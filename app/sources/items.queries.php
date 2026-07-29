@@ -261,8 +261,18 @@ switch ($inputData['type']) {
                 isset($dataReceived['pw_is_b64']) && (int) $dataReceived['pw_is_b64'] === 1
             );
             // Compute complexity server-side from plaintext — single source of truth with the API path
-            $_zxcvbn = new \ZxcvbnPhp\Zxcvbn();
-            $post_complexity_level = convertPasswordStrength($_zxcvbn->passwordStrength($post_password)['score']);
+            $passwordStrength = evaluatePasswordStrengthSafely($post_password);
+            if ($passwordStrength['success'] === false) {
+                echo (string) prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => $lang->get('error_password_strength_evaluation'),
+                    ],
+                    'encode'
+                );
+                break;
+            }
+            $post_complexity_level = convertPasswordStrength((int) $passwordStrength['score']);
             $post_tags = htmlspecialchars($dataReceived['tags']);
             $post_template_id = filter_var($dataReceived['template_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_url = filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_URL);
@@ -949,8 +959,18 @@ switch ($inputData['type']) {
         // Compute complexity server-side from plaintext — single source of truth with the API path
         // When password is unchanged (empty), fall back to the client-sent value for the folder minimum check
         if (empty($post_password) === false) {
-            $_zxcvbn = new \ZxcvbnPhp\Zxcvbn();
-            $post_complexity_level = convertPasswordStrength($_zxcvbn->passwordStrength($post_password)['score']);
+            $passwordStrength = evaluatePasswordStrengthSafely($post_password);
+            if ($passwordStrength['success'] === false) {
+                echo (string) prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => $lang->get('error_password_strength_evaluation'),
+                    ],
+                    'encode'
+                );
+                break;
+            }
+            $post_complexity_level = convertPasswordStrength((int) $passwordStrength['score']);
         } else {
             $post_complexity_level = (int) filter_var($dataReceived['complexity_level'], FILTER_SANITIZE_NUMBER_INT);
         }
@@ -3243,16 +3263,61 @@ switch ($inputData['type']) {
             $arrData['label'] = $dataItem['label'] === '' ? '' : $dataItem['label'];
             $pwLength = strlen($passwordForMetrics);
             $arrData['pw_length'] = $pwLength;
-            // Per-item health marker (replaces the old binary pw_is_secure shield): the same
-            // posture signals used by the Security Posture Dashboard (F1), surfaced on the card.
-            // - weak: complexity below "medium" (TP_PW_STRENGTH_3) OR length < 12 (card-only,
-            //   uses the decrypted value available here — the dashboard has no plaintext).
-            // - reused: from the per-user scan (item_health), only when the dashboard is enabled.
+            // Same classification as the list and Security Posture, but the card is the only health
+            // surface that already holds the decrypted password: assess from the live value and
+            // repair the stored metadata when it diverges, instead of reporting "unassessed" on
+            // data it can assess for free. The repair makes the three views converge and is
+            // self-limiting — once written, the item is no longer legacy.
             // breached is intentionally excluded — the HIBP badge already shows it on the card.
-            if ($pwLength === 0) {
-                $arrData['pw_health'] = null; // empty password → no marker
+            $storedPasswordLength = $dataItem['pw_len'] === null ? null : (int) $dataItem['pw_len'];
+            $complexityLevel = is_int($dataItem['complexity_level']) || is_string($dataItem['complexity_level'])
+                ? $dataItem['complexity_level']
+                : null;
+            $assessedPasswordLength = $storedPasswordLength;
+
+            if ($pwLength > 0) {
+                $metadataUpdates = [];
+                $passwordLengthChanged = $storedPasswordLength !== $pwLength;
+                if ($passwordLengthChanged === true) {
+                    $metadataUpdates['pw_len'] = $pwLength;
+                }
+                if (
+                    $passwordLengthChanged === true
+                    || $complexityLevel === null
+                    || $complexityLevel === ''
+                    || is_numeric($complexityLevel) === false
+                    || (int) $complexityLevel < 0
+                ) {
+                    $passwordStrength = evaluatePasswordStrengthSafely($passwordForMetrics);
+                    if ($passwordStrength['success'] === true) {
+                        $complexityLevel = convertPasswordStrength((int) $passwordStrength['score']);
+                        $metadataUpdates['complexity_level'] = $complexityLevel;
+                    } else {
+                        // Existing malformed credentials remain usable but unassessed. The
+                        // sentinel keeps that state consistent with the posture scan and the
+                        // background calculation, which both stop reprocessing the item.
+                        $complexityLevel = TP_PW_COMPLEXITY_UNASSESSABLE;
+                        $metadataUpdates['complexity_level'] = TP_PW_COMPLEXITY_UNASSESSABLE;
+                        error_log(
+                            'TEAMPASS - item card: password strength could not be assessed for item '
+                            . (int) $inputData['id'] . ' (' . $passwordStrength['reason'] . ')'
+                        );
+                    }
+                }
+                if (count($metadataUpdates) > 0) {
+                    DB::update(prefixTable('items'), $metadataUpdates, 'id = %i', (int) $inputData['id']);
+                }
+                $assessedPasswordLength = $pwLength;
+            }
+
+            $passwordHealthStatus = securityPasswordHealthStatus(
+                $complexityLevel,
+                $assessedPasswordLength,
+                (string) $dataItem['pw'] !== ''
+            );
+            if ($passwordHealthStatus === 'empty') {
+                $arrData['pw_health'] = null;
             } else {
-                $flagWeak = (intval($dataItem['complexity_level']) < TP_PW_STRENGTH_3 || $pwLength < 12) ? 1 : 0;
                 $flagReused = 0;
                 if ((int) ($SETTINGS['security_dashboard_enabled'] ?? 0) === 1) {
                     $flagReused = (int) DB::queryFirstField(
@@ -3262,7 +3327,11 @@ switch ($inputData['type']) {
                         (int) $inputData['id']
                     );
                 }
-                $arrData['pw_health'] = ['weak' => $flagWeak, 'reused' => $flagReused];
+                $arrData['pw_health'] = [
+                    'weak' => $passwordHealthStatus === 'weak' ? 1 : 0,
+                    'unassessed' => $passwordHealthStatus === 'unassessed' ? 1 : 0,
+                    'reused' => $flagReused,
+                ];
             }
 
             // HIBP cached status (no API call here — async check is triggered by the JS)
@@ -8390,11 +8459,16 @@ switch ($inputData['type']) {
                 break;
             }
 
-            // Load item and verify user has access via sharekey
+            // A sharekey is required for decryption but is not an authorization grant. Apply the
+            // same current folder and item restrictions as Security Posture before decrypting.
+            $hibpAccessScopeSql = securityPostureItemAccessSql((int) $session->get('user-id'));
             $hibpItem = DB::queryFirstRow(
-                'SELECT pw, pw_iv, hibp_status, hibp_checked_at
-                FROM ' . prefixTable('items') . '
-                WHERE id = %i',
+                'SELECT i.pw, i.pw_iv, i.hibp_status, i.hibp_checked_at
+                FROM ' . prefixTable('items') . ' AS i
+                WHERE i.id = %i
+                    AND i.inactif = 0
+                    AND i.deleted_at IS NULL
+                    AND ' . $hibpAccessScopeSql,
                 $hibpItemId
             );
             if ($hibpItem === null) {

@@ -70,24 +70,35 @@ trait SharekeysRepairTrait {
             return;
         }
 
+        // Personal objects are excluded: rebuilding their keys for every eligible user would hand
+        // them to the whole instance. The items.perso flag alone is not a safe filter (it is 0 on
+        // items created while the client sent folder_is_personal = 0), so the folder is checked too.
+        $personalFolders = getAllPersonalFolderIds();
+        $personalFolderSql = count($personalFolders) > 0
+            ? ' AND i.id_tree NOT IN (' . implode(',', $personalFolders) . ')'
+            : '';
+
         // One pass per object type sharing the same sharekeys schema
         $scopes = [
             'items' => [
                 'sharekeysTable' => 'sharekeys_items',
                 'objectsQuery' => 'SELECT o.id AS id FROM ' . prefixTable('items') . ' AS o
-                    WHERE o.perso = 0 AND o.id > %i ORDER BY o.id ASC LIMIT %i',
+                    INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = o.id_tree)
+                    WHERE o.perso = 0 AND n.personal_folder = 0 AND o.id > %i ORDER BY o.id ASC LIMIT %i',
             ],
             'fields' => [
                 'sharekeysTable' => 'sharekeys_fields',
                 'objectsQuery' => 'SELECT o.id AS id FROM ' . prefixTable('categories_items') . ' AS o
                     INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = o.item_id AND i.perso = 0)
-                    WHERE o.encryption_type = "' . TP_ENCRYPTION_NAME . '" AND o.id > %i ORDER BY o.id ASC LIMIT %i',
+                    WHERE o.encryption_type = "' . TP_ENCRYPTION_NAME . '"' . $personalFolderSql . '
+                    AND o.id > %i ORDER BY o.id ASC LIMIT %i',
             ],
             'files' => [
                 'sharekeysTable' => 'sharekeys_files',
                 'objectsQuery' => 'SELECT o.id AS id FROM ' . prefixTable('files') . ' AS o
                     INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = o.id_item AND i.perso = 0)
-                    WHERE o.status = "' . TP_ENCRYPTION_NAME . '" AND o.id > %i ORDER BY o.id ASC LIMIT %i',
+                    WHERE o.status = "' . TP_ENCRYPTION_NAME . '"' . $personalFolderSql . '
+                    AND o.id > %i ORDER BY o.id ASC LIMIT %i',
             ],
         ];
 

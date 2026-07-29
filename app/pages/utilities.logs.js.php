@@ -90,8 +90,31 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     var oTableAdmin;
     var oTableErrors;
     var oTableKb;
+    let oTableAuthenticationLockouts = null;
+    let authenticationLockoutTimersStarted = false;
 
     var kbEnabled = <?php echo isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_kb'] === 1 ? 'true' : 'false'; ?>;
+    const authenticationLockoutAdmin = <?php echo (int) ($session->get('user-admin') ?? 0) === 1 ? 'true' : 'false'; ?>;
+    const authenticationLockoutMessages = <?php
+        echo (string) json_encode(
+            [
+                'scopeLogin' => $lang->get('authentication_lockout_scope_login'),
+                'scopeIp' => $lang->get('authentication_lockout_scope_ip'),
+                'viewFailures' => $lang->get('authentication_lockout_view_failures'),
+                'remove' => $lang->get('authentication_lockout_remove'),
+                'remaining' => $lang->get('remaining_lock_time'),
+                'expired' => $lang->get('authentication_lockout_expired'),
+                'confirm' => $lang->get('authentication_lockout_remove_confirm'),
+                'ipWarning' => $lang->get('authentication_lockout_remove_ip_warning'),
+                'clientWarning' => $lang->get('authentication_lockout_client_warning'),
+                'invalidTarget' => $lang->get('authentication_lockout_invalid_target'),
+                'serverError' => $lang->get('server_answer_error'),
+                'caution' => $lang->get('caution'),
+                'close' => $lang->get('close'),
+            ],
+            JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE
+        );
+        ?>;
 
     // Decode HTML entities (e.g. &eacute; -> é, &amp; -> &)
     function decodeHtmlEntities(str) {
@@ -116,6 +139,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     $('a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
         $('#selector-purge-action option[value="all"]').prop('selected', true);
+        if (authenticationLockoutAdmin === true) {
+            $('#logs-purge-footer').toggleClass('hidden', e.target.hash === '#authentication-lockouts');
+        }
         if (e.target.hash === '#connections') {
             store.update(
                 'teampassApplication',
@@ -133,6 +159,15 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             );
             $('#selector-purge-action').addClass('hidden');
             showFailed();
+        } else if (e.target.hash === '#authentication-lockouts' && authenticationLockoutAdmin === true) {
+            store.update(
+                'teampassApplication',
+                function(teampassApplication) {
+                    teampassApplication.logData = 'authentication_lockouts';
+                }
+            );
+            $('#selector-purge-action').addClass('hidden');
+            showAuthenticationLockouts();
         } else if (e.target.hash === '#errors') {
             store.update(
                 'teampassApplication',
@@ -270,8 +305,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             },
             'columnDefs': [
                 {
-                    // Label + User + IP
-                    'targets': [1, 2, 3],
+                    // Label + User + IP + Channel
+                    'targets': [1, 2, 3, 4],
                     'render': function (data, type) {
                         if (type !== 'display') { return data; }
                         return $('<div/>').text(decodeHtmlEntities(data)).html();
@@ -279,6 +314,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 },
                 {
                     'targets': 4,
+                    'orderable': false,
+                    'searchable': false
+                },
+                {
+                    'targets': 5,
                     'orderable': false,
                     'searchable': false,
                     'className': 'text-center',
@@ -307,6 +347,207 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 );
             },
         });
+    }
+
+    /**
+     * Escape a DataTables value before displaying it as HTML.
+     *
+     * @param {*} value Value to escape.
+     * @return {string}
+     */
+    function escapeAuthenticationLockoutValue(value) {
+        return $('<div/>').text(value === null || value === undefined ? '' : value.toString()).html();
+    }
+
+    /**
+     * Format a lockout countdown in a compact, language-neutral form.
+     *
+     * @param {number} totalSeconds Number of seconds remaining.
+     * @return {string}
+     */
+    function formatAuthenticationLockoutRemaining(totalSeconds) {
+        if (totalSeconds <= 0) {
+            return authenticationLockoutMessages.expired;
+        }
+
+        const days = Math.floor(totalSeconds / 86400);
+        const hours = Math.floor((totalSeconds % 86400) / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        const parts = [];
+
+        if (days > 0) {
+            parts.push(days + 'd');
+        }
+        if (hours > 0 || days > 0) {
+            parts.push(hours.toString().padStart(2, '0') + 'h');
+        }
+        parts.push(minutes.toString().padStart(2, '0') + 'm');
+        parts.push(seconds.toString().padStart(2, '0') + 's');
+
+        return parts.join(' ');
+    }
+
+    /**
+     * Refresh every visible lockout countdown.
+     *
+     * @return {void}
+     */
+    function updateAuthenticationLockoutCountdowns() {
+        const now = Math.floor(Date.now() / 1000);
+
+        $('.authentication-lockout-remaining').each(function() {
+            const unlockAt = parseInt($(this).attr('data-unlock-at'), 10);
+            const remaining = Number.isNaN(unlockAt) ? 0 : Math.max(0, unlockAt - now);
+            $(this).text(formatAuthenticationLockoutRemaining(remaining));
+        });
+    }
+
+    /**
+     * Start the countdown and auto-refresh timers, once and only for an administrator.
+     *
+     * @return {void}
+     */
+    function startAuthenticationLockoutTimers() {
+        if (authenticationLockoutTimersStarted === true) {
+            return;
+        }
+        authenticationLockoutTimersStarted = true;
+
+        window.setInterval(updateAuthenticationLockoutCountdowns, 1000);
+        window.setInterval(function() {
+            if (
+                oTableAuthenticationLockouts !== null
+                && $('#authentication-lockouts').hasClass('active')
+            ) {
+                oTableAuthenticationLockouts.ajax.reload(null, false);
+            }
+        }, 30000);
+    }
+
+    /**
+     * Initialize or refresh the active authentication lockouts table.
+     *
+     * @return {void}
+     */
+    function showAuthenticationLockouts() {
+        if (authenticationLockoutAdmin !== true) {
+            return;
+        }
+
+        if ($.fn.dataTable.isDataTable('#table-authentication-lockouts')) {
+            oTableAuthenticationLockouts.ajax.reload(null, false);
+            return;
+        }
+
+        oTableAuthenticationLockouts = $('#table-authentication-lockouts').DataTable({
+            'paging': true,
+            'sPaginationType': 'listbox',
+            'lengthMenu': [10, 25, 50, 100],
+            'searching': true,
+            'order': [
+                [6, 'asc']
+            ],
+            'info': true,
+            'processing': true,
+            'serverSide': true,
+            'responsive': false,
+            'stateSave': true,
+            'autoWidth': false,
+            'scrollX': true,
+            'ajax': {
+                url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/logs.datatables.php?action=authentication_lockouts'
+            },
+            'columns': [
+                {
+                    'data': 'source',
+                    'render': function(data, type) {
+                        if (type !== 'display') {
+                            return data;
+                        }
+                        const label = data === 'remote_ip'
+                            ? authenticationLockoutMessages.scopeIp
+                            : authenticationLockoutMessages.scopeLogin;
+                        const badge = data === 'remote_ip' ? 'badge-warning' : 'badge-info';
+                        return '<span class="badge ' + badge + '">' + escapeAuthenticationLockoutValue(label) + '</span>';
+                    }
+                },
+                {
+                    'data': 'value',
+                    'render': function(data, type) {
+                        return type === 'display' ? escapeAuthenticationLockoutValue(data) : data;
+                    }
+                },
+                {
+                    'data': 'user_display',
+                    'render': function(data, type) {
+                        if (type !== 'display') {
+                            return data;
+                        }
+                        return data === '' ? '&mdash;' : escapeAuthenticationLockoutValue(data);
+                    }
+                },
+                {
+                    'data': 'failure_count',
+                    'className': 'text-center'
+                },
+                {
+                    'data': 'first_failure',
+                    'render': function(data, type) {
+                        return type === 'display' ? escapeAuthenticationLockoutValue(data) : data;
+                    }
+                },
+                {
+                    'data': 'last_failure',
+                    'render': function(data, type) {
+                        return type === 'display' ? escapeAuthenticationLockoutValue(data) : data;
+                    }
+                },
+                {
+                    'data': 'unlock_at',
+                    'render': function(data, type, row) {
+                        if (type !== 'display') {
+                            return row.unlock_at_timestamp;
+                        }
+                        return escapeAuthenticationLockoutValue(data)
+                            + '<br><small class="text-muted">'
+                            + escapeAuthenticationLockoutValue(authenticationLockoutMessages.remaining)
+                            + ': <span class="authentication-lockout-remaining" data-unlock-at="'
+                            + parseInt(row.unlock_at_timestamp, 10)
+                            + '"></span></small>';
+                    }
+                },
+                {
+                    'data': null,
+                    'orderable': false,
+                    'searchable': false,
+                    'className': 'text-nowrap text-center',
+                    'render': function(data, type, row) {
+                        if (type !== 'display') {
+                            return '';
+                        }
+                        const source = row.source === 'remote_ip' ? 'remote_ip' : 'login';
+                        const value = encodeURIComponent(row.value === null ? '' : row.value.toString());
+                        return '<button type="button" class="btn btn-sm btn-outline-secondary authentication-lockout-view-failures mr-1"'
+                            + ' data-value="' + value + '" title="'
+                            + escapeAuthenticationLockoutValue(authenticationLockoutMessages.viewFailures) + '">'
+                            + '<i class="fa-solid fa-magnifying-glass"></i></button>'
+                            + '<button type="button" class="btn btn-sm btn-outline-danger authentication-lockout-remove"'
+                            + ' data-source="' + source + '" data-value="' + value + '" title="'
+                            + escapeAuthenticationLockoutValue(authenticationLockoutMessages.remove) + '">'
+                            + '<i class="fa-solid fa-lock-open"></i></button>';
+                    }
+                }
+            ],
+            'language': {
+                'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $session->get('user-language'); ?>.txt'
+            },
+            'drawCallback': function() {
+                updateAuthenticationLockoutCountdowns();
+            }
+        });
+
+        startAuthenticationLockoutTimers();
     }
 
     /**
@@ -808,6 +1049,151 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 }
             );
         }
+    });
+
+    $(document).on('click', '.authentication-lockout-view-failures', function(e) {
+        e.preventDefault();
+
+        let value = '';
+        try {
+            value = decodeURIComponent(($(this).attr('data-value') || '').toString());
+        } catch (error) {
+            toastr.error(authenticationLockoutMessages.invalidTarget, authenticationLockoutMessages.caution);
+            return;
+        }
+
+        const $failedTab = $('a[href="#failed"]');
+        $failedTab
+            .off('shown.bs.tab.tpAuthenticationLockoutFailures')
+            .one('shown.bs.tab.tpAuthenticationLockoutFailures', function() {
+                if (typeof oTableFailed !== 'undefined' && oTableFailed !== null) {
+                    oTableFailed.api().search(value).draw();
+                }
+            });
+        $failedTab.tab('show');
+    });
+
+    $(document).on('click', '.authentication-lockout-remove', function(e) {
+        e.preventDefault();
+
+        const source = ($(this).attr('data-source') || '').toString();
+        let value = '';
+        try {
+            value = decodeURIComponent(($(this).attr('data-value') || '').toString());
+        } catch (error) {
+            toastr.error(authenticationLockoutMessages.invalidTarget, authenticationLockoutMessages.caution);
+            return;
+        }
+
+        if ((source !== 'login' && source !== 'remote_ip') || value === '') {
+            toastr.error(authenticationLockoutMessages.invalidTarget, authenticationLockoutMessages.caution);
+            return;
+        }
+
+        const scopeLabel = source === 'remote_ip'
+            ? authenticationLockoutMessages.scopeIp
+            : authenticationLockoutMessages.scopeLogin;
+        let modalBody = '<p>' + escapeAuthenticationLockoutValue(authenticationLockoutMessages.confirm) + '</p>'
+            + '<p><strong>' + escapeAuthenticationLockoutValue(scopeLabel) + ':</strong> '
+            + escapeAuthenticationLockoutValue(value) + '</p>'
+            + '<div class="alert alert-warning mb-0"><i class="fa-solid fa-triangle-exclamation mr-2"></i>'
+            + escapeAuthenticationLockoutValue(authenticationLockoutMessages.clientWarning);
+
+        if (source === 'remote_ip') {
+            modalBody += '<br><br>' + escapeAuthenticationLockoutValue(authenticationLockoutMessages.ipWarning);
+        }
+        modalBody += '</div>';
+
+        showModalDialogBox(
+            '#warningModal',
+            '<i class="fa-solid fa-lock-open mr-2"></i>' + escapeAuthenticationLockoutValue(authenticationLockoutMessages.remove),
+            modalBody,
+            escapeAuthenticationLockoutValue(authenticationLockoutMessages.remove),
+            escapeAuthenticationLockoutValue(authenticationLockoutMessages.close),
+            false,
+            true,
+            true
+        );
+
+        $(document)
+            .off('click.tpAuthenticationLockoutConfirm', '#warningModalButtonAction')
+            .one('click.tpAuthenticationLockoutConfirm', '#warningModalButtonAction', function(event) {
+                event.preventDefault();
+                const $actionButton = $(this);
+                $actionButton.prop('disabled', true);
+
+                $.post(
+                    'sources/admin.queries.php',
+                    {
+                        type: 'authentication_lockout_remove',
+                        data: prepareExchangedData(
+                            JSON.stringify({
+                                source: source,
+                                value: value
+                            }),
+                            'encode',
+                            '<?php echo $session->get('key'); ?>'
+                        ),
+                        key: '<?php echo $session->get('key'); ?>'
+                    },
+                    function(response) {
+                        let data;
+                        try {
+                            data = prepareExchangedData(response, 'decode', '<?php echo $session->get('key'); ?>');
+                        } catch (error) {
+                            data = null;
+                        }
+
+                        // A decode failure may return a falsy value instead of throwing, so the
+                        // success path requires an explicit 'error: false' from the server.
+                        if (!data || typeof data !== 'object') {
+                            data = {
+                                error: true,
+                                message: authenticationLockoutMessages.serverError
+                            };
+                        }
+
+                        if (data.error !== false) {
+                            $actionButton.prop('disabled', false);
+                            toastr.error(data.message || authenticationLockoutMessages.serverError, authenticationLockoutMessages.caution, {
+                                timeOut: 5000,
+                                progressBar: true
+                            });
+                            return;
+                        }
+
+                        $('#warningModal').modal('hide');
+                        toastr.success(data.message, '', {
+                            timeOut: 2500,
+                            progressBar: true
+                        });
+
+                        if (oTableAuthenticationLockouts !== null) {
+                            oTableAuthenticationLockouts.ajax.reload(null, false);
+                        }
+                        if (typeof oTableAdmin !== 'undefined' && oTableAdmin !== null) {
+                            oTableAdmin.api().ajax.reload(null, false);
+                        }
+                    }
+                ).fail(function() {
+                    $actionButton.prop('disabled', false);
+                    toastr.error(
+                        authenticationLockoutMessages.serverError,
+                        authenticationLockoutMessages.caution,
+                        {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                });
+            });
+
+        $('#warningModal')
+            .off('hidden.bs.modal.tpAuthenticationLockout')
+            .one('hidden.bs.modal.tpAuthenticationLockout', function() {
+                $(document).off('click.tpAuthenticationLockoutConfirm', '#warningModalButtonAction');
+                $('#warningModalButtonAction').prop('disabled', false);
+            });
     });
 
     $(document).on('click', '.failed-auth-add-blacklist', function(e) {

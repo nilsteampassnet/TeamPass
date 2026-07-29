@@ -25,6 +25,7 @@
 4. [Folders Endpoints](#folders-endpoints)
    - [List accessible folders](#list-folders)
    - [List folders with access rights](#writable-folders)
+     - [Item rights vs folder capabilities](#item-rights-vs-folder-capabilities)
    - [Create a folder](#create-folder)
    - [Update a folder](#folder-update)
    - [Delete a folder](#folder-delete)
@@ -96,9 +97,27 @@ This directive defines the limit on the allowed size of an HTTP request-header f
 **Response (success):**
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "teampass_version": "3.2.1.2",
+  "teampass_version_major": "3.2.1",
+  "teampass_version_minor": "2"
 }
 ```
+
+**Response Fields:**
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `token` | string | The JWT to send as `Authorization: Bearer <token>` on every other endpoint |
+| `teampass_version` | string | Complete server release, `<major>.<minor>.<patch>.<revision>` |
+| `teampass_version_major` | string | Base server version, `<major>.<minor>.<patch>` |
+| `teampass_version_minor` | string | Final release revision component |
+
+> The three `teampass_version*` fields are returned in the **response body**, not as JWT claims:
+> the token stays a pure credential, and a server upgraded during a token's lifetime reports its
+> new version at the next authentication rather than at token expiry. A long-lived client that
+> needs to refresh the value without re-authenticating can read the same three fields from
+> `misc/refreshExtensionSettings`.
 
 **Response Codes:**
 
@@ -147,10 +166,14 @@ OAuth2/SSO users have no usable password (their stored credential is a hash of t
 
 > The `token` must be a 64-character hexadecimal string (`^[a-f0-9]{64}$`). Credentials must be sent in the body — query-string credentials are rejected with `400`.
 
-**Response (success):**
+**Response (success):** identical in shape to [`authorize`](#authorize) — the JWT plus the three
+server version fields.
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "teampass_version": "3.2.1.2",
+  "teampass_version_major": "3.2.1",
+  "teampass_version_minor": "2"
 }
 ```
 
@@ -666,7 +689,7 @@ curl -X POST "https://your-teampass.com/api/index.php/item/create" \
 | 200 | Item updated successfully |
 | 400 | Missing ID or no fields to update |
 | 401 | Invalid session or user keys not found |
-| 403 | Update permission denied or access denied |
+| 403 | Update permission denied or access denied — including a folder granted as `R`, `NE` or `NDNE` (check `can_edit` on [`folder/writableFolders`](#writable-folders)) |
 | 404 | Item not found |
 | 422 | HTTP method not supported |
 | 500 | Server error |
@@ -738,7 +761,7 @@ curl -X PUT "https://your-teampass.com/api/index.php/item/update" \
 | ---- | ----------- |
 | 200 | Item deleted successfully |
 | 400 | Missing ID or inconsistent data |
-| 403 | Delete permission denied or access denied |
+| 403 | Delete permission denied or access denied — including a folder granted as `R`, `ND` or `NDNE` (check `can_delete` on [`folder/writableFolders`](#writable-folders)) |
 | 404 | Item not found |
 | 422 | HTTP method not supported (must be DELETE) |
 | 500 | Server error |
@@ -812,11 +835,13 @@ curl -X GET "https://your-teampass.com/api/index.php/item/allTags" \
     "id": 1,
     "title": "Production",
     "isVisible": true,
+    "complexity": 38,
     "childrens": [
       {
         "id": 2,
         "title": "Servers",
         "isVisible": true,
+        "complexity": 48,
         "childrens": []
       }
     ]
@@ -831,7 +856,20 @@ curl -X GET "https://your-teampass.com/api/index.php/item/allTags" \
 | `id` | integer | Unique folder ID |
 | `title` | string | Folder name |
 | `isVisible` | boolean | `false` when the folder is only returned to carry accessible children |
+| `complexity` | integer | Minimum password strength required in this folder (see table below) |
 | `childrens` | array | Child nodes, same structure |
+
+**Complexity levels:**
+
+| Value | Level |
+| ----- | ----- |
+| `0` | Weak |
+| `20` | Medium |
+| `38` | Strong |
+| `48` | Very strong |
+| `60` | Heavy |
+
+`0` is also returned when the folder carries no complexity rule (for example a personal root folder).
 
 **Response Codes:**
 
@@ -871,6 +909,14 @@ Rows are sorted by `position` (the folder tree's own order, siblings included), 
 | **Headers** | `Authorization: Bearer <token>` |
 
 **Response (success):**
+
+> The example below is the response seen by a user who passes the global
+> folder-management gate (administrator, manager, or the
+> `enable_user_can_create_folders` setting turned on) and holds the three API CRUD
+> permissions. A standard user who does not pass that gate gets `0` on every
+> `can_*_folder` field of the **shared** folders, while keeping them on his own
+> personal tree.
+
 ```json
 [
   {
@@ -880,7 +926,18 @@ Rows are sorted by `position` (the folder tree's own order, siblings included), 
     "parent_id": 0,
     "first_position": 1,
     "position": 23,
-    "is_readonly": 0
+    "complexity": 0,
+    "is_readonly": 0,
+    "access_type": "W",
+    "can_create": 1,
+    "can_edit": 1,
+    "can_delete": 1,
+    "is_personal": 1,
+    "is_personal_root": 1,
+    "can_create_subfolder": 1,
+    "can_rename_folder": 0,
+    "can_move_folder": 0,
+    "can_delete_folder": 0
   },
   {
     "id": 1,
@@ -889,7 +946,18 @@ Rows are sorted by `position` (the folder tree's own order, siblings included), 
     "parent_id": 0,
     "first_position": 0,
     "position": 41,
-    "is_readonly": 0
+    "complexity": 38,
+    "is_readonly": 0,
+    "access_type": "ND",
+    "can_create": 1,
+    "can_edit": 1,
+    "can_delete": 0,
+    "is_personal": 0,
+    "is_personal_root": 0,
+    "can_create_subfolder": 1,
+    "can_rename_folder": 1,
+    "can_move_folder": 1,
+    "can_delete_folder": 1
   },
   {
     "id": 2,
@@ -898,7 +966,18 @@ Rows are sorted by `position` (the folder tree's own order, siblings included), 
     "parent_id": 1,
     "first_position": 0,
     "position": 42,
-    "is_readonly": 1
+    "complexity": 48,
+    "is_readonly": 1,
+    "access_type": "R",
+    "can_create": 0,
+    "can_edit": 0,
+    "can_delete": 0,
+    "is_personal": 0,
+    "is_personal_root": 0,
+    "can_create_subfolder": 0,
+    "can_rename_folder": 0,
+    "can_move_folder": 0,
+    "can_delete_folder": 0
   }
 ]
 ```
@@ -913,7 +992,51 @@ Rows are sorted by `position` (the folder tree's own order, siblings included), 
 | `parent_id` | integer | Parent folder ID (0 for root) |
 | `first_position` | integer | `1` for the user's personal root folder, to be listed first |
 | `position` | integer | Tree position; the list is already sorted on it |
-| `is_readonly` | integer | `1` = read access only, `0` = the user can write |
+| `complexity` | integer | Minimum password strength required in this folder: `0` Weak, `20` Medium, `38` Strong, `48` Very strong, `60` Heavy (`0` also when no rule is set) |
+| `is_readonly` | integer | `1` = read access only (`access_type` is `R`), `0` = the user can write |
+| `access_type` | string | Effective access level: `W`, `ND`, `NE`, `NDNE` or `R` |
+| `can_create` | integer | **Item right** — `1` when the user may create items in this folder. Does **not** authorize creating a subfolder |
+| `can_edit` | integer | **Item right** — `1` when the user may edit existing items (`0` for `NE`, `NDNE`, `R`). Does **not** authorize renaming or moving the folder |
+| `can_delete` | integer | **Item right** — `1` when the user may delete items (`0` for `ND`, `NDNE`, `R`). Does **not** authorize deleting the folder |
+| `is_personal` | integer | `1` when the folder is part of a personal folder tree, `0` for the shared domain. Only your own personal folders are ever listed |
+| `is_personal_root` | integer | `1` for the root of your personal tree. A personal root can never be renamed, moved or deleted |
+| `can_create_subfolder` | integer | **Folder capability** — `1` when [`folder/create`](#create-folder) may use this folder as its `parent_id` |
+| `can_rename_folder` | integer | **Folder capability** — `1` when this folder is eligible for a rename through [`folder/update`](#folder-update) |
+| `can_move_folder` | integer | **Folder capability** — `1` when this folder is eligible to be moved. Describes the **source only**, see the warning below |
+| `can_delete_folder` | integer | **Folder capability** — `1` when this folder is eligible for deletion through [`folder/delete`](#folder-delete) |
+
+> ⚠️ `is_readonly: 0` does **not** mean full write access. A folder granted as `ND`, `NE` or
+> `NDNE` is writable but restricts deletion and/or edition — rely on `can_edit` / `can_delete`
+> rather than on `is_readonly` alone, otherwise a legitimate call will come back as `403`.
+>
+> When several roles grant different levels on the same folder, the **least permissive wins**
+> (`R` > `NDNE` > `NE` = `ND` > `W`), exactly like the web interface. See
+> [Rights management](../features/rights.md).
+
+#### Item rights vs folder capabilities {#item-rights-vs-folder-capabilities}
+
+The two families answer different questions and are **not** interchangeable:
+
+| | `can_create` / `can_edit` / `can_delete` | `can_create_subfolder` / `can_rename_folder` / `can_move_folder` / `can_delete_folder` |
+| --- | --- | --- |
+| Scope | The **items stored in** the folder | The **folder itself** |
+| Driven by | The folder access level (`W`, `ND`, `NE`, `NDNE`, `R`) | Access level **+** the global folder-management gate **+** personal-root protection |
+
+A folder granted as `ND` illustrates the difference: `can_delete: 0` (you may not delete the
+items it contains) while `can_delete_folder: 1` (you may delete the folder itself).
+
+The global folder-management gate is passed when **any** of these is true: you are an
+administrator, a manager, you hold *manage all users* or *create root folder*, the
+`enable_user_can_create_folders` setting is on, or the folder belongs to your personal tree.
+
+> ⚠️ These four fields are **UI hints**. The server stays authoritative and re-runs every
+> check when the mutation is actually attempted — never treat a `1` as a guarantee of success.
+>
+> ⚠️ `can_move_folder` qualifies the **source folder only**. [`folder/update`](#folder-update)
+> separately validates the chosen destination: accessibility, read-only state, move into itself
+> or into one of its own descendants, personal ↔ shared boundary, and the permission to move to
+> the root. A `can_move_folder: 1` can therefore still be answered with a `403` or `422`
+> depending on the destination you pick.
 
 **Response Codes:**
 
@@ -980,9 +1103,11 @@ curl -s -X GET "https://your-teampass.com/api/index.php/folder/writableFolders" 
 | `edit_auth_without` | integer | ❌ | Allow update even if complexity insufficient (0/1) |
 | `icon` | string | ❌ | FontAwesome icon code (closed state) |
 | `icon_selected` | string | ❌ | FontAwesome icon code (open/selected state) |
-| `access_rights` | string | ❌ | Access type: R (Read), W (Write), ND (No deletion), NE (No edit), NDNE (No deletion and No edit) |
+| `access_rights` | string | ❌ | Access type granted to your roles on the new folder: R (Read), W (Write), ND (No deletion), NE (No edit), NDNE (No deletion and No edit). **Defaults to `W`** when omitted. |
 
 > ¹ `parent_id` and `complexity` are required for a **shared** folder. When `private` is `true` (personal folder), both are optional — `parent_id` defaults to your personal root and the complexity ceiling does not apply. The `personal_folder` flag is always derived server-side; it is never accepted from the client.
+>
+> A `title` made only of whitespace is rejected with `422`.
 
 **Possible values for `complexity`:**
 
@@ -1081,14 +1206,14 @@ Partial update: only `id` is required; any field you omit keeps its current valu
 | `id` | integer | ✅ | Folder ID to update |
 | `title` | string | ❌ | New folder name |
 | `parent_id` | integer | ❌ | New parent ID (move). Cross-domain personal ↔ shared moves are rejected. |
-| `complexity` | integer | ❌ | New complexity level |
+| `complexity` | integer | ❌ | New complexity level. Must be one of 0, 20, 38, 48, 60 — any other value is rejected with `422`. |
 | `duration` | integer | ❌ | Expiration delay in minutes |
 | `create_auth_without` | integer | ❌ | Allow creation even if complexity insufficient (0/1) |
 | `edit_auth_without` | integer | ❌ | Allow update even if complexity insufficient (0/1) |
 | `icon` | string | ❌ | FontAwesome icon code (closed state) |
 | `icon_selected` | string | ❌ | FontAwesome icon code (open/selected state) |
 
-> `access_rights` cannot be changed here — folder rights are a roles-management concern. Personal **root** folders cannot be renamed or moved. At least one updatable field must be provided.
+> `access_rights` cannot be changed here — folder rights are a roles-management concern. Personal **root** folders cannot be renamed or moved. At least one updatable field must be provided. An empty or whitespace-only `title` is rejected with `422`.
 
 **Response (success):**
 ```json
@@ -1109,7 +1234,7 @@ Partial update: only `id` is required; any field you omit keeps its current valu
 | 403 | Update permission denied / read-only folder / personal root rename or move |
 | 404 | Folder not found |
 | 405 | Method not allowed (use PUT) |
-| 422 | Numeric title, duplicate title, circular/descendant move, cross-domain move, or complexity below parent |
+| 422 | Empty or numeric title, duplicate title, invalid complexity level, circular/descendant move, cross-domain move, or complexity below parent |
 | 500 | Server error |
 
 **Example:**
@@ -1258,10 +1383,21 @@ All API endpoints may return the following standard HTTP error codes:
 
 ## Command-line client {#cli}
 
-Teampass ships a small Bash client, `scripts/teampass-cli.sh`, that wraps the JWT
-authentication and the most common endpoints. It requires `curl` and `jq`.
+Teampass ships a small command-line client that wraps the JWT authentication and the most
+common endpoints. Two equivalent implementations are provided:
 
-**Configuration** — environment variables, or `~/.config/teampass/config`:
+| Script | Platform | Requirements |
+|---|---|---|
+| `app/scripts/teampass-cli.sh` | Linux / macOS / any Bash shell | `curl` and `jq` |
+| `app/scripts/teampass-cli.ps1` | Windows (native PowerShell) | PowerShell 5.1+ (built-in `Invoke-RestMethod`) |
+
+The PowerShell version provides full feature parity with the Bash one — same commands, same
+options, same output — so Windows environments no longer need WSL, Git Bash or any
+third-party Bash runtime to use the API from the command line, Task Scheduler or an
+automation script.
+
+**Configuration** — environment variables, or a configuration file
+(`~/.config/teampass/config` on Bash, `%LOCALAPPDATA%\teampass\config` on PowerShell):
 
 ```bash
 export TEAMPASS_URL="https://your-teampass.com"
@@ -1275,16 +1411,31 @@ export TEAMPASS_APIKEY="..."
 export TEAMPASS_TOKEN="..."
 ```
 
-**Commands:**
+On PowerShell, the same variables are set with `$ENV:TEAMPASS_URL = "https://your-teampass.com"`,
+or written as `TEAMPASS_URL="https://your-teampass.com"` lines in the configuration file.
+
+**Commands (Bash):**
 
 ```bash
-./scripts/teampass-cli.sh folders --tree          # folder tree with access rights
-./scripts/teampass-cli.sh read 25                 # read an item
-./scripts/teampass-cli.sh create 5 "My Server" "admin" "S3cr3t!" "Root credentials"
-./scripts/teampass-cli.sh update 25 label "Updated Server"
-./scripts/teampass-cli.sh search "server"         # by label
-./scripts/teampass-cli.sh search "192.168." --by-desc
-./scripts/teampass-cli.sh search "https://app" --by-url
+./app/scripts/teampass-cli.sh folders --tree          # folder tree with access rights
+./app/scripts/teampass-cli.sh read 25                 # read an item
+./app/scripts/teampass-cli.sh create 5 "My Server" "admin" "S3cr3t!" "Root credentials"
+./app/scripts/teampass-cli.sh update 25 label "Updated Server"
+./app/scripts/teampass-cli.sh search "server"         # by label
+./app/scripts/teampass-cli.sh search "192.168." --by-desc
+./app/scripts/teampass-cli.sh search "https://app" --by-url
+```
+
+**Commands (PowerShell):**
+
+```powershell
+.\app\scripts\teampass-cli.ps1 folders --tree         # folder tree with access rights
+.\app\scripts\teampass-cli.ps1 read 25                # read an item
+.\app\scripts\teampass-cli.ps1 create 5 "My Server" "admin" "S3cr3t!" "Root credentials"
+.\app\scripts\teampass-cli.ps1 update 25 label "Updated Server"
+.\app\scripts\teampass-cli.ps1 search "server"        # by label
+.\app\scripts\teampass-cli.ps1 search "192.168." --by-desc
+.\app\scripts\teampass-cli.ps1 search "https://app" --by-url
 ```
 
 `folders --tree` renders the hierarchy directly, because
@@ -1302,4 +1453,8 @@ Production [1]
   Each authentication opens a server-side API session, so a script must not re-authenticate
   on every request.
 - A `429` answer is retried once, honouring the `Retry-After` header.
-- The configuration file holds credentials in clear text: keep it at `chmod 600`.
+- The configuration file holds credentials in clear text: keep it at `chmod 600` (Bash) or
+  restrict its NTFS permissions to the current user (PowerShell).
+- On Windows, an execution policy may block the script. Run it in the current session with
+  `powershell -ExecutionPolicy Bypass -File .\app\scripts\teampass-cli.ps1 <command>`, or
+  unblock the file with `Unblock-File .\app\scripts\teampass-cli.ps1`.

@@ -84,6 +84,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
 // KB feature toggle
 $kbEnabled = isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_kb'] === 1;
+$isAdmin = $session->has('user-admin') && (int) $session->get('user-admin') === 1;
 
 
 ?>
@@ -115,6 +116,11 @@ $kbEnabled = isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_k
                             <li class="nav-item">
                                 <a class="nav-link" data-toggle="tab" href="#failed" role="tab" aria-controls="failed" aria-selected="false"><?php echo $lang->get('failed_logins'); ?></a>
                             </li>
+                            <?php if ($isAdmin === true) { ?>
+                            <li class="nav-item">
+                                <a class="nav-link" id="authentication-lockouts-tab" data-toggle="tab" href="#authentication-lockouts" role="tab" aria-controls="authentication-lockouts" aria-selected="false"><?php echo $lang->get('authentication_lockouts'); ?></a>
+                            </li>
+                            <?php } ?>
                             <li class="nav-item">
                                 <a class="nav-link" data-toggle="tab" href="#errors" role="tab" aria-controls="errors" aria-selected="false"><?php echo $lang->get('errors'); ?></a>
                             </li>
@@ -221,16 +227,39 @@ $kbEnabled = isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_k
                                             <th><?php echo $lang->get('label'); ?></th>
                                             <th><?php echo $lang->get('user'); ?></th>
                                             <th><?php echo $lang->get('ip'); ?></th>
+                                            <th><?php echo $lang->get('authentication_channel'); ?></th>
                                             <th><?php echo $lang->get('action'); ?></th>
                                         </tr>
                                     </thead>
                                 </table>
                             </div>
+                            <?php if ($isAdmin === true) { ?>
+                            <div class="tab-pane fade" id="authentication-lockouts" role="tabpanel" aria-labelledby="authentication-lockouts-tab">
+                                <div class="alert alert-warning">
+                                    <i class="fa-solid fa-triangle-exclamation mr-2"></i>
+                                    <?php echo $lang->get('authentication_lockouts_tip'); ?>
+                                </div>
+                                <table class="table table-striped nowrap table-responsive-sm" id="table-authentication-lockouts" style="width:100%;">
+                                    <thead>
+                                        <tr>
+                                            <th><?php echo $lang->get('authentication_lockout_scope'); ?></th>
+                                            <th><?php echo $lang->get('authentication_lockout_target'); ?></th>
+                                            <th><?php echo $lang->get('user'); ?></th>
+                                            <th><?php echo $lang->get('authentication_lockout_failures'); ?></th>
+                                            <th><?php echo $lang->get('authentication_lockout_first_failure'); ?></th>
+                                            <th><?php echo $lang->get('authentication_lockout_last_failure'); ?></th>
+                                            <th><?php echo $lang->get('authentication_lockout_until'); ?></th>
+                                            <th><?php echo $lang->get('action'); ?></th>
+                                        </tr>
+                                    </thead>
+                                </table>
+                            </div>
+                            <?php } ?>
                         </div>
                     </div>
 
-                    <div class="card-footer<?php
-                                            echo $session->has('user-admin') && (int) $session->get('user-admin') === 1 ? '' : ' hidden';
+                    <div id="logs-purge-footer" class="card-footer<?php
+                                            echo $isAdmin === true ? '' : ' hidden';
                                             ?>">
                         <div class="form-group">
                             <h5><i class="fas fa-broom mr-2"></i><?php echo $lang->get('purge') . ' ' . $lang->get('date_range'); ?></h5>

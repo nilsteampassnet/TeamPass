@@ -5725,58 +5725,91 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 <?php } ?>
     }
 
+    let healthBadgeRequestGeneration = 0
+
     /**
      * F8 — decorate at-risk items in the current list with a single health marker.
      * Complements (never duplicates) the item-card HIBP badge shown only when an item
-     * is opened. Metadata-only; driven by the per-user item_health flags via get_folder_flags.
+     * is opened. Metadata-only; combines live item metadata and per-user scan flags.
      */
     function applyHealthBadges() {
-        var ids = [];
+        const requestGeneration = ++healthBadgeRequestGeneration
+        const ids = []
         $('#teampass_items_list tr[data-item-id]').each(function () {
-            var id = parseInt($(this).data('item-id'), 10);
-            if (id > 0) ids.push(id);
-        });
-        if (ids.length === 0) return;
+            const id = parseInt($(this).data('item-id'), 10)
+            if (id > 0 && ids.indexOf(id) === -1) ids.push(id)
+        })
 
-        var nudgeLabels = {
+        $('#teampass_items_list .tp-item-health-marker').tooltip('dispose').remove()
+        if (ids.length === 0) return
+
+        const nudgeLabels = {
             breached: '<?php echo addslashes($lang->get('security_dashboard_breached')); ?>',
             weak: '<?php echo addslashes($lang->get('security_dashboard_weak')); ?>',
+            unassessed: '<?php echo addslashes($lang->get('security_dashboard_unassessed')); ?>',
             reused: '<?php echo addslashes($lang->get('security_dashboard_reused')); ?>',
             overdue: '<?php echo addslashes($lang->get('security_dashboard_overdue')); ?>'
-        };
-        var badgeTitlePrefix = '<?php echo addslashes($lang->get('security_nudges_list_badge_title')); ?>';
-        var nudgeSessionKey = '<?php echo $session->get('key'); ?>';
+        }
+        const badgeTitlePrefix = '<?php echo addslashes($lang->get('security_nudges_list_badge_title')); ?>'
+        const nudgeSessionKey = '<?php echo $session->get('key'); ?>'
+        const requests = []
 
-        $.post('sources/dashboard.queries.php', { type: 'get_folder_flags', item_ids: ids.join(','), key: nudgeSessionKey }, function (response) {
-            var data;
-            try {
-                data = prepareExchangedData(response, 'decode', nudgeSessionKey);
-            } catch (e) {
-                return;
-            }
-            if (!data || data.error === true || !data.flags) return;
+        // The endpoint intentionally accepts at most 500 ids. Chunk the full rendered list and
+        // merge every response so progressively loaded or very large folders remain complete.
+        for (let offset = 0; offset < ids.length; offset += 500) {
+            const chunk = ids.slice(offset, offset + 500)
+            requests.push(new Promise(function (resolve) {
+                $.post(
+                    'sources/dashboard.queries.php',
+                    {type: 'get_folder_flags', item_ids: chunk.join(','), key: nudgeSessionKey}
+                ).done(function (response) {
+                    try {
+                        const data = prepareExchangedData(response, 'decode', nudgeSessionKey)
+                        resolve(data && data.error !== true && data.flags ? data.flags : {})
+                    } catch (e) {
+                        resolve({})
+                    }
+                }).fail(function () {
+                    resolve({})
+                })
+            }))
+        }
 
-            Object.keys(data.flags).forEach(function (itemId) {
-                var f = data.flags[itemId];
-                var labels = [];
-                if (f.breached === 1) labels.push(nudgeLabels.breached);
-                if (f.weak === 1) labels.push(nudgeLabels.weak);
-                if (f.reused === 1) labels.push(nudgeLabels.reused);
-                if (f.overdue === 1) labels.push(nudgeLabels.overdue);
-                if (labels.length === 0) return;
+        Promise.all(requests).then(function (responses) {
+            // Ignore responses from a folder/list generation that has already been replaced.
+            if (requestGeneration !== healthBadgeRequestGeneration) return
 
-                var $container = $('#list-item-row_' + itemId + ' .icon-container');
-                if ($container.length === 0 || $container.find('.tp-item-health-marker').length > 0) return;
+            const flags = {}
+            responses.forEach(function (responseFlags) {
+                Object.keys(responseFlags).forEach(function (itemId) {
+                    flags[itemId] = responseFlags[itemId]
+                })
+            })
 
-                var cls = f.breached === 1 ? 'text-danger' : 'text-warning';
+            Object.keys(flags).forEach(function (itemId) {
+                const f = flags[itemId]
+                const labels = []
+                if (f.breached === 1) labels.push(nudgeLabels.breached)
+                if (f.weak === 1) labels.push(nudgeLabels.weak)
+                if (f.unassessed === 1) labels.push(nudgeLabels.unassessed)
+                if (f.reused === 1) labels.push(nudgeLabels.reused)
+                if (f.overdue === 1) labels.push(nudgeLabels.overdue)
+                if (labels.length === 0) return
+
+                const $container = $('#list-item-row_' + itemId + ' .icon-container')
+                if ($container.length === 0) return
+
+                const cls = f.breached === 1
+                    ? 'text-danger'
+                    : (f.weak === 1 || f.reused === 1 || f.overdue === 1 ? 'text-warning' : 'text-secondary')
                 $container.append(
                     $('<i>')
                         .addClass('fa-solid fa-shield-halved mr-1 infotip tp-item-health-marker ' + cls)
                         .attr('title', badgeTitlePrefix + ' — ' + labels.join(', '))
-                );
-                $container.find('.tp-item-health-marker').tooltip();
-            });
-        });
+                )
+                $container.find('.tp-item-health-marker').tooltip()
+            })
+        })
     }
 
     $(document).on('click', '.open-folder', function() {
@@ -6594,18 +6627,19 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     // is not shown here — the HIBP badge already covers it on the card.
                     const $pwBadge = $('#card-item-pwd-security-badge')
                     const pwHealth = data.pw_health
-                    if (pwHealth && (pwHealth.weak === 1 || pwHealth.reused === 1)) {
+                    if (pwHealth && (pwHealth.weak === 1 || pwHealth.unassessed === 1 || pwHealth.reused === 1)) {
                         const pwIssues = []
                         if (pwHealth.weak === 1) pwIssues.push('<?php echo addslashes($lang->get('security_dashboard_weak')); ?>')
+                        if (pwHealth.unassessed === 1) pwIssues.push('<?php echo addslashes($lang->get('security_dashboard_unassessed')); ?>')
                         if (pwHealth.reused === 1) pwIssues.push('<?php echo addslashes($lang->get('security_dashboard_reused')); ?>')
                         $pwBadge
-                            .removeClass('hidden badge-success badge-danger')
-                            .addClass('badge-warning infotip')
+                            .removeClass('hidden badge-success badge-danger badge-warning badge-secondary')
+                            .addClass((pwHealth.weak === 1 || pwHealth.reused === 1 ? 'badge-warning' : 'badge-secondary') + ' infotip')
                             .attr('title', '<?php echo addslashes($lang->get('security_nudges_list_badge_title')); ?>' + ' — ' + pwIssues.join(', '))
                             .html('<i class="fa-solid fa-shield-halved mr-1 infotip"></i>')
                         $pwBadge.find('.infotip').tooltip()
                     } else {
-                        $pwBadge.addClass('hidden').removeClass('badge-success badge-danger badge-warning')
+                        $pwBadge.addClass('hidden').removeClass('badge-success badge-danger badge-warning badge-secondary')
                     }
 
                     $('#card-item-login').html(data.login);

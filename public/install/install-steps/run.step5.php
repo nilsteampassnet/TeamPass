@@ -522,6 +522,7 @@ class DatabaseInstaller
             array('admin', 'pw_life_duration', '0'),
             array('admin', 'security_dashboard_enabled', '0'),
             array('admin', 'security_dashboard_overshared_threshold', '10'),
+            array('admin', 'security_dashboard_min_password_length', '12'),
             array('admin', 'security_nudges_enabled', '0'),
             array('admin', 'security_nudges_email_enabled', '0'),
             array('admin', 'security_nudges_email_frequency_days', '7'),
@@ -693,6 +694,12 @@ class DatabaseInstaller
             array('admin', 'enable_ad_users_with_ad_groups', '0'),
             array('admin', 'enable_ad_user_auto_creation', '0'),
             array('admin', 'ldap_guid_attibute', 'objectguid'),
+            // A fresh install already stores AD group identifiers in the canonical byte
+            // order: the one-shot conversion of upgrade_run_3.2.1.php must never run here.
+            array('admin', 'ldap_group_guid_byteorder_fixed', '1'),
+            // A fresh install cannot hold the foreign sharekeys on personal items that the
+            // remediation of upgrade_run_3.2.1.php cleans: mark it as already done.
+            array('admin', 'personal_sharekeys_remediated', '1'),
             array('admin', 'sending_emails_job_frequency', '2'),
             array('admin', 'user_keys_job_frequency', '1'),
             array('admin', 'items_statistics_job_frequency', '5'),

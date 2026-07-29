@@ -27,7 +27,7 @@
  */
 
 define('TP_VERSION', '3.2.2');
-define("UPGRADE_MIN_DATE", "1784796353");
+define("UPGRADE_MIN_DATE", "1785099115");
 define('TP_VERSION_MINOR', '0');
 define('TP_TOOL_NAME', 'Teampass');
 define('TP_ONE_DAY_SECONDS', 86400);
@@ -101,6 +101,11 @@ define('TP_PW_STRENGTH_2', 20);
 define('TP_PW_STRENGTH_3', 38);
 define('TP_PW_STRENGTH_4', 48);
 define('TP_PW_STRENGTH_5', 60);
+// Stored in items.complexity_level when the password could not be evaluated (invalid UTF-8,
+// evaluator failure). Any negative value is classified as "unassessed", and this specific value
+// keeps the item out of the background metadata work queue, which only selects -1/NULL/''.
+define('TP_PW_COMPLEXITY_UNASSESSABLE', -2);
+define('TP_SECURITY_PASSWORD_MIN_LENGTH', 12);
 define('MIN_PHP_VERSION', '8.2');
 define('MIN_MYSQL_VERSION', '8.0.13');
 define('MIN_MARIADB_VERSION', '10.2.1');

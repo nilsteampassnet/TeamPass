@@ -30,7 +30,6 @@
 
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\ConfigManager\ConfigManager;
-use ZxcvbnPhp\Zxcvbn;
 use voku\helper\AntiXSS;
 
 class ItemModel
@@ -525,7 +524,7 @@ class ItemModel
      * @param string $password - The plaintext password to check
      * @param array $itemInfos - Folder settings including password complexity requirements
      * @return int - The computed complexity level (one of TP_PW_STRENGTH_*)
-     * @throws Exception - If the password complexity is insufficient
+     * @throws Exception - If the password is unassessable or its complexity is insufficient
      */
     private function checkPasswordComplexity(string $password, array $itemInfos) : int
     {
@@ -552,9 +551,13 @@ class ItemModel
 
         $requested_folder_complexity = $folderComplexity !== null ? (int) $folderComplexity['valeur'] : 0;
 
-        $zxcvbn = new Zxcvbn();
-        $passwordStrength = $zxcvbn->passwordStrength($password);
-        $passwordStrengthScore = convertPasswordStrength($passwordStrength['score']);
+        $passwordStrength = evaluatePasswordStrengthSafely($password);
+        if ($passwordStrength['success'] === false) {
+            throw new InvalidArgumentException(
+                'Password strength could not be evaluated. The password must be valid UTF-8 text.'
+            );
+        }
+        $passwordStrengthScore = convertPasswordStrength((int) $passwordStrength['score']);
 
         if ($passwordStrengthScore < $requested_folder_complexity && (int) $itemInfos['no_complex_check_on_creation'] === 0) {
             throw new Exception('Password strength is too low');

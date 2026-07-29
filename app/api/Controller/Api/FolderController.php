@@ -24,6 +24,7 @@
  */
 
 use Symfony\Component\HttpFoundation\Request AS symfonyRequest;
+use TeampassClasses\ConfigManager\ConfigManager;
 
 class FolderController extends BaseController
 {
@@ -221,18 +222,42 @@ class FolderController extends BaseController
                 $userId = (string) $userData['id'];
                 $username = $userData['username'];
                 $writableFolders = [];
+                $configManager = new ConfigManager();
+                $settings = $configManager->getAllSettings();
+                $enableUserCanCreateFolders = isset($settings['enable_user_can_create_folders']) === true
+                    && (int) $settings['enable_user_can_create_folders'] === 1;
 
                 if (empty($userFolders) === false) {
                     $rows = DB::query(
-                        'SELECT nt.id AS folder_id, nt.title, nt.nlevel, nt.parent_id, nt.nleft
+                        'SELECT nt.id AS folder_id, nt.title, nt.nlevel, nt.parent_id, nt.nleft, nt.personal_folder
                         FROM ' . prefixTable('nested_tree') . ' AS nt
                         WHERE nt.id IN %li
                         ORDER BY nt.nleft ASC',
                         $userFolders
                     );
 
+                    // Complexity levels in one query, folder id => level
+                    $complexityLevels = FolderModel::getComplexityLevels($userFolders);
+
                     foreach ($rows as $row) {
                         $folderId = (int) $row['folder_id'];
+                        // Single resolution per folder — is_readonly and the granular
+                        // flags below all derive from it (no extra query).
+                        $access = $folderAccessModel->getFolderAccessLevelForUser($folderId, (int) $userData['id']);
+                        $isPersonal = (int) $row['personal_folder'] === 1;
+                        $isPersonalRoot = $isPersonal === true && (int) $row['parent_id'] === 0;
+                        // Named arguments: the evaluator takes five booleans in a row,
+                        // which is unreadable — and dangerous to reorder — positionally.
+                        // hasEffectiveAccess is always true here: the loop only iterates
+                        // over folders already present in the user's accessible list.
+                        $managementCapabilities = $folderAccessModel->getFolderManagementCapabilities(
+                            userData: $userData,
+                            isPersonal: $isPersonal,
+                            isPersonalRoot: $isPersonalRoot,
+                            isReadOnly: $access['type'] === 'R',
+                            hasEffectiveAccess: true,
+                            enableUserCanCreateFolders: $enableUserCanCreateFolders
+                        );
                         $writableFolders[] = [
                             'id' => $folderId,
                             'label' => $row['title'] === $userId ? $username : $row['title'],
@@ -241,7 +266,24 @@ class FolderController extends BaseController
                             'first_position' => $row['title'] === $userId ? 1 : 0,
                             // MPTT left bound: lets a client re-sort the list back into tree order
                             'position' => (int) $row['nleft'],
-                            'is_readonly' => $folderAccessModel->isFolderReadOnlyForUser($folderId, (int) $userData['id']) ? 1 : 0,
+                            // Minimum password strength required in this folder
+                            // (0 | 20 | 38 | 48 | 60), 0 when no rule is set
+                            'complexity' => $complexityLevels[$folderId] ?? 0,
+                            'is_readonly' => $access['type'] === 'R' ? 1 : 0,
+                            // Granular rights: ND/NE/NDNE are writable but restrict edit
+                            // and/or delete, which is_readonly alone cannot express
+                            'access_type' => $access['type'],
+                            'can_create' => $access['create'] ? 1 : 0,
+                            'can_edit' => $access['edit'] ? 1 : 0,
+                            'can_delete' => $access['delete'] ? 1 : 0,
+                            // Folder-domain metadata and folder-management capabilities.
+                            // These are UI hints only; mutation routes re-run every check.
+                            'is_personal' => $isPersonal ? 1 : 0,
+                            'is_personal_root' => $isPersonalRoot ? 1 : 0,
+                            'can_create_subfolder' => $managementCapabilities['can_create_subfolder'] ? 1 : 0,
+                            'can_rename_folder' => $managementCapabilities['can_rename_folder'] ? 1 : 0,
+                            'can_move_folder' => $managementCapabilities['can_move_folder'] ? 1 : 0,
+                            'can_delete_folder' => $managementCapabilities['can_delete_folder'] ? 1 : 0,
                         ];
                     }
                 }

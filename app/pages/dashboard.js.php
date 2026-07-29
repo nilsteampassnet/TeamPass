@@ -89,6 +89,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             scanning: <?php echo json_encode($lang->get('security_dashboard_scanning'), JSON_UNESCAPED_UNICODE); ?>,
             scanButton: <?php echo json_encode($lang->get('security_dashboard_scan_button'), JSON_UNESCAPED_UNICODE); ?>,
             done: <?php echo json_encode($lang->get('security_dashboard_scan_done'), JSON_UNESCAPED_UNICODE); ?>,
+            doneSkipped: <?php echo json_encode($lang->get('security_dashboard_scan_done_skipped'), JSON_UNESCAPED_UNICODE); ?>,
+            scanFailed: <?php echo json_encode($lang->get('security_dashboard_scan_failed'), JSON_UNESCAPED_UNICODE); ?>,
             fix: <?php echo json_encode($lang->get('security_nudges_fix_worst'), JSON_UNESCAPED_UNICODE); ?>,
             allGood: <?php echo json_encode($lang->get('security_score_all_good'), JSON_UNESCAPED_UNICODE); ?>,
             scoreHint: <?php echo json_encode($lang->get('security_score_scan_hint'), JSON_UNESCAPED_UNICODE); ?>,
@@ -104,6 +106,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         },
         flags: {
             flag_weak: { label: <?php echo json_encode($lang->get('security_dashboard_weak'), JSON_UNESCAPED_UNICODE); ?>, cls: 'badge-warning' },
+            flag_unassessed: { label: <?php echo json_encode($lang->get('security_dashboard_unassessed'), JSON_UNESCAPED_UNICODE); ?>, cls: 'badge-secondary' },
             flag_reused: { label: <?php echo json_encode($lang->get('security_dashboard_reused'), JSON_UNESCAPED_UNICODE); ?>, cls: 'badge-warning' },
             flag_breached: { label: <?php echo json_encode($lang->get('security_dashboard_breached'), JSON_UNESCAPED_UNICODE); ?>, cls: 'badge-danger' },
             flag_overdue: { label: <?php echo json_encode($lang->get('security_dashboard_overdue'), JSON_UNESCAPED_UNICODE); ?>, cls: 'badge-warning' },
@@ -114,12 +117,30 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     };
 
     // Post helper using the standard encrypted client-server exchange.
-    function dashboardPost(payload, callback) {
+    function dashboardPost(payload, callback, errorCallback) {
         payload.key = TP_DASH.key;
-        $.post('sources/dashboard.queries.php', payload, function (data) {
-            data = prepareExchangedData(data, 'decode', TP_DASH.key);
-            callback(data);
-        });
+        return $.post('sources/dashboard.queries.php', payload)
+            .done(function (data) {
+                let decoded;
+                // Only the decoding is guarded: an exception raised by the callback itself is a
+                // rendering bug and must keep surfacing instead of being reported as a transport
+                // failure.
+                try {
+                    decoded = prepareExchangedData(data, 'decode', TP_DASH.key);
+                } catch (error) {
+                    if (typeof errorCallback === 'function') {
+                        errorCallback();
+                        return;
+                    }
+                    throw error;
+                }
+                callback(decoded);
+            })
+            .fail(function () {
+                if (typeof errorCallback === 'function') {
+                    errorCallback();
+                }
+            });
     }
 
     // F10: score band -> presentation (label + gauge colour, kept in sync with the CSS).
@@ -142,7 +163,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             scored += '<li>' + esc(label) + ' <span class="text-muted">(×' + (parseInt(w[k], 10) || 0) + ')</span></li>';
         });
         let notCounted = '';
-        ['no_expiry', 'overshared'].forEach(function (k) {
+        ['unassessed', 'no_expiry', 'overshared'].forEach(function (k) {
             const meta = TP_DASH.flags['flag_' + k];
             notCounted += '<li>' + esc(meta ? meta.label : k) + '</li>';
         });
@@ -299,6 +320,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     // Incremental list paging state ("load more").
     let dashboardListShown = 0;
     let dashboardListTotal = 0;
+    let dashboardScanSkipped = 0;
 
     function dashboardBuildFolders(folders) {
         const sel = $('#dashboard-folder-filter');
@@ -379,27 +401,44 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     function dashboardScanChunk(offset, includeHibp) {
         dashboardPost({ type: 'deep_scan_chunk', offset: offset, limit: TP_DASH.chunk, include_hibp: includeHibp }, function (data) {
             if (!data || data.error === true) {
-                dashboardScanFinish(false);
+                dashboardScanFinish(false, data ? data.message : '');
                 return;
             }
+            dashboardScanSkipped += parseInt(data.skipped_count, 10) || 0;
             const pct = data.total > 0 ? Math.min(100, Math.round((data.next_offset / data.total) * 100)) : 100;
             $('#dashboard-progress-bar').css('width', pct + '%').text(pct + '%');
             if (data.done === true) {
-                dashboardPost({ type: 'finalize_scan' }, function () {
+                dashboardPost({ type: 'finalize_scan' }, function (finalData) {
+                    if (!finalData || finalData.error === true) {
+                        dashboardScanFinish(false, finalData ? finalData.message : '');
+                        return;
+                    }
                     dashboardScanFinish(true);
+                }, function () {
+                    dashboardScanFinish(false);
                 });
             } else {
                 dashboardScanChunk(data.next_offset, includeHibp);
             }
+        }, function () {
+            dashboardScanFinish(false);
         });
     }
 
-    function dashboardScanFinish(success) {
+    // `message` is the server-side reason when the backend answered with an explicit error;
+    // it is preferred over the generic wording so the user knows what to fix.
+    function dashboardScanFinish(success, message) {
         const btn = $('#dashboard-scan-btn');
         btn.prop('disabled', false).html('<i class="fa-solid fa-magnifying-glass-chart mr-1"></i>' + TP_DASH.strings.scanButton);
         $('#dashboard-progress-wrap').hide();
-        if (success === true && typeof toastr !== 'undefined') {
-            toastr.success(TP_DASH.strings.done);
+        if (typeof toastr !== 'undefined') {
+            if (success === true && dashboardScanSkipped > 0) {
+                toastr.warning(TP_DASH.strings.doneSkipped.replace('#count#', String(dashboardScanSkipped)));
+            } else if (success === true) {
+                toastr.success(TP_DASH.strings.done);
+            } else {
+                toastr.error(typeof message === 'string' && message !== '' ? message : TP_DASH.strings.scanFailed);
+            }
         }
         dashboardLoadSummary();
         dashboardLoadScore();
@@ -413,6 +452,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
         $('#dashboard-scan-btn').on('click', function () {
             const includeHibp = $('#dashboard-include-hibp').is(':checked') ? 1 : 0;
+            dashboardScanSkipped = 0;
             $(this).prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin mr-1"></i>' + TP_DASH.strings.scanning);
             $('#dashboard-progress-bar').css('width', '0%').text('0%');
             $('#dashboard-progress-wrap').show();

@@ -417,4 +417,168 @@ class FolderLogicTest extends TestCase
         self::assertFalse(folderDeleteShouldSkipNode(3, 1), 'personal subfolder');
         self::assertFalse(folderDeleteShouldSkipNode(0, 0), 'shared root branch');
     }
+
+    // -------------------------------------------------------------------------
+    // Access level resolution — least permissive wins (docs/features/rights.md)
+    // -------------------------------------------------------------------------
+
+    /**
+     * The regression this guards: the API used to treat R + W as writable
+     * (hasReadOnly && !hasWrite), while the web gives R absolute priority.
+     */
+    public function testReadOnlyWinsOverWrite(): void
+    {
+        self::assertSame('R', folderResolveAccessType(['W', 'R']));
+        self::assertSame('R', folderResolveAccessType(['R', 'W']));
+        self::assertSame('R', folderResolveAccessType(['ND', 'R', 'W']));
+    }
+
+    public function testNoDeleteAndNoEditCombineIntoNdne(): void
+    {
+        self::assertSame('NDNE', folderResolveAccessType(['ND', 'NE']));
+        self::assertSame('NDNE', folderResolveAccessType(['NE', 'ND']));
+    }
+
+    public function testRestrictionWinsOverPlainWrite(): void
+    {
+        self::assertSame('ND', folderResolveAccessType(['W', 'ND']));
+        self::assertSame('NE', folderResolveAccessType(['W', 'NE']));
+        self::assertSame('NDNE', folderResolveAccessType(['W', 'NDNE']));
+    }
+
+    public function testSingleTypeAndEmptySetResolution(): void
+    {
+        self::assertSame('W', folderResolveAccessType(['W']));
+        self::assertSame('R', folderResolveAccessType(['R']));
+        // No role defines the folder: visibility is decided upstream by folders_list
+        self::assertSame('W', folderResolveAccessType([]));
+    }
+
+    public function testAccessFlagsMatchDocumentedMatrix(): void
+    {
+        // Same matrix as docs/features/rights.md and getRoleBasedAccess()
+        self::assertSame(
+            ['type' => 'W', 'create' => true, 'edit' => true, 'delete' => true],
+            folderAccessFlagsFromType('W')
+        );
+        self::assertSame(
+            ['type' => 'ND', 'create' => true, 'edit' => true, 'delete' => false],
+            folderAccessFlagsFromType('ND')
+        );
+        self::assertSame(
+            ['type' => 'NE', 'create' => true, 'edit' => false, 'delete' => true],
+            folderAccessFlagsFromType('NE')
+        );
+        self::assertSame(
+            ['type' => 'NDNE', 'create' => true, 'edit' => false, 'delete' => false],
+            folderAccessFlagsFromType('NDNE')
+        );
+        self::assertSame(
+            ['type' => 'R', 'create' => false, 'edit' => false, 'delete' => false],
+            folderAccessFlagsFromType('R')
+        );
+    }
+
+    /**
+     * is_readonly must stay strictly equivalent to "resolved type is R" —
+     * ND/NE/NDNE are writable folders carrying a restriction.
+     */
+    public function testOnlyReadOnlyTypeIsFlaggedReadOnly(): void
+    {
+        foreach (['W', 'ND', 'NE', 'NDNE'] as $type) {
+            self::assertNotSame('R', folderAccessFlagsFromType($type)['type'], $type . ' is not read-only');
+            self::assertTrue(folderAccessFlagsFromType($type)['create'], $type . ' allows item creation');
+        }
+        self::assertFalse(folderAccessFlagsFromType('R')['create']);
+    }
+
+    // -------------------------------------------------------------------------
+    // Accessible folders list (admin / AD roles / forbidden folders)
+    // -------------------------------------------------------------------------
+
+    public function testForbiddenFolderIsSubtractedFromEveryGrant(): void
+    {
+        // Folder 7 is granted directly AND by a role, but explicitly denied
+        $folders = folderBuildAccessibleList(
+            false,
+            [7, 8],
+            [7, 9],
+            [12],
+            [7],
+            []
+        );
+
+        self::assertNotContains(7, $folders, 'an explicitly denied folder must never be accessible');
+        self::assertSame([8, 9, 12], $folders);
+    }
+
+    public function testAdministratorSeesEverySharedFolder(): void
+    {
+        $folders = folderBuildAccessibleList(
+            true,
+            [],
+            [],
+            [12],
+            [],
+            [1, 2, 3]
+        );
+
+        self::assertSame([1, 2, 3, 12], $folders, 'an admin without roles still gets all shared folders');
+    }
+
+    public function testAdministratorIsExemptFromTheDenyList(): void
+    {
+        // Mirrors identAdmin(), which resets user-no_access_folders to an empty list
+        $folders = folderBuildAccessibleList(true, [], [], [], [2], [1, 2, 3]);
+
+        self::assertContains(2, $folders);
+    }
+
+    public function testAdRolesContributeToTheAccessibleList(): void
+    {
+        // roleFolders carries both manual and AD-sourced roles after the merge
+        $folders = folderBuildAccessibleList(false, [], [4, 5], [], [], []);
+
+        self::assertSame([4, 5], $folders);
+    }
+
+    // -------------------------------------------------------------------------
+    // Create / update input validation
+    // -------------------------------------------------------------------------
+
+    /**
+     * The documented example { "title": "…", "private": true } sends no
+     * access_rights; the controller forwards '' and the model must default to W
+     * instead of failing the enum check with a 422.
+     */
+    public function testOmittedAccessRightsDefaultsToWrite(): void
+    {
+        self::assertSame('W', folderEffectiveAccessRights(''));
+        self::assertTrue(folderIsValidAccessRight(folderEffectiveAccessRights('')));
+    }
+
+    public function testExplicitAccessRightsIsPreserved(): void
+    {
+        self::assertSame('R', folderEffectiveAccessRights('R'));
+        self::assertSame('NDNE', folderEffectiveAccessRights('NDNE'));
+    }
+
+    public function testWhitespaceOnlyTitleIsRejected(): void
+    {
+        self::assertFalse(folderIsValidTitle(''));
+        self::assertFalse(folderIsValidTitle('   '));
+        self::assertFalse(folderIsValidTitle("\t\n"));
+        self::assertTrue(folderIsValidTitle('Production'));
+    }
+
+    public function testUpdateComplexityMustBeAKnownLevel(): void
+    {
+        $levels = [0, 20, 38, 48, 60];
+
+        self::assertTrue(folderIsValidComplexity(0, $levels));
+        self::assertTrue(folderIsValidComplexity(60, $levels));
+        self::assertFalse(folderIsValidComplexity(999, $levels), 'arbitrary value must be rejected on update');
+        self::assertFalse(folderIsValidComplexity(-5, $levels));
+        self::assertFalse(folderIsValidComplexity(37, $levels));
+    }
 }

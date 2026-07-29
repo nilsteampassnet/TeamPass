@@ -625,6 +625,10 @@ if (null !== $post_type) {
             $groups = filter_var_array($dataReceived['groups'], FILTER_SANITIZE_NUMBER_INT);
             $allowed_flds = filter_var_array($dataReceived['allowed_flds'], FILTER_SANITIZE_NUMBER_INT);
             $forbidden_flds = filter_var_array($dataReceived['forbidden_flds'], FILTER_SANITIZE_NUMBER_INT);
+
+            // The role ids are client-supplied: keep only the ones the caller is entitled to
+            // grant. A new account has no prior role, so nothing can be preserved here.
+            $groups = mergeGrantableRoleSets([], (array) $groups, callerGrantableRoleIds());
             $post_root_level = filter_var($dataReceived['form-create-root-folder'], FILTER_SANITIZE_NUMBER_INT);
             $mfa_enabled = filter_var($dataReceived['mfa_enabled'], FILTER_SANITIZE_NUMBER_INT);
 
@@ -1223,52 +1227,46 @@ if (null !== $post_type) {
                 $users_functions = array_filter(array_unique(explode(';', $rowUser['fonction_id'].';'.$rowUser['roles_from_ad_groups'])));
 
                 $session->set('user-roles_array', explode(';', $session->get('user-roles')));
-                // Admins and users who can manage all users see every role so they
-                // can assign any role to the user they are editing. Other users
-                // (e.g. a role-manager who can edit only users sharing their role)
-                // only see the roles they personally hold.
-                if (
-                    (int) $session->get('user-admin') === 1
-                    || (int) $session->get('user-manager') === 1
-                    || (int) $session->get('user-can_manage_all_users') === 1
-                ) {
-                    $rows = DB::query(
-                        'SELECT id,title,creator_id FROM ' . prefixTable('roles_title') . ' ORDER BY title ASC'
-                    );
-                } else {
-                    $rows = DB::query(
-                        'SELECT id,title,creator_id FROM ' . prefixTable('roles_title') . ' WHERE id IN %li',
-                        $session->get('user-roles_array')
-                    );
-                }
+                // The caller may only assign the roles within their own grant scope: every
+                // role for an administrator, the roles they hold or created for anyone else.
+                // A role already held by the edited user but outside that scope is still
+                // returned, flagged as locked, so the form neither hides it nor lets the
+                // caller drop it. Roles outside the scope and not held are not returned.
+                $grantableRoleIds = callerGrantableRoleIds();
+                $rows = DB::query(
+                    'SELECT id,title,creator_id FROM ' . prefixTable('roles_title') . ' ORDER BY title ASC'
+                );
                 foreach ($rows as $record) {
-                    if (
-                        (int) $session->get('user-admin') === 1
-                        || (((int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1))
-                    ) {
-                        if (in_array($record['id'], $users_functions)) {
-                            $selected = 'selected';
+                    $roleIsHeld = in_array($record['id'], $users_functions);
+                    $roleIsGrantable = in_array((int) $record['id'], $grantableRoleIds, true);
 
-                            array_push(
-                                $arrFunction,
-                                array(
-                                    'title' => $record['title'],
-                                    'id' => $record['id'],
-                                )
-                            );
-                        } else {
-                            $selected = '';
-                        }
+                    if ($roleIsGrantable === false && $roleIsHeld === false) {
+                        continue;
+                    }
+
+                    if ($roleIsHeld === true) {
+                        $selected = 'selected';
 
                         array_push(
-                            $functionsList,
+                            $arrFunction,
                             array(
                                 'title' => $record['title'],
                                 'id' => $record['id'],
-                                'selected' => $selected,
                             )
                         );
+                    } else {
+                        $selected = '';
                     }
+
+                    array_push(
+                        $functionsList,
+                        array(
+                            'title' => $record['title'],
+                            'id' => $record['id'],
+                            'selected' => $selected,
+                            'locked' => $roleIsGrantable === false,
+                        )
+                    );
                 }
 
                 // get MANAGEDBY
@@ -1285,40 +1283,44 @@ if (null !== $post_type) {
                     array(
                         'title' => $lang->get('administrators_only'),
                         'id' => 0,
+                        'selected' => (int) $rowUser['isAdministratedByRole'] === 0 ? 'selected' : '',
+                        'locked' => false,
                     )
                 );
                 foreach ($rolesList as $fonction) {
-                    // Admins and global user managers can assign any administration
-                    // role; role-managers are limited to roles they personally hold.
-                    if (
-                        (int) $session->get('user-admin') === 1
-                        || (int) $session->get('user-manager') === 1
-                        || (int) $session->get('user-can_manage_all_users') === 1
-                        || in_array($fonction['id'], $session->get('user-roles_array'))
-                    ) {
-                        if ($rowUser['isAdministratedByRole'] == $fonction['id']) {
-                            $selected = 'selected';
+                    // Same grant scope as the roles list above. This select is single valued
+                    // and mandatory, so the role currently administrating the user is always
+                    // offered even when out of scope, otherwise the form could not be saved.
+                    $roleIsGrantable = in_array((int) $fonction['id'], $grantableRoleIds, true);
+                    $roleIsCurrent = (int) $rowUser['isAdministratedByRole'] === (int) $fonction['id'];
 
-                            array_push(
-                                $arrMngBy,
-                                array(
-                                    'title' => $fonction['title'],
-                                    'id' => $fonction['id'],
-                                )
-                            );
-                        } else {
-                            $selected = '';
-                        }
+                    if ($roleIsGrantable === false && $roleIsCurrent === false) {
+                        continue;
+                    }
+
+                    if ($roleIsCurrent === true) {
+                        $selected = 'selected';
 
                         array_push(
-                            $managedBy,
+                            $arrMngBy,
                             array(
-                                'title' => $lang->get('managers_of') . ' ' . $fonction['title'],
+                                'title' => $fonction['title'],
                                 'id' => $fonction['id'],
-                                'selected' => $selected,
                             )
                         );
+                    } else {
+                        $selected = '';
                     }
+
+                    array_push(
+                        $managedBy,
+                        array(
+                            'title' => $lang->get('managers_of') . ' ' . $fonction['title'],
+                            'id' => $fonction['id'],
+                            'selected' => $selected,
+                            'locked' => $roleIsGrantable === false,
+                        )
+                    );
                 }
 
                 if (count($arrMngBy) === 0) {
@@ -1541,6 +1543,19 @@ if (null !== $post_type) {
             }
             $post_groups = empty($fonctions) === true ? $post_groups : $fonctions;
 
+            // The submitted role set is not authoritative: the form only shows the roles the
+            // caller may grant, so it is merged with the ones stored outside that scope.
+            $post_groups = reconcileManualUserRoles($post_id, (array) $post_groups);
+
+            // Same scope applies to the administrating role. Submitting a role the caller may
+            // not grant keeps the stored value instead of writing the forged one.
+            $grantableRoleIds = callerGrantableRoleIds();
+            if ((int) $post_is_administrated_by !== 0
+                && (int) $post_is_administrated_by !== (int) $data_user['isAdministratedByRole']
+                && in_array((int) $post_is_administrated_by, $grantableRoleIds, true) === false
+            ) {
+                $post_is_administrated_by = (string) $data_user['isAdministratedByRole'];
+            }
 
             // Build array of update
             $changeArray = array(
@@ -1710,11 +1725,16 @@ if (null !== $post_type) {
                         $session->set('user-email', $post_email);
                     }
 
-                    // Has the groups changed? If yes then ask for a keys regeneration
-                    $arrOldData = array_filter(explode(';', $oldData['fonction_id']));
-                    $post_groups = array_filter($post_groups);
+                    // Has the groups changed? If yes then ask for a keys regeneration.
+                    // Both sets are normalised so that a different ordering, or the roles
+                    // preserved by the reconciliation, do not trigger a useless regeneration.
+                    $arrOldData = array_map('intval', array_filter(explode(';', $oldData['fonction_id'])));
+                    $post_groups = array_values(array_filter(array_map('intval', $post_groups)));
+                    $arrNewData = $post_groups;
+                    sort($arrOldData);
+                    sort($arrNewData);
 
-                    if ($arrOldData != $post_groups && (int) $oldData['admin'] !== 1) {
+                    if ($arrOldData !== $arrNewData && (int) $oldData['admin'] !== 1) {
                         $action_to_perform_after = 'encrypt_keys';
                     }
 
@@ -1731,7 +1751,8 @@ if (null !== $post_type) {
                         insertPrivateKeyWithCurrentFlag($post_id, $changeArray['private_key']);
                     }
 
-                    // Add Groups and Roles
+                    // Add Groups and Roles ($post_groups already reconciled with the roles
+                    // the caller is not entitled to grant)
                     setUserRoles($post_id, $post_groups, 'manual');
                     setUserGroups($post_id, $post_allowed_flds);
                     setUserForbiddenGroups($post_id, $post_forbidden_flds);
@@ -2273,11 +2294,17 @@ if (null !== $post_type) {
             }
 
             foreach ($inputData['destination_ids'] as $dest_user_id) {
-                // Update user roles in users_roles table
+                // Update user roles in users_roles table. The propagated set is reconciled
+                // per destination so a caller cannot revoke, through the propagation, a role
+                // they would not be entitled to grant on the user edit form.
                 $roleIds = array_filter(
                     explode(';', str_replace(',', ';', (string) $inputData['user_functions']))
                 );
-                setUserRoles((int) $dest_user_id, $roleIds, 'manual');
+                setUserRoles(
+                    (int) $dest_user_id,
+                    reconcileManualUserRoles((int) $dest_user_id, $roleIds),
+                    'manual'
+                );
 
                 // Update allowed folders in users_groups table
                 $allowedFolders = array_filter(
@@ -2639,34 +2666,15 @@ if (null !== $post_type) {
             // particular role, otherwise a manager could hand one of their users a role reaching
             // folders the manager cannot see. The scope mirrors the role dropdown built server-side
             // in app/pages/users.php: an administrator may grant any existing role, anyone else only
-            // a role they hold themselves or a role they created.
-            $callerMayGrantRole = static function (int $roleId) use ($session, $callerIsAdmin): bool {
-                $role = DB::queryFirstRow(
-                    'SELECT creator_id
-                    FROM ' . prefixTable('roles_title') . '
-                    WHERE id = %i',
-                    $roleId
-                );
-                // A role id pointing to nothing is never granted.
-                if (DB::count() === 0 || is_array($role) === false) {
-                    return false;
-                }
-                if ($callerIsAdmin === true) {
-                    return true;
-                }
-                // user-roles_array holds the caller's effective roles (manual ones plus those
-                // derived from AD groups), stored as strings at login.
-                $callerRoles = array_map('strval', (array) $session->get('user-roles_array'));
-                return in_array((string) $roleId, $callerRoles, true)
-                    || (int) $role['creator_id'] === (int) $session->get('user-id');
-            };
+            // a role they hold themselves or a role they created. That scope now lives in the
+            // shared callerGrantableRoleIds(), which also feeds the role dropdowns.
 
             // If adding a role to user, use the users_roles table directly
             if (empty($post_context) === false && $post_context === 'add_one_role_to_user') {
                 // Only an administrator or an in-scope manager may assign a role to this user,
                 // and only a role that is within their own grant scope.
                 if ($callerMayManageTargetUser((int) $post_user_id) === false
-                    || $callerMayGrantRole((int) $post_new_value) === false
+                    || in_array((int) $post_new_value, callerGrantableRoleIds(), true) === false
                 ) {
                     echo prepareExchangedData(
                         array(
@@ -3235,6 +3243,9 @@ if (null !== $post_type) {
                 $dataReceived['roles'],
                 FILTER_SANITIZE_NUMBER_INT
             );
+            // Same grant scope as the other creation paths: a caller can only attach the roles
+            // they are entitled to grant to the account they import from the directory.
+            $post_roles = mergeGrantableRoleSets([], (array) $post_roles, callerGrantableRoleIds());
             $post_authType = filter_var($dataReceived['authType'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             // Empty user
@@ -4232,7 +4243,21 @@ if (null !== $post_type) {
                 'login',
                 $login
             );
-            
+            $deletedCount = DB::affectedRows();
+
+            // Same audit event and format as the Logs page unlock action, so the administrator
+            // trail is complete whichever screen was used.
+            if ($deletedCount > 0) {
+                logEvents(
+                    $SETTINGS,
+                    'admin_action',
+                    'authentication_lockout_removed',
+                    (string) ($session->get('user-id') ?? ''),
+                    (string) ($session->get('user-login') ?? ''),
+                    'source=login; value=' . $login . '; deleted=' . $deletedCount
+                );
+            }
+
             break;
         
         case "list_deleted_users":

@@ -55,7 +55,7 @@ Database schema: initial install via `/install/install.php`, upgrades via `/inst
 - `NestedTree` — MPTT folder hierarchy (`nleft`/`nright`/`nlevel`); never update these columns manually
 - `CryptoManager` — single entry point for all RSA/AES crypto; never call phpseclib directly
 
-**Dual-location classes:** `ConfigManager` and `SessionManager` exist in both `includes/libraries/teampassclasses/` and `vendor/teampassclasses/`. Always edit both.
+**Dual-location classes:** **every** `teampassclasses` package (`ConfigManager`, `SessionManager`, `CryptoManager`, `LdapExtra`, …) exists in both `app/includes/libraries/teampassclasses/` and `app/vendor/teampassclasses/`. Always edit both — **only the `vendor/` copy is autoloaded** (`app/vendor/composer/autoload_psr4.php`), so editing `includes/libraries/` alone produces a change with zero runtime effect. Sentinel tests: `tests/Unit/CryptoManagerCopiesInSyncTest.php`, `tests/Unit/LdapExtraCopiesInSyncTest.php`.
 
 ## Database Layer: MeekroDB
 

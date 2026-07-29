@@ -1840,10 +1840,14 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
                 : (string) ($userADInfos['dn'] ?? '');
 
             if ($groupMode === 'user') {
-                // User-centric: check the user's own memberOf attribute (AD-native, no extra query)
+                // User-centric: check the user's own memberOf attribute (AD-native, no extra
+                // query). The DN and the connection let the handler resolve nested membership
+                // when the attribute alone would deny access.
                 $isMember = $ldapHandler['handler']->isUserInAllowedGroupByMemberOf(
                     $allowedGroupDn,
-                    $userADInfos
+                    $userADInfos,
+                    $userDnForCheck,
+                    $ldapHandler['connection']
                 );
             } else {
                 // Group-centric (default): scope=base read on the group entry — works outside base DN
@@ -1868,9 +1872,16 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
             $userInfo = handleNewUser($username, $passwordClear, $userADInfos, $userInfo, $SETTINGS, $lang);
         }
         
-        // Get and handle user groups
+        // Get and handle user groups.
+        // A failed lookup must not be read as "this user has no group": handleUserADGroups()
+        // would remove every AD role and silently strip the user's folder access.
         $userGroupsData = getUserADGroups($userADInfos, $ldapHandler, $SETTINGS, $username);
-        handleUserADGroups($username, $userInfo, $userGroupsData['userGroups'], $SETTINGS);
+        if ($userGroupsData['error'] === false) {
+            handleUserADGroups($username, $userInfo, $userGroupsData['userGroups'], $SETTINGS);
+        } else {
+            error_log('TEAMPASS LDAP: group membership lookup failed for ' . $username
+                . ' — AD roles left unchanged. ' . $userGroupsData['message']);
+        }
         
         // Finalize authentication
         finalizeAuthentication($userInfo, $passwordClear, $SETTINGS);
@@ -2045,30 +2056,45 @@ function handleNewUser(string $username, string $passwordClear, array $userADInf
  * @param array $ldapHandler LDAP connection and handler
  * @param array $SETTINGS Teampass settings
  * @param string $username User login name (used for posixGroup memberuid matching in OpenLDAP)
- * @return array User groups
+ * @return array{error: bool, message: string, userGroups: array} User groups, with 'error'
+ *         set to true when membership could not be resolved at all
  */
 function getUserADGroups(array $userADInfos, array $ldapHandler, array $SETTINGS, string $username = ''): array
 {
     $dnAttribute = $SETTINGS['ldap_user_dn_attribute'] ?? 'distinguishedname';
 
     if ($ldapHandler['type'] === 'ActiveDirectory') {
+        $userDN = (string) ($userADInfos[$dnAttribute][0] ?? '');
+    } elseif ($ldapHandler['type'] === 'OpenLDAP') {
+        $userDN = (string) ($userADInfos['dn'] ?? '');
+    } else {
+        throw new Exception("Unsupported LDAP type: " . $ldapHandler['type']);
+    }
+
+    // Without a DN nothing can be resolved. Reported as an error so the caller keeps the
+    // roles already granted instead of removing them all.
+    if ($userDN === '') {
+        return [
+            'error' => true,
+            'message' => 'No user DN available to resolve LDAP group membership.',
+            'userGroups' => [],
+        ];
+    }
+
+    if ($ldapHandler['type'] === 'ActiveDirectory') {
         return $ldapHandler['handler']->getUserADGroups(
-            $userADInfos[$dnAttribute][0],
+            $userDN,
             $ldapHandler['connection'],
             $SETTINGS
         );
     }
 
-    if ($ldapHandler['type'] === 'OpenLDAP') {
-        return $ldapHandler['handler']->getUserADGroups(
-            $userADInfos['dn'],
-            $ldapHandler['connection'],
-            $SETTINGS,
-            $username
-        );
-    }
-
-    throw new Exception("Unsupported LDAP type: " . $ldapHandler['type']);
+    return $ldapHandler['handler']->getUserADGroups(
+        $userDN,
+        $ldapHandler['connection'],
+        $SETTINGS,
+        $username
+    );
 }
 
 /**

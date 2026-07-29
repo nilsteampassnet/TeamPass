@@ -931,15 +931,21 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         });
                         $('#form-forbid').append(tmp);
 
+                        // A locked option is a role the current user is not entitled to grant
+                        // but that the edited user already holds. Select2 renders it as a tag
+                        // without a remove button, and jQuery still returns it on :selected so
+                        // the role is posted back and preserved.
                         tmp = '';
                         $(data.managedby).each(function(i, value) {
-                            tmp += '<option value="' + value.id + '" ' + value.selected + '>' + value.title + '</option>';
+                            tmp += '<option value="' + value.id + '" ' + value.selected +
+                                (value.locked === true ? ' disabled' : '') + '>' + value.title + '</option>';
                         });
                         $('#form-managedby').append(tmp);
 
                         tmp = '';
                         $(data.function).each(function(i, value) {
-                            tmp += '<option value="' + value.id + '" ' + value.selected + '>' + value.title + '</option>';
+                            tmp += '<option value="' + value.id + '" ' + value.selected +
+                                (value.locked === true ? ' disabled' : '') + '>' + value.title + '</option>';
                         });
                         $('#form-roles').append(tmp);
 

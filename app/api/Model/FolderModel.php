@@ -50,8 +50,55 @@ class FolderModel
         ];
     }
 
+    /**
+     * Return the complexity level of the given folders, indexed by folder id.
+     *
+     * The level is the minimum password strength required for the items of a
+     * folder. It is stored in misc (type 'complex', intitule = folder id) as a
+     * varchar, hence the string comparison — casting the column would prevent
+     * the (type, intitule) index from being used. Folders carrying no rule
+     * (personal roots) are simply absent from the result; callers fall back to
+     * 0, the same default as the web interface.
+     *
+     * @param array<int, int>|null $foldersId Folder ids to look up, null for all folders
+     * @return array<int, int>
+     */
+    public static function getComplexityLevels(?array $foldersId = null): array
+    {
+        if ($foldersId !== null && count($foldersId) === 0) {
+            return [];
+        }
+
+        $rows = $foldersId !== null
+            ? DB::query(
+                'SELECT intitule, valeur
+                FROM ' . prefixTable('misc') . '
+                WHERE type = %s AND intitule IN %ls',
+                'complex',
+                array_map('strval', $foldersId)
+            )
+            : DB::query(
+                'SELECT intitule, valeur
+                FROM ' . prefixTable('misc') . '
+                WHERE type = %s',
+                'complex'
+            );
+
+        $levels = [];
+        foreach ($rows as $row) {
+            $levels[(int) $row['intitule']] = (int) $row['valeur'];
+        }
+
+        return $levels;
+    }
+
     public function getFoldersInfo(array $foldersId): array
     {
+        // Complexity levels, prefetched once: the tree walk below runs one
+        // query per node, so joining misc on each of them would rescan the
+        // table every time.
+        $complexityLevels = self::getComplexityLevels();
+
         // Get folders
         $rows = DB::query(
             'SELECT id, title
@@ -64,7 +111,7 @@ class FolderModel
 
         foreach ($rows as $row) {
 			$isVisible = in_array((int) $row['id'], $foldersId);
-            $childrens = $this->getFoldersChildren($row['id'], $foldersId);
+            $childrens = $this->getFoldersChildren($row['id'], $foldersId, $complexityLevels);
 
             if ($isVisible || count($childrens) > 0) {
                 array_push(
@@ -73,6 +120,7 @@ class FolderModel
                         'id' => (int) $row['id'],
                         'title' => $row['title'],
 						'isVisible' => $isVisible,
+                        'complexity' => $complexityLevels[(int) $row['id']] ?? 0,
                         'childrens' => $childrens
                     ]
                 );
@@ -82,7 +130,10 @@ class FolderModel
         return $ret;
     }
 
-    private function getFoldersChildren(int $parentId, array $foldersId): array
+    /**
+     * @param array<int, int> $complexityLevels Complexity level indexed by folder id
+     */
+    private function getFoldersChildren(int $parentId, array $foldersId, array $complexityLevels): array
     {
         $ret = [];
         $childrens = DB::query(
@@ -95,7 +146,7 @@ class FolderModel
         if ( count($childrens) > 0) {
             foreach ($childrens as $children) {
 				$isVisible = in_array((int) $children['id'], $foldersId);
-                $childs = $this->getFoldersChildren($children['id'], $foldersId);
+                $childs = $this->getFoldersChildren($children['id'], $foldersId, $complexityLevels);
 
                 if (in_array((int) $children['id'], $foldersId) || count($childs) > 0) {
                     array_push(
@@ -104,6 +155,7 @@ class FolderModel
                             'id' => (int) $children['id'],
                             'title' => $children['title'],
 							'isVisible' => $isVisible,
+                            'complexity' => $complexityLevels[(int) $children['id']] ?? 0,
                             'childrens' => $childs
                         ]
                     );
@@ -190,8 +242,17 @@ class FolderModel
         $edit_auth_without = isset($inputData['edit_auth_without']) === true ? $inputData['edit_auth_without'] : 0;
         $icon = $inputData['icon'];
         $icon_selected = $inputData['icon_selected'];
-        $access_rights = isset($inputData['access_rights']) === true ? $inputData['access_rights'] : 'W';
+        // The controller always forwards the key (empty string when the client omitted it),
+        // so isset() cannot detect absence — fall back to 'W' on an empty value, exactly
+        // like the web add_folder handler does.
+        $access_rights = empty($inputData['access_rights']) === true ? 'W' : $inputData['access_rights'];
         $foldersId = $inputData['foldersId'];
+
+        // A title made only of whitespace collapses to '' after trim and would create
+        // an unnamed folder — the controller's non-empty check runs before sanitization.
+        if (trim((string) $title) === '') {
+            return $this->apiError(422, 'Folder name cannot be empty');
+        }
 
         $folderAccessModel = new FolderAccessModel();
 
@@ -261,6 +322,31 @@ class FolderModel
             return $this->apiError(422, 'Invalid parameters');
         }
 
+        // Global folder-management gate, applied as a fail-fast pre-check.
+        //
+        // FolderManager::canCreateFolder() (sources/folders.class.php) remains the
+        // authoritative backstop and evaluates the same rule — the block below is a
+        // deliberate mirror, kept for two reasons: it avoids loading folders.class.php
+        // for a caller that will be rejected anyway, and it returns 403 BEFORE the
+        // business validations (numeric title, duplicate, complexity ceiling), so an
+        // unauthorized caller learns nothing about the parent folder.
+        // Keep both in sync; the rejection maps to the same 403 either way.
+        $configManager = new ConfigManager();
+        $settings = $configManager->getAllSettings();
+        if ($folderAccessModel->hasFolderManagementPrivilege(
+            userData: [
+                'is_admin' => $is_admin,
+                'is_manager' => $is_manager,
+                'user_can_create_root_folder' => $user_can_create_root_folder,
+                'user_can_manage_all_users' => $user_can_manage_all_users,
+            ],
+            isPersonal: $isPersonal === 1,
+            enableUserCanCreateFolders: isset($settings['enable_user_can_create_folders']) === true
+                && (int) $settings['enable_user_can_create_folders'] === 1
+        ) === false) {
+            return $this->apiError(403, 'Access denied: insufficient permissions to create a folder');
+        }
+
         // Create folder
         require_once API_ROOT_PATH . '/../sources/folders.class.php';
         $lang = new Language();
@@ -297,6 +383,10 @@ class FolderModel
 
         // Map FolderManager result → API error envelope
         if (($creationStatus['error'] ?? false) === true) {
+            if (($creationStatus['db_error'] ?? false) === true) {
+                // Transaction rolled back — details are in the server log
+                return $this->apiError(500, 'An internal error occurred while creating the folder');
+            }
             if (isset($creationStatus['message']) && (string) $creationStatus['message'] !== '') {
                 // Validation error (numeric title, duplicate, complexity ceiling…)
                 return $this->apiError(422, (string) $creationStatus['message']);
@@ -389,8 +479,7 @@ class FolderModel
 
         // Personal root protection — cannot be renamed or moved
         $isPersonalRoot = (int) $folder['parent_id'] === 0
-            && (int) $folder['personal_folder'] === 1
-            && (string) $folder['title'] === (string) $userId;
+            && (int) $folder['personal_folder'] === 1;
         if ($isPersonalRoot === true && ($titleChanged === true || $parentChanged === true)) {
             return $this->apiError(403, 'A personal root folder cannot be renamed or moved');
         }
@@ -437,9 +526,23 @@ class FolderModel
             $isPersonal = (int) $folder['personal_folder'];
         }
 
+        // Empty title — is_numeric('') is false, so the numeric guard below does not catch it
+        if ($titleProvided === true && trim((string) $provided['title']) === '') {
+            return $this->apiError(422, 'Folder name cannot be empty');
+        }
+
         // Numeric title
         if ($titleProvided === true && is_numeric($provided['title']) === true) {
             return $this->apiError(422, 'Folder name cannot be numeric');
+        }
+
+        // Complexity must be one of the TeamPass levels — same guard as createFolder().
+        // The parent-ceiling check below is skipped for privileged users, so without this
+        // an arbitrary value would reach the misc/complex row.
+        if ($complexityProvided === true
+            && in_array((int) $provided['complexity'], [TP_PW_STRENGTH_1, TP_PW_STRENGTH_2, TP_PW_STRENGTH_3, TP_PW_STRENGTH_4, TP_PW_STRENGTH_5], true) === false
+        ) {
+            return $this->apiError(422, 'Invalid complexity level');
         }
 
         // Duplicate title (shared scope) on rename
@@ -477,14 +580,12 @@ class FolderModel
         }
 
         // Global permission gate
-        if (!(
-            $isPersonal === 1
-            || (int) ($userData['is_admin'] ?? 0) === 1
-            || (int) ($userData['is_manager'] ?? 0) === 1
-            || (int) ($userData['user_can_manage_all_users'] ?? 0) === 1
-            || (isset($SETTINGS['enable_user_can_create_folders']) === true && (int) $SETTINGS['enable_user_can_create_folders'] === 1)
-            || (int) ($userData['user_can_create_root_folder'] ?? 0) === 1
-        )) {
+        if ($folderAccessModel->hasFolderManagementPrivilege(
+            userData: $userData,
+            isPersonal: $isPersonal === 1,
+            enableUserCanCreateFolders: isset($SETTINGS['enable_user_can_create_folders']) === true
+                && (int) $SETTINGS['enable_user_can_create_folders'] === 1
+        ) === false) {
             return $this->apiError(403, 'Access denied: insufficient permissions to update this folder');
         }
 
@@ -511,6 +612,10 @@ class FolderModel
         $result = $folderManager->updateFolder($params);
 
         if ($result['error'] === true) {
+            if (($result['db_error'] ?? false) === true) {
+                // Transaction rolled back — details are in the server log
+                return $this->apiError(500, 'An internal error occurred while updating the folder');
+            }
             return $this->apiError(500, (string) ($result['message'] ?? 'Folder update failed'));
         }
 
@@ -570,14 +675,12 @@ class FolderModel
         $isPersonal = (int) $folder['personal_folder'] === 1;
 
         // Global permission gate — same expression as the web delete handler
-        if (!(
-            $isPersonal === true
-            || (int) ($userData['is_admin'] ?? 0) === 1
-            || (int) ($userData['is_manager'] ?? 0) === 1
-            || (int) ($userData['user_can_manage_all_users'] ?? 0) === 1
-            || (isset($SETTINGS['enable_user_can_create_folders']) === true && (int) $SETTINGS['enable_user_can_create_folders'] === 1)
-            || (int) ($userData['user_can_create_root_folder'] ?? 0) === 1
-        )) {
+        if ($folderAccessModel->hasFolderManagementPrivilege(
+            userData: $userData,
+            isPersonal: $isPersonal,
+            enableUserCanCreateFolders: isset($SETTINGS['enable_user_can_create_folders']) === true
+                && (int) $SETTINGS['enable_user_can_create_folders'] === 1
+        ) === false) {
             return $this->apiError(403, 'Access denied: insufficient permissions to delete this folder');
         }
 

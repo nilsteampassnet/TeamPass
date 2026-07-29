@@ -1315,6 +1315,115 @@ switch ($post_type) {
         );
         break;
 
+    case 'authentication_lockout_remove':
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ],
+                'encode'
+            );
+            break;
+        }
+        if ((int) ($session->get('user-admin') ?? 0) !== 1) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ],
+                'encode'
+            );
+            break;
+        }
+
+        $dataReceived = prepareExchangedData($post_data, 'decode');
+        if (is_array($dataReceived) === false) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('authentication_lockout_invalid_target'),
+                ],
+                'encode'
+            );
+            break;
+        }
+        $source = trim((string) ($dataReceived['source'] ?? ''));
+        $value = trim((string) ($dataReceived['value'] ?? ''));
+        $validSource = in_array($source, ['login', 'remote_ip'], true);
+        $validValue = $value !== ''
+            && mb_strlen($value, 'UTF-8') <= 500
+            && preg_match('/[\x00-\x1F\x7F]/', $value) !== 1;
+
+        // An IP scope normally carries a real address, but getClientIpServer() falls back to the
+        // literal 'UNKNOWN' when no header yields a valid IP, and that value does get locked.
+        // Such a row would otherwise be listed and never removable, so a target failing the IP
+        // check is still accepted when it exactly matches a stored lockout - which is the real
+        // precondition of the deletion anyway.
+        $knownTarget = false;
+        if (
+            $validSource === true
+            && $validValue === true
+            && $source === 'remote_ip'
+            && filter_var($value, FILTER_VALIDATE_IP) === false
+        ) {
+            $knownTarget = (int) DB::queryFirstField(
+                'SELECT COUNT(*) FROM ' . prefixTable('auth_failures') . ' WHERE source = %s AND value = %s',
+                $source,
+                $value
+            ) > 0;
+        }
+
+        if (
+            $validSource === false
+            || $validValue === false
+            || (
+                $source === 'remote_ip'
+                && filter_var($value, FILTER_VALIDATE_IP) === false
+                && $knownTarget === false
+            )
+        ) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('authentication_lockout_invalid_target'),
+                ],
+                'encode'
+            );
+            break;
+        }
+
+        DB::delete(
+            prefixTable('auth_failures'),
+            'source = %s AND value = %s',
+            $source,
+            $value
+        );
+        $deletedCount = DB::affectedRows();
+
+        if ($deletedCount > 0) {
+            logEvents(
+                $SETTINGS,
+                'admin_action',
+                'authentication_lockout_removed',
+                (string) ($session->get('user-id') ?? ''),
+                (string) ($session->get('user-login') ?? ''),
+                'source=' . $source . '; value=' . $value . '; deleted=' . $deletedCount
+            );
+        }
+
+        echo prepareExchangedData(
+            [
+                'error' => false,
+                'message' => $deletedCount > 0
+                    ? $lang->get('authentication_lockout_removed_success')
+                    : $lang->get('authentication_lockout_not_found'),
+                'deleted_count' => $deletedCount,
+            ],
+            'encode'
+        );
+        break;
+
     case 'save_option_change':
         // Check KEY and rights
         if ($post_key !== $session->get('key')) {
@@ -1687,52 +1796,65 @@ case 'get_operational_statistics':
         }
 
         $period = isset($dataReceived['period']) ? (string) $dataReceived['period'] : '24h';
-        if (in_array($period, array('24h', '7d', '30d', '90d'), true) === false) {
+        if (in_array($period, array('24h', 'current_week', 'current_month', '7d', '30d', '90d'), true) === false) {
             $period = '24h';
         }
 
         $includePersonal = isset($dataReceived['include_personal']) ? (int) $dataReceived['include_personal'] : 1;
         $includeApi = isset($dataReceived['include_api']) ? (int) $dataReceived['include_api'] : 1;
 
-        $topUsersLimit = isset($dataReceived['top_users_limit']) ? (int) $dataReceived['top_users_limit'] : 15;
+        $topUsersLimit = 5;
         $topRolesLimit = isset($dataReceived['top_roles_limit']) ? (int) $dataReceived['top_roles_limit'] : 15;
         $topItemsLimit = isset($dataReceived['top_items_limit']) ? (int) $dataReceived['top_items_limit'] : 20;
 
         // hard limits (safety)
-        $topUsersLimit = min(max($topUsersLimit, 5), 50);
         $topRolesLimit = min(max($topRolesLimit, 5), 50);
         $topItemsLimit = min(max($topItemsLimit, 5), 50);
 
+        // Period range and chart granularity. Calendar periods are resolved in the timezone
+        // already applied at the top of this file.
         $nowTs = time();
-
-        // Period range and chart granularity
-        if ($period === '7d') {
-            $fromTs = $nowTs - (7 * 24 * 3600);
-            $granularity = 'day';
-        } elseif ($period === '30d') {
-            $fromTs = $nowTs - (30 * 24 * 3600);
-            $granularity = 'day';
-        } elseif ($period === '90d') {
-            $fromTs = $nowTs - (90 * 24 * 3600);
-            $granularity = 'day';
-        } else {
-            $fromTs = $nowTs - (24 * 3600);
-            $granularity = 'hour';
-        }
+        $periodRange = opsStatsResolvePeriodRange($period, $nowTs);
+        $fromTs = $periodRange['from'];
+        $granularity = $periodRange['granularity'];
 
         // Common filters (do not assume deleted_at is always filled)
         $usersNotDeletedSql = "(u.deleted_at IS NULL OR u.deleted_at = '' OR u.deleted_at = '0')";
+        $systemUserIds = implode(
+            ',',
+            array_map('intval', array(TP_USER_ID, OTV_USER_ID, API_USER_ID, SSH_USER_ID))
+        );
+        $usersOperationalSql = "{$usersNotDeletedSql} AND u.id NOT IN ({$systemUserIds})";
         $itemsNotDeletedSql = "(i.deleted_at IS NULL OR i.deleted_at = '' OR i.deleted_at = '0')";
 
         // Marker for API logs
         $tpApiLike = '%tp_src=api%';
+        $tpImportLike = '%at_import%';
+        $hibpIntervalDays = max(1, (int) ($SETTINGS['hibp_check_interval_days'] ?? 7));
+        $hibpStaleTs = $nowTs - ($hibpIntervalDays * 24 * 3600);
+
+        $passwordHealthSql = securityPasswordHealthSql();
+        $flagWeakSql = $passwordHealthSql['weak'];
+        $flagUnassessedSql = $passwordHealthSql['unassessed'];
+        $passwordNonEmptySql = "(NOT (COALESCE(i.pw, '') = ''"
+            . " AND (i.pw_len IS NULL OR CAST(i.pw_len AS SIGNED) = 0)))";
+        $passwordMinLength = securityPostureMinPasswordLength();
+        // Indexed by complexity level; -1 is the "never assessed" bucket.
+        $complexityLabels = array(
+            -1 => $lang->get('ops_label_unknown'),
+            (int) TP_PW_STRENGTH_1 => $lang->get('complex_level1'),
+            (int) TP_PW_STRENGTH_2 => $lang->get('complex_level2'),
+            (int) TP_PW_STRENGTH_3 => $lang->get('complex_level3'),
+            (int) TP_PW_STRENGTH_4 => $lang->get('complex_level4'),
+            (int) TP_PW_STRENGTH_5 => $lang->get('complex_level5'),
+        );
 
         // ---- USERS (inventory / status)
         $totalUsers = intval(DB::queryFirstField(
-            "SELECT COUNT(*) FROM " . prefixTable('users') . " u WHERE {$usersNotDeletedSql}"
+            "SELECT COUNT(*) FROM " . prefixTable('users') . " u WHERE {$usersOperationalSql}"
         ));
         $disabledUsers = intval(DB::queryFirstField(
-            "SELECT COUNT(*) FROM " . prefixTable('users') . " u WHERE {$usersNotDeletedSql} AND u.disabled = 1"
+            "SELECT COUNT(*) FROM " . prefixTable('users') . " u WHERE {$usersOperationalSql} AND u.disabled = 1"
         ));
         $enabledUsers = max(0, $totalUsers - $disabledUsers);
 
@@ -1755,7 +1877,7 @@ case 'get_operational_statistics':
                   AND (%i = 1 OR ls.field_1 IS NULL OR (ls.field_1 <> 'api' AND ls.field_1 NOT LIKE %s))
             ) t
             INNER JOIN " . prefixTable('users') . " u ON (u.id = t.user_id)
-            WHERE {$usersNotDeletedSql} AND u.disabled = 0",
+            WHERE {$usersOperationalSql} AND u.disabled = 0",
             $fromTs,
             $nowTs,
             $includePersonal,
@@ -1823,7 +1945,8 @@ case 'get_operational_statistics':
                 {$groupExpr} AS g,
                 SUM(CASE WHEN li.action = 'at_shown' THEN 1 ELSE 0 END) AS views,
                 SUM(CASE WHEN li.action IN ('at_password_copied','at_copy') THEN 1 ELSE 0 END) AS copies,
-                SUM(CASE WHEN li.action IN ('at_password_shown','at_password_shown_edit_form') THEN 1 ELSE 0 END) AS pw_shown
+                SUM(CASE WHEN li.action IN ('at_password_shown','at_password_shown_edit_form') THEN 1 ELSE 0 END) AS pw_shown,
+                SUM(CASE WHEN li.action = 'at_creation' THEN 1 ELSE 0 END) AS created
             FROM " . prefixTable('log_items') . " li
             INNER JOIN " . prefixTable('items') . " i ON (i.id = li.id_item)
             WHERE CAST(li.date AS UNSIGNED) BETWEEN %i AND %i
@@ -1839,16 +1962,17 @@ case 'get_operational_statistics':
             $tpApiLike
         );
 
-        $series = array('labels' => array(), 'views' => array(), 'copies' => array(), 'pw_shown' => array());
+        $series = array('labels' => array(), 'views' => array(), 'copies' => array(), 'pw_shown' => array(), 'created' => array());
         foreach ($seriesRows as $r) {
             $series['labels'][] = strval($r['g']);
             $series['views'][] = intval($r['views']);
             $series['copies'][] = intval($r['copies']);
             $series['pw_shown'][] = intval($r['pw_shown']);
+            $series['created'][] = intval($r['created']);
         }
 
-        // Top users
-        $topUsers = DB::query(
+        // User rankings. Aggregate once, then build true top-five lists for each activity metric.
+        $userActivityRows = DB::query(
             "SELECT
                 u.id,
                 u.login,
@@ -1869,18 +1993,34 @@ case 'get_operational_statistics':
                     + (2 * SUM(CASE WHEN li.action IN ('at_password_shown','at_password_shown_edit_form') THEN 1 ELSE 0 END))
                     + SUM(CASE WHEN li.action = 'at_creation' THEN 1 ELSE 0 END)
                     + SUM(CASE WHEN li.action = 'at_modification' THEN 1 ELSE 0 END)
-                ) AS score
+                ) AS score,
+                SUM(CASE WHEN li.action IN (
+                    'at_password_copied',
+                    'at_copy',
+                    'at_password_shown',
+                    'at_password_shown_edit_form'
+                ) THEN 1 ELSE 0 END) AS password_actions,
+                SUM(CASE WHEN li.action IN (
+                    'at_shown',
+                    'at_password_copied',
+                    'at_copy',
+                    'at_password_shown',
+                    'at_password_shown_edit_form',
+                    'at_creation',
+                    'at_modification'
+                ) THEN 1 ELSE 0 END) AS activity_total
             FROM " . prefixTable('log_items') . " li
             INNER JOIN " . prefixTable('users') . " u ON (u.id = li.id_user)
             INNER JOIN " . prefixTable('items') . " i ON (i.id = li.id_item)
             WHERE CAST(li.date AS UNSIGNED) BETWEEN %i AND %i
-              AND {$usersNotDeletedSql}
+              AND {$usersOperationalSql}
               AND u.disabled = 0
               AND {$itemsNotDeletedSql}
               AND (%i = 1 OR i.perso = 0)
               AND (%i = 1 OR li.raison IS NULL OR li.raison NOT LIKE %s)
             GROUP BY u.id, u.login, u.name, u.lastname
-            ORDER BY score DESC, last_activity DESC
+            HAVING activity_total > 0
+            ORDER BY activity_total DESC, last_activity DESC
             LIMIT %i",
             $tpApiLike,
             $fromTs,
@@ -1888,18 +2028,26 @@ case 'get_operational_statistics':
             $includePersonal,
             $includeApi,
             $tpApiLike,
-            $topUsersLimit
+            OPS_STATS_RANKING_CANDIDATES
         );
+        $userRankings = array(
+            'overall' => opsStatsBuildUserRanking($userActivityRows, 'activity_total', $topUsersLimit),
+            'views' => opsStatsBuildUserRanking($userActivityRows, 'views', $topUsersLimit),
+            'created' => opsStatsBuildUserRanking($userActivityRows, 'created', $topUsersLimit),
+            'modified' => opsStatsBuildUserRanking($userActivityRows, 'modified', $topUsersLimit),
+            'password_actions' => opsStatsBuildUserRanking($userActivityRows, 'password_actions', $topUsersLimit),
+        );
+        $topUsers = $userRankings['overall'];
 
         // ---- ROLES
         $rolesTotal = intval(DB::queryFirstField("SELECT COUNT(*) FROM " . prefixTable('roles_title')));
 
-        // Users total per role (excluding deleted users)
+        // Users total per role (excluding deleted users and service accounts)
         $roleUsersTotalRows = DB::query(
             "SELECT ur.role_id, COUNT(DISTINCT ur.user_id) AS c
              FROM " . prefixTable('users_roles') . " ur
              INNER JOIN " . prefixTable('users') . " u ON (u.id = ur.user_id)
-             WHERE {$usersNotDeletedSql}
+             WHERE {$usersOperationalSql}
              GROUP BY ur.role_id"
         );
         $roleUsersTotal = array();
@@ -1945,7 +2093,7 @@ case 'get_operational_statistics':
             INNER JOIN " . prefixTable('roles_title') . " rt ON (rt.id = ur.role_id)
             INNER JOIN " . prefixTable('users') . " u ON (u.id = li.id_user)
             WHERE CAST(li.date AS UNSIGNED) BETWEEN %i AND %i
-              AND {$usersNotDeletedSql}
+              AND {$usersOperationalSql}
               AND u.disabled = 0
               AND {$itemsNotDeletedSql}
               AND (%i = 1 OR i.perso = 0)
@@ -1973,7 +2121,7 @@ case 'get_operational_statistics':
             INNER JOIN " . prefixTable('users_roles') . " ur ON (ur.user_id = li.id_user)
             INNER JOIN " . prefixTable('users') . " u ON (u.id = li.id_user)
             WHERE CAST(li.date AS UNSIGNED) BETWEEN %i AND %i
-              AND {$usersNotDeletedSql}
+              AND {$usersOperationalSql}
               AND u.disabled = 0
               AND {$itemsNotDeletedSql}
               AND (%i = 1 OR i.perso = 0)
@@ -2003,8 +2151,8 @@ case 'get_operational_statistics':
                 SUM(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0) AND i.inactif = 1 THEN 1 ELSE 0 END) AS inactive_active,
                 SUM(CASE WHEN ({$itemsNotDeletedSql}) THEN 0 ELSE 1 END) AS deleted,
                 SUM(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0) AND i.restricted_to IS NOT NULL AND i.restricted_to <> '' THEN 1 ELSE 0 END) AS restricted,
-                AVG(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0) AND i.complexity_level <> '-1' THEN CAST(i.complexity_level AS SIGNED) ELSE NULL END) AS avg_complexity,
-                SUM(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0) AND i.complexity_level = '-1' THEN 1 ELSE 0 END) AS unknown_complexity,
+                AVG(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0) AND i.complexity_level IS NOT NULL AND i.complexity_level <> '' AND i.complexity_level <> '-1' THEN CAST(i.complexity_level AS SIGNED) ELSE NULL END) AS avg_complexity,
+                SUM(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0) AND (i.complexity_level IS NULL OR i.complexity_level = '' OR i.complexity_level = '-1') THEN 1 ELSE 0 END) AS unknown_complexity,
                 AVG(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0) AND i.pw_len > 0 THEN i.pw_len ELSE NULL END) AS avg_pw_len,
                 SUM(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0) AND CAST(i.updated_at AS UNSIGNED) > 0 AND CAST(i.updated_at AS UNSIGNED) < %i THEN 1 ELSE 0 END) AS stale_90
             FROM " . prefixTable('items') . " i",
@@ -2019,42 +2167,42 @@ case 'get_operational_statistics':
             $stale90Ts
         );
 
-        
-
-        // ---- ITEMS (password security - OWASP ASVS aligned policy)
-        $pwMinLen = 12;
-        $pwMinComplexity = TP_PW_STRENGTH_5;
-
+        // ---- ITEMS (password health, aligned with Security Posture)
         $passwordSecurityRow = DB::queryFirstRow(
             "SELECT
-                SUM(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0)
-                    AND (i.pw_len IS NULL OR i.pw_len <= 0 OR i.complexity_level IS NULL OR i.complexity_level = '-1')
-                    THEN 1 ELSE 0 END) AS unknown,
-                SUM(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0)
-                    AND i.pw_len > 0 AND i.complexity_level IS NOT NULL AND i.complexity_level <> '-1'
-                    THEN 1 ELSE 0 END) AS assessed_total,
-                SUM(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0)
-                    AND i.pw_len >= %i AND i.complexity_level IS NOT NULL AND i.complexity_level <> '-1'
-                    AND CAST(i.complexity_level AS SIGNED) >= %i
-                    THEN 1 ELSE 0 END) AS compliant
+                COUNT(DISTINCT CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0)
+                    AND {$passwordNonEmptySql}
+                    AND {$flagUnassessedSql} = 1
+                    THEN i.id ELSE NULL END) AS unknown,
+                COUNT(DISTINCT CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0)
+                    AND {$passwordNonEmptySql}
+                    AND {$flagUnassessedSql} = 0
+                    THEN i.id ELSE NULL END) AS assessed_total,
+                COUNT(DISTINCT CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0)
+                    AND {$passwordNonEmptySql}
+                    AND {$flagUnassessedSql} = 0
+                    AND {$flagWeakSql} = 0
+                    THEN i.id ELSE NULL END) AS compliant,
+                COUNT(DISTINCT CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0)
+                    AND {$flagWeakSql} = 1
+                    THEN i.id ELSE NULL END) AS non_compliant
             FROM " . prefixTable('items') . " i",
             $includePersonal,
             $includePersonal,
             $includePersonal,
-            $pwMinLen,
-            $pwMinComplexity
+            $includePersonal
         );
 
         $pwAssessedTotal = intval($passwordSecurityRow['assessed_total'] ?? 0);
         $pwCompliant = intval($passwordSecurityRow['compliant'] ?? 0);
         $pwUnknown = intval($passwordSecurityRow['unknown'] ?? 0);
-        $pwNonCompliant = max(0, $pwAssessedTotal - $pwCompliant);
+        $pwNonCompliant = intval($passwordSecurityRow['non_compliant'] ?? 0);
         $pwSecureScore = $pwAssessedTotal > 0 ? (int) round(($pwCompliant / $pwAssessedTotal) * 100) : null;
         if ($pwSecureScore !== null) {
             $pwSecureScore = min(max($pwSecureScore, 0), 100);
         }
 
-// Complexity distribution (for chart)
+        // Complexity distribution (for chart)
         $complexityDist = DB::query(
             "SELECT i.complexity_level, COUNT(*) AS c
              FROM " . prefixTable('items') . " i
@@ -2064,11 +2212,91 @@ case 'get_operational_statistics':
              ORDER BY CAST(i.complexity_level AS SIGNED) ASC",
             $includePersonal
         );
-        $complexity = array('labels' => array(), 'counts' => array());
-        foreach ($complexityDist as $r) {
-            $complexity['labels'][] = strval($r['complexity_level']);
-            $complexity['counts'][] = intval($r['c']);
-        }
+        $complexity = opsStatsFormatComplexityDistribution($complexityDist, $complexityLabels);
+
+        // Created items in selected period. Password quality reflects current item metadata.
+        $createdItems = DB::queryFirstRow(
+            "SELECT
+                COUNT(DISTINCT i.id) AS total,
+                COUNT(DISTINCT CASE WHEN li.raison LIKE %s AND li.raison NOT LIKE %s THEN i.id ELSE NULL END) AS api,
+                COUNT(DISTINCT CASE WHEN li.raison IS NULL OR (li.raison NOT LIKE %s AND li.raison NOT LIKE %s) THEN i.id ELSE NULL END) AS web,
+                COUNT(DISTINCT CASE WHEN li.raison LIKE %s THEN i.id ELSE NULL END) AS imported,
+                COUNT(DISTINCT CASE WHEN i.perso = 1 THEN i.id ELSE NULL END) AS personal,
+                COUNT(DISTINCT CASE WHEN i.perso = 0 THEN i.id ELSE NULL END) AS shared,
+                AVG(CASE WHEN i.pw_len > 0 AND i.complexity_level IS NOT NULL AND i.complexity_level <> '' AND i.complexity_level <> '-1' THEN CAST(i.complexity_level AS SIGNED) ELSE NULL END) AS avg_complexity,
+                AVG(CASE WHEN i.pw_len > 0 THEN i.pw_len ELSE NULL END) AS avg_pw_len,
+                COUNT(DISTINCT CASE WHEN {$passwordNonEmptySql} AND {$flagUnassessedSql} = 1 THEN i.id ELSE NULL END) AS unknown_complexity,
+                COUNT(DISTINCT CASE WHEN {$flagWeakSql} = 1 THEN i.id ELSE NULL END) AS weak_complexity,
+                COUNT(DISTINCT CASE WHEN i.hibp_status = 2 THEN i.id ELSE NULL END) AS hibp_pwned,
+                COUNT(DISTINCT CASE WHEN i.hibp_status = 1 THEN i.id ELSE NULL END) AS hibp_safe,
+                COUNT(DISTINCT CASE WHEN i.hibp_status IS NULL OR i.hibp_status = 0 THEN i.id ELSE NULL END) AS hibp_unknown,
+                COUNT(DISTINCT CASE WHEN i.hibp_status IN (1, 2)
+                    AND (i.hibp_checked_at IS NULL OR i.hibp_checked_at = '' OR CAST(i.hibp_checked_at AS UNSIGNED) < %i)
+                    THEN i.id ELSE NULL END) AS hibp_stale
+            FROM " . prefixTable('log_items') . " li
+            INNER JOIN " . prefixTable('items') . " i ON (i.id = li.id_item)
+            WHERE li.action = 'at_creation'
+              AND CAST(li.date AS UNSIGNED) BETWEEN %i AND %i
+              AND {$itemsNotDeletedSql}
+              AND (%i = 1 OR i.perso = 0)
+              AND (%i = 1 OR li.raison IS NULL OR li.raison NOT LIKE %s)",
+            $tpApiLike,
+            $tpImportLike,
+            $tpApiLike,
+            $tpImportLike,
+            $tpImportLike,
+            $hibpStaleTs,
+            $fromTs,
+            $nowTs,
+            $includePersonal,
+            $includeApi,
+            $tpApiLike
+        );
+
+        $createdComplexityRows = DB::query(
+            "SELECT i.complexity_level, COUNT(DISTINCT i.id) AS c
+             FROM " . prefixTable('log_items') . " li
+             INNER JOIN " . prefixTable('items') . " i ON (i.id = li.id_item)
+             WHERE li.action = 'at_creation'
+               AND CAST(li.date AS UNSIGNED) BETWEEN %i AND %i
+               AND {$itemsNotDeletedSql}
+               AND (%i = 1 OR i.perso = 0)
+               AND (%i = 1 OR li.raison IS NULL OR li.raison NOT LIKE %s)
+             GROUP BY i.complexity_level
+             ORDER BY CAST(i.complexity_level AS SIGNED) ASC",
+            $fromTs,
+            $nowTs,
+            $includePersonal,
+            $includeApi,
+            $tpApiLike
+        );
+        $createdComplexity = opsStatsFormatComplexityDistribution($createdComplexityRows, $complexityLabels);
+
+        $hibpRow = DB::queryFirstRow(
+            "SELECT
+                SUM(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0) THEN 1 ELSE 0 END) AS total,
+                SUM(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0) AND i.hibp_status = 1 THEN 1 ELSE 0 END) AS safe,
+                SUM(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0) AND i.hibp_status = 2 THEN 1 ELSE 0 END) AS pwned,
+                SUM(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0) AND (i.hibp_status IS NULL OR i.hibp_status = 0) THEN 1 ELSE 0 END) AS unknown,
+                SUM(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0) AND i.hibp_status IN (1, 2)
+                    AND (i.hibp_checked_at IS NULL OR i.hibp_checked_at = '' OR CAST(i.hibp_checked_at AS UNSIGNED) < %i)
+                    THEN 1 ELSE 0 END) AS stale,
+                SUM(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0) AND i.hibp_status = 2 THEN COALESCE(i.hibp_count, 0) ELSE 0 END) AS pwned_occurrences
+            FROM " . prefixTable('items') . " i",
+            $includePersonal,
+            $includePersonal,
+            $includePersonal,
+            $includePersonal,
+            $includePersonal,
+            $hibpStaleTs,
+            $includePersonal
+        );
+        $hibpTotal = intval($hibpRow['total'] ?? 0);
+        $hibpSafe = intval($hibpRow['safe'] ?? 0);
+        $hibpPwned = intval($hibpRow['pwned'] ?? 0);
+        $hibpUnknown = intval($hibpRow['unknown'] ?? 0);
+        $hibpKnown = $hibpSafe + $hibpPwned;
+        $hibpCoverage = $hibpTotal > 0 ? (int) round(($hibpKnown / $hibpTotal) * 100) : 0;
 
         // Usage by personal/shared (period)
         $usageByPersoRows = DB::query(
@@ -2164,6 +2392,7 @@ case 'get_operational_statistics':
                 ),
                 'series' => $series,
                 'top' => $topUsers,
+                'rankings' => $userRankings,
             ),
             'roles' => array(
                 'total' => $rolesTotal,
@@ -2182,8 +2411,11 @@ case 'get_operational_statistics':
                     'non_compliant' => $pwNonCompliant,
                     'unknown' => $pwUnknown,
                     'policy' => array(
-                        'min_len' => $pwMinLen,
-                        'min_complexity' => $pwMinComplexity,
+                        'basis' => 'security_posture',
+                        'min_len' => $passwordMinLength,
+                        'min_complexity' => TP_PW_STRENGTH_3,
+                        // Human label of the threshold, so the page does not display a raw score.
+                        'min_complexity_label' => $complexityLabels[(int) TP_PW_STRENGTH_3],
                     ),
                 ),
                 'inventory' => array(
@@ -2193,12 +2425,42 @@ case 'get_operational_statistics':
                     'inactive_active' => intval($itemsInventory['inactive_active'] ?? 0),
                     'deleted' => intval($itemsInventory['deleted'] ?? 0),
                     'restricted' => intval($itemsInventory['restricted'] ?? 0),
-                    'avg_complexity' => $itemsInventory['avg_complexity'] !== null ? round(floatval($itemsInventory['avg_complexity']), 1) : null,
+                    'avg_complexity' => ($itemsInventory['avg_complexity'] ?? null) !== null ? round(floatval($itemsInventory['avg_complexity']), 1) : null,
                     'unknown_complexity' => intval($itemsInventory['unknown_complexity'] ?? 0),
-                    'avg_pw_len' => $itemsInventory['avg_pw_len'] !== null ? round(floatval($itemsInventory['avg_pw_len']), 1) : null,
+                    'avg_pw_len' => ($itemsInventory['avg_pw_len'] ?? null) !== null ? round(floatval($itemsInventory['avg_pw_len']), 1) : null,
                     'stale_90' => intval($itemsInventory['stale_90'] ?? 0),
                 ),
                 'complexity' => $complexity,
+                'created' => array(
+                    'total' => intval($createdItems['total'] ?? 0),
+                    'web' => intval($createdItems['web'] ?? 0),
+                    'api' => intval($createdItems['api'] ?? 0),
+                    'imported' => intval($createdItems['imported'] ?? 0),
+                    'personal' => intval($createdItems['personal'] ?? 0),
+                    'shared' => intval($createdItems['shared'] ?? 0),
+                    'avg_complexity' => ($createdItems['avg_complexity'] ?? null) !== null ? round(floatval($createdItems['avg_complexity']), 1) : null,
+                    'avg_pw_len' => ($createdItems['avg_pw_len'] ?? null) !== null ? round(floatval($createdItems['avg_pw_len']), 1) : null,
+                    'unknown_complexity' => intval($createdItems['unknown_complexity'] ?? 0),
+                    'weak_complexity' => intval($createdItems['weak_complexity'] ?? 0),
+                    'hibp' => array(
+                        'pwned' => intval($createdItems['hibp_pwned'] ?? 0),
+                        'safe' => intval($createdItems['hibp_safe'] ?? 0),
+                        'unknown' => intval($createdItems['hibp_unknown'] ?? 0),
+                        'stale' => intval($createdItems['hibp_stale'] ?? 0),
+                    ),
+                ),
+                'created_complexity' => $createdComplexity,
+                'hibp' => array(
+                    'enabled' => isset($SETTINGS['hibp_enabled']) ? (int) $SETTINGS['hibp_enabled'] : 0,
+                    'interval_days' => $hibpIntervalDays,
+                    'total' => $hibpTotal,
+                    'safe' => $hibpSafe,
+                    'pwned' => $hibpPwned,
+                    'unknown' => $hibpUnknown,
+                    'stale' => intval($hibpRow['stale'] ?? 0),
+                    'coverage_pct' => $hibpCoverage,
+                    'pwned_occurrences' => intval($hibpRow['pwned_occurrences'] ?? 0),
+                ),
                 'usage_by_perso' => $usageByPerso,
                 'top_copied' => $topItemsCopied,
             ),

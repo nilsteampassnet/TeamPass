@@ -52,6 +52,10 @@ use TeampassClasses\EmailService\EmailSettings;
 use TeampassClasses\CryptoManager\CryptoManager;
 
 require_once __DIR__ . '/otp.functions.php';
+require_once __DIR__ . '/security_posture_logic.php';
+require_once __DIR__ . '/operational_statistics_logic.php';
+require_once __DIR__ . '/password_strength.functions.php';
+require_once __DIR__ . '/roles_scope.functions.php';
 
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
@@ -652,6 +656,356 @@ function identUserGetPFList(
     ];
 }
 
+/**
+ * List every personal folder of the instance (all owners, roots and sub-folders).
+ *
+ * Folder-level counterpart of the items.perso flag, which is unreliable: an item created while the
+ * client sent folder_is_personal = 0 is stored with perso = 0 in a personal folder, and the flag is
+ * only repaired later, on folder listing. Any process that must leave personal objects alone has to
+ * filter on this list rather than on items.perso.
+ *
+ * @return int[] Folder ids flagged personal (empty when the feature was never used).
+ */
+function getAllPersonalFolderIds(): array
+{
+    loadClasses('DB');
+
+    return array_map(
+        'intval',
+        DB::queryFirstColumn(
+            'SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE personal_folder = %i',
+            1
+        )
+    );
+}
+
+/**
+ * List the personal folders that do NOT belong to the given user.
+ *
+ * Since the SEC-8 fix, TP_USER holds a recovery sharekey on every personal object. Any process
+ * redistributing keys from TP_USER (user creation, password change, key regeneration) must
+ * therefore exclude the other users' personal trees explicitly: the historical "the owner has no
+ * sharekey on a foreign personal item" assumption no longer holds, and without this list the
+ * target user inherits a valid sharekey on everybody's personal items.
+ *
+ * The ownership test is folder based (root of the personal tree titled with the user id), which is
+ * the same signal as identUserGetPFList(); the items.perso column is not used as it is known to be
+ * unreliable on items created before the folder flag was repaired.
+ *
+ * @param int $userId User whose own personal tree must stay in scope.
+ *
+ * @return int[] Folder ids belonging to another user's personal tree (empty when there is none).
+ */
+function getForeignPersonalFolderIds(int $userId): array
+{
+    $allPersonalFolders = getAllPersonalFolderIds();
+    if (count($allPersonalFolders) === 0) {
+        return [];
+    }
+
+    return array_values(
+        array_diff(
+            array_map('intval', $allPersonalFolders),
+            getOwnPersonalFolderIds($userId)
+        )
+    );
+}
+
+/**
+ * List the personal folders belonging to the given user (root + descendants).
+ *
+ * The ownership test is folder based (root of the personal tree titled with the user id), the same
+ * signal as identUserGetPFList(); items.perso is not used as it is known to be unreliable.
+ *
+ * @param int $userId Owner of the personal tree.
+ *
+ * @return int[] Folder ids of the user's own personal tree (empty when there is none).
+ */
+function getOwnPersonalFolderIds(int $userId): array
+{
+    loadClasses('DB');
+
+    $ownRootId = DB::queryFirstField(
+        'SELECT id FROM ' . prefixTable('nested_tree') . '
+        WHERE personal_folder = %i AND title = %s',
+        1,
+        (string) $userId
+    );
+    if (empty($ownRootId) === true) {
+        return [];
+    }
+
+    $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+
+    return array_map('intval', $tree->getDescendants((int) $ownRootId, true, false, true));
+}
+
+/**
+ * Resolve the minimum password length used by the password-health classification.
+ *
+ * Admin setting `security_dashboard_min_password_length` (Options > Security posture), falling back
+ * to TP_SECURITY_PASSWORD_MIN_LENGTH when the row is absent — which is the case on every instance
+ * upgraded from a release that did not ship the setting. No upgrade script is therefore required:
+ * save_option_change() upserts the row the first time an administrator changes the value.
+ *
+ * @return int Minimum length in characters (always >= 1).
+ */
+function securityPostureMinPasswordLength(): int
+{
+    static $minLength = null;
+    if ($minLength !== null) {
+        return $minLength;
+    }
+
+    $configManager = new ConfigManager();
+    $settings = $configManager->getAllSettings();
+    $configured = (int) ($settings['security_dashboard_min_password_length'] ?? 0);
+
+    $minLength = $configured > 0 ? $configured : (int) TP_SECURITY_PASSWORD_MIN_LENGTH;
+
+    return $minLength;
+}
+
+/**
+ * Classify password health from the metadata stored with an item.
+ *
+ * Thin adapter over securityPasswordHealthClassify() (security_posture_logic.php) which holds the
+ * DB-free truth table; this wrapper only injects the two configured thresholds.
+ *
+ * @param int|string|null $complexityLevel   Stored zxcvbn-derived complexity level.
+ * @param int|null        $passwordLength    Stored (or live) password length.
+ * @param bool            $hasStoredPassword Whether the item contains password ciphertext.
+ *
+ * @return string One of: empty, unassessed, weak, healthy.
+ */
+function securityPasswordHealthStatus(
+    int|string|null $complexityLevel,
+    ?int $passwordLength,
+    bool $hasStoredPassword
+): string
+{
+    return securityPasswordHealthClassify(
+        $complexityLevel,
+        $passwordLength,
+        $hasStoredPassword,
+        (int) TP_PW_STRENGTH_3,
+        securityPostureMinPasswordLength()
+    );
+}
+
+/**
+ * Build canonical SQL expressions for password-health metadata.
+ *
+ * @param string $itemAlias SQL alias of the items table in the caller's query.
+ *
+ * @return array{weak:string,unassessed:string} CASE expressions returning zero or one.
+ */
+function securityPasswordHealthSql(string $itemAlias = 'i'): array
+{
+    if (preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $itemAlias) !== 1) {
+        return [
+            'weak' => '(CASE WHEN 1 = 0 THEN 1 ELSE 0 END)',
+            'unassessed' => '(CASE WHEN 1 = 1 THEN 1 ELSE 0 END)',
+        ];
+    }
+
+    // Mirrors securityPasswordHealthClassify() state by state, in the same order.
+    $emptySql = '(COALESCE(' . $itemAlias . '.pw, \'\') = \'\''
+        . ' AND (' . $itemAlias . '.pw_len IS NULL OR CAST(' . $itemAlias . '.pw_len AS SIGNED) = 0))';
+
+    $assessedSql = '(NOT ' . $emptySql
+        . ' AND ' . $itemAlias . '.complexity_level IS NOT NULL'
+        . ' AND ' . $itemAlias . '.complexity_level <> \'\''
+        . ' AND ' . $itemAlias . '.complexity_level REGEXP \'^-?[0-9]+$\''
+        . ' AND CAST(' . $itemAlias . '.complexity_level AS SIGNED) >= 0'
+        . ' AND ' . $itemAlias . '.pw_len IS NOT NULL'
+        . ' AND CAST(' . $itemAlias . '.pw_len AS SIGNED) > 0'
+        . ')';
+
+    return [
+        'weak' => '(CASE WHEN ' . $assessedSql
+            . ' AND (CAST(' . $itemAlias . '.complexity_level AS SIGNED) < ' . (int) TP_PW_STRENGTH_3
+            . ' OR CAST(' . $itemAlias . '.pw_len AS SIGNED) < ' . securityPostureMinPasswordLength()
+            . ') THEN 1 ELSE 0 END)',
+        // An empty password is a known state, not a finding: excluded from both flags.
+        'unassessed' => '(CASE WHEN NOT ' . $emptySql . ' AND NOT ' . $assessedSql . ' THEN 1 ELSE 0 END)',
+    ];
+}
+
+/**
+ * Resolve the role ids held by a user.
+ *
+ * Both manual and AD/LDAP sourced roles count, exactly like identUser(): filtering on the source
+ * would hide folders granted through a directory group.
+ *
+ * @param int $userId User whose roles are read.
+ *
+ * @return int[] Role ids, empty when the user holds none.
+ */
+function securityPostureUserRoleIds(int $userId): array
+{
+    static $cache = [];
+    if (array_key_exists($userId, $cache) === true) {
+        return $cache[$userId];
+    }
+
+    loadClasses('DB');
+
+    $cache[$userId] = array_map(
+        'intval',
+        DB::queryFirstColumn(
+            'SELECT role_id FROM ' . prefixTable('users_roles') . ' WHERE user_id = %i',
+            $userId
+        )
+    );
+
+    return $cache[$userId];
+}
+
+/**
+ * Resolve the folders whose items Security Posture may report for a user.
+ *
+ * Reads the grant/denial sets from the database — no session — so it works identically in a web
+ * request and in a CLI background worker, then delegates every decision to the DB-free
+ * securityPostureResolveAuthorizedFolders() (security_posture_logic.php).
+ *
+ * Memoized per user: get_score alone resolves this three times per page load.
+ *
+ * @param int $userId User whose read scope is resolved.
+ *
+ * @return int[] Readable folder ids, unique and sorted ascending.
+ */
+function securityPostureAuthorizedFolderIds(int $userId): array
+{
+    static $cache = [];
+    if (array_key_exists($userId, $cache) === true) {
+        return $cache[$userId];
+    }
+
+    loadClasses('DB');
+
+    $directGrantFolders = array_map(
+        'intval',
+        DB::queryFirstColumn(
+            'SELECT group_id FROM ' . prefixTable('users_groups') . ' WHERE user_id = %i',
+            $userId
+        )
+    );
+    $deniedFolders = array_map(
+        'intval',
+        DB::queryFirstColumn(
+            'SELECT group_id FROM ' . prefixTable('users_groups_forbidden') . ' WHERE user_id = %i',
+            $userId
+        )
+    );
+
+    // Readable role types, identical to identUserGetFoldersFromRoles().
+    $roleGrantFolders = [];
+    $userRoleIds = securityPostureUserRoleIds($userId);
+    if (count($userRoleIds) > 0) {
+        $roleGrantFolders = array_map(
+            'intval',
+            DB::queryFirstColumn(
+                'SELECT folder_id FROM ' . prefixTable('roles_values') . '
+                WHERE role_id IN %li AND type IN %ls',
+                $userRoleIds,
+                ['W', 'ND', 'NE', 'NDNE', 'R']
+            )
+        );
+    }
+
+    // Personal tree: only when the feature is enabled globally AND for this user, as in
+    // identUserGetPFList().
+    $ownPersonalFolders = [];
+    $configManager = new ConfigManager();
+    $postureSettings = $configManager->getAllSettings();
+    if ((int) ($postureSettings['enable_pf_feature'] ?? 0) === 1) {
+        $userPersonalFolderEnabled = (int) DB::queryFirstField(
+            'SELECT personal_folder FROM ' . prefixTable('users') . ' WHERE id = %i',
+            $userId
+        );
+        if ($userPersonalFolderEnabled === 1) {
+            $ownPersonalFolders = getOwnPersonalFolderIds($userId);
+        }
+    }
+
+    $cache[$userId] = securityPostureResolveAuthorizedFolders(
+        $directGrantFolders,
+        $roleGrantFolders,
+        $deniedFolders,
+        $ownPersonalFolders,
+        getAllPersonalFolderIds()
+    );
+
+    return $cache[$userId];
+}
+
+/**
+ * Build the SQL predicate limiting Security Posture data to items the user may read.
+ *
+ * A sharekey proves that the user can cryptographically unwrap an item key, but it is not an
+ * authorization grant: keys survive role changes and are distributed more broadly than the set of
+ * users currently allowed to browse a folder. This predicate adds the missing authorization half.
+ *
+ * Shape: the readable folders are resolved once in PHP and embedded as an `id_tree IN (...)` set,
+ * so the only correlated work left per row is the item's own restriction check against the small,
+ * item_id-indexed restriction_to_roles table. An earlier form used six correlated EXISTS
+ * (including two nested_tree self-joins) evaluated for every scanned row; this one runs on hot
+ * paths — get_score fires on every page load, get_folder_flags on every folder open, and the
+ * item_health prune on every password save.
+ *
+ * Two deliberate exclusions, both narrower than the item browser and both fail-closed:
+ *  - **administrators**: identAdmin() grants folder browsing, but show_details_item returns
+ *    show_details = 0 for every non-personal item, so an administrator never reads item content.
+ *    Listing those items here would disclose labels and folder paths they cannot open. They
+ *    resolve to their own personal tree only; their organisation-wide view is the admin-only
+ *    compliance report, which is global by design.
+ *  - **the manager_edit derogation** on per-item restrictions: Security Posture reports the
+ *    credentials a user holds in their own right, not the ones reachable through a management
+ *    override.
+ *
+ * The caller must already join the items table with the alias supplied in $itemAlias.
+ *
+ * @param int    $userId    User whose read access is evaluated.
+ * @param string $itemAlias SQL alias of the items table in the caller's query.
+ *
+ * @return string Parenthesized SQL predicate without a leading AND.
+ */
+function securityPostureItemAccessSql(int $userId, string $itemAlias = 'i'): string
+{
+    if ($userId <= 0 || preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $itemAlias) !== 1) {
+        return '(1 = 0)';
+    }
+
+    $authorizedFolders = securityPostureAuthorizedFolderIds($userId);
+    if (count($authorizedFolders) === 0) {
+        return '(1 = 0)';
+    }
+
+    $restrictionTable = prefixTable('restriction_to_roles');
+    $userRoleIds = securityPostureUserRoleIds($userId);
+
+    $roleRestrictionClause = '';
+    if (count($userRoleIds) > 0) {
+        $roleRestrictionClause = ' OR EXISTS (SELECT 1 FROM ' . $restrictionTable
+            . ' AS posture_restricted_role'
+            . ' WHERE posture_restricted_role.item_id = ' . $itemAlias . '.id'
+            . ' AND posture_restricted_role.role_id IN (' . implode(',', $userRoleIds) . '))';
+    }
+
+    // Everything interpolated below is an int-cast id or the validated table alias. The LIKE
+    // pattern carries no MeekroDB placeholder ('%;' and ';%' are not in its parameter map).
+    return '(' . $itemAlias . '.id_tree IN (' . implode(',', $authorizedFolders) . ')'
+        . ' AND ('
+        . '(COALESCE(' . $itemAlias . '.restricted_to, \'\') = \'\''
+        . ' AND NOT EXISTS (SELECT 1 FROM ' . $restrictionTable . ' AS posture_any_restricted_role'
+        . ' WHERE posture_any_restricted_role.item_id = ' . $itemAlias . '.id))'
+        . ' OR CONCAT(\';\', COALESCE(' . $itemAlias . '.restricted_to, \'\'), \';\')'
+        . ' LIKE \'%;' . $userId . ';%\''
+        . $roleRestrictionClause
+        . '))';
+}
+
 
 /**
  * Update the CACHE table.
@@ -1136,16 +1490,18 @@ function prepareSendingEmail(
  *
  * @param int $userId User to compute the posture for.
  *
- * @return array{weak:int,overdue:int,breached:int,reused:int,total_flagged:int,last_scan:int,worst_item:array{id:int,folder_id:int}|null}
+ * @return array{weak:int,unassessed:int,overdue:int,breached:int,reused:int,total_flagged:int,last_scan:int,worst_item:array{id:int,folder_id:int}|null}
  */
 function securityNudgeComputeCounts(int $userId): array
 {
     $nowTs = time();
-    $weakThreshold = TP_PW_STRENGTH_3;
+    $accessScopeSql = securityPostureItemAccessSql($userId);
+    $passwordHealthSql = securityPasswordHealthSql();
 
     // Metadata-only flag expressions (identical semantics to the dashboard).
     $lastRelevantSql = 'COALESCE(NULLIF(l.last_relevant_date, 0), NULLIF(CAST(i.created_at AS UNSIGNED), 0), 0)';
-    $flagWeakSql = "(CASE WHEN i.complexity_level <> '' AND CAST(i.complexity_level AS SIGNED) >= 0 AND CAST(i.complexity_level AS SIGNED) < " . (int) $weakThreshold . " THEN 1 ELSE 0 END)";
+    $flagWeakSql = $passwordHealthSql['weak'];
+    $flagUnassessedSql = $passwordHealthSql['unassessed'];
     $flagOverdueSql = '(CASE WHEN n.renewal_period > 0 AND ' . $lastRelevantSql . ' > 0 AND (' . $lastRelevantSql . ' + n.renewal_period * ' . TP_ONE_DAY_SECONDS . ') <= ' . (int) $nowTs . ' THEN 1 ELSE 0 END)';
     $flagBreachedSql = '(CASE WHEN i.hibp_status = 2 THEN 1 ELSE 0 END)';
 
@@ -1162,6 +1518,7 @@ function securityNudgeComputeCounts(int $userId): array
     $innerSql =
         'SELECT i.id, i.id_tree,
             ' . $flagWeakSql . ' AS flag_weak,
+            ' . $flagUnassessedSql . ' AS flag_unassessed,
             ' . $flagOverdueSql . ' AS flag_overdue,
             ' . $flagBreachedSql . ' AS flag_breached,
             COALESCE(ih.flag_reused, 0) AS flag_reused
@@ -1170,11 +1527,13 @@ function securityNudgeComputeCounts(int $userId): array
         INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)' .
         $logJoinSql . '
         LEFT JOIN ' . prefixTable('item_health') . ' AS ih ON (ih.item_id = i.id AND ih.user_id = %i)
-        WHERE i.inactif = 0 AND i.deleted_at IS NULL';
+        WHERE i.inactif = 0 AND i.deleted_at IS NULL
+            AND ' . $accessScopeSql;
 
     $agg = DB::queryFirstRow(
         'SELECT
             COALESCE(SUM(t.flag_weak), 0) AS weak,
+            COALESCE(SUM(t.flag_unassessed), 0) AS unassessed,
             COALESCE(SUM(t.flag_overdue), 0) AS overdue,
             COALESCE(SUM(t.flag_breached), 0) AS breached,
             COALESCE(SUM(t.flag_reused), 0) AS reused,
@@ -1200,12 +1559,21 @@ function securityNudgeComputeCounts(int $userId): array
     }
 
     $lastScan = (int) DB::queryFirstField(
-        'SELECT COALESCE(MAX(last_scan_at), 0) FROM ' . prefixTable('item_health') . ' WHERE user_id = %i',
+        'SELECT COALESCE(MAX(ih.last_scan_at), 0)
+        FROM ' . prefixTable('item_health') . ' AS ih
+        INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = ih.item_id)
+        INNER JOIN ' . prefixTable('sharekeys_items') . ' AS sk
+            ON (sk.object_id = i.id AND sk.user_id = ih.user_id)
+        WHERE ih.user_id = %i
+            AND i.inactif = 0
+            AND i.deleted_at IS NULL
+            AND ' . $accessScopeSql,
         $userId
     );
 
     return [
         'weak' => (int) ($agg['weak'] ?? 0),
+        'unassessed' => (int) ($agg['unassessed'] ?? 0),
         'overdue' => (int) ($agg['overdue'] ?? 0),
         'breached' => (int) ($agg['breached'] ?? 0),
         'reused' => (int) ($agg['reused'] ?? 0),
@@ -1218,11 +1586,11 @@ function securityNudgeComputeCounts(int $userId): array
 /**
  * Re-derive the per-user `reused` flags in item_health from the stored reuse buckets.
  *
- * Resets flag_reused for the user, then sets it back to 1 for every item whose
- * reuse_group has more than one member. Shared by the dashboard deep scan
- * (`dashboard.queries.php` `finalize_scan`) and the save-time incremental refresh
- * (`refreshItemHealthAfterSave`) so both use one canonical definition of "reused"
- * and never drift.
+ * Prunes rows for stale or currently unauthorized items, resets flag_reused for the user, then
+ * sets it back to 1 for every item whose reuse_group has more than one member. Shared by the
+ * dashboard deep scan (`dashboard.queries.php` `finalize_scan`) and the save-time incremental
+ * refresh (`refreshItemHealthAfterSave`) so both use one canonical definition of "reused" and
+ * never drift.
  *
  * @param int $userId User whose reuse flags are recomputed.
  *
@@ -1230,6 +1598,27 @@ function securityNudgeComputeCounts(int $userId): array
  */
 function finalizeUserReuseFlags(int $userId): void
 {
+    $accessScopeSql = securityPostureItemAccessSql($userId);
+
+    // Remove stale or unauthorized rows before deriving reuse groups. Otherwise an inaccessible
+    // item could make an accessible item appear reused until a later scan.
+    DB::query(
+        'DELETE ih
+        FROM ' . prefixTable('item_health') . ' AS ih
+        LEFT JOIN ' . prefixTable('items') . ' AS i ON (i.id = ih.item_id)
+        LEFT JOIN ' . prefixTable('sharekeys_items') . ' AS sk
+            ON (sk.object_id = ih.item_id AND sk.user_id = ih.user_id)
+        WHERE ih.user_id = %i
+            AND (
+                i.id IS NULL
+                OR sk.increment_id IS NULL
+                OR i.inactif <> 0
+                OR i.deleted_at IS NOT NULL
+                OR NOT ' . $accessScopeSql . '
+            )',
+        $userId
+    );
+
     // Reset, then flag every item whose bucket has more than one member.
     DB::query(
         'UPDATE ' . prefixTable('item_health') . ' SET flag_reused = 0 WHERE user_id = %i',
@@ -1285,7 +1674,6 @@ function refreshItemHealthAfterSave(int $itemId, int $userId, string $plaintextP
     }
 
     $nowTs = time();
-    $weakThreshold = TP_PW_STRENGTH_3;
     $oversharedThreshold = (int) ($SETTINGS['security_dashboard_overshared_threshold'] ?? 10);
     if ($oversharedThreshold <= 0) {
         $oversharedThreshold = 10;
@@ -1343,7 +1731,12 @@ function refreshItemHealthAfterSave(int $itemId, int $userId, string $plaintextP
     }
 
     $cl = (string) $row['complexity_level'];
-    $flagWeak = ($cl !== '' && (int) $cl >= 0 && (int) $cl < $weakThreshold) ? 1 : 0;
+    $passwordHealthStatus = securityPasswordHealthStatus(
+        $cl,
+        strlen($plaintextPassword),
+        $plaintextPassword !== ''
+    );
+    $flagWeak = $passwordHealthStatus === 'weak' ? 1 : 0;
     $renewal = (int) $row['renewal_period'];
     $flagNoExpiry = ($renewal <= 0) ? 1 : 0;
     $base = (int) $row['last_relevant_date'];
@@ -1411,7 +1804,7 @@ function refreshItemHealthAfterSave(int $itemId, int $userId, string $plaintextP
  *
  * @param int $userId User to score.
  *
- * @return array{score:int,band:string,total_items:int,scanned:bool,last_scan:int,delta:int|null,delta_at:int,counts:array{breached:int,reused:int,weak:int,overdue:int,total:int},weights:array{breached:int,reused:int,weak:int,overdue:int},top3:array<int,array{key:string,count:int}>,worst_item:array{id:int,folder_id:int}|null}
+ * @return array{score:int,band:string,total_items:int,scanned:bool,last_scan:int,delta:int|null,delta_at:int,counts:array{breached:int,reused:int,weak:int,unassessed:int,overdue:int,total:int},weights:array{breached:int,reused:int,weak:int,overdue:int},top3:array<int,array{key:string,count:int}>,worst_item:array{id:int,folder_id:int}|null}
  */
 function securityScoreCompute(int $userId): array
 {
@@ -1420,13 +1813,15 @@ function securityScoreCompute(int $userId): array
     $maxWeight = 10;
 
     $counts = securityNudgeComputeCounts($userId);
+    $accessScopeSql = securityPostureItemAccessSql($userId);
 
     // Total credentials the user can read — the score denominator.
     $totalItems = (int) DB::queryFirstField(
         'SELECT COUNT(*)
         FROM ' . prefixTable('items') . ' AS i
         INNER JOIN ' . prefixTable('sharekeys_items') . ' AS sk ON (sk.object_id = i.id AND sk.user_id = %i)
-        WHERE i.inactif = 0 AND i.deleted_at IS NULL',
+        WHERE i.inactif = 0 AND i.deleted_at IS NULL
+            AND ' . $accessScopeSql,
         $userId
     );
 
@@ -1463,6 +1858,8 @@ function securityScoreCompute(int $userId): array
         ['key' => 'reused', 'count' => (int) $counts['reused'], 'w' => $weights['reused'] * (int) $counts['reused']],
         ['key' => 'weak', 'count' => (int) $counts['weak'], 'w' => $weights['weak'] * (int) $counts['weak']],
         ['key' => 'overdue', 'count' => (int) $counts['overdue'], 'w' => $weights['overdue'] * (int) $counts['overdue']],
+        // Unknown metadata is surfaced for remediation but does not reduce the score.
+        ['key' => 'unassessed', 'count' => (int) $counts['unassessed'], 'w' => 0],
     ];
     usort($contrib, static function (array $a, array $b): int {
         return $b['w'] <=> $a['w'];
@@ -1496,6 +1893,7 @@ function securityScoreCompute(int $userId): array
             'breached' => (int) $counts['breached'],
             'reused' => (int) $counts['reused'],
             'weak' => (int) $counts['weak'],
+            'unassessed' => (int) $counts['unassessed'],
             'overdue' => (int) $counts['overdue'],
             'total' => (int) $counts['total_flagged'],
         ],
@@ -7493,24 +7891,27 @@ function purgeUnnecessaryKeysForUser(int $user_id=0)
             $personalItems,
             [$user_id, TP_USER_ID, API_USER_ID, OTV_USER_ID, SSH_USER_ID]
         );
-        // Files keys
-        DB::delete(
-            prefixTable('sharekeys_files'),
-            'object_id IN %li AND user_id NOT IN %ls',
+        // Files keys — object_id references files.id, never the item id
+        DB::query(
+            'DELETE FROM ' . prefixTable('sharekeys_files') . '
+            WHERE object_id IN (SELECT id FROM ' . prefixTable('files') . ' WHERE id_item IN %li)
+            AND user_id NOT IN %ls',
             $personalItems,
             [$user_id, TP_USER_ID, API_USER_ID, OTV_USER_ID, SSH_USER_ID]
         );
-        // Fields keys
-        DB::delete(
-            prefixTable('sharekeys_fields'),
-            'object_id IN %li AND user_id NOT IN %ls',
+        // Fields keys — object_id references categories_items.id, never the item id
+        DB::query(
+            'DELETE FROM ' . prefixTable('sharekeys_fields') . '
+            WHERE object_id IN (SELECT id FROM ' . prefixTable('categories_items') . ' WHERE item_id IN %li)
+            AND user_id NOT IN %ls',
             $personalItems,
             [$user_id, TP_USER_ID, API_USER_ID, OTV_USER_ID, SSH_USER_ID]
         );
-        // Logs keys
-        DB::delete(
-            prefixTable('sharekeys_logs'),
-            'object_id IN %li AND user_id NOT IN %ls',
+        // Logs keys — object_id references log_items.increment_id, never the item id
+        DB::query(
+            'DELETE FROM ' . prefixTable('sharekeys_logs') . '
+            WHERE object_id IN (SELECT increment_id FROM ' . prefixTable('log_items') . ' WHERE id_item IN %li)
+            AND user_id NOT IN %ls',
             $personalItems,
             [$user_id, TP_USER_ID, API_USER_ID, OTV_USER_ID, SSH_USER_ID]
         );
@@ -10433,6 +10834,70 @@ function callerMayManageUser(int $targetUserId): bool
     }
 
     return true;
+}
+
+/**
+ * Returns the ids of the roles the caller is entitled to grant or revoke.
+ *
+ * An administrator may act on every role. Anyone else is limited to the roles they hold
+ * and to the roles they created, which is the scope already enforced on the
+ * 'add_one_role_to_user' action and offered by the new user form. This function is the
+ * single definition of that scope: the role dropdowns and the write paths must both derive
+ * from it, otherwise a list narrower than the write guard silently drops roles on save.
+ *
+ * @return array<int> Role ids the caller may grant, empty when none.
+ */
+function callerGrantableRoleIds(): array
+{
+    $session = SessionManager::getSession();
+
+    if ((int) $session->get('user-admin') === 1) {
+        return array_map(
+            'intval',
+            array_column(DB::query('SELECT id FROM ' . prefixTable('roles_title')), 'id')
+        );
+    }
+
+    // user-roles_array may hold empty strings, and %li renders an empty array as "()",
+    // which is a SQL syntax error. Fall back to the created roles only in that case.
+    $callerRoles = array_filter((array) $session->get('user-roles_array'));
+    $rows = count($callerRoles) === 0
+        ? DB::query(
+            'SELECT id FROM ' . prefixTable('roles_title') . '
+            WHERE creator_id = %i',
+            (int) $session->get('user-id')
+        )
+        : DB::query(
+            'SELECT id FROM ' . prefixTable('roles_title') . '
+            WHERE id IN %li OR creator_id = %i',
+            $callerRoles,
+            (int) $session->get('user-id')
+        );
+
+    return array_map('intval', array_column($rows, 'id'));
+}
+
+/**
+ * Merges a submitted role set with the roles the caller is not entitled to touch.
+ *
+ * The user edit form replaces the whole manual role set while a manager only ever sees a
+ * subset of it, so the submission alone cannot be taken as the final state: applying it
+ * as-is would silently revoke every role outside the caller's scope. Roles within that
+ * scope are taken from the submission, all the others are preserved exactly as stored.
+ * Roles coming from AD are not concerned, they live under another source.
+ *
+ * @param int   $targetUserId     Id of the user whose roles are being saved.
+ * @param array $submittedRoleIds Role ids coming from the form.
+ *
+ * @return array<int> Role ids to persist as manual roles.
+ */
+function reconcileManualUserRoles(int $targetUserId, array $submittedRoleIds): array
+{
+    return mergeGrantableRoleSets(
+        getUserRoles($targetUserId, 'manual'),
+        $submittedRoleIds,
+        callerGrantableRoleIds()
+    );
 }
 
 /**
