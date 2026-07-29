@@ -258,12 +258,91 @@ class ActiveDirectoryExtra extends BaseGroup
             $groupsArr[] = $adGroupId;
         }
 
+        // The primary group is never returned by the filters above: Active Directory does not
+        // list it in the group's `member` attribute, nor in the user's `memberOf`, and
+        // LDAP_MATCHING_RULE_IN_CHAIN does not expand it either. Only the user's primaryGroupID
+        // RID carries the membership, so it has to be resolved on its own — otherwise the most
+        // widely mapped group of a domain, Domain Users, is missing from every login.
+        $primaryGroupId = $this->getPrimaryGroupIdentifier($userDN, $idAttribute, $connection);
+        if ($primaryGroupId !== null) {
+            $groupsArr[] = $primaryGroupId;
+        }
+
         return [
             'error' => false,
             'message' => '',
             // Nested expansion can return the same group through several paths
             'userGroups' => array_values(array_unique($groupsArr)),
         ];
+    }
+
+    /**
+     * Resolve the identifier of the user's Active Directory primary group.
+     *
+     * The identifier is built exactly as getADGroups() builds it, since both sides are compared
+     * against teampass_ldap_groups_roles.ldap_group_id.
+     *
+     * @param string $userDN Distinguished name of the authenticated user
+     * @param string $idAttribute Group identifier attribute, already lowercased
+     * @param Connection $connection Active LdapRecord connection
+     * @return string|null Group identifier, or null when there is no resolvable primary group
+     */
+    private function getPrimaryGroupIdentifier(string $userDN, string $idAttribute, Connection $connection): ?string
+    {
+        $group = $this->findPrimaryGroup($userDN, $connection);
+        if ($group === null) {
+            return null;
+        }
+
+        try {
+            $value = $idAttribute === 'objectguid'
+                ? $group->getConvertedGuid()
+                : $group->getFirstAttribute($idAttribute);
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        return $value === null || $value === '' ? null : strtolower((string) $value);
+    }
+
+    /**
+     * Read the Active Directory primary group entry of a user.
+     *
+     * Delegates to LdapRecord's HasOnePrimaryGroup relation, which substitutes the user's
+     * primaryGroupID RID into the user's own object SID and reads the matching group.
+     *
+     * @param string $userDN Distinguished name of the authenticated user
+     * @param Connection $connection Active LdapRecord connection
+     * @return \LdapRecord\Models\Model|null The primary group, null when unresolvable
+     */
+    private function findPrimaryGroup(string $userDN, Connection $connection): ?\LdapRecord\Models\Model
+    {
+        if (trim($userDN) === '') {
+            return null;
+        }
+
+        try {
+            Container::addConnection($connection);
+
+            // find() is declared as Model|Collection|null: only a single user entry carries
+            // the primaryGroupID relation.
+            $user = User::find($userDN);
+            if ($user instanceof User === false) {
+                return null;
+            }
+
+            return $user->primaryGroup()->first();
+        } catch (\Throwable $e) {
+            // A directory without primaryGroupID, or a group the bind account cannot read.
+            // The memberships resolved from the `member` attribute stay valid, so this is not
+            // an error: it must not turn a partial answer into a failed lookup.
+            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                error_log('TEAMPASS LDAP: primary group resolution unavailable for ' . $userDN
+                    . ': ' . $e->getMessage());
+            }
+
+            return null;
+        }
     }
 
     /**
@@ -343,6 +422,14 @@ class ActiveDirectoryExtra extends BaseGroup
         // "no additional query" property of the user-centric mode is preserved.
         if ($connection !== null
             && $this->isNestedMemberByMemberOf($groupDn, $userDn, $connection) === true
+        ) {
+            return true;
+        }
+
+        // memberOf never carries the primary group, so restricting login to Domain Users would
+        // lock out the whole domain. Checked last, for the same reason as the nested lookup.
+        if ($connection !== null
+            && $this->isPrimaryGroupMember($groupDn, $userDn, $connection) === true
         ) {
             return true;
         }
@@ -458,11 +545,40 @@ class ActiveDirectoryExtra extends BaseGroup
             // Not a direct member: last resort, look for an indirect membership through
             // nested groups. Kept last on purpose — the extended matching rule is an
             // unindexed transitive search, so a direct member never pays for it.
-            return $this->isNestedMemberOfGroup($groupDn, $userDn, $connection);
+            if ($this->isNestedMemberOfGroup($groupDn, $userDn, $connection) === true) {
+                return true;
+            }
+
+            // The `member` attribute read above never carries the primary group members, so a
+            // restriction on Domain Users would deny every user of the domain.
+            return $this->isPrimaryGroupMember($groupDn, $userDn, $connection);
         } catch (\Throwable $e) {
             error_log('TEAMPASS LDAP: isUserInAllowedGroup error: ' . $e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * Check whether a group is the Active Directory primary group of a user.
+     *
+     * Primary group membership appears in neither the group's `member` attribute nor the user's
+     * `memberOf`, and the extended matching rule does not expand it: it is carried by the user's
+     * primaryGroupID alone. Without this check, restricting login to the default primary group
+     * of a domain (Domain Users) denies access to every user.
+     *
+     * @param string $groupDn Full distinguished name of the required group
+     * @param string $userDn Distinguished name of the authenticating user
+     * @param Connection $connection Active LdapRecord connection
+     * @return bool True if $groupDn is the user's primary group
+     */
+    private function isPrimaryGroupMember(string $groupDn, string $userDn, Connection $connection): bool
+    {
+        $group = $this->findPrimaryGroup($userDn, $connection);
+        if ($group === null) {
+            return false;
+        }
+
+        return strcasecmp((string) $group->getDn(), $groupDn) === 0;
     }
 
     /**
