@@ -25,6 +25,7 @@
 4. [Folders Endpoints](#folders-endpoints)
    - [List accessible folders](#list-folders)
    - [List folders with access rights](#writable-folders)
+     - [Item rights vs folder capabilities](#item-rights-vs-folder-capabilities)
    - [Create a folder](#create-folder)
    - [Update a folder](#folder-update)
    - [Delete a folder](#folder-delete)
@@ -96,9 +97,27 @@ This directive defines the limit on the allowed size of an HTTP request-header f
 **Response (success):**
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "teampass_version": "3.2.1.2",
+  "teampass_version_major": "3.2.1",
+  "teampass_version_minor": "2"
 }
 ```
+
+**Response Fields:**
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `token` | string | The JWT to send as `Authorization: Bearer <token>` on every other endpoint |
+| `teampass_version` | string | Complete server release, `<major>.<minor>.<patch>.<revision>` |
+| `teampass_version_major` | string | Base server version, `<major>.<minor>.<patch>` |
+| `teampass_version_minor` | string | Final release revision component |
+
+> The three `teampass_version*` fields are returned in the **response body**, not as JWT claims:
+> the token stays a pure credential, and a server upgraded during a token's lifetime reports its
+> new version at the next authentication rather than at token expiry. A long-lived client that
+> needs to refresh the value without re-authenticating can read the same three fields from
+> `misc/refreshExtensionSettings`.
 
 **Response Codes:**
 
@@ -147,10 +166,14 @@ OAuth2/SSO users have no usable password (their stored credential is a hash of t
 
 > The `token` must be a 64-character hexadecimal string (`^[a-f0-9]{64}$`). Credentials must be sent in the body — query-string credentials are rejected with `400`.
 
-**Response (success):**
+**Response (success):** identical in shape to [`authorize`](#authorize) — the JWT plus the three
+server version fields.
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "teampass_version": "3.2.1.2",
+  "teampass_version_major": "3.2.1",
+  "teampass_version_minor": "2"
 }
 ```
 
@@ -886,6 +909,14 @@ Rows are sorted by `position` (the folder tree's own order, siblings included), 
 | **Headers** | `Authorization: Bearer <token>` |
 
 **Response (success):**
+
+> The example below is the response seen by a user who passes the global
+> folder-management gate (administrator, manager, or the
+> `enable_user_can_create_folders` setting turned on) and holds the three API CRUD
+> permissions. A standard user who does not pass that gate gets `0` on every
+> `can_*_folder` field of the **shared** folders, while keeping them on his own
+> personal tree.
+
 ```json
 [
   {
@@ -900,7 +931,13 @@ Rows are sorted by `position` (the folder tree's own order, siblings included), 
     "access_type": "W",
     "can_create": 1,
     "can_edit": 1,
-    "can_delete": 1
+    "can_delete": 1,
+    "is_personal": 1,
+    "is_personal_root": 1,
+    "can_create_subfolder": 1,
+    "can_rename_folder": 0,
+    "can_move_folder": 0,
+    "can_delete_folder": 0
   },
   {
     "id": 1,
@@ -914,7 +951,13 @@ Rows are sorted by `position` (the folder tree's own order, siblings included), 
     "access_type": "ND",
     "can_create": 1,
     "can_edit": 1,
-    "can_delete": 0
+    "can_delete": 0,
+    "is_personal": 0,
+    "is_personal_root": 0,
+    "can_create_subfolder": 1,
+    "can_rename_folder": 1,
+    "can_move_folder": 1,
+    "can_delete_folder": 1
   },
   {
     "id": 2,
@@ -928,7 +971,13 @@ Rows are sorted by `position` (the folder tree's own order, siblings included), 
     "access_type": "R",
     "can_create": 0,
     "can_edit": 0,
-    "can_delete": 0
+    "can_delete": 0,
+    "is_personal": 0,
+    "is_personal_root": 0,
+    "can_create_subfolder": 0,
+    "can_rename_folder": 0,
+    "can_move_folder": 0,
+    "can_delete_folder": 0
   }
 ]
 ```
@@ -946,9 +995,15 @@ Rows are sorted by `position` (the folder tree's own order, siblings included), 
 | `complexity` | integer | Minimum password strength required in this folder: `0` Weak, `20` Medium, `38` Strong, `48` Very strong, `60` Heavy (`0` also when no rule is set) |
 | `is_readonly` | integer | `1` = read access only (`access_type` is `R`), `0` = the user can write |
 | `access_type` | string | Effective access level: `W`, `ND`, `NE`, `NDNE` or `R` |
-| `can_create` | integer | `1` when the user may create items in this folder |
-| `can_edit` | integer | `1` when the user may edit existing items (`0` for `NE`, `NDNE`, `R`) |
-| `can_delete` | integer | `1` when the user may delete items (`0` for `ND`, `NDNE`, `R`) |
+| `can_create` | integer | **Item right** — `1` when the user may create items in this folder. Does **not** authorize creating a subfolder |
+| `can_edit` | integer | **Item right** — `1` when the user may edit existing items (`0` for `NE`, `NDNE`, `R`). Does **not** authorize renaming or moving the folder |
+| `can_delete` | integer | **Item right** — `1` when the user may delete items (`0` for `ND`, `NDNE`, `R`). Does **not** authorize deleting the folder |
+| `is_personal` | integer | `1` when the folder is part of a personal folder tree, `0` for the shared domain. Only your own personal folders are ever listed |
+| `is_personal_root` | integer | `1` for the root of your personal tree. A personal root can never be renamed, moved or deleted |
+| `can_create_subfolder` | integer | **Folder capability** — `1` when [`folder/create`](#create-folder) may use this folder as its `parent_id` |
+| `can_rename_folder` | integer | **Folder capability** — `1` when this folder is eligible for a rename through [`folder/update`](#folder-update) |
+| `can_move_folder` | integer | **Folder capability** — `1` when this folder is eligible to be moved. Describes the **source only**, see the warning below |
+| `can_delete_folder` | integer | **Folder capability** — `1` when this folder is eligible for deletion through [`folder/delete`](#folder-delete) |
 
 > ⚠️ `is_readonly: 0` does **not** mean full write access. A folder granted as `ND`, `NE` or
 > `NDNE` is writable but restricts deletion and/or edition — rely on `can_edit` / `can_delete`
@@ -957,6 +1012,31 @@ Rows are sorted by `position` (the folder tree's own order, siblings included), 
 > When several roles grant different levels on the same folder, the **least permissive wins**
 > (`R` > `NDNE` > `NE` = `ND` > `W`), exactly like the web interface. See
 > [Rights management](../features/rights.md).
+
+#### Item rights vs folder capabilities {#item-rights-vs-folder-capabilities}
+
+The two families answer different questions and are **not** interchangeable:
+
+| | `can_create` / `can_edit` / `can_delete` | `can_create_subfolder` / `can_rename_folder` / `can_move_folder` / `can_delete_folder` |
+| --- | --- | --- |
+| Scope | The **items stored in** the folder | The **folder itself** |
+| Driven by | The folder access level (`W`, `ND`, `NE`, `NDNE`, `R`) | Access level **+** the global folder-management gate **+** personal-root protection |
+
+A folder granted as `ND` illustrates the difference: `can_delete: 0` (you may not delete the
+items it contains) while `can_delete_folder: 1` (you may delete the folder itself).
+
+The global folder-management gate is passed when **any** of these is true: you are an
+administrator, a manager, you hold *manage all users* or *create root folder*, the
+`enable_user_can_create_folders` setting is on, or the folder belongs to your personal tree.
+
+> ⚠️ These four fields are **UI hints**. The server stays authoritative and re-runs every
+> check when the mutation is actually attempted — never treat a `1` as a guarantee of success.
+>
+> ⚠️ `can_move_folder` qualifies the **source folder only**. [`folder/update`](#folder-update)
+> separately validates the chosen destination: accessibility, read-only state, move into itself
+> or into one of its own descendants, personal ↔ shared boundary, and the permission to move to
+> the root. A `can_move_folder: 1` can therefore still be answered with a `403` or `422`
+> depending on the destination you pick.
 
 **Response Codes:**
 
