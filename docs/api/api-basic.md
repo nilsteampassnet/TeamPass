@@ -1303,10 +1303,21 @@ All API endpoints may return the following standard HTTP error codes:
 
 ## Command-line client {#cli}
 
-Teampass ships a small Bash client, `app/scripts/teampass-cli.sh`, that wraps the JWT
-authentication and the most common endpoints. It requires `curl` and `jq`.
+Teampass ships a small command-line client that wraps the JWT authentication and the most
+common endpoints. Two equivalent implementations are provided:
 
-**Configuration** — environment variables, or `~/.config/teampass/config`:
+| Script | Platform | Requirements |
+|---|---|---|
+| `app/scripts/teampass-cli.sh` | Linux / macOS / any Bash shell | `curl` and `jq` |
+| `app/scripts/teampass-cli.ps1` | Windows (native PowerShell) | PowerShell 5.1+ (built-in `Invoke-RestMethod`) |
+
+The PowerShell version provides full feature parity with the Bash one — same commands, same
+options, same output — so Windows environments no longer need WSL, Git Bash or any
+third-party Bash runtime to use the API from the command line, Task Scheduler or an
+automation script.
+
+**Configuration** — environment variables, or a configuration file
+(`~/.config/teampass/config` on Bash, `%LOCALAPPDATA%\teampass\config` on PowerShell):
 
 ```bash
 export TEAMPASS_URL="https://your-teampass.com"
@@ -1320,7 +1331,10 @@ export TEAMPASS_APIKEY="..."
 export TEAMPASS_TOKEN="..."
 ```
 
-**Commands:**
+On PowerShell, the same variables are set with `$ENV:TEAMPASS_URL = "https://your-teampass.com"`,
+or written as `TEAMPASS_URL="https://your-teampass.com"` lines in the configuration file.
+
+**Commands (Bash):**
 
 ```bash
 ./app/scripts/teampass-cli.sh folders --tree          # folder tree with access rights
@@ -1330,6 +1344,18 @@ export TEAMPASS_TOKEN="..."
 ./app/scripts/teampass-cli.sh search "server"         # by label
 ./app/scripts/teampass-cli.sh search "192.168." --by-desc
 ./app/scripts/teampass-cli.sh search "https://app" --by-url
+```
+
+**Commands (PowerShell):**
+
+```powershell
+.\app\scripts\teampass-cli.ps1 folders --tree         # folder tree with access rights
+.\app\scripts\teampass-cli.ps1 read 25                # read an item
+.\app\scripts\teampass-cli.ps1 create 5 "My Server" "admin" "S3cr3t!" "Root credentials"
+.\app\scripts\teampass-cli.ps1 update 25 label "Updated Server"
+.\app\scripts\teampass-cli.ps1 search "server"        # by label
+.\app\scripts\teampass-cli.ps1 search "192.168." --by-desc
+.\app\scripts\teampass-cli.ps1 search "https://app" --by-url
 ```
 
 `folders --tree` renders the hierarchy directly, because
@@ -1347,4 +1373,8 @@ Production [1]
   Each authentication opens a server-side API session, so a script must not re-authenticate
   on every request.
 - A `429` answer is retried once, honouring the `Retry-After` header.
-- The configuration file holds credentials in clear text: keep it at `chmod 600`.
+- The configuration file holds credentials in clear text: keep it at `chmod 600` (Bash) or
+  restrict its NTFS permissions to the current user (PowerShell).
+- On Windows, an execution policy may block the script. Run it in the current session with
+  `powershell -ExecutionPolicy Bypass -File .\app\scripts\teampass-cli.ps1 <command>`, or
+  unblock the file with `Unblock-File .\app\scripts\teampass-cli.ps1`.
