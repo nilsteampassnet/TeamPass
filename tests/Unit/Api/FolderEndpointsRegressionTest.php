@@ -452,11 +452,67 @@ class FolderEndpointsRegressionTest extends TestCase
             $controller,
             'writableFolders must use the authoritative capability evaluator'
         );
-        self::assertSame(
-            3,
-            substr_count($model, 'hasFolderManagementPrivilege('),
-            'create, update and delete must all reuse the same global management gate'
-        );
+
+        // Asserted per mutation rather than by counting occurrences: a future
+        // folder mutation reusing the gate must not make this sentinel fail.
+        foreach ([
+            'public function createFolder(',
+            'public function updateFolder(array $data, array $userData): array',
+            'public function deleteFolder(int $folderId, array $userData): array',
+        ] as $signature) {
+            self::assertStringContainsString(
+                'hasFolderManagementPrivilege(',
+                $this->extractMethodBody($model, $signature),
+                "$signature must reuse the same global management gate"
+            );
+        }
+    }
+
+    /**
+     * The response contract of writableFolders is public documentation, not just
+     * openapi.json: docs/api/api-basic.md is the docsify site users actually read.
+     * A field added to the endpoint without a doc entry silently makes it wrong.
+     */
+    public function testWritableFolderCapabilitiesArePubliclyDocumented(): void
+    {
+        $doc = $this->readSource('/docs/api/api-basic.md');
+
+        foreach ([
+            'is_personal',
+            'is_personal_root',
+            'can_create_subfolder',
+            'can_rename_folder',
+            'can_move_folder',
+            'can_delete_folder',
+        ] as $field) {
+            self::assertStringContainsString(
+                '`' . $field . '`',
+                $doc,
+                "docs/api/api-basic.md must document the $field field"
+            );
+        }
+
+        // The whole point of the split: item rights and folder capabilities are
+        // different families, and can_move_folder qualifies the source only.
+        self::assertStringContainsString('Item rights vs folder capabilities', $doc);
+        self::assertStringContainsString('source folder only', $doc);
+    }
+
+    /**
+     * The server version fields are returned in the response body of both
+     * authentication routes — clients rely on them to adapt to the instance.
+     */
+    public function testServerVersionFieldsArePubliclyDocumented(): void
+    {
+        $doc = $this->readSource('/docs/api/api-basic.md');
+
+        foreach (['teampass_version', 'teampass_version_major', 'teampass_version_minor'] as $field) {
+            self::assertStringContainsString(
+                '`' . $field . '`',
+                $doc,
+                "docs/api/api-basic.md must document the $field field"
+            );
+        }
     }
 
     public function testOpenApiDocumentsNewPaths(): void
