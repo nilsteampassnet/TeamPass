@@ -209,7 +209,7 @@ function tpBackupResolveScheduledOutputDir(string $requestedDir, array $SETTINGS
  * @param array  $options       Optional:
  *                              - output_dir (string) default: $SETTINGS['path_to_files_folder']
  *                              - filename_prefix (string) default: '' (ex: 'scheduled-')
- *                              - chunk_rows (int) default: 1000
+ *                              - chunk_rows (int) deprecated, kept for caller compatibility
  *                              - flush_every_inserts (int) default: 200
  *                              - include_tables (array<string>) default: [] (empty => all)
  *                              - exclude_tables (array<string>) default: [] (empty => none)
@@ -282,7 +282,6 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
 
         $outputDir = $options['output_dir'] ?? ($SETTINGS['path_to_files_folder'] ?? '');
         $prefix = (string)($options['filename_prefix'] ?? '');
-        $chunkRows = (int)($options['chunk_rows'] ?? 1000);
         $flushEvery = (int)($options['flush_every_inserts'] ?? 200);
         $includeTables = $options['include_tables'] ?? [];
         $excludeTables = $options['exclude_tables'] ?? [];
@@ -305,9 +304,15 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
         $schemaLevel = tpGetSchemaLevel();
         $schemaSuffix = ($schemaLevel !== '') ? ('-sl' . $schemaLevel) : '';
         $filename = $prefix . time() . '-' . $token . $schemaSuffix . '.sql';
-        $filepath = rtrim($outputDir, '/') . '/' . $filename;
+        $filepath = rtrim($outputDir, '/\\') . DIRECTORY_SEPARATOR . $filename;
+        $plainTempPath = $filepath . '.part';
+        $encryptedTempPath = $filepath . '.encrypted.part';
 
-        $handle = @fopen($filepath, 'w+');
+        // The final filename is only published after the complete dump (and its
+        // optional encryption) succeeds. A fatal interruption can therefore
+        // leave, at worst, a non-restorable .part file instead of a truncated
+        // backup that looks valid.
+        $handle = fopen($plainTempPath, 'x+b');
         if ($handle === false) {
             return [
                 'success' => false,
@@ -315,11 +320,24 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
                 'filepath' => $filepath,
                 'encrypted' => false,
                 'size_bytes' => 0,
-                'message' => 'Could not create backup file: ' . $filepath,
+                'message' => 'Could not create temporary backup file: ' . $plainTempPath,
             ];
         }
 
         $insertCount = 0;
+        $write = static function ($stream, string $data): void {
+            $length = strlen($data);
+            $offset = 0;
+
+            while ($offset < $length) {
+                $chunk = $offset === 0 ? $data : substr($data, $offset);
+                $written = fwrite($stream, $chunk);
+                if ($written === false || $written === 0) {
+                    throw new RuntimeException('Could not write the database backup to disk.');
+                }
+                $offset += $written;
+            }
+        };
 
         try {
             // Get all tables
@@ -348,31 +366,24 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
                 }
 
                 // Write drop and creation
-                fwrite($handle, 'DROP TABLE IF EXISTS `' . $tableName . "`;\n");
+                $write($handle, 'DROP TABLE IF EXISTS `' . $tableName . "`;\n");
 
                 $row2 = DB::queryFirstRow('SHOW CREATE TABLE `' . $tableName . '`');
                 if (!is_array($row2) || empty($row2['Create Table'])) {
                     // Skip table if structure cannot be fetched
-                    fwrite($handle, "\n");
+                    $write($handle, "\n");
                     continue;
                 }
 
-                fwrite($handle, $row2['Create Table'] . ";\n\n");
+                $write($handle, $row2['Create Table'] . ";\n\n");
 
-                // Process table data in chunks to reduce memory usage
-                $offset = 0;
-                while (true) {
-                    $rows = DB::query(
-                        'SELECT * FROM `' . $tableName . '` LIMIT %i OFFSET %i',
-                        $chunkRows,
-                        $offset
-                    );
-
-                    if (empty($rows)) {
-                        break;
-                    }
-
-                    foreach ($rows as $record) {
+                // queryWalk() uses MYSQLI_USE_RESULT. This is intentionally
+                // unbuffered: only the current row is held in PHP memory, which
+                // also keeps tables containing large document BLOBs safe with
+                // standard PHP-FPM memory limits.
+                $rows = DB::queryWalk('SELECT * FROM `' . $tableName . '`');
+                try {
+                    while (($record = $rows->next()) !== null) {
                         $values = [];
                         foreach ($record as $value) {
                             if ($value === null) {
@@ -396,20 +407,23 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
                         }
 
                         $insertQuery = 'INSERT INTO `' . $tableName . '` VALUES(' . implode(',', $values) . ");\n";
-                        fwrite($handle, $insertQuery);
+                        $write($handle, $insertQuery);
 
                         $insertCount++;
                         if ($flushEvery > 0 && ($insertCount % $flushEvery) === 0) {
-                            fflush($handle);
+                            if (fflush($handle) === false) {
+                                throw new RuntimeException('Could not flush the database backup to disk.');
+                            }
                         }
                     }
-
-                    $offset += $chunkRows;
-                    fflush($handle);
+                } finally {
+                    $rows->free();
                 }
 
-                fwrite($handle, "\n\n");
-                fflush($handle);
+                $write($handle, "\n\n");
+                if (fflush($handle) === false) {
+                    throw new RuntimeException('Could not flush the database backup to disk.');
+                }
             }
         } catch (Throwable $e) {
             if (is_resource($handle)) {
@@ -418,9 +432,8 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
 
             $errorMessage = 'Backup failed: ' . $e->getMessage();
 
-            // Suppression sécurisée sans @
-            if (file_exists($filepath)) {
-                $deleted = unlink($filepath);
+            if (file_exists($plainTempPath)) {
+                $deleted = unlink($plainTempPath);
                 if ($deleted === false) {
                     $errorMessage .= ' (Note: Temporary backup file could not be deleted from disk)';
                 }
@@ -441,11 +454,9 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
         // Encrypt the file if key provided
         $encrypted = false;
         if ($encryptionKey !== '') {
-            $tmpPath = rtrim($outputDir, '/') . '/defuse_temp_' . $filename;
-
             if (!function_exists('prepareFileWithDefuse')) {
-                if (file_exists($filepath)) {
-                    unlink($filepath);
+                if (file_exists($plainTempPath)) {
+                    unlink($plainTempPath);
                 }
                 return [
                     'success' => false,
@@ -457,14 +468,14 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
                 ];
             }
 
-            $ret = prepareFileWithDefuse('encrypt', $filepath, $tmpPath, $encryptionKey);
+            $ret = prepareFileWithDefuse('encrypt', $plainTempPath, $encryptedTempPath, $encryptionKey);
 
             if ($ret !== true) {
-                if (file_exists($filepath)) {
-                    unlink($filepath);
+                if (file_exists($plainTempPath)) {
+                    unlink($plainTempPath);
                 }
-                if (file_exists($tmpPath)) {
-                    unlink($tmpPath);
+                if (file_exists($encryptedTempPath)) {
+                    unlink($encryptedTempPath);
                 }
                 return [
                     'success' => false,
@@ -476,15 +487,23 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
                 ];
             }
 
-            // Replace original with encrypted version
-            if (file_exists($filepath)) {
-                unlink($filepath);
+            if (unlink($plainTempPath) === false) {
+                if (file_exists($encryptedTempPath)) {
+                    unlink($encryptedTempPath);
+                }
+                return [
+                    'success' => false,
+                    'filename' => $filename,
+                    'filepath' => $filepath,
+                    'encrypted' => false,
+                    'size_bytes' => 0,
+                    'message' => 'Encryption succeeded but the temporary plaintext backup could not be deleted',
+                ];
             }
-            
-            // On vérifie le succès de rename() sans @
-            if (is_file($tmpPath) && !rename($tmpPath, $filepath)) {
-                if (file_exists($tmpPath)) {
-                    unlink($tmpPath);
+
+            if (is_file($encryptedTempPath) === false || rename($encryptedTempPath, $filepath) === false) {
+                if (file_exists($encryptedTempPath)) {
+                    unlink($encryptedTempPath);
                 }
                 return [
                     'success' => false,
@@ -497,6 +516,18 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
             }
 
             $encrypted = true;
+        } elseif (rename($plainTempPath, $filepath) === false) {
+            if (file_exists($plainTempPath)) {
+                unlink($plainTempPath);
+            }
+            return [
+                'success' => false,
+                'filename' => $filename,
+                'filepath' => $filepath,
+                'encrypted' => false,
+                'size_bytes' => 0,
+                'message' => 'Backup succeeded but could not finalize file (rename failed)',
+            ];
         }
 
         // Gestion de filesize sans @
