@@ -732,9 +732,11 @@ var tpBckMetaOrphansPurgeNone = "<?php echo addslashes($lang->get('bck_meta_orph
     });
 
     // Delete on-the-fly server backup
-    $(document).on('click', '.onthefly-server-backup-delete', function () {
+    $(document).on('click', '.onthefly-server-backup-delete', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
         const fileName = $(this).data('filename');
-        console.log('Delete on-the-fly server backup:', fileName);
         if (!fileName) return;
         
         // Call confirm dialog
@@ -775,7 +777,10 @@ var tpBckMetaOrphansPurgeNone = "<?php echo addslashes($lang->get('bck_meta_orph
 
 
     // Edit on-the-fly backup comment
-    $(document).on('click', '.onthefly-server-backup-edit-comment', function () {
+    $(document).on('click', '.onthefly-server-backup-edit-comment', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
         const fileName = ($(this).data('filename') || '').toString();
         let comment = '';
         try { comment = decodeURIComponent((($(this).data('commentEnc') || '') + '')); } catch (e) { comment = ((($(this).data('commentEnc') || '') + '')); }
@@ -902,24 +907,18 @@ function tpUpdateMetaOrphansButton(state) {
         try { $btn.addClass('btn-warning').removeClass('btn-outline-warning'); } catch (e) {}
         $btn.attr('aria-label', 'Meta orphans: ' + total);
         $btn.data('tp-has-orphans', 1);
-        $btn.attr('title', tpTpl(tpBckMetaOrphansTooltipTpl, {
+        var tooltipTitle = tpTpl(tpBckMetaOrphansTooltipTpl, {
             TOTAL: total,
             FILES: filesCnt,
             SCHEDULED: schedCnt
-        }));
+        });
+        $btn.attr('title', tooltipTitle).attr('data-original-title', tooltipTitle);
     } else {
         $badge.addClass('d-none').text('0');
         try { $btn.addClass('btn-outline-warning').removeClass('btn-warning'); } catch (e) {}
         $btn.data('tp-has-orphans', 0);
-        $btn.attr('title', tpBckMetaOrphansTooltipNone);
+        $btn.attr('title', tpBckMetaOrphansTooltipNone).attr('data-original-title', tpBckMetaOrphansTooltipNone);
     }
-
-    // Refresh tooltip content if bootstrap tooltips are used
-    try {
-        if (typeof $btn.tooltip === 'function') {
-            $btn.tooltip('dispose').tooltip({ boundary: 'window', trigger: 'hover' });
-        }
-    } catch (e) {}
 }
 
 function tpRefreshMetaOrphansIndicator() {
@@ -1147,7 +1146,6 @@ function tpFmtBytes(bytes) {
                     });
 
                     $('#onthefly-server-backups-tbody').html(html);
-                    try { $('#onthefly-server-backups-tbody [data-toggle="tooltip"]').tooltip(); } catch (e) {}
                 }
             );
         }
@@ -2104,8 +2102,6 @@ var tpScheduled = {
         $tb.append(tr);
       });
 
-      try { $('#scheduled-backups-tbody [data-toggle="tooltip"]').tooltip(); } catch (e) {}
-
       // If selection no longer exists, clear it
       if (selected !== '' && foundSelected === false) {
         $('#scheduled-restore-server-file').val('');
@@ -2761,8 +2757,6 @@ var tpExternalized = {
         tr.append($cell);
         $tb.append(tr);
       });
-
-      try { $('#externalized-backups-tbody [data-toggle="tooltip"]').tooltip(); } catch (e) {}
 
       if (selected !== '' && foundSelected === false) {
         tpExternalized.clearRestoreSelection();
