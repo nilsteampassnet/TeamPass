@@ -18,6 +18,7 @@ use PHPUnit\Framework\TestCase;
 class HealthSystemConsistencyTest extends TestCase
 {
     private string $mainSource;
+    private string $backupSource;
     private string $utilitiesSource;
     private string $adminSource;
     private string $healthPage;
@@ -27,6 +28,7 @@ class HealthSystemConsistencyTest extends TestCase
     {
         $root = __DIR__ . '/../..';
         $this->mainSource = $this->read($root . '/app/sources/main.functions.php');
+        $this->backupSource = $this->read($root . '/app/sources/backup.functions.php');
         $this->utilitiesSource = $this->read($root . '/app/sources/utilities.queries.php');
         $this->adminSource = $this->read($root . '/app/sources/admin.queries.php');
         $this->healthPage = $this->read($root . '/app/pages/utilities.health.php');
@@ -121,20 +123,17 @@ class HealthSystemConsistencyTest extends TestCase
         }
     }
 
-    public function testBackupCompatibilityUsesSchemaVersionAndMetadata(): void
+    public function testBackupHealthUsesSharedSchemaCompatibilityAndSchedulerCadence(): void
     {
         $this->assertStringContainsString(
             'function tpHealthGetBackupCompatibility',
-            $this->utilitiesSource
+            $this->backupSource
         );
         $this->assertStringContainsString(
-            "\$tpFilesVersion !== \$expectedTpFilesVersion",
+            'tpHealthGetBackupSchedulerGracePeriod',
             $this->utilitiesSource
         );
-        $this->assertStringContainsString(
-            "array_key_exists('metadata_present', \$file)",
-            $this->utilitiesSource
-        );
+        $this->assertStringContainsString("'items_ops_job_frequency'", $this->utilitiesSource);
         $this->assertStringContainsString(
             "'health_text_key' => 'health_backup_scheduler_disabled'",
             $this->utilitiesSource
