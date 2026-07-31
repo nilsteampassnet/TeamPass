@@ -125,6 +125,7 @@ function cryption(string $message, string $ascii_key, string $type, ?array $SETT
  * Runtime constants are authoritative. The settings-array fallback is kept for
  * installation and test contexts where the constants may not have been loaded.
  *
+ * @param array<string, mixed> $SETTINGS TeamPass settings fallback.
  * @return array{status:string, reason:string, path:string}
  */
 function teampassGetSecureFileHealth(array $SETTINGS = []): array
@@ -200,6 +201,8 @@ function teampassGetSystemAccountIds(): array
 /**
  * Build the system-health snapshot shared by the admin dashboard and Health.
  *
+ * @param array<string, mixed> $SETTINGS TeamPass settings.
+ * @param Language             $lang     Language service used for status labels.
  * @return array<string,mixed>
  */
 function teampassGetSystemHealthOverview(array $SETTINGS, Language $lang): array
