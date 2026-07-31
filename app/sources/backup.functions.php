@@ -5784,7 +5784,9 @@ function tpHealthGetBackupSchedulerGracePeriod(int $handlerIntervalMinutes): int
  * Build Health statistics for a backup directory.
  *
  * Detailed counters may overlap by design, but anomalies_total counts each
- * backup file at most once, plus each orphan metadata sidecar.
+ * backup file at most once, plus each orphan metadata sidecar. A TeamPass files
+ * version difference is reported through tp_version_mismatch only: it is
+ * diagnostic information, not a restore blocker, so it never raises an anomaly.
  *
  * @param string                   $dir         Backup directory.
  * @param string                   $labelKey    Translation key for the directory.
@@ -5919,8 +5921,9 @@ function tpBuildBackupDirHealth(
                 && $tpFilesVersion !== ''
                 && $tpFilesVersion !== $expectedTpFilesVersion
             ) {
+                // Diagnostic only: a backup taken by another TeamPass release
+                // still restores as long as the schema level matches.
                 $stats['tp_version_mismatch']++;
-                $fileHasAnomaly = true;
             }
 
             $metadataMissing = false;

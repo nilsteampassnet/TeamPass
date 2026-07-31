@@ -81,6 +81,37 @@ class BackupPackageFunctionsTest extends TestCase
         $this->assertSame('health_backup_anomalies_found', $health['summary']['text_key']);
     }
 
+    public function testTeampassVersionDifferenceAloneIsNotAnAnomaly(): void
+    {
+        $file = [
+            'name' => 'scheduled-1-sl1780331401.sql',
+            'mtime' => time() - 60,
+            'size_mb' => 1.5,
+            'schema_level' => '1780331401',
+            'tp_files_version' => '3.2.1.2',
+            'metadata_present' => true,
+        ];
+
+        $health = tpBuildBackupDirHealth(
+            sys_get_temp_dir(),
+            'health_backup_scheduled',
+            [$file],
+            0,
+            [
+                'all_files' => [$file],
+                'expected_schema_level' => '1780331401',
+                'expected_tp_files_version' => '3.2.1.3',
+            ]
+        );
+        $stats = $health['stats'];
+
+        $this->assertSame(1, $stats['compatible']);
+        $this->assertSame(1, $stats['tp_version_mismatch']);
+        $this->assertSame(0, $stats['anomalies_total']);
+        $this->assertSame('health_status_ok', $health['summary']['text_key']);
+        $this->assertSame('success', $health['summary']['status']);
+    }
+
     public function testBackupSchedulerGraceTracksTheHandlerCadence(): void
     {
         $this->assertSame(600, tpHealthGetBackupSchedulerGracePeriod(1));
