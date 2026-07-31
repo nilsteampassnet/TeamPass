@@ -637,6 +637,15 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     }
 
     $(function () {
+        // Page purpose is carried by the help icon next to the title instead of an
+        // intro paragraph. Own init (not the global .infotip one) to get the wider template.
+        $('#dashboard-page-info').tooltip({
+            trigger: 'hover focus',
+            placement: 'right',
+            boundary: 'window',
+            template: '<div class="tooltip dashboard-help-tooltip" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>'
+        });
+
         dashboardRestoreFilters();
         dashboardLoadSummary();
         dashboardLoadScore();

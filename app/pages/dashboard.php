@@ -89,7 +89,11 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-6">
-                <h1 class="m-0 text-dark"><i class="fa-solid fa-shield-halved mr-2"></i><?php echo $lang->get('security_dashboard'); ?></h1>
+                <h1 class="m-0 text-dark"><i class="fa-solid fa-shield-halved mr-2"></i><?php echo $lang->get('security_dashboard'); ?><a
+                        href="#" id="dashboard-page-info" class="dashboard-title-help text-muted ml-2"
+                        role="button" tabindex="0" onclick="return false;"
+                        title="<?php echo htmlspecialchars($lang->get('security_dashboard_desc'), ENT_QUOTES, 'UTF-8'); ?>"><i
+                        class="fa-regular fa-circle-question"></i></a></h1>
             </div>
         </div>
     </div>
@@ -110,8 +114,12 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
     .score-band-good { background-color: #20c997; color: #fff; }
     .score-band-fair { background-color: #ffc107; color: #212529; }
     .score-band-poor { background-color: #dc3545; color: #fff; }
-    /* Wider, left-aligned tooltip for the score methodology help. */
-    .dashboard-score-tooltip .tooltip-inner { max-width: 320px; text-align: left; }
+    /* Wider, left-aligned tooltips for the score methodology and the page help. */
+    .dashboard-score-tooltip .tooltip-inner,
+    .dashboard-help-tooltip .tooltip-inner { max-width: 320px; text-align: left; }
+    /* Help icon inside the page title: keep it discreet, not sized like the h1. */
+    .dashboard-title-help { font-size: 1rem; vertical-align: middle; }
+    .dashboard-title-help:hover, .dashboard-title-help:focus { text-decoration: none; }
     /* Flagged-items filter bar: the three controls must stay on one line. A deep folder
        path would otherwise size the select to its longest option and push the sort away. */
     .dashboard-filter-bar { background-color: rgba(0, 0, 0, .02); }
@@ -135,8 +143,6 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 <!-- Main content -->
 <section class="content">
     <div class="container-fluid">
-
-        <p class="text-muted"><?php echo $lang->get('security_dashboard_desc'); ?></p>
 
         <!-- My security posture -->
         <div class="card card-outline card-primary">
