@@ -55,6 +55,10 @@ class DatabaseBackupStreamingTest extends TestCase
             'rename($encryptedTempPath, $filepath)',
             $this->source
         );
+        $this->assertStringContainsString(
+            "@fopen(\$plainTempPath, 'x+b')",
+            $this->source
+        );
         $this->assertStringNotContainsString("fopen(\$filepath, 'w+'", $this->source);
     }
 
