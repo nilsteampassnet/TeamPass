@@ -116,7 +116,8 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
        path would otherwise size the select to its longest option and push the sort away. */
     .dashboard-filter-bar { background-color: rgba(0, 0, 0, .02); }
     .dashboard-filter-search { width: 260px; }
-    #dashboard-folder-filter { max-width: 260px; text-overflow: ellipsis; }
+    /* Width paired with the 60-char cap in dashboardShortenPath(). */
+    #dashboard-folder-filter { max-width: 400px; text-overflow: ellipsis; }
     @media (max-width: 575px) {
         .dashboard-filter-search { width: 100%; }
         #dashboard-folder-filter { max-width: 100%; }

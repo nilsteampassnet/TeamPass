@@ -453,7 +453,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 $('<option>')
                     .attr('value', String(parseInt(f.id, 10) || 0))
                     .attr('title', f.path)
-                    .text(dashboardShortenPath(f.path, 40))
+                    // 60 chars ≈ the 400px cap set on #dashboard-folder-filter: keep both in sync.
+                    .text(dashboardShortenPath(f.path, 60))
             );
         });
         sel.val(current);
