@@ -112,10 +112,15 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
     .score-band-poor { background-color: #dc3545; color: #fff; }
     /* Wider, left-aligned tooltip for the score methodology help. */
     .dashboard-score-tooltip .tooltip-inner { max-width: 320px; text-align: left; }
-    /* Flagged-items filter bar. */
+    /* Flagged-items filter bar: the three controls must stay on one line. A deep folder
+       path would otherwise size the select to its longest option and push the sort away. */
     .dashboard-filter-bar { background-color: rgba(0, 0, 0, .02); }
     .dashboard-filter-search { width: 260px; }
-    @media (max-width: 575px) { .dashboard-filter-search { width: 100%; } }
+    #dashboard-folder-filter { max-width: 260px; text-overflow: ellipsis; }
+    @media (max-width: 575px) {
+        .dashboard-filter-search { width: 100%; }
+        #dashboard-folder-filter { max-width: 100%; }
+    }
     /* Anchor for the loading overlay; min-height keeps the spinner visible on a short list. */
     #dashboard-list-wrapper { position: relative; min-height: 120px; }
     /* Explicit class toggle: the AdminLTE overlay is display:flex, which an inline

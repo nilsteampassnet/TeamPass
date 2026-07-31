@@ -418,6 +418,30 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         );
     }
 
+    // A select sizes itself on its longest option, so one deep folder path would widen the
+    // dropdown until the sort control wraps to a second line. Collapse the middle segments;
+    // the full path stays reachable as a tooltip, and the leaf — the part that identifies
+    // the folder — is always kept.
+    function dashboardShortenPath(path, maxLength) {
+        const full = String(path);
+        if (full.length <= maxLength) {
+            return full;
+        }
+        const parts = full.split(' › ');
+        const leaf = parts[parts.length - 1];
+        // The leaf is what identifies the folder — cut into it only when it alone overflows.
+        if (leaf.length > maxLength - 2) {
+            return '…' + leaf.slice(leaf.length - maxLength + 1);
+        }
+        if (parts.length > 2) {
+            const collapsed = parts[0] + ' › … › ' + leaf;
+            if (collapsed.length <= maxLength) {
+                return collapsed;
+            }
+        }
+        return '… › ' + leaf;
+    }
+
     // Returns true when the selected grouping had to be dropped, so the caller can
     // refetch: the answer it just got was filtered on a folder that no longer applies.
     function dashboardBuildFolders(folders) {
@@ -425,16 +449,29 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         const current = String(dashboardFilterFolder);
         sel.find('option:not(:first)').remove();
         (folders || []).forEach(function (f) {
-            sel.append($('<option>').attr('value', String(parseInt(f.id, 10) || 0)).text(f.path));
+            sel.append(
+                $('<option>')
+                    .attr('value', String(parseInt(f.id, 10) || 0))
+                    .attr('title', f.path)
+                    .text(dashboardShortenPath(f.path, 40))
+            );
         });
         sel.val(current);
         // Selected grouping no longer has flagged items → fall back to "all".
-        if (sel.val() === null) {
+        const reset = sel.val() === null;
+        if (reset === true) {
             dashboardFilterFolder = 0;
             sel.val('0');
-            return true;
         }
-        return false;
+        dashboardUpdateFolderTitle();
+        return reset;
+    }
+
+    // Mirror the selected option's full path onto the select, so an abbreviated label can
+    // still be read in full by hovering the closed control.
+    function dashboardUpdateFolderTitle() {
+        const sel = $('#dashboard-folder-filter');
+        sel.attr('title', sel.find('option:selected').attr('title') || '');
     }
 
     function dashboardApplyFilterUI() {
@@ -625,6 +662,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         // Filter the list by grouping (folder).
         $('#dashboard-folder-filter').on('change', function () {
             dashboardFilterFolder = parseInt($(this).val(), 10) || 0;
+            dashboardUpdateFolderTitle();
             dashboardLoadSummary();
         });
 
@@ -682,6 +720,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             dashboardFilterText = '';
             $('#dashboard-folder-filter').val('0');
             $('#dashboard-text-filter').val('');
+            dashboardUpdateFolderTitle();
             dashboardLoadSummary();
         });
     });
