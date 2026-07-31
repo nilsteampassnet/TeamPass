@@ -586,6 +586,7 @@
     border-radius:5px;
     opacity:0;
     position:absolute;
+    pointer-events:none;
     -webkit-transition: opacity 0.5s;
     -moz-transition:  opacity 0.5s;
     -ms-transition: opacity 0.5s;

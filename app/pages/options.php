@@ -676,7 +676,9 @@ $zones = timezone_list();
                                     <div class='mb-2'>
                                         <div class='d-flex justify-content-between'>
                                             <span><?php echo $lang->get($aesV2Label); ?></span>
-                                            <span class='text-muted'><?php echo (int) $aesV2Row['v2'] . ' / ' . (int) $aesV2Row['total'] . ' (' . (int) $aesV2Row['percent'] . '%)'; ?></span>
+                                            <span class='text-muted'><?php echo (bool) $aesV2Row['applicable'] === false
+                                                ? $lang->get('health_not_available')
+                                                : (int) $aesV2Row['v2'] . ' / ' . (int) $aesV2Row['total'] . ' (' . (int) $aesV2Row['percent'] . '%)'; ?></span>
                                         </div>
                                         <div class='progress' style='height:6px;'>
                                             <div class='progress-bar bg-success' role='progressbar' style='width:<?php echo (int) $aesV2Row['percent']; ?>%;' aria-valuenow='<?php echo (int) $aesV2Row['percent']; ?>' aria-valuemin='0' aria-valuemax='100'></div>

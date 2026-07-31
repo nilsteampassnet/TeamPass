@@ -119,4 +119,25 @@ function purgeTemporaryFiles(): void
     if (function_exists('tpBackupPurgeOldTemporaryDirectories')) {
         tpBackupPurgeOldTemporaryDirectories((string) sys_get_temp_dir(), 86400);
     }
+
+    // Purge database dump fragments left by fatal errors or terminated PHP-FPM
+    // requests. The helper preserves files newer than one day.
+    if (function_exists('tpBackupPurgeStaleDatabasePartFiles')) {
+        $scheduledDir = (string) ($SETTINGS['bck_scheduled_output_dir'] ?? tpBackupGetScheduledDefaultDir());
+        if ($scheduledDir === '') {
+            $scheduledDir = tpBackupGetScheduledDefaultDir();
+        }
+        $onTheFlyDir = defined('TEAMPASS_STORAGE')
+            ? TEAMPASS_STORAGE . '/onthefly'
+            : __DIR__ . '/../../storage/onthefly';
+        $backupDirs = array_unique(array_filter(array(
+            $scheduledDir,
+            $onTheFlyDir,
+            (string) ($SETTINGS['path_to_files_folder'] ?? ''),
+        )));
+
+        foreach ($backupDirs as $backupDir) {
+            tpBackupPurgeStaleDatabasePartFiles((string) $backupDir, 86400);
+        }
+    }
 }
