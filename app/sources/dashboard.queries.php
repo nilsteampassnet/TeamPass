@@ -153,6 +153,11 @@ switch ($post_type) {
     case 'get_summary':
         $post_filter_flag = (string) $request->request->filter('filter_flag', '', FILTER_SANITIZE_SPECIAL_CHARS);
         $post_filter_folder = (int) $request->request->filter('filter_folder', 0, FILTER_SANITIZE_NUMBER_INT);
+        // Free text: kept raw on purpose. HTML-encoding it would stop `L'oreal` from matching
+        // its own stored label; the value only ever reaches SQL through MeekroDB's %ss
+        // placeholder (escaped + LIKE wildcards neutralised) and is never echoed back.
+        $post_filter_text = mb_substr(trim((string) $request->request->filter('filter_text', '', FILTER_UNSAFE_RAW)), 0, 100);
+        $post_sort = (string) $request->request->filter('sort', '', FILTER_SANITIZE_SPECIAL_CHARS);
 
         // Flag whitelist -> derived-table column. Filters the list to one issue type.
         $flagColumns = [
@@ -165,9 +170,29 @@ switch ($post_type) {
         // Grouping (folder) scope. id_tree is an int, safe to embed; filters the list only.
         $folderClauseSql = $post_filter_folder > 0 ? ' AND i.id_tree = ' . $post_filter_folder : '';
 
+        // Free-text scope: the two columns shown in the list (label, folder) plus the two that
+        // identify a credential without revealing it (login, url). Never the password.
+        $textColumns = ['t.label', 't.login', 't.url', 't.folder_title'];
+        $textFilterSql = '';
+        if ($post_filter_text !== '') {
+            $textFilterSql = ' AND (' . implode(' LIKE %ss OR ', $textColumns) . ' LIKE %ss)';
+        }
+
+        // Sort whitelist -> ORDER BY. Unknown value falls back to severity.
+        // `last_change = 0` means "no dated password event": pushed last on the age sort so an
+        // undatable item never masquerades as the oldest one.
+        $sortColumns = [
+            'severity' => '(t.flag_breached + t.flag_reused) DESC, t.flag_weak DESC, t.flag_unassessed DESC, t.id DESC',
+            'label' => 't.label ASC, t.id ASC',
+            'folder' => 't.folder_title ASC, t.label ASC, t.id ASC',
+            'oldest' => '(CASE WHEN t.last_change = 0 THEN 1 ELSE 0 END) ASC, t.last_change ASC, t.id DESC',
+        ];
+        $orderBySql = $sortColumns[$post_sort] ?? $sortColumns['severity'];
+
         // Inner flagged-items SELECT — reused by the paged list, the total count and the dropdown.
         $flaggedInnerSql =
-            'SELECT i.id, i.label, i.id_tree,
+            'SELECT i.id, i.label, i.id_tree, i.login, i.url, n.title AS folder_title,
+                ' . $lastRelevantSql . ' AS last_change,
                 ' . $flagWeakSql . ' AS flag_weak,
                 ' . $flagUnassessedSql . ' AS flag_unassessed,
                 ' . $flagNoExpirySql . ' AS flag_no_expiry,
@@ -185,24 +210,29 @@ switch ($post_type) {
                 AND ' . $accessScopeSql;
         $flagSumSql = '(t.flag_weak + t.flag_unassessed + t.flag_no_expiry + t.flag_overdue + t.flag_overshared + t.flag_breached + t.flag_reused + t.flag_orphaned)';
 
+        // Positional arguments of $flaggedInnerSql, in placeholder order.
+        $innerArgs = [$userId, 'at_creation', 'at_modification', 'at_pw%', $userId];
+        // One argument per %ss in $textFilterSql; empty when no text is filtered on.
+        $textArgs = $post_filter_text === '' ? [] : array_fill(0, count($textColumns), $post_filter_text);
+
         // Paging window for the flagged-items list (incremental "load more").
         $listLimit = ($post_limit > 0 && $post_limit <= 200) ? $post_limit : 50;
         $listOffset = $post_offset >= 0 ? $post_offset : 0;
 
-        // Paged list of flagged items, filtered by grouping + issue type.
+        // Paged list of flagged items, filtered by grouping + issue type + free text.
         $rows = DB::query(
             'SELECT t.* FROM (' . $flaggedInnerSql . $folderClauseSql . ') AS t
-            WHERE ' . $flagSumSql . ' > 0' . $flagFilterSql . '
-            ORDER BY (t.flag_breached + t.flag_reused) DESC, t.flag_weak DESC, t.flag_unassessed DESC, t.id DESC
+            WHERE ' . $flagSumSql . ' > 0' . $flagFilterSql . $textFilterSql . '
+            ORDER BY ' . $orderBySql . '
             LIMIT %i OFFSET %i',
-            $userId, 'at_creation', 'at_modification', 'at_pw%', $userId, $listLimit, $listOffset
+            ...array_merge($innerArgs, $textArgs, [$listLimit, $listOffset])
         );
 
         // Total flagged items matching the current filters — drives the "load more" button.
         $listTotal = (int) DB::queryFirstField(
             'SELECT COUNT(*) FROM (' . $flaggedInnerSql . $folderClauseSql . ') AS t
-            WHERE ' . $flagSumSql . ' > 0' . $flagFilterSql,
-            $userId, 'at_creation', 'at_modification', 'at_pw%', $userId
+            WHERE ' . $flagSumSql . ' > 0' . $flagFilterSql . $textFilterSql,
+            ...array_merge($innerArgs, $textArgs)
         );
 
         $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
@@ -219,6 +249,8 @@ switch ($post_type) {
                 'folder_id' => (int) $r['id_tree'],
                 'label' => (string) $r['label'],
                 'path' => implode(' › ', $path),
+                // Timestamp of the last dated password event (0 = none recorded).
+                'last_change' => (int) $r['last_change'],
                 'flag_weak' => (int) $r['flag_weak'],
                 'flag_unassessed' => (int) $r['flag_unassessed'],
                 'flag_no_expiry' => (int) $r['flag_no_expiry'],
@@ -281,10 +313,12 @@ switch ($post_type) {
                 $userId
             );
 
-            // Distinct groupings (folders) holding flagged items — unfiltered, drives the dropdown.
+            // Distinct groupings (folders) holding flagged items. Deliberately ignores the
+            // active filters: a dropdown that shrinks as you type would drop the entry the
+            // user is currently filtering on.
             $folderRows = DB::query(
                 'SELECT DISTINCT t.id_tree FROM (' . $flaggedInnerSql . ') AS t WHERE ' . $flagSumSql . ' > 0',
-                $userId, 'at_creation', 'at_modification', 'at_pw%', $userId
+                ...$innerArgs
             );
 
             // Build the groupings dropdown (folder id + readable path).
