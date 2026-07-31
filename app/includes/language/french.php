@@ -3065,6 +3065,7 @@ return array(
     'security_dashboard_sort_folder' => 'Dossier',
     'security_dashboard_last_change' => 'Mot de passe modifié',
     'security_dashboard_last_change_unknown' => 'Inconnu',
+    // Recherche à facettes
     'search_term_placeholder' => 'Rechercher des objets…',
     'search_filters' => 'Filtres',
     'search_clear_all' => 'Tout effacer',

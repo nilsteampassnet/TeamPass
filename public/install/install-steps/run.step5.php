@@ -1069,7 +1069,9 @@ class DatabaseInstaller
             `url` text NULL DEFAULT NULL,
             `encryption_type` VARCHAR(50) NULL DEFAULT NULL,
             PRIMARY KEY (`increment_id`),
-            UNIQUE KEY `idx_cache_id_unique` (`id`)
+            UNIQUE KEY `idx_cache_id_unique` (`id`),
+            KEY `idx_cache_id_tree` (`id_tree`),
+            KEY `idx_cache_label` (`label`(191))
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
