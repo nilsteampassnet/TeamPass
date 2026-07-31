@@ -86,15 +86,121 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         loginClipboard,
         urlClipboard;
 
+    // Current facet selection. Sent as one JSON blob so the server can
+    // validate it against its own allow-lists in a single place.
+    var searchFilters = {}
+
+    // Out-of-order responses need no guard here: DataTables discards any
+    // response whose "draw" counter is older than the current one.
+
+    // Collect the facet panel into the canonical payload.
+    const collectFilters = () => {
+      const filters = {
+        term: $('#search-term').val() || '',
+        fields: $('.search-field-cb:checked').map((i, el) => $(el).val()).get()
+      }
+
+      // Multi-value checkbox facets (classification, health, rotation status).
+      $('.search-facet:checked').each(function() {
+        const facet = $(this).data('facet')
+        if (!filters[facet]) filters[facet] = []
+        filters[facet].push($(this).val())
+      })
+
+      $('.search-facet-bool:checked').each(function() {
+        filters[$(this).data('facet')] = true
+      })
+
+      $('.search-facet-text').each(function() {
+        const value = ($(this).val() || '').trim()
+        if (value !== '') filters[$(this).data('facet')] = value
+      })
+
+      // Comma-separated free input (attachment extensions).
+      $('.search-facet-csv').each(function() {
+        const value = ($(this).val() || '').trim()
+        if (value !== '') {
+          filters[$(this).data('facet')] = value.split(',')
+            .map((v) => v.trim().replace(/^\./, ''))
+            .filter((v) => v !== '')
+        }
+      })
+
+      // Dates arrive as yyyy-mm-dd and go out as unix timestamps.
+      $('.search-facet-date').each(function() {
+        const value = $(this).val()
+        if (value) {
+          const stamp = Math.floor(new Date(value).getTime() / 1000)
+          if (!isNaN(stamp)) filters[$(this).data('facet')] = stamp
+        }
+      })
+
+      $('.search-facet-single').each(function() {
+        const value = $(this).val()
+        if (value) filters[$(this).data('facet')] = $(this).data('facet') === 'custom_field_id' ? [value] : value
+      })
+
+      $('.search-facet-select').each(function() {
+        const value = $(this).val()
+        if (value && value.length > 0) filters[$(this).data('facet')] = value
+      })
+
+      return filters
+    }
+
+    // Facet values whose <option> elements are fetched asynchronously; they
+    // can only be restored once the list has arrived.
+    var pendingSelectRestore = null
+
+    // Push a saved payload back into the panel controls.
+    const restoreFilters = (filters) => {
+      if (!filters) return
+
+      if (filters.term) $('#search-term').val(filters.term)
+      if (Array.isArray(filters.fields) && filters.fields.length > 0) {
+        $('.search-field-cb').each(function() {
+          $(this).prop('checked', filters.fields.indexOf($(this).val()) !== -1)
+        })
+      }
+
+      $('.search-facet').each(function() {
+        const values = filters[$(this).data('facet')]
+        $(this).prop('checked', Array.isArray(values) && values.indexOf($(this).val()) !== -1)
+      })
+      $('.search-facet-bool').each(function() {
+        $(this).prop('checked', filters[$(this).data('facet')] === true)
+      })
+      $('.search-facet-text').each(function() {
+        $(this).val(filters[$(this).data('facet')] || '')
+      })
+      $('.search-facet-csv').each(function() {
+        const values = filters[$(this).data('facet')]
+        $(this).val(Array.isArray(values) ? values.join(', ') : '')
+      })
+      $('.search-facet-date').each(function() {
+        const stamp = filters[$(this).data('facet')]
+        $(this).val(stamp ? new Date(stamp * 1000).toISOString().slice(0, 10) : '')
+      })
+
+      // Deferred: the tag and custom-field lists are not loaded yet.
+      pendingSelectRestore = filters
+
+      // This runs while DataTables is still being constructed, i.e. before the
+      // first ajax call, so the restored facets must already be in the payload.
+      // Nothing defined further down may be called from here.
+      searchFilters = collectFilters()
+    }
+
     //Launch the datatables pluggin
     var oTable = $("#search-results-items").DataTable({
         "paging": true,
         "lengthMenu": [
-            [10, 25, 50, -1],
-            [10, 25, 50, "All"]
+            [10, 25, 50, 100],
+            [10, 25, 50, 100]
         ],
         "pagingType": "full_numbers",
-        "searching": true,
+        // The page has its own search bar and facet panel.
+        "searching": false,
         "info": true,
         "order": [
             [1, "asc"]
@@ -104,19 +210,29 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         "responsive": true,
         "select": false,
         "stateSave": true,
+        // Ride on the DataTables state rather than keeping a parallel store,
+        // so the facets survive a reload exactly like the paging does.
+        "stateSaveParams": function (settings, data) {
+            data.tpFilters = collectFilters()
+        },
+        "stateLoadParams": function (settings, data) {
+            restoreFilters(data.tpFilters)
+        },
         "autoWidth": true,
         "ajax": {
-            url: "<?php echo $SETTINGS['cpassman_url']; ?>/sources/find.queries.php",
-            type: 'GET',
+            url: "<?php echo $SETTINGS['cpassman_url']; ?>/sources/search.queries.php",
+            // POST keeps search terms out of web server access logs and Referer.
+            type: 'POST',
+            "data": function ( d ) {
+                d.type = 'search'
+                d.key = '<?php echo $session->get('key'); ?>'
+                d.filters = JSON.stringify(searchFilters)
+                return d
+            },
             "dataSrc": function ( json ) {
-                for ( var i=0, ien=json.data.length ; i<ien ; i++ ) {
-                    json.data[i][1]=atob(json.data[i][1]).utf8Decode();
-                    json.data[i][2]=atob(json.data[i][2]).utf8Decode();
-                    json.data[i][3]=atob(json.data[i][3]).utf8Decode();
-                    json.data[i][4]=atob(json.data[i][4]).utf8Decode();
-                    json.data[i][6]=atob(json.data[i][6]).utf8Decode();
-                }
-                return (json.data);
+                // Cells are already HTML-escaped server-side and sent as plain
+                // JSON: no base64 round-trip to decode any more.
+                return json.data
             }
         },
         "language": {
@@ -156,6 +272,170 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             });
         }
     });
+
+    // -----------------------------------------------------------------
+    // Facet panel
+    // -----------------------------------------------------------------
+
+    // Human-readable label for a chip, read from the facet control itself so
+    // the wording always follows the translated panel.
+    const facetChipLabel = (facet, value) => {
+      const byValue = $('.search-facet[data-facet="' + facet + '"][value="' + value + '"]')
+      if (byValue.length > 0) {
+        return byValue.next('label').text().trim()
+      }
+      const asBool = $('.search-facet-bool[data-facet="' + facet + '"]')
+      if (asBool.length > 0) {
+        return asBool.next('label').text().trim()
+      }
+      const asSelect = $('.search-facet-single[data-facet="' + facet + '"], .search-facet-select[data-facet="' + facet + '"]')
+      if (asSelect.length > 0) {
+        const opt = asSelect.find('option[value="' + value + '"]')
+        if (opt.length > 0) return opt.text().trim()
+      }
+      return String(value)
+    }
+
+    // Repaint the chips row from the current selection.
+    const renderChips = () => {
+      const chips = []
+      Object.keys(searchFilters).forEach((facet) => {
+        if (facet === 'term' || facet === 'fields') return
+        const value = searchFilters[facet]
+        if (Array.isArray(value)) {
+          value.forEach((v) => chips.push({facet: facet, value: v, label: facetChipLabel(facet, v)}))
+        } else if (value === true) {
+          chips.push({facet: facet, value: true, label: facetChipLabel(facet, true)})
+        } else {
+          chips.push({facet: facet, value: value, label: facetChipLabel(facet, value)})
+        }
+      })
+
+      const container = $('#search-chips').empty()
+      chips.forEach((chip) => {
+        // .text() on the label keeps any translated string inert.
+        $('<span class="badge badge-primary mr-1 mb-1 search-chip" style="cursor:pointer;"></span>')
+          .attr('data-facet', chip.facet)
+          .attr('data-value', chip.value)
+          .text(chip.label)
+          .append(' <i class="fas fa-times"></i>')
+          .appendTo(container)
+      })
+
+      $('#search-chips-row').toggleClass('hidden', chips.length === 0)
+      $('#search-filters-count')
+        .text(chips.length)
+        .toggleClass('hidden', chips.length === 0)
+    }
+
+    // Rebuild the payload and refresh the chips row and the empty hint.
+    const refreshPanelState = () => {
+      searchFilters = collectFilters()
+      renderChips()
+
+      // Mirrors the server rule: a bare term under 2 characters with no facet
+      // is not searched, so say so instead of showing an empty table.
+      const hasTerm = (searchFilters.term || '').trim().length > 1
+      const hasFacet = Object.keys(searchFilters).some((k) => k !== 'term' && k !== 'fields')
+      $('#search-empty-hint').toggleClass('hidden', hasTerm || hasFacet)
+    }
+
+    // Refresh the panel, then reload the table.
+    var searchDebounce = null
+    const runSearch = (immediate) => {
+      refreshPanelState()
+
+      clearTimeout(searchDebounce)
+      searchDebounce = setTimeout(() => {
+        oTable.ajax.reload(null, true)
+      }, immediate === true ? 0 : 300)
+    }
+
+    $('#search-term').on('keyup', () => runSearch())
+    $(document).on('change', '.search-field-cb, .search-facet, .search-facet-bool, .search-facet-single, .search-facet-select', () => runSearch(true))
+    $(document).on('change', '.search-facet-date', () => runSearch(true))
+    $(document).on('keyup', '.search-facet-text, .search-facet-csv', () => runSearch())
+
+    // Remove a single filter by clicking its chip.
+    $(document).on('click', '.search-chip', function() {
+      const facet = $(this).data('facet')
+      const value = String($(this).data('value'))
+
+      $('.search-facet[data-facet="' + facet + '"]').filter(function() {
+        return $(this).val() === value
+      }).prop('checked', false)
+      $('.search-facet-bool[data-facet="' + facet + '"]').prop('checked', false)
+      $('.search-facet-text[data-facet="' + facet + '"], .search-facet-csv[data-facet="' + facet + '"]').val('')
+      $('.search-facet-date[data-facet="' + facet + '"]').val('')
+      $('.search-facet-single[data-facet="' + facet + '"]').val('')
+      $('.search-facet-select[data-facet="' + facet + '"]').val([])
+
+      runSearch(true)
+    })
+
+    $('#search-clear-all').on('click', () => {
+      $('.search-facet, .search-facet-bool').prop('checked', false)
+      $('.search-facet-text, .search-facet-csv, .search-facet-date, .search-facet-single').val('')
+      $('.search-facet-select').val([])
+      runSearch(true)
+    })
+
+    // Show/hide the panel and give the results column the freed width back.
+    $('#search-toggle-filters').on('click', function() {
+      const panel = $('#search-filters-panel')
+      const shown = panel.hasClass('hidden')
+      panel.toggleClass('hidden', !shown)
+      $(this).attr('aria-expanded', shown ? 'true' : 'false')
+      $('#search-results-column')
+        .toggleClass('col-12', !shown)
+        .toggleClass('col-md-9', shown)
+      oTable.columns.adjust()
+    })
+
+    // Populate the dropdowns that depend on what this user may see. The lists
+    // are scoped server-side to the same folders as the search itself.
+    $.post(
+      'sources/search.queries.php', {
+        type: 'filter_options',
+        key: '<?php echo $session->get('key'); ?>'
+      },
+      function(options) {
+        if (options.tags) {
+          options.tags.forEach((tag) => {
+            $('<option></option>').attr('value', tag).text(tag).appendTo('#search-tags')
+          })
+        }
+        if (options.custom_fields) {
+          options.custom_fields.forEach((field) => {
+            $('<option></option>').attr('value', field.id).text(field.title).appendTo('#search-custom-field')
+          })
+        }
+
+        // Now that the options exist, apply any selection restored from state.
+        if (pendingSelectRestore !== null) {
+          if (Array.isArray(pendingSelectRestore.tags)) {
+            $('#search-tags').val(pendingSelectRestore.tags)
+          }
+          if (Array.isArray(pendingSelectRestore.custom_field_id)) {
+            $('#search-custom-field').val(pendingSelectRestore.custom_field_id[0])
+          }
+          if (pendingSelectRestore.scope_perso) {
+            $('#search-scope-perso').val(pendingSelectRestore.scope_perso)
+          }
+          const needsReload = Array.isArray(pendingSelectRestore.tags)
+            || Array.isArray(pendingSelectRestore.custom_field_id)
+            || !!pendingSelectRestore.scope_perso
+          pendingSelectRestore = null
+          if (needsReload) {
+            runSearch(true)
+            return
+          }
+        }
+        // Reflect the facets restored from state in the chips row and hint.
+        refreshPanelState()
+      },
+      'json'
+    )
 
     var detailRows = [];
 

@@ -626,6 +626,21 @@ if ((int) $remediationDone !== 1) {
     );
 }
 
+// Faceted search: the cache table is scanned on every search but only carried
+// PRIMARY(increment_id) and UNIQUE(id). Index the folder scope (present in
+// every query) and the default sort column. checkIndexExist() is a no-op when
+// the index is already there, so this is safe to replay.
+checkIndexExist(
+    $pre . 'cache',
+    'idx_cache_id_tree',
+    'ADD INDEX idx_cache_id_tree (id_tree)'
+);
+checkIndexExist(
+    $pre . 'cache',
+    'idx_cache_label',
+    'ADD INDEX idx_cache_label (label(191))'
+);
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,
