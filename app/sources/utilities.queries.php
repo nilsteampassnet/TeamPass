@@ -1425,9 +1425,9 @@ logItems(
             $aesV2Migrated = 0;
             $aesV2Legacy = 0;
             foreach ($aesV2Stores as $storeStatus) {
-                $aesV2Total += (int) ($storeStatus['total'] ?? 0);
-                $aesV2Migrated += (int) ($storeStatus['v2'] ?? 0);
-                $aesV2Legacy += (int) ($storeStatus['legacy'] ?? 0);
+                $aesV2Total += $storeStatus['total'];
+                $aesV2Migrated += $storeStatus['v2'];
+                $aesV2Legacy += $storeStatus['legacy'];
             }
             $aesV2Migration = array(
                 'write_enabled' => (int) ($SETTINGS['aes_v2_write_enabled'] ?? 0) === 1,
@@ -2438,7 +2438,7 @@ function tpGetDiskInfo(array $paths): array
         }
 
         $stat = @stat($real);
-        $filesystemKey = is_array($stat) === true && isset($stat['dev']) === true
+        $filesystemKey = $stat !== false
             ? 'dev:' . (string) $stat['dev']
             : 'path:' . $real;
 
@@ -3395,6 +3395,8 @@ function tpGetBackupsStatus(array $SETTINGS): array
         'last_status' => '',
         'last_message' => '',
         'last_completed_at' => 0,
+        'handler_interval_minutes' => 1,
+        'overdue_grace_seconds' => 600,
         'health_status' => 'info',
         'health_text_key' => 'health_backup_scheduler_disabled',
     );
@@ -3411,6 +3413,13 @@ function tpGetBackupsStatus(array $SETTINGS): array
     $scheduler['last_status'] = (string) tpHealthGetSettingsValue('bck_scheduled_last_status', '');
     $scheduler['last_message'] = (string) tpHealthGetSettingsValue('bck_scheduled_last_message', '');
     $scheduler['last_completed_at'] = (int) tpHealthGetSettingsValue('bck_scheduled_last_completed_at', '0');
+    $scheduler['handler_interval_minutes'] = max(
+        1,
+        (int) ($SETTINGS['items_ops_job_frequency'] ?? 1)
+    );
+    $scheduler['overdue_grace_seconds'] = tpHealthGetBackupSchedulerGracePeriod(
+        $scheduler['handler_interval_minutes']
+    );
 
     $scheduler['next_run_at_human'] = $scheduler['next_run_at'] > 0 ? date('Y-m-d H:i:s', (int) $scheduler['next_run_at']) : '';
     $scheduler['last_run_at_human'] = $scheduler['last_run_at'] > 0 ? date('Y-m-d H:i:s', (int) $scheduler['last_run_at']) : '';
@@ -3421,7 +3430,10 @@ function tpGetBackupsStatus(array $SETTINGS): array
         if (in_array(strtolower($scheduler['last_status']), $failedStatuses, true) === true) {
             $scheduler['health_status'] = 'danger';
             $scheduler['health_text_key'] = 'health_backup_scheduler_failed';
-        } elseif ($scheduler['next_run_at'] > 0 && $now > ($scheduler['next_run_at'] + 600)) {
+        } elseif (
+            $scheduler['next_run_at'] > 0
+            && $now > ($scheduler['next_run_at'] + $scheduler['overdue_grace_seconds'])
+        ) {
             $scheduler['health_status'] = 'warning';
             $scheduler['health_text_key'] = 'health_backup_scheduler_overdue';
         } elseif ($scheduler['last_completed_at'] === 0) {
@@ -3476,8 +3488,7 @@ function tpGetBackupsStatus(array $SETTINGS): array
     foreach ($latest as $k => $f) {
         $latest[$k]['compatibility'] = tpHealthGetBackupCompatibility(
             $f,
-            $expectedSchemaLevel,
-            $expectedTpFilesVersion
+            $expectedSchemaLevel
         );
     }
 
@@ -3508,8 +3519,7 @@ function tpGetBackupsStatus(array $SETTINGS): array
             $f['type'] = $type;
             $f['compatibility'] = tpHealthGetBackupCompatibility(
                 $f,
-                $expectedSchemaLevel,
-                $expectedTpFilesVersion
+                $expectedSchemaLevel
             );
 
             $backupHistory[] = $f;
@@ -4076,218 +4086,6 @@ function tpListBackupSqlFiles(string $dir, bool $scheduledOnly, int $limit = 10,
     return array_slice($items, 0, $limit);
 }
 
-/**
- * Classify a backup against both the current schema and TeamPass files version.
- *
- * A missing metadata sidecar/version is deliberately "unknown": a filename can
- * prove the schema level, but it cannot prove that the dump was completed by
- * the current TeamPass code.
- */
-function tpHealthGetBackupCompatibility(
-    array $file,
-    string $expectedSchemaLevel,
-    string $expectedTpFilesVersion
-): string {
-    $schemaLevel = isset($file['schema_level']) && is_scalar($file['schema_level'])
-        ? trim((string) $file['schema_level'])
-        : '';
-    $tpFilesVersion = isset($file['tp_files_version']) && is_scalar($file['tp_files_version'])
-        ? trim((string) $file['tp_files_version'])
-        : '';
-
-    if ($expectedSchemaLevel === '' || $schemaLevel === '') {
-        return 'unknown';
-    }
-    if ($schemaLevel !== $expectedSchemaLevel) {
-        return 'incompatible';
-    }
-    if ($expectedTpFilesVersion !== '') {
-        if ($tpFilesVersion === '') {
-            return 'unknown';
-        }
-        if ($tpFilesVersion !== $expectedTpFilesVersion) {
-            return 'incompatible';
-        }
-    }
-    if (array_key_exists('metadata_present', $file) === true && (bool) $file['metadata_present'] === false) {
-        return 'unknown';
-    }
-
-    return 'compatible';
-}
-
-function tpBuildBackupDirHealth(string $dir, string $labelKey, array $files, int $metaOrphans = 0, array $options = array()): array
-{
-    $now = time();
-
-    $expectedSchemaLevel = '';
-    if (isset($options['expected_schema_level']) === true && is_scalar($options['expected_schema_level'])) {
-        $expectedSchemaLevel = (string) $options['expected_schema_level'];
-    }
-
-    $expectedTpFilesVersion = '';
-    if (isset($options['expected_tp_files_version']) === true && is_scalar($options['expected_tp_files_version'])) {
-        $expectedTpFilesVersion = (string) $options['expected_tp_files_version'];
-    }
-
-    $allFiles = $files;
-    if (isset($options['all_files']) === true && is_array($options['all_files']) === true) {
-        $allFiles = $options['all_files'];
-    }
-
-    $summaryStatus = 'info';
-    $summaryTextKey = 'health_backup_no_data';
-    $lastAgeHours = null;
-
-    $stats = array(
-        'total_files' => 0,
-        'compatible' => 0,
-        'incompatible' => 0,
-        'unknown_compatibility' => 0,
-        'unknown_schema' => 0,
-        'missing_meta' => 0,
-        'meta_orphans' => $metaOrphans,
-        'tp_version_mismatch' => 0,
-        'last_backup_at' => 0,
-        'last_backup_at_human' => '',
-        'last_backup_file' => '',
-        'last_backup_size_mb' => null,
-        'last_backup_comment' => null,
-        'last_backup_compatibility' => 'unknown',
-        'last_compatible_backup_at' => 0,
-        'last_compatible_backup_at_human' => '',
-        'last_compatible_backup_file' => '',
-        'last_compatible_backup_size_mb' => null,
-        'last_compatible_backup_comment' => null,
-        'expected_schema_level' => $expectedSchemaLevel,
-        'expected_tp_files_version' => $expectedTpFilesVersion,
-        'anomalies_total' => 0,
-    );
-
-    if (isset($allFiles['error']) === true) {
-        $summaryStatus = 'warning';
-        $summaryTextKey = 'health_backup_path_not_readable';
-        $stats['anomalies_total'] = 1;
-    } elseif (empty($allFiles) === true) {
-        $summaryStatus = 'danger';
-        $summaryTextKey = 'health_backup_no_files';
-    } else {
-        foreach ($allFiles as $f) {
-            if (is_array($f) === false) {
-                continue;
-            }
-            $name = isset($f['name']) && is_scalar($f['name']) ? (string) $f['name'] : '';
-            if ($name === '') {
-                continue;
-            }
-
-            $stats['total_files']++;
-
-            $mtime = (int) ($f['mtime'] ?? 0);
-            $sizeMb = isset($f['size_mb']) ? (float) $f['size_mb'] : null;
-            $rawComment = isset($f['comment']) && is_scalar($f['comment']) ? trim((string) $f['comment']) : '';
-            $comment = $rawComment !== '' ? $rawComment : null;
-
-            $schemaLevel = isset($f['schema_level']) && is_scalar($f['schema_level']) ? (string) $f['schema_level'] : '';
-            $tpFilesVersion = isset($f['tp_files_version']) && is_scalar($f['tp_files_version']) ? (string) $f['tp_files_version'] : '';
-
-            $compatibility = tpHealthGetBackupCompatibility(
-                $f,
-                $expectedSchemaLevel,
-                $expectedTpFilesVersion
-            );
-
-            if ($mtime > $stats['last_backup_at']) {
-                $stats['last_backup_at'] = $mtime;
-                $stats['last_backup_at_human'] = date('Y-m-d H:i:s', $mtime);
-                $stats['last_backup_file'] = $name;
-                $stats['last_backup_size_mb'] = $sizeMb;
-                $stats['last_backup_comment'] = $comment;
-                $stats['last_backup_compatibility'] = $compatibility;
-            }
-
-            if ($compatibility === 'compatible') {
-                $stats['compatible']++;
-                if ($mtime > $stats['last_compatible_backup_at']) {
-                    $stats['last_compatible_backup_at'] = $mtime;
-                    $stats['last_compatible_backup_at_human'] = date('Y-m-d H:i:s', $mtime);
-                    $stats['last_compatible_backup_file'] = $name;
-                    $stats['last_compatible_backup_size_mb'] = $sizeMb;
-                    $stats['last_compatible_backup_comment'] = $comment;
-                }
-            } elseif ($compatibility === 'incompatible') {
-                $stats['incompatible']++;
-            } else {
-                $stats['unknown_compatibility']++;
-            }
-
-            if ($schemaLevel === '') {
-                $stats['unknown_schema']++;
-            }
-
-            if ($expectedTpFilesVersion !== '' && $tpFilesVersion !== '' && $tpFilesVersion !== $expectedTpFilesVersion) {
-                $stats['tp_version_mismatch']++;
-            }
-
-            if (array_key_exists('metadata_present', $f) === true) {
-                if ((bool) $f['metadata_present'] === false) {
-                    $stats['missing_meta']++;
-                }
-            } elseif (!empty($f['remote'])) {
-                // Remote destinations cannot be checked with local filesystem helpers.
-            } else {
-                // Check missing meta (.meta.json)
-                $fullPath = rtrim($dir, '/') . '/' . $name;
-                $metaPath = $fullPath . '.meta.json';
-                if (function_exists('tpGetBackupMetadataPath') === true) {
-                    $metaPath = (string) tpGetBackupMetadataPath($fullPath);
-                }
-                if (is_file($metaPath) === false) {
-                    $stats['missing_meta']++;
-                }
-            }
-        }
-
-        // Best effort age calculation based on latest backup
-        if ($stats['last_backup_at'] > 0) {
-            $lastAgeHours = round(($now - $stats['last_backup_at']) / 3600, 2);
-        }
-
-        $stats['anomalies_total'] =
-            (int) $metaOrphans
-            + (int) $stats['missing_meta']
-            + (int) $stats['unknown_schema']
-            + (int) $stats['unknown_compatibility']
-            + (int) $stats['tp_version_mismatch']
-            + (int) ($expectedSchemaLevel !== '' ? $stats['incompatible'] : 0);
-
-        if ($expectedSchemaLevel !== '' && $stats['compatible'] === 0) {
-            $summaryStatus = 'warning';
-            $summaryTextKey = 'health_backup_no_compatible_backups';
-        } elseif ($stats['anomalies_total'] > 0) {
-            $summaryStatus = 'warning';
-            $summaryTextKey = 'health_backup_anomalies_found';
-        } else {
-            $summaryStatus = 'success';
-            $summaryTextKey = 'health_status_ok';
-        }
-    }
-
-    return array(
-        'label_key' => $labelKey,
-        'path' => $dir,
-        'files' => $files,
-        'meta_orphans' => $metaOrphans,
-        'stats' => $stats,
-        'summary' => array(
-            'status' => $summaryStatus,
-            'text_key' => $summaryTextKey,
-            'last_backup_age_hours' => $lastAgeHours,
-        ),
-    );
-}
-
-
 function tpGetTeampassSettingsForHealth(array $SETTINGS): array
 {
     $wanted = array(
@@ -4297,6 +4095,7 @@ function tpGetTeampassSettingsForHealth(array $SETTINGS): array
         'task_maximum_run_time',
         'enable_tasks_manager',
         'tasks_manager_refreshing_period',
+        'items_ops_job_frequency',
         'enable_tasks_log',
         'tasks_log_retention_delay',
         'redis_session_enabled',
