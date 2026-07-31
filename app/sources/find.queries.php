@@ -39,6 +39,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 // Load functions
 require_once 'main.functions.php';
 require_once 'find.functions.php';
+require_once 'search.functions.php';
 
 // init
 loadClasses('DB');
@@ -85,39 +86,66 @@ date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, no-store, must-revalidate');
 error_reporting(E_ERROR);
-set_time_limit(0);
 
 // --------------------------------- //
 
-// if no folders are visible then return no results
-if (null === $session->get('user-accessible_folders')
-    || empty($session->get('user-accessible_folders')) === true
-) {
-    echo '{"sEcho": ' . $request->query->filter('sEcho', FILTER_SANITIZE_NUMBER_INT) . ' ,"iTotalRecords": "0", "iTotalDisplayRecords": "0", "aaData": [] }';
-    exit;
-}
+// The "no visible folder" case is handled below, once the ACL scope is
+// resolved, so both callers get an answer in the shape they expect. The
+// previous early return emitted the DataTables 1.9 payload (sEcho/aaData)
+// that this page's 1.10+ client cannot read.
 
 //Columns name
 $aColumns = ['c.id', 'c.label', 'c.login', 'c.description', 'c.tags', 'c.id_tree', 'c.folder', 'c.login', 'c.url', 'ci.data'];//
-$aSortTypes = ['ASC', 'DESC'];
 //init SQL variables
 $sOrder = $sLimit = $sWhere = '';
 $sWhere = 'c.id_tree IN %ls_idtree';
 //limit search to the visible folders
 
-if (null === $request->query->get('limited')
-    || $request->query->get('limited') === 'false'
+// Resolve the requested subtree, when the caller asked to narrow the search.
+// It is only ever intersected with the accessible folders below: getDescendants()
+// walks the raw tree without any ACL, so a client-supplied folder id must never
+// become the scope on its own.
+$requestedSubtree = null;
+if (null !== $request->query->get('limited')
+    && $request->query->get('limited') !== 'false'
 ) {
-    $folders = $session->get('user-accessible_folders');
-} else {
     // Build tree
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-    $folders = $tree->getDescendants($request->query->filter('limited', null, FILTER_SANITIZE_NUMBER_INT), true);
-    $folders = array_keys($folders);
+    $requestedSubtree = array_keys(
+        $tree->getDescendants($request->query->filter('limited', null, FILTER_SANITIZE_NUMBER_INT), true)
+    );
+}
+
+$folders = searchResolveFolderScope(
+    (array) $session->get('user-accessible_folders'),
+    (array) $session->get('user-forbiden_personal_folders'),
+    $requestedSubtree
+);
+
+// Nothing left to search in once the ACL scope is applied. Answer in the shape
+// the caller expects: the DataTables page reads plain JSON, the items page
+// quick search reads an encrypted payload.
+if (count($folders) === 0) {
+    if (null === $request->query->get('type')) {
+        echo '{"draw": ' . (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT)
+            . ', "recordsTotal": 0, "recordsFiltered": 0, "data": [] }';
+    } else {
+        echo (string) prepareExchangedData(
+            [
+                'html_json' => [],
+                'message' => ' ' . $lang->get('find_message'),
+                'total' => 0,
+                'start' => -1,
+                'totalItems' => (int) $request->query->filter('totalItems', null, FILTER_SANITIZE_NUMBER_INT),
+            ],
+            'encode'
+        );
+    }
+    exit;
 }
 
 //Get current user "personal folder" ID
-$row = DB::query(
+$row = DB::queryFirstRow(
     'SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE title = %i',
     intval($session->get('user-id'))
 );
@@ -153,28 +181,17 @@ if (null !== $request->query->get('start') && $request->query->get('length') !==
     $sLimit = 'LIMIT ' . $request->query->filter('start', null, FILTER_SANITIZE_NUMBER_INT) . ', ' . $request->query->filter('length', null, FILTER_SANITIZE_NUMBER_INT) . '';
 }
 
-//Ordering
-$sOrder = '';
+// Ordering.
+// The clause is rebuilt from the fixed server-side column map with a strictly
+// validated, re-derived direction. No request value reaches the SQL verbatim
+// (the form mandated after GHSA-fqg6-xvv8-w228).
 $orderParam = $request->query->all()['order'] ?? null;
-if (isset($orderParam) && is_array($orderParam)) {
-    if (in_array(strtoupper($orderParam[0]['dir']), $aSortTypes) === false) {
-        // possible attack - stop
-        echo '[{}]';
-        exit;
-    }
-    $sOrder = 'ORDER BY  ';
-    if ($orderParam[0]['column'] >= 0) {
-        $sOrder .= '' . $aColumns[filter_var($orderParam[0]['column'], FILTER_SANITIZE_NUMBER_INT)] . ' '
-                . filter_var($orderParam[0]['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) . ', ';
-    }
-
-    $sOrder = substr_replace($sOrder, '', -2);
-    if ($sOrder === 'ORDER BY') {
-        $sOrder = '';
-    }
-} else {
-    $sOrder = 'ORDER BY ' . $aColumns[1] . ' ASC';
-}
+$sOrder = searchBuildOrderClause(
+    $aColumns,
+    is_array($orderParam) ? ($orderParam[0]['column'] ?? null) : null,
+    is_array($orderParam) ? ($orderParam[0]['dir'] ?? null) : null,
+    'ORDER BY ' . $aColumns[1] . ' ASC'
+);
 
 // Define criteria
 $search_criteria = '';
@@ -375,9 +392,11 @@ if (null === $request->query->get('type')) {
             $restrictedToRole = true;
         }
 
-        if (($record['perso'] === 1 && $record['author'] !== $session->get('user-id'))
+        // Cast both sides: the driver returns every column as a string, so a
+        // strict comparison against an int would silently never match.
+        if (((int) $record['perso'] === 1 && (int) $record['author'] !== (int) $session->get('user-id'))
             || (empty($record['restricted_to']) === false
-            && in_array($session->get('user-id'), explode(';', $record['restricted_to'])) === false)
+            && in_array((int) $session->get('user-id'), array_map('intval', explode(';', (string) $record['restricted_to'])), true) === false)
             || ($restrictedToRole === true)
         ) {
             $getItemInList = false;
