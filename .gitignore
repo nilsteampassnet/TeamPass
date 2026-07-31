@@ -90,3 +90,4 @@ entities.json
 # Claude Code — developer-local config (paths and permissions specific to each machine)
 .claude/settings.local.json
 .mcp.json
+.claude/
