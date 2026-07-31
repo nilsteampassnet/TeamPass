@@ -202,6 +202,68 @@ function tpBackupResolveScheduledOutputDir(string $requestedDir, array $SETTINGS
 }
 
 /**
+ * Purge stale temporary database dumps left by interrupted backup processes.
+ *
+ * Only the two temporary suffixes created by tpCreateDatabaseBackup() are
+ * considered. Recent files are preserved to avoid interfering with a backup
+ * that is still running.
+ *
+ * @param string $dir              Backup output directory.
+ * @param int    $olderThanSeconds Minimum age required before deletion.
+ * @return array{scanned:int, deleted:int, failed:int, skipped_recent:int}
+ */
+function tpBackupPurgeStaleDatabasePartFiles(string $dir, int $olderThanSeconds = 86400): array
+{
+    $stats = [
+        'scanned' => 0,
+        'deleted' => 0,
+        'failed' => 0,
+        'skipped_recent' => 0,
+    ];
+
+    $dirReal = realpath($dir);
+    if ($dirReal === false || is_dir($dirReal) === false) {
+        return $stats;
+    }
+
+    $entries = scandir($dirReal);
+    if ($entries === false) {
+        return $stats;
+    }
+
+    $cutoff = time() - max(3600, $olderThanSeconds);
+    foreach ($entries as $entry) {
+        if (preg_match('/\.sql(?:\.encrypted)?\.part$/', $entry) !== 1) {
+            continue;
+        }
+
+        $candidate = $dirReal . DIRECTORY_SEPARATOR . $entry;
+        if (is_file($candidate) === false) {
+            continue;
+        }
+
+        $stats['scanned']++;
+        $mtime = @filemtime($candidate);
+        if ($mtime === false) {
+            $stats['failed']++;
+            continue;
+        }
+        if ($mtime > $cutoff) {
+            $stats['skipped_recent']++;
+            continue;
+        }
+
+        if (@unlink($candidate) === true) {
+            $stats['deleted']++;
+        } else {
+            $stats['failed']++;
+        }
+    }
+
+    return $stats;
+}
+
+/**
  * Create a Teampass database backup file (optionally encrypted) in the requested output directory.
  *
  * @param array  $SETTINGS      Teampass settings array (must include path_to_files_folder)
@@ -297,6 +359,10 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
             ];
         }
 
+        // Best effort: a fatal error cannot run the normal cleanup path, so the
+        // next backup invocation removes only stale temporary dumps.
+        tpBackupPurgeStaleDatabasePartFiles((string) $outputDir);
+
         // Generate filename
         $token = GenerateCryptKey(20, false, true, true, false, true);
 
@@ -312,7 +378,9 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
         // optional encryption) succeeds. A fatal interruption can therefore
         // leave, at worst, a non-restorable .part file instead of a truncated
         // backup that looks valid.
-        $handle = fopen($plainTempPath, 'x+b');
+        // Suppress the filesystem warning because AJAX callers expect a clean
+        // encoded response; the structured failure below remains actionable.
+        $handle = @fopen($plainTempPath, 'x+b');
         if ($handle === false) {
             return [
                 'success' => false,
@@ -5672,6 +5740,237 @@ function tpGetSchemaLevel(): string
 function tpGetBackupMetadataPath(string $backupFilePath): string
 {
     return $backupFilePath . '.meta.json';
+}
+
+/**
+ * Classify a backup against the current database schema.
+ *
+ * TeamPass file versions change on regular releases and are therefore
+ * diagnostic information, not a restore-compatibility boundary.
+ *
+ * @param array<string, mixed> $file                Backup information.
+ * @param string               $expectedSchemaLevel Current database schema level.
+ * @return 'compatible'|'incompatible'|'unknown'
+ */
+function tpHealthGetBackupCompatibility(array $file, string $expectedSchemaLevel): string
+{
+    $schemaLevel = isset($file['schema_level']) && is_scalar($file['schema_level'])
+        ? trim((string) $file['schema_level'])
+        : '';
+
+    if ($expectedSchemaLevel === '' || $schemaLevel === '') {
+        return 'unknown';
+    }
+
+    return $schemaLevel === $expectedSchemaLevel ? 'compatible' : 'incompatible';
+}
+
+/**
+ * Return the grace period used before a scheduled backup is considered overdue.
+ *
+ * The background task handler can only enqueue a due backup on its next tick.
+ * Two complete handler intervals are allowed, while preserving the historical
+ * ten-minute minimum for installations using the default one-minute cadence.
+ *
+ * @param int $handlerIntervalMinutes Configured handler cadence in minutes.
+ * @return int Grace period in seconds.
+ */
+function tpHealthGetBackupSchedulerGracePeriod(int $handlerIntervalMinutes): int
+{
+    return max(600, max(1, $handlerIntervalMinutes) * 120);
+}
+
+/**
+ * Build Health statistics for a backup directory.
+ *
+ * Detailed counters may overlap by design, but anomalies_total counts each
+ * backup file at most once, plus each orphan metadata sidecar.
+ *
+ * @param string                   $dir         Backup directory.
+ * @param string                   $labelKey    Translation key for the directory.
+ * @param array<int|string, mixed> $files       Backup files displayed in Health.
+ * @param int                      $metaOrphans Number of orphan metadata sidecars.
+ * @param array<string, mixed>     $options     Expected versions and complete file list.
+ * @return array<string, mixed>
+ */
+function tpBuildBackupDirHealth(
+    string $dir,
+    string $labelKey,
+    array $files,
+    int $metaOrphans = 0,
+    array $options = array()
+): array {
+    $now = time();
+
+    $expectedSchemaLevel = '';
+    if (isset($options['expected_schema_level']) === true && is_scalar($options['expected_schema_level'])) {
+        $expectedSchemaLevel = (string) $options['expected_schema_level'];
+    }
+
+    $expectedTpFilesVersion = '';
+    if (isset($options['expected_tp_files_version']) === true && is_scalar($options['expected_tp_files_version'])) {
+        $expectedTpFilesVersion = (string) $options['expected_tp_files_version'];
+    }
+
+    $allFiles = $files;
+    if (isset($options['all_files']) === true && is_array($options['all_files']) === true) {
+        $allFiles = $options['all_files'];
+    }
+
+    $summaryStatus = 'info';
+    $summaryTextKey = 'health_backup_no_data';
+    $lastAgeHours = null;
+    $fileAnomalies = 0;
+
+    $stats = array(
+        'total_files' => 0,
+        'compatible' => 0,
+        'incompatible' => 0,
+        'unknown_compatibility' => 0,
+        'unknown_schema' => 0,
+        'missing_meta' => 0,
+        'meta_orphans' => $metaOrphans,
+        'tp_version_mismatch' => 0,
+        'last_backup_at' => 0,
+        'last_backup_at_human' => '',
+        'last_backup_file' => '',
+        'last_backup_size_mb' => null,
+        'last_backup_comment' => null,
+        'last_backup_compatibility' => 'unknown',
+        'last_compatible_backup_at' => 0,
+        'last_compatible_backup_at_human' => '',
+        'last_compatible_backup_file' => '',
+        'last_compatible_backup_size_mb' => null,
+        'last_compatible_backup_comment' => null,
+        'expected_schema_level' => $expectedSchemaLevel,
+        'expected_tp_files_version' => $expectedTpFilesVersion,
+        'anomalies_total' => 0,
+    );
+
+    if (isset($allFiles['error']) === true) {
+        $summaryStatus = 'warning';
+        $summaryTextKey = 'health_backup_path_not_readable';
+        $stats['anomalies_total'] = 1;
+    } elseif (empty($allFiles) === true) {
+        $summaryStatus = 'danger';
+        $summaryTextKey = 'health_backup_no_files';
+    } else {
+        foreach ($allFiles as $file) {
+            if (is_array($file) === false) {
+                continue;
+            }
+            $name = isset($file['name']) && is_scalar($file['name']) ? (string) $file['name'] : '';
+            if ($name === '') {
+                continue;
+            }
+
+            $stats['total_files']++;
+            $fileHasAnomaly = false;
+
+            $mtime = (int) ($file['mtime'] ?? 0);
+            $sizeMb = isset($file['size_mb']) ? (float) $file['size_mb'] : null;
+            $rawComment = isset($file['comment']) && is_scalar($file['comment'])
+                ? trim((string) $file['comment'])
+                : '';
+            $comment = $rawComment !== '' ? $rawComment : null;
+
+            $schemaLevel = isset($file['schema_level']) && is_scalar($file['schema_level'])
+                ? (string) $file['schema_level']
+                : '';
+            $tpFilesVersion = isset($file['tp_files_version']) && is_scalar($file['tp_files_version'])
+                ? (string) $file['tp_files_version']
+                : '';
+
+            $compatibility = tpHealthGetBackupCompatibility($file, $expectedSchemaLevel);
+
+            if ($mtime > $stats['last_backup_at']) {
+                $stats['last_backup_at'] = $mtime;
+                $stats['last_backup_at_human'] = date('Y-m-d H:i:s', $mtime);
+                $stats['last_backup_file'] = $name;
+                $stats['last_backup_size_mb'] = $sizeMb;
+                $stats['last_backup_comment'] = $comment;
+                $stats['last_backup_compatibility'] = $compatibility;
+            }
+
+            if ($compatibility === 'compatible') {
+                $stats['compatible']++;
+                if ($mtime > $stats['last_compatible_backup_at']) {
+                    $stats['last_compatible_backup_at'] = $mtime;
+                    $stats['last_compatible_backup_at_human'] = date('Y-m-d H:i:s', $mtime);
+                    $stats['last_compatible_backup_file'] = $name;
+                    $stats['last_compatible_backup_size_mb'] = $sizeMb;
+                    $stats['last_compatible_backup_comment'] = $comment;
+                }
+            } elseif ($compatibility === 'incompatible') {
+                $stats['incompatible']++;
+                $fileHasAnomaly = true;
+            } else {
+                $stats['unknown_compatibility']++;
+                $fileHasAnomaly = true;
+            }
+
+            if ($schemaLevel === '') {
+                $stats['unknown_schema']++;
+                $fileHasAnomaly = true;
+            }
+
+            if (
+                $expectedTpFilesVersion !== ''
+                && $tpFilesVersion !== ''
+                && $tpFilesVersion !== $expectedTpFilesVersion
+            ) {
+                $stats['tp_version_mismatch']++;
+                $fileHasAnomaly = true;
+            }
+
+            $metadataMissing = false;
+            if (array_key_exists('metadata_present', $file) === true) {
+                $metadataMissing = (bool) $file['metadata_present'] === false;
+            } elseif (empty($file['remote']) === true) {
+                $fullPath = rtrim($dir, '/\\') . DIRECTORY_SEPARATOR . $name;
+                $metadataMissing = is_file(tpGetBackupMetadataPath($fullPath)) === false;
+            }
+
+            if ($metadataMissing === true) {
+                $stats['missing_meta']++;
+                $fileHasAnomaly = true;
+            }
+
+            if ($fileHasAnomaly === true) {
+                $fileAnomalies++;
+            }
+        }
+
+        if ($stats['last_backup_at'] > 0) {
+            $lastAgeHours = round(($now - $stats['last_backup_at']) / 3600, 2);
+        }
+
+        $stats['anomalies_total'] = $metaOrphans + $fileAnomalies;
+
+        if ($expectedSchemaLevel !== '' && $stats['compatible'] === 0) {
+            $summaryStatus = 'warning';
+            $summaryTextKey = 'health_backup_no_compatible_backups';
+        } elseif ($stats['anomalies_total'] > 0) {
+            $summaryStatus = 'warning';
+            $summaryTextKey = 'health_backup_anomalies_found';
+        } else {
+            $summaryStatus = 'success';
+            $summaryTextKey = 'health_status_ok';
+        }
+    }
+
+    return array(
+        'label_key' => $labelKey,
+        'path' => $dir,
+        'files' => $files,
+        'meta_orphans' => $metaOrphans,
+        'stats' => $stats,
+        'summary' => array(
+            'status' => $summaryStatus,
+            'text_key' => $summaryTextKey,
+            'last_backup_age_hours' => $lastAgeHours,
+        ),
+    );
 }
 
 /**
