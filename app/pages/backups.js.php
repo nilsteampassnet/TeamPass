@@ -907,7 +907,7 @@ function tpUpdateMetaOrphansButton(state) {
         try { $btn.addClass('btn-warning').removeClass('btn-outline-warning'); } catch (e) {}
         $btn.attr('aria-label', 'Meta orphans: ' + total);
         $btn.data('tp-has-orphans', 1);
-        var tooltipTitle = tpTpl(tpBckMetaOrphansTooltipTpl, {
+        const tooltipTitle = tpTpl(tpBckMetaOrphansTooltipTpl, {
             TOTAL: total,
             FILES: filesCnt,
             SCHEDULED: schedCnt
