@@ -110,6 +110,27 @@ if ($post_type === 'identify_user') {
     // ---
     // ---
     // ---
+} elseif ($post_type === 'is_session_key_valid') {
+    //--------
+    // CHECK THE PAGE ENCRYPTION KEY IS STILL THE CURRENT ONE
+    //--------
+    // Answers a boolean only - the caller already owns the key it submits, so
+    // no secret is returned. Used by the login page when the tab comes back to
+    // the foreground, to repair itself before the user submits his credentials.
+    $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    $currentSessionKey = $session->get('key');
+
+    echo json_encode([
+        'error' => false,
+        'valid' => empty($currentSessionKey) === false
+            && is_string($post_key) === true
+            && hash_equals((string) $currentSessionKey, $post_key) === true,
+    ]);
+    return false;
+
+    // ---
+    // ---
+    // ---
 } elseif ($post_type === 'get2FAMethods') {
     //--------
     // Get MFA methods

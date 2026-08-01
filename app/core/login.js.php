@@ -52,6 +52,10 @@ declare(strict_types=1);
     // attempted, any further failure falls back to the refresh dialog.
     var sessionKeyRecoveryDone = false;
 
+    // Last moment the page was known to be in sync with the server-side session.
+    var lastSessionKeyCheck = Date.now();
+    var sessionKeyCheckInProgress = false;
+
     function hideForgotLocalPasswordLink() {
         $('#forgot-local-password-container').addClass('hidden');
         $('#forgot-local-password-link').prop('disabled', false);
@@ -122,6 +126,7 @@ declare(strict_types=1);
                 }
 
                 tpSessionKey = parsed.value.key;
+                lastSessionKeyCheck = Date.now();
                 onSuccess();
             }
         ).fail(function() {
@@ -171,6 +176,52 @@ declare(strict_types=1);
         $('#warningModalButtonAction').off('click').on('click', function() {
             clearInterval(refreshTimer);
             document.location.reload();
+        });
+    }
+
+    /**
+     * Checks the page is still in sync with the server-side session when the tab
+     * comes back to the foreground - typically after the computer woke up from
+     * sleep. When the session has been garbage collected in the meantime, the
+     * page repairs itself before the user submits anything.
+     *
+     * @returns {void}
+     */
+    function checkSessionKeyFreshness() {
+        // Throttled: a focus event is fired on every click back into the window.
+        if (sessionKeyCheckInProgress === true || (Date.now() - lastSessionKeyCheck) < 300000) {
+            return;
+        }
+        sessionKeyCheckInProgress = true;
+
+        $.post(
+            'sources/identify.php', {
+                type: 'is_session_key_valid',
+                key: tpSessionKey
+            },
+            function(answer) {
+                sessionKeyCheckInProgress = false;
+                lastSessionKeyCheck = Date.now();
+
+                const parsed = safeParseJSONMaybe(answer);
+                if (parsed.ok !== true || parsed.value.valid === true) {
+                    return;
+                }
+
+                // Nothing typed yet: a plain refresh is the cleanest recovery.
+                if ($('#pw').val() === '') {
+                    storeLoginFormState();
+                    document.location.reload();
+                    return;
+                }
+
+                // Credentials are being typed: renew the key without touching
+                // the form, so nothing the user typed is lost.
+                sessionKeyRecoveryDone = false;
+                recoverFromStaleSessionKey(function() {});
+            }
+        ).fail(function() {
+            sessionKeyCheckInProgress = false;
         });
     }
 
@@ -255,6 +306,16 @@ declare(strict_types=1);
                 }
             );
         }
+
+        // Repair the page when the tab comes back to the foreground after the
+        // server-side session has been garbage collected (computer sleep, long
+        // idle time...), so the user never submits credentials with a dead key.
+        $(document).on('visibilitychange', function() {
+            if (document.visibilityState === 'visible') {
+                checkSessionKeyFreshness();
+            }
+        });
+        $(window).on('focus', checkSessionKeyFreshness);
 
         // Manage case of oauth2 login
         var userOauth2Info = <?php echo empty($userOauth2InfoJson) ? 'null' : $userOauth2InfoJson; ?>;
