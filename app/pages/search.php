@@ -94,6 +94,17 @@ $featureFavourites = (int) ($SETTINGS['enable_favourites'] ?? 0) === 1;
 
 ?>
 
+<style>
+    /* The facet panel is deliberately narrow: keep every control inside it. */
+    #search-filters-panel .form-control {
+        min-width: 0;
+    }
+    #search-filters-panel .custom-control-label {
+        font-size: .875rem;
+        line-height: 1.35;
+    }
+</style>
+
 <!-- Content Header (Page header) -->
 <div class="content-header">
     <div class="container-fluid">
@@ -164,7 +175,7 @@ $featureFavourites = (int) ($SETTINGS['enable_favourites'] ?? 0) === 1;
 
     <div class="row">
         <!-- FILTER PANEL -->
-        <div class="col-md-3 hidden" id="search-filters-panel">
+        <div class="col-md-3 col-xl-2 hidden" id="search-filters-panel">
             <div class="card">
                 <div class="card-body p-2" id="search-filters-body">
 
@@ -197,7 +208,11 @@ $featureFavourites = (int) ($SETTINGS['enable_favourites'] ?? 0) === 1;
                     <?php if ($featureHealth === true) : ?>
                     <!-- Security health -->
                     <div class="search-facet-group mt-3">
-                        <h6 class="text-muted text-uppercase small mb-2"><?php echo $lang->get('search_facet_health'); ?></h6>
+                        <h6 class="text-muted text-uppercase small mb-2">
+                            <?php echo $lang->get('search_facet_health'); ?>
+                            <i class="fas fa-info-circle text-muted ml-1" data-toggle="tooltip" data-placement="top"
+                                title="<?php echo $lang->get('search_scan_required'); ?>"></i>
+                        </h6>
                         <?php foreach (['weak', 'breached', 'overdue', 'no_expiry', 'overshared'] as $flag) : ?>
                             <div class="custom-control custom-checkbox">
                                 <input type="checkbox" class="custom-control-input search-facet" data-facet="health"
@@ -212,7 +227,6 @@ $featureFavourites = (int) ($SETTINGS['enable_favourites'] ?? 0) === 1;
                                 <label class="custom-control-label" for="search-health-<?php echo $flag; ?>"><?php echo $lang->get('security_dashboard_' . $flag); ?></label>
                             </div>
                         <?php endforeach; ?>
-                        <small class="form-text text-muted"><?php echo $lang->get('search_scan_required'); ?></small>
                     </div>
                     <?php endif; ?>
 

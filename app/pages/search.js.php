@@ -388,7 +388,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
       $(this).attr('aria-expanded', shown ? 'true' : 'false')
       $('#search-results-column')
         .toggleClass('col-12', !shown)
-        .toggleClass('col-md-9', shown)
+        .toggleClass('col-md-9 col-xl-10', shown)
       oTable.columns.adjust()
     })
 
