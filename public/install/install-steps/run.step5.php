@@ -2036,11 +2036,13 @@ class DatabaseInstaller
                 `user_id` int(12) NOT NULL,
                 `item_id` int(12) NOT NULL,
                 `accessed_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+                `access_count` int(11) NOT NULL DEFAULT 1,
                 PRIMARY KEY (`increment_id`),
                 UNIQUE KEY `user_item_unique` (`user_id`, `item_id`),
                 KEY `user_idx` (`user_id`),
                 KEY `item_idx` (`item_id`),
-                KEY `accessed_idx` (`accessed_at`)
+                KEY `accessed_idx` (`accessed_at`),
+                KEY `user_count_idx` (`user_id`, `access_count`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }

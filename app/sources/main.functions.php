@@ -9083,34 +9083,41 @@ function createUserMigrationSubTasks($processId, $nbItemsToTreat): void
 }
 
 /**
- * Add or update an item in user's latest items list (max 20, FIFO)
- * 
+ * Add or update an item in user's latest items list (FIFO on recency).
+ *
+ * Feeds both Quick access tabs: `accessed_at` orders "Recent", `access_count`
+ * orders "Most used". The count is maintained here rather than aggregated from
+ * `log_items` because that table's index leads with `id_item`, so a per-user
+ * GROUP BY would degrade into a full scan of the largest table of the schema.
+ *
  * @param int $userId User ID
  * @param int $itemId Item ID to add
  * @return void
  */
 function updateUserLatestItems(int $userId, int $itemId): void
 {
-    // 1. Insert or update the item with current timestamp
+    // 1. Insert or update the item with current timestamp, and count the access
     DB::query(
-        'INSERT INTO ' . prefixTable('users_latest_items') . ' (user_id, item_id, accessed_at)
-        VALUES (%i, %i, NOW())
-        ON DUPLICATE KEY UPDATE accessed_at = NOW()',
+        'INSERT INTO ' . prefixTable('users_latest_items') . ' (user_id, item_id, accessed_at, access_count)
+        VALUES (%i, %i, NOW(), 1)
+        ON DUPLICATE KEY UPDATE accessed_at = NOW(), access_count = access_count + 1',
         $userId,
         $itemId
     );
-    
-    // 2. Keep only the 20 most recent items (delete older ones)
+
+    // 2. Keep only the most recent items (delete older ones). The window is larger
+    // than what the panel displays so "Most used" ranks over a meaningful history
+    // instead of over the handful of items just opened.
     DB::query(
         'DELETE FROM ' . prefixTable('users_latest_items') . '
         WHERE user_id = %i
         AND increment_id NOT IN (
             SELECT increment_id FROM (
-                SELECT increment_id 
+                SELECT increment_id
                 FROM ' . prefixTable('users_latest_items') . '
                 WHERE user_id = %i
                 ORDER BY accessed_at DESC
-                LIMIT 20
+                LIMIT ' . QUICK_ACCESS_HISTORY_SIZE . '
             ) AS keep_items
         )',
         $userId,

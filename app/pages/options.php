@@ -1381,12 +1381,24 @@ $zones = timezone_list();
                             </div>
                         </div>
 
-                        <div class='row mb-2 option' data-keywords="password last">
+                        <div class='row mb-2 option' data-keywords="quick access sidebar last">
+                            <div class='col-10'>
+                                <?php echo $lang->get('show_last_items'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('show_last_items_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='show_last_items' data-toggle-on='<?php echo (int) ($SETTINGS['show_last_items'] ?? 1) === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='show_last_items_input' value='<?php echo (int) ($SETTINGS['show_last_items'] ?? 1) === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="password last quick access">
                             <div class='col-10'>
                                 <?php echo $lang->get('max_last_items'); ?>
                             </div>
                             <div class='col-2'>
-                                <input type='number' class='form-control form-control-sm' id='max_last_items' value='<?php echo isset($SETTINGS['max_last_items']) === true ? $SETTINGS['max_last_items'] : '7'; ?>'>
+                                <input type='number' class='form-control form-control-sm' id='max_latest_items' value='<?php echo isset($SETTINGS['max_latest_items']) === true ? $SETTINGS['max_latest_items'] : '10'; ?>'>
                             </div>
                         </div>
 

@@ -633,7 +633,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     // Handle the copy in clipboard button for api key
     document.getElementById('copy-api-key').addEventListener('click', function() {
         const apiKey = document.getElementById('profile-user-api-token').textContent;
-        navigator.clipboard.writeText(apiKey).then(function() {
+        // Shared helper: falls back to execCommand when the async Clipboard API is
+        // unavailable, which is the case on an instance served over plain HTTP.
+        tpClipboardCopy(apiKey).then(function(copied) {
+            if (copied === false) {
+                return;
+            }
             // Display message.
             toastr.remove();
             toastr.info(
@@ -752,7 +757,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     document.getElementById('copy-extension-token').addEventListener('click', function() {
         const tokenValue = document.getElementById('extension-token-value').value;
-        navigator.clipboard.writeText(tokenValue).then(function() {
+        tpClipboardCopy(tokenValue).then(function(copied) {
+            if (copied === false) {
+                return;
+            }
             toastr.remove();
             toastr.info(
                 '<?php echo $lang->get('copy_to_clipboard'); ?>',
