@@ -97,13 +97,20 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     })
 
     // Select user properties
-    $('#profile-user-language option[value=<?php echo $session->get('user-language');?>').attr('selected','selected');
+    // The closing bracket was missing, so jQuery threw a "unrecognized expression" error here and
+    // every statement below (avatar uploader included) was never executed.
+    $('#profile-user-language option[value="<?php echo addslashes(strval($session->get('user-language') ?? ''));?>"]').prop('selected', true);
 
 
     // AVATAR IMPORT
+    // Both the button in the settings tab and the profile picture itself open the file dialog.
+    // Plupload resolves browse_button through Dom.getAll(), so a list of ids is supported and
+    // missing elements are simply ignored (profile edition disabled).
     var uploader_photo = new plupload.Uploader({
         runtimes: 'gears,html5,flash,silverlight,browserplus',
-        browse_button: 'profile-avatar-file',
+        browse_button: <?php echo (string) ($SETTINGS['disable_user_edit_profile'] ?? '0') === '0'
+            ? "['profile-avatar-file', 'profile-user-avatar']"
+            : "['profile-avatar-file']"; ?>,
         container: 'profile-avatar-file-container',
         max_file_size: '10mb',
         chunk_size: '1mb',
