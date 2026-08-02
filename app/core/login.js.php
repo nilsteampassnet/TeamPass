@@ -43,9 +43,186 @@ declare(strict_types=1);
     var mfaStepPending = false;
     var cachedMfaData = null;
 
+    // Encryption key shared with the server for this page. It is not read-only:
+    // it is renewed in place when the server-side session has been garbage
+    // collected while the login page stayed open (see recoverFromStaleSessionKey).
+    var tpSessionKey = '<?php echo strval($session->get('key')); ?>';
+
+    // Guard against an endless refresh loop: a single silent recovery is
+    // attempted, any further failure falls back to the refresh dialog.
+    var sessionKeyRecoveryDone = false;
+
+    // Last moment the page was known to be in sync with the server-side session.
+    var lastSessionKeyCheck = Date.now();
+    var sessionKeyCheckInProgress = false;
+
     function hideForgotLocalPasswordLink() {
         $('#forgot-local-password-container').addClass('hidden');
         $('#forgot-local-password-link').prop('disabled', false);
+    }
+
+    /**
+     * Detects the marker sent by identify.php when the exchanged data could not
+     * be decoded because the session encryption key no longer exists server-side.
+     *
+     * @param {*} answer Raw answer received from the server
+     *
+     * @returns {boolean}
+     */
+    function isStaleSessionKeyAnswer(answer) {
+        return typeof answer === 'string' && answer.indexOf('ERROR SESSION EXPIRED') !== -1;
+    }
+
+    /**
+     * Saves what can safely be restored after a page refresh. The password is
+     * deliberately never persisted: writing it to the local storage of a
+     * password manager would be a security regression.
+     *
+     * @returns {void}
+     */
+    function storeLoginFormState() {
+        store.update(
+            'teampassUser', {},
+            function(teampassUser) {
+                teampassUser.login = $('#login').val();
+                teampassUser.mfaSelector = $('#select2fa-otp').is(':checked');
+                teampassUser.mfaCode = $('#ga_code').val();
+                teampassUser.sessionDurationSelected = $('#session_duration').val();
+                teampassUser.page_reload = 1;
+            }
+        );
+    }
+
+    /**
+     * Asks the server for a fresh encryption key, then replays the pending
+     * action. Used when the login page has been open longer than the
+     * server-side session: the page repairs itself instead of showing an
+     * alarming "session expired" message to a user who is not logged in yet.
+     *
+     * @param {function} onSuccess Action to replay once the key is renewed
+     *
+     * @returns {void}
+     */
+    function recoverFromStaleSessionKey(onSuccess) {
+        if (sessionKeyRecoveryDone === true) {
+            showSessionRefreshDialog();
+            return;
+        }
+        sessionKeyRecoveryDone = true;
+
+        $.post(
+            'sources/identify.php', {
+                type: 'refresh_session_key'
+            },
+            function(answer) {
+                const parsed = safeParseJSONMaybe(answer);
+
+                if (parsed.ok !== true ||
+                    typeof parsed.value.key === 'undefined' ||
+                    parsed.value.key === ''
+                ) {
+                    showSessionRefreshDialog();
+                    return;
+                }
+
+                tpSessionKey = parsed.value.key;
+                lastSessionKeyCheck = Date.now();
+                onSuccess();
+            }
+        ).fail(function() {
+            showSessionRefreshDialog();
+        });
+    }
+
+    /**
+     * Last resort when the page could not be repaired silently: explain why a
+     * refresh is required and reload after a short countdown, restoring the
+     * login so that only the password has to be typed again.
+     *
+     * @returns {void}
+     */
+    function showSessionRefreshDialog() {
+        let countdown = 5;
+
+        storeLoginFormState();
+
+        toastr.remove();
+        showModalDialogBox(
+            '#warningModal',
+            '<i class="fas fa-sync-alt fa-lg text-primary mr-2"></i><?php echo addslashes($lang->get('login_page_refresh_needed')); ?>',
+            '<p><?php echo addslashes($lang->get('login_page_refresh_needed_explanation')); ?></p>' +
+            '<p class="text-muted mb-0">' +
+            '<?php echo addslashes($lang->get('login_page_refresh_countdown')); ?>'.replace(
+                '#seconds#',
+                '<span id="login-refresh-countdown">' + countdown + '</span>'
+            ) +
+            '</p>',
+            '<i class="fas fa-sync-alt mr-1"></i><?php echo addslashes($lang->get('login_page_refresh_now')); ?>',
+            '',
+            false,
+            false,
+            false
+        );
+
+        const refreshTimer = setInterval(function() {
+            countdown--;
+            $('#login-refresh-countdown').text(countdown);
+            if (countdown <= 0) {
+                clearInterval(refreshTimer);
+                document.location.reload();
+            }
+        }, 1000);
+
+        $('#warningModalButtonAction').off('click').on('click', function() {
+            clearInterval(refreshTimer);
+            document.location.reload();
+        });
+    }
+
+    /**
+     * Checks the page is still in sync with the server-side session when the tab
+     * comes back to the foreground - typically after the computer woke up from
+     * sleep. When the session has been garbage collected in the meantime, the
+     * page repairs itself before the user submits anything.
+     *
+     * @returns {void}
+     */
+    function checkSessionKeyFreshness() {
+        // Throttled: a focus event is fired on every click back into the window.
+        if (sessionKeyCheckInProgress === true || (Date.now() - lastSessionKeyCheck) < 300000) {
+            return;
+        }
+        sessionKeyCheckInProgress = true;
+
+        $.post(
+            'sources/identify.php', {
+                type: 'is_session_key_valid',
+                key: tpSessionKey
+            },
+            function(answer) {
+                sessionKeyCheckInProgress = false;
+                lastSessionKeyCheck = Date.now();
+
+                const parsed = safeParseJSONMaybe(answer);
+                if (parsed.ok !== true || parsed.value.valid === true) {
+                    return;
+                }
+
+                // Nothing typed yet: a plain refresh is the cleanest recovery.
+                if ($('#pw').val() === '') {
+                    storeLoginFormState();
+                    document.location.reload();
+                    return;
+                }
+
+                // Credentials are being typed: renew the key without touching
+                // the form, so nothing the user typed is lost.
+                sessionKeyRecoveryDone = false;
+                recoverFromStaleSessionKey(function() {});
+            }
+        ).fail(function() {
+            sessionKeyCheckInProgress = false;
+        });
     }
 
     function resetMfaStep() {
@@ -102,6 +279,24 @@ declare(strict_types=1);
             $("#login").val(store.get('teampassUser').login);
             $("#select2fa-otp").prop('checked', store.get('teampassUser').mfaSelector);
             $("#ga_code").val(store.get('teampassUser').mfaCode);
+            if (typeof store.get('teampassUser').sessionDurationSelected !== 'undefined' &&
+                store.get('teampassUser').sessionDurationSelected !== null
+            ) {
+                $('#session_duration').val(store.get('teampassUser').sessionDurationSelected);
+            }
+
+            // The password is never persisted: point the user straight at it.
+            if ($('#login').val() !== '') {
+                $('#pw').focus();
+                toastr.info(
+                    '<?php echo addslashes($lang->get('login_page_refreshed_retype_password')); ?>',
+                    '', {
+                        timeOut: 6000,
+                        progressBar: true,
+                        positionClass: "toast-bottom-right"
+                    }
+                );
+            }
 
             // Update session
             store.update(
@@ -111,6 +306,16 @@ declare(strict_types=1);
                 }
             );
         }
+
+        // Repair the page when the tab comes back to the foreground after the
+        // server-side session has been garbage collected (computer sleep, long
+        // idle time...), so the user never submits credentials with a dead key.
+        $(document).on('visibilitychange', function() {
+            if (document.visibilityState === 'visible') {
+                checkSessionKeyFreshness();
+            }
+        });
+        $(window).on('focus', checkSessionKeyFreshness);
 
         // Manage case of oauth2 login
         var userOauth2Info = <?php echo empty($userOauth2InfoJson) ? 'null' : $userOauth2InfoJson; ?>;
@@ -486,7 +691,7 @@ declare(strict_types=1);
                                     "sources/main.queries.php", {
                                         type: "convert_items_with_personal_saltkey_progress",
                                         data: prepareExchangedData(JSON.stringify(data), "encode", store.get('teampassUser').sessionKey),
-                                        key: '<?php echo strval($session->get('key')); ?>'
+                                        key: tpSessionKey
                                     },
                                     function(data) {
                                         data = prepareExchangedData(data, store.get('teampassUser').sessionKey);
@@ -570,7 +775,7 @@ declare(strict_types=1);
                         login: login
                     }),
                     'encode',
-                    '<?php echo strval($session->get('key')); ?>'
+                    tpSessionKey
                 )
             },
             function(receivedData) {
@@ -580,7 +785,7 @@ declare(strict_types=1);
                     data = prepareExchangedData(
                         receivedData,
                         'decode',
-                        '<?php echo strval($session->get('key')); ?>'
+                        tpSessionKey
                     );
                 } catch (e) {
                     toastr.remove();
@@ -787,7 +992,7 @@ declare(strict_types=1);
         var client_info = '';
 
         if (debugJavascript === true) {
-            console.log('KEY : <?php echo strval($session->get('key')); ?>')
+            console.log('KEY : ' + tpSessionKey)
         }
 
         let mfaData = {},
@@ -873,7 +1078,13 @@ declare(strict_types=1);
             pw: btoa(unescape(encodeURIComponent(data.pw))),
             ...oauth2Info
         };
-        
+
+        // Captured here because the answer handler shadows `data` with its own
+        // decoded payload, making the arguments unreachable from inside it.
+        const replayIdentify = function() {
+            identifyUser(redirect, psk, data, randomstring, oauth2Info);
+        };
+
         //send query
         $.post(
             "sources/identify.php", {
@@ -882,18 +1093,31 @@ declare(strict_types=1);
                 data: prepareExchangedData(
                     JSON.stringify(sharedData),
                     'encode',
-                    '<?php echo strval($session->get('key')); ?>'
+                    tpSessionKey
                 ),
                 xhrFields: {
                     withCredentials: true
                 },
             },
             function(receivedData) {
+                // The page has been open longer than the server-side session:
+                // its encryption key is gone and the credentials could not be
+                // decoded. Renew the key and replay the submission silently,
+                // rather than showing a "session expired" warning to a user who
+                // is precisely trying to open a session.
+                if (isStaleSessionKeyAnswer(receivedData) === true) {
+                    recoverFromStaleSessionKey(replayIdentify);
+                    return false;
+                }
+
+                // The answer is exploitable: allow a future recovery again.
+                sessionKeyRecoveryDone = false;
+
                 try {
                     var data = prepareExchangedData(
                         receivedData,
                         "decode",
-                        "<?php echo strval($session->get('key')); ?>"
+                        tpSessionKey
                     );
                 } catch (e) {
                     // The session key baked into the page may be stale (the
@@ -1178,11 +1402,11 @@ declare(strict_types=1);
                 'sources/main.queries.php', {
                     type: 'ga_generate_qr',
                     type_category: 'action_user',
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo strval($session->get('key')); ?>"),
-                    key: "<?php echo strval($session->get('key')); ?>"
+                    data: prepareExchangedData(JSON.stringify(data), "encode", tpSessionKey),
+                    key: tpSessionKey
                 },
                 function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo strval($session->get('key')); ?>');
+                    data = prepareExchangedData(data, 'decode', tpSessionKey);
                     if (debugJavascript === true) console.log(data);
 
                     if (data.error !== false) {
@@ -1235,11 +1459,11 @@ declare(strict_types=1);
             'sources/main.queries.php', {
                 type: 'ga_generate_qr',
                 type_category: 'action_user',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo strval($session->get('key')); ?>"),
-                key: "<?php echo strval($session->get('key')); ?>"
+                data: prepareExchangedData(JSON.stringify(data), "encode", tpSessionKey),
+                key: tpSessionKey
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo strval($session->get('key')); ?>');
+                data = prepareExchangedData(data, 'decode', tpSessionKey);
                 if (debugJavascript === true) console.log(data);
 
                 if (data.error !== false) {

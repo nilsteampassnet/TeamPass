@@ -583,8 +583,11 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                             return;
                         }
 
-                        // Copy to clipboard
-                        await navigator.clipboard.writeText(password);
+                        // Copy to clipboard (shared helper: falls back to execCommand
+                        // when the async Clipboard API is unavailable, e.g. plain HTTP)
+                        if (await tpClipboardCopy(password) === false) {
+                            throw new Error('Clipboard unavailable');
+                        }
 
                         // Notification for the user
                         const clipboardDuration = parseInt(store.get('teampassSettings').clipboard_life_duration) || 0;
@@ -636,7 +639,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                             const loginText = document.getElementById('login-item_' + loginId).textContent;
 
                             // Copy the text to the clipboard
-                            await navigator.clipboard.writeText(loginText);
+                            if (await tpClipboardCopy(loginText) === false) {
+                                throw new Error('Clipboard unavailable');
+                            }
 
                             // Display a success notification
                             toastr.remove();
@@ -672,7 +677,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                             const urlText = document.getElementById('url-item_' + urlId).textContent;
 
                             // Copy the URL to the clipboard
-                            await navigator.clipboard.writeText(urlText);
+                            if (await tpClipboardCopy(urlText) === false) {
+                                throw new Error('Clipboard unavailable');
+                            }
 
                             // Display a success notification
                             toastr.remove();

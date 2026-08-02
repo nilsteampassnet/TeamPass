@@ -3135,5 +3135,10 @@ return array(
     'favorites_unavailable_item' => 'Unavailable favorite',
     'favorites_unavailable_hint' => 'Deleted item, or access to its folder removed.',
     'favorites_added_on' => 'Added on',
+    'login_page_refresh_needed' => 'Refresh needed',
+    'login_page_refresh_needed_explanation' => 'This login page has been open for a while and its secure link with the server has expired. It is being refreshed, then you will be able to log in as usual.',
+    'login_page_refresh_countdown' => 'Automatic refresh in #seconds# seconds.',
+    'login_page_refresh_now' => 'Refresh now',
+    'login_page_refreshed_retype_password' => 'Page refreshed. Please type your password again.',
 
 );

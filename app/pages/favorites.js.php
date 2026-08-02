@@ -156,9 +156,9 @@ $(function() {
    * instance is configured to do so (same behaviour as the item card).
    */
   const copyValue = async (value, isSecret) => {
-    try {
-      await navigator.clipboard.writeText(value)
-    } catch (error) {
+    // Shared helper (load.js.php): falls back to execCommand when the async
+    // Clipboard API is missing, which is the case on a plain-HTTP instance.
+    if (await tpClipboardCopy(value) === false) {
       toastr.error(lang.clipboardError, '', {timeOut: 3000, positionClass: 'toast-bottom-right'})
       return
     }

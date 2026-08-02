@@ -1406,6 +1406,11 @@ switch ($post_type) {
         if ($post_field === 'secure_send_max_views') {
             $post_value = (string) max(1, (int) $post_value);
         }
+        // Quick access panel: keep the list short enough to stay scannable and
+        // never larger than the history kept per user.
+        if ($post_field === 'max_latest_items') {
+            $post_value = (string) min(QUICK_ACCESS_HISTORY_SIZE, max(1, (int) $post_value));
+        }
         
         require_once 'main.functions.php';
 

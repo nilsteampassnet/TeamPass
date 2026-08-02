@@ -45,9 +45,23 @@ class ClipboardCleaner {
         }, this.duration);
     }
 
+    /**
+     * Overwrite the clipboard, through the shared helper when it is available so
+     * a plain-HTTP instance (no navigator.clipboard) still gets cleared.
+     */
+    async writeEmptyClipboard() {
+        if (typeof window.tpClipboardCopy === 'function') {
+            if (await window.tpClipboardCopy('') === false) {
+                throw new Error('Clipboard unavailable');
+            }
+            return;
+        }
+        await navigator.clipboard.writeText('');
+    }
+
     async attemptClearing(retriesLeft, onSuccess, onError) {
         try {
-            await navigator.clipboard.writeText('');
+            await this.writeEmptyClipboard();
             if (onSuccess) {
                 // Remove existing messages
                 toastr.remove();
@@ -114,7 +128,7 @@ class ClipboardCleaner {
                 toastr.remove(); // Remove all notifications
                 try {
                     // Attempt to clear the clipboard
-                    await navigator.clipboard.writeText('');
+                    await this.writeEmptyClipboard();
                     toastr.success(
                         `${TRANSLATIONS_CLIPBOARD.clipboard_cleared}`,
                         '', {

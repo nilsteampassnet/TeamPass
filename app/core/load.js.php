@@ -242,12 +242,15 @@ if (
 
         // Check theme on page load
         applyTheme(false);
-        
+
         // Switch light/dark theme button (anchor inside: prevent the # jump)
         $('#switch-theme').on('click', function(event) {
             event.preventDefault();
             applyTheme(true);
         });
+
+        // Quick access panel (right control sidebar)
+        window.TeamPassQuickAccess.init();
 
         // Select all objects with the class .fa-clickable-login
         $(document).on('click', '.clipboard-copy', async function(event) {
@@ -283,7 +286,9 @@ if (
                 }
 
                 // Copy the value to the clipboard
-                await navigator.clipboard.writeText(valueToCopy);
+                if (await tpClipboardCopy(valueToCopy) === false) {
+                    throw new Error('Clipboard unavailable');
+                }
 
                 toastr.info(
                     '<?php echo $lang->get("copy_to_clipboard"); ?>',
@@ -2094,57 +2099,420 @@ if (
     }
 
     /**
-     * Loads the last seen items
+     * Quick access panel (right control sidebar).
      *
-     * @return void
+     * Three scopes over the same row template: Recent and Most used read
+     * users_latest_items, Starred reads users_favorites. The common actions
+     * (copy password, copy login, open) let the user act without leaving the
+     * page they are on.
      */
-    function refreshListLastSeenItems() {
-        $.post(
-            "sources/main.queries.php", {
-                type: 'refresh_list_items_seen',
-                type_category: 'action_user',
-                key: '<?php echo $session->get('key'); ?>'
-            },
-            function(data) {
-                try {
-                    data = $.parseJSON(data)
-                } catch (e) {
-                    return false;
-                }
-                if (debugJavascript === true) {
-                    console.log('Refresh last item seen result');
-                    console.log(data);
-                }
-                //check if format error
-                if (data.error === '') {
-                    if (data.html_json === null || data.html_json === '') {
-                        $('#index-last-pwds').html('<li><?php echo $lang->get('none'); ?></li>');
-                    } else {
-                        // Prepare HTML
-                        var html_list = '';
-                        $.each(data.html_json, function(i, value) {
-                            html_list += '<li onclick="showItemCard($(this).closest(\'li\'))" class="pointer" data-item-edition="0" data-item-id="' + value.id + '" data-item-sk="' + value.perso + '" data-item-expired="0" data-item-restricted="' + value.restricted + '" data-item-display="1" data-item-open-edit="0" data-item-reload="0" data-item-tree-id="' + value.tree_id + '" data-is-search-result="0">' +
-                                '<i class="fa-solid fa-caret-right mr-2"></i>' + value.label + '</li>';
-                        });
-                        $('#index-last-pwds').html(html_list);
+    window.TeamPassQuickAccess = (function() {
+        const sessionKey = "<?php echo $session->get('key'); ?>";
+        const historySize = <?php echo QUICK_ACCESS_HISTORY_SIZE; ?>;
+        // Below this many rows the list is short enough to scan by eye.
+        const filterThreshold = 8;
+        const scopes = ['recent', 'frequent', 'starred'];
+
+        const i18n = {
+            copyPassword: <?php echo json_encode($lang->get('favorites_copy_password')); ?>,
+            copyLogin: <?php echo json_encode($lang->get('favorites_copy_login')); ?>,
+            openItem: <?php echo json_encode($lang->get('favorites_open_item')); ?>,
+            personal: <?php echo json_encode($lang->get('personal')); ?>,
+            copied: <?php echo json_encode($lang->get('copy_to_clipboard')); ?>,
+            clipboardError: <?php echo json_encode($lang->get('clipboard_error')); ?>,
+            clipboardWillClear: <?php echo json_encode($lang->get('clipboard_will_be_cleared')); ?>,
+            clipboardCleared: <?php echo json_encode($lang->get('clipboard_cleared')); ?>,
+            emptyRecent: <?php echo json_encode($lang->get('quick_access_empty_recent')); ?>,
+            emptyFrequent: <?php echo json_encode($lang->get('quick_access_empty_frequent')); ?>,
+            emptyStarred: <?php echo json_encode($lang->get('quick_access_empty_starred')); ?>,
+            noMatch: <?php echo json_encode($lang->get('quick_access_no_match')); ?>,
+            hintFrequent: <?php echo json_encode($lang->get('quick_access_hint_frequent')); ?>,
+            uses: <?php echo json_encode($lang->get('quick_access_uses')); ?>,
+            seeAll: <?php echo json_encode($lang->get('quick_access_see_all')); ?>,
+            seeAllFavorites: <?php echo json_encode($lang->get('favorites')); ?>
+        };
+
+        let currentScope = 'recent';
+        let rows = [];
+        let isLoading = false;
+
+        const panel = () => document.getElementById('index-last-pwds');
+
+        /**
+         * The selected tab is a pure UI preference: localStorage keeps it per
+         * browser without a round-trip on every click.
+         */
+        function readStoredScope() {
+            try {
+                const stored = localStorage.getItem('tpQuickAccessScope');
+                return scopes.indexOf(stored) !== -1 ? stored : 'recent';
+            } catch (e) {
+                return 'recent';
+            }
+        }
+
+        function writeStoredScope(scope) {
+            try {
+                localStorage.setItem('tpQuickAccessScope', scope);
+            } catch (e) {
+                // Private browsing or a full quota: the tab simply is not remembered.
+            }
+        }
+
+        /**
+         * Relative time through Intl, so the wording and pluralisation follow the
+         * browser locale instead of needing a translated unit per language.
+         */
+        function relativeTime(timestamp) {
+            if (!timestamp) {
+                return '';
+            }
+            const seconds = Math.round((Date.now() / 1000) - timestamp);
+            const units = [
+                ['year', 31536000],
+                ['month', 2592000],
+                ['day', 86400],
+                ['hour', 3600],
+                ['minute', 60]
+            ];
+
+            try {
+                const formatter = new Intl.RelativeTimeFormat(navigator.language || 'en', {numeric: 'auto'});
+                for (const [unit, span] of units) {
+                    if (seconds >= span) {
+                        return formatter.format(-Math.floor(seconds / span), unit);
                     }
+                }
+                return formatter.format(-Math.max(seconds, 1), 'second');
+            } catch (e) {
+                return new Date(timestamp * 1000).toLocaleDateString();
+            }
+        }
+
+        /**
+         * Copy a value and warn the user, clearing the clipboard afterwards when
+         * the instance is configured to do so (same behaviour as the item card).
+         */
+        async function copyValue(value, isSecret) {
+            if (await tpClipboardCopy(value) === false) {
+                toastr.error(i18n.clipboardError, '', {timeOut: 3000, positionClass: 'toast-bottom-right'});
+                return;
+            }
+
+            const settings = store.get('teampassSettings') || {};
+            const clipboardDuration = parseInt(settings.clipboard_life_duration) || 0;
+            toastr.remove();
+
+            if (isSecret !== true || clipboardDuration === 0) {
+                toastr.info(i18n.copied, '', {timeOut: 2000, positionClass: 'toast-bottom-right', progressBar: true});
+                return;
+            }
+
+            toastr.warning(i18n.clipboardWillClear, '', {timeOut: clipboardDuration * 1000, progressBar: true});
+            const cleaner = new ClipboardCleaner(clipboardDuration);
+            cleaner.scheduleClearing(
+                () => {
+                    const clipboardStatus = JSON.parse(localStorage.getItem('clipboardStatus'));
+                    if (clipboardStatus.status === 'unsafe') {
+                        return;
+                    }
+                    toastr.success(i18n.clipboardCleared, '', {timeOut: 2000, positionClass: 'toast-bottom-right'});
+                },
+                (error) => console.error('Error clearing clipboard:', error)
+            );
+        }
+
+        function emptyMessage() {
+            if (currentScope === 'frequent') {
+                return i18n.emptyFrequent;
+            }
+            if (currentScope === 'starred') {
+                return i18n.emptyStarred;
+            }
+            return i18n.emptyRecent;
+        }
+
+        function metricHtml(row) {
+            if (currentScope === 'starred') {
+                return '<i class="fa-solid fa-star" aria-hidden="true"></i>';
+            }
+            if (currentScope === 'frequent') {
+                return '<span title="' + tpEscapeHtml(i18n.uses.replace('%d', row.metric)) + '">'
+                    + tpEscapeHtml(row.metric) + '&times;</span>';
+            }
+            return tpEscapeHtml(relativeTime(row.metric));
+        }
+
+        function rowHtml(row) {
+            const icon = row.icon !== '' ? row.icon : 'fa-solid fa-key';
+            // The server sends plain text, so every field is escaped right here.
+            const meta = [row.folder, row.login].filter((part) => part !== '').join(' · ');
+            // Kept as data attributes because showItemCard() reads the item
+            // definition straight off the clicked element.
+            return '<li class="tp-qa-row" tabindex="0" role="button"'
+                + ' data-item-edition="0" data-item-id="' + row.id + '"'
+                + ' data-item-sk="' + row.perso + '" data-item-expired="0"'
+                + ' data-item-restricted="' + tpEscapeHtml(row.restricted) + '"'
+                + ' data-item-display="1" data-item-open-edit="0" data-item-reload="0"'
+                + ' data-item-tree-id="' + row.tree_id + '" data-is-search-result="0"'
+                + ' data-haystack="' + tpEscapeHtml((row.label + ' ' + meta).toLowerCase()) + '"'
+                + ' title="' + tpEscapeHtml(row.label) + '">'
+                + '<span class="tp-qa-icon' + (parseInt(row.perso) === 1 ? ' perso' : '') + '"'
+                + (parseInt(row.perso) === 1 ? ' title="' + tpEscapeHtml(i18n.personal) + '"' : '')
+                + '><i class="' + tpEscapeHtml(icon) + '" aria-hidden="true"></i></span>'
+                + '<span class="tp-qa-main">'
+                + '<span class="tp-qa-line">'
+                + '<span class="tp-qa-label">' + tpEscapeHtml(row.label) + '</span>'
+                + '<span class="tp-qa-metric">' + metricHtml(row) + '</span>'
+                + '</span>'
+                + '<span class="tp-qa-meta">' + tpEscapeHtml(meta) + '</span>'
+                + '</span>'
+                + '<span class="tp-qa-actions">'
+                + '<button type="button" data-qa-action="password" title="' + tpEscapeHtml(i18n.copyPassword) + '">'
+                + '<i class="fa-solid fa-key" aria-hidden="true"></i></button>'
+                + (row.login !== ''
+                    ? '<button type="button" data-qa-action="login" title="' + tpEscapeHtml(i18n.copyLogin) + '">'
+                        + '<i class="fa-solid fa-user" aria-hidden="true"></i></button>'
+                    : '')
+                + '<button type="button" data-qa-action="open" title="' + tpEscapeHtml(i18n.openItem) + '">'
+                + '<i class="fa-solid fa-up-right-from-square" aria-hidden="true"></i></button>'
+                + '</span>'
+                + '</li>';
+        }
+
+        function render() {
+            const list = panel();
+            if (list === null) {
+                return;
+            }
+
+            if (rows.length === 0) {
+                list.innerHTML = '<li class="tp-qa-empty"><i class="fa-solid fa-inbox" aria-hidden="true"></i>'
+                    + tpEscapeHtml(emptyMessage()) + '</li>';
+            } else {
+                list.innerHTML = rows.map(rowHtml).join('');
+            }
+
+            // The filter only earns its space once the list is long enough to need it.
+            $('#tp-qa-filter-wrap').toggleClass('hidden-filter', rows.length < filterThreshold);
+            if (rows.length < filterThreshold) {
+                $('#tp-qa-filter').val('');
+            }
+
+            $('#tp-qa-hint').text(
+                currentScope === 'frequent' ? i18n.hintFrequent.replace('%d', historySize) : ''
+            );
+            $('#tp-qa-seeall')
+                .text(currentScope === 'starred' ? i18n.seeAllFavorites : i18n.seeAll)
+                .attr('href', currentScope === 'starred' ? 'index.php?page=favourites' : 'index.php?page=items');
+
+            applyFilter();
+        }
+
+        function applyFilter() {
+            const needle = ($('#tp-qa-filter').val() || '').trim().toLowerCase();
+            const list = panel();
+            if (list === null || rows.length === 0) {
+                return;
+            }
+
+            let shown = 0;
+            $(list).find('.tp-qa-row').each(function() {
+                // attr() and not data(): jQuery would cast a numeric label to a Number.
+                const haystack = String($(this).attr('data-haystack') || '');
+                const hit = needle === '' || haystack.indexOf(needle) !== -1;
+                $(this).toggle(hit);
+                if (hit === true) {
+                    shown += 1;
+                }
+            });
+
+            $(list).find('.tp-qa-no-match').remove();
+            if (shown === 0) {
+                $(list).append('<li class="tp-qa-empty tp-qa-no-match">'
+                    + '<i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>'
+                    + tpEscapeHtml(i18n.noMatch) + '</li>');
+            }
+        }
+
+        function setActiveTab(scope) {
+            $('.tp-qa-tab')
+                .removeClass('active')
+                .attr('aria-selected', 'false')
+                .filter('[data-scope="' + scope + '"]')
+                .addClass('active')
+                .attr('aria-selected', 'true');
+        }
+
+        /**
+         * Load one tab. Returns the jQuery promise so callers can chain on it.
+         */
+        function load(scope) {
+            if (panel() === null) {
+                return $.Deferred().resolve().promise();
+            }
+            if (scopes.indexOf(scope) === -1) {
+                scope = 'recent';
+            }
+            currentScope = scope;
+            setActiveTab(scope);
+            isLoading = true;
+            $('#tp-qa-refresh').addClass('is-loading').find('i').addClass('fa-spin');
+
+            return $.post(
+                'sources/main.queries.php', {
+                    type: 'refresh_list_items_seen',
+                    type_category: 'action_user',
+                    data: prepareExchangedData(JSON.stringify({scope: scope}), 'encode', sessionKey),
+                    key: sessionKey
+                },
+                function(data) {
+                    isLoading = false;
+                    $('#tp-qa-refresh').removeClass('is-loading').find('i').removeClass('fa-spin');
+
+                    try {
+                        data = $.parseJSON(data);
+                    } catch (e) {
+                        return false;
+                    }
+                    if (debugJavascript === true) {
+                        console.log('Quick access refresh result');
+                        console.log(data);
+                    }
+
+                    if (data.error !== '') {
+                        toastr.remove();
+                        toastr.error(data.error, '<?php echo $lang->get('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        });
+                        return;
+                    }
+
+                    // The server may have refused the requested scope (Starred turned
+                    // off since the tab was stored): follow what it actually returned.
+                    if (data.scope !== currentScope) {
+                        currentScope = data.scope;
+                        setActiveTab(currentScope);
+                        writeStoredScope(currentScope);
+                    }
+
+                    rows = (data.html_json === null || data.html_json === '') ? [] : data.html_json;
+                    render();
 
                     // show notification
                     if (data.existing_suggestions !== 0) {
                         blink('#menu_button_suggestion', -1, 500, 'ui-state-error');
                     }
-                } else {
-                    toastr.remove();
-                    toastr.error(
-                        data.error,
-                        '<?php echo $lang->get('caution'); ?>', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
-                    );
                 }
+            );
+        }
+
+        function init() {
+            if (panel() === null) {
+                return;
             }
-        );
+
+            currentScope = readStoredScope();
+            // The Starred tab is not rendered when the feature is off for this user.
+            if ($('.tp-qa-tab[data-scope="' + currentScope + '"]').length === 0) {
+                currentScope = 'recent';
+            }
+            setActiveTab(currentScope);
+
+            $(document).on('click', '.tp-qa-tab', function() {
+                const scope = $(this).data('scope');
+                if (scope === currentScope && isLoading === false) {
+                    return;
+                }
+                $('#tp-qa-filter').val('');
+                writeStoredScope(scope);
+                load(scope);
+            });
+
+            $(document).on('click', '#tp-qa-refresh', function(event) {
+                event.preventDefault();
+                if (isLoading === false) {
+                    load(currentScope);
+                }
+            });
+
+            $(document).on('input', '#tp-qa-filter', applyFilter);
+
+            // Opening the panel reloads it: the list was otherwise as old as the page.
+            // AdminLTE adds its body class from a delayed queue, so the state cannot be
+            // read right after the click - its own expanded event is the reliable hook.
+            $(document).on('expanded.lte.controlsidebar', function() {
+                if (isLoading === false) {
+                    load(currentScope);
+                }
+            });
+
+            // Row actions. Stop the propagation so acting on a row never also
+            // opens the item card behind it.
+            $(document).on('click', '.tp-qa-actions button', async function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                const button = $(this);
+                const row = button.closest('.tp-qa-row');
+                const itemId = row.data('itemId');
+                const action = button.data('qaAction');
+
+                if (action === 'open') {
+                    showItemCard(row);
+                    return;
+                }
+
+                if (action === 'login') {
+                    const item = rows.find((element) => parseInt(element.id) === parseInt(itemId));
+                    if (item !== undefined && item.login !== '') {
+                        copyValue(item.login, false);
+                    }
+                    return;
+                }
+
+                if (action === 'password') {
+                    button.find('i').removeClass('fa-key').addClass('fa-circle-notch fa-spin');
+                    // Same handler as the item card: access checked server-side and
+                    // the access logged as at_password_copied.
+                    const password = await getItemPassword('at_password_copied', 'item_id', itemId, 'quick_access');
+                    button.find('i').removeClass('fa-circle-notch fa-spin').addClass('fa-key');
+                    if (password) {
+                        copyValue(password, true);
+                    }
+                }
+            });
+
+            $(document).on('click', '.tp-qa-row', function() {
+                showItemCard($(this));
+            });
+
+            $(document).on('keydown', '.tp-qa-row', function(event) {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    showItemCard($(this));
+                }
+            });
+        }
+
+        return {
+            init: init,
+            load: load,
+            refresh: function() {
+                return load(currentScope);
+            }
+        };
+    }());
+
+    /**
+     * Reloads the Quick access panel on its current tab.
+     * Kept as a function for the existing callers (page load, item saved).
+     *
+     * @return void
+     */
+    function refreshListLastSeenItems() {
+        return window.TeamPassQuickAccess.refresh();
     }
 
     /**
@@ -2169,9 +2537,11 @@ if (
                 ListerItems(itemDefinition.data().itemTreeId, '', 0, 0, true);
             }
 
-            // Hide sidebar-mini
-            $('body')
-                .removeClass('control-sidebar-slide-open');
+            // Close the control sidebar through AdminLTE rather than by dropping the
+            // body class: its toggle() decides on the panel visibility, so a manual
+            // removal leaves the widget thinking the panel is still open and the
+            // next click on the navbar button does nothing.
+            $('[data-widget="control-sidebar"]').ControlSidebar('collapse');
         }
     }
 
@@ -2385,6 +2755,9 @@ if (
             // jstree dark theme
             $('#jstree').addClass('jstree-default-dark');
 
+            // Quick access panel follows the theme
+            $('.control-sidebar').removeClass('control-sidebar-light').addClass('control-sidebar-dark');
+
             // Overload .main-header color
             $('.main-header').removeClass('navbar-white navbar-light');
             $('.main-header').addClass('navbar-dark');
@@ -2405,6 +2778,9 @@ if (
             
             // jstree dark theme
             $('#jstree').removeClass('jstree-default-dark');
+
+            // Quick access panel follows the theme
+            $('.control-sidebar').removeClass('control-sidebar-dark').addClass('control-sidebar-light');
             
             // Restore .main-header default classes
             $('.main-header').removeClass('navbar-dark');
@@ -2431,14 +2807,16 @@ if (
 
     /**
      * Get item password to show or copy it in clipboard.
-     * 
+     *
      * @param {string} action - Log action (ex: at_password_shown).
      * @param {string} id_type - 'item_key' or 'item_id'.
      * @param {number|string} id_value - The item key or id.
-     * 
+     * @param {string} [origin] - Calling surface. 'quick_access' also counts the access,
+     *                            since copying from the panel skips opening the item card.
+     *
      * @returns {Promise<string>} - A promise that resolves to the item cleartext password if user has access.
      */
-    async function getItemPassword(action, id_type, id_value) {
+    async function getItemPassword(action, id_type, id_value, origin) {
         const key = "<?php echo $session->get('key'); ?>";
         const lang = "<?php echo $lang->get('no_item_to_display'); ?>";
 
@@ -2447,6 +2825,7 @@ if (
                 type: "POST",
                 url: 'sources/items.queries.php',
                 data: `type=get_item_password&action=${action}&${id_type}=${id_value}&key=${key}`
+                    + (origin ? `&origin=${encodeURIComponent(origin)}` : '')
             });
 
             // Decrypt data
@@ -2510,6 +2889,74 @@ if (
     function tpEscapeHtml(value) {
         return $('<div>').text((value || '').toString()).html();
     }
+
+    /**
+     * Copy a value to the clipboard, whatever the browsing context.
+     *
+     * The async Clipboard API is only exposed on a secure origin (HTTPS, or
+     * localhost). On an instance served over plain HTTP, navigator.clipboard is
+     * undefined and every copy button fails. The hidden-textarea + execCommand
+     * path is the historical fallback and still works there, so it also covers
+     * the cases where writeText() is rejected (document not focused, permission
+     * denied).
+     *
+     * @param {string} value - The text to copy.
+     *
+     * @returns {Promise<boolean>} - True when the value reached the clipboard.
+     */
+    async function tpClipboardCopy(value) {
+        const text = (value === null || value === undefined) ? '' : String(value);
+
+        if (window.isSecureContext === true
+            && navigator.clipboard
+            && typeof navigator.clipboard.writeText === 'function'
+        ) {
+            try {
+                await navigator.clipboard.writeText(text);
+                return true;
+            } catch (error) {
+                // Fall through to the legacy path below.
+            }
+        }
+
+        const holder = document.createElement('textarea');
+        try {
+            holder.value = text;
+            holder.setAttribute('readonly', '');
+            // Off-screen but still focusable, and no scroll jump on selection.
+            holder.style.position = 'fixed';
+            holder.style.top = '-1000px';
+            holder.style.opacity = '0';
+            document.body.appendChild(holder);
+
+            const selection = document.getSelection();
+            const previousRange = selection !== null && selection.rangeCount > 0
+                ? selection.getRangeAt(0)
+                : null;
+
+            holder.select();
+            holder.setSelectionRange(0, text.length);
+            const copied = document.execCommand('copy');
+
+            // Restore whatever the user had selected before the copy.
+            if (previousRange !== null) {
+                selection.removeAllRanges();
+                selection.addRange(previousRange);
+            }
+
+            return copied;
+        } catch (error) {
+            return false;
+        } finally {
+            // The holder carries the secret: it must never survive this call, even
+            // when execCommand throws.
+            holder.value = '';
+            if (holder.parentNode !== null) {
+                holder.parentNode.removeChild(holder);
+            }
+        }
+    }
+    window.tpClipboardCopy = tpClipboardCopy;
 
     window.TeamPassOnlineUsers = (function() {
         const sessionKey = "<?php echo $session->get('key'); ?>";
