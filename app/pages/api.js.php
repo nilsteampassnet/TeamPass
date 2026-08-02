@@ -234,7 +234,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     // Handle the copy in clipboard button for api key
     $(document).on('click', '#copy-extension-key', function() {
         const apiKey = $('#browser_extension_key').val();
-        navigator.clipboard.writeText(apiKey).then(function() {
+        // Shared helper: falls back to execCommand when the async Clipboard API is
+        // unavailable, which is the case on an instance served over plain HTTP.
+        tpClipboardCopy(apiKey).then(function(copied) {
+            if (copied === false) {
+                return;
+            }
             // Display message.
             toastr.remove();
             toastr.info(

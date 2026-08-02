@@ -377,6 +377,10 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                 $tpShowScore     = (int) ($SETTINGS['security_dashboard_enabled'] ?? 0) === 1 && (int) $session_user_admin !== 1;
                 $tpShowBell      = (int) ($SETTINGS['notification_center_enabled'] ?? 0) === 1;
                 $tpShowAwareness = $tpShowScore === true || $tpShowBell === true;
+                // Quick access panel (right control sidebar). The Starred tab follows the
+                // Favorites page gate: feature enabled and caller not an administrator.
+                $tpShowQuickAccess = (int) ($SETTINGS['show_last_items'] ?? 1) === 1;
+                $tpQuickAccessStarred = (int) ($SETTINGS['enable_favourites'] ?? 0) === 1 && (int) $session_user_admin !== 1;
                 // Account chip initials + role label.
                 $tpInitials = strtoupper(mb_substr((string) $session_name, 0, 1, 'UTF-8') . mb_substr((string) $session_lastname, 0, 1, 'UTF-8'));
                 $tpRoleLabel = (int) $session_user_admin === 1
@@ -417,14 +421,16 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                             <i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i>
                         </a>
                     </li>
+                    <?php if ($tpShowQuickAccess === true) { ?>
                     <li class="nav-item">
                         <a class="nav-link tp-topbar-btn" data-widget="control-sidebar" data-slide="true" href="#"
                             id="controlsidebar" role="button"
                             aria-label="<?php echo $lang->get('a11y_open_sidebar'); ?>"
-                            title="<?php echo $lang->get('last_items_title'); ?>">
-                            <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+                            title="<?php echo $lang->get('quick_access_title'); ?>">
+                            <i class="fa-solid fa-bolt" aria-hidden="true"></i>
                         </a>
                     </li>
+                    <?php } ?>
                     <li class="tp-topbar-sep" aria-hidden="true"></li>
 
                     <!-- Account: identity chip + live session countdown + menu -->
@@ -1305,17 +1311,49 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
             </div>
             <!-- /.content-wrapper -->
 
-            <!-- Control Sidebar -->
-            <aside class="control-sidebar control-sidebar-dark">
-                <!-- Control sidebar content goes here -->
-                <div class="p-3">
-                    <h5><?php echo $lang->get('last_items_title'); ?></h5>
-                    <div>
-                        <ul class="list-unstyled" id="index-last-pwds">
-                        </ul>
-                    </div>
+            <!-- Control Sidebar — Quick access (recent / most used / starred) -->
+            <?php if ($tpShowQuickAccess === true) { ?>
+            <aside class="control-sidebar control-sidebar-dark tp-qa">
+
+                <div class="tp-qa-head">
+                    <span class="tp-qa-title"><?php echo $lang->get('quick_access_title'); ?></span>
+                    <button type="button" class="tp-qa-refresh" id="tp-qa-refresh"
+                        aria-label="<?php echo $lang->get('refresh'); ?>"
+                        title="<?php echo $lang->get('refresh'); ?>">
+                        <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+                    </button>
                 </div>
+
+                <div class="tp-qa-tabs" role="tablist" aria-label="<?php echo $lang->get('quick_access_title'); ?>">
+                    <button type="button" class="tp-qa-tab active" role="tab" aria-selected="true" data-scope="recent">
+                        <?php echo $lang->get('quick_access_recent'); ?>
+                    </button>
+                    <button type="button" class="tp-qa-tab" role="tab" aria-selected="false" data-scope="frequent">
+                        <?php echo $lang->get('quick_access_frequent'); ?>
+                    </button>
+                    <?php if ($tpQuickAccessStarred === true) { ?>
+                    <button type="button" class="tp-qa-tab" role="tab" aria-selected="false" data-scope="starred">
+                        <?php echo $lang->get('favorites'); ?>
+                    </button>
+                    <?php } ?>
+                </div>
+
+                <div class="tp-qa-filter" id="tp-qa-filter-wrap">
+                    <input type="text" class="no-save" id="tp-qa-filter" autocomplete="off"
+                        placeholder="<?php echo $lang->get('quick_access_filter'); ?>"
+                        aria-label="<?php echo $lang->get('quick_access_filter'); ?>">
+                </div>
+
+                <ul class="list-unstyled tp-qa-list" id="index-last-pwds">
+                </ul>
+
+                <div class="tp-qa-foot">
+                    <span id="tp-qa-hint"></span>
+                    <a href="#" id="tp-qa-seeall"><?php echo $lang->get('quick_access_see_all'); ?></a>
+                </div>
+
             </aside>
+            <?php } ?>
             <!-- /.control-sidebar -->
 
             <!-- Main Footer -->

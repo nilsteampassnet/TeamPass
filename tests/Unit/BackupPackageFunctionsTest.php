@@ -35,6 +35,129 @@ require_once __DIR__ . '/../../app/sources/backup.functions.php';
 
 class BackupPackageFunctionsTest extends TestCase
 {
+    public function testBackupCompatibilityUsesOnlyTheSchemaBoundary(): void
+    {
+        $file = [
+            'schema_level' => '1780331401',
+            'tp_files_version' => '3.2.1.2',
+            'metadata_present' => false,
+        ];
+
+        $this->assertSame('compatible', tpHealthGetBackupCompatibility($file, '1780331401'));
+        $this->assertSame('incompatible', tpHealthGetBackupCompatibility($file, '1780331402'));
+        $this->assertSame('unknown', tpHealthGetBackupCompatibility([], '1780331401'));
+        $this->assertSame('unknown', tpHealthGetBackupCompatibility($file, ''));
+    }
+
+    public function testBackupAnomaliesCountEachFileOnlyOnce(): void
+    {
+        $file = [
+            'name' => 'scheduled-1-sl1780331401.sql',
+            'mtime' => time() - 60,
+            'size_mb' => 1.5,
+            'schema_level' => '1780331401',
+            'tp_files_version' => '3.2.1.2',
+            'metadata_present' => false,
+        ];
+
+        $health = tpBuildBackupDirHealth(
+            sys_get_temp_dir(),
+            'health_backup_scheduled',
+            [$file],
+            0,
+            [
+                'all_files' => [$file],
+                'expected_schema_level' => '1780331401',
+                'expected_tp_files_version' => '3.2.1.3',
+            ]
+        );
+        $stats = $health['stats'];
+
+        $this->assertSame(1, $stats['compatible']);
+        $this->assertSame(0, $stats['incompatible']);
+        $this->assertSame(1, $stats['tp_version_mismatch']);
+        $this->assertSame(1, $stats['missing_meta']);
+        $this->assertSame(1, $stats['anomalies_total']);
+        $this->assertSame('health_backup_anomalies_found', $health['summary']['text_key']);
+    }
+
+    public function testTeampassVersionDifferenceAloneIsNotAnAnomaly(): void
+    {
+        $file = [
+            'name' => 'scheduled-1-sl1780331401.sql',
+            'mtime' => time() - 60,
+            'size_mb' => 1.5,
+            'schema_level' => '1780331401',
+            'tp_files_version' => '3.2.1.2',
+            'metadata_present' => true,
+        ];
+
+        $health = tpBuildBackupDirHealth(
+            sys_get_temp_dir(),
+            'health_backup_scheduled',
+            [$file],
+            0,
+            [
+                'all_files' => [$file],
+                'expected_schema_level' => '1780331401',
+                'expected_tp_files_version' => '3.2.1.3',
+            ]
+        );
+        $stats = $health['stats'];
+
+        $this->assertSame(1, $stats['compatible']);
+        $this->assertSame(1, $stats['tp_version_mismatch']);
+        $this->assertSame(0, $stats['anomalies_total']);
+        $this->assertSame('health_status_ok', $health['summary']['text_key']);
+        $this->assertSame('success', $health['summary']['status']);
+    }
+
+    public function testBackupSchedulerGraceTracksTheHandlerCadence(): void
+    {
+        $this->assertSame(600, tpHealthGetBackupSchedulerGracePeriod(1));
+        $this->assertSame(1800, tpHealthGetBackupSchedulerGracePeriod(15));
+        $this->assertSame(7200, tpHealthGetBackupSchedulerGracePeriod(60));
+    }
+
+    public function testStaleDatabasePartFilesArePurgedWithoutTouchingRecentOrUnrelatedFiles(): void
+    {
+        $dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'tp_backup_parts_' . bin2hex(random_bytes(4));
+        $this->assertTrue(mkdir($dir));
+
+        $oldPlain = $dir . DIRECTORY_SEPARATOR . 'scheduled-old.sql.part';
+        $oldEncrypted = $dir . DIRECTORY_SEPARATOR . 'scheduled-old.sql.encrypted.part';
+        $recent = $dir . DIRECTORY_SEPARATOR . 'scheduled-active.sql.part';
+        $unrelated = $dir . DIRECTORY_SEPARATOR . 'scheduled-old.tpbackup.part';
+
+        foreach ([$oldPlain, $oldEncrypted, $recent, $unrelated] as $path) {
+            file_put_contents($path, 'temporary');
+        }
+        touch($oldPlain, time() - 7200);
+        touch($oldEncrypted, time() - 7200);
+
+        try {
+            $result = tpBackupPurgeStaleDatabasePartFiles($dir, 3600);
+
+            $this->assertSame(3, $result['scanned']);
+            $this->assertSame(2, $result['deleted']);
+            $this->assertSame(0, $result['failed']);
+            $this->assertSame(1, $result['skipped_recent']);
+            $this->assertFileDoesNotExist($oldPlain);
+            $this->assertFileDoesNotExist($oldEncrypted);
+            $this->assertFileExists($recent);
+            $this->assertFileExists($unrelated);
+        } finally {
+            foreach (glob($dir . DIRECTORY_SEPARATOR . '*') ?: [] as $path) {
+                if (is_file($path)) {
+                    unlink($path);
+                }
+            }
+            if (is_dir($dir)) {
+                rmdir($dir);
+            }
+        }
+    }
+
     public function testRecognizesTpbackupFilenameCaseInsensitively(): void
     {
         $this->assertTrue(tpBackupIsPackageFilename('scheduled-123.TPBACKUP'));

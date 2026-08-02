@@ -89,7 +89,11 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-6">
-                <h1 class="m-0 text-dark"><i class="fa-solid fa-shield-halved mr-2"></i><?php echo $lang->get('security_dashboard'); ?></h1>
+                <h1 class="m-0 text-dark"><i class="fa-solid fa-shield-halved mr-2"></i><?php echo $lang->get('security_dashboard'); ?><a
+                        href="#" id="dashboard-page-info" class="dashboard-title-help text-muted ml-2"
+                        role="button" tabindex="0" onclick="return false;"
+                        title="<?php echo htmlspecialchars($lang->get('security_dashboard_desc'), ENT_QUOTES, 'UTF-8'); ?>"><i
+                        class="fa-regular fa-circle-question"></i></a></h1>
             </div>
         </div>
     </div>
@@ -110,15 +114,35 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
     .score-band-good { background-color: #20c997; color: #fff; }
     .score-band-fair { background-color: #ffc107; color: #212529; }
     .score-band-poor { background-color: #dc3545; color: #fff; }
-    /* Wider, left-aligned tooltip for the score methodology help. */
-    .dashboard-score-tooltip .tooltip-inner { max-width: 320px; text-align: left; }
+    /* Wider, left-aligned tooltips for the score methodology and the page help. */
+    .dashboard-score-tooltip .tooltip-inner,
+    .dashboard-help-tooltip .tooltip-inner { max-width: 320px; text-align: left; }
+    /* Help icon inside the page title: keep it discreet, not sized like the h1. */
+    .dashboard-title-help { font-size: 1rem; vertical-align: middle; }
+    .dashboard-title-help:hover, .dashboard-title-help:focus { text-decoration: none; }
+    /* Flagged-items filter bar: the three controls must stay on one line. A deep folder
+       path would otherwise size the select to its longest option and push the sort away. */
+    .dashboard-filter-bar { background-color: rgba(0, 0, 0, .02); }
+    .dashboard-filter-search { width: 260px; }
+    /* Width paired with the 60-char cap in dashboardShortenPath(). */
+    #dashboard-folder-filter { max-width: 400px; text-overflow: ellipsis; }
+    @media (max-width: 575px) {
+        .dashboard-filter-search { width: 100%; }
+        #dashboard-folder-filter { max-width: 100%; }
+    }
+    /* Anchor for the loading overlay; min-height keeps the spinner visible on a short list. */
+    #dashboard-list-wrapper { position: relative; min-height: 120px; }
+    /* Explicit class toggle: the AdminLTE overlay is display:flex, which an inline
+       style="display:none" plus jQuery .show() would turn into display:block. */
+    #dashboard-list-overlay { display: none; }
+    #dashboard-list-overlay.is-visible { display: flex; }
+    /* Stale rows stay readable but visibly inactive while the next page is loading. */
+    .dashboard-list-loading #dashboard-flagged-tbody { opacity: .45; }
 </style>
 
 <!-- Main content -->
 <section class="content">
     <div class="container-fluid">
-
-        <p class="text-muted"><?php echo $lang->get('security_dashboard_desc'); ?></p>
 
         <!-- My security posture -->
         <div class="card card-outline card-primary">
@@ -209,33 +233,66 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
         </div>
 
         <!-- Flagged items list -->
-        <div class="card card-outline card-secondary">
+        <div class="card card-outline card-secondary" id="dashboard-list-card">
             <div class="card-header">
                 <h3 class="card-title"><i class="fa-solid fa-list-check mr-2"></i><?php echo $lang->get('security_dashboard_flagged_items'); ?>
                     <span id="dashboard-active-flag" class="badge badge-secondary ml-2" style="display:none;"></span>
                 </h3>
                 <div class="card-tools">
-                    <select id="dashboard-folder-filter" class="form-control form-control-sm no-save d-inline-block align-middle" style="width:auto;">
-                        <option value="0"><?php echo $lang->get('security_dashboard_all_groupings'); ?></option>
-                    </select>
-                    <button type="button" id="dashboard-clear-filter" class="btn btn-sm btn-default ml-1" style="display:none;">
+                    <span class="text-muted small mr-2" id="dashboard-list-summary"></span>
+                    <button type="button" id="dashboard-clear-filter" class="btn btn-sm btn-default" style="display:none;">
                         <i class="fa-solid fa-xmark mr-1"></i><?php echo $lang->get('security_dashboard_clear_filter'); ?>
                     </button>
                 </div>
             </div>
-            <div class="card-body p-0">
-                <table class="table table-sm table-hover mb-0">
-                    <thead>
-                        <tr>
-                            <th><?php echo $lang->get('security_dashboard_item'); ?></th>
-                            <th><?php echo $lang->get('security_dashboard_location'); ?></th>
-                            <th><?php echo $lang->get('security_dashboard_issues'); ?></th>
-                        </tr>
-                    </thead>
-                    <tbody id="dashboard-flagged-tbody">
-                        <tr><td colspan="3" class="text-center text-muted p-3"><?php echo $lang->get('security_dashboard_no_issues'); ?></td></tr>
-                    </tbody>
-                </table>
+            <!-- Filter bar: free text + grouping + sort. -->
+            <div class="card-body py-2 border-bottom dashboard-filter-bar">
+                <div class="form-inline">
+                    <div class="input-group input-group-sm mr-2 mb-1 dashboard-filter-search">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></i></span>
+                        </div>
+                        <input type="text" id="dashboard-text-filter" class="form-control form-control-sm no-save"
+                            autocomplete="off" placeholder="<?php echo $lang->get('security_dashboard_search_placeholder'); ?>">
+                        <div class="input-group-append" id="dashboard-text-clear-wrap" style="display:none;">
+                            <button type="button" class="btn btn-default" id="dashboard-text-clear" title="<?php echo $lang->get('security_dashboard_clear_filter'); ?>">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <select id="dashboard-folder-filter" class="form-control form-control-sm no-save mr-2 mb-1" style="width:auto;">
+                        <option value="0"><?php echo $lang->get('security_dashboard_all_groupings'); ?></option>
+                    </select>
+                    <label class="text-muted small mb-1 mr-1" for="dashboard-sort"><?php echo $lang->get('security_dashboard_sort'); ?></label>
+                    <select id="dashboard-sort" class="form-control form-control-sm no-save mb-1" style="width:auto;">
+                        <option value="severity"><?php echo $lang->get('security_dashboard_sort_severity'); ?></option>
+                        <option value="oldest"><?php echo $lang->get('security_dashboard_sort_oldest'); ?></option>
+                        <option value="label"><?php echo $lang->get('security_dashboard_sort_label'); ?></option>
+                        <option value="folder"><?php echo $lang->get('security_dashboard_sort_folder'); ?></option>
+                    </select>
+                </div>
+            </div>
+            <!-- The overlay wraps the table only, so the filter controls above stay usable
+                 while a slow folder/flag query is running. -->
+            <div class="overlay-wrapper" id="dashboard-list-wrapper">
+                <div class="card-body p-0">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th><?php echo $lang->get('security_dashboard_item'); ?></th>
+                                <th><?php echo $lang->get('security_dashboard_location'); ?></th>
+                                <th class="text-nowrap"><?php echo $lang->get('security_dashboard_last_change'); ?></th>
+                                <th><?php echo $lang->get('security_dashboard_issues'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody id="dashboard-flagged-tbody">
+                            <tr><td colspan="4" class="text-center text-muted p-3"><?php echo $lang->get('security_dashboard_no_issues'); ?></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="overlay" id="dashboard-list-overlay">
+                    <i class="fa-solid fa-2x fa-circle-notch fa-spin"></i>
+                </div>
             </div>
             <div class="card-footer text-center" id="dashboard-load-more-wrap" style="display:none;">
                 <button type="button" class="btn btn-sm btn-default" id="dashboard-load-more-btn">

@@ -153,6 +153,7 @@ $data = [
     'timestamp' => $request->request->filter('timestamp', '', FILTER_SANITIZE_SPECIAL_CHARS),
     'itemKey' => $request->request->filter('item_key', '', FILTER_SANITIZE_SPECIAL_CHARS),
     'action' => $request->request->filter('action', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'origin' => $request->request->filter('origin', '', FILTER_SANITIZE_SPECIAL_CHARS),
 ];
 
 $filters = [
@@ -178,6 +179,7 @@ $filters = [
     'timestamp' => 'cast:integer',
     'itemKey' => 'trim|escape',
     'action' => 'trim|escape',
+    'origin' => 'trim|escape',
 ];
 
 $inputData = dataSanitizer(
@@ -3878,7 +3880,8 @@ switch ($inputData['type']) {
             }
             $returnArray['otp_secret'] = (string) $secret;
 
-            // Add this item to the latests list
+            // Add this item to the latests list. The session array is a de-duplicated
+            // display list, hence the in_array() guard.
             if ($session->has('user-latest_items') && isset($SETTINGS['max_latest_items']) &&
                 in_array($dataItem['id'], $session->get('user-latest_items')) === false
             ) {
@@ -3887,10 +3890,13 @@ switch ($inputData['type']) {
                     SessionManager::specificOpsOnSessionArray('user-latest_items', 'pop');
                 }
                 SessionManager::specificOpsOnSessionArray('user-latest_items', 'unshift', $dataItem['id']);
-                
-                // Store in DB this item as lastest item seen
-                updateUserLatestItems($session->get('user-id'), intval($dataItem['id']));
             }
+
+            // Store in DB this item as latest item seen. Deliberately outside the guard
+            // above: the row upserts itself, and every view has to refresh accessed_at
+            // and increment access_count - otherwise re-opening a known item would never
+            // move it back to the top of Recent nor count towards Most used.
+            updateUserLatestItems($session->get('user-id'), intval($dataItem['id']));
 
             // get list of roles
             $listOptionsForUsers = array();
@@ -5150,6 +5156,13 @@ switch ($inputData['type']) {
             $inputData['action'], // Filtered by array of allowed values
             $session->get('user-login')
         );
+
+        // Copying straight from the Quick access panel skips opening the item card,
+        // which is where the recent/most-used counters are normally bumped. Bump them
+        // here so a shortcut still counts as a real usage of the item.
+        if (($inputData['origin'] ?? '') === 'quick_access') {
+            updateUserLatestItems(intval($session->get('user-id')), intval($dataItem['id']));
+        }
 
         // Uncrypt PW if sharekey is available (empty password otherwise)
         // Automatic v1→v3 migration is performed transparently during decryption

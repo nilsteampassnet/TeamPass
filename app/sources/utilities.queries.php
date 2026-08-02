@@ -960,6 +960,15 @@ logItems(
                     'encode'
                 );
                 break;
+            } elseif ($checkUserAccess->userAccessPage('utilities.health') === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
             }
 
             $now = time();
@@ -976,93 +985,13 @@ logItems(
             // ------------------------
             // Overview (same base as admin dashboard system health)
             // ------------------------
-
-            // Encryption check
-            $encryptionStatus = 'success';
-            $encryptionText = $lang->get('health_status_ok');
-
-            if (
-                isset($SETTINGS['TEAMPASS_SECRETS'], $SETTINGS['securefile']) === true
-                && empty($SETTINGS['TEAMPASS_SECRETS']) === false
-                && empty($SETTINGS['securefile']) === false
-                && file_exists($SETTINGS['TEAMPASS_SECRETS'] . DIRECTORY_SEPARATOR . $SETTINGS['securefile']) === false
-            ) {
-                $encryptionStatus = 'danger';
-                $encryptionText = $lang->get('health_secure_file_missing');
-            }
-
-            // Active sessions count (exclude soft-deleted + system accounts)
-            $sessionsCount = (int) DB::queryFirstField(
-                'SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE session_end > %i AND disabled = 0 AND deleted_at IS NULL' . $excludedSql,
-                $now
-            );
-
-            // Cron check
-            DB::query(
-                'SELECT valeur
-                FROM ' . prefixTable('misc') . '
-                WHERE type = %s AND intitule = %s and valeur >= %d',
-                'admin',
-                'last_cron_exec',
-                $now - 600
-            );
-
-            if (DB::count() === 0) {
-                $cronStatus = 'danger';
-                $cronText = $lang->get('error');
-            } else {
-                // Cron is running. Detect a real backlog independently of the
-                // optional task DB-logging setting (enable_tasks_log): the
-                // background_tasks_logs table is only written when that setting
-                // is on, so a stale/empty table does not mean tasks are delayed.
-                // Two delay causes are distinguished so the status label names the
-                // actual problem: a task stuck "in progress" (worker crashed/killed,
-                // blocking the queue) vs a queued backlog the handler is not draining.
-                $cronStatus = 'success';
-                $cronText = $lang->get('health_status_ok');
-
-                // A task stuck "in progress" for over 30 minutes. started_at is set
-                // when a task starts being processed; guard against NULL/empty/zero.
-                $oldestStuck = DB::queryFirstField(
-                    'SELECT MIN(started_at) FROM ' . prefixTable('background_tasks') . '
-                    WHERE is_in_progress = 1
-                    AND started_at IS NOT NULL AND started_at <> "" AND started_at <> 0'
-                );
-
-                if ($oldestStuck !== null && ($now - (int) $oldestStuck) > 1800) {
-                    $cronStatus = 'warning';
-                    $cronText = $lang->get('health_cron_stuck');
-                } else {
-                    // No stuck task: flag "Delayed" when a queued task has waited
-                    // unprocessed for too long while the cron is fresh.
-                    $oldestPending = DB::queryFirstField(
-                        'SELECT MIN(created_at) FROM ' . prefixTable('background_tasks') . '
-                        WHERE is_in_progress = 0
-                        AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)'
-                    );
-
-                    if ($oldestPending !== null && ($now - (int) $oldestPending) > 300) {
-                        $cronStatus = 'warning';
-                        $cronText = $lang->get('health_cron_delayed');
-                    }
-                }
-            }
-
-            // Unknown files count
-            $unknownFilesData = DB::queryFirstField(
-                'SELECT valeur FROM ' . prefixTable('misc') . '
-                WHERE type = %s AND intitule = %s',
-                'admin',
-                'unknown_files'
-            );
-
-            $unknownFilesCount = 0;
-            if (!empty($unknownFilesData)) {
-                $unknownFiles = json_decode((string) $unknownFilesData, true);
-                if (is_array($unknownFiles)) {
-                    $unknownFilesCount = count($unknownFiles);
-                }
-            }
+            $systemHealth = teampassGetSystemHealthOverview($SETTINGS, $lang);
+            $encryptionStatus = (string) ($systemHealth['encryption']['status'] ?? 'danger');
+            $encryptionText = (string) ($systemHealth['encryption']['text'] ?? $lang->get('error'));
+            $sessionsCount = (int) ($systemHealth['sessions']['count'] ?? 0);
+            $cronStatus = (string) ($systemHealth['cron']['status'] ?? 'danger');
+            $cronText = (string) ($systemHealth['cron']['text'] ?? $lang->get('error'));
+            $unknownFilesCount = (int) ($systemHealth['unknown_files']['count'] ?? 0);
 
             // ------------------------
             // System info (CPU / RAM / Disk / PHP)
@@ -1333,12 +1262,25 @@ logItems(
                     }
                 }
             }
+            if (isset($backupInfo['scheduler']['health_text_key']) === true) {
+                $backupInfo['scheduler']['health_text'] = $lang->get(
+                    (string) $backupInfo['scheduler']['health_text_key']
+                );
+            }
 
             // ------------------------
             // Compare PHP vs Teampass settings
             // ------------------------
             $teampassSettings = tpGetTeampassSettingsForHealth($SETTINGS);
             $systemChecks = tpGetSystemChecks($phpIni, $teampassSettings, $lang);
+            $websocketHealth = $systemHealth['websocket'] ?? array();
+            $systemChecks[] = array(
+                'status' => (string) ($websocketHealth['status'] ?? 'info') === 'disabled'
+                    ? 'info'
+                    : (string) ($websocketHealth['status'] ?? 'info'),
+                'title' => $lang->get('websocket'),
+                'text' => (string) ($websocketHealth['text'] ?? $lang->get('health_not_available')),
+            );
 
             // ------------------------
             // Logs (last 24h) - teampass_log_system
@@ -1478,6 +1420,28 @@ logItems(
                 }
             }
 
+            $aesV2Stores = getAesV2MigrationStatus();
+            $aesV2Total = 0;
+            $aesV2Migrated = 0;
+            $aesV2Legacy = 0;
+            foreach ($aesV2Stores as $storeStatus) {
+                $aesV2Total += $storeStatus['total'];
+                $aesV2Migrated += $storeStatus['v2'];
+                $aesV2Legacy += $storeStatus['legacy'];
+            }
+            $aesV2Migration = array(
+                'write_enabled' => (int) ($SETTINGS['aes_v2_write_enabled'] ?? 0) === 1,
+                'stores' => $aesV2Stores,
+                'overall' => array(
+                    'legacy' => $aesV2Legacy,
+                    'v2' => $aesV2Migrated,
+                    'total' => $aesV2Total,
+                    'percent' => $aesV2Total > 0 ? (int) round(($aesV2Migrated / $aesV2Total) * 100) : 0,
+                    'applicable' => $aesV2Total > 0,
+                    'complete' => $aesV2Total > 0 && $aesV2Legacy === 0,
+                ),
+            );
+
             $report = array(
                 'generated_at' => $now,
                 'generated_at_human' => date('Y-m-d H:i:s', $now),
@@ -1486,6 +1450,7 @@ logItems(
                     'encryption' => array(
                         'status' => $encryptionStatus,
                         'text' => $encryptionText,
+                        'reason' => (string) ($systemHealth['encryption']['reason'] ?? ''),
                     ),
                     'sessions' => array(
                         'count' => $sessionsCount,
@@ -1500,6 +1465,7 @@ logItems(
                     'migration' => array(
                         'overall' => $migrationOverall,
                         'sharekeys_items' => $sharekeysItemsProgress,
+                        'aes_v2' => $aesV2Migration,
                         'users' => array(
                             'total' => $usersTotal,
                             // Main health indicator: migrated keys version (v3)
@@ -1539,6 +1505,7 @@ logItems(
                     'opcache' => $opcache,
                     'teampass_settings' => $teampassSettings,
                     'checks' => $systemChecks,
+                    'websocket' => $systemHealth['websocket'] ?? array(),
                 ),
                 'database' => array(
                     'version' => $dbVersionShort,
@@ -1549,6 +1516,7 @@ logItems(
                     'tables_top' => $dbTablesTop,
                 ),
                 'crypto' => array(
+                    'aes_v2' => $aesV2Migration,
                     'corrupted_items' => $corruptedItemsMeta,
                     'sharekeys' => array(
                         'tables' => $sharekeysStats,
@@ -1592,6 +1560,15 @@ logItems(
                     array(
                         'error' => true,
                         'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($checkUserAccess->userAccessPage('utilities.health') === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -1656,6 +1633,15 @@ logItems(
                     'encode'
                 );
                 break;
+            } elseif ($checkUserAccess->userAccessPage('utilities.health') === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
             }
 
             $meta = teampassCorruptedItemsGetSummary();
@@ -1695,6 +1681,15 @@ logItems(
                     array(
                         'error' => true,
                         'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($checkUserAccess->userAccessPage('utilities.health') === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -2291,6 +2286,7 @@ function tpTailFileLines(string $path, int $lines, int $maxBytes = 2097152): str
 
 function tpGetCpuCores(): int
 {
+    $detected = 1;
     $cpuinfo = '/proc/cpuinfo';
     if (is_readable($cpuinfo) === true) {
         $content = @file_get_contents($cpuinfo);
@@ -2298,17 +2294,49 @@ function tpGetCpuCores(): int
             preg_match_all('/^processor\s*:/m', $content, $m);
             $count = count($m[0]);
             if ($count > 0) {
-                return $count;
+                $detected = $count;
             }
         }
     }
 
     $env = getenv('NUMBER_OF_PROCESSORS');
-    if ($env !== false && (int) $env > 0) {
-        return (int) $env;
+    if ($detected === 1 && $env !== false && (int) $env > 0) {
+        $detected = (int) $env;
     }
 
-    return 1;
+    // Respect container CPU quotas instead of always reporting host capacity.
+    $quotaFiles = array(
+        array('/sys/fs/cgroup/cpu.max', true),
+        array('/sys/fs/cgroup/cpu/cpu.cfs_quota_us', false),
+    );
+    foreach ($quotaFiles as $quotaDefinition) {
+        [$quotaPath, $isV2] = $quotaDefinition;
+        if (is_readable($quotaPath) === false) {
+            continue;
+        }
+
+        if ($isV2 === true) {
+            $parts = preg_split('/\s+/', trim((string) file_get_contents($quotaPath)));
+            if (is_array($parts) === false || count($parts) < 2 || $parts[0] === 'max') {
+                continue;
+            }
+            $quota = (int) $parts[0];
+            $period = (int) $parts[1];
+        } else {
+            $periodPath = '/sys/fs/cgroup/cpu/cpu.cfs_period_us';
+            if (is_readable($periodPath) === false) {
+                continue;
+            }
+            $quota = (int) trim((string) file_get_contents($quotaPath));
+            $period = (int) trim((string) file_get_contents($periodPath));
+        }
+
+        if ($quota > 0 && $period > 0) {
+            $detected = min($detected, max(1, (int) ceil($quota / $period)));
+        }
+    }
+
+    return max(1, $detected);
 }
 
 function tpGetMemInfo(): array
@@ -2321,40 +2349,70 @@ function tpGetMemInfo(): array
         'used_percent' => 0,
         'swap_total_mb' => 0,
         'swap_free_mb' => 0,
+        'source' => 'unavailable',
     );
 
-    if (is_readable($meminfo) === false) {
-        return $result;
-    }
+    if (is_readable($meminfo) === true) {
+        $lines = @file($meminfo, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        if ($lines !== false) {
+            $vals = array();
+            foreach ($lines as $line) {
+                if (preg_match('/^(\w+):\s+(\d+)\s+kB$/', $line, $m) === 1) {
+                    $vals[$m[1]] = (int) $m[2];
+                }
+            }
 
-    $lines = @file($meminfo, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    if ($lines === false) {
-        return $result;
-    }
+            $totalKb = (int) ($vals['MemTotal'] ?? 0);
+            $availKb = (int) ($vals['MemAvailable'] ?? 0);
+            $swapTotalKb = (int) ($vals['SwapTotal'] ?? 0);
+            $swapFreeKb = (int) ($vals['SwapFree'] ?? 0);
 
-    $vals = array();
-    foreach ($lines as $line) {
-        if (preg_match('/^(\w+):\s+(\d+)\s+kB$/', $line, $m) === 1) {
-            $vals[$m[1]] = (int) $m[2];
+            $totalMb = (int) round($totalKb / 1024);
+            $availMb = (int) round($availKb / 1024);
+            $usedMb = max(0, $totalMb - $availMb);
+
+            $result['total_mb'] = $totalMb;
+            $result['available_mb'] = $availMb;
+            $result['used_mb'] = $usedMb;
+            $result['used_percent'] = $totalMb > 0 ? round(($usedMb / $totalMb) * 100, 2) : 0;
+            $result['swap_total_mb'] = (int) round($swapTotalKb / 1024);
+            $result['swap_free_mb'] = (int) round($swapFreeKb / 1024);
+            $result['source'] = 'host';
         }
     }
 
-    $totalKb = (int) ($vals['MemTotal'] ?? 0);
-    $availKb = (int) ($vals['MemAvailable'] ?? 0);
-    $swapTotalKb = (int) ($vals['SwapTotal'] ?? 0);
-    $swapFreeKb = (int) ($vals['SwapFree'] ?? 0);
+    $cgroupCandidates = array(
+        array('/sys/fs/cgroup/memory.max', '/sys/fs/cgroup/memory.current', 'cgroup_v2'),
+        array('/sys/fs/cgroup/memory/memory.limit_in_bytes', '/sys/fs/cgroup/memory/memory.usage_in_bytes', 'cgroup_v1'),
+    );
+    foreach ($cgroupCandidates as $candidate) {
+        [$limitPath, $usagePath, $source] = $candidate;
+        if (is_readable($limitPath) === false || is_readable($usagePath) === false) {
+            continue;
+        }
 
-    $totalMb = (int) round($totalKb / 1024);
-    $availMb = (int) round($availKb / 1024);
-    $usedMb = max(0, $totalMb - $availMb);
-    $usedPercent = $totalMb > 0 ? round(($usedMb / $totalMb) * 100, 2) : 0;
+        $limitRaw = trim((string) file_get_contents($limitPath));
+        $usageRaw = trim((string) file_get_contents($usagePath));
+        if ($limitRaw === 'max' || ctype_digit($limitRaw) === false || ctype_digit($usageRaw) === false) {
+            continue;
+        }
 
-    $result['total_mb'] = $totalMb;
-    $result['available_mb'] = $availMb;
-    $result['used_mb'] = $usedMb;
-    $result['used_percent'] = $usedPercent;
-    $result['swap_total_mb'] = (int) round($swapTotalKb / 1024);
-    $result['swap_free_mb'] = (int) round($swapFreeKb / 1024);
+        $limitBytes = (int) $limitRaw;
+        $usageBytes = (int) $usageRaw;
+        $hostBytes = (int) $result['total_mb'] * 1024 * 1024;
+        if ($limitBytes <= 0 || ($hostBytes > 0 && $limitBytes >= $hostBytes)) {
+            continue;
+        }
+
+        $totalMb = max(1, (int) round($limitBytes / 1024 / 1024));
+        $usedMb = max(0, min($totalMb, (int) round($usageBytes / 1024 / 1024)));
+        $result['total_mb'] = $totalMb;
+        $result['used_mb'] = $usedMb;
+        $result['available_mb'] = max(0, $totalMb - $usedMb);
+        $result['used_percent'] = round(($usedMb / $totalMb) * 100, 2);
+        $result['source'] = $source;
+        break;
+    }
 
     return $result;
 }
@@ -2379,10 +2437,19 @@ function tpGetDiskInfo(array $paths): array
             $real = '/';
         }
 
-        if (isset($seen[$real]) === true) {
+        $stat = @stat($real);
+        $filesystemKey = $stat !== false
+            ? 'dev:' . (string) $stat['dev']
+            : 'path:' . $real;
+
+        if (isset($seen[$filesystemKey]) === true) {
+            $index = (int) $seen[$filesystemKey];
+            if (in_array($real, $out[$index]['paths'], true) === false) {
+                $out[$index]['paths'][] = $real;
+            }
             continue;
         }
-        $seen[$real] = true;
+        $seen[$filesystemKey] = count($out);
 
         $total = @disk_total_space($real);
         $free = @disk_free_space($real);
@@ -2390,6 +2457,7 @@ function tpGetDiskInfo(array $paths): array
         if ($total === false || $free === false || $total <= 0) {
             $out[] = array(
                 'path' => $real,
+                'paths' => array($real),
                 'total_gb' => 0,
                 'free_gb' => 0,
                 'used_percent' => 0,
@@ -2402,6 +2470,7 @@ function tpGetDiskInfo(array $paths): array
 
         $out[] = array(
             'path' => $real,
+            'paths' => array($real),
             'total_gb' => round($total / 1024 / 1024 / 1024, 2),
             'free_gb' => round($free / 1024 / 1024 / 1024, 2),
             'used_percent' => $usedPercent,
@@ -2433,6 +2502,7 @@ function tpGetPhpIniInfo(): array
     return array(
         'version' => PHP_VERSION,
         'sapi' => PHP_SAPI,
+        'runtime_scope' => PHP_SAPI === 'cli' ? 'cli' : 'web',
         'ini' => $ini,
     );
 }
@@ -2862,41 +2932,7 @@ function tpGetSharekeysOrphans(string $shortTableName): array
 
 function tpGetExcludedUserIds(): array
 {
-    $ids = array();
-
-    $constants = array(
-        'OTV_USER_ID',
-        'SSH_USER_ID',
-        'API_USER_ID',
-        'ADMIN_USER_ID',
-        'SUPERVISOR_USER_ID',
-    );
-
-    foreach ($constants as $c) {
-        if (defined($c) === true) {
-            $ids[] = (int) constant($c);
-        }
-    }
-
-    
-    // Fallback: system accounts by login (TP / OTV / API)
-    // This ensures exclusions even if constants are not defined in some contexts.
-    try {
-        $rows = DB::query(
-            'SELECT id FROM ' . prefixTable('users') . ' WHERE UPPER(login) IN ("TP","OTV","API")'
-        );
-        foreach ($rows as $r) {
-            $ids[] = (int) ($r['id'] ?? 0);
-        }
-    } catch (Exception $e) {
-        // ignore
-    }
-
-    $ids = array_values(array_unique(array_filter($ids, static function ($v): bool {
-        return $v > 0;
-    })));
-
-    return $ids;
+    return teampassGetSystemAccountIds();
 }
 
 function tpGetIntegrityHashStatus(array $SETTINGS, array $excludedUserIds = array()): array
@@ -3329,7 +3365,11 @@ function tpGetBackupsStatus(array $SETTINGS): array
     // Summary: last backup age (best effort across all dirs)
     // ------------------------
     $lastMtime = 0;
-    foreach (array($scheduledAll, $ontheflyAll, $externalizedAll) as $list) {
+    $summaryLists = array($scheduledAll, $ontheflyAll);
+    if ($externalizedEnabled === 1) {
+        $summaryLists[] = $externalizedAll;
+    }
+    foreach ($summaryLists as $list) {
         if (isset($list['error']) === true || empty($list) === true) {
             continue;
         }
@@ -3346,6 +3386,8 @@ function tpGetBackupsStatus(array $SETTINGS): array
     // Scheduler health (settings)
     // ------------------------
     $scheduler = array(
+        'enabled' => false,
+        'frequency' => 'daily',
         'output_dir' => $scheduledDir,
         'retention_days' => 0,
         'next_run_at' => 0,
@@ -3353,8 +3395,14 @@ function tpGetBackupsStatus(array $SETTINGS): array
         'last_status' => '',
         'last_message' => '',
         'last_completed_at' => 0,
+        'handler_interval_minutes' => 1,
+        'overdue_grace_seconds' => 600,
+        'health_status' => 'info',
+        'health_text_key' => 'health_backup_scheduler_disabled',
     );
 
+    $scheduler['enabled'] = (int) tpHealthGetSettingsValue('bck_scheduled_enabled', '0') === 1;
+    $scheduler['frequency'] = (string) tpHealthGetSettingsValue('bck_scheduled_frequency', 'daily');
     $scheduler['output_dir'] = (string) tpHealthGetSettingsValue('bck_scheduled_output_dir', $scheduledDir);
     if ($scheduler['output_dir'] === '') {
         $scheduler['output_dir'] = $scheduledDir;
@@ -3365,10 +3413,37 @@ function tpGetBackupsStatus(array $SETTINGS): array
     $scheduler['last_status'] = (string) tpHealthGetSettingsValue('bck_scheduled_last_status', '');
     $scheduler['last_message'] = (string) tpHealthGetSettingsValue('bck_scheduled_last_message', '');
     $scheduler['last_completed_at'] = (int) tpHealthGetSettingsValue('bck_scheduled_last_completed_at', '0');
+    $scheduler['handler_interval_minutes'] = max(
+        1,
+        (int) ($SETTINGS['items_ops_job_frequency'] ?? 1)
+    );
+    $scheduler['overdue_grace_seconds'] = tpHealthGetBackupSchedulerGracePeriod(
+        $scheduler['handler_interval_minutes']
+    );
 
     $scheduler['next_run_at_human'] = $scheduler['next_run_at'] > 0 ? date('Y-m-d H:i:s', (int) $scheduler['next_run_at']) : '';
     $scheduler['last_run_at_human'] = $scheduler['last_run_at'] > 0 ? date('Y-m-d H:i:s', (int) $scheduler['last_run_at']) : '';
     $scheduler['last_completed_at_human'] = $scheduler['last_completed_at'] > 0 ? date('Y-m-d H:i:s', (int) $scheduler['last_completed_at']) : '';
+
+    if ($scheduler['enabled'] === true) {
+        $failedStatuses = array('failed', 'error', 'failure');
+        if (in_array(strtolower($scheduler['last_status']), $failedStatuses, true) === true) {
+            $scheduler['health_status'] = 'danger';
+            $scheduler['health_text_key'] = 'health_backup_scheduler_failed';
+        } elseif (
+            $scheduler['next_run_at'] > 0
+            && $now > ($scheduler['next_run_at'] + $scheduler['overdue_grace_seconds'])
+        ) {
+            $scheduler['health_status'] = 'warning';
+            $scheduler['health_text_key'] = 'health_backup_scheduler_overdue';
+        } elseif ($scheduler['last_completed_at'] === 0) {
+            $scheduler['health_status'] = 'warning';
+            $scheduler['health_text_key'] = 'health_backup_scheduler_never_completed';
+        } else {
+            $scheduler['health_status'] = 'success';
+            $scheduler['health_text_key'] = 'health_status_ok';
+        }
+    }
 
     // ------------------------
     // Latest backups (merged, for quick visibility)
@@ -3411,14 +3486,10 @@ function tpGetBackupsStatus(array $SETTINGS): array
     $latest = array_slice($latest, 0, 10);
 
     foreach ($latest as $k => $f) {
-        $schema = isset($f['schema_level']) && is_scalar($f['schema_level']) ? (string) $f['schema_level'] : '';
-        if ($schema === '' || $expectedSchemaLevel === '') {
-            $latest[$k]['compatibility'] = 'unknown';
-        } elseif ($schema === $expectedSchemaLevel) {
-            $latest[$k]['compatibility'] = 'compatible';
-        } else {
-            $latest[$k]['compatibility'] = 'incompatible';
-        }
+        $latest[$k]['compatibility'] = tpHealthGetBackupCompatibility(
+            $f,
+            $expectedSchemaLevel
+        );
     }
 
 
@@ -3445,19 +3516,11 @@ function tpGetBackupsStatus(array $SETTINGS): array
                 continue;
             }
 
-            $schemaLevel = isset($f['schema_level']) ? (string) $f['schema_level'] : '';
-            $tpFilesVersion = isset($f['tp_files_version']) ? (string) $f['tp_files_version'] : '';
-
-            $compatibility = 'unknown';
-            if ($expectedSchemaLevel !== '' && $schemaLevel !== '') {
-                $compatibility = ($schemaLevel === $expectedSchemaLevel) ? 'compatible' : 'incompatible';
-                if ($compatibility === 'compatible' && $expectedTpFilesVersion !== '' && $tpFilesVersion !== '' && $tpFilesVersion !== $expectedTpFilesVersion) {
-                    $compatibility = 'incompatible';
-                }
-            }
-
             $f['type'] = $type;
-            $f['compatibility'] = $compatibility;
+            $f['compatibility'] = tpHealthGetBackupCompatibility(
+                $f,
+                $expectedSchemaLevel
+            );
 
             $backupHistory[] = $f;
         }
@@ -3551,10 +3614,11 @@ function tpGetBackupsStatus(array $SETTINGS): array
     $scheduledStats = isset($scheduledDirHealth['stats']) && is_array($scheduledDirHealth['stats']) ? $scheduledDirHealth['stats'] : array();
     $ontheflyStats = isset($ontheflyDirHealth['stats']) && is_array($ontheflyDirHealth['stats']) ? $ontheflyDirHealth['stats'] : array();
     $externalizedStats = isset($externalizedDirHealth['stats']) && is_array($externalizedDirHealth['stats']) ? $externalizedDirHealth['stats'] : array();
+    $externalizedSummaryStats = $externalizedEnabled === 1 ? $externalizedStats : array();
 
-    $totalFiles = (int) ($scheduledStats['total_files'] ?? 0) + (int) ($ontheflyStats['total_files'] ?? 0) + (int) ($externalizedStats['total_files'] ?? 0);
-    $totalCompatible = (int) ($scheduledStats['compatible'] ?? 0) + (int) ($ontheflyStats['compatible'] ?? 0) + (int) ($externalizedStats['compatible'] ?? 0);
-    $anomaliesTotal = (int) ($scheduledStats['anomalies_total'] ?? 0) + (int) ($ontheflyStats['anomalies_total'] ?? 0) + (int) ($externalizedStats['anomalies_total'] ?? 0);
+    $totalFiles = (int) ($scheduledStats['total_files'] ?? 0) + (int) ($ontheflyStats['total_files'] ?? 0) + (int) ($externalizedSummaryStats['total_files'] ?? 0);
+    $totalCompatible = (int) ($scheduledStats['compatible'] ?? 0) + (int) ($ontheflyStats['compatible'] ?? 0) + (int) ($externalizedSummaryStats['compatible'] ?? 0);
+    $anomaliesTotal = (int) ($scheduledStats['anomalies_total'] ?? 0) + (int) ($ontheflyStats['anomalies_total'] ?? 0) + (int) ($externalizedSummaryStats['anomalies_total'] ?? 0);
 
     $summaryStatus = 'info';
     $summaryTextKey = 'health_backup_no_data';
@@ -3562,6 +3626,12 @@ function tpGetBackupsStatus(array $SETTINGS): array
     if ($totalFiles === 0) {
         $summaryStatus = 'danger';
         $summaryTextKey = 'health_backup_no_files';
+    } elseif ($scheduler['enabled'] === true && $scheduler['health_status'] === 'danger') {
+        $summaryStatus = 'danger';
+        $summaryTextKey = (string) $scheduler['health_text_key'];
+    } elseif ($scheduler['enabled'] === true && $scheduler['health_status'] === 'warning') {
+        $summaryStatus = 'warning';
+        $summaryTextKey = (string) $scheduler['health_text_key'];
     } elseif ($expectedSchemaLevel !== '' && $totalCompatible === 0) {
         $summaryStatus = 'warning';
         $summaryTextKey = 'health_backup_no_compatible_backups';
@@ -4016,173 +4086,6 @@ function tpListBackupSqlFiles(string $dir, bool $scheduledOnly, int $limit = 10,
     return array_slice($items, 0, $limit);
 }
 
-function tpBuildBackupDirHealth(string $dir, string $labelKey, array $files, int $metaOrphans = 0, array $options = array()): array
-{
-    $now = time();
-
-    $expectedSchemaLevel = '';
-    if (isset($options['expected_schema_level']) === true && is_scalar($options['expected_schema_level'])) {
-        $expectedSchemaLevel = (string) $options['expected_schema_level'];
-    }
-
-    $expectedTpFilesVersion = '';
-    if (isset($options['expected_tp_files_version']) === true && is_scalar($options['expected_tp_files_version'])) {
-        $expectedTpFilesVersion = (string) $options['expected_tp_files_version'];
-    }
-
-    $allFiles = $files;
-    if (isset($options['all_files']) === true && is_array($options['all_files']) === true) {
-        $allFiles = $options['all_files'];
-    }
-
-    $summaryStatus = 'info';
-    $summaryTextKey = 'health_backup_no_data';
-    $lastAgeHours = null;
-
-    $stats = array(
-        'total_files' => 0,
-        'compatible' => 0,
-        'incompatible' => 0,
-        'unknown_schema' => 0,
-        'missing_meta' => 0,
-        'meta_orphans' => $metaOrphans,
-        'tp_version_mismatch' => 0,
-        'last_backup_at' => 0,
-        'last_backup_at_human' => '',
-        'last_backup_file' => '',
-        'last_backup_size_mb' => null,
-        'last_backup_comment' => null,
-        'last_backup_compatibility' => 'unknown',
-        'last_compatible_backup_at' => 0,
-        'last_compatible_backup_at_human' => '',
-        'last_compatible_backup_file' => '',
-        'last_compatible_backup_size_mb' => null,
-        'last_compatible_backup_comment' => null,
-        'expected_schema_level' => $expectedSchemaLevel,
-        'expected_tp_files_version' => $expectedTpFilesVersion,
-        'anomalies_total' => 0,
-    );
-
-    if (isset($allFiles['error']) === true) {
-        $summaryStatus = 'warning';
-        $summaryTextKey = 'health_backup_path_not_readable';
-        $stats['anomalies_total'] = 1;
-    } elseif (empty($allFiles) === true) {
-        $summaryStatus = 'danger';
-        $summaryTextKey = 'health_backup_no_files';
-    } else {
-        foreach ($allFiles as $f) {
-            if (is_array($f) === false) {
-                continue;
-            }
-            $name = isset($f['name']) && is_scalar($f['name']) ? (string) $f['name'] : '';
-            if ($name === '') {
-                continue;
-            }
-
-            $stats['total_files']++;
-
-            $mtime = (int) ($f['mtime'] ?? 0);
-            $sizeMb = isset($f['size_mb']) ? (float) $f['size_mb'] : null;
-            $rawComment = isset($f['comment']) && is_scalar($f['comment']) ? trim((string) $f['comment']) : '';
-            $comment = $rawComment !== '' ? $rawComment : null;
-
-            $schemaLevel = isset($f['schema_level']) && is_scalar($f['schema_level']) ? (string) $f['schema_level'] : '';
-            $tpFilesVersion = isset($f['tp_files_version']) && is_scalar($f['tp_files_version']) ? (string) $f['tp_files_version'] : '';
-
-            $compatibility = 'unknown';
-            if ($schemaLevel !== '' && $expectedSchemaLevel !== '') {
-                $compatibility = ($schemaLevel === $expectedSchemaLevel) ? 'compatible' : 'incompatible';
-            }
-
-            if ($mtime > $stats['last_backup_at']) {
-                $stats['last_backup_at'] = $mtime;
-                $stats['last_backup_at_human'] = date('Y-m-d H:i:s', $mtime);
-                $stats['last_backup_file'] = $name;
-                $stats['last_backup_size_mb'] = $sizeMb;
-                $stats['last_backup_comment'] = $comment;
-                $stats['last_backup_compatibility'] = $compatibility;
-            }
-
-            if ($schemaLevel === '') {
-                $stats['unknown_schema']++;
-            } elseif ($expectedSchemaLevel !== '') {
-                if ($schemaLevel === $expectedSchemaLevel) {
-                    $stats['compatible']++;
-                    if ($mtime > $stats['last_compatible_backup_at']) {
-                        $stats['last_compatible_backup_at'] = $mtime;
-                        $stats['last_compatible_backup_at_human'] = date('Y-m-d H:i:s', $mtime);
-                        $stats['last_compatible_backup_file'] = $name;
-                        $stats['last_compatible_backup_size_mb'] = $sizeMb;
-                        $stats['last_compatible_backup_comment'] = $comment;
-                    }
-                } else {
-                    $stats['incompatible']++;
-                }
-            }
-
-            if ($expectedTpFilesVersion !== '' && $tpFilesVersion !== '' && $tpFilesVersion !== $expectedTpFilesVersion) {
-                $stats['tp_version_mismatch']++;
-            }
-
-            if (array_key_exists('metadata_present', $f) === true) {
-                if ((bool) $f['metadata_present'] === false) {
-                    $stats['missing_meta']++;
-                }
-            } elseif (!empty($f['remote'])) {
-                // Remote destinations cannot be checked with local filesystem helpers.
-            } else {
-                // Check missing meta (.meta.json)
-                $fullPath = rtrim($dir, '/') . '/' . $name;
-                $metaPath = $fullPath . '.meta.json';
-                if (function_exists('tpGetBackupMetadataPath') === true) {
-                    $metaPath = (string) tpGetBackupMetadataPath($fullPath);
-                }
-                if (is_file($metaPath) === false) {
-                    $stats['missing_meta']++;
-                }
-            }
-        }
-
-        // Best effort age calculation based on latest backup
-        if ($stats['last_backup_at'] > 0) {
-            $lastAgeHours = round(($now - $stats['last_backup_at']) / 3600, 2);
-        }
-
-        $stats['anomalies_total'] =
-            (int) $metaOrphans
-            + (int) $stats['missing_meta']
-            + (int) $stats['unknown_schema']
-            + (int) $stats['tp_version_mismatch']
-            + (int) ($expectedSchemaLevel !== '' ? $stats['incompatible'] : 0);
-
-        if ($expectedSchemaLevel !== '' && $stats['compatible'] === 0) {
-            $summaryStatus = 'warning';
-            $summaryTextKey = 'health_backup_no_compatible_backups';
-        } elseif ($stats['anomalies_total'] > 0) {
-            $summaryStatus = 'warning';
-            $summaryTextKey = 'health_backup_anomalies_found';
-        } else {
-            $summaryStatus = 'success';
-            $summaryTextKey = 'health_status_ok';
-        }
-    }
-
-    return array(
-        'label_key' => $labelKey,
-        'path' => $dir,
-        'files' => $files,
-        'meta_orphans' => $metaOrphans,
-        'stats' => $stats,
-        'summary' => array(
-            'status' => $summaryStatus,
-            'text_key' => $summaryTextKey,
-            'last_backup_age_hours' => $lastAgeHours,
-        ),
-    );
-}
-
-
 function tpGetTeampassSettingsForHealth(array $SETTINGS): array
 {
     $wanted = array(
@@ -4192,8 +4095,16 @@ function tpGetTeampassSettingsForHealth(array $SETTINGS): array
         'task_maximum_run_time',
         'enable_tasks_manager',
         'tasks_manager_refreshing_period',
+        'items_ops_job_frequency',
         'enable_tasks_log',
         'tasks_log_retention_delay',
+        'redis_session_enabled',
+        'websocket_enabled',
+        'websocket_host',
+        'websocket_port',
+        'aes_v2_write_enabled',
+        'bck_scheduled_enabled',
+        'bck_scheduled_frequency',
         'bck_script_path',
         'bck_script_filename',
         'api',
