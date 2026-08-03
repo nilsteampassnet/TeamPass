@@ -350,13 +350,17 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     }
 
     /**
-     * Escape a DataTables value before displaying it as HTML.
+     * Decode a legacy entity layer and escape the value before displaying it as HTML.
      *
      * @param {*} value Value to escape.
      * @return {string}
      */
     function escapeAuthenticationLockoutValue(value) {
-        return $('<div/>').text(value === null || value === undefined ? '' : value.toString()).html();
+        const normalizedValue = decodeHtmlEntities(
+            value === null || value === undefined ? '' : value.toString()
+        );
+
+        return $('<div/>').text(normalizedValue).html();
     }
 
     /**
