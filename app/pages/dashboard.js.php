@@ -83,9 +83,15 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         key: '<?php echo $session->get('key'); ?>',
         chunk: 50,
         listPage: 100,
+        // Debounce for the free-text filter: long enough to skip intermediate keystrokes,
+        // short enough not to feel laggy.
+        searchDelay: 350,
         strings: {
             never: <?php echo json_encode($lang->get('security_dashboard_never'), JSON_UNESCAPED_UNICODE); ?>,
             noIssues: <?php echo json_encode($lang->get('security_dashboard_no_issues'), JSON_UNESCAPED_UNICODE); ?>,
+            noMatch: <?php echo json_encode($lang->get('security_dashboard_no_match'), JSON_UNESCAPED_UNICODE); ?>,
+            showing: <?php echo json_encode($lang->get('security_dashboard_showing'), JSON_UNESCAPED_UNICODE); ?>,
+            lastChangeUnknown: <?php echo json_encode($lang->get('security_dashboard_last_change_unknown'), JSON_UNESCAPED_UNICODE); ?>,
             scanning: <?php echo json_encode($lang->get('security_dashboard_scanning'), JSON_UNESCAPED_UNICODE); ?>,
             scanButton: <?php echo json_encode($lang->get('security_dashboard_scan_button'), JSON_UNESCAPED_UNICODE); ?>,
             done: <?php echo json_encode($lang->get('security_dashboard_scan_done'), JSON_UNESCAPED_UNICODE); ?>,
@@ -275,14 +281,33 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         $('#dashboard-total-items').text(counts.total);
     }
 
+    // Age of the last dated password event, as a cell: date + "N days" hint.
+    // 0 means no such event was ever logged for this item.
+    function dashboardLastChangeCell(timestamp) {
+        const ts = parseInt(timestamp, 10) || 0;
+        const td = $('<td>').addClass('text-muted small text-nowrap');
+        if (ts <= 0) {
+            return td.text(TP_DASH.strings.lastChangeUnknown);
+        }
+        const date = new Date(ts * 1000);
+        const days = Math.floor((Date.now() - date.getTime()) / 86400000);
+        return td
+            .attr('title', date.toLocaleString())
+            .text(date.toLocaleDateString() + ' (' + days + 'd)');
+    }
+
     function dashboardRenderList(list, append) {
         const tbody = $('#dashboard-flagged-tbody');
         if (append !== true) {
             tbody.empty();
         }
         if ((!list || list.length === 0) && append !== true) {
+            // "Nothing wrong" and "nothing matches what you typed" are two different
+            // answers — reporting the first for the second would be misleading.
+            const filtered = dashboardFilterFlag !== '' || dashboardFilterFolder > 0 || dashboardFilterText !== '';
             tbody.append($('<tr>').append(
-                $('<td>').attr('colspan', 3).addClass('text-center text-muted p-3').text(TP_DASH.strings.noIssues)
+                $('<td>').attr('colspan', 4).addClass('text-center text-muted p-3')
+                    .text(filtered ? TP_DASH.strings.noMatch : TP_DASH.strings.noIssues)
             ));
             return;
         }
@@ -294,6 +319,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             const tr = $('<tr>');
             tr.append($('<td>').append($('<a>').attr('href', itemLink).text(item.label)));
             tr.append($('<td>').addClass('text-muted small').text(item.path));
+            tr.append(dashboardLastChangeCell(item.last_change));
 
             const tdBadges = $('<td>');
             Object.keys(TP_DASH.flags).forEach(function (f) {
@@ -313,28 +339,140 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         });
     }
 
-    // Active filters: by grouping (folder) and by issue type (clicked card).
+    // Active filters: by grouping (folder), by issue type (clicked card), by free text,
+    // plus the chosen sort order.
     let dashboardFilterFolder = 0;
     let dashboardFilterFlag = '';
+    let dashboardFilterText = '';
+    let dashboardSort = 'severity';
 
     // Incremental list paging state ("load more").
     let dashboardListShown = 0;
     let dashboardListTotal = 0;
     let dashboardScanSkipped = 0;
 
+    // Debounce handle for the free-text input.
+    let dashboardTextTimer = null;
+    // Monotonic request id: a slow answer to an abandoned filter must not overwrite
+    // the list rendered for the filter the user has since moved on to.
+    let dashboardRequestSeq = 0;
+
+    // Filters survive the round-trip to an item editor and back ("fix" links leave the
+    // page). Per-tab only, and never fatal: private-mode browsers throw on access.
+    const DASHBOARD_STATE_KEY = 'tpDashboardFilters';
+
+    function dashboardSaveFilters() {
+        try {
+            window.sessionStorage.setItem(DASHBOARD_STATE_KEY, JSON.stringify({
+                flag: dashboardFilterFlag,
+                folder: dashboardFilterFolder,
+                text: dashboardFilterText,
+                sort: dashboardSort
+            }));
+        } catch (e) {
+            // Storage unavailable — filters simply do not persist.
+        }
+    }
+
+    function dashboardRestoreFilters() {
+        let saved = null;
+        try {
+            saved = JSON.parse(window.sessionStorage.getItem(DASHBOARD_STATE_KEY) || 'null');
+        } catch (e) {
+            saved = null;
+        }
+        if (saved === null || typeof saved !== 'object') {
+            return;
+        }
+        // Server-side whitelists still apply; this only restores the widgets.
+        dashboardFilterFlag = typeof saved.flag === 'string' ? saved.flag : '';
+        dashboardFilterFolder = parseInt(saved.folder, 10) || 0;
+        dashboardFilterText = typeof saved.text === 'string' ? saved.text : '';
+        dashboardSort = typeof saved.sort === 'string' && saved.sort !== '' ? saved.sort : 'severity';
+        $('#dashboard-text-filter').val(dashboardFilterText);
+        $('#dashboard-sort').val(dashboardSort);
+        if ($('#dashboard-sort').val() === null) {
+            dashboardSort = 'severity';
+            $('#dashboard-sort').val('severity');
+        }
+    }
+
+    // Loader over the flagged-items card. `append` keeps the already-shown rows visible
+    // (a "load more" must not blank the list the user is reading).
+    function dashboardListLoading(isLoading, append) {
+        $('#dashboard-list-overlay').toggleClass('is-visible', isLoading === true && append !== true);
+        $('#dashboard-list-card').toggleClass('dashboard-list-loading', isLoading === true);
+    }
+
+    // "Showing X of Y" — immediate feedback that a filter actually did something.
+    function dashboardUpdateListSummary() {
+        const el = $('#dashboard-list-summary');
+        if (dashboardListTotal === 0) {
+            el.text('');
+            return;
+        }
+        el.text(
+            TP_DASH.strings.showing
+                .replace('#shown#', String(dashboardListShown))
+                .replace('#total#', String(dashboardListTotal))
+        );
+    }
+
+    // A select sizes itself on its longest option, so one deep folder path would widen the
+    // dropdown until the sort control wraps to a second line. Collapse the middle segments;
+    // the full path stays reachable as a tooltip, and the leaf — the part that identifies
+    // the folder — is always kept.
+    function dashboardShortenPath(path, maxLength) {
+        const full = String(path);
+        if (full.length <= maxLength) {
+            return full;
+        }
+        const parts = full.split(' › ');
+        const leaf = parts[parts.length - 1];
+        // The leaf is what identifies the folder — cut into it only when it alone overflows.
+        if (leaf.length > maxLength - 2) {
+            return '…' + leaf.slice(leaf.length - maxLength + 1);
+        }
+        if (parts.length > 2) {
+            const collapsed = parts[0] + ' › … › ' + leaf;
+            if (collapsed.length <= maxLength) {
+                return collapsed;
+            }
+        }
+        return '… › ' + leaf;
+    }
+
+    // Returns true when the selected grouping had to be dropped, so the caller can
+    // refetch: the answer it just got was filtered on a folder that no longer applies.
     function dashboardBuildFolders(folders) {
         const sel = $('#dashboard-folder-filter');
         const current = String(dashboardFilterFolder);
         sel.find('option:not(:first)').remove();
         (folders || []).forEach(function (f) {
-            sel.append($('<option>').attr('value', String(parseInt(f.id, 10) || 0)).text(f.path));
+            sel.append(
+                $('<option>')
+                    .attr('value', String(parseInt(f.id, 10) || 0))
+                    .attr('title', f.path)
+                    // 60 chars ≈ the 400px cap set on #dashboard-folder-filter: keep both in sync.
+                    .text(dashboardShortenPath(f.path, 60))
+            );
         });
         sel.val(current);
         // Selected grouping no longer has flagged items → fall back to "all".
-        if (sel.val() === null) {
+        const reset = sel.val() === null;
+        if (reset === true) {
             dashboardFilterFolder = 0;
             sel.val('0');
         }
+        dashboardUpdateFolderTitle();
+        return reset;
+    }
+
+    // Mirror the selected option's full path onto the select, so an abbreviated label can
+    // still be read in full by hovering the closed control.
+    function dashboardUpdateFolderTitle() {
+        const sel = $('#dashboard-folder-filter');
+        sel.attr('title', sel.find('option:selected').attr('title') || '');
     }
 
     function dashboardApplyFilterUI() {
@@ -346,25 +484,59 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         } else {
             $('#dashboard-active-flag').hide();
         }
-        $('#dashboard-clear-filter').toggle(dashboardFilterFlag !== '' || dashboardFilterFolder > 0);
+        $('#dashboard-text-clear-wrap').toggle(dashboardFilterText !== '');
+        $('#dashboard-clear-filter').toggle(
+            dashboardFilterFlag !== '' || dashboardFilterFolder > 0 || dashboardFilterText !== ''
+        );
     }
 
     function dashboardLoadSummary() {
-        dashboardPost({ type: 'get_summary', offset: 0, limit: TP_DASH.listPage, filter_flag: dashboardFilterFlag, filter_folder: dashboardFilterFolder }, function (data) {
+        const seq = ++dashboardRequestSeq;
+        dashboardListLoading(true, false);
+        dashboardPost({
+            type: 'get_summary',
+            offset: 0,
+            limit: TP_DASH.listPage,
+            filter_flag: dashboardFilterFlag,
+            filter_folder: dashboardFilterFolder,
+            filter_text: dashboardFilterText,
+            sort: dashboardSort
+        }, function (data) {
+            if (seq !== dashboardRequestSeq) {
+                // Superseded by a newer filter change — drop this answer entirely.
+                return;
+            }
+            if (data && data.error !== true) {
+                dashboardRenderCounts(data.counts);
+                if (dashboardBuildFolders(data.folders) === true) {
+                    // The grouping filter was stale (restored from a previous visit, or its
+                    // last flagged item was fixed meanwhile): this answer is void, ask again
+                    // unfiltered. The loader stays up across the second round-trip.
+                    dashboardLoadSummary();
+                    return;
+                }
+            }
+            dashboardListLoading(false, false);
             $('.dashboard-card').removeClass('loading');
             if (!data || data.error === true) {
                 return;
             }
-            dashboardRenderCounts(data.counts);
-            dashboardBuildFolders(data.folders);
             dashboardRenderList(data.list, false);
             dashboardListShown = (data.list || []).length;
             dashboardListTotal = parseInt(data.list_total, 10) || 0;
             dashboardUpdateLoadMore();
+            dashboardUpdateListSummary();
             dashboardApplyFilterUI();
+            dashboardSaveFilters();
             $('#dashboard-last-scan').text(
                 data.last_scan > 0 ? new Date(data.last_scan * 1000).toLocaleString() : TP_DASH.strings.never
             );
+        }, function () {
+            if (seq !== dashboardRequestSeq) {
+                return;
+            }
+            dashboardListLoading(false, false);
+            $('.dashboard-card').removeClass('loading');
         });
     }
 
@@ -383,10 +555,22 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     // posture counts and groupings are not recomputed (the server skips them past offset 0).
     function dashboardLoadMore() {
         const btn = $('#dashboard-load-more-btn');
-        btn.prop('disabled', true);
-        dashboardPost({ type: 'get_summary', offset: dashboardListShown, limit: TP_DASH.listPage, filter_flag: dashboardFilterFlag, filter_folder: dashboardFilterFolder }, function (data) {
-            btn.prop('disabled', false);
-            if (!data || data.error === true) {
+        // Not incremented: this page belongs to the current filter set. If a filter changes
+        // while it is in flight, the answer is stale and must not be appended.
+        const seq = dashboardRequestSeq;
+        btn.prop('disabled', true).find('i').removeClass('fa-chevron-down').addClass('fa-circle-notch fa-spin');
+        dashboardListLoading(true, true);
+        dashboardPost({
+            type: 'get_summary',
+            offset: dashboardListShown,
+            limit: TP_DASH.listPage,
+            filter_flag: dashboardFilterFlag,
+            filter_folder: dashboardFilterFolder,
+            filter_text: dashboardFilterText,
+            sort: dashboardSort
+        }, function (data) {
+            dashboardLoadMoreFinish(btn);
+            if (seq !== dashboardRequestSeq || !data || data.error === true) {
                 return;
             }
             dashboardRenderList(data.list, true);
@@ -395,7 +579,15 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 dashboardListTotal = parseInt(data.list_total, 10) || dashboardListTotal;
             }
             dashboardUpdateLoadMore();
+            dashboardUpdateListSummary();
+        }, function () {
+            dashboardLoadMoreFinish(btn);
         });
+    }
+
+    function dashboardLoadMoreFinish(btn) {
+        dashboardListLoading(false, true);
+        btn.prop('disabled', false).find('i').removeClass('fa-circle-notch fa-spin').addClass('fa-chevron-down');
     }
 
     function dashboardScanChunk(offset, includeHibp) {
@@ -445,6 +637,16 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     }
 
     $(function () {
+        // Page purpose is carried by the help icon next to the title instead of an
+        // intro paragraph. Own init (not the global .infotip one) to get the wider template.
+        $('#dashboard-page-info').tooltip({
+            trigger: 'hover focus',
+            placement: 'right',
+            boundary: 'window',
+            template: '<div class="tooltip dashboard-help-tooltip" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>'
+        });
+
+        dashboardRestoreFilters();
         dashboardLoadSummary();
         dashboardLoadScore();
 
@@ -470,14 +672,65 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         // Filter the list by grouping (folder).
         $('#dashboard-folder-filter').on('change', function () {
             dashboardFilterFolder = parseInt($(this).val(), 10) || 0;
+            dashboardUpdateFolderTitle();
             dashboardLoadSummary();
         });
 
-        // Reset both filters.
+        // Filter the list by free text (label, login, URL, folder), debounced.
+        $('#dashboard-text-filter').on('input', function () {
+            const value = String($(this).val()).trim();
+            $('#dashboard-text-clear-wrap').toggle(value !== '');
+            window.clearTimeout(dashboardTextTimer);
+            dashboardTextTimer = window.setTimeout(function () {
+                if (value === dashboardFilterText) {
+                    return;
+                }
+                dashboardFilterText = value;
+                dashboardLoadSummary();
+            }, TP_DASH.searchDelay);
+        });
+
+        // Enter applies immediately instead of waiting for the debounce.
+        $('#dashboard-text-filter').on('keydown', function (event) {
+            if (event.key !== 'Enter') {
+                return;
+            }
+            event.preventDefault();
+            window.clearTimeout(dashboardTextTimer);
+            const value = String($(this).val()).trim();
+            if (value === dashboardFilterText) {
+                return;
+            }
+            dashboardFilterText = value;
+            dashboardLoadSummary();
+        });
+
+        $('#dashboard-text-clear').on('click', function () {
+            window.clearTimeout(dashboardTextTimer);
+            $('#dashboard-text-filter').val('').focus();
+            if (dashboardFilterText === '') {
+                $('#dashboard-text-clear-wrap').hide();
+                return;
+            }
+            dashboardFilterText = '';
+            dashboardLoadSummary();
+        });
+
+        // Change the list order.
+        $('#dashboard-sort').on('change', function () {
+            dashboardSort = String($(this).val());
+            dashboardLoadSummary();
+        });
+
+        // Reset every filter (the sort order is a preference, not a filter: it is kept).
         $('#dashboard-clear-filter').on('click', function () {
+            window.clearTimeout(dashboardTextTimer);
             dashboardFilterFlag = '';
             dashboardFilterFolder = 0;
+            dashboardFilterText = '';
             $('#dashboard-folder-filter').val('0');
+            $('#dashboard-text-filter').val('');
+            dashboardUpdateFolderTitle();
             dashboardLoadSummary();
         });
     });

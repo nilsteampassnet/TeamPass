@@ -626,6 +626,49 @@ if ((int) $remediationDone !== 1) {
     );
 }
 
+// Quick access panel visibility. Seeded at install since 3.x but never present on
+// databases upgraded from older releases, where the panel was unconditionally
+// rendered - default 1 keeps that behaviour.
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'show_last_items', '1')"
+);
+
+// Quick access panel: count how many times each user opened each item, so the
+// "Most used" tab can rank without aggregating log_items (whose index leads with
+// id_item and could not serve a per-user GROUP BY). Existing rows start at 1 and
+// gain meaning as items are opened again.
+$res = addColumnIfNotExist(
+    $pre . 'users_latest_items',
+    'access_count',
+    'INT(11) NOT NULL DEFAULT 1'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error adding column access_count to users_latest_items table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+checkIndexExist(
+    $pre . 'users_latest_items',
+    'user_count_idx',
+    'ADD INDEX user_count_idx (user_id, access_count)'
+);
+
+// Faceted search: the cache table is scanned on every search but only carried
+// PRIMARY(increment_id) and UNIQUE(id). Index the folder scope (present in
+// every query) and the default sort column. checkIndexExist() is a no-op when
+// the index is already there, so this is safe to replay.
+checkIndexExist(
+    $pre . 'cache',
+    'idx_cache_id_tree',
+    'ADD INDEX idx_cache_id_tree (id_tree)'
+);
+checkIndexExist(
+    $pre . 'cache',
+    'idx_cache_label',
+    'ADD INDEX idx_cache_label (label(191))'
+);
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,

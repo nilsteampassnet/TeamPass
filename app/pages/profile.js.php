@@ -97,13 +97,20 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     })
 
     // Select user properties
-    $('#profile-user-language option[value=<?php echo $session->get('user-language');?>').attr('selected','selected');
+    // The closing bracket was missing, so jQuery threw a "unrecognized expression" error here and
+    // every statement below (avatar uploader included) was never executed.
+    $('#profile-user-language option[value="<?php echo addslashes(strval($session->get('user-language') ?? ''));?>"]').prop('selected', true);
 
 
     // AVATAR IMPORT
+    // Both the button in the settings tab and the profile picture itself open the file dialog.
+    // Plupload resolves browse_button through Dom.getAll(), so a list of ids is supported and
+    // missing elements are simply ignored (profile edition disabled).
     var uploader_photo = new plupload.Uploader({
         runtimes: 'gears,html5,flash,silverlight,browserplus',
-        browse_button: 'profile-avatar-file',
+        browse_button: <?php echo (string) ($SETTINGS['disable_user_edit_profile'] ?? '0') === '0'
+            ? "['profile-avatar-file', 'profile-user-avatar']"
+            : "['profile-avatar-file']"; ?>,
         container: 'profile-avatar-file-container',
         max_file_size: '10mb',
         chunk_size: '1mb',
@@ -633,7 +640,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     // Handle the copy in clipboard button for api key
     document.getElementById('copy-api-key').addEventListener('click', function() {
         const apiKey = document.getElementById('profile-user-api-token').textContent;
-        navigator.clipboard.writeText(apiKey).then(function() {
+        // Shared helper: falls back to execCommand when the async Clipboard API is
+        // unavailable, which is the case on an instance served over plain HTTP.
+        tpClipboardCopy(apiKey).then(function(copied) {
+            if (copied === false) {
+                return;
+            }
             // Display message.
             toastr.remove();
             toastr.info(
@@ -752,7 +764,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     document.getElementById('copy-extension-token').addEventListener('click', function() {
         const tokenValue = document.getElementById('extension-token-value').value;
-        navigator.clipboard.writeText(tokenValue).then(function() {
+        tpClipboardCopy(tokenValue).then(function(copied) {
+            if (copied === false) {
+                return;
+            }
             toastr.remove();
             toastr.info(
                 '<?php echo $lang->get('copy_to_clipboard'); ?>',

@@ -87,6 +87,50 @@ if ($post_type === 'identify_user') {
     // ---
     // ---
     // ---
+} elseif ($post_type === 'refresh_session_key') {
+    //--------
+    // RENEW THE PAGE ENCRYPTION KEY
+    //--------
+    // The login page embeds the session encryption key at render time. When the
+    // server-side session is garbage-collected while the page stays open, that
+    // key is gone and the credentials sent by the form cannot be decoded any
+    // more. Handing a fresh key back lets the page recover without a reload.
+    // Nothing is disclosed: this key is already rendered in clear in the page,
+    // and the answer is only readable by the calling session (same-origin).
+    if ($session->get('key') === null) {
+        $session->set('key', bin2hex(random_bytes(16)));
+    }
+
+    echo json_encode([
+        'error' => false,
+        'key' => $session->get('key'),
+    ]);
+    return false;
+
+    // ---
+    // ---
+    // ---
+} elseif ($post_type === 'is_session_key_valid') {
+    //--------
+    // CHECK THE PAGE ENCRYPTION KEY IS STILL THE CURRENT ONE
+    //--------
+    // Answers a boolean only - the caller already owns the key it submits, so
+    // no secret is returned. Used by the login page when the tab comes back to
+    // the foreground, to repair itself before the user submits his credentials.
+    $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    $currentSessionKey = $session->get('key');
+
+    echo json_encode([
+        'error' => false,
+        'valid' => empty($currentSessionKey) === false
+            && is_string($post_key) === true
+            && hash_equals((string) $currentSessionKey, $post_key) === true,
+    ]);
+    return false;
+
+    // ---
+    // ---
+    // ---
 } elseif ($post_type === 'get2FAMethods') {
     //--------
     // Get MFA methods

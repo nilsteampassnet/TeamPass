@@ -151,6 +151,9 @@ if (empty($userInfo['avatar']) === true) {
     $hasCustomAvatar = true;
 }
 
+// Avatar can only be changed when the user is allowed to edit his profile
+$canEditAvatar = (string) ($SETTINGS['disable_user_edit_profile'] ?? '0') === '0';
+
 // Get Groups name
 $userParOfGroups = [];
 foreach ($session->get('user-roles_array') as $role) {
@@ -196,7 +199,7 @@ foreach ($session->get('user-roles_array') as $role) {
                 <div class="card card-primary card-outline">
                     <div class="card-body box-profile">
                         <div class="text-center">
-                            <img class="profile-user-img img-fluid img-circle" src="<?php echo $avatar; ?>" alt="User profile picture" id="profile-user-avatar">
+                            <img class="profile-user-img img-fluid img-circle<?php echo $canEditAvatar === true ? ' pointer' : ''; ?>" src="<?php echo $avatar; ?>" alt="User profile picture" id="profile-user-avatar"<?php echo $canEditAvatar === true ? ' title="' . $lang->get('upload_new_avatar') . '"' : ''; ?>>
                         </div>
 
                         <h3 id="profile-username" class="text-center">
@@ -536,7 +539,7 @@ foreach ($session->get('user-roles_array') as $role) {
                                                 <button type="button" class="btn btn-info" id="profile-user-save-settings"><?php echo $lang->get('save'); ?></button>
                                             </div>
                                             <div class="col-sm-8">
-                                                <?php if ((string) ($SETTINGS['disable_user_edit_profile'] ?? '0') === '0') { ?>
+                                                <?php if ($canEditAvatar === true) { ?>
                                                     <div class="text-muted small text-right mb-2"><?php echo $lang->get('avatar_upload_hint'); ?></div>
                                                     <div class="d-flex justify-content-end align-items-center">
                                                         <button type="button" class="btn btn-sm btn-outline-danger mr-2<?php echo $hasCustomAvatar === true ? '' : ' hidden'; ?>" id="profile-avatar-delete" title="<?php echo $lang->get('delete_current_avatar'); ?>" aria-label="<?php echo $lang->get('delete_current_avatar'); ?>" data-toggle="tooltip">

@@ -1458,6 +1458,11 @@ switch ($post_type) {
         if ($post_field === 'secure_send_max_views') {
             $post_value = (string) max(1, (int) $post_value);
         }
+        // Quick access panel: keep the list short enough to stay scannable and
+        // never larger than the history kept per user.
+        if ($post_field === 'max_latest_items') {
+            $post_value = (string) min(QUICK_ACCESS_HISTORY_SIZE, max(1, (int) $post_value));
+        }
         
         require_once 'main.functions.php';
 
@@ -3434,170 +3439,9 @@ case 'get_system_status':
 // ========================================
 
 case 'get_system_health':
-    /**
-     * Get system health checks
-     * 
-     * @return array {
-     *   encryption: {status: string, text: string},
-     *   database: {status: string, text: string},
-     *   sessions: {count: int},
-     *   cron: {status: string, text: string},
-     *   unknown_files: {count: int},
-     *   websocket: {status: string}
-     * }
-     */
-    
-    // Encryption check
-    $encryptionStatus = 'success';
-    $encryptionText = $lang->get('health_status_ok');
-    
-    // Check if secure file exists
-    if (isset($SETTINGS['TEAMPASS_SECRETS']) && isset($SETTINGS['securefile']) && !file_exists($SETTINGS['TEAMPASS_SECRETS'] . DIRECTORY_SEPARATOR . $SETTINGS['securefile'])) {
-        $encryptionStatus = 'danger';
-        $encryptionText = $lang->get('health_secure_file_missing');
-    }
-    
-    // Active sessions count
-    $sessionsCount = DB::queryFirstField(
-        'SELECT COUNT(*) FROM ' . prefixTable('users') . ' 
-        WHERE session_end > %i',
-        time()
-    );
-    
-    // Is cron installed
-    DB::query(
-        'SELECT valeur
-        FROM ' . prefixTable('misc') . '
-        WHERE type = %s AND intitule = %s and valeur >= %d',
-        'admin',
-        'last_cron_exec',
-        time() - 600 // max 10 minutes
-    );
-
-    if (DB::count() === 0) {
-        $cronStatus = 'danger';
-        $cronText = $lang->get('error');
-    } else {
-        // Cron is running. Two independent delay causes are distinguished so the
-        // dashboard tooltip can name the actual problem (enable_tasks_log is
-        // irrelevant here: background_tasks_logs is not used as a freshness signal).
-        //  - "Stuck task": a task has been "in progress" for too long, i.e. the
-        //    worker that picked it up crashed or was killed (e.g. FPM
-        //    request_terminate_timeout) and never released it, blocking the queue.
-        //  - "Delayed": a queued task waited unprocessed for too long while the
-        //    cron is fresh - the handler is not draining the queue (typically it
-        //    cannot write its lock file in storage/logs).
-        $cronStatus = 'success';
-        $cronText = $lang->get('health_status_ok');
-        $cronDelayReason = '';
-
-        // A task stuck "in progress" for over 30 minutes. started_at is set when a
-        // task starts being processed; guard against NULL/empty/zero values.
-        $oldestStuck = DB::queryFirstField(
-            'SELECT MIN(started_at) FROM ' . prefixTable('background_tasks') . '
-            WHERE is_in_progress = 1
-            AND started_at IS NOT NULL AND started_at <> "" AND started_at <> 0'
-        );
-
-        if ($oldestStuck !== null && (time() - intval($oldestStuck)) > 1800) {
-            $cronStatus = 'warning';
-            $cronText = $lang->get('health_cron_stuck');
-            $cronDelayReason = 'stuck';
-        } else {
-            // No stuck task: check for a queued backlog the handler is not draining.
-            $oldestPending = DB::queryFirstField(
-                'SELECT MIN(created_at) FROM ' . prefixTable('background_tasks') . '
-                WHERE is_in_progress = 0
-                AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)'
-            );
-
-            if ($oldestPending !== null && (time() - intval($oldestPending)) > 300) {
-                $cronStatus = 'warning';
-                $cronText = $lang->get('health_cron_delayed');
-                $cronDelayReason = 'pending';
-            }
-        }
-    }
-
-    // Actionable hint shown as a tooltip in the dashboard, worded to match the
-    // detected cause:
-    //  - 'danger' (Error): no cron execution detected at all.
-    //  - 'stuck': a background task is hung in progress, blocking the queue.
-    //  - 'pending' (Delayed): the cron runs but queued tasks are not processed.
-    $cronTooltip = '';
-    if ($cronStatus === 'danger') {
-        $cronTooltip = $lang->get('health_cron_error_help');
-    } elseif ($cronDelayReason === 'stuck') {
-        $cronTooltip = $lang->get('health_cron_stuck_help');
-    } elseif ($cronStatus === 'warning') {
-        $cronTooltip = $lang->get('health_cron_delayed_help');
-    }
-
-    // Unknown files count
-    $unknownFilesData = DB::queryFirstField(
-        'SELECT valeur FROM ' . prefixTable('misc') . ' 
-        WHERE type = %s AND intitule = %s',
-        'admin',
-        'unknown_files'
-    );
-    
-    $unknownFilesCount = 0;
-    if ($unknownFilesData) {
-        $unknownFiles = json_decode($unknownFilesData, true);
-        if (is_array($unknownFiles)) {
-            $unknownFilesCount = count($unknownFiles);
-        }
-    }
-
-    // WebSocket status check
-    $wsEnabled = $SETTINGS['websocket_enabled'] ?? '0';
-    $wsHost = $SETTINGS['websocket_host'] ?? '127.0.0.1';
-    $wsPort = (int) ($SETTINGS['websocket_port'] ?? 8080);
-    $wsStatus = 'disabled';
-    $wsText = 'Disabled';
-    $wsRunning = false;
-
-    if ($wsEnabled === '1') {
-        $wsRunning = @fsockopen($wsHost, $wsPort, $errno, $errstr, 2);
-        if ($wsRunning) {
-            fclose($wsRunning);
-            $wsRunning = true;
-            $wsStatus = 'success';
-            $wsText = 'Running';
-        } else {
-            $wsRunning = false;
-            $wsStatus = 'danger';
-            $wsText = 'Stopped';
-        }
-    }
-
+    $systemHealth = teampassGetSystemHealthOverview($SETTINGS, $lang);
     echo prepareExchangedData(
-        array(
-            'error' => false,
-            'encryption' => array(
-                'status' => $encryptionStatus,
-                'text' => $encryptionText,
-            ),
-            'sessions' => array(
-                'count' => intval($sessionsCount),
-            ),
-            'cron' => array(
-                'status' => $cronStatus,
-                'text' => $cronText,
-                'tooltip' => $cronTooltip,
-            ),
-            'unknown_files' => array(
-                'count' => $unknownFilesCount,
-            ),
-            'websocket' => array(
-                'status' => $wsStatus,
-                'text' => $wsText,
-                'enabled' => $wsEnabled === '1',
-                'running' => $wsRunning,
-                'host' => $wsHost,
-                'port' => $wsPort,
-            ),
-        ),
+        array_merge(array('error' => false), $systemHealth),
         'encode'
     );
     break;

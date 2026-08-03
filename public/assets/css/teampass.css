@@ -586,6 +586,7 @@
     border-radius:5px;
     opacity:0;
     position:absolute;
+    pointer-events:none;
     -webkit-transition: opacity 0.5s;
     -moz-transition:  opacity 0.5s;
     -ms-transition: opacity 0.5s;
@@ -1082,6 +1083,315 @@ body.dark-mode .form-control:focus-visible {
 @media (prefers-reduced-motion: reduce) {
     .tp-topbar-btn,
     .tp-account-chip {
+        transition: none;
+    }
+}
+
+
+/* ------------------------------------------------------------------
+   Quick access panel (right control sidebar)
+   Recent / Most used / Starred. The aside is a fixed-height flex column:
+   head, tabs and footer stay put while only the list scrolls.
+   Styled for both grounds - AdminLTE swaps control-sidebar-dark and
+   control-sidebar-light when the theme is toggled.
+   ------------------------------------------------------------------ */
+.tp-qa {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+}
+.tp-qa.control-sidebar-light {
+    border-left: 1px solid rgba(0, 0, 0, .1);
+}
+
+/* Head ---------------------------------------------------------- */
+.tp-qa-head {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 12px 12px 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, .1);
+}
+.control-sidebar-light .tp-qa-head {
+    border-bottom-color: rgba(0, 0, 0, .09);
+}
+.tp-qa-title {
+    font-size: .95rem;
+    font-weight: 600;
+    letter-spacing: -.01em;
+}
+.tp-qa-refresh {
+    background: none;
+    border: 0;
+    padding: 3px 5px;
+    border-radius: 3px;
+    line-height: 1;
+    font-size: .78rem;
+    color: inherit;
+    opacity: .6;
+    cursor: pointer;
+}
+.tp-qa-refresh:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, .09);
+}
+.control-sidebar-light .tp-qa-refresh:hover {
+    background: rgba(0, 0, 0, .06);
+}
+.tp-qa-refresh.is-loading {
+    opacity: 1;
+}
+
+/* Tabs ---------------------------------------------------------- */
+.tp-qa-tabs {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 2px;
+    padding: 8px 8px 0;
+}
+.tp-qa-tab {
+    flex: 1 1 0;
+    min-width: 0;
+    background: none;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    padding: 5px 2px 6px;
+    font-size: .72rem;
+    font-weight: 600;
+    line-height: 1.2;
+    color: inherit;
+    opacity: .6;
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: opacity .12s ease, border-color .12s ease;
+}
+.tp-qa-tab:hover {
+    opacity: .9;
+}
+.tp-qa-tab.active {
+    opacity: 1;
+    border-bottom-color: #3f8cff;
+}
+.control-sidebar-light .tp-qa-tab.active {
+    border-bottom-color: #007bff;
+}
+.tp-qa-tab:focus-visible {
+    outline: 2px solid #3f8cff;
+    outline-offset: -2px;
+}
+
+/* Filter -------------------------------------------------------- */
+.tp-qa-filter {
+    flex: 0 0 auto;
+    padding: 9px 10px 3px;
+}
+.tp-qa-filter.hidden-filter {
+    display: none;
+}
+.tp-qa-filter input {
+    width: 100%;
+    background: rgba(0, 0, 0, .22);
+    border: 1px solid rgba(255, 255, 255, .13);
+    border-radius: 3px;
+    color: inherit;
+    font-size: .78rem;
+    padding: 4px 8px;
+}
+.control-sidebar-light .tp-qa-filter input {
+    background: #fff;
+    border-color: rgba(0, 0, 0, .15);
+}
+.tp-qa-filter input::placeholder {
+    opacity: .55;
+}
+.tp-qa-filter input:focus {
+    outline: none;
+    border-color: #3f8cff;
+}
+
+/* List ---------------------------------------------------------- */
+.tp-qa-list {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 4px 5px 8px;
+}
+.tp-qa-row {
+    position: relative;
+    display: grid;
+    grid-template-columns: 22px 1fr;
+    gap: 8px;
+    align-items: center;
+    padding: 6px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.tp-qa-row:hover,
+.tp-qa-row:focus-within {
+    background: rgba(255, 255, 255, .07);
+}
+.control-sidebar-light .tp-qa-row:hover,
+.control-sidebar-light .tp-qa-row:focus-within {
+    background: rgba(0, 0, 0, .045);
+}
+.tp-qa-row:focus-visible {
+    outline: 2px solid #3f8cff;
+    outline-offset: -2px;
+}
+.tp-qa-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .68rem;
+    background: rgba(63, 140, 255, .16);
+    color: #74a9ff;
+}
+.control-sidebar-light .tp-qa-icon {
+    background: rgba(0, 123, 255, .1);
+    color: #007bff;
+}
+.tp-qa-icon.perso {
+    background: rgba(240, 173, 78, .18);
+    color: #f0ad4e;
+}
+.tp-qa-main {
+    min-width: 0;
+}
+.tp-qa-line {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+.tp-qa-label {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: .78rem;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.tp-qa-metric {
+    flex: 0 0 auto;
+    font-size: .66rem;
+    opacity: .6;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+.tp-qa-metric .fa-star {
+    color: #f0ad4e;
+    opacity: .9;
+}
+.tp-qa-meta {
+    font-size: .68rem;
+    opacity: .6;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Row actions: shown on hover, over a fade so a long label never
+   collides with the buttons. */
+.tp-qa-actions {
+    position: absolute;
+    top: 50%;
+    right: 5px;
+    transform: translateY(-50%);
+    display: flex;
+    gap: 2px;
+    padding-left: 22px;
+    opacity: 0;
+    pointer-events: none;
+    background: linear-gradient(90deg, rgba(52, 58, 64, 0) 0%, #3a4149 24%);
+    transition: opacity .1s ease;
+}
+.control-sidebar-light .tp-qa-actions {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, #f4f5f7 24%);
+}
+.tp-qa-row:hover .tp-qa-actions,
+.tp-qa-row:focus-within .tp-qa-actions {
+    opacity: 1;
+    pointer-events: auto;
+}
+.tp-qa-actions button {
+    width: 21px;
+    height: 21px;
+    border: 0;
+    border-radius: 3px;
+    padding: 0;
+    font-size: .65rem;
+    line-height: 1;
+    cursor: pointer;
+    background: rgba(255, 255, 255, .12);
+    color: inherit;
+}
+.control-sidebar-light .tp-qa-actions button {
+    background: rgba(0, 0, 0, .07);
+}
+.tp-qa-actions button:hover {
+    background: #007bff;
+    color: #fff;
+}
+.tp-qa-actions button:focus-visible {
+    outline: 2px solid #3f8cff;
+    outline-offset: 1px;
+}
+
+/* Empty state --------------------------------------------------- */
+.tp-qa-empty {
+    padding: 26px 14px;
+    text-align: center;
+    font-size: .76rem;
+    opacity: .6;
+    cursor: default;
+}
+.tp-qa-empty i {
+    display: block;
+    font-size: 1.4rem;
+    opacity: .45;
+    margin-bottom: 7px;
+}
+
+/* Footer -------------------------------------------------------- */
+.tp-qa-foot {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 12px;
+    font-size: .68rem;
+    opacity: .75;
+    border-top: 1px solid rgba(255, 255, 255, .1);
+}
+.control-sidebar-light .tp-qa-foot {
+    border-top-color: rgba(0, 0, 0, .09);
+}
+.tp-qa-foot span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.tp-qa-foot a {
+    flex: 0 0 auto;
+    color: #74a9ff;
+}
+.control-sidebar-light .tp-qa-foot a {
+    color: #007bff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tp-qa-tab,
+    .tp-qa-actions {
         transition: none;
     }
 }

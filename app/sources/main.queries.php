@@ -464,18 +464,21 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
             );
 
         /*
-        * Refresh list of last items seen
+        * Refresh one tab of the Quick access panel (recent / frequent / starred)
         */
         case 'refresh_list_items_seen'://action_user
             if ($session->has('user-id')) {
                 return refreshUserItemsSeenList(
-                    $SETTINGS
+                    $SETTINGS,
+                    is_array($dataReceived) === true ? (string) ($dataReceived['scope'] ?? 'recent') : 'recent'
                 );
 
             } else {
                 return json_encode(
                     array(
                         'error' => '',
+                        'scope' => 'recent',
+                        'starred_available' => false,
                         'existing_suggestions' => 0,
                         'html_json' => '',
                     ),
@@ -1669,42 +1672,143 @@ function sendEmailsNotSent(
 }
 
 
-function refreshUserItemsSeenList(
-    array $SETTINGS
-): string
+/**
+ * Tells if the Starred tab of the Quick access panel is available.
+ *
+ * Mirrors the gate of the Favorites page (app/pages/favourites.php): the feature
+ * must be enabled and administrators are excluded, so the panel never offers a
+ * tab that leads to a page the user cannot open.
+ *
+ * @param array $SETTINGS Teampass settings
+ * @return bool
+ */
+function quickAccessStarredIsAvailable(array $SETTINGS): bool
 {
     $session = SessionManager::getSession();
 
-    // get list of last items seen
-    $arr_html = array();
+    return (int) ($SETTINGS['enable_favourites'] ?? 0) === 1
+        && (int) ($session->get('user-admin') ?? 0) !== 1;
+}
+
+/**
+ * Normalize a stored item string for display in the Quick access panel.
+ *
+ * Labels, logins and folder titles saved by older versions carry HTML entities
+ * ("acc&egrave;s"). htmlspecialchars_decode() only knows the five XML entities and
+ * leaves those untouched, so re-escaping turned them into a literal "acc&egrave;s"
+ * on screen. Decoding the full HTML5 set fixes the accents; the client escapes the
+ * result again before inserting it, so markup stored in a label stays inert.
+ *
+ * @param string|null $value Raw column value
+ * @return string Plain text
+ */
+function quickAccessPlainText(?string $value): string
+{
+    return html_entity_decode(stripslashes((string) $value), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+}
+
+/**
+ * Build one tab of the Quick access panel (right control sidebar).
+ *
+ * The three scopes read from tables that are maintained elsewhere:
+ *  - recent   → users_latest_items.accessed_at  (fed by updateUserLatestItems())
+ *  - frequent → users_latest_items.access_count (idem)
+ *  - starred  → users_favorites                 (fed by the Favorites page)
+ *
+ * Every scope is re-authorized with securityPostureItemAccessSql(), so an item
+ * whose folder rights were revoked disappears from the panel instead of failing
+ * when clicked - and its label is never sent to the browser.
+ *
+ * @param string $scope    One of 'recent', 'frequent', 'starred'
+ * @param array  $SETTINGS Teampass settings
+ * @return string JSON payload
+ */
+function refreshUserItemsSeenList(
+    array $SETTINGS,
+    string $scope = 'recent'
+): string
+{
+    $session = SessionManager::getSession();
+    $userId = (int) $session->get('user-id');
+    $userLogin = (string) $session->get('user-login');
+
+    // Unknown scope falls back to the default tab rather than returning an error:
+    // the panel must always render something.
+    if (in_array($scope, ['recent', 'frequent', 'starred'], true) === false) {
+        $scope = 'recent';
+    }
+    if ($scope === 'starred' && quickAccessStarredIsAvailable($SETTINGS) === false) {
+        $scope = 'recent';
+    }
+
+    // Number of rows displayed. Historically seeded as max_latest_items.
+    $maxItems = (int) ($SETTINGS['max_latest_items'] ?? 10);
+    if ($maxItems <= 0) {
+        $maxItems = 10;
+    }
+
+    $accessClause = securityPostureItemAccessSql($userId, 'i');
+
+    // The scope only changes the source table, the metric and the ordering; the
+    // item columns and the authorization predicate are common to the three.
+    if ($scope === 'starred') {
+        $sourceJoin = prefixTable('users_favorites') . ' AS src ON (src.item_id = i.id)';
+        $metricColumn = 'UNIX_TIMESTAMP(src.created_at) AS metric';
+        $orderBy = 'src.created_at DESC';
+    } else {
+        $sourceJoin = prefixTable('users_latest_items') . ' AS src ON (src.item_id = i.id)';
+        $metricColumn = $scope === 'frequent'
+            ? 'src.access_count AS metric'
+            : 'UNIX_TIMESTAMP(src.accessed_at) AS metric';
+        $orderBy = $scope === 'frequent'
+            ? 'src.access_count DESC, src.accessed_at DESC'
+            : 'src.accessed_at DESC';
+    }
+
     $rows = DB::query(
-        'SELECT i.id AS id, i.label AS label, i.id_tree AS id_tree, l.date, i.perso AS perso, i.restricted_to AS restricted
-        FROM ' . prefixTable('log_items') . ' AS l
-        RIGHT JOIN ' . prefixTable('items') . ' AS i ON (l.id_item = i.id)
-        WHERE l.action = %s AND l.id_user = %i
-        ORDER BY l.date DESC
-        LIMIT 0, 100',
-        'at_shown',
-        $session->get('user-id')
+        'SELECT i.id AS id, i.label AS label, i.id_tree AS id_tree, i.perso AS perso,
+            i.restricted_to AS restricted, i.login AS login, i.fa_icon AS fa_icon,
+            ' . $metricColumn . ',
+            c.folder AS folder_path, nt.title AS folder_title
+        FROM ' . prefixTable('items') . ' AS i
+        INNER JOIN ' . $sourceJoin . '
+        LEFT JOIN ' . prefixTable('cache') . ' AS c ON (c.id = i.id)
+        LEFT JOIN ' . prefixTable('nested_tree') . ' AS nt ON (nt.id = i.id_tree)
+        WHERE src.user_id = %i AND i.inactif = %i AND ' . $accessClause . '
+        ORDER BY ' . $orderBy . '
+        LIMIT %i',
+        $userId,
+        0,
+        $maxItems
     );
-    if (DB::count() > 0) {
-        foreach ($rows as $record) {
-            if (in_array($record['id'], array_column($arr_html, 'id')) === false) {
-                array_push(
-                    $arr_html,
-                    array(
-                        'id' => $record['id'],
-                        'label' => htmlspecialchars(stripslashes(htmlspecialchars_decode($record['label'], ENT_QUOTES)), ENT_QUOTES),
-                        'tree_id' => $record['id_tree'],
-                        'perso' => $record['perso'],
-                        'restricted' => $record['restricted'],
-                    )
-                );
-                if (count($arr_html) >= (int) $SETTINGS['max_latest_items']) {
-                    break;
-                }
-            }
+
+    $arr_html = array();
+    foreach ($rows as $record) {
+        // The cache holds the readable path with personal folder ids already
+        // resolved to logins. Fall back to the folder title when the cache row
+        // has not been built yet.
+        $folderPath = trim((string) ($record['folder_path'] ?? ''));
+        if ($folderPath === '') {
+            $folderTitle = (string) ($record['folder_title'] ?? '');
+            $folderPath = ($folderTitle === (string) $userId) ? $userLogin : $folderTitle;
         }
+
+        // Every string below leaves as plain text: the client escapes each one at
+        // insertion time (tpEscapeHtml), so nothing here may be pre-encoded.
+        array_push(
+            $arr_html,
+            array(
+                'id' => (int) $record['id'],
+                'label' => quickAccessPlainText($record['label']),
+                'tree_id' => (int) $record['id_tree'],
+                'perso' => (int) $record['perso'],
+                'restricted' => $record['restricted'],
+                'login' => quickAccessPlainText($record['login'] ?? ''),
+                'folder' => quickAccessPlainText($folderPath),
+                'icon' => (string) ($record['fa_icon'] ?? ''),
+                'metric' => (int) $record['metric'],
+            )
+        );
     }
 
     // get wainting suggestions
@@ -1719,6 +1823,8 @@ function refreshUserItemsSeenList(
     return json_encode(
         array(
             'error' => '',
+            'scope' => $scope,
+            'starred_available' => quickAccessStarredIsAvailable($SETTINGS),
             'existing_suggestions' => $nb_suggestions_waiting,
             'html_json' => $arr_html,
         ),

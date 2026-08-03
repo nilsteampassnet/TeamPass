@@ -202,6 +202,68 @@ function tpBackupResolveScheduledOutputDir(string $requestedDir, array $SETTINGS
 }
 
 /**
+ * Purge stale temporary database dumps left by interrupted backup processes.
+ *
+ * Only the two temporary suffixes created by tpCreateDatabaseBackup() are
+ * considered. Recent files are preserved to avoid interfering with a backup
+ * that is still running.
+ *
+ * @param string $dir              Backup output directory.
+ * @param int    $olderThanSeconds Minimum age required before deletion.
+ * @return array{scanned:int, deleted:int, failed:int, skipped_recent:int}
+ */
+function tpBackupPurgeStaleDatabasePartFiles(string $dir, int $olderThanSeconds = 86400): array
+{
+    $stats = [
+        'scanned' => 0,
+        'deleted' => 0,
+        'failed' => 0,
+        'skipped_recent' => 0,
+    ];
+
+    $dirReal = realpath($dir);
+    if ($dirReal === false || is_dir($dirReal) === false) {
+        return $stats;
+    }
+
+    $entries = scandir($dirReal);
+    if ($entries === false) {
+        return $stats;
+    }
+
+    $cutoff = time() - max(3600, $olderThanSeconds);
+    foreach ($entries as $entry) {
+        if (preg_match('/\.sql(?:\.encrypted)?\.part$/', $entry) !== 1) {
+            continue;
+        }
+
+        $candidate = $dirReal . DIRECTORY_SEPARATOR . $entry;
+        if (is_file($candidate) === false) {
+            continue;
+        }
+
+        $stats['scanned']++;
+        $mtime = @filemtime($candidate);
+        if ($mtime === false) {
+            $stats['failed']++;
+            continue;
+        }
+        if ($mtime > $cutoff) {
+            $stats['skipped_recent']++;
+            continue;
+        }
+
+        if (@unlink($candidate) === true) {
+            $stats['deleted']++;
+        } else {
+            $stats['failed']++;
+        }
+    }
+
+    return $stats;
+}
+
+/**
  * Create a Teampass database backup file (optionally encrypted) in the requested output directory.
  *
  * @param array  $SETTINGS      Teampass settings array (must include path_to_files_folder)
@@ -209,7 +271,7 @@ function tpBackupResolveScheduledOutputDir(string $requestedDir, array $SETTINGS
  * @param array  $options       Optional:
  *                              - output_dir (string) default: $SETTINGS['path_to_files_folder']
  *                              - filename_prefix (string) default: '' (ex: 'scheduled-')
- *                              - chunk_rows (int) default: 1000
+ *                              - chunk_rows (int) deprecated, kept for caller compatibility
  *                              - flush_every_inserts (int) default: 200
  *                              - include_tables (array<string>) default: [] (empty => all)
  *                              - exclude_tables (array<string>) default: [] (empty => none)
@@ -282,7 +344,6 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
 
         $outputDir = $options['output_dir'] ?? ($SETTINGS['path_to_files_folder'] ?? '');
         $prefix = (string)($options['filename_prefix'] ?? '');
-        $chunkRows = (int)($options['chunk_rows'] ?? 1000);
         $flushEvery = (int)($options['flush_every_inserts'] ?? 200);
         $includeTables = $options['include_tables'] ?? [];
         $excludeTables = $options['exclude_tables'] ?? [];
@@ -298,6 +359,10 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
             ];
         }
 
+        // Best effort: a fatal error cannot run the normal cleanup path, so the
+        // next backup invocation removes only stale temporary dumps.
+        tpBackupPurgeStaleDatabasePartFiles((string) $outputDir);
+
         // Generate filename
         $token = GenerateCryptKey(20, false, true, true, false, true);
 
@@ -305,9 +370,17 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
         $schemaLevel = tpGetSchemaLevel();
         $schemaSuffix = ($schemaLevel !== '') ? ('-sl' . $schemaLevel) : '';
         $filename = $prefix . time() . '-' . $token . $schemaSuffix . '.sql';
-        $filepath = rtrim($outputDir, '/') . '/' . $filename;
+        $filepath = rtrim($outputDir, '/\\') . DIRECTORY_SEPARATOR . $filename;
+        $plainTempPath = $filepath . '.part';
+        $encryptedTempPath = $filepath . '.encrypted.part';
 
-        $handle = @fopen($filepath, 'w+');
+        // The final filename is only published after the complete dump (and its
+        // optional encryption) succeeds. A fatal interruption can therefore
+        // leave, at worst, a non-restorable .part file instead of a truncated
+        // backup that looks valid.
+        // Suppress the filesystem warning because AJAX callers expect a clean
+        // encoded response; the structured failure below remains actionable.
+        $handle = @fopen($plainTempPath, 'x+b');
         if ($handle === false) {
             return [
                 'success' => false,
@@ -315,11 +388,24 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
                 'filepath' => $filepath,
                 'encrypted' => false,
                 'size_bytes' => 0,
-                'message' => 'Could not create backup file: ' . $filepath,
+                'message' => 'Could not create temporary backup file: ' . $plainTempPath,
             ];
         }
 
         $insertCount = 0;
+        $write = static function ($stream, string $data): void {
+            $length = strlen($data);
+            $offset = 0;
+
+            while ($offset < $length) {
+                $chunk = $offset === 0 ? $data : substr($data, $offset);
+                $written = fwrite($stream, $chunk);
+                if ($written === false || $written === 0) {
+                    throw new RuntimeException('Could not write the database backup to disk.');
+                }
+                $offset += $written;
+            }
+        };
 
         try {
             // Get all tables
@@ -348,31 +434,24 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
                 }
 
                 // Write drop and creation
-                fwrite($handle, 'DROP TABLE IF EXISTS `' . $tableName . "`;\n");
+                $write($handle, 'DROP TABLE IF EXISTS `' . $tableName . "`;\n");
 
                 $row2 = DB::queryFirstRow('SHOW CREATE TABLE `' . $tableName . '`');
                 if (!is_array($row2) || empty($row2['Create Table'])) {
                     // Skip table if structure cannot be fetched
-                    fwrite($handle, "\n");
+                    $write($handle, "\n");
                     continue;
                 }
 
-                fwrite($handle, $row2['Create Table'] . ";\n\n");
+                $write($handle, $row2['Create Table'] . ";\n\n");
 
-                // Process table data in chunks to reduce memory usage
-                $offset = 0;
-                while (true) {
-                    $rows = DB::query(
-                        'SELECT * FROM `' . $tableName . '` LIMIT %i OFFSET %i',
-                        $chunkRows,
-                        $offset
-                    );
-
-                    if (empty($rows)) {
-                        break;
-                    }
-
-                    foreach ($rows as $record) {
+                // queryWalk() uses MYSQLI_USE_RESULT. This is intentionally
+                // unbuffered: only the current row is held in PHP memory, which
+                // also keeps tables containing large document BLOBs safe with
+                // standard PHP-FPM memory limits.
+                $rows = DB::queryWalk('SELECT * FROM `' . $tableName . '`');
+                try {
+                    while (($record = $rows->next()) !== null) {
                         $values = [];
                         foreach ($record as $value) {
                             if ($value === null) {
@@ -396,20 +475,23 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
                         }
 
                         $insertQuery = 'INSERT INTO `' . $tableName . '` VALUES(' . implode(',', $values) . ");\n";
-                        fwrite($handle, $insertQuery);
+                        $write($handle, $insertQuery);
 
                         $insertCount++;
                         if ($flushEvery > 0 && ($insertCount % $flushEvery) === 0) {
-                            fflush($handle);
+                            if (fflush($handle) === false) {
+                                throw new RuntimeException('Could not flush the database backup to disk.');
+                            }
                         }
                     }
-
-                    $offset += $chunkRows;
-                    fflush($handle);
+                } finally {
+                    $rows->free();
                 }
 
-                fwrite($handle, "\n\n");
-                fflush($handle);
+                $write($handle, "\n\n");
+                if (fflush($handle) === false) {
+                    throw new RuntimeException('Could not flush the database backup to disk.');
+                }
             }
         } catch (Throwable $e) {
             if (is_resource($handle)) {
@@ -418,9 +500,8 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
 
             $errorMessage = 'Backup failed: ' . $e->getMessage();
 
-            // Suppression sécurisée sans @
-            if (file_exists($filepath)) {
-                $deleted = unlink($filepath);
+            if (file_exists($plainTempPath)) {
+                $deleted = unlink($plainTempPath);
                 if ($deleted === false) {
                     $errorMessage .= ' (Note: Temporary backup file could not be deleted from disk)';
                 }
@@ -441,11 +522,9 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
         // Encrypt the file if key provided
         $encrypted = false;
         if ($encryptionKey !== '') {
-            $tmpPath = rtrim($outputDir, '/') . '/defuse_temp_' . $filename;
-
             if (!function_exists('prepareFileWithDefuse')) {
-                if (file_exists($filepath)) {
-                    unlink($filepath);
+                if (file_exists($plainTempPath)) {
+                    unlink($plainTempPath);
                 }
                 return [
                     'success' => false,
@@ -457,14 +536,14 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
                 ];
             }
 
-            $ret = prepareFileWithDefuse('encrypt', $filepath, $tmpPath, $encryptionKey);
+            $ret = prepareFileWithDefuse('encrypt', $plainTempPath, $encryptedTempPath, $encryptionKey);
 
             if ($ret !== true) {
-                if (file_exists($filepath)) {
-                    unlink($filepath);
+                if (file_exists($plainTempPath)) {
+                    unlink($plainTempPath);
                 }
-                if (file_exists($tmpPath)) {
-                    unlink($tmpPath);
+                if (file_exists($encryptedTempPath)) {
+                    unlink($encryptedTempPath);
                 }
                 return [
                     'success' => false,
@@ -476,15 +555,23 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
                 ];
             }
 
-            // Replace original with encrypted version
-            if (file_exists($filepath)) {
-                unlink($filepath);
+            if (unlink($plainTempPath) === false) {
+                if (file_exists($encryptedTempPath)) {
+                    unlink($encryptedTempPath);
+                }
+                return [
+                    'success' => false,
+                    'filename' => $filename,
+                    'filepath' => $filepath,
+                    'encrypted' => false,
+                    'size_bytes' => 0,
+                    'message' => 'Encryption succeeded but the temporary plaintext backup could not be deleted',
+                ];
             }
-            
-            // On vérifie le succès de rename() sans @
-            if (is_file($tmpPath) && !rename($tmpPath, $filepath)) {
-                if (file_exists($tmpPath)) {
-                    unlink($tmpPath);
+
+            if (is_file($encryptedTempPath) === false || rename($encryptedTempPath, $filepath) === false) {
+                if (file_exists($encryptedTempPath)) {
+                    unlink($encryptedTempPath);
                 }
                 return [
                     'success' => false,
@@ -497,6 +584,18 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
             }
 
             $encrypted = true;
+        } elseif (rename($plainTempPath, $filepath) === false) {
+            if (file_exists($plainTempPath)) {
+                unlink($plainTempPath);
+            }
+            return [
+                'success' => false,
+                'filename' => $filename,
+                'filepath' => $filepath,
+                'encrypted' => false,
+                'size_bytes' => 0,
+                'message' => 'Backup succeeded but could not finalize file (rename failed)',
+            ];
         }
 
         // Gestion de filesize sans @
@@ -5641,6 +5740,240 @@ function tpGetSchemaLevel(): string
 function tpGetBackupMetadataPath(string $backupFilePath): string
 {
     return $backupFilePath . '.meta.json';
+}
+
+/**
+ * Classify a backup against the current database schema.
+ *
+ * TeamPass file versions change on regular releases and are therefore
+ * diagnostic information, not a restore-compatibility boundary.
+ *
+ * @param array<string, mixed> $file                Backup information.
+ * @param string               $expectedSchemaLevel Current database schema level.
+ * @return 'compatible'|'incompatible'|'unknown'
+ */
+function tpHealthGetBackupCompatibility(array $file, string $expectedSchemaLevel): string
+{
+    $schemaLevel = isset($file['schema_level']) && is_scalar($file['schema_level'])
+        ? trim((string) $file['schema_level'])
+        : '';
+
+    if ($expectedSchemaLevel === '' || $schemaLevel === '') {
+        return 'unknown';
+    }
+
+    return $schemaLevel === $expectedSchemaLevel ? 'compatible' : 'incompatible';
+}
+
+/**
+ * Return the grace period used before a scheduled backup is considered overdue.
+ *
+ * The background task handler can only enqueue a due backup on its next tick.
+ * Two complete handler intervals are allowed, while preserving the historical
+ * ten-minute minimum for installations using the default one-minute cadence.
+ *
+ * @param int $handlerIntervalMinutes Configured handler cadence in minutes.
+ * @return int Grace period in seconds.
+ */
+function tpHealthGetBackupSchedulerGracePeriod(int $handlerIntervalMinutes): int
+{
+    return max(600, max(1, $handlerIntervalMinutes) * 120);
+}
+
+/**
+ * Build Health statistics for a backup directory.
+ *
+ * Detailed counters may overlap by design, but anomalies_total counts each
+ * backup file at most once, plus each orphan metadata sidecar. A TeamPass files
+ * version difference is reported through tp_version_mismatch only: it is
+ * diagnostic information, not a restore blocker, so it never raises an anomaly.
+ *
+ * @param string                   $dir         Backup directory.
+ * @param string                   $labelKey    Translation key for the directory.
+ * @param array<int|string, mixed> $files       Backup files displayed in Health.
+ * @param int                      $metaOrphans Number of orphan metadata sidecars.
+ * @param array<string, mixed>     $options     Expected versions and complete file list.
+ * @return array<string, mixed>
+ */
+function tpBuildBackupDirHealth(
+    string $dir,
+    string $labelKey,
+    array $files,
+    int $metaOrphans = 0,
+    array $options = array()
+): array {
+    $now = time();
+
+    $expectedSchemaLevel = '';
+    if (isset($options['expected_schema_level']) === true && is_scalar($options['expected_schema_level'])) {
+        $expectedSchemaLevel = (string) $options['expected_schema_level'];
+    }
+
+    $expectedTpFilesVersion = '';
+    if (isset($options['expected_tp_files_version']) === true && is_scalar($options['expected_tp_files_version'])) {
+        $expectedTpFilesVersion = (string) $options['expected_tp_files_version'];
+    }
+
+    $allFiles = $files;
+    if (isset($options['all_files']) === true && is_array($options['all_files']) === true) {
+        $allFiles = $options['all_files'];
+    }
+
+    $summaryStatus = 'info';
+    $summaryTextKey = 'health_backup_no_data';
+    $lastAgeHours = null;
+    $fileAnomalies = 0;
+
+    $stats = array(
+        'total_files' => 0,
+        'compatible' => 0,
+        'incompatible' => 0,
+        'unknown_compatibility' => 0,
+        'unknown_schema' => 0,
+        'missing_meta' => 0,
+        'meta_orphans' => $metaOrphans,
+        'tp_version_mismatch' => 0,
+        'last_backup_at' => 0,
+        'last_backup_at_human' => '',
+        'last_backup_file' => '',
+        'last_backup_size_mb' => null,
+        'last_backup_comment' => null,
+        'last_backup_compatibility' => 'unknown',
+        'last_compatible_backup_at' => 0,
+        'last_compatible_backup_at_human' => '',
+        'last_compatible_backup_file' => '',
+        'last_compatible_backup_size_mb' => null,
+        'last_compatible_backup_comment' => null,
+        'expected_schema_level' => $expectedSchemaLevel,
+        'expected_tp_files_version' => $expectedTpFilesVersion,
+        'anomalies_total' => 0,
+    );
+
+    if (isset($allFiles['error']) === true) {
+        $summaryStatus = 'warning';
+        $summaryTextKey = 'health_backup_path_not_readable';
+        $stats['anomalies_total'] = 1;
+    } elseif (empty($allFiles) === true) {
+        $summaryStatus = 'danger';
+        $summaryTextKey = 'health_backup_no_files';
+    } else {
+        foreach ($allFiles as $file) {
+            if (is_array($file) === false) {
+                continue;
+            }
+            $name = isset($file['name']) && is_scalar($file['name']) ? (string) $file['name'] : '';
+            if ($name === '') {
+                continue;
+            }
+
+            $stats['total_files']++;
+            $fileHasAnomaly = false;
+
+            $mtime = (int) ($file['mtime'] ?? 0);
+            $sizeMb = isset($file['size_mb']) ? (float) $file['size_mb'] : null;
+            $rawComment = isset($file['comment']) && is_scalar($file['comment'])
+                ? trim((string) $file['comment'])
+                : '';
+            $comment = $rawComment !== '' ? $rawComment : null;
+
+            $schemaLevel = isset($file['schema_level']) && is_scalar($file['schema_level'])
+                ? (string) $file['schema_level']
+                : '';
+            $tpFilesVersion = isset($file['tp_files_version']) && is_scalar($file['tp_files_version'])
+                ? (string) $file['tp_files_version']
+                : '';
+
+            $compatibility = tpHealthGetBackupCompatibility($file, $expectedSchemaLevel);
+
+            if ($mtime > $stats['last_backup_at']) {
+                $stats['last_backup_at'] = $mtime;
+                $stats['last_backup_at_human'] = date('Y-m-d H:i:s', $mtime);
+                $stats['last_backup_file'] = $name;
+                $stats['last_backup_size_mb'] = $sizeMb;
+                $stats['last_backup_comment'] = $comment;
+                $stats['last_backup_compatibility'] = $compatibility;
+            }
+
+            if ($compatibility === 'compatible') {
+                $stats['compatible']++;
+                if ($mtime > $stats['last_compatible_backup_at']) {
+                    $stats['last_compatible_backup_at'] = $mtime;
+                    $stats['last_compatible_backup_at_human'] = date('Y-m-d H:i:s', $mtime);
+                    $stats['last_compatible_backup_file'] = $name;
+                    $stats['last_compatible_backup_size_mb'] = $sizeMb;
+                    $stats['last_compatible_backup_comment'] = $comment;
+                }
+            } elseif ($compatibility === 'incompatible') {
+                $stats['incompatible']++;
+                $fileHasAnomaly = true;
+            } else {
+                $stats['unknown_compatibility']++;
+                $fileHasAnomaly = true;
+            }
+
+            if ($schemaLevel === '') {
+                $stats['unknown_schema']++;
+                $fileHasAnomaly = true;
+            }
+
+            if (
+                $expectedTpFilesVersion !== ''
+                && $tpFilesVersion !== ''
+                && $tpFilesVersion !== $expectedTpFilesVersion
+            ) {
+                // Diagnostic only: a backup taken by another TeamPass release
+                // still restores as long as the schema level matches.
+                $stats['tp_version_mismatch']++;
+            }
+
+            $metadataMissing = false;
+            if (array_key_exists('metadata_present', $file) === true) {
+                $metadataMissing = (bool) $file['metadata_present'] === false;
+            } elseif (empty($file['remote']) === true) {
+                $fullPath = rtrim($dir, '/\\') . DIRECTORY_SEPARATOR . $name;
+                $metadataMissing = is_file(tpGetBackupMetadataPath($fullPath)) === false;
+            }
+
+            if ($metadataMissing === true) {
+                $stats['missing_meta']++;
+                $fileHasAnomaly = true;
+            }
+
+            if ($fileHasAnomaly === true) {
+                $fileAnomalies++;
+            }
+        }
+
+        if ($stats['last_backup_at'] > 0) {
+            $lastAgeHours = round(($now - $stats['last_backup_at']) / 3600, 2);
+        }
+
+        $stats['anomalies_total'] = $metaOrphans + $fileAnomalies;
+
+        if ($expectedSchemaLevel !== '' && $stats['compatible'] === 0) {
+            $summaryStatus = 'warning';
+            $summaryTextKey = 'health_backup_no_compatible_backups';
+        } elseif ($stats['anomalies_total'] > 0) {
+            $summaryStatus = 'warning';
+            $summaryTextKey = 'health_backup_anomalies_found';
+        } else {
+            $summaryStatus = 'success';
+            $summaryTextKey = 'health_status_ok';
+        }
+    }
+
+    return array(
+        'label_key' => $labelKey,
+        'path' => $dir,
+        'files' => $files,
+        'meta_orphans' => $metaOrphans,
+        'stats' => $stats,
+        'summary' => array(
+            'status' => $summaryStatus,
+            'text_key' => $summaryTextKey,
+            'last_backup_age_hours' => $lastAgeHours,
+        ),
+    );
 }
 
 /**

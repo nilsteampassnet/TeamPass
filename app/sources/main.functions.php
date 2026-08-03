@@ -120,6 +120,218 @@ function cryption(string $message, string $ascii_key, string $type, ?array $SETT
 }
 
 /**
+ * Resolve and validate the Defuse key file used by the running instance.
+ *
+ * Runtime constants are authoritative. The settings-array fallback is kept for
+ * installation and test contexts where the constants may not have been loaded.
+ *
+ * @param array<string, mixed> $SETTINGS TeamPass settings fallback.
+ * @return array{status:string, reason:string, path:string}
+ */
+function teampassGetSecureFileHealth(array $SETTINGS = []): array
+{
+    $secretsDirectory = defined('TEAMPASS_SECRETS')
+        ? (string) constant('TEAMPASS_SECRETS')
+        : (string) ($SETTINGS['TEAMPASS_SECRETS'] ?? '');
+    $secureFile = defined('SECUREFILE')
+        ? (string) constant('SECUREFILE')
+        : (string) ($SETTINGS['securefile'] ?? '');
+
+    if ($secretsDirectory === '' || $secureFile === '') {
+        return array('status' => 'danger', 'reason' => 'not_configured', 'path' => '');
+    }
+
+    $path = rtrim($secretsDirectory, '/\\') . DIRECTORY_SEPARATOR . ltrim($secureFile, '/\\');
+    if (is_file($path) === false) {
+        return array('status' => 'danger', 'reason' => 'missing', 'path' => $path);
+    }
+    if (is_readable($path) === false) {
+        return array('status' => 'danger', 'reason' => 'not_readable', 'path' => $path);
+    }
+    if (class_exists('Defuse\\Crypto\\Key') === false) {
+        return array('status' => 'danger', 'reason' => 'defuse_unavailable', 'path' => $path);
+    }
+
+    try {
+        $contents = file_get_contents($path);
+        if ($contents === false || trim($contents) === '') {
+            throw new RuntimeException('Secure file is empty.');
+        }
+        Key::loadFromAsciiSafeString(trim($contents));
+    } catch (Throwable $e) {
+        return array('status' => 'danger', 'reason' => 'invalid', 'path' => $path);
+    }
+
+    return array('status' => 'success', 'reason' => 'ok', 'path' => $path);
+}
+
+/**
+ * Return internal TeamPass accounts excluded from user-facing statistics and migrations.
+ *
+ * @return array<int>
+ */
+function teampassGetSystemAccountIds(): array
+{
+    $ids = array();
+    foreach (array('TP_USER_ID', 'OTV_USER_ID', 'SSH_USER_ID', 'API_USER_ID') as $constantName) {
+        if (defined($constantName) === true) {
+            $ids[] = (int) constant($constantName);
+        }
+    }
+
+    try {
+        $rows = DB::query(
+            'SELECT id FROM ' . prefixTable('users') . ' WHERE UPPER(login) IN ("TP","OTV","SSH","API")'
+        );
+        foreach ($rows as $row) {
+            $ids[] = (int) ($row['id'] ?? 0);
+        }
+    } catch (Throwable $e) {
+        // Keep the constants-only list when the users table is unavailable.
+    }
+
+    return array_values(array_unique(array_filter(
+        $ids,
+        static function (int $id): bool {
+            return $id > 0;
+        }
+    )));
+}
+
+/**
+ * Build the system-health snapshot shared by the admin dashboard and Health.
+ *
+ * @param array<string, mixed> $SETTINGS TeamPass settings.
+ * @param Language             $lang     Language service used for status labels.
+ * @return array<string,mixed>
+ */
+function teampassGetSystemHealthOverview(array $SETTINGS, Language $lang): array
+{
+    $now = time();
+    $secureFile = teampassGetSecureFileHealth($SETTINGS);
+    $secureFileTextKeys = array(
+        'ok' => 'health_status_ok',
+        'not_configured' => 'health_secure_file_not_configured',
+        'missing' => 'health_secure_file_missing',
+        'not_readable' => 'health_secure_file_not_readable',
+        'defuse_unavailable' => 'health_secure_file_invalid',
+        'invalid' => 'health_secure_file_invalid',
+    );
+    $secureFileTextKey = $secureFileTextKeys[(string) $secureFile['reason']] ?? 'health_secure_file_invalid';
+
+    $excludedIds = teampassGetSystemAccountIds();
+    $excludedSql = empty($excludedIds) === true
+        ? ''
+        : ' AND id NOT IN (' . implode(',', array_map('intval', $excludedIds)) . ')';
+    $sessionsCount = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('users') . '
+        WHERE session_end > %i AND disabled = 0 AND deleted_at IS NULL' . $excludedSql,
+        $now
+    );
+
+    DB::query(
+        'SELECT valeur
+        FROM ' . prefixTable('misc') . '
+        WHERE type = %s AND intitule = %s AND valeur >= %d',
+        'admin',
+        'last_cron_exec',
+        $now - 600
+    );
+
+    $cronDelayReason = '';
+    if (DB::count() === 0) {
+        $cronStatus = 'danger';
+        $cronText = $lang->get('error');
+    } else {
+        $cronStatus = 'success';
+        $cronText = $lang->get('health_status_ok');
+
+        $oldestStuck = DB::queryFirstField(
+            'SELECT MIN(started_at) FROM ' . prefixTable('background_tasks') . '
+            WHERE is_in_progress = 1
+            AND started_at IS NOT NULL AND started_at <> "" AND started_at <> 0'
+        );
+        if ($oldestStuck !== null && ($now - (int) $oldestStuck) > 1800) {
+            $cronStatus = 'warning';
+            $cronText = $lang->get('health_cron_stuck');
+            $cronDelayReason = 'stuck';
+        } else {
+            $oldestPending = DB::queryFirstField(
+                'SELECT MIN(created_at) FROM ' . prefixTable('background_tasks') . '
+                WHERE is_in_progress = 0
+                AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)'
+            );
+            if ($oldestPending !== null && ($now - (int) $oldestPending) > 300) {
+                $cronStatus = 'warning';
+                $cronText = $lang->get('health_cron_delayed');
+                $cronDelayReason = 'pending';
+            }
+        }
+    }
+
+    $cronTooltip = '';
+    if ($cronStatus === 'danger') {
+        $cronTooltip = $lang->get('health_cron_error_help');
+    } elseif ($cronDelayReason === 'stuck') {
+        $cronTooltip = $lang->get('health_cron_stuck_help');
+    } elseif ($cronDelayReason === 'pending') {
+        $cronTooltip = $lang->get('health_cron_delayed_help');
+    }
+
+    $unknownFilesData = DB::queryFirstField(
+        'SELECT valeur FROM ' . prefixTable('misc') . '
+        WHERE type = %s AND intitule = %s',
+        'admin',
+        'unknown_files'
+    );
+    $unknownFiles = is_string($unknownFilesData) ? json_decode($unknownFilesData, true) : null;
+    $unknownFilesCount = is_array($unknownFiles) ? count($unknownFiles) : 0;
+
+    $websocketEnabled = (string) ($SETTINGS['websocket_enabled'] ?? '0') === '1';
+    $websocketHost = (string) ($SETTINGS['websocket_host'] ?? '127.0.0.1');
+    $websocketPort = (int) ($SETTINGS['websocket_port'] ?? 8080);
+    $websocketRunning = false;
+    $websocketStatus = 'disabled';
+    $websocketText = $lang->get('disabled');
+
+    if ($websocketEnabled === true) {
+        $socket = @fsockopen($websocketHost, $websocketPort, $errno, $errstr, 2);
+        if (is_resource($socket) === true) {
+            fclose($socket);
+            $websocketRunning = true;
+            $websocketStatus = 'success';
+            $websocketText = $lang->get('health_status_ok');
+        } else {
+            $websocketStatus = 'danger';
+            $websocketText = $lang->get('error');
+        }
+    }
+
+    return array(
+        'encryption' => array(
+            'status' => (string) $secureFile['status'],
+            'text' => $lang->get($secureFileTextKey),
+            'reason' => (string) $secureFile['reason'],
+        ),
+        'sessions' => array('count' => $sessionsCount),
+        'cron' => array(
+            'status' => $cronStatus,
+            'text' => $cronText,
+            'tooltip' => $cronTooltip,
+        ),
+        'unknown_files' => array('count' => $unknownFilesCount),
+        'websocket' => array(
+            'status' => $websocketStatus,
+            'text' => $websocketText,
+            'enabled' => $websocketEnabled,
+            'running' => $websocketRunning,
+            'host' => $websocketHost,
+            'port' => $websocketPort,
+        ),
+    );
+}
+
+/**
  * Generating a defuse key.
  *
  * @return string
@@ -5133,39 +5345,51 @@ function aesV2WriteEnabled(): bool
  * format, plus a completion percentage. Used by the admin Security tab to track
  * the lazy migration triggered by the aes_v2_write_enabled flag.
  *
- * @return array<string, array{legacy: int, v2: int, total: int, percent: int}>
+ * @return array<string, array{legacy:int, v2:int, total:int, percent:int, applicable:bool, complete:bool}>
  */
 function getAesV2MigrationStatus(): array
 {
-    // Items: legacy = has a password but empty pw_iv; v2 = pw_iv carries metadata.
+    // Only non-empty encrypted values are part of the migration denominator.
     $itemsV2 = (int) DB::queryFirstField(
-        'SELECT COUNT(*) FROM ' . prefixTable('items') . " WHERE pw_iv != ''"
+        'SELECT COUNT(*) FROM ' . prefixTable('items') . "
+        WHERE pw != '' AND pw_iv IS NOT NULL AND pw_iv != ''"
     );
     $itemsLegacy = (int) DB::queryFirstField(
-        'SELECT COUNT(*) FROM ' . prefixTable('items') . " WHERE pw != '' AND pw_iv = ''"
+        'SELECT COUNT(*) FROM ' . prefixTable('items') . "
+        WHERE pw != '' AND (pw_iv IS NULL OR pw_iv = '')"
     );
 
     // Custom fields: only encrypted values are concerned (encryption_type set).
     $fieldsV2 = (int) DB::queryFirstField(
-        'SELECT COUNT(*) FROM ' . prefixTable('categories_items') . " WHERE encryption_type = %s AND data_iv != ''",
+        'SELECT COUNT(*) FROM ' . prefixTable('categories_items') . "
+        WHERE encryption_type = %s AND data != ''
+        AND data_iv IS NOT NULL AND data_iv != ''",
         TP_ENCRYPTION_NAME
     );
     $fieldsLegacy = (int) DB::queryFirstField(
-        'SELECT COUNT(*) FROM ' . prefixTable('categories_items') . " WHERE encryption_type = %s AND data_iv = ''",
+        'SELECT COUNT(*) FROM ' . prefixTable('categories_items') . "
+        WHERE encryption_type = %s AND data != ''
+        AND (data_iv IS NULL OR data_iv = '')",
         TP_ENCRYPTION_NAME
     );
 
-    // Private keys: v2 carries the "v2:" prefix. Skip service accounts and
-    // placeholder keys ('none', '') that never go through a password re-encryption.
+    // Private keys: v2 carries the "v2:" prefix. Skip all TeamPass internal
+    // accounts, including the TP recovery account which owns a real private key,
+    // and placeholder keys ('none', '') that never undergo password re-encryption.
+    $serviceAccountIds = teampassGetSystemAccountIds();
+    $serviceAccountFilter = empty($serviceAccountIds) === true ? '' : ' AND id NOT IN %ls';
+
     $keysV2 = (int) DB::queryFirstField(
-        'SELECT COUNT(*) FROM ' . prefixTable('users') . " WHERE private_key LIKE 'v2:%'"
+        'SELECT COUNT(*) FROM ' . prefixTable('users') . "
+        WHERE private_key LIKE 'v2:%'" . $serviceAccountFilter,
+        ...($serviceAccountFilter === '' ? array() : array($serviceAccountIds))
     );
     $keysLegacy = (int) DB::queryFirstField(
         'SELECT COUNT(*) FROM ' . prefixTable('users') . "
         WHERE private_key NOT LIKE 'v2:%'
         AND private_key != '' AND private_key != 'none'
-        AND id NOT IN %ls",
-        [OTV_USER_ID, SSH_USER_ID, API_USER_ID]
+        " . $serviceAccountFilter,
+        ...($serviceAccountFilter === '' ? array() : array($serviceAccountIds))
     );
 
     $build = static function (int $legacy, int $v2): array {
@@ -5174,7 +5398,9 @@ function getAesV2MigrationStatus(): array
             'legacy'  => $legacy,
             'v2'      => $v2,
             'total'   => $total,
-            'percent' => $total === 0 ? 100 : (int) round($v2 / $total * 100),
+            'percent' => $total === 0 ? 0 : (int) round($v2 / $total * 100),
+            'applicable' => $total > 0,
+            'complete' => $total > 0 && $legacy === 0,
         ];
     };
 
@@ -8857,34 +9083,41 @@ function createUserMigrationSubTasks($processId, $nbItemsToTreat): void
 }
 
 /**
- * Add or update an item in user's latest items list (max 20, FIFO)
- * 
+ * Add or update an item in user's latest items list (FIFO on recency).
+ *
+ * Feeds both Quick access tabs: `accessed_at` orders "Recent", `access_count`
+ * orders "Most used". The count is maintained here rather than aggregated from
+ * `log_items` because that table's index leads with `id_item`, so a per-user
+ * GROUP BY would degrade into a full scan of the largest table of the schema.
+ *
  * @param int $userId User ID
  * @param int $itemId Item ID to add
  * @return void
  */
 function updateUserLatestItems(int $userId, int $itemId): void
 {
-    // 1. Insert or update the item with current timestamp
+    // 1. Insert or update the item with current timestamp, and count the access
     DB::query(
-        'INSERT INTO ' . prefixTable('users_latest_items') . ' (user_id, item_id, accessed_at)
-        VALUES (%i, %i, NOW())
-        ON DUPLICATE KEY UPDATE accessed_at = NOW()',
+        'INSERT INTO ' . prefixTable('users_latest_items') . ' (user_id, item_id, accessed_at, access_count)
+        VALUES (%i, %i, NOW(), 1)
+        ON DUPLICATE KEY UPDATE accessed_at = NOW(), access_count = access_count + 1',
         $userId,
         $itemId
     );
-    
-    // 2. Keep only the 20 most recent items (delete older ones)
+
+    // 2. Keep only the most recent items (delete older ones). The window is larger
+    // than what the panel displays so "Most used" ranks over a meaningful history
+    // instead of over the handful of items just opened.
     DB::query(
         'DELETE FROM ' . prefixTable('users_latest_items') . '
         WHERE user_id = %i
         AND increment_id NOT IN (
             SELECT increment_id FROM (
-                SELECT increment_id 
+                SELECT increment_id
                 FROM ' . prefixTable('users_latest_items') . '
                 WHERE user_id = %i
                 ORDER BY accessed_at DESC
-                LIMIT 20
+                LIMIT ' . QUICK_ACCESS_HISTORY_SIZE . '
             ) AS keep_items
         )',
         $userId,

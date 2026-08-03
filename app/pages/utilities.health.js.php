@@ -88,6 +88,8 @@ var TP_HEALTH_L10N = {
     status_warning: "<?php echo addslashes($lang->get('warning')); ?>",
     status_error: "<?php echo addslashes($lang->get('error')); ?>",
     status_info: "<?php echo addslashes($lang->get('information')); ?>",
+    enabled: "<?php echo addslashes($lang->get('enabled')); ?>",
+    disabled: "<?php echo addslashes($lang->get('disabled')); ?>",
     generic_error: "<?php echo addslashes($lang->get('error')); ?>",
     no_data: "<?php echo addslashes($lang->get('health_no_data')); ?>",
     not_available: "<?php echo addslashes($lang->get('health_not_available')); ?>",
@@ -115,6 +117,13 @@ var TP_HEALTH_L10N = {
     backup_type_scheduled: "<?php echo addslashes($lang->get('health_backup_scheduled')); ?>",
     backup_type_onthefly: "<?php echo addslashes($lang->get('health_backup_onthefly')); ?>",
     backup_type_externalized: "<?php echo addslashes($lang->get('health_backup_externalized')); ?>",
+    aes_v2_items: "<?php echo addslashes($lang->get('aes_v2_migration_items')); ?>",
+    aes_v2_fields: "<?php echo addslashes($lang->get('aes_v2_migration_fields')); ?>",
+    aes_v2_private_keys: "<?php echo addslashes($lang->get('aes_v2_migration_private_keys')); ?>",
+    runtime_scope: "<?php echo addslashes($lang->get('health_runtime_scope')); ?>",
+    runtime_web_scope: "<?php echo addslashes($lang->get('health_runtime_web_scope')); ?>",
+    memory_source_host: "<?php echo addslashes($lang->get('health_memory_source_host')); ?>",
+    memory_source_container: "<?php echo addslashes($lang->get('health_memory_source_container')); ?>",
     excluded_label: "<?php echo addslashes($lang->get('health_excluded_label')); ?>",
     excluded_deleted_users: "<?php echo addslashes($lang->get('health_excluded_deleted_users')); ?>",
     excluded_system_accounts: "<?php echo addslashes($lang->get('health_excluded_system_accounts')); ?>",
@@ -323,6 +332,17 @@ function tpRenderOverview(report) {
         tpSetProgressBar($('#health-migration-personal-bar'), 0);
     }
 
+    var aesOverview = mig && mig.aes_v2 ? mig.aes_v2.overall : null;
+    if (aesOverview && aesOverview.applicable) {
+        $('#health-migration-aes-v2-text').text(
+            (aesOverview.percent || 0) + '% (' + (aesOverview.v2 || 0) + '/' + (aesOverview.total || 0) + ')'
+        );
+        tpSetProgressBar($('#health-migration-aes-v2-bar'), aesOverview.percent || 0);
+    } else {
+        $('#health-migration-aes-v2-text').text(TP_HEALTH_L10N.not_available);
+        tpSetProgressBar($('#health-migration-aes-v2-bar'), 0);
+    }
+
     // Findings
     var find = report.overview && report.overview.findings ? report.overview.findings : {};
     $('#health-orphans-total').text(Number(find.sharekeys_orphans_total || 0));
@@ -350,14 +370,26 @@ function tpRenderSystem(report) {
     $('#health-cpu-cores').text(tpEscapeHtml((cpu.cores || 0) + ' ' + '<?php echo addslashes($lang->get('health_cpu_cores')); ?>'));
 
     // Memory
-    $('#health-mem-usage').text(tpEscapeHtml((mem.used_mb || 0) + ' MB / ' + (mem.total_mb || 0) + ' MB (' + (mem.used_percent || 0) + '%)'));
+    var memorySource = '';
+    if (String(mem.source || '').indexOf('cgroup_') === 0) {
+        memorySource = ' • ' + TP_HEALTH_L10N.memory_source_container;
+    } else if (mem.source === 'host') {
+        memorySource = ' • ' + TP_HEALTH_L10N.memory_source_host;
+    }
+    $('#health-mem-usage').text(tpEscapeHtml((mem.used_mb || 0) + ' MB / ' + (mem.total_mb || 0) + ' MB (' + (mem.used_percent || 0) + '%)' + memorySource));
     tpSetProgressBar($('#health-mem-bar'), mem.used_percent || 0);
 
-    // Disk summary (first path)
+    // Disk summary: show the most constrained filesystem and retain every path.
     if (disk.length > 0) {
-        var d0 = disk[0];
-        $('#health-disk-summary').text(tpEscapeHtml((d0.free_gb || 0) + ' GB / ' + (d0.total_gb || 0) + ' GB'));
-        $('#health-disk-details').text(tpEscapeHtml((d0.path || '') + ' (' + (d0.used_percent || 0) + '%)'));
+        var worstDisk = disk.slice().sort(function(a, b) {
+            return Number(b.used_percent || 0) - Number(a.used_percent || 0);
+        })[0];
+        $('#health-disk-summary').text(tpEscapeHtml((worstDisk.free_gb || 0) + ' GB / ' + (worstDisk.total_gb || 0) + ' GB'));
+        var diskDetails = disk.map(function(d) {
+            var diskPaths = Array.isArray(d.paths) && d.paths.length ? d.paths.join(', ') : (d.path || '');
+            return tpEscapeHtml(diskPaths + ' — ' + (d.free_gb || 0) + ' GB / ' + (d.total_gb || 0) + ' GB (' + (d.used_percent || 0) + '%)');
+        });
+        $('#health-disk-details').html(diskDetails.join('<br>'));
     } else {
         $('#health-disk-summary').text(TP_HEALTH_L10N.no_data);
         $('#health-disk-details').text('');
@@ -370,6 +402,9 @@ function tpRenderSystem(report) {
     $iniBody.empty();
 
     $iniBody.append('<tr><td>PHP</td><td>' + tpEscapeHtml((php.version || '') + ' (' + (php.sapi || '') + ')') + '</td></tr>');
+    if (php.runtime_scope === 'web') {
+        $iniBody.append('<tr><td>' + tpEscapeHtml(TP_HEALTH_L10N.runtime_scope) + '</td><td>' + tpEscapeHtml(TP_HEALTH_L10N.runtime_web_scope) + '</td></tr>');
+    }
 
     Object.keys(ini).forEach(function(k) {
         $iniBody.append('<tr><td>' + tpEscapeHtml(k) + '</td><td><code>' + tpEscapeHtml(ini[k]) + '</code></td></tr>');
@@ -459,6 +494,46 @@ function tpRenderDatabase(report) {
 function tpRenderCrypto(report) {
     var crypto = report.crypto || {};
     var share = crypto.sharekeys || {};
+    var aesV2 = crypto.aes_v2 || {};
+    var aesOverall = aesV2.overall || {};
+
+    $('#health-aes-v2-write-status').html(
+        '<span class="badge ' + (aesV2.write_enabled ? 'badge-success' : 'badge-secondary') + '">' +
+        tpEscapeHtml(aesV2.write_enabled ? TP_HEALTH_L10N.enabled : TP_HEALTH_L10N.disabled) +
+        '</span>'
+    );
+    if (aesOverall.applicable) {
+        $('#health-aes-v2-overall-text').text(
+            (aesOverall.percent || 0) + '% (' + (aesOverall.v2 || 0) + '/' + (aesOverall.total || 0) + ')'
+        );
+        tpSetProgressBar($('#health-aes-v2-overall-bar'), aesOverall.percent || 0);
+    } else {
+        $('#health-aes-v2-overall-text').text(TP_HEALTH_L10N.not_available);
+        tpSetProgressBar($('#health-aes-v2-overall-bar'), 0);
+    }
+
+    var aesStoreLabels = {
+        items: TP_HEALTH_L10N.aes_v2_items,
+        fields: TP_HEALTH_L10N.aes_v2_fields,
+        private_keys: TP_HEALTH_L10N.aes_v2_private_keys
+    };
+    var aesStores = aesV2.stores || {};
+    var $aesStores = $('#health-aes-v2-stores');
+    $aesStores.empty();
+    Object.keys(aesStoreLabels).forEach(function(storeKey) {
+        var store = aesStores[storeKey] || {};
+        var progress = store.applicable
+            ? (store.percent || 0) + '% (' + (store.v2 || 0) + '/' + (store.total || 0) + ')'
+            : TP_HEALTH_L10N.not_available;
+        $aesStores.append(
+            '<tr>' +
+            '<td>' + tpEscapeHtml(aesStoreLabels[storeKey]) + '</td>' +
+            '<td>' + tpEscapeHtml(store.v2 || 0) + '</td>' +
+            '<td>' + tpEscapeHtml(store.legacy || 0) + '</td>' +
+            '<td>' + tpEscapeHtml(progress) + '</td>' +
+            '</tr>'
+        );
+    });
 
     // Sharekeys stats
     var stats = share.tables || [];
@@ -720,6 +795,9 @@ function tpRenderBackups(report) {
     $('#health-backups-scheduler-last-run').text(tpEscapeHtml(sch.last_run_at_human || ''));
     $('#health-backups-scheduler-last-message').text(tpEscapeHtml(sch.last_message || ''));
     $('#health-backups-scheduler-last-completed').text(tpEscapeHtml(sch.last_completed_at_human || ''));
+    $('#health-backups-scheduler-note').html(
+        tpStatusToBadge(sch.health_status || 'info') + ' ' + tpEscapeHtml(sch.health_text || '')
+    );
 
     var lastStatus = sch.last_status || '';
     if (lastStatus) {
@@ -749,6 +827,7 @@ function tpRenderBackups(report) {
     addRow(TP_HEALTH_L10N.backup_total_files, Number(schedStats.total_files || 0), Number(flyStats.total_files || 0), Number(extStats.total_files || 0));
     addRow(TP_HEALTH_L10N.backup_compatible, Number(schedStats.compatible || 0), Number(flyStats.compatible || 0), Number(extStats.compatible || 0));
     addRow(TP_HEALTH_L10N.backup_incompatible, Number(schedStats.incompatible || 0), Number(flyStats.incompatible || 0), Number(extStats.incompatible || 0));
+    addRow(TP_HEALTH_L10N.backup_unknown, Number(schedStats.unknown_compatibility || 0), Number(flyStats.unknown_compatibility || 0), Number(extStats.unknown_compatibility || 0));
     addRow(TP_HEALTH_L10N.backup_schema_unknown, Number(schedStats.unknown_schema || 0), Number(flyStats.unknown_schema || 0), Number(extStats.unknown_schema || 0));
     addRow(TP_HEALTH_L10N.backup_meta_missing, Number(schedStats.missing_meta || 0), Number(flyStats.missing_meta || 0), Number(extStats.missing_meta || 0));
     addRow(TP_HEALTH_L10N.backup_meta_orphans, Number(schedStats.meta_orphans || 0), Number(flyStats.meta_orphans || 0), Number(extStats.meta_orphans || 0));

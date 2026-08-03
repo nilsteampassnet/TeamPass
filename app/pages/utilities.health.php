@@ -231,13 +231,23 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             </div>
                                         </div>
 
-                                        <div class="mb-0">
+                                        <div class="mb-3">
                                             <div class="d-flex justify-content-between">
                                                 <span><?php echo $lang->get('health_migration_personal_items'); ?></span>
                                                 <span class="text-muted" id="health-migration-personal-text">-</span>
                                             </div>
                                             <div class="progress">
                                                 <div class="progress-bar" role="progressbar" id="health-migration-personal-bar" style="width:0%"></div>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-0">
+                                            <div class="d-flex justify-content-between">
+                                                <span><?php echo $lang->get('health_aes_v2_migration'); ?></span>
+                                                <span class="text-muted" id="health-migration-aes-v2-text">-</span>
+                                            </div>
+                                            <div class="progress">
+                                                <div class="progress-bar bg-success" role="progressbar" id="health-migration-aes-v2-bar" style="width:0%"></div>
                                             </div>
                                         </div>
                                     </div>
@@ -528,6 +538,37 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                             </div>
                         </div>
 
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fas fa-lock mr-2"></i><?php echo $lang->get('health_aes_v2_title'); ?></h3>
+                                <div class="card-tools" id="health-aes-v2-write-status">-</div>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted"><?php echo $lang->get('health_aes_v2_help'); ?></p>
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between">
+                                        <strong><?php echo $lang->get('health_aes_v2_overall'); ?></strong>
+                                        <span id="health-aes-v2-overall-text">-</span>
+                                    </div>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-success" role="progressbar" id="health-aes-v2-overall-bar" style="width:0%"></div>
+                                    </div>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-striped">
+                                        <thead>
+                                        <tr>
+                                            <th><?php echo $lang->get('health_store'); ?></th>
+                                            <th><?php echo $lang->get('health_migrated'); ?></th>
+                                            <th><?php echo $lang->get('health_legacy'); ?></th>
+                                            <th><?php echo $lang->get('health_migration_progress'); ?></th>
+                                        </tr>
+                                        </thead>
+                                        <tbody id="health-aes-v2-stores"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
 
                         <div class="card">
                             <div class="card-header">
