@@ -975,6 +975,7 @@ body.dark-mode .form-control:focus-visible {
 }
 
 .tp-account-avatar {
+    position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -988,6 +989,16 @@ body.dark-mode .form-control:focus-visible {
     font-weight: 700;
     letter-spacing: .02em;
     text-transform: uppercase;
+    overflow: hidden;
+}
+.tp-account-avatar-img {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background-color: #007bff;
 }
 .tp-account-avatar-lg {
     width: 42px;
