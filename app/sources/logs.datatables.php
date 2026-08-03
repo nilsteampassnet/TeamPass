@@ -547,7 +547,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
                     FROM '.prefixTable('users').' as u
                     WHERE u.id = %i',
                     $record['field_1']
-            );
+            ) ?? [];
             $sOutput_item .= ', '.tpDatatableJsonCell(
                 empty($info['name']) === false
                     ? normalizeLogDisplayValue($info['name']).' '.normalizeLogDisplayValue($info['lastname'] ?? '')

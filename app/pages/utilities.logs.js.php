@@ -350,17 +350,47 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     }
 
     /**
-     * Decode a legacy entity layer and escape the value before displaying it as HTML.
+     * Escape a value before inserting it in an HTML text node.
+     *
+     * No entity decoding here: the value is rendered exactly as the server sent it. Used for the
+     * raw lockout identifier, so what the administrator reads is the value the unlock action
+     * targets.
      *
      * @param {*} value Value to escape.
      * @return {string}
      */
     function escapeAuthenticationLockoutValue(value) {
-        const normalizedValue = decodeHtmlEntities(
-            value === null || value === undefined ? '' : value.toString()
-        );
+        return $('<div/>').text(value === null || value === undefined ? '' : value.toString()).html();
+    }
 
-        return $('<div/>').text(normalizedValue).html();
+    /**
+     * Escape a value before inserting it in an HTML attribute.
+     *
+     * text().html() escapes '&', '<' and '>' but leaves quotes untouched, which would let a value
+     * containing one break out of the attribute. Quotes are therefore escaped explicitly.
+     *
+     * @param {*} value Value to escape.
+     * @return {string}
+     */
+    function escapeAuthenticationLockoutAttribute(value) {
+        return escapeAuthenticationLockoutValue(value)
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    /**
+     * Decode the remaining display entity layer, then escape the value as HTML text.
+     *
+     * Reserved for display-only columns normalized server-side by normalizeLogDisplayValue(), so
+     * legacy accents render correctly. Never use it on an operational identifier.
+     *
+     * @param {*} value Value to display.
+     * @return {string}
+     */
+    function renderAuthenticationLockoutDisplayValue(value) {
+        return escapeAuthenticationLockoutValue(
+            decodeHtmlEntities(value === null || value === undefined ? '' : value.toString())
+        );
     }
 
     /**
@@ -488,7 +518,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         if (type !== 'display') {
                             return data;
                         }
-                        return data === '' ? '&mdash;' : escapeAuthenticationLockoutValue(data);
+                        return data === '' ? '&mdash;' : renderAuthenticationLockoutDisplayValue(data);
                     }
                 },
                 {
@@ -534,11 +564,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         const value = encodeURIComponent(row.value === null ? '' : row.value.toString());
                         return '<button type="button" class="btn btn-sm btn-outline-secondary authentication-lockout-view-failures mr-1"'
                             + ' data-value="' + value + '" title="'
-                            + escapeAuthenticationLockoutValue(authenticationLockoutMessages.viewFailures) + '">'
+                            + escapeAuthenticationLockoutAttribute(authenticationLockoutMessages.viewFailures) + '">'
                             + '<i class="fa-solid fa-magnifying-glass"></i></button>'
                             + '<button type="button" class="btn btn-sm btn-outline-danger authentication-lockout-remove"'
                             + ' data-source="' + source + '" data-value="' + value + '" title="'
-                            + escapeAuthenticationLockoutValue(authenticationLockoutMessages.remove) + '">'
+                            + escapeAuthenticationLockoutAttribute(authenticationLockoutMessages.remove) + '">'
                             + '<i class="fa-solid fa-lock-open"></i></button>';
                     }
                 }
