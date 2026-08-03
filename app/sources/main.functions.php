@@ -6952,6 +6952,24 @@ function secureOutput(mixed $data, array $fields = []): mixed
 }
 
 /**
+ * Normalize a database-backed log value for safe display.
+ *
+ * Older records may contain HTML entities, and some values have already been encoded more than
+ * once. Decode one storage layer here, then re-escape without double encoding. The DataTables
+ * renderers decode the remaining display layer and escape it again before inserting it into the
+ * DOM, so legacy accents remain readable without reintroducing stored XSS.
+ *
+ * @param mixed $value Value read from a log-related database column
+ * @return string Value with one storage entity layer removed and safely re-escaped
+ */
+function normalizeLogDisplayValue(mixed $value): string
+{
+    $decodedValue = html_entity_decode((string) $value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+    return htmlspecialchars($decodedValue, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8', false);
+}
+
+/**
  * Permits to manage the cache tree for a user
  *
  * @param integer $user_id
