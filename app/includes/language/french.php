@@ -3012,7 +3012,7 @@ return array(
     'ops_hibp_occurrences' => 'occurrences HIBP',
     'ops_hibp_disabled' => 'La vérification Have I Been Pwned est désactivée. Les statuts déjà en cache restent affichés lorsqu’ils existent.',
     'ops_hibp_interval' => 'revérification tous les {days} jour(s)',
-    'ops_kpi_complexity_unknown' => 'Unknown complexity',
+    'ops_kpi_complexity_unknown' => 'Compléxité inconnue',
     'ops_kpi_created_period' => 'Créés sur la période',
     'ops_kpi_created_weak' => 'Créés faibles',
     'ops_activity_summary' => 'Synthèse de l’activité',
