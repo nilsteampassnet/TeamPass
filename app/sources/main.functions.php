@@ -6292,6 +6292,325 @@ function storeUsersShareKey(
 }
 
 /**
+ * Move a personal item to a shared folder and synchronously distribute its object keys.
+ *
+ * The item remains personal until every source key owned by the caller has been loaded and
+ * decrypted. Item, encrypted custom-field and file sharekeys are then distributed inside the
+ * same transaction as the folder change. Historical log sharekeys intentionally keep the
+ * existing Web move behaviour and are not redistributed by this first implementation.
+ *
+ * @param int    $itemId        Item to move
+ * @param int    $targetFolderId Shared destination folder
+ * @param int    $userId        User performing the move
+ * @param string $userPrivateKey Decrypted private key of the user performing the move
+ *
+ * @return array{
+ *     item_id: int,
+ *     label: string,
+ *     source_folder_id: int,
+ *     source_folder_title: string,
+ *     target_folder_id: int,
+ *     target_folder_title: string,
+ *     fields_count: int,
+ *     files_count: int
+ * }
+ *
+ * @throws InvalidArgumentException When the requested transition is not personal to shared
+ * @throws UnexpectedValueException When a required source encryption key is unavailable
+ * @throws Throwable When the database operation cannot be completed
+ */
+function movePersonalItemToSharedFolderSynchronously(
+    int $itemId,
+    int $targetFolderId,
+    int $userId,
+    string $userPrivateKey
+): array {
+    if ($itemId <= 0 || $targetFolderId <= 0 || $userId <= 0 || $userPrivateKey === '') {
+        throw new InvalidArgumentException('Invalid personal item move parameters.');
+    }
+
+    $transactionStarted = false;
+    try {
+        DB::startTransaction();
+        $transactionStarted = true;
+
+        // Lock the item so no concurrent request can change its folder while keys are prepared.
+        $item = DB::queryFirstRow(
+            'SELECT i.id, i.id_tree, i.label,
+                source_folder.personal_folder AS source_personal_folder,
+                source_folder.title AS source_folder_title
+            FROM ' . prefixTable('items') . ' AS i
+            INNER JOIN ' . prefixTable('nested_tree') . ' AS source_folder ON source_folder.id = i.id_tree
+            WHERE i.id = %i
+            FOR UPDATE',
+            $itemId
+        );
+        if (is_array($item) === false) {
+            throw new InvalidArgumentException('Item not found.');
+        }
+
+        $targetFolder = DB::queryFirstRow(
+            'SELECT id, title, personal_folder
+            FROM ' . prefixTable('nested_tree') . '
+            WHERE id = %i',
+            $targetFolderId
+        );
+        if (is_array($targetFolder) === false) {
+            throw new InvalidArgumentException('Target folder not found.');
+        }
+
+        if (
+            (int) $item['source_personal_folder'] !== 1
+            || (int) $targetFolder['personal_folder'] !== 0
+        ) {
+            throw new InvalidArgumentException('Only personal-to-shared item moves are supported by this operation.');
+        }
+
+        $user = DB::queryFirstRow(
+            'SELECT public_key
+            FROM ' . prefixTable('users') . '
+            WHERE id = %i',
+            $userId
+        );
+        if (is_array($user) === false || empty($user['public_key'])) {
+            throw new UnexpectedValueException(
+                'The item cannot be moved because the user encryption keys are unavailable.'
+            );
+        }
+        $userPublicKey = (string) $user['public_key'];
+
+        /**
+         * Decrypt one caller sharekey while preserving the migration-on-read contract.
+         *
+         * @param array<string, mixed> $sharekeyRow
+         */
+        $decryptSourceKey = static function (
+            array $sharekeyRow,
+            string $sharekeysTable,
+            string $objectType,
+            int $objectId
+        ) use ($userPrivateKey, $userPublicKey): string {
+            if (
+                empty($sharekeyRow['share_key'])
+                || empty($sharekeyRow['increment_id'])
+            ) {
+                error_log(
+                    'TEAMPASS Error - personal-to-shared move: missing ' . $objectType
+                    . ' sharekey for object ' . $objectId
+                );
+                throw new UnexpectedValueException(
+                    'The item cannot be moved because one or more encryption keys are missing or invalid.'
+                );
+            }
+
+            try {
+                $objectKey = decryptUserObjectKeyWithMigration(
+                    (string) $sharekeyRow['share_key'],
+                    $userPrivateKey,
+                    $userPublicKey,
+                    (int) $sharekeyRow['increment_id'],
+                    $sharekeysTable
+                );
+            } catch (Throwable $exception) {
+                error_log(
+                    'TEAMPASS Error - personal-to-shared move: unable to decrypt ' . $objectType
+                    . ' key for object ' . $objectId . ' - ' . $exception->getMessage()
+                );
+                throw new UnexpectedValueException(
+                    'The item cannot be moved because one or more encryption keys are missing or invalid.',
+                    0,
+                    $exception
+                );
+            }
+
+            if ($objectKey === '') {
+                throw new UnexpectedValueException(
+                    'The item cannot be moved because one or more encryption keys are missing or invalid.'
+                );
+            }
+
+            return $objectKey;
+        };
+
+        $itemSharekey = DB::queryFirstRow(
+            'SELECT share_key, increment_id
+            FROM ' . prefixTable('sharekeys_items') . '
+            WHERE user_id = %i AND object_id = %i',
+            $userId,
+            $itemId
+        );
+        $itemObjectKey = $decryptSourceKey(
+            is_array($itemSharekey) ? $itemSharekey : [],
+            'sharekeys_items',
+            'item',
+            $itemId
+        );
+
+        $fieldObjectKeys = [];
+        $fields = DB::query(
+            'SELECT custom_field.id, custom_field.encryption_type, sharekey.share_key, sharekey.increment_id
+            FROM ' . prefixTable('categories_items') . ' AS custom_field
+            LEFT JOIN ' . prefixTable('sharekeys_fields') . ' AS sharekey
+                ON sharekey.object_id = custom_field.id AND sharekey.user_id = %i
+            WHERE custom_field.item_id = %i',
+            $userId,
+            $itemId
+        );
+        foreach ($fields as $field) {
+            // Plain custom fields have no object key to distribute.
+            if ((string) $field['encryption_type'] === 'not_set') {
+                continue;
+            }
+
+            $fieldId = (int) $field['id'];
+            $fieldObjectKeys[] = [
+                'object_id' => $fieldId,
+                'object_key' => $decryptSourceKey(
+                    $field,
+                    'sharekeys_fields',
+                    'custom field',
+                    $fieldId
+                ),
+            ];
+        }
+
+        $fileObjectKeys = [];
+        $files = DB::query(
+            'SELECT attachment.id, sharekey.share_key, sharekey.increment_id
+            FROM ' . prefixTable('files') . ' AS attachment
+            LEFT JOIN ' . prefixTable('sharekeys_files') . ' AS sharekey
+                ON sharekey.object_id = attachment.id AND sharekey.user_id = %i
+            WHERE attachment.id_item = %i',
+            $userId,
+            $itemId
+        );
+        foreach ($files as $file) {
+            $fileId = (int) $file['id'];
+            $fileObjectKeys[] = [
+                'object_id' => $fileId,
+                'object_key' => $decryptSourceKey(
+                    $file,
+                    'sharekeys_files',
+                    'file',
+                    $fileId
+                ),
+            ];
+        }
+
+        // Reuse the canonical recipient selection and sharekey-upsert implementation.
+        storeUsersShareKey(
+            'sharekeys_items',
+            0,
+            $itemId,
+            $itemObjectKey,
+            false,
+            true,
+            [],
+            -1,
+            $userId
+        );
+        foreach ($fieldObjectKeys as $fieldObjectKey) {
+            storeUsersShareKey(
+                'sharekeys_fields',
+                0,
+                (int) $fieldObjectKey['object_id'],
+                (string) $fieldObjectKey['object_key'],
+                false,
+                true,
+                [],
+                -1,
+                $userId
+            );
+        }
+        foreach ($fileObjectKeys as $fileObjectKey) {
+            storeUsersShareKey(
+                'sharekeys_files',
+                0,
+                (int) $fileObjectKey['object_id'],
+                (string) $fileObjectKey['object_key'],
+                false,
+                true,
+                [],
+                -1,
+                $userId
+            );
+        }
+
+        // Publish the item in the shared folder only after every source object key was recovered.
+        DB::update(
+            prefixTable('items'),
+            [
+                'id_tree' => $targetFolderId,
+                'perso' => 0,
+                'updated_at' => time(),
+            ],
+            'id = %i',
+            $itemId
+        );
+
+        DB::commit();
+        $transactionStarted = false;
+
+        return [
+            'item_id' => $itemId,
+            'label' => (string) $item['label'],
+            'source_folder_id' => (int) $item['id_tree'],
+            'source_folder_title' => (string) $item['source_folder_title'],
+            'target_folder_id' => $targetFolderId,
+            'target_folder_title' => (string) $targetFolder['title'],
+            'fields_count' => count($fieldObjectKeys),
+            'files_count' => count($fileObjectKeys),
+        ];
+    } catch (Throwable $exception) {
+        if ($transactionStarted === true) {
+            DB::rollback();
+        }
+        throw $exception;
+    }
+}
+
+/**
+ * Apply the shared post-commit effects of an item move.
+ *
+ * @param array<string, mixed> $settings TeamPass settings
+ */
+function finalizeItemMoveSideEffects(
+    array $settings,
+    int $itemId,
+    string $itemLabel,
+    int $userId,
+    string $userLogin,
+    int $sourceFolderId,
+    string $sourceFolderTitle,
+    int $targetFolderId,
+    string $targetFolderTitle
+): void {
+    logItems(
+        $settings,
+        $itemId,
+        $itemLabel,
+        $userId,
+        'at_modification',
+        $userLogin,
+        'at_moved : ' . $sourceFolderTitle . ' -> ' . $targetFolderTitle
+    );
+
+    updateCacheTable('update_value', $itemId, $userId);
+    adjustFolderItemsCounter($sourceFolderId, -1);
+    adjustFolderItemsCounter($targetFolderId, 1);
+
+    $movePayload = [
+        'item_id' => $itemId,
+        'from_folder_id' => $sourceFolderId,
+        'to_folder_id' => $targetFolderId,
+        'label' => $itemLabel,
+        'moved_by' => $userLogin,
+    ];
+    emitWebSocketEvent('item_moved', 'folder', $sourceFolderId, $movePayload, $userId);
+    emitWebSocketEvent('item_moved', 'folder', $targetFolderId, $movePayload, $userId);
+}
+
+/**
  * Insert or update sharekey for a user
  * Handles duplicate key errors gracefully
  * 
