@@ -5920,202 +5920,53 @@ switch ($inputData['type']) {
             // ---
             // ---
         } elseif (intval($dataSource['personal_folder']) === 1 && intval($dataDestination['personal_folder']) === 0) {
-            // If previous is personal folder and new is not personal folder => no key exist on item => add new
-            // Create keys for all users
-
-            // Get the ITEM object key for the user
-            $userKey = DB::queryFirstRow(
-                'SELECT share_key, increment_id
-                FROM ' . prefixTable('sharekeys_items') . '
-                WHERE user_id = %i AND object_id = %i',
-                $session->get('user-id'),
-                $inputData['itemId']
-            );
-            if (DB::count() > 0) {
-                $objectKey = decryptUserObjectKeyWithMigration(
-                    $userKey['share_key'],
-                    $session->get('user-private_key'),
-                    $session->get('user-public_key'),
-                    intval($userKey['increment_id']),
-                    'sharekeys_items'
+            try {
+                movePersonalItemToSharedFolderSynchronously(
+                    (int) $inputData['itemId'],
+                    (int) $inputData['folderId'],
+                    (int) $session->get('user-id'),
+                    (string) $session->get('user-private_key')
                 );
-
-                // This is a public object
-                $users = DB::query(
-                    'SELECT id, public_key
-                    FROM ' . prefixTable('users') . '
-                    WHERE id NOT IN %li
-                    AND public_key != ""',
-                    $tpUsersIDs
+            } catch (InvalidArgumentException | UnexpectedValueException $exception) {
+                error_log(
+                    'TEAMPASS Error - move_item personal-to-shared validation failed for item '
+                    . (int) $inputData['itemId'] . ': ' . $exception->getMessage()
                 );
-
-                foreach ($users as $user) {
-                    // Insert in DB the new object key for this item by user
-                    insertOrUpdateSharekey(
-                        prefixTable('sharekeys_items'),
-                        (int) $inputData['itemId'],
-                        intval($user['id']),
-                        encryptUserObjectKey($objectKey, $user['public_key'])
-                    );
-                }
+                echo (string) prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => $lang->get('error_missing_sharekey'),
+                    ],
+                    'encode'
+                );
+                break;
+            } catch (Throwable $exception) {
+                error_log(
+                    'TEAMPASS Error - move_item personal-to-shared failed for item '
+                    . (int) $inputData['itemId'] . ': ' . $exception->getMessage()
+                );
+                echo (string) prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => $lang->get('error_unknown'),
+                    ],
+                    'encode'
+                );
+                break;
             }
-
-            // Get fields for this Item
-            // Fetch encryption_type to skip non-encrypted fields and detect orphans
-            $rows = DB::query(
-                'SELECT id, encryption_type
-                FROM ' . prefixTable('categories_items') . '
-                WHERE item_id = %i',
-                $inputData['itemId']
-            );
-            foreach ($rows as $field) {
-                // Non-encrypted fields have no sharekey — nothing to distribute
-                if ($field['encryption_type'] === 'not_set') {
-                    continue;
-                }
-
-                $userKey = DB::queryFirstRow(
-                    'SELECT share_key, increment_id
-                    FROM ' . prefixTable('sharekeys_fields') . '
-                    WHERE user_id = %i AND object_id = %i',
-                    $session->get('user-id'),
-                    $field['id']
-                );
-                if (DB::count() === 0) {
-                    // Encrypted field with no sharekey: the object key is unrecoverable.
-                    // Keeping this row would cause a permanent decryption_failed for all users.
-                    // Delete the orphaned field value and log the incident.
-                    logEvents(
-                        $SETTINGS,
-                        'error',
-                        'move_item: encrypted field id=' . $field['id'] .
-                            ' (item=' . $inputData['itemId'] . ') has no sharekey' .
-                            ' for user=' . $session->get('user-id') .
-                            ' — orphaned row deleted during personal→public move',
-                        (string) $session->get('user-id'),
-                        (string) $session->get('user-login'),
-                        (string) $inputData['itemId']
-                    );
-                    DB::delete(prefixTable('categories_items'), 'id = %i', $field['id']);
-                    continue;
-                }
-
-                $objectKey = decryptUserObjectKeyWithMigration(
-                    $userKey['share_key'],
-                    $session->get('user-private_key'),
-                    $session->get('user-public_key'),
-                    intval($userKey['increment_id']),
-                    'sharekeys_fields'
-                );
-
-                // This is a public object
-                $users = DB::query(
-                    'SELECT id, public_key
-                    FROM ' . prefixTable('users') . '
-                    WHERE id NOT IN %li
-                    AND public_key != ""',
-                    $tpUsersIDs
-                );
-                foreach ($users as $user) {
-                    // Insert in DB the new object key for this item by user
-                    insertOrUpdateSharekey(
-                        prefixTable('sharekeys_fields'),
-                        intval($field['id']),
-                        intval($user['id']),
-                        encryptUserObjectKey($objectKey, $user['public_key'])
-                    );
-                }
-            }
-
-            // Get the FILE object key for the user
-            // Get FILES for this Item
-            $rows = DB::query(
-                'SELECT id
-                FROM ' . prefixTable('files') . '
-                WHERE id_item = %i',
-                $inputData['itemId']
-            );
-            foreach ($rows as $attachment) {
-                $userKey = DB::queryFirstRow(
-                    'SELECT share_key, increment_id
-                    FROM ' . prefixTable('sharekeys_files') . '
-                    WHERE user_id = %i AND object_id = %i',
-                    $session->get('user-id'),
-                    $attachment['id']
-                );
-                if (DB::count() > 0) {
-                    $objectKey = decryptUserObjectKeyWithMigration(
-                        $userKey['share_key'],
-                        $session->get('user-private_key'),
-                        $session->get('user-public_key'),
-                        intval($userKey['increment_id']),
-                        'sharekeys_files'
-                    );
-
-                    // This is a public object
-                    $users = DB::query(
-                        'SELECT id, public_key
-                        FROM ' . prefixTable('users') . '
-                        WHERE id NOT IN %li
-                        AND public_key != ""',
-                        $tpUsersIDs
-                    );
-
-                    foreach ($users as $user) {
-                        // Insert in DB the new object key for this item by user
-                        insertOrUpdateSharekey(
-                            prefixTable('sharekeys_files'),
-                            intval($attachment['id']),
-                            intval($user['id']),
-                            encryptUserObjectKey($objectKey, $user['public_key'])
-                        );
-                    }
-                }
-            }
-
-            // update item
-            DB::update(
-                prefixTable('items'),
-                array(
-                    'id_tree' => $inputData['folderId'],
-                    'perso' => 0,
-                    'updated_at' => time(),
-                ),
-                'id=%i',
-                $inputData['itemId']
-            );
         }
 
-        // Log item moved
-        logItems(
+        finalizeItemMoveSideEffects(
             $SETTINGS,
             (int) $inputData['itemId'],
-            $dataSource['label'],
-            $session->get('user-id'),
-            'at_modification',
-            $session->get('user-login'),
-            'at_moved : ' . strval($dataSource['title']) . ' -> ' . strval($dataDestination['title'])
+            (string) $dataSource['label'],
+            (int) $session->get('user-id'),
+            (string) ($session->get('user-login') ?? ''),
+            (int) $dataSource['id_tree'],
+            (string) $dataSource['title'],
+            (int) $inputData['folderId'],
+            (string) $dataDestination['title']
         );
-
-        // Update cache table
-        updateCacheTable('update_value', (int) $inputData['itemId']);
-
-        // Refresh tree counters for both source and destination folders (#5221)
-        adjustFolderItemsCounter((int) $dataSource['id_tree'], -1);
-        adjustFolderItemsCounter((int) $inputData['folderId'], 1);
-
-        // Notify via WebSocket: item moved from source folder and arrived in destination folder.
-        // Both folders' subscribers receive the event (excluding the user who performed the move).
-        $movePayload = [
-            'item_id'        => (int) $inputData['itemId'],
-            'from_folder_id' => (int) $dataSource['id_tree'],
-            'to_folder_id'   => (int) $inputData['folderId'],
-            'label'          => $dataSource['label'],
-            'moved_by'       => $session->get('user-login') ?? '',
-        ];
-        $moveExclude = (int) $session->get('user-id');
-        emitWebSocketEvent('item_moved', 'folder', (int) $dataSource['id_tree'], $movePayload, $moveExclude);
-        emitWebSocketEvent('item_moved', 'folder', (int) $inputData['folderId'], $movePayload, $moveExclude);
 
         $returnValues = array(
             'error' => '',
