@@ -894,9 +894,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 }
                 upldr.splice(); // clear the file queue
             },
-            Error: function(up, data) {
+            Error: function(up, err) {
                 toastr.warning(
-                    data.message + ' (' + up.settings.max_file_size + ')',
+                    err.message + (err.file ? ' (' + err.file.name + ')' : ''),
                     '<?php echo $lang->get('caution'); ?>',
                     {
                         timeOut: 4000,

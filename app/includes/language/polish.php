@@ -3142,5 +3142,6 @@ wyszukiwanie elementów grupy ustawień',
     'login_page_refresh_countdown' => 'Automatic refresh in #seconds# seconds.',
     'login_page_refresh_now' => 'Refresh now',
     'login_page_refreshed_retype_password' => 'Page refreshed. Please type your password again.',
+    'import_hint_keepass' => 'In KeePass: File &rarr; Export &rarr; KeePass XML (2.x). Upload the resulting .xml file (the encrypted .kdbx database is not supported).',
 
 );

@@ -772,6 +772,7 @@ return array(
     'import_hint_lastpass' => 'In LastPass: Advanced Options &rarr; Export &rarr; save the .csv file. Upload that file.',
     'import_hint_1password' => 'In 1Password (desktop app): File &rarr; Export &rarr; CSV. Upload the resulting .csv file.',
     'import_hint_keepassxc' => 'In KeePassXC: Database &rarr; Export &rarr; Export to CSV. Upload the resulting .csv file.',
+    'import_hint_keepass' => 'In KeePass: File &rarr; Export &rarr; KeePass XML (2.x). Upload the resulting .xml file (the encrypted .kdbx database is not supported).',
     'import_flat_in_target_folder' => 'Folder creation is limited to Manager accounts. Items will be imported directly into the target folder.',
     'import_error_invalid_structure' => 'The file structure is invalid or unsupported.',
     'import_error_unknown_format' => 'Unknown or unsupported import format.',

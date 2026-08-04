@@ -3140,5 +3140,6 @@ return array(
     'login_page_refresh_countdown' => 'Actualisation automatique dans #seconds# secondes.',
     'login_page_refresh_now' => 'Actualiser maintenant',
     'login_page_refreshed_retype_password' => 'Page actualisée. Merci de saisir à nouveau votre mot de passe.',
+    'import_hint_keepass' => 'Dans KeePass : Fichier &rarr; Exporter &rarr; KeePass XML (2.x). Téléversez le fichier .xml obtenu (la base chiffrée .kdbx n\’est pas prise en charge).',
 
 );
