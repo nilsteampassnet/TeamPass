@@ -57,16 +57,6 @@ function tpDatatableJsonCell($value): string
 }
 
 /**
- * Normalize a display value: decode HTML entities then re-encode for safe output.
- */
-function normalizeBackgroundTaskDisplayValue($value): string
-{
-    $decodedValue = html_entity_decode((string) $value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-
-    return htmlspecialchars($decodedValue, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8', false);
-}
-
-/**
  * Return the display name for a user ID, or a user-slash icon if not found.
  */
 function getBackgroundTaskUserDisplayFromUserId($userId): string
@@ -87,13 +77,13 @@ function getBackgroundTaskUserDisplayFromUserId($userId): string
     }
 
     $displayName = trim(
-        normalizeBackgroundTaskDisplayValue($dataUser['name'] ?? '')
+        normalizeLogDisplayValue($dataUser['name'] ?? '')
         . ' ' .
-        normalizeBackgroundTaskDisplayValue($dataUser['lastname'] ?? '')
+        normalizeLogDisplayValue($dataUser['lastname'] ?? '')
     );
 
     if ($displayName === '') {
-        $displayName = trim(normalizeBackgroundTaskDisplayValue($dataUser['login'] ?? ''));
+        $displayName = trim(normalizeLogDisplayValue($dataUser['login'] ?? ''));
     }
 
     return $displayName === '' ? "<i class='fa-solid fa-user-slash'></i>" : $displayName;
@@ -117,7 +107,7 @@ function resolveBackgroundTaskUserDisplay(array $arguments, string $processType)
     if ($processType === 'send_email') {
         $receiverName = trim((string) ($arguments['receiver_name'] ?? ($arguments['login'] ?? '')));
         if ($receiverName !== '') {
-            return normalizeBackgroundTaskDisplayValue($receiverName);
+            return normalizeLogDisplayValue($receiverName);
         }
 
         $email = trim((string) ($arguments['receivers'] ?? ($arguments['email'] ?? '')));
@@ -132,13 +122,13 @@ function resolveBackgroundTaskUserDisplay(array $arguments, string $processType)
 
             if (DB::count() > 0 && $dataUser !== null) {
                 $displayName = trim(
-                    normalizeBackgroundTaskDisplayValue($dataUser['name'] ?? '')
+                    normalizeLogDisplayValue($dataUser['name'] ?? '')
                     . ' ' .
-                    normalizeBackgroundTaskDisplayValue($dataUser['lastname'] ?? '')
+                    normalizeLogDisplayValue($dataUser['lastname'] ?? '')
                 );
 
                 if ($displayName === '') {
-                    $displayName = trim(normalizeBackgroundTaskDisplayValue($dataUser['login'] ?? ''));
+                    $displayName = trim(normalizeLogDisplayValue($dataUser['login'] ?? ''));
                 }
 
                 if ($displayName !== '') {
@@ -146,7 +136,7 @@ function resolveBackgroundTaskUserDisplay(array $arguments, string $processType)
                 }
             }
 
-            return normalizeBackgroundTaskDisplayValue($email);
+            return normalizeLogDisplayValue($email);
         }
 
         return "<i class='fa-solid fa-user-slash'></i>";
@@ -294,22 +284,21 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         //col1
         $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col2
-        $sOutput .= tpDatatableJsonCell(str_replace([chr(10), chr(13)], [' ', ' '], htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES))).', ';
+        $sOutput .= tpDatatableJsonCell(normalizeLogDisplayValue(str_replace([chr(10), chr(13)], [' ', ' '], stripslashes((string) $record['label'])))).', ';
         //col3 (Source)
         $field1 = isset($record['field_1']) ? trim((string) $record['field_1']) : '';
         $isApi = ($field1 === 'api') || (strpos($field1, 'tp_src=api') !== false);
         $sourceLabel = $isApi ? 'API/Extension' : 'Web';
         $sOutput .= '"'.htmlspecialchars($sourceLabel, ENT_QUOTES).'", ';
         //col4
-        $record = secureOutput($record, ['login', 'name', 'lastname', 'who']);
         if (!empty($record['login'])) {
             $fullname = trim(
-                (string) ($record['name'] ?? '') . ' ' .
-                (string) ($record['lastname'] ?? '')
+                normalizeLogDisplayValue($record['name'] ?? '') . ' ' .
+                normalizeLogDisplayValue($record['lastname'] ?? '')
             );
-            $sOutput .= tpDatatableJsonCell(($fullname !== '' ? $fullname . ' ' : '') . '[' . $record['login'] . ']');
+            $sOutput .= tpDatatableJsonCell(($fullname !== '' ? $fullname . ' ' : '') . '[' . normalizeLogDisplayValue($record['login']) . ']');
         } else {
-            $sOutput .= tpDatatableJsonCell('IP: ' . (string) $record['who']);
+            $sOutput .= tpDatatableJsonCell('IP: ' . normalizeLogDisplayValue($record['who'] ?? ''));
         }
         //Finish the line
         $sOutput .= '],';
@@ -377,14 +366,13 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $sOutput .= '[';
     }
     foreach ($rows as $record) {
-        $record = secureOutput($record, ['login', 'label']);
         $sOutput .= '[';
         //col1
         $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col2
-        $sOutput .= tpDatatableJsonCell(str_replace([chr(10), chr(13)], [' ', ' '], (string) $record['label'])).', ';
+        $sOutput .= tpDatatableJsonCell(normalizeLogDisplayValue(str_replace([chr(10), chr(13)], [' ', ' '], (string) $record['label']))).', ';
         //col3
-        $sOutput .= tpDatatableJsonCell((string) $record['login']);
+        $sOutput .= tpDatatableJsonCell(normalizeLogDisplayValue($record['login'] ?? ''));
         //Finish the line
         $sOutput .= '],';
     }
@@ -451,14 +439,13 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $sOutput .= '[';
     }
     foreach ($rows as $record) {
-        $record = secureOutput($record, ['login', 'label']);
         $sOutput .= '[';
         //col1
         $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col2
-        $sOutput .= tpDatatableJsonCell(trim((string) $record['label'])).', ';
+        $sOutput .= tpDatatableJsonCell(normalizeLogDisplayValue(trim((string) $record['label']))).', ';
         //col3
-        $sOutput .= tpDatatableJsonCell(trim((string) $record['login']));
+        $sOutput .= tpDatatableJsonCell(normalizeLogDisplayValue(trim((string) $record['login'])));
         //Finish the line
         $sOutput .= '],';
     }
@@ -522,13 +509,12 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": [ ';
     foreach ($rows as $record) {
-        $record = secureOutput($record, ['login', 'label']);
         $get_item_in_list = true;
         $sOutput_item = '[';
         //col1
         $sOutput_item .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col2
-        $sOutput_item .= tpDatatableJsonCell((string) $record['login']).', ';
+        $sOutput_item .= tpDatatableJsonCell(normalizeLogDisplayValue($record['login'] ?? '')).', ';
         //col3
         if ($record['label'] === 'at_user_added') {
             $cell = $lang->get('user_creation');
@@ -538,7 +524,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
             $cell = $lang->get('user_updated');
         } elseif (strpos($record['label'], 'at_user_email_changed') !== false) {
             $change = explode(':', $record['label']);
-            $cell = $lang->get('log_user_email_changed').' '.secureOutput($change[1]);
+            $cell = $lang->get('log_user_email_changed').' '.($change[1] ?? '');
         } elseif ($record['label'] === 'at_user_new_keys') {
             $cell = $lang->get('new_keys_generated');
         } elseif ($record['label'] === 'at_user_keys_download') {
@@ -550,10 +536,10 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         } else {
             $cell = (string) $record['label'];
         }
-        $sOutput_item .= tpDatatableJsonCell($cell).' ';
+        $sOutput_item .= tpDatatableJsonCell(normalizeLogDisplayValue($cell)).' ';
         //col4
         if ($record['label'] === 'authentication_lockout_removed') {
-            $sOutput_item .= ', '.tpDatatableJsonCell((string) ($record['field_1'] ?? '')).' ';
+            $sOutput_item .= ', '.tpDatatableJsonCell(normalizeLogDisplayValue($record['field_1'] ?? '')).' ';
         } elseif (empty($record['field_1']) === false) {
             // get user name
             $info = DB::queryFirstRow(
@@ -561,9 +547,12 @@ if (isset($params['action']) && $params['action'] === 'connections') {
                     FROM '.prefixTable('users').' as u
                     WHERE u.id = %i',
                     $record['field_1']
-            );
-            $info = secureOutput($info ?? [], ['name', 'lastname']);
-            $sOutput_item .= ', '.tpDatatableJsonCell(empty($info['name']) === false ? (string) $info['name'].' '.$info['lastname'] : 'Removed user ('.$record['field_1'].')').' ';
+            ) ?? [];
+            $sOutput_item .= ', '.tpDatatableJsonCell(
+                empty($info['name']) === false
+                    ? normalizeLogDisplayValue($info['name']).' '.normalizeLogDisplayValue($info['lastname'] ?? '')
+                    : normalizeLogDisplayValue('Removed user ('.$record['field_1'].')')
+            ).' ';
         } else {
             $sOutput_item .= ', "" ';
         }
@@ -630,7 +619,6 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": [ ';
     foreach ($rows as $record) {
-        $record = secureOutput($record, ['label', 'folder', 'name', 'lastname', 'login']);
         $get_item_in_list = true;
         $sOutput_item = '[';
         //col1
@@ -638,11 +626,15 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         //col3
         $sOutput_item .= '"'.trim((string) $record['id']).'", ';
         //col3
-        $sOutput_item .= tpDatatableJsonCell(trim((string) $record['label'])).', ';
+        $sOutput_item .= tpDatatableJsonCell(normalizeLogDisplayValue(trim((string) $record['label']))).', ';
         //col2
-        $sOutput_item .= tpDatatableJsonCell(trim((string) $record['folder'])).', ';
+        $sOutput_item .= tpDatatableJsonCell(normalizeLogDisplayValue(trim((string) $record['folder']))).', ';
         //col2
-        $sOutput_item .= tpDatatableJsonCell(trim((string) $record['name']).' '.trim((string) $record['lastname']).' ['.trim((string) $record['login']).']').', ';
+        $sOutput_item .= tpDatatableJsonCell(
+            normalizeLogDisplayValue(trim((string) $record['name'])).' '.
+            normalizeLogDisplayValue(trim((string) $record['lastname'])).' ['.
+            normalizeLogDisplayValue(trim((string) $record['login'])).']'
+        ).', ';
         //col6
         $sOutput_item .= '"'.secureOutput($lang->get($record['action'])).'", ';
         //col7 (API / Extension)
@@ -764,6 +756,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
             if ($userDisplay === '') {
                 $userDisplay = $lang->get('authentication_lockout_unknown_user');
             }
+            $userDisplay = normalizeLogDisplayValue($userDisplay);
         }
 
         $firstFailureTimestamp = strtotime((string) ($lockoutRow['first_failure'] ?? ''));
@@ -879,8 +872,8 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $failedLoginUser = $isApiFailure === true
             ? trim(str_replace([' | tp_src=api', 'tp_src=api'], '', $failedLoginField), " |\t\n\r\0\x0B")
             : $failedLoginField;
-        $failedLoginUser = htmlspecialchars($failedLoginUser, ENT_QUOTES);
-        $failedLoginIp = htmlspecialchars(stripslashes((string) ($record['who'] ?? '')), ENT_QUOTES);
+        $failedLoginUser = normalizeLogDisplayValue($failedLoginUser);
+        $failedLoginIp = normalizeLogDisplayValue(stripslashes((string) ($record['who'] ?? '')));
         $failedLoginChannel = $isApiFailure === true
             ? $lang->get('authentication_channel_api')
             : $lang->get('authentication_channel_web_unknown');
@@ -898,7 +891,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         // col1
         $sOutput .= json_encode(date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['auth_date']), JSON_UNESCAPED_UNICODE) . ', ';
         // col2
-        $sOutput .= json_encode(htmlspecialchars((string) $lang->get($failedLoginLabel), ENT_QUOTES), JSON_UNESCAPED_UNICODE) . ', ';
+        $sOutput .= json_encode(normalizeLogDisplayValue($lang->get($failedLoginLabel)), JSON_UNESCAPED_UNICODE) . ', ';
         // col3
         $sOutput .= json_encode($failedLoginUser, JSON_UNESCAPED_UNICODE) . ', ';
         // col4
@@ -971,14 +964,17 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $sOutput .= '[';
     }
     foreach ($rows as $record) {
-        $record = secureOutput($record, ['name', 'lastname', 'login']);
         $sOutput .= '[';
         //col1
         $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col2
         $sOutput .= '"'.addslashes(str_replace([chr(10), chr(13), '`', '<br />@', "'"], ['<br>', '<br>', "'", '', '&#39;'], $record['label'])).'", ';
         //col3
-        $sOutput .= tpDatatableJsonCell((string) $record['name'].' '.(string) $record['lastname'].' ['.(string) $record['login'].']');
+        $sOutput .= tpDatatableJsonCell(
+            normalizeLogDisplayValue($record['name'] ?? '').' '.
+            normalizeLogDisplayValue($record['lastname'] ?? '').' ['.
+            normalizeLogDisplayValue($record['login'] ?? '').']'
+        );
         //Finish the line
         $sOutput .= '],';
     }
