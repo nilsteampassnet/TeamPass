@@ -2511,6 +2511,39 @@ switch ($inputData['type']) {
                 break;
             }
 
+            // SECURITY: the destination folder must also be accessible to the user.
+            // Without this check any non-read-only user could plant a copy into any
+            // folder of the instance (including admin-restricted ones).
+            if (in_array($post_dest_id, $session->get('user-accessible_folders')) === false) {
+                echo (string) prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to_access_this_folder'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // SECURITY: the user must be allowed to create items in the destination
+            // folder. This rejects read-only folders (create is false only for the
+            // read-only access level), mirroring the destination check in move_item.
+            $destinationRights = getCurrentAccessRights(
+                (int) $session->get('user-id'),
+                (int) $inputData['itemId'],
+                (int) $post_dest_id,
+            );
+            if ($destinationRights['error'] || $destinationRights['create'] === false) {
+                echo (string) prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to_access_this_folder'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
             // Load the destination folder record into an array
             $dataDestination = DB::queryFirstRow(
                 'SELECT personal_folder FROM ' . prefixTable('nested_tree') . '
