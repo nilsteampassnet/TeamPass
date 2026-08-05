@@ -213,7 +213,7 @@ class PerformChecks
                 'admin', 'profile', 'mfa', 'api', 'backups', 'emails', 'ldap', 'special',
                 'statistics', 'reports', 'reviews', 'fields', 'options', 'views', 'roles', 'folders', 'users', 'utilities',
                 'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs', 'utilities.health', 'tasks', 'uploads', 'oauth', 'tools',
-                'lapr_endpoints', 'lapr_accounts', 'lapr_policies', 'admin_lapr'
+                'admin_lapr'
             ),
         );
 
@@ -254,7 +254,9 @@ class PerformChecks
             ||
             ($this->isValueInArray($pageVisited, $pagesRights['user']) === true)
             ||
-            ((int) ($data['can_manage_lapr'] ?? 0) === 1 && $this->isValueInArray($pageVisited, $laprFlagPages) === true)
+            ((int) $data['admin'] !== 1
+            && (int) ($data['can_manage_lapr'] ?? 0) === 1
+            && $this->isValueInArray($pageVisited, $laprFlagPages) === true)
         ) {
             return true;
         }
