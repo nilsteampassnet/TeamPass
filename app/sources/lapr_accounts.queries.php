@@ -34,6 +34,7 @@ use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
+use TeampassClasses\NestedTree\NestedTree;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
 // Load functions
@@ -100,7 +101,10 @@ switch ($post_type) {
         laprListEndpointsOptions();
         break;
     case 'list_manageable_items':
-        laprListManageableItems($session);
+        laprListManageableItems($session, $dataReceived);
+        break;
+    case 'search_manageable_items':
+        laprSearchManageableItems($session, $dataReceived);
         break;
     case 'list_policies_options':
         laprListPoliciesOptions();
@@ -216,40 +220,103 @@ function laprListPoliciesOptions(): void
 }
 
 /**
- * List candidate items to manage: accessible, non-personal, active, with a
- * non-empty login, not already managed. Folder scope applies (admin bypass).
+ * List candidate items to manage: writable, non-personal, active, with a
+ * non-empty login, not already managed. Folder scope always applies.
  *
  * @param SessionInterface $session Current session
+ * @param array            $data    Optional exact login filter used by discovery
  * @return void
  */
-function laprListManageableItems(SessionInterface $session): void
+function laprListManageableItems(SessionInterface $session, array $data = []): void
 {
-    $accessible = array_map('intval', (array) ($session->get('user-accessible_folders') ?? []));
-    $isAdmin = (int) $session->get('user-admin') === 1;
+    $rows = laprFindManageableItems($session, $data, 500);
 
-    if ($isAdmin === false && count($accessible) === 0) {
-        echo prepareExchangedData(['error' => false, 'data' => []], 'encode');
-        return;
+    $items = [];
+    foreach ($rows as $r) {
+        $items[] = ['id' => (int) $r['id'], 'label' => $r['label'], 'login' => $r['login']];
+    }
+    echo prepareExchangedData(['error' => false, 'data' => $items], 'encode');
+}
+
+/**
+ * Search eligible managed-account items for the Select2 picker.
+ *
+ * @param SessionInterface $session Current session
+ * @param array            $data    Search term and optional exact login filter
+ * @return void
+ */
+function laprSearchManageableItems(SessionInterface $session, array $data): void
+{
+    $rows = laprFindManageableItems($session, $data, 20);
+    $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+    $pathCache = [];
+    $results = [];
+
+    foreach ($rows as $row) {
+        $folderId = (int) $row['id_tree'];
+        if (isset($pathCache[$folderId]) === false) {
+            $segments = [];
+            foreach ($tree->getPath($folderId, true) as $node) {
+                $segments[] = (string) $node->title;
+            }
+            $pathCache[$folderId] = implode(' / ', $segments);
+        }
+
+        $results[] = [
+            'id' => (int) $row['id'],
+            'text' => (string) $row['label'],
+            'login' => (string) $row['login'],
+            'path' => $pathCache[$folderId],
+        ];
     }
 
-    $folderClause = $isAdmin === true ? '' : ' AND i.id_tree IN %li_folders';
-    $rows = DB::query(
+    echo prepareExchangedData(['error' => false, 'results' => $results], 'encode');
+}
+
+/**
+ * Return TeamPass items that are eligible to become managed LAPR accounts.
+ *
+ * @param SessionInterface $session Current session
+ * @param array            $data    Search term and optional exact login filter
+ * @param int              $limit   Maximum number of returned rows
+ * @return array<int, array<string, mixed>>
+ */
+function laprFindManageableItems(SessionInterface $session, array $data, int $limit): array
+{
+    $accessible = array_map('intval', (array) ($session->get('user-accessible_folders') ?? []));
+    $readOnly = array_map('intval', (array) ($session->get('user-read_only_folders') ?? []));
+    $writable = array_values(array_diff($accessible, $readOnly));
+    if ((int) $session->get('user-admin') === 1 || count($writable) === 0) {
+        return [];
+    }
+
+    $login = substr(trim((string) ($data['login'] ?? '')), 0, 100);
+    $term = substr(trim((string) ($data['term'] ?? '')), 0, 100);
+    $likeTerm = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term) . '%';
+    $safeLimit = max(1, min($limit, 500));
+    $loginClause = $login === '' ? '' : ' AND i.login = %s_login';
+    $queryParameters = [
+        'folders' => $writable,
+        'term_label' => $likeTerm,
+        'term_login' => $likeTerm,
+        'limit' => $safeLimit,
+    ];
+    if ($login !== '') {
+        $queryParameters['login'] = $login;
+    }
+
+    return DB::query(
         'SELECT i.id, i.label, i.login, i.id_tree
          FROM ' . prefixTable('items') . ' AS i
          WHERE i.perso = 0 AND i.inactif = 0 AND i.deleted_at IS NULL
          AND i.login IS NOT NULL AND i.login != ""
+         AND (i.label LIKE %s_term_label OR i.login LIKE %s_term_login)
          AND i.id NOT IN (
             SELECT item_id FROM ' . prefixTable('lapr_accounts') . ' WHERE status != "deleted"
-         )' . $folderClause . '
-         ORDER BY i.label ASC LIMIT 500',
-        $isAdmin === true ? [] : ['folders' => $accessible]
+         ) AND i.id_tree IN %li_folders' . $loginClause . '
+         ORDER BY i.label ASC LIMIT %i_limit',
+        $queryParameters
     );
-
-    $data = [];
-    foreach ($rows as $r) {
-        $data[] = ['id' => (int) $r['id'], 'label' => $r['label'], 'login' => $r['login']];
-    }
-    echo prepareExchangedData(['error' => false, 'data' => $data], 'encode');
 }
 
 /**
@@ -293,7 +360,7 @@ function laprAddAccount(array $data, SessionInterface $session, int $userId, Lan
         return;
     }
 
-    // Rotation writes the item → require write access to its folder (admin bypass).
+    // Rotation writes the item → require write access to its folder.
     if (laprUserCanWriteFolder((int) $item['id_tree'], $session) === false) {
         echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
         return;
@@ -310,13 +377,13 @@ function laprAddAccount(array $data, SessionInterface $session, int $userId, Lan
         return;
     }
 
-    // Already managed? (unique key also protects, but give a friendly message)
-    $existing = DB::queryFirstField(
-        'SELECT COUNT(*) FROM ' . prefixTable('lapr_accounts') . ' WHERE item_id = %i AND status != %s',
-        $itemId,
-        'deleted'
+    // The unique item_id remains occupied after a soft deletion. Reuse that row
+    // instead of inserting a duplicate and losing the relationship history.
+    $existing = DB::queryFirstRow(
+        'SELECT id, status FROM ' . prefixTable('lapr_accounts') . ' WHERE item_id = %i',
+        $itemId
     );
-    if ((int) $existing > 0) {
+    if ($existing !== null && (string) $existing['status'] !== 'deleted') {
         echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_item_already_managed')], 'encode');
         return;
     }
@@ -336,22 +403,55 @@ function laprAddAccount(array $data, SessionInterface $session, int $userId, Lan
     }
     $nextRotation = laprComputeNextRotation(null, $frequencyDays);
 
-    DB::insert(prefixTable('lapr_accounts'), [
-        'endpoint_id' => $endpointId,
-        'item_id' => $itemId,
-        'username_cache' => $login,
-        'policy_id' => $policyId > 0 ? $policyId : null,
-        'next_rotation_at' => $nextRotation,
-        'status' => 'active',
-        'created_by' => $userId,
-        'created_at' => date('Y-m-d H:i:s'),
-    ]);
-    $accountId = (int) DB::insertId();
+    $reactivated = $existing !== null;
+    if ($reactivated === true) {
+        $accountId = (int) $existing['id'];
+        DB::update(prefixTable('lapr_accounts'), [
+            'endpoint_id' => $endpointId,
+            'username_cache' => $login,
+            'policy_id' => $policyId > 0 ? $policyId : null,
+            'last_rotation_at' => null,
+            'last_rotation_status' => 'never',
+            'last_rotation_error' => null,
+            'next_rotation_at' => $nextRotation,
+            'retry_count' => 0,
+            'retry_at' => null,
+            'status' => 'active',
+            'updated_by' => $userId,
+        ], 'id = %i', $accountId);
+    } else {
+        try {
+            DB::insert(prefixTable('lapr_accounts'), [
+                'endpoint_id' => $endpointId,
+                'item_id' => $itemId,
+                'username_cache' => $login,
+                'policy_id' => $policyId > 0 ? $policyId : null,
+                'next_rotation_at' => $nextRotation,
+                'status' => 'active',
+                'created_by' => $userId,
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+            $accountId = (int) DB::insertId();
+        } catch (MeekroDBException $exception) {
+            // A concurrent request may have claimed the same item after the
+            // availability check. Return a controlled conflict, not HTTP 500.
+            $conflictingAccountId = (int) DB::queryFirstField(
+                'SELECT id FROM ' . prefixTable('lapr_accounts') . ' WHERE item_id = %i',
+                $itemId
+            );
+            if ($conflictingAccountId > 0) {
+                echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_item_already_managed')], 'encode');
+                return;
+            }
+            throw $exception;
+        }
+    }
 
     laprAuditLog('account_add', $endpointId, $userId, [
         'item_id' => $itemId,
         'username' => $login,
         'policy_id' => $policyId,
+        'reactivated' => $reactivated,
     ], 'success', $accountId);
 
     echo prepareExchangedData(['error' => false, 'message' => $lang->get('lapr_account_added'), 'id' => $accountId], 'encode');
@@ -522,7 +622,7 @@ function laprStartRotation(array $data, SessionInterface $session, int $userId, 
         return;
     }
 
-    // Rotation writes the item → require write access to its folder (admin bypass).
+    // Rotation writes the item → require write access to its folder.
     if (laprUserCanWriteFolder((int) $account['id_tree'], $session) === false) {
         echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
         return;
@@ -664,7 +764,7 @@ function laprRotationStatus(array $data, Language $lang): void
 /**
  * Paginated, read-only rotation history for one account (Point 6). Reads the
  * LAPR audit log filtered by account_id; never decrypts anything. Enforces read
- * access to the item's folder (admin bypass).
+ * access to the item's folder.
  *
  * @param array            $data    Decoded client payload
  * @param SessionInterface $session Current session
