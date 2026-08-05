@@ -2810,6 +2810,8 @@ return array(
     'error_no_edit_right' => 'Vous n’avez pas le droit de modifier cet élément',
     'error_no_delete_right' => 'Vous n’avez pas le droit de supprimer cet élément',
     'error_missing_sharekey' => 'Votre clé de déchiffrement pour cet élément n’est pas encore disponible. Veuillez réessayer dans quelques instants.',
+    'error_move_missing_sharekey' => 'Cet élément ne peut pas être déplacé : une ou plusieurs de ses clés de chiffrement sont manquantes ou inutilisables. L’élément est resté inchangé. Demandez à un administrateur de lancer la tâche de réparation des clés de chiffrement.',
+    'mass_move_partially_failed_keys' => '#nb# élément(s) laissé(s) en place car leurs clés de chiffrement n’ont pas pu être récupérées',
     'error_readonly_account' => 'Votre compte est en lecture seule, cette action n’est pas autorisée',
     'error_item_creation_failed' => 'La création de l’élément a échoué suite à une erreur interne. Veuillez réessayer.',
     'error_no_sharekey_yet' => 'Clé de déchiffrement pas encore disponible pour ce champ',

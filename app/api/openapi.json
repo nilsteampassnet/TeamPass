@@ -578,7 +578,7 @@
             "put": {
                 "operationId": "itemUpdate",
                 "summary": "Update an existing item",
-                "description": "Requires 'id' plus at least one updatable field (label, password, description, login, email, url, tags, anyone_can_modify, icon, folder_id, totp, fields).",
+                "description": "Requires 'id' plus at least one updatable field (label, password, description, login, email, url, tags, anyone_can_modify, icon, folder_id, totp, fields). Moving an item out of a personal folder into a shared one redistributes its encryption keys synchronously, so it must be requested on its own: combining it with any other updatable field returns 422. It returns 422 as well when a source encryption key cannot be recovered (the item stays personal), and 409 when the item was modified concurrently.",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -615,11 +615,17 @@
                     "405": {
                         "$ref": "#/components/responses/MethodNotAllowed"
                     },
-                    "500": {
-                        "$ref": "#/components/responses/InternalError"
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/UnprocessableEntity"
                     },
                     "429": {
                         "$ref": "#/components/responses/RateLimited"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
                     }
                 }
             }
@@ -1902,6 +1908,16 @@
                         }
                     }
                 },
+                "content": {
+                    "application/problem+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Problem"
+                        }
+                    }
+                }
+            },
+            "Conflict": {
+                "description": "The resource changed while the request was being processed",
                 "content": {
                     "application/problem+json": {
                         "schema": {
