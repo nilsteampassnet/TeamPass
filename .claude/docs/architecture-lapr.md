@@ -23,7 +23,7 @@ background-task pipeline, and phpseclib3. No parallel secret store, no new crypt
 | DB migration | `public/install/upgrade_run_3.2.2.php` (+ `upgrade_scripts_manager.php` entry) and `public/install/install-steps/run.step5.php` (+ `install.js` check68–72) |
 | Routing / access | `public/index.php` (sidebar + JS include), `app/config/include.php` (`$mngPages['admin_lapr']`), `PerformChecks::$pagesRights` (BOTH copies) |
 | Session flag | `app/sources/identify.php` → `user-can_manage_lapr` |
-| Item delete guard | `app/sources/items.queries.php` `case 'delete_item'` (D6) |
+| Item integration | `app/sources/lapr.functions.php` (`laprGetItemRelations()`), `app/sources/items.queries.php`, `app/sources/find.queries.php`, `app/pages/items.{php,js.php}`, `app/api/Model/ItemModel.php` |
 | Language | `app/includes/language/{english,french}.php` (`lapr_*` keys) |
 | Tests | `tests/Unit/LaprFunctionsTest.php` (DB-free helpers + fingerprint) |
 
@@ -39,11 +39,14 @@ background-task pipeline, and phpseclib3. No parallel secret store, no new crypt
 
 ## Permission model
 
-`laprCheckPermission($session, $SETTINGS)` = `lapr_enabled == 1` **AND** (admin **OR** `user-can_manage_lapr == 1`).
-Every LAPR handler calls it after the standard `PerformChecks` preamble (C8). `admin_lapr` is admin-only
-(also in `$mngPages`, so `admin.js.php` wires its settings toggles via the generic `save_option_change`).
+`laprCheckPermission($session, $SETTINGS)` = `lapr_enabled == 1` **AND** `admin != 1` **AND**
+`user-can_manage_lapr == 1`. Every operational LAPR handler calls it after the standard `PerformChecks`
+preamble (C8). Operational LAPR pages are also absent from the administrator page allowlist in both
+`PerformChecks` copies. `admin_lapr` remains admin-only (also in `$mngPages`, so `admin.js.php` wires its
+settings toggles via the generic `save_option_change`).
 Folder scope: **write** = `user-accessible_folders` − `user-read_only_folders` (add account / rotate / reset);
-**read** = `user-accessible_folders` (history). Admin bypasses both (C9).
+**read** = `user-accessible_folders` (history). Folder helpers explicitly reject administrators as an
+additional guard because operational LAPR access depends on TeamPass item access.
 
 ## Encryption integration (corrections C2/C3/C4)
 
@@ -58,6 +61,21 @@ Folder scope: **write** = `user-accessible_folders` − `user-read_only_folders`
   all-eligible-users fan-out with `deleteAll` cleanup, `apiUserId=TP_USER_ID` so **no HTTP session** is needed
   in the CLI worker. Then password-history `logItems(... old_value)` (master-key encrypted, SEC-6),
   `emitItemEvent('updated', ...)` (WebSocket rule).
+
+## TeamPass item ownership and UI integration
+
+`laprGetItemRelations()` batch-loads the two independent roles an item can hold:
+
+- **managed target** — a non-deleted `lapr_accounts.item_id`; LAPR owns the item's Linux `login` and password;
+- **SSH credential** — a non-deleted `lapr_endpoints.ssh_credential_source`; LAPR reads the item on each connection but does not own the remote password.
+
+An item can hold both roles. Folder item lists and global search results receive only redacted role/status metadata for badges. The item-detail response receives endpoint, policy, and scheduling context only when the caller is an authorized LAPR operator with write access to the item's folder. This prevents normal item responses from exposing LAPR infrastructure details unnecessarily.
+
+Managed-target login/password updates are blocked in both `items.queries.php` and the REST API. The item editor also disables those controls while leaving non-secret metadata editable. Credential-only items remain editable as an intentional recovery path, with a warning that a vault edit does not update Linux. Deletion is rejected while either active relationship exists, in both the web and REST paths.
+
+The item detail panel can enqueue the existing `lapr_rotation` background task through `lapr_accounts.queries.php`; it does not implement a second rotation path. Direct item edits never perform SSH work.
+
+Managed-account deletion remains logical (`status=deleted`) for history retention. Because `lapr_accounts.item_id` is unique across all states, adding the item again reactivates and resets the existing row instead of issuing a duplicate insert.
 
 ## Background flow
 
@@ -94,6 +112,8 @@ Confirmed decisions:
 - Reading a credential/item as the server ⇒ `laprReadItemPasswordAsTpUser()` (TP_USER chain, migration-aware).
 - Writing an item password ⇒ mirror `laprUpdateItemPassword()` (pw_iv, sharekey fan-out via `TP_USER_ID`,
   history `old_value`, WebSocket) — do not hand-roll a reduced version.
+- Any new item write/delete path must preserve LAPR ownership: managed logins/passwords cannot be edited outside
+  rotation, and items referenced by a managed account or endpoint cannot be deleted.
 - New setting ⇒ seed in `upgrade_run_3.2.2.php` **and** `run.step5.php`; new table ⇒ add a `run.step5` method
   **and** an `install.js` check entry, plus DDL in the upgrade script.
 - `PerformChecks` edits go in **both** the `includes/libraries` and `vendor` copies.
