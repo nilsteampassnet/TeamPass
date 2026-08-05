@@ -1260,6 +1260,7 @@ class ItemModel
                 || array_key_exists('totp_algorithm', $params)
                 || array_key_exists('totp_digits', $params)
                 || array_key_exists('totp_period', $params);
+            $moveSideEffects = null;
 
             // Handle folder_id change
             if (isset($params['folder_id'])) {
@@ -1290,9 +1291,51 @@ class ItemModel
                     ];
                 }
 
+                $sourceItemInfos = $this->getFolderSettings((int) $currentItem['id_tree']);
                 $targetItemInfos = $this->getFolderSettings($newFolderId);
-                $updateData['id_tree'] = $newFolderId;
-                $updateData['perso'] = (int) $targetItemInfos['personal_folder'];
+
+                if (
+                    (int) $sourceItemInfos['personal_folder'] === 1
+                    && (int) $targetItemInfos['personal_folder'] === 0
+                ) {
+                    $additionalMoveFields = array_diff(
+                        array_keys($params),
+                        ['id', 'folder_id']
+                    );
+                    if (empty($additionalMoveFields) === false) {
+                        return [
+                            'error' => true,
+                            'error_message' => 'A personal-to-shared move must be requested separately from other item updates.',
+                            'error_header' => 'HTTP/1.1 422 Unprocessable Entity',
+                        ];
+                    }
+
+                    try {
+                        $moveSideEffects = movePersonalItemToSharedFolderSynchronously(
+                            $itemId,
+                            $newFolderId,
+                            (int) $userData['id'],
+                            $userPrivateKey
+                        );
+                    } catch (InvalidArgumentException | UnexpectedValueException $exception) {
+                        error_log(
+                            '[API] Personal-to-shared item move rejected for item ' . $itemId
+                            . ': ' . $exception->getMessage()
+                        );
+                        return [
+                            'error' => true,
+                            'error_message' => 'The item cannot be moved because one or more encryption keys are missing or invalid.',
+                            'error_header' => 'HTTP/1.1 422 Unprocessable Entity',
+                        ];
+                    }
+
+                    // Keep the in-memory row aligned for the standard response and cache refresh.
+                    $currentItem['id_tree'] = $newFolderId;
+                    $currentItem['perso'] = 0;
+                } else {
+                    $updateData['id_tree'] = $newFolderId;
+                    $updateData['perso'] = (int) $targetItemInfos['personal_folder'];
+                }
             }
 
             // Generate favicon URL if URL is provided and favicon_url is empty
@@ -1497,11 +1540,23 @@ class ItemModel
                 );
             }
 
-            // Log the update
             $label = isset($updateData['label']) ? $updateData['label'] : $currentItem['label'];
-            logItems($SETTINGS, $itemId, $label, $userData['id'], 'at_modification', $userData['username']);
-
-            updateCacheTable('update_value', $itemId, (int) $userData['id']);
+            if (is_array($moveSideEffects)) {
+                finalizeItemMoveSideEffects(
+                    $SETTINGS,
+                    $itemId,
+                    (string) $label,
+                    (int) $userData['id'],
+                    (string) $userData['username'],
+                    (int) $moveSideEffects['source_folder_id'],
+                    (string) $moveSideEffects['source_folder_title'],
+                    (int) $moveSideEffects['target_folder_id'],
+                    (string) $moveSideEffects['target_folder_title']
+                );
+            } else {
+                logItems($SETTINGS, $itemId, $label, $userData['id'], 'at_modification', $userData['username']);
+                updateCacheTable('update_value', $itemId, (int) $userData['id']);
+            }
 
             // Success response
             return [
