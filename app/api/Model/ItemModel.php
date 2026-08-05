@@ -1233,6 +1233,7 @@ class ItemModel
     {
         try {
             include_once API_ROOT_PATH . '/../sources/main.functions.php';
+            include_once API_ROOT_PATH . '/../sources/lapr.functions.php';
 
             // Load config
             $configManager = new ConfigManager();
@@ -1249,6 +1250,22 @@ class ItemModel
                     'error' => true,
                     'error_message' => 'Item not found',
                     'error_header' => 'HTTP/1.1 404 Not Found',
+                ];
+            }
+
+            $laprRelations = laprGetItemRelations([$itemId]);
+            $laprRelation = $laprRelations[$itemId] ?? [];
+            $laprLoginChanged = isset($params['login'])
+                && (string) filter_var((string) $params['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)
+                    !== (string) ($currentItem['login'] ?? '');
+            $laprPasswordChanged = isset($params['password']) && (string) $params['password'] !== '';
+            if ((bool) ($laprRelation['is_managed'] ?? false) === true
+                && ($laprLoginChanged === true || $laprPasswordChanged === true)
+            ) {
+                return [
+                    'error' => true,
+                    'error_message' => 'This item is managed by LAPR. Rotate its password through LAPR or remove the managed account first.',
+                    'error_header' => 'HTTP/1.1 409 Conflict',
                 ];
             }
 
@@ -1534,6 +1551,7 @@ class ItemModel
     {
         try {
             include_once API_ROOT_PATH . '/../sources/main.functions.php';
+            include_once API_ROOT_PATH . '/../sources/lapr.functions.php';
 
             // Load config
             $configManager = new ConfigManager();
@@ -1550,6 +1568,18 @@ class ItemModel
                     'error' => true,
                     'error_message' => 'Item not found',
                     'error_header' => 'HTTP/1.1 404 Not Found',
+                ];
+            }
+
+            $laprRelations = laprGetItemRelations([$itemId]);
+            $laprRelation = $laprRelations[$itemId] ?? [];
+            if ((bool) ($laprRelation['is_managed'] ?? false) === true
+                || (bool) ($laprRelation['is_credential'] ?? false) === true
+            ) {
+                return [
+                    'error' => true,
+                    'error_message' => 'This item is linked to LAPR. Remove the managed account or linked endpoint first.',
+                    'error_header' => 'HTTP/1.1 409 Conflict',
                 ];
             }
 
