@@ -38,23 +38,125 @@ $lang = new Language($session->get('user-language') ?? 'english');
 <script>
 'use strict'
 
-const laprSessionKey = '<?php echo $session->get('key'); ?>'
+const laprSessionKey = <?php echo json_encode((string) $session->get('key'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 const laprEndpointsUrl = 'sources/lapr_endpoints.queries.php'
 let laprEndpointsTable = null
 let laprTestPollTimer = null
 let laprVerifiedSnapshot = null
+let laprRemediationCommands = ''
 
 const laprLang = {
-  testInProgress: '<?php echo addslashes($lang->get('lapr_test_in_progress')); ?>',
-  testSuccess: '<?php echo addslashes($lang->get('lapr_test_success')); ?>',
-  testFailed: '<?php echo addslashes($lang->get('lapr_test_failed')); ?>',
-  testRequired: '<?php echo addslashes($lang->get('lapr_test_required_before_save')); ?>',
-  cannotRotate: '<?php echo addslashes($lang->get('lapr_endpoint_cannot_rotate')); ?>',
-  confirmDelete: '<?php echo addslashes($lang->get('please_confirm_deletion')); ?>',
-  hostkeyFingerprint: '<?php echo addslashes($lang->get('lapr_hostkey_fingerprint')); ?>',
-  hostkeyTofu: '<?php echo addslashes($lang->get('lapr_hostkey_tofu_note')); ?>',
-  errorGeneric: '<?php echo addslashes($lang->get('error')); ?>',
-  searchItemPlaceholder: '<?php echo addslashes($lang->get('lapr_search_item_placeholder')); ?>'
+  testInProgress: <?php echo json_encode($lang->get('lapr_test_in_progress'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+  testSuccess: <?php echo json_encode($lang->get('lapr_test_success'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+  testFailed: <?php echo json_encode($lang->get('lapr_test_failed'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+  testRequired: <?php echo json_encode($lang->get('lapr_test_required_before_save'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+  cannotRotate: <?php echo json_encode($lang->get('lapr_endpoint_cannot_rotate'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+  confirmDelete: <?php echo json_encode($lang->get('please_confirm_deletion'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+  hostkeyFingerprint: <?php echo json_encode($lang->get('lapr_hostkey_fingerprint'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+  hostkeyTofu: <?php echo json_encode($lang->get('lapr_hostkey_tofu_note'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+  errorGeneric: <?php echo json_encode($lang->get('error'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+  searchItemPlaceholder: <?php echo json_encode($lang->get('lapr_search_item_placeholder'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+  remediationTitle: <?php echo json_encode($lang->get('lapr_remediation_title'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+  remediationIntro: <?php echo json_encode($lang->get('lapr_remediation_intro'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+  remediationUnknownOs: <?php echo json_encode($lang->get('lapr_remediation_unknown_os'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+  detectedOs: <?php echo json_encode($lang->get('lapr_detected_os'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+  copyCommands: <?php echo json_encode($lang->get('lapr_copy_commands'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+  commandsCopied: <?php echo json_encode($lang->get('lapr_commands_copied'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>
+}
+
+function laprHtml(value) {
+  return $('<div>').text(value === null || value === undefined ? '' : String(value)).html()
+}
+
+function laprSafeSshUsername() {
+  const username = ($('#lapr-ep-username').val() || '').toString().trim()
+  return /^[a-z_][a-z0-9_.-]{0,63}\$?$/i.test(username) ? username : '<ssh-user>'
+}
+
+function laprPackageCommands(osFamily) {
+  const commands = {
+    debian: ['sudo apt-get update', 'sudo apt-get install -y passwd sudo'],
+    rhel: ['sudo dnf install -y shadow-utils sudo'],
+    suse: ['sudo zypper install -y shadow sudo'],
+    arch: ['sudo pacman -S --needed shadow sudo'],
+    alpine: ['sudo apk add shadow sudo'],
+    generic: ['# Install the packages providing chpasswd and sudo with your OS package manager']
+  }
+  return commands[osFamily] || commands.generic
+}
+
+function laprRenderRemediation(commands, osName, connectionFailed) {
+  laprRemediationCommands = commands.join('\n')
+  let html = '<div class="alert alert-warning mt-2 mb-0">'
+  html += '<div><strong><i class="fas fa-terminal mr-1"></i>' + laprHtml(laprLang.remediationTitle) + '</strong></div>'
+  if (osName) {
+    html += '<div class="small mt-1"><strong>' + laprHtml(laprLang.detectedOs) + ':</strong> ' + laprHtml(osName) + '</div>'
+  }
+  html += '<div class="small mt-1">' + laprHtml(connectionFailed ? laprLang.remediationUnknownOs : laprLang.remediationIntro) + '</div>'
+  html += '<pre class="small bg-dark text-light p-2 mt-2 mb-2" style="white-space:pre-wrap"><code>' + laprHtml(laprRemediationCommands) + '</code></pre>'
+  html += '<button type="button" class="btn btn-xs btn-outline-dark" id="lapr-copy-remediation"><i class="far fa-copy mr-1"></i>' + laprHtml(laprLang.copyCommands) + '</button>'
+  html += '</div>'
+  return html
+}
+
+function laprBuildConnectionRemediation(errorCode) {
+  const form = laprCollectEndpointForm()
+  const hostname = /^[a-z0-9_.:-]+$/i.test(form.hostname) ? form.hostname : '<hostname>'
+  const username = laprSafeSshUsername()
+  const commands = [
+    '# From the TeamPass server',
+    'getent hosts ' + hostname,
+    'nc -vz ' + hostname + ' ' + form.port,
+    '',
+    '# From the endpoint console',
+    'sudo systemctl status ssh || sudo systemctl status sshd',
+    'sudo ss -lntp',
+    'id ' + username
+  ]
+  if (errorCode === 'ERR_AUTH_FAILED') {
+    commands.push('sudo sshd -T | grep -E "^(passwordauthentication|pubkeyauthentication|permitrootlogin)"')
+    commands.push('sudo journalctl -u ssh -u sshd -n 50 --no-pager')
+  }
+  return laprRenderRemediation(commands, '', true)
+}
+
+function laprBuildCapabilityRemediation(data) {
+  const osInfo = data.os_info || {}
+  const username = laprSafeSshUsername()
+  const family = ['debian', 'rhel', 'suse', 'arch', 'alpine'].indexOf(osInfo.os_family) !== -1
+    ? osInfo.os_family
+    : 'generic'
+  const familyLabels = {
+    debian: 'Debian / Ubuntu',
+    rhel: 'RHEL / Fedora',
+    suse: 'SUSE',
+    arch: 'Arch Linux',
+    alpine: 'Alpine Linux',
+    generic: 'Linux'
+  }
+  const commands = [
+    '# Check the required commands',
+    'command -v chpasswd',
+    'command -v sudo',
+    '',
+    '# ' + familyLabels[family] + ' prerequisites (only if a command above is missing)'
+  ].concat(laprPackageCommands(family))
+
+  if (osInfo.is_root === true) {
+    commands.push('', '# Root requires no sudoers rule', 'chpasswd </dev/null; echo $?')
+  } else {
+    commands.push(
+      '',
+      '# Grant only the privilege LAPR needs',
+      'CHPASSWD_PATH="$(command -v chpasswd)"',
+      'test -n "$CHPASSWD_PATH" || { echo "chpasswd not found" >&2; exit 1; }',
+      'printf \'%s\\n\' \'' + username + ' ALL=(root) NOPASSWD: \'"$CHPASSWD_PATH" | sudo tee /etc/sudoers.d/teampass-lapr >/dev/null',
+      'sudo chmod 0440 /etc/sudoers.d/teampass-lapr',
+      'sudo visudo -cf /etc/sudoers.d/teampass-lapr',
+      'sudo -n chpasswd </dev/null; echo $?'
+    )
+  }
+  return laprRenderRemediation(commands, osInfo.os_name || '', false)
 }
 
 // Returns the jqXHR so callers can chain .fail() (select2 transport needs it).
@@ -233,7 +335,9 @@ function laprPollTest(taskId) {
       return
     }
     if (data.success !== true) {
-      $('#lapr-ep-test-result').html('<span class="text-danger"><i class="fas fa-times mr-1"></i>' + laprLang.testFailed + ' (' + DOMPurify.sanitize(data.error_code || '') + ')</span>')
+      let html = '<span class="text-danger"><i class="fas fa-times mr-1"></i>' + laprHtml(laprLang.testFailed) + ' (' + laprHtml(data.error_code || '') + ')</span>'
+      html += laprBuildConnectionRemediation(data.error_code || '')
+      $('#lapr-ep-test-result').html(html)
       return
     }
     laprVerifiedSnapshot = { snapshot: data.snapshot, snapshot_sig: data.snapshot_sig }
@@ -241,7 +345,8 @@ function laprPollTest(taskId) {
     html += '<div class="small mt-1"><strong>' + laprLang.hostkeyFingerprint + ':</strong> <code>' + DOMPurify.sanitize(data.fingerprint || '') + '</code></div>'
     html += '<div class="small text-muted">' + laprLang.hostkeyTofu + '</div>'
     if (data.can_rotate !== true) {
-      html += '<div class="text-danger small mt-1">' + laprLang.cannotRotate + '</div>'
+      html += '<div class="text-danger small mt-1">' + laprHtml(laprLang.cannotRotate) + '</div>'
+      html += laprBuildCapabilityRemediation(data)
     }
     $('#lapr-ep-test-result').html(html)
     $('#lapr-ep-save-btn').prop('disabled', data.can_rotate !== true)
@@ -287,6 +392,19 @@ $(document).ready(function () {
   $('#lapr-ep-save-btn').on('click', laprSaveEndpoint)
   $('#lapr-ep-skip-hostkey').on('change', function () {
     $('#lapr-ep-skip-hostkey-warning').toggle($(this).is(':checked'))
+  })
+  $(document).on('click', '#lapr-copy-remediation', function () {
+    if (!laprRemediationCommands) { return }
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(laprRemediationCommands).then(function () {
+        toastr.success(laprLang.commandsCopied)
+      })
+      return
+    }
+    const $copyArea = $('<textarea>').val(laprRemediationCommands).appendTo('body').select()
+    document.execCommand('copy')
+    $copyArea.remove()
+    toastr.success(laprLang.commandsCopied)
   })
   $('#lapr-endpoints-table').on('click', '.lapr-delete-ep', function () {
     laprDeleteEndpoint($(this).data('id'))
