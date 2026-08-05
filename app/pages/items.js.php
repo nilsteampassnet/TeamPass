@@ -138,6 +138,27 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     const TP_BIP39_WORDLIST = <?php echo json_encode($bip39Wordlist, JSON_UNESCAPED_UNICODE); ?>;
     const TP_NOTIFICATION_ENGAGED = <?php echo json_encode($lang->get('notification_engaged'), JSON_UNESCAPED_UNICODE); ?>;
     const TP_NOTIFICATION_NOT_ENGAGED = <?php echo json_encode($lang->get('notification_not_engaged'), JSON_UNESCAPED_UNICODE); ?>;
+    const TP_LAPR_ITEM_LANG = <?php echo json_encode([
+        'badgeManaged' => $lang->get('lapr_badge_managed'),
+        'badgeCredential' => $lang->get('lapr_badge_credential'),
+        'managedNotice' => $lang->get('lapr_item_managed_notice'),
+        'credentialNotice' => $lang->get('lapr_item_credential_notice'),
+        'schedulerDisabled' => $lang->get('lapr_item_scheduler_disabled'),
+        'endpointUnavailable' => $lang->get('lapr_item_endpoint_unavailable'),
+        'endpoint' => $lang->get('lapr_endpoint'),
+        'policy' => $lang->get('lapr_policy'),
+        'nextRotation' => $lang->get('lapr_next_rotation'),
+        'rotateTitle' => $lang->get('lapr_rotate_now'),
+        'rotateConfirm' => $lang->get('lapr_rotate_confirm'),
+        'rotationInProgress' => $lang->get('lapr_rotation_in_progress'),
+        'rotationSuccess' => $lang->get('lapr_rotation_success'),
+        'rotationFailed' => $lang->get('lapr_rotation_failed'),
+        'manualResync' => $lang->get('lapr_manual_resync_required'),
+        'hostkeyMismatch' => $lang->get('lapr_hostkey_mismatch_blocked'),
+        'error' => $lang->get('error'),
+    ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>;
+    const TP_LAPR_ACCOUNTS_URL = 'sources/lapr_accounts.queries.php';
+    const TP_LAPR_SESSION_KEY = <?php echo json_encode((string) $session->get('key'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 
     // Plain-language coaching strings for the passphrase generator (F9).
     const TP_PASSPHRASE_COACH = {
@@ -207,6 +228,180 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         pendingItemDetailsFallback = null,
         loadingToast = '',
         showCorruptedItemsInList = <?php echo ((int) ($session->get('user-admin') ?? 0) !== 1 && isset($SETTINGS['show_corrupted_items_in_list']) === true && (int) $SETTINGS['show_corrupted_items_in_list'] === 1) ? 'true' : 'false'; ?>;
+
+    /**
+     * Build the compact role badges displayed in item lists and detail headers.
+     */
+    function laprItemBadgesHtml(lapr) {
+        if (!lapr) return '';
+
+        let html = '';
+        if (lapr.is_managed === true) {
+            const status = lapr.managed_account ? lapr.managed_account.status : '';
+            const style = status === 'active' ? 'success' : (status === 'error' ? 'danger' : 'secondary');
+            html += '<span class="badge badge-' + style + ' mr-1 infotip" title="' + htmlEncode(TP_LAPR_ITEM_LANG.badgeManaged) + '"><i class="fa-solid fa-rotate mr-1"></i>' + htmlEncode(TP_LAPR_ITEM_LANG.badgeManaged) + '</span>';
+        }
+        if (lapr.is_credential === true) {
+            html += '<span class="badge badge-info mr-1 infotip" title="' + htmlEncode(TP_LAPR_ITEM_LANG.credentialNotice) + '"><i class="fa-solid fa-server mr-1"></i>' + htmlEncode(TP_LAPR_ITEM_LANG.badgeCredential) + '</span>';
+        }
+        return html;
+    }
+
+    /**
+     * Protect the two fields owned by LAPR while leaving the rest of the item editable.
+     */
+    function laprSetManagedFieldsLocked(locked) {
+        $('#form-item-login, #form-item-password, #item-button-generate, #pwd-definition-size, .password-definition, #form-item-generator-mode input, #form-item-passphrase-options input, #form-item-passphrase-options select')
+            .prop('disabled', locked === true);
+    }
+
+    /**
+     * Render LAPR roles, operational context, and the explicit rotation action.
+     */
+    function laprRenderItemIntegration(data, actionType) {
+        const lapr = data.lapr || {};
+        const isManaged = lapr.is_managed === true;
+        const isCredential = lapr.is_credential === true;
+        const badges = laprItemBadgesHtml(lapr);
+        const $badges = $('#card-item-lapr-badges');
+        const $details = $('#card-item-lapr-info').empty();
+        const $notice = $('#form-item-lapr-notice').empty();
+
+        $badges.html(badges).toggleClass('hidden', badges === '');
+        $details.addClass('hidden').removeClass('alert-info alert-warning alert-danger');
+        $notice.addClass('hidden').removeClass('alert-info alert-warning alert-danger');
+        laprSetManagedFieldsLocked(isManaged);
+        $('.tp-action[data-item-action="delete"]').closest('.nav-item').toggleClass('hidden', isManaged || isCredential);
+        $('.tp-action[data-item-action="server"]').closest('.nav-item').toggleClass('hidden', isManaged);
+
+        if (isManaged) {
+            const account = lapr.managed_account || {};
+            const endpointText = (account.endpoint_label || '') + (account.hostname ? ' (' + account.hostname + ')' : '');
+            const $managedLine = $('<div>').append($('<strong>').text(TP_LAPR_ITEM_LANG.badgeManaged + ': '));
+            $managedLine.append(document.createTextNode((account.username || data.login || '') + (endpointText ? ' @ ' + endpointText : '')));
+            $details.append($managedLine);
+
+            const context = [];
+            if (account.policy_label) context.push(TP_LAPR_ITEM_LANG.policy + ': ' + account.policy_label);
+            if (account.next_rotation_at) context.push(TP_LAPR_ITEM_LANG.nextRotation + ': ' + account.next_rotation_at);
+            if (lapr.scheduler_enabled !== true) context.push(TP_LAPR_ITEM_LANG.schedulerDisabled);
+            if (lapr.can_manage === true && account.endpoint_status !== 'active') context.push(TP_LAPR_ITEM_LANG.endpointUnavailable);
+            if (context.length) $details.append($('<div>', { class: 'small mt-1' }).text(context.join(' · ')));
+
+            if (lapr.can_manage === true && account.status === 'active' && account.endpoint_status === 'active') {
+                $details.append(
+                    $('<button>', {
+                        type: 'button',
+                        class: 'btn btn-sm btn-success mt-2',
+                        id: 'card-item-lapr-rotate',
+                        'data-account-id': account.id
+                    }).append($('<i>', { class: 'fa-solid fa-rotate mr-1' })).append(document.createTextNode(TP_LAPR_ITEM_LANG.rotateTitle))
+                );
+            }
+
+            $notice.append($('<div>').text(TP_LAPR_ITEM_LANG.managedNotice));
+        }
+
+        if (isCredential) {
+            const endpoints = (lapr.credential_endpoints || []).map(function (endpoint) {
+                return endpoint.label + (endpoint.ssh_username ? ' (' + endpoint.ssh_username + ')' : '');
+            });
+            if (endpoints.length > 0) {
+                const $credentialLine = $('<div>');
+                $credentialLine.append($('<strong>').text(TP_LAPR_ITEM_LANG.badgeCredential + ': '));
+                $credentialLine.append(document.createTextNode(endpoints.join(', ')));
+                $details.append($credentialLine);
+            } else if (!isManaged) {
+                $details.append($('<div>').text(TP_LAPR_ITEM_LANG.badgeCredential));
+            }
+            $notice.append($('<div>', { class: isManaged ? 'mt-2' : '' }).text(TP_LAPR_ITEM_LANG.credentialNotice));
+        }
+
+        if (isManaged || isCredential) {
+            $details.removeClass('hidden').addClass(isCredential ? 'alert-warning' : 'alert-info');
+            if (actionType === 'edit') {
+                $notice.removeClass('hidden').addClass(isCredential ? 'alert-warning' : 'alert-info');
+            }
+            $('.infotip').tooltip();
+        }
+    }
+
+    function laprItemPost(type, payload, onDone) {
+        return $.post(TP_LAPR_ACCOUNTS_URL, {
+            type: type,
+            key: TP_LAPR_SESSION_KEY,
+            data: prepareExchangedData(JSON.stringify(payload || {}), 'encode', TP_LAPR_SESSION_KEY)
+        }, function (response) {
+            let data;
+            try {
+                data = prepareExchangedData(response, 'decode', TP_LAPR_SESSION_KEY);
+            } catch (error) {
+                toastr.error(TP_LAPR_ITEM_LANG.error);
+                return;
+            }
+            onDone(data || {});
+        }).fail(function () {
+            toastr.error(TP_LAPR_ITEM_LANG.error);
+        });
+    }
+
+    function laprRotateManagedItem(accountId) {
+        launchConfirmDialog(
+            TP_LAPR_ITEM_LANG.rotateTitle,
+            DOMPurify.sanitize(TP_LAPR_ITEM_LANG.rotateConfirm),
+            function () { laprStartManagedItemRotation(accountId); },
+            TP_LAPR_ITEM_LANG.rotateTitle
+        );
+    }
+
+    function laprStartManagedItemRotation(accountId) {
+        $('#card-item-lapr-rotate').prop('disabled', true);
+        toastr.info('<i class="fas fa-circle-notch fa-spin mr-1"></i>' + TP_LAPR_ITEM_LANG.rotationInProgress);
+        laprItemPost('start_rotation', { id: accountId }, function (data) {
+            if (data.error === true) {
+                toastr.clear();
+                toastr.error(data.message || TP_LAPR_ITEM_LANG.error);
+                $('#card-item-lapr-rotate').prop('disabled', false);
+                return;
+            }
+            laprPollManagedItemRotation(data.task_id);
+        });
+    }
+
+    function laprPollManagedItemRotation(taskId) {
+        laprItemPost('rotation_status', { task_id: taskId }, function (data) {
+            if (data.error === true) {
+                toastr.clear();
+                toastr.error(data.message || TP_LAPR_ITEM_LANG.error);
+                $('#card-item-lapr-rotate').prop('disabled', false);
+                return;
+            }
+            if (data.finished !== true) {
+                setTimeout(function () { laprPollManagedItemRotation(taskId); }, 2000);
+                return;
+            }
+
+            toastr.clear();
+            if (data.success === true) {
+                toastr.success(TP_LAPR_ITEM_LANG.rotationSuccess);
+                Details(store.get('teampassItem').id, 'show', true);
+            } else if (data.message_code === 'MANUAL_RESYNC_REQUIRED') {
+                toastr.error(TP_LAPR_ITEM_LANG.manualResync);
+            } else if (data.error_code === 'ERR_HOSTKEY_MISMATCH') {
+                toastr.error(TP_LAPR_ITEM_LANG.hostkeyMismatch);
+            } else {
+                toastr.error(TP_LAPR_ITEM_LANG.rotationFailed + ' (' + DOMPurify.sanitize(data.error_code || '') + ')');
+            }
+            $('#card-item-lapr-rotate').prop('disabled', false);
+        });
+    }
+
+    $(document).on('click', '#card-item-lapr-rotate', function () {
+        const accountId = parseInt($(this).attr('data-account-id'), 10) || 0;
+        if (accountId > 0) {
+            laprRotateManagedItem(accountId);
+        }
+    });
 
     var tpFolderProgress = (function () {
         var _timer = null, _wrap = null, _bar = null;
@@ -1096,6 +1291,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         } else if ($(this).data('item-action') === 'new') {
             if (debugJavascript === true) console.info('SHOW NEW ITEM');
             toastr.remove();
+            laprSetManagedFieldsLocked(false);
+            $('#form-item-lapr-notice').addClass('hidden').empty();
             // Store current view
             savePreviousView();
 
@@ -1291,6 +1488,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 savePreviousView();
                 // Fields are already populated by Details('show') — only clear password
                 resetEditFormSkeleton(false);
+                laprRenderItemIntegration({
+                    lapr: store.get('teampassItem').lapr || {},
+                    login: $('#form-item-login').val()
+                }, 'edit');
 
                 // Fetch password now that we know the user is allowed
                 const _pwdPromise = getItemPassword(
@@ -3037,6 +3238,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         $('#items-details-container .delete-after-usage').remove();
         $('#items-details-container .edition-lock-detail-badge').remove();
         $('#card-item-corrupted-warning').addClass('hidden').html('');
+        $('#card-item-lapr-badges, #card-item-lapr-info').addClass('hidden').empty();
         $('#card-item-misc').html(
             '<span class="skeleton-line skeleton-sm d-inline-block mr-3" style="width:22px;"></span>' +
             '<span class="skeleton-line skeleton-sm d-inline-block mr-3" style="width:22px;"></span>' +
@@ -3056,6 +3258,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
      *                                       already populated by Details('show'), keep them as-is.
      */
     function resetEditFormSkeleton(clearFields) {
+        laprSetManagedFieldsLocked(false);
+        $('#form-item-lapr-notice').addClass('hidden').empty();
         if (clearFields) {
             // Title placeholder in card header
             $('#form-item-title').html('<span class="skeleton-line skeleton-title"></span>');
@@ -5609,7 +5813,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 }
 
                 // Trash icon
-                trash_link = '<span class="fa-stack fa-clickable warn-user pointer infotip mr-2 list-item-clicktodelete" title="<?php echo $lang->get('delete'); ?>" data-item-id="' + value.item_id + '" data-item-tree-id="' + value.tree_id + '"><i class="fa-solid fa-circle fa-stack-2x"></i><i class="fa-solid fa-trash fa-stack-1x fa-inverse"></i></span>';
+                trash_link = value.lapr && (value.lapr.is_managed === true || value.lapr.is_credential === true)
+                    ? ''
+                    : '<span class="fa-stack fa-clickable warn-user pointer infotip mr-2 list-item-clicktodelete" title="<?php echo $lang->get('delete'); ?>" data-item-id="' + value.item_id + '" data-item-tree-id="' + value.tree_id + '"><i class="fa-solid fa-circle fa-stack-2x"></i><i class="fa-solid fa-trash fa-stack-1x fa-inverse"></i></span>';
 
                 var description = '',
                     itemLabel = '';
@@ -5663,7 +5869,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     corruption_marker +
                     // Show item fa_icon if set
                     (value.fa_icon !== '' ? '<i class="'+htmlEncode(value.fa_icon)+' mr-1 user-fa-icon"></i>' : '') +
-                    '<span class="list-item-row-description d-inline-block' + (value.rights === 10 ? ' font-weight-light' : '') + '"><i class="item-favorite-star fa-solid' + ((store.get('teampassApplication').highlightFavorites === 1 && value.is_favourited === 1) ? ' fa-star mr-1' : '') + '"></i>' + value.label + '</span>' + (value.rights === 10 ? '' : description) +
+                    '<span class="list-item-row-description d-inline-block' + (value.rights === 10 ? ' font-weight-light' : '') + '"><i class="item-favorite-star fa-solid' + ((store.get('teampassApplication').highlightFavorites === 1 && value.is_favourited === 1) ? ' fa-star mr-1' : '') + '"></i>' + value.label + '</span>' + laprItemBadgesHtml(value.lapr) + (value.rights === 10 ? '' : description) +
                     '<span class="list-item-row-description-extend"></span>' +
                     '</span>' +
                     '<span class="list-item-actions hidden">' +
@@ -6490,7 +6696,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             teampassItem.id_restricted_to = data.id_restricted_to,
                             teampassItem.id_restricted_to_roles = data.id_restricted_to_roles,
                             teampassItem.item_rights = itemRights,
-                            teampassItem.notificationStatus = data.notification_status === true
+                            teampassItem.notificationStatus = data.notification_status === true,
+                            teampassItem.lapr = data.lapr || {}
                         }
                     );
 
@@ -6573,6 +6780,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
                     const itemIcon = (data.fa_icon !== "") ? '<i class="'+data.fa_icon+' mr-1"></i>' : '';
                     $('#card-item-label, #form-item-title').html(itemIcon + data.label);
+                    laprRenderItemIntegration(data, actionType);
 
                     // Populate breadcrumb with folder path when item comes from a search result
                     if (itemFolder !== '') {
