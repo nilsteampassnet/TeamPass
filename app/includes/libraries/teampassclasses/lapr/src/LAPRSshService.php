@@ -190,9 +190,34 @@ class LAPRSshService
      */
     public function testAndCollect(): array
     {
-        $osName = trim($this->exec("cat /etc/os-release 2>/dev/null | grep '^PRETTY_NAME=' | cut -d= -f2- | tr -d '\"'")['output']);
+        $osRelease = (string) $this->exec('cat /etc/os-release 2>/dev/null')['output'];
+        $osMetadata = [];
+        foreach (preg_split('/\r?\n/', $osRelease) ?: [] as $line) {
+            if (strpos($line, '=') === false) {
+                continue;
+            }
+            [$key, $value] = explode('=', $line, 2);
+            $osMetadata[strtoupper(trim($key))] = trim($value, " \t\n\r\0\x0B\"'");
+        }
+
+        $osName = trim((string) ($osMetadata['PRETTY_NAME'] ?? ''));
         if ($osName === '') {
             $osName = trim($this->exec('uname -s')['output']);
+        }
+        $osId = strtolower(trim((string) ($osMetadata['ID'] ?? '')));
+        $osLike = strtolower(trim((string) ($osMetadata['ID_LIKE'] ?? '')));
+        $familyTokens = ' ' . $osId . ' ' . $osLike . ' ';
+        $osFamily = 'generic';
+        if (preg_match('/\b(alpine)\b/', $familyTokens) === 1) {
+            $osFamily = 'alpine';
+        } elseif (preg_match('/\b(debian|ubuntu|linuxmint|pop)\b/', $familyTokens) === 1) {
+            $osFamily = 'debian';
+        } elseif (preg_match('/\b(rhel|fedora|centos|rocky|almalinux|amzn|ol)\b/', $familyTokens) === 1) {
+            $osFamily = 'rhel';
+        } elseif (preg_match('/\b(suse|opensuse|sles)\b/', $familyTokens) === 1) {
+            $osFamily = 'suse';
+        } elseif (preg_match('/\b(arch|manjaro)\b/', $familyTokens) === 1) {
+            $osFamily = 'arch';
         }
         $kernel = trim($this->exec('uname -r')['output']);
         $userInfo = trim($this->exec('id')['output']);
@@ -224,6 +249,9 @@ class LAPRSshService
         return [
             'os_info' => [
                 'os_name' => $osName,
+                'os_id' => $osId,
+                'os_like' => $osLike,
+                'os_family' => $osFamily,
                 'kernel' => $kernel,
                 'user_info' => $userInfo,
                 'is_root' => $isRoot,
