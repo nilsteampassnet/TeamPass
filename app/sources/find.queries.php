@@ -40,6 +40,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 require_once 'main.functions.php';
 require_once 'find.functions.php';
 require_once 'search.functions.php';
+require_once 'lapr.functions.php';
 
 // init
 loadClasses('DB');
@@ -441,6 +442,7 @@ if (null === $request->query->get('type')) {
     $totalItems = $request->query->filter('totalItems', null, FILTER_SANITIZE_NUMBER_INT);
 
     $arr_data = [];
+    $laprRelations = laprGetItemRelations(array_column($rows, 'id'));
     foreach ($rows as $record) {
         $displayItem = false;
         $arr_data[$record['id']]['item_id'] = (int) $record['id'];
@@ -451,6 +453,14 @@ if (null === $request->query->get('type')) {
         $arr_data[$record['id']]['login'] = (string) strtr($record['login'], '"', '&quot;');
         $arr_data[$record['id']]['item_key'] = (string) $record['item_key'];
         $arr_data[$record['id']]['link'] = (string) $record['url'] !== '0' && empty($record['url']) === false ? filter_var($record['url'], FILTER_SANITIZE_URL) : '';
+        $laprListRelation = $laprRelations[(int) $record['id']] ?? [];
+        $arr_data[$record['id']]['lapr'] = [
+            'is_managed' => (bool) ($laprListRelation['is_managed'] ?? false),
+            'is_credential' => (bool) ($laprListRelation['is_credential'] ?? false),
+            'managed_account' => (bool) ($laprListRelation['is_managed'] ?? false) === true
+                ? ['status' => (string) ($laprListRelation['managed_account']['status'] ?? '')]
+                : null,
+        ];
 
         // Is favorite?
         if (in_array($record['id'], $session->get('user-favorites')) === true) {
