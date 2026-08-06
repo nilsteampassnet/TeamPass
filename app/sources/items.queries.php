@@ -4509,9 +4509,11 @@ switch ($inputData['type']) {
             $start = $post_start;
         }
 
-        // to do only on 1st iteration
+        // Prepare tree. Built before the authorization check below, because the path
+        // of a folder the user cannot browse is still returned to him so he can walk
+        // the hierarchy down to a folder he is allowed to open. Only needed on the
+        // first page: the client keeps it for the next ones.
         if ((int) $start === 0) {
-            // Prepare tree
             $arbo = $tree->getPath(intval($inputData['id']), true);
             foreach ($arbo as $elem) {
                 // Personnal folder
@@ -4529,6 +4531,25 @@ switch ($inputData['type']) {
                     )
                 );
             }
+        }
+
+        // The folder authorization must be enforced on every page of the list, not
+        // only on the first one. Administrators already own every shared folder in
+        // `user-accessible_folders`, so no bypass is needed here: adding one would
+        // expose the personal folders of other users.
+        if (!in_array($inputData['id'], $session->get('user-accessible_folders'))) {
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => 'not_authorized',
+                    'arborescence' => $arr_arbo,
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // to do only on 1st iteration
+        if ((int) $start === 0) {
             $uniqueLoadData['path'] = $arr_arbo;
 
             // store last folder accessed in cookie
@@ -4626,32 +4647,18 @@ switch ($inputData['type']) {
             $uniqueLoadData['showError'] = $showError;
 
             // check if items exist
-            $where = new WhereClause('and');
-            if (!in_array(
-                $inputData['id'],
-                $session->get('user-accessible_folders')
-            )) {
-                echo (string) prepareExchangedData(
-                    array(
-                        'error' => 'not_authorized',
-                        'arborescence' => $arr_arbo,
-                    ),
-                    'encode'
-                );
-                break;
-            } else {
-                $counter = (int) DB::queryFirstField(
-                    'SELECT COUNT(*)
-                    FROM ' . prefixTable('items') . '
-                    WHERE inactif = %i AND id_tree = %i AND deleted_at IS NULL',
-                    0,
-                    $inputData['id']
-                );
-                // Store counter_full here to avoid a second query later
-                $counter_full = $counter;
-                $uniqueLoadData['counter'] = $counter;
-                $uniqueLoadData['counter_full'] = $counter_full;
-            }
+            // The folder access has already been checked above, for every page.
+            $counter = (int) DB::queryFirstField(
+                'SELECT COUNT(*)
+                FROM ' . prefixTable('items') . '
+                WHERE inactif = %i AND id_tree = %i AND deleted_at IS NULL',
+                0,
+                $inputData['id']
+            );
+            // Store counter_full here to avoid a second query later
+            $counter_full = $counter;
+            $uniqueLoadData['counter'] = $counter;
+            $uniqueLoadData['counter_full'] = $counter_full;
 
             // Get folder complexity
             $folderComplexity = DB::queryFirstRow(
@@ -4686,11 +4693,41 @@ switch ($inputData['type']) {
                 $list_folders_editable_by_role = '';
             }
             $uniqueLoadData['list_folders_editable_by_role'] = $list_folders_editable_by_role;
+
+            // Keep the authoritative pagination state server-side. It used to travel
+            // back and forth through the client (`uniqueLoadData`), which let a caller
+            // forge `counter`, `accessLevel` or `folder_is_personal` on any page but
+            // the first one. Storing it in the session preserves the "compute once"
+            // optimization without trusting the client. The map is keyed by folder so
+            // that several tabs can page through different folders at the same time.
+            $listContexts = $session->get('user-items_list_context');
+            if (is_array($listContexts) === false) {
+                $listContexts = [];
+            }
+            unset($listContexts[(string) (int) $inputData['id']]);
+            $listContexts[(string) (int) $inputData['id']] = $uniqueLoadData;
+            if (count($listContexts) > TP_ITEMS_LIST_CONTEXT_MAX) {
+                $listContexts = array_slice($listContexts, -TP_ITEMS_LIST_CONTEXT_MAX, null, true);
+            }
+            $session->set('user-items_list_context', $listContexts);
         } else {
-            $uniqueLoadData = json_decode(
-                filter_var($dataReceived['uniqueLoadData'], FILTER_UNSAFE_RAW),
-                true
-            );
+            // Reload the state built on the first page of this very folder. A missing
+            // context means the caller never went through the authorized first page:
+            // refuse instead of trusting anything it sent.
+            $listContexts = $session->get('user-items_list_context');
+            if (is_array($listContexts) === false
+                || isset($listContexts[(string) (int) $inputData['id']]) === false
+            ) {
+                echo (string) prepareExchangedData(
+                    array(
+                        'error' => 'not_authorized',
+                        'arborescence' => $arr_arbo,
+                    ),
+                    'encode'
+                );
+                break;
+            }
+            $uniqueLoadData = $listContexts[(string) (int) $inputData['id']];
 
             // initialize main variables
             $showError = $uniqueLoadData['showError'];
