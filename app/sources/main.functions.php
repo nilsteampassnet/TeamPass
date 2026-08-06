@@ -2451,6 +2451,35 @@ function makeThumbnail(string $src, string $dest, int $desired_width)
 }
 
 /**
+ * Resolve the web URL of a user avatar from a list of candidate file names.
+ *
+ * Each candidate is reduced to its basename, so a path stored in database or
+ * session is never honored, and must exist in the avatars directory, so a stale
+ * reference does not produce a broken image. The first usable candidate wins,
+ * which lets a caller ask for the thumbnail first and fall back to the full
+ * image.
+ *
+ * @param array<int, string|null> $fileNames Candidate file names, most wanted first
+ *
+ * @return string Web URL of the avatar, or an empty string when none is usable
+ */
+function getUserAvatarUrl(array $fileNames): string
+{
+    foreach ($fileNames as $fileName) {
+        $safeFileName = basename(trim((string) $fileName));
+        if ($safeFileName === '') {
+            continue;
+        }
+
+        if (is_file(TEAMPASS_ROOT . '/public/assets/avatars/' . $safeFileName) === true) {
+            return './assets/avatars/' . rawurlencode($safeFileName);
+        }
+    }
+
+    return '';
+}
+
+/**
  * Check table prefix in SQL query.
  *
  * @param string $table Table name

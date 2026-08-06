@@ -991,6 +991,8 @@ body.dark-mode .form-control:focus-visible {
     text-transform: uppercase;
     overflow: hidden;
 }
+/* Overlays the initials kept in the markup as fallback. The badge background
+   shows through a transparent avatar, so no background is needed here. */
 .tp-account-avatar-img {
     position: absolute;
     inset: 0;
@@ -998,11 +1000,12 @@ body.dark-mode .form-control:focus-visible {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    background-color: #007bff;
 }
+/* 40px matches the avatar thumbnail width produced on upload (makeThumbnail),
+   so the large badge renders the image without upscaling it. */
 .tp-account-avatar-lg {
-    width: 42px;
-    height: 42px;
+    width: 40px;
+    height: 40px;
     font-size: .98rem;
 }
 
