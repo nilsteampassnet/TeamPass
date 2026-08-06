@@ -2910,6 +2910,8 @@ return array(
     'error_no_edit_right' => 'You don\'t have permission to edit this item',
     'error_no_delete_right' => 'You don\'t have permission to delete this item',
     'error_missing_sharekey' => 'Your decryption key for this item is not available yet. Please retry in a few moments.',
+    'error_move_missing_sharekey' => 'This item cannot be moved: one or more of its encryption keys are missing or unusable. The item was left unchanged. Please ask an administrator to run the encryption keys repair task.',
+    'mass_move_partially_failed_keys' => '#nb# item(s) left in place because their encryption keys could not be recovered',
     'error_readonly_account' => 'Your account is read-only, this action is not permitted',
     'error_item_creation_failed' => 'Item creation failed due to an internal error. Please try again.',
     'error_no_sharekey_yet' => 'Decryption key not yet available for this field',
