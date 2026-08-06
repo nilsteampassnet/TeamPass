@@ -1689,6 +1689,16 @@ function prepareSendingEmail(
             ], JSON_HEX_QUOT | JSON_HEX_TAG),
         )
     );
+
+    // Wake the handler up. This task is very often created from inside a worker that the
+    // handler is already draining (typically create_user_keys step99). Without the trigger
+    // the handler only picks it up if it is still in its launching window: once
+    // tasks_max_drain_time is exceeded, drainTaskPool() stops launching and exits, leaving
+    // the email queued until the next cron tick - or forever when no cron is configured.
+    // Touching the trigger file makes a running handler extend its drain window
+    // (checkAndConsumeTrigger) and relaunches a stopped one. Concurrent launches are
+    // harmless: the handler holds an exclusive flock and surplus instances exit at once.
+    triggerBackgroundHandler();
 }
 
 /**

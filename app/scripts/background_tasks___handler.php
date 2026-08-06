@@ -768,7 +768,9 @@ class BackgroundTasksHandler {
      */
     private function drainTaskPool(): void {
         $startTime = time();
-        $maxDrainTime = (int)($this->settings['tasks_max_drain_time'] ?? 55);
+        // Clamped: 0 would stop launching immediately, and an unbounded value would keep
+        // a cron-launched handler alive across the next tick.
+        $maxDrainTime = max(10, min(3600, (int)($this->settings['tasks_max_drain_time'] ?? 55)));
         $launchingEnabled = true;
         $loopCount = 0;
         $triggerCheckInterval = 10; // Check for trigger every 10 loops (~1 second)

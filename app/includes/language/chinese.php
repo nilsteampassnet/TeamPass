@@ -3141,5 +3141,12 @@ return array(
     'login_page_refresh_now' => 'Refresh now',
     'login_page_refreshed_retype_password' => 'Page refreshed. Please type your password again.',
     'import_hint_keepass' => 'In KeePass: File &rarr; Export &rarr; KeePass XML (2.x). Upload the resulting .xml file (the encrypted .kdbx database is not supported).',
+    'error_move_missing_sharekey' => 'This item cannot be moved: one or more of its encryption keys are missing or unusable. The item was left unchanged. Please ask an administrator to run the encryption keys repair task.',
+    'mass_move_partially_failed_keys' => '#nb# item(s) left in place because their encryption keys could not be recovered',
+    'tasks_max_drain_time' => 'Task drain window (seconds)',
+    'tasks_max_drain_time_tip' => 'How long a single run of the background handler keeps launching new tasks. Once exceeded it waits for running tasks then exits, leaving the rest queued until the next run. Raise it on large vaults where key generation is slow, so tasks queued by a running task (such as notification emails) are still picked up. Between 10 and 3600, default 55.',
+    'email_subject_account_ready' => 'Your account is ready',
+    'health_check_pending_tasks' => 'Background task queue',
+    'health_check_pending_tasks_stalled' => '%s task(s) have been waiting for more than %s minutes. The background handler is no longer being woken up, so notification emails and cache rebuilds are not delivered. Check the cron entry for scripts/background_tasks___handler.php, that exec() is not disabled, and that the web server user can write to storage/logs.',
 
 );

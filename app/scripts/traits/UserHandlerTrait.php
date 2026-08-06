@@ -694,14 +694,31 @@ trait UserHandlerTrait {
                 $receiverName = (string) ($userInfo['login'] ?? '');
             }
 
+            // Language key of the body to send. Legacy queued tasks may carry an already
+            // translated text instead of a key; Language::get() returns its argument
+            // unchanged when it matches no key, so both forms keep working.
+            $emailBodyKey = empty($arguments['email_body']) === false
+                ? (string) $arguments['email_body']
+                : 'email_body_user_config_1';
+
+            // An externally authenticated account (LDAP/SSO) receives no credential in
+            // this email, so the subject must not announce one.
+            $emailSubjectKey = $emailBodyKey === 'email_body_user_config_2'
+                ? 'email_subject_account_ready'
+                : 'login_credentials';
+
             sendMailToUser(
                 filter_var($userInfo['email'], FILTER_SANITIZE_EMAIL),
                 // @scrutinizer ignore-type
-                empty($arguments['email_body']) === false ? $lang->get($arguments['email_body']) : $lang->get('email_body_user_config_1'),
-                'TEAMPASS - ' . $lang->get('login_credentials'),
+                $lang->get($emailBodyKey),
+                'TEAMPASS - ' . $lang->get($emailSubjectKey),
                 (array) filter_var_array(
                     [
+                        // '#lastname#' historically carries the FIRST name (users.name).
+                        // It is kept as-is so untranslated language files render exactly
+                        // as before; new templates should use '#firstname#'.
                         '#lastname#' => isset($userInfo['name']) === true ? $userInfo['name'] : '',
+                        '#firstname#' => isset($userInfo['name']) === true ? $userInfo['name'] : '',
                         '#login#' => isset($userInfo['login']) === true ? $userInfo['login'] : '',
                     ],
                     FILTER_SANITIZE_FULL_SPECIAL_CHARS

@@ -669,6 +669,14 @@ checkIndexExist(
     'ADD INDEX idx_cache_label (label(191))'
 );
 
+// Add by default value for the max drain time of the background tasks. This is used to avoid
+// the situation where a task is running for too long and the next one is not started because
+// the previous one is still running. The value is in seconds and the default is 55
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'tasks_max_drain_time', '55')"
+);
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,

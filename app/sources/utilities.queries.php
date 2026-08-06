@@ -4331,6 +4331,39 @@ function tpGetSystemChecks(array $phpIni, array $tpSettings, Language $lang): ar
         }
     }
 
+    // Stalled background queue. A task that stays pending well beyond the drain window
+    // means the handler is not being woken up any more — usually a missing cron entry,
+    // exec() disabled, or an unwritable storage/logs directory. The visible symptom is
+    // silent side effects: notification emails never leave, caches never rebuild.
+    // created_at is a varchar(50) holding a unix timestamp: cast explicitly rather than
+    // relying on MySQL's implicit string-to-number coercion.
+    $tpStalledTasksThreshold = 900;
+    $tpStalledTasks = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('background_tasks') . '
+        WHERE is_in_progress = 0
+        AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)
+        AND created_at != ""
+        AND CAST(created_at AS UNSIGNED) < %i',
+        time() - $tpStalledTasksThreshold
+    );
+    if ($tpStalledTasks > 0) {
+        $checks[] = array(
+            'status' => 'warning',
+            'title' => $lang->get('health_check_pending_tasks'),
+            'text' => sprintf(
+                $lang->get('health_check_pending_tasks_stalled'),
+                (string) $tpStalledTasks,
+                (string) ((int) ($tpStalledTasksThreshold / 60))
+            ),
+        );
+    } else {
+        $checks[] = array(
+            'status' => 'success',
+            'title' => $lang->get('health_check_pending_tasks'),
+            'text' => $lang->get('health_status_ok'),
+        );
+    }
+
     return $checks;
 }
 
