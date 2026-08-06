@@ -74,6 +74,90 @@ function paletteEscapeLikeTerm(string $term): string
 }
 
 /**
+ * Flatten rich text (KB descriptions) to a searchable/displayable string.
+ *
+ * KB descriptions are stored either as sanitized HTML or, for legacy rows, as
+ * escaped markup (`&lt;p&gt;`); both must flatten to the same readable text.
+ * Tags are turned into word boundaries so `<p>a</p><p>b</p>` never becomes
+ * `ab`.
+ *
+ * @param string $html      Stored description
+ * @param int    $maxLength Hard cap on the returned text
+ *
+ * @return string Plain text, whitespace-collapsed
+ */
+function paletteFlattenRichText(string $html, int $maxLength = 2000): string
+{
+    $text = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $text = str_replace('<', ' <', $text);
+    $text = html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $text = trim((string) preg_replace('/\s+/u', ' ', $text));
+
+    return mb_substr($text, 0, $maxLength);
+}
+
+/**
+ * Tell whether the term appears in at least one of the given texts.
+ *
+ * Used to drop rows whose SQL LIKE only matched HTML markup (searching
+ * "table" must not return every entry containing a `<table>`).
+ *
+ * @param array<int, string> $haystacks Texts to test
+ * @param string             $term      Normalised term
+ *
+ * @return bool True when the term is readable in one of the texts
+ */
+function paletteTextMatchesTerm(array $haystacks, string $term): bool
+{
+    $needle = mb_strtolower(trim($term));
+    if ($needle === '') {
+        return false;
+    }
+
+    foreach ($haystacks as $haystack) {
+        if (mb_strpos(mb_strtolower((string) $haystack), $needle) !== false) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Build a short excerpt centred on the term match.
+ *
+ * Gives the user the context of the hit instead of the first words of the
+ * entry, which are rarely the reason it matched.
+ *
+ * @param string $text      Plain text (already flattened)
+ * @param string $term      Normalised term
+ * @param int    $maxLength Excerpt length
+ *
+ * @return string Excerpt, ellipsised on both ends when trimmed
+ */
+function paletteBuildExcerpt(string $text, string $term, int $maxLength = 90): string
+{
+    $text = trim($text);
+    if ($text === '' || $maxLength < 1) {
+        return '';
+    }
+
+    $pos = mb_strpos(mb_strtolower($text), mb_strtolower(trim($term)));
+    // Keep a bit of run-up before the match so the hit is not glued to the left.
+    $start = ($pos === false || $pos < 20) ? 0 : $pos - 20;
+    $excerpt = mb_substr($text, $start, $maxLength);
+
+    if ($start > 0) {
+        $excerpt = '…' . $excerpt;
+    }
+    if (mb_strlen($text) > $start + $maxLength) {
+        $excerpt = rtrim($excerpt) . '…';
+    }
+
+    return $excerpt;
+}
+
+/**
  * Rank palette rows by relevance to the term.
  *
  * Order: exact match, prefix match, earliest substring position, then
