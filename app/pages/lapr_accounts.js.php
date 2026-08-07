@@ -40,6 +40,9 @@ $laprRetentionDays = (int) ($laprSettings['lapr_audit_retention_days'] ?? 365);
 $laprJsJsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE;
 $laprAccountTranslations = [
     'confirmDelete' => $lang->get('please_confirm_deletion'),
+    'caution' => $lang->get('caution'),
+    'deleteLabel' => $lang->get('delete'),
+    'closeLabel' => $lang->get('close'),
     'discoverInProgress' => $lang->get('lapr_discover_in_progress'),
     'errorGeneric' => $lang->get('error'),
     'addAccount' => $lang->get('lapr_add_account'),
@@ -458,15 +461,38 @@ function laprSaveAccountPolicy() {
 }
 
 function laprDeleteAccount(id) {
-  if (!window.confirm(laprAccLang.confirmDelete)) { return }
-  laprAccPost('delete_account', { id: id }, function (data) {
-    if (data.error === true) {
-      toastr.error(data.message || laprAccLang.errorGeneric)
-      return
-    }
-    toastr.success(data.message)
-    laprLoadAccounts()
+  const eventNamespace = '.laprDeleteAccountConfirm'
+  const cleanup = function () {
+    $(document).off(eventNamespace)
+    $('#warningModal').off('hidden.bs.modal' + eventNamespace)
+  }
+
+  cleanup()
+  showModalDialogBox(
+    '#warningModal',
+    '<i class="fa-solid fa-triangle-exclamation mr-2 text-warning"></i>' + laprAccLang.caution,
+    laprAccLang.confirmDelete,
+    laprAccLang.deleteLabel,
+    laprAccLang.closeLabel,
+    false,
+    false,
+    false
+  )
+
+  $(document).one('click' + eventNamespace, '#warningModalButtonAction', function (event) {
+    event.preventDefault()
+    cleanup()
+    $('#warningModal').modal('hide')
+    laprAccPost('delete_account', { id: id }, function (data) {
+      if (data.error === true) {
+        toastr.error(data.message || laprAccLang.errorGeneric)
+        return
+      }
+      toastr.success(data.message)
+      laprLoadAccounts()
+    })
   })
+  $('#warningModal').one('hidden.bs.modal' + eventNamespace, cleanup)
 }
 
 function laprOpenDiscover() {

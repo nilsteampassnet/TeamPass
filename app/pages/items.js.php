@@ -230,7 +230,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         showCorruptedItemsInList = <?php echo ((int) ($session->get('user-admin') ?? 0) !== 1 && isset($SETTINGS['show_corrupted_items_in_list']) === true && (int) $SETTINGS['show_corrupted_items_in_list'] === 1) ? 'true' : 'false'; ?>;
 
     /**
-     * Build the compact role badges displayed in item lists and detail headers.
+     * Build the role badges displayed in the item detail header.
      */
     function laprItemBadgesHtml(lapr) {
         if (!lapr) return '';
@@ -243,6 +243,24 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         }
         if (lapr.is_credential === true) {
             html += '<span class="badge badge-info mr-1 infotip" title="' + htmlEncode(TP_LAPR_ITEM_LANG.credentialNotice) + '"><i class="fa-solid fa-server mr-1"></i>' + htmlEncode(TP_LAPR_ITEM_LANG.badgeCredential) + '</span>';
+        }
+        return html;
+    }
+
+    /**
+     * Build icon-only LAPR markers for the item list status area.
+     */
+    function laprItemListMarkersHtml(lapr) {
+        if (!lapr) return '';
+
+        let html = '';
+        if (lapr.is_managed === true) {
+            const status = lapr.managed_account ? lapr.managed_account.status : '';
+            const style = status === 'active' ? 'success' : (status === 'error' ? 'danger' : 'secondary');
+            html += '<i class="fa-solid fa-rotate mr-1 infotip tp-item-lapr-marker text-' + style + '" title="' + htmlEncode(TP_LAPR_ITEM_LANG.badgeManaged) + '"></i>';
+        }
+        if (lapr.is_credential === true) {
+            html += '<i class="fa-solid fa-server mr-1 infotip tp-item-lapr-marker text-info" title="' + htmlEncode(TP_LAPR_ITEM_LANG.credentialNotice) + '"></i>';
         }
         return html;
     }
@@ -5863,13 +5881,15 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     (value.rights === 10 ? '<i class="fa-regular fa-eye-slash fa-xs mr-1 text-primary infotip" title="<?php echo $lang->get('item_with_restricted_access'); ?>"></i>' : '') +
                     // Show user that password is badly encrypted
                     (value.pw_status === 'encryption_error' ? '<i class="fa-solid fa-exclamation-triangle fa-xs text-danger infotip mr-1" title="<?php echo $lang->get('pw_encryption_error'); ?>"></i>' : '') +
+                    // Show LAPR roles next to the password health marker
+                    laprItemListMarkersHtml(value.lapr) +
                     // Prepare item info
                     '</span>' +
                     '<span class="list-item-clicktoshow d-inline-flex align-items-center' + (value.rights === 10 ? '' : ' pointer') + '" data-item-id="' + value.item_id + '" data-item-key="' + value.item_key + '">' +
                     corruption_marker +
                     // Show item fa_icon if set
                     (value.fa_icon !== '' ? '<i class="'+htmlEncode(value.fa_icon)+' mr-1 user-fa-icon"></i>' : '') +
-                    '<span class="list-item-row-description d-inline-block' + (value.rights === 10 ? ' font-weight-light' : '') + '"><i class="item-favorite-star fa-solid' + ((store.get('teampassApplication').highlightFavorites === 1 && value.is_favourited === 1) ? ' fa-star mr-1' : '') + '"></i>' + value.label + '</span>' + laprItemBadgesHtml(value.lapr) + (value.rights === 10 ? '' : description) +
+                    '<span class="list-item-row-description d-inline-block' + (value.rights === 10 ? ' font-weight-light' : '') + '"><i class="item-favorite-star fa-solid' + ((store.get('teampassApplication').highlightFavorites === 1 && value.is_favourited === 1) ? ' fa-star mr-1' : '') + '"></i>' + value.label + '</span>' + (value.rights === 10 ? '' : description) +
                     '<span class="list-item-row-description-extend"></span>' +
                     '</span>' +
                     '<span class="list-item-actions hidden">' +
@@ -6008,12 +6028,17 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 const cls = f.breached === 1
                     ? 'text-danger'
                     : (f.weak === 1 || f.reused === 1 || f.overdue === 1 ? 'text-warning' : 'text-secondary')
-                $container.append(
-                    $('<i>')
-                        .addClass('fa-solid fa-shield-halved mr-1 infotip tp-item-health-marker ' + cls)
-                        .attr('title', badgeTitlePrefix + ' — ' + labels.join(', '))
-                )
-                $container.find('.tp-item-health-marker').tooltip()
+                const $healthMarker = $('<i>')
+                    .addClass('fa-solid fa-shield-halved mr-1 infotip tp-item-health-marker ' + cls)
+                    .attr('title', badgeTitlePrefix + ' — ' + labels.join(', '))
+                const $firstLaprMarker = $container.find('.tp-item-lapr-marker').first()
+
+                if ($firstLaprMarker.length > 0) {
+                    $healthMarker.insertBefore($firstLaprMarker)
+                } else {
+                    $container.append($healthMarker)
+                }
+                $healthMarker.tooltip()
             })
         })
     }

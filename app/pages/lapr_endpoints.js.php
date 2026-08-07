@@ -52,6 +52,9 @@ const laprLang = {
   testRequired: <?php echo json_encode($lang->get('lapr_test_required_before_save'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
   cannotRotate: <?php echo json_encode($lang->get('lapr_endpoint_cannot_rotate'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
   confirmDelete: <?php echo json_encode($lang->get('please_confirm_deletion'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+  caution: <?php echo json_encode($lang->get('caution'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+  deleteLabel: <?php echo json_encode($lang->get('delete'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+  closeLabel: <?php echo json_encode($lang->get('close'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
   hostkeyFingerprint: <?php echo json_encode($lang->get('lapr_hostkey_fingerprint'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
   hostkeyTofu: <?php echo json_encode($lang->get('lapr_hostkey_tofu_note'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
   errorGeneric: <?php echo json_encode($lang->get('error'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
@@ -270,6 +273,13 @@ function laprInitCredentialPicker() {
     templateResult: laprFormatCredentialResult,
     templateSelection: laprFormatCredentialSelection
   })
+
+  sel.off('select2:open.laprEndpoint').on('select2:open.laprEndpoint', function () {
+    window.setTimeout(function () {
+      const searchField = document.querySelector('.select2-container--open .select2-search__field')
+      if (searchField) { searchField.focus() }
+    }, 0)
+  })
 }
 
 /**
@@ -374,15 +384,38 @@ function laprSaveEndpoint() {
 }
 
 function laprDeleteEndpoint(id) {
-  if (!window.confirm(laprLang.confirmDelete)) { return }
-  laprPost('delete_endpoint', { id: id }, function (data) {
-    if (data.error === true) {
-      toastr.error(data.message || laprLang.errorGeneric)
-      return
-    }
-    toastr.success(data.message)
-    laprLoadEndpoints()
+  const eventNamespace = '.laprDeleteEndpointConfirm'
+  const cleanup = function () {
+    $(document).off(eventNamespace)
+    $('#warningModal').off('hidden.bs.modal' + eventNamespace)
+  }
+
+  cleanup()
+  showModalDialogBox(
+    '#warningModal',
+    '<i class="fa-solid fa-triangle-exclamation mr-2 text-warning"></i>' + laprLang.caution,
+    laprLang.confirmDelete,
+    laprLang.deleteLabel,
+    laprLang.closeLabel,
+    false,
+    false,
+    false
+  )
+
+  $(document).one('click' + eventNamespace, '#warningModalButtonAction', function (event) {
+    event.preventDefault()
+    cleanup()
+    $('#warningModal').modal('hide')
+    laprPost('delete_endpoint', { id: id }, function (data) {
+      if (data.error === true) {
+        toastr.error(data.message || laprLang.errorGeneric)
+        return
+      }
+      toastr.success(data.message)
+      laprLoadEndpoints()
+    })
   })
+  $('#warningModal').one('hidden.bs.modal' + eventNamespace, cleanup)
 }
 
 $(document).ready(function () {
