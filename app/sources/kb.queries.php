@@ -2250,10 +2250,10 @@ switch ($type) {
         foreach ($pagedRows as $row) {
             $dataRows[] = [
                 date(($SETTINGS['date_format'] ?? 'Y-m-d') . ' ' . ($SETTINGS['time_format'] ?? 'H:i:s'), (int) ($row['date'] ?? time())),
-                (string) ($row['label'] ?? ''),
-                (string) ($row['user_login'] ?? ''),
-                (string) ($row['action'] ?? ''),
-                (string) ($row['reason'] ?? ''),
+                normalizeLogDisplayValue($row['label'] ?? ''),
+                normalizeLogDisplayValue($row['user_login'] ?? ''),
+                normalizeLogDisplayValue($row['action'] ?? ''),
+                normalizeLogDisplayValue($row['reason'] ?? ''),
             ];
         }
 

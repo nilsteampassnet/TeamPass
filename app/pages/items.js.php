@@ -606,21 +606,30 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     // Is this a short url
     var queryDict = {},
         showItemOnPageLoad = false,
+        folderOpenedFromUrl = false,
         itemIdToShow = '',
         itemActionOnLoad = 'show';
     location.search.substr(1).split("&").forEach(function(item) {
         queryDict[item.split("=")[0]] = item.split("=")[1]
     });
 
-    if (queryDict['group'] !== undefined && queryDict['group'] !== '' &&
-        queryDict['id'] !== undefined && queryDict['id'] !== ''
-    ) {
-        // Show cog
-        toastr.remove();
-        loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
+    // Deep-link: `group` alone opens the folder (command palette folder result),
+    // `group` + `id` also opens the item card.
+    var folderIdFromUrl = (queryDict['group'] !== undefined && queryDict['group'] !== '') ?
+        parseInt(queryDict['group'], 10) : NaN;
 
-        // Store current view
-        savePreviousView();
+    if (isNaN(folderIdFromUrl) === false) {
+        folderOpenedFromUrl = true;
+        showItemOnPageLoad = queryDict['id'] !== undefined && queryDict['id'] !== '';
+
+        if (showItemOnPageLoad === true) {
+            // Show cog
+            toastr.remove();
+            loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
+
+            // Store current view
+            savePreviousView();
+        }
 
         // Store the folder to open.
         // Merge into the existing store instead of replacing it: store.set() would
@@ -628,9 +637,11 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         store.update(
             'teampassApplication',
             function(app) {
-                app.selectedFolder = parseInt(queryDict['group'])
-                app.itemsListFolderId = parseInt(queryDict['group'])
-                app.selectedItem = parseInt(queryDict['id'])
+                app.selectedFolder = folderIdFromUrl
+                app.itemsListFolderId = folderIdFromUrl
+                if (showItemOnPageLoad === true) {
+                    app.selectedItem = parseInt(queryDict['id'])
+                }
                 app.highlightSelected = parseInt(<?php echo (int) ($SETTINGS['highlight_selected'] ?? 0); ?>)
                 app.highlightFavorites = parseInt(<?php echo (int) ($SETTINGS['highlight_favorites'] ?? 0); ?>)
                 app.hibpEnabled = parseInt(<?php echo isset($SETTINGS['hibp_enabled']) ? (int) $SETTINGS['hibp_enabled'] : 0; ?>)
@@ -640,18 +651,20 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         store.update(
             'teampassItem',
             function(teampassItem) {
-                teampassItem.folderId = parseInt(queryDict['group'])
+                teampassItem.folderId = folderIdFromUrl
             }
         );
 
-        showItemOnPageLoad = true;
-        itemIdToShow = queryDict['id'];
         startedItemsListQuery = true;
 
-        // F8 "Fix it now" deep-link: open the item straight in edit mode so the
-        // password generator is ready (index.php?page=items&group=..&id=..&action=edit).
-        if (queryDict['action'] === 'edit') {
-            itemActionOnLoad = 'edit';
+        if (showItemOnPageLoad === true) {
+            itemIdToShow = queryDict['id'];
+
+            // F8 "Fix it now" deep-link: open the item straight in edit mode so the
+            // password generator is ready (index.php?page=items&group=..&id=..&action=edit).
+            if (queryDict['action'] === 'edit') {
+                itemActionOnLoad = 'edit';
+            }
         }
     }
 
@@ -676,8 +689,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     // What do we do if a folder is selected?
     if (store.get('teampassApplication') !== undefined &&
         store.get('teampassApplication').selectedFolder !== undefined &&
-        store.get('teampassApplication').selectedFolder !== '' && 
-        showItemOnPageLoad === true
+        store.get('teampassApplication').selectedFolder !== '' &&
+        folderOpenedFromUrl === true
     ) {
         startedItemsListQuery = true;
 

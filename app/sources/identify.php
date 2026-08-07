@@ -2085,7 +2085,10 @@ function handleNewUser(string $username, string $passwordClear, array $userADInf
         true,
         true,
         false,
-        $lang->get('email_body_user_config_2')
+        // Pass the language KEY, not the translated text: the notification is sent later
+        // by the background worker, which resolves the TARGET user's language. Translating
+        // here would freeze the body in the language of the login page instead.
+        'email_body_user_config_2'
     );
 
     $userInfo['has_been_created'] = 1;
@@ -3668,7 +3671,8 @@ function createOauth2User(
             true,
             true,
             false,
-            $lang->get('email_body_user_config_2'),
+            // Language KEY, resolved against the target user's language by the worker.
+            'email_body_user_config_2',
         );
 
         // Complete $userInfo

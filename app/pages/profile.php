@@ -143,12 +143,12 @@ $userInfo = DB::queryFirstRow(
     $session->get('user-id')
 );
 
-if (empty($userInfo['avatar']) === true) {
+// The delete button follows the stored value, not the resolved URL, so a stale
+// database reference can still be cleared by the user.
+$hasCustomAvatar = empty($userInfo['avatar']) === false;
+$avatar = getUserAvatarUrl([$userInfo['avatar']]);
+if ($avatar === '') {
     $avatar = './assets/images/photo.jpg';
-    $hasCustomAvatar = false;
-} else {
-    $avatar = './assets/avatars/' . strval($userInfo['avatar']);
-    $hasCustomAvatar = true;
 }
 
 // Avatar can only be changed when the user is allowed to edit his profile

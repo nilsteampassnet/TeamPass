@@ -252,6 +252,24 @@ if (
         // Quick access panel (right control sidebar)
         window.TeamPassQuickAccess.init();
 
+        // Account avatar: reveal the initials again when the image cannot be loaded.
+        // index.php already checked the file exists, so this only covers a file
+        // removed or corrupted between the page render and the image request.
+        // The error event does not bubble, hence no delegation, and an image that
+        // already failed before this runs is detected through naturalWidth.
+        $('.tp-account-avatar-img').each(function() {
+            const accountAvatarImg = this
+
+            if (accountAvatarImg.complete === true && accountAvatarImg.naturalWidth === 0) {
+                accountAvatarImg.remove()
+                return
+            }
+
+            accountAvatarImg.addEventListener('error', function() {
+                accountAvatarImg.remove()
+            })
+        })
+
         // Select all objects with the class .fa-clickable-login
         $(document).on('click', '.clipboard-copy', async function(event) {
             event.preventDefault();

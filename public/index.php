@@ -381,8 +381,16 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                 // Favorites page gate: feature enabled and caller not an administrator.
                 $tpShowQuickAccess = (int) ($SETTINGS['show_last_items'] ?? 1) === 1;
                 $tpQuickAccessStarred = (int) ($SETTINGS['enable_favourites'] ?? 0) === 1 && (int) $session_user_admin !== 1;
-                // Account chip initials + role label.
+                // Account chip avatar (with initials fallback) + role label.
+                // The thumbnail is preferred over the full image: it is the size the badges
+                // are rendered at. Both account badges show the initials, overlaid by the
+                // image when one is available (app/core/load.js.php reveals the initials
+                // again should the image fail to load).
                 $tpInitials = strtoupper(mb_substr((string) $session_name, 0, 1, 'UTF-8') . mb_substr((string) $session_lastname, 0, 1, 'UTF-8'));
+                $tpAvatarUrl = getUserAvatarUrl([$session->get('user-avatar_thumb'), $session->get('user-avatar')]);
+                $tpAvatarImg = $tpAvatarUrl === ''
+                    ? ''
+                    : '<img class="tp-account-avatar-img" src="' . htmlspecialchars($tpAvatarUrl, ENT_QUOTES, 'UTF-8') . '" alt="">';
                 $tpRoleLabel = (int) $session_user_admin === 1
                     ? $lang->get('god')
                     : ($session_user_manager === 1 ? $lang->get('gestionnaire') : $lang->get('user'));
@@ -438,7 +446,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                         <a class="nav-link tp-account-chip" href="#" data-toggle="dropdown" role="button"
                             aria-haspopup="true" aria-expanded="false"
                             aria-label="<?php echo $lang->get('my_profile'); ?>">
-                            <span class="tp-account-avatar"><?php echo htmlspecialchars($tpInitials, ENT_QUOTES, 'UTF-8'); ?></span>
+                            <span class="tp-account-avatar"><?php echo htmlspecialchars($tpInitials, ENT_QUOTES, 'UTF-8') . $tpAvatarImg; ?></span>
                             <span class="tp-account-identity">
                                 <span class="tp-account-name"><?php echo $session_name . ' ' . $session_lastname; ?></span>
                                 <span class="tp-account-exp infotip" id="countdown" title="<?php echo $lang->get('index_expiration_in'); ?>"></span>
@@ -448,7 +456,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
 
                         <div class="dropdown-menu dropdown-menu-right tp-account-menu">
                             <div class="tp-account-menu-head">
-                                <span class="tp-account-avatar tp-account-avatar-lg"><?php echo htmlspecialchars($tpInitials, ENT_QUOTES, 'UTF-8'); ?></span>
+                                <span class="tp-account-avatar tp-account-avatar-lg"><?php echo htmlspecialchars($tpInitials, ENT_QUOTES, 'UTF-8') . $tpAvatarImg; ?></span>
                                 <span class="tp-account-menu-identity">
                                     <span class="tp-account-menu-name"><?php echo $session_name . ' ' . $session_lastname; ?></span>
                                     <span class="tp-account-menu-role"><?php echo $tpRoleLabel; ?></span>

@@ -722,6 +722,7 @@ class DatabaseInstaller
             array('admin', 'tasks_history_delay', '604800'),
             array('admin', 'cli_php_binary_path', ''),
             array('admin', 'enable_fastcgi_finish_request', '1'),
+            array('admin', 'tasks_max_drain_time', '55'),
             // Fresh installs start hardened: AES v2 (authenticated GCM) writes enabled.
             // Upgraded installs keep '0' (seeded by upgrade_run_3.2.1.php) until the
             // admin opts in.

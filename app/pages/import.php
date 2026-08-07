@@ -247,6 +247,7 @@ echo isset($folderOptions) ? $folderOptions : '';
                             <div class="callout callout-info">
                                 <i class="far fa-lightbulb text-warning fa-lg mr-2"></i>
                                 <a href="<?php echo READTHEDOC_URL; ?>" target="_blank" class="text-info"><?php echo $lang->get('get_tips_about_importation'); ?></a>
+                                <div class="mt-2"><?php echo $lang->get('import_hint_keepass'); ?></div>
                             </div>
 
                             <div class="row mt-3">
