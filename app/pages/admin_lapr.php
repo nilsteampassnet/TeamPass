@@ -191,6 +191,18 @@ function laprAdminToggle(string $field, array $SETTINGS): string
                     <!-- PERMISSIONS -->
                     <div class="tab-pane fade" id="tab-lapr-permissions">
                         <p class="text-muted"><?php echo $lang->get('lapr_permissions_intro'); ?></p>
+                        <div class="row mb-3">
+                            <div class="col-12 col-lg-6">
+                                <div class="input-group input-group-sm">
+                                    <div class="input-group-prepend">
+                                        <div class="input-group-text">
+                                            <i class="fas fa-search"></i>
+                                        </div>
+                                    </div>
+                                    <input type="search" class="form-control" placeholder="<?php echo $lang->get('find'); ?>" aria-label="<?php echo $lang->get('find'); ?>" id="lapr-permissions-search">
+                                </div>
+                            </div>
+                        </div>
                         <table class="table table-hover table-sm" id="lapr-permissions-table" style="width:100%">
                             <thead>
                                 <tr>
@@ -201,6 +213,9 @@ function laprAdminToggle(string $field, array $SETTINGS): string
                             </thead>
                             <tbody></tbody>
                         </table>
+                        <div class="mt-2 hidden" id="lapr-permissions-search-no-results">
+                            <i class="fas fa-info mr-2 text-warning"></i><?php echo $lang->get('no_item_to_display'); ?>
+                        </div>
                     </div>
 
                 </div>

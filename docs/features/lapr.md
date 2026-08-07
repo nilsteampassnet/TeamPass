@@ -26,12 +26,12 @@ Everything runs in **background tasks** — no SSH work ever happens in the web 
 
 LAPR is **disabled by default** and fully opt-in.
 
-1. Go to **Admin → Password Rotation → LAPR settings → General**.
+1. As a TeamPass administrator, go to **Operations → LAPR settings → General**.
 2. Toggle **Enable LAPR module** on.
 3. (Recommended) Under **Security**, enable the **allowlist** and list the hostnames/domains LAPR is allowed to reach.
 4. (Optional) Under **Scheduler**, enable automatic rotations and set the scan interval.
 
-Once enabled, a **Password Rotation** section appears in the sidebar for admins and for users who hold the *Can manage LAPR* permission.
+Once enabled, an **LAPR** section appears directly below **Passwords** for non-admin users who hold the *Can manage LAPR* permission. TeamPass administrators keep access to **LAPR settings** only; they cannot use the item-dependent operational pages.
 
 | Setting | Key | Default |
 |---------|-----|---------|
@@ -50,7 +50,7 @@ Once enabled, a **Password Rotation** section appears in the sidebar for admins 
 
 ## Enrolling an endpoint
 
-**Password Rotation → Managed endpoints → Enroll an endpoint.**
+**LAPR → Managed endpoints → Enroll an endpoint.**
 
 1. Fill the label, hostname/IP, SSH port, SSH username and authentication method.
 2. Select the **TeamPass item that holds the SSH credential** (the item's password field). LAPR reads it server-side through the `TP_USER` key chain — it is never typed into the enrollment form and never transmitted.
@@ -68,19 +68,40 @@ Once enabled, a **Password Rotation** section appears in the sidebar for admins 
 
 ## Managing accounts
 
-**Password Rotation → Managed accounts → Add a managed account.**
+**LAPR → Managed accounts → Add a managed account.**
 
-- Pick the endpoint, then an eligible TeamPass item (accessible to you, non-personal, active, with a login, not already managed), then a policy.
+- Pick the endpoint, then search for an eligible TeamPass item (writable by you, non-personal, active, with a login, not already managed), then select a policy. The picker searches by item label or login and displays the folder path when labels are ambiguous.
 - The item's `login` must be a **valid Linux username**. Free-text logins that aren't valid usernames are rejected.
-- **Discover accounts** scans the endpoint (`getent passwd`) and lists real login accounts to help you pick which to manage.
+- **Discover accounts** scans the endpoint (`getent passwd`) and lists real login accounts to help you pick which to manage. **Manage this account** opens the same form with the discovered endpoint locked and the item search restricted to the discovered Linux login.
+- Removing a managed account is a soft deletion so its audit history is preserved. Adding the same TeamPass item again safely reactivates the existing LAPR row and resets its scheduling/retry state.
 
-Deleting a TeamPass item that a managed account still references is **blocked** — remove the managed account first.
+LAPR does not create vault items during discovery. Endpoint enrollment and managed-account creation are two separate relationships:
+
+- the endpoint's **SSH credential item** lets LAPR connect to the server;
+- a **managed-account item** represents one local Linux account whose password LAPR rotates.
+
+The same endpoint can therefore own several managed accounts. An item may also play both roles when the SSH account itself is managed.
+
+Deleting a TeamPass item that a managed account or enrolled endpoint still references is **blocked** — remove the managed account or reconfigure/remove the endpoint first.
+
+### LAPR item integration
+
+TeamPass identifies LAPR-linked items throughout the item vault:
+
+- **LAPR managed** marks the item whose Linux login and password are controlled by a managed account. The badge colour reflects the account state.
+- **LAPR SSH credential** marks an item used to authenticate an enrolled endpoint.
+
+Both badges appear in item lists, search results, and the item detail header. For an authorized LAPR operator with write access to the item's folder, the detail panel also shows the endpoint, policy, next rotation, scheduler state, and any endpoint-availability warning.
+
+For a managed item, the normal item form keeps the `login` and password read-only while leaving metadata such as label, URL, description, tags, and custom fields editable. The same ownership rule is enforced by the web handler and REST API, so bypassing the browser cannot silently desynchronize TeamPass from Linux. Remove the managed-account relationship first if the login itself must change.
+
+For an SSH credential item, manual editing remains available as a recovery path, but TeamPass warns that changing the stored value does **not** change the remote Linux password and may break future LAPR connections.
 
 ---
 
 ## Rotation policies
 
-**Password Rotation → Rotation policies.**
+**LAPR → Rotation policies.**
 
 Three read-only presets ship by default (Standard 30 days, High Security 7 days, Weekly + rotate on enroll). Create your own with:
 
@@ -95,9 +116,11 @@ Generated passwords are always filtered to be **safe for `chpasswd`** — no `:`
 
 ## Rotating
 
-- **Rotate now** on a managed account runs an immediate rotation and shows live progress.
+- **Rotate now** on a managed account, or from its TeamPass item detail panel, runs an immediate rotation and shows live progress after the standard TeamPass confirmation dialog.
 - The **scheduler** rotates due accounts automatically when enabled.
 - **History** shows a per-account, read-only, paginated timeline of every rotation, retry, suspension and reset.
+
+Editing an item's password never triggers an implicit remote operation. A rotation is always explicit (or scheduler-driven), runs as a background task, and preserves the SSH-first safety model described below.
 
 Each rotation:
 
@@ -110,14 +133,14 @@ Each rotation:
 
 - **SSH-first model.** The password is pushed to the server first. If the *item* update then fails, the account is marked **error** with a **MANUAL RESYNC REQUIRED** note — the server holds the new password, so reset it manually and re-sync.
 - **Host-key mismatch blocks rotation.** Because LAPR connects with a reusable, privileged credential, a changed host key (a MITM signal) **aborts** the rotation. Verify the server, then explicitly trust the new key.
-- **Scheduler retries** failed rotations up to `lapr_max_retries`, then **suspends** the account until an admin uses **Reset & resume**.
+- **Scheduler retries** failed rotations up to `lapr_max_retries`, then **suspends** the account until an authorized LAPR operator uses **Reset & resume**.
 
 ---
 
 ## Permissions
 
-- **Admins** always have full LAPR access.
-- Grant non-admin users the **Can manage LAPR** permission under **LAPR settings → Permissions**. Folder access rules still apply: a user can only manage accounts whose item folder they can write to.
+- **TeamPass administrators** configure and enable LAPR under **Operations → LAPR settings**, but cannot open managed endpoints, managed accounts, or rotation policies because administrators do not have access to TeamPass items.
+- Grant non-admin users the **Can manage LAPR** permission under **LAPR settings → Permissions**. Folder access rules still apply: an authorized user can only manage accounts whose item folder they can write to.
 
 ---
 

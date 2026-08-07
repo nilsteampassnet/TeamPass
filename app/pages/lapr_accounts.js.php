@@ -37,36 +37,46 @@ $session = SessionManager::getSession();
 $lang = new Language($session->get('user-language') ?? 'english');
 $laprSettings = (new ConfigManager())->getAllSettings();
 $laprRetentionDays = (int) ($laprSettings['lapr_audit_retention_days'] ?? 365);
+$laprJsJsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE;
+$laprAccountTranslations = [
+    'confirmDelete' => $lang->get('please_confirm_deletion'),
+    'caution' => $lang->get('caution'),
+    'deleteLabel' => $lang->get('delete'),
+    'closeLabel' => $lang->get('close'),
+    'discoverInProgress' => $lang->get('lapr_discover_in_progress'),
+    'errorGeneric' => $lang->get('error'),
+    'addAccount' => $lang->get('lapr_add_account'),
+    'rotateConfirm' => $lang->get('lapr_rotate_confirm'),
+    'rotationInProgress' => $lang->get('lapr_rotation_in_progress'),
+    'rotationSuccess' => $lang->get('lapr_rotation_success'),
+    'rotationFailed' => $lang->get('lapr_rotation_failed'),
+    'manualResync' => $lang->get('lapr_manual_resync_required'),
+    'hostkeyMismatch' => $lang->get('lapr_hostkey_mismatch_blocked'),
+    'rotateTitle' => $lang->get('lapr_rotate_now'),
+    'resetTitle' => $lang->get('lapr_reset_resume'),
+    'historyTitle' => $lang->get('lapr_history'),
+    'historyEmpty' => $lang->get('lapr_history_empty'),
+    'system' => $lang->get('lapr_system_scheduler'),
+    'unknownUser' => $lang->get('lapr_unknown_user'),
+    'manageDiscovered' => $lang->get('lapr_manage_discovered_account'),
+    'discoveredAccountContext' => $lang->get('lapr_discovered_account_context'),
+    'noMatchingItem' => $lang->get('lapr_no_matching_item'),
+    'searchItemPlaceholder' => $lang->get('lapr_search_item_placeholder'),
+];
 ?>
 <script>
 'use strict'
 
-const laprAccSessionKey = '<?php echo $session->get('key'); ?>'
+const laprAccSessionKey = <?php echo json_encode((string) $session->get('key'), $laprJsJsonFlags); ?>;
 const laprAccountsUrl = 'sources/lapr_accounts.queries.php'
 let laprAccountsTable = null
 let laprDiscoverPollTimer = null
+let laprAccountSaveInProgress = false
 
-const laprAccLang = {
-  confirmDelete: '<?php echo addslashes($lang->get('please_confirm_deletion')); ?>',
-  discoverInProgress: '<?php echo addslashes($lang->get('lapr_discover_in_progress')); ?>',
-  errorGeneric: '<?php echo addslashes($lang->get('error')); ?>',
-  addAccount: '<?php echo addslashes($lang->get('lapr_add_account')); ?>',
-  rotateConfirm: '<?php echo addslashes($lang->get('lapr_rotate_confirm')); ?>',
-  rotationInProgress: '<?php echo addslashes($lang->get('lapr_rotation_in_progress')); ?>',
-  rotationSuccess: '<?php echo addslashes($lang->get('lapr_rotation_success')); ?>',
-  rotationFailed: '<?php echo addslashes($lang->get('lapr_rotation_failed')); ?>',
-  manualResync: '<?php echo addslashes($lang->get('lapr_manual_resync_required')); ?>',
-  hostkeyMismatch: '<?php echo addslashes($lang->get('lapr_hostkey_mismatch_blocked')); ?>',
-  rotateTitle: '<?php echo addslashes($lang->get('lapr_rotate_now')); ?>',
-  resetTitle: '<?php echo addslashes($lang->get('lapr_reset_resume')); ?>',
-  historyTitle: '<?php echo addslashes($lang->get('lapr_history')); ?>',
-  historyEmpty: '<?php echo addslashes($lang->get('lapr_history_empty')); ?>',
-  system: '<?php echo addslashes($lang->get('lapr_system_scheduler')); ?>',
-  unknownUser: '<?php echo addslashes($lang->get('lapr_unknown_user')); ?>'
-}
+const laprAccLang = <?php echo json_encode($laprAccountTranslations, $laprJsJsonFlags); ?>;
 
-const laprRetentionDays = <?php echo (int) $laprRetentionDays; ?>
-const laprRetentionNote = '<?php echo addslashes($lang->get('lapr_history_retention_note')); ?>'
+const laprRetentionDays = <?php echo (int) $laprRetentionDays; ?>;
+const laprRetentionNote = <?php echo json_encode($lang->get('lapr_history_retention_note'), $laprJsJsonFlags); ?>;
 let laprHistoryState = { accountId: null, offset: 0, limit: 20, total: 0 }
 
 const laprEventLabels = {
@@ -137,7 +147,7 @@ function laprRenderHistory(data) {
 }
 
 function laprAccPost(type, payload, onDone) {
-  $.post(laprAccountsUrl, {
+  return $.post(laprAccountsUrl, {
     type: type,
     key: laprAccSessionKey,
     data: prepareExchangedData(JSON.stringify(payload || {}), 'encode', laprAccSessionKey)
@@ -215,7 +225,15 @@ function laprResetAccount(id) {
 }
 
 function laprRotateAccount(id) {
-  if (!window.confirm(laprAccLang.rotateConfirm)) { return }
+  launchConfirmDialog(
+    laprAccLang.rotateTitle,
+    DOMPurify.sanitize(laprAccLang.rotateConfirm),
+    function () { laprStartAccountRotation(id) },
+    laprAccLang.rotateTitle
+  )
+}
+
+function laprStartAccountRotation(id) {
   toastr.info('<i class="fas fa-circle-notch fa-spin mr-1"></i>' + laprAccLang.rotationInProgress)
   laprAccPost('start_rotation', { id: id }, function (data) {
     if (data.error === true) {
@@ -259,17 +277,121 @@ function laprFillSelect(sel, items, valueKey, labelKey) {
   })
 }
 
-function laprOpenAddAccount() {
+/**
+ * Initialize the managed-item picker with the same server-side search used by
+ * endpoint enrollment. An optional discovery context restricts results to the
+ * exact Linux login that was discovered.
+ */
+function laprInitAccountItemPicker(context, onSelectionChange) {
+  const sel = $('#lapr-acc-item')
+  if (sel.hasClass('select2-hidden-accessible')) {
+    sel.select2('destroy')
+  }
+  sel.off('change.laprAccount').empty().append($('<option>')).val(null)
+
+  sel.select2({
+    width: '100%',
+    dropdownParent: $('#modal_lapr_account'),
+    placeholder: laprAccLang.searchItemPlaceholder,
+    minimumInputLength: 0,
+    ajax: {
+      delay: 250,
+      transport: function (params, success, failure) {
+        laprAccPost('search_manageable_items', {
+          term: params.data.term || '',
+          login: context ? context.username : ''
+        }, function (data) {
+          if (data.error === true) {
+            toastr.error(data.message || laprAccLang.errorGeneric)
+            success({ results: [] })
+            return
+          }
+          success({ results: data.results || [] })
+        }).fail(failure)
+      },
+      processResults: function (data) {
+        return data
+      }
+    },
+    templateResult: laprFormatAccountItemResult,
+    templateSelection: laprFormatAccountItemSelection
+  }).on('change.laprAccount', onSelectionChange)
+}
+
+function laprFormatAccountItemResult(item) {
+  if (!item.id) { return item.text }
+  const title = DOMPurify.sanitize(item.text) +
+    (item.login ? ' <span class="text-muted">(' + DOMPurify.sanitize(item.login) + ')</span>' : '')
+  const path = item.path
+    ? '<div class="small text-muted"><i class="fas fa-folder-open mr-1"></i>' + DOMPurify.sanitize(item.path) + '</div>'
+    : ''
+  return $('<div>' + title + path + '</div>')
+}
+
+function laprFormatAccountItemSelection(item) {
+  if (!item.id) { return item.text }
+  return item.text + (item.login ? ' (' + item.login + ')' : '')
+}
+
+function laprOpenAddAccount(options) {
+  const context = options && options.endpointId && options.username
+    ? { endpointId: parseInt(options.endpointId, 10), username: String(options.username) }
+    : null
+
+  $('#lapr-acc-discovered-context,#lapr-acc-no-matching-item').addClass('hidden').text('')
+  let endpointReady = false
+  let itemReady = false
+  function refreshSaveState() {
+    $('#lapr-acc-save-btn').prop('disabled', endpointReady === false || itemReady === false)
+  }
+
+  $('#lapr-acc-endpoint').prop('disabled', false)
+  laprAccountSaveInProgress = false
+  $('#lapr-acc-save-btn').prop('disabled', true)
+  laprInitAccountItemPicker(context, function () {
+    itemReady = (parseInt($('#lapr-acc-item').val(), 10) || 0) > 0
+    refreshSaveState()
+  })
+
+  if (context) {
+    $('#lapr-acc-discovered-context')
+      .removeClass('hidden')
+      .text(laprAccLang.discoveredAccountContext.replace('%s', context.username))
+  }
+
   laprAccPost('list_endpoints_options', {}, function (d) {
+    if (d.error === true) {
+      toastr.error(d.message || laprAccLang.errorGeneric)
+      return
+    }
     laprFillSelect($('#lapr-acc-endpoint'), d.data || [], 'id', 'label')
+    if (context) {
+      $('#lapr-acc-endpoint').val(String(context.endpointId)).prop('disabled', true)
+    }
+    endpointReady = (parseInt($('#lapr-acc-endpoint').val(), 10) || 0) > 0
+    refreshSaveState()
   })
-  laprAccPost('list_manageable_items', {}, function (d) {
-    const sel = $('#lapr-acc-item').empty()
-    ;(d.data || []).forEach(function (it) {
-      sel.append($('<option>').val(it.id).text(it.label + ' (' + it.login + ')'))
+  if (context) {
+    laprAccPost('list_manageable_items', { login: context.username }, function (d) {
+      if (d.error === true) {
+        toastr.error(d.message || laprAccLang.errorGeneric)
+        return
+      }
+      const items = d.data || []
+      if (!items.length) {
+        $('#lapr-acc-no-matching-item').removeClass('hidden').text(laprAccLang.noMatchingItem)
+        return
+      }
+      const first = items[0]
+      const option = new Option(first.label + ' (' + first.login + ')', first.id, true, true)
+      $('#lapr-acc-item').append(option).trigger('change')
     })
-  })
+  }
   laprAccPost('list_policies_options', {}, function (d) {
+    if (d.error === true) {
+      toastr.error(d.message || laprAccLang.errorGeneric)
+      return
+    }
     const sel = $('#lapr-acc-policy')
     sel.find('option:gt(0)').remove()
     ;(d.data || []).forEach(function (p) {
@@ -280,11 +402,17 @@ function laprOpenAddAccount() {
 }
 
 function laprSaveAccount() {
+  if (laprAccountSaveInProgress === true) { return }
+
   const payload = {
     endpoint_id: parseInt($('#lapr-acc-endpoint').val(), 10) || 0,
     item_id: parseInt($('#lapr-acc-item').val(), 10) || 0,
     policy_id: parseInt($('#lapr-acc-policy').val(), 10) || 0
   }
+  if (payload.endpoint_id <= 0 || payload.item_id <= 0) { return }
+
+  laprAccountSaveInProgress = true
+  $('#lapr-acc-save-btn').prop('disabled', true)
   laprAccPost('add_account', payload, function (data) {
     if (data.error === true) {
       toastr.error(data.message || laprAccLang.errorGeneric)
@@ -293,6 +421,13 @@ function laprSaveAccount() {
     toastr.success(data.message)
     $('#modal_lapr_account').modal('hide')
     laprLoadAccounts()
+  }).always(function () {
+    laprAccountSaveInProgress = false
+    if ($('#modal_lapr_account').hasClass('show')) {
+      const canSave = (parseInt($('#lapr-acc-endpoint').val(), 10) || 0) > 0 &&
+        (parseInt($('#lapr-acc-item').val(), 10) || 0) > 0
+      $('#lapr-acc-save-btn').prop('disabled', canSave === false)
+    }
   })
 }
 
@@ -326,15 +461,38 @@ function laprSaveAccountPolicy() {
 }
 
 function laprDeleteAccount(id) {
-  if (!window.confirm(laprAccLang.confirmDelete)) { return }
-  laprAccPost('delete_account', { id: id }, function (data) {
-    if (data.error === true) {
-      toastr.error(data.message || laprAccLang.errorGeneric)
-      return
-    }
-    toastr.success(data.message)
-    laprLoadAccounts()
+  const eventNamespace = '.laprDeleteAccountConfirm'
+  const cleanup = function () {
+    $(document).off(eventNamespace)
+    $('#warningModal').off('hidden.bs.modal' + eventNamespace)
+  }
+
+  cleanup()
+  showModalDialogBox(
+    '#warningModal',
+    '<i class="fa-solid fa-triangle-exclamation mr-2 text-warning"></i>' + laprAccLang.caution,
+    laprAccLang.confirmDelete,
+    laprAccLang.deleteLabel,
+    laprAccLang.closeLabel,
+    false,
+    false,
+    false
+  )
+
+  $(document).one('click' + eventNamespace, '#warningModalButtonAction', function (event) {
+    event.preventDefault()
+    cleanup()
+    $('#warningModal').modal('hide')
+    laprAccPost('delete_account', { id: id }, function (data) {
+      if (data.error === true) {
+        toastr.error(data.message || laprAccLang.errorGeneric)
+        return
+      }
+      toastr.success(data.message)
+      laprLoadAccounts()
+    })
   })
+  $('#warningModal').one('hidden.bs.modal' + eventNamespace, cleanup)
 }
 
 function laprOpenDiscover() {
@@ -354,11 +512,11 @@ function laprStartDiscover() {
       $('#lapr-discover-result').html('<span class="text-danger">' + DOMPurify.sanitize(data.message || '') + '</span>')
       return
     }
-    laprPollDiscover(data.task_id)
+    laprPollDiscover(data.task_id, endpointId)
   })
 }
 
-function laprPollDiscover(taskId) {
+function laprPollDiscover(taskId, endpointId) {
   if (laprDiscoverPollTimer) { clearTimeout(laprDiscoverPollTimer) }
   laprAccPost('discover_status', { task_id: taskId }, function (data) {
     if (data.error === true) {
@@ -366,22 +524,45 @@ function laprPollDiscover(taskId) {
       return
     }
     if (data.finished !== true) {
-      laprDiscoverPollTimer = setTimeout(function () { laprPollDiscover(taskId) }, 1500)
+      laprDiscoverPollTimer = setTimeout(function () { laprPollDiscover(taskId, endpointId) }, 1500)
       return
     }
     if (data.success !== true) {
       $('#lapr-discover-result').html('<span class="text-danger">' + DOMPurify.sanitize(data.error_code || 'error') + '</span>')
       return
     }
-    let html = '<table class="table table-sm table-striped"><thead><tr><th>User</th><th>UID</th><th>Shell</th></tr></thead><tbody>'
-    ;(data.accounts || []).forEach(function (acc) {
-      html += '<tr><td>' + DOMPurify.sanitize(acc.username) + '</td><td>' + acc.uid + '</td><td>' + DOMPurify.sanitize(acc.shell) + '</td></tr>'
-    })
-    html += '</tbody></table>'
-    if (!(data.accounts || []).length) {
-      html = '<div class="text-muted">' + DOMPurify.sanitize(laprAccLang.errorGeneric) + '</div>'
+    const accounts = data.accounts || []
+    if (!accounts.length) {
+      $('#lapr-discover-result').html('<div class="text-muted">' + DOMPurify.sanitize(laprAccLang.errorGeneric) + '</div>')
+      return
     }
-    $('#lapr-discover-result').html(html)
+
+    const $table = $('<table>', { class: 'table table-sm table-striped' })
+    const $header = $('<tr>')
+      .append($('<th>').text('User'))
+      .append($('<th>').text('UID'))
+      .append($('<th>').text('Shell'))
+      .append($('<th>'))
+    const $tbody = $('<tbody>')
+
+    accounts.forEach(function (acc) {
+      const $manageButton = $('<button>', {
+        type: 'button',
+        class: 'btn btn-xs btn-primary lapr-manage-discovered',
+        title: laprAccLang.manageDiscovered,
+        'data-endpoint-id': endpointId,
+        'data-username': acc.username
+      }).append($('<i>', { class: 'fas fa-plus mr-1' })).append(document.createTextNode(laprAccLang.manageDiscovered))
+      $tbody.append(
+        $('<tr>')
+          .append($('<td>').text(acc.username || ''))
+          .append($('<td>').text(parseInt(acc.uid, 10)))
+          .append($('<td>').text(acc.shell || ''))
+          .append($('<td>', { class: 'text-right' }).append($manageButton))
+      )
+    })
+    $table.append($('<thead>').append($header)).append($tbody)
+    $('#lapr-discover-result').empty().append($table)
   })
 }
 
@@ -392,6 +573,15 @@ $(document).ready(function () {
   $('#lapr-editpolicy-save-btn').on('click', laprSaveAccountPolicy)
   $('#lapr-discover-btn').on('click', laprOpenDiscover)
   $('#lapr-discover-start-btn').on('click', laprStartDiscover)
+  $('#lapr-discover-result').on('click', '.lapr-manage-discovered', function () {
+    const context = {
+      endpointId: parseInt($(this).attr('data-endpoint-id'), 10),
+      username: $(this).attr('data-username') || ''
+    }
+    $('#modal_lapr_discover').one('hidden.bs.modal', function () {
+      laprOpenAddAccount(context)
+    }).modal('hide')
+  })
   $('#lapr-accounts-table').on('click', '.lapr-delete-acc', function () {
     laprDeleteAccount($(this).data('id'))
   })
