@@ -97,6 +97,18 @@ For a managed item, the normal item form keeps the `login` and password read-onl
 
 For an SSH credential item, manual editing remains available as a recovery path, but TeamPass warns that changing the stored value does **not** change the remote Linux password and may break future LAPR connections.
 
+Three operations are refused while an item is linked to LAPR, on **every** path — single actions, bulk actions and the REST API:
+
+| Operation | Why |
+|---|---|
+| Changing the `login` or password of a **managed** item | LAPR owns them; a manual change desynchronizes TeamPass from Linux |
+| **Deleting** a managed item or an SSH credential item | the relationship has no database foreign key and would be orphaned |
+| **Moving** either kind of item into a **personal folder** | LAPR reads the item as the server, which is only possible in a shared folder |
+
+Bulk move and bulk delete skip the linked items and tell you how many were skipped, instead of failing the whole selection. The REST API answers `409 Conflict` in all three cases. Resending an unchanged password is **not** a conflict, so an API client that reads an item and writes it back untouched keeps working.
+
+> **Disabling the module releases everything.** When **Enable LAPR module** is off, linked items behave exactly like ordinary items: no badge, no read-only field, no blocked delete or move. This is deliberate — the only way to remove a managed account goes through the LAPR pages, which are themselves hidden when the module is off. Managed accounts are kept and resume where they left off when you re-enable LAPR.
+
 ---
 
 ## Rotation policies

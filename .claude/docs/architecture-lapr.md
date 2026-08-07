@@ -64,14 +64,25 @@ additional guard because operational LAPR access depends on TeamPass item access
 
 ## TeamPass item ownership and UI integration
 
-`laprGetItemRelations()` batch-loads the two independent roles an item can hold:
+`laprGetItemRelations($itemIds, $SETTINGS)` batch-loads the two independent roles an item can hold:
 
 - **managed target** — a non-deleted `lapr_accounts.item_id`; LAPR owns the item's Linux `login` and password;
 - **SSH credential** — a non-deleted `lapr_endpoints.ssh_credential_source`; LAPR reads the item on each connection but does not own the remote password.
 
+**Rule: the module switch is authoritative.** `laprGetItemRelations()` returns `[]` when `lapr_enabled != 1`, so a disabled module means plain items — no badge, no locked field, no blocked delete or move. Without this, disabling LAPR would freeze every managed item permanently, because the only way to remove a managed account goes through pages that are themselves gated on the switch. It also keeps the two extra queries off every item list on installations that do not use LAPR.
+
 An item can hold both roles. Folder item lists and global search results receive only redacted role/status metadata for badges. The item-detail response receives endpoint, policy, and scheduling context only when the caller is an authorized LAPR operator with write access to the item's folder. This prevents normal item responses from exposing LAPR infrastructure details unnecessarily.
 
-Managed-target login/password updates are blocked in both `items.queries.php` and the REST API. The item editor also disables those controls while leaving non-secret metadata editable. Credential-only items remain editable as an intentional recovery path, with a warning that a vault edit does not update Linux. Deletion is rejected while either active relationship exists, in both the web and REST paths.
+Managed-target login/password updates are blocked in both `items.queries.php` and the REST API. The item editor also disables those controls while leaving non-secret metadata editable. Credential-only items remain editable as an intentional recovery path, with a warning that a vault edit does not update Linux.
+
+**Rule: every item write path applies the guards, single AND mass.** Two helpers on top of `laprGetItemRelations()` keep them aligned:
+
+| Helper | Blocks | Web | REST |
+|---|---|---|---|
+| `laprItemsDeletionBlocker()` | deleting an item still referenced by a managed account or an enrolled endpoint (no FK — the row would be orphaned) | `delete_item`, `mass_delete_items` | `DELETE /item/delete` → `409` |
+| `laprItemsPersonalMoveBlocker()` | moving a linked item **into a personal folder** — `laprReadItemPasswordAsTpUser()` only covers non-personal items, so the move would silently break every future rotation | `move_item`, `mass_move_items` | `PUT /item/update` (`folder_id`) → `409` |
+
+Mass paths skip the blocked items and report the count through `lapr_mass_operation_items_skipped`; they never fail the whole batch. The REST update guard compares the submitted password against the **decrypted** current value (`getItemPasswordForComparison()`), so a read-modify-write client resending the unchanged password is not a conflict; an undecryptable password fails closed.
 
 The item detail panel can enqueue the existing `lapr_rotation` background task through `lapr_accounts.queries.php`; it does not implement a second rotation path. Direct item edits never perform SSH work.
 

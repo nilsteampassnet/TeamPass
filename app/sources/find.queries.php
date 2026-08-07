@@ -442,7 +442,7 @@ if (null === $request->query->get('type')) {
     $totalItems = $request->query->filter('totalItems', null, FILTER_SANITIZE_NUMBER_INT);
 
     $arr_data = [];
-    $laprRelations = laprGetItemRelations(array_column($rows, 'id'));
+    $laprRelations = laprGetItemRelations(array_column($rows, 'id'), $SETTINGS);
     foreach ($rows as $record) {
         $displayItem = false;
         $arr_data[$record['id']]['item_id'] = (int) $record['id'];

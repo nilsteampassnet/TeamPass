@@ -34,21 +34,29 @@ use TeampassClasses\Language\Language;
 
 $session = SessionManager::getSession();
 $lang = new Language($session->get('user-language') ?? 'english');
+// Same JSON flags as the other LAPR pages: addslashes() never escaped '</script>'
+// and a PHP tag closing a line makes PHP swallow the newline, concatenating the
+// next statement onto the generated one.
+$laprPolJsJsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE;
+$laprPolicyTranslations = [
+    'confirmDelete' => $lang->get('please_confirm_deletion'),
+    'caution' => $lang->get('caution'),
+    'deleteLabel' => $lang->get('delete'),
+    'closeLabel' => $lang->get('close'),
+    'addPolicy' => $lang->get('lapr_add_policy'),
+    'editPolicy' => $lang->get('lapr_edit_policy'),
+    'preset' => $lang->get('lapr_preset'),
+    'errorGeneric' => $lang->get('error'),
+];
 ?>
 <script>
 'use strict'
 
-const laprPolSessionKey = '<?php echo $session->get('key'); ?>'
+const laprPolSessionKey = <?php echo json_encode((string) $session->get('key'), $laprPolJsJsonFlags); ?>;
 const laprPoliciesUrl = 'sources/lapr_policies.queries.php'
 let laprPoliciesTable = null
 
-const laprPolLang = {
-  confirmDelete: '<?php echo addslashes($lang->get('please_confirm_deletion')); ?>',
-  addPolicy: '<?php echo addslashes($lang->get('lapr_add_policy')); ?>',
-  editPolicy: '<?php echo addslashes($lang->get('lapr_edit_policy')); ?>',
-  preset: '<?php echo addslashes($lang->get('lapr_preset')); ?>',
-  errorGeneric: '<?php echo addslashes($lang->get('error')); ?>'
-}
+const laprPolLang = <?php echo json_encode($laprPolicyTranslations, $laprPolJsJsonFlags); ?>;
 
 function laprPolPost(type, payload, onDone) {
   $.post(laprPoliciesUrl, {
@@ -164,15 +172,22 @@ function laprPreviewPassword() {
 }
 
 function laprDeletePolicy(id) {
-  if (!window.confirm(laprPolLang.confirmDelete)) { return }
-  laprPolPost('delete_policy', { id: id }, function (data) {
-    if (data.error === true) {
-      toastr.error(data.message || laprPolLang.errorGeneric)
-      return
-    }
-    toastr.success(data.message)
-    laprLoadPolicies()
-  })
+  launchConfirmDialog(
+    '<i class="fa-solid fa-triangle-exclamation mr-2 text-warning"></i>' + laprPolLang.caution,
+    DOMPurify.sanitize(laprPolLang.confirmDelete),
+    function () {
+      laprPolPost('delete_policy', { id: id }, function (data) {
+        if (data.error === true) {
+          toastr.error(data.message || laprPolLang.errorGeneric)
+          return
+        }
+        toastr.success(data.message)
+        laprLoadPolicies()
+      })
+    },
+    laprPolLang.deleteLabel,
+    laprPolLang.closeLabel
+  )
 }
 
 $(document).ready(function () {

@@ -138,6 +138,7 @@
       self.ws.onopen = function() {
         self._log('info', 'Connected')
         self.isConnected = true
+        self.reconnectAttempts = 0
         self._startPingInterval()
         self._resubscribe()
         self._onOpen()
@@ -329,8 +330,6 @@
         break
 
       case 'connected':
-        // Reset the retry budget only after application-level authentication succeeds.
-        this.reconnectAttempts = 0
         // Store the reconnect token issued by the server so it is used
         // for subsequent connections instead of the short-lived URL token.
         if (message.reconnect_token) {
@@ -340,12 +339,7 @@
         break
 
       case 'error':
-        var isConnectionLimit = message.error_code === 'max_connections'
-        this._log(
-          isConnectionLimit ? 'warn' : 'error',
-          isConnectionLimit ? 'Connection limit reached' : 'Server error',
-          message
-        )
+        this._log('error', 'Server error', message)
         this._emit('server_error', message)
         break
 

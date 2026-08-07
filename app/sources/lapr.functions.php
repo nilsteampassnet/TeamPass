@@ -535,11 +535,24 @@ function laprUserCanReadFolder(int $folderId, SessionInterface $session): bool
  * credential of one or more endpoints, or both. Deleted LAPR relationships are
  * deliberately excluded so stale links never lock or label an item.
  *
- * @param array $itemIds TeamPass item ids
+ * The module switch is authoritative: when LAPR is disabled no relation is
+ * reported, so items behave exactly like ordinary items (no badge, no locked
+ * field, no blocked delete or move). This is what prevents a disabled module
+ * from leaving items permanently frozen — the only way to remove a managed
+ * account is through the LAPR pages, which are themselves gated on the switch.
+ * It also keeps the two extra queries off every item list on installations
+ * that do not use LAPR.
+ *
+ * @param array $itemIds  TeamPass item ids
+ * @param array $SETTINGS TeamPass settings
  * @return array<int, array<string, mixed>> Relations indexed by item id
  */
-function laprGetItemRelations(array $itemIds): array
+function laprGetItemRelations(array $itemIds, array $SETTINGS): array
 {
+    if ((int) ($SETTINGS['lapr_enabled'] ?? 0) !== 1) {
+        return [];
+    }
+
     $normalizedIds = array_values(array_unique(array_filter(
         array_map('intval', $itemIds),
         static fn (int $itemId): bool => $itemId > 0
@@ -613,4 +626,55 @@ function laprGetItemRelations(array $itemIds): array
     }
 
     return $relations;
+}
+
+/**
+ * Language key blocking the deletion of at least one of the given items.
+ *
+ * Deleting an item still referenced by a managed account or an enrolled
+ * endpoint would orphan the LAPR relationship (no FK exists) and break
+ * rotation or endpoint authentication. Single and mass deletions share this
+ * helper so both paths stay aligned.
+ *
+ * @param array $itemIds  TeamPass item ids
+ * @param array $SETTINGS TeamPass settings
+ * @return string Language key, or '' when the deletion is allowed
+ */
+function laprItemsDeletionBlocker(array $itemIds, array $SETTINGS): string
+{
+    foreach (laprGetItemRelations($itemIds, $SETTINGS) as $relation) {
+        if ((bool) ($relation['is_managed'] ?? false) === true) {
+            return 'lapr_item_managed_cannot_delete';
+        }
+        if ((bool) ($relation['is_credential'] ?? false) === true) {
+            return 'lapr_item_credential_cannot_delete';
+        }
+    }
+
+    return '';
+}
+
+/**
+ * Language key blocking a move of the given items into a personal folder.
+ *
+ * LAPR reads item passwords server-side through the TP_USER key chain
+ * (`laprReadItemPasswordAsTpUser()`), which only covers non-personal items.
+ * Moving a managed target or an SSH credential into a personal folder would
+ * therefore silently break every subsequent rotation or connection.
+ *
+ * @param array $itemIds  TeamPass item ids
+ * @param array $SETTINGS TeamPass settings
+ * @return string Language key, or '' when the move is allowed
+ */
+function laprItemsPersonalMoveBlocker(array $itemIds, array $SETTINGS): string
+{
+    foreach (laprGetItemRelations($itemIds, $SETTINGS) as $relation) {
+        if ((bool) ($relation['is_managed'] ?? false) === true
+            || (bool) ($relation['is_credential'] ?? false) === true
+        ) {
+            return 'lapr_item_cannot_move_to_personal';
+        }
+    }
+
+    return '';
 }

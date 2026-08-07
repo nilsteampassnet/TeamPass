@@ -1324,7 +1324,7 @@ switch ($inputData['type']) {
                 );
             }
 
-            $laprRelations = laprGetItemRelations([(int) $inputData['itemId']]);
+            $laprRelations = laprGetItemRelations([(int) $inputData['itemId']], $SETTINGS);
             $laprRelation = $laprRelations[(int) $inputData['itemId']] ?? [];
             $laprProtectsItem = (bool) ($laprRelation['is_managed'] ?? false);
             if ($laprProtectsItem === true
@@ -3702,8 +3702,8 @@ switch ($inputData['type']) {
             $arrData['notification_status'] = '';
         }
 
-        if ((int) ($arrData['show_details'] ?? 0) === 1) {
-            $itemRelations = laprGetItemRelations([(int) $inputData['id']]);
+        if ((int) $arrData['show_details'] === 1) {
+            $itemRelations = laprGetItemRelations([(int) $inputData['id']], $SETTINGS);
             $arrData['lapr'] = $itemRelations[(int) $inputData['id']] ?? [
                 'is_managed' => false,
                 'is_credential' => false,
@@ -4187,38 +4187,17 @@ switch ($inputData['type']) {
             break;
         }
 
-        // LAPR (D6): block deletion while a non-deleted managed account references
-        // this item — no FK, so the guard is enforced here. Removing the item out from
-        // under LAPR would orphan the account and break rotation.
-        $laprManaged = DB::queryFirstField(
-            'SELECT COUNT(*) FROM ' . prefixTable('lapr_accounts') . '
-            WHERE item_id = %i AND status != %s',
-            intval($inputData['itemId']),
-            'deleted'
-        );
-        if ((int) $laprManaged > 0) {
+        // LAPR (D6): block deletion while a non-deleted managed account or enrolled
+        // endpoint references this item — no FK, so the guard is enforced here.
+        // Removing the item out from under LAPR would orphan the relationship and
+        // break rotation or endpoint authentication.
+        $laprDeletionBlocker = laprItemsDeletionBlocker([(int) $inputData['itemId']], $SETTINGS);
+        if ($laprDeletionBlocker !== '') {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('lapr_item_managed_cannot_delete'),
+                    'message' => $lang->get($laprDeletionBlocker),
                 ),
-                'encode'
-            );
-            break;
-        }
-
-        $laprCredential = DB::queryFirstField(
-            'SELECT COUNT(*) FROM ' . prefixTable('lapr_endpoints') . '
-            WHERE ssh_credential_source = %i AND status != %s',
-            intval($inputData['itemId']),
-            'deleted'
-        );
-        if ((int) $laprCredential > 0) {
-            echo (string) prepareExchangedData(
-                [
-                    'error' => true,
-                    'message' => $lang->get('lapr_item_credential_cannot_delete'),
-                ],
                 'encode'
             );
             break;
@@ -4817,7 +4796,7 @@ switch ($inputData['type']) {
             $batchCorruptedItems = [];
 
             if (!empty($allItemIds)) {
-                $batchLaprRelations = laprGetItemRelations($allItemIds);
+                $batchLaprRelations = laprGetItemRelations($allItemIds, $SETTINGS);
 
                 if ((int) $session->get('user-admin') !== 1 && teampassCorruptedItemsTableExists() === true) {
                     $corruptedRows = DB::query(
@@ -5921,6 +5900,23 @@ switch ($inputData['type']) {
             break;
         }
 
+        // LAPR: a managed target or an SSH credential must stay in a shared folder.
+        // The server reads it through the TP_USER key chain, which never covers
+        // personal items — the move would silently break every future rotation.
+        if (intval($dataDestination['personal_folder']) === 1) {
+            $laprMoveBlocker = laprItemsPersonalMoveBlocker([(int) $inputData['itemId']], $SETTINGS);
+            if ($laprMoveBlocker !== '') {
+                echo (string) prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get($laprMoveBlocker),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+        }
+
         // Manage possible cases
         if (intval($dataSource['personal_folder']) === 0 && intval($dataDestination['personal_folder']) === 0) {
             // Previous is non personal folder and new too
@@ -6261,6 +6257,22 @@ switch ($inputData['type']) {
         // Track items skipped because the user lacks the required rights (#5275)
         $deniedItems = 0;
 
+        // LAPR: a managed target or an SSH credential must stay in a shared folder —
+        // the server reads it through the TP_USER key chain, which never covers
+        // personal items. The destination is the same for the whole batch, so the
+        // relations are resolved once instead of per item.
+        $laprBlockedItems = 0;
+        $laprRelationsForMove = [];
+        if ((int) DB::queryFirstField(
+            'SELECT personal_folder FROM ' . prefixTable('nested_tree') . ' WHERE id = %i',
+            $inputData['folderId']
+        ) === 1) {
+            $laprRelationsForMove = laprGetItemRelations(
+                array_map('intval', array_filter(explode(';', $post_item_ids), 'strlen')),
+                $SETTINGS
+            );
+        }
+
         // loop on items to move
         foreach (explode(';', $post_item_ids) as $item_id) {
             if (empty($item_id) === false) {
@@ -6302,6 +6314,15 @@ switch ($inputData['type']) {
                     || $destinationRights['error'] === true || $destinationRights['edit'] === false
                 ) {
                     $deniedItems++;
+                    continue;
+                }
+
+                // LAPR relationship guard (empty unless the destination is personal)
+                $laprRelation = $laprRelationsForMove[(int) $item_id] ?? [];
+                if ((bool) ($laprRelation['is_managed'] ?? false) === true
+                    || (bool) ($laprRelation['is_credential'] ?? false) === true
+                ) {
+                    $laprBlockedItems++;
                     continue;
                 }
 
@@ -6599,10 +6620,18 @@ switch ($inputData['type']) {
         }
 
         // Report a partial denial when at least one item was skipped for lack of rights (#5275)
+        // or because a LAPR relationship forbids the move.
+        $massMoveMessages = [];
+        if ($deniedItems > 0) {
+            $massMoveMessages[] = str_replace('#nb#', (string) $deniedItems, $lang->get('mass_operation_partially_denied'));
+        }
+        if ($laprBlockedItems > 0) {
+            $massMoveMessages[] = str_replace('#nb#', (string) $laprBlockedItems, $lang->get('lapr_mass_operation_items_skipped'));
+        }
         echo (string) prepareExchangedData(
             array(
-                'error' => $deniedItems > 0,
-                'message' => $deniedItems > 0 ? str_replace('#nb#', (string) $deniedItems, $lang->get('mass_operation_partially_denied')) : '',
+                'error' => count($massMoveMessages) > 0,
+                'message' => implode(' ', $massMoveMessages),
             ),
             'encode'
         );
@@ -6660,6 +6689,15 @@ switch ($inputData['type']) {
         // Track items skipped because the user lacks the delete right (#5275)
         $deniedItems = 0;
 
+        // LAPR: an item still referenced by a managed account or an enrolled endpoint
+        // cannot be deleted — the relationship has no FK and would be orphaned. The
+        // whole batch is resolved in one pass, exactly like the single delete_item path.
+        $laprBlockedItems = 0;
+        $laprRelationsForDelete = laprGetItemRelations(
+            array_map('intval', array_filter(explode(';', $post_item_ids), 'strlen')),
+            $SETTINGS
+        );
+
         // loop on items to delete
         foreach (explode(';', $post_item_ids) as $item_id) {
             if (empty($item_id) === false) {
@@ -6691,6 +6729,15 @@ switch ($inputData['type']) {
                 );
                 if ($checkRights['error'] === true || $checkRights['delete'] === false) {
                     $deniedItems++;
+                    continue;
+                }
+
+                // LAPR relationship guard
+                $laprRelation = $laprRelationsForDelete[(int) $item_id] ?? [];
+                if ((bool) ($laprRelation['is_managed'] ?? false) === true
+                    || (bool) ($laprRelation['is_credential'] ?? false) === true
+                ) {
+                    $laprBlockedItems++;
                     continue;
                 }
 
@@ -6730,10 +6777,18 @@ switch ($inputData['type']) {
         }
 
         // Report a partial denial when at least one item was skipped for lack of rights (#5275)
+        // or because a LAPR relationship forbids the deletion.
+        $massDeleteMessages = [];
+        if ($deniedItems > 0) {
+            $massDeleteMessages[] = str_replace('#nb#', (string) $deniedItems, $lang->get('mass_operation_partially_denied'));
+        }
+        if ($laprBlockedItems > 0) {
+            $massDeleteMessages[] = str_replace('#nb#', (string) $laprBlockedItems, $lang->get('lapr_mass_operation_items_skipped'));
+        }
         echo (string) prepareExchangedData(
             array(
-                'error' => $deniedItems > 0,
-                'message' => $deniedItems > 0 ? str_replace('#nb#', (string) $deniedItems, $lang->get('mass_operation_partially_denied')) : '',
+                'error' => count($massDeleteMessages) > 0,
+                'message' => implode(' ', $massDeleteMessages),
             ),
             'encode'
         );

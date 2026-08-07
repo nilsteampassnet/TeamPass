@@ -69,6 +69,43 @@ class LaprFunctionsTest extends TestCase
         $this->assertFalse(laprUserCanReadFolder(1, $session));
     }
 
+    // =========================================================================
+    // Item relations — module switch is authoritative (no DB access when off)
+    // =========================================================================
+
+    /**
+     * A disabled module reports no relation at all. This is what keeps items
+     * usable after LAPR is switched off: the only way to remove a managed
+     * account goes through pages that are themselves gated on the switch, so a
+     * relation-driven lock would be impossible to lift. It also proves the two
+     * queries never run on installations that do not use LAPR — the assertion
+     * would fail with a DB error otherwise, as no connection exists here.
+     */
+    public function testLaprGetItemRelationsIsEmptyWhenModuleDisabled(): void
+    {
+        $this->assertSame([], laprGetItemRelations([1, 2, 3], ['lapr_enabled' => '0']));
+        $this->assertSame([], laprGetItemRelations([1, 2, 3], []));
+    }
+
+    /**
+     * An empty id list short-circuits before any query, module enabled or not.
+     */
+    public function testLaprGetItemRelationsIsEmptyWithoutUsableIds(): void
+    {
+        $this->assertSame([], laprGetItemRelations([], ['lapr_enabled' => '1']));
+        $this->assertSame([], laprGetItemRelations([0, -5], ['lapr_enabled' => '1']));
+    }
+
+    /**
+     * Delete and move guards inherit the module switch, so a disabled module
+     * never blocks an ordinary item operation.
+     */
+    public function testLaprItemGuardsAreInactiveWhenModuleDisabled(): void
+    {
+        $this->assertSame('', laprItemsDeletionBlocker([1, 2], ['lapr_enabled' => '0']));
+        $this->assertSame('', laprItemsPersonalMoveBlocker([1, 2], ['lapr_enabled' => '0']));
+    }
+
     /**
      * Build the minimum session mock needed by the LAPR permission gate.
      */

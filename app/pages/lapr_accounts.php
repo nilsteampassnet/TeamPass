@@ -135,6 +135,7 @@ date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
             </div>
             <div class="modal-body">
                 <div class="alert alert-info hidden" id="lapr-acc-discovered-context"></div>
+                <div class="alert alert-warning hidden" id="lapr-acc-multiple-matching-items"></div>
                 <div class="alert alert-warning hidden" id="lapr-acc-no-matching-item"></div>
                 <div class="form-group">
                     <label><?php echo $lang->get('lapr_endpoint'); ?></label>

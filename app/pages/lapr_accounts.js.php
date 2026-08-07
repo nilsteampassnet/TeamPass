@@ -50,6 +50,7 @@ $laprAccountTranslations = [
     'rotationInProgress' => $lang->get('lapr_rotation_in_progress'),
     'rotationSuccess' => $lang->get('lapr_rotation_success'),
     'rotationFailed' => $lang->get('lapr_rotation_failed'),
+    'rotationTimeout' => $lang->get('lapr_rotation_status_timeout'),
     'manualResync' => $lang->get('lapr_manual_resync_required'),
     'hostkeyMismatch' => $lang->get('lapr_hostkey_mismatch_blocked'),
     'rotateTitle' => $lang->get('lapr_rotate_now'),
@@ -61,6 +62,7 @@ $laprAccountTranslations = [
     'manageDiscovered' => $lang->get('lapr_manage_discovered_account'),
     'discoveredAccountContext' => $lang->get('lapr_discovered_account_context'),
     'noMatchingItem' => $lang->get('lapr_no_matching_item'),
+    'multipleMatchingItems' => $lang->get('lapr_multiple_matching_items'),
     'searchItemPlaceholder' => $lang->get('lapr_search_item_placeholder'),
 ];
 ?>
@@ -69,6 +71,7 @@ $laprAccountTranslations = [
 
 const laprAccSessionKey = <?php echo json_encode((string) $session->get('key'), $laprJsJsonFlags); ?>;
 const laprAccountsUrl = 'sources/lapr_accounts.queries.php'
+const LAPR_ROTATION_POLL_MAX_ATTEMPTS = 300
 let laprAccountsTable = null
 let laprDiscoverPollTimer = null
 let laprAccountSaveInProgress = false
@@ -241,11 +244,13 @@ function laprStartAccountRotation(id) {
       toastr.error(data.message || laprAccLang.errorGeneric)
       return
     }
-    laprPollRotation(data.task_id)
+    laprPollRotation(data.task_id, 0)
   })
 }
 
-function laprPollRotation(taskId) {
+// Bounded polling: a background task that never reports back must not leave an
+// endless request loop behind (LAPR_ROTATION_POLL_MAX_ATTEMPTS × 2 s ≈ 10 min).
+function laprPollRotation(taskId, attempt) {
   laprAccPost('rotation_status', { task_id: taskId }, function (data) {
     if (data.error === true) {
       toastr.clear()
@@ -253,7 +258,13 @@ function laprPollRotation(taskId) {
       return
     }
     if (data.finished !== true) {
-      setTimeout(function () { laprPollRotation(taskId) }, 2000)
+      if (attempt + 1 >= LAPR_ROTATION_POLL_MAX_ATTEMPTS) {
+        toastr.clear()
+        toastr.warning(laprAccLang.rotationTimeout)
+        laprLoadAccounts()
+        return
+      }
+      setTimeout(function () { laprPollRotation(taskId, attempt + 1) }, 2000)
       return
     }
     toastr.clear()
@@ -338,7 +349,8 @@ function laprOpenAddAccount(options) {
     ? { endpointId: parseInt(options.endpointId, 10), username: String(options.username) }
     : null
 
-  $('#lapr-acc-discovered-context,#lapr-acc-no-matching-item').addClass('hidden').text('')
+  $('#lapr-acc-discovered-context,#lapr-acc-no-matching-item,#lapr-acc-multiple-matching-items')
+    .addClass('hidden').text('')
   let endpointReady = false
   let itemReady = false
   function refreshSaveState() {
@@ -385,6 +397,13 @@ function laprOpenAddAccount(options) {
       const first = items[0]
       const option = new Option(first.label + ' (' + first.login + ')', first.id, true, true)
       $('#lapr-acc-item').append(option).trigger('change')
+      // Preselecting the first match must not hide the others: say so explicitly,
+      // the picker still lets the operator search the remaining candidates.
+      if (items.length > 1) {
+        $('#lapr-acc-multiple-matching-items')
+          .removeClass('hidden')
+          .text(laprAccLang.multipleMatchingItems.replace('%d', String(items.length)))
+      }
     })
   }
   laprAccPost('list_policies_options', {}, function (d) {
@@ -461,38 +480,22 @@ function laprSaveAccountPolicy() {
 }
 
 function laprDeleteAccount(id) {
-  const eventNamespace = '.laprDeleteAccountConfirm'
-  const cleanup = function () {
-    $(document).off(eventNamespace)
-    $('#warningModal').off('hidden.bs.modal' + eventNamespace)
-  }
-
-  cleanup()
-  showModalDialogBox(
-    '#warningModal',
+  launchConfirmDialog(
     '<i class="fa-solid fa-triangle-exclamation mr-2 text-warning"></i>' + laprAccLang.caution,
-    laprAccLang.confirmDelete,
+    DOMPurify.sanitize(laprAccLang.confirmDelete),
+    function () {
+      laprAccPost('delete_account', { id: id }, function (data) {
+        if (data.error === true) {
+          toastr.error(data.message || laprAccLang.errorGeneric)
+          return
+        }
+        toastr.success(data.message)
+        laprLoadAccounts()
+      })
+    },
     laprAccLang.deleteLabel,
-    laprAccLang.closeLabel,
-    false,
-    false,
-    false
+    laprAccLang.closeLabel
   )
-
-  $(document).one('click' + eventNamespace, '#warningModalButtonAction', function (event) {
-    event.preventDefault()
-    cleanup()
-    $('#warningModal').modal('hide')
-    laprAccPost('delete_account', { id: id }, function (data) {
-      if (data.error === true) {
-        toastr.error(data.message || laprAccLang.errorGeneric)
-        return
-      }
-      toastr.success(data.message)
-      laprLoadAccounts()
-    })
-  })
-  $('#warningModal').one('hidden.bs.modal' + eventNamespace, cleanup)
 }
 
 function laprOpenDiscover() {

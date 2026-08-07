@@ -155,9 +155,11 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         'rotationFailed' => $lang->get('lapr_rotation_failed'),
         'manualResync' => $lang->get('lapr_manual_resync_required'),
         'hostkeyMismatch' => $lang->get('lapr_hostkey_mismatch_blocked'),
+        'rotationTimeout' => $lang->get('lapr_rotation_status_timeout'),
         'error' => $lang->get('error'),
     ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>;
     const TP_LAPR_ACCOUNTS_URL = 'sources/lapr_accounts.queries.php';
+    const TP_LAPR_ROTATION_POLL_MAX_ATTEMPTS = 300;
     const TP_LAPR_SESSION_KEY = <?php echo json_encode((string) $session->get('key'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 
     // Plain-language coaching strings for the passphrase generator (F9).
@@ -382,11 +384,16 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 $('#card-item-lapr-rotate').prop('disabled', false);
                 return;
             }
-            laprPollManagedItemRotation(data.task_id);
+            laprPollManagedItemRotation(data.task_id, 0);
         });
     }
 
-    function laprPollManagedItemRotation(taskId) {
+    /**
+     * Bounded polling: a background task that never reports back must not leave
+     * an endless request loop behind (300 × 2 s ≈ 10 min, same cap as the
+     * managed accounts page).
+     */
+    function laprPollManagedItemRotation(taskId, attempt) {
         laprItemPost('rotation_status', { task_id: taskId }, function (data) {
             if (data.error === true) {
                 toastr.clear();
@@ -395,7 +402,13 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 return;
             }
             if (data.finished !== true) {
-                setTimeout(function () { laprPollManagedItemRotation(taskId); }, 2000);
+                if (attempt + 1 >= TP_LAPR_ROTATION_POLL_MAX_ATTEMPTS) {
+                    toastr.clear();
+                    toastr.warning(TP_LAPR_ITEM_LANG.rotationTimeout);
+                    $('#card-item-lapr-rotate').prop('disabled', false);
+                    return;
+                }
+                setTimeout(function () { laprPollManagedItemRotation(taskId, attempt + 1); }, 2000);
                 return;
             }
 

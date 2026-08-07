@@ -384,38 +384,22 @@ function laprSaveEndpoint() {
 }
 
 function laprDeleteEndpoint(id) {
-  const eventNamespace = '.laprDeleteEndpointConfirm'
-  const cleanup = function () {
-    $(document).off(eventNamespace)
-    $('#warningModal').off('hidden.bs.modal' + eventNamespace)
-  }
-
-  cleanup()
-  showModalDialogBox(
-    '#warningModal',
+  launchConfirmDialog(
     '<i class="fa-solid fa-triangle-exclamation mr-2 text-warning"></i>' + laprLang.caution,
-    laprLang.confirmDelete,
+    DOMPurify.sanitize(laprLang.confirmDelete),
+    function () {
+      laprPost('delete_endpoint', { id: id }, function (data) {
+        if (data.error === true) {
+          toastr.error(data.message || laprLang.errorGeneric)
+          return
+        }
+        toastr.success(data.message)
+        laprLoadEndpoints()
+      })
+    },
     laprLang.deleteLabel,
-    laprLang.closeLabel,
-    false,
-    false,
-    false
+    laprLang.closeLabel
   )
-
-  $(document).one('click' + eventNamespace, '#warningModalButtonAction', function (event) {
-    event.preventDefault()
-    cleanup()
-    $('#warningModal').modal('hide')
-    laprPost('delete_endpoint', { id: id }, function (data) {
-      if (data.error === true) {
-        toastr.error(data.message || laprLang.errorGeneric)
-        return
-      }
-      toastr.success(data.message)
-      laprLoadEndpoints()
-    })
-  })
-  $('#warningModal').one('hidden.bs.modal' + eventNamespace, cleanup)
 }
 
 $(document).ready(function () {
