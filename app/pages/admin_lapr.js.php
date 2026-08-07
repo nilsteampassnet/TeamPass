@@ -38,11 +38,11 @@ $lang = new Language($session->get('user-language') ?? 'english');
 <script>
 'use strict'
 
-const laprAdminSessionKey = '<?php echo $session->get('key'); ?>'
+const laprAdminSessionKey = <?php echo json_encode((string) $session->get('key'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 const laprAdminUrl = 'sources/admin.queries.php'
 const laprAdminLang = {
-  errorGeneric: '<?php echo addslashes($lang->get('error')); ?>',
-  saved: '<?php echo addslashes($lang->get('saved')); ?>'
+  errorGeneric: <?php echo json_encode($lang->get('error'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+  saved: <?php echo json_encode($lang->get('saved'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>
 }
 
 function laprAdminPost(type, payload, onDone) {
@@ -68,24 +68,59 @@ function laprLoadPermissionUsers() {
       toastr.error(data.message || laprAdminLang.errorGeneric)
       return
     }
-    let html = ''
-    ;(data.data || []).forEach(function (u) {
-      const checked = u.can_manage_lapr === 1 ? 'checked' : ''
-      html += '<tr>' +
-        '<td>' + DOMPurify.sanitize(u.login) + '</td>' +
-        '<td>' + DOMPurify.sanitize(u.name || '') + '</td>' +
-        '<td><input type="checkbox" class="lapr-perm-toggle" data-id="' + u.id + '" ' + checked + '></td>' +
-        '</tr>'
+    const users = data.data || []
+    const $tbody = $('#lapr-permissions-table tbody').empty()
+
+    users.forEach(function (u) {
+      const searchText = [u.login || '', u.name || ''].join(' ').toLowerCase()
+      const $row = $('<tr>', {
+        class: 'lapr-permission-user-row',
+        'data-search': searchText
+      })
+      const $toggle = $('<input>', {
+        type: 'checkbox',
+        class: 'lapr-perm-toggle',
+        'data-id': parseInt(u.id, 10)
+      }).prop('checked', u.can_manage_lapr === 1)
+
+      $row.append($('<td>').text(u.login || ''))
+      $row.append($('<td>').text(u.name || ''))
+      $row.append($('<td>').append($toggle))
+      $tbody.append($row)
     })
-    if (!(data.data || []).length) {
-      html = '<tr><td colspan="3" class="text-muted text-center">—</td></tr>'
+
+    if (!users.length) {
+      $tbody.append($('<tr>').append($('<td>', {
+        colspan: 3,
+        class: 'text-muted text-center',
+        text: '—'
+      })))
     }
-    $('#lapr-permissions-table tbody').html(html)
+
+    laprFilterPermissionUsers()
   })
+}
+
+function laprFilterPermissionUsers() {
+  const criteria = ($('#lapr-permissions-search').val() || '').toString().trim().toLowerCase()
+  let visibleCount = 0
+
+  $('.lapr-permission-user-row').each(function () {
+    const searchText = ($(this).attr('data-search') || '').toLowerCase()
+    const visible = criteria === '' || searchText.indexOf(criteria) !== -1
+    $(this).toggleClass('hidden', !visible)
+    if (visible) { visibleCount += 1 }
+  })
+
+  $('#lapr-permissions-search-no-results').toggleClass(
+    'hidden',
+    criteria === '' || visibleCount > 0
+  )
 }
 
 $(document).ready(function () {
   laprLoadPermissionUsers()
+  $(document).on('input keyup search', '#lapr-permissions-search', laprFilterPermissionUsers)
   $('#lapr-permissions-table').on('change', '.lapr-perm-toggle', function () {
     const userId = $(this).data('id')
     const granted = $(this).is(':checked') ? 1 : 0

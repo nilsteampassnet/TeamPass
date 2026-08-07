@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
 require_once __DIR__ . '/../../app/includes/libraries/teampassclasses/lapr/src/LAPRSshService.php';
 require_once __DIR__ . '/../../app/sources/lapr.functions.php';
@@ -23,6 +24,70 @@ use TeampassClasses\Lapr\LAPRSshService;
  */
 class LaprFunctionsTest extends TestCase
 {
+    // =========================================================================
+    // laprCheckPermission (operational role boundary)
+    // =========================================================================
+
+    /**
+     * A delegated non-admin may use operational LAPR pages while enabled.
+     */
+    public function testLaprPermissionAllowsDelegatedNonAdmin(): void
+    {
+        $session = $this->createLaprSession(false, true);
+
+        $this->assertTrue(laprCheckPermission($session, ['lapr_enabled' => '1']));
+    }
+
+    /**
+     * TeamPass administrators cannot use item-dependent LAPR operations.
+     */
+    public function testLaprPermissionRejectsAdminEvenWithFlag(): void
+    {
+        $session = $this->createLaprSession(true, true);
+
+        $this->assertFalse(laprCheckPermission($session, ['lapr_enabled' => '1']));
+    }
+
+    /**
+     * The global module switch remains authoritative for delegated users.
+     */
+    public function testLaprPermissionRejectsDelegatedUserWhenDisabled(): void
+    {
+        $session = $this->createLaprSession(false, true);
+
+        $this->assertFalse(laprCheckPermission($session, ['lapr_enabled' => '0']));
+    }
+
+    /**
+     * Folder helpers keep administrators outside item-dependent operations.
+     */
+    public function testLaprFolderHelpersRejectAdmin(): void
+    {
+        $session = $this->createLaprSession(true, true);
+
+        $this->assertFalse(laprUserCanWriteFolder(1, $session));
+        $this->assertFalse(laprUserCanReadFolder(1, $session));
+    }
+
+    /**
+     * Build the minimum session mock needed by the LAPR permission gate.
+     */
+    private function createLaprSession(bool $admin, bool $canManageLapr): SessionInterface
+    {
+        $session = $this->createMock(SessionInterface::class);
+        $session->method('get')->willReturnCallback(
+            static function (string $key) use ($admin, $canManageLapr): int {
+                if ($key === 'user-admin') {
+                    return $admin ? 1 : 0;
+                }
+
+                return $key === 'user-can_manage_lapr' && $canManageLapr ? 1 : 0;
+            }
+        );
+
+        return $session;
+    }
+
     // =========================================================================
     // laprValidateUsername (R1)
     // =========================================================================

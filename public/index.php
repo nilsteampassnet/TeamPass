@@ -546,16 +546,49 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                                 }
 
                                 if ($session_user_admin === 0) {
-                                    // ITEMS & SEARCH
+                                    // Keep the historical direct link to the password vault.
                                     echo '
                     <li class="nav-item">
                         <a href="#" data-name="items" class="nav-link', $get['page'] === 'items' ? ' active' : '', '">
-                        <i class="nav-icon fa-solid fa-key"></i>
-                        <p>
-                            ' . $lang->get('pw') . '
-                        </p>
+                            <i class="nav-icon fa-solid fa-key"></i>
+                            <p>' . $lang->get('pw') . '</p>
                         </a>
                     </li>';
+
+                                    // LAPR is a separate entry immediately below Passwords.
+                                    if ((int) ($SETTINGS['lapr_enabled'] ?? 0) === 1
+                                        && (int) $session->get('user-can_manage_lapr') === 1
+                                    ) {
+                                        $laprUserPages = ['lapr_endpoints', 'lapr_accounts', 'lapr_policies'];
+                                        $laprUserMenuOpen = in_array($get['page'], $laprUserPages, true);
+                                        echo '
+                    <li class="nav-item has-treeview', $laprUserMenuOpen === true ? ' menu-open' : '', '">
+                        <a href="#" class="nav-link', $laprUserMenuOpen === true ? ' active' : '', '">
+                            <i class="nav-icon fa-solid fa-arrows-rotate"></i>
+                            <p>' . $lang->get('lapr') . '<i class="fa-solid fa-angle-left right"></i></p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="#" data-name="lapr_endpoints" class="nav-link', $get['page'] === 'lapr_endpoints' ? ' active' : '', '">
+                                    <i class="fa-solid fa-server nav-icon"></i>
+                                    <p>' . $lang->get('lapr_endpoints') . '</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" data-name="lapr_accounts" class="nav-link', $get['page'] === 'lapr_accounts' ? ' active' : '', '">
+                                    <i class="fa-solid fa-user-gear nav-icon"></i>
+                                    <p>' . $lang->get('lapr_accounts') . '</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" data-name="lapr_policies" class="nav-link', $get['page'] === 'lapr_policies' ? ' active' : '', '">
+                                    <i class="fa-solid fa-scroll nav-icon"></i>
+                                    <p>' . $lang->get('lapr_policies') . '</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>';
+                                    }
                                 }
 
     if ($session_user_admin === 0) {
@@ -597,47 +630,6 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                         </a>
                     </li>';
     }
-
-                                // LAPR (Linux Account Password Rotation) — operational pages, visible
-                                // when the module is enabled and the user is admin or holds the
-                                // can_manage_lapr flag. The settings page (admin_lapr) is NOT here:
-                                // it lives in the Operations drawer, ungated, so an admin can switch
-                                // the module on in the first place.
-                                if ((int) ($SETTINGS['lapr_enabled'] ?? 0) === 1
-                                    && ((int) $session_user_admin === 1 || (int) $session->get('user-can_manage_lapr') === 1)
-                                ) {
-                                    $laprPages = ['lapr_endpoints', 'lapr_accounts', 'lapr_policies'];
-                                    echo '
-                    <li class="nav-item has-treeview', in_array($get['page'], $laprPages, true) ? ' menu-open' : '', '">
-                        <a href="#" class="nav-link', in_array($get['page'], $laprPages, true) ? ' active' : '', '">
-                        <i class="nav-icon fa-solid fa-arrows-rotate"></i>
-                        <p>
-                            ' . $lang->get('lapr') . '
-                            <i class="fa-solid fa-angle-left right"></i>
-                        </p>
-                        </a>
-                        <ul class="nav nav-treeview">
-                            <li class="nav-item">
-                                <a href="#" data-name="lapr_endpoints" class="nav-link', $get['page'] === 'lapr_endpoints' ? ' active' : '', '">
-                                    <i class="fa-solid fa-server nav-icon"></i>
-                                    <p>' . $lang->get('lapr_endpoints') . '</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="#" data-name="lapr_accounts" class="nav-link', $get['page'] === 'lapr_accounts' ? ' active' : '', '">
-                                    <i class="fa-solid fa-user-gear nav-icon"></i>
-                                    <p>' . $lang->get('lapr_accounts') . '</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="#" data-name="lapr_policies" class="nav-link', $get['page'] === 'lapr_policies' ? ' active' : '', '">
-                                    <i class="fa-solid fa-scroll nav-icon"></i>
-                                    <p>' . $lang->get('lapr_policies') . '</p>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>';
-                                }
 
     // IMPORT menu
     if (isset($SETTINGS['allow_import']) === true && (int) $SETTINGS['allow_import'] === 1 && (int) $session_user_admin === 0) {
@@ -907,8 +899,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                                     <p>' . $lang->get('deletion') . '</p>
                                 </a>
                             </li>';
-        // LAPR settings — rendered whatever the value of lapr_enabled, otherwise an
-        // admin could never reach the page holding the toggle that enables the module.
+        // Admins configure LAPR but do not access its item-dependent operations.
         if ($isAdmin === true) {
             echo '
                             <li class="nav-item">

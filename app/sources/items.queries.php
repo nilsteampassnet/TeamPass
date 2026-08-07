@@ -44,6 +44,7 @@ use TeampassClasses\EmailService\EmailSettings;
 // Load functions
 require_once 'main.functions.php';
 require_once 'find.functions.php';
+require_once 'lapr.functions.php';
 
 // init
 loadClasses('DB');
@@ -1286,7 +1287,7 @@ switch ($inputData['type']) {
         ) {
             // Get existing values
             $data = DB::queryFirstRow(
-                'SELECT i.id as id, i.label as label, i.description as description, i.pw as pw, i.pw_iv as pw_iv, i.url as url, i.id_tree as id_tree, i.perso as perso, i.login as login,
+                'SELECT i.id as id, i.label as label, i.description as description, i.pw as pw, i.pw_iv as pw_iv, i.pw_len as pw_len, i.url as url, i.id_tree as id_tree, i.perso as perso, i.login as login,
                 i.inactif as inactif, i.restricted_to as restricted_to, i.anyone_can_modify as anyone_can_modify, i.email as email, i.notification as notification,
                 u.login as user_login, u.email as user_email
                 FROM ' . prefixTable('items') . ' as i
@@ -1321,6 +1322,22 @@ switch ($inputData['type']) {
                     (int) ($data['pw_len'] ?? 0),
                     (string) ($data['pw_iv'] ?? '')
                 );
+            }
+
+            $laprRelations = laprGetItemRelations([(int) $inputData['itemId']]);
+            $laprRelation = $laprRelations[(int) $inputData['itemId']] ?? [];
+            $laprProtectsItem = (bool) ($laprRelation['is_managed'] ?? false);
+            if ($laprProtectsItem === true
+                && ($post_password !== $pw || $post_login !== (string) ($data['login'] ?? ''))
+            ) {
+                echo (string) prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => $lang->get('lapr_item_managed_fields_locked'),
+                    ],
+                    'encode'
+                );
+                break;
             }
 
             if ($post_password !== $pw) {
@@ -3685,6 +3702,31 @@ switch ($inputData['type']) {
             $arrData['notification_status'] = '';
         }
 
+        if ((int) ($arrData['show_details'] ?? 0) === 1) {
+            $itemRelations = laprGetItemRelations([(int) $inputData['id']]);
+            $arrData['lapr'] = $itemRelations[(int) $inputData['id']] ?? [
+                'is_managed' => false,
+                'is_credential' => false,
+                'managed_account' => null,
+                'credential_endpoints' => [],
+            ];
+            $canManageLaprItem = laprCheckPermission($session, $SETTINGS)
+                && laprUserCanWriteFolder((int) ($arrData['folder'] ?? 0), $session);
+            if ($canManageLaprItem === false) {
+                $arrData['lapr'] = [
+                    'is_managed' => (bool) ($arrData['lapr']['is_managed'] ?? false),
+                    'is_credential' => (bool) ($arrData['lapr']['is_credential'] ?? false),
+                    'managed_account' => (bool) ($arrData['lapr']['is_managed'] ?? false) === true
+                        ? ['status' => (string) ($arrData['lapr']['managed_account']['status'] ?? '')]
+                        : null,
+                    'credential_endpoints' => [],
+                ];
+            }
+            $arrData['lapr']['module_enabled'] = (int) ($SETTINGS['lapr_enabled'] ?? 0) === 1;
+            $arrData['lapr']['scheduler_enabled'] = (int) ($SETTINGS['lapr_scheduler_enabled'] ?? 0) === 1;
+            $arrData['lapr']['can_manage'] = $canManageLaprItem;
+        }
+
         // Set a timestamp
         $arrData['timestamp'] = time();
 
@@ -4145,13 +4187,14 @@ switch ($inputData['type']) {
             break;
         }
 
-        // LAPR (D6): block deletion while an active/paused managed account references
+        // LAPR (D6): block deletion while a non-deleted managed account references
         // this item — no FK, so the guard is enforced here. Removing the item out from
         // under LAPR would orphan the account and break rotation.
         $laprManaged = DB::queryFirstField(
             'SELECT COUNT(*) FROM ' . prefixTable('lapr_accounts') . '
-            WHERE item_id = %i AND status IN ("active","paused","error")',
-            intval($inputData['itemId'])
+            WHERE item_id = %i AND status != %s',
+            intval($inputData['itemId']),
+            'deleted'
         );
         if ((int) $laprManaged > 0) {
             echo (string) prepareExchangedData(
@@ -4159,6 +4202,23 @@ switch ($inputData['type']) {
                     'error' => true,
                     'message' => $lang->get('lapr_item_managed_cannot_delete'),
                 ),
+                'encode'
+            );
+            break;
+        }
+
+        $laprCredential = DB::queryFirstField(
+            'SELECT COUNT(*) FROM ' . prefixTable('lapr_endpoints') . '
+            WHERE ssh_credential_source = %i AND status != %s',
+            intval($inputData['itemId']),
+            'deleted'
+        );
+        if ((int) $laprCredential > 0) {
+            echo (string) prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('lapr_item_credential_cannot_delete'),
+                ],
                 'encode'
             );
             break;
@@ -4757,6 +4817,8 @@ switch ($inputData['type']) {
             $batchCorruptedItems = [];
 
             if (!empty($allItemIds)) {
+                $batchLaprRelations = laprGetItemRelations($allItemIds);
+
                 if ((int) $session->get('user-admin') !== 1 && teampassCorruptedItemsTableExists() === true) {
                     $corruptedRows = DB::query(
                         'SELECT item_id, reason_code, severity
@@ -4872,6 +4934,16 @@ switch ($inputData['type']) {
                     $html_json[$record['id']]['link'] = $record['link'];
                     $html_json[$record['id']]['email'] = $record['email'] ?? '';
                     $html_json[$record['id']]['fa_icon'] = $record['fa_icon'];
+                    $laprListRelation = $batchLaprRelations[(int) $record['id']] ?? [];
+                    $html_json[$record['id']]['lapr'] = [
+                        'is_managed' => (bool) ($laprListRelation['is_managed'] ?? false),
+                        'is_credential' => (bool) ($laprListRelation['is_credential'] ?? false),
+                        // Lists only need the status colour. Endpoint names, hostnames,
+                        // policies, and dates stay in the access-checked detail response.
+                        'managed_account' => (bool) ($laprListRelation['is_managed'] ?? false) === true
+                            ? ['status' => (string) ($laprListRelation['managed_account']['status'] ?? '')]
+                            : null,
+                    ];
                     $html_json[$record['id']]['user_restriction_allowed_for_user'] = ((!empty($record['restricted_to']) && $user_is_in_restricted_list === true) || empty($record['restricted_to'])) ? true : false;
 
                     $corruptedState = $batchCorruptedItems[(int) $record['id']] ?? null;

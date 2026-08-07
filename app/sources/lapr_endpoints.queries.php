@@ -73,7 +73,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     exit;
 }
 
-// LAPR module gate (module enabled + admin-or-flag)
+// LAPR operational gate (enabled + delegated non-admin permission)
 if (laprCheckPermission($session, $SETTINGS) === false) {
     echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_not_allowed')], 'encode');
     exit;

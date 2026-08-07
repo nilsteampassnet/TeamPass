@@ -168,6 +168,7 @@ if ((int) $session_user_admin === 1) {
                     </ul>
                 </div><!-- /.card-header -->
                 <div class="card-body">
+                    <div id="form-item-lapr-notice" class="alert hidden text-left"></div>
                     <form id="form-item" class="needs-validation" novalidate onsubmit="return false;">
                         <div class="tab-content">
                             <div class="tab-pane active" id="tab_1">
@@ -1241,6 +1242,7 @@ if ((int) $session_user_admin === 1) {
                             <span id="card-item-readonly-badge" class="badge badge-warning ml-2 hidden" title="<?php echo $lang->get('read_only'); ?>">
                                 <i class="fa-solid fa-lock mr-1"></i><small><?php echo $lang->get('read_only'); ?></small>
                             </span>
+                            <span id="card-item-lapr-badges" class="ml-2 hidden"></span>
                             <div class="card-tools">
                                 <button type="button" class="btn btn-secondary btn-sm but-back-to-list mt-2">
                                     <i class="fa-solid fa-times"></i>
@@ -1358,6 +1360,7 @@ if ((int) $session_user_admin === 1) {
                                 </li>
                             </ul>
                             <div id="card-item-corrupted-warning" class="alert mt-3 mb-0 hidden"></div>
+                            <div id="card-item-lapr-info" class="alert alert-info mt-3 mb-0 hidden"></div>
                         </div>
                     </div>
                 </div>

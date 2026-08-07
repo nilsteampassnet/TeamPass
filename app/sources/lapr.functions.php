@@ -46,8 +46,10 @@ if (defined('LAPR_USERNAME_REGEX') === false) {
 /**
  * Whether the current user may use the LAPR module.
  *
- * Central permission gate (Point 7 §5b revised): the module must be enabled
- * globally AND the user must be an admin or hold the per-user flag.
+ * Central permission gate for item-dependent LAPR operations: the module must
+ * be enabled globally AND the user must be a non-admin holding the per-user
+ * flag. TeamPass administrators configure LAPR through admin_lapr but cannot
+ * access items, endpoints, managed accounts, or rotation policies.
  *
  * @param SessionInterface $session  Current session
  * @param array            $SETTINGS TeamPass settings
@@ -60,8 +62,8 @@ function laprCheckPermission(SessionInterface $session, array $SETTINGS): bool
         return false;
     }
 
-    return (int) $session->get('user-admin') === 1
-        || (int) $session->get('user-can_manage_lapr') === 1;
+    return (int) $session->get('user-admin') !== 1
+        && (int) $session->get('user-can_manage_lapr') === 1;
 }
 
 /**
@@ -485,7 +487,7 @@ function laprReadItemPasswordAsTpUser(int $itemId, string $tpPrivateKey, string 
 /**
  * Whether the user can WRITE in a folder (Point 7 §4 / correction C9):
  * writable = user-accessible_folders minus user-read_only_folders.
- * Admin bypass.
+ * Administrators are rejected because operational LAPR access requires items.
  *
  * @param int              $folderId Folder id (nested_tree)
  * @param SessionInterface $session  Current session
@@ -495,7 +497,7 @@ function laprReadItemPasswordAsTpUser(int $itemId, string $tpPrivateKey, string 
 function laprUserCanWriteFolder(int $folderId, SessionInterface $session): bool
 {
     if ((int) $session->get('user-admin') === 1) {
-        return true;
+        return false;
     }
 
     $accessible = $session->get('user-accessible_folders') ?? [];
@@ -508,7 +510,7 @@ function laprUserCanWriteFolder(int $folderId, SessionInterface $session): bool
 /**
  * Whether the user can READ a folder (Point 6 §6.2): read access uses
  * user-accessible_folders directly (reading a read-only folder is allowed).
- * Admin bypass.
+ * Administrators are rejected because operational LAPR access requires items.
  *
  * @param int              $folderId Folder id (nested_tree)
  * @param SessionInterface $session  Current session
@@ -518,10 +520,97 @@ function laprUserCanWriteFolder(int $folderId, SessionInterface $session): bool
 function laprUserCanReadFolder(int $folderId, SessionInterface $session): bool
 {
     if ((int) $session->get('user-admin') === 1) {
-        return true;
+        return false;
     }
 
     $accessible = $session->get('user-accessible_folders') ?? [];
 
     return in_array($folderId, array_map('intval', (array) $accessible), true);
+}
+
+/**
+ * Load the active LAPR roles attached to a set of TeamPass items.
+ *
+ * A vault item can be the password target of one managed account, the SSH
+ * credential of one or more endpoints, or both. Deleted LAPR relationships are
+ * deliberately excluded so stale links never lock or label an item.
+ *
+ * @param array $itemIds TeamPass item ids
+ * @return array<int, array<string, mixed>> Relations indexed by item id
+ */
+function laprGetItemRelations(array $itemIds): array
+{
+    $normalizedIds = array_values(array_unique(array_filter(
+        array_map('intval', $itemIds),
+        static fn (int $itemId): bool => $itemId > 0
+    )));
+    if (count($normalizedIds) === 0) {
+        return [];
+    }
+
+    $relations = [];
+    foreach ($normalizedIds as $itemId) {
+        $relations[$itemId] = [
+            'is_managed' => false,
+            'is_credential' => false,
+            'managed_account' => null,
+            'credential_endpoints' => [],
+        ];
+    }
+
+    $managedRows = DB::query(
+        'SELECT a.id, a.item_id, a.username_cache, a.status, a.next_rotation_at,
+                a.last_rotation_status, e.id AS endpoint_id, e.label AS endpoint_label,
+                e.hostname, e.status AS endpoint_status, p.label AS policy_label
+         FROM ' . prefixTable('lapr_accounts') . ' AS a
+         LEFT JOIN ' . prefixTable('lapr_endpoints') . ' AS e ON e.id = a.endpoint_id
+         LEFT JOIN ' . prefixTable('lapr_policies') . ' AS p ON p.id = a.policy_id
+         WHERE a.item_id IN %li AND a.status != %s',
+        $normalizedIds,
+        'deleted'
+    );
+    foreach ($managedRows as $row) {
+        $itemId = (int) $row['item_id'];
+        if (isset($relations[$itemId]) === false) {
+            continue;
+        }
+        $relations[$itemId]['is_managed'] = true;
+        $relations[$itemId]['managed_account'] = [
+            'id' => (int) $row['id'],
+            'username' => (string) $row['username_cache'],
+            'status' => (string) $row['status'],
+            'next_rotation_at' => $row['next_rotation_at'],
+            'last_rotation_status' => (string) $row['last_rotation_status'],
+            'endpoint_id' => (int) $row['endpoint_id'],
+            'endpoint_label' => (string) $row['endpoint_label'],
+            'hostname' => (string) $row['hostname'],
+            'endpoint_status' => (string) $row['endpoint_status'],
+            'policy_label' => (string) ($row['policy_label'] ?? ''),
+        ];
+    }
+
+    $credentialRows = DB::query(
+        'SELECT id, label, hostname, ssh_username, ssh_credential_source, status
+         FROM ' . prefixTable('lapr_endpoints') . '
+         WHERE ssh_credential_source IN %li AND status != %s
+         ORDER BY label ASC',
+        $normalizedIds,
+        'deleted'
+    );
+    foreach ($credentialRows as $row) {
+        $itemId = (int) $row['ssh_credential_source'];
+        if (isset($relations[$itemId]) === false) {
+            continue;
+        }
+        $relations[$itemId]['is_credential'] = true;
+        $relations[$itemId]['credential_endpoints'][] = [
+            'id' => (int) $row['id'],
+            'label' => (string) $row['label'],
+            'hostname' => (string) $row['hostname'],
+            'ssh_username' => (string) $row['ssh_username'],
+            'status' => (string) $row['status'],
+        ];
+    }
+
+    return $relations;
 }
