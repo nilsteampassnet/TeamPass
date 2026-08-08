@@ -204,6 +204,7 @@ sudo chmod 0750 ${TEAMPASS}/storage/upload
 sudo chmod 0750 ${TEAMPASS}/storage/backups
 sudo chmod 0750 ${TEAMPASS}/public/assets/avatars
 sudo chmod 0750 ${TEAMPASS}/app/includes/libraries/csrfp/log
+sudo chmod 0750 ${TEAMPASS}/app/websocket/logs
 
 # ── Encryption key directory ──────────────────────────────────────────────────
 sudo chmod 0750 ${TEAMPASS}/secrets
@@ -299,7 +300,8 @@ stat -c "%a %n" \
     ${TEAMPASS}/storage/upload \
     ${TEAMPASS}/storage/backups \
     ${TEAMPASS}/public/assets/avatars \
-    ${TEAMPASS}/app/includes/libraries/csrfp/log
+    ${TEAMPASS}/app/includes/libraries/csrfp/log \
+    ${TEAMPASS}/app/websocket/logs
 
 echo "=== Encryption key directory (expect 750) ==="
 stat -c "%a %n" ${TEAMPASS}/secrets
