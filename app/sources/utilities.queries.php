@@ -1712,6 +1712,7 @@ logItems(
                         'server' => tpHealthResolveLogResult('server', $SETTINGS, $lines),
                         'teampass' => tpHealthResolveLogResult('teampass', $SETTINGS, $lines),
                         'php_fpm' => tpHealthResolveLogResult('php_fpm', $SETTINGS, $lines),
+                        'websocket' => tpHealthResolveWebSocketLogResult($SETTINGS, $lines),
                     ),
                 ),
                 'encode'
@@ -4823,9 +4824,57 @@ function tpHealthBuildRuntimeLogsContext(array $SETTINGS): array
         'health_teampass_log_path' => tpHealthSanitizeManualLogPath((string) ($SETTINGS['health_teampass_log_path'] ?? '')),
         'health_php_fpm_log_path' => tpHealthSanitizeManualLogPath((string) ($SETTINGS['health_php_fpm_log_path'] ?? '')),
         'php_fpm_enabled' => tpHealthPhpFpmIsEnabled(),
+        'websocket_enabled' => (string) ($SETTINGS['websocket_enabled'] ?? '0') === '1',
+        'websocket_log_path' => tpHealthGetWebSocketLogPath(),
         'php_version' => PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION,
         'runtime_user' => tpHealthGetRuntimeProcessUser(),
     );
+}
+
+/**
+ * Return the log path used by the WebSocket daemon configuration.
+ */
+function tpHealthGetWebSocketLogPath(): string
+{
+    static $resolvedPath = null;
+
+    if (is_string($resolvedPath) === true) {
+        return $resolvedPath;
+    }
+
+    $appPath = defined('TEAMPASS_APP') === true ? TEAMPASS_APP : dirname(__DIR__);
+    $rootPath = defined('TEAMPASS_ROOT') === true ? TEAMPASS_ROOT : dirname($appPath);
+    $defaultPath = $appPath . '/websocket/logs/websocket.log';
+    $configPath = $appPath . '/websocket/config/websocket.php';
+    $resolvedPath = $defaultPath;
+
+    if (is_file($configPath) === false || is_readable($configPath) === false) {
+        return $resolvedPath;
+    }
+
+    try {
+        $config = include $configPath;
+    } catch (\Throwable) {
+        return $resolvedPath;
+    }
+
+    if (is_array($config) === false) {
+        return $resolvedPath;
+    }
+
+    $configuredPath = trim((string) ($config['log_file'] ?? ''));
+    if ($configuredPath === '') {
+        return $resolvedPath;
+    }
+
+    if (tpHealthIsAbsolutePath($configuredPath) === true) {
+        $resolvedPath = $configuredPath;
+        return $resolvedPath;
+    }
+
+    $resolvedPath = rtrim($rootPath, '/\\') . '/' . ltrim(str_replace('\\', '/', $configuredPath), '/');
+
+    return $resolvedPath;
 }
 
 
@@ -5070,10 +5119,49 @@ function tpHealthBuildReadAccessCommands(string $logPath): array
     return tpHealthUniqueNonEmptyStrings($commands);
 }
 
+/**
+ * Build diagnostic and permission commands for the WebSocket log.
+ *
+ * @return array<int, string>
+ */
+function tpHealthBuildWebSocketFixCommands(string $logPath, string $access = ''): array
+{
+    $commands = array();
+    $runtimeUser = preg_replace('/[^a-zA-Z0-9._-]+/', '', tpHealthGetRuntimeProcessUser());
+    $runtimeUser = is_string($runtimeUser) === true ? trim($runtimeUser) : '';
+
+    if (
+        $runtimeUser !== ''
+        && $logPath !== ''
+        && tpHealthIsAbsolutePath($logPath) === true
+        && in_array($access, array('not_found', 'not_readable', 'directory_not_writable', 'file_not_writable'), true) === true
+    ) {
+        $logDir = dirname($logPath);
+        $safeLogDir = escapeshellarg($logDir);
+        $safeOwner = escapeshellarg($runtimeUser . ':' . $runtimeUser);
+        $safeRuntimeUser = escapeshellarg($runtimeUser);
+
+        $commands[] = 'sudo install -d -o ' . $safeRuntimeUser . ' -g ' . $safeRuntimeUser . ' -m 0750 ' . $safeLogDir;
+        $commands[] = 'sudo chown -R ' . $safeOwner . ' ' . $safeLogDir;
+        $commands[] = 'sudo find ' . $safeLogDir . ' -type d -exec chmod 0750 {} \\;';
+        $commands[] = 'sudo find ' . $safeLogDir . ' -type f -exec chmod 0640 {} \\;';
+    }
+
+    $commands[] = 'sudo systemctl restart teampass-websocket.service || true';
+    $commands[] = 'systemctl status teampass-websocket.service --no-pager -n 20 || true';
+    $commands[] = 'journalctl -u teampass-websocket.service --no-pager -n 50 || true';
+
+    return tpHealthUniqueNonEmptyStrings($commands);
+}
+
 
 
 function tpHealthGetFixCommands(string $role, string $serverFamily, string $logPath, string $access = ''): array
 {
+    if ($role === 'websocket') {
+        return tpHealthBuildWebSocketFixCommands($logPath, $access);
+    }
+
     if ($role === 'php_fpm' && tpHealthPhpFpmIsEnabled() === false) {
         return array();
     }
@@ -5209,6 +5297,61 @@ function tpHealthInspectLogPath(string $logPath, int $lines, array $meta): array
             'content_length' => $contentLength,
         )
     );
+}
+
+/**
+ * Resolve the WebSocket log and verify read and write access for the runtime user.
+ *
+ * @param array<string, mixed> $SETTINGS
+ * @return array<string, mixed>
+ */
+function tpHealthResolveWebSocketLogResult(array $SETTINGS, int $lines): array
+{
+    $context = tpHealthBuildRuntimeLogsContext($SETTINGS);
+    $logPath = tpHealthGetWebSocketLogPath();
+    $enabled = (string) ($SETTINGS['websocket_enabled'] ?? '0') === '1';
+    $meta = array(
+        'role' => 'websocket',
+        'mode' => 'config',
+        'server_family' => (string) ($context['server_family'] ?? 'unknown'),
+        'server_software' => (string) ($context['server_software'] ?? ''),
+    );
+
+    if ($enabled === false) {
+        return array_merge(
+            $meta,
+            array(
+                'enabled' => false,
+                'log_path' => $logPath,
+                'lines' => $lines,
+                'access' => 'not_used',
+                'write_access' => 'not_used',
+                'fix_commands' => array(),
+                'write_fix_commands' => array(),
+                'content' => '',
+                'content_length' => 0,
+                'file_size' => null,
+            )
+        );
+    }
+
+    $result = tpHealthInspectLogPath($logPath, $lines, $meta);
+    $result['enabled'] = true;
+    $result['write_access'] = 'ok';
+    $result['write_fix_commands'] = array();
+
+    $logDir = dirname($logPath);
+    if (is_dir($logDir) === false || is_writable($logDir) === false) {
+        $result['write_access'] = 'directory_not_writable';
+    } elseif (file_exists($logPath) === true && is_writable($logPath) === false) {
+        $result['write_access'] = 'file_not_writable';
+    }
+
+    if ($result['write_access'] !== 'ok') {
+        $result['write_fix_commands'] = tpHealthBuildWebSocketFixCommands($logPath, (string) $result['write_access']);
+    }
+
+    return $result;
 }
 
 
@@ -5355,5 +5498,6 @@ function tpHealthReadRuntimeLogs(array $SETTINGS, int $lines): array
         'server' => tpHealthResolveLogResult('server', $SETTINGS, $lines),
         'teampass' => tpHealthResolveLogResult('teampass', $SETTINGS, $lines),
         'php_fpm' => tpHealthResolveLogResult('php_fpm', $SETTINGS, $lines),
+        'websocket' => tpHealthResolveWebSocketLogResult($SETTINGS, $lines),
     );
 }
