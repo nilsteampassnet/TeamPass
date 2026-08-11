@@ -355,12 +355,12 @@
 
     // Folder events
     tpWs.on('folder_created', function(data) {
-      showNotification('success', L.new_folder, '"' + data.title + '" ' + L.folder_created)
+      showNotification('success', L.new_folder, '"' + escapeHtml(data.title) + '" ' + L.folder_created)
       refreshFolderTree()
     })
 
     tpWs.on('folder_updated', function(data) {
-      showNotification('info', L.folder_updated, '"' + data.title + '" ' + L.folder_has_been_updated)
+      showNotification('info', L.folder_updated, '"' + escapeHtml(data.title) + '" ' + L.folder_has_been_updated)
       refreshFolderTree()
     })
 
@@ -381,7 +381,7 @@
     tpWs.on('fields_updated', function(data) {
       showNotification('info',
         L.fields_updated || 'Fields updated',
-        (L.fields_schema_changed || 'Field definitions were modified by') + ' ' + (data.changed_by || '')
+        (L.fields_schema_changed || 'Field definitions were modified by') + ' ' + escapeHtml(data.changed_by || '')
       )
       // Signal items.js.php to refresh custom fields on next item open
       if (typeof $ !== 'undefined') {
@@ -411,7 +411,7 @@
 
     // Session events
     tpWs.on('session_expired', function(data) {
-      showNotification('error', L.session_expired, data.reason || L.please_reconnect)
+      showNotification('error', L.session_expired, escapeHtml(data.reason || L.please_reconnect))
       setTimeout(function() {
         window.location.href = 'includes/core/logout.php?session_expired=1'
       }, 2000)
@@ -419,7 +419,7 @@
 
     // System events
     tpWs.on('system_maintenance', function(data) {
-      showNotification('warning', L.maintenance, data.message)
+      showNotification('warning', L.maintenance, escapeHtml(data.message))
     })
 
     // Reconnection failed: offer the user a way to restore the connection
@@ -626,7 +626,8 @@
    * Update task progress UI
    */
   function updateTaskProgress(data) {
-    var progressId = 'task-progress-' + data.task_id
+    // Numeric id only: the value is written into an id attribute below.
+    var progressId = 'task-progress-' + (parseInt(data.task_id, 10) || 0)
 
     // Try to find existing progress bar
     var progressBar = document.getElementById(progressId)
@@ -635,8 +636,8 @@
       // Create progress notification if using Toastr
       if (typeof toastr !== 'undefined' && data.percent < 100) {
         toastr.info(
-          '<div class="progress"><div class="progress-bar" id="' + progressId + '" style="width:' + data.percent + '%"></div></div>' +
-          '<small>' + data.task_type + ': ' + data.progress + '/' + data.total + '</small>',
+          '<div class="progress"><div class="progress-bar" id="' + progressId + '" style="width:' + (parseInt(data.percent, 10) || 0) + '%"></div></div>' +
+          '<small>' + escapeHtml(data.task_type) + ': ' + escapeHtml(data.progress) + '/' + escapeHtml(data.total) + '</small>',
           L.progress || 'Progress',
           { timeOut: 0, extendedTimeOut: 0, closeButton: true }
         )
@@ -656,7 +657,7 @@
     var type = data.status === 'completed' ? 'success' : 'error'
     var message = data.message || (data.status === 'completed' ? (L.operation_completed || 'Operation completed') : (L.operation_failed || 'Operation failed'))
 
-    showNotification(type, data.task_type || (L.task || 'Task'), message, 5000)
+    showNotification(type, escapeHtml(data.task_type || (L.task || 'Task')), escapeHtml(message), 5000)
 
     // Auto-refresh item details when encryption task completes for the viewed item
     if (data.status === 'completed' && data.task_type === 'Item encryption' && data.item_id) {
