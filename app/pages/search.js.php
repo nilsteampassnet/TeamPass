@@ -532,7 +532,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         (descriptionHtml === '' ? '' : '<div class="form-group">' + descriptionHtml + '</div>') +
                         '<div class="form-group">' +
                         '<?php echo $lang->get('pw'); ?>' +
-                        '<button type="button" class="btn btn-secondary ml-2" id="btn-copy-pwd" data-id="' + data.id + '" data-label="' + data.label + '"><i class="fas fa-copy"></i></button>' +
+                        // purifyData() strips tags but decodes &quot; back into a live quote,
+                        // which would close this attribute — encode the label here.
+                        '<button type="button" class="btn btn-secondary ml-2" id="btn-copy-pwd" data-id="' + data.id + '" data-label="' + htmlEncode(data.label) + '"><i class="fas fa-copy"></i></button>' +
                         '<button type="button" class="btn btn-secondary btn-show-pwd ml-2" data-id="' + data.id + '"><i class="fas fa-eye pwd-show-spinner"></i></button>' +
                         '<span id="pwd-show_' + data.id + '" class="unhide_masked_data ml-2" style="height: 20px;"><?php echo $var['hidden_asterisk']; ?></span>' +
                         '<input type="hidden" id="pwd-is-shown_' + data.id + '" value="0">' +

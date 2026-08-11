@@ -8269,7 +8269,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                                     .append('<option value="' + value.id + '" class="restriction_is_user">' + value.name + '</option>');
 
                                 // Prepare list of emailers
-                                $('#form-item-anounce').append('<option value="' + value.email + '">' + value.name + '</option>');
+                                // Emails of directory-created users are stored unfiltered, and
+                                // purifyData() decodes &quot; back to a quote: encode the attribute.
+                                $('#form-item-anounce').append('<option value="' + htmlEncode(value.email) + '">' + value.name + '</option>');
                             });
                             if (data.setting_restricted_to_roles === 1) {
                                 //add optgroup
