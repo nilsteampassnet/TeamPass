@@ -7283,12 +7283,12 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 var html_restrictions = '';
                 $.each(store.get('teampassItem').id_restricted_to, function(i, value) {
                     html_restrictions +='<span class="badge badge-info mr-2 mb-1"><i class="fa-solid fa-group fa-sm mr-1"></i>' +
-                        data.users_list.find(x => x.id === parseInt(value)).name + '</span>';
-                }); 
-                        
-                $.each(store.get('teampassItem').id_restricted_to_roles, function(i, value) {                   
+                        htmlEncode(data.users_list.find(x => x.id === parseInt(value)).name) + '</span>';
+                });
+
+                $.each(store.get('teampassItem').id_restricted_to_roles, function(i, value) {
                     const role = data.roles_list.find(x => x.id === parseInt(value));
-                    html_restrictions += (role ? '<span class="badge badge-info mr-2 mb-1"><i class="fa-solid fa-group fa-sm mr-1"></i>' + role.title  + '</span>' : '');
+                    html_restrictions += (role ? '<span class="badge badge-info mr-2 mb-1"><i class="fa-solid fa-group fa-sm mr-1"></i>' + htmlEncode(role.title) + '</span>' : '');
                 });     
                         
                 if (html_restrictions === '') {

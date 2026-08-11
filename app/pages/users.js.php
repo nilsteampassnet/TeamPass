@@ -921,13 +921,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                         var tmp = '';
                         $(data.foldersAllow).each(function(i, value) {
-                            tmp += '<option value="' + value.id + '" ' + value.selected + '>' + value.title + '</option>';
+                            tmp += '<option value="' + value.id + '" ' + value.selected + '>' + htmlEncode(value.title) + '</option>';
                         });
                         $('#form-auth').append(tmp);
 
                         tmp = '';
                         $(data.foldersForbid).each(function(i, value) {
-                            tmp += '<option value="' + value.id + '" ' + value.selected + '>' + value.title + '</option>';
+                            tmp += '<option value="' + value.id + '" ' + value.selected + '>' + htmlEncode(value.title) + '</option>';
                         });
                         $('#form-forbid').append(tmp);
 
@@ -938,14 +938,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         tmp = '';
                         $(data.managedby).each(function(i, value) {
                             tmp += '<option value="' + value.id + '" ' + value.selected +
-                                (value.locked === true ? ' disabled' : '') + '>' + value.title + '</option>';
+                                (value.locked === true ? ' disabled' : '') + '>' + htmlEncode(value.title) + '</option>';
                         });
                         $('#form-managedby').append(tmp);
 
                         tmp = '';
                         $(data.function).each(function(i, value) {
                             tmp += '<option value="' + value.id + '" ' + value.selected +
-                                (value.locked === true ? ' disabled' : '') + '>' + value.title + '</option>';
+                                (value.locked === true ? ' disabled' : '') + '>' + htmlEncode(value.title) + '</option>';
                         });
                         $('#form-roles').append(tmp);
 

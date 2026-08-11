@@ -790,7 +790,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                                 if (val.roles.length > 0) {
                                     $(val.roles).each(function(k, role) {
-                                        roles += '<span class="badge badge-secondary mr-1" data-id="' + role.id + '">' + role.title + '</span>';
+                                        roles += '<span class="badge badge-secondary mr-1" data-id="' + role.id + '">' + htmlEncode(role.title) + '</span>';
                                     });
                                 }
 
