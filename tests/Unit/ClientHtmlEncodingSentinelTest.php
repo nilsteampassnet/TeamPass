@@ -41,8 +41,8 @@ class ClientHtmlEncodingSentinelTest extends TestCase
      * live quotes, which is exactly the gap this sentinel exists to close.
      */
     private const ENCODERS = [
-        'htmlEncode', 'escapeHtml', 'escapeText', 'escapeAttribute',
-        'esc', 'tpEscapeHtml', 'sanitizeDom',
+        'htmlEncode', 'escapeHtml', 'escapeHtmlString', 'escapeText',
+        'escapeAttribute', 'esc', 'tpEscapeHtml',
     ];
 
     private const SCANNED_GLOBS = [

@@ -409,7 +409,7 @@ function prepareExchangedData(data, type, key, fileName = '', functionName = '',
                 return jsonErrorHdl(
                     '<b>Server response is not valid JSON</b>'
                     + (fileName ? '<br><b>Informations:</b><div>  - File: ' + fileName + '<br>  - Function: ' + functionName + '</div>' : '')
-                    + '<div><br><b>Raw data:</b><br>' + sanitizeDom(rawStr) + '</div>'
+                    + '<div><br><b>Raw data:</b><br>' + escapeHtmlString(rawStr) + '</div>'
                 );
             }
         } else {
@@ -429,7 +429,7 @@ function prepareExchangedData(data, type, key, fileName = '', functionName = '',
                     return jsonErrorHdl(
                         '<b>Decrypted payload is not valid JSON</b>'
                         + (fileName ? '<br><b>Informations:</b><div>  - File: ' + fileName + '<br>  - Function: ' + functionName + '</div>' : '')
-                        + '<div><br><b>Raw decrypted data:</b><br>' + sanitizeDom(decryptedRawStr) + '</div>'
+                        + '<div><br><b>Raw decrypted data:</b><br>' + escapeHtmlString(decryptedRawStr) + '</div>'
                     );
                 }
                 
@@ -445,7 +445,7 @@ function prepareExchangedData(data, type, key, fileName = '', functionName = '',
                 return jsonErrorHdl(
                     '<b>Decryption error occurred</b><div>' + e + '</div>'
                     + (fileName !== '' ? '<br><b>Informations:</b><div>  - File: ' + fileName + '<br>  - Function: ' + functionName + '</div>' : '')
-                    + '<div><br><b>Raw answer from server:</b><br>' + sanitizeDom(encRawStr) + '</div>'
+                    + '<div><br><b>Raw answer from server:</b><br>' + escapeHtmlString(encRawStr) + '</div>'
                 );
             }
         }
@@ -624,13 +624,31 @@ function showModalDialogBox(
 }
 
 /**
- * Sanitize a string
- * 
- * @param {string} str  The string
+ * Escape a value so it can be interpolated into markup.
+ *
+ * Covers the five HTML-significant characters plus the backtick, which older parsers
+ * accept as an attribute delimiter. That is everything an HTML text node or a QUOTED
+ * attribute can be broken out of - the only two contexts this helper is used in.
+ *
+ * It is NOT enough for an unquoted attribute (a space alone ends the value there), for a
+ * <script> block, or for an inline event handler, where the parser decodes the entities
+ * before the JavaScript is read. Do not use it in those.
+ *
+ * @param {string} str The string
+ *
+ * @returns {string} String safe to interpolate into markup
  */
+const HTML_ESCAPES = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+    '`': '&#96;'
+};
 function htmlEncode(str){
-    return String(str).replace(/[^\w. ]/gi, function(c){
-        return '&#'+c.charCodeAt(0)+';';
+    return String(str).replace(/[&<>"'`]/g, function(c){
+        return HTML_ESCAPES[c];
     });
 }
 
@@ -705,10 +723,10 @@ function decodeStorageEntities(text)
  */
 function purifyWithDomPurify(text, bHtml, bSvg, bSvgFilters)
 {
-    // Markup is allowed: sanitizeDom() escapes the sanitized HTML, so the caller gets
+    // Markup is allowed: escapeHtmlString() escapes the sanitized HTML, so the caller gets
     // an escaped string it has to htmlDecode() before rendering.
     if (bHtml === true) {
-        return sanitizeDom(
+        return escapeHtmlString(
             DOMPurify.sanitize(
                 text,
                 {USE_PROFILES: {html:bHtml, svg:bSvg, svgFilters: bSvgFilters}}
@@ -974,7 +992,7 @@ function fieldDomPurifierWithWarning(
 
     // Purify string
     string = purifyUserInput(
-        sanitizeDom(currentString),
+        escapeHtmlString(currentString),
         bHtml,
         bSvg,
         bSvgFilters
@@ -997,7 +1015,18 @@ function fieldDomPurifierWithWarning(
     return string;
 }
 
-const sanitizeDom = (str) => {
+/**
+ * Escape a string by letting the DOM do it - textContent in, innerHTML out.
+ *
+ * Was named sanitizeDom(), which read like a sanitizer and got reached for as one. It
+ * removes nothing: it turns markup into text. htmlEncode() does the same job on a fixed
+ * character set; this one follows whatever the browser escapes in a text node.
+ *
+ * @param {string} str The string
+ *
+ * @returns {string} Escaped string
+ */
+const escapeHtmlString = (str) => {
     const div = document.createElement('div');
     div.textContent = str;
     const newString = div.innerHTML;
