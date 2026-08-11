@@ -146,7 +146,10 @@ if (is_null($tableExists) === true) {
         WHERE disabled = 0 AND (login NOT LIKE "%_deleted%")
         ORDER BY login');
     foreach ($users as $user) {
-        $selectOptions .= '<option value="'.strval($user['id']).'" data-pf="'.strval($user['personal_folder']).'" data-psk="'.strval($user['encrypted_psk'] ?? '').'">' . strval($user['lastname']).' '.strval($user['name']).' ('.strval($user['login']).')'.
+        $selectOptions .= '<option value="'.strval($user['id']).'" data-pf="'.strval($user['personal_folder']).'" data-psk="'.htmlspecialchars(strval($user['encrypted_psk'] ?? ''), ENT_QUOTES, 'UTF-8').'">'
+            .htmlspecialchars(strval($user['lastname']), ENT_QUOTES, 'UTF-8').' '
+            .htmlspecialchars(strval($user['name']), ENT_QUOTES, 'UTF-8').' ('
+            .htmlspecialchars(strval($user['login']), ENT_QUOTES, 'UTF-8').')'.
             ((is_null($user['encrypted_psk']) === true || empty($user['encrypted_psk']) === true) ? ' - '.$lang->get('tools_no_user_psk') : '').
             (intval($user['personal_folder']) !== 1 ? ' - '.$lang->get('tools_personal_folder_disabled') : '').
             '</option>';
@@ -308,7 +311,9 @@ if ($result > 0) {
 $selectOptions = '';
 // Get list of backups
 foreach ($backups as $bck) {
-    $selectOptions .= '<option value="'.strval($bck['operation_code']).'">'.strval($bck['login']).' - '.sprintf($lang->get('tools_backup_date_fmt'), strval($bck['created_at'])).'</option>';
+    $selectOptions .= '<option value="'.htmlspecialchars(strval($bck['operation_code']), ENT_QUOTES, 'UTF-8').'">'
+        .htmlspecialchars(strval($bck['login']), ENT_QUOTES, 'UTF-8').' - '
+        .sprintf($lang->get('tools_backup_date_fmt'), htmlspecialchars(strval($bck['created_at']), ENT_QUOTES, 'UTF-8')).'</option>';
 }
 ?>
                     <div class='row mb-2'>

@@ -1707,13 +1707,7 @@ logItems(
             echo prepareExchangedData(
                 array(
                     'error' => false,
-                    'result' => array(
-                        'context' => tpHealthBuildRuntimeLogsContext($SETTINGS),
-                        'server' => tpHealthResolveLogResult('server', $SETTINGS, $lines),
-                        'teampass' => tpHealthResolveLogResult('teampass', $SETTINGS, $lines),
-                        'php_fpm' => tpHealthResolveLogResult('php_fpm', $SETTINGS, $lines),
-                        'websocket' => tpHealthResolveWebSocketLogResult($SETTINGS, $lines),
-                    ),
+                    'result' => tpHealthReadRuntimeLogs($SETTINGS, $lines),
                 ),
                 'encode'
             );
@@ -4832,6 +4826,43 @@ function tpHealthBuildRuntimeLogsContext(array $SETTINGS): array
 }
 
 /**
+ * Tell whether a path is absolute on a Windows filesystem (drive letter or UNC share).
+ *
+ * tpHealthIsAbsolutePath() only recognises POSIX paths and stays the reference for the
+ * "sudo" remediation commands, which must never be proposed on Windows.
+ */
+function tpHealthIsWindowsAbsolutePath(string $path): bool
+{
+    return $path !== ''
+        && (preg_match('#^[A-Za-z]:[\\\\/]#', $path) === 1 || str_starts_with($path, '\\\\') === true);
+}
+
+/**
+ * Collapse "." and ".." segments so the path displayed to the administrator is readable.
+ *
+ * The log file may not exist yet, so the parent directory is normalized when the file
+ * itself cannot be resolved. The raw path is returned when nothing can be resolved.
+ */
+function tpHealthNormalizeLogPath(string $path): string
+{
+    if ($path === '') {
+        return '';
+    }
+
+    $realPath = @realpath($path);
+    if (is_string($realPath) === true) {
+        return $realPath;
+    }
+
+    $realDirectory = @realpath(dirname($path));
+    if (is_string($realDirectory) === true) {
+        return rtrim($realDirectory, '/\\') . DIRECTORY_SEPARATOR . basename($path);
+    }
+
+    return $path;
+}
+
+/**
  * Return the log path used by the WebSocket daemon configuration.
  */
 function tpHealthGetWebSocketLogPath(): string
@@ -4846,7 +4877,7 @@ function tpHealthGetWebSocketLogPath(): string
     $rootPath = defined('TEAMPASS_ROOT') === true ? TEAMPASS_ROOT : dirname($appPath);
     $defaultPath = $appPath . '/websocket/logs/websocket.log';
     $configPath = $appPath . '/websocket/config/websocket.php';
-    $resolvedPath = $defaultPath;
+    $resolvedPath = tpHealthNormalizeLogPath($defaultPath);
 
     if (is_file($configPath) === false || is_readable($configPath) === false) {
         return $resolvedPath;
@@ -4867,12 +4898,19 @@ function tpHealthGetWebSocketLogPath(): string
         return $resolvedPath;
     }
 
-    if (tpHealthIsAbsolutePath($configuredPath) === true) {
-        $resolvedPath = $configuredPath;
+    // The shipped configuration uses __DIR__ . '/../logs/websocket.log', so the value is
+    // absolute but still carries a ".." segment: normalize it before showing it.
+    if (
+        tpHealthIsAbsolutePath($configuredPath) === true
+        || tpHealthIsWindowsAbsolutePath($configuredPath) === true
+    ) {
+        $resolvedPath = tpHealthNormalizeLogPath($configuredPath);
         return $resolvedPath;
     }
 
-    $resolvedPath = rtrim($rootPath, '/\\') . '/' . ltrim(str_replace('\\', '/', $configuredPath), '/');
+    $resolvedPath = tpHealthNormalizeLogPath(
+        rtrim($rootPath, '/\\') . '/' . ltrim(str_replace('\\', '/', $configuredPath), '/')
+    );
 
     return $resolvedPath;
 }
@@ -5141,6 +5179,13 @@ function tpHealthBuildWebSocketFixCommands(string $logPath, string $access = '')
         $safeOwner = escapeshellarg($runtimeUser . ':' . $runtimeUser);
         $safeRuntimeUser = escapeshellarg($runtimeUser);
 
+        // The daemon writes the log while PHP only reads it. The shipped systemd unit runs
+        // as www-data like PHP, but a custom unit may not: applying the ownership commands
+        // blindly would then lock the daemon out of its own log file.
+        $commands[] = '# These commands assume the WebSocket daemon also runs as "' . $runtimeUser
+            . '" (check User= in teampass-websocket.service).';
+        $commands[] = '# If it runs as another user, give both accounts a shared group instead:'
+            . ' sudo chgrp -R <shared_group> ' . $safeLogDir . ' && sudo chmod 2770 ' . $safeLogDir;
         $commands[] = 'sudo install -d -o ' . $safeRuntimeUser . ' -g ' . $safeRuntimeUser . ' -m 0750 ' . $safeLogDir;
         $commands[] = 'sudo chown -R ' . $safeOwner . ' ' . $safeLogDir;
         $commands[] = 'sudo find ' . $safeLogDir . ' -type d -exec chmod 0750 {} \\;';
@@ -5308,8 +5353,8 @@ function tpHealthInspectLogPath(string $logPath, int $lines, array $meta): array
 function tpHealthResolveWebSocketLogResult(array $SETTINGS, int $lines): array
 {
     $context = tpHealthBuildRuntimeLogsContext($SETTINGS);
-    $logPath = tpHealthGetWebSocketLogPath();
-    $enabled = (string) ($SETTINGS['websocket_enabled'] ?? '0') === '1';
+    $logPath = (string) ($context['websocket_log_path'] ?? '');
+    $enabled = ($context['websocket_enabled'] ?? false) === true;
     $meta = array(
         'role' => 'websocket',
         'mode' => 'config',
@@ -5489,6 +5534,12 @@ function tpHealthResolveLogResult(string $role, array $SETTINGS, int $lines): ar
 }
 
 
+/**
+ * Build the full runtime logs payload returned by the "health_check_runtime_logs" action.
+ *
+ * @param array<string, mixed> $SETTINGS
+ * @return array<string, mixed>
+ */
 function tpHealthReadRuntimeLogs(array $SETTINGS, int $lines): array
 {
     $context = tpHealthBuildRuntimeLogsContext($SETTINGS);

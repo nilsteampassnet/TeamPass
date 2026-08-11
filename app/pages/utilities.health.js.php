@@ -1228,16 +1228,17 @@ function tpRuntimeLogMessage(result) {
     return TP_HEALTH_L10N.runtime_log_failed;
 }
 
+// Returns plain text: the only consumer injects it with .text(), which escapes on its own.
 function tpRuntimeLogWriteMessage(result) {
     if (!result || result.role !== 'websocket') {
         return '';
     }
 
     if (result.write_access === 'directory_not_writable') {
-        return TP_HEALTH_L10N.websocket_log_directory_not_writable_fmt.replace('%s', tpEscapeHtml(result.log_path || ''));
+        return TP_HEALTH_L10N.websocket_log_directory_not_writable_fmt.replace('%s', String(result.log_path || ''));
     }
     if (result.write_access === 'file_not_writable') {
-        return TP_HEALTH_L10N.websocket_log_file_not_writable_fmt.replace('%s', tpEscapeHtml(result.log_path || ''));
+        return TP_HEALTH_L10N.websocket_log_file_not_writable_fmt.replace('%s', String(result.log_path || ''));
     }
 
     return '';
