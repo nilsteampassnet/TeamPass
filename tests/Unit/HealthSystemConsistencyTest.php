@@ -153,6 +153,31 @@ class HealthSystemConsistencyTest extends TestCase
         $this->assertStringContainsString("'runtime_scope'", $this->utilitiesSource);
     }
 
+    public function testRuntimeLogsIncludeWebSocketReadAndWriteDiagnostics(): void
+    {
+        $runtimeLogsBlock = $this->switchCaseBlock($this->utilitiesSource, 'health_check_runtime_logs');
+
+        // The handler must stay a thin delegation: a second inline copy of the payload would
+        // drift from tpHealthReadRuntimeLogs() the next time a log is added.
+        $this->assertStringContainsString(
+            'tpHealthReadRuntimeLogs($SETTINGS, $lines)',
+            $runtimeLogsBlock
+        );
+        $this->assertStringNotContainsString('tpHealthResolveLogResult(', $runtimeLogsBlock);
+        $this->assertStringContainsString(
+            "'websocket' => tpHealthResolveWebSocketLogResult(\$SETTINGS, \$lines)",
+            $this->utilitiesSource
+        );
+        $this->assertStringContainsString('function tpHealthGetWebSocketLogPath', $this->utilitiesSource);
+        $this->assertStringContainsString('function tpHealthNormalizeLogPath', $this->utilitiesSource);
+        $this->assertStringContainsString('function tpHealthIsWindowsAbsolutePath', $this->utilitiesSource);
+        $this->assertStringContainsString('function tpHealthResolveWebSocketLogResult', $this->utilitiesSource);
+        $this->assertStringContainsString("'write_access'", $this->utilitiesSource);
+        $this->assertStringContainsString('health-websocket-log-content', $this->healthPage);
+        $this->assertStringContainsString("tpApplyRuntimeLogResult('health-websocket-log'", $this->healthJavascript);
+        $this->assertStringContainsString('reportToExport.logs.websocket_log', $this->healthJavascript);
+    }
+
     private function read(string $path): string
     {
         $contents = file_get_contents($path);

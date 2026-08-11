@@ -150,6 +150,9 @@ var TP_HEALTH_L10N = {
     runtime_log_not_detected: "<?php echo addslashes($lang->get('health_log_not_detected')); ?>",
     runtime_log_invalid_path: "<?php echo addslashes($lang->get('health_log_invalid_path')); ?>",
     runtime_log_not_used: "<?php echo addslashes($lang->get('health_log_not_used')); ?>",
+    websocket_log_disabled: "<?php echo addslashes($lang->get('health_websocket_log_disabled')); ?>",
+    websocket_log_file_not_writable_fmt: "<?php echo addslashes($lang->get('health_websocket_log_file_not_writable_fmt')); ?>",
+    websocket_log_directory_not_writable_fmt: "<?php echo addslashes($lang->get('health_websocket_log_directory_not_writable_fmt')); ?>",
     runtime_log_empty_fmt: "<?php echo addslashes($lang->get('health_runtime_log_empty_fmt')); ?>",
     runtime_log_fix_hint: "<?php echo addslashes($lang->get('health_runtime_log_fix_hint')); ?>",
     runtime_log_fix_hint_missing: "<?php echo addslashes($lang->get('health_runtime_log_fix_hint_missing')); ?>",
@@ -193,6 +196,10 @@ $(document).ready(function() {
 
     $('#health-php-fpm-log-copy-btn').on('click', function() {
         tpCopyRuntimeLogToClipboard('php-fpm');
+    });
+
+    $('#health-websocket-log-copy-btn').on('click', function() {
+        tpCopyRuntimeLogToClipboard('websocket');
     });
 
     tpLoadHealthReport();
@@ -1194,6 +1201,9 @@ function tpRuntimeLogMessage(result) {
     }
 
     if (result.access === 'not_used') {
+        if (result.role === 'websocket') {
+            return TP_HEALTH_L10N.websocket_log_disabled;
+        }
         return TP_HEALTH_L10N.runtime_log_not_used;
     }
     if (result.access === 'empty') {
@@ -1218,6 +1228,22 @@ function tpRuntimeLogMessage(result) {
     return TP_HEALTH_L10N.runtime_log_failed;
 }
 
+// Returns plain text: the only consumer injects it with .text(), which escapes on its own.
+function tpRuntimeLogWriteMessage(result) {
+    if (!result || result.role !== 'websocket') {
+        return '';
+    }
+
+    if (result.write_access === 'directory_not_writable') {
+        return TP_HEALTH_L10N.websocket_log_directory_not_writable_fmt.replace('%s', String(result.log_path || ''));
+    }
+    if (result.write_access === 'file_not_writable') {
+        return TP_HEALTH_L10N.websocket_log_file_not_writable_fmt.replace('%s', String(result.log_path || ''));
+    }
+
+    return '';
+}
+
 function tpApplyRuntimeLogResult(prefix, result) {
     tpResetRuntimeLogPane(prefix);
 
@@ -1233,6 +1259,18 @@ function tpApplyRuntimeLogResult(prefix, result) {
         if (content.length > 0) {
             $('#' + prefix + '-copy-btn').prop('disabled', false);
         }
+    }
+
+    var writeMessage = tpRuntimeLogWriteMessage(result);
+    if (writeMessage && (result.access === 'ok' || result.access === 'empty')) {
+        var writeCommands = result.write_fix_commands || [];
+        $('#' + prefix + '-fix-text').text(writeMessage + ' ' + TP_HEALTH_L10N.runtime_log_fix_hint);
+        $('#' + prefix + '-fix-cmd').toggle(writeCommands.length > 0).text(writeCommands.join('\n'));
+        $('#' + prefix + '-fix').show();
+        return;
+    }
+
+    if (result.access === 'ok') {
         return;
     }
 
@@ -1257,7 +1295,10 @@ function tpApplyRuntimeLogResult(prefix, result) {
         return;
     }
 
-    if (result.role === 'php_fpm' && (result.access === 'not_used' || result.access === 'not_configured' || result.access === 'not_found')) {
+    if (
+        (result.role === 'php_fpm' || result.role === 'websocket')
+        && (result.access === 'not_used' || result.access === 'not_configured' || result.access === 'not_found')
+    ) {
         $('#' + prefix + '-fix-text').text(message);
         $('#' + prefix + '-fix-cmd').hide().text('');
         $('#' + prefix + '-fix').show();
@@ -1275,6 +1316,7 @@ function tpCheckRuntimeLogs() {
     tpResetRuntimeLogPane('health-server-log');
     tpResetRuntimeLogPane('health-teampass-log');
     tpResetRuntimeLogPane('health-php-fpm-log');
+    tpResetRuntimeLogPane('health-websocket-log');
 
     $btn.prop('disabled', true);
     $icon.removeClass('fa-search').addClass('fa-spinner fa-spin');
@@ -1282,6 +1324,7 @@ function tpCheckRuntimeLogs() {
     $('#health-server-log-content').show().text(TP_HEALTH_L10N.runtime_log_checking);
     $('#health-teampass-log-content').show().text(TP_HEALTH_L10N.runtime_log_checking);
     $('#health-php-fpm-log-content').show().text(TP_HEALTH_L10N.runtime_log_checking);
+    $('#health-websocket-log-content').show().text(TP_HEALTH_L10N.runtime_log_checking);
 
     $.post(
         'sources/utilities.queries.php',
@@ -1300,6 +1343,7 @@ function tpCheckRuntimeLogs() {
                 tpResetRuntimeLogPane('health-server-log');
                 tpResetRuntimeLogPane('health-teampass-log');
                 tpResetRuntimeLogPane('health-php-fpm-log');
+                tpResetRuntimeLogPane('health-websocket-log');
                 toastr.error(data.message || TP_HEALTH_L10N.runtime_log_failed);
                 return;
             }
@@ -1308,6 +1352,7 @@ function tpCheckRuntimeLogs() {
                 tpResetRuntimeLogPane('health-server-log');
                 tpResetRuntimeLogPane('health-teampass-log');
                 tpResetRuntimeLogPane('health-php-fpm-log');
+                tpResetRuntimeLogPane('health-websocket-log');
                 toastr.error(TP_HEALTH_L10N.runtime_log_failed);
                 return;
             }
@@ -1317,6 +1362,7 @@ function tpCheckRuntimeLogs() {
             tpApplyRuntimeLogResult('health-server-log', result.server || null);
             tpApplyRuntimeLogResult('health-teampass-log', result.teampass || null);
             tpApplyRuntimeLogResult('health-php-fpm-log', result.php_fpm || null);
+            tpApplyRuntimeLogResult('health-websocket-log', result.websocket || null);
         }
     ).fail(function() {
         $btn.prop('disabled', false);
@@ -1324,6 +1370,7 @@ function tpCheckRuntimeLogs() {
         tpResetRuntimeLogPane('health-server-log');
         tpResetRuntimeLogPane('health-teampass-log');
         tpResetRuntimeLogPane('health-php-fpm-log');
+        tpResetRuntimeLogPane('health-websocket-log');
         toastr.error(TP_HEALTH_L10N.runtime_log_failed);
     });
 }
@@ -1334,6 +1381,8 @@ function tpCopyRuntimeLogToClipboard(role) {
         prefix = 'health-teampass-log';
     } else if (role === 'php-fpm') {
         prefix = 'health-php-fpm-log';
+    } else if (role === 'websocket') {
+        prefix = 'health-websocket-log';
     }
     var text = $('#' + prefix + '-content').text() || '';
     if (!text) {
@@ -1441,6 +1490,7 @@ function tpDownloadReportJson() {
                 reportToExport.logs.server_error_log = data.result.server || {};
                 reportToExport.logs.teampass_error_log = data.result.teampass || {};
                 reportToExport.logs.php_fpm_error_log = data.result.php_fpm || {};
+                reportToExport.logs.websocket_log = data.result.websocket || {};
             } else if (data && data.error) {
                 reportToExport.logs.runtime_logs_error = {
                     message: (data.message || ''),

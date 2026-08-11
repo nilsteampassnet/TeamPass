@@ -146,9 +146,12 @@ if (is_null($tableExists) === true) {
         WHERE disabled = 0 AND (login NOT LIKE "%_deleted%")
         ORDER BY login');
     foreach ($users as $user) {
-        $selectOptions .= '<option value="'.strval($user['id']).'" data-pf="'.strval($user['personal_folder']).'" data-psk="'.strval($user['encrypted_psk'] ?? '').'">' . strval($user['lastname']).' '.strval($user['name']).' ('.strval($user['login']).')'.
-            ((is_null($user['encrypted_psk']) === true || empty($user['encrypted_psk']) === true) ? ' - No user PSK exists in DB' : '').
-            (intval($user['personal_folder']) !== 1 ? ' - Personal Folder disabled for user' : '').
+        $selectOptions .= '<option value="'.strval($user['id']).'" data-pf="'.strval($user['personal_folder']).'" data-psk="'.htmlspecialchars(strval($user['encrypted_psk'] ?? ''), ENT_QUOTES, 'UTF-8').'">'
+            .htmlspecialchars(strval($user['lastname']), ENT_QUOTES, 'UTF-8').' '
+            .htmlspecialchars(strval($user['name']), ENT_QUOTES, 'UTF-8').' ('
+            .htmlspecialchars(strval($user['login']), ENT_QUOTES, 'UTF-8').')'.
+            ((is_null($user['encrypted_psk']) === true || empty($user['encrypted_psk']) === true) ? ' - '.$lang->get('tools_no_user_psk') : '').
+            (intval($user['personal_folder']) !== 1 ? ' - '.$lang->get('tools_personal_folder_disabled') : '').
             '</option>';
     }
     ?>
@@ -189,7 +192,7 @@ if (is_null($tableExists) === true) {
          
         <div class='card card-primary'>
             <div class='card-header'>
-                <h3 class='card-title'>Fix items are empty after user OTP change</h3>
+                <h3 class='card-title'><?php echo $lang->get('tools_fix_items_otp_title'); ?></h3>
             </div>
             <!-- /.card-header -->
             <!-- form start -->
@@ -199,9 +202,8 @@ if (is_null($tableExists) === true) {
                     <div class='row mb-3'>
                         <div class='col-12'>
                             <small id='passwordHelpBlock' class='form-text text-muted'>
-                                This tool permits to fix the issue where items are empty after a new OTP has been generated for a user. It consists in regenerating the master sharekeys using the ones from an account for which you know it has access to all items. If not, some items could be lost.
-                                A backup of the keys are performed before being updated. You will be able to restore them if needed using the Restore keys tool.<br>
-                                <strong>Warning:</strong> This operation is irreversible. As a precaution, please backup the table <code>teampass_sharekeys_items</code> before starting.
+                                <?php echo $lang->get('tools_fix_items_otp_tip'); ?><br>
+                                <strong><?php echo $lang->get('warning'); ?>:</strong> <?php echo $lang->get('tools_fix_items_otp_warning'); ?>
                             </small>
                         </div>
                     </div>
@@ -234,7 +236,7 @@ foreach ($users as $user) {
 ?>
                     <div class='row mb-2'>
                         <div class='col-5'>
-                            Select username that has access to all items
+                            <?php echo $lang->get('tools_select_full_access_user'); ?>
                         </div>
                         <div class='col-7'>
                             <select class='form-control' id='fix_items_master_keys_user_id'>
@@ -246,10 +248,10 @@ foreach ($users as $user) {
 
                     <div class='row mb-2'>
                         <div class='col-5'>
-                            Password
+                            <?php echo $lang->get('password'); ?>
                         </div>
                         <div class='col-7'>
-                            <input type='password' class='form-control' id='fix_items_master_keys_pwd' placeholder='User password'>
+                            <input type='password' class='form-control' id='fix_items_master_keys_pwd' placeholder='<?php echo htmlspecialchars($lang->get('user_password'), ENT_QUOTES, 'UTF-8'); ?>'>
                         </div>
                     </div>
                     
@@ -274,7 +276,7 @@ foreach ($users as $user) {
          
         <div class='card card-primary'>
             <div class='card-header'>
-                <h3 class='card-title'>Fix items are empty after user OTP change - Restore keys</h3>
+                <h3 class='card-title'><?php echo $lang->get('tools_restore_items_otp_title'); ?></h3>
             </div>
             <!-- /.card-header -->
             <!-- form start -->
@@ -284,7 +286,7 @@ foreach ($users as $user) {
                     <div class='row mb-3'>
                         <div class='col-12'>
                             <small id='passwordHelpBlock' class='form-text text-muted'>
-                                This tool permits to restore backuped keys from a previous fix. It consists in restoring the master sharekeys using the ones from the backup.
+                                <?php echo $lang->get('tools_restore_items_otp_tip'); ?>
                             </small>
                         </div>
                     </div>
@@ -309,12 +311,14 @@ if ($result > 0) {
 $selectOptions = '';
 // Get list of backups
 foreach ($backups as $bck) {
-    $selectOptions .= '<option value="'.strval($bck['operation_code']).'">'.strval($bck['login']).' - Backup date: '.strval($bck['created_at']).'</option>';
+    $selectOptions .= '<option value="'.htmlspecialchars(strval($bck['operation_code']), ENT_QUOTES, 'UTF-8').'">'
+        .htmlspecialchars(strval($bck['login']), ENT_QUOTES, 'UTF-8').' - '
+        .sprintf($lang->get('tools_backup_date_fmt'), htmlspecialchars(strval($bck['created_at']), ENT_QUOTES, 'UTF-8')).'</option>';
 }
 ?>
                     <div class='row mb-2'>
                         <div class='col-5'>
-                            Select the backup to restore
+                            <?php echo $lang->get('tools_select_backup'); ?>
                         </div>
                         <div class='col-7'>
                             <select class='form-control' id='restore_items_master_keys_id'>
@@ -325,10 +329,10 @@ foreach ($backups as $bck) {
                     
                     <div class='row mb-3'>
                         <button type='button' class='btn btn-primary btn-sm tp-action mr-2' id="restore_items_master_keys_but" data-action='restore_items_master_keys_but'>
-                            <i class='fas fa-cog mr-2'></i>Restore keys
+                            <i class='fas fa-cog mr-2'></i><?php echo $lang->get('tools_restore_keys'); ?>
                         </button>
                         <button type='button' class='btn btn-secundary btn-sm tp-action mr-2' id="delete_restore_backup_but" data-action='delete_restore_backup_but'>
-                            <i class='fas fa-trash mr-2'></i>Delete backup
+                            <i class='fas fa-trash mr-2'></i><?php echo $lang->get('tools_delete_backup'); ?>
                         </button>
                     </div>
                     
