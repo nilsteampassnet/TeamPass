@@ -655,15 +655,21 @@ if (typeof String.prototype.utf8Decode == 'undefined') {
     };
 }
 
-function simplePurifier(
-    text,
-    bHtml = false,
-    bSvg = false,
-    bSvgFilters = false,
-    bSanitize = true
-) 
+/**
+ * Decode the HTML entities the TeamPass storage paths are known to produce.
+ *
+ * This is deliberately NOT a general-purpose entity decoder. It exists so that a payload
+ * which was encoded on its way into the database (&lt;img ...&gt;) is seen as markup by
+ * DOMPurify below instead of slipping through as inert-looking text. Its cost is that a
+ * value a user legitimately typed as "&lt;" comes back out as "<".
+ *
+ * @param {string} text Raw string
+ *
+ * @returns {string} String with the known entities turned back into characters
+ */
+function decodeStorageEntities(text)
 {
-    var textCleaned = String(text)
+    return String(text)
     .replaceAll('&lt;', '<')
     .replaceAll('&#x3C;', '<')
     .replaceAll('&#x3c;', '<')
@@ -682,24 +688,37 @@ function simplePurifier(
     .replaceAll('&#x22;', '"')
     .replaceAll('&#39;', "'")
     .replaceAll('&#039;', "'");
+}
 
-    if (bSanitize === false) {
-        return textCleaned;
-    }
-
-    // If no HTML, SVG or SVG filters are requested, return the cleaned text
+/**
+ * Run DOMPurify over a string and return it in the shape the caller asked for.
+ *
+ * Shared engine of purifyServerData() and purifyUserInput() - it holds the DOMPurify
+ * configuration so the two contracts cannot drift apart by accident.
+ *
+ * @param {string}  text        String to sanitize
+ * @param {boolean} bHtml       Keep markup instead of reducing the value to plain text
+ * @param {boolean} bSvg        Allow the SVG profile
+ * @param {boolean} bSvgFilters Allow the SVG filters profile
+ *
+ * @returns {string} HTML-ESCAPED markup when bHtml is true, PLAIN UNESCAPED text otherwise
+ */
+function purifyWithDomPurify(text, bHtml, bSvg, bSvgFilters)
+{
+    // Markup is allowed: sanitizeDom() escapes the sanitized HTML, so the caller gets
+    // an escaped string it has to htmlDecode() before rendering.
     if (bHtml === true) {
         return sanitizeDom(
             DOMPurify.sanitize(
-                textCleaned,
+                text,
                 {USE_PROFILES: {html:bHtml, svg:bSvg, svgFilters: bSvgFilters}}
             )
         );
     }
-      
+
     // Sanitize with DOMPurify
     const sanitized = DOMPurify.sanitize(
-        textCleaned,
+        text,
         { USE_PROFILES: { html: bHtml, svg: bSvg, svgFilters: bSvgFilters } }
     );
 
@@ -712,7 +731,62 @@ function simplePurifier(
 }
 
 /**
- * Permits to purify the content of an object using simplePurifier
+ * INBOUND - purify a value received from the server, before it is rendered.
+ *
+ * CONTRACT: unless bHtml is true, the value comes back as PLAIN, UNESCAPED TEXT. The tags
+ * are gone, but decodeStorageEntities() has turned the stored entities back into
+ * characters, so a quote stays a quote. This is defence in depth, NOT what makes the value
+ * safe to render: every interpolation of the result into markup must still be encoded at
+ * the sink (htmlEncode(), escapeHtml(), or jQuery .text()).
+ *
+ * @param {string}  text        Value returned by the server
+ * @param {boolean} bHtml       Keep markup (returned escaped - htmlDecode() it at the sink)
+ * @param {boolean} bSvg        Allow the SVG profile
+ * @param {boolean} bSvgFilters Allow the SVG filters profile
+ * @param {boolean} bSanitize   False to only decode the entities, skipping DOMPurify
+ *
+ * @returns {string} Purified value
+ */
+function purifyServerData(
+    text,
+    bHtml = false,
+    bSvg = false,
+    bSvgFilters = false,
+    bSanitize = true
+)
+{
+    const textCleaned = decodeStorageEntities(text);
+
+    if (bSanitize === false) {
+        return textCleaned;
+    }
+
+    return purifyWithDomPurify(textCleaned, bHtml, bSvg, bSvgFilters);
+}
+
+/**
+ * OUTBOUND - purify a value the user typed, before it is posted to the server.
+ *
+ * CONTRACT: rejects markup in user input. The result is the value to send, and an empty
+ * string means everything was stripped, which the callers report as an XSS attempt.
+ *
+ * This is a usability guard, not a security boundary: an attacker posts to the endpoint
+ * directly. The server-side sanitization is what protects the database.
+ *
+ * @param {string}  text        Value read from the form
+ * @param {boolean} bHtml       Keep markup (rich-text fields)
+ * @param {boolean} bSvg        Allow the SVG profile
+ * @param {boolean} bSvgFilters Allow the SVG filters profile
+ *
+ * @returns {string} Value to send to the server
+ */
+function purifyUserInput(text, bHtml = false, bSvg = false, bSvgFilters = false)
+{
+    return purifyWithDomPurify(decodeStorageEntities(text), bHtml, bSvg, bSvgFilters);
+}
+
+/**
+ * Permits to purify the content of an object using purifyServerData
  * Usefull for ajax answers
  * Can exclude some fields from HTML purification
  * Can exclude some fields from purification
@@ -720,8 +794,8 @@ function simplePurifier(
  * CONTRACT — read this before rendering anything returned by this function.
  *
  * For every key except `htmlFields`, the value comes back as PLAIN, UNESCAPED TEXT:
- * simplePurifier() strips the tags, but it also decodes HTML entities twice (the
- * replaceAll chain above, then innerHTML -> textContent), so a value the server stored
+ * purifyServerData() strips the tags, but it also decodes HTML entities twice
+ * (decodeStorageEntities(), then innerHTML -> textContent), so a value the server stored
  * as "&lt;img onerror=...&gt;" can come back out as "<img onerror=...>".
  *
  * Therefore: purification here is defence in depth, NOT the thing that makes a value safe
@@ -760,7 +834,7 @@ function purifyData(obj, bHtml = false, bSvg = false, bSvgFilters = false, bStri
         const result = (bStringify === true) ? JSON.stringify(purifiedObject) : purifiedObject;
         return result;
     } else if (typeof obj === 'string') {
-        return simplePurifier(obj, bHtml, bSvg, bSvgFilters);
+        return purifyServerData(obj, bHtml, bSvg, bSvgFilters);
     } else {
         return obj;
     }
@@ -779,12 +853,13 @@ function htmlDecode(input) {
 }
 
 /**
- * Permits to purify the content of a string using domPurify
- * @param {*} field 
- * @param {*} bHtml 
- * @param {*} bSvg 
- * @param {*} bSvgFilters 
- * @param {*} text 
+ * OUTBOUND - purify a form field before its value is posted (see purifyUserInput).
+ *
+ * @param {*} field
+ * @param {*} bHtml
+ * @param {*} bSvg
+ * @param {*} bSvgFilters
+ * @param {*} text
  * @returns bool||string
  */
 function fieldDomPurifier(
@@ -800,10 +875,10 @@ function fieldDomPurifier(
     }
     let string = '';
     text = (text === '') ? $(field).val() : text;
-    
+
     // Purify string
-    string = simplePurifier(text, bHtml, bSvg, bSvgFilters);
-    
+    string = purifyUserInput(text, bHtml, bSvg, bSvgFilters);
+
     // Clear field if string is empty and warn user
     if (string === '' && text !== '') {
         $(field).val('');
@@ -814,8 +889,9 @@ function fieldDomPurifier(
 }
 
 /**
- * Permits to get all fields of a class and purify them
- * @param {*} elementClass 
+ * OUTBOUND - purify every field of a class before they are posted.
+ *
+ * @param {*} elementClass
  * @returns array
  */
 function fieldDomPurifierLoop(elementClass)
@@ -865,11 +941,12 @@ function fieldDomPurifierLoop(elementClass)
 }
 
 /**
- * Permits to purify the content of a string using domPurify
- * @param {*} field 
- * @param {*} bHtml 
- * @param {*} bSvg 
- * @param {*} bSvgFilters 
+ * OUTBOUND - purify a form field before it is posted, warning the user on rejection.
+ *
+ * @param {*} field
+ * @param {*} bHtml
+ * @param {*} bSvg
+ * @param {*} bSvgFilters
  * @returns bool||string
  */
 function fieldDomPurifierWithWarning(
@@ -896,7 +973,7 @@ function fieldDomPurifierWithWarning(
     }
 
     // Purify string
-    string = simplePurifier(
+    string = purifyUserInput(
         sanitizeDom(currentString),
         bHtml,
         bSvg,

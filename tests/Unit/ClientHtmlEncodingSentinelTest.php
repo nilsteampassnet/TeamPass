@@ -9,7 +9,7 @@ use PHPUnit\Framework\TestCase;
  *
  * purifyData() — which every AJAX response goes through, since
  * prepareExchangedData(…, 'decode', …) defaults to purify = true — returns PLAIN,
- * UNESCAPED TEXT. simplePurifier() strips tags but decodes HTML entities twice, so a value
+ * UNESCAPED TEXT. purifyServerData() strips tags but decodes HTML entities twice, so a value
  * the server stored as "&lt;img onerror=…&gt;" can come back out as live markup.
  *
  * Safety therefore lives at the sink: every interpolation of such a value into markup must
@@ -36,10 +36,13 @@ class ClientHtmlEncodingSentinelTest extends TestCase
 
     /**
      * Helpers that make a value safe to interpolate.
+     *
+     * The purifiers are deliberately absent: they strip tags but hand back plain text with
+     * live quotes, which is exactly the gap this sentinel exists to close.
      */
     private const ENCODERS = [
         'htmlEncode', 'escapeHtml', 'escapeText', 'escapeAttribute',
-        'esc', 'tpEscapeHtml', 'sanitizeDom', 'simplePurifier',
+        'esc', 'tpEscapeHtml', 'sanitizeDom',
     ];
 
     private const SCANNED_GLOBS = [
@@ -210,5 +213,50 @@ class ClientHtmlEncodingSentinelTest extends TestCase
                 $relative . ' must keep stating that purifyData() returns unescaped text.'
             );
         }
+    }
+
+    /**
+     * The inbound and outbound purifiers must stay two distinct entry points.
+     *
+     * They were a single simplePurifier() serving both directions, which is what made the
+     * function impossible to reason about: the same code had to reject what the user typed
+     * AND clean what the server returned, two contracts that do not follow the same rules.
+     * Re-merging them, or reviving the old name in a page script, would undo that.
+     */
+    public function testInboundAndOutboundPurifiersStaySeparate(): void
+    {
+        $root = dirname(__DIR__, 2) . '/';
+
+        foreach (['app/includes/js/functions.js', 'public/assets/js/functions.js'] as $relative) {
+            $source = (string) file_get_contents($root . $relative);
+
+            $this->assertStringContainsString(
+                'return purifyServerData(obj, bHtml, bSvg, bSvgFilters);',
+                $source,
+                $relative . ': purifyData() must route AJAX responses through purifyServerData().'
+            );
+            $this->assertStringContainsString(
+                'string = purifyUserInput(text, bHtml, bSvg, bSvgFilters);',
+                $source,
+                $relative . ': fieldDomPurifier() must route form values through purifyUserInput().'
+            );
+        }
+
+        $stale = [];
+        foreach (self::SCANNED_GLOBS as $glob) {
+            foreach ((array) glob($root . $glob) as $path) {
+                if (str_contains((string) file_get_contents((string) $path), 'simplePurifier') === true) {
+                    $stale[] = substr((string) $path, strlen($root));
+                }
+            }
+        }
+
+        $this->assertSame(
+            [],
+            $stale,
+            "simplePurifier() was split into purifyServerData() (AJAX responses) and\n"
+            . "purifyUserInput() (form values). Pick the one that matches the direction of\n"
+            . 'the data instead of reviving the merged name.'
+        );
     }
 }
