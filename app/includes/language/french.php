@@ -2055,6 +2055,7 @@ return array(
     'network_security_enable_whitelist' => 'Activer la liste blanche',
     'network_security_enable_whitelist_tip' => 'Quand elle est activée, seules les IPs ou plages CIDR présentes dans la liste blanche peuvent atteindre TeamPass.',
     'network_security_mode' => 'Mode de détection IP',
+    'network_security_mode_tip' => 'Reverse proxy / WAF fait lire à TeamPass l\'adresse du client dans l\'en-tête du proxy, et uniquement lorsque REMOTE_ADDR correspond à un proxy de confiance. C\'est cette adresse qui est enregistrée dans le journal d\'audit et sur laquelle porte le compteur anti-bruteforce par IP : laissez Accès direct si aucun proxy ne se trouve devant TeamPass.',
     'network_security_mode_direct' => 'Accès direct',
     'network_security_mode_reverse_proxy' => 'Reverse proxy / WAF',
     'network_security_header' => 'En-tête proxy',

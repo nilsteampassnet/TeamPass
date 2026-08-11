@@ -340,9 +340,9 @@ function sanitizeLegacyFaIconsFallback(string $table, string $column, string $al
 }
 
 /**
- * 3.2.2 - Neutralize the identity fields of directory-created accounts.
+ * 3.2.1.6 - Neutralize the identity fields of directory-created accounts.
  *
- * Until 3.2.2, externalAdCreateUser() stored `email`, `name` and `lastname` exactly as the
+ * Until 3.2.1.6, externalAdCreateUser() stored `email`, `name` and `lastname` exactly as the
  * LDAP or OAuth2 directory returned them, so a display name carrying markup was persisted
  * verbatim and rendered in the admin screens. The creation path is fixed, but the fix is
  * not retroactive: accounts provisioned by an earlier release still hold the raw value.
@@ -413,9 +413,9 @@ function sanitizeDirectoryUserFields(string $pre): int
 }
 
 /**
- * 3.2.2 - Neutralize folder titles stored raw by the import.
+ * 3.2.1.6 - Neutralize folder titles stored raw by the import.
  *
- * Until 3.2.2, createFolder() (sources/import.queries.php) decoded HTML entities before
+ * Until 3.2.1.6, createFolder() (sources/import.queries.php) decoded HTML entities before
  * writing `nested_tree.title`, which undid the FILTER_SANITIZE_FULL_SPECIAL_CHARS the import
  * had just applied: a KeePass group named with a tag was stored executable. The write path
  * is fixed, but trees imported by an earlier release still hold the raw value.

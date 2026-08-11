@@ -938,6 +938,7 @@ $zones = timezone_list();
                                         <div class='row mb-3 option' data-keywords='reverse proxy waf x-forwarded-for x-real-ip'>
                                             <div class='col-6'>
                                                 <label for='network_security_mode'><?php echo $lang->get('network_security_mode'); ?></label>
+                                                <small class='form-text text-muted'><?php echo $lang->get('network_security_mode_tip'); ?></small>
                                             </div>
                                             <div class='col-6'>
                                                 <select class='form-control form-control-sm' id='network_security_mode'>

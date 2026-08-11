@@ -3132,10 +3132,45 @@ function geItemReadablePath(int $id_tree, string $label, array $SETTINGS): strin
 /**
  * Get the client ip address.
  *
- * @return string IP address
+ * The value feeds the per-IP bruteforce counter, the authentication lock and the audit log,
+ * so a client able to choose it can forge log entries and rotate the header to escape
+ * `nb_bad_authentication_by_ip` entirely.
+ *
+ * Two resolutions coexist, and the strict one is **opt-in**:
+ *
+ *  - `network_security_mode = 'reverse_proxy'` (Settings → Network) — delegates to
+ *    teampassGetClientIpForSecurity(), which reads the proxy header only when REMOTE_ADDR
+ *    matches `network_trusted_proxies`. This is the resolution the API already uses.
+ *  - `network_security_mode = 'direct'` (default) — the historical behaviour, unchanged.
+ *
+ * The default deliberately stays on the historical path: an installation that really sits
+ * behind a proxy but has not declared it would otherwise attribute every request to the
+ * proxy address, and a handful of failed logins would lock the whole organisation out on a
+ * single shared counter. Switching the mode is the admin's call, not an upgrade side effect.
+ *
+ * @return string IP address, or 'UNKNOWN' when nothing yields a valid address
  */
 function getClientIpServer(): string
 {
+    // The address cannot change within a request; resolving it once keeps the settings
+    // lookup off the ~8 calls a single login attempt makes.
+    static $resolvedIp = null;
+    if ($resolvedIp !== null) {
+        return $resolvedIp;
+    }
+
+    $configManager = new ConfigManager();
+    $settings = $configManager->getAllSettings();
+
+    if (strtolower(trim((string) ($settings['network_security_mode'] ?? 'direct'))) === 'reverse_proxy') {
+        $context = teampassGetClientIpForSecurity($settings);
+        $detectedIp = $context['detected_ip'] ?? null;
+
+        $resolvedIp = is_string($detectedIp) && $detectedIp !== '' ? $detectedIp : 'UNKNOWN';
+
+        return $resolvedIp;
+    }
+
     // Candidate sources, in order of preference. Proxy headers are attacker-controllable and may
     // carry a comma-separated list, so every candidate is validated as a real IP before being used.
     $sources = [
@@ -3157,12 +3192,16 @@ function getClientIpServer(): string
             $candidate = trim($candidate);
             // Return the first candidate that is a valid IPv4/IPv6 address.
             if ($candidate !== '' && filter_var($candidate, FILTER_VALIDATE_IP) !== false) {
-                return $candidate;
+                $resolvedIp = $candidate;
+
+                return $resolvedIp;
             }
         }
     }
 
-    return 'UNKNOWN';
+    $resolvedIp = 'UNKNOWN';
+
+    return $resolvedIp;
 }
 
 /**
