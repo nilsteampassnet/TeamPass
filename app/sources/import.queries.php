@@ -1814,6 +1814,21 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
     // Is parent folder a personal folder?
     $isPersonalFolder = in_array($parentId, $session->get('user-personal_folders')) ? 1 : 0;
 
+    // The caller filters the title with FILTER_SANITIZE_FULL_SPECIAL_CHARS, so decoding
+    // alone would hand back the exact markup that filter neutralized ("&lt;img
+    // onerror=...&gt;" would become "<img onerror=...>" again and be stored executable).
+    // Decode to normalize what the import file encoded — a group named "R&D" arrives as
+    // "R&amp;D" and must not be stored double-encoded — then re-encode, which leaves the
+    // title in the same shape as the web and API folder paths.
+    // The normalized value is also what the duplicate check below must look for: comparing
+    // the unnormalized argument against a normalized column never matched, so re-importing
+    // a folder whose name carried an accent or an ampersand created a duplicate every time.
+    $folderTitle = htmlspecialchars(
+        html_entity_decode(stripslashes((string) $folderTitle), ENT_QUOTES, 'UTF-8'),
+        ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5,
+        'UTF-8'
+    );
+
     //create folder - if not exists at the same level
     DB::query(
         'SELECT * FROM '.prefixTable('nested_tree').'
@@ -1828,7 +1843,7 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
             prefixTable('nested_tree'),
             array(
                 'parent_id' => (int) $parentId,
-                'title' => (string) html_entity_decode(stripslashes($folderTitle), ENT_QUOTES, 'UTF-8'),
+                'title' => $folderTitle,
                 'nlevel' => (int) ($folderLevel + $startPathLevel),
                 'categories' => '',
                 'personal_folder' => $isPersonalFolder,

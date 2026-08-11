@@ -176,6 +176,8 @@ if (isset($post_operation) === true && empty($post_operation) === false && strpo
         $finish = sanitizeLegacyFaIcons($pre);
     } elseif ($post_operation === 'sanitize_directory_user_fields') {
         $finish = sanitizeDirectoryUserFields($pre);
+    } elseif ($post_operation === 'sanitize_imported_folder_titles') {
+        $finish = sanitizeImportedFolderTitles($pre);
     }
     // Return back
     echo '[{"finish":"'.$finish.'" , "next":"", "error":"", "total":"'.$total.'"}]';
@@ -378,9 +380,10 @@ function sanitizeDirectoryUserFields(string $pre): int
     }
 
     while ($row = mysqli_fetch_assoc($rows)) {
+        // users.name and users.lastname are varchar(100), users.email varchar(250).
         $email = (string) filter_var((string) $row['email'], FILTER_SANITIZE_EMAIL);
-        $name = normalizeDirectoryUserField((string) $row['name']);
-        $lastname = normalizeDirectoryUserField((string) $row['lastname']);
+        $name = normalizeStoredHtmlValue((string) $row['name'], 100);
+        $lastname = normalizeStoredHtmlValue((string) $row['lastname'], 100);
 
         // Only touch what actually changes, so a clean database performs no write at all.
         if ($email === (string) $row['email']
@@ -410,13 +413,72 @@ function sanitizeDirectoryUserFields(string $pre): int
 }
 
 /**
- * Decode HTML entities until the value stabilizes, then re-encode the characters that
- * matter. Mirrors what externalAdCreateUser() now stores, while staying idempotent.
+ * 3.2.2 - Neutralize folder titles stored raw by the import.
  *
- * @param string $value Stored identity field
- * @return string Normalized value
+ * Until 3.2.2, createFolder() (sources/import.queries.php) decoded HTML entities before
+ * writing `nested_tree.title`, which undid the FILTER_SANITIZE_FULL_SPECIAL_CHARS the import
+ * had just applied: a KeePass group named with a tag was stored executable. The write path
+ * is fixed, but trees imported by an earlier release still hold the raw value.
+ *
+ * The same decode-then-encode normalization as the users pass, so it is idempotent and
+ * leaves folders created through the web or the API untouched — those already store this
+ * exact form. Personal folders are named after a user id, so digits pass through unchanged.
+ *
+ * @param string $pre Table prefix
+ * @return int 1 = finished
  */
-function normalizeDirectoryUserField(string $value): string
+function sanitizeImportedFolderTitles(string $pre): int
+{
+    global $db_link;
+
+    $rows = mysqli_query($db_link, "SELECT `id`, `title` FROM `{$pre}nested_tree`");
+
+    if ($rows === false) {
+        error_log('TEAMPASS Error - sanitizeImportedFolderTitles select failed: ' . mysqli_error($db_link));
+        return 1;
+    }
+
+    $updates = [];
+    while ($row = mysqli_fetch_assoc($rows)) {
+        // nested_tree.title is varchar(255).
+        $title = normalizeStoredHtmlValue((string) $row['title'], 255);
+
+        // Only touch what actually changes, so a clean database performs no write at all.
+        if ($title !== (string) $row['title']) {
+            $updates[(int) $row['id']] = $title;
+        }
+    }
+    mysqli_free_result($rows);
+
+    foreach ($updates as $id => $title) {
+        mysqli_query(
+            $db_link,
+            "UPDATE `{$pre}nested_tree`
+            SET `title` = '" . mysqli_real_escape_string($db_link, $title) . "'
+            WHERE `id` = " . $id
+        );
+
+        if (mysqli_error($db_link)) {
+            error_log('TEAMPASS Error - sanitizeImportedFolderTitles update failed: ' . mysqli_error($db_link));
+        }
+    }
+
+    return 1;
+}
+
+/**
+ * Decode HTML entities until the value stabilizes, then re-encode the characters that
+ * matter. Mirrors what the application now stores, while staying idempotent.
+ *
+ * Encoding makes a string longer, so a value that already filled its column would no longer
+ * fit. Rather than let the server truncate it — which would leave a half-written entity such
+ * as "&quo" — the decoded text is shortened until its encoded form fits.
+ *
+ * @param string $value     Stored value
+ * @param int    $maxLength Column length in bytes
+ * @return string Normalized value, guaranteed to fit
+ */
+function normalizeStoredHtmlValue(string $value, int $maxLength): string
 {
     for ($pass = 0; $pass < 5; ++$pass) {
         $previousPass = $value;
@@ -427,7 +489,14 @@ function normalizeDirectoryUserField(string $value): string
         }
     }
 
-    return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
+    $encoded = htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
+
+    while (strlen($encoded) > $maxLength && $value !== '') {
+        $value = mb_substr($value, 0, max(0, mb_strlen($value) - 1), 'UTF-8');
+        $encoded = htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
+    }
+
+    return $encoded;
 }
 
 /**
