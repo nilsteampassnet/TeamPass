@@ -49,11 +49,23 @@ function findBuildDescriptionPreview(string $description, int $maxLength = 200):
         return '';
     }
 
-    $decodedDescription = html_entity_decode(
-        $description,
-        ENT_QUOTES | ENT_HTML5,
-        'UTF-8'
-    );
+    // Decode until the string stops changing: a single pass on a multi-encoded record
+    // (&amp;lt;tag&amp;gt;) leaves entity-escaped markup that strip_tags() cannot see, so
+    // the preview would still carry the tag. The loop is bounded so a crafted value
+    // cannot turn the decoding into a denial of service.
+    $decodedDescription = $description;
+    for ($pass = 0; $pass < 5; ++$pass) {
+        $previousPass = $decodedDescription;
+        $decodedDescription = html_entity_decode(
+            $decodedDescription,
+            ENT_QUOTES | ENT_HTML5,
+            'UTF-8'
+        );
+
+        if ($decodedDescription === $previousPass) {
+            break;
+        }
+    }
 
     // Preserve visual boundaries between rich-text blocks before removing tags.
     $decodedDescription = preg_replace(

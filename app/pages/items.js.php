@@ -6688,8 +6688,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     if (debugJavascript === true) {
                         console.log('>>>> create summernote');
                     }
+                    // htmlDecode() turns entities back into live markup, so the result must be
+                    // purified before it reaches .html() — same treatment as the detail card.
                     $('#form-item-description')
-                        .html(htmlDecode(data.description))
+                        .html(DOMPurify.sanitize(htmlDecode(data.description), {USE_PROFILES: {html: true}}))
                         .summernote({
                             toolbar: [
                                 ['style', ['style']],
@@ -6718,7 +6720,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     //.summernote('editor.insertText', data.description);
 
                     $('#form-item-suggestion-description')
-                        .html(htmlDecode(data.description))
+                        .html(DOMPurify.sanitize(htmlDecode(data.description), {USE_PROFILES: {html: true}}))
                         .summernote({
                             toolbar: [
                                 ['style', ['style']],
