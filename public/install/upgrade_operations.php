@@ -348,13 +348,17 @@ function sanitizeLegacyFaIconsFallback(string $table, string $column, string $al
  * Normalization is decode-then-encode so it is idempotent and safe to run on rows that are
  * already clean: entities are decoded until the string stops changing (a double-encoded
  * payload only reveals its markup on the second pass), then the five HTML-significant
- * characters are re-encoded. Accents are preserved, which also realigns accounts created
- * through `add_user_from_ad` — that path used FILTER_SANITIZE_FULL_SPECIAL_CHARS and stored
- * "Jérôme" as "J&eacute;r&ocirc;me".
+ * characters are re-encoded, accents left as they are.
+ *
+ * Every account is processed, not only the directory ones. The security problem was limited
+ * to `externalAdCreateUser()`, but `add_new_user`, `store_user_changes` and
+ * `add_user_from_ad` used FILTER_SANITIZE_FULL_SPECIAL_CHARS and therefore stored "Jérôme"
+ * as "J&eacute;r&ocirc;me". Those paths now use htmlspecialchars, so normalizing the whole
+ * table is what keeps stored names and newly written ones in the same form.
  *
  * `login` is left alone on purpose: it is the value later logins are matched on
- * (getUserCompleteData()), and it was already filtered before insertion.
- * Local accounts are out of scope — their fields were never stored unfiltered.
+ * (getUserCompleteData()), and identifyUser() filters the submitted login the same way
+ * before comparing — rewriting it here would lock accounts out.
  *
  * @param string $pre Table prefix
  * @return int 1 = finished
@@ -365,8 +369,7 @@ function sanitizeDirectoryUserFields(string $pre): int
 
     $rows = mysqli_query(
         $db_link,
-        "SELECT `id`, `email`, `name`, `lastname` FROM `{$pre}users`
-        WHERE `auth_type` IN ('ldap', 'oauth2')"
+        "SELECT `id`, `email`, `name`, `lastname` FROM `{$pre}users`"
     );
 
     if ($rows === false) {
