@@ -1768,7 +1768,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         // Build select
                         var html = '';
                         $.each(data.values, function(i, value) {
-                            html += '<option value="' + value.id + '" data-groups="' + value.groups + '" data-managed-by="' + value.managedBy + '" data-folders-allowed="' + value.foldersAllowed + '" data-folders-forbidden="' + value.foldersForbidden + '" data-groups-id="' + value.groupIds + '" data-managed-by-id="' + value.managedById + '" data-folders-allowed-id="' + value.foldersAllowedIds + '" data-folders-forbidden-id="' + value.foldersForbiddenIds + '" data-admin="' + value.admin + '" data-manager="' + value.manager + '" data-hr="' + value.hr + '" data-read-only="' + value.readOnly + '" data-personal-folder="' + value.personalFolder + '" data-root-folder="' + value.rootFolder + '">' + value.name + ' ' + value.lastname + ' [' + value.login + ']</option>';
+                            html += '<option value="' + value.id + '" data-groups="' + htmlEncode(value.groups) + '" data-managed-by="' + htmlEncode(value.managedBy) + '" data-folders-allowed="' + htmlEncode(value.foldersAllowed) + '" data-folders-forbidden="' + htmlEncode(value.foldersForbidden) + '" data-groups-id="' + value.groupIds + '" data-managed-by-id="' + value.managedById + '" data-folders-allowed-id="' + value.foldersAllowedIds + '" data-folders-forbidden-id="' + value.foldersForbiddenIds + '" data-admin="' + value.admin + '" data-manager="' + value.manager + '" data-hr="' + value.hr + '" data-read-only="' + value.readOnly + '" data-personal-folder="' + value.personalFolder + '" data-root-folder="' + value.rootFolder + '">' + htmlEncode(value.name) + ' ' + htmlEncode(value.lastname) + ' [' + htmlEncode(value.login) + ']</option>';
                         });
 
                         $('#propagate-from, #propagate-to')
@@ -2418,7 +2418,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             '<td class="text-center align-middle px-1">' +
                                 '<input type="checkbox" class="deleted-user-select" value="' + user.id + '">' +
                             '</td>' +
-                            '<td class="align-middle pl-1 text-left">' + user.login + '</td>' +
+                            '<td class="align-middle pl-1 text-left">' + htmlEncode(user.login) + '</td>' +
                             '<td class="align-middle text-left">' + (user.email || '-') + '</td>' +
                             '<td>' + new Date(user.deleted_at * 1000).toLocaleDateString() + '</td>' +
                             '<td>' + user.days_since_deletion + ' <?php echo $lang->get("days"); ?></td>' +
@@ -2804,7 +2804,7 @@ function refreshListInactiveUsers(filterValue) {
                         const row =
                             '<tr>' +
                                 '<td class="text-center align-middle px-1"><input type="checkbox" class="inactive-user-select" value="' + user.id + '"></td>' +
-                                '<td class="align-middle pl-1 text-left">' + user.login + badges + '</td>' +
+                                '<td class="align-middle pl-1 text-left">' + htmlEncode(user.login) + badges + '</td>' +
                                 '<td class="align-middle text-left">' + (user.email || '-') + '</td>' +
                                 '<td class="align-middle">' + lastActivityTxt + '</td>' +
                                 '<td class="align-middle">' + daysInactiveTxt + '</td>' +

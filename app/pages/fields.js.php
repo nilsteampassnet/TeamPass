@@ -741,7 +741,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                 var foldersList = '';
                                 $(val.folders).each(function(j, folder) {
                                     foldersList += '<span class="badge badge-info folder mr-2" data-folder="' + folder.id + '">' +
-                                        '<i class="far fa-folder mr-1"></i>' + folder.title + '</span>';
+                                        '<i class="far fa-folder mr-1"></i>' + htmlEncode(folder.title) + '</span>';
                                 });
 
                                 // Prepare html
@@ -750,12 +750,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                     '<i class="far fa-edit pointer action-category mr-1" data-action="edit"></i>' +
                                     '<i class="far fa-trash-alt pointer action-category" data-action="delete"></i>' +
                                     '</td>' +
-                                    '<td class="text-left" colspan="2"><strong>' + val.title + '</strong></td>' +
+                                    '<td class="text-left" colspan="2"><strong>' + htmlEncode(val.title) + '</strong></td>' +
                                     '<td class="no-ellipsis" width="50%"><small>' + foldersList + '</small></td>' +
                                     '</tr>';
 
                                 // Prepare list of categories for Form
-                                categoriesList += '<option value="' + categoryId + '"><?php echo $lang->get('before') . ' '; ?>' + val.title + '</option>';
+                                categoriesList += '<option value="' + categoryId + '"><?php echo $lang->get('before') . ' '; ?>' + htmlEncode(val.title) + '</option>';
 
                                 positionCategory += 1;
                             } else {
@@ -800,7 +800,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                     '<i class="far fa-edit pointer mr-1 action-field" data-action="edit"></i>' +
                                     '<i class="far fa-trash-alt pointer action-field" data-action="delete"></i>' +
                                     '</td>' +
-                                    '<td class="text-left"><i class="fas fa-angle-right mr-2"></i>' + val.title + '</td>' +
+                                    '<td class="text-left"><i class="fas fa-angle-right mr-2"></i>' + htmlEncode(val.title) + '</td>' +
                                     '<td class="text-center">' + regex + mandatory + encrypted + masked + type + '</td>' +
                                     '<td class="">' + roles + '</td>' +
                                     '</tr>';

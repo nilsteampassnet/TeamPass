@@ -4832,7 +4832,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                                 ((value.disabled === 1) ? ' disabled="disabled"' : '') +
                                 ' data-parent-id="' + value.parent_id + '">' +
                                 '&nbsp;'.repeat(value.level) +
-                                value.title + (value.path !== '' ? ' [' + value.path + ']' : '') + '</option>';
+                                htmlEncode(value.title) + (value.path !== '' ? ' [' + htmlEncode(value.path) + ']' : '') + '</option>';
                         });
 
                         // Append new list
@@ -5596,7 +5596,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     }
                     // Pwd icon
                     if (value.pw_status !== 'pw_is_empty' && value.pw_status !== 'encryption_error') {
-                        icon_pwd = '<span class="fa-stack fa-clickable fa-clickable-password pointer infotip mr-2" title="<?php echo $lang->get('item_menu_copy_pw'); ?>" data-item-key="' + value.item_key + '" data-item-label="' + value.label + '" data-item-id="' + value.item_id + '"><i class="fa-solid fa-circle fa-stack-2x"></i><i class="fa-solid fa-key fa-stack-1x fa-inverse"></i></span>';
+                        icon_pwd = '<span class="fa-stack fa-clickable fa-clickable-password pointer infotip mr-2" title="<?php echo $lang->get('item_menu_copy_pw'); ?>" data-item-key="' + value.item_key + '" data-item-label="' + htmlEncode(value.label) + '" data-item-id="' + value.item_id + '"><i class="fa-solid fa-circle fa-stack-2x"></i><i class="fa-solid fa-key fa-stack-1x fa-inverse"></i></span>';
                     }
 
                     // Now check if pwd is empty. If it is then warn user
@@ -5630,8 +5630,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 if (store.get('teampassSettings') !== undefined && parseInt(store.get('teampassSettings').show_item_data) === 1) {
                     if (value.login !== '' || value.email !== '' || value.link !== '') {
                         itemLabel =
-                            (value.login !== '' ? '<i class="fa-regular fa-circle-user mr-1 ml-2"></i>' + value.login : '') +
-                            (value.email !== undefined && value.email !== '' ? '<i class="fa-solid fa-at mr-1 ml-2"></i>' + value.email : '') +
+                            (value.login !== '' ? '<i class="fa-regular fa-circle-user mr-1 ml-2"></i>' + htmlEncode(value.login) : '') +
+                            (value.email !== undefined && value.email !== '' ? '<i class="fa-solid fa-at mr-1 ml-2"></i>' + htmlEncode(value.email) : '') +
                             (value.link !== '' ? '<i class="fa-solid fa-link mr-1 ml-2"></i>' + value.link : '');
                     }
                 }
@@ -5676,7 +5676,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     corruption_marker +
                     // Show item fa_icon if set
                     (value.fa_icon !== '' ? '<i class="'+htmlEncode(value.fa_icon)+' mr-1 user-fa-icon"></i>' : '') +
-                    '<span class="list-item-row-description d-inline-block' + (value.rights === 10 ? ' font-weight-light' : '') + '"><i class="item-favorite-star fa-solid' + ((store.get('teampassApplication').highlightFavorites === 1 && value.is_favourited === 1) ? ' fa-star mr-1' : '') + '"></i>' + value.label + '</span>' + (value.rights === 10 ? '' : description) +
+                    '<span class="list-item-row-description d-inline-block' + (value.rights === 10 ? ' font-weight-light' : '') + '"><i class="item-favorite-star fa-solid' + ((store.get('teampassApplication').highlightFavorites === 1 && value.is_favourited === 1) ? ' fa-star mr-1' : '') + '"></i>' + htmlEncode(value.label) + '</span>' + (value.rights === 10 ? '' : description) +
                     '<span class="list-item-row-description-extend"></span>' +
                     '</span>' +
                     '<span class="list-item-actions hidden">' +
@@ -5686,7 +5686,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     '</span>' +
                     (value.folder !== undefined ?
                         '<br><span class="text-secondary small font-italic pointer open-folder" data-tree-id="' +
-                        value.tree_id + '"">[' + value.folder + ']</span>' : '') +
+                        value.tree_id + '"">[' + htmlEncode(value.folder) + ']</span>' : '') +
                     '</td>' +
                     '</tr>'
                 );
@@ -6589,7 +6589,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     // break out of the attribute. Entities are decoded back by the HTML parser,
                     // so legitimate Font Awesome classes keep working.
                     const itemIcon = (data.fa_icon !== "") ? '<i class="'+htmlEncode(data.fa_icon)+' mr-1"></i>' : '';
-                    $('#card-item-label, #form-item-title').html(itemIcon + data.label);
+                    $('#card-item-label, #form-item-title').html(itemIcon + htmlEncode(data.label));
 
                     // Populate breadcrumb with folder path when item comes from a search result
                     if (itemFolder !== '') {
@@ -7871,7 +7871,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     $.each(data.history, function(i, value) {
                         const sourceBadge = value.is_api === true ? '<span class="badge badge-info ml-2 align-middle">API</span>' : ''
                         html += '<div class="direct-chat-msg"><div class="direct-chat-info clearfix">' +
-                            '<span class="direct-chat-name float-left">' + value.name + sourceBadge + '</span>' +
+                            '<span class="direct-chat-name float-left">' + htmlEncode(value.name) + sourceBadge + '</span>' +
                             '<span class="direct-chat-timestamp float-right">' + value.date + '</span>' +
                             '</div>' +
                             '<img class="direct-chat-img" src="' + value.avatar + '" alt="Message User Image">' +
@@ -8025,7 +8025,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     var lock = s.has_passphrase === 1 ? ' <i class="fa-solid fa-lock text-success"></i>' : '';
                     var icon = s.send_type === 'note' ? 'fa-note-sticky' : 'fa-key';
                     html += '<li class="d-flex justify-content-between align-items-center border-bottom py-1">' +
-                        '<span><i class="fa-solid ' + icon + ' mr-2"></i>' + s.label + lock +
+                        '<span><i class="fa-solid ' + icon + ' mr-2"></i>' + htmlEncode(s.label) + lock +
                         ' <small class="text-muted ml-2">' + s.remaining_views + ' <?php echo $lang->get('secure_send_remaining_views'); ?> &middot; ' + s.expires_label + '</small></span>' +
                         '<button type="button" class="btn btn-xs btn-outline-danger secure-send-revoke ml-2" data-id="' + s.id + '"><i class="fa-solid fa-trash"></i></button>' +
                         '</li>';
@@ -8266,7 +8266,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             $(data.usersList).each(function(index, value) {
                                 // Prepare list for FORM
                                 $("#form-item-restrictedto")
-                                    .append('<option value="' + value.id + '" class="restriction_is_user">' + value.name + '</option>');
+                                    .append('<option value="' + value.id + '" class="restriction_is_user">' + htmlEncode(value.name) + '</option>');
 
                                 // Prepare list of emailers
                                 // Emails of directory-created users are stored unfiltered, and
@@ -9277,7 +9277,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                                     ((value.disabled === 1) ? ' disabled="disabled"' : '') +
                                     ' data-parent-id="' + value.parent_id + '">' +
                                     '&nbsp;'.repeat(value.level) +
-                                    value.title + (value.path !== '' ? ' [' + value.path + ']' : '') + '</option>';
+                                    htmlEncode(value.title) + (value.path !== '' ? ' [' + htmlEncode(value.path) + ']' : '') + '</option>';
                             });
                             $('#form-item-folder, #form-item-copy-destination, #form-folder-add-parent,' +
                                     '#form-folder-delete-selection, #form-folder-copy-source, #form-folder-copy-destination')

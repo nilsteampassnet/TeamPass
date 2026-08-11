@@ -376,7 +376,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     const splitViewModeChanged = selectedSplitViewMode !== '<?php echo (int) ($session->get('user-split_view_mode') ?? 0); ?>';
                     const showSubfoldersChanged = selectedShowSubfolders !== '<?php echo (int) ($session->get('user-show_subfolders') ?? 0); ?>';
 
-                    $('#profile-username').html(data.name + ' ' + data.lastname);
+                    $('#profile-username').html(htmlEncode(data.name) + ' ' + htmlEncode(data.lastname));
                     $('#profile-user-name').val(data.name);
                     $('#profile-user-lastname').val(data.lastname);
                     $('#profile-user-email').val(data.email);
