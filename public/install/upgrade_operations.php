@@ -174,6 +174,8 @@ if (isset($post_operation) === true && empty($post_operation) === false && strpo
         $finish = deduplicateMisc($pre);
     } elseif ($post_operation === 'sanitize_legacy_fa_icons') {
         $finish = sanitizeLegacyFaIcons($pre);
+    } elseif ($post_operation === 'sanitize_directory_user_fields') {
+        $finish = sanitizeDirectoryUserFields($pre);
     }
     // Return back
     echo '[{"finish":"'.$finish.'" , "next":"", "error":"", "total":"'.$total.'"}]';
@@ -333,6 +335,96 @@ function sanitizeLegacyFaIconsFallback(string $table, string $column, string $al
     }
 
     mysqli_free_result($rows);
+}
+
+/**
+ * 3.2.2 - Neutralize the identity fields of directory-created accounts.
+ *
+ * Until 3.2.2, externalAdCreateUser() stored `email`, `name` and `lastname` exactly as the
+ * LDAP or OAuth2 directory returned them, so a display name carrying markup was persisted
+ * verbatim and rendered in the admin screens. The creation path is fixed, but the fix is
+ * not retroactive: accounts provisioned by an earlier release still hold the raw value.
+ *
+ * Normalization is decode-then-encode so it is idempotent and safe to run on rows that are
+ * already clean: entities are decoded until the string stops changing (a double-encoded
+ * payload only reveals its markup on the second pass), then the five HTML-significant
+ * characters are re-encoded. Accents are preserved, which also realigns accounts created
+ * through `add_user_from_ad` — that path used FILTER_SANITIZE_FULL_SPECIAL_CHARS and stored
+ * "Jérôme" as "J&eacute;r&ocirc;me".
+ *
+ * `login` is left alone on purpose: it is the value later logins are matched on
+ * (getUserCompleteData()), and it was already filtered before insertion.
+ * Local accounts are out of scope — their fields were never stored unfiltered.
+ *
+ * @param string $pre Table prefix
+ * @return int 1 = finished
+ */
+function sanitizeDirectoryUserFields(string $pre): int
+{
+    global $db_link;
+
+    $rows = mysqli_query(
+        $db_link,
+        "SELECT `id`, `email`, `name`, `lastname` FROM `{$pre}users`
+        WHERE `auth_type` IN ('ldap', 'oauth2')"
+    );
+
+    if ($rows === false) {
+        error_log('TEAMPASS Error - sanitizeDirectoryUserFields select failed: ' . mysqli_error($db_link));
+        return 1;
+    }
+
+    while ($row = mysqli_fetch_assoc($rows)) {
+        $email = (string) filter_var((string) $row['email'], FILTER_SANITIZE_EMAIL);
+        $name = normalizeDirectoryUserField((string) $row['name']);
+        $lastname = normalizeDirectoryUserField((string) $row['lastname']);
+
+        // Only touch what actually changes, so a clean database performs no write at all.
+        if ($email === (string) $row['email']
+            && $name === (string) $row['name']
+            && $lastname === (string) $row['lastname']
+        ) {
+            continue;
+        }
+
+        mysqli_query(
+            $db_link,
+            "UPDATE `{$pre}users` SET
+                `email` = '" . mysqli_real_escape_string($db_link, $email) . "',
+                `name` = '" . mysqli_real_escape_string($db_link, $name) . "',
+                `lastname` = '" . mysqli_real_escape_string($db_link, $lastname) . "'
+            WHERE `id` = " . (int) $row['id']
+        );
+
+        if (mysqli_error($db_link)) {
+            error_log('TEAMPASS Error - sanitizeDirectoryUserFields update failed: ' . mysqli_error($db_link));
+        }
+    }
+
+    mysqli_free_result($rows);
+
+    return 1;
+}
+
+/**
+ * Decode HTML entities until the value stabilizes, then re-encode the characters that
+ * matter. Mirrors what externalAdCreateUser() now stores, while staying idempotent.
+ *
+ * @param string $value Stored identity field
+ * @return string Normalized value
+ */
+function normalizeDirectoryUserField(string $value): string
+{
+    for ($pass = 0; $pass < 5; ++$pass) {
+        $previousPass = $value;
+        $value = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        if ($value === $previousPass) {
+            break;
+        }
+    }
+
+    return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
 }
 
 /**

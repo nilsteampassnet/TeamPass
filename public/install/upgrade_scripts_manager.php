@@ -67,6 +67,7 @@ $scripts_list = array(
     array('upgrade_run_3.2.0.php', 'user_id'),
     array('upgrade_run_3.2.1.php', 'user_id'),
     array('upgrade_operations.php', 'sanitize_legacy_fa_icons'),
+    array('upgrade_operations.php', 'sanitize_directory_user_fields'),
 );
 $param = '';
 
