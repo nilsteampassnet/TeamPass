@@ -62,6 +62,29 @@ class FindDescriptionPreviewTest extends TestCase
         $this->assertSame('safe', findBuildDescriptionPreview($description));
     }
 
+    public function testMultiEncodedMarkupIsFullyDecodedBeforeTagsAreStripped(): void
+    {
+        // A single decoding pass would leave "&lt;svg onload=alert(1)&gt;img", which
+        // strip_tags() cannot see, so the preview would still carry the markup.
+        $this->assertSame(
+            'img',
+            findBuildDescriptionPreview('&amp;amp;lt;svg onload=alert(1)&amp;amp;gt;img')
+        );
+
+        $this->assertSame(
+            '',
+            findBuildDescriptionPreview('&amp;lt;img src=x onerror=alert(1)&amp;gt;')
+        );
+    }
+
+    public function testPlainTextEntitiesStillRenderAsCharacters(): void
+    {
+        $this->assertSame(
+            'condition 5 & 6 < 7',
+            findBuildDescriptionPreview('condition 5 &amp; 6 &lt; 7')
+        );
+    }
+
     public function testEmptyDescriptionOrNonPositiveLimitReturnsEmptyPreview(): void
     {
         $this->assertSame('', findBuildDescriptionPreview(''));

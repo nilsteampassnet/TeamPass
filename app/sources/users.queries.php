@@ -610,10 +610,16 @@ if (null !== $post_type) {
             }
 
             // Prepare variables
+            // Name and lastname use htmlspecialchars, not FILTER_SANITIZE_FULL_SPECIAL_CHARS:
+            // both neutralize < > & " ' but the filter also encodes every character above
+            // U+007F, so "Jérôme" would be stored as "J&eacute;r&ocirc;me" and read back
+            // literally outside an HTML context. Matches 'user_profile_update' and
+            // externalAdCreateUser(). $login keeps the filter: it is the value identifyUser()
+            // filters the same way before matching it at every login.
             $login = filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $email = filter_var($dataReceived['email'], FILTER_SANITIZE_EMAIL);
-            $lastname = filter_var($dataReceived['lastname'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $name = filter_var($dataReceived['name'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $lastname = htmlspecialchars((string) $dataReceived['lastname'], ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
+            $name = htmlspecialchars((string) $dataReceived['name'], ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
             $is_admin = filter_var($dataReceived['admin'], FILTER_SANITIZE_NUMBER_INT);
             $is_manager = filter_var($dataReceived['manager'], FILTER_SANITIZE_NUMBER_INT);
             $is_hr = filter_var($dataReceived['hr'], FILTER_SANITIZE_NUMBER_INT);
@@ -1475,8 +1481,10 @@ if (null !== $post_type) {
             $post_id = (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_login = (string) filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_email = (string) filter_var($dataReceived['email'], FILTER_SANITIZE_EMAIL);
-            $post_lastname = (string) filter_var($dataReceived['lastname'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $post_name = (string) filter_var($dataReceived['name'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            // Same treatment as 'add_new_user': editing a user must not re-encode the
+            // accents of a name that was stored with them.
+            $post_lastname = htmlspecialchars((string) $dataReceived['lastname'], ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
+            $post_name = htmlspecialchars((string) $dataReceived['name'], ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
             $post_is_admin = (int) filter_var($dataReceived['admin'], FILTER_SANITIZE_NUMBER_INT);
             $post_is_manager = (int) filter_var($dataReceived['manager'], FILTER_SANITIZE_NUMBER_INT);
             $post_is_hr = (int) filter_var($dataReceived['hr'], FILTER_SANITIZE_NUMBER_INT);
@@ -3235,9 +3243,12 @@ if (null !== $post_type) {
             }
 
             // Prepare variables
+            // Name and lastname come from the directory listing: keep their accents while
+            // neutralizing markup, like externalAdCreateUser() does on the automatic path.
+            // $login keeps the filter, it is matched at every later login.
             $post_login = filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $post_name = filter_var($dataReceived['name'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $post_lastname = filter_var($dataReceived['lastname'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_name = htmlspecialchars((string) $dataReceived['name'], ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
+            $post_lastname = htmlspecialchars((string) $dataReceived['lastname'], ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
             $post_email = filter_var($dataReceived['email'], FILTER_SANITIZE_EMAIL);
             $post_roles = filter_var_array(
                 $dataReceived['roles'],

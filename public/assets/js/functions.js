@@ -397,7 +397,9 @@ function prepareExchangedData(data, type, key, fileName = '', functionName = '',
             const parsed = safeParseJSONMaybe(data);
             
             if (parsed.ok) {
-                return purifyData(parsed.value, false, false, false, bStringify);
+                return purify === true
+                    ? purifyData(parsed.value, false, false, false, bStringify)
+                    : parsed.value;
             } else {
                 // Handle non-JSON server response gracefully with detailed error info
                 const rawStr = String(parsed.value)
@@ -431,7 +433,9 @@ function prepareExchangedData(data, type, key, fileName = '', functionName = '',
                     );
                 }
                 
-                return purifyData(parsed.value, false, false, false, bStringify);
+                return purify === true
+                    ? purifyData(parsed.value, false, false, false, bStringify)
+                    : parsed.value;
             } catch (e) {
                 // Handle case where decryption itself failed (e.g., bad key, corrupted data)
                 const encRawStr = String(data)
@@ -673,8 +677,8 @@ function simplePurifier(
     .replaceAll('&#038;', '&')
     .replaceAll('&#x26;', '&')
     .replaceAll('&quot;', '"')
-    .replaceAll('&#34;;', '"')
-    .replaceAll('&#034;;', '"')
+    .replaceAll('&#34;', '"')
+    .replaceAll('&#034;', '"')
     .replaceAll('&#x22;', '"')
     .replaceAll('&#39;', "'")
     .replaceAll('&#039;', "'");
@@ -712,9 +716,25 @@ function simplePurifier(
  * Usefull for ajax answers
  * Can exclude some fields from HTML purification
  * Can exclude some fields from purification
+ *
+ * CONTRACT — read this before rendering anything returned by this function.
+ *
+ * For every key except `htmlFields`, the value comes back as PLAIN, UNESCAPED TEXT:
+ * simplePurifier() strips the tags, but it also decodes HTML entities twice (the
+ * replaceAll chain above, then innerHTML -> textContent), so a value the server stored
+ * as "&lt;img onerror=...&gt;" can come back out as "<img onerror=...>".
+ *
+ * Therefore: purification here is defence in depth, NOT the thing that makes a value safe
+ * to render. Every interpolation of the result into markup MUST be encoded at the sink -
+ * htmlEncode(), escapeHtml(), escapeText() or jQuery .text(). This applies to attribute
+ * values too: the decoding turns a stored &quot; back into a live quote, which is enough to
+ * break out of title="..." or data-x="...".
+ *
+ * tests/Unit/ClientHtmlEncodingSentinelTest.php enforces this rule over the page scripts.
+ * See workReadmeFiles/client-purifier-root-cause-study.md for why it works this way.
  */
 const htmlFields = ['description', 'desc', 'html'];
-const ignoredFields = ['pw', 'previous_password', 'current_password', 'old_password', 'new_password', 'otp'];
+const ignoredFields = ['pw', 'password', 'previous_password', 'current_password', 'old_password', 'new_password', 'otp', 'otp_secret'];
 function purifyData(obj, bHtml = false, bSvg = false, bSvgFilters = false, bStringify = false) {
     if (Array.isArray(obj)) {
         const purifiedObject = obj.map(item => purifyData(item, bHtml, bSvg, bSvgFilters, false));

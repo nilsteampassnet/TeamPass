@@ -177,7 +177,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             deletedBy += value.name;
                         }
                         if (typeof value.login !== 'undefined' && value.login) {
-                            deletedBy += (deletedBy ? ' ' : '') + '[' + value.login + ']';
+                            deletedBy += (deletedBy ? ' ' : '') + '[' + htmlEncode(value.login) + ']';
                         }
 
                         // Every server value below is rendered through .html(): encode each one.

@@ -2314,13 +2314,30 @@ function externalAdCreateUser(
         $userGroups = $SETTINGS['oauth_selfregistered_user_belongs_to_role'];
     }
     
+    // Mail, name and lastname come straight from the directory and are rendered in the
+    // admin screens, so they are neutralized before being stored.
+    //
+    // htmlspecialchars() rather than FILTER_SANITIZE_FULL_SPECIAL_CHARS: both neutralize
+    // the five characters that matter (< > & " '), but the filter also turns every
+    // character above U+007F into a named entity, so "Jérôme" would be stored as
+    // "J&eacute;r&ocirc;me" and read back literally outside an HTML context (mail bodies,
+    // CSV exports). Directory names are full of accents, so fidelity wins here.
+    //
+    // $login is deliberately left untouched: it already went through
+    // FILTER_SANITIZE_FULL_SPECIAL_CHARS in identifyUser() before reaching here, and it is
+    // the value getUserCompleteData() matches on at every later login — filtering it a
+    // second time would double-encode it and lock the account out.
+    $userEmail = (string) filter_var($userEmail, FILTER_SANITIZE_EMAIL);
+    $userName = htmlspecialchars($userName, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
+    $userLastname = htmlspecialchars($userLastname, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
+
     // Prepare user data
     $userData = [
         'login' => (string) $login,
         'pw' => (string) $hashedPassword,
-        'email' => (string) $userEmail,
-        'name' => (string) $userName,
-        'lastname' => (string) $userLastname,
+        'email' => $userEmail,
+        'name' => $userName,
+        'lastname' => $userLastname,
         'admin' => '0',
         'gestionnaire' => '0',
         'can_manage_all_users' => '0',

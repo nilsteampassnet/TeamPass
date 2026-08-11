@@ -172,6 +172,12 @@ if (isset($post_operation) === true && empty($post_operation) === false && strpo
         }
     } elseif ($post_operation === 'deduplicate_misc') {
         $finish = deduplicateMisc($pre);
+    } elseif ($post_operation === 'sanitize_legacy_fa_icons') {
+        $finish = sanitizeLegacyFaIcons($pre);
+    } elseif ($post_operation === 'sanitize_directory_user_fields') {
+        $finish = sanitizeDirectoryUserFields($pre);
+    } elseif ($post_operation === 'sanitize_imported_folder_titles') {
+        $finish = sanitizeImportedFolderTitles($pre);
     }
     // Return back
     echo '[{"finish":"'.$finish.'" , "next":"", "error":"", "total":"'.$total.'"}]';
@@ -251,6 +257,246 @@ function deduplicateMisc(string $pre): int
 
     // Full batch: there may be more duplicates — request another call
     return 0;
+}
+
+/**
+ * 3.2.1 - Strip unsafe characters from stored Font Awesome icon classes.
+ *
+ * Before 3.2.1, the API item create/update flow stored the `icon` parameter verbatim in
+ * `items.fa_icon`. Both write paths now constrain it to `[a-zA-Z0-9 _-]`, but the fix is
+ * not retroactive: an instance upgraded from an older release still carries whatever was
+ * written back then, and that value is rendered inside a class attribute.
+ * The same normalisation is applied to `nested_tree.fa_icon` / `fa_icon_selected`, whose
+ * values are concatenated server-side in `sources/tree.php`.
+ *
+ * Runs in a single pass: only rows actually containing a character outside the allow-list
+ * are rewritten, so a clean database performs three cheap no-op updates.
+ *
+ * @param string $pre Table prefix
+ * @return int 1 = finished
+ */
+function sanitizeLegacyFaIcons(string $pre): int
+{
+    global $db_link;
+
+    // Characters allowed in a Font Awesome class list: letters, digits, space, underscore, hyphen.
+    $allowed = "a-zA-Z0-9 _-";
+
+    $targets = [
+        [$pre . 'items', 'fa_icon'],
+        [$pre . 'nested_tree', 'fa_icon'],
+        [$pre . 'nested_tree', 'fa_icon_selected'],
+    ];
+
+    foreach ($targets as [$table, $column]) {
+        $query = "UPDATE `" . $table . "`
+            SET `" . $column . "` = REGEXP_REPLACE(`" . $column . "`, '[^" . $allowed . "]', '')
+            WHERE `" . $column . "` REGEXP '[^" . $allowed . "]'";
+
+        if (mysqli_query($db_link, $query) === false) {
+            // MariaDB < 10.0.5 and MySQL < 8.0 have no REGEXP_REPLACE: fall back to a
+            // row-by-row rewrite so the cleanup still happens on older servers.
+            sanitizeLegacyFaIconsFallback($table, $column, $allowed);
+        }
+    }
+
+    return 1;
+}
+
+/**
+ * Row-by-row fallback for sanitizeLegacyFaIcons() when REGEXP_REPLACE is unavailable.
+ *
+ * @param string $table   Prefixed table name
+ * @param string $column  Column holding the icon classes
+ * @param string $allowed Allowed character class (without the brackets)
+ * @return void
+ */
+function sanitizeLegacyFaIconsFallback(string $table, string $column, string $allowed): void
+{
+    global $db_link;
+
+    $rows = mysqli_query(
+        $db_link,
+        "SELECT `id`, `" . $column . "` AS `icon` FROM `" . $table . "`
+        WHERE `" . $column . "` REGEXP '[^" . $allowed . "]'"
+    );
+
+    if ($rows === false) {
+        error_log('TEAMPASS Error - sanitizeLegacyFaIcons select failed: ' . mysqli_error($db_link));
+        return;
+    }
+
+    while ($row = mysqli_fetch_assoc($rows)) {
+        $clean = (string) preg_replace('/[^a-zA-Z0-9 _-]/', '', (string) $row['icon']);
+        mysqli_query(
+            $db_link,
+            "UPDATE `" . $table . "`
+            SET `" . $column . "` = '" . mysqli_real_escape_string($db_link, $clean) . "'
+            WHERE `id` = " . (int) $row['id']
+        );
+    }
+
+    mysqli_free_result($rows);
+}
+
+/**
+ * 3.2.1.6 - Neutralize the identity fields of directory-created accounts.
+ *
+ * Until 3.2.1.6, externalAdCreateUser() stored `email`, `name` and `lastname` exactly as the
+ * LDAP or OAuth2 directory returned them, so a display name carrying markup was persisted
+ * verbatim and rendered in the admin screens. The creation path is fixed, but the fix is
+ * not retroactive: accounts provisioned by an earlier release still hold the raw value.
+ *
+ * Normalization is decode-then-encode so it is idempotent and safe to run on rows that are
+ * already clean: entities are decoded until the string stops changing (a double-encoded
+ * payload only reveals its markup on the second pass), then the five HTML-significant
+ * characters are re-encoded, accents left as they are.
+ *
+ * Every account is processed, not only the directory ones. The security problem was limited
+ * to `externalAdCreateUser()`, but `add_new_user`, `store_user_changes` and
+ * `add_user_from_ad` used FILTER_SANITIZE_FULL_SPECIAL_CHARS and therefore stored "Jérôme"
+ * as "J&eacute;r&ocirc;me". Those paths now use htmlspecialchars, so normalizing the whole
+ * table is what keeps stored names and newly written ones in the same form.
+ *
+ * `login` is left alone on purpose: it is the value later logins are matched on
+ * (getUserCompleteData()), and identifyUser() filters the submitted login the same way
+ * before comparing — rewriting it here would lock accounts out.
+ *
+ * @param string $pre Table prefix
+ * @return int 1 = finished
+ */
+function sanitizeDirectoryUserFields(string $pre): int
+{
+    global $db_link;
+
+    $rows = mysqli_query(
+        $db_link,
+        "SELECT `id`, `email`, `name`, `lastname` FROM `{$pre}users`"
+    );
+
+    if ($rows === false) {
+        error_log('TEAMPASS Error - sanitizeDirectoryUserFields select failed: ' . mysqli_error($db_link));
+        return 1;
+    }
+
+    while ($row = mysqli_fetch_assoc($rows)) {
+        // users.name and users.lastname are varchar(100), users.email varchar(250).
+        $email = (string) filter_var((string) $row['email'], FILTER_SANITIZE_EMAIL);
+        $name = normalizeStoredHtmlValue((string) $row['name'], 100);
+        $lastname = normalizeStoredHtmlValue((string) $row['lastname'], 100);
+
+        // Only touch what actually changes, so a clean database performs no write at all.
+        if ($email === (string) $row['email']
+            && $name === (string) $row['name']
+            && $lastname === (string) $row['lastname']
+        ) {
+            continue;
+        }
+
+        mysqli_query(
+            $db_link,
+            "UPDATE `{$pre}users` SET
+                `email` = '" . mysqli_real_escape_string($db_link, $email) . "',
+                `name` = '" . mysqli_real_escape_string($db_link, $name) . "',
+                `lastname` = '" . mysqli_real_escape_string($db_link, $lastname) . "'
+            WHERE `id` = " . (int) $row['id']
+        );
+
+        if (mysqli_error($db_link)) {
+            error_log('TEAMPASS Error - sanitizeDirectoryUserFields update failed: ' . mysqli_error($db_link));
+        }
+    }
+
+    mysqli_free_result($rows);
+
+    return 1;
+}
+
+/**
+ * 3.2.1.6 - Neutralize folder titles stored raw by the import.
+ *
+ * Until 3.2.1.6, createFolder() (sources/import.queries.php) decoded HTML entities before
+ * writing `nested_tree.title`, which undid the FILTER_SANITIZE_FULL_SPECIAL_CHARS the import
+ * had just applied: a KeePass group named with a tag was stored executable. The write path
+ * is fixed, but trees imported by an earlier release still hold the raw value.
+ *
+ * The same decode-then-encode normalization as the users pass, so it is idempotent and
+ * leaves folders created through the web or the API untouched — those already store this
+ * exact form. Personal folders are named after a user id, so digits pass through unchanged.
+ *
+ * @param string $pre Table prefix
+ * @return int 1 = finished
+ */
+function sanitizeImportedFolderTitles(string $pre): int
+{
+    global $db_link;
+
+    $rows = mysqli_query($db_link, "SELECT `id`, `title` FROM `{$pre}nested_tree`");
+
+    if ($rows === false) {
+        error_log('TEAMPASS Error - sanitizeImportedFolderTitles select failed: ' . mysqli_error($db_link));
+        return 1;
+    }
+
+    $updates = [];
+    while ($row = mysqli_fetch_assoc($rows)) {
+        // nested_tree.title is varchar(255).
+        $title = normalizeStoredHtmlValue((string) $row['title'], 255);
+
+        // Only touch what actually changes, so a clean database performs no write at all.
+        if ($title !== (string) $row['title']) {
+            $updates[(int) $row['id']] = $title;
+        }
+    }
+    mysqli_free_result($rows);
+
+    foreach ($updates as $id => $title) {
+        mysqli_query(
+            $db_link,
+            "UPDATE `{$pre}nested_tree`
+            SET `title` = '" . mysqli_real_escape_string($db_link, $title) . "'
+            WHERE `id` = " . $id
+        );
+
+        if (mysqli_error($db_link)) {
+            error_log('TEAMPASS Error - sanitizeImportedFolderTitles update failed: ' . mysqli_error($db_link));
+        }
+    }
+
+    return 1;
+}
+
+/**
+ * Decode HTML entities until the value stabilizes, then re-encode the characters that
+ * matter. Mirrors what the application now stores, while staying idempotent.
+ *
+ * Encoding makes a string longer, so a value that already filled its column would no longer
+ * fit. Rather than let the server truncate it — which would leave a half-written entity such
+ * as "&quo" — the decoded text is shortened until its encoded form fits.
+ *
+ * @param string $value     Stored value
+ * @param int    $maxLength Column length in bytes
+ * @return string Normalized value, guaranteed to fit
+ */
+function normalizeStoredHtmlValue(string $value, int $maxLength): string
+{
+    for ($pass = 0; $pass < 5; ++$pass) {
+        $previousPass = $value;
+        $value = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        if ($value === $previousPass) {
+            break;
+        }
+    }
+
+    $encoded = htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
+
+    while (strlen($encoded) > $maxLength && $value !== '') {
+        $value = mb_substr($value, 0, max(0, mb_strlen($value) - 1), 'UTF-8');
+        $encoded = htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
+    }
+
+    return $encoded;
 }
 
 /**

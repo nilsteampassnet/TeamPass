@@ -1075,7 +1075,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                                     // Done for this iteration
                                                     // Prepare results
                                                     data.items.forEach(function(item) {
-                                                        $resultsList.append('<li>' + item.title + ' [' + item.folder + ']</li>');
+                                                        $resultsList.append('<li>' + htmlEncode(item.title) + ' [' + htmlEncode(item.folder) + ']</li>');
                                                     });                                                    
 
                                                     // Remove item from list

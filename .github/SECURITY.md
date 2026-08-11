@@ -10,7 +10,7 @@ This project is currently being supported with security updates.
 
 ## Reporting a Vulnerability
 
-For any vulnerability or potential security issue, please provide complete description by email to nils@teampass.net.
+For any vulnerability or potential security issue, please provide complete description by filling in a new advisory form from https://github.com/nilsteampassnet/TeamPass/security/advisories.
 
 ## Published Security Advisories
 
