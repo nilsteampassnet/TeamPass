@@ -17,9 +17,10 @@ use PHPUnit\Framework\TestCase;
  * with .text(). Nine private XSS reports in a row landed on screens that skipped this step,
  * which is why it is enforced here rather than left to review.
  *
- * The test flags `'…' + <ident>.<field> + '…'` for a field known to carry user data. The
- * encoded form `htmlEncode(value.title)` never matches, because the call sits between the
- * `+` and the identifier.
+ * The test flags `'…' + <path>.<field> + '…'` for a field known to carry user data, `<path>`
+ * being any dotted expression: `data.message` and `err.file.name` both match. The encoded
+ * form `htmlEncode(value.title)` never does, because the call sits between the `+` and the
+ * start of the path.
  *
  * Analysis: workReadmeFiles/client-purifier-root-cause-study.md
  */
@@ -58,11 +59,10 @@ class ClientHtmlEncodingSentinelTest extends TestCase
      * not used: they drift on every edit, whereas an expression that changes deserves a new
      * look anyway.
      *
-     * Two groups:
-     *  - "safe": proven not to reach markup with user data.
-     *  - "pending": real sinks fed by server-composed strings ($lang->get() plus, in some
-     *    cases, interpolated data). Encoding them is a behaviour change for any message that
-     *    intentionally carries markup, so they are tracked here rather than silently fixed.
+     * Every entry is a value proven not to reach markup with user data. The status and error
+     * messages that used to sit here as "pending review" are now encoded at their sinks; two
+     * of them carried a <br> from the server, which moved into the page template so the
+     * message could become pure data.
      */
     private const ALLOWED = [
         // safe — inside a /* … */ block, never executed
@@ -73,13 +73,6 @@ class ClientHtmlEncodingSentinelTest extends TestCase
         'app/pages/utilities.logs.js.php' => ['opt.title'],
         // safe — info comes from the static client-side LEVELS map
         'app/core/item-classification.js.php' => ['info.label'],
-
-        // pending review — server-composed status and error messages
-        'app/pages/admin.js.php' => ['data.message'],
-        'app/pages/import.js.php' => ['data.message', 'err.message'],
-        'app/pages/items.js.php' => ['data.message'],
-        'app/pages/profile.js.php' => ['myData.message', 'err.message'],
-        'app/pages/tools.js.php' => ['dataStep1.message', 'dataStep2.message', 'ret.message'],
     ];
 
     /**
@@ -88,7 +81,10 @@ class ClientHtmlEncodingSentinelTest extends TestCase
     private static function collectViolations(): array
     {
         $root = dirname(__DIR__, 2) . '/';
-        $pattern = '/\+\s*([A-Za-z_][A-Za-z0-9_]*)\.(' . implode('|', self::WATCHED_FIELDS) . ')\b/';
+        // The path part is greedy across dots so a nested sink such as err.file.name or
+        // data.corruption_notice.message is caught, not only the single-level form.
+        $pattern = '/\+\s*([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)*)\.('
+            . implode('|', self::WATCHED_FIELDS) . ')\b/';
 
         $violations = [];
         foreach (self::SCANNED_GLOBS as $glob) {

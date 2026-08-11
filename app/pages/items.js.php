@@ -3803,7 +3803,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
             // Affiche l'erreur dans l'interface utilisateur
             toastr.error(
-                errorMessage + (err.file ? ', File: ' + err.file.name : ''),
+                errorMessage + (err.file ? ', File: ' + htmlEncode(err.file.name) : ''),
                 '', {
                     timeOut: 10000,
                     progressBar: true
@@ -4717,7 +4717,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 } else {
                     toastr.remove();
                     toastr.info(
-                        total_items + data.message,
+                        total_items + htmlEncode(data.message),
                         '', {
                             timeOut: 5000,
                             progressBar: true
@@ -6474,7 +6474,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         $('#card-item-corrupted-warning')
                             .removeClass('hidden')
                             .addClass(data.corruption_notice.severity === 'danger' ? 'alert-danger' : 'alert-warning')
-                            .html('<i class="fa-solid fa-triangle-exclamation mr-2"></i>' + data.corruption_notice.message);
+                            .html('<i class="fa-solid fa-triangle-exclamation mr-2"></i>' + htmlEncode(data.corruption_notice.message));
                     }
 
                     // Show decryption errors for custom fields

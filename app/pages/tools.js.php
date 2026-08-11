@@ -139,7 +139,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             }
                         );
                     } else {
-                        $('#fix_pf_items_results').html(dataStep1.message + dataStep1.personalFolders);
+                        $('#fix_pf_items_results').html(htmlEncode(dataStep1.message) + htmlEncode(dataStep1.personalFolders));
 
                         // Launch step 2
                         var data = {
@@ -168,7 +168,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                         }
                                     );
                                 } else {
-                                    $('#fix_pf_items_results').append(dataStep2.message + dataStep1.personalFolders);
+                                    $('#fix_pf_items_results').append('<br>' + htmlEncode(dataStep2.message) + htmlEncode(dataStep1.personalFolders));
 
                                     // Launch step 3
                                     var data = {
@@ -197,7 +197,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                                     }
                                                 );
                                             } else {
-                                                $('#fix_pf_items_results').append(dataStep3.message + dataStep1.personalFolders);
+                                                $('#fix_pf_items_results').append('<br>' + htmlEncode(dataStep3.message) + htmlEncode(dataStep1.personalFolders));
 
                                                 // Inform user
                                                 toastr.remove();
@@ -333,7 +333,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         );
                         $('#fix_items_master_keys_but').prop('disabled', false);
                     } else {
-                        $('#fix_items_master_keys_results').html('Step 1:<br>'+dataStep1.message+'<br>Public key is available');
+                        $('#fix_items_master_keys_results').html('Step 1:<br>'+htmlEncode(dataStep1.message)+'<br>Public key is available');
 
                         // Launch step 2
                         // CHecking                        
@@ -353,7 +353,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                 console.log('-- STEP2 RESULTS --');
                                 console.log(dataStep2);
 
-                                $('#fix_items_master_keys_results').append('<br><br>Step 2:<br>'+dataStep2.message);
+                                $('#fix_items_master_keys_results').append('<br><br>Step 2:<br>'+htmlEncode(dataStep2.message));
 
                                 if (dataStep2.error === true) {
                                     // Show error
@@ -881,7 +881,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 }
 
                 $('#restore_missing_sharekeys_results').append(
-                    '<div class="alert alert-success"><i class="fas fa-check mr-2"></i>' + ret.message + '</div>'
+                    '<div class="alert alert-success"><i class="fas fa-check mr-2"></i>' + htmlEncode(ret.message) + '</div>'
                 );
                 toastr.success(
                     '<?php echo $lang->get('done'); ?>',

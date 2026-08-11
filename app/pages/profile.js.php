@@ -202,7 +202,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     $('#profile-avatar-file-list').html('').addClass('hidden');
                 } else {
                     toastr.error(
-                        'An error occurred.<br />Returned data:<br />' + myData.message,
+                        'An error occurred.<br />Returned data:<br />' + htmlEncode(myData.message),
                         '', {
                             closeButton: true
                         }
@@ -224,9 +224,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     // get error
     uploader_photo.bind('Error', function(up, err) {
-        $('#profile-avatar-file-list').html('<div class="ui-state-error ui-corner-all">Error: ' + err.code +
-            ', Message: ' + err.message +
-            (err.file ? ', File: ' + err.file.name : '') +
+        // err.file.name is the name the user gave the file they picked.
+        $('#profile-avatar-file-list').html('<div class="ui-state-error ui-corner-all">Error: ' + htmlEncode(err.code) +
+            ', Message: ' + htmlEncode(err.message) +
+            (err.file ? ', File: ' + htmlEncode(err.file.name) : '') +
             '</div>'
         );
         up.refresh(); // Reposition Flash/Silverlight
