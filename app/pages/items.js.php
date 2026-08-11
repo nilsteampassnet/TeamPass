@@ -8271,7 +8271,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                                 // Prepare list of emailers
                                 // Emails of directory-created users are stored unfiltered, and
                                 // purifyData() decodes &quot; back to a quote: encode the attribute.
-                                $('#form-item-anounce').append('<option value="' + htmlEncode(value.email) + '">' + value.name + '</option>');
+                                $('#form-item-anounce').append('<option value="' + htmlEncode(value.email) + '">' + htmlEncode(value.name) + '</option>');
                             });
                             if (data.setting_restricted_to_roles === 1) {
                                 //add optgroup
