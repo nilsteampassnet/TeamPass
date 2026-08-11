@@ -397,7 +397,9 @@ function prepareExchangedData(data, type, key, fileName = '', functionName = '',
             const parsed = safeParseJSONMaybe(data);
             
             if (parsed.ok) {
-                return purifyData(parsed.value, false, false, false, bStringify);
+                return purify === true
+                    ? purifyData(parsed.value, false, false, false, bStringify)
+                    : parsed.value;
             } else {
                 // Handle non-JSON server response gracefully with detailed error info
                 const rawStr = String(parsed.value)
@@ -431,7 +433,9 @@ function prepareExchangedData(data, type, key, fileName = '', functionName = '',
                     );
                 }
                 
-                return purifyData(parsed.value, false, false, false, bStringify);
+                return purify === true
+                    ? purifyData(parsed.value, false, false, false, bStringify)
+                    : parsed.value;
             } catch (e) {
                 // Handle case where decryption itself failed (e.g., bad key, corrupted data)
                 const encRawStr = String(data)
@@ -730,7 +734,7 @@ function simplePurifier(
  * See workReadmeFiles/client-purifier-root-cause-study.md for why it works this way.
  */
 const htmlFields = ['description', 'desc', 'html'];
-const ignoredFields = ['pw', 'previous_password', 'current_password', 'old_password', 'new_password', 'otp'];
+const ignoredFields = ['pw', 'password', 'previous_password', 'current_password', 'old_password', 'new_password', 'otp', 'otp_secret'];
 function purifyData(obj, bHtml = false, bSvg = false, bSvgFilters = false, bStringify = false) {
     if (Array.isArray(obj)) {
         const purifiedObject = obj.map(item => purifyData(item, bHtml, bSvg, bSvgFilters, false));
