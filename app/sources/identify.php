@@ -2314,13 +2314,24 @@ function externalAdCreateUser(
         $userGroups = $SETTINGS['oauth_selfregistered_user_belongs_to_role'];
     }
     
+    // Mail, name and lastname come straight from the directory and are rendered in the
+    // admin screens, so they get the same filters as a manually created user
+    // (see users.queries.php, 'add_new_user'). $login is deliberately left untouched:
+    // it already went through FILTER_SANITIZE_FULL_SPECIAL_CHARS in identifyUser()
+    // before reaching here, and it is the value getUserCompleteData() matches on at
+    // every later login — filtering it a second time would double-encode it and lock
+    // the account out.
+    $userEmail = (string) filter_var($userEmail, FILTER_SANITIZE_EMAIL);
+    $userName = (string) filter_var($userName, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    $userLastname = (string) filter_var($userLastname, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
     // Prepare user data
     $userData = [
         'login' => (string) $login,
         'pw' => (string) $hashedPassword,
-        'email' => (string) $userEmail,
-        'name' => (string) $userName,
-        'lastname' => (string) $userLastname,
+        'email' => $userEmail,
+        'name' => $userName,
+        'lastname' => $userLastname,
         'admin' => '0',
         'gestionnaire' => '0',
         'can_manage_all_users' => '0',
