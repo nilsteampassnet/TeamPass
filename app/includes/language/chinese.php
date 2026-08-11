@@ -2055,6 +2055,7 @@ return array(
     'network_security_enable_whitelist' => '启用白名单',
     'network_security_enable_whitelist_tip' => '启用此功能后，只有白名单中的IP地址或CIDR范围才能访问TeamPass。',
     'network_security_mode' => 'IP检测模式',
+    'network_security_mode_tip' => 'Reverse proxy / WAF makes TeamPass read the client address from the proxy header, and only when REMOTE_ADDR matches a trusted proxy. That address is the one recorded in the audit log and the one the per-IP bruteforce counter locks on, so leave Direct access selected when no proxy sits in front of TeamPass.',
     'network_security_mode_direct' => '直接访问',
     'network_security_mode_reverse_proxy' => '反向代理/WAF',
     'network_security_header' => '代理标头',
