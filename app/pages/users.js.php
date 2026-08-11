@@ -3286,15 +3286,17 @@ function refreshListInactiveUsers(filterValue) {
                                 }
                                 ldapStatusIcons += '<i class="fa-solid fa-hourglass-end ml-2 infotip text-warning" title="<?php echo addslashes($lang->get('ldap_account_expired')); ?>' + expiresHint + '"></i>';
                             }
+                            // Directory-supplied values: purifyData() drops tags but keeps quotes,
+                            // which alone breaks out of the attributes below. Encode each one.
                             html += '<tr>' +
-                                '<td>' + userLogin +
+                                '<td>' + htmlEncode(userLogin) +
                                 '</td>' +
                                 '<td class="text-center text-nowrap" style="min-width: 85px;">' +
                                 '<span class="d-inline-flex align-items-center justify-content-center" style="white-space:nowrap;">' +
                                 '<i class="fa-solid fa-info-circle ml-3 infotip text-info pointer text-center" data-toggle="tooltip" data-html="true" title="' +
                                 '<p class=\'text-left\'><i class=\'fas fa-user mr-1\'></i>' +
-                                (entry.displayname !== undefined ? '' + entry.displayname[0] + '' : '') + '</p>' +
-                                '<p class=\'text-left\'><i class=\'fas fa-envelope mr-1\'></i>' + (entry.mail !== undefined ? '' + entry.mail[0] + '' : '') + '</p>' +
+                                (entry.displayname !== undefined ? htmlEncode(entry.displayname[0]) : '') + '</p>' +
+                                '<p class=\'text-left\'><i class=\'fas fa-envelope mr-1\'></i>' + (entry.mail !== undefined ? htmlEncode(entry.mail[0]) : '') + '</p>' +
                                 '"></i>' + ldapStatusIcons + '</span>' +
                                 '</td><td>' +
                                 (entry.userInTeampass === 0 ? '' :
@@ -3326,12 +3328,12 @@ function refreshListInactiveUsers(filterValue) {
                                     }
                                 }
 
-                                html += group + icon + '<br>';
+                                html += htmlEncode(group) + icon + '<br>';
                                 groupsNumber++;
                             });
                             html += '</td><td>';
                             // Action icons
-                            html += (entry.userInTeampass === 0 ? '<i class="fa-solid fa-user-plus text-warning ml-2 infotip pointer add-user-icon" title="<?php echo $lang->get('add_user_in_teampass'); ?>" data-user-login="' + userLogin + '" data-user-email="' + (entry.mail !== undefined ? entry.mail[0] : '') + '" data-user-name="' + (entry.givenname !== undefined ? entry.givenname[0] : '') + '" data-user-lastname="' + (entry.sn !== undefined ? entry.sn[0] : '') + '" data-user-auth-type="ldap"></i>' : '');
+                            html += (entry.userInTeampass === 0 ? '<i class="fa-solid fa-user-plus text-warning ml-2 infotip pointer add-user-icon" title="<?php echo $lang->get('add_user_in_teampass'); ?>" data-user-login="' + htmlEncode(userLogin) + '" data-user-email="' + (entry.mail !== undefined ? htmlEncode(entry.mail[0]) : '') + '" data-user-name="' + (entry.givenname !== undefined ? htmlEncode(entry.givenname[0]) : '') + '" data-user-lastname="' + (entry.sn !== undefined ? htmlEncode(entry.sn[0]) : '') + '" data-user-auth-type="ldap"></i>' : '');
 
                             html += '</td></tr>';
                         }
@@ -3418,14 +3420,17 @@ function refreshListInactiveUsers(filterValue) {
                     $.each(data.ad_users, function(i, user) {
                         // CHeck if not empty
                         if (userLogin !== '') {
+                            // Every value below comes from the directory, not from TeamPass.
+                            // purifyData() removes tags but keeps quotes, which is enough to
+                            // break out of the attributes used here, so encode each value.
                             html += '<tr>' +
-                                '<td>' + user.login +
+                                '<td>' + htmlEncode(user.login) +
                                 '</td>' +
                                 '<td>' +
                                 '<i class="fa-solid fa-info-circle ml-3 infotip text-info pointer text-center" data-toggle="tooltip" data-html="true" title="' +
                                 '<p class=\'text-left\'><i class=\'fas fa-user mr-1\'></i> ' +
-                                user.displayName + '</p>' +
-                                '<p class=\'text-left\'><i class=\'fas fa-envelope mr-1\'></i>' + (user.mail !== null ? '' + user.mail + '' : '') + '</p>' +
+                                htmlEncode(user.displayName) + '</p>' +
+                                '<p class=\'text-left\'><i class=\'fas fa-envelope mr-1\'></i>' + (user.mail !== null ? htmlEncode(user.mail) : '') + '</p>' +
                                 '"></i>' +
                                 '</td><td>' +
                                 (user.userInTeampass === 0 ? '' :
@@ -3448,7 +3453,7 @@ function refreshListInactiveUsers(filterValue) {
                                     }
                                 }
 
-                                html += group.name + icon + '<br>';
+                                html += htmlEncode(group.name) + icon + '<br>';
                                 groupsNumber++;
                             });
 
@@ -3456,7 +3461,7 @@ function refreshListInactiveUsers(filterValue) {
                             // Action icons
                             html += (user.userInTeampass === 0 ? 
                                  (user.mail !== null ? 
-                                    '<i class="fa-solid fa-user-plus text-warning ml-2 infotip pointer add-user-icon" title="<?php echo $lang->get('add_user_in_teampass'); ?>" data-user-login="' + user.login + '" data-user-email="' + user.mail + '" data-user-name="' + user.surname + '" data-user-lastname="' + user.givenName + '" data-user-auth-type="oauth2"></i>'
+                                    '<i class="fa-solid fa-user-plus text-warning ml-2 infotip pointer add-user-icon" title="<?php echo $lang->get('add_user_in_teampass'); ?>" data-user-login="' + htmlEncode(user.login) + '" data-user-email="' + htmlEncode(user.mail) + '" data-user-name="' + htmlEncode(user.surname) + '" data-user-lastname="' + htmlEncode(user.givenName) + '" data-user-auth-type="oauth2"></i>'
                                     : '<i class="fa-solid fa-user-large-slash text-danger ml-2 infotip" title="<?php echo $lang->get('oauth2_user_has_no_mail'); ?>"></i>'
                                 )
                                 : ''
@@ -4035,18 +4040,20 @@ function refreshListInactiveUsers(filterValue) {
 
             showModalDialogBox(
                 '#warningModal',
-                '<h3><i class="fa-solid fa-user-plus fa-lg warning mr-2"></i><?php echo $lang->get('new_ldap_user_info'); ?> <span class="badge badge-primary">'+$(this)[0].dataset.userLogin+'</span></h3>',
+                // Reading the attributes back gives the decoded directory value, so it has to be
+                // encoded again before it is concatenated into the modal markup.
+                '<h3><i class="fa-solid fa-user-plus fa-lg warning mr-2"></i><?php echo $lang->get('new_ldap_user_info'); ?> <span class="badge badge-primary">'+htmlEncode($(this)[0].dataset.userLogin)+'</span></h3>',
                 '<div class="form-group">'+
                     '<label for="auth-user-name"><?php echo $lang->get('name'); ?></label>'+
-                    '<input readonly type="text" class="form-control required" id="auth-user-name" value="'+ $(this).attr('data-user-name')+'">'+
+                    '<input readonly type="text" class="form-control required" id="auth-user-name" value="'+ htmlEncode($(this).attr('data-user-name'))+'">'+
                 '</div>'+
                 '<div class="form-group">'+
                     '<label for="auth-user-name"><?php echo $lang->get('lastname'); ?></label>'+
-                    '<input readonly type="text" class="form-control required" id="auth-user-lastname" value="'+ $(this).attr('data-user-lastname')+'">'+
+                    '<input readonly type="text" class="form-control required" id="auth-user-lastname" value="'+ htmlEncode($(this).attr('data-user-lastname'))+'">'+
                 '</div>'+
                 '<div class="form-group">'+
                     '<label for="auth-user-name"><?php echo $lang->get('email'); ?></label>'+
-                    '<input readonly type="text" class="form-control required" id="auth-user-email" value="'+ $(this).attr('data-user-email')+'">'+
+                    '<input readonly type="text" class="form-control required" id="auth-user-email" value="'+ htmlEncode($(this).attr('data-user-email'))+'">'+
                 '</div>'+
                 '<div class="form-group">'+
                     '<label for="auth-user-roles"><?php echo $lang->get('roles'); ?></label>'+
