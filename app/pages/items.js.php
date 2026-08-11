@@ -6584,7 +6584,11 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             .removeClass('skeleton-input');
                     }
 
-                    const itemIcon = (data.fa_icon !== "") ? '<i class="'+data.fa_icon+' mr-1"></i>' : '';
+                    // Encode the icon before it lands in a class attribute: a value stored by an
+                    // older release (when the API accepted any string for fa_icon) could otherwise
+                    // break out of the attribute. Entities are decoded back by the HTML parser,
+                    // so legitimate Font Awesome classes keep working.
+                    const itemIcon = (data.fa_icon !== "") ? '<i class="'+htmlEncode(data.fa_icon)+' mr-1"></i>' : '';
                     $('#card-item-label, #form-item-title').html(itemIcon + data.label);
 
                     // Populate breadcrumb with folder path when item comes from a search result

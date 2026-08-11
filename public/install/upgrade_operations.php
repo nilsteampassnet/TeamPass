@@ -172,6 +172,8 @@ if (isset($post_operation) === true && empty($post_operation) === false && strpo
         }
     } elseif ($post_operation === 'deduplicate_misc') {
         $finish = deduplicateMisc($pre);
+    } elseif ($post_operation === 'sanitize_legacy_fa_icons') {
+        $finish = sanitizeLegacyFaIcons($pre);
     }
     // Return back
     echo '[{"finish":"'.$finish.'" , "next":"", "error":"", "total":"'.$total.'"}]';
@@ -251,6 +253,86 @@ function deduplicateMisc(string $pre): int
 
     // Full batch: there may be more duplicates — request another call
     return 0;
+}
+
+/**
+ * 3.2.1 - Strip unsafe characters from stored Font Awesome icon classes.
+ *
+ * Before 3.2.1, the API item create/update flow stored the `icon` parameter verbatim in
+ * `items.fa_icon`. Both write paths now constrain it to `[a-zA-Z0-9 _-]`, but the fix is
+ * not retroactive: an instance upgraded from an older release still carries whatever was
+ * written back then, and that value is rendered inside a class attribute.
+ * The same normalisation is applied to `nested_tree.fa_icon` / `fa_icon_selected`, whose
+ * values are concatenated server-side in `sources/tree.php`.
+ *
+ * Runs in a single pass: only rows actually containing a character outside the allow-list
+ * are rewritten, so a clean database performs three cheap no-op updates.
+ *
+ * @param string $pre Table prefix
+ * @return int 1 = finished
+ */
+function sanitizeLegacyFaIcons(string $pre): int
+{
+    global $db_link;
+
+    // Characters allowed in a Font Awesome class list: letters, digits, space, underscore, hyphen.
+    $allowed = "a-zA-Z0-9 _-";
+
+    $targets = [
+        [$pre . 'items', 'fa_icon'],
+        [$pre . 'nested_tree', 'fa_icon'],
+        [$pre . 'nested_tree', 'fa_icon_selected'],
+    ];
+
+    foreach ($targets as [$table, $column]) {
+        $query = "UPDATE `" . $table . "`
+            SET `" . $column . "` = REGEXP_REPLACE(`" . $column . "`, '[^" . $allowed . "]', '')
+            WHERE `" . $column . "` REGEXP '[^" . $allowed . "]'";
+
+        if (mysqli_query($db_link, $query) === false) {
+            // MariaDB < 10.0.5 and MySQL < 8.0 have no REGEXP_REPLACE: fall back to a
+            // row-by-row rewrite so the cleanup still happens on older servers.
+            sanitizeLegacyFaIconsFallback($table, $column, $allowed);
+        }
+    }
+
+    return 1;
+}
+
+/**
+ * Row-by-row fallback for sanitizeLegacyFaIcons() when REGEXP_REPLACE is unavailable.
+ *
+ * @param string $table   Prefixed table name
+ * @param string $column  Column holding the icon classes
+ * @param string $allowed Allowed character class (without the brackets)
+ * @return void
+ */
+function sanitizeLegacyFaIconsFallback(string $table, string $column, string $allowed): void
+{
+    global $db_link;
+
+    $rows = mysqli_query(
+        $db_link,
+        "SELECT `id`, `" . $column . "` AS `icon` FROM `" . $table . "`
+        WHERE `" . $column . "` REGEXP '[^" . $allowed . "]'"
+    );
+
+    if ($rows === false) {
+        error_log('TEAMPASS Error - sanitizeLegacyFaIcons select failed: ' . mysqli_error($db_link));
+        return;
+    }
+
+    while ($row = mysqli_fetch_assoc($rows)) {
+        $clean = (string) preg_replace('/[^a-zA-Z0-9 _-]/', '', (string) $row['icon']);
+        mysqli_query(
+            $db_link,
+            "UPDATE `" . $table . "`
+            SET `" . $column . "` = '" . mysqli_real_escape_string($db_link, $clean) . "'
+            WHERE `id` = " . (int) $row['id']
+        );
+    }
+
+    mysqli_free_result($rows);
 }
 
 /**
