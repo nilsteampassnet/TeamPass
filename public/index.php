@@ -670,7 +670,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
     $currentPage = $get['page'];
     $menuAccess = in_array($currentPage, ['users', 'roles', 'folders'], true);
     $menuGovernance = in_array($currentPage, ['reviews', 'reports'], true);
-    $menuConfiguration = in_array($currentPage, ['options', 'fields', 'emails', 'uploads'], true);
+    $menuConfiguration = in_array($currentPage, ['options', 'fields', 'emails', 'emails_templates', 'uploads'], true);
     $menuAuthentication = in_array($currentPage, ['2fa', 'ldap', 'oauth', 'api'], true);
     $menuOperations = in_array($currentPage, ['tasks', 'backups', 'utilities.database', 'import', 'utilities.renewal', 'utilities.deletion'], true);
     $menuMonitoring = in_array($currentPage, ['statistics', 'utilities.logs', 'utilities.health', 'tools'], true);
@@ -771,6 +771,12 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                                 <a href="#" data-name="emails" class="nav-link', $currentPage === 'emails' ? ' active' : '', '">
                                     <i class="fa-solid fa-envelope nav-icon"></i>
                                     <p>' . $lang->get('emails') . '</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" data-name="emails_templates" class="nav-link', $currentPage === 'emails_templates' ? ' active' : '', '">
+                                    <i class="fa-solid fa-envelope-open-text nav-icon"></i>
+                                    <p>' . $lang->get('emails_templates') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -1596,6 +1602,13 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
             }
             ?>
         <?php
+        } elseif ($get['page'] === 'emails_templates') {
+            // The templates editor is the only admin page needing a rich text editor.
+            ?>
+            <!-- SUMMERNOTE -->
+            <link rel="stylesheet" href="./plugins/summernote/summernote-bs4.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
+            <script src="./plugins/summernote/summernote-bs4.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+        <?php
         } elseif ($get['page'] === 'profile') {
             ?>
             <!-- FILESAVER -->
@@ -1877,6 +1890,8 @@ if (isset($SETTINGS['cpassman_dir']) === true) {
             include_once TEAMPASS_APP . '/pages/backups.js.php';
         } elseif ($get['page'] === 'emails') {
             include_once TEAMPASS_APP . '/pages/emails.js.php';
+        } elseif ($get['page'] === 'emails_templates') {
+            include_once TEAMPASS_APP . '/pages/emails_templates.js.php';
         } elseif ($get['page'] === 'ldap') {
             include_once TEAMPASS_APP . '/pages/ldap.js.php';
         } elseif ($get['page'] === 'uploads') {

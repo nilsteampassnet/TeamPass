@@ -137,6 +137,21 @@ class Language {
             return $override;
         }
 
+        // 1..3 Language files, then the key itself
+        return $this->getShipped($key);
+    }
+
+    /**
+     * Retrieves the translation shipped with the application, ignoring any
+     * administrator customization.
+     *
+     * Used by the email templates administration page to display the original
+     * text next to a customized one, and to offer a revert.
+     *
+     * @param string $key The translation key.
+     * @return string The translated string.
+     */
+    public function getShipped($key) {
         // 1. Check in Primary Language
         if (isset($this->translations[$key]) && $this->translations[$key] !== "") {
             return $this->translations[$key];
