@@ -93,7 +93,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     let oTableAuthenticationLockouts = null;
     let authenticationLockoutTimersStarted = false;
 
-    var kbEnabled = <?php echo isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_kb'] === 1 ? 'true' : 'false'; ?>;
+    // Same rule as in utilities.logs.php: knowledge base logs are administrator only
+    var kbEnabled = <?php echo isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_kb'] === 1 && (int) ($session->get('user-admin') ?? 0) === 1 ? 'true' : 'false'; ?>;
     const authenticationLockoutAdmin = <?php echo (int) ($session->get('user-admin') ?? 0) === 1 ? 'true' : 'false'; ?>;
     const authenticationLockoutMessages = <?php
         echo (string) json_encode(

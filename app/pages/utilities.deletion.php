@@ -87,7 +87,11 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
 // --------------------------------- //
 
-$kbEnabled = isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_kb'] === 1;
+// The recycled bin page is granted to managers too, but the deleted knowledge base entries are
+// an administrator only maintenance area (see kb.queries.php). Do not display that block to
+// anybody else, otherwise the page queries an action it is not allowed to run.
+$kbEnabled = isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_kb'] === 1
+    && (int) $session->get('user-admin') === 1;
  
 ?>
 
