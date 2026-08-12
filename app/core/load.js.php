@@ -1487,10 +1487,11 @@ if (
             if (debugJavascript === true) console.log('Preparing for email sending');
             
             // Prepare data
+            // Only the template identifier travels: the subject and the body are
+            // resolved server-side, in the recipient's language.
             var data = {
                 'receipt': $('#temp-user-email').val(),
-                'subject': '[Teampass] <?php echo $lang->get('your_new_password');?>',
-                'body': '<?php echo $lang->get('email_body_temporary_login_password');?>',
+                'template': 'user_temporary_password',
                 'pre_replace' : {
                     '#enc_code#' : $('#temp-user-pwd').val(),
                 }

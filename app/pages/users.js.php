@@ -456,10 +456,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
         // Prepare data
         if (store.get('teampassApplication').formUserAction === "add_new_user") {
+            // Only the template identifier travels: the subject and the body are
+            // resolved server-side, in the recipient's language.
             var data = {
                 'receipt': $('#form-email').val(),
-                'subject': 'TEAMPASS - <?php echo $lang->get('temporary_encryption_code');?>',
-                'body': '<?php echo $lang->get('email_body_new_user');?>',
+                'template': 'new_user_credentials',
                 'pre_replace' : {
                     '#login#' : store.get('teampassUser').admin_new_user_login,
                     '#password#' : store.get('teampassUser').admin_new_user_password,

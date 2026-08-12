@@ -370,6 +370,66 @@ $groupLabels = [
             );
         });
 
+        // Preview and test both render what is currently in the editor, unsaved
+        // changes included, through the same normalization a save would apply.
+        function emailsTemplatesEditorPayload() {
+            return {
+                template: emailsTemplatesCurrent,
+                language: $('#emails-templates-language').val(),
+                subject: $('#emails-templates-subject').val(),
+                body: $('#emails-templates-body').summernote('code')
+            };
+        }
+
+        $(document).on('click', '#emails-templates-preview', function() {
+            if (emailsTemplatesCurrent === '') {
+                return;
+            }
+
+            emailsTemplatesPost(
+                'preview_template',
+                emailsTemplatesEditorPayload(),
+                function(answer) {
+                    if (answer.fragment === true) {
+                        $('#emails-templates-preview-fragment').removeClass('hidden');
+                        $('#emails-templates-preview-subject-group').addClass('hidden');
+                    } else {
+                        $('#emails-templates-preview-fragment').addClass('hidden');
+                        $('#emails-templates-preview-subject-group').removeClass('hidden');
+                        $('#emails-templates-preview-subject').text(answer.subject);
+                    }
+                    $('#emails-templates-preview-body').html(
+                        DOMPurify.sanitize(answer.body, {USE_PROFILES: {html: true}})
+                    );
+                    $('#emails-templates-preview-modal').modal('show');
+                }
+            );
+        });
+
+        $(document).on('click', '#emails-templates-send-test', function() {
+            if (emailsTemplatesCurrent === '') {
+                return;
+            }
+
+            toastr.remove();
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+
+            emailsTemplatesPost(
+                'send_test_template',
+                emailsTemplatesEditorPayload(),
+                function(answer) {
+                    toastr.remove();
+                    toastr.success(
+                        '<?php echo $lang->get('emails_templates_send_test_done'); ?> ' +
+                            htmlEncode(answer.recipient),
+                        '', {
+                            timeOut: 3000
+                        }
+                    );
+                }
+            );
+        });
+
         $(document).on('click', '#emails-templates-reset', function() {
             if (emailsTemplatesCurrent === '') {
                 return;

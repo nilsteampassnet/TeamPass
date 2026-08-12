@@ -133,6 +133,75 @@ class EmailsTemplatesCatalogTest extends TestCase
         }
     }
 
+    /**
+     * The "new item created" email used to append the literal string "email_body3" — a language
+     * key that exists in no file — inside its link, and to substitute markers without their
+     * closing '#'. Both defects are silent: the email is still delivered, just broken.
+     */
+    public function testItemCreatedEmailNoLongerCarriesTheDeadKeyOrMalformedMarkers(): void
+    {
+        $source = (string) file_get_contents(dirname(__DIR__, 2) . '/app/sources/items.queries.php');
+
+        $this->assertStringNotContainsString(
+            'email_body3',
+            $source,
+            'The dead language key email_body3 is back in the item creation email'
+        );
+        $this->assertStringContainsString(
+            "array('#label#', '#label', '#link#', '#link')",
+            $source,
+            'The item creation email must substitute both the canonical and the legacy markers'
+        );
+    }
+
+    /**
+     * The subject and the body of an email must never be taken from an HTTP request: the
+     * mail_me endpoint accepts a catalog identifier and resolves the text server-side. Before
+     * that, a manager could mail arbitrary content to the users they administrate.
+     */
+    public function testMailMeEndpointDoesNotAcceptAClientSuppliedBody(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $source = (string) file_get_contents($root . '/app/sources/main.queries.php');
+
+        $start = strpos($source, "case 'mail_me'");
+        $this->assertNotFalse($start, 'The mail_me case is gone from main.queries.php');
+        $end = strpos($source, "case 'send_waiting_emails'", (int) $start);
+        $block = substr($source, (int) $start, (int) $end - (int) $start);
+
+        foreach (["\$dataReceived['body']", "\$dataReceived['subject']"] as $forbidden) {
+            $this->assertStringNotContainsString(
+                $forbidden,
+                $block,
+                sprintf('mail_me reads %s from the request again', $forbidden)
+            );
+        }
+        $this->assertStringContainsString(
+            "\$dataReceived['template']",
+            $block,
+            'mail_me must resolve the email from a catalog identifier'
+        );
+    }
+
+    public function testBothMailMeCallersSendAKnownTemplateIdentifier(): void
+    {
+        $root = dirname(__DIR__, 2);
+
+        foreach (['app/pages/users.js.php', 'app/core/load.js.php'] as $file) {
+            $source = (string) file_get_contents($root . '/' . $file);
+            $this->assertSame(
+                1,
+                preg_match("/'template': '([a-z_]+)'/", $source, $matches),
+                sprintf('%s no longer sends a template identifier to mail_me', $file)
+            );
+            $this->assertArrayHasKey(
+                $matches[1],
+                self::$catalog,
+                sprintf('%s sends the unknown template identifier "%s"', $file, $matches[1])
+            );
+        }
+    }
+
     public function testLanguageCopiesAreByteIdentical(): void
     {
         $root = dirname(__DIR__, 2);

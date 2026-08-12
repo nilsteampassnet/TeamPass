@@ -289,11 +289,11 @@ return [
         'subject_key' => 'email_subject_item_updated',
         'subject_prefix' => '',
         'body_key' => 'new_item_email_body',
-        // The call site substitutes the malformed markers '#label' and '#link'
-        // (trailing '#' missing) - see the customization plan, section 9.3.
-        // The tokens are declared as emitted so the UI never advertises a
-        // marker that would not be replaced.
-        'tokens' => ['#label', '#link'],
+        // Historically the shipped templates used '#label' and '#link' without
+        // their closing '#', and the call site substituted those malformed
+        // forms. It now substitutes both, so only the canonical markers are
+        // advertised here while untranslated language files keep working.
+        'tokens' => ['#label#', '#link#'],
         'required_tokens' => [],
         'label' => 'email_tpl_item_created',
         'description' => 'email_tpl_item_created_desc',

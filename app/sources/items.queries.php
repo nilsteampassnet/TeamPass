@@ -812,12 +812,23 @@ switch ($inputData['type']) {
                         $cpt = 0;
                         foreach ($post_diffusion_list as $emailAddress) {
                             if (empty($emailAddress) === false) {
+                                // Both marker forms are substituted: the shipped
+                                // templates historically use '#label' and '#link'
+                                // without their closing '#', while the canonical
+                                // form the administration page inserts is
+                                // '#label#' / '#link#'. Longest first, so the
+                                // canonical form is never eaten by the legacy one.
                                 prepareSendingEmail(
                                     $lang->get('email_subject_item_updated'),
                                     str_replace(
-                                        array('#label', '#link'),
-                                            array($path, $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . $inputData['folderId'] . '&id=' . strval($newID) . strval($lang->get('email_body3'))),
-                                            $lang->get('new_item_email_body')
+                                        array('#label#', '#label', '#link#', '#link'),
+                                        array(
+                                            $path,
+                                            $path,
+                                            $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . $inputData['folderId'] . '&id=' . strval($newID),
+                                            $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . $inputData['folderId'] . '&id=' . strval($newID),
+                                        ),
+                                        $lang->get('new_item_email_body')
                                     ),
                                     $emailAddress,
                                     $post_diffusion_list_names[$cpt]

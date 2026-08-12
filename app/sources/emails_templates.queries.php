@@ -42,6 +42,8 @@ use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
+use TeampassClasses\EmailService\EmailSettings;
+use TeampassClasses\EmailService\EmailService;
 use voku\helper\AntiXSS;
 
 // Load functions
@@ -467,6 +469,113 @@ switch ($post_type) {
 
         echo (string) prepareExchangedData(
             ['error' => false, 'message' => $lang->get('done')],
+            'encode'
+        );
+        break;
+
+    /*
+     * PREVIEW the content currently in the editor, with sample values.
+     *
+     * The content is normalized exactly like a save would, so the modal shows
+     * what would actually leave the server, unsaved edits included.
+     */
+    case 'preview_template':
+    /*
+     * SEND the preview to the administrator's own address.
+     *
+     * The recipient is taken from the session, never from the request: this
+     * endpoint must not become a way to mail arbitrary content to anyone.
+     */
+    case 'send_test_template':
+        $dataReceived = prepareExchangedData($post_data, 'decode');
+        $templateId = (string) ($dataReceived['template'] ?? '');
+        $language = (string) ($dataReceived['language'] ?? '');
+
+        if (isset($emailsCatalog[$templateId]) === false || emailsTemplatesLanguageExists($language) === false) {
+            echo (string) prepareExchangedData(
+                ['error' => true, 'message' => $lang->get('error_not_allowed_to')],
+                'encode'
+            );
+            break;
+        }
+
+        $template = $emailsCatalog[$templateId];
+        $subjectKey = empty($template['subject_key']) === true ? '' : (string) $template['subject_key'];
+
+        $subject = $subjectKey === ''
+            ? '' : emailsTemplatesNormalizeSubject((string) ($dataReceived['subject'] ?? ''));
+        $body = emailsTemplatesNormalizeBody((string) ($dataReceived['body'] ?? ''), $antiXss);
+
+        if (strlen($subject) > EMAILS_TEMPLATES_MAX_LENGTH || strlen($body) > EMAILS_TEMPLATES_MAX_LENGTH) {
+            echo (string) prepareExchangedData(
+                ['error' => true, 'message' => $lang->get('emails_templates_error_too_long')],
+                'encode'
+            );
+            break;
+        }
+
+        $samples = emailsTemplatesSampleValues([
+            'url' => (string) ($SETTINGS['cpassman_url'] ?? ''),
+            'login' => (string) $session->get('user-login'),
+            'name' => (string) $session->get('user-name'),
+            'lastname' => (string) $session->get('user-lastname'),
+            'email' => (string) $session->get('user-email'),
+            'date' => date((string) $SETTINGS['date_format'], time()),
+            'time' => date((string) $SETTINGS['time_format'], time()),
+            'datetime' => date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], time()),
+            'secret_placeholder' => $lang->get('emails_templates_preview_secret'),
+        ]);
+
+        // The subject carries its own token list: only #tp_status# is substituted
+        // there, and only for the scheduled backup report.
+        $renderedSubject = (string) ($template['subject_prefix'] ?? '') . emailsTemplatesRenderPreview(
+            $subject,
+            (array) ($template['subject_tokens'] ?? []),
+            $samples
+        );
+        $renderedBody = emailsTemplatesRenderPreview($body, (array) $template['tokens'], $samples);
+
+        if ($post_type === 'preview_template') {
+            echo (string) prepareExchangedData(
+                [
+                    'error' => false,
+                    'subject' => $renderedSubject,
+                    'body' => $renderedBody,
+                    'fragment' => ($template['fragment'] ?? false) === true,
+                ],
+                'encode'
+            );
+            break;
+        }
+
+        // --- send_test_template
+        $recipient = (string) $session->get('user-email');
+        if (filter_var($recipient, FILTER_VALIDATE_EMAIL) === false) {
+            echo (string) prepareExchangedData(
+                ['error' => true, 'message' => $lang->get('no_email_set')],
+                'encode'
+            );
+            break;
+        }
+
+        $emailSettings = new EmailSettings($SETTINGS);
+        $emailService = new EmailService();
+        $result = json_decode(
+            (string) $emailService->sendMail(
+                $renderedSubject === '' ? $lang->get('emails_templates') : $renderedSubject,
+                $renderedBody,
+                $recipient,
+                $emailSettings
+            ),
+            true
+        );
+
+        echo (string) prepareExchangedData(
+            [
+                'error' => empty($result['error']) === false,
+                'message' => (string) ($result['message'] ?? ''),
+                'recipient' => $recipient,
+            ],
             'encode'
         );
         break;

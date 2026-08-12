@@ -114,6 +114,88 @@ class EmailsTemplatesLogicTest extends TestCase
         );
     }
 
+    public function testEveryCatalogTokenHasASampleValue(): void
+    {
+        $catalog = require dirname(__DIR__, 2) . '/app/config/emails_templates.php';
+        $samples = emailsTemplatesSampleValues([]);
+
+        foreach ($catalog as $id => $template) {
+            $tokens = array_merge($template['tokens'], $template['subject_tokens'] ?? []);
+            foreach ($tokens as $token) {
+                $this->assertArrayHasKey(
+                    $token,
+                    $samples,
+                    sprintf('Template "%s": token "%s" has no preview sample value', $id, $token)
+                );
+            }
+        }
+    }
+
+    public function testPreviewLeavesNoDeclaredTokenBehind(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $catalog = require $root . '/app/config/emails_templates.php';
+        $english = require $root . '/app/includes/language/english.php';
+        $samples = emailsTemplatesSampleValues([]);
+
+        foreach ($catalog as $id => $template) {
+            $rendered = emailsTemplatesRenderPreview(
+                $english[$template['body_key']],
+                $template['tokens'],
+                $samples
+            );
+
+            foreach ($template['tokens'] as $token) {
+                $this->assertStringNotContainsString(
+                    $token,
+                    $rendered,
+                    sprintf('Template "%s": token "%s" survived the preview rendering', $id, $token)
+                );
+            }
+        }
+    }
+
+    public function testPreviewReplacesTheLongestTokenFirst(): void
+    {
+        // A short marker that is the prefix of a longer one must not consume it.
+        $this->assertSame(
+            'A=alpha B=beta',
+            emailsTemplatesRenderPreview(
+                'A=#tp# B=#tp_long#',
+                ['#tp#', '#tp_long#'],
+                ['#tp#' => 'alpha', '#tp_long#' => 'beta']
+            )
+        );
+    }
+
+    public function testPreviewMarksASampleLessTokenInsteadOfLeavingItRaw(): void
+    {
+        $this->assertSame(
+            'Hello [brand_new]',
+            emailsTemplatesRenderPreview('Hello #brand_new#', ['#brand_new#'], [])
+        );
+    }
+
+    public function testPreviewDoesNotDiscloseSecretsResolvedAtSendTime(): void
+    {
+        $samples = emailsTemplatesSampleValues(['secret_placeholder' => '[later]']);
+
+        $this->assertSame('[later]', $samples['#password#']);
+        $this->assertSame('[later]', $samples['#enc_code#']);
+    }
+
+    public function testPreviewUsesTheProvidedContext(): void
+    {
+        $samples = emailsTemplatesSampleValues([
+            'url' => 'https://vault.example.org',
+            'login' => 'alice',
+        ]);
+
+        $this->assertSame('alice', $samples['#login#']);
+        $this->assertSame('https://vault.example.org', $samples['#url#']);
+        $this->assertStringStartsWith('https://vault.example.org/reset-password.php', $samples['#reset_url#']);
+    }
+
     public function testTokenDetectionIsNotFooledByASubstring(): void
     {
         // '#tp_externalized_retention_days#' contains '#tp_externalized_retention_' but the

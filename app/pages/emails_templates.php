@@ -198,8 +198,15 @@ $templatesEnabled = isset($SETTINGS['emails_templates_enabled']) === false
                             <button type="button" class="btn btn-primary btn-sm mr-2" id="emails-templates-save">
                                 <i class="fas fa-save mr-2"></i><?php echo $lang->get('save'); ?>
                             </button>
-                            <button type="button" class="btn btn-secondary btn-sm" id="emails-templates-reset">
+                            <button type="button" class="btn btn-secondary btn-sm mr-2" id="emails-templates-reset">
                                 <i class="fas fa-rotate-left mr-2"></i><?php echo $lang->get('emails_templates_reset'); ?>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm mr-2" id="emails-templates-preview">
+                                <i class="fas fa-eye mr-2"></i><?php echo $lang->get('emails_templates_preview'); ?>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="emails-templates-send-test"
+                                title="<?php echo $lang->get('emails_templates_send_test_tip'); ?>">
+                                <i class="fas fa-paper-plane mr-2"></i><?php echo $lang->get('emails_templates_send_test'); ?>
                             </button>
                         </div>
 
@@ -209,3 +216,34 @@ $templatesEnabled = isset($SETTINGS['emails_templates_enabled']) === false
         </div>
     </div>
 </section>
+
+<!-- Preview modal -->
+<div class="modal fade" id="emails-templates-preview-modal" tabindex="-1" role="dialog"
+    aria-labelledby="emails-templates-preview-modal-title" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="emails-templates-preview-modal-title">
+                    <?php echo $lang->get('emails_templates_preview_title'); ?>
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-circle-info mr-2"></i>
+                    <?php echo $lang->get('emails_templates_preview_tip'); ?>
+                </div>
+                <div class="alert alert-secondary hidden" id="emails-templates-preview-fragment">
+                    <?php echo $lang->get('emails_templates_preview_fragment'); ?>
+                </div>
+                <div class="mb-2" id="emails-templates-preview-subject-group">
+                    <span class="text-muted"><?php echo $lang->get('emails_templates_subject'); ?>:</span>
+                    <strong id="emails-templates-preview-subject"></strong>
+                </div>
+                <div class="border rounded p-3 bg-white text-dark" id="emails-templates-preview-body"></div>
+            </div>
+        </div>
+    </div>
+</div>
