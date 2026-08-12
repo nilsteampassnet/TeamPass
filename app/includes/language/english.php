@@ -2197,6 +2197,8 @@ return array(
     'health_check_execution_time' => 'Execution time',
     'health_check_execution_time_mismatch' => 'Mismatch between PHP and TeamPass settings',
     'health_check_ok' => 'OK',
+    'health_check_site_url' => 'Site URL',
+    'health_check_site_url_mismatch' => 'The URL saved in the settings (%1$s) does not match the path this page is served from (%2$s). Every absolute URL of the application is built from this setting, so AJAX calls answer 404 and data cannot be displayed. Update "URL to TeamPass" in Settings.',
     'health_check_upload_limits' => 'Upload limits',
     'health_check_upload_limits_mismatch' => 'Mismatch between PHP and TeamPass upload limits',
     'health_check_upload_limits_websrv' => 'PHP allows uploads up to %1$s (upload_max_filesize) / %2$s (post_max_size). Make sure the front web server allows at least the same: nginx "client_max_body_size", Apache "LimitRequestBody". A lower web-server limit returns HTTP 413 before PHP sees the request.',

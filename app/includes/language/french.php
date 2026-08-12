@@ -1833,6 +1833,8 @@ return array(
     'health_teampass_settings' => 'Paramètres TeamPass',
     'health_checks' => 'Contrôles',
     'health_check_ok' => 'OK',
+    'health_check_site_url' => 'URL du site',
+    'health_check_site_url_mismatch' => 'L’URL enregistrée dans les paramètres (%1$s) ne correspond pas au chemin depuis lequel cette page est servie (%2$s). Toutes les URL absolues de l’application sont construites à partir de ce paramètre : les appels AJAX répondent 404 et les données ne s’affichent pas. Corrigez « URL de TeamPass » dans les paramètres.',
     'health_check_upload_limits' => 'Limites d’upload',
     'health_check_upload_limits_mismatch' => 'Incohérence entre les limites d’upload PHP et TeamPass',
     'health_check_execution_time' => 'Temps d’exécution',

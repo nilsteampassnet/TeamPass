@@ -588,6 +588,22 @@ if (isset($post_type)) {
             // AES Counter Mode implementation
             require_once './libs/aesctr.php';
 
+            // Save the full URL confirmed in step 1. This runs before the version
+            // scripts so that settings they rebuild from cpassman_url get the new
+            // value. An instance moved to another path keeps the former URL
+            // otherwise, and every absolute URL built from it answers 404.
+            $siteUrl = refreshStoredSiteUrl(
+                $db_link,
+                $pre,
+                empty($post_fullurl) === false ? (string) $post_fullurl : (string) $superGlobal->get('fullurl', 'SESSION')
+            );
+            if ($siteUrl['updated'] === true) {
+                $res .= $siteUrl['previous'] === ''
+                    ? 'Site URL saved: ' . $siteUrl['current']
+                    : 'Site URL updated from ' . $siteUrl['previous'] . ' to ' . $siteUrl['current'];
+                $res = str_replace(array('\\', '"'), array('\\\\', '\\"'), $res);
+            }
+
             //Get some infos from DB
             $cpmIsUTF8[0] = 0;
             if (@mysqli_fetch_row(

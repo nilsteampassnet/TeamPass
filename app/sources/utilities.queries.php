@@ -4085,6 +4085,7 @@ function tpGetTeampassSettingsForHealth(array $SETTINGS): array
 {
     $wanted = array(
         'timezone',
+        'cpassman_url',
         'path_to_upload_folder',
         'upload_maxfilesize',
         'task_maximum_run_time',
@@ -4161,6 +4162,39 @@ function tpGetSystemChecks(array $phpIni, array $tpSettings, Language $lang): ar
                 (string) ($phpIni['ini']['post_max_size'] ?? '')
             ),
         );
+    }
+
+    // Site URL consistency. Every absolute URL of the application is built from
+    // cpassman_url, so a stale value - typically an instance moved from /teampass
+    // to the web root - makes all AJAX calls answer 404. Only the path is compared:
+    // reaching the same instance through several host names is legitimate, while a
+    // path mismatch always breaks the requests.
+    $storedUrl = trim((string) ($tpSettings['cpassman_url'] ?? ''));
+    if ($storedUrl !== '') {
+        $storedPath = rtrim((string) (parse_url($storedUrl, PHP_URL_PATH) ?? ''), '/');
+
+        // This handler is served as <base>/sources/utilities.queries.php
+        $scriptPath = str_replace('\\', '/', dirname(dirname((string) ($_SERVER['SCRIPT_NAME'] ?? ''))));
+        $requestPath = in_array($scriptPath, array('/', '.', ''), true) === true ? '' : rtrim($scriptPath, '/');
+
+        if ($storedPath !== $requestPath) {
+            $checks[] = array(
+                'status' => 'danger',
+                'title' => $lang->get('health_check_site_url'),
+                // Values are escaped client-side when the check is rendered
+                'text' => sprintf(
+                    $lang->get('health_check_site_url_mismatch'),
+                    $storedUrl,
+                    $requestPath === '' ? '/' : $requestPath
+                ),
+            );
+        } else {
+            $checks[] = array(
+                'status' => 'success',
+                'title' => $lang->get('health_check_site_url'),
+                'text' => $lang->get('health_status_ok'),
+            );
+        }
     }
 
     // Execution time consistency

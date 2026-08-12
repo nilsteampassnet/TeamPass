@@ -296,6 +296,10 @@ if (!isset($_GET['step']) && !isset($post_step)) {
                             <div class="form-group">
                                 <label>Full URL to TeamPass</label>
                                 <input type="text" class="form-control" id="root_url" value="'.$protocol.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'">
+                                <small class="form-text text-muted">
+                                    This URL is saved in the settings and used to build every absolute URL of the application.
+                                    Adjust it if TeamPass is reached through a different address than the one detected.
+                                </small>
                             </div>
                         </div>
                     </div>
