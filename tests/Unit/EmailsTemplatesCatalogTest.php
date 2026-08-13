@@ -202,6 +202,59 @@ class EmailsTemplatesCatalogTest extends TestCase
         }
     }
 
+    /**
+     * The templates editor needs summernote, which public/index.php loads per page.
+     *
+     * Every page of $mngPages takes the `$menuAdmin === true` branch, so declaring the script in
+     * the `elseif (isset($get['page']))` chain below it — where the kb page does — silently loads
+     * nothing. The symptom is remote from the cause: the body stays empty, the preview does
+     * nothing and the progress toast never stops, because the missing plugin throws and skips the
+     * rest of each callback.
+     */
+    public function testSummernoteIsLoadedInsideTheAdminBranchOfIndex(): void
+    {
+        $source = (string) file_get_contents(dirname(__DIR__, 2) . '/public/index.php');
+
+        $adminBranch = strpos($source, 'if ($menuAdmin === true) {');
+        $this->assertNotFalse($adminBranch, 'The $menuAdmin asset branch is gone from public/index.php');
+
+        $nextBranch = strpos($source, "} elseif (isset(\$get['page']) === true) {", (int) $adminBranch);
+        $this->assertNotFalse($nextBranch, 'The page-specific asset branch is gone from public/index.php');
+
+        $block = substr($source, (int) $adminBranch, (int) $nextBranch - (int) $adminBranch);
+
+        $this->assertStringContainsString(
+            "\$get['page'] === 'emails_templates'",
+            $block,
+            'The emails_templates asset condition must sit in the $menuAdmin branch'
+        );
+        $this->assertStringContainsString(
+            'summernote-bs4.min.js',
+            $block,
+            'summernote is not loaded for the emails_templates page'
+        );
+    }
+
+    /**
+     * The response carries the HTML of the templates: decoding it with the client purifier
+     * returns plain text, which would show a tag-stripped body and store it on the next save.
+     */
+    public function testTemplatesPageDecodesItsResponsesWithoutThePurifier(): void
+    {
+        $source = (string) file_get_contents(dirname(__DIR__, 2) . '/app/pages/emails_templates.js.php');
+
+        $this->assertStringNotContainsString(
+            'decodeQueryReturn(',
+            $source,
+            'decodeQueryReturn() purifies the response and strips the template markup'
+        );
+        $this->assertMatchesRegularExpression(
+            '/prepareExchangedData\(\s*receivedData,\s*\'decode\'/',
+            $source,
+            'The page must decode its responses explicitly, with purification disabled'
+        );
+    }
+
     public function testLanguageCopiesAreByteIdentical(): void
     {
         $root = dirname(__DIR__, 2);

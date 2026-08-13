@@ -1538,6 +1538,16 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
         <link rel="stylesheet" src="./plugins/datatables/extensions/Scroller-1.5.0/css/scroller.bootstrap4.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
         <script type="text/javascript" src="./plugins/datatables/extensions/Scroller-1.5.0/js/dataTables.scroller.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
         <link rel="stylesheet" href="./assets/css/admin-dashboard.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
+        <?php
+        // The email templates editor is the only management page needing a rich text editor.
+        if ($get['page'] === 'emails_templates') {
+            ?>
+            <!-- SUMMERNOTE -->
+            <link rel="stylesheet" href="./plugins/summernote/summernote-bs4.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
+            <script src="./plugins/summernote/summernote-bs4.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+        <?php
+        }
+        ?>
     <?php
     } elseif (isset($get['page']) === true) {
         if (in_array($get['page'], ['items', 'import']) === true) {
@@ -1601,13 +1611,6 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
             <?php
             }
             ?>
-        <?php
-        } elseif ($get['page'] === 'emails_templates') {
-            // The templates editor is the only admin page needing a rich text editor.
-            ?>
-            <!-- SUMMERNOTE -->
-            <link rel="stylesheet" href="./plugins/summernote/summernote-bs4.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
-            <script src="./plugins/summernote/summernote-bs4.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
         <?php
         } elseif ($get['page'] === 'profile') {
             ?>

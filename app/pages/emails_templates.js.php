@@ -99,6 +99,13 @@ $groupLabels = [
 
     /**
      * Send an action to the templates handler.
+     *
+     * The response is decoded WITHOUT the client purifier: it carries the HTML of the
+     * email templates, and the purifier returns plain text for every field that is not
+     * named 'description'/'desc'/'html'. Purifying here would show the administrator a
+     * tag-stripped body and store that stripped text on the next save.
+     * Safety therefore lives at each sink below: .text() for plain values, DOMPurify for
+     * the rendered HTML, and the server re-runs xss_clean on every save.
      */
     function emailsTemplatesPost(type, data, onSuccess) {
         $.post(
@@ -108,24 +115,108 @@ $groupLabels = [
                 key: '<?php echo $session->get('key'); ?>'
             },
             function(receivedData) {
-                var answer = decodeQueryReturn(receivedData, '<?php echo $session->get('key'); ?>');
-                if (answer === false) {
+                var answer;
+                try {
+                    answer = prepareExchangedData(
+                        receivedData,
+                        'decode',
+                        '<?php echo $session->get('key'); ?>',
+                        'emails_templates.js.php',
+                        type,
+                        false
+                    );
+                } catch (exception) {
+                    emailsTemplatesFailed('<?php echo $lang->get('error'); ?>');
                     return;
                 }
-                if (answer.error === true) {
+
+                if (answer === false || answer === undefined) {
+                    // prepareExchangedData() already reported it in a modal
                     toastr.remove();
-                    toastr.error(
-                        answer.message,
-                        '', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
+                    return;
+                }
+
+                if (answer.error === true) {
+                    emailsTemplatesFailed(
+                        answer.message ? answer.message : '<?php echo $lang->get('error'); ?>'
                     );
                     return;
                 }
+
                 onSuccess(answer);
             }
+        ).fail(function() {
+            // Without this the "in progress" toast stays on screen for ever
+            emailsTemplatesFailed('<?php echo $lang->get('error'); ?>');
+        });
+    }
+
+    /**
+     * Clear any pending progress toast and report the failure.
+     */
+    function emailsTemplatesFailed(message) {
+        toastr.remove();
+        toastr.error(
+            htmlEncode(message),
+            '', {
+                timeOut: 5000,
+                progressBar: true
+            }
         );
+    }
+
+    /**
+     * Is the rich text editor available?
+     *
+     * summernote is loaded only for this page (see public/index.php). Calling it when it is
+     * absent throws, and every statement after the call in the same callback is skipped —
+     * which is exactly how a missing script tag once looked like "the body stays empty, the
+     * preview does nothing and the loader never stops". Fail loudly instead.
+     */
+    function emailsTemplatesEditorReady() {
+        if (typeof $.fn.summernote !== 'undefined') {
+            return true;
+        }
+        emailsTemplatesFailed('<?php echo $lang->get('emails_templates_editor_missing'); ?>');
+        return false;
+    }
+
+    /**
+     * Load a body into the editor, recreating it so no content leaks between templates.
+     */
+    function emailsTemplatesSetBody(html) {
+        if (emailsTemplatesEditorReady() === false) {
+            return;
+        }
+
+        if ($('#emails-templates-body').next('.note-editor').length > 0) {
+            $('#emails-templates-body').summernote('destroy');
+        }
+        $('#emails-templates-body').summernote({
+            height: 260,
+            toolbar: [
+                ['font', ['bold', 'italic', 'underline', 'clear']],
+                ['color', ['color']],
+                ['para', ['ul', 'ol', 'paragraph']],
+                ['insert', ['link']],
+                ['view', ['codeview']]
+            ],
+            codeviewFilter: false,
+            codeviewIframeFilter: true
+        });
+        $('#emails-templates-body').summernote('code', html);
+        $('.btn-light').addClass('btn-secondary').removeClass('btn-light');
+    }
+
+    /**
+     * Current content of the editor, or null when it is unavailable.
+     */
+    function emailsTemplatesGetBody() {
+        if (emailsTemplatesEditorReady() === false) {
+            return null;
+        }
+
+        return $('#emails-templates-body').summernote('code');
     }
 
     /**
@@ -236,23 +327,7 @@ $groupLabels = [
                 }
 
                 // Body editor
-                if ($('#emails-templates-body').next('.note-editor').length > 0) {
-                    $('#emails-templates-body').summernote('destroy');
-                }
-                $('#emails-templates-body').summernote({
-                    height: 260,
-                    toolbar: [
-                        ['font', ['bold', 'italic', 'underline', 'clear']],
-                        ['color', ['color']],
-                        ['para', ['ul', 'ol', 'paragraph']],
-                        ['insert', ['link']],
-                        ['view', ['codeview']]
-                    ],
-                    codeviewFilter: false,
-                    codeviewIframeFilter: true
-                });
-                $('#emails-templates-body').summernote('code', answer.body);
-                $('.btn-light').addClass('btn-secondary').removeClass('btn-light');
+                emailsTemplatesSetBody(answer.body);
 
                 // Token chips
                 var $tokens = $('#emails-templates-tokens').empty();
@@ -321,6 +396,9 @@ $groupLabels = [
                 );
                 return;
             }
+            if (emailsTemplatesEditorReady() === false) {
+                return;
+            }
             // The click blurred the editor: restore the caret before inserting
             $('#emails-templates-body').summernote('editor.restoreRange');
             $('#emails-templates-body').summernote('editor.focus');
@@ -333,7 +411,8 @@ $groupLabels = [
         });
 
         $(document).on('click', '#emails-templates-save', function() {
-            if (emailsTemplatesCurrent === '') {
+            var payload = emailsTemplatesCurrent === '' ? null : emailsTemplatesEditorPayload();
+            if (payload === null) {
                 return;
             }
 
@@ -341,12 +420,8 @@ $groupLabels = [
             toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             emailsTemplatesPost(
-                'save_template', {
-                    template: emailsTemplatesCurrent,
-                    language: $('#emails-templates-language').val(),
-                    subject: $('#emails-templates-subject').val(),
-                    body: $('#emails-templates-body').summernote('code')
-                },
+                'save_template',
+                payload,
                 function(answer) {
                     toastr.remove();
                     toastr.success('<?php echo $lang->get('done'); ?>', '', {
@@ -373,22 +448,28 @@ $groupLabels = [
         // Preview and test both render what is currently in the editor, unsaved
         // changes included, through the same normalization a save would apply.
         function emailsTemplatesEditorPayload() {
+            var body = emailsTemplatesGetBody();
+            if (body === null) {
+                return null;
+            }
+
             return {
                 template: emailsTemplatesCurrent,
                 language: $('#emails-templates-language').val(),
                 subject: $('#emails-templates-subject').val(),
-                body: $('#emails-templates-body').summernote('code')
+                body: body
             };
         }
 
         $(document).on('click', '#emails-templates-preview', function() {
-            if (emailsTemplatesCurrent === '') {
+            var payload = emailsTemplatesCurrent === '' ? null : emailsTemplatesEditorPayload();
+            if (payload === null) {
                 return;
             }
 
             emailsTemplatesPost(
                 'preview_template',
-                emailsTemplatesEditorPayload(),
+                payload,
                 function(answer) {
                     if (answer.fragment === true) {
                         $('#emails-templates-preview-fragment').removeClass('hidden');
@@ -407,7 +488,10 @@ $groupLabels = [
         });
 
         $(document).on('click', '#emails-templates-send-test', function() {
-            if (emailsTemplatesCurrent === '') {
+            // Build the payload BEFORE showing the progress toast, so a failure here
+            // cannot leave it spinning for ever.
+            var payload = emailsTemplatesCurrent === '' ? null : emailsTemplatesEditorPayload();
+            if (payload === null) {
                 return;
             }
 
@@ -416,7 +500,7 @@ $groupLabels = [
 
             emailsTemplatesPost(
                 'send_test_template',
-                emailsTemplatesEditorPayload(),
+                payload,
                 function(answer) {
                     toastr.remove();
                     toastr.success(

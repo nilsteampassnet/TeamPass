@@ -3206,6 +3206,7 @@ return array(
     'emails_templates_group_security' => 'Sécurité',
     'emails_templates_group_items' => 'Éléments',
     'emails_templates_group_maintenance' => 'Maintenance',
+    'emails_templates_editor_missing' => 'L\'éditeur de texte enrichi n\'a pas pu être chargé. Rechargez la page ; si le problème persiste, contactez votre administrateur.',
     'emails_templates_preview' => 'Aperçu',
     'emails_templates_preview_title' => 'Aperçu avec des valeurs d\'exemple',
     'emails_templates_preview_secret' => '[remplacé à l\'envoi]',

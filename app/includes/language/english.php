@@ -3077,6 +3077,7 @@ return array(
     'emails_templates_group_security' => 'Security',
     'emails_templates_group_items' => 'Items',
     'emails_templates_group_maintenance' => 'Maintenance',
+    'emails_templates_editor_missing' => 'The rich text editor could not be loaded. Reload the page; if the problem remains, contact your administrator.',
     'emails_templates_preview' => 'Preview',
     'emails_templates_preview_title' => 'Preview with sample values',
     'emails_templates_preview_secret' => '[replaced when sent]',
