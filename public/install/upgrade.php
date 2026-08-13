@@ -55,7 +55,6 @@ $post_root_url = filter_input(INPUT_POST, 'root_url', FILTER_SANITIZE_FULL_SPECI
 $post_step = filter_input(INPUT_POST, 'step', FILTER_SANITIZE_NUMBER_INT);
 $post_actual_cpm_version = filter_input(INPUT_POST, 'actual_cpm_version', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_cpm_isUTF8 = filter_input(INPUT_POST, 'cpm_isUTF8', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$post_user_granted = filter_input(INPUT_POST, 'user_granted', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_session_salt = filter_input(INPUT_POST, 'session_salt', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_url_path = filter_input(INPUT_POST, 'url_path', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_infotmp = filter_input(INPUT_POST, 'infotmp', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -186,7 +185,6 @@ echo '
                 <input type="hidden" id="actual_cpm_version" name="actual_cpm_version" value="', isset($post_actual_cpm_version) ? $post_actual_cpm_version : '', '" />
                 <input type="hidden" id="cpm_isUTF8" name="cpm_isUTF8" value="', isset($post_cpm_isUTF8) ? $post_cpm_isUTF8 : '', '" />
                 <input type="hidden" name="menu_action" id="menu_action" value="" />
-                <input type="hidden" name="user_granted" id="user_granted" value="" />
                 <input type="hidden" name="infotmp" id="infotmp" value="', isset($post_infotmp) ? $post_infotmp : '', '" />
                 <input type="hidden" name="url_path" id="url_path" value="'.$protocol.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'" />
                 <input type="hidden" name="session_salt" id="session_salt" value="', (isset($post_session_salt) && !empty($post_session_salt)) ? $post_session_salt : @$_SESSION['encrypt_key'], '" />';
@@ -275,12 +273,11 @@ if (!isset($_GET['step']) && !isset($post_step)) {
 
             </div>';
 // STEP1
-} elseif ((isset($post_step) && $post_step == 1)
-    || (isset($_GET['step']) && $_GET['step'] == 1)
-    && $post_user_granted === '1'
+} elseif (((isset($post_step) && $post_step == 1)
+    || (isset($_GET['step']) && $_GET['step'] == 1))
+    && ($_SESSION['user_granted'] ?? '') === '1'
 ) {
     //ETAPE 1
-    $_SESSION['user_granted'] = $post_user_granted;
     echo '
             <div class="row">
                 <div class="col-12">
@@ -479,9 +476,9 @@ if (!isset($_GET['step']) && !isset($post_step)) {
             </div>
             <input type="hidden" id="step1" name="step1" value="" />';
 // STEP2
-} elseif ((isset($post_step) && $post_step == 2)
-    || (isset($_GET['step']) && $_GET['step'] == 2)
-    && $_SESSION['user_granted'] === '1'
+} elseif (((isset($post_step) && $post_step == 2)
+    || (isset($_GET['step']) && $_GET['step'] == 2))
+    && ($_SESSION['user_granted'] ?? '') === '1'
 ) {
     // Do we have all database settings
     if (defined('DB_HOST')
@@ -623,7 +620,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
 // STEP3
 } elseif ((isset($post_step) && $post_step == 3 || isset($_GET['step']) && $_GET['step'] == 3)
     && isset($post_actual_cpm_version)
-    && intVal($_SESSION['user_granted']) === 1
+    && ($_SESSION['user_granted'] ?? '') === '1'
 ) {
     if (version_compare($post_actual_cpm_version, '2.1.26', '<')) {
         $conversion_utf8 = true;
@@ -648,9 +645,9 @@ if (!isset($_GET['step']) && !isset($post_step)) {
             </div>
         </div>';
 // STEP4
-} elseif ((isset($post_step) && $post_step == 4) || (isset($_GET['step'])
-    && $_GET['step'] == 4)
-    && $_SESSION['user_granted'] === '1'
+} elseif (((isset($post_step) && $post_step == 4)
+    || (isset($_GET['step']) && $_GET['step'] == 4))
+    && ($_SESSION['user_granted'] ?? '') === '1'
 ) {
     echo '
         <div class="card card-primary">
@@ -693,9 +690,9 @@ if (!isset($_GET['step']) && !isset($post_step)) {
             </div>
         </div>';
 // STEP5
-} elseif ((isset($post_step) && $post_step == 5)
-    || (isset($_GET['step']) && $_GET['step'] == 5)
-    && $_SESSION['user_granted'] === '1'
+} elseif (((isset($post_step) && $post_step == 5)
+    || (isset($_GET['step']) && $_GET['step'] == 5))
+    && ($_SESSION['user_granted'] ?? '') === '1'
 ) {
     //STEP 5
     echo '
@@ -723,9 +720,9 @@ if (!isset($_GET['step']) && !isset($post_step)) {
 
     echo '
         <div class="alert alert-info mt-4 hidden" id="res_step5"></div>';
-} elseif ((isset($post_step) && $post_step == 6)
-    || (isset($_GET['step']) && $_GET['step'] == 6)
-    && $_SESSION['user_granted'] === '1'
+} elseif (((isset($post_step) && $post_step == 6)
+    || (isset($_GET['step']) && $_GET['step'] == 6))
+    && ($_SESSION['user_granted'] ?? '') === '1'
 ) {
     // STEP 6
     $homeUrl = ((isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] == 'on' || $_SERVER['HTTPS'] == 1) || isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https') ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'/index.php';
@@ -810,6 +807,15 @@ if (!isset($_GET['step']) && !isset($post_step)) {
             });
         }
         </script>';
+} else {
+    // A step was requested but the upgrade was never granted, or the session expired
+    // before it could be used. Without this branch the page would simply show an empty
+    // step with no explanation.
+    echo '
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle mr-2"></i>Your upgrade session is not valid anymore.
+            Please <a href="upgrade.php">start again</a> and confirm your administrator credentials.
+        </div>';
 }
 
 echo '
@@ -983,7 +989,6 @@ $(function(){
                 console.log(data)
                 // manage error
                 if (data.error !== "") {
-                    $("#user_granted").val("0");
                     $('#but_next').attr('disabled');
 
                     if (currentStep === 'step1' && data.checks) {
@@ -1015,7 +1020,6 @@ $(function(){
                     }
                 } else {
                     $("#step").val(data.index);
-                    $("#user_granted").val("1");
                     $('#but_next').removeAttr('disabled');
 
                     // Special
@@ -1050,11 +1054,22 @@ $(function(){
                         }
                     } else if (currentStep === 'step5') {
                         $("#res_step5").html("Operations are successfully completed.").removeClass("hidden");
-                        var res = $.parseJSON(atob(data.info));
-                        
-                        $.each(res, function(index, value) {
-                            $('#'+value.id).html(value.html);
-                        });
+
+                        // The detailed report is base64 encoded JSON. It only refines the
+                        // display, so a malformed payload must not throw here: the spinner
+                        // is dismissed further down and would otherwise run forever.
+                        var res = null;
+                        try {
+                            res = JSON.parse(atob(data.info));
+                        } catch (e) {
+                            res = null;
+                        }
+
+                        if (res !== null) {
+                            $.each(res, function(index, value) {
+                                $('#'+value.id).html(value.html);
+                            });
+                        }
                     }
 
                     // Display

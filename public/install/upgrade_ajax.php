@@ -325,10 +325,15 @@ $session_url_path = $superGlobal->get('url_path', 'SESSION');
 if (isset($post_type)) {
     switch ($post_type) {
         case 'step0':
-            // erase session table
+            // Erase the session content and issue a new session identifier.
+            // session_destroy() must not be used here: it closes the session, so the
+            // upgrade grant stored below would be written to a dead session and lost.
+            // The next steps would then find no grant at all. Regenerating keeps the
+            // session usable and renews the identifier right after the credentials
+            // check, which is also the expected protection against session fixation.
             $_SESSION = array();
             setcookie('pma_end_session');
-            session_destroy();
+            session_regenerate_id(true);
 
             require_once './libs/aesctr.php';
             
@@ -366,12 +371,14 @@ if (isset($post_type)) {
                     '"error" : "User is not allowed",'.
                     '"index" : ""'.
                 '}]';
-                $superGlobal->put('user_granted', false, 'SESSION');
+                $superGlobal->put('user_granted', '0', 'SESSION');
             } else {
                 if ($passwordManager->verifyPassword($user_info['pw'], Encryption\Crypt\aesctr::decrypt(base64_decode($post_pwd), 'cpm', 128)) === true && $user_info['admin'] === '1') {
-                    $superGlobal->put('user_granted', true, 'SESSION');
+                    // The grant is stored as a string: every step compares it strictly
+                    // against '1'. The administrator password is deliberately not kept
+                    // in the session, it is never read back from there.
+                    $superGlobal->put('user_granted', '1', 'SESSION');
                     $superGlobal->put('user_login', mysqli_escape_string($db_link, stripslashes($post_login)), 'SESSION');
-                    $superGlobal->put('user_password', Encryption\Crypt\aesctr::decrypt(base64_decode($post_pwd), 'cpm', 128), 'SESSION');
                     $superGlobal->put('user_id', $user_info['id'], 'SESSION');
                     echo '[{'.
                         '"error" : "",'.
@@ -381,7 +388,7 @@ if (isset($post_type)) {
                         )) . '"'.
                     '}]';
                 } else {
-                    $superGlobal->put('user_granted', false, 'SESSION');
+                    $superGlobal->put('user_granted', '0', 'SESSION');
                     echo '[{'.
                         '"error" : "User is not allowed",'.
                         '"index" : ""'.
