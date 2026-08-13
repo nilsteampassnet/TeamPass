@@ -35,6 +35,47 @@ use TeampassClasses\ConfigManager\ConfigManager;
 use TeampassClasses\SessionManager\SessionManager;
 
 
+// Buffer the whole answer. Any stray byte emitted before the session is started
+// (a BOM, a warning displayed by a permissive php.ini, output coming from an
+// included file) would otherwise make session_start() fail with "headers already
+// sent" and turn the answer into an HTML fatal error the wizard cannot read.
+ob_start();
+
+/**
+ * Answer with the JSON envelope expected by upgrade.php when PHP dies.
+ *
+ * Every case of this script answers with `[{"error": "...", "index": ""}]`. On a
+ * fatal error PHP would instead return an HTML error page, which the wizard
+ * cannot parse: it would stay stuck on its progress spinner with no message.
+ * Registered as a shutdown function so the contract is honoured in every case.
+ *
+ * @return void
+ */
+function upgradeAjaxShutdownHandler(): void
+{
+    $error = error_get_last();
+    $fatalTypes = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR];
+
+    if ($error === null || in_array($error['type'], $fatalTypes, true) === false) {
+        return;
+    }
+
+    // Drop what was buffered: it is either stray output or a partial answer.
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+
+    echo json_encode([
+        [
+            'error' => 'PHP fatal error: ' . $error['message']
+                . ' in ' . $error['file'] . ' on line ' . $error['line'],
+            'index' => '',
+        ],
+    ]);
+}
+
+register_shutdown_function('upgradeAjaxShutdownHandler');
+
 $_SESSION = [];
 
 function settingsConsistencyCheck(): array
@@ -201,6 +242,14 @@ loadClasses('DB');
 // SessionManager registers the EncryptedSessionProxy handler; a bare session_start()
 // would read unintelligible encrypted bytes and return an empty $_SESSION.
 SessionManager::getSession();
+
+// Everything above must be silent. Anything buffered at this point is stray
+// output that would corrupt the JSON answer, so log it and drop it.
+if (ob_get_length() > 0) {
+    error_log('TeamPass upgrade: unexpected output before the JSON answer: ' . ob_get_contents());
+    ob_clean();
+}
+
 $superGlobal = new SuperGlobal();
 $lang = new Language();
 

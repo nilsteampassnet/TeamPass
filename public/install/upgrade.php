@@ -971,11 +971,15 @@ $(function(){
             url: "upgrade_ajax.php",
             type : "POST",
             dataType : "json",
-            async: false,
             data : postData,
             complete : function(result, status){
                 //console.log(result.responseText)
-                data = $.parseJSON(result.responseText)[0];
+                var data = upgradeParseAjaxResponse(result);
+                if (data === false) {
+                    // Non JSON answer (PHP fatal, 500 page, stray output).
+                    upgradeAjaxFailure(result, "#res_" + currentStep);
+                    return;
+                }
                 console.log(data)
                 // manage error
                 if (data.error !== "") {
@@ -1148,7 +1152,9 @@ function manageUpgradeScripts(file_number)
             }
         },
         "json"
-    );
+    ).fail(function(jqXHR) {
+        upgradeAjaxFailure(jqXHR, "#step4_progress", true);
+    });
 }
 
 var usersList = [],
@@ -1391,7 +1397,9 @@ function migrateUsersToV3(step, data, number, rand_number, loop_start, loop_fini
             }
         },
         "json"
-    );
+    ).fail(function(jqXHR) {
+        upgradeAjaxFailure(jqXHR, "#step4_progress", true);
+    });
 }
 
 /**
@@ -1451,7 +1459,9 @@ function sendPwdToUsers(usersList, init, cpt, total)
             }
         },
         "json"
-    );
+    ).fail(function(jqXHR) {
+        upgradeAjaxFailure(jqXHR, "#step4_progress", true);
+    });
 }
 
 function runUpdate (script_file, type_parameter, start_at, noitems_by_loop, loop_number, file_number)
@@ -1505,7 +1515,10 @@ function runUpdate (script_file, type_parameter, start_at, noitems_by_loop, loop
             }
         },
         "json"
-    );
+    ).fail(function(jqXHR) {
+        $("#span_"+rand_number).html("<i class=\"fas fa-thumbs-down\" style=\"color:red\"></i>");
+        upgradeAjaxFailure(jqXHR, "#step4_progress", true);
+    });
 }
 
 function newEncryptPw(suggestion)
@@ -1549,7 +1562,10 @@ function newEncryptPw(suggestion)
             }
         },
         "json"
-    );
+    ).fail(function(jqXHR) {
+        $("#change_pw_encryption_progress").html("Failed");
+        upgradeAjaxFailure(jqXHR, "#res_step4");
+    });
 
 }
 
@@ -1570,7 +1586,7 @@ function launch_database_dump() {
                 $("#dump_result").html(data[0].error);
 
                 alertify
-                    .Error('Error', 1)
+                    .error('Error', 5)
                     .dismissOthers();
             } else {
                 // DONE
@@ -1582,7 +1598,72 @@ function launch_database_dump() {
             }
         },
         "json"
-    );
+    ).fail(function(jqXHR) {
+        upgradeAjaxFailure(jqXHR, "#dump_result");
+    });
+}
+
+/**
+ * Parse the JSON envelope returned by an upgrade AJAX endpoint.
+ *
+ * Every upgrade endpoint answers with `[{"error": "...", ...}]`. When PHP fails
+ * before reaching that echo (fatal error, 500 page, stray output sent before the
+ * JSON) the body is not parsable and the caller must not blow up: an uncaught
+ * exception in a jQuery callback leaves the alertify spinner - opened with a `0`
+ * timeout - running forever and the wizard looks frozen (issue #5329).
+ *
+ * @param {object} jqXHR jQuery XHR object of the completed request
+ * @returns {object|boolean} the first element of the envelope, or false
+ */
+function upgradeParseAjaxResponse(jqXHR)
+{
+    var parsed;
+
+    try {
+        parsed = JSON.parse(jqXHR.responseText);
+    } catch (e) {
+        return false;
+    }
+
+    if (Array.isArray(parsed) === false || parsed.length === 0 || parsed[0] === null || typeof parsed[0] !== 'object') {
+        return false;
+    }
+
+    return parsed[0];
+}
+
+/**
+ * Report an upgrade step that could not be completed.
+ *
+ * Dismisses the progress spinner and shows both a toast and, when available, the
+ * raw server answer in the step result area so the failure can be diagnosed.
+ *
+ * @param {object}  jqXHR             jQuery XHR object of the failed request
+ * @param {string}  containerSelector selector of the result area to fill in
+ * @param {boolean} prepend           prepend to the container instead of replacing it
+ * @returns {void}
+ */
+function upgradeAjaxFailure(jqXHR, containerSelector, prepend)
+{
+    var status = (jqXHR && jqXHR.status) ? jqXHR.status : 0,
+        body = (jqXHR && typeof jqXHR.responseText === 'string') ? jqXHR.responseText : '',
+        message = 'The server returned an unexpected answer (HTTP ' + status + '). '
+            + 'Please check the web server and PHP error logs.',
+        html = '<i class="fa-solid fa-exclamation-triangle mr-2"></i>' + message
+            + (body === '' ? '' : '<pre class="mt-2 mb-0 text-left" style="max-height:250px;overflow:auto;white-space:pre-wrap;">'
+                + $('<div>').text(body.substring(0, 2000)).html() + '</pre>');
+
+    alertify
+        .error('<i class="fas fa-exclamation-triangle mr-2"></i>' + message, 10)
+        .dismissOthers();
+
+    if (containerSelector && $(containerSelector).length > 0) {
+        if (prepend === true) {
+            $(containerSelector).html('<div class="text-danger">' + getTime() + ' - ' + html + '</div>' + $(containerSelector).html());
+        } else {
+            $(containerSelector).html(html).removeClass('hidden');
+        }
+    }
 }
 
 function createRandomId()
