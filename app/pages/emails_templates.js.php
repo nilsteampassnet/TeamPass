@@ -100,18 +100,27 @@ $groupLabels = [
     /**
      * Send an action to the templates handler.
      *
-     * The response is decoded WITHOUT the client purifier: it carries the HTML of the
-     * email templates, and the purifier returns plain text for every field that is not
-     * named 'description'/'desc'/'html'. Purifying here would show the administrator a
-     * tag-stripped body and store that stripped text on the next save.
-     * Safety therefore lives at each sink below: .text() for plain values, DOMPurify for
-     * the rendered HTML, and the server re-runs xss_clean on every save.
+     * Neither direction goes through the client purifier: it returns plain text for every
+     * field that is not named 'description'/'desc'/'html', and this page exchanges nothing
+     * but the HTML of the email bodies.
+     * On the way OUT it would strip the markup from the whole payload before it is even
+     * sent — the administrator saves bold text and stores plain text. On the way IN it
+     * would show a tag-stripped body, which the next save then makes permanent.
+     * Safety therefore lives at each sink: .text() for plain values, DOMPurify for the
+     * rendered preview, and the server runs xss_clean on every save.
      */
     function emailsTemplatesPost(type, data, onSuccess) {
         $.post(
             'sources/emails_templates.queries.php', {
                 type: type,
-                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                data: prepareExchangedData(
+                    JSON.stringify(data),
+                    'encode',
+                    '<?php echo $session->get('key'); ?>',
+                    'emails_templates.js.php',
+                    type,
+                    false
+                ),
                 key: '<?php echo $session->get('key'); ?>'
             },
             function(receivedData) {
@@ -192,12 +201,15 @@ $groupLabels = [
         if ($('#emails-templates-body').next('.note-editor').length > 0) {
             $('#emails-templates-body').summernote('destroy');
         }
+        // Only the formatting that survives the sanitizing applied when the email is
+        // actually sent is offered. Colours, highlighting and alignment are inline
+        // styles, and xss_clean() drops every style attribute, so those buttons would
+        // let the administrator format text that the recipient never sees.
         $('#emails-templates-body').summernote({
             height: 260,
             toolbar: [
                 ['font', ['bold', 'italic', 'underline', 'clear']],
-                ['color', ['color']],
-                ['para', ['ul', 'ol', 'paragraph']],
+                ['para', ['ul', 'ol']],
                 ['insert', ['link']],
                 ['view', ['codeview']]
             ],

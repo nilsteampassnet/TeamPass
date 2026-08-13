@@ -51,6 +51,52 @@ class EmailsTemplatesLogicTest extends TestCase
         $this->assertStringContainsString('#reset_url#', $body);
     }
 
+    /**
+     * What the rich text editor produces must reach the recipient.
+     *
+     * Every button left in the toolbar emits one of these, so a change in the sanitizer
+     * that swallows one of them turns into "the formatting disappears when I save".
+     */
+    public function testBodyKeepsWhatTheEditorToolbarProduces(): void
+    {
+        $body = emailsTemplatesNormalizeBody(
+            "<p>Hello <b>bold</b> <i>italic</i> <u>underline</u></p>\n"
+            . '<p>Second line<br>after a break</p>'
+            . '<ol><li>one</li></ol><ul><li>two</li></ul>'
+            . '<a href="#tp_link#">open</a>',
+            $this->antiXss
+        );
+
+        foreach (
+            [
+                '<p>', '<b>bold</b>', '<i>italic</i>', '<u>underline</u>', '<br>',
+                '<ol><li>one</li></ol>', '<ul><li>two</li></ul>', '<a href="#tp_link#">open</a>',
+            ] as $markup
+        ) {
+            $this->assertStringContainsString(
+                $markup,
+                $body,
+                sprintf('The save no longer keeps %s, which the editor can produce', $markup)
+            );
+        }
+    }
+
+    /**
+     * Inline styles are dropped, which is why the toolbar offers no colour, no
+     * highlighting and no alignment: the same sanitizing runs when the email is sent, so
+     * offering them would only let the administrator format what nobody receives.
+     */
+    public function testBodyDropsInlineStyles(): void
+    {
+        $body = emailsTemplatesNormalizeBody(
+            '<p style="text-align: center;"><span style="color: rgb(255, 0, 0);">red</span></p>',
+            $this->antiXss
+        );
+
+        $this->assertStringNotContainsString('style=', $body);
+        $this->assertStringContainsString('red', $body);
+    }
+
     public function testBodyDropsScriptAndNewlines(): void
     {
         $body = emailsTemplatesNormalizeBody(

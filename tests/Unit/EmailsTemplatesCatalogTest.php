@@ -256,6 +256,54 @@ class EmailsTemplatesCatalogTest extends TestCase
     }
 
     /**
+     * The outbound payload must skip the client purifier too.
+     *
+     * prepareExchangedData(..., 'encode') purifies by default, and purifyData() returns
+     * plain text for every field that is not named description/desc/html. The whole
+     * payload is one JSON string here, so the default silently strips the markup of the
+     * body before it is even posted: the administrator formats text and saves plain text,
+     * and the preview shows the same flattened content.
+     */
+    public function testTemplatesPageEncodesItsPayloadWithoutThePurifier(): void
+    {
+        $source = (string) file_get_contents(dirname(__DIR__, 2) . '/app/pages/emails_templates.js.php');
+
+        $this->assertSame(
+            1,
+            preg_match(
+                '/prepareExchangedData\(\s*JSON\.stringify\(data\),\s*\'encode\',.*?,\s*false\s*\)/s',
+                $source
+            ),
+            'The page must encode its payload with purification disabled'
+        );
+    }
+
+    /**
+     * The editor must not offer formatting the email will never carry.
+     *
+     * sendMailToUser() runs xss_clean() on the body at send time, which drops every style
+     * attribute — so colours, highlighting and alignment are lost between the editor and
+     * the recipient.
+     */
+    public function testEditorOffersOnlyFormattingThatSurvivesSanitizing(): void
+    {
+        $source = (string) file_get_contents(dirname(__DIR__, 2) . '/app/pages/emails_templates.js.php');
+
+        $start = strpos($source, 'toolbar: [');
+        $this->assertNotFalse($start, 'The summernote toolbar is gone from the templates page');
+        $end = strpos($source, '],', (int) $start);
+        $toolbar = substr($source, (int) $start, (int) $end - (int) $start);
+
+        foreach (["'color'", "'paragraph'", "'height'", "'fontsize'"] as $styleBased) {
+            $this->assertStringNotContainsString(
+                $styleBased,
+                $toolbar,
+                sprintf('The toolbar offers %s, whose inline style is stripped when the email is sent', $styleBased)
+            );
+        }
+    }
+
+    /**
      * A subject must be customizable end to end.
      *
      * `subject_prefix` is the shipped default only: the single resolver drops it

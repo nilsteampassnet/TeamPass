@@ -83,7 +83,7 @@ the prefixed default comes back.
 | Field | What TeamPass does |
 |---|---|
 | Subject | Markup removed, line breaks collapsed into spaces. A subject travels in a mail header, so it must stay plain text. |
-| Body | Sanitized against XSS (scripts and event handlers removed), line breaks removed. The formatting tags emails rely on — `<b>`, `<br>`, `<ul>`, `<li>`, `<a href>` — are kept. |
+| Body | Sanitized against XSS (scripts and event handlers removed), line breaks removed. The formatting tags emails rely on — `<p>`, `<b>`, `<i>`, `<u>`, `<br>`, `<ul>`, `<ol>`, `<li>`, `<a href>` — are kept. Inline styles are **not**: the same sanitizing runs when the email is sent, and it drops every `style` attribute. That is why the editor offers no colour, no highlighting and no alignment — they would look right in the editor and never reach the recipient. |
 | Both | Refused above 64 KB. |
 
 Every save and every reset is recorded in **Utilities → Logs**, administration tab, with the email
