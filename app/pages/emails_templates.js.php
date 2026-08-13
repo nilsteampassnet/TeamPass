@@ -299,12 +299,6 @@ $groupLabels = [
                 } else {
                     $('#emails-templates-subject-group').removeClass('hidden');
                     $('#emails-templates-subject').val(answer.subject);
-                    if (answer.subject_prefix === '') {
-                        $('#emails-templates-subject-prefix-group').addClass('hidden');
-                    } else {
-                        $('#emails-templates-subject-prefix').text(answer.subject_prefix);
-                        $('#emails-templates-subject-prefix-group').removeClass('hidden');
-                    }
                 }
 
                 // Subject shared with other emails

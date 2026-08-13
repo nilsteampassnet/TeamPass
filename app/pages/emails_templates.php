@@ -161,12 +161,7 @@ $templatesEnabled = isset($SETTINGS['emails_templates_enabled']) === false
 
                             <div class="form-group" id="emails-templates-subject-group">
                                 <label for="emails-templates-subject"><?php echo $lang->get('emails_templates_subject'); ?></label>
-                                <div class="input-group input-group-sm">
-                                    <div class="input-group-prepend hidden" id="emails-templates-subject-prefix-group">
-                                        <span class="input-group-text" id="emails-templates-subject-prefix"></span>
-                                    </div>
-                                    <input type="text" class="form-control form-control-sm" id="emails-templates-subject">
-                                </div>
+                                <input type="text" class="form-control form-control-sm" id="emails-templates-subject">
                                 <small class="form-text text-muted"><?php echo $lang->get('emails_templates_subject_tip'); ?></small>
                             </div>
 

@@ -167,6 +167,21 @@ class Language {
     }
 
     /**
+     * Tells whether an administrator customization applies to a key.
+     *
+     * Used by the callers that prepend a literal prefix to a subject
+     * (`TEAMPASS - `, ...): that prefix belongs to the shipped default only, so
+     * a customized subject must be sent verbatim and stay editable end to end.
+     *
+     * @param string $key The translation key.
+     * @return bool True when the value comes from the emails_templates table.
+     */
+    public function isCustomized(string $key): bool
+    {
+        return $this->getEmailOverride($key) !== null;
+    }
+
+    /**
      * Returns the administrator customization for an email template key, or null.
      *
      * Resolution mirrors the language files: the current language wins, English

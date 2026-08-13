@@ -255,6 +255,124 @@ class EmailsTemplatesCatalogTest extends TestCase
         );
     }
 
+    /**
+     * A subject must be customizable end to end.
+     *
+     * `subject_prefix` is the shipped default only: the single resolver drops it
+     * as soon as an administrator has customized the subject. A call site that
+     * concatenates the prefix itself would put it back on every email and make
+     * the first words of the line uneditable again.
+     */
+    public function testNoCallSiteConcatenatesASubjectPrefix(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $prefixes = [];
+        foreach (self::$catalog as $template) {
+            $prefix = (string) ($template['subject_prefix'] ?? '');
+            if ($prefix !== '') {
+                $prefixes[$prefix] = true;
+            }
+        }
+        $this->assertNotEmpty($prefixes, 'No prefixed subject left to guard — drop this test');
+
+        $files = [
+            'app/scripts/traits/UserHandlerTrait.php',
+            'app/sources/main.queries.php',
+            'app/sources/emails_templates.queries.php',
+        ];
+
+        foreach ($files as $file) {
+            $source = (string) file_get_contents($root . '/' . $file);
+            foreach (array_keys($prefixes) as $prefix) {
+                $this->assertStringNotContainsString(
+                    "'" . $prefix . "' .",
+                    $source,
+                    sprintf('%s prepends "%s" to a subject instead of using getEmailTemplateSubject()', $file, $prefix)
+                );
+            }
+            $this->assertStringNotContainsString(
+                "subject_prefix'] ?? '') . emailsTemplates",
+                $source,
+                sprintf('%s prepends the default prefix to an edited subject', $file)
+            );
+        }
+
+        $this->assertStringContainsString(
+            'getEmailTemplateSubject(',
+            (string) file_get_contents($root . '/app/scripts/traits/UserHandlerTrait.php'),
+            'UserHandlerTrait must resolve its subject through the shared resolver'
+        );
+        $this->assertStringContainsString(
+            'getEmailTemplateSubject($mailTemplateId',
+            (string) file_get_contents($root . '/app/sources/main.queries.php'),
+            'mail_me must resolve its subject through the shared resolver'
+        );
+    }
+
+    /**
+     * UserHandlerTrait resolves the subject from a single template identifier
+     * while sending four different bodies. That shortcut is only correct as long
+     * as those bodies share one subject key and one prefix.
+     */
+    public function testUserHandlerCredentialTemplatesShareOneSubject(): void
+    {
+        $shared = [
+            'user_keys_ready_credentials',
+            'user_new_password',
+            'user_keys_ready',
+            'user_created_credentials',
+        ];
+
+        $reference = self::$catalog['user_keys_ready_credentials'];
+        foreach ($shared as $id) {
+            $this->assertArrayHasKey($id, self::$catalog, sprintf('Template "%s" left the catalog', $id));
+            $this->assertSame(
+                $reference['subject_key'],
+                self::$catalog[$id]['subject_key'],
+                sprintf('Template "%s" no longer shares the credentials subject key', $id)
+            );
+            $this->assertSame(
+                $reference['subject_prefix'] ?? '',
+                self::$catalog[$id]['subject_prefix'] ?? '',
+                sprintf('Template "%s" no longer shares the credentials subject prefix', $id)
+            );
+        }
+    }
+
+    /**
+     * The editor holds the complete subject line, so the read-only prefix block
+     * has no reason to exist any more.
+     */
+    public function testTemplatesPageShowsNoReadOnlySubjectPrefix(): void
+    {
+        $root = dirname(__DIR__, 2);
+
+        foreach (['app/pages/emails_templates.php', 'app/pages/emails_templates.js.php'] as $file) {
+            $this->assertStringNotContainsString(
+                'emails-templates-subject-prefix',
+                (string) file_get_contents($root . '/' . $file),
+                sprintf('%s still renders the subject prefix outside the editable field', $file)
+            );
+        }
+
+        $this->assertStringNotContainsString(
+            "'subject_prefix' =>",
+            (string) file_get_contents($root . '/app/sources/emails_templates.queries.php'),
+            'The prefix must not be sent to the page any more'
+        );
+    }
+
+    public function testLanguageExposesTheCustomizationFlag(): void
+    {
+        $this->assertStringContainsString(
+            'public function isCustomized(string $key): bool',
+            (string) file_get_contents(
+                dirname(__DIR__, 2) . '/app/vendor/teampassclasses/language/src/Language.php'
+            ),
+            'getEmailTemplateSubject() needs Language::isCustomized() to know when to drop the prefix'
+        );
+    }
+
     public function testLanguageCopiesAreByteIdentical(): void
     {
         $root = dirname(__DIR__, 2);

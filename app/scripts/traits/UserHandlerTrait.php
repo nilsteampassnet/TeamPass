@@ -702,16 +702,18 @@ trait UserHandlerTrait {
                 : 'email_body_user_config_1';
 
             // An externally authenticated account (LDAP/SSO) receives no credential in
-            // this email, so the subject must not announce one.
-            $emailSubjectKey = $emailBodyKey === 'email_body_user_config_2'
-                ? 'email_subject_account_ready'
-                : 'login_credentials';
+            // this email, so the subject must not announce one. Every other body
+            // handled here shares the credentials subject, hence a single template
+            // identifier: it only resolves the subject, never the body.
+            $emailTemplateId = $emailBodyKey === 'email_body_user_config_2'
+                ? 'user_account_ready'
+                : 'user_keys_ready_credentials';
 
             sendMailToUser(
                 filter_var($userInfo['email'], FILTER_SANITIZE_EMAIL),
                 // @scrutinizer ignore-type
                 $lang->get($emailBodyKey),
-                'TEAMPASS - ' . $lang->get($emailSubjectKey),
+                getEmailTemplateSubject($emailTemplateId, $lang),
                 (array) filter_var_array(
                     [
                         // '#lastname#' historically carries the FIRST name (users.name).

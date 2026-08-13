@@ -71,8 +71,10 @@ Several emails share the same subject. Changing the subject of *Encryption keys 
 it for *Password changed by an administrator* and *Account created by an administrator*, and the
 editor lists which ones when it happens.
 
-Three subjects also carry a fixed prefix built outside the template (`TEAMPASS - `, `[Teampass] `).
-The editor shows it as read-only context before the field: you edit what follows it.
+Some subjects ship with a prefix that is not part of the translation (`TEAMPASS - `,
+`[Teampass] `). The editor shows the complete line, prefix included, and the whole of it is
+yours to edit — remove the prefix and it disappears from the emails sent. Reset the template and
+the prefixed default comes back.
 
 ---
 

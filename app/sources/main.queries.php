@@ -579,7 +579,7 @@ function mailHandler(string $post_type, /*php8 array|null|string */$dataReceived
             // identifier from the email templates catalog is accepted, and the text
             // is resolved server-side. Before that, a manager could mail arbitrary
             // content to the users they administrate.
-            $mailCatalog = require TEAMPASS_APP . '/config/emails_templates.php';
+            $mailCatalog = emailTemplatesCatalog();
             $mailTemplateId = (string) filter_var($dataReceived['template'] ?? '', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             if (isset($mailCatalog[$mailTemplateId]) === false
                 || empty($mailCatalog[$mailTemplateId]['subject_key']) === true
@@ -601,8 +601,7 @@ function mailHandler(string $post_type, /*php8 array|null|string */$dataReceived
             }
             $recipientLanguage = new Language($recipientLanguageName);
 
-            $mailSubject = (string) ($mailTemplate['subject_prefix'] ?? '')
-                . $recipientLanguage->get((string) $mailTemplate['subject_key']);
+            $mailSubject = getEmailTemplateSubject($mailTemplateId, $recipientLanguage);
             $mailBody = $recipientLanguage->get((string) $mailTemplate['body_key']);
 
             // Only the placeholders this template declares may be substituted

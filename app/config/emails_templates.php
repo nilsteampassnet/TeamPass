@@ -48,9 +48,11 @@ declare(strict_types=1);
  *
  *   'group'           string  UI grouping: users|auth|security|items|maintenance
  *   'subject_key'     ?string language key of the subject, null for a fragment
- *   'subject_prefix'  string  literal text the caller prepends to the subject
- *                             (hard-coded outside the language file, shown as
- *                             read-only context in the UI)
+ *   'subject_prefix'  string  literal text prepended to the SHIPPED subject
+ *                             (hard-coded outside the language file). It is part
+ *                             of the default only: `getEmailTemplateSubject()`
+ *                             drops it as soon as the subject is customized, so
+ *                             the administrator owns the whole line.
  *   'body_key'        string  language key of the body
  *   'tokens'          array   markers the call site actually substitutes
  *   'required_tokens' array   removing one of these breaks the email: save is refused

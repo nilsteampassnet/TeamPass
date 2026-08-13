@@ -326,9 +326,13 @@ switch ($post_type) {
                 'fragment' => ($template['fragment'] ?? false) === true,
                 'subject_key' => $subjectKey,
                 'body_key' => $bodyKey,
-                'subject_prefix' => (string) ($template['subject_prefix'] ?? ''),
-                'subject' => $subjectKey === '' ? '' : $targetLang->get($subjectKey),
-                'subject_shipped' => $subjectKey === '' ? '' : $targetLang->getShipped($subjectKey),
+                // Both carry the default prefix when the subject is not
+                // customized: the administrator edits the whole line, and what
+                // they save is sent as is.
+                'subject' => $subjectKey === '' ? '' : getEmailTemplateSubject($templateId, $targetLang),
+                'subject_shipped' => $subjectKey === ''
+                    ? ''
+                    : (string) ($template['subject_prefix'] ?? '') . $targetLang->getShipped($subjectKey),
                 'body' => $targetLang->get($bodyKey),
                 'body_shipped' => $targetLang->getShipped($bodyKey),
                 'tokens' => array_values((array) $template['tokens']),
@@ -527,8 +531,9 @@ switch ($post_type) {
         ]);
 
         // The subject carries its own token list: only #tp_status# is substituted
-        // there, and only for the scheduled backup report.
-        $renderedSubject = (string) ($template['subject_prefix'] ?? '') . emailsTemplatesRenderPreview(
+        // there, and only for the scheduled backup report. Nothing is prepended:
+        // the editor already holds the whole line.
+        $renderedSubject = emailsTemplatesRenderPreview(
             $subject,
             (array) ($template['subject_tokens'] ?? []),
             $samples

@@ -8712,6 +8712,58 @@ function returnIfSet($value, $retFalse = '', $retTrue = null): mixed
 
 
 /**
+ * Loads the emails templates catalog.
+ *
+ * Read once per request: the file is a plain array literal and is also needed
+ * by Language, which keeps its own copy of the keys only.
+ *
+ * @return array<string, array<string, mixed>>
+ */
+function emailTemplatesCatalog(): array
+{
+    static $catalog = null;
+
+    if ($catalog === null) {
+        $file = TEAMPASS_APP . '/config/emails_templates.php';
+        $catalog = file_exists($file) === true ? (array) require $file : [];
+    }
+
+    return $catalog;
+}
+
+/**
+ * Resolves the subject line of an email template.
+ *
+ * Some emails historically prepend a literal prefix to the translated subject
+ * (`TEAMPASS - `, `[Teampass] `). That prefix is part of the shipped default
+ * only: as soon as an administrator customizes the subject they own the whole
+ * line, prefix included, and nothing is added to what they typed.
+ *
+ * @param string $templateId Identifier from app/config/emails_templates.php.
+ * @param object $lang       Language instance of the RECIPIENT.
+ * @return string The subject to send, empty when the template has no subject.
+ */
+function getEmailTemplateSubject(string $templateId, $lang): string
+{
+    $catalog = emailTemplatesCatalog();
+    if (isset($catalog[$templateId]) === false
+        || empty($catalog[$templateId]['subject_key']) === true
+    ) {
+        return '';
+    }
+
+    $subjectKey = (string) $catalog[$templateId]['subject_key'];
+
+    // Customized: sent as typed, no prefix.
+    if ($lang->isCustomized($subjectKey) === true) {
+        return (string) $lang->get($subjectKey);
+    }
+
+    return (string) ($catalog[$templateId]['subject_prefix'] ?? '')
+        . (string) $lang->getShipped($subjectKey);
+}
+
+/**
  * SEnd email to user
  *
  * @param string $post_receipt
