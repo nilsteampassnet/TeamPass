@@ -37,6 +37,20 @@ $lang = new Language($session->get('user-language') ?? 'english');
 ?>
 <style>
     #tp-notification-menu { width: 360px; max-width: 92vw; }
+    /* Keep the header and footer visible while long notification lists scroll. */
+    #tp-notification-menu #tp-notification-list {
+        max-height: min(60vh, 30rem);
+        overflow-x: hidden;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-width: thin;
+    }
+    #tp-notification-menu #tp-notification-list::-webkit-scrollbar { width: 6px; }
+    #tp-notification-menu #tp-notification-list::-webkit-scrollbar-thumb {
+        background-color: rgba(108, 117, 125, 0.55);
+        border-radius: 3px;
+    }
+    #tp-notification-menu #tp-notification-list::-webkit-scrollbar-track { background: transparent; }
     #tp-notification-menu .tp-notification-row { white-space: normal; }
     #tp-notification-menu .tp-notification-when { white-space: nowrap; flex: 0 0 auto; }
     #tp-notification-menu .tp-notification-detail { word-break: break-word; }
