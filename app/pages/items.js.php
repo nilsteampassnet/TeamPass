@@ -1412,7 +1412,13 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
                 if (debugJavascript === true) console.info('SHOW DELETE ITEM');
                 if (store.get('teampassItem').user_can_modify === 1) {
-                    $('#modal-item-delete').modal('show');
+                    showItemDeleteModal(
+                        store.get('teampassItem').id,
+                        store.get('teampassItem').item_key !== undefined ? store.get('teampassItem').item_key : '',
+                        selectedFolderId,
+                        store.get('teampassItem').hasAccessLevel,
+                        true
+                    );
                 } else {
                     toastr.remove();
                     toastr.error(
@@ -2127,16 +2133,46 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
 
     /**
+     * Prepare and show the shared item deletion confirmation modal.
+     *
+     * @param {number} itemId Item identifier
+     * @param {string} itemKey Item encryption key, when available
+     * @param {number} folderId Parent folder identifier
+     * @param {string|number} hasAccessLevel Current access level, when available
+     * @param {boolean} closeItemCard Whether the detail card must close after deletion
+     * @return {void}
+     */
+    function showItemDeleteModal(itemId, itemKey, folderId, hasAccessLevel, closeItemCard)
+    {
+        $('#form-item-delete-perform')
+            .prop('disabled', false)
+            .html('<?php echo $lang->get('perform'); ?>')
+            .data('deleteContext', {
+                itemId: itemId,
+                itemKey: itemKey,
+                folderId: folderId,
+                hasAccessLevel: hasAccessLevel,
+                closeItemCard: closeItemCard
+            });
+        $('#modal-item-delete').modal('show');
+    }
+
+    /**
      * DELETE - recycle item
      */
     $('#form-item-delete-perform').click(function() {
+        var deleteContext = $(this).data('deleteContext');
+        if (deleteContext === undefined || parseInt(deleteContext.itemId, 10) <= 0) {
+            return false;
+        }
+
         $(this).prop('disabled', true).html('<i class="fa-solid fa-circle-notch fa-spin mr-1"></i>');
         goDeleteItem(
-            store.get('teampassItem').id,
-            store.get('teampassItem').item_key !== undefined ? store.get('teampassItem').item_key : '',
-            selectedFolderId,
-            store.get('teampassItem').hasAccessLevel,
-            true
+            deleteContext.itemId,
+            deleteContext.itemKey,
+            deleteContext.folderId,
+            deleteContext.hasAccessLevel,
+            deleteContext.closeItemCard
         );
     });
 
@@ -3240,38 +3276,14 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     return false;
                 }
 
-                // SHow dialog
-                showModalDialogBox(
-                    '#warningModal',
-                    '<i class="fa-solid fa-triangle-exclamation mr-2 text-warning"></i><?php echo $lang->get('caution'); ?>',
-                    '<?php echo $lang->get('please_confirm_deletion'); ?>',
-                    '<?php echo $lang->get('delete'); ?>',
-                    '<?php echo $lang->get('close'); ?>',
-                    false,
-                    false,
+                // Show the same deletion confirmation modal as the item detail card
+                showItemDeleteModal(
+                    itemIdToDelete,
+                    '',
+                    selectedFolderId,
+                    '',
                     false
                 );
-                
-                // Launch deletion
-                $(document)
-                    .off('click.tpDeleteItemConfirm', '#warningModalButtonAction')
-                    .one('click.tpDeleteItemConfirm', '#warningModalButtonAction', {itemKey:$(this).data('item-key')}, function(event2) {
-                        event2.preventDefault();
-
-                        goDeleteItem(
-                            itemIdToDelete,
-                            '',
-                            selectedFolderId,
-                            '',
-                            false
-                        );
-                        $('#warningModal').modal('hide');
-                    });
-                $(document)
-                    .off('click.tpDeleteItemConfirm', '#warningModalButtonClose')
-                    .one('click.tpDeleteItemConfirm', '#warningModalButtonClose', function() {
-                        requestRunning = false;
-                    });
             });
         });
 
