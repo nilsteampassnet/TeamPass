@@ -2170,6 +2170,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     progressBar: true
                 }
             );
+            $('#form-item-delete-perform').prop('disabled', false).html('<?php echo $lang->get('perform'); ?>');
             requestRunning = false;
             return false;
         }
@@ -2186,6 +2187,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'delete_item');
 
                 if (typeof data !== 'undefined' && data.error !== true) {
+                    $('#form-item-delete-perform').prop('disabled', false).html('<?php echo $lang->get('perform'); ?>');
                     $('#modal-item-delete').modal('hide');
                     // Warn user
                     toastrUpdate(loadingToast, 'success',
