@@ -560,7 +560,7 @@ function mailHandler(string $post_type, /*php8 array|null|string */$dataReceived
         case 'mail_me'://action_mail
             // Get info about user to send email
             $data_user = DB::queryFirstRow(
-                'SELECT admin, gestionnaire, can_manage_all_users, isAdministratedByRole FROM ' . prefixTable('users') . '
+                'SELECT admin, gestionnaire, can_manage_all_users, isAdministratedByRole, user_language FROM ' . prefixTable('users') . '
                 WHERE email = %s',
                 filter_var($dataReceived['receipt'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)
             );
@@ -573,6 +573,43 @@ function mailHandler(string $post_type, /*php8 array|null|string */$dataReceived
                     ),
                     'encode'
                 );
+            }
+
+            // The subject and the body are NEVER taken from the request: only an
+            // identifier from the email templates catalog is accepted, and the text
+            // is resolved server-side. Before that, a manager could mail arbitrary
+            // content to the users they administrate.
+            $mailCatalog = emailTemplatesCatalog();
+            $mailTemplateId = (string) filter_var($dataReceived['template'] ?? '', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            if (isset($mailCatalog[$mailTemplateId]) === false
+                || empty($mailCatalog[$mailTemplateId]['subject_key']) === true
+            ) {
+                return prepareExchangedData(
+                    array(
+                        'error' => true,
+                    ),
+                    'encode'
+                );
+            }
+            $mailTemplate = $mailCatalog[$mailTemplateId];
+
+            // Resolved in the RECIPIENT's language, not the sender's, and through
+            // Language::get() so an administrator customization applies.
+            $recipientLanguageName = trim((string) ($data_user['user_language'] ?? ''));
+            if ($recipientLanguageName === '' || $recipientLanguageName === '0') {
+                $recipientLanguageName = (string) ($SETTINGS['default_language'] ?? 'english');
+            }
+            $recipientLanguage = new Language($recipientLanguageName);
+
+            $mailSubject = getEmailTemplateSubject($mailTemplateId, $recipientLanguage);
+            $mailBody = $recipientLanguage->get((string) $mailTemplate['body_key']);
+
+            // Only the placeholders this template declares may be substituted
+            $mailReplace = [];
+            foreach ((array) filter_var_array((array) ($dataReceived['pre_replace'] ?? []), FILTER_SANITIZE_FULL_SPECIAL_CHARS) as $token => $value) {
+                if (in_array($token, (array) $mailTemplate['tokens'], true) === true) {
+                    $mailReplace[$token] = (string) $value;
+                }
             }
 
             // Only administrators and managers can send mails
@@ -593,12 +630,9 @@ function mailHandler(string $post_type, /*php8 array|null|string */$dataReceived
             ) {
                 return sendMailToUser(
                     filter_var($dataReceived['receipt'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                    $dataReceived['body'],
-                    (string) filter_var($dataReceived['subject'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                    (array) filter_var_array(
-                        $dataReceived['pre_replace'],
-                        FILTER_SANITIZE_FULL_SPECIAL_CHARS
-                    ),
+                    $mailBody,
+                    $mailSubject,
+                    $mailReplace,
                     true
                 );
             }

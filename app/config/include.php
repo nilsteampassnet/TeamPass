@@ -143,6 +143,7 @@ $mngPages = array(
     '2fa' => '2fa.php',
     'ldap' => 'ldap.php',
     'emails' => 'emails.php',
+    'emails_templates' => 'emails_templates.php',
     'backups' => 'backups.php',
     'api' => 'api.php',
     'fields' => 'fields.php',
