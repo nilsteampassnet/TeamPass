@@ -673,6 +673,14 @@ curl -X POST "https://your-teampass.com/api/index.php/item/create" \
 
 > ⚠️ **Important**: At least one field to update must be provided in addition to the ID.
 
+> ⚠️ **Moving an item out of a personal folder into a shared one must be a request of its own.**
+> That move re-encrypts the item's keys for every user who will now have access, and it is
+> committed immediately. Combining it with any other updatable field (`label`, `password`,
+> `description`, `login`, `email`, `url`, `tags`, `anyone_can_modify`, `icon`, `fields`, `totp*`)
+> is rejected with `422` — send `{ "id": ..., "folder_id": ... }` alone, then send the rest in a
+> second request. All other moves (shared → shared, shared → personal, personal → personal) can
+> still be combined freely with other fields.
+
 **Response (success):**
 ```json
 {
@@ -691,7 +699,9 @@ curl -X POST "https://your-teampass.com/api/index.php/item/create" \
 | 401 | Invalid session or user keys not found |
 | 403 | Update permission denied or access denied — including a folder granted as `R`, `NE` or `NDNE` (check `can_edit` on [`folder/writableFolders`](#writable-folders)) |
 | 404 | Item not found |
-| 422 | HTTP method not supported |
+| 405 | HTTP method not supported (only `PUT` is accepted) |
+| 409 | The item was moved or re-encrypted by another request while this move was being prepared — retry |
+| 422 | Validation failed: a personal → shared move combined with another field, or one of the item's encryption keys could not be recovered (the item is left untouched) |
 | 500 | Server error |
 
 **Example - Update password and description:**

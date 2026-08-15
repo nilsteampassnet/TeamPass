@@ -533,6 +533,12 @@ if (isset($params['action']) && $params['action'] === 'connections') {
             $cell = $lang->get('mfa_code_send_by_email');
         } elseif ($record['label'] === 'authentication_lockout_removed') {
             $cell = $lang->get('authentication_lockout_removed');
+        } elseif (strpos($record['label'], 'at_email_template_updated:') === 0
+            || strpos($record['label'], 'at_email_template_reset:') === 0
+        ) {
+            // Label carries "<action>:<template id>:<language>"
+            $change = explode(':', $record['label']);
+            $cell = $lang->get($change[0]) . ' ' . ($change[1] ?? '') . ' (' . ($change[2] ?? '') . ')';
         } else {
             $cell = (string) $record['label'];
         }
@@ -1326,7 +1332,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         //col1
         $errMsg = is_null($record['error_message']) ? '' : (string) $record['error_message'];
         $errMsg = preg_replace('/\r\n|\r|\n/', ' ', $errMsg);
-        $sOutput .= json_encode($errMsg, JSON_UNESCAPED_UNICODE).', ';
+        $sOutput .= tpDatatableJsonCell($errMsg).', ';
         //col2
         $sOutput .= '"'.date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['created_at']).'", ';
         //col3

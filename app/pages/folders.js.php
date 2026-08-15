@@ -360,7 +360,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     for (let i = offset; i < end; i++) {
                         const value = data.matrix[i]
                         batchHtml += buildFolderRowHtml(value, data.userIsAdmin, data.userCanCreateRootFolder)
-                        foldersSelect += '<option value="' + value.id + '">' + value.title + '</option>'
+                        foldersSelect += '<option value="' + value.id + '">' + htmlEncode(value.title) + '</option>'
                         if (parseInt(value.level) > max_folder_depth) {
                             max_folder_depth = parseInt(value.level)
                         }
@@ -459,7 +459,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
         // Column 2 — folder name with left indent proportional to tree depth + item count badge
         const indent = (value.level - 1) * 16
-        let nameCell = '<span id="folder-' + value.id + '" data-id="' + value.id + '" class="infotip folder-name" data-html="true" title="<?php echo $lang->get('id'); ?>: ' + value.id + '<br><?php echo $lang->get('level'); ?>: ' + value.level + '<br><?php echo $lang->get('nb_items'); ?>: ' + value.nbItems + '">' + value.title + '</span>'
+        let nameCell = '<span id="folder-' + value.id + '" data-id="' + value.id + '" class="infotip folder-name" data-html="true" title="<?php echo $lang->get('id'); ?>: ' + value.id + '<br><?php echo $lang->get('level'); ?>: ' + value.level + '<br><?php echo $lang->get('nb_items'); ?>: ' + value.nbItems + '">' + htmlEncode(value.title) + '</span>'
         if (value.nbItems > 0) {
             nameCell += ' <span class="badge badge-secondary ml-1">' + value.nbItems + '</span>'
         }
@@ -546,7 +546,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
         // Append the new folder to the stored select options
         store.update('teampassApplication', function(app) {
-            app.foldersSelect += '<option value="' + rowData.id + '">' + rowData.title + '</option>'
+            app.foldersSelect += '<option value="' + rowData.id + '">' + htmlEncode(rowData.title) + '</option>'
         })
 
         toastr.remove()

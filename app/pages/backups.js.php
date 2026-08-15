@@ -1210,7 +1210,7 @@ function tpFmtBytes(bytes) {
 
                 // Prepare data
                 var data = {
-                    'encryptionKey': simplePurifier($('#onthefly-backup-key').val()),
+                    'encryptionKey': purifyUserInput($('#onthefly-backup-key').val()),
                     'comment': ($('#onthefly-backup-comment').length ? $('#onthefly-backup-comment').val() : ''),
                     'include_documents': $('#onthefly-include-documents').is(':checked') ? 1 : 0
                 };
@@ -1279,7 +1279,7 @@ function tpFmtBytes(bytes) {
                 return false;
             }
 
-            var encryptionKey = simplePurifier($('#onthefly-restore-key').val());
+            var encryptionKey = purifyUserInput($('#onthefly-restore-key').val());
             var overrideKey = '';
 
             // If a scheduled backup is selected from this panel, the instance key will be used server-side.
@@ -1758,7 +1758,7 @@ $.post(
             .html('<div class="alert alert-danger alert-dismissible ml-2">' +
                 '<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>' +
                 '<h5><i class="icon fas fa-ban mr-2"></i><?php echo addslashes($lang->get('error')); ?></h5>' +
-                simplePurifier(msg) +
+                purifyServerData(msg) +
                 '</div>');
 
         // Bottom-right toaster (consistent with the rest of the page)

@@ -109,6 +109,18 @@ MFA: Google Authenticator (TOTP), Duo Security, YubiKey, AGSES.
 
 **Rule: always call the high-level helpers** (`emitItemEvent`, `emitFolderEvent`, etc.) after any write on items/folders in `sources/*.queries.php`. Never insert into `teampass_websocket_events` directly.
 
+## Email Templates
+
+> Admin guide: `docs/manage/email-templates.md` — design notes: `workReadmeFiles/emails-templates-customization-plan.md`
+
+Emails are language strings, customizable per language by an admin. `Language::get()` checks `teampass_emails_templates` **before** the language files (`override[lang] → override[english] → file[lang] → file[english] → key`); the table is a pure diff, an empty table = shipped behaviour. Kill switch: `emails_templates_enabled`.
+
+**Rule: a new email is only customizable once it has an entry in `app/config/emails_templates.php`** — the catalog is the allow-list `Language::get()` checks, so a key absent from it is never looked up in the DB (and the admin page cannot reach it). Declare `subject_key`, `body_key`, `tokens` (exactly what the call site substitutes) and `required_tokens`.
+
+**Rule: `Language` exists in two copies** (`includes/libraries/` + `vendor/`, only the latter autoloaded) — edit both; `tests/Unit/EmailsTemplatesCatalogTest.php` fails otherwise. **Rule: use `getShipped()`, not `get()`, when you need the text *without* the customization.** **Rule: an empty override is not an override** — the resolver ignores it, so `background_tasks___worker.php`'s key-as-fallback guard keeps working.
+
+Save-time normalization + token validation live in the DB-free `app/sources/emails_templates_logic.php` (unit-tested by `tests/Unit/EmailsTemplatesLogicTest.php`).
+
 ## PHP-FPM
 
 > Full architecture details: @.claude/docs/architecture-php-fpm.md

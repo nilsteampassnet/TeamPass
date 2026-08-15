@@ -737,6 +737,7 @@ class DatabaseInstaller
             array('admin', 'tasks_history_delay', '604800'),
             array('admin', 'cli_php_binary_path', ''),
             array('admin', 'enable_fastcgi_finish_request', '1'),
+            array('admin', 'tasks_max_drain_time', '55'),
             // Fresh installs start hardened: AES v2 (authenticated GCM) writes enabled.
             // Upgraded installs keep '0' (seeded by upgrade_run_3.2.1.php) until the
             // admin opts in.
@@ -776,7 +777,10 @@ class DatabaseInstaller
             array('admin', 'show_online_users_list', '0'),
             array('admin', 'health_logs_mode', 'auto'),
             array('admin', 'health_teampass_log_path', ''),
-            array('admin', 'health_php_fpm_log_path', '')
+            array('admin', 'health_php_fpm_log_path', ''),
+            // Kill switch of the emails customization layer. Set to 0 to ignore
+            // every stored template without deleting them.
+            array('admin', 'emails_templates_enabled', '1')
         );
         foreach ($aMiscVal as $elem) {
             $value = isset($elem[3]) ? $elem[3] : 0;
@@ -2339,6 +2343,25 @@ class DatabaseInstaller
         KEY `idx_enabled` (`enabled`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     COMMENT='Network ACL rules for IPv4 whitelist and blacklist'"
+        );
+    }
+
+    // Create table emails_templates
+    private function emails_templates()
+    {
+        DB::query(
+            'CREATE TABLE IF NOT EXISTS `' . $this->inputData['tablePrefix'] . "emails_templates` (
+        `id` INT(12) NOT NULL AUTO_INCREMENT,
+        `template_key` VARCHAR(100) NOT NULL COMMENT 'Language key of the customized subject or body',
+        `language` VARCHAR(50) NOT NULL COMMENT 'Language name, as in the languages table',
+        `content` MEDIUMTEXT NOT NULL,
+        `updated_at` INT(12) NULL DEFAULT NULL,
+        `updated_by` INT(12) NULL DEFAULT NULL,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `uk_key_lang` (`template_key`, `language`),
+        KEY `idx_language` (`language`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    COMMENT='Administrator customizations of the emails subjects and bodies'"
         );
     }
 

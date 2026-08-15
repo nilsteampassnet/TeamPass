@@ -456,10 +456,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
         // Prepare data
         if (store.get('teampassApplication').formUserAction === "add_new_user") {
+            // Only the template identifier travels: the subject and the body are
+            // resolved server-side, in the recipient's language.
             var data = {
                 'receipt': $('#form-email').val(),
-                'subject': 'TEAMPASS - <?php echo $lang->get('temporary_encryption_code');?>',
-                'body': '<?php echo $lang->get('email_body_new_user');?>',
+                'template': 'new_user_credentials',
                 'pre_replace' : {
                     '#login#' : store.get('teampassUser').admin_new_user_login,
                     '#password#' : store.get('teampassUser').admin_new_user_password,
@@ -921,13 +922,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                         var tmp = '';
                         $(data.foldersAllow).each(function(i, value) {
-                            tmp += '<option value="' + value.id + '" ' + value.selected + '>' + value.title + '</option>';
+                            tmp += '<option value="' + value.id + '" ' + value.selected + '>' + htmlEncode(value.title) + '</option>';
                         });
                         $('#form-auth').append(tmp);
 
                         tmp = '';
                         $(data.foldersForbid).each(function(i, value) {
-                            tmp += '<option value="' + value.id + '" ' + value.selected + '>' + value.title + '</option>';
+                            tmp += '<option value="' + value.id + '" ' + value.selected + '>' + htmlEncode(value.title) + '</option>';
                         });
                         $('#form-forbid').append(tmp);
 
@@ -938,14 +939,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         tmp = '';
                         $(data.managedby).each(function(i, value) {
                             tmp += '<option value="' + value.id + '" ' + value.selected +
-                                (value.locked === true ? ' disabled' : '') + '>' + value.title + '</option>';
+                                (value.locked === true ? ' disabled' : '') + '>' + htmlEncode(value.title) + '</option>';
                         });
                         $('#form-managedby').append(tmp);
 
                         tmp = '';
                         $(data.function).each(function(i, value) {
                             tmp += '<option value="' + value.id + '" ' + value.selected +
-                                (value.locked === true ? ' disabled' : '') + '>' + value.title + '</option>';
+                                (value.locked === true ? ' disabled' : '') + '>' + htmlEncode(value.title) + '</option>';
                         });
                         $('#form-roles').append(tmp);
 
@@ -1768,7 +1769,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         // Build select
                         var html = '';
                         $.each(data.values, function(i, value) {
-                            html += '<option value="' + value.id + '" data-groups="' + value.groups + '" data-managed-by="' + value.managedBy + '" data-folders-allowed="' + value.foldersAllowed + '" data-folders-forbidden="' + value.foldersForbidden + '" data-groups-id="' + value.groupIds + '" data-managed-by-id="' + value.managedById + '" data-folders-allowed-id="' + value.foldersAllowedIds + '" data-folders-forbidden-id="' + value.foldersForbiddenIds + '" data-admin="' + value.admin + '" data-manager="' + value.manager + '" data-hr="' + value.hr + '" data-read-only="' + value.readOnly + '" data-personal-folder="' + value.personalFolder + '" data-root-folder="' + value.rootFolder + '">' + value.name + ' ' + value.lastname + ' [' + value.login + ']</option>';
+                            html += '<option value="' + value.id + '" data-groups="' + htmlEncode(value.groups) + '" data-managed-by="' + htmlEncode(value.managedBy) + '" data-folders-allowed="' + htmlEncode(value.foldersAllowed) + '" data-folders-forbidden="' + htmlEncode(value.foldersForbidden) + '" data-groups-id="' + value.groupIds + '" data-managed-by-id="' + value.managedById + '" data-folders-allowed-id="' + value.foldersAllowedIds + '" data-folders-forbidden-id="' + value.foldersForbiddenIds + '" data-admin="' + value.admin + '" data-manager="' + value.manager + '" data-hr="' + value.hr + '" data-read-only="' + value.readOnly + '" data-personal-folder="' + value.personalFolder + '" data-root-folder="' + value.rootFolder + '">' + htmlEncode(value.name) + ' ' + htmlEncode(value.lastname) + ' [' + htmlEncode(value.login) + ']</option>';
                         });
 
                         $('#propagate-from, #propagate-to')
@@ -1945,7 +1946,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                 // Prepare data
                 var data = {
-                    'label': simplePurifier($('#ldap-new-role-selection').val()),
+                    'label': purifyUserInput($('#ldap-new-role-selection').val()),
                     'complexity': $('#ldap-new-role-complexity').val(),
                     'allowEdit': 0,
                     'action': 'add_role',
@@ -2036,7 +2037,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                 // Prepare data
                 var data = {
-                    'label': simplePurifier($('#oauth2-new-role-selection').val()),
+                    'label': purifyUserInput($('#oauth2-new-role-selection').val()),
                     'complexity': $('#oauth2-new-role-complexity').val(),
                     'allowEdit': 0,
                     'action': 'add_role',
@@ -2418,7 +2419,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             '<td class="text-center align-middle px-1">' +
                                 '<input type="checkbox" class="deleted-user-select" value="' + user.id + '">' +
                             '</td>' +
-                            '<td class="align-middle pl-1 text-left">' + user.login + '</td>' +
+                            '<td class="align-middle pl-1 text-left">' + htmlEncode(user.login) + '</td>' +
                             '<td class="align-middle text-left">' + (user.email || '-') + '</td>' +
                             '<td>' + new Date(user.deleted_at * 1000).toLocaleDateString() + '</td>' +
                             '<td>' + user.days_since_deletion + ' <?php echo $lang->get("days"); ?></td>' +
@@ -2804,7 +2805,7 @@ function refreshListInactiveUsers(filterValue) {
                         const row =
                             '<tr>' +
                                 '<td class="text-center align-middle px-1"><input type="checkbox" class="inactive-user-select" value="' + user.id + '"></td>' +
-                                '<td class="align-middle pl-1 text-left">' + user.login + badges + '</td>' +
+                                '<td class="align-middle pl-1 text-left">' + htmlEncode(user.login) + badges + '</td>' +
                                 '<td class="align-middle text-left">' + (user.email || '-') + '</td>' +
                                 '<td class="align-middle">' + lastActivityTxt + '</td>' +
                                 '<td class="align-middle">' + daysInactiveTxt + '</td>' +
@@ -3286,15 +3287,17 @@ function refreshListInactiveUsers(filterValue) {
                                 }
                                 ldapStatusIcons += '<i class="fa-solid fa-hourglass-end ml-2 infotip text-warning" title="<?php echo addslashes($lang->get('ldap_account_expired')); ?>' + expiresHint + '"></i>';
                             }
+                            // Directory-supplied values: purifyData() drops tags but keeps quotes,
+                            // which alone breaks out of the attributes below. Encode each one.
                             html += '<tr>' +
-                                '<td>' + userLogin +
+                                '<td>' + htmlEncode(userLogin) +
                                 '</td>' +
                                 '<td class="text-center text-nowrap" style="min-width: 85px;">' +
                                 '<span class="d-inline-flex align-items-center justify-content-center" style="white-space:nowrap;">' +
                                 '<i class="fa-solid fa-info-circle ml-3 infotip text-info pointer text-center" data-toggle="tooltip" data-html="true" title="' +
                                 '<p class=\'text-left\'><i class=\'fas fa-user mr-1\'></i>' +
-                                (entry.displayname !== undefined ? '' + entry.displayname[0] + '' : '') + '</p>' +
-                                '<p class=\'text-left\'><i class=\'fas fa-envelope mr-1\'></i>' + (entry.mail !== undefined ? '' + entry.mail[0] + '' : '') + '</p>' +
+                                (entry.displayname !== undefined ? htmlEncode(entry.displayname[0]) : '') + '</p>' +
+                                '<p class=\'text-left\'><i class=\'fas fa-envelope mr-1\'></i>' + (entry.mail !== undefined ? htmlEncode(entry.mail[0]) : '') + '</p>' +
                                 '"></i>' + ldapStatusIcons + '</span>' +
                                 '</td><td>' +
                                 (entry.userInTeampass === 0 ? '' :
@@ -3326,12 +3329,12 @@ function refreshListInactiveUsers(filterValue) {
                                     }
                                 }
 
-                                html += group + icon + '<br>';
+                                html += htmlEncode(group) + icon + '<br>';
                                 groupsNumber++;
                             });
                             html += '</td><td>';
                             // Action icons
-                            html += (entry.userInTeampass === 0 ? '<i class="fa-solid fa-user-plus text-warning ml-2 infotip pointer add-user-icon" title="<?php echo $lang->get('add_user_in_teampass'); ?>" data-user-login="' + userLogin + '" data-user-email="' + (entry.mail !== undefined ? entry.mail[0] : '') + '" data-user-name="' + (entry.givenname !== undefined ? entry.givenname[0] : '') + '" data-user-lastname="' + (entry.sn !== undefined ? entry.sn[0] : '') + '" data-user-auth-type="ldap"></i>' : '');
+                            html += (entry.userInTeampass === 0 ? '<i class="fa-solid fa-user-plus text-warning ml-2 infotip pointer add-user-icon" title="<?php echo $lang->get('add_user_in_teampass'); ?>" data-user-login="' + htmlEncode(userLogin) + '" data-user-email="' + (entry.mail !== undefined ? htmlEncode(entry.mail[0]) : '') + '" data-user-name="' + (entry.givenname !== undefined ? htmlEncode(entry.givenname[0]) : '') + '" data-user-lastname="' + (entry.sn !== undefined ? htmlEncode(entry.sn[0]) : '') + '" data-user-auth-type="ldap"></i>' : '');
 
                             html += '</td></tr>';
                         }
@@ -3350,8 +3353,10 @@ function refreshListInactiveUsers(filterValue) {
                     $.each(data.ldap_groups, function(i, group) {
                         tmp = data.teampass_groups.filter(p => p.title === group);
                         if (tmp.length === 0) {
+                            // The group name comes from the directory and purifyData() left it
+                            // as plain text, quotes included, so encode it for both sinks.
                             $('#ldap-new-role-selection').append(
-                                '<option value="' + group + '">' + group + '</option>'
+                                '<option value="' + htmlEncode(group) + '">' + htmlEncode(group) + '</option>'
                             );
                         }
                     });
@@ -3418,14 +3423,17 @@ function refreshListInactiveUsers(filterValue) {
                     $.each(data.ad_users, function(i, user) {
                         // CHeck if not empty
                         if (userLogin !== '') {
+                            // Every value below comes from the directory, not from TeamPass.
+                            // purifyData() removes tags but keeps quotes, which is enough to
+                            // break out of the attributes used here, so encode each value.
                             html += '<tr>' +
-                                '<td>' + user.login +
+                                '<td>' + htmlEncode(user.login) +
                                 '</td>' +
                                 '<td>' +
                                 '<i class="fa-solid fa-info-circle ml-3 infotip text-info pointer text-center" data-toggle="tooltip" data-html="true" title="' +
                                 '<p class=\'text-left\'><i class=\'fas fa-user mr-1\'></i> ' +
-                                user.displayName + '</p>' +
-                                '<p class=\'text-left\'><i class=\'fas fa-envelope mr-1\'></i>' + (user.mail !== null ? '' + user.mail + '' : '') + '</p>' +
+                                htmlEncode(user.displayName) + '</p>' +
+                                '<p class=\'text-left\'><i class=\'fas fa-envelope mr-1\'></i>' + (user.mail !== null ? htmlEncode(user.mail) : '') + '</p>' +
                                 '"></i>' +
                                 '</td><td>' +
                                 (user.userInTeampass === 0 ? '' :
@@ -3448,7 +3456,7 @@ function refreshListInactiveUsers(filterValue) {
                                     }
                                 }
 
-                                html += group.name + icon + '<br>';
+                                html += htmlEncode(group.name) + icon + '<br>';
                                 groupsNumber++;
                             });
 
@@ -3456,7 +3464,7 @@ function refreshListInactiveUsers(filterValue) {
                             // Action icons
                             html += (user.userInTeampass === 0 ? 
                                  (user.mail !== null ? 
-                                    '<i class="fa-solid fa-user-plus text-warning ml-2 infotip pointer add-user-icon" title="<?php echo $lang->get('add_user_in_teampass'); ?>" data-user-login="' + user.login + '" data-user-email="' + user.mail + '" data-user-name="' + user.surname + '" data-user-lastname="' + user.givenName + '" data-user-auth-type="oauth2"></i>'
+                                    '<i class="fa-solid fa-user-plus text-warning ml-2 infotip pointer add-user-icon" title="<?php echo $lang->get('add_user_in_teampass'); ?>" data-user-login="' + htmlEncode(user.login) + '" data-user-email="' + htmlEncode(user.mail) + '" data-user-name="' + htmlEncode(user.surname) + '" data-user-lastname="' + htmlEncode(user.givenName) + '" data-user-auth-type="oauth2"></i>'
                                     : '<i class="fa-solid fa-user-large-slash text-danger ml-2 infotip" title="<?php echo $lang->get('oauth2_user_has_no_mail'); ?>"></i>'
                                 )
                                 : ''
@@ -3478,8 +3486,9 @@ function refreshListInactiveUsers(filterValue) {
                     $.each(data.ad_groups, function(i, group) {
                         tmp = data.teampass_groups.filter(p => p.title === group);
                         if (tmp.length === 0) {
-                            group = simplePurifier(group)
-                            htmlGroups += '<option value="' + group + '">' + group + '</option>';
+                            // Already purified by purifyData() above, but that leaves plain
+                            // text with live quotes, so encode it for both sinks.
+                            htmlGroups += '<option value="' + htmlEncode(group) + '">' + htmlEncode(group) + '</option>';
                         }
                     });
                     $('#oauth2-new-role-selection').append(htmlGroups);
@@ -3721,10 +3730,10 @@ function refreshListInactiveUsers(filterValue) {
         
         // prepare data
         var data = {
-            'login': simplePurifier($('.selected-user').data('user-login')),
-            'name': simplePurifier($('.selected-user').data('user-name') === '' ? $('#ldap-user-name').val() : $('.selected-user').data('user-name')),
-            'lastname': simplePurifier($('.selected-user').data('user-lastname')),
-            'email': simplePurifier($('.selected-user').data('user-email')),
+            'login': purifyUserInput($('.selected-user').data('user-login')),
+            'name': purifyUserInput($('.selected-user').data('user-name') === '' ? $('#ldap-user-name').val() : $('.selected-user').data('user-name')),
+            'lastname': purifyUserInput($('.selected-user').data('user-lastname')),
+            'email': purifyUserInput($('.selected-user').data('user-email')),
             'roles': roles,
             'authType': authType,
         };
@@ -4035,18 +4044,20 @@ function refreshListInactiveUsers(filterValue) {
 
             showModalDialogBox(
                 '#warningModal',
-                '<h3><i class="fa-solid fa-user-plus fa-lg warning mr-2"></i><?php echo $lang->get('new_ldap_user_info'); ?> <span class="badge badge-primary">'+$(this)[0].dataset.userLogin+'</span></h3>',
+                // Reading the attributes back gives the decoded directory value, so it has to be
+                // encoded again before it is concatenated into the modal markup.
+                '<h3><i class="fa-solid fa-user-plus fa-lg warning mr-2"></i><?php echo $lang->get('new_ldap_user_info'); ?> <span class="badge badge-primary">'+htmlEncode($(this)[0].dataset.userLogin)+'</span></h3>',
                 '<div class="form-group">'+
                     '<label for="auth-user-name"><?php echo $lang->get('name'); ?></label>'+
-                    '<input readonly type="text" class="form-control required" id="auth-user-name" value="'+ $(this).attr('data-user-name')+'">'+
+                    '<input readonly type="text" class="form-control required" id="auth-user-name" value="'+ htmlEncode($(this).attr('data-user-name'))+'">'+
                 '</div>'+
                 '<div class="form-group">'+
                     '<label for="auth-user-name"><?php echo $lang->get('lastname'); ?></label>'+
-                    '<input readonly type="text" class="form-control required" id="auth-user-lastname" value="'+ $(this).attr('data-user-lastname')+'">'+
+                    '<input readonly type="text" class="form-control required" id="auth-user-lastname" value="'+ htmlEncode($(this).attr('data-user-lastname'))+'">'+
                 '</div>'+
                 '<div class="form-group">'+
                     '<label for="auth-user-name"><?php echo $lang->get('email'); ?></label>'+
-                    '<input readonly type="text" class="form-control required" id="auth-user-email" value="'+ $(this).attr('data-user-email')+'">'+
+                    '<input readonly type="text" class="form-control required" id="auth-user-email" value="'+ htmlEncode($(this).attr('data-user-email'))+'">'+
                 '</div>'+
                 '<div class="form-group">'+
                     '<label for="auth-user-roles"><?php echo $lang->get('roles'); ?></label>'+

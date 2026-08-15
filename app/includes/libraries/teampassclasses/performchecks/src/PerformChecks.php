@@ -210,7 +210,7 @@ class PerformChecks
                 'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'manage_roles', 'manage_folders',
                 'import', 'export', 'offline', 'process',
                 'manage_views', 'manage_users', 'manage_settings', 'manage_main',
-                'admin', 'profile', 'mfa', 'api', 'backups', 'emails', 'ldap', 'special',
+                'admin', 'profile', 'mfa', 'api', 'backups', 'emails', 'emails_templates', 'ldap', 'special',
                 'statistics', 'reports', 'reviews', 'fields', 'options', 'views', 'roles', 'folders', 'users', 'utilities',
                 'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs', 'utilities.health', 'tasks', 'uploads', 'oauth', 'tools',
                 'admin_lapr'

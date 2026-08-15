@@ -1365,6 +1365,8 @@ class ItemModel
                 || array_key_exists('totp_algorithm', $params)
                 || array_key_exists('totp_digits', $params)
                 || array_key_exists('totp_period', $params);
+            // Set when the request actually relocates the item, whatever the transition type.
+            $moveContext = null;
 
             // Handle folder_id change
             if (isset($params['folder_id'])) {
@@ -1395,9 +1397,104 @@ class ItemModel
                     ];
                 }
 
+                $sourceFolderId = (int) $currentItem['id_tree'];
+                $sourceItemInfos = $this->getFolderSettings($sourceFolderId);
                 $targetItemInfos = $this->getFolderSettings($newFolderId);
-                $updateData['id_tree'] = $newFolderId;
-                $updateData['perso'] = (int) $targetItemInfos['personal_folder'];
+                // A folder_id equal to the current one is a no-op, not a move.
+                $isActualMove = $newFolderId !== $sourceFolderId;
+
+                if (
+                    $isActualMove === true
+                    && (int) $sourceItemInfos['personal_folder'] === 1
+                    && (int) $targetItemInfos['personal_folder'] === 0
+                ) {
+                    // This transition commits its own transaction, so a validation failure on
+                    // another field could no longer be undone afterwards. Only fields that would
+                    // actually be written conflict — unknown extra keys in the payload are ignored
+                    // here exactly as they are by the rest of updateItem().
+                    $conflictingUpdateFields = array_intersect(
+                        array_keys($params),
+                        [
+                            'label', 'password', 'description', 'login', 'email', 'url', 'tags',
+                            'anyone_can_modify', 'icon', 'fields',
+                            'totp', 'totp_algorithm', 'totp_digits', 'totp_period',
+                        ]
+                    );
+                    if (empty($conflictingUpdateFields) === false) {
+                        return [
+                            'error' => true,
+                            'error_message' => 'A personal-to-shared move must be requested separately from other item updates. '
+                                . 'Remove: ' . implode(', ', $conflictingUpdateFields) . '.',
+                            'error_header' => 'HTTP/1.1 422 Unprocessable Entity',
+                        ];
+                    }
+
+                    try {
+                        $moveResult = movePersonalItemToSharedFolderSynchronously(
+                            $itemId,
+                            $newFolderId,
+                            (int) $userData['id'],
+                            $userPrivateKey
+                        );
+                    } catch (UnexpectedValueException $exception) {
+                        error_log(
+                            '[API] Personal-to-shared item move rejected for item ' . $itemId
+                            . ': ' . $exception->getMessage()
+                        );
+                        return [
+                            'error' => true,
+                            'error_message' => 'The item cannot be moved because one or more encryption keys are missing or invalid.',
+                            'error_header' => 'HTTP/1.1 422 Unprocessable Entity',
+                        ];
+                    } catch (RuntimeException $exception) {
+                        // Concurrent change detected under the row lock. Must stay AFTER the
+                        // UnexpectedValueException catch, which is a RuntimeException subclass.
+                        error_log(
+                            '[API] Personal-to-shared item move conflicted for item ' . $itemId
+                            . ': ' . $exception->getMessage()
+                        );
+                        return [
+                            'error' => true,
+                            'error_message' => 'The item was modified by another request. Please retry the move.',
+                            'error_header' => 'HTTP/1.1 409 Conflict',
+                        ];
+                    } catch (InvalidArgumentException $exception) {
+                        error_log(
+                            '[API] Personal-to-shared item move refused for item ' . $itemId
+                            . ': ' . $exception->getMessage()
+                        );
+                        return [
+                            'error' => true,
+                            'error_message' => 'This item cannot be moved to the requested folder.',
+                            'error_header' => 'HTTP/1.1 422 Unprocessable Entity',
+                        ];
+                    }
+
+                    $moveContext = [
+                        'source_folder_id' => (int) $moveResult['source_folder_id'],
+                        'source_folder_title' => (string) $moveResult['source_folder_title'],
+                        'target_folder_id' => (int) $moveResult['target_folder_id'],
+                        'target_folder_title' => (string) $moveResult['target_folder_title'],
+                    ];
+
+                    // Keep the in-memory row aligned for the standard response and cache refresh.
+                    $currentItem['id_tree'] = $newFolderId;
+                    $currentItem['perso'] = 0;
+                } else {
+                    $updateData['id_tree'] = $newFolderId;
+                    $updateData['perso'] = (int) $targetItemInfos['personal_folder'];
+
+                    // Every other transition is a plain folder change, but it is still a move:
+                    // it deserves the same audit trail, counters and WebSocket events.
+                    if ($isActualMove === true) {
+                        $moveContext = [
+                            'source_folder_id' => $sourceFolderId,
+                            'source_folder_title' => $this->getFolderTitle($sourceFolderId),
+                            'target_folder_id' => $newFolderId,
+                            'target_folder_title' => $this->getFolderTitle($newFolderId),
+                        ];
+                    }
+                }
             }
 
             // Generate favicon URL if URL is provided and favicon_url is empty
@@ -1602,11 +1699,23 @@ class ItemModel
                 );
             }
 
-            // Log the update
             $label = isset($updateData['label']) ? $updateData['label'] : $currentItem['label'];
-            logItems($SETTINGS, $itemId, $label, $userData['id'], 'at_modification', $userData['username']);
-
-            updateCacheTable('update_value', $itemId, (int) $userData['id']);
+            if (is_array($moveContext)) {
+                finalizeItemMoveSideEffects(
+                    $SETTINGS,
+                    $itemId,
+                    (string) $label,
+                    (int) $userData['id'],
+                    (string) $userData['username'],
+                    $moveContext['source_folder_id'],
+                    $moveContext['source_folder_title'],
+                    $moveContext['target_folder_id'],
+                    $moveContext['target_folder_title']
+                );
+            } else {
+                logItems($SETTINGS, $itemId, $label, $userData['id'], 'at_modification', $userData['username']);
+                updateCacheTable('update_value', $itemId, (int) $userData['id']);
+            }
 
             // Success response
             return [
@@ -1615,14 +1724,39 @@ class ItemModel
                 'item_id' => $itemId,
             ];
 
+        } catch (InvalidArgumentException | UnexpectedValueException $e) {
+            // Validation failures carry a message that is safe and useful to the client.
+            return [
+                'error' => true,
+                'error_header' => 'HTTP/1.1 422 Unprocessable Entity',
+                'error_message' => $e->getMessage(),
+            ];
         } catch (Exception $e) {
-            // Error response
+            // Anything else (database errors above all) must not surface its message to the
+            // client: it can expose SQL fragments or schema details. Log it server-side instead.
+            error_log('[API] ItemModel::updateItem failed for item ' . $itemId . ': ' . $e->getMessage());
             return [
                 'error' => true,
                 'error_header' => 'HTTP/1.1 500 Internal Server Error',
-                'error_message' => $e->getMessage(),
+                'error_message' => 'An internal error occurred while updating the item.',
             ];
         }
+    }
+
+    /**
+     * Return a folder title, or an empty string when the folder no longer exists.
+     *
+     * @param int $folderId Folder identifier
+     * @return string
+     */
+    private function getFolderTitle(int $folderId): string
+    {
+        $folder = DB::queryFirstRow(
+            'SELECT title FROM ' . prefixTable('nested_tree') . ' WHERE id = %i',
+            $folderId
+        );
+
+        return $folder === null ? '' : (string) $folder['title'];
     }
 
     /**

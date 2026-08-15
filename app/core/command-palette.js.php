@@ -43,6 +43,7 @@ $lang = new Language($session->get('user-language') ?? 'english');
      * Ctrl+K / Cmd+K opens a keyboard-first overlay searching, in one box:
      *  - items (labels/logins/urls/tags from the ACL-bound search cache),
      *  - folders the user can see,
+     *  - knowledge base entries (title + description),
      *  - the pages of the left menu (client-side, from the rendered sidebar).
      * Arrow keys navigate, Enter opens, Escape closes. Results respect the
      * user's folder ACL server-side; no password value is ever returned.
@@ -56,6 +57,7 @@ $lang = new Language($session->get('user-language') ?? 'english');
             placeholder: <?php echo json_encode($lang->get('palette_placeholder'), JSON_UNESCAPED_UNICODE); ?>,
             items: <?php echo json_encode($lang->get('items'), JSON_UNESCAPED_UNICODE); ?>,
             folders: <?php echo json_encode($lang->get('folders'), JSON_UNESCAPED_UNICODE); ?>,
+            kb: <?php echo json_encode($lang->get('kb_menu'), JSON_UNESCAPED_UNICODE); ?>,
             pages: <?php echo json_encode($lang->get('palette_pages'), JSON_UNESCAPED_UNICODE); ?>,
             noResult: <?php echo json_encode($lang->get('no_data_to_display'), JSON_UNESCAPED_UNICODE); ?>,
             hint: <?php echo json_encode($lang->get('palette_hint'), JSON_UNESCAPED_UNICODE); ?>
@@ -115,7 +117,7 @@ $lang = new Language($session->get('user-language') ?? 'english');
             state.open = true
             $('#tp-palette-overlay').show()
             $('#tp-palette-input').val('')
-            renderResults({ items: [], folders: [] }, '')
+            renderResults({ items: [], folders: [], kb: [] }, '')
             setTimeout(function () { $('#tp-palette-input').trigger('focus') }, 50)
         }
 
@@ -136,7 +138,7 @@ $lang = new Language($session->get('user-language') ?? 'english');
         function runSearch(term) {
             term = term.trim()
             if (term.length < 2) {
-                renderResults({ items: [], folders: [] }, term)
+                renderResults({ items: [], folders: [], kb: [] }, term)
                 return
             }
             var seq = ++state.requestSeq
@@ -192,6 +194,15 @@ $lang = new Language($session->get('user-language') ?? 'english');
                 return '<a href="' + folder._href + '" class="dropdown-item tp-palette-entry py-2" data-index="' + index + '" role="option">' +
                     '<i class="fa-solid fa-folder-open mr-2 text-warning"></i>' + escapeText(folder.title) +
                     '<span class="float-right text-muted text-xs">' + escapeText(folder.path) + '</span></a>'
+            })
+
+            section(L.kb, data.kb || [], function (entry, index) {
+                entry._href = 'index.php?page=kb&id=' + parseInt(entry.id, 10)
+                return '<a href="' + entry._href + '" class="dropdown-item tp-palette-entry py-2" data-index="' + index + '" role="option">' +
+                    '<i class="fa-solid fa-book mr-2 text-success"></i>' + escapeText(entry.label) +
+                    (entry.excerpt ? ' <span class="text-muted text-sm">' + escapeText(entry.excerpt) + '</span>' : '') +
+                    (entry.category ? '<span class="float-right text-muted text-xs">' + escapeText(entry.category) + '</span>' : '') +
+                    '</a>'
             })
 
             section(L.pages, matchPages(term), function (page, index) {

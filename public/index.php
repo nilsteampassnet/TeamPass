@@ -381,8 +381,16 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                 // Favorites page gate: feature enabled and caller not an administrator.
                 $tpShowQuickAccess = (int) ($SETTINGS['show_last_items'] ?? 1) === 1;
                 $tpQuickAccessStarred = (int) ($SETTINGS['enable_favourites'] ?? 0) === 1 && (int) $session_user_admin !== 1;
-                // Account chip initials + role label.
+                // Account chip avatar (with initials fallback) + role label.
+                // The thumbnail is preferred over the full image: it is the size the badges
+                // are rendered at. Both account badges show the initials, overlaid by the
+                // image when one is available (app/core/load.js.php reveals the initials
+                // again should the image fail to load).
                 $tpInitials = strtoupper(mb_substr((string) $session_name, 0, 1, 'UTF-8') . mb_substr((string) $session_lastname, 0, 1, 'UTF-8'));
+                $tpAvatarUrl = getUserAvatarUrl([$session->get('user-avatar_thumb'), $session->get('user-avatar')]);
+                $tpAvatarImg = $tpAvatarUrl === ''
+                    ? ''
+                    : '<img class="tp-account-avatar-img" src="' . htmlspecialchars($tpAvatarUrl, ENT_QUOTES, 'UTF-8') . '" alt="">';
                 $tpRoleLabel = (int) $session_user_admin === 1
                     ? $lang->get('god')
                     : ($session_user_manager === 1 ? $lang->get('gestionnaire') : $lang->get('user'));
@@ -438,7 +446,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                         <a class="nav-link tp-account-chip" href="#" data-toggle="dropdown" role="button"
                             aria-haspopup="true" aria-expanded="false"
                             aria-label="<?php echo $lang->get('my_profile'); ?>">
-                            <span class="tp-account-avatar"><?php echo htmlspecialchars($tpInitials, ENT_QUOTES, 'UTF-8'); ?></span>
+                            <span class="tp-account-avatar"><?php echo htmlspecialchars($tpInitials, ENT_QUOTES, 'UTF-8') . $tpAvatarImg; ?></span>
                             <span class="tp-account-identity">
                                 <span class="tp-account-name"><?php echo $session_name . ' ' . $session_lastname; ?></span>
                                 <span class="tp-account-exp infotip" id="countdown" title="<?php echo $lang->get('index_expiration_in'); ?>"></span>
@@ -448,7 +456,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
 
                         <div class="dropdown-menu dropdown-menu-right tp-account-menu">
                             <div class="tp-account-menu-head">
-                                <span class="tp-account-avatar tp-account-avatar-lg"><?php echo htmlspecialchars($tpInitials, ENT_QUOTES, 'UTF-8'); ?></span>
+                                <span class="tp-account-avatar tp-account-avatar-lg"><?php echo htmlspecialchars($tpInitials, ENT_QUOTES, 'UTF-8') . $tpAvatarImg; ?></span>
                                 <span class="tp-account-menu-identity">
                                     <span class="tp-account-menu-name"><?php echo $session_name . ' ' . $session_lastname; ?></span>
                                     <span class="tp-account-menu-role"><?php echo $tpRoleLabel; ?></span>
@@ -696,7 +704,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
     $currentPage = $get['page'];
     $menuAccess = in_array($currentPage, ['users', 'roles', 'folders'], true);
     $menuGovernance = in_array($currentPage, ['reviews', 'reports'], true);
-    $menuConfiguration = in_array($currentPage, ['options', 'fields', 'emails', 'uploads'], true);
+    $menuConfiguration = in_array($currentPage, ['options', 'fields', 'emails', 'emails_templates', 'uploads'], true);
     $menuAuthentication = in_array($currentPage, ['2fa', 'ldap', 'oauth', 'api'], true);
     $menuOperations = in_array($currentPage, ['tasks', 'backups', 'utilities.database', 'import', 'utilities.renewal', 'utilities.deletion', 'admin_lapr'], true);
     $menuMonitoring = in_array($currentPage, ['statistics', 'utilities.logs', 'utilities.health', 'tools'], true);
@@ -797,6 +805,12 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                                 <a href="#" data-name="emails" class="nav-link', $currentPage === 'emails' ? ' active' : '', '">
                                     <i class="fa-solid fa-envelope nav-icon"></i>
                                     <p>' . $lang->get('emails') . '</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" data-name="emails_templates" class="nav-link', $currentPage === 'emails_templates' ? ' active' : '', '">
+                                    <i class="fa-solid fa-envelope-open-text nav-icon"></i>
+                                    <p>' . $lang->get('emails_templates') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -1569,6 +1583,16 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
         <link rel="stylesheet" src="./plugins/datatables/extensions/Scroller-1.5.0/css/scroller.bootstrap4.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
         <script type="text/javascript" src="./plugins/datatables/extensions/Scroller-1.5.0/js/dataTables.scroller.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
         <link rel="stylesheet" href="./assets/css/admin-dashboard.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
+        <?php
+        // The email templates editor is the only management page needing a rich text editor.
+        if ($get['page'] === 'emails_templates') {
+            ?>
+            <!-- SUMMERNOTE -->
+            <link rel="stylesheet" href="./plugins/summernote/summernote-bs4.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
+            <script src="./plugins/summernote/summernote-bs4.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+        <?php
+        }
+        ?>
     <?php
     } elseif (isset($get['page']) === true) {
         if (in_array($get['page'], ['items', 'import']) === true) {
@@ -1914,6 +1938,8 @@ if (isset($SETTINGS['cpassman_dir']) === true) {
             include_once TEAMPASS_APP . '/pages/backups.js.php';
         } elseif ($get['page'] === 'emails') {
             include_once TEAMPASS_APP . '/pages/emails.js.php';
+        } elseif ($get['page'] === 'emails_templates') {
+            include_once TEAMPASS_APP . '/pages/emails_templates.js.php';
         } elseif ($get['page'] === 'ldap') {
             include_once TEAMPASS_APP . '/pages/ldap.js.php';
         } elseif ($get['page'] === 'uploads') {

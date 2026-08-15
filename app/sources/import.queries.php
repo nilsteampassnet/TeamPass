@@ -1326,7 +1326,7 @@ switch ($inputData['type']) {
          * Recursive function to process the Keepass XML structure.
          *
          * @param array $array The current array to process.
-         * @param string $previousFolder The parent folder ID.
+         * @param string|int $previousFolder The parent folder ID (int destination id at root, KeePass UUID string in recursion).
          * @param array $newItemsToAdd The new items to add to the database.
          * @param int $level The current level of the recursion.
          *
@@ -1352,12 +1352,12 @@ switch ($inputData['type']) {
          * It processes each entry and adds it to the new items list.
          *
          * @param array $entries The entries to process.
-         * @param string $previousFolder The parent folder ID.
+         * @param string|int $previousFolder The parent folder ID (int destination id at root, KeePass UUID string in recursion).
          * @param array $newItemsToAdd The new items to add to the database.
          *
          * @return array The new items to add to the database.
          */
-        function handleEntries(array $entries, string $previousFolder, array $newItemsToAdd) : array
+        function handleEntries(array $entries, string|int $previousFolder, array $newItemsToAdd) : array
         {
             // If a single entry is found, wrap it into an array
             // (same normalization as handleGroups does for single groups)
@@ -1379,11 +1379,11 @@ switch ($inputData['type']) {
          * Converts the key-value pairs into a usable item format.
          *
          * @param array $strings The 'String' fields to process.
-         * @param string $previousFolder The parent folder ID.
+         * @param string|int $previousFolder The parent folder ID (int destination id at root, KeePass UUID string in recursion).
          *
          * @return array The item definition.
          */
-        function buildItemDefinition(array $strings, string $previousFolder) : array
+        function buildItemDefinition(array $strings, string|int $previousFolder) : array
         {
             $itemDefinition = [];
             // Loop through each 'String' entry and map keys and values
@@ -1405,11 +1405,11 @@ switch ($inputData['type']) {
          * This is used when there is no associated key, just ordered values.
          *
          * @param array $value The ordered values to process.
-         * @param string $previousFolder The parent folder ID.
+         * @param string|int $previousFolder The parent folder ID (int destination id at root, KeePass UUID string in recursion).
          *
          * @return array The simple item definition.
          */
-        function buildSimpleItem(array $value, string $previousFolder) : array
+        function buildSimpleItem(array $value, string|int $previousFolder) : array
         {
             return [
                 'Notes' => is_array($value[0]['Value']) ? '' : $value[0]['Value'],
@@ -1426,12 +1426,12 @@ switch ($inputData['type']) {
          * It processes each group and recursively goes deeper into subgroups and subentries.
          *
          * @param array $groups The groups to process.
-         * @param string $previousFolder The parent folder ID.
+         * @param string|int $previousFolder The parent folder ID (int destination id at root, KeePass UUID string in recursion).
          * @param array $newItemsToAdd The new items to add to the database.
          *
          * @return array The new items to add to the database.
          */
-        function handleGroups(array $groups, string $previousFolder, array $newItemsToAdd, int $level) : array
+        function handleGroups(array $groups, string|int $previousFolder, array $newItemsToAdd, int $level) : array
         {
             // If a single group is found, wrap it into an array
             if (isset($groups['UUID'])) {
@@ -1655,13 +1655,13 @@ switch ($inputData['type']) {
             DB::insert(
                 prefixTable('items'),
                 array(
-                    'label' => substr($item['Title'], 0, 500),
-                    'description' => $item['Notes'],
+                    'label' => substr($item['Title'] ?? '', 0, 500),
+                    'description' => $item['Notes'] ?? '',
                     'pw' => $cryptedStuff['encrypted'],
                     'pw_iv' => $cryptedStuff['meta'] ?? '',
-                    'url' => substr($item['URL'], 0, 500),
+                    'url' => substr($item['URL'] ?? '', 0, 500),
                     'id_tree' => $folderId,
-                    'login' => substr($item['UserName'], 0, 500),
+                    'login' => substr($item['UserName'] ?? '', 0, 500),
                     'anyone_can_modify' => $inputData['editAll'],
                     'encryption_type' => 'teampass_aes',
                     'inactif' => 0,
@@ -1814,6 +1814,21 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
     // Is parent folder a personal folder?
     $isPersonalFolder = in_array($parentId, $session->get('user-personal_folders')) ? 1 : 0;
 
+    // The caller filters the title with FILTER_SANITIZE_FULL_SPECIAL_CHARS, so decoding
+    // alone would hand back the exact markup that filter neutralized ("&lt;img
+    // onerror=...&gt;" would become "<img onerror=...>" again and be stored executable).
+    // Decode to normalize what the import file encoded — a group named "R&D" arrives as
+    // "R&amp;D" and must not be stored double-encoded — then re-encode, which leaves the
+    // title in the same shape as the web and API folder paths.
+    // The normalized value is also what the duplicate check below must look for: comparing
+    // the unnormalized argument against a normalized column never matched, so re-importing
+    // a folder whose name carried an accent or an ampersand created a duplicate every time.
+    $folderTitle = htmlspecialchars(
+        html_entity_decode(stripslashes((string) $folderTitle), ENT_QUOTES, 'UTF-8'),
+        ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5,
+        'UTF-8'
+    );
+
     //create folder - if not exists at the same level
     DB::query(
         'SELECT * FROM '.prefixTable('nested_tree').'
@@ -1828,7 +1843,7 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
             prefixTable('nested_tree'),
             array(
                 'parent_id' => (int) $parentId,
-                'title' => (string) html_entity_decode(stripslashes($folderTitle), ENT_QUOTES, 'UTF-8'),
+                'title' => $folderTitle,
                 'nlevel' => (int) ($folderLevel + $startPathLevel),
                 'categories' => '',
                 'personal_folder' => $isPersonalFolder,

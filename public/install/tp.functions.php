@@ -798,4 +798,100 @@ function generateSecureToken(int $length = 64): string
     // random_bytes returns bytes, so we take half the length for bin2hex
     return bin2hex(random_bytes($length / 2));
 }
-// --< 
+// --<
+
+/**
+ * Store the site URL confirmed in the upgrade wizard.
+ *
+ * The wizard asks for the full URL to TeamPass but never saved it. When an
+ * instance is served from another path after the upgrade - typically 3.1.x
+ * reached at /teampass then 3.2.x served from the web root because public/
+ * became the document root - the former URL stays in `misc.cpassman_url` and
+ * every absolute URL built from it (AJAX endpoints, datatables) answers 404.
+ *
+ * Settings derived from the site URL follow it only when they still carry the
+ * previous URL as prefix, so a custom favicon or files URL is preserved.
+ *
+ * @param mysqli $db_link Database link
+ * @param string $pre     Tables prefix
+ * @param string $newUrl  Full URL to TeamPass as confirmed in the wizard
+ *
+ * @return array{updated: bool, previous: string, current: string}
+ */
+function refreshStoredSiteUrl($db_link, string $pre, string $newUrl): array
+{
+    $result = array('updated' => false, 'previous' => '', 'current' => '');
+
+    // Only accept a well formed http(s) URL, never overwrite with garbage
+    $newUrl = rtrim(trim($newUrl), '/');
+    if ($newUrl === '' || filter_var($newUrl, FILTER_VALIDATE_URL) === false) {
+        return $result;
+    }
+    $scheme = strtolower((string) parse_url($newUrl, PHP_URL_SCHEME));
+    if (in_array($scheme, array('http', 'https'), true) === false) {
+        return $result;
+    }
+
+    $row = mysqli_fetch_assoc(
+        mysqli_query(
+            $db_link,
+            "SELECT valeur FROM `" . $pre . "misc` WHERE type='admin' AND intitule='cpassman_url'"
+        )
+    );
+    $currentUrl = empty($row) === true ? '' : rtrim(trim((string) $row['valeur']), '/');
+
+    $result['previous'] = $currentUrl;
+    $result['current'] = $newUrl;
+
+    if ($currentUrl === $newUrl) {
+        return $result;
+    }
+
+    $escapedNewUrl = mysqli_real_escape_string($db_link, $newUrl);
+    if (empty($row) === true) {
+        mysqli_query(
+            $db_link,
+            "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`)
+            VALUES ('admin', 'cpassman_url', '" . $escapedNewUrl . "')"
+        );
+    } else {
+        mysqli_query(
+            $db_link,
+            "UPDATE `" . $pre . "misc` SET `valeur` = '" . $escapedNewUrl . "'
+            WHERE type='admin' AND intitule='cpassman_url'"
+        );
+    }
+
+    // Move the settings that were built on top of the previous site URL
+    if ($currentUrl !== '') {
+        foreach (array('favicon', 'url_to_files_folder') as $setting) {
+            $dependent = mysqli_fetch_assoc(
+                mysqli_query(
+                    $db_link,
+                    "SELECT valeur FROM `" . $pre . "misc` WHERE type='admin' AND intitule='" . $setting . "'"
+                )
+            );
+            if (empty($dependent) === true) {
+                continue;
+            }
+
+            // Require a path boundary so https://host does not match https://hostname.tld
+            $value = trim((string) $dependent['valeur']);
+            if ($value !== $currentUrl && strpos($value, $currentUrl . '/') !== 0) {
+                continue;
+            }
+
+            $updatedValue = $newUrl . substr($value, strlen($currentUrl));
+            mysqli_query(
+                $db_link,
+                "UPDATE `" . $pre . "misc`
+                SET `valeur` = '" . mysqli_real_escape_string($db_link, $updatedValue) . "'
+                WHERE type='admin' AND intitule='" . $setting . "'"
+            );
+        }
+    }
+
+    $result['updated'] = true;
+
+    return $result;
+}

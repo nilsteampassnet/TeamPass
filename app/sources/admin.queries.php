@@ -1463,7 +1463,11 @@ switch ($post_type) {
         if ($post_field === 'max_latest_items') {
             $post_value = (string) min(QUICK_ACCESS_HISTORY_SIZE, max(1, (int) $post_value));
         }
-        
+        // Background handler drain window: same bounds as drainTaskPool().
+        if ($post_field === 'tasks_max_drain_time') {
+            $post_value = (string) min(3600, max(10, (int) $post_value));
+        }
+
         require_once 'main.functions.php';
 
         // In case of backup script key, then normalize, archive the previous state and encrypt it.

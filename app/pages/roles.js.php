@@ -171,9 +171,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             access = '<i class="fas fa-ban mr-2 text-danger infotip" title="<?php echo $lang->get('no_access'); ?>"></i>'
         }
 
+        // Folder titles and the path built from them are user-supplied. purifyData() drops
+        // tags, but a title stored double-encoded comes back out as live markup, so encode
+        // before interpolating — same treatment as the folder table in users.js.php.
         var path = ''
         $(value.path).each(function(j, valuePath) {
-            path = path === '' ? valuePath : path + ' / ' + valuePath
+            const safePath = htmlEncode(valuePath)
+            path = path === '' ? safePath : path + ' / ' + safePath
         })
 
         var indent = (parseInt(value.ident) - 1) * 16
@@ -183,7 +187,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
         return '<tr data-level="' + value.ident + '" class="' + (value.ident === 1 ? 'parent' : 'descendant') + '" data-id="' + value.id + '">' +
             '<td width="35px"><input type="checkbox" id="cb-' + value.id + '" data-id="' + value.id + '" class="folder-select"></td>' +
-            '<td class="pointer modify folder-name" data-id="' + value.id + '" data-access="' + value.access + '" style="padding-left:' + indent + 'px">' + folderIcon + value.title + '</td>' +
+            '<td class="pointer modify folder-name" data-id="' + value.id + '" data-access="' + value.access + '" style="padding-left:' + indent + 'px">' + folderIcon + htmlEncode(value.title) + '</td>' +
             '<td class="font-italic pointer modify" data-id="' + value.id + '" data-access="' + value.access + '"><small class="text-muted">' + path + '</small></td>' +
             '<td class="pointer modify td-100 text-center" data-id="' + value.id + '" data-access="' + value.access + '">' + access + '</td>' +
             '<td class="hidden compare tp-borders td-100 text-center"></td>' +
@@ -814,7 +818,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     // prepare select
                     rolesSelectOptions = '<option value="-1"><?php echo $lang->get('none'); ?></option>';;
                     $.each(data.teampass_groups, function(i, role) {
-                        rolesSelectOptions += '<option value="' + role.id + '">' + role.title + '</option>';
+                        rolesSelectOptions += '<option value="' + role.id + '">' + htmlEncode(role.title) + '</option>';
                     });
                     store.update(
                         'teampassApplication',

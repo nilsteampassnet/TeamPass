@@ -12,9 +12,12 @@ require_once __DIR__ . '/../../app/sources/palette.functions.php';
  * Unit tests for the Command Palette logic (F15).
  *
  * Covers:
- *   - paletteNormalizeTerm()  — trimming, min length, hard cap
- *   - paletteEscapeLikeTerm() — LIKE-injection hardening
- *   - paletteRankRows()       — relevance ordering
+ *   - paletteNormalizeTerm()    — trimming, min length, hard cap
+ *   - paletteEscapeLikeTerm()   — LIKE-injection hardening
+ *   - paletteRankRows()         — relevance ordering
+ *   - paletteFlattenRichText()  — KB rich text to searchable plain text
+ *   - paletteTextMatchesTerm()  — markup-only match rejection
+ *   - paletteBuildExcerpt()     — excerpt centred on the match
  */
 class CommandPaletteLogicTest extends TestCase
 {
@@ -115,5 +118,90 @@ class CommandPaletteLogicTest extends TestCase
         $ranked = paletteRankRows($this->rows(['abc']), 'ab');
 
         $this->assertArrayNotHasKey('_score', $ranked[0]);
+    }
+
+    // -------------------------------------------------------------------
+    // paletteFlattenRichText()  — knowledge base descriptions
+    // -------------------------------------------------------------------
+
+    public function testFlattenKeepsWordBoundariesBetweenBlocks(): void
+    {
+        // Without a boundary, strip_tags() would produce "firstsecond".
+        $this->assertSame(
+            'first second',
+            paletteFlattenRichText('<p>first</p><p>second</p>')
+        );
+    }
+
+    public function testFlattenHandlesLegacyEscapedMarkup(): void
+    {
+        // Legacy KB rows store the markup escaped; both shapes must flatten
+        // to the same readable text.
+        $this->assertSame(
+            'reset the VPN token',
+            paletteFlattenRichText('&lt;p&gt;reset the VPN token&lt;/p&gt;')
+        );
+    }
+
+    public function testFlattenCollapsesWhitespaceAndCaps(): void
+    {
+        $this->assertSame('a b', paletteFlattenRichText("a \n\t  b"));
+        $this->assertSame(10, mb_strlen(paletteFlattenRichText(str_repeat('x', 50), 10)));
+    }
+
+    // -------------------------------------------------------------------
+    // paletteTextMatchesTerm()
+    // -------------------------------------------------------------------
+
+    public function testTextMatchIsCaseInsensitiveAcrossHaystacks(): void
+    {
+        $this->assertTrue(paletteTextMatchesTerm(['VPN access', ''], 'vpn'));
+        $this->assertTrue(paletteTextMatchesTerm(['', 'how to reset the VPN'], 'vpn'));
+    }
+
+    public function testTextMatchRejectsMarkupOnlyHit(): void
+    {
+        // The SQL LIKE matched "<table>" in the stored HTML, but the readable
+        // text never mentions it — the row must be dropped.
+        $this->assertFalse(paletteTextMatchesTerm(['Onboarding', 'Step one then step two'], 'table'));
+    }
+
+    public function testTextMatchRejectsEmptyTerm(): void
+    {
+        $this->assertFalse(paletteTextMatchesTerm(['anything'], '   '));
+    }
+
+    // -------------------------------------------------------------------
+    // paletteBuildExcerpt()
+    // -------------------------------------------------------------------
+
+    public function testExcerptStartsAtTextWhenMatchIsEarly(): void
+    {
+        $excerpt = paletteBuildExcerpt('VPN token renewal procedure', 'vpn', 90);
+
+        $this->assertSame('VPN token renewal procedure', $excerpt);
+    }
+
+    public function testExcerptIsCentredOnALateMatch(): void
+    {
+        $text = str_repeat('lorem ipsum ', 10) . 'the VPN token lives here';
+        $excerpt = paletteBuildExcerpt($text, 'vpn', 40);
+
+        $this->assertStringStartsWith('…', $excerpt);
+        $this->assertStringContainsString('VPN', $excerpt);
+    }
+
+    public function testExcerptEllipsisesWhenTruncated(): void
+    {
+        $excerpt = paletteBuildExcerpt(str_repeat('a', 200), 'zzz', 20);
+
+        $this->assertStringEndsWith('…', $excerpt);
+        // 20 kept characters + the trailing ellipsis.
+        $this->assertSame(21, mb_strlen($excerpt));
+    }
+
+    public function testExcerptOnEmptyTextIsEmpty(): void
+    {
+        $this->assertSame('', paletteBuildExcerpt('   ', 'vpn'));
     }
 }

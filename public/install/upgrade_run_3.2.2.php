@@ -76,7 +76,34 @@ if ($db_link) {
 
 //---------------------------------------------------------------------
 
-//--->BEGIN 3.2.2 — LAPR (Linux Account Password Rotation)
+//--->BEGIN 3.2.2
+
+// Add the emails_templates table — administrator customizations of the emails
+// subjects and bodies, one row per (language key, language). The table is a diff
+// over the shipped language files: empty table means today's behaviour, and
+// reverting a template is simply deleting its row. No seeding on purpose.
+$res = mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . "emails_templates` (
+        `id` INT(12) NOT NULL AUTO_INCREMENT,
+        `template_key` VARCHAR(100) NOT NULL COMMENT 'Language key of the customized subject or body',
+        `language` VARCHAR(50) NOT NULL COMMENT 'Language name, as in the languages table',
+        `content` MEDIUMTEXT NOT NULL,
+        `updated_at` INT(12) NULL DEFAULT NULL,
+        `updated_by` INT(12) NULL DEFAULT NULL,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `uk_key_lang` (`template_key`, `language`),
+        KEY `idx_language` (`language`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    COMMENT='Administrator customizations of the emails subjects and bodies'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error creating emails_templates table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// LAPR (Linux Account Password Rotation)
 
 // LAPR managed endpoints (enrolled Linux servers reachable over SSH).
 // No FK constraints (TeamPass project convention) — referential integrity
@@ -298,6 +325,21 @@ foreach ($laprPresets as $preset) {
         );
     }
 }
+
+// Global kill switch of the customization layer. Enabled by default: with an
+// empty emails_templates table the feature is a no-op anyway, and support can
+// set it to 0 to fall back to the shipped strings without losing the templates.
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'emails_templates_enabled', '1')"
+);
+
+// Save upgrade timestamp (upsert: always update if exists)
+mysqli_query(
+    $db_link,
+    "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'upgrade_timestamp', " . time() . ")
+     ON DUPLICATE KEY UPDATE `valeur` = VALUES(`valeur`)"
+);
 
 //--->END 3.2.2
 

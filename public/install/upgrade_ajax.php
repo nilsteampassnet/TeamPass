@@ -35,6 +35,47 @@ use TeampassClasses\ConfigManager\ConfigManager;
 use TeampassClasses\SessionManager\SessionManager;
 
 
+// Buffer the whole answer. Any stray byte emitted before the session is started
+// (a BOM, a warning displayed by a permissive php.ini, output coming from an
+// included file) would otherwise make session_start() fail with "headers already
+// sent" and turn the answer into an HTML fatal error the wizard cannot read.
+ob_start();
+
+/**
+ * Answer with the JSON envelope expected by upgrade.php when PHP dies.
+ *
+ * Every case of this script answers with `[{"error": "...", "index": ""}]`. On a
+ * fatal error PHP would instead return an HTML error page, which the wizard
+ * cannot parse: it would stay stuck on its progress spinner with no message.
+ * Registered as a shutdown function so the contract is honoured in every case.
+ *
+ * @return void
+ */
+function upgradeAjaxShutdownHandler(): void
+{
+    $error = error_get_last();
+    $fatalTypes = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR];
+
+    if ($error === null || in_array($error['type'], $fatalTypes, true) === false) {
+        return;
+    }
+
+    // Drop what was buffered: it is either stray output or a partial answer.
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+
+    echo json_encode([
+        [
+            'error' => 'PHP fatal error: ' . $error['message']
+                . ' in ' . $error['file'] . ' on line ' . $error['line'],
+            'index' => '',
+        ],
+    ]);
+}
+
+register_shutdown_function('upgradeAjaxShutdownHandler');
+
 $_SESSION = [];
 
 function settingsConsistencyCheck(): array
@@ -201,6 +242,14 @@ loadClasses('DB');
 // SessionManager registers the EncryptedSessionProxy handler; a bare session_start()
 // would read unintelligible encrypted bytes and return an empty $_SESSION.
 SessionManager::getSession();
+
+// Everything above must be silent. Anything buffered at this point is stray
+// output that would corrupt the JSON answer, so log it and drop it.
+if (ob_get_length() > 0) {
+    error_log('TeamPass upgrade: unexpected output before the JSON answer: ' . ob_get_contents());
+    ob_clean();
+}
+
 $superGlobal = new SuperGlobal();
 $lang = new Language();
 
@@ -276,10 +325,15 @@ $session_url_path = $superGlobal->get('url_path', 'SESSION');
 if (isset($post_type)) {
     switch ($post_type) {
         case 'step0':
-            // erase session table
+            // Erase the session content and issue a new session identifier.
+            // session_destroy() must not be used here: it closes the session, so the
+            // upgrade grant stored below would be written to a dead session and lost.
+            // The next steps would then find no grant at all. Regenerating keeps the
+            // session usable and renews the identifier right after the credentials
+            // check, which is also the expected protection against session fixation.
             $_SESSION = array();
             setcookie('pma_end_session');
-            session_destroy();
+            session_regenerate_id(true);
 
             require_once './libs/aesctr.php';
             
@@ -317,12 +371,14 @@ if (isset($post_type)) {
                     '"error" : "User is not allowed",'.
                     '"index" : ""'.
                 '}]';
-                $superGlobal->put('user_granted', false, 'SESSION');
+                $superGlobal->put('user_granted', '0', 'SESSION');
             } else {
                 if ($passwordManager->verifyPassword($user_info['pw'], Encryption\Crypt\aesctr::decrypt(base64_decode($post_pwd), 'cpm', 128)) === true && $user_info['admin'] === '1') {
-                    $superGlobal->put('user_granted', true, 'SESSION');
+                    // The grant is stored as a string: every step compares it strictly
+                    // against '1'. The administrator password is deliberately not kept
+                    // in the session, it is never read back from there.
+                    $superGlobal->put('user_granted', '1', 'SESSION');
                     $superGlobal->put('user_login', mysqli_escape_string($db_link, stripslashes($post_login)), 'SESSION');
-                    $superGlobal->put('user_password', Encryption\Crypt\aesctr::decrypt(base64_decode($post_pwd), 'cpm', 128), 'SESSION');
                     $superGlobal->put('user_id', $user_info['id'], 'SESSION');
                     echo '[{'.
                         '"error" : "",'.
@@ -332,7 +388,7 @@ if (isset($post_type)) {
                         )) . '"'.
                     '}]';
                 } else {
-                    $superGlobal->put('user_granted', false, 'SESSION');
+                    $superGlobal->put('user_granted', '0', 'SESSION');
                     echo '[{'.
                         '"error" : "User is not allowed",'.
                         '"index" : ""'.
@@ -587,6 +643,22 @@ if (isset($post_type)) {
             //decrypt the password
             // AES Counter Mode implementation
             require_once './libs/aesctr.php';
+
+            // Save the full URL confirmed in step 1. This runs before the version
+            // scripts so that settings they rebuild from cpassman_url get the new
+            // value. An instance moved to another path keeps the former URL
+            // otherwise, and every absolute URL built from it answers 404.
+            $siteUrl = refreshStoredSiteUrl(
+                $db_link,
+                $pre,
+                empty($post_fullurl) === false ? (string) $post_fullurl : (string) $superGlobal->get('fullurl', 'SESSION')
+            );
+            if ($siteUrl['updated'] === true) {
+                $res .= $siteUrl['previous'] === ''
+                    ? 'Site URL saved: ' . $siteUrl['current']
+                    : 'Site URL updated from ' . $siteUrl['previous'] . ' to ' . $siteUrl['current'];
+                $res = str_replace(array('\\', '"'), array('\\\\', '\\"'), $res);
+            }
 
             //Get some infos from DB
             $cpmIsUTF8[0] = 0;

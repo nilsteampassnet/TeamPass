@@ -103,6 +103,27 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
 
     // AVATAR IMPORT
+    const updateAccountAvatar = (avatarUrl) => {
+        $('.tp-account-avatar').each(function() {
+            const accountAvatar = $(this)
+            accountAvatar.find('.tp-account-avatar-img').remove()
+
+            if (typeof avatarUrl !== 'string' || avatarUrl === '') {
+                return
+            }
+
+            $('<img>', {
+                class: 'tp-account-avatar-img',
+                src: avatarUrl,
+                alt: ''
+            })
+                .on('error', function() {
+                    $(this).remove()
+                })
+                .appendTo(accountAvatar)
+        })
+    }
+
     // Both the button in the settings tab and the profile picture itself open the file dialog.
     // Plupload resolves browse_button through Dom.getAll(), so a list of ids is supported and
     // missing elements are simply ignored (profile edition disabled).
@@ -176,11 +197,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 toastr.remove();
                 if (myData.error === false) {
                     $('#profile-user-avatar').attr('src', 'assets/avatars/' + myData.filename);
+                    updateAccountAvatar('assets/avatars/' + encodeURIComponent(myData.filename_thumb || myData.filename))
                     $('#profile-avatar-delete').removeClass('hidden');
                     $('#profile-avatar-file-list').html('').addClass('hidden');
                 } else {
                     toastr.error(
-                        'An error occurred.<br />Returned data:<br />' + myData.message,
+                        'An error occurred.<br />Returned data:<br />' + htmlEncode(myData.message),
                         '', {
                             closeButton: true
                         }
@@ -202,9 +224,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     // get error
     uploader_photo.bind('Error', function(up, err) {
-        $('#profile-avatar-file-list').html('<div class="ui-state-error ui-corner-all">Error: ' + err.code +
-            ', Message: ' + err.message +
-            (err.file ? ', File: ' + err.file.name : '') +
+        // err.file.name is the name the user gave the file they picked.
+        $('#profile-avatar-file-list').html('<div class="ui-state-error ui-corner-all">Error: ' + htmlEncode(err.code) +
+            ', Message: ' + htmlEncode(err.message) +
+            (err.file ? ', File: ' + htmlEncode(err.file.name) : '') +
             '</div>'
         );
         up.refresh(); // Reposition Flash/Silverlight
@@ -256,6 +279,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         }
 
                         $('#profile-user-avatar').attr('src', data.avatar_url || './assets/images/photo.jpg');
+                        updateAccountAvatar('')
                         $('#profile-avatar-delete').addClass('hidden');
                         toastr.success(
                             data.message || '<?php echo addslashes($lang->get('avatar_deleted')); ?>',
@@ -353,7 +377,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     const splitViewModeChanged = selectedSplitViewMode !== '<?php echo (int) ($session->get('user-split_view_mode') ?? 0); ?>';
                     const showSubfoldersChanged = selectedShowSubfolders !== '<?php echo (int) ($session->get('user-show_subfolders') ?? 0); ?>';
 
-                    $('#profile-username').html(data.name + ' ' + data.lastname);
+                    $('#profile-username').html(htmlEncode(data.name) + ' ' + htmlEncode(data.lastname));
                     $('#profile-user-name').val(data.name);
                     $('#profile-user-lastname').val(data.lastname);
                     $('#profile-user-email').val(data.email);

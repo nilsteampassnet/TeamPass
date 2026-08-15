@@ -1707,12 +1707,7 @@ logItems(
             echo prepareExchangedData(
                 array(
                     'error' => false,
-                    'result' => array(
-                        'context' => tpHealthBuildRuntimeLogsContext($SETTINGS),
-                        'server' => tpHealthResolveLogResult('server', $SETTINGS, $lines),
-                        'teampass' => tpHealthResolveLogResult('teampass', $SETTINGS, $lines),
-                        'php_fpm' => tpHealthResolveLogResult('php_fpm', $SETTINGS, $lines),
-                    ),
+                    'result' => tpHealthReadRuntimeLogs($SETTINGS, $lines),
                 ),
                 'encode'
             );
@@ -4090,6 +4085,7 @@ function tpGetTeampassSettingsForHealth(array $SETTINGS): array
 {
     $wanted = array(
         'timezone',
+        'cpassman_url',
         'path_to_upload_folder',
         'upload_maxfilesize',
         'task_maximum_run_time',
@@ -4166,6 +4162,39 @@ function tpGetSystemChecks(array $phpIni, array $tpSettings, Language $lang): ar
                 (string) ($phpIni['ini']['post_max_size'] ?? '')
             ),
         );
+    }
+
+    // Site URL consistency. Every absolute URL of the application is built from
+    // cpassman_url, so a stale value - typically an instance moved from /teampass
+    // to the web root - makes all AJAX calls answer 404. Only the path is compared:
+    // reaching the same instance through several host names is legitimate, while a
+    // path mismatch always breaks the requests.
+    $storedUrl = trim((string) ($tpSettings['cpassman_url'] ?? ''));
+    if ($storedUrl !== '') {
+        $storedPath = rtrim((string) (parse_url($storedUrl, PHP_URL_PATH) ?? ''), '/');
+
+        // This handler is served as <base>/sources/utilities.queries.php
+        $scriptPath = str_replace('\\', '/', dirname(dirname((string) ($_SERVER['SCRIPT_NAME'] ?? ''))));
+        $requestPath = in_array($scriptPath, array('/', '.', ''), true) === true ? '' : rtrim($scriptPath, '/');
+
+        if ($storedPath !== $requestPath) {
+            $checks[] = array(
+                'status' => 'danger',
+                'title' => $lang->get('health_check_site_url'),
+                // Values are escaped client-side when the check is rendered
+                'text' => sprintf(
+                    $lang->get('health_check_site_url_mismatch'),
+                    $storedUrl,
+                    $requestPath === '' ? '/' : $requestPath
+                ),
+            );
+        } else {
+            $checks[] = array(
+                'status' => 'success',
+                'title' => $lang->get('health_check_site_url'),
+                'text' => $lang->get('health_status_ok'),
+            );
+        }
     }
 
     // Execution time consistency
@@ -4329,6 +4358,39 @@ function tpGetSystemChecks(array $phpIni, array $tpSettings, Language $lang): ar
                 'text' => $lang->get('health_check_api_https_off_message'),
             );
         }
+    }
+
+    // Stalled background queue. A task that stays pending well beyond the drain window
+    // means the handler is not being woken up any more — usually a missing cron entry,
+    // exec() disabled, or an unwritable storage/logs directory. The visible symptom is
+    // silent side effects: notification emails never leave, caches never rebuild.
+    // created_at is a varchar(50) holding a unix timestamp: cast explicitly rather than
+    // relying on MySQL's implicit string-to-number coercion.
+    $tpStalledTasksThreshold = 900;
+    $tpStalledTasks = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('background_tasks') . '
+        WHERE is_in_progress = 0
+        AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)
+        AND created_at != ""
+        AND CAST(created_at AS UNSIGNED) < %i',
+        time() - $tpStalledTasksThreshold
+    );
+    if ($tpStalledTasks > 0) {
+        $checks[] = array(
+            'status' => 'warning',
+            'title' => $lang->get('health_check_pending_tasks'),
+            'text' => sprintf(
+                $lang->get('health_check_pending_tasks_stalled'),
+                (string) $tpStalledTasks,
+                (string) ((int) ($tpStalledTasksThreshold / 60))
+            ),
+        );
+    } else {
+        $checks[] = array(
+            'status' => 'success',
+            'title' => $lang->get('health_check_pending_tasks'),
+            'text' => $lang->get('health_status_ok'),
+        );
     }
 
     return $checks;
@@ -4790,9 +4852,101 @@ function tpHealthBuildRuntimeLogsContext(array $SETTINGS): array
         'health_teampass_log_path' => tpHealthSanitizeManualLogPath((string) ($SETTINGS['health_teampass_log_path'] ?? '')),
         'health_php_fpm_log_path' => tpHealthSanitizeManualLogPath((string) ($SETTINGS['health_php_fpm_log_path'] ?? '')),
         'php_fpm_enabled' => tpHealthPhpFpmIsEnabled(),
+        'websocket_enabled' => (string) ($SETTINGS['websocket_enabled'] ?? '0') === '1',
+        'websocket_log_path' => tpHealthGetWebSocketLogPath(),
         'php_version' => PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION,
         'runtime_user' => tpHealthGetRuntimeProcessUser(),
     );
+}
+
+/**
+ * Tell whether a path is absolute on a Windows filesystem (drive letter or UNC share).
+ *
+ * tpHealthIsAbsolutePath() only recognises POSIX paths and stays the reference for the
+ * "sudo" remediation commands, which must never be proposed on Windows.
+ */
+function tpHealthIsWindowsAbsolutePath(string $path): bool
+{
+    return $path !== ''
+        && (preg_match('#^[A-Za-z]:[\\\\/]#', $path) === 1 || str_starts_with($path, '\\\\') === true);
+}
+
+/**
+ * Collapse "." and ".." segments so the path displayed to the administrator is readable.
+ *
+ * The log file may not exist yet, so the parent directory is normalized when the file
+ * itself cannot be resolved. The raw path is returned when nothing can be resolved.
+ */
+function tpHealthNormalizeLogPath(string $path): string
+{
+    if ($path === '') {
+        return '';
+    }
+
+    $realPath = @realpath($path);
+    if (is_string($realPath) === true) {
+        return $realPath;
+    }
+
+    $realDirectory = @realpath(dirname($path));
+    if (is_string($realDirectory) === true) {
+        return rtrim($realDirectory, '/\\') . DIRECTORY_SEPARATOR . basename($path);
+    }
+
+    return $path;
+}
+
+/**
+ * Return the log path used by the WebSocket daemon configuration.
+ */
+function tpHealthGetWebSocketLogPath(): string
+{
+    static $resolvedPath = null;
+
+    if (is_string($resolvedPath) === true) {
+        return $resolvedPath;
+    }
+
+    $appPath = defined('TEAMPASS_APP') === true ? TEAMPASS_APP : dirname(__DIR__);
+    $rootPath = defined('TEAMPASS_ROOT') === true ? TEAMPASS_ROOT : dirname($appPath);
+    $defaultPath = $appPath . '/websocket/logs/websocket.log';
+    $configPath = $appPath . '/websocket/config/websocket.php';
+    $resolvedPath = tpHealthNormalizeLogPath($defaultPath);
+
+    if (is_file($configPath) === false || is_readable($configPath) === false) {
+        return $resolvedPath;
+    }
+
+    try {
+        $config = include $configPath;
+    } catch (\Throwable) {
+        return $resolvedPath;
+    }
+
+    if (is_array($config) === false) {
+        return $resolvedPath;
+    }
+
+    $configuredPath = trim((string) ($config['log_file'] ?? ''));
+    if ($configuredPath === '') {
+        return $resolvedPath;
+    }
+
+    // The shipped configuration uses __DIR__ . '/../logs/websocket.log', so the value is
+    // absolute but still carries a ".." segment: normalize it before showing it.
+    if (
+        tpHealthIsAbsolutePath($configuredPath) === true
+        || tpHealthIsWindowsAbsolutePath($configuredPath) === true
+    ) {
+        $resolvedPath = tpHealthNormalizeLogPath($configuredPath);
+        return $resolvedPath;
+    }
+
+    $resolvedPath = tpHealthNormalizeLogPath(
+        rtrim($rootPath, '/\\') . '/' . ltrim(str_replace('\\', '/', $configuredPath), '/')
+    );
+
+    return $resolvedPath;
 }
 
 
@@ -5037,10 +5191,56 @@ function tpHealthBuildReadAccessCommands(string $logPath): array
     return tpHealthUniqueNonEmptyStrings($commands);
 }
 
+/**
+ * Build diagnostic and permission commands for the WebSocket log.
+ *
+ * @return array<int, string>
+ */
+function tpHealthBuildWebSocketFixCommands(string $logPath, string $access = ''): array
+{
+    $commands = array();
+    $runtimeUser = preg_replace('/[^a-zA-Z0-9._-]+/', '', tpHealthGetRuntimeProcessUser());
+    $runtimeUser = is_string($runtimeUser) === true ? trim($runtimeUser) : '';
+
+    if (
+        $runtimeUser !== ''
+        && $logPath !== ''
+        && tpHealthIsAbsolutePath($logPath) === true
+        && in_array($access, array('not_found', 'not_readable', 'directory_not_writable', 'file_not_writable'), true) === true
+    ) {
+        $logDir = dirname($logPath);
+        $safeLogDir = escapeshellarg($logDir);
+        $safeOwner = escapeshellarg($runtimeUser . ':' . $runtimeUser);
+        $safeRuntimeUser = escapeshellarg($runtimeUser);
+
+        // The daemon writes the log while PHP only reads it. The shipped systemd unit runs
+        // as www-data like PHP, but a custom unit may not: applying the ownership commands
+        // blindly would then lock the daemon out of its own log file.
+        $commands[] = '# These commands assume the WebSocket daemon also runs as "' . $runtimeUser
+            . '" (check User= in teampass-websocket.service).';
+        $commands[] = '# If it runs as another user, give both accounts a shared group instead:'
+            . ' sudo chgrp -R <shared_group> ' . $safeLogDir . ' && sudo chmod 2770 ' . $safeLogDir;
+        $commands[] = 'sudo install -d -o ' . $safeRuntimeUser . ' -g ' . $safeRuntimeUser . ' -m 0750 ' . $safeLogDir;
+        $commands[] = 'sudo chown -R ' . $safeOwner . ' ' . $safeLogDir;
+        $commands[] = 'sudo find ' . $safeLogDir . ' -type d -exec chmod 0750 {} \\;';
+        $commands[] = 'sudo find ' . $safeLogDir . ' -type f -exec chmod 0640 {} \\;';
+    }
+
+    $commands[] = 'sudo systemctl restart teampass-websocket.service || true';
+    $commands[] = 'systemctl status teampass-websocket.service --no-pager -n 20 || true';
+    $commands[] = 'journalctl -u teampass-websocket.service --no-pager -n 50 || true';
+
+    return tpHealthUniqueNonEmptyStrings($commands);
+}
+
 
 
 function tpHealthGetFixCommands(string $role, string $serverFamily, string $logPath, string $access = ''): array
 {
+    if ($role === 'websocket') {
+        return tpHealthBuildWebSocketFixCommands($logPath, $access);
+    }
+
     if ($role === 'php_fpm' && tpHealthPhpFpmIsEnabled() === false) {
         return array();
     }
@@ -5178,6 +5378,61 @@ function tpHealthInspectLogPath(string $logPath, int $lines, array $meta): array
     );
 }
 
+/**
+ * Resolve the WebSocket log and verify read and write access for the runtime user.
+ *
+ * @param array<string, mixed> $SETTINGS
+ * @return array<string, mixed>
+ */
+function tpHealthResolveWebSocketLogResult(array $SETTINGS, int $lines): array
+{
+    $context = tpHealthBuildRuntimeLogsContext($SETTINGS);
+    $logPath = (string) ($context['websocket_log_path'] ?? '');
+    $enabled = ($context['websocket_enabled'] ?? false) === true;
+    $meta = array(
+        'role' => 'websocket',
+        'mode' => 'config',
+        'server_family' => (string) ($context['server_family'] ?? 'unknown'),
+        'server_software' => (string) ($context['server_software'] ?? ''),
+    );
+
+    if ($enabled === false) {
+        return array_merge(
+            $meta,
+            array(
+                'enabled' => false,
+                'log_path' => $logPath,
+                'lines' => $lines,
+                'access' => 'not_used',
+                'write_access' => 'not_used',
+                'fix_commands' => array(),
+                'write_fix_commands' => array(),
+                'content' => '',
+                'content_length' => 0,
+                'file_size' => null,
+            )
+        );
+    }
+
+    $result = tpHealthInspectLogPath($logPath, $lines, $meta);
+    $result['enabled'] = true;
+    $result['write_access'] = 'ok';
+    $result['write_fix_commands'] = array();
+
+    $logDir = dirname($logPath);
+    if (is_dir($logDir) === false || is_writable($logDir) === false) {
+        $result['write_access'] = 'directory_not_writable';
+    } elseif (file_exists($logPath) === true && is_writable($logPath) === false) {
+        $result['write_access'] = 'file_not_writable';
+    }
+
+    if ($result['write_access'] !== 'ok') {
+        $result['write_fix_commands'] = tpHealthBuildWebSocketFixCommands($logPath, (string) $result['write_access']);
+    }
+
+    return $result;
+}
+
 
 function tpHealthResolveLogResult(string $role, array $SETTINGS, int $lines): array
 {
@@ -5313,6 +5568,12 @@ function tpHealthResolveLogResult(string $role, array $SETTINGS, int $lines): ar
 }
 
 
+/**
+ * Build the full runtime logs payload returned by the "health_check_runtime_logs" action.
+ *
+ * @param array<string, mixed> $SETTINGS
+ * @return array<string, mixed>
+ */
 function tpHealthReadRuntimeLogs(array $SETTINGS, int $lines): array
 {
     $context = tpHealthBuildRuntimeLogsContext($SETTINGS);
@@ -5322,5 +5583,6 @@ function tpHealthReadRuntimeLogs(array $SETTINGS, int $lines): array
         'server' => tpHealthResolveLogResult('server', $SETTINGS, $lines),
         'teampass' => tpHealthResolveLogResult('teampass', $SETTINGS, $lines),
         'php_fpm' => tpHealthResolveLogResult('php_fpm', $SETTINGS, $lines),
+        'websocket' => tpHealthResolveWebSocketLogResult($SETTINGS, $lines),
     );
 }

@@ -29,8 +29,9 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  *
  * Universal Search / Command Palette (F15 — Scale & polish).
- * Lightweight ACL-bound search endpoint: items (from the search cache) and
- * folders the user can see. No password value is ever read or returned.
+ * Lightweight ACL-bound search endpoint: items (from the search cache), the
+ * folders the user can see, and the knowledge base entries (title +
+ * description). No password value is ever read or returned.
  */
 
 use TeampassClasses\NestedTree\NestedTree;
@@ -116,118 +117,146 @@ if ($post_key !== $session->get('key')) {
 switch ($post_type) {
     /*
      * CASE
-     * Palette search: items + folders visible to the user, ranked, bounded.
+     * Palette search: items + folders visible to the user and knowledge base
+     * entries, ranked, bounded.
      */
     case 'palette_search':
         $term = paletteNormalizeTerm($post_term);
         if ($term === '') {
             echo (string) prepareExchangedData(
-                ['error' => false, 'items' => [], 'folders' => []],
-                'encode'
-            );
-            break;
-        }
-
-        // ACL scope: strictly the folders the session user can see.
-        $accessibleFolders = array_filter(
-            array_map('intval', (array) ($session->get('user-accessible_folders') ?? [])),
-            static fn (int $id): bool => $id > 0
-        );
-        if (count($accessibleFolders) === 0) {
-            echo (string) prepareExchangedData(
-                ['error' => false, 'items' => [], 'folders' => []],
+                ['error' => false, 'items' => [], 'folders' => [], 'kb' => []],
                 'encode'
             );
             break;
         }
 
         $likeTerm = '%' . paletteEscapeLikeTerm($term) . '%';
-        $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+        $items = [];
+        $folders = [];
 
-        // Belt-and-braces: exclude foreign personal folders (same rule as the
-        // search page, on top of the accessible-folders scope). The user's own
-        // personal tree (root titled with the user id + its children) stays in.
-        $otherPersonalFolders = [];
-        $pfRoot = DB::queryFirstRow(
-            'SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE title = %i',
-            (int) $session->get('user-id')
+        // ACL scope: strictly the folders the session user can see.
+        $accessibleFolders = array_filter(
+            array_map('intval', (array) ($session->get('user-accessible_folders') ?? [])),
+            static fn (int $id): bool => $id > 0
         );
-        if (empty($pfRoot['id']) === false) {
-            $pfRows = DB::query(
-                'SELECT id FROM ' . prefixTable('nested_tree') . '
-                WHERE personal_folder = 1 AND NOT parent_id = %i AND NOT title = %i',
-                (int) $pfRoot['id'],
+
+        if (count($accessibleFolders) > 0) {
+            $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+
+            // Belt-and-braces: exclude foreign personal folders (same rule as the
+            // search page, on top of the accessible-folders scope). The user's own
+            // personal tree (root titled with the user id + its children) stays in.
+            $otherPersonalFolders = [];
+            $pfRoot = DB::queryFirstRow(
+                'SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE title = %i',
                 (int) $session->get('user-id')
             );
-            foreach ($pfRows as $pfRow) {
-                $otherPersonalFolders[] = (int) $pfRow['id'];
+            if (empty($pfRoot['id']) === false) {
+                $pfRows = DB::query(
+                    'SELECT id FROM ' . prefixTable('nested_tree') . '
+                    WHERE personal_folder = 1 AND NOT parent_id = %i AND NOT title = %i',
+                    (int) $pfRoot['id'],
+                    (int) $session->get('user-id')
+                );
+                foreach ($pfRows as $pfRow) {
+                    $otherPersonalFolders[] = (int) $pfRow['id'];
+                }
+            }
+            $searchableFolders = array_values(array_diff($accessibleFolders, $otherPersonalFolders));
+
+            if (count($searchableFolders) > 0) {
+                // Items — from the search cache (labels/logins/urls/tags, no secret).
+                $itemRecords = DB::query(
+                    'SELECT c.id, c.label, c.login, c.id_tree
+                    FROM ' . prefixTable('cache') . ' AS c
+                    WHERE c.id_tree IN %li
+                    AND (c.label LIKE %s OR c.login LIKE %s OR c.url LIKE %s OR c.tags LIKE %s)
+                    LIMIT 30',
+                    $searchableFolders,
+                    $likeTerm,
+                    $likeTerm,
+                    $likeTerm,
+                    $likeTerm
+                );
+
+                foreach ($itemRecords as $record) {
+                    $path = [];
+                    foreach ($tree->getPath((int) $record['id_tree'], true) as $node) {
+                        // Raw values: the client escapes them at render time.
+                        $path[] = (string) $node->title;
+                    }
+                    $items[] = [
+                        'id' => (int) $record['id'],
+                        'label' => (string) $record['label'],
+                        'login' => (string) $record['login'],
+                        'folder_id' => (int) $record['id_tree'],
+                        'path' => implode(' › ', $path),
+                    ];
+                }
+                $items = array_slice(paletteRankRows($items, $term, 'label'), 0, 8);
+
+                // Folders — visible tree nodes matching by title.
+                $folderRecords = DB::query(
+                    'SELECT id, title FROM ' . prefixTable('nested_tree') . '
+                    WHERE id IN %li AND title LIKE %s
+                    LIMIT 20',
+                    $searchableFolders,
+                    $likeTerm
+                );
+
+                foreach ($folderRecords as $record) {
+                    $path = [];
+                    foreach ($tree->getPath((int) $record['id'], true) as $node) {
+                        $path[] = (string) $node->title;
+                    }
+                    $folders[] = [
+                        'id' => (int) $record['id'],
+                        'title' => (string) $record['title'],
+                        'path' => implode(' › ', $path),
+                    ];
+                }
+                $folders = array_slice(paletteRankRows($folders, $term, 'title'), 0, 5);
             }
         }
-        $searchableFolders = array_values(array_diff($accessibleFolders, $otherPersonalFolders));
-        if (count($searchableFolders) === 0) {
-            echo (string) prepareExchangedData(
-                ['error' => false, 'items' => [], 'folders' => []],
-                'encode'
+
+        // Knowledge base — titles and descriptions. Same gate as the KB menu
+        // and the KB page: feature enabled, non-admin, page allowed. Entries
+        // carry no per-user ACL, so no folder scope applies here.
+        $kb = [];
+        if (
+            (int) ($SETTINGS['enable_kb'] ?? 0) === 1
+            && (int) $session->get('user-admin') !== 1
+            && $checkUserAccess->userAccessPage('kb') === true
+        ) {
+            $kbRecords = DB::query(
+                'SELECT k.id, k.label, k.description, c.category AS category
+                FROM ' . prefixTable('kb') . ' AS k
+                LEFT JOIN ' . prefixTable('kb_categories') . ' AS c ON (c.id = k.category_id)
+                WHERE k.deleted_at IS NULL
+                AND (k.label LIKE %s OR k.description LIKE %s)
+                LIMIT 30',
+                $likeTerm,
+                $likeTerm
             );
-            break;
-        }
 
-        // Items — from the search cache (labels/logins/urls/tags, no secret).
-        $itemRecords = DB::query(
-            'SELECT c.id, c.label, c.login, c.id_tree
-            FROM ' . prefixTable('cache') . ' AS c
-            WHERE c.id_tree IN %li
-            AND (c.label LIKE %s OR c.login LIKE %s OR c.url LIKE %s OR c.tags LIKE %s)
-            LIMIT 30',
-            $searchableFolders,
-            $likeTerm,
-            $likeTerm,
-            $likeTerm,
-            $likeTerm
-        );
-
-        $items = [];
-        foreach ($itemRecords as $record) {
-            $path = [];
-            foreach ($tree->getPath((int) $record['id_tree'], true) as $node) {
-                // Raw values: the client escapes them at render time.
-                $path[] = (string) $node->title;
+            foreach ($kbRecords as $record) {
+                $plainDescription = paletteFlattenRichText((string) $record['description']);
+                // Drop rows whose LIKE only matched the stored markup.
+                if (paletteTextMatchesTerm([(string) $record['label'], $plainDescription], $term) === false) {
+                    continue;
+                }
+                $kb[] = [
+                    'id' => (int) $record['id'],
+                    'label' => (string) $record['label'],
+                    'excerpt' => paletteBuildExcerpt($plainDescription, $term),
+                    'category' => (string) ($record['category'] ?? ''),
+                ];
             }
-            $items[] = [
-                'id' => (int) $record['id'],
-                'label' => (string) $record['label'],
-                'login' => (string) $record['login'],
-                'folder_id' => (int) $record['id_tree'],
-                'path' => implode(' › ', $path),
-            ];
+            $kb = array_slice(paletteRankRows($kb, $term, 'label'), 0, 5);
         }
-        $items = array_slice(paletteRankRows($items, $term, 'label'), 0, 8);
-
-        // Folders — visible tree nodes matching by title.
-        $folderRecords = DB::query(
-            'SELECT id, title FROM ' . prefixTable('nested_tree') . '
-            WHERE id IN %li AND title LIKE %s
-            LIMIT 20',
-            $searchableFolders,
-            $likeTerm
-        );
-
-        $folders = [];
-        foreach ($folderRecords as $record) {
-            $path = [];
-            foreach ($tree->getPath((int) $record['id'], true) as $node) {
-                $path[] = (string) $node->title;
-            }
-            $folders[] = [
-                'id' => (int) $record['id'],
-                'title' => (string) $record['title'],
-                'path' => implode(' › ', $path),
-            ];
-        }
-        $folders = array_slice(paletteRankRows($folders, $term, 'title'), 0, 5);
 
         echo (string) prepareExchangedData(
-            ['error' => false, 'items' => $items, 'folders' => $folders],
+            ['error' => false, 'items' => $items, 'folders' => $folders, 'kb' => $kb],
             'encode'
         );
         break;

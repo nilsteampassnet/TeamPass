@@ -1689,6 +1689,16 @@ function prepareSendingEmail(
             ], JSON_HEX_QUOT | JSON_HEX_TAG),
         )
     );
+
+    // Wake the handler up. This task is very often created from inside a worker that the
+    // handler is already draining (typically create_user_keys step99). Without the trigger
+    // the handler only picks it up if it is still in its launching window: once
+    // tasks_max_drain_time is exceeded, drainTaskPool() stops launching and exits, leaving
+    // the email queued until the next cron tick - or forever when no cron is configured.
+    // Touching the trigger file makes a running handler extend its drain window
+    // (checkAndConsumeTrigger) and relaunches a stopped one. Concurrent launches are
+    // harmless: the handler holds an exclusive flock and surplus instances exit at once.
+    triggerBackgroundHandler();
 }
 
 /**
@@ -2451,6 +2461,35 @@ function makeThumbnail(string $src, string $dest, int $desired_width)
 }
 
 /**
+ * Resolve the web URL of a user avatar from a list of candidate file names.
+ *
+ * Each candidate is reduced to its basename, so a path stored in database or
+ * session is never honored, and must exist in the avatars directory, so a stale
+ * reference does not produce a broken image. The first usable candidate wins,
+ * which lets a caller ask for the thumbnail first and fall back to the full
+ * image.
+ *
+ * @param array<int, string|null> $fileNames Candidate file names, most wanted first
+ *
+ * @return string Web URL of the avatar, or an empty string when none is usable
+ */
+function getUserAvatarUrl(array $fileNames): string
+{
+    foreach ($fileNames as $fileName) {
+        $safeFileName = basename(trim((string) $fileName));
+        if ($safeFileName === '') {
+            continue;
+        }
+
+        if (is_file(TEAMPASS_ROOT . '/public/assets/avatars/' . $safeFileName) === true) {
+            return './assets/avatars/' . rawurlencode($safeFileName);
+        }
+    }
+
+    return '';
+}
+
+/**
  * Check table prefix in SQL query.
  *
  * @param string $table Table name
@@ -3093,10 +3132,45 @@ function geItemReadablePath(int $id_tree, string $label, array $SETTINGS): strin
 /**
  * Get the client ip address.
  *
- * @return string IP address
+ * The value feeds the per-IP bruteforce counter, the authentication lock and the audit log,
+ * so a client able to choose it can forge log entries and rotate the header to escape
+ * `nb_bad_authentication_by_ip` entirely.
+ *
+ * Two resolutions coexist, and the strict one is **opt-in**:
+ *
+ *  - `network_security_mode = 'reverse_proxy'` (Settings → Network) — delegates to
+ *    teampassGetClientIpForSecurity(), which reads the proxy header only when REMOTE_ADDR
+ *    matches `network_trusted_proxies`. This is the resolution the API already uses.
+ *  - `network_security_mode = 'direct'` (default) — the historical behaviour, unchanged.
+ *
+ * The default deliberately stays on the historical path: an installation that really sits
+ * behind a proxy but has not declared it would otherwise attribute every request to the
+ * proxy address, and a handful of failed logins would lock the whole organisation out on a
+ * single shared counter. Switching the mode is the admin's call, not an upgrade side effect.
+ *
+ * @return string IP address, or 'UNKNOWN' when nothing yields a valid address
  */
 function getClientIpServer(): string
 {
+    // The address cannot change within a request; resolving it once keeps the settings
+    // lookup off the ~8 calls a single login attempt makes.
+    static $resolvedIp = null;
+    if ($resolvedIp !== null) {
+        return $resolvedIp;
+    }
+
+    $configManager = new ConfigManager();
+    $settings = $configManager->getAllSettings();
+
+    if (strtolower(trim((string) ($settings['network_security_mode'] ?? 'direct'))) === 'reverse_proxy') {
+        $context = teampassGetClientIpForSecurity($settings);
+        $detectedIp = $context['detected_ip'] ?? null;
+
+        $resolvedIp = is_string($detectedIp) && $detectedIp !== '' ? $detectedIp : 'UNKNOWN';
+
+        return $resolvedIp;
+    }
+
     // Candidate sources, in order of preference. Proxy headers are attacker-controllable and may
     // carry a comma-separated list, so every candidate is validated as a real IP before being used.
     $sources = [
@@ -3118,12 +3192,16 @@ function getClientIpServer(): string
             $candidate = trim($candidate);
             // Return the first candidate that is a valid IPv4/IPv6 address.
             if ($candidate !== '' && filter_var($candidate, FILTER_VALIDATE_IP) !== false) {
-                return $candidate;
+                $resolvedIp = $candidate;
+
+                return $resolvedIp;
             }
         }
     }
 
-    return 'UNKNOWN';
+    $resolvedIp = 'UNKNOWN';
+
+    return $resolvedIp;
 }
 
 /**
@@ -6293,6 +6371,419 @@ function storeUsersShareKey(
 }
 
 /**
+ * Resolve a folder identity together with a personal-tree aware `personal_folder` flag.
+ *
+ * Mirrors ItemModel::getFolderSettings(): a folder counts as personal when its own
+ * `personal_folder` column is set OR when it sits inside a personal root. The second case
+ * rescues legacy personal subfolders whose own flag was never written, and prevents callers
+ * and callees from disagreeing on what a "personal" folder is.
+ *
+ * @param int $folderId Folder to resolve
+ *
+ * @return array{id: int, title: string, personal_folder: int}|null Null when the folder does not exist
+ */
+function getFolderIdentityWithPersonalFlag(int $folderId): ?array
+{
+    loadClasses('DB');
+
+    $folder = DB::queryFirstRow(
+        'SELECT folder.id, folder.title,
+            CASE WHEN COUNT(personal_root.id) > 0 THEN 1 ELSE folder.personal_folder END AS personal_folder
+        FROM ' . prefixTable('nested_tree') . ' AS folder
+        LEFT JOIN ' . prefixTable('nested_tree') . ' AS personal_root
+            ON personal_root.personal_folder = 1
+            AND folder.nleft >= personal_root.nleft
+            AND folder.nright <= personal_root.nright
+        WHERE folder.id = %i
+        GROUP BY folder.id, folder.title, folder.personal_folder',
+        $folderId
+    );
+
+    if (is_array($folder) === false) {
+        return null;
+    }
+
+    return [
+        'id' => (int) $folder['id'],
+        'title' => (string) $folder['title'],
+        'personal_folder' => (int) $folder['personal_folder'],
+    ];
+}
+
+/**
+ * Move a personal item to a shared folder and synchronously distribute its object keys.
+ *
+ * Source object keys are recovered BEFORE the transaction opens: decryption is the slow part
+ * and keeping it out of the transaction keeps the item row lock as short as possible. The
+ * state read during that phase is then revalidated under the lock, so a concurrent move or
+ * password rotation can never be silently overwritten with stale object keys.
+ *
+ * The sharekey fan-out stays INSIDE the transaction on purpose: an aborted move must not leave
+ * foreign sharekeys on an item that is still personal (invariant I1 — see SEC-8).
+ *
+ * Historical log sharekeys intentionally keep the existing Web move behaviour and are not
+ * redistributed by this implementation.
+ *
+ * SECURITY — this helper performs NO authorization check. Callers MUST have verified that the
+ * user may remove the item from its source folder and write into the destination folder
+ * (Web: getCurrentAccessRights() + `user-accessible_folders`; API: FolderAccessModel).
+ *
+ * @param int    $itemId         Item to move
+ * @param int    $targetFolderId Shared destination folder
+ * @param int    $userId         User performing the move
+ * @param string $userPrivateKey Decrypted private key of the user performing the move
+ *
+ * @return array{
+ *     item_id: int,
+ *     label: string,
+ *     source_folder_id: int,
+ *     source_folder_title: string,
+ *     target_folder_id: int,
+ *     target_folder_title: string,
+ *     fields_count: int,
+ *     files_count: int
+ * }
+ *
+ * @throws InvalidArgumentException When the requested transition is not a personal-to-shared move
+ * @throws UnexpectedValueException When a required source encryption key is missing or unusable
+ * @throws RuntimeException         When the item changed while the move was being prepared
+ * @throws Throwable                When the database operation cannot be completed
+ *
+ * Note for callers: UnexpectedValueException extends RuntimeException, so a `catch` for the
+ * concurrency case must always come AFTER the `catch` for the key case.
+ */
+function movePersonalItemToSharedFolderSynchronously(
+    int $itemId,
+    int $targetFolderId,
+    int $userId,
+    string $userPrivateKey
+): array {
+    if ($itemId <= 0 || $targetFolderId <= 0 || $userId <= 0 || $userPrivateKey === '') {
+        throw new InvalidArgumentException('Invalid personal item move parameters.');
+    }
+
+    loadClasses('DB');
+
+    // -----------------------------------------------------------------------------------
+    // Phase 1 — read-only preparation, deliberately outside the transaction.
+    // -----------------------------------------------------------------------------------
+    $item = DB::queryFirstRow(
+        'SELECT id, id_tree, label, updated_at, pw
+        FROM ' . prefixTable('items') . '
+        WHERE id = %i',
+        $itemId
+    );
+    if (is_array($item) === false) {
+        throw new InvalidArgumentException('Item not found.');
+    }
+
+    $sourceFolder = getFolderIdentityWithPersonalFlag((int) $item['id_tree']);
+    if ($sourceFolder === null) {
+        throw new InvalidArgumentException('Source folder not found.');
+    }
+
+    $targetFolder = getFolderIdentityWithPersonalFlag($targetFolderId);
+    if ($targetFolder === null) {
+        throw new InvalidArgumentException('Target folder not found.');
+    }
+
+    if ($sourceFolder['personal_folder'] !== 1 || $targetFolder['personal_folder'] !== 0) {
+        throw new InvalidArgumentException('Only personal-to-shared item moves are supported by this operation.');
+    }
+
+    $user = DB::queryFirstRow(
+        'SELECT public_key
+        FROM ' . prefixTable('users') . '
+        WHERE id = %i',
+        $userId
+    );
+    if (is_array($user) === false || empty($user['public_key'])) {
+        throw new UnexpectedValueException(
+            'The item cannot be moved because the user encryption keys are unavailable.'
+        );
+    }
+    $userPublicKey = (string) $user['public_key'];
+
+    /**
+     * Decrypt one caller sharekey while preserving the migration-on-read contract.
+     *
+     * @param array<string, mixed> $sharekeyRow
+     */
+    $decryptSourceKey = static function (
+        array $sharekeyRow,
+        string $sharekeysTable,
+        string $objectType,
+        int $objectId
+    ) use ($userPrivateKey, $userPublicKey): string {
+        if (
+            empty($sharekeyRow['share_key'])
+            || (int) ($sharekeyRow['increment_id'] ?? 0) <= 0
+        ) {
+            error_log(
+                'TEAMPASS Error - personal-to-shared move: missing ' . $objectType
+                . ' sharekey for object ' . $objectId
+            );
+            throw new UnexpectedValueException(
+                'The item cannot be moved because one or more encryption keys are missing or invalid.'
+            );
+        }
+
+        try {
+            $objectKey = decryptUserObjectKeyWithMigration(
+                (string) $sharekeyRow['share_key'],
+                $userPrivateKey,
+                $userPublicKey,
+                (int) $sharekeyRow['increment_id'],
+                $sharekeysTable
+            );
+        } catch (Throwable $exception) {
+            error_log(
+                'TEAMPASS Error - personal-to-shared move: unable to decrypt ' . $objectType
+                . ' key for object ' . $objectId . ' - ' . $exception->getMessage()
+            );
+            throw new UnexpectedValueException(
+                'The item cannot be moved because one or more encryption keys are missing or invalid.',
+                0,
+                $exception
+            );
+        }
+
+        if ($objectKey === '') {
+            throw new UnexpectedValueException(
+                'The item cannot be moved because one or more encryption keys are missing or invalid.'
+            );
+        }
+
+        return $objectKey;
+    };
+
+    $itemSharekey = DB::queryFirstRow(
+        'SELECT share_key, increment_id
+        FROM ' . prefixTable('sharekeys_items') . '
+        WHERE user_id = %i AND object_id = %i',
+        $userId,
+        $itemId
+    );
+    $itemObjectKey = $decryptSourceKey(
+        is_array($itemSharekey) ? $itemSharekey : [],
+        'sharekeys_items',
+        'item',
+        $itemId
+    );
+
+    $fieldObjectKeys = [];
+    $fields = DB::query(
+        'SELECT custom_field.id, custom_field.encryption_type, sharekey.share_key, sharekey.increment_id
+        FROM ' . prefixTable('categories_items') . ' AS custom_field
+        LEFT JOIN ' . prefixTable('sharekeys_fields') . ' AS sharekey
+            ON sharekey.object_id = custom_field.id AND sharekey.user_id = %i
+        WHERE custom_field.item_id = %i',
+        $userId,
+        $itemId
+    );
+    foreach ($fields as $field) {
+        // Plain custom fields have no object key to distribute.
+        if ((string) $field['encryption_type'] === 'not_set') {
+            continue;
+        }
+
+        $fieldId = (int) $field['id'];
+        $fieldObjectKeys[] = [
+            'object_id' => $fieldId,
+            'object_key' => $decryptSourceKey(
+                $field,
+                'sharekeys_fields',
+                'custom field',
+                $fieldId
+            ),
+        ];
+    }
+
+    $fileObjectKeys = [];
+    $files = DB::query(
+        'SELECT attachment.id, sharekey.share_key, sharekey.increment_id
+        FROM ' . prefixTable('files') . ' AS attachment
+        LEFT JOIN ' . prefixTable('sharekeys_files') . ' AS sharekey
+            ON sharekey.object_id = attachment.id AND sharekey.user_id = %i
+        WHERE attachment.id_item = %i',
+        $userId,
+        $itemId
+    );
+    foreach ($files as $file) {
+        $fileId = (int) $file['id'];
+        $fileObjectKeys[] = [
+            'object_id' => $fileId,
+            'object_key' => $decryptSourceKey(
+                $file,
+                'sharekeys_files',
+                'file',
+                $fileId
+            ),
+        ];
+    }
+
+    // -----------------------------------------------------------------------------------
+    // Phase 2 — atomic publication: lock, revalidate, distribute, move.
+    // -----------------------------------------------------------------------------------
+    $transactionStarted = false;
+    try {
+        DB::startTransaction();
+        $transactionStarted = true;
+
+        // Lock the item row alone. Joining nested_tree here would also lock the folder row
+        // and needlessly block unrelated folder operations for the whole fan-out.
+        $lockedItem = DB::queryFirstRow(
+            'SELECT id_tree, updated_at, pw
+            FROM ' . prefixTable('items') . '
+            WHERE id = %i
+            FOR UPDATE',
+            $itemId
+        );
+        if (is_array($lockedItem) === false) {
+            throw new InvalidArgumentException('Item not found.');
+        }
+
+        // Another request moved the item or rotated its object keys while phase 1 was running:
+        // the keys in hand may already be stale, so abort rather than distribute them.
+        // `updated_at` has a one-second resolution, hence the ciphertext comparison as well:
+        // rotating the object key always rewrites `pw`, even within the same second.
+        if (
+            (int) $lockedItem['id_tree'] !== (int) $item['id_tree']
+            || (string) $lockedItem['updated_at'] !== (string) $item['updated_at']
+            || (string) $lockedItem['pw'] !== (string) $item['pw']
+        ) {
+            throw new RuntimeException(
+                'The item was modified by another request while the move was being prepared.'
+            );
+        }
+
+        // Reuse the canonical recipient selection and sharekey-upsert implementation.
+        storeUsersShareKey(
+            'sharekeys_items',
+            0,
+            $itemId,
+            $itemObjectKey,
+            false,
+            true,
+            [],
+            -1,
+            $userId
+        );
+        foreach ($fieldObjectKeys as $fieldObjectKey) {
+            storeUsersShareKey(
+                'sharekeys_fields',
+                0,
+                (int) $fieldObjectKey['object_id'],
+                (string) $fieldObjectKey['object_key'],
+                false,
+                true,
+                [],
+                -1,
+                $userId
+            );
+        }
+        foreach ($fileObjectKeys as $fileObjectKey) {
+            storeUsersShareKey(
+                'sharekeys_files',
+                0,
+                (int) $fileObjectKey['object_id'],
+                (string) $fileObjectKey['object_key'],
+                false,
+                true,
+                [],
+                -1,
+                $userId
+            );
+        }
+
+        // Publish the item in the shared folder only after every source object key was recovered.
+        DB::update(
+            prefixTable('items'),
+            [
+                'id_tree' => $targetFolderId,
+                'perso' => 0,
+                'updated_at' => time(),
+            ],
+            'id = %i',
+            $itemId
+        );
+
+        DB::commit();
+        $transactionStarted = false;
+
+        return [
+            'item_id' => $itemId,
+            'label' => (string) $item['label'],
+            'source_folder_id' => $sourceFolder['id'],
+            'source_folder_title' => $sourceFolder['title'],
+            'target_folder_id' => $targetFolder['id'],
+            'target_folder_title' => $targetFolder['title'],
+            'fields_count' => count($fieldObjectKeys),
+            'files_count' => count($fileObjectKeys),
+        ];
+    } catch (Throwable $exception) {
+        if ($transactionStarted === true) {
+            DB::rollback();
+        }
+        throw $exception;
+    }
+}
+
+/**
+ * Apply the shared post-commit effects of an item move.
+ *
+ * The audit log and the WebSocket notifications are always emitted. Cache refresh and folder
+ * counters are optional so the mass-move path can batch them once for the whole selection
+ * instead of paying them per item.
+ *
+ * @param array<string, mixed> $settings         TeamPass settings
+ * @param bool                 $refreshCache     Refresh the item cache row for this item
+ * @param bool                 $adjustCounters   Apply the -1/+1 folder item counters
+ */
+function finalizeItemMoveSideEffects(
+    array $settings,
+    int $itemId,
+    string $itemLabel,
+    int $userId,
+    string $userLogin,
+    int $sourceFolderId,
+    string $sourceFolderTitle,
+    int $targetFolderId,
+    string $targetFolderTitle,
+    bool $refreshCache = true,
+    bool $adjustCounters = true
+): void {
+    logItems(
+        $settings,
+        $itemId,
+        $itemLabel,
+        $userId,
+        'at_modification',
+        $userLogin,
+        'at_moved : ' . $sourceFolderTitle . ' -> ' . $targetFolderTitle
+    );
+
+    if ($refreshCache === true) {
+        updateCacheTable('update_value', $itemId, $userId);
+    }
+
+    if ($adjustCounters === true) {
+        adjustFolderItemsCounter($sourceFolderId, -1);
+        adjustFolderItemsCounter($targetFolderId, 1);
+    }
+
+    $movePayload = [
+        'item_id' => $itemId,
+        'from_folder_id' => $sourceFolderId,
+        'to_folder_id' => $targetFolderId,
+        'label' => $itemLabel,
+        'moved_by' => $userLogin,
+    ];
+    emitWebSocketEvent('item_moved', 'folder', $sourceFolderId, $movePayload, $userId);
+    emitWebSocketEvent('item_moved', 'folder', $targetFolderId, $movePayload, $userId);
+}
+
+/**
  * Insert or update sharekey for a user
  * Handles duplicate key errors gracefully
  * 
@@ -8219,6 +8710,58 @@ function returnIfSet($value, $retFalse = '', $retTrue = null): mixed
     return $retFalse;
 }
 
+
+/**
+ * Loads the emails templates catalog.
+ *
+ * Read once per request: the file is a plain array literal and is also needed
+ * by Language, which keeps its own copy of the keys only.
+ *
+ * @return array<string, array<string, mixed>>
+ */
+function emailTemplatesCatalog(): array
+{
+    static $catalog = null;
+
+    if ($catalog === null) {
+        $file = TEAMPASS_APP . '/config/emails_templates.php';
+        $catalog = file_exists($file) === true ? (array) require $file : [];
+    }
+
+    return $catalog;
+}
+
+/**
+ * Resolves the subject line of an email template.
+ *
+ * Some emails historically prepend a literal prefix to the translated subject
+ * (`TEAMPASS - `, `[Teampass] `). That prefix is part of the shipped default
+ * only: as soon as an administrator customizes the subject they own the whole
+ * line, prefix included, and nothing is added to what they typed.
+ *
+ * @param string $templateId Identifier from app/config/emails_templates.php.
+ * @param object $lang       Language instance of the RECIPIENT.
+ * @return string The subject to send, empty when the template has no subject.
+ */
+function getEmailTemplateSubject(string $templateId, $lang): string
+{
+    $catalog = emailTemplatesCatalog();
+    if (isset($catalog[$templateId]) === false
+        || empty($catalog[$templateId]['subject_key']) === true
+    ) {
+        return '';
+    }
+
+    $subjectKey = (string) $catalog[$templateId]['subject_key'];
+
+    // Customized: sent as typed, no prefix.
+    if ($lang->isCustomized($subjectKey) === true) {
+        return (string) $lang->get($subjectKey);
+    }
+
+    return (string) ($catalog[$templateId]['subject_prefix'] ?? '')
+        . (string) $lang->getShipped($subjectKey);
+}
 
 /**
  * SEnd email to user

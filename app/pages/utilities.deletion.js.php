@@ -85,7 +85,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 <script type='text/javascript'>
     //<![CDATA[
     var debugJavascript = false;
-    var kbEnabled = <?php echo isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_kb'] === 1 ? 'true' : 'false'; ?>;
+    // Same rule as in utilities.deletion.php: deleted knowledge base entries are administrator only
+    var kbEnabled = <?php echo isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_kb'] === 1 && (int) $session->get('user-admin') === 1 ? 'true' : 'false'; ?>;
 
 
     // Prepare tooltips
@@ -177,7 +178,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             deletedBy += value.name;
                         }
                         if (typeof value.login !== 'undefined' && value.login) {
-                            deletedBy += (deletedBy ? ' ' : '') + '[' + value.login + ']';
+                            deletedBy += (deletedBy ? ' ' : '') + '[' + htmlEncode(value.login) + ']';
                         }
 
                         // Every server value below is rendered through .html(): encode each one.

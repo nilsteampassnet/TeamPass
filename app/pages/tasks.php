@@ -416,6 +416,18 @@ catch (Exception $e) {
                                         </div>
                                     </div>
 
+                                    <div class='row mb-3 option'>
+                                        <div class='col-9'>
+                                        <h5><i class="fa-solid fa-hourglass-half mr-2"></i><?php echo $lang->get('tasks_max_drain_time'); ?></h5>
+                                            <small class='form-text text-muted'>
+                                                <?php echo $lang->get('tasks_max_drain_time_tip'); ?>
+                                            </small>
+                                        </div>
+                                        <div class='col-3'>
+                                            <input type='number' min='10' max='3600' class='form-control form-control-sm' id='tasks_max_drain_time' value='<?php echo isset($SETTINGS['tasks_max_drain_time']) === true ? (int) $SETTINGS['tasks_max_drain_time'] : 55; ?>'>
+                                        </div>
+                                    </div>
+
                                 </div>
                             </div>
 

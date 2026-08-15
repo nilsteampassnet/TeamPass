@@ -27,7 +27,7 @@
  */
 
 define('TP_VERSION', '3.2.2');
-define("UPGRADE_MIN_DATE", "1785688678");
+define("UPGRADE_MIN_DATE", "1786454078");
 define('TP_VERSION_MINOR', '0');
 define('TP_TOOL_NAME', 'Teampass');
 define('TP_ONE_DAY_SECONDS', 86400);
@@ -57,6 +57,7 @@ define('FORCE_PHPSECLIBV3_MIGRATION', true); // Set to true to force phpseclib v
 define('TP_FORGOT_PWD_TOKEN_REASON', 'forgot_local_password');  // teampass_tokens.reason of a local password recovery token
 define('TP_FORGOT_PWD_TOKEN_VALIDITY', 900);    // A recovery link stays usable 15 minutes
 define('TP_FORGOT_PWD_TOKEN_THROTTLE', 120);    // Minimum delay between two recovery emails for one account
+define('TP_ITEMS_LIST_CONTEXT_MAX', 5);         // Number of folders keeping a server-side items list pagination context
 
 // Ensure root path constants are available when this file is included directly
 // (e.g. from CLI scripts). Web entry points define them earlier in public/index.php.
@@ -142,6 +143,7 @@ $mngPages = array(
     '2fa' => '2fa.php',
     'ldap' => 'ldap.php',
     'emails' => 'emails.php',
+    'emails_templates' => 'emails_templates.php',
     'backups' => 'backups.php',
     'api' => 'api.php',
     'fields' => 'fields.php',

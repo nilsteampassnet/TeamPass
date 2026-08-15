@@ -526,13 +526,15 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     return_html = '<td colspan="7">' +
                         '<div class="card card-info">' +
                         '<div class="card-header">' +
-                        '<h5 id="item-label">' + data.label + '</h5>' +
+                        '<h5 id="item-label">' + htmlEncode(data.label) + '</h5>' +
                         '</div>' +
                         '<div class="card-body">' +
                         (descriptionHtml === '' ? '' : '<div class="form-group">' + descriptionHtml + '</div>') +
                         '<div class="form-group">' +
                         '<?php echo $lang->get('pw'); ?>' +
-                        '<button type="button" class="btn btn-secondary ml-2" id="btn-copy-pwd" data-id="' + data.id + '" data-label="' + data.label + '"><i class="fas fa-copy"></i></button>' +
+                        // purifyData() strips tags but decodes &quot; back into a live quote,
+                        // which would close this attribute — encode the label here.
+                        '<button type="button" class="btn btn-secondary ml-2" id="btn-copy-pwd" data-id="' + data.id + '" data-label="' + htmlEncode(data.label) + '"><i class="fas fa-copy"></i></button>' +
                         '<button type="button" class="btn btn-secondary btn-show-pwd ml-2" data-id="' + data.id + '"><i class="fas fa-eye pwd-show-spinner"></i></button>' +
                         '<span id="pwd-show_' + data.id + '" class="unhide_masked_data ml-2" style="height: 20px;"><?php echo $var['hidden_asterisk']; ?></span>' +
                         '<input type="hidden" id="pwd-is-shown_' + data.id + '" value="0">' +
@@ -542,7 +544,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                             '<label class="form-group-label"><?php echo $lang->get('index_login'); ?>' +
                             '<button type="button" class="btn btn-secondary ml-2" id="btn-copy-login" data-id="' + data.id + '"><i class="fas fa-copy"></i></button>' +
                             '</label>' +
-                            '<span class="ml-2" id="login-item_' + data.id + '">' + data.login + '</span>' +
+                            '<span class="ml-2" id="login-item_' + data.id + '">' + htmlEncode(data.login) + '</span>' +
                             '</div>') +
                         (data.url === '' ? '' :
                             '<div class="form-group">' +
@@ -844,9 +846,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     var folders = '';
                     $.each(store.get('teampassApplication').foldersList, function(index, item) {
                         if (item.disabled === 0) {
-                            folders += '<option value="' + item.id + '">' + item.title +
+                            folders += '<option value="' + item.id + '">' + htmlEncode(item.title) +
                                 '   [' +
-                                (item.path === '' ? '<?php echo $lang->get('root'); ?>' : item.path) +
+                                (item.path === '' ? '<?php echo $lang->get('root'); ?>' : htmlEncode(item.path)) +
                                 ']</option>';
                         }
                     });
