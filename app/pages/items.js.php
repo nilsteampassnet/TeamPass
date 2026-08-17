@@ -2157,14 +2157,33 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         $('#modal-item-delete').modal('show');
     }
 
+    // Reset the reusable deletion modal once it is fully hidden: the button gets its
+    // normal state back and the deletion context is dropped, so a future opener that
+    // would forget showItemDeleteModal() cannot delete a previously targeted item.
+    $('#modal-item-delete').on('hidden.bs.modal', function() {
+        const deleteContext = $('#form-item-delete-perform').data('deleteContext');
+
+        // Only a dismissal without confirmation releases the guard. Once a deletion is
+        // launched, goDeleteItem() owns the flag and clears it on every outcome.
+        if (deleteContext === undefined || deleteContext.launched !== true) {
+            requestRunning = false;
+        }
+
+        $('#form-item-delete-perform')
+            .prop('disabled', false)
+            .html('<?php echo $lang->get('perform'); ?>')
+            .removeData('deleteContext');
+    });
+
     /**
      * DELETE - recycle item
      */
     $('#form-item-delete-perform').click(function() {
-        var deleteContext = $(this).data('deleteContext');
-        if (deleteContext === undefined || parseInt(deleteContext.itemId, 10) <= 0) {
+        const deleteContext = $(this).data('deleteContext');
+        if (deleteContext === undefined || !(parseInt(deleteContext.itemId, 10) > 0)) {
             return false;
         }
+        deleteContext.launched = true;
 
         $(this).prop('disabled', true).html('<i class="fa-solid fa-circle-notch fa-spin mr-1"></i>');
         goDeleteItem(
@@ -2223,7 +2242,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'delete_item');
 
                 if (typeof data !== 'undefined' && data.error !== true) {
-                    $('#form-item-delete-perform').prop('disabled', false).html('<?php echo $lang->get('perform'); ?>');
+                    // The button is restored by the modal 'hidden.bs.modal' handler, once the
+                    // dialog is no longer visible: restoring it here would expose an enabled
+                    // button during the fade-out and allow a second deletion request.
                     $('#modal-item-delete').modal('hide');
                     // Warn user
                     toastrUpdate(loadingToast, 'success',
