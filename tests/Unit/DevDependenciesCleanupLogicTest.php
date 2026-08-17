@@ -218,6 +218,117 @@ class DevDependenciesCleanupLogicTest extends TestCase
         self::assertDirectoryExists($outside);
     }
 
+    // --- Full sweep, the entry point both call sites use --------------------------
+
+    /**
+     * Build a miniature installation: a lock declaring one production and two dev packages,
+     * the matching vendor tree, and the launchers Composer would have written.
+     */
+    private function buildFakeInstallation(): string
+    {
+        $root = $this->tmpDir . '/teampass';
+        $vendor = $root . '/app/vendor';
+
+        foreach (
+            [
+                $vendor . '/bin',
+                $vendor . '/phpunit/phpunit/src',
+                $vendor . '/phpstan/phpstan',
+                $vendor . '/symfony/var-exporter',
+                $vendor . '/symfony/http-foundation',
+                $vendor . '/phpseclib/phpseclib',
+            ] as $dir
+        ) {
+            mkdir($dir, 0o700, true);
+        }
+        file_put_contents($vendor . '/phpunit/phpunit/src/Framework.php', '<?php');
+        file_put_contents($vendor . '/phpstan/phpstan/phpstan.phar', 'PHAR');
+        file_put_contents($vendor . '/symfony/http-foundation/Request.php', '<?php');
+        file_put_contents($vendor . '/phpseclib/phpseclib/RSA.php', '<?php');
+        foreach (['phpunit', 'phpstan', 'phpstan.phar', 'composer', 'carbon'] as $bin) {
+            file_put_contents($vendor . '/bin/' . $bin, '#!/usr/bin/env php');
+        }
+
+        file_put_contents($root . '/composer.lock', (string) json_encode([
+            'packages' => [
+                ['name' => 'symfony/http-foundation'],
+                ['name' => 'phpseclib/phpseclib'],
+            ],
+            'packages-dev' => [
+                ['name' => 'phpunit/phpunit', 'bin' => ['phpunit']],
+                ['name' => 'phpstan/phpstan', 'bin' => ['phpstan', 'phpstan.phar']],
+                ['name' => 'symfony/var-exporter'],
+            ],
+        ]));
+
+        return $root;
+    }
+
+    public function testSweepRemovesDevPackagesAndKeepsProductionOnes(): void
+    {
+        $root = $this->buildFakeInstallation();
+        $vendor = $root . '/app/vendor';
+
+        $result = devDependenciesCleanupRun($root);
+
+        self::assertSame(3, $result['packages_removed']);
+        self::assertSame(0, $result['skipped']);
+
+        self::assertDirectoryDoesNotExist($vendor . '/phpunit');
+        self::assertDirectoryDoesNotExist($vendor . '/phpstan');
+        self::assertDirectoryDoesNotExist($vendor . '/symfony/var-exporter');
+
+        // Production packages, and the namespace directory shared with a dev package.
+        self::assertFileExists($vendor . '/symfony/http-foundation/Request.php');
+        self::assertFileExists($vendor . '/phpseclib/phpseclib/RSA.php');
+        self::assertDirectoryExists($vendor . '/symfony');
+    }
+
+    public function testSweepRemovesOnlyTheDevLaunchers(): void
+    {
+        $root = $this->buildFakeInstallation();
+        $bin = $root . '/app/vendor/bin';
+
+        $result = devDependenciesCleanupRun($root);
+
+        self::assertSame(3, $result['binaries_removed']);
+        foreach (['phpunit', 'phpstan', 'phpstan.phar'] as $removed) {
+            self::assertFileDoesNotExist($bin . '/' . $removed);
+        }
+        // Production launchers must survive.
+        foreach (['composer', 'carbon'] as $kept) {
+            self::assertFileExists($bin . '/' . $kept);
+        }
+    }
+
+    public function testSweepIsIdempotent(): void
+    {
+        $root = $this->buildFakeInstallation();
+
+        devDependenciesCleanupRun($root);
+        $second = devDependenciesCleanupRun($root);
+
+        self::assertSame(
+            ['packages_removed' => 0, 'binaries_removed' => 0, 'skipped' => 0],
+            $second
+        );
+    }
+
+    public function testSweepIsANoOpWithoutALockOrAVendorDirectory(): void
+    {
+        $zero = ['packages_removed' => 0, 'binaries_removed' => 0, 'skipped' => 0];
+
+        // Nothing at all.
+        self::assertSame($zero, devDependenciesCleanupRun($this->tmpDir . '/nowhere'));
+
+        // A vendor tree but no composer.lock: the sweep has no source of truth and must not
+        // guess, otherwise it could delete production packages.
+        $root = $this->buildFakeInstallation();
+        unlink($root . '/composer.lock');
+        self::assertSame($zero, devDependenciesCleanupRun($root));
+        self::assertDirectoryExists($root . '/app/vendor/phpunit/phpunit');
+    }
+
     // --- Sentinel on the real lock file ------------------------------------------
 
     public function testProjectLockYieldsTheDevToolsAndNoProductionPackage(): void

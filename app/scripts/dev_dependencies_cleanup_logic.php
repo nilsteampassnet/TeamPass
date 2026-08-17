@@ -212,6 +212,69 @@ function devDependencyRemoveDirectoryIfEmpty(string $baseDir, string $path): boo
 }
 
 /**
+ * Remove from an installation every package a production install does not need.
+ *
+ * Single entry point shared by the installer (`cleanInstall()` in run.step6.php) and the
+ * upgrade (`upgrade_run_3.2.1.php`), so a fresh install and an upgraded one end up with the
+ * same tree.
+ *
+ * Best effort by contract: a missing composer.lock, an unreadable file or a protected
+ * directory is counted in the result instead of raising. Neither call site may fail over
+ * this cleanup. Idempotent — running it on an already-clean installation is a no-op.
+ *
+ * @param string $teampassRoot Absolute path of the TeamPass root (the parent of app/)
+ *
+ * @return array{packages_removed: int, binaries_removed: int, skipped: int}
+ */
+function devDependenciesCleanupRun(string $teampassRoot): array
+{
+    $result = ['packages_removed' => 0, 'binaries_removed' => 0, 'skipped' => 0];
+
+    $vendorDir = $teampassRoot . '/app/vendor';
+    $lockFile = $teampassRoot . '/composer.lock';
+    if (is_dir($vendorDir) === false || is_readable($lockFile) === false) {
+        return $result;
+    }
+
+    $contents = @file_get_contents($lockFile);
+    if ($contents === false) {
+        return $result;
+    }
+
+    $devDependencies = devDependenciesFromLock($contents);
+
+    foreach ($devDependencies['packages'] as $packageName) {
+        $packageDir = $vendorDir . '/' . $packageName;
+        if (is_dir($packageDir) === false) {
+            continue;
+        }
+        if (devDependencyRemovePath($vendorDir, $packageDir) === true) {
+            $result['packages_removed']++;
+            // Drop the vendor namespace directory once the removal emptied it. It stays
+            // when production packages remain in it, as in app/vendor/symfony.
+            devDependencyRemoveDirectoryIfEmpty($vendorDir, dirname($packageDir));
+        } else {
+            $result['skipped']++;
+        }
+    }
+
+    // Composer launchers of the packages just removed.
+    foreach ($devDependencies['binaries'] as $binaryName) {
+        $binaryPath = $vendorDir . '/bin/' . $binaryName;
+        if (file_exists($binaryPath) === false && is_link($binaryPath) === false) {
+            continue;
+        }
+        if (devDependencyRemovePath($vendorDir . '/bin', $binaryPath) === true) {
+            $result['binaries_removed']++;
+        } else {
+            $result['skipped']++;
+        }
+    }
+
+    return $result;
+}
+
+/**
  * Tell whether a canonical path sits inside a base directory.
  *
  * @param string $baseDir Base directory, canonicalized when it exists
