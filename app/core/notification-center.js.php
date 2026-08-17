@@ -36,19 +36,45 @@ $session = SessionManager::getSession();
 $lang = new Language($session->get('user-language') ?? 'english');
 ?>
 <style>
-    #tp-notification-menu { width: 360px; max-width: 92vw; }
+    #tp-notification-menu {
+        width: 360px;
+        max-width: 92vw;
+        /* Bound the whole dropdown so the footer stays reachable on short viewports. */
+        max-height: calc(100vh - 70px);
+    }
+    /* Scoped to .show on purpose: an unscoped display would outweigh Bootstrap's
+       .dropdown-menu { display: none } and leave the dropdown permanently open. */
+    #tp-notification-menu.show {
+        display: flex;
+        flex-direction: column;
+    }
+    /* Header, divider and footer keep their height — only the list absorbs the constraint. */
+    #tp-notification-menu > .dropdown-header,
+    #tp-notification-menu > .dropdown-divider,
+    #tp-notification-menu > .dropdown-footer { flex: 0 0 auto; }
     /* Keep the header and footer visible while long notification lists scroll. */
     #tp-notification-menu #tp-notification-list {
+        flex: 1 1 auto;
+        min-height: 0;
+        max-height: 60vh;
         max-height: min(60vh, 30rem);
         overflow-x: hidden;
         overflow-y: auto;
         overscroll-behavior: contain;
         scrollbar-width: thin;
+        scrollbar-color: rgba(108, 117, 125, 0.55) transparent;
     }
+    .dark-mode #tp-notification-menu #tp-notification-list {
+        scrollbar-color: rgba(255, 255, 255, 0.35) transparent;
+    }
+    /* WebKit rules cover Safari and Chromium < 121, which ignore scrollbar-color. */
     #tp-notification-menu #tp-notification-list::-webkit-scrollbar { width: 6px; }
     #tp-notification-menu #tp-notification-list::-webkit-scrollbar-thumb {
         background-color: rgba(108, 117, 125, 0.55);
         border-radius: 3px;
+    }
+    .dark-mode #tp-notification-menu #tp-notification-list::-webkit-scrollbar-thumb {
+        background-color: rgba(255, 255, 255, 0.35);
     }
     #tp-notification-menu #tp-notification-list::-webkit-scrollbar-track { background: transparent; }
     #tp-notification-menu .tp-notification-row { white-space: normal; }
