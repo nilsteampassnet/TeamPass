@@ -26,7 +26,7 @@ RUN composer install \
 # ============================================
 # Stage 2: Final production image
 # ============================================
-FROM php:8.3-fpm-alpine3.19
+FROM php:8.3-fpm-alpine3.24
 
 # Metadata labels
 LABEL maintainer="TeamPass <nils@teampass.net>" \
@@ -93,8 +93,12 @@ RUN apk add --no-cache \
     && apk del .build-deps \
     && rm -rf /var/cache/apk/* /tmp/* /var/tmp/*
 
-# Add GNU libiconv for better performance
-ENV LD_PRELOAD /usr/lib/preloadable_libiconv.so
+# No LD_PRELOAD of preloadable_libiconv.so on purpose: Alpine has not shipped that
+# file for several releases. The gnu-libiconv package only provides the gnu-iconv
+# binary, and gnu-libiconv-libs provides libiconv.so.2, which exports the prefixed
+# symbols (libiconv_open, …) and therefore cannot shadow musl's iconv. Setting the
+# classic workaround would only make every process log an ld.so error. PHP uses
+# musl's iconv.
 
 # Copy PHP configuration
 COPY docker/php/php.ini /usr/local/etc/php/conf.d/teampass.ini
