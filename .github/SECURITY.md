@@ -12,6 +12,8 @@ This project is currently being supported with security updates.
 
 For any vulnerability or potential security issue, please provide complete description by filling in a new advisory form from https://github.com/nilsteampassnet/TeamPass/security/advisories.
 
+This is the only supported reporting channel. Reports sent by email are not tracked and may be filtered as spam before anyone sees them.
+
 ## Published Security Advisories
 
 Vulnerabilities that have been fixed and publicly disclosed. The GitHub Security Advisory (GHSA) is the authoritative record for each entry. `pending` means a CVE ID has been requested but not yet assigned; the advisory is updated automatically once it is.
