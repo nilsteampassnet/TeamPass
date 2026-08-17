@@ -1615,6 +1615,9 @@ function tpBackupOpenExternalizedWebdavConnection(array $config): array
             'timeout' => 30,
             'connect_timeout' => 15,
             'http_errors' => false,
+            // Requests carry Basic credentials: never follow a redirect, so they
+            // can never be replayed towards a host the administrator did not configure.
+            'allow_redirects' => false,
         ]);
     } catch (Throwable) {
         return ['success' => false, 'path' => (string) $validated['path'], 'reason' => 'WEBDAV_CONNECTION_FAILED', 'destination_type' => 'webdav'];
@@ -1700,6 +1703,7 @@ function tpBackupExternalizedWebdavRequest($client, array $config, string $metho
         'http_errors' => false,
         'timeout' => 30,
         'connect_timeout' => 15,
+        'allow_redirects' => false,
         'headers' => [
             'User-Agent' => 'TeamPass-Backup-WebDAV',
         ],

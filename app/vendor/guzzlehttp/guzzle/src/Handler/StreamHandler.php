@@ -4,6 +4,7 @@ namespace GuzzleHttp\Handler;
 
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\TransferException;
 use GuzzleHttp\Multiplexing;
 use GuzzleHttp\Promise as P;
 use GuzzleHttp\Promise\FulfilledPromise;
@@ -123,7 +124,9 @@ class StreamHandler
 
         $multiplex = $options['multiplex'] ?? null;
 
-        if (null !== $multiplex && !\in_array($multiplex, [Multiplexing::EAGER, Multiplexing::WAIT, Multiplexing::REQUIRE_EAGER, Multiplexing::REQUIRE_WAIT], true)) {
+        // Multiplexing::NONE is trivially satisfied: the stream handler sends
+        // one HTTP/1.x request per connection and never multiplexes.
+        if (null !== $multiplex && !\in_array($multiplex, [Multiplexing::NONE, Multiplexing::EAGER, Multiplexing::WAIT, Multiplexing::REQUIRE_EAGER, Multiplexing::REQUIRE_WAIT], true)) {
             throw new \InvalidArgumentException(\sprintf(
                 'The "multiplex" option must be null or a GuzzleHttp\\Multiplexing::* constant; received %s.',
                 \get_debug_type($multiplex)
@@ -168,8 +171,8 @@ class StreamHandler
             // the behavior of `CurlHandler`
             if (
                 (
-                    0 === \strcasecmp('PUT', $request->getMethod())
-                    || 0 === \strcasecmp('POST', $request->getMethod())
+                    Psr7\Utils::caselessEquals('PUT', $request->getMethod())
+                    || Psr7\Utils::caselessEquals('POST', $request->getMethod())
                 )
                 && 0 === $request->getBody()->getSize()
             ) {
@@ -185,11 +188,10 @@ class StreamHandler
         } catch (\InvalidArgumentException $e) {
             throw $e;
         } catch (\Exception $e) {
-            // Determine if the error was a networking error.
-            if (self::isConnectionError($e->getMessage())) {
-                $e = new ConnectException($e->getMessage(), $request, $e);
-            } else {
-                $e = $e instanceof RequestException ? $e : new RequestException($e->getMessage(), $request, null, $e);
+            if (!$e instanceof TransferException) {
+                $e = self::isConnectionError($e->getMessage())
+                    ? new ConnectException($e->getMessage(), $request, $e)
+                    : new RequestException($e->getMessage(), $request, null, $e);
             }
             $this->invokeStats($options, $request, $startTime, null, $e);
 
@@ -239,7 +241,7 @@ class StreamHandler
         $stream = Psr7\Utils::streamFor($stream);
         $sink = $stream;
 
-        if (\strcasecmp('HEAD', $request->getMethod())) {
+        if (!Psr7\Utils::caselessEquals('HEAD', $request->getMethod())) {
             $sink = $this->createSink($stream, $options);
         }
 
@@ -426,6 +428,8 @@ class StreamHandler
             throw new RequestException('URI must include a scheme and host. Use an absolute URI, a network-path reference starting with //, or configure a base_uri.', $request);
         }
 
+        HostValidator::assertRequestHost($request);
+
         // HTTP/1.1 streams using the PHP stream wrapper require a
         // Connection: close header
         if ($request->getProtocolVersion() === '1.1'
@@ -526,6 +530,18 @@ class StreamHandler
         $uri = $request->getUri();
 
         $host = $uri->getHost();
+
+        // Fold a numeric IPv4 spelling to the dotted quad libcurl connects
+        // to, rather than leaving it to the platform resolver: macOS reads
+        // the zero-padded 0177 as decimal 177 where glibc, musl and FreeBSD
+        // read octal 127. The Host header is serialized from the request and
+        // stays as written; the TLS peer name follows the same fold.
+        $canonicalHost = self::canonicalConnectionHost($host);
+        if ($canonicalHost !== $host) {
+            $uri = $uri->withHost($canonicalHost);
+            $host = $canonicalHost;
+        }
+
         $hostForIpCheck = $host !== '' && $host[0] === '[' && \substr($host, -1) === ']'
             ? \substr($host, 1, -1)
             : $host;
@@ -551,17 +567,96 @@ class StreamHandler
         return $uri;
     }
 
+    /**
+     * Returns a numeric IPv4 spelling folded to the dotted quad libcurl's
+     * ipv4_normalize() produces, and every other host unchanged.
+     */
+    private static function canonicalConnectionHost(string $host): string
+    {
+        $binary = self::numericIpv4ToBinary($host);
+        if ($binary === null) {
+            return $host;
+        }
+
+        return (string) \inet_ntop($binary);
+    }
+
+    /**
+     * Returns the four-byte binary form of a host that a transport reads as a
+     * numeric IPv4 address, or null when it reads it as a name.
+     *
+     * The shape test is HostValidator::isNumericIpv4Host(); this method adds
+     * the range checks that predicate omits: every part but the last must fit
+     * one octet, and the last must fit the octets the earlier parts left. A
+     * trailing root dot is not swallowed, unlike libcurl 8.21.0 and later,
+     * because assertRequestHost() rejects that spelling first.
+     */
+    private static function numericIpv4ToBinary(string $host): ?string
+    {
+        if (!HostValidator::isNumericIpv4Host($host)) {
+            return null;
+        }
+
+        $values = [];
+        foreach (\explode('.', $host) as $part) {
+            $values[] = self::numericIpv4PartValue($part);
+        }
+
+        // Every accepted value is a whole number no larger than 0xFFFFFFFF,
+        // which a float holds exactly, so the arithmetic below is correct on a
+        // 32-bit build too, where the widest part overflows an integer.
+        $address = (float) \array_pop($values);
+
+        $packed = '';
+        foreach ($values as $value) {
+            if ($value > 255.0) {
+                return null;
+            }
+
+            $packed .= \chr((int) $value);
+        }
+
+        $width = 4 - \count($values);
+        if ($address >= 256.0 ** $width) {
+            return null;
+        }
+
+        for ($shift = $width - 1; $shift >= 0; --$shift) {
+            $packed .= \chr((int) \fmod(\floor($address / 256.0 ** $shift), 256.0));
+        }
+
+        return $packed;
+    }
+
+    /**
+     * Returns the value of one accepted part as a float, so a part filling
+     * all four octets such as 2130706433 stays exact on every integer width.
+     */
+    private static function numericIpv4PartValue(string $part): float
+    {
+        if ($part[0] === '0' && isset($part[1]) && ($part[1] === 'x' || $part[1] === 'X')) {
+            return (float) \hexdec((string) \substr($part, 2));
+        }
+
+        if ($part[0] === '0') {
+            return (float) \octdec($part);
+        }
+
+        return (float) $part;
+    }
+
     private function getDefaultContext(RequestInterface $request): array
     {
         $headers = '';
         foreach ($request->getHeaders() as $name => $value) {
-            // A first-class Proxy-Authorization header is proxy-scoped and
-            // PHP's stream wrapper has no separate proxy-only header option,
-            // so the field is never serialized before routing; add_proxy()
-            // restores one validated value only after selecting a proxy. The
-            // strtr() table is locale-independent, unlike strcasecmp(), so a
-            // locale cannot make this match miss and re-leak the credential.
-            if (\strtr((string) $name, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz') === 'proxy-authorization') {
+            // A first-class Proxy-Authorization header is proxy-scoped. Keep
+            // it out of the origin context; add_proxy() adds one
+            // validated canonical line only when Guzzle selects a proxy; PHP
+            // extracts that line for CONNECT and removes it before sending the
+            // tunneled origin request. The caselessEquals() helper is
+            // locale-independent, unlike strcasecmp(), so a locale cannot
+            // make this match miss and re-leak the credential.
+            if (Psr7\Utils::caselessEquals((string) $name, 'Proxy-Authorization')) {
                 continue;
             }
 
@@ -579,7 +674,7 @@ class StreamHandler
                 'follow_location' => 0,
             ],
             'ssl' => [
-                'peer_name' => $request->getUri()->getHost(),
+                'peer_name' => self::canonicalConnectionHost($request->getUri()->getHost()),
             ],
         ];
 
@@ -783,7 +878,7 @@ class StreamHandler
             return false;
         }
 
-        $type = \strtr($options['auth'][2], 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz');
+        $type = Psr7\Utils::asciiToLower($options['auth'][2]);
         if ($type === 'digest') {
             $httpAuth = \defined('CURLAUTH_DIGEST') ? \constant('CURLAUTH_DIGEST') : null;
         } elseif ($type === 'ntlm') {
@@ -849,7 +944,7 @@ class StreamHandler
             throw new \InvalidArgumentException(\sprintf('%s must be a non-empty string', $option));
         }
 
-        if (\strtoupper($value) !== 'PEM') {
+        if (Psr7\Utils::asciiToUpper($value) !== 'PEM') {
             throw new \InvalidArgumentException(\sprintf('The stream handler only supports "PEM" for the %s request option.', $option));
         }
     }
@@ -881,32 +976,30 @@ class StreamHandler
 
         $parsed = $this->parse_proxy($uri);
 
-        // PHP's stream wrapper extracts one Proxy-Authorization line for a
-        // CONNECT tunnel and removes it from the tunneled origin request. A
-        // plain HTTP proxy receives the same line on its forward request. Add
-        // one canonical line only after proxy selection so direct and bypassed
-        // routes cannot receive it. The first-class value is authoritative
-        // over proxy URI userinfo, including when it is empty.
+        // PHP extracts and removes only one Proxy-Authorization line for a
+        // CONNECT tunnel. Serialize exactly one validated first-class value;
+        // more than one could leave a credential in the tunneled origin
+        // request. A first-class value, including an empty one, is
+        // authoritative over Basic credentials embedded in the proxy URI.
         $managed = $request->getHeader('Proxy-Authorization');
         if (\count($managed) > 1) {
-            throw new \InvalidArgumentException('The stream handler supports exactly one Proxy-Authorization request header value through a proxy.');
+            throw new \InvalidArgumentException('The stream handler supports exactly one Proxy-Authorization request header value when a proxy is selected.');
         }
-
-        if ($managed !== []) {
-            $managedValue = (string) $managed[0];
-            if (\strpbrk($managedValue, "\r\n") !== false) {
-                throw new \InvalidArgumentException('Proxy-Authorization request header values must not contain a carriage return or line feed.');
-            }
+        if ($managed !== [] && \strpbrk($managed[0], "\r\n") !== false) {
+            throw new \InvalidArgumentException('Proxy-Authorization request header values must not contain a carriage return or line feed.');
         }
 
         $options['http']['proxy'] = $parsed['proxy'];
 
-        $proxyAuthorization = $managedValue ?? $parsed['auth'];
-        if ($proxyAuthorization !== null) {
-            if (!isset($options['http']['header'])) {
-                $options['http']['header'] = '';
-            }
-            $options['http']['header'] .= "\r\nProxy-Authorization: {$proxyAuthorization}";
+        if (($managed !== [] || $parsed['auth']) && !isset($options['http']['header'])) {
+            $options['http']['header'] = '';
+        }
+        if ($managed !== []) {
+            $options['http']['header'] .= "\r\nProxy-Authorization: {$managed[0]}";
+
+            return true;
+        } elseif ($parsed['auth']) {
+            $options['http']['header'] .= "\r\nProxy-Authorization: {$parsed['auth']}";
 
             return true;
         }
@@ -935,7 +1028,7 @@ class StreamHandler
             }
         }
 
-        if (\is_array($parsed) && isset($parsed['scheme']) && \strcasecmp($parsed['scheme'], 'http') === 0) {
+        if (\is_array($parsed) && isset($parsed['scheme']) && Psr7\Utils::caselessEquals($parsed['scheme'], 'http')) {
             if (isset($parsed['host'], $parsed['port'])) {
                 $user = $parsed['user'] ?? '';
                 $pass = $parsed['pass'] ?? '';

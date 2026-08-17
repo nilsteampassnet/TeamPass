@@ -91,7 +91,7 @@ final class Utils
      *
      * The returned handler is not wrapped by any default middlewares.
      *
-     * @param array{transport_sharing?: mixed, max_host_connections?: mixed, max_total_connections?: mixed} $handlerOptions Handler constructor options.
+     * @param array{transport_sharing?: mixed, max_host_connections?: mixed, max_total_connections?: mixed, multiplex?: mixed} $handlerOptions Handler constructor options.
      *
      * @return callable(RequestInterface, array): Promise\PromiseInterface Returns the best handler for the given system.
      *
@@ -137,7 +137,7 @@ final class Utils
     }
 
     /**
-     * @param array{max_host_connections?: mixed, max_total_connections?: mixed} $handlerOptions
+     * @param array{max_host_connections?: mixed, max_total_connections?: mixed, multiplex?: mixed} $handlerOptions
      *
      * @return (callable(RequestInterface, array): Promise\PromiseInterface)|null
      */
@@ -154,6 +154,12 @@ final class Utils
 
         $curlHandlerOptions = self::createCurlHandlerOptions($sharingMode);
         $curlMultiHandlerOptions = $curlHandlerOptions + $connectionCapOptions;
+        if (($handlerOptions['multiplex'] ?? null) === Multiplexing::NONE) {
+            // Forwarded to the CurlMultiHandler only: CurlHandler and
+            // StreamHandler validate known options, and both satisfy NONE
+            // per-request without a handler option.
+            $curlMultiHandlerOptions['multiplex'] = Multiplexing::NONE;
+        }
 
         if (\function_exists('curl_multi_exec') && \function_exists('curl_exec')) {
             $multiHandler = new CurlMultiHandler($curlMultiHandlerOptions);
@@ -262,6 +268,8 @@ final class Utils
      */
     public static function defaultCaBundle(): string
     {
+        \trigger_deprecation('guzzlehttp/guzzle', '7.1', '%s() is deprecated and will be removed in 8.0. This method is not needed in PHP 5.6+.', __METHOD__);
+
         static $cached = null;
         static $cafiles = [
             // Red Hat, CentOS, Fedora (provided by the ca-certificates package)
@@ -305,7 +313,7 @@ No system CA bundle could be found in any of the the common system locations.
 PHP versions earlier than 5.6 are not properly configured to use the system's
 CA bundle by default. In order to verify peer certificates, you will need to
 supply the path on disk to a certificate bundle to the 'verify' request option:
-https://github.com/guzzle/guzzle/blob/7.14/docs/request-options.md#verify. If
+https://github.com/guzzle/guzzle/blob/7.15/docs/request-options.md#verify. If
 you do not need a specific certificate bundle, then Mozilla provides a commonly
 used CA bundle which can be downloaded here (provided by the maintainer of
 cURL): https://curl.se/ca/cacert.pem. Once you have a CA bundle available on
@@ -324,7 +332,7 @@ EOT
     {
         $result = [];
         foreach (\array_keys($headers) as $key) {
-            $result[\strtr((string) $key, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz')] = $key;
+            $result[Psr7\Utils::asciiToLower((string) $key)] = $key;
         }
 
         return $result;
@@ -571,7 +579,7 @@ EOT
 
         return [
             'type' => 'domain',
-            'value' => \strtr($host, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'),
+            'value' => Psr7\Utils::asciiToLower($host),
             'port' => $port,
             'matchesRoot' => $matchesRoot,
         ];
@@ -776,9 +784,12 @@ EOT
      * @throws InvalidArgumentException if the JSON cannot be decoded.
      *
      * @see https://www.php.net/manual/en/function.json-decode.php
+     * @deprecated Utils::jsonDecode() will be removed in guzzlehttp/guzzle:8.0. Use PHP's json_decode() instead.
      */
     public static function jsonDecode(string $json, bool $assoc = false, int $depth = 512, int $options = 0)
     {
+        \trigger_deprecation('guzzlehttp/guzzle', '7.15', '%s() is deprecated and will be removed in 8.0. Use PHP\'s json_decode() instead.', __METHOD__);
+
         if ($depth < 1) {
             throw new InvalidArgumentException('json_decode error: Maximum stack depth exceeded');
         }
@@ -801,9 +812,12 @@ EOT
      * @throws InvalidArgumentException if the JSON cannot be encoded.
      *
      * @see https://www.php.net/manual/en/function.json-encode.php
+     * @deprecated Utils::jsonEncode() will be removed in guzzlehttp/guzzle:8.0. Use PHP's json_encode() instead.
      */
     public static function jsonEncode($value, int $options = 0, int $depth = 512): string
     {
+        \trigger_deprecation('guzzlehttp/guzzle', '7.15', '%s() is deprecated and will be removed in 8.0. Use PHP\'s json_encode() instead.', __METHOD__);
+
         $json = \json_encode($value, $options, $depth);
         if (\JSON_ERROR_NONE !== \json_last_error()) {
             throw new InvalidArgumentException('json_encode error: '.\json_last_error_msg());

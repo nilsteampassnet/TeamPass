@@ -653,9 +653,59 @@ final class ClientTest extends TestCase
         $this->assertStringContainsString("php/" . phpversion(), $captured_user_agent);
         $this->assertStringContainsString(php_uname(), $captured_user_agent);
         // Ensure no trailing spaces from empty extension
-        $expected_base = Client::USER_AGENT . " php/" . phpversion() . " " . php_uname();
+        $expected_base = Client::USER_AGENT . " php/" . phpversion() . " " . php_uname()
+                       . " " . Client::CA_BUNDLE_VERSION . " (ca_pinning=enabled)";
         $this->assertEquals($expected_base, $captured_user_agent);
     }
+
+    /**
+     * Test that creating a client with CA pinning disabled does not throw an error.
+     */
+    public function testClientCaPinningDisabled(): void
+    {
+        $client = new Client(
+            $this->client_id,
+            $this->client_secret,
+            $this->api_host,
+            $this->redirect_url,
+            true,
+            null,
+            true
+        );
+        $this->assertInstanceOf(Client::class, $client);
+    }
+
+
+    /**
+     * Test that when CA pinning is enabled (default), the client can still perform health checks.
+     */
+    public function testCaPinningEnabledHealthCheck(): void
+    {
+        $client = $this->getMockBuilder(Client::class)
+            ->setConstructorArgs([$this->client_id, $this->client_secret, $this->api_host, $this->redirect_url])
+            ->setMethods(['makeHttpsCall'])
+            ->getMock();
+        $client->method('makeHttpsCall')
+            ->will($this->returnValue($this->good_http_request));
+        $result = $client->healthCheck();
+        $this->assertEquals($this->expected_good_http_request, $result);
+    }
+
+    /**
+     * Test that when CA pinning is disabled, the client can still perform health checks.
+     */
+    public function testCaPinningDisabledHealthCheck(): void
+    {
+        $client = $this->getMockBuilder(Client::class)
+            ->setConstructorArgs([$this->client_id, $this->client_secret, $this->api_host, $this->redirect_url, true, null, true])
+            ->setMethods(['makeHttpsCall'])
+            ->getMock();
+        $client->method('makeHttpsCall')
+            ->will($this->returnValue($this->good_http_request));
+        $result = $client->healthCheck();
+        $this->assertEquals($this->expected_good_http_request, $result);
+    }
+
 
     /**
      * Test that whitespace-only user agent extension is handled correctly.
@@ -687,7 +737,121 @@ final class ClientTest extends TestCase
 
         // Verify the user agent contains default information but no extra whitespace
         $this->assertNotNull($captured_user_agent);
-        $expected_base = Client::USER_AGENT . " php/" . phpversion() . " " . php_uname();
+        $expected_base = Client::USER_AGENT . " php/" . phpversion() . " " . php_uname()
+                       . " " . Client::CA_BUNDLE_VERSION . " (ca_pinning=enabled)";
         $this->assertEquals($expected_base, $captured_user_agent);
+    }
+
+    /**
+     * Test that the user agent includes the CA bundle version.
+     */
+    public function testUserAgentIncludesCaBundleVersion(): void
+    {
+        $id_token = $this->createIdToken();
+        $result = $this->createTokenResult($id_token);
+
+        $client = $this->getMockBuilder(Client::class)
+            ->setConstructorArgs([$this->client_id, $this->client_secret, $this->api_host, $this->redirect_url])
+            ->setMethods(['makeHttpsCall'])
+            ->getMock();
+
+        $captured_user_agent = null;
+        $client->method('makeHttpsCall')
+            ->willReturnCallback(function ($endpoint, $request, $user_agent = null) use (&$captured_user_agent, $result) {
+                $captured_user_agent = $user_agent;
+                return $result;
+            });
+
+        $client->exchangeAuthorizationCodeFor2FAResult($this->code, $this->username);
+
+        $this->assertNotNull($captured_user_agent);
+        $this->assertStringContainsString(Client::CA_BUNDLE_VERSION, $captured_user_agent);
+        $this->assertStringContainsString("ca_bundle/1.0", $captured_user_agent);
+    }
+
+    /**
+     * Test that the user agent reports CA pinning as enabled by default.
+     */
+    public function testUserAgentCaPinningEnabled(): void
+    {
+        $id_token = $this->createIdToken();
+        $result = $this->createTokenResult($id_token);
+
+        $client = $this->getMockBuilder(Client::class)
+            ->setConstructorArgs([$this->client_id, $this->client_secret, $this->api_host, $this->redirect_url])
+            ->setMethods(['makeHttpsCall'])
+            ->getMock();
+
+        $captured_user_agent = null;
+        $client->method('makeHttpsCall')
+            ->willReturnCallback(function ($endpoint, $request, $user_agent = null) use (&$captured_user_agent, $result) {
+                $captured_user_agent = $user_agent;
+                return $result;
+            });
+
+        $client->exchangeAuthorizationCodeFor2FAResult($this->code, $this->username);
+
+        $this->assertNotNull($captured_user_agent);
+        $this->assertStringContainsString("(ca_pinning=enabled)", $captured_user_agent);
+        $this->assertStringNotContainsString("(ca_pinning=disabled)", $captured_user_agent);
+    }
+
+    /**
+     * Test that the user agent reports CA pinning as disabled when it is turned off.
+     */
+    public function testUserAgentCaPinningDisabled(): void
+    {
+        $id_token = $this->createIdToken();
+        $result = $this->createTokenResult($id_token);
+
+        // Construct with disable_ca_pinning = true (7th constructor argument)
+        $client = $this->getMockBuilder(Client::class)
+            ->setConstructorArgs([$this->client_id, $this->client_secret, $this->api_host, $this->redirect_url, true, null, true])
+            ->setMethods(['makeHttpsCall'])
+            ->getMock();
+
+        $captured_user_agent = null;
+        $client->method('makeHttpsCall')
+            ->willReturnCallback(function ($endpoint, $request, $user_agent = null) use (&$captured_user_agent, $result) {
+                $captured_user_agent = $user_agent;
+                return $result;
+            });
+
+        $client->exchangeAuthorizationCodeFor2FAResult($this->code, $this->username);
+
+        $this->assertNotNull($captured_user_agent);
+        $this->assertStringContainsString("(ca_pinning=disabled)", $captured_user_agent);
+        $this->assertStringNotContainsString("(ca_pinning=enabled)", $captured_user_agent);
+    }
+
+    /**
+     * Test the full user agent string format when CA pinning is disabled and a
+     * custom extension is appended, verifying the ordering of all fields.
+     */
+    public function testUserAgentFullFormatWithPinningDisabled(): void
+    {
+        $custom_extension = "MyApp/1.0.0";
+        $id_token = $this->createIdToken();
+        $result = $this->createTokenResult($id_token);
+
+        $client = $this->getMockBuilder(Client::class)
+            ->setConstructorArgs([$this->client_id, $this->client_secret, $this->api_host, $this->redirect_url, true, null, true])
+            ->setMethods(['makeHttpsCall'])
+            ->getMock();
+
+        $captured_user_agent = null;
+        $client->method('makeHttpsCall')
+            ->willReturnCallback(function ($endpoint, $request, $user_agent = null) use (&$captured_user_agent, $result) {
+                $captured_user_agent = $user_agent;
+                return $result;
+            });
+
+        $client->appendToUserAgent($custom_extension);
+        $client->exchangeAuthorizationCodeFor2FAResult($this->code, $this->username);
+
+        $expected = Client::USER_AGENT . " php/" . phpversion() . " " . php_uname()
+                  . " " . Client::CA_BUNDLE_VERSION . " (ca_pinning=disabled) "
+                  . $custom_extension;
+        $this->assertEquals($expected, $captured_user_agent);
     }
 }
