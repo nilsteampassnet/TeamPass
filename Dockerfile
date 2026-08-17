@@ -3,9 +3,11 @@
 # ============================================
 
 # Stage 1: Composer dependencies builder
-# Kept on the same line as the Composer that generates composer.lock locally, so the
-# image resolves the lock exactly like a developer does.
-FROM composer:2.8 AS composer-builder
+# Current Composer line. The installed versions come from composer.lock, not from this
+# binary, so the only thing the version buys is Composer's own fixes — hence "latest
+# supported line" rather than an alignment with any particular developer setup. Pinned to
+# the minor line, never to "latest", so a future major cannot land silently.
+FROM composer:2.10 AS composer-builder
 
 WORKDIR /app
 
