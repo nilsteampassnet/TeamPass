@@ -190,6 +190,10 @@ $(document).ready(function() {
         tpCopyRuntimeLogToClipboard('server');
     });
 
+    $('#health-server-access-log-copy-btn').on('click', function() {
+        tpCopyRuntimeLogToClipboard('server_access');
+    });
+
     $('#health-teampass-log-copy-btn').on('click', function() {
         tpCopyRuntimeLogToClipboard('teampass');
     });
@@ -1314,6 +1318,7 @@ function tpCheckRuntimeLogs() {
     var lines = Number($('#health-runtime-log-lines').val() || 50);
 
     tpResetRuntimeLogPane('health-server-log');
+    tpResetRuntimeLogPane('health-server-access-log');
     tpResetRuntimeLogPane('health-teampass-log');
     tpResetRuntimeLogPane('health-php-fpm-log');
     tpResetRuntimeLogPane('health-websocket-log');
@@ -1322,6 +1327,7 @@ function tpCheckRuntimeLogs() {
     $icon.removeClass('fa-search').addClass('fa-spinner fa-spin');
 
     $('#health-server-log-content').show().text(TP_HEALTH_L10N.runtime_log_checking);
+    $('#health-server-access-log-content').show().text(TP_HEALTH_L10N.runtime_log_checking);
     $('#health-teampass-log-content').show().text(TP_HEALTH_L10N.runtime_log_checking);
     $('#health-php-fpm-log-content').show().text(TP_HEALTH_L10N.runtime_log_checking);
     $('#health-websocket-log-content').show().text(TP_HEALTH_L10N.runtime_log_checking);
@@ -1341,6 +1347,7 @@ function tpCheckRuntimeLogs() {
 
             if (data && data.error) {
                 tpResetRuntimeLogPane('health-server-log');
+                tpResetRuntimeLogPane('health-server-access-log');
                 tpResetRuntimeLogPane('health-teampass-log');
                 tpResetRuntimeLogPane('health-php-fpm-log');
                 tpResetRuntimeLogPane('health-websocket-log');
@@ -1350,6 +1357,7 @@ function tpCheckRuntimeLogs() {
 
             if (!data || !data.result) {
                 tpResetRuntimeLogPane('health-server-log');
+                tpResetRuntimeLogPane('health-server-access-log');
                 tpResetRuntimeLogPane('health-teampass-log');
                 tpResetRuntimeLogPane('health-php-fpm-log');
                 tpResetRuntimeLogPane('health-websocket-log');
@@ -1360,6 +1368,7 @@ function tpCheckRuntimeLogs() {
             var result = data.result || {};
             tpRenderRuntimeLogsContext(result.context || {});
             tpApplyRuntimeLogResult('health-server-log', result.server || null);
+            tpApplyRuntimeLogResult('health-server-access-log', result.server_access || null);
             tpApplyRuntimeLogResult('health-teampass-log', result.teampass || null);
             tpApplyRuntimeLogResult('health-php-fpm-log', result.php_fpm || null);
             tpApplyRuntimeLogResult('health-websocket-log', result.websocket || null);
@@ -1368,6 +1377,7 @@ function tpCheckRuntimeLogs() {
         $btn.prop('disabled', false);
         $icon.removeClass('fa-spinner fa-spin').addClass('fa-search');
         tpResetRuntimeLogPane('health-server-log');
+        tpResetRuntimeLogPane('health-server-access-log');
         tpResetRuntimeLogPane('health-teampass-log');
         tpResetRuntimeLogPane('health-php-fpm-log');
         tpResetRuntimeLogPane('health-websocket-log');
@@ -1377,7 +1387,9 @@ function tpCheckRuntimeLogs() {
 
 function tpCopyRuntimeLogToClipboard(role) {
     var prefix = 'health-server-log';
-    if (role === 'teampass') {
+    if (role === 'server_access') {
+        prefix = 'health-server-access-log';
+    } else if (role === 'teampass') {
         prefix = 'health-teampass-log';
     } else if (role === 'php-fpm') {
         prefix = 'health-php-fpm-log';
@@ -1488,6 +1500,7 @@ function tpDownloadReportJson() {
             if (data && data.result) {
                 reportToExport.logs.runtime_context = data.result.context || {};
                 reportToExport.logs.server_error_log = data.result.server || {};
+                reportToExport.logs.server_access_log = data.result.server_access || {};
                 reportToExport.logs.teampass_error_log = data.result.teampass || {};
                 reportToExport.logs.php_fpm_error_log = data.result.php_fpm || {};
                 reportToExport.logs.websocket_log = data.result.websocket || {};
