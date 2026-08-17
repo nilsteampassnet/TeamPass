@@ -20,9 +20,12 @@ class HealthSystemConsistencyTest extends TestCase
     private string $mainSource;
     private string $backupSource;
     private string $utilitiesSource;
+    private string $healthLogsFunctionsSource;
     private string $adminSource;
     private string $healthPage;
     private string $healthJavascript;
+    private string $englishLanguage;
+    private string $frenchLanguage;
 
     protected function setUp(): void
     {
@@ -30,9 +33,12 @@ class HealthSystemConsistencyTest extends TestCase
         $this->mainSource = $this->read($root . '/app/sources/main.functions.php');
         $this->backupSource = $this->read($root . '/app/sources/backup.functions.php');
         $this->utilitiesSource = $this->read($root . '/app/sources/utilities.queries.php');
+        $this->healthLogsFunctionsSource = $this->read($root . '/app/sources/health.logs.functions.php');
         $this->adminSource = $this->read($root . '/app/sources/admin.queries.php');
         $this->healthPage = $this->read($root . '/app/pages/utilities.health.php');
         $this->healthJavascript = $this->read($root . '/app/pages/utilities.health.js.php');
+        $this->englishLanguage = $this->read($root . '/app/includes/language/english.php');
+        $this->frenchLanguage = $this->read($root . '/app/includes/language/french.php');
     }
 
     public function testSensitiveHealthActionsRequireHealthPageAuthorization(): void
@@ -168,6 +174,10 @@ class HealthSystemConsistencyTest extends TestCase
             "'websocket' => tpHealthResolveWebSocketLogResult(\$SETTINGS, \$lines)",
             $this->utilitiesSource
         );
+        $this->assertStringContainsString(
+            "'server_access' => tpHealthResolveLogResult('server_access', \$SETTINGS, \$lines)",
+            $this->utilitiesSource
+        );
         $this->assertStringContainsString('function tpHealthGetWebSocketLogPath', $this->utilitiesSource);
         $this->assertStringContainsString('function tpHealthNormalizeLogPath', $this->utilitiesSource);
         $this->assertStringContainsString('function tpHealthIsWindowsAbsolutePath', $this->utilitiesSource);
@@ -176,6 +186,27 @@ class HealthSystemConsistencyTest extends TestCase
         $this->assertStringContainsString('health-websocket-log-content', $this->healthPage);
         $this->assertStringContainsString("tpApplyRuntimeLogResult('health-websocket-log'", $this->healthJavascript);
         $this->assertStringContainsString('reportToExport.logs.websocket_log', $this->healthJavascript);
+    }
+
+    public function testRuntimeLogsUseBoundedLogicalRotationReader(): void
+    {
+        $this->assertStringContainsString('function tpHealthReadLogicalLog', $this->healthLogsFunctionsSource);
+        $this->assertStringContainsString('function tpHealthReadGzipLogTail', $this->healthLogsFunctionsSource);
+        $this->assertStringContainsString("'status' => 'limit_reached'", $this->healthLogsFunctionsSource);
+        $this->assertStringContainsString("'source_files'", $this->utilitiesSource);
+        $this->assertStringContainsString('tpHealthReadLogicalLog($logPath, $lines, 1024 * 1024 * 2)', $this->utilitiesSource);
+    }
+
+    public function testServerAccessLogIsIntegratedAcrossHealthSystem(): void
+    {
+        $this->assertStringContainsString('function tpHealthExtractApacheAccessLogsFromConfig', $this->utilitiesSource);
+        $this->assertStringContainsString('function tpHealthExtractNginxAccessLogsFromConfig', $this->utilitiesSource);
+        $this->assertStringContainsString('health-server-access-log-content', $this->healthPage);
+        $this->assertStringContainsString("tpApplyRuntimeLogResult('health-server-access-log'", $this->healthJavascript);
+        $this->assertStringContainsString("tpCopyRuntimeLogToClipboard('server_access')", $this->healthJavascript);
+        $this->assertStringContainsString('reportToExport.logs.server_access_log', $this->healthJavascript);
+        $this->assertStringContainsString("'health_server_access_log' => 'Web server access log'", $this->englishLanguage);
+        $this->assertStringContainsString("'health_server_access_log' => 'Log d’accès du serveur web'", $this->frenchLanguage);
     }
 
     private function read(string $path): string
