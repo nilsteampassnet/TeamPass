@@ -4,8 +4,11 @@
 .idea
 *.sh
 *.sh.save
-# Ship the API command-line client despite the global *.sh rule
+# Shell scripts shared with the project, despite the global *.sh rule above. These
+# negations must stay *after* it: within .gitignore the last matching pattern wins.
 !/app/scripts/teampass-cli.sh
+!/scripts/release_check.sh
+!/.claude/skills/**/scripts/*.sh
 nbproject
 nbproject/private
 node_modules
@@ -123,7 +126,19 @@ entities.json
 # Added by code-review-graph
 .code-review-graph/
 
-# Claude Code — developer-local config (paths and permissions specific to each machine)
+# Claude Code — the project's own documentation, commands and skills are shared; only what
+# carries machine-specific paths stays out.
+#
+# The pattern is `.claude/*` and not `.claude/` on purpose: git never descends into an
+# excluded directory, so a negation placed under a directory pattern would be unreachable.
+.claude/*
+!.claude/commands/
+!.claude/docs/
+!.claude/skills/
+
+# Machine-specific, never shared: settings.json hardcodes this checkout's absolute path in
+# its hooks and expects code-review-graph to be installed, settings.local.json holds
+# per-machine permissions.
+.claude/settings.json
 .claude/settings.local.json
 .mcp.json
-.claude/
