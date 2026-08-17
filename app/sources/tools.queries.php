@@ -352,7 +352,7 @@ case 'perform_fix_pf_items-step3':
 
         if (empty($privateKey)) {
             // Generate new keys for TP user
-            $userKeys = generateUserKeys($pwd, $SETTINGS ?? null);
+            $userKeys = generateUserKeys($pwd, $SETTINGS);
 
             // Update user keys
             $updateData = array(

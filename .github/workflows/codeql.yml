@@ -1,0 +1,46 @@
+---
+name: CodeQL
+
+# Advanced setup: a workflow is the only way to apply a configuration file, and the
+# configuration is what keeps the vendored third-party code out of the results.
+# The repository "Default setup" for code scanning must be disabled, otherwise both
+# configurations analyse the same commits and the results are duplicated.
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+    branches: [master, develop]
+  schedule:
+    # Weekly run so new queries are applied to code that is not being changed.
+    - cron: '27 3 * * 1'
+
+jobs:
+  analyze:
+    name: Analyze ${{ matrix.language }}
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # CodeQL supports no PHP extractor, so only these two apply here.
+        language: [javascript-typescript, actions]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          config-file: ./.github/codeql/codeql-config.yml
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"

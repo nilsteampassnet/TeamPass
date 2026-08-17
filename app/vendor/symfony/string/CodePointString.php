@@ -126,7 +126,11 @@ class CodePointString extends AbstractUnicodeString
             return null;
         }
 
-        $i = $this->ignoreCase ? mb_stripos($this->string, $needle, $offset, 'UTF-8') : mb_strpos($this->string, $needle, $offset, 'UTF-8');
+        try {
+            $i = $this->ignoreCase ? mb_stripos($this->string, $needle, $offset, 'UTF-8') : mb_strpos($this->string, $needle, $offset, 'UTF-8');
+        } catch (\ValueError) {
+            return null;
+        }
 
         return false === $i ? null : $i;
     }
@@ -143,7 +147,11 @@ class CodePointString extends AbstractUnicodeString
             return null;
         }
 
-        $i = $this->ignoreCase ? mb_strripos($this->string, $needle, $offset, 'UTF-8') : mb_strrpos($this->string, $needle, $offset, 'UTF-8');
+        try {
+            $i = $this->ignoreCase ? mb_strripos($this->string, $needle, $offset, 'UTF-8') : mb_strrpos($this->string, $needle, $offset, 'UTF-8');
+        } catch (\ValueError) {
+            return null;
+        }
 
         return false === $i ? null : $i;
     }
@@ -202,7 +210,7 @@ class CodePointString extends AbstractUnicodeString
 
         $str = clone $this;
         $start = $start ? \strlen(mb_substr($this->string, 0, $start, 'UTF-8')) : 0;
-        $length = $length ? \strlen(mb_substr($this->string, $start, $length, 'UTF-8')) : $length;
+        $length = $length ? \strlen(mb_substr(substr($this->string, $start), 0, $length, 'UTF-8')) : $length;
         $str->string = substr_replace($this->string, $replacement, $start, $length ?? \PHP_INT_MAX);
 
         return $str;
