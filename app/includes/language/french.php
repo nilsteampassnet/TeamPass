@@ -2128,11 +2128,12 @@ return array(
     'health_runtime_logs_context_mode_fmt' => 'Mode : %s',
     'health_runtime_logs_context_server_fmt' => 'Serveur détecté : %s',
     'health_server_error_log' => 'Log d’erreurs du serveur web',
+    'health_server_access_log' => 'Log d’accès du serveur web',
     'health_teampass_error_log' => 'Log d’erreurs dédié à TeamPass',
     'health_log_not_used' => 'PHP-FPM n’est pas utilisé par cette instance.',
     'health_teampass_log_path' => 'Chemin du log d’erreurs dédié à TeamPass',
     'health_teampass_log_path_tip' => 'Surcharge manuelle optionnelle du chemin du log dédié à TeamPass lorsque l’auto-détection ne permet pas d’identifier correctement le fichier du vhost ou de l’instance.',
-    'health_runtime_log_empty_fmt' => 'Aucune entrée récente n’a été trouvée dans : %s',
+    'health_runtime_log_empty_fmt' => 'Aucune entrée de log n’a été trouvée pour : %s',
     'email_smtp_server_not_configured' => 'Email n’est pas configuré - l’adresse du serveur SMTP est manquant. Cliquer pour configurer.',
     'health_corrupted_items_remaining' => 'Objets corrompus restants',
     'health_corrupted_items_by_reason' => 'Objets par catégorie',
@@ -3261,5 +3262,4 @@ return array(
     'email_tpl_scheduled_backup_report_desc' => 'Envoyé aux administrateurs après chaque sauvegarde planifiée.',
     'email_tpl_scheduled_backup_externalized_block' => 'Sauvegarde planifiée : bloc d’externalisation',
     'email_tpl_scheduled_backup_externalized_block_desc' => 'Ce n’est pas un email à part entière : ce bloc est inséré dans le rapport de sauvegarde planifiée lorsque la sauvegarde est copiée vers une destination externe.',
-
 );
