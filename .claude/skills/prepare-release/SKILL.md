@@ -149,13 +149,26 @@ Manual checks the gate does not cover — run them when the range touches the ma
   tar xzf /tmp/idx.tar.gz -O APKINDEX | grep -x 'P:<package>'
   ```
 
-  Keep the `composer:` builder tag on the same line as the Composer that generates
-  `composer.lock` locally (`composer --version`), so the image resolves the lock the same way.
-  The builder is a discarded stage, so its own CVEs never ship.
+  Keep the `composer:` builder tag on the **current Composer line** (2.10 as of 3.2.1.7). It
+  does *not* need to match the local `composer --version`: the installed versions come from
+  `composer.lock`, not from the binary that reads it. The builder is a discarded stage, so its
+  own CVEs never ship either — which is why "latest stable" is the right default here.
 
-  > There is no Docker in the dev environment, so none of this can be validated by a build
-  > locally. After any `FROM` change, run the `docker-publish` workflow **before** publishing
-  > the release, and read the Trivy step.
+  > Docker is installed in the dev environment but WSL integration is off, so there is no
+  > daemon and no local build. **This does not mean the `FROM` change goes unvalidated until
+  > the tag:** `docker-publish.yml` fires on `push` to `develop` *and* `master`, not only on
+  > tags. Pushing `develop` therefore builds the image on GitHub runners and is the earliest
+  > real proof that the base image still compiles `intl`, `xml`, `gd`, `ldap` and the rest.
+  > Watch it with `gh run watch` and read the Trivy step.
+  >
+  > A cheap pre-flight before pushing, when only `FROM` moved:
+  >
+  > ```bash
+  > curl -s "https://hub.docker.com/v2/repositories/library/php/tags/<TAG>" | head -c 200
+  > ```
+  >
+  > An HTTP body starting with `{"creator":` means the tag exists; `{"message": "httperror 404"`
+  > means the `FROM` line would fail instantly. It proves the tag, never the compilation.
 
 If dependencies changed (§1b), regenerate the licence report and commit it with the release:
 
@@ -279,6 +292,38 @@ disk **without touching the index**, so a `.gitignore`d directory stays untracke
 `git checkout <commit> -- <path>` would re-stage the files and silently undo the untracking.
 (Hit on 3.2.1.4: the `.claude/` directory, untracked earlier on `develop`, vanished mid-release.)
 
+**Since 3.2.1.7 this fires on `app/vendor` every single time.** Commit `c018a28a2` untracked
+**1940 files** of Composer dev dependencies, so the merge into `master` deletes them from disk.
+Do *not* restore them with `git archive` — they are Composer's to manage, and the git copy is
+the stale one. Run this after the merge instead:
+
+```bash
+rm -rf app/vendor/phpstan app/vendor/phpunit app/vendor/symfony/cache
+composer install
+git checkout -- app/vendor/composer/
+```
+
+The `rm -rf` is **not** optional, and it is the part nobody guesses. Those three packages keep
+untracked *generated* files that git has no reason to delete — `phpstan/phpstan/turbo-ext/`
+(28 native `.so` binaries), the generated Redis proxies under `symfony/cache/Traits/`, and the
+three `Xdebug*` files that the committed vendor tree never contained. Their directory therefore
+survives the deletion, and Composer — which only checks that a package directory *exists*, never
+what is inside it — considers them installed and skips them. Symptom: `composer install` aborts
+with `Could not scan for classes inside ".../symfony/cache/Traits/ValueWrapper.php" which does
+not appear to be a file nor a folder`, leaving the autoloader ungenerated. Deleting a directory
+that happens to be already gone costs nothing; missing one breaks the whole install.
+
+The third line discards pure churn: `composer install` always rewrites `autoload_classmap.php`,
+`autoload_real.php` and `autoload_static.php` (a randomly regenerated `apcuPrefix`, plus three
+`Xdebug*` classmap entries absent from the committed tree). Never commit it.
+
+Then re-verify the toolchain, which the deletion had disarmed:
+
+```bash
+php app/vendor/phpunit/phpunit/phpunit          # expect: OK (1318 tests, 38189 assertions)
+php app/vendor/bin/phpstan analyse --memory-limit=2G
+```
+
 ```bash
 git checkout master
 GIT_MERGE_AUTOEDIT=no git merge --no-ff release/<VERSION> -m "Merge branch 'release/<VERSION>'"
@@ -297,8 +342,11 @@ git cat-file -t <VERSION>          # must print "tag" (annotated)
 git show <VERSION>:app/config/include.php | grep TP_VERSION
 ```
 
-**STOP — ask the user before pushing.** Pushing the tag triggers the Docker build workflow
-(`.github/workflows/docker-publish.yml` fires on tags matching `*.*.*.*`).
+**STOP — ask the user before pushing.** Every one of the three pushes below triggers the Docker
+build workflow: `.github/workflows/docker-publish.yml` fires on `push` to `master` **and**
+`develop`, on tags matching `*.*.*.*` / `v*.*.*`, on `release: published`, and on
+`workflow_dispatch`. Each run publishes to Docker Hub and GHCR (`push:` is true for every event
+except `pull_request`), so this is not a dry run.
 
 ```bash
 git push origin master
@@ -348,7 +396,8 @@ gh release create <VERSION> \
 
 ## 9. After publishing
 
-- `docker-publish.yml` (tag push) and `docker-image.yml` (release published) build and push the
+- `docker-publish.yml` (push to `master`/`develop`, tags, release, manual dispatch) and
+  `docker-image.yml` (release published) build and push the
   images. Check both runs: `gh run list --repo nilsteampassnet/TeamPass --limit 5`.
 - Confirm the release is visible and correctly flagged:
   `gh release view <VERSION> --repo nilsteampassnet/TeamPass --json name,isPrerelease`.
@@ -391,3 +440,5 @@ gh release create <VERSION> \
 | Bumping `include.php` without `Dockerfile` | Locally built images carry the previous version (check 1 now fails) |
 | Treating the base image as code-only | It ages on its own: an end-of-life Alpine makes every Trivy CVE unfixable until `FROM` moves (§3) |
 | Changing `FROM` without running `docker-publish` | No Docker locally ⇒ a broken build is only discovered after the release is published |
+| Running only `composer install` after the `master` merge | Repairs nothing for `phpstan`, `phpunit` and `symfony/cache`: untracked generated files keep their directory alive, so Composer believes they are installed — `rm -rf` those three first (§7) |
+| Restoring `app/vendor` with `git archive` | Reinstates the *stale* dev dependencies and re-stages them, undoing the untracking — `composer install` is the only correct restore (§7) |
