@@ -279,6 +279,26 @@ class EmailsTemplatesCatalogTest extends TestCase
     }
 
     /**
+     * Destructive actions must use the shared TeamPass confirmation modal rather than
+     * the browser-native dialog, which does not follow the application theme.
+     */
+    public function testResetUsesTheTeamPassConfirmationDialog(): void
+    {
+        $source = (string) file_get_contents(dirname(__DIR__, 2) . '/app/pages/emails_templates.js.php');
+
+        $this->assertStringContainsString(
+            'launchConfirmDialog(',
+            $source,
+            'Reset must use the shared TeamPass confirmation modal'
+        );
+        $this->assertStringNotContainsString(
+            'window.confirm(',
+            $source,
+            'The browser-native reset confirmation dialog must not be restored'
+        );
+    }
+
+    /**
      * The editor must not offer formatting the email will never carry.
      *
      * sendMailToUser() runs xss_clean() on the body at send time, which drops every style
