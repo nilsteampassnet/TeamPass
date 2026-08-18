@@ -15,6 +15,8 @@
 #      script for the current version
 #   9. Installer table registration: every CREATE TABLE method in run.step5.php
 #      must be registered as an action in install.js
+#  10. Shipped autoloader integrity: every file required by autoload_files.php
+#      must be tracked, or the release archive fatals on every request
 #
 # Usage:
 #   scripts/release_check.sh [<base-ref>]
@@ -217,6 +219,44 @@ if [ -f "$INSTALL_STEP" ] && [ -f "$INSTALL_JS" ]; then
     fi
 else
     warn "Could not check installer table registration (files missing)"
+fi
+
+# 10. --------------------------------------------------------------------------
+hdr "10. Shipped autoloader integrity (app/vendor/composer)"
+AUTOLOAD_FILES="app/vendor/composer/autoload_files.php"
+INSTALLED_JSON="app/vendor/composer/installed.json"
+if [ -f "$AUTOLOAD_FILES" ]; then
+    # Every entry of autoload_files.php is `require`d unconditionally by
+    # autoload_real.php, so a file missing from the release archive is a fatal
+    # error on every request. The archive is built from the index, so membership
+    # is decided by `git ls-files`, never by the working tree: an untracked dev
+    # dependency is present locally and absent from the archive.
+    git ls-files app/vendor > "$TMP/tracked_vendor.txt"
+    sed -n "s/.*\$vendorDir \. '\/\([^']*\)'.*/app\/vendor\/\1/p" "$AUTOLOAD_FILES" > "$TMP/autoload_needs.txt"
+    sed -n "s/.*\$baseDir \. '\/\([^']*\)'.*/\1/p" "$AUTOLOAD_FILES" >> "$TMP/autoload_needs.txt"
+    MISSING_FROM_ARCHIVE=""
+    while IFS= read -r f; do
+        [ -z "$f" ] && continue
+        grep -qxF "$f" "$TMP/tracked_vendor.txt" && continue
+        git ls-files --error-unmatch "$f" >/dev/null 2>&1 && continue
+        MISSING_FROM_ARCHIVE="$MISSING_FROM_ARCHIVE $f"
+    done < "$TMP/autoload_needs.txt"
+    if [ -z "$MISSING_FROM_ARCHIVE" ]; then
+        pass "Every file required by autoload_files.php is tracked (archive boots)"
+    else
+        fail "autoload_files.php requires files absent from the release archive — it fatals on every request:"
+        for f in $MISSING_FROM_ARCHIVE; do echo "      $f"; done
+        echo "      Fix: composer install --no-dev, then commit app/vendor/composer/"
+    fi
+else
+    warn "Could not check the shipped autoloader ($AUTOLOAD_FILES missing)"
+fi
+if [ -f "$INSTALLED_JSON" ]; then
+    if grep -qE '"dev": *true' "$INSTALLED_JSON"; then
+        warn "installed.json advertises the dev dependencies (\"dev\": true) — scanners report CVEs for packages that are not shipped. Fix: composer install --no-dev"
+    else
+        pass "installed.json describes a production install"
+    fi
 fi
 
 # --- Summary -------------------------------------------------------------------
