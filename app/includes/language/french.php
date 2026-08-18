@@ -551,6 +551,7 @@ return array(
     'anyone_can_modify' => 'Cet élément peut être modifié par tout utilisateur',
     'at' => 'à',
     'at_category' => 'Dossier',
+    'at_classification_changed' => 'Classification modifiée',
     'at_copy' => 'Copie faite',
     'at_delete' => 'Suppression',
     'at_description' => 'Description.',

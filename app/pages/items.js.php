@@ -3098,7 +3098,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         $('#card-item-pwd').html('<span class="skeleton-line skeleton-md"></span>');
         $('#card-item-login').html('<span class="skeleton-line skeleton-sm"></span>');
         $('#card-item-email').html('<span class="skeleton-line skeleton-sm"></span>');
-        $('#card-item-url-text').html('<span class="skeleton-line skeleton-lg"></span>');
+        $('#card-item-url-text').html('<span class="skeleton-line skeleton-lg"></span>').removeAttr('title');
         $('#card-item-restrictedto').html('<span class="skeleton-line skeleton-md"></span>');
         $('#card-item-tags').html('<span class="skeleton-line skeleton-sm"></span>');
         $('#card-item-kbs').html('<span class="skeleton-line skeleton-sm"></span>');
@@ -6699,7 +6699,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
                     $('#card-item-email').text(data.email);
                     $('#form-item-email, #form-item-suggestion-email').val(data.email);
-                    $('#card-item-url-text').text(data.url);
+                    // Title keeps the full URL reachable when the display is truncated
+                    $('#card-item-url-text').text(data.url).attr('title', data.url);
                     $('#card-item-url').attr("href", $('#card-item-url-text').text());
                     $('#form-item-url, #form-item-suggestion-url').val($('#card-item-url-text').text());
                     $('#form-item-restrictedToUsers').val(JSON.stringify(data.id_restricted_to));

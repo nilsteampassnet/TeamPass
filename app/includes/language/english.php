@@ -1277,6 +1277,7 @@ return array(
     'anyone_can_modify' => 'Allow this item to be modified by anyone that can access it',
     'at' => 'at',
     'at_category' => 'Folder',
+    'at_classification_changed' => 'Classification changed',
     'at_copy' => 'Copy done',
     'at_delete' => 'Deletion',
     'at_description' => 'Description',
