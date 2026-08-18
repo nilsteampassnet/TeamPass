@@ -189,6 +189,11 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request'
 
+    # The job only checks out the repository and pulls the image that
+    # build-and-push published, so read access to the contents is all it needs.
+    permissions:
+      contents: read
+
     # Add MariaDB service to allow the entrypoint to succeed
     services:
       db:
