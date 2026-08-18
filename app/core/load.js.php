@@ -769,10 +769,10 @@ if (
 
     loadTeampassSidebarVersionBadge();
 
-    // Sidebar redirection
+    // Sidebar redirection. The click has already been acknowledged by
+    // app/core/page-transition.js.php (progress bar + spinner on the entry).
     $('.nav-link').click(function() {
         if ($(this).data('name') !== undefined) {
-            //NProgress.start();
             document.location.href = "index.php?page=" + $(this).data('name');
         }
     });

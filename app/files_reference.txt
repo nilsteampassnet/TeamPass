@@ -12659,9 +12659,6 @@ public/plugins/moment/moment.min.js 6c0a2330b0d8d6ea185d4669a0eddeab
 public/plugins/morris/morris.css 36e70bf949fcdb7d0fe55fc16ce86445
 public/plugins/morris/morris.js c33aff9ca10315c7f9a9aa320b69abba
 public/plugins/morris/morris.min.js fadac462637afd6cdc0cb0a0137629af
-public/plugins/pace-progress/pace.js b91ce8d10b82be5e97ff1afd731fb14c
-public/plugins/pace-progress/pace.min.js 094ce2780af2906e8916dc4c4eab6ee1
-public/plugins/pace-progress/themes/corner-indicator.css 38e0d104dd31e873af89ee9d0f7277ec
 public/plugins/platform/platform.js cb365bcfd478f68794def217a3a11b5b
 public/plugins/plupload/js/Moxie.swf 2590ae470a7aa085461073e89da0aab1
 public/plugins/plupload/js/Moxie.xap 13e92bbba6bb14d09c52db721db2772c

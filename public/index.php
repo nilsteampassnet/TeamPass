@@ -313,7 +313,6 @@ $theme_navbar = $theme === 'dark' ? 'navbar-dark' : 'navbar-white navbar-light';
     <link rel="stylesheet" href="./assets/css/ionicons.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
     <!-- Theme style -->
     <link rel="stylesheet" href="./plugins/adminlte/css/adminlte.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
-    <link rel="stylesheet" href="./plugins/pace-progress/themes/corner-indicator.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" type="text/css" />
     <link rel="stylesheet" href="./plugins/select2/css/select2.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" type="text/css" />
     <link rel="stylesheet" href="./plugins/select2/theme/select2-bootstrap4.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" type="text/css" />
     <!-- Theme style -->
@@ -352,6 +351,12 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
 ) {
     ?>
     <body class="hold-transition sidebar-mini layout-navbar-fixed layout-fixed <?php echo $theme_body; ?>">
+        <?php
+        // Page transition indicator. Included first thing in <body> so it is live
+        // before jQuery: it has to react to the very first click, and it resumes
+        // the bar the previous page started.
+        include_once TEAMPASS_APP . '/core/page-transition.js.php';
+        ?>
         <a class="tp-skip-link" href="#tp-main-content"><?php echo $lang->get('a11y_skip_to_content'); ?></a>
         <div class="wrapper">
 
@@ -377,9 +382,10 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                 $tpShowScore     = (int) ($SETTINGS['security_dashboard_enabled'] ?? 0) === 1 && (int) $session_user_admin !== 1;
                 $tpShowBell      = (int) ($SETTINGS['notification_center_enabled'] ?? 0) === 1;
                 $tpShowAwareness = $tpShowScore === true || $tpShowBell === true;
-                // Quick access panel (right control sidebar). The Starred tab follows the
-                // Favorites page gate: feature enabled and caller not an administrator.
-                $tpShowQuickAccess = (int) ($SETTINGS['show_last_items'] ?? 1) === 1;
+                // Quick access panel (right control sidebar). Administrators never reach
+                // items, so the panel would always be empty for them. The Starred tab
+                // follows the Favorites page gate: feature enabled and caller not an admin.
+                $tpShowQuickAccess = (int) ($SETTINGS['show_last_items'] ?? 1) === 1 && (int) $session_user_admin !== 1;
                 $tpQuickAccessStarred = (int) ($SETTINGS['enable_favourites'] ?? 0) === 1 && (int) $session_user_admin !== 1;
                 // Account chip avatar (with initials fallback) + role label.
                 // The thumbnail is preferred over the full image: it is the size the badges
@@ -1490,8 +1496,6 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
     <!-- cryptojs-aesphp -->
     <script type="text/javascript" src="./assets/lib/cryptojs/crypto-js.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <script type="text/javascript" src="./assets/lib/cryptojs/encryption.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
-    <!-- pace -->
-    <script type="text/javascript" data-pace-options='{ "ajax": true, "eventLag": false }' src="./plugins/pace-progress/pace.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <!-- select2 -->
     <script type="text/javascript" src="./plugins/select2/js/select2.full.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <!-- simplePassMeter -->
