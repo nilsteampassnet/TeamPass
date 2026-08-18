@@ -544,7 +544,7 @@ $groupLabels = [
                         }
                     );
                 },
-                <?php echo json_encode($lang->get('emails_templates_reset'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+                <?php echo json_encode($lang->get('confirm'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
                 <?php echo json_encode($lang->get('cancel'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>
             );
         });

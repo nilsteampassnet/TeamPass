@@ -1148,7 +1148,12 @@ function launchConfirmDialog(
 
     // Attach the callback to the action button
     // We use .off() to ensure we don't stack events from previous calls
-    $(modalId + 'ButtonAction').off('click').on('click', function() {
+    $(modalId + 'ButtonAction').off('click').on('click', function(event) {
+        // Other flows bind their own handlers on document for that same button. They are
+        // delegated, so the .off() above does not reach them and they would run alongside
+        // our callback. Stopping the propagation keeps this dialog self-contained.
+        event.stopPropagation();
+
         // Execute the passed function
         if (typeof confirmCallback === "function") {
             confirmCallback();

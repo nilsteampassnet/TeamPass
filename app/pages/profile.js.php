@@ -241,8 +241,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         e.preventDefault();
 
         launchConfirmDialog(
-            '<?php echo addslashes($lang->get('delete_current_avatar')); ?>',
-            '<?php echo addslashes($lang->get('delete_current_avatar_confirm')); ?>',
+            <?php echo json_encode($lang->get('delete_current_avatar'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+            <?php echo json_encode($lang->get('delete_current_avatar_confirm'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
             function() {
                 toastr.remove();
                 toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i>');
