@@ -128,11 +128,16 @@ if (null !== $post_type) {
             $post_role_id = filter_input(INPUT_POST, 'role_id', FILTER_SANITIZE_NUMBER_INT);
             $arrData = array();
 
+            // Personal folders are never granted to a role: exclude them from the matrix.
+            // user-personal_visible_folders stays empty for non-admin users, whose own personal
+            // folders ARE in accessible_folders, so the exclusion list has to be resolved here.
+            $personalFolderIds = getPersonalFolderIdsWithDescendants();
+
             //Display each folder with associated rights by role
             $descendants = $tree->getDescendants();
             foreach ($descendants as $node) {
                 if (in_array($node->id, $session->get('user-accessible_folders')) === true
-                    && in_array($node->id, $session->get('user-personal_visible_folders')) === false
+                    && in_array((int) $node->id, $personalFolderIds, true) === false
                 ) {
                     $arrNode = array();
                     $arrNode['ident'] = (int) $node->nlevel;

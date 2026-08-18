@@ -893,6 +893,35 @@ function getAllPersonalFolderIds(): array
 }
 
 /**
+ * List every folder sitting in a personal tree, whatever its own personal_folder flag says.
+ *
+ * getAllPersonalFolderIds() only returns the folders whose flag is set, which is not enough for
+ * the administration screens: a sub-folder created under a personal root keeps personal_folder = 0
+ * when the flag was never written (legacy data, copy_folder, import). Those rows then leak into
+ * every list filtered on the raw flag. Same containment rule as
+ * getFolderIdentityWithPersonalFlag(), applied to the whole tree in a single query.
+ *
+ * @return int[] Folder ids inside a personal tree (empty when the feature was never used).
+ */
+function getPersonalFolderIdsWithDescendants(): array
+{
+    loadClasses('DB');
+
+    return array_map(
+        'intval',
+        DB::queryFirstColumn(
+            'SELECT DISTINCT folder.id
+            FROM ' . prefixTable('nested_tree') . ' AS folder
+            INNER JOIN ' . prefixTable('nested_tree') . ' AS personal_root
+                ON personal_root.personal_folder = %i
+                AND folder.nleft >= personal_root.nleft
+                AND folder.nright <= personal_root.nright',
+            1
+        )
+    );
+}
+
+/**
  * List the personal folders that do NOT belong to the given user.
  *
  * Since the SEC-8 fix, TP_USER holds a recovery sharekey on every personal object. Any process
