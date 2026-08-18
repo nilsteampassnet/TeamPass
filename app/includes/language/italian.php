@@ -3267,5 +3267,12 @@ Have I Been Pwned
     'email_tpl_scheduled_backup_report_desc' => 'Sent to the administrators after each scheduled backup.',
     'email_tpl_scheduled_backup_externalized_block' => 'Scheduled backup: externalization block',
     'email_tpl_scheduled_backup_externalized_block_desc' => 'Not an email of its own: this block is inserted into the scheduled backup report when the backup is copied to an external destination.',
+    'health_server_access_log' => 'Web server access log',
+    'at_classification_changed' => 'Classification changed',
+    'health_runtime_log_truncated_fmt' => 'The safety read limit was reached before a complete entry could be extracted from: %s. The log exists and holds data, but its entries are too large or too compressed to be displayed here.',
+    'health_runtime_log_partial' => 'Partial excerpt: the safety read limit was reached before the requested number of lines was collected.',
+    'health_runtime_log_sources_fmt' => 'Merged from: %s',
+    'health_server_access_log_shared_notice' => 'No access log is declared by this instance. The file shown below is the server-wide access log and contains the traffic of every site hosted on this machine.',
+    'health_runtime_log_redacted' => 'Secret values carried in URLs (Secure Send links, download keys) are masked as [REDACTED].',
 
 );
