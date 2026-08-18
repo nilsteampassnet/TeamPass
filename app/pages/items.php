@@ -1346,7 +1346,7 @@ if ((int) $session_user_admin === 1) {
                                     </button>
                                     <span id="card-item-email" class="float-right ml-1"><span class="skeleton-line skeleton-sm"></span></span>
                                 </li>
-                                <li class="list-group-item">
+                                <li class="list-group-item item-url-row">
                                     <b><?php echo $lang->get('url'); ?></b>
                                     <button type="button" class="float-right btn btn-secondary btn-sm ml-1 btn-copy-clipboard-clear" data-clipboard-target="card-item-url-text" id="card-item-url-text-btn">
                                         <i class="fa-regular fa-copy"></i>

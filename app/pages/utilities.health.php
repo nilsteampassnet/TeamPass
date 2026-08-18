@@ -1035,6 +1035,27 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             <pre class="mb-0" id="health-server-log-fix-cmd" style="white-space: pre-wrap;"></pre>
                                         </div>
                                         <pre id="health-server-log-content" class="p-2 mb-0" style="display:none; max-height: 380px; overflow:auto; background-color: #f8f9fa; border: 1px solid #dee2e6; white-space: pre-wrap;"></pre>
+                                        <div class="small text-muted mt-2" id="health-server-log-meta" style="display:none;"></div>
+                                    </div>
+                                </div>
+
+                                <div class="card card-outline card-secondary mb-3">
+                                    <div class="card-header">
+                                        <h3 class="card-title"><i class="fas fa-exchange-alt mr-2"></i><?php echo $lang->get('health_server_access_log'); ?></h3>
+                                        <div class="card-tools">
+                                            <button type="button" class="btn btn-secondary btn-sm" id="health-server-access-log-copy-btn" disabled>
+                                                <i class="fas fa-copy mr-1"></i><?php echo $lang->get('copy'); ?>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="alert alert-danger" id="health-server-access-log-error" style="display:none;"></div>
+                                        <div class="alert alert-warning" id="health-server-access-log-fix" style="display:none;">
+                                            <div class="mb-2" id="health-server-access-log-fix-text"></div>
+                                            <pre class="mb-0" id="health-server-access-log-fix-cmd" style="white-space: pre-wrap;"></pre>
+                                        </div>
+                                        <pre id="health-server-access-log-content" class="p-2 mb-0" style="display:none; max-height: 380px; overflow:auto; background-color: #f8f9fa; border: 1px solid #dee2e6; white-space: pre-wrap;"></pre>
+                                        <div class="small text-muted mt-2" id="health-server-access-log-meta" style="display:none;"></div>
                                     </div>
                                 </div>
 
@@ -1054,10 +1075,11 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             <pre class="mb-0" id="health-teampass-log-fix-cmd" style="white-space: pre-wrap;"></pre>
                                         </div>
                                         <pre id="health-teampass-log-content" class="p-2 mb-0" style="display:none; max-height: 380px; overflow:auto; background-color: #f8f9fa; border: 1px solid #dee2e6; white-space: pre-wrap;"></pre>
+                                        <div class="small text-muted mt-2" id="health-teampass-log-meta" style="display:none;"></div>
                                     </div>
                                 </div>
 
-                                <div class="card card-outline card-secondary">
+                                <div class="card card-outline card-secondary mb-3">
                                     <div class="card-header">
                                         <h3 class="card-title"><i class="fas fa-code-branch mr-2"></i><?php echo $lang->get('health_php_fpm_error_log'); ?></h3>
                                         <div class="card-tools">
@@ -1073,6 +1095,27 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             <pre class="mb-0" id="health-php-fpm-log-fix-cmd" style="white-space: pre-wrap;"></pre>
                                         </div>
                                         <pre id="health-php-fpm-log-content" class="p-2 mb-0" style="display:none; max-height: 380px; overflow:auto; background-color: #f8f9fa; border: 1px solid #dee2e6; white-space: pre-wrap;"></pre>
+                                        <div class="small text-muted mt-2" id="health-php-fpm-log-meta" style="display:none;"></div>
+                                    </div>
+                                </div>
+
+                                <div class="card card-outline card-secondary">
+                                    <div class="card-header">
+                                        <h3 class="card-title"><i class="fas fa-plug mr-2"></i><?php echo $lang->get('health_websocket_log'); ?></h3>
+                                        <div class="card-tools">
+                                            <button type="button" class="btn btn-secondary btn-sm" id="health-websocket-log-copy-btn" disabled>
+                                                <i class="fas fa-copy mr-1"></i><?php echo $lang->get('copy'); ?>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="alert alert-danger" id="health-websocket-log-error" style="display:none;"></div>
+                                        <div class="alert alert-warning" id="health-websocket-log-fix" style="display:none;">
+                                            <div class="mb-2" id="health-websocket-log-fix-text"></div>
+                                            <pre class="mb-0" id="health-websocket-log-fix-cmd" style="white-space: pre-wrap;"></pre>
+                                        </div>
+                                        <pre id="health-websocket-log-content" class="p-2 mb-0" style="display:none; max-height: 380px; overflow:auto; background-color: #f8f9fa; border: 1px solid #dee2e6; white-space: pre-wrap;"></pre>
+                                        <div class="small text-muted mt-2" id="health-websocket-log-meta" style="display:none;"></div>
                                     </div>
                                 </div>
                             </div>

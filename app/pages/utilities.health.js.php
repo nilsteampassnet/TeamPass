@@ -150,7 +150,15 @@ var TP_HEALTH_L10N = {
     runtime_log_not_detected: "<?php echo addslashes($lang->get('health_log_not_detected')); ?>",
     runtime_log_invalid_path: "<?php echo addslashes($lang->get('health_log_invalid_path')); ?>",
     runtime_log_not_used: "<?php echo addslashes($lang->get('health_log_not_used')); ?>",
+    websocket_log_disabled: "<?php echo addslashes($lang->get('health_websocket_log_disabled')); ?>",
+    websocket_log_file_not_writable_fmt: "<?php echo addslashes($lang->get('health_websocket_log_file_not_writable_fmt')); ?>",
+    websocket_log_directory_not_writable_fmt: "<?php echo addslashes($lang->get('health_websocket_log_directory_not_writable_fmt')); ?>",
     runtime_log_empty_fmt: "<?php echo addslashes($lang->get('health_runtime_log_empty_fmt')); ?>",
+    runtime_log_truncated_fmt: "<?php echo addslashes($lang->get('health_runtime_log_truncated_fmt')); ?>",
+    runtime_log_partial: "<?php echo addslashes($lang->get('health_runtime_log_partial')); ?>",
+    runtime_log_sources_fmt: "<?php echo addslashes($lang->get('health_runtime_log_sources_fmt')); ?>",
+    runtime_log_redacted: "<?php echo addslashes($lang->get('health_runtime_log_redacted')); ?>",
+    server_access_log_shared_notice: "<?php echo addslashes($lang->get('health_server_access_log_shared_notice')); ?>",
     runtime_log_fix_hint: "<?php echo addslashes($lang->get('health_runtime_log_fix_hint')); ?>",
     runtime_log_fix_hint_missing: "<?php echo addslashes($lang->get('health_runtime_log_fix_hint_missing')); ?>",
     runtime_logs_context_mode_fmt: "<?php echo addslashes($lang->get('health_runtime_logs_context_mode_fmt')); ?>",
@@ -187,12 +195,20 @@ $(document).ready(function() {
         tpCopyRuntimeLogToClipboard('server');
     });
 
+    $('#health-server-access-log-copy-btn').on('click', function() {
+        tpCopyRuntimeLogToClipboard('server_access');
+    });
+
     $('#health-teampass-log-copy-btn').on('click', function() {
         tpCopyRuntimeLogToClipboard('teampass');
     });
 
     $('#health-php-fpm-log-copy-btn').on('click', function() {
         tpCopyRuntimeLogToClipboard('php-fpm');
+    });
+
+    $('#health-websocket-log-copy-btn').on('click', function() {
+        tpCopyRuntimeLogToClipboard('websocket');
     });
 
     tpLoadHealthReport();
@@ -1185,7 +1201,39 @@ function tpResetRuntimeLogPane(prefix) {
     $('#' + prefix + '-fix-text').text('');
     $('#' + prefix + '-fix-cmd').hide().text('');
     $('#' + prefix + '-content').hide().text('');
+    $('#' + prefix + '-meta').hide().text('');
     $('#' + prefix + '-copy-btn').prop('disabled', true);
+}
+
+// Builds the notes shown under a log excerpt: which physical files were merged,
+// whether the excerpt is incomplete, and the scope of the selected file.
+// Returns plain text lines: the consumer injects them with .text().
+function tpRuntimeLogNotes(result) {
+    var notes = [];
+
+    if (!result) {
+        return notes;
+    }
+
+    var sources = result.source_files || [];
+    if (sources.length > 1 || (sources.length === 1 && sources[0] !== result.log_path)) {
+        notes.push(TP_HEALTH_L10N.runtime_log_sources_fmt.replace('%s', sources.join(', ')));
+    }
+
+    if (result.partial === true) {
+        notes.push(TP_HEALTH_L10N.runtime_log_partial);
+    }
+
+    if (result.role === 'server_access') {
+        if (result.instance_scoped === false && result.log_path) {
+            notes.push(TP_HEALTH_L10N.server_access_log_shared_notice);
+        }
+        if (result.content_length > 0) {
+            notes.push(TP_HEALTH_L10N.runtime_log_redacted);
+        }
+    }
+
+    return notes;
 }
 
 function tpRuntimeLogMessage(result) {
@@ -1194,10 +1242,16 @@ function tpRuntimeLogMessage(result) {
     }
 
     if (result.access === 'not_used') {
+        if (result.role === 'websocket') {
+            return TP_HEALTH_L10N.websocket_log_disabled;
+        }
         return TP_HEALTH_L10N.runtime_log_not_used;
     }
     if (result.access === 'empty') {
         return TP_HEALTH_L10N.runtime_log_empty_fmt.replace('%s', tpEscapeHtml(result.log_path || ''));
+    }
+    if (result.access === 'truncated') {
+        return TP_HEALTH_L10N.runtime_log_truncated_fmt.replace('%s', tpEscapeHtml(result.log_path || ''));
     }
     if (result.access === 'not_configured') {
         return TP_HEALTH_L10N.runtime_log_not_configured;
@@ -1218,6 +1272,22 @@ function tpRuntimeLogMessage(result) {
     return TP_HEALTH_L10N.runtime_log_failed;
 }
 
+// Returns plain text: the only consumer injects it with .text(), which escapes on its own.
+function tpRuntimeLogWriteMessage(result) {
+    if (!result || result.role !== 'websocket') {
+        return '';
+    }
+
+    if (result.write_access === 'directory_not_writable') {
+        return TP_HEALTH_L10N.websocket_log_directory_not_writable_fmt.replace('%s', String(result.log_path || ''));
+    }
+    if (result.write_access === 'file_not_writable') {
+        return TP_HEALTH_L10N.websocket_log_file_not_writable_fmt.replace('%s', String(result.log_path || ''));
+    }
+
+    return '';
+}
+
 function tpApplyRuntimeLogResult(prefix, result) {
     tpResetRuntimeLogPane(prefix);
 
@@ -1233,6 +1303,23 @@ function tpApplyRuntimeLogResult(prefix, result) {
         if (content.length > 0) {
             $('#' + prefix + '-copy-btn').prop('disabled', false);
         }
+    }
+
+    var notes = tpRuntimeLogNotes(result);
+    if (notes.length > 0 && result.access === 'ok') {
+        $('#' + prefix + '-meta').show().text(notes.join(' '));
+    }
+
+    var writeMessage = tpRuntimeLogWriteMessage(result);
+    if (writeMessage && (result.access === 'ok' || result.access === 'empty')) {
+        var writeCommands = result.write_fix_commands || [];
+        $('#' + prefix + '-fix-text').text(writeMessage + ' ' + TP_HEALTH_L10N.runtime_log_fix_hint);
+        $('#' + prefix + '-fix-cmd').toggle(writeCommands.length > 0).text(writeCommands.join('\n'));
+        $('#' + prefix + '-fix').show();
+        return;
+    }
+
+    if (result.access === 'ok') {
         return;
     }
 
@@ -1250,14 +1337,17 @@ function tpApplyRuntimeLogResult(prefix, result) {
         return;
     }
 
-    if (result.access === 'empty') {
+    if (result.access === 'empty' || result.access === 'truncated') {
         $('#' + prefix + '-fix-text').text(message);
         $('#' + prefix + '-fix-cmd').hide().text('');
         $('#' + prefix + '-fix').show();
         return;
     }
 
-    if (result.role === 'php_fpm' && (result.access === 'not_used' || result.access === 'not_configured' || result.access === 'not_found')) {
+    if (
+        (result.role === 'php_fpm' || result.role === 'websocket')
+        && (result.access === 'not_used' || result.access === 'not_configured' || result.access === 'not_found')
+    ) {
         $('#' + prefix + '-fix-text').text(message);
         $('#' + prefix + '-fix-cmd').hide().text('');
         $('#' + prefix + '-fix').show();
@@ -1273,15 +1363,19 @@ function tpCheckRuntimeLogs() {
     var lines = Number($('#health-runtime-log-lines').val() || 50);
 
     tpResetRuntimeLogPane('health-server-log');
+    tpResetRuntimeLogPane('health-server-access-log');
     tpResetRuntimeLogPane('health-teampass-log');
     tpResetRuntimeLogPane('health-php-fpm-log');
+    tpResetRuntimeLogPane('health-websocket-log');
 
     $btn.prop('disabled', true);
     $icon.removeClass('fa-search').addClass('fa-spinner fa-spin');
 
     $('#health-server-log-content').show().text(TP_HEALTH_L10N.runtime_log_checking);
+    $('#health-server-access-log-content').show().text(TP_HEALTH_L10N.runtime_log_checking);
     $('#health-teampass-log-content').show().text(TP_HEALTH_L10N.runtime_log_checking);
     $('#health-php-fpm-log-content').show().text(TP_HEALTH_L10N.runtime_log_checking);
+    $('#health-websocket-log-content').show().text(TP_HEALTH_L10N.runtime_log_checking);
 
     $.post(
         'sources/utilities.queries.php',
@@ -1298,16 +1392,20 @@ function tpCheckRuntimeLogs() {
 
             if (data && data.error) {
                 tpResetRuntimeLogPane('health-server-log');
+                tpResetRuntimeLogPane('health-server-access-log');
                 tpResetRuntimeLogPane('health-teampass-log');
                 tpResetRuntimeLogPane('health-php-fpm-log');
+                tpResetRuntimeLogPane('health-websocket-log');
                 toastr.error(data.message || TP_HEALTH_L10N.runtime_log_failed);
                 return;
             }
 
             if (!data || !data.result) {
                 tpResetRuntimeLogPane('health-server-log');
+                tpResetRuntimeLogPane('health-server-access-log');
                 tpResetRuntimeLogPane('health-teampass-log');
                 tpResetRuntimeLogPane('health-php-fpm-log');
+                tpResetRuntimeLogPane('health-websocket-log');
                 toastr.error(TP_HEALTH_L10N.runtime_log_failed);
                 return;
             }
@@ -1315,25 +1413,33 @@ function tpCheckRuntimeLogs() {
             var result = data.result || {};
             tpRenderRuntimeLogsContext(result.context || {});
             tpApplyRuntimeLogResult('health-server-log', result.server || null);
+            tpApplyRuntimeLogResult('health-server-access-log', result.server_access || null);
             tpApplyRuntimeLogResult('health-teampass-log', result.teampass || null);
             tpApplyRuntimeLogResult('health-php-fpm-log', result.php_fpm || null);
+            tpApplyRuntimeLogResult('health-websocket-log', result.websocket || null);
         }
     ).fail(function() {
         $btn.prop('disabled', false);
         $icon.removeClass('fa-spinner fa-spin').addClass('fa-search');
         tpResetRuntimeLogPane('health-server-log');
+        tpResetRuntimeLogPane('health-server-access-log');
         tpResetRuntimeLogPane('health-teampass-log');
         tpResetRuntimeLogPane('health-php-fpm-log');
+        tpResetRuntimeLogPane('health-websocket-log');
         toastr.error(TP_HEALTH_L10N.runtime_log_failed);
     });
 }
 
 function tpCopyRuntimeLogToClipboard(role) {
     var prefix = 'health-server-log';
-    if (role === 'teampass') {
+    if (role === 'server_access') {
+        prefix = 'health-server-access-log';
+    } else if (role === 'teampass') {
         prefix = 'health-teampass-log';
     } else if (role === 'php-fpm') {
         prefix = 'health-php-fpm-log';
+    } else if (role === 'websocket') {
+        prefix = 'health-websocket-log';
     }
     var text = $('#' + prefix + '-content').text() || '';
     if (!text) {
@@ -1439,8 +1545,10 @@ function tpDownloadReportJson() {
             if (data && data.result) {
                 reportToExport.logs.runtime_context = data.result.context || {};
                 reportToExport.logs.server_error_log = data.result.server || {};
+                reportToExport.logs.server_access_log = data.result.server_access || {};
                 reportToExport.logs.teampass_error_log = data.result.teampass || {};
                 reportToExport.logs.php_fpm_error_log = data.result.php_fpm || {};
+                reportToExport.logs.websocket_log = data.result.websocket || {};
             } else if (data && data.error) {
                 reportToExport.logs.runtime_logs_error = {
                     message: (data.message || ''),

@@ -3,7 +3,11 @@
 # ============================================
 
 # Stage 1: Composer dependencies builder
-FROM composer:2.7 AS composer-builder
+# Current Composer line. The installed versions come from composer.lock, not from this
+# binary, so the only thing the version buys is Composer's own fixes — hence "latest
+# supported line" rather than an alignment with any particular developer setup. Pinned to
+# the minor line, never to "latest", so a future major cannot land silently.
+FROM composer:2.10 AS composer-builder
 
 WORKDIR /app
 
@@ -26,7 +30,7 @@ RUN composer install \
 # ============================================
 # Stage 2: Final production image
 # ============================================
-FROM php:8.3-fpm-alpine3.19
+FROM php:8.3-fpm-alpine3.24
 
 # Metadata labels
 LABEL maintainer="TeamPass <nils@teampass.net>" \
@@ -39,7 +43,10 @@ LABEL maintainer="TeamPass <nils@teampass.net>" \
       org.opencontainers.image.vendor="TeamPass"
 
 # Build arguments
-ARG TEAMPASS_VERSION=3.1.5.2
+# The CI workflow overrides this with the release tag; the default only serves local
+# builds, so it must stay equal to TP_VERSION.TP_VERSION_MINOR in app/config/include.php.
+# The release procedure bumps it in the same commit as the version constants.
+ARG TEAMPASS_VERSION=3.2.1.7
 ENV TEAMPASS_VERSION=${TEAMPASS_VERSION}
 
 # Install system dependencies and PHP extensions
@@ -93,8 +100,12 @@ RUN apk add --no-cache \
     && apk del .build-deps \
     && rm -rf /var/cache/apk/* /tmp/* /var/tmp/*
 
-# Add GNU libiconv for better performance
-ENV LD_PRELOAD /usr/lib/preloadable_libiconv.so
+# No LD_PRELOAD of preloadable_libiconv.so on purpose: Alpine has not shipped that
+# file for several releases. The gnu-libiconv package only provides the gnu-iconv
+# binary, and gnu-libiconv-libs provides libiconv.so.2, which exports the prefixed
+# symbols (libiconv_open, …) and therefore cannot shadow musl's iconv. Setting the
+# classic workaround would only make every process log an ld.so error. PHP uses
+# musl's iconv.
 
 # Copy PHP configuration
 COPY docker/php/php.ini /usr/local/etc/php/conf.d/teampass.ini

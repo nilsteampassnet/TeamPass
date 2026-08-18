@@ -635,11 +635,21 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
 
             // Save the installation status
             DB::query(
-                "INSERT IGNORE INTO " . $this->inputData['tablePrefix'] . "misc 
-                    (`type`, `intitule`, `valeur`) VALUES 
+                "INSERT IGNORE INTO " . $this->inputData['tablePrefix'] . "misc
+                    (`type`, `intitule`, `valeur`) VALUES
                     ('install', 'clear_install_folder', 'true');"
             );
-            
+
+            // Remove the development dependencies shipped in the archive. PHPUnit, PHPStan
+            // (whose app/vendor/bin/phpstan.phar is an executable archive) and their
+            // transitive packages are never loaded at runtime, so on a server they are dead
+            // weight and needless attack surface. The upgrade runs the same sweep, so a
+            // fresh install and an upgraded one end up with the same tree.
+            // Best effort by contract: it never reports a failure, so it cannot break an
+            // installation that is otherwise complete.
+            require_once TEAMPASS_ROOT . '/app/scripts/dev_dependencies_cleanup_logic.php';
+            devDependenciesCleanupRun(TEAMPASS_ROOT);
+
             return [
                 'success' => true,
             ];

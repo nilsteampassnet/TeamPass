@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## 2.5.2 - 2026-08-05
+
+### Fixed
+
+- Fixed `EachPromise` abandoning its aggregate when the pending window drains unsettled
+- Fixed `EachPromise` admitting new work after its aggregate has settled
+
+
 ## 2.5.1 - 2026-07-08
 
 ### Fixed

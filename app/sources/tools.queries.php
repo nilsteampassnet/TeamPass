@@ -224,7 +224,8 @@ case 'perform_fix_pf_items-step2':
     echo prepareExchangedData(
         array(
             'error' => false,
-            'message' => '<br>Number of Sharekeys for private items DELETED: ',
+            // No markup here - the caller encodes this message and owns the line break.
+            'message' => 'Number of Sharekeys for private items DELETED: ',
             'nbDeleted' => $pfiSharekeysCount,
             'personalFolders' => json_encode($personalFolders),
         ),
@@ -291,7 +292,8 @@ case 'perform_fix_pf_items-step3':
     echo prepareExchangedData(
         array(
             'error' => false,
-            'message' => '<br>Number of items reseted to Defuse: ',
+            // No markup here - the caller encodes this message and owns the line break.
+            'message' => 'Number of items reseted to Defuse: ',
             'nbItems' => $nbItems,
             'personalFolders' => json_encode($personalFolders),
         ),
@@ -350,7 +352,7 @@ case 'perform_fix_pf_items-step3':
 
         if (empty($privateKey)) {
             // Generate new keys for TP user
-            $userKeys = generateUserKeys($pwd, $SETTINGS ?? null);
+            $userKeys = generateUserKeys($pwd, $SETTINGS);
 
             // Update user keys
             $updateData = array(

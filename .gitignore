@@ -4,8 +4,11 @@
 .idea
 *.sh
 *.sh.save
-# Ship the API command-line client despite the global *.sh rule
+# Shell scripts shared with the project, despite the global *.sh rule above. These
+# negations must stay *after* it: within .gitignore the last matching pattern wins.
 !/app/scripts/teampass-cli.sh
+!/scripts/release_check.sh
+!/.claude/skills/**/scripts/*.sh
 nbproject
 nbproject/private
 node_modules
@@ -76,6 +79,42 @@ phpinsights.php
 tests/_output/
 tests/_support/_generated/
 
+# Composer development dependencies — restore them with `composer install`.
+# app/vendor is committed so the release archive is installable without Composer, but the
+# require-dev packages have no reason to be: they are never loaded at runtime, they weigh
+# around 59 MB (including app/vendor/bin/phpstan.phar, an executable archive, and 21 MB of
+# PHPStan native extensions), and shipping them puts development tooling on production
+# servers. The installer and the upgrade delete them from existing installations
+# (devDependenciesCleanupRun() in app/scripts/dev_dependencies_cleanup_logic.php).
+#
+# Scope comes from the `packages-dev` section of composer.lock. Namespaces listed whole are
+# dev-only; symfony is mixed (4 dev packages against 23 production ones), so it is listed
+# package by package. Re-check with the loop in dev_dependencies_cleanup_logic.php when a
+# dev dependency is added or removed.
+/app/vendor/dominikb/
+/app/vendor/masterminds/
+/app/vendor/myclabs/
+/app/vendor/nikic/
+/app/vendor/phar-io/
+/app/vendor/phpstan/
+/app/vendor/phpunit/
+/app/vendor/sebastian/
+/app/vendor/theseer/
+/app/vendor/symfony/cache/
+/app/vendor/symfony/css-selector/
+/app/vendor/symfony/dom-crawler/
+/app/vendor/symfony/var-exporter/
+/app/vendor/bin/composer-license-checker
+/app/vendor/bin/composer-license-checker.bat
+/app/vendor/bin/php-parse
+/app/vendor/bin/php-parse.bat
+/app/vendor/bin/phpstan
+/app/vendor/bin/phpstan.bat
+/app/vendor/bin/phpstan.phar
+/app/vendor/bin/phpstan.phar.bat
+/app/vendor/bin/phpunit
+/app/vendor/bin/phpunit.bat
+
 # Snyk Security Extension - AI Rules (auto-generated)
 .github/instructions/snyk_rules.instructions.md
 
@@ -87,7 +126,19 @@ entities.json
 # Added by code-review-graph
 .code-review-graph/
 
-# Claude Code — developer-local config (paths and permissions specific to each machine)
+# Claude Code — the project's own documentation, commands and skills are shared; only what
+# carries machine-specific paths stays out.
+#
+# The pattern is `.claude/*` and not `.claude/` on purpose: git never descends into an
+# excluded directory, so a negation placed under a directory pattern would be unreachable.
+.claude/*
+!.claude/commands/
+!.claude/docs/
+!.claude/skills/
+
+# Machine-specific, never shared: settings.json hardcodes this checkout's absolute path in
+# its hooks and expects code-review-graph to be installed, settings.local.json holds
+# per-machine permissions.
+.claude/settings.json
 .claude/settings.local.json
 .mcp.json
-.claude/

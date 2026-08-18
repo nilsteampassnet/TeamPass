@@ -121,7 +121,7 @@ sudo systemctl reload nginx
 Install the service file:
 
 ```
-sudo cp /path/to/teampass/websocket/config/teampass-websocket.service /etc/systemd/system/
+sudo cp /path/to/teampass/app/websocket/config/teampass-websocket.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable teampass-websocket
 sudo systemctl start teampass-websocket
@@ -138,7 +138,7 @@ sudo systemctl status teampass-websocket
 ### Option B: Manual start
 
 ```
-sudo -u www-data php /path/to/teampass/websocket/bin/server.php
+sudo -u www-data php /path/to/teampass/app/websocket/bin/server.php
 ```
 
 Press `Ctrl+C` to stop.
@@ -183,8 +183,34 @@ Go to **Administration > Dashboard**. The WebSocket status badge should be green
 Application log:
 
 ```
-tail -f /path/to/teampass/websocket/logs/websocket.log
+tail -f /path/to/teampass/app/websocket/logs/websocket.log
 ```
+
+The service user must be able to create and append this file. On Debian/Ubuntu with the bundled
+systemd unit, the service and PHP-FPM normally both run as `www-data`:
+
+```
+sudo chown -R www-data:www-data /path/to/teampass/app/websocket/logs
+sudo find /path/to/teampass/app/websocket/logs -type d -exec chmod 0750 {} \;
+sudo find /path/to/teampass/app/websocket/logs -type f -exec chmod 0640 {} \;
+```
+
+If you changed `User=` in the systemd unit so the daemon no longer runs as the web server user,
+do **not** apply the commands above as-is: they would leave the daemon unable to write its own
+log. Give both accounts a shared group instead:
+
+```
+sudo groupadd -f teampass
+sudo usermod -aG teampass www-data
+sudo usermod -aG teampass <daemon_user>
+sudo chown -R <daemon_user>:teampass /path/to/teampass/app/websocket/logs
+sudo chmod 2770 /path/to/teampass/app/websocket/logs
+sudo chmod 0660 /path/to/teampass/app/websocket/logs/websocket.log
+```
+
+The **Utilities > System Health > Logs** page displays the recent WebSocket entries and reports
+when the runtime user cannot read the file or write to the log directory. The remediation
+commands it suggests assume the daemon and PHP share the same user, and say so.
 
 Systemd journal:
 
@@ -196,14 +222,14 @@ journalctl -u teampass-websocket -f
 
 | Problem | Cause | Solution |
 |---------|-------|----------|
-| Port 8080 already in use | Another service uses the port | Change the port in **Settings** and in `websocket/config/websocket.php` |
+| Port 8080 already in use | Another service uses the port | Change the port in **Settings** and in `app/websocket/config/websocket.php` |
 | 502 Bad Gateway on `/ws` | WebSocket server is not running | Start the server (see section 4) |
 | Connection refused in browser console | Reverse proxy not configured | Configure Apache or Nginx (see section 2) |
 | Server starts but stops immediately | Missing PHP extension | Install `pcntl` and `posix` (see section 1) |
 
 ### Advanced configuration
 
-The file `websocket/config/websocket.php` contains advanced options:
+The file `app/websocket/config/websocket.php` contains advanced options:
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|

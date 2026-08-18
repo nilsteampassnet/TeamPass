@@ -456,10 +456,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
         // Prepare data
         if (store.get('teampassApplication').formUserAction === "add_new_user") {
+            // Only the template identifier travels: the subject and the body are
+            // resolved server-side, in the recipient's language.
             var data = {
                 'receipt': $('#form-email').val(),
-                'subject': 'TEAMPASS - <?php echo $lang->get('temporary_encryption_code');?>',
-                'body': '<?php echo $lang->get('email_body_new_user');?>',
+                'template': 'new_user_credentials',
                 'pre_replace' : {
                     '#login#' : store.get('teampassUser').admin_new_user_login,
                     '#password#' : store.get('teampassUser').admin_new_user_password,
@@ -1945,7 +1946,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                 // Prepare data
                 var data = {
-                    'label': simplePurifier($('#ldap-new-role-selection').val()),
+                    'label': purifyUserInput($('#ldap-new-role-selection').val()),
                     'complexity': $('#ldap-new-role-complexity').val(),
                     'allowEdit': 0,
                     'action': 'add_role',
@@ -2036,7 +2037,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                 // Prepare data
                 var data = {
-                    'label': simplePurifier($('#oauth2-new-role-selection').val()),
+                    'label': purifyUserInput($('#oauth2-new-role-selection').val()),
                     'complexity': $('#oauth2-new-role-complexity').val(),
                     'allowEdit': 0,
                     'action': 'add_role',
@@ -3352,8 +3353,10 @@ function refreshListInactiveUsers(filterValue) {
                     $.each(data.ldap_groups, function(i, group) {
                         tmp = data.teampass_groups.filter(p => p.title === group);
                         if (tmp.length === 0) {
+                            // The group name comes from the directory and purifyData() left it
+                            // as plain text, quotes included, so encode it for both sinks.
                             $('#ldap-new-role-selection').append(
-                                '<option value="' + group + '">' + group + '</option>'
+                                '<option value="' + htmlEncode(group) + '">' + htmlEncode(group) + '</option>'
                             );
                         }
                     });
@@ -3483,8 +3486,9 @@ function refreshListInactiveUsers(filterValue) {
                     $.each(data.ad_groups, function(i, group) {
                         tmp = data.teampass_groups.filter(p => p.title === group);
                         if (tmp.length === 0) {
-                            group = simplePurifier(group)
-                            htmlGroups += '<option value="' + group + '">' + group + '</option>';
+                            // Already purified by purifyData() above, but that leaves plain
+                            // text with live quotes, so encode it for both sinks.
+                            htmlGroups += '<option value="' + htmlEncode(group) + '">' + htmlEncode(group) + '</option>';
                         }
                     });
                     $('#oauth2-new-role-selection').append(htmlGroups);
@@ -3726,10 +3730,10 @@ function refreshListInactiveUsers(filterValue) {
         
         // prepare data
         var data = {
-            'login': simplePurifier($('.selected-user').data('user-login')),
-            'name': simplePurifier($('.selected-user').data('user-name') === '' ? $('#ldap-user-name').val() : $('.selected-user').data('user-name')),
-            'lastname': simplePurifier($('.selected-user').data('user-lastname')),
-            'email': simplePurifier($('.selected-user').data('user-email')),
+            'login': purifyUserInput($('.selected-user').data('user-login')),
+            'name': purifyUserInput($('.selected-user').data('user-name') === '' ? $('#ldap-user-name').val() : $('.selected-user').data('user-name')),
+            'lastname': purifyUserInput($('.selected-user').data('user-lastname')),
+            'email': purifyUserInput($('.selected-user').data('user-email')),
             'roles': roles,
             'authType': authType,
         };

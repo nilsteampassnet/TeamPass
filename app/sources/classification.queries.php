@@ -222,6 +222,15 @@ switch ($post_type) {
             break;
         }
 
+        // Previous level (no row = unclassified) so the history shows the transition
+        $previousClassification = DB::queryFirstRow(
+            'SELECT level
+            FROM ' . prefixTable('data_classification') . '
+            WHERE item_id = %i',
+            $post_item_id
+        );
+        $previousLevel = $previousClassification === null ? 0 : (int) $previousClassification['level'];
+
         if ($post_level === 0) {
             DB::delete(prefixTable('data_classification'), 'item_id = %i', $post_item_id);
         } else {
@@ -246,7 +255,7 @@ switch ($post_type) {
             $userId,
             'at_modification',
             (string) $session->get('user-login'),
-            'at_classification_changed:' . $post_level
+            'at_classification_changed : ' . $previousLevel . ' => ' . $post_level
         );
 
         echo (string) prepareExchangedData(

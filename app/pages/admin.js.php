@@ -1282,7 +1282,7 @@ function performDBIntegrityCheck()
                 }
             } else {
                 html = '<i class="fa-solid fa-circle-xmark text-danger mr-2"></i><span class="badge badge-secondary mr-2">Experimental</span>Database integrity check could not be performed!'
-                    + 'Error returned: ' + data.message;
+                    + 'Error returned: ' + htmlEncode(data.message);
             }
             $('#health-database-integrity').html(html);                
 

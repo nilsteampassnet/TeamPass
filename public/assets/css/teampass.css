@@ -772,6 +772,39 @@
     border-radius: 3px;
 }
 
+/* ****
+* ITEM detail - URL row
+* A long URL used to overflow its row and push the action buttons away.
+* The row is laid out as a flex line so the value takes exactly the space
+* left by the label and the buttons, and is truncated with an ellipsis.
+* Only the rendering is truncated: the full URL stays in the DOM, so the
+* copy button and the "open" link keep using the complete value.
+* *****/
+.item-url-row {
+    display: flex;
+    align-items: center;
+}
+.item-url-row > b {
+    flex: 0 0 auto;
+    margin-right: auto;
+    padding-right: 0.5rem;
+}
+.item-url-row #card-item-url-text {
+    order: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.item-url-row #card-item-url {
+    order: 2;
+    flex: 0 0 auto;
+}
+.item-url-row #card-item-url-text-btn {
+    order: 3;
+    flex: 0 0 auto;
+}
+
 /* Persistent highlight on the currently selected item row */
 #teampass_items_list tr.item-selected td {
     background-color: rgba(0, 123, 255, 0.07) !important;

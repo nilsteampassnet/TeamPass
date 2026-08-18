@@ -9,7 +9,7 @@ use PHPUnit\Framework\TestCase;
  *
  * purifyData() — which every AJAX response goes through, since
  * prepareExchangedData(…, 'decode', …) defaults to purify = true — returns PLAIN,
- * UNESCAPED TEXT. simplePurifier() strips tags but decodes HTML entities twice, so a value
+ * UNESCAPED TEXT. purifyServerData() strips tags but decodes HTML entities twice, so a value
  * the server stored as "&lt;img onerror=…&gt;" can come back out as live markup.
  *
  * Safety therefore lives at the sink: every interpolation of such a value into markup must
@@ -17,9 +17,10 @@ use PHPUnit\Framework\TestCase;
  * with .text(). Nine private XSS reports in a row landed on screens that skipped this step,
  * which is why it is enforced here rather than left to review.
  *
- * The test flags `'…' + <ident>.<field> + '…'` for a field known to carry user data. The
- * encoded form `htmlEncode(value.title)` never matches, because the call sits between the
- * `+` and the identifier.
+ * The test flags `'…' + <path>.<field> + '…'` for a field known to carry user data, `<path>`
+ * being any dotted expression: `data.message` and `err.file.name` both match. The encoded
+ * form `htmlEncode(value.title)` never does, because the call sits between the `+` and the
+ * start of the path.
  *
  * Analysis: workReadmeFiles/client-purifier-root-cause-study.md
  */
@@ -36,10 +37,13 @@ class ClientHtmlEncodingSentinelTest extends TestCase
 
     /**
      * Helpers that make a value safe to interpolate.
+     *
+     * The purifiers are deliberately absent: they strip tags but hand back plain text with
+     * live quotes, which is exactly the gap this sentinel exists to close.
      */
     private const ENCODERS = [
-        'htmlEncode', 'escapeHtml', 'escapeText', 'escapeAttribute',
-        'esc', 'tpEscapeHtml', 'sanitizeDom', 'simplePurifier',
+        'htmlEncode', 'escapeHtml', 'escapeHtmlString', 'escapeText',
+        'escapeAttribute', 'esc', 'tpEscapeHtml',
     ];
 
     private const SCANNED_GLOBS = [
@@ -55,11 +59,10 @@ class ClientHtmlEncodingSentinelTest extends TestCase
      * not used: they drift on every edit, whereas an expression that changes deserves a new
      * look anyway.
      *
-     * Two groups:
-     *  - "safe": proven not to reach markup with user data.
-     *  - "pending": real sinks fed by server-composed strings ($lang->get() plus, in some
-     *    cases, interpolated data). Encoding them is a behaviour change for any message that
-     *    intentionally carries markup, so they are tracked here rather than silently fixed.
+     * Every entry is a value proven not to reach markup with user data. The status and error
+     * messages that used to sit here as "pending review" are now encoded at their sinks; two
+     * of them carried a <br> from the server, which moved into the page template so the
+     * message could become pure data.
      */
     private const ALLOWED = [
         // safe — inside a /* … */ block, never executed
@@ -70,13 +73,6 @@ class ClientHtmlEncodingSentinelTest extends TestCase
         'app/pages/utilities.logs.js.php' => ['opt.title'],
         // safe — info comes from the static client-side LEVELS map
         'app/core/item-classification.js.php' => ['info.label'],
-
-        // pending review — server-composed status and error messages
-        'app/pages/admin.js.php' => ['data.message'],
-        'app/pages/import.js.php' => ['data.message', 'err.message'],
-        'app/pages/items.js.php' => ['data.message'],
-        'app/pages/profile.js.php' => ['myData.message', 'err.message'],
-        'app/pages/tools.js.php' => ['dataStep1.message', 'dataStep2.message', 'ret.message'],
     ];
 
     /**
@@ -85,7 +81,10 @@ class ClientHtmlEncodingSentinelTest extends TestCase
     private static function collectViolations(): array
     {
         $root = dirname(__DIR__, 2) . '/';
-        $pattern = '/\+\s*([A-Za-z_][A-Za-z0-9_]*)\.(' . implode('|', self::WATCHED_FIELDS) . ')\b/';
+        // The path part is greedy across dots so a nested sink such as err.file.name or
+        // data.corruption_notice.message is caught, not only the single-level form.
+        $pattern = '/\+\s*([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)*)\.('
+            . implode('|', self::WATCHED_FIELDS) . ')\b/';
 
         $violations = [];
         foreach (self::SCANNED_GLOBS as $glob) {
@@ -210,5 +209,50 @@ class ClientHtmlEncodingSentinelTest extends TestCase
                 $relative . ' must keep stating that purifyData() returns unescaped text.'
             );
         }
+    }
+
+    /**
+     * The inbound and outbound purifiers must stay two distinct entry points.
+     *
+     * They were a single simplePurifier() serving both directions, which is what made the
+     * function impossible to reason about: the same code had to reject what the user typed
+     * AND clean what the server returned, two contracts that do not follow the same rules.
+     * Re-merging them, or reviving the old name in a page script, would undo that.
+     */
+    public function testInboundAndOutboundPurifiersStaySeparate(): void
+    {
+        $root = dirname(__DIR__, 2) . '/';
+
+        foreach (['app/includes/js/functions.js', 'public/assets/js/functions.js'] as $relative) {
+            $source = (string) file_get_contents($root . $relative);
+
+            $this->assertStringContainsString(
+                'return purifyServerData(obj, bHtml, bSvg, bSvgFilters);',
+                $source,
+                $relative . ': purifyData() must route AJAX responses through purifyServerData().'
+            );
+            $this->assertStringContainsString(
+                'string = purifyUserInput(text, bHtml, bSvg, bSvgFilters);',
+                $source,
+                $relative . ': fieldDomPurifier() must route form values through purifyUserInput().'
+            );
+        }
+
+        $stale = [];
+        foreach (self::SCANNED_GLOBS as $glob) {
+            foreach ((array) glob($root . $glob) as $path) {
+                if (str_contains((string) file_get_contents((string) $path), 'simplePurifier') === true) {
+                    $stale[] = substr((string) $path, strlen($root));
+                }
+            }
+        }
+
+        $this->assertSame(
+            [],
+            $stale,
+            "simplePurifier() was split into purifyServerData() (AJAX responses) and\n"
+            . "purifyUserInput() (form values). Pick the one that matches the direction of\n"
+            . 'the data instead of reviving the merged name.'
+        );
     }
 }

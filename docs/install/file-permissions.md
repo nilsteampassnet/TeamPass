@@ -33,8 +33,15 @@ The upgrade wizard (**Step 1 — Requirements check**) verifies every item liste
 │   ├── upload/               ← optional writable (file attachments)
 │   └── backups/              ← optional writable (SQL dumps)
 └── secrets/                  ← encryption key  (readable by web server, NOT in webroot)
-    └── teampass-seckey.txt
+    └── <SECUREFILE>          ← random file name chosen by the installer
 ```
+
+> :information_source: **The key file name is random.** The installer generates it and stores it in
+> the `SECUREFILE` constant of `app/config/settings.php`. `teampass-seckey.txt` is only the legacy
+> name still found on installs upgraded from older versions. To resolve it on your server:
+> ```bash
+> grep -oP 'define\("SECUREFILE",\s*"\K[^"]+' /path/to/teampass/app/config/settings.php
+> ```
 
 ---
 
@@ -122,9 +129,28 @@ The Defuse encryption master key must be stored **outside the webroot** (`public
 | Path | Recommended perms | Notes |
 |------|------------------|-------|
 | `secrets/` | `0750`, owned by web server user | Readable by the web server — must not be web-accessible |
-| `secrets/teampass-seckey.txt` | `0600` | The key file itself — owner read-only |
+| `secrets/<SECUREFILE>` | `0600` | The key file itself — owner read/write, **no access for group or others** |
 
 > :warning: **`secrets/` must not be inside `public/`.** It lives at the project root, one level above the webroot, and is therefore unreachable via HTTP. In Docker deployments the key is stored at `/var/www/html/secrets/`.
+
+> :bulb: **`0600` and not `0400`.** At runtime Teampass only *reads* the key file, so `0400` also
+> works — but it is not a real boundary: when the owner is the web server user, that same process
+> can `chmod` the file back to `rw` at will. What protects the key is the empty group/other bits
+> plus `0750` on `secrets/`. Write access is needed when the installer *creates* the key, and when
+> the upgrade wizard migrates a legacy `teampass-seckey.txt` (copy + rename) — the latter needs
+> write on the **directory**, not on the file.
+>
+> For real defense-in-depth, apply the hardened split-owner model to the key as well — the web
+> server can then read the key but never rewrite or replace it:
+> ```bash
+> TEAMPASS=/var/www/html/teampass
+> SECKEY=$(grep -oP 'define\("SECUREFILE",\s*"\K[^"]+' ${TEAMPASS}/app/config/settings.php)
+>
+> sudo chown root:www-data ${TEAMPASS}/secrets ${TEAMPASS}/secrets/${SECKEY}
+> sudo chmod 0750 ${TEAMPASS}/secrets            # web server: r-x → cannot create/rename/delete
+> sudo chmod 0640 ${TEAMPASS}/secrets/${SECKEY}  # web server: read only, and cannot chmod it
+> ```
+> Restore write access temporarily before re-running the installer.
 
 ---
 
@@ -204,10 +230,12 @@ sudo chmod 0750 ${TEAMPASS}/storage/upload
 sudo chmod 0750 ${TEAMPASS}/storage/backups
 sudo chmod 0750 ${TEAMPASS}/public/assets/avatars
 sudo chmod 0750 ${TEAMPASS}/app/includes/libraries/csrfp/log
+sudo chmod 0750 ${TEAMPASS}/app/websocket/logs
 
 # ── Encryption key directory ──────────────────────────────────────────────────
+SECKEY=$(grep -oP 'define\("SECUREFILE",\s*"\K[^"]+' ${TEAMPASS}/app/config/settings.php)
 sudo chmod 0750 ${TEAMPASS}/secrets
-sudo chmod 0600 ${TEAMPASS}/secrets/teampass-seckey.txt
+sudo chmod 0600 ${TEAMPASS}/secrets/${SECKEY}
 ```
 
 ### RHEL / AlmaLinux / Rocky Linux (SELinux environments)
@@ -299,17 +327,26 @@ stat -c "%a %n" \
     ${TEAMPASS}/storage/upload \
     ${TEAMPASS}/storage/backups \
     ${TEAMPASS}/public/assets/avatars \
-    ${TEAMPASS}/app/includes/libraries/csrfp/log
+    ${TEAMPASS}/app/includes/libraries/csrfp/log \
+    ${TEAMPASS}/app/websocket/logs
 
 echo "=== Encryption key directory (expect 750) ==="
 stat -c "%a %n" ${TEAMPASS}/secrets
 
 echo "=== Encryption key file (expect 600) ==="
-stat -c "%a %n" ${TEAMPASS}/secrets/teampass-seckey.txt
+SECKEY=$(grep -oP 'define\("SECUREFILE",\s*"\K[^"]+' ${TEAMPASS}/app/config/settings.php)
+stat -c "%a %n" ${TEAMPASS}/secrets/${SECKEY}
 
 echo "=== World-writable check (expect no output) ==="
-find ${TEAMPASS} -not -path "*/vendor/*" -perm -o+w -ls
+find ${TEAMPASS} -not -path "*/vendor/*" ! -type l -perm -o+w -ls
 ```
+
+> :information_source: **Why `! -type l` in the last check.** `public/includes/language/datatables.*.txt`
+> are symbolic links to `app/includes/language/` (DataTables loads its translation file over HTTP, so
+> it must exist under the webroot while the real file stays in `app/`). On Linux a symlink's own mode
+> is always `0777` and is **never** used for access control — the kernel checks the target's
+> permissions — and `chmod` follows the link, so those bits cannot be changed. Excluding symlinks
+> removes those false positives while still auditing every real file.
 
 ---
 
@@ -378,5 +415,5 @@ sudo -u ${WEB_USER} php ${TEAMPASS}/app/scripts/background_tasks___handler.php
 | `storage/upload/` | optional writable | — | write | `0750` |
 | `storage/backups/` | optional writable | write | write | `0750` |
 | `secrets/` | **required readable** | write | read | `0750` |
-| `secrets/teampass-seckey.txt` | **required readable** | write | read | `0600` |
+| `secrets/<SECUREFILE>` | **required readable** | write | read | `0600` |
 | `app/websocket/logs/` *(WebSocket)* | — | — | write (daemon) | `0750` |

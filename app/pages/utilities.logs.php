@@ -83,8 +83,10 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 // --------------------------------- //
 
 // KB feature toggle
-$kbEnabled = isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_kb'] === 1;
+// Knowledge base logs are an administrator only maintenance area (see kb.queries.php), while the
+// logs page itself is also granted to managers.
 $isAdmin = $session->has('user-admin') && (int) $session->get('user-admin') === 1;
+$kbEnabled = isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_kb'] === 1 && $isAdmin === true;
 
 
 ?>

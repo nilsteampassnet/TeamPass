@@ -166,7 +166,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 if (data.error === true) {
                     toastr.remove();
                     toastr.error(
-                        '<i class="fa-solid fa-exclamation-circle fa-lg mr-2"></i>Message: ' + data.message,
+                        '<i class="fa-solid fa-exclamation-circle fa-lg mr-2"></i>Message: ' + htmlEncode(data.message),
                         '', {
                             timeOut: 10000,
                             progressBar: true
@@ -207,9 +207,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     uploader_csv.bind("Error", function(up, err) {
         $('#import-csv-upload-pickfile-list-csv')
             .removeClass('hidden')
-            .html("<div class='ui-state-error ui-corner-all'>Error: " + err.code +
-                ", Message: " + err.message +
-                (err.file ? ", File: " + err.file.name : "") +
+            // err.file.name is the name the user gave the file they picked.
+            .html("<div class='ui-state-error ui-corner-all'>Error: " + htmlEncode(err.code) +
+                ", Message: " + htmlEncode(err.message) +
+                (err.file ? ", File: " + htmlEncode(err.file.name) : "") +
                 "</div>"
             );
         up.splice(); // Clear the file queue
@@ -351,7 +352,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 if (data.error == true) {
                     toastr.remove();
                     toastr.error(
-                        '<i class="fa-solid fa-ban fa-lg mr-2"></i>' + data.message,
+                        '<i class="fa-solid fa-ban fa-lg mr-2"></i>' + htmlEncode(data.message),
                         '', {
                             timeOut: 10000,
                             closeButton: true,
@@ -862,7 +863,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 if (data.error === true) {
                     toastr.remove();
                     toastr.error(
-                        '<i class="fa-solid fa-exclamation-circle fa-lg mr-2"></i>Message: ' + data.message,
+                        '<i class="fa-solid fa-exclamation-circle fa-lg mr-2"></i>Message: ' + htmlEncode(data.message),
                         '', {
                             timeOut: 10000,
                             closeButton: true,
@@ -896,7 +897,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             },
             Error: function(up, err) {
                 toastr.warning(
-                    err.message + (err.file ? ' (' + err.file.name + ')' : ''),
+                    htmlEncode(err.message) + (err.file ? ' (' + htmlEncode(err.file.name) + ')' : ''),
                     '<?php echo $lang->get('caution'); ?>',
                     {
                         timeOut: 4000,
@@ -911,9 +912,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     uploader_keepass.bind("Error", function(up, err) {
         $('#import-csv-keepass-pickfile-list-keepass')
             .removeClass('hidden')
-            .html("<div class='ui-state-error ui-corner-all'>Error: " + err.code +
-                ", Message: " + err.message +
-                (err.file ? ", File: " + err.file.name : "") +
+            // err.file.name is the name the user gave the file they picked.
+            .html("<div class='ui-state-error ui-corner-all'>Error: " + htmlEncode(err.code) +
+                ", Message: " + htmlEncode(err.message) +
+                (err.file ? ", File: " + htmlEncode(err.file.name) : "") +
                 "</div>"
             );
         up.splice(); // Clear the file queue
@@ -1267,7 +1269,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 if (data.error === true) {
                     toastr.remove();
                     toastr.error(
-                        '<i class="fa-solid fa-exclamation-circle fa-lg mr-2"></i>Message: ' + data.message,
+                        '<i class="fa-solid fa-exclamation-circle fa-lg mr-2"></i>Message: ' + htmlEncode(data.message),
                         '', {
                             timeOut: 10000,
                             closeButton: true,
@@ -1297,7 +1299,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     });
     uploader_mgr.bind("Error", function(up, err) {
         toastr.warning(
-            err.message + (err.file ? ' (' + err.file.name + ')' : ''),
+            htmlEncode(err.message) + (err.file ? ' (' + htmlEncode(err.file.name) + ')' : ''),
             '<?php echo addslashes($lang->get('caution')); ?>',
             { timeOut: 4000, progressBar: true }
         );
@@ -1335,7 +1337,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 if (data.error === true) {
                     toastr.remove();
                     toastr.error(
-                        '<i class="fa-solid fa-ban fa-lg mr-2"></i>' + data.message,
+                        '<i class="fa-solid fa-ban fa-lg mr-2"></i>' + htmlEncode(data.message),
                         '', {
                             timeOut: 10000,
                             closeButton: true,

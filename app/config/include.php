@@ -27,8 +27,8 @@
  */
 
 define('TP_VERSION', '3.2.1');
-define("UPGRADE_MIN_DATE", "1786454078");
-define('TP_VERSION_MINOR', '6');
+define("UPGRADE_MIN_DATE", "1787041944");
+define('TP_VERSION_MINOR', '7');
 define('TP_TOOL_NAME', 'Teampass');
 define('TP_ONE_DAY_SECONDS', 86400);
 define('TP_ONE_WEEK_SECONDS', 604800);
@@ -143,6 +143,7 @@ $mngPages = array(
     '2fa' => '2fa.php',
     'ldap' => 'ldap.php',
     'emails' => 'emails.php',
+    'emails_templates' => 'emails_templates.php',
     'backups' => 'backups.php',
     'api' => 'api.php',
     'fields' => 'fields.php',

@@ -44,6 +44,7 @@ use TeampassClasses\EmailService\EmailSettings;
 // Load functions
 require_once 'main.functions.php';
 require_once 'find.functions.php';
+require_once 'classification.functions.php';
 
 // init
 loadClasses('DB');
@@ -812,12 +813,23 @@ switch ($inputData['type']) {
                         $cpt = 0;
                         foreach ($post_diffusion_list as $emailAddress) {
                             if (empty($emailAddress) === false) {
+                                // Both marker forms are substituted: the shipped
+                                // templates historically use '#label' and '#link'
+                                // without their closing '#', while the canonical
+                                // form the administration page inserts is
+                                // '#label#' / '#link#'. Longest first, so the
+                                // canonical form is never eaten by the legacy one.
                                 prepareSendingEmail(
                                     $lang->get('email_subject_item_updated'),
                                     str_replace(
-                                        array('#label', '#link'),
-                                            array($path, $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . $inputData['folderId'] . '&id=' . strval($newID) . strval($lang->get('email_body3'))),
-                                            $lang->get('new_item_email_body')
+                                        array('#label#', '#label', '#link#', '#link'),
+                                        array(
+                                            $path,
+                                            $path,
+                                            $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . $inputData['folderId'] . '&id=' . strval($newID),
+                                            $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . $inputData['folderId'] . '&id=' . strval($newID),
+                                        ),
+                                        $lang->get('new_item_email_body')
                                     ),
                                     $emailAddress,
                                     $post_diffusion_list_names[$cpt]
@@ -7564,6 +7576,19 @@ switch ($inputData['type']) {
                     $tmp = explode(' => ', $reason[1]);
                     $detail = empty(trim($tmp[0])) === true ?
                         $lang->get('no_previous_value') : $lang->get('previous_value') . ': <span class="font-weight-light">' . $tmp[0] . ' </span>';
+                } elseif ($reason[0] === 'at_classification_changed') {
+                    // Reason is '<previous level> => <new level>'; legacy
+                    // entries only carry the new level.
+                    $tmp = array_map('trim', explode('=>', (string) ($reason[1] ?? '0')));
+                    if (count($tmp) > 1) {
+                        $detail = $lang->get('from') . ' <span class="font-weight-light">'
+                            . $lang->get(classificationLabelKey((int) $tmp[0])) . '</span> '
+                            . $lang->get('to') . ' <span class="font-weight-light">'
+                            . $lang->get(classificationLabelKey((int) $tmp[1])) . '</span>';
+                    } else {
+                        $detail = '<span class="font-weight-light">'
+                            . $lang->get(classificationLabelKey((int) $tmp[0])) . '</span>';
+                    }
                 } elseif ($reason[0] === 'at_automatic_del') {
                     $detail = $lang->get($reason[1]);
                 } elseif ($reason[0] === 'at_anyoneconmodify' || $reason[0] === 'at_otp_status' || $reason[0] === 'at_otp_secret' || $reason[0] === 'at_phone_number') {

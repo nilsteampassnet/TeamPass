@@ -227,7 +227,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         return '<i class="fas fa-square text-success"></i>';
                     } else {
                         // The task error message is built from exception text, which can carry
-                        // quotes. simplePurifier() drops tags but returns plain text, so a quote
+                        // quotes. purifyServerData() drops tags but returns plain text, so a quote
                         // would close this title attribute — encode instead of purifying.
                         return '<i class="fas fa-square text-danger" title="'+htmlEncode(row[0])+'" style="cursor: pointer;"></i>';
                     }

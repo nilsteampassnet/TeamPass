@@ -78,8 +78,12 @@ if (
 $requestType = htmlspecialchars((string) $request->request->get('type', $request->query->get('type', '')), ENT_QUOTES, 'UTF-8');
 $adminMaintenanceTypes = ['load_deleted_kbs', 'restore_deleted_kbs', 'purge_deleted_kbs', 'datatables_logs', 'purge_logs'];
 if (in_array($requestType, $adminMaintenanceTypes, true) === true) {
+    // Only the page level right is checked here: utilities.deletion and utilities.logs are also
+    // granted to managers. The administrator only restriction on these maintenance actions is
+    // enforced by kbIsAdmin() in each case, which answers with a clean error instead of running
+    // error.php (which destroys the session and shows a misleading "session expired" message).
     $requiredPage = in_array($requestType, ['datatables_logs', 'purge_logs'], true) ? 'utilities.logs' : 'utilities.deletion';
-    if ((int) $session->get('user-admin') !== 1 || $checkUserAccess->userAccessPage($requiredPage) === false) {
+    if ($checkUserAccess->userAccessPage($requiredPage) === false) {
         $session->set('system-error_code', ERR_NOT_ALLOWED);
         include TEAMPASS_ROOT . '/public/error.php';
         exit;
