@@ -405,9 +405,10 @@ gh release create <VERSION> \
 
 ## 9. After publishing
 
-- `docker-publish.yml` (push to `master`/`develop`, tags, release, manual dispatch) and
-  `docker-image.yml` (release published) build and push the
-  images. Check both runs: `gh run list --repo nilsteampassnet/TeamPass --limit 5`.
+- `docker-publish.yml` (push to `master`/`develop`, tags, release, manual dispatch) builds and
+  pushes the images, to Docker Hub and GHCR. A release fires it twice, once on the tag push and
+  once on `release: published`. Check the runs:
+  `gh run list --repo nilsteampassnet/TeamPass --limit 5`.
 - Confirm the release is visible and correctly flagged:
   `gh release view <VERSION> --repo nilsteampassnet/TeamPass --json name,isPrerelease`.
 - **Read the Trivy outcome.** `docker-publish.yml` scans the freshly built image and uploads the
