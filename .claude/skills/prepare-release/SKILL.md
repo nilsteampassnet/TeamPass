@@ -99,10 +99,14 @@ Checks 8 and 9 of the release gate (§3) verify points 3 automatically.
 scripts/release_check.sh "$BASE"
 ```
 
-Nine checks: version constants, PHPStan (level from `phpstan.neon`), PHPUnit, PHP lint on
+Ten checks: version constants, PHPStan (level from `phpstan.neon`), PHPUnit, PHP lint on
 changed files, shell lint, debug-leftover scan on added lines, EN/FR language parity,
 installer-vs-upgrade admin-setting seed parity, installer `CREATE TABLE` → `install.js`
-registration. Exit code is non-zero on any failure; warnings never fail the run.
+registration, and shipped-autoloader integrity (every file required by
+`app/vendor/composer/autoload_files.php` must be in the archive, or it fatals on every
+request — added when 3.2.1.7 was found to carry that break). Check 10 reads the **committed**
+copies, not the working tree, so a local `composer install` does not disturb it and the gate
+runs green in the normal dev state. Exit code is non-zero on any failure; warnings never fail the run.
 
 **Failures block the release. Warnings are triaged, not ignored** — each one is either fixed
 or explicitly justified to the user.
@@ -300,7 +304,9 @@ the stale one. Run this after the merge instead:
 ```bash
 rm -rf app/vendor/phpstan app/vendor/phpunit app/vendor/symfony/cache
 composer install
-git checkout -- app/vendor/composer/
+php app/vendor/phpunit/phpunit/phpunit          # expect: OK (1344 tests, 38419 assertions)
+php app/vendor/bin/phpstan analyse --memory-limit=2G
+git checkout -- app/vendor/composer/            # LAST — see below, it disarms the toolchain
 ```
 
 The `rm -rf` is **not** optional, and it is the part nobody guesses. Those three packages keep
@@ -313,16 +319,19 @@ with `Could not scan for classes inside ".../symfony/cache/Traits/ValueWrapper.p
 not appear to be a file nor a folder`, leaving the autoloader ungenerated. Deleting a directory
 that happens to be already gone costs nothing; missing one breaks the whole install.
 
-The third line discards pure churn: `composer install` always rewrites `autoload_classmap.php`,
-`autoload_real.php` and `autoload_static.php` (a randomly regenerated `apcuPrefix`, plus three
-`Xdebug*` classmap entries absent from the committed tree). Never commit it.
+**The order of those last three lines is not free, and it changed in 3.2.1.7.** The committed
+`app/vendor/composer/` is now the **production** autoloader (`composer install --no-dev`), because
+the archive is built from the index and must not require dev files it does not carry — see check 10
+of the release gate. `composer install` rewrites those seven tracked files into their *dev* form,
+which is what makes PHPUnit and PHPStan runnable at all; `git checkout -- app/vendor/composer/`
+puts the production form back. So run the toolchain **between** the two, never after: with the
+production autoloader on disk, `php app/vendor/phpunit/phpunit/phpunit` dies with
+`Class "PHPUnit\TextUI\Application" not found` even though the package sits right there.
 
-Then re-verify the toolchain, which the deletion had disarmed:
-
-```bash
-php app/vendor/phpunit/phpunit/phpunit          # expect: OK (1318 tests, 38189 assertions)
-php app/vendor/bin/phpstan analyse --memory-limit=2G
-```
+That `git checkout` is still mandatory before committing anything or regenerating the checksums —
+committing the dev autoloader is exactly the bug 3.2.1.7 had to fix, and it fatals every
+installation. The same rule holds outside a release: to run the suite locally, `composer install`
+first, and restore `app/vendor/composer/` before you commit.
 
 ```bash
 git checkout master
@@ -426,6 +435,8 @@ gh release create <VERSION> \
 
 | Trap | Consequence |
 |---|---|
+| Committing the dev autoloader (`app/vendor/composer/` after a plain `composer install`) | The archive requires dev files it does not carry ⇒ **PHP fatal on every request**, fresh installs and upgrades alike (Docker is spared). Gate check 10 |
+| Running the test suite after `git checkout -- app/vendor/composer/` | The production autoloader cannot load PHPUnit ⇒ `Class "PHPUnit\TextUI\Application" not found`, with the package present |
 | Regenerating checksums before the last commit | `files_reference.txt` is stale ⇒ integrity check reports false mismatches |
 | Forgetting `app/files_reference.txt` | The app reads that copy — the root file alone changes nothing at runtime |
 | Regenerating with `public/install/` renamed to `install1` | 68 installer entries silently missing from the reference file (the script now refuses) |

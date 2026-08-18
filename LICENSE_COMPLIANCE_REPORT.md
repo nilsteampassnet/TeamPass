@@ -1,6 +1,6 @@
 # Teampass License Compliance Report
 
-**Generated:** 2026-07-17 16:21:28
+**Generated:** 2026-08-18 08:28:46
 **Project License:** GNU General Public License v3.0
 
 ## PHP Dependencies (Composer)
@@ -11,7 +11,7 @@
 | brick/math | 0.12.3 | MIT | ✅ Compatible |
 | carbonphp/carbon-doctrine-types | 3.2.0 | MIT | ✅ Compatible |
 | cboden/ratchet | v0.4.4 | MIT | ✅ Compatible |
-| composer/ca-bundle | 1.5.12 | MIT | ✅ Compatible |
+| composer/ca-bundle | 1.5.13 | MIT | ✅ Compatible |
 | composer/class-map-generator | 1.7.3 | MIT | ✅ Compatible |
 | composer/composer | 2.10.2 | MIT | ✅ Compatible |
 | composer/metadata-minifier | 1.0.1 | MIT | ✅ Compatible |
@@ -25,16 +25,16 @@
 | doctrine/inflector | 2.1.0 | MIT | ✅ Compatible |
 | doctrine/lexer | 3.0.1 | MIT | ✅ Compatible |
 | dragonmantank/cron-expression | v3.6.0 | MIT | ✅ Compatible |
-| duosecurity/duo_universal_php | 1.1.2 | BSD-3-Clause | ✅ Compatible |
+| duosecurity/duo_universal_php | 1.2.0 | BSD-3-Clause | ✅ Compatible |
 | egulias/email-validator | 4.0.4 | MIT | ✅ Compatible |
 | elegantweb/sanitizer | v2.4.0 | MIT | ✅ Compatible |
 | evenement/evenement | v3.0.2 | MIT | ✅ Compatible |
-| ezimuel/php-secure-session | dev-sec/composer-update | BSD-3-Clause | ✅ Compatible |
+| ezimuel/php-secure-session | dev-composer-update | BSD-3-Clause | ✅ Compatible |
 | ezyang/htmlpurifier | v4.19.0 | LGPL-2.1-or-later | ✅ Compatible |
 | firebase/php-jwt | v7.1.0 | BSD-3-Clause | ✅ Compatible |
 | goodby/csv | 1.3.0 | MIT | ✅ Compatible |
-| guzzlehttp/guzzle | 7.14.2 | MIT | ✅ Compatible |
-| guzzlehttp/promises | 2.5.1 | MIT | ✅ Compatible |
+| guzzlehttp/guzzle | 7.15.3 | MIT | ✅ Compatible |
+| guzzlehttp/promises | 2.5.2 | MIT | ✅ Compatible |
 | guzzlehttp/psr7 | 2.13.0 | MIT | ✅ Compatible |
 | hackzilla/password-generator | 1.7.0 | MIT | ✅ Compatible |
 | illuminate/collections | v10.49.0 | MIT | ✅ Compatible |
@@ -57,7 +57,7 @@
 | paragonie/random_compat | v9.99.100 | MIT | ✅ Compatible |
 | peppeocchi/php-cron-scheduler | v4.0 | MIT | ✅ Compatible |
 | phpmailer/phpmailer | v6.12.0 | LGPL-2.1-only | ✅ Compatible |
-| phpseclib/phpseclib | 3.0.55 | MIT | ✅ Compatible |
+| phpseclib/phpseclib | 3.0.56 | MIT | ✅ Compatible |
 | psr/cache | 3.0.0 | MIT | ✅ Compatible |
 | psr/clock | 1.0.0 | MIT | ✅ Compatible |
 | psr/container | 2.0.2 | MIT | ✅ Compatible |
@@ -77,20 +77,20 @@
 | react/stream | v1.4.0 | MIT | ✅ Compatible |
 | robthree/twofactorauth | v2.1.0 | MIT | ✅ Compatible |
 | seld/jsonlint | 1.12.1 | MIT | ✅ Compatible |
-| seld/phar-utils | 1.2.1 | MIT | ✅ Compatible |
+| seld/phar-utils | 1.2.2 | MIT | ✅ Compatible |
 | seld/signal-handler | 2.0.2 | MIT | ✅ Compatible |
 | sergeytsalkov/meekrodb | v2.5.2 | LGPL-3.0 | ✅ Compatible |
 | spomky-labs/otphp | 11.5.0 | MIT | ✅ Compatible |
-| symfony/console | v6.4.42 | MIT | ✅ Compatible |
+| symfony/console | v6.4.43 | MIT | ✅ Compatible |
 | symfony/contracts | v3.7.2 | MIT | ✅ Compatible |
-| symfony/filesystem | v7.4.11 | MIT | ✅ Compatible |
+| symfony/filesystem | v7.4.15 | MIT | ✅ Compatible |
 | symfony/finder | v6.4.42 | MIT | ✅ Compatible |
-| symfony/http-foundation | v6.4.42 | MIT | ✅ Compatible |
-| symfony/mime | v6.4.41 | MIT | ✅ Compatible |
+| symfony/http-foundation | v6.4.43 | MIT | ✅ Compatible |
+| symfony/mime | v6.4.43 | MIT | ✅ Compatible |
 | symfony/password-hasher | v6.4.32 | MIT | ✅ Compatible |
 | symfony/polyfill-ctype | v1.37.0 | MIT | ✅ Compatible |
 | symfony/polyfill-iconv | v1.37.0 | MIT | ✅ Compatible |
-| symfony/polyfill-intl-grapheme | v1.38.1 | MIT | ✅ Compatible |
+| symfony/polyfill-intl-grapheme | v1.41.0 | MIT | ✅ Compatible |
 | symfony/polyfill-intl-idn | v1.38.1 | MIT | ✅ Compatible |
 | symfony/polyfill-intl-normalizer | v1.38.0 | MIT | ✅ Compatible |
 | symfony/polyfill-mbstring | v1.38.2 | MIT | ✅ Compatible |
@@ -98,27 +98,27 @@
 | symfony/polyfill-php73 | v1.37.0 | MIT | ✅ Compatible |
 | symfony/polyfill-php80 | v1.37.0 | MIT | ✅ Compatible |
 | symfony/polyfill-php81 | v1.38.1 | MIT | ✅ Compatible |
-| symfony/polyfill-php83 | v1.38.2 | MIT | ✅ Compatible |
+| symfony/polyfill-php83 | v1.41.0 | MIT | ✅ Compatible |
 | symfony/polyfill-php84 | v1.38.1 | MIT | ✅ Compatible |
 | symfony/process | v6.4.41 | MIT | ✅ Compatible |
-| symfony/routing | v6.4.41 | MIT | ✅ Compatible |
-| symfony/string | v7.4.13 | MIT | ✅ Compatible |
+| symfony/routing | v6.4.43 | MIT | ✅ Compatible |
+| symfony/string | v7.4.15 | MIT | ✅ Compatible |
 | symfony/translation | v6.4.42 | MIT | ✅ Compatible |
-| teampassclasses/configmanager | dev-sec/composer-update | GPL-3.0-only | ✅ Compatible |
-| teampassclasses/cryptomanager | dev-sec/composer-update | GPL-3.0-only | ✅ Compatible |
-| teampassclasses/emailservice | dev-sec/composer-update | GPL-3.0-only | ✅ Compatible |
-| teampassclasses/encryption | dev-sec/composer-update | GPL-3.0-only | ✅ Compatible |
-| teampassclasses/folderservices | dev-sec/composer-update | GPL-3.0-only | ✅ Compatible |
-| teampassclasses/importformat | dev-sec/composer-update | GPL-3.0-only | ✅ Compatible |
-| teampassclasses/language | dev-sec/composer-update | GPL-3.0-only | ✅ Compatible |
-| teampassclasses/ldapextra | dev-sec/composer-update | GPL-3.0-only | ✅ Compatible |
-| teampassclasses/nestedtree | dev-sec/composer-update | GPL-3.0-only | ✅ Compatible |
-| teampassclasses/oauth2controller | dev-sec/composer-update | GPL-3.0-only | ✅ Compatible |
-| teampassclasses/passwordgeneratorservice | dev-sec/composer-update | GPL-3.0-only | ✅ Compatible |
-| teampassclasses/passwordmanager | dev-sec/composer-update | GPL-3.0-only | ✅ Compatible |
-| teampassclasses/performchecks | dev-sec/composer-update | GPL-3.0-only | ✅ Compatible |
-| teampassclasses/sessionmanager | dev-sec/composer-update | GPL-3.0-only | ✅ Compatible |
-| teampassclasses/superglobal | dev-sec/composer-update | GPL-3.0-only | ✅ Compatible |
+| teampassclasses/configmanager | dev-composer-update | GPL-3.0-only | ✅ Compatible |
+| teampassclasses/cryptomanager | dev-composer-update | GPL-3.0-only | ✅ Compatible |
+| teampassclasses/emailservice | dev-composer-update | GPL-3.0-only | ✅ Compatible |
+| teampassclasses/encryption | dev-composer-update | GPL-3.0-only | ✅ Compatible |
+| teampassclasses/folderservices | dev-composer-update | GPL-3.0-only | ✅ Compatible |
+| teampassclasses/importformat | dev-composer-update | GPL-3.0-only | ✅ Compatible |
+| teampassclasses/language | dev-composer-update | GPL-3.0-only | ✅ Compatible |
+| teampassclasses/ldapextra | dev-composer-update | GPL-3.0-only | ✅ Compatible |
+| teampassclasses/nestedtree | dev-composer-update | GPL-3.0-only | ✅ Compatible |
+| teampassclasses/oauth2controller | dev-composer-update | GPL-3.0-only | ✅ Compatible |
+| teampassclasses/passwordgeneratorservice | dev-composer-update | GPL-3.0-only | ✅ Compatible |
+| teampassclasses/passwordmanager | dev-composer-update | GPL-3.0-only | ✅ Compatible |
+| teampassclasses/performchecks | dev-composer-update | GPL-3.0-only | ✅ Compatible |
+| teampassclasses/sessionmanager | dev-composer-update | GPL-3.0-only | ✅ Compatible |
+| teampassclasses/superglobal | dev-composer-update | GPL-3.0-only | ✅ Compatible |
 | tecnickcom/tcpdf | 6.11.3 | LGPL-3.0-or-later | ✅ Compatible |
 | thenetworg/oauth2-azure | v2.2.6 | MIT | ✅ Compatible |
 | tiben/crontab-manager | v1.4.0 | Apache-2.0 | ✅ Compatible |
@@ -172,4 +172,4 @@ php _tools/licences/compliance-checker.php
 
 ---
 
-*Auto-generated report - Last updated: 2026-07-17 16:21:28*
+*Auto-generated report - Last updated: 2026-08-18 08:28:46*

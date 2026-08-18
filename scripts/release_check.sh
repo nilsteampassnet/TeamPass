@@ -15,6 +15,8 @@
 #      script for the current version
 #   9. Installer table registration: every CREATE TABLE method in run.step5.php
 #      must be registered as an action in install.js
+#  10. Shipped autoloader integrity: every file required by autoload_files.php
+#      must be tracked, or the release archive fatals on every request
 #
 # Usage:
 #   scripts/release_check.sh [<base-ref>]
@@ -217,6 +219,46 @@ if [ -f "$INSTALL_STEP" ] && [ -f "$INSTALL_JS" ]; then
     fi
 else
     warn "Could not check installer table registration (files missing)"
+fi
+
+# 10. --------------------------------------------------------------------------
+hdr "10. Shipped autoloader integrity (app/vendor/composer)"
+AUTOLOAD_FILES="app/vendor/composer/autoload_files.php"
+INSTALLED_JSON="app/vendor/composer/installed.json"
+# Read the committed copies, never the working tree: the archive is built from the
+# index, and a local `composer install` legitimately rewrites these files into their
+# dev form so that PHPUnit and PHPStan can run. Only what is committed ships.
+if git cat-file -e "HEAD:$AUTOLOAD_FILES" 2>/dev/null; then
+    # Every entry of autoload_files.php is `require`d unconditionally by
+    # autoload_real.php, so a file missing from the archive is a fatal error on
+    # every request of a fresh install or an upgrade.
+    git ls-tree -r --name-only HEAD app/vendor > "$TMP/tracked_vendor.txt"
+    git show "HEAD:$AUTOLOAD_FILES" > "$TMP/autoload_files.php"
+    sed -n "s/.*\$vendorDir \. '\/\([^']*\)'.*/app\/vendor\/\1/p" "$TMP/autoload_files.php" > "$TMP/autoload_needs.txt"
+    sed -n "s/.*\$baseDir \. '\/\([^']*\)'.*/\1/p" "$TMP/autoload_files.php" >> "$TMP/autoload_needs.txt"
+    MISSING_FROM_ARCHIVE=""
+    while IFS= read -r f; do
+        [ -z "$f" ] && continue
+        grep -qxF "$f" "$TMP/tracked_vendor.txt" && continue
+        git cat-file -e "HEAD:$f" 2>/dev/null && continue
+        MISSING_FROM_ARCHIVE="$MISSING_FROM_ARCHIVE $f"
+    done < "$TMP/autoload_needs.txt"
+    if [ -z "$MISSING_FROM_ARCHIVE" ]; then
+        pass "Every file required by the committed autoload_files.php is in the archive"
+    else
+        fail "The committed autoload_files.php requires files absent from the archive — it fatals on every request:"
+        for f in $MISSING_FROM_ARCHIVE; do echo "      $f"; done
+        echo "      Fix: composer install --no-dev, then commit app/vendor/composer/"
+    fi
+else
+    warn "Could not check the shipped autoloader ($AUTOLOAD_FILES not committed)"
+fi
+if git cat-file -e "HEAD:$INSTALLED_JSON" 2>/dev/null; then
+    if git show "HEAD:$INSTALLED_JSON" | grep -qE '"dev": *true'; then
+        warn "The committed installed.json advertises the dev dependencies (\"dev\": true) — scanners report CVEs for packages that are not shipped. Fix: composer install --no-dev"
+    else
+        pass "The committed installed.json describes a production install"
+    fi
 fi
 
 # --- Summary -------------------------------------------------------------------
