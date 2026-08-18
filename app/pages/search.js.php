@@ -82,10 +82,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
 
 <script type="text/javascript">
-    var pwdClipboard,
-        loginClipboard,
-        urlClipboard;
-
     // Current facet selection. Sent as one JSON blob so the server can
     // validate it against its own allow-lists in a single place.
     var searchFilters = {}
@@ -192,6 +188,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     }
 
     //Launch the datatables pluggin
+    // Mass operation drives the selection column: without it the column would
+    // sit empty on every row.
+    const massOperationEnabled = <?php echo (int) ($SETTINGS['enable_massive_move_delete'] ?? 0) === 1 ? 'true' : 'false'; ?>;
+
     var oTable = $("#search-results-items").DataTable({
         "paging": true,
         "lengthMenu": [
@@ -217,6 +217,12 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         },
         "stateLoadParams": function (settings, data) {
             restoreFilters(data.tpFilters)
+            // Column visibility is part of the saved state: a state written
+            // before an admin turned mass operation off would bring the empty
+            // selection column back.
+            if (data.columns !== undefined && data.columns[0] !== undefined) {
+                data.columns[0].visible = massOperationEnabled
+            }
         },
         "autoWidth": true,
         "ajax": {
@@ -238,19 +244,31 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         "language": {
             "url": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $session->get('user-language'); ?>.txt"
         },
+        // Column 0 carries the mass-operation checkbox, the last one the row
+        // actions; neither is sortable. Indexes 1..6 must stay put: the server
+        // maps them to SQL columns in searchSortColumnMap() - hence hiding the
+        // selection column rather than dropping it when the feature is off,
+        // which would shift every index by one.
+        // 'all' keeps both out of the Responsive collapse: one is the only way
+        // to select a row, the other holds no flow content to measure.
         "columns": [{
-                "width": "70px",
-                class: "details-control",
+                class: "search-col-select all",
+                orderable: false,
+                visible: massOperationEnabled,
                 defaultContent: ""
             },
+            // The six content columns now claim the whole width: with the two
+            // technical columns reduced to nothing, leftover space would
+            // otherwise be handed back to them.
             {
-                "width": "15%"
+                "width": "15%",
+                responsivePriority: 1
             },
             {
                 "width": "10%"
             },
             {
-                "width": "25%"
+                "width": "35%"
             },
             {
                 "width": "10%"
@@ -260,6 +278,12 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             },
             {
                 "width": "15%"
+            },
+            {
+                "width": "1px",
+                class: "search-col-actions all",
+                orderable: false,
+                defaultContent: ""
             }
         ],
         "drawCallback": function() {
@@ -437,285 +461,354 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
       'json'
     )
 
-    var detailRows = [];
+    // -----------------------------------------------------------------
+    // Result rows: quick actions + detail modal
+    //
+    // The detail used to be injected as a DataTables child row. That collided
+    // with the Responsive extension (it drives row.child() too) and pushed
+    // every row below out of place. It now opens in a dedicated modal, and the
+    // three gestures a user actually performs after a search - copy the login,
+    // copy the password, jump to the item - are one click away on the row.
+    // -----------------------------------------------------------------
 
-    $("#search-results-items tbody").on('click', '.item-detail', function() {
-        var tr = $(this).closest('tr');
-        var row = oTable.row(tr);
-        var idx = $.inArray(tr.attr('id'), detailRows);
-        var itemGlobal = row.data();
-        var item = $(this);
+    const MASKED_PASSWORD = '<?php echo $var['hidden_asterisk']; ?>';
 
-        if (row.child.isShown()) {
-            row.child.hide();
-
-            // Change eye icon
-            $(this)
-                .removeClass('fa-eye-slash text-warning')
-                .addClass('fa-eye');
-
-            // Remove from the 'open' array
-            detailRows.splice(idx, 1);
-        } else {
-            // Remove existing one
-            if ($('.new-row').length > 0) {
-                $('.new-row').remove();
-
-                // Change eye icon
-                var eyeIcon = $('.item-detail').closest('i.fa-eye-slash');
-                eyeIcon
-                    .removeClass('fa-eye-slash text-warning')
-                    .addClass('fa-eye');
+    // Copy a value, warn the user, and schedule the clipboard purge when the
+    // instance is configured for it. Same behaviour as the item card.
+    const copySearchValue = async (value, isSecret) => {
+        try {
+            if (await tpClipboardCopy(value) === false) {
+                throw new Error('Clipboard unavailable');
             }
+        } catch (error) {
+            toastr.remove();
+            toastr.error('<?php echo $lang->get('clipboard_error'); ?>', '', {
+                timeOut: 3000,
+                positionClass: 'toast-bottom-right',
+                progressBar: true
+            });
+            return;
+        }
 
-            // Change eye icon
-            $(this)
-                .removeClass('fa-eye')
-                .addClass('fa-eye-slash text-warning');
+        const clipboardDuration = parseInt(store.get('teampassSettings').clipboard_life_duration) || 0;
+        toastr.remove();
 
-            // Add loader
-            $(this)
-                .after('<i class="fas fa-refresh fa-spin fa-fw" id="search-spinner"></i>');
+        if (isSecret !== true || clipboardDuration === 0) {
+            toastr.info('<?php echo $lang->get('copy_to_clipboard'); ?>', '', {
+                timeOut: 2000,
+                positionClass: 'toast-bottom-right',
+                progressBar: true
+            });
+            return;
+        }
 
-            // Get content of item
-            row.child(showItemInfo(itemGlobal, tr, item), 'new-row').show();
+        toastr.warning('<?php echo $lang->get('clipboard_will_be_cleared'); ?>', '', {
+            timeOut: clipboardDuration * 1000,
+            progressBar: true
+        });
 
-            // Add to the 'open' array
-            if (idx === -1) {
-                detailRows.push(tr.attr('id'));
+        const cleaner = new ClipboardCleaner(clipboardDuration);
+        cleaner.scheduleClearing(
+            () => {
+                const clipboardStatus = JSON.parse(localStorage.getItem('clipboardStatus'));
+                if (clipboardStatus.status === 'unsafe') {
+                    return;
+                }
+                toastr.success('<?php echo $lang->get('clipboard_cleared'); ?>', '', {
+                    timeOut: 2000,
+                    positionClass: 'toast-bottom-right'
+                });
+            },
+            (error) => console.error('Error clearing clipboard:', error)
+        );
+    };
+
+    // Metadata of the row the modal is currently showing. Read once on open so
+    // the modal keeps working even if the table is redrawn behind it.
+    let currentItem = null;
+
+    // Text of a cell, read from the DataTables row rather than from the DOM:
+    // Responsive hides cells on narrow screens, and a hidden cell has no <td>.
+    const cellText = (rowData, index) => {
+        if (Array.isArray(rowData) === false || rowData[index] === undefined) {
+            return '';
+        }
+        return $('<div></div>').html(rowData[index]).text().trim();
+    };
+
+    // Read the payload the server attached to the row actions. The holder is
+    // parsed out of the row data for the same reason.
+    const readRowMeta = (tr) => {
+        const rowData = oTable.row(tr).data();
+        if (Array.isArray(rowData) === false) {
+            return null;
+        }
+        const holder = $(rowData[7]);
+        if (holder.hasClass('search-row-actions') === false) {
+            return null;
+        }
+
+        return {
+            id: holder.data('id'),
+            folderId: holder.data('tree-id'),
+            perso: holder.data('perso'),
+            expired: holder.data('expired'),
+            restrictedTo: holder.data('restricted-to'),
+            rights: holder.data('rights'),
+            // Already in the row: no reason to ask the server for them again.
+            // The label cell also holds the classification badge, so read the
+            // button alone rather than the whole cell.
+            label: $('<div></div>').html(rowData[1]).find('.search-label-btn').text().trim(),
+            badge: $('<div></div>').html(rowData[1]).find('.badge').prop('outerHTML') || '',
+            login: cellText(rowData, 2),
+            folderPath: cellText(rowData, 6)
+        };
+    };
+
+    const goToItem = (meta) => {
+        document.location.href = 'index.php?page=items&group=' + encodeURIComponent(meta.folderId) +
+            '&id=' + encodeURIComponent(meta.id);
+    };
+
+    // Reset the modal to its loading state before each open, so a slow answer
+    // never shows the previous item's data.
+    const resetItemModal = (meta) => {
+        // The label is painted from the row so the header is right immediately,
+        // then confirmed by the server answer.
+        $('#search-item-modal-label').text(meta.label);
+        // Server-built markup (the classification badge), carried over as is.
+        $('#search-item-badge').html(meta.badge);
+        $('#search-item-path').text(meta.folderPath);
+        $('#search-item-loading').removeClass('hidden');
+        $('#search-item-content').addClass('hidden');
+        $('#search-item-message').addClass('hidden').text('');
+        $('#search-item-open').prop('disabled', false);
+        $('#search-item-login-row, #search-item-url-row, #search-item-tags-row, ' +
+          '#search-item-description-row').addClass('hidden');
+        $('#search-item-pwd-holder').empty();
+    };
+
+    const fillItemModal = (data) => {
+        $('#search-item-modal-label').text(data.label);
+        // fa_icon is item data: only ever let it be a list of class names.
+        const icon = String(data.fa_icon || '').trim();
+        $('#search-item-glyph').attr(
+            'class',
+            /^[a-z0-9 -]+$/i.test(icon) === true && icon !== '' ? icon : 'fa-solid fa-key'
+        );
+
+        if (data.login) {
+            $('#search-item-login').text(data.login);
+            $('#search-item-login-row').removeClass('hidden');
+        }
+
+        // The reveal button and the long-press both key off this per-item id.
+        $('#search-item-pwd-holder').html(
+            '<span id="pwd-show_' + parseInt(data.id, 10) + '" class="unhide_masked_data pointer">' +
+            MASKED_PASSWORD + '</span>'
+        );
+        // The shared .btn-show-pwd handler reads this to find the span above.
+        $('#search-item-show-pwd').data('id', data.id).attr('data-id', data.id);
+
+        if (data.url) {
+            $('#search-item-url').text(data.url);
+            // Only http(s) reaches the anchor: a javascript: URL stored on the
+            // item would otherwise become clickable here.
+            const safeUrl = /^https?:\/\//i.test(data.url) ? data.url : '';
+            $('#search-item-open-url')
+                .attr('href', safeUrl === '' ? '#' : safeUrl)
+                .toggleClass('disabled', safeUrl === '');
+            $('#search-item-url-row').removeClass('hidden');
+        }
+
+        // The server returns an array of tags; older payloads sent a single
+        // space separated string.
+        const tags = Array.isArray(data.tags)
+            ? data.tags
+            : String(data.tags || '').split(' ');
+        const shownTags = tags.filter((tag) => String(tag).trim() !== '');
+        if (shownTags.length > 0) {
+            const container = $('#search-item-tags').empty();
+            shownTags.forEach((tag) => {
+                // .text() keeps a tag containing markup inert.
+                $('<span class="badge badge-secondary mr-1"></span>').text(tag).appendTo(container);
+            });
+            $('#search-item-tags-row').removeClass('hidden');
+        }
+
+        const descriptionHtml = DOMPurify.sanitize(
+            htmlDecode(data.description || ''),
+            {USE_PROFILES: {html: true}}
+        );
+        if (descriptionHtml !== '') {
+            $('#search-item-description').html(descriptionHtml);
+            $('#search-item-description-row').removeClass('hidden');
+        }
+
+        $('#search-item-loading').addClass('hidden');
+        $('#search-item-content').removeClass('hidden');
+        $('.infotip').tooltip();
+    };
+
+    const showItemMessage = (message) => {
+        $('#search-item-loading').addClass('hidden');
+        $('#search-item-content').addClass('hidden');
+        $('#search-item-message').text(message).removeClass('hidden');
+    };
+
+    const openItemModal = (meta) => {
+        currentItem = meta;
+        resetItemModal(meta);
+        $('#search-item-modal').modal('show');
+
+        const payload = {
+            'id': meta.id,
+            'folder_id': meta.folderId,
+            'salt_key_required': meta.perso,
+            'salt_key_set': store.get('teampassUser').pskSetForSession,
+            'expired_item': meta.expired,
+            'restricted': meta.restrictedTo,
+            'page': 'find',
+            'rights': meta.rights,
+        };
+
+        $.post(
+            'sources/items.queries.php', {
+                type: 'show_details_item',
+                data: prepareExchangedData(JSON.stringify(payload), 'encode', '<?php echo $session->get('key'); ?>'),
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+
+                if (currentItem === null) {
+                    return;
+                }
+                // A row opened meanwhile: this answer is no longer the one shown.
+                // Refusal payloads carry no id, so they can only be correlated by
+                // the fact that a request is still pending.
+                const answeredId = parseInt(data.id, 10);
+                if (isNaN(answeredId) === false && parseInt(currentItem.id, 10) !== answeredId) {
+                    return;
+                }
+
+                if (data.error === true) {
+                    showItemMessage(data.message);
+                    return;
+                }
+                // Order matters: show_details === 0 means the caller may not see
+                // the item at all (an administrator, typically). The former code
+                // tested it as a string, which never matched, so those users got
+                // the expiry message instead.
+                if (parseInt(data.show_details, 10) === 0) {
+                    showItemMessage('<?php echo $lang->get('not_allowed_to_see_pw'); ?>');
+                    return;
+                }
+                if (data.show_detail_option !== 0) {
+                    showItemMessage('<?php echo $lang->get('not_allowed_to_see_pw_is_expired'); ?>');
+                    return;
+                }
+
+                fillItemModal(data);
+            }
+        ).fail(function() {
+            if (currentItem !== null) {
+                showItemMessage('<?php echo $lang->get('server_answer_error'); ?>');
+            }
+        });
+    };
+
+    // Row actions. Stop the propagation so acting on a row never also opens the
+    // modal behind it.
+    $('#search-results-items tbody').on('click', '.search-row-action', async function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const meta = readRowMeta($(this).closest('tr'));
+        if (meta === null) {
+            return;
+        }
+        const action = $(this).data('action');
+
+        if (action === 'open') {
+            goToItem(meta);
+            return;
+        }
+
+        if (action === 'login') {
+            // The login is already in the row: no round-trip, no audit entry -
+            // reading a login is not a password access.
+            copySearchValue(meta.login, false);
+            return;
+        }
+
+        if (action === 'password') {
+            const icon = $(this).find('i');
+            const original = icon.attr('class');
+            icon.attr('class', 'fa-solid fa-circle-notch fa-spin');
+            // Access checked server-side and logged as at_password_copied.
+            const password = await getItemPassword('at_password_copied', 'item_id', meta.id);
+            icon.attr('class', original);
+            if (password) {
+                copySearchValue(password, true);
             }
         }
     });
 
-    function showItemInfo(d, tr, item) {
-        // prepare data
-        var data = {
-            'id': $(item).data('id'),
-            'folder_id': $(item).data('tree-id'),
-            'salt_key_required': $(item).data('perso'),
-            'salt_key_set': store.get('teampassUser').pskSetForSession,
-            'expired_item': $(item).data('expired'),
-            'restricted': $(item).data('restricted-to'),
-            'page': 'find',
-            'rights': $(item).data('rights'),
-        };
+    // The row itself opens the detail. The mass-operation checkbox is the one
+    // control inside a row that must not.
+    $('#search-results-items tbody').on('click', 'tr', function(event) {
+        // The selection cell belongs to the mass operation, not to the detail.
+        // iCheck replaces the checkbox with its own markup, so match the cell.
+        if ($(event.target).closest('.search-col-select, .search-row-action').length > 0) {
+            return;
+        }
+        const meta = readRowMeta(this);
+        if (meta === null) {
+            return;
+        }
+        openItemModal(meta);
+    });
 
-        // Launch query
-        $.post(
-            'sources/items.queries.php', {
-                type: 'show_details_item',
-                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
-                key: '<?php echo $session->get('key'); ?>'
-            },
-            function(data) {
-                //decrypt data
-                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
-                console.info(data);
-                var return_html = '';
-                var descriptionHtml = DOMPurify.sanitize(
-                    htmlDecode(data.description || ''),
-                    {USE_PROFILES: {html: true}}
-                );
-                if (data.show_detail_option !== 0 || data.show_details === 0) {
-                    //item expired
-                    return_html = '<?php echo $lang->get('not_allowed_to_see_pw_is_expired'); ?>';
-                } else if (data.show_details === '0') {
-                    //Admin cannot see Item
-                    return_html = '<?php echo $lang->get('not_allowed_to_see_pw'); ?>';
-                } else {
-                    return_html = '<td colspan="7">' +
-                        '<div class="card card-info">' +
-                        '<div class="card-header">' +
-                        '<h5 id="item-label">' + htmlEncode(data.label) + '</h5>' +
-                        '</div>' +
-                        '<div class="card-body">' +
-                        (descriptionHtml === '' ? '' : '<div class="form-group">' + descriptionHtml + '</div>') +
-                        '<div class="form-group">' +
-                        '<?php echo $lang->get('pw'); ?>' +
-                        // purifyData() strips tags but decodes &quot; back into a live quote,
-                        // which would close this attribute — encode the label here.
-                        '<button type="button" class="btn btn-secondary ml-2" id="btn-copy-pwd" data-id="' + data.id + '" data-label="' + htmlEncode(data.label) + '"><i class="fas fa-copy"></i></button>' +
-                        '<button type="button" class="btn btn-secondary btn-show-pwd ml-2" data-id="' + data.id + '"><i class="fas fa-eye pwd-show-spinner"></i></button>' +
-                        '<span id="pwd-show_' + data.id + '" class="unhide_masked_data ml-2" style="height: 20px;"><?php echo $var['hidden_asterisk']; ?></span>' +
-                        '<input type="hidden" id="pwd-is-shown_' + data.id + '" value="0">' +
-                        '</div>' +
-                        (data.login === '' ? '' :
-                            '<div class="form-group">' +
-                            '<label class="form-group-label"><?php echo $lang->get('index_login'); ?>' +
-                            '<button type="button" class="btn btn-secondary ml-2" id="btn-copy-login" data-id="' + data.id + '"><i class="fas fa-copy"></i></button>' +
-                            '</label>' +
-                            '<span class="ml-2" id="login-item_' + data.id + '">' + htmlEncode(data.login) + '</span>' +
-                            '</div>') +
-                        (data.url === '' ? '' :
-                            '<div class="form-group">' +
-                            '<label class="form-group-label"><?php echo $lang->get('url'); ?>' +
-                            '<button type="button" class="btn btn-secondary ml-2" id="btn-copy-url" data-id="' + data.id + '"><i class="fas fa-copy"></i></button>' +
-                            '</label>' +
-                            '<span class="ml-2" id="url-item_' + data.id + '">' + data.url + '</span>' +
-                            '</div>') +
-                        '</div>' +
-                        '<div class="card-footer">' +
-                        '<button type="button" class="btn btn-info float-right" id="cancel"><?php echo $lang->get('cancel'); ?></button>' +
-                        '</div>' +
-                        '</div>' +
-                        '</td>';
-                }
-                $(tr).next('tr').html(return_html);
-                $('.unhide_masked_data').addClass('pointer');
+    // Modal actions, bound once instead of on every open.
+    $('#search-item-open').on('click', function() {
+        if (currentItem !== null) {
+            goToItem(currentItem);
+        }
+    });
 
-                // On click on CANCEL
-                $('#cancel').on('click', function() {
-                    // Change eye icon
-                    var eyeIcon = $('.item-detail').closest('i.fa-eye-slash');
-                    eyeIcon
-                        .removeClass('fa-eye-slash text-warning')
-                        .addClass('fa-eye');
+    $('#search-item-copy-login').on('click', function() {
+        copySearchValue($('#search-item-login').text(), false);
+    });
 
-                    // Remove card
-                    $('.new-row').remove();
-                });
+    $('#search-item-copy-url').on('click', function() {
+        copySearchValue($('#search-item-url').text(), false);
+    });
 
-                // Prepare clipboard using async function
-                document.getElementById('btn-copy-pwd').addEventListener('click', async function() {
-                    try {
-                        // Retrieve the password
-                        const password = await getItemPassword('at_password_copied', 'item_id', $('#btn-copy-pwd').data('id'));
+    $('#search-item-copy-pwd').on('click', async function() {
+        if (currentItem === null) {
+            return;
+        }
+        const icon = $(this).find('i');
+        const original = icon.attr('class');
+        icon.attr('class', 'fa-solid fa-circle-notch fa-spin');
+        const password = await getItemPassword('at_password_copied', 'item_id', currentItem.id);
+        icon.attr('class', original);
+        if (password) {
+            copySearchValue(password, true);
+        }
+    });
 
-                        if (!password) {
-                            return;
-                        }
-
-                        // Copy to clipboard (shared helper: falls back to execCommand
-                        // when the async Clipboard API is unavailable, e.g. plain HTTP)
-                        if (await tpClipboardCopy(password) === false) {
-                            throw new Error('Clipboard unavailable');
-                        }
-
-                        // Notification for the user
-                        const clipboardDuration = parseInt(store.get('teampassSettings').clipboard_life_duration) || 0;
-                        if (clipboardDuration === 0) {
-                            toastr.info('<?php echo $lang->get("copy_to_clipboard"); ?>', '', {
-                                timeOut: 2000,
-                                positionClass: 'toast-bottom-right',
-                                progressBar: true
-                            });
-                        } else {
-                            toastr.warning('<?php echo $lang->get("clipboard_will_be_cleared"); ?>', '', {
-                                timeOut: clipboardDuration * 1000,
-                                progressBar: true
-                            });
-
-                            // Clear the clipboard content after a delay
-                            const cleaner = new ClipboardCleaner(clipboardDuration);
-                            cleaner.scheduleClearing(
-                                () => {
-                                    const clipboardStatus = JSON.parse(localStorage.getItem('clipboardStatus'));
-                                    if (clipboardStatus.status === 'unsafe') {
-                                        return;                                        
-                                    }
-                                    toastr.success('<?php echo $lang->get("clipboard_cleared"); ?>', '', {
-                                        timeOut: 2000,
-                                        positionClass: 'toast-bottom-right'
-                                    });
-                                },
-                                (error) => {
-                                    console.error('Error clearing clipboard:', error);
-                                }
-                            );
-                        }
-                    } catch (error) {
-                        toastr.error('<?php echo $lang->get("clipboard_error"); ?>', '', {
-                            timeOut: 3000,
-                            positionClass: 'toast-bottom-right',
-                            progressBar: true
-                        });
-                    }
-                });
-                
-                // Click handler to copy the login to the clipboard if it exists
-                if (document.getElementById('btn-copy-login')) {
-                    document.getElementById('btn-copy-login').addEventListener('click', async function() {
-                        try {
-                            // Retrieve the ID of the element containing the login
-                            const loginId = this.dataset.id;
-                            const loginText = document.getElementById('login-item_' + loginId).textContent;
-
-                            // Copy the text to the clipboard
-                            if (await tpClipboardCopy(loginText) === false) {
-                                throw new Error('Clipboard unavailable');
-                            }
-
-                            // Display a success notification
-                            toastr.remove();
-                            toastr.info(
-                                '<?php echo $lang->get("copy_to_clipboard"); ?>',
-                                '', {
-                                    timeOut: 2000,
-                                    positionClass: 'toast-bottom-right',
-                                    progressBar: true
-                                }
-                            );
-                        } catch (error) {
-                            toastr.error(
-                                '<?php echo $lang->get("clipboard_error"); ?>',
-                                '', {
-                                    timeOut: 3000,
-                                    positionClass: 'toast-bottom-right',
-                                    progressBar: true
-                                }
-                            );
-                        }
-                    });
-                }
-
-                // Check if the btn-copy-url button exists
-                const btnCopyUrl = document.getElementById('btn-copy-url');
-                if (btnCopyUrl) {
-                    // Attach a click handler only if the button exists
-                    btnCopyUrl.addEventListener('click', async function() {
-                        try {
-                            // Retrieve the ID of the element containing the URL
-                            const urlId = this.dataset.id;
-                            const urlText = document.getElementById('url-item_' + urlId).textContent;
-
-                            // Copy the URL to the clipboard
-                            if (await tpClipboardCopy(urlText) === false) {
-                                throw new Error('Clipboard unavailable');
-                            }
-
-                            // Display a success notification
-                            toastr.remove();
-                            toastr.info(
-                                '<?php echo $lang->get("copy_to_clipboard"); ?>',
-                                '', {
-                                    timeOut: 2000,
-                                    positionClass: 'toast-bottom-right',
-                                    progressBar: true
-                                }
-                            );
-                        } catch (error) {
-                            toastr.error(
-                                '<?php echo $lang->get("clipboard_error"); ?>',
-                                '', {
-                                    timeOut: 3000,
-                                    positionClass: 'toast-bottom-right',
-                                    progressBar: true
-                                }
-                            );
-                        }
-                    });
-                }
-
-                $('#search-spinner').remove();
-                $('.infotip').tooltip();
-            }
-        );
-        return data;
-    }
+    // Drop the reference so a late answer for this item is discarded.
+    $('#search-item-modal').on('hidden.bs.modal', function() {
+        currentItem = null;
+    });
 
     // show password during longpress
     let mouseStillDown = false;
-    $('#search-results-items')
+    // Bound on the document: the masked password moved from a table child row
+    // to the detail modal, which is not inside #search-results-items.
+    $(document)
         .on('mousedown', '.unhide_masked_data', function(event) {
             mouseStillDown = true;
 
