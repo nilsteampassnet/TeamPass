@@ -103,8 +103,10 @@ Ten checks: version constants, PHPStan (level from `phpstan.neon`), PHPUnit, PHP
 changed files, shell lint, debug-leftover scan on added lines, EN/FR language parity,
 installer-vs-upgrade admin-setting seed parity, installer `CREATE TABLE` → `install.js`
 registration, and shipped-autoloader integrity (every file required by
-`app/vendor/composer/autoload_files.php` must be tracked, or the archive fatals on every
-request — added when 3.2.1.7 was found to carry that break). Exit code is non-zero on any failure; warnings never fail the run.
+`app/vendor/composer/autoload_files.php` must be in the archive, or it fatals on every
+request — added when 3.2.1.7 was found to carry that break). Check 10 reads the **committed**
+copies, not the working tree, so a local `composer install` does not disturb it and the gate
+runs green in the normal dev state. Exit code is non-zero on any failure; warnings never fail the run.
 
 **Failures block the release. Warnings are triaged, not ignored** — each one is either fixed
 or explicitly justified to the user.
