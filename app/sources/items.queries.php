@@ -44,6 +44,7 @@ use TeampassClasses\EmailService\EmailSettings;
 // Load functions
 require_once 'main.functions.php';
 require_once 'find.functions.php';
+require_once 'classification.functions.php';
 require_once 'lapr.functions.php';
 
 // init
@@ -7717,6 +7718,19 @@ switch ($inputData['type']) {
                     $tmp = explode(' => ', $reason[1]);
                     $detail = empty(trim($tmp[0])) === true ?
                         $lang->get('no_previous_value') : $lang->get('previous_value') . ': <span class="font-weight-light">' . $tmp[0] . ' </span>';
+                } elseif ($reason[0] === 'at_classification_changed') {
+                    // Reason is '<previous level> => <new level>'; legacy
+                    // entries only carry the new level.
+                    $tmp = array_map('trim', explode('=>', (string) ($reason[1] ?? '0')));
+                    if (count($tmp) > 1) {
+                        $detail = $lang->get('from') . ' <span class="font-weight-light">'
+                            . $lang->get(classificationLabelKey((int) $tmp[0])) . '</span> '
+                            . $lang->get('to') . ' <span class="font-weight-light">'
+                            . $lang->get(classificationLabelKey((int) $tmp[1])) . '</span>';
+                    } else {
+                        $detail = '<span class="font-weight-light">'
+                            . $lang->get(classificationLabelKey((int) $tmp[0])) . '</span>';
+                    }
                 } elseif ($reason[0] === 'at_automatic_del') {
                     $detail = $lang->get($reason[1]);
                 } elseif ($reason[0] === 'at_anyoneconmodify' || $reason[0] === 'at_otp_status' || $reason[0] === 'at_otp_secret' || $reason[0] === 'at_phone_number') {

@@ -1,0 +1,17 @@
+---
+name: "TeamPass CodeQL configuration"
+
+# TeamPass vendors its dependencies in the repository instead of fetching them at
+# build time: the PHP packages under app/vendor, and the front-end libraries under
+# public/plugins, app/includes/libraries and public/install/js. CodeQL would report
+# findings in that third-party code, which we neither own nor can fix without
+# patching upstream, and which drowns the findings that are actually ours.
+#
+# Note: CodeQL has no PHP extractor, so the analysis only ever covers JavaScript
+# (and the workflow files). TeamPass front-end code lives in *.js.php templates and
+# in app/includes/js — the latter is the part that must stay analysed.
+paths-ignore:
+  - app/vendor
+  - public/plugins
+  - app/includes/libraries
+  - public/install/js

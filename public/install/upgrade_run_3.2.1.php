@@ -677,6 +677,19 @@ mysqli_query(
     "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'tasks_max_drain_time', '55')"
 );
 
+// Remove the development dependencies from the installation. PHPUnit, PHPStan (whose
+// app/vendor/bin/phpstan.phar is an executable archive, shipped alongside 21 MB of
+// precompiled native extensions), the license checker and their transitive packages are
+// part of the archive but are never loaded at runtime: on a server they are dead weight
+// and needless attack surface.
+// The lists are derived from composer.lock, so they follow the dependencies instead of
+// drifting. The step is idempotent — an installation that is already clean is a no-op —
+// and a failure is deliberately silent: it must never interrupt an upgrade.
+// The installer runs the very same sweep (cleanInstall() in run.step6.php), so a fresh
+// install and an upgraded one end up with the same tree.
+require_once TEAMPASS_ROOT . '/app/scripts/dev_dependencies_cleanup_logic.php';
+devDependenciesCleanupRun(TEAMPASS_ROOT);
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,

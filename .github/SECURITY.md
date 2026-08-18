@@ -12,6 +12,8 @@ This project is currently being supported with security updates.
 
 For any vulnerability or potential security issue, please provide complete description by filling in a new advisory form from https://github.com/nilsteampassnet/TeamPass/security/advisories.
 
+This is the only supported reporting channel. Reports sent by email are not tracked and may be filtered as spam before anyone sees them.
+
 ## Published Security Advisories
 
 Vulnerabilities that have been fixed and publicly disclosed. The GitHub Security Advisory (GHSA) is the authoritative record for each entry. `pending` means a CVE ID has been requested but not yet assigned; the advisory is updated automatically once it is.
@@ -20,6 +22,7 @@ Each entry is fixed in the version listed and in every later release. **Always u
 
 | CVE            | Advisory                                                                                                  | Summary                                                                                        | Fixed in |
 | -------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | -------- |
+| _pending_      | [GHSA-8fg2-3gpc-x8m7](https://github.com/nilsteampassnet/TeamPass/security/advisories/GHSA-8fg2-3gpc-x8m7) | Sixteen stored XSS issues across the web UI, API and log tables.                                | 3.2.0.3  |
 | _pending_      | [GHSA-cpgh-9h3x-r8gm](https://github.com/nilsteampassnet/TeamPass/security/advisories/GHSA-cpgh-9h3x-r8gm) | Stored XSS in the One-Time View page via an unescaped URL field.                                | 3.2.0.4  |
 | _pending_      | [GHSA-fhm7-pf6p-prgg](https://github.com/nilsteampassnet/TeamPass/security/advisories/GHSA-fhm7-pf6p-prgg) | Inverted admin authorization check making critical admin functions inaccessible.                | 3.2.0.4  |
 | CVE-2026-68936 | [GHSA-x8jf-9g87-j232](https://github.com/nilsteampassnet/TeamPass/security/advisories/GHSA-x8jf-9g87-j232) | Mass assignment in user management leading to privilege escalation.                             | 3.2.0.8  |

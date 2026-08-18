@@ -741,8 +741,8 @@ var tpBckMetaOrphansPurgeNone = "<?php echo addslashes($lang->get('bck_meta_orph
         
         // Call confirm dialog
         launchConfirmDialog(
-            "<?php echo addslashes($lang->get('del_button')); ?>", // Title
-            "<?php echo addslashes($lang->get('bck_onthefly_confirm_delete')); ?><br><br><b>" + fileName + "</b>", // Message
+            <?php echo json_encode($lang->get('del_button'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>, // Title
+            <?php echo json_encode($lang->get('bck_onthefly_confirm_delete'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?> + "<br><br><b>" + htmlEncode(fileName) + "</b>", // Message
             function () {
                 $.post(
                     "sources/backups.queries.php",
@@ -2070,8 +2070,8 @@ var tpScheduled = {
                 const fileName = f.name || '';
                 // Appel de la fonction générique
                 launchConfirmDialog(
-                    "<?php echo addslashes($lang->get('del_button')); ?>",
-                    "<?php echo addslashes($lang->get('bck_onthefly_confirm_delete')); ?><br><br><b>" + fileName + "</b>",
+                    <?php echo json_encode($lang->get('del_button'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+                    <?php echo json_encode($lang->get('bck_onthefly_confirm_delete'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?> + "<br><br><b>" + htmlEncode(fileName) + "</b>",
                     function() {
                         // --- CALLBACK DE CONFIRMATION ---
                         tpScheduled.ajax('scheduled_delete_backup', { file: fileName }, function(rr) {
@@ -2732,8 +2732,8 @@ var tpExternalized = {
               e.stopPropagation();
 
               launchConfirmDialog(
-                "<?php echo addslashes($lang->get('del_button')); ?>",
-                "<?php echo addslashes($lang->get('bck_onthefly_confirm_delete')); ?><br><br><b>" + fn + "</b>",
+                <?php echo json_encode($lang->get('del_button'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+                <?php echo json_encode($lang->get('bck_onthefly_confirm_delete'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?> + "<br><br><b>" + htmlEncode(fn) + "</b>",
                 function() {
                   tpExternalized.ajax('externalized_delete_backup', { file: fn }, function(rr) {
                     if (rr && rr.error) {

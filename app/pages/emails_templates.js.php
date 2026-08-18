@@ -525,23 +525,27 @@ $groupLabels = [
                 return;
             }
 
-            if (window.confirm('<?php echo $lang->get('emails_templates_reset_confirm'); ?>') === false) {
-                return;
-            }
-
-            emailsTemplatesPost(
-                'reset_template', {
-                    template: emailsTemplatesCurrent,
-                    language: $('#emails-templates-language').val()
-                },
+            launchConfirmDialog(
+                <?php echo json_encode($lang->get('emails_templates_reset'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+                <?php echo json_encode($lang->get('emails_templates_reset_confirm'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
                 function() {
-                    toastr.remove();
-                    toastr.success('<?php echo $lang->get('done'); ?>', '', {
-                        timeOut: 1000
-                    });
-                    emailsTemplatesLoadList($('#emails-templates-language').val());
-                    emailsTemplatesLoad(emailsTemplatesCurrent);
-                }
+                    emailsTemplatesPost(
+                        'reset_template', {
+                            template: emailsTemplatesCurrent,
+                            language: $('#emails-templates-language').val()
+                        },
+                        function() {
+                            toastr.remove();
+                            toastr.success('<?php echo $lang->get('done'); ?>', '', {
+                                timeOut: 1000
+                            });
+                            emailsTemplatesLoadList($('#emails-templates-language').val());
+                            emailsTemplatesLoad(emailsTemplatesCurrent);
+                        }
+                    );
+                },
+                <?php echo json_encode($lang->get('confirm'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+                <?php echo json_encode($lang->get('cancel'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>
             );
         });
     });
