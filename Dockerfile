@@ -46,7 +46,7 @@ LABEL maintainer="TeamPass <nils@teampass.net>" \
 # The CI workflow overrides this with the release tag; the default only serves local
 # builds, so it must stay equal to TP_VERSION.TP_VERSION_MINOR in app/config/include.php.
 # The release procedure bumps it in the same commit as the version constants.
-ARG TEAMPASS_VERSION=3.2.1.6
+ARG TEAMPASS_VERSION=3.2.1.7
 ENV TEAMPASS_VERSION=${TEAMPASS_VERSION}
 
 # Install system dependencies and PHP extensions
