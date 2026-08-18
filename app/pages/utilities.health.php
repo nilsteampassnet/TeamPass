@@ -1035,6 +1035,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             <pre class="mb-0" id="health-server-log-fix-cmd" style="white-space: pre-wrap;"></pre>
                                         </div>
                                         <pre id="health-server-log-content" class="p-2 mb-0" style="display:none; max-height: 380px; overflow:auto; background-color: #f8f9fa; border: 1px solid #dee2e6; white-space: pre-wrap;"></pre>
+                                        <div class="small text-muted mt-2" id="health-server-log-meta" style="display:none;"></div>
                                     </div>
                                 </div>
 
@@ -1054,6 +1055,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             <pre class="mb-0" id="health-server-access-log-fix-cmd" style="white-space: pre-wrap;"></pre>
                                         </div>
                                         <pre id="health-server-access-log-content" class="p-2 mb-0" style="display:none; max-height: 380px; overflow:auto; background-color: #f8f9fa; border: 1px solid #dee2e6; white-space: pre-wrap;"></pre>
+                                        <div class="small text-muted mt-2" id="health-server-access-log-meta" style="display:none;"></div>
                                     </div>
                                 </div>
 
@@ -1073,6 +1075,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             <pre class="mb-0" id="health-teampass-log-fix-cmd" style="white-space: pre-wrap;"></pre>
                                         </div>
                                         <pre id="health-teampass-log-content" class="p-2 mb-0" style="display:none; max-height: 380px; overflow:auto; background-color: #f8f9fa; border: 1px solid #dee2e6; white-space: pre-wrap;"></pre>
+                                        <div class="small text-muted mt-2" id="health-teampass-log-meta" style="display:none;"></div>
                                     </div>
                                 </div>
 
@@ -1092,6 +1095,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             <pre class="mb-0" id="health-php-fpm-log-fix-cmd" style="white-space: pre-wrap;"></pre>
                                         </div>
                                         <pre id="health-php-fpm-log-content" class="p-2 mb-0" style="display:none; max-height: 380px; overflow:auto; background-color: #f8f9fa; border: 1px solid #dee2e6; white-space: pre-wrap;"></pre>
+                                        <div class="small text-muted mt-2" id="health-php-fpm-log-meta" style="display:none;"></div>
                                     </div>
                                 </div>
 
@@ -1111,6 +1115,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             <pre class="mb-0" id="health-websocket-log-fix-cmd" style="white-space: pre-wrap;"></pre>
                                         </div>
                                         <pre id="health-websocket-log-content" class="p-2 mb-0" style="display:none; max-height: 380px; overflow:auto; background-color: #f8f9fa; border: 1px solid #dee2e6; white-space: pre-wrap;"></pre>
+                                        <div class="small text-muted mt-2" id="health-websocket-log-meta" style="display:none;"></div>
                                     </div>
                                 </div>
                             </div>

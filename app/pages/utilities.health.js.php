@@ -154,6 +154,11 @@ var TP_HEALTH_L10N = {
     websocket_log_file_not_writable_fmt: "<?php echo addslashes($lang->get('health_websocket_log_file_not_writable_fmt')); ?>",
     websocket_log_directory_not_writable_fmt: "<?php echo addslashes($lang->get('health_websocket_log_directory_not_writable_fmt')); ?>",
     runtime_log_empty_fmt: "<?php echo addslashes($lang->get('health_runtime_log_empty_fmt')); ?>",
+    runtime_log_truncated_fmt: "<?php echo addslashes($lang->get('health_runtime_log_truncated_fmt')); ?>",
+    runtime_log_partial: "<?php echo addslashes($lang->get('health_runtime_log_partial')); ?>",
+    runtime_log_sources_fmt: "<?php echo addslashes($lang->get('health_runtime_log_sources_fmt')); ?>",
+    runtime_log_redacted: "<?php echo addslashes($lang->get('health_runtime_log_redacted')); ?>",
+    server_access_log_shared_notice: "<?php echo addslashes($lang->get('health_server_access_log_shared_notice')); ?>",
     runtime_log_fix_hint: "<?php echo addslashes($lang->get('health_runtime_log_fix_hint')); ?>",
     runtime_log_fix_hint_missing: "<?php echo addslashes($lang->get('health_runtime_log_fix_hint_missing')); ?>",
     runtime_logs_context_mode_fmt: "<?php echo addslashes($lang->get('health_runtime_logs_context_mode_fmt')); ?>",
@@ -1196,7 +1201,39 @@ function tpResetRuntimeLogPane(prefix) {
     $('#' + prefix + '-fix-text').text('');
     $('#' + prefix + '-fix-cmd').hide().text('');
     $('#' + prefix + '-content').hide().text('');
+    $('#' + prefix + '-meta').hide().text('');
     $('#' + prefix + '-copy-btn').prop('disabled', true);
+}
+
+// Builds the notes shown under a log excerpt: which physical files were merged,
+// whether the excerpt is incomplete, and the scope of the selected file.
+// Returns plain text lines: the consumer injects them with .text().
+function tpRuntimeLogNotes(result) {
+    var notes = [];
+
+    if (!result) {
+        return notes;
+    }
+
+    var sources = result.source_files || [];
+    if (sources.length > 1 || (sources.length === 1 && sources[0] !== result.log_path)) {
+        notes.push(TP_HEALTH_L10N.runtime_log_sources_fmt.replace('%s', sources.join(', ')));
+    }
+
+    if (result.partial === true) {
+        notes.push(TP_HEALTH_L10N.runtime_log_partial);
+    }
+
+    if (result.role === 'server_access') {
+        if (result.instance_scoped === false && result.log_path) {
+            notes.push(TP_HEALTH_L10N.server_access_log_shared_notice);
+        }
+        if (result.content_length > 0) {
+            notes.push(TP_HEALTH_L10N.runtime_log_redacted);
+        }
+    }
+
+    return notes;
 }
 
 function tpRuntimeLogMessage(result) {
@@ -1212,6 +1249,9 @@ function tpRuntimeLogMessage(result) {
     }
     if (result.access === 'empty') {
         return TP_HEALTH_L10N.runtime_log_empty_fmt.replace('%s', tpEscapeHtml(result.log_path || ''));
+    }
+    if (result.access === 'truncated') {
+        return TP_HEALTH_L10N.runtime_log_truncated_fmt.replace('%s', tpEscapeHtml(result.log_path || ''));
     }
     if (result.access === 'not_configured') {
         return TP_HEALTH_L10N.runtime_log_not_configured;
@@ -1265,6 +1305,11 @@ function tpApplyRuntimeLogResult(prefix, result) {
         }
     }
 
+    var notes = tpRuntimeLogNotes(result);
+    if (notes.length > 0 && result.access === 'ok') {
+        $('#' + prefix + '-meta').show().text(notes.join(' '));
+    }
+
     var writeMessage = tpRuntimeLogWriteMessage(result);
     if (writeMessage && (result.access === 'ok' || result.access === 'empty')) {
         var writeCommands = result.write_fix_commands || [];
@@ -1292,7 +1337,7 @@ function tpApplyRuntimeLogResult(prefix, result) {
         return;
     }
 
-    if (result.access === 'empty') {
+    if (result.access === 'empty' || result.access === 'truncated') {
         $('#' + prefix + '-fix-text').text(message);
         $('#' + prefix + '-fix-cmd').hide().text('');
         $('#' + prefix + '-fix').show();

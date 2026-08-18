@@ -235,6 +235,74 @@ NGINX;
         $this->assertSame(array('/var/log/nginx/example.access.log'), $paths);
     }
 
+    public function testSecureSendLinkSecretsAreRedactedFromAccessLogLines(): void
+    {
+        $line = '203.0.113.7 - - [17/Aug/2026:10:11:12 +0000] "GET /index.php?otv=1&code=abcdef0123456789&key=fedcba9876543210&stamp=1755422400 HTTP/1.1" 200 5120';
+
+        $redacted = tpHealthRedactLogLine($line);
+
+        $this->assertStringNotContainsString('abcdef0123456789', $redacted);
+        $this->assertStringNotContainsString('fedcba9876543210', $redacted);
+        $this->assertStringContainsString('code=[REDACTED]', $redacted);
+        $this->assertStringContainsString('key=[REDACTED]', $redacted);
+        // Everything useful for diagnostics survives.
+        $this->assertStringContainsString('203.0.113.7', $redacted);
+        $this->assertStringContainsString('/index.php?otv=1', $redacted);
+        $this->assertStringContainsString('stamp=1755422400', $redacted);
+        $this->assertStringContainsString('200 5120', $redacted);
+    }
+
+    public function testDownloadKeysAreRedactedIncludingInsideARefererField(): void
+    {
+        $line = '"GET /sources/downloadFile.php?name=a.pdf&key=1111aaaa&key_tmp=2222bbbb&fileid=42 HTTP/1.1" 200 12 "https://tp.example.com/index.php?page=items&key=3333cccc"';
+
+        $redacted = tpHealthRedactLogLine($line);
+
+        $this->assertStringNotContainsString('1111aaaa', $redacted);
+        $this->assertStringNotContainsString('2222bbbb', $redacted);
+        $this->assertStringNotContainsString('3333cccc', $redacted);
+        $this->assertStringContainsString('key_tmp=[REDACTED]', $redacted);
+        $this->assertStringContainsString('fileid=42', $redacted);
+        $this->assertSame(2, substr_count($redacted, 'key=[REDACTED]'));
+    }
+
+    public function testRedactionLeavesOrdinaryLogLinesUntouched(): void
+    {
+        $line = '[Mon Aug 17 10:11:12 2026] [error] [client 203.0.113.7] PHP Warning: something failed in /var/www/index.php on line 12';
+
+        $this->assertSame($line, tpHealthRedactLogLine($line));
+        $this->assertSame('', tpHealthRedactLogLine(''));
+    }
+
+    public function testRedactionAppliesToEveryLineOfAnExcerpt(): void
+    {
+        $content = "GET /index.php?code=aaaa HTTP/1.1\nGET /index.php?key=bbbb HTTP/1.1\nplain line";
+
+        $redacted = tpHealthRedactLogContent($content);
+
+        $this->assertSame(
+            "GET /index.php?code=[REDACTED] HTTP/1.1\nGET /index.php?key=[REDACTED] HTTP/1.1\nplain line",
+            $redacted
+        );
+        $this->assertSame('', tpHealthRedactLogContent(''));
+    }
+
+    public function testGzipRotationLargerThanTheBudgetReportsLimitReachedInsteadOfEmpty(): void
+    {
+        // Reproduces a post-logrotate "compress" layout: the current file is
+        // empty and the only data sits in an archive too large for the budget.
+        $path = $this->logPath();
+        file_put_contents($path, '');
+        $this->writeGzipLines($path . '.1.gz', $this->numberedLines('rotation', 4000));
+
+        $result = tpHealthReadLogicalLog($path, 50, 4096);
+
+        $this->assertSame(array(), $result['lines']);
+        $this->assertSame('limit_reached', $result['status']);
+        // The caller must be able to tell this apart from a genuinely empty log.
+        $this->assertNotSame('exhausted', $result['status']);
+    }
+
     private function logPath(): string
     {
         return $this->temporaryDirectory . DIRECTORY_SEPARATOR . 'application.log';

@@ -76,7 +76,6 @@ function tpHealthReadPlainLogTail(string $path, int $lines, int $maxBytes): arra
     $position = (int) $position;
     $buffer = '';
     $bytesRead = 0;
-    $resultLines = array();
 
     while (true) {
         if ($position === 0) {
@@ -239,6 +238,11 @@ function tpHealthReadLogFileTail(string $path, int $lines, int $maxBytes): array
 
 /**
  * Backward-compatible single-file tail helper.
+ *
+ * @param string $path     Absolute path of the log file to read.
+ * @param int    $lines    Number of trailing lines to return.
+ * @param int    $maxBytes Maximum number of bytes the reader may consume.
+ * @return string The trailing lines joined by a single line feed.
  */
 function tpTailFileLines(string $path, int $lines, int $maxBytes = 2097152): string
 {
@@ -248,7 +252,79 @@ function tpTailFileLines(string $path, int $lines, int $maxBytes = 2097152): str
 }
 
 /**
+ * Query-string parameters whose value must never be displayed in a log viewer.
+ *
+ * A web server access log records the full request line, and TeamPass carries
+ * link secrets in the query string: a Secure Send / OTV URL is built as
+ * `index.php?otv=1&code=<secret>&key=<secret>&stamp=<ts>` and possession of
+ * that URL is the whole credential. Attachment and backup download links carry
+ * `key` / `key_tmp` the same way. Displaying those values would let anyone able
+ * to open the Health page read secrets they hold no sharekey for.
+ *
+ * @return list<string>
+ */
+function tpHealthGetRedactedLogParameters(): array
+{
+    return array(
+        'key_tmp',
+        'api_key',
+        'apikey',
+        'password',
+        'passwd',
+        'secret',
+        'token',
+        'code',
+        'key',
+        'pw',
+    );
+}
+
+/**
+ * Mask the value of every secret-bearing query-string parameter in a log line.
+ *
+ * The parameter name is kept so the line stays readable for diagnostics; only
+ * the value is replaced. Referer fields are covered too because the match is
+ * not anchored to the request target.
+ *
+ * @param string $line One raw log line.
+ * @return string The same line with secret values replaced by a placeholder.
+ */
+function tpHealthRedactLogLine(string $line): string
+{
+    if ($line === '') {
+        return '';
+    }
+
+    $pattern = '/([?&](?:' . implode('|', tpHealthGetRedactedLogParameters()) . ')=)[^\s&"\']+/i';
+    $redacted = preg_replace($pattern, '${1}[REDACTED]', $line);
+
+    return is_string($redacted) === true ? $redacted : $line;
+}
+
+/**
+ * Apply {@see tpHealthRedactLogLine()} to a whole log excerpt.
+ *
+ * @param string $content Log excerpt, lines separated by a line feed.
+ * @return string The excerpt with every secret value masked.
+ */
+function tpHealthRedactLogContent(string $content): string
+{
+    if ($content === '') {
+        return '';
+    }
+
+    return implode("\n", array_map('tpHealthRedactLogLine', explode("\n", $content)));
+}
+
+/**
  * Resolve one numeric rotation without scanning arbitrary sibling files.
+ *
+ * Only `<logical path>.<number>` and `<logical path>.<number>.gz` are accepted;
+ * rotation 0 designates the current file.
+ *
+ * @param string $logicalPath Path of the current (non-rotated) log file.
+ * @param int    $rotation    Rotation index, 0 for the current file.
+ * @return string The existing physical path, or an empty string when absent.
  */
 function tpHealthGetLogRotationPath(string $logicalPath, int $rotation): string
 {
@@ -343,12 +419,20 @@ function tpHealthReadLogicalLog(
     );
 }
 
+/**
+ * Tell whether a path is absolute in the POSIX sense.
+ *
+ * @param string $path Path to test.
+ * @return bool True when the path starts with a slash.
+ */
 function tpHealthIsAbsolutePath(string $path): bool
 {
     return $path !== '' && str_starts_with($path, '/');
 }
 
 /**
+ * Trim, drop empty entries and de-duplicate while preserving order.
+ *
  * @param array<int, mixed> $values
  * @return list<string>
  */
@@ -366,6 +450,10 @@ function tpHealthUniqueNonEmptyStrings(array $values): array
 }
 
 /**
+ * List the directories ${APACHE_LOG_DIR} may expand to, most reliable first.
+ *
+ * The value declared in /etc/apache2/envvars wins over the conventional paths.
+ *
  * @return list<string>
  */
 function tpHealthGetApacheLogDirCandidates(): array
@@ -388,6 +476,13 @@ function tpHealthGetApacheLogDirCandidates(): array
 
 /**
  * Extract only the local-file token from an Apache or nginx log directive.
+ *
+ * Formats and options are dropped, and destinations that are not a local file
+ * (piped programs, syslog:, nginx `off` / `stderr`) are rejected.
+ *
+ * @param string $rawDirective Directive value, without its keyword.
+ * @param string $serverFamily 'apache' or 'nginx'.
+ * @return string The local path, or an empty string when unusable.
  */
 function tpHealthExtractLogDirectivePathToken(string $rawDirective, string $serverFamily): string
 {
@@ -422,7 +517,12 @@ function tpHealthExtractLogDirectivePathToken(string $rawDirective, string $serv
 }
 
 /**
- * @param list<string>|null $logDirectories
+ * Resolve an Apache log directive to an absolute path.
+ *
+ * @param string            $rawDirective   Directive value, without its keyword.
+ * @param string            $configPath     Config file the directive was read from.
+ * @param list<string>|null $logDirectories ${APACHE_LOG_DIR} candidates, null to auto-detect.
+ * @return string The absolute path, or an empty string when unresolvable.
  */
 function tpHealthResolveApacheLogDirectivePath(
     string $rawDirective,
@@ -456,6 +556,15 @@ function tpHealthResolveApacheLogDirectivePath(
     return tpHealthIsAbsolutePath($candidate) === true ? $candidate : '';
 }
 
+/**
+ * Resolve an nginx log directive to an absolute path.
+ *
+ * Dynamic destinations built from nginx variables are rejected.
+ *
+ * @param string $rawDirective Directive value, without its keyword.
+ * @param string $configPath   Config file the directive was read from.
+ * @return string The absolute path, or an empty string when unresolvable.
+ */
 function tpHealthResolveNginxLogDirectivePath(string $rawDirective, string $configPath): string
 {
     $path = tpHealthExtractLogDirectivePathToken($rawDirective, 'nginx');
@@ -472,7 +581,12 @@ function tpHealthResolveNginxLogDirectivePath(string $rawDirective, string $conf
 }
 
 /**
- * @param list<string>|null $logDirectories
+ * Collect every usable path declared by one Apache directive in a config file.
+ *
+ * @param string            $content        Configuration file content.
+ * @param string            $directive      Directive keyword, e.g. 'CustomLog'.
+ * @param string            $configPath     Config file the content was read from.
+ * @param list<string>|null $logDirectories ${APACHE_LOG_DIR} candidates, null to auto-detect.
  * @return list<string>
  */
 function tpHealthExtractApacheLogPathsFromContent(
@@ -496,6 +610,11 @@ function tpHealthExtractApacheLogPathsFromContent(
 }
 
 /**
+ * Collect every usable path declared by one nginx directive in a config file.
+ *
+ * @param string $content    Configuration file content.
+ * @param string $directive  Directive keyword, e.g. 'access_log'.
+ * @param string $configPath Config file the content was read from.
  * @return list<string>
  */
 function tpHealthExtractNginxLogPathsFromContent(

@@ -209,6 +209,56 @@ class HealthSystemConsistencyTest extends TestCase
         $this->assertStringContainsString("'health_server_access_log' => 'Log d’accès du serveur web'", $this->frenchLanguage);
     }
 
+    public function testRuntimeLogContentIsRedactedBeforeBeingReturned(): void
+    {
+        $this->assertStringContainsString('function tpHealthRedactLogLine', $this->healthLogsFunctionsSource);
+        $this->assertStringContainsString('function tpHealthRedactLogContent', $this->healthLogsFunctionsSource);
+        // The redaction must wrap the reader output, not sit in an unused helper.
+        $this->assertStringContainsString(
+            "tpHealthRedactLogContent(\$logicalLog['content'])",
+            $this->utilitiesSource
+        );
+        foreach (array('code', 'key_tmp', 'token', 'password') as $parameter) {
+            $this->assertStringContainsString("'" . $parameter . "'", $this->healthLogsFunctionsSource);
+        }
+    }
+
+    public function testBudgetExhaustedReadIsReportedAsTruncatedNotEmpty(): void
+    {
+        $this->assertStringContainsString("'access' => 'truncated'", $this->utilitiesSource);
+        $this->assertStringContainsString(
+            "in_array(\$readStatus, array('limit_reached', 'gzip_unavailable'), true)",
+            $this->utilitiesSource
+        );
+        $this->assertStringContainsString("'partial' => \$readStatus === 'limit_reached'", $this->utilitiesSource);
+        $this->assertStringContainsString("result.access === 'truncated'", $this->healthJavascript);
+        $this->assertStringContainsString('runtime_log_truncated_fmt', $this->healthJavascript);
+        $this->assertStringContainsString("'health_runtime_log_truncated_fmt'", $this->englishLanguage);
+        $this->assertStringContainsString("'health_runtime_log_truncated_fmt'", $this->frenchLanguage);
+    }
+
+    public function testLogExcerptMetadataIsSurfacedInTheUserInterface(): void
+    {
+        $this->assertStringContainsString('function tpRuntimeLogNotes', $this->healthJavascript);
+        $this->assertStringContainsString('runtime_log_sources_fmt', $this->healthJavascript);
+        $this->assertStringContainsString('server_access_log_shared_notice', $this->healthJavascript);
+        $this->assertStringContainsString('runtime_log_redacted', $this->healthJavascript);
+        foreach (array('server', 'server-access', 'teampass', 'php-fpm', 'websocket') as $card) {
+            $this->assertStringContainsString('id="health-' . $card . '-log-meta"', $this->healthPage);
+        }
+        $this->assertStringContainsString("\$('#' + prefix + '-meta').hide().text('')", $this->healthJavascript);
+    }
+
+    public function testSharedAccessLogIsFlaggedAsNotInstanceScoped(): void
+    {
+        $this->assertStringContainsString('function tpHealthGetInstanceAccessLogPaths', $this->utilitiesSource);
+        $this->assertStringContainsString('function tpHealthFlagInstanceScopedLog', $this->utilitiesSource);
+        $this->assertStringContainsString("\$result['instance_scoped'] = in_array(", $this->utilitiesSource);
+        $this->assertStringContainsString('result.instance_scoped === false', $this->healthJavascript);
+        $this->assertStringContainsString("'health_server_access_log_shared_notice'", $this->englishLanguage);
+        $this->assertStringContainsString("'health_server_access_log_shared_notice'", $this->frenchLanguage);
+    }
+
     private function read(string $path): string
     {
         $contents = file_get_contents($path);

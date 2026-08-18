@@ -4637,6 +4637,12 @@ function tpHealthExtractNginxErrorLogsFromConfig(string $configPath): array
     return tpHealthExtractNginxLogPathsFromContent($content, 'error_log', $configPath);
 }
 
+/**
+ * Extract the access logs declared by an Apache configuration file.
+ *
+ * @param string $configPath Absolute path of the Apache configuration file.
+ * @return list<string>
+ */
 function tpHealthExtractApacheAccessLogsFromConfig(string $configPath): array
 {
     $content = tpHealthReadSmallConfigFile($configPath);
@@ -4647,6 +4653,12 @@ function tpHealthExtractApacheAccessLogsFromConfig(string $configPath): array
     return tpHealthExtractApacheLogPathsFromContent($content, 'CustomLog', $configPath);
 }
 
+/**
+ * Extract the access logs declared by an nginx configuration file.
+ *
+ * @param string $configPath Absolute path of the nginx configuration file.
+ * @return list<string>
+ */
 function tpHealthExtractNginxAccessLogsFromConfig(string $configPath): array
 {
     $content = tpHealthReadSmallConfigFile($configPath);
@@ -4657,6 +4669,14 @@ function tpHealthExtractNginxAccessLogsFromConfig(string $configPath): array
     return tpHealthExtractNginxLogPathsFromContent($content, 'access_log', $configPath);
 }
 
+/**
+ * Find the logs this instance declares, ordered by configuration match score.
+ *
+ * @param array<string, mixed> $SETTINGS
+ * @param string               $serverFamily 'apache' or 'nginx'.
+ * @param string               $logType      'access' or 'error'.
+ * @return list<string>
+ */
 function tpHealthFindInstanceLogsFromConfig(array $SETTINGS, string $serverFamily, string $logType): array
 {
     $configPaths = $serverFamily === 'nginx' ? tpHealthGetNginxConfigPaths() : tpHealthGetApacheConfigPaths();
@@ -4713,6 +4733,12 @@ function tpHealthFindDedicatedErrorLogsFromConfig(array $SETTINGS, string $serve
     return tpHealthFindInstanceLogsFromConfig($SETTINGS, $serverFamily, 'error');
 }
 
+/**
+ * Find the web server access logs declared by this instance's configuration.
+ *
+ * @param array<string, mixed> $SETTINGS
+ * @return list<string>
+ */
 function tpHealthFindServerAccessLogsFromConfig(array $SETTINGS, string $serverFamily): array
 {
     return tpHealthFindInstanceLogsFromConfig($SETTINGS, $serverFamily, 'access');
@@ -4890,6 +4916,15 @@ function tpHealthBuildServerLogCandidates(array $SETTINGS, string $serverFamily)
     );
 }
 
+/**
+ * Build the ordered access-log candidates, instance-declared paths first.
+ *
+ * Conventional server-wide paths are appended as a last resort; a result built
+ * from one of them is flagged by tpHealthFlagInstanceScopedLog().
+ *
+ * @param array<string, mixed> $SETTINGS
+ * @return list<string>
+ */
 function tpHealthBuildServerAccessLogCandidates(array $SETTINGS, string $serverFamily): array
 {
     $hints = tpHealthGetHostHints($SETTINGS);
@@ -4941,7 +4976,50 @@ function tpHealthBuildServerAccessLogCandidates(array $SETTINGS, string $serverF
     ));
 }
 
+/**
+ * List the access logs explicitly declared by this instance's own vhost.
+ *
+ * Used to tell an instance-scoped access log apart from the server-wide file
+ * every site on the machine writes to.
+ *
+ * @param array<string, mixed> $SETTINGS
+ * @return list<string>
+ */
+function tpHealthGetInstanceAccessLogPaths(array $SETTINGS, string $serverFamily): array
+{
+    if ($serverFamily === 'apache' || $serverFamily === 'nginx') {
+        return tpHealthFindServerAccessLogsFromConfig($SETTINGS, $serverFamily);
+    }
 
+    return tpHealthUniqueNonEmptyStrings(array_merge(
+        tpHealthFindServerAccessLogsFromConfig($SETTINGS, 'apache'),
+        tpHealthFindServerAccessLogsFromConfig($SETTINGS, 'nginx')
+    ));
+}
+
+/**
+ * Stamp a resolved log result with the scope of the file that was selected.
+ *
+ * `instance_scoped = false` means auto-detection fell back to a conventional
+ * path such as /var/log/apache2/access.log, which aggregates the traffic of
+ * every vhost hosted on the machine. The administrator has to know that before
+ * reading or exporting it.
+ *
+ * @param array<string, mixed> $result        Result returned by tpHealthInspectLogPath().
+ * @param string               $role          Runtime log role being resolved.
+ * @param list<string>         $instancePaths Paths declared by this instance's vhost.
+ * @return array<string, mixed>
+ */
+function tpHealthFlagInstanceScopedLog(array $result, string $role, array $instancePaths): array
+{
+    if ($role !== 'server_access') {
+        return $result;
+    }
+
+    $result['instance_scoped'] = in_array((string) ($result['log_path'] ?? ''), $instancePaths, true);
+
+    return $result;
+}
 
 function tpHealthBuildTeampassLogCandidates(array $SETTINGS, string $serverFamily): array
 {
@@ -5323,7 +5401,10 @@ function tpHealthInspectLogPath(string $logPath, int $lines, array $meta): array
     }
 
     $logicalLog = tpHealthReadLogicalLog($logPath, $lines, 1024 * 1024 * 2);
-    $content = $logicalLog['content'];
+    // Never display a link secret carried in a query string (Secure Send / OTV,
+    // attachment and backup download URLs). Applied to every role: an error log
+    // can quote a full request URI just as an access log does.
+    $content = tpHealthRedactLogContent($logicalLog['content']);
     $contentLength = strlen($content);
     $readStatus = $logicalLog['status'];
 
@@ -5349,6 +5430,22 @@ function tpHealthInspectLogPath(string $logPath, int $lines, array $meta): array
         );
     }
 
+    // The reader hit its safety budget before it could isolate a single complete
+    // line. Reporting 'empty' here would claim the log holds nothing, which is
+    // the opposite of the truth on a busy or heavily compressed journal.
+    if ($contentLength === 0 && in_array($readStatus, array('limit_reached', 'gzip_unavailable'), true) === true) {
+        return array_merge(
+            $base,
+            array(
+                'access' => 'truncated',
+                'read_status' => $readStatus,
+                'source_files' => $logicalLog['source_files'],
+                'bytes_read' => $logicalLog['bytes_read'],
+                'fix_commands' => array(),
+            )
+        );
+    }
+
     return array_merge(
         $base,
         array(
@@ -5359,6 +5456,9 @@ function tpHealthInspectLogPath(string $logPath, int $lines, array $meta): array
             'source_files' => $logicalLog['source_files'],
             'read_status' => $readStatus,
             'bytes_read' => $logicalLog['bytes_read'],
+            // Lines were returned but the budget stopped the read before the
+            // requested count was reached: the excerpt is incomplete.
+            'partial' => $readStatus === 'limit_reached',
         )
     );
 }
@@ -5490,10 +5590,12 @@ function tpHealthResolveLogResult(string $role, array $SETTINGS, int $lines): ar
         return tpHealthInspectLogPath($manualPath, $lines, $meta);
     }
 
+    $instancePaths = array();
     if ($role === 'server') {
         $candidates = tpHealthBuildServerLogCandidates($SETTINGS, $serverFamily);
     } elseif ($role === 'server_access') {
         $candidates = tpHealthBuildServerAccessLogCandidates($SETTINGS, $serverFamily);
+        $instancePaths = tpHealthGetInstanceAccessLogPaths($SETTINGS, $serverFamily);
     } elseif ($role === 'teampass') {
         $candidates = tpHealthBuildTeampassLogCandidates($SETTINGS, $serverFamily);
     } else {
@@ -5515,6 +5617,7 @@ function tpHealthResolveLogResult(string $role, array $SETTINGS, int $lines): ar
         );
     }
 
+    $firstTruncated = null;
     $firstEmpty = null;
     $firstUnreadable = null;
     foreach ($candidates as $candidate) {
@@ -5522,7 +5625,14 @@ function tpHealthResolveLogResult(string $role, array $SETTINGS, int $lines): ar
 
         if ($candidateResult['access'] === 'ok') {
             $candidateResult['candidates'] = $candidates;
-            return $candidateResult;
+            return tpHealthFlagInstanceScopedLog($candidateResult, $role, $instancePaths);
+        }
+
+        // A truncated read proves the file holds data, so it is a better answer
+        // than an empty candidate further down the list.
+        if ($candidateResult['access'] === 'truncated' && $firstTruncated === null) {
+            $firstTruncated = $candidateResult;
+            continue;
         }
 
         if ($candidateResult['access'] === 'empty' && $firstEmpty === null) {
@@ -5535,14 +5645,19 @@ function tpHealthResolveLogResult(string $role, array $SETTINGS, int $lines): ar
         }
     }
 
+    if ($firstTruncated !== null) {
+        $firstTruncated['candidates'] = $candidates;
+        return tpHealthFlagInstanceScopedLog($firstTruncated, $role, $instancePaths);
+    }
+
     if ($firstEmpty !== null) {
         $firstEmpty['candidates'] = $candidates;
-        return $firstEmpty;
+        return tpHealthFlagInstanceScopedLog($firstEmpty, $role, $instancePaths);
     }
 
     if ($firstUnreadable !== null) {
         $firstUnreadable['candidates'] = $candidates;
-        return $firstUnreadable;
+        return tpHealthFlagInstanceScopedLog($firstUnreadable, $role, $instancePaths);
     }
 
     return array_merge(
