@@ -302,3 +302,46 @@ function itemRevisionResolveCursor(int $since, array $scannedRevisions, array $u
 
     return max($since, $cursor);
 }
+
+/**
+ * Default retention of the change journal, in days.
+ */
+const ITEM_REVISION_DEFAULT_RETENTION_DAYS = 90;
+
+/**
+ * Resolve the configured journal retention.
+ *
+ * Zero, or anything negative, disables pruning. A missing or unreadable setting falls back to
+ * the default rather than to "keep forever": the journal grows with every change.
+ *
+ * @param mixed $rawSetting Value read from the settings
+ *
+ * @return int Retention in days, 0 to disable pruning
+ */
+function itemRevisionResolveRetentionDays($rawSetting): int
+{
+    if ($rawSetting === null || $rawSetting === '' || is_numeric($rawSetting) === false) {
+        return ITEM_REVISION_DEFAULT_RETENTION_DAYS;
+    }
+
+    $days = (int) $rawSetting;
+
+    return $days > 0 ? $days : 0;
+}
+
+/**
+ * Oldest change date the journal must keep.
+ *
+ * @param int $retentionDays Retention in days, 0 to disable pruning
+ * @param int $now           Current timestamp
+ *
+ * @return int|null Cut-off timestamp, null when pruning is disabled
+ */
+function itemRevisionPruneCutoff(int $retentionDays, int $now): ?int
+{
+    if ($retentionDays <= 0) {
+        return null;
+    }
+
+    return $now - ($retentionDays * 86400);
+}

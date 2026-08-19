@@ -3168,6 +3168,39 @@ function bumpItemRevision(
 }
 
 /**
+ * Drop change journal entries older than the configured retention.
+ *
+ * A client whose cursor falls below what is left is answered full_sync_required, so pruning
+ * never loses information — it only shortens how long a device may stay offline and still
+ * resynchronize incrementally.
+ *
+ * @param int $retentionDays Retention in days, 0 to disable pruning
+ *
+ * @return int Number of entries removed
+ */
+function pruneItemRevisionsJournal(int $retentionDays): int
+{
+    $cutoff = itemRevisionPruneCutoff($retentionDays, time());
+    if ($cutoff === null) {
+        return 0;
+    }
+
+    try {
+        loadClasses('DB');
+
+        DB::delete(
+            prefixTable('items_revisions'),
+            'changed_at < %i',
+            $cutoff
+        );
+
+        return (int) DB::affectedRows();
+    } catch (\Throwable $e) {
+        return 0;
+    }
+}
+
+/**
  * Read the current revision of an item.
  *
  * Lets a write path report the revision it just produced without re-reading the whole item.

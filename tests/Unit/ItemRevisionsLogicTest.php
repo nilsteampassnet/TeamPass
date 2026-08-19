@@ -280,4 +280,31 @@ class ItemRevisionsLogicTest extends TestCase
         // The very first scanned revision could not be delivered: stay where we were.
         self::assertSame(10, itemRevisionResolveCursor(10, [11, 12], [11]));
     }
+
+    public function testRetentionFallsBackToTheDefaultRatherThanToKeepForever(): void
+    {
+        self::assertSame(ITEM_REVISION_DEFAULT_RETENTION_DAYS, itemRevisionResolveRetentionDays(null));
+        self::assertSame(ITEM_REVISION_DEFAULT_RETENTION_DAYS, itemRevisionResolveRetentionDays(''));
+        self::assertSame(ITEM_REVISION_DEFAULT_RETENTION_DAYS, itemRevisionResolveRetentionDays('nonsense'));
+    }
+
+    public function testRetentionAcceptsNumericStringsAndDisablesOnZero(): void
+    {
+        self::assertSame(30, itemRevisionResolveRetentionDays('30'));
+        self::assertSame(30, itemRevisionResolveRetentionDays(30));
+        self::assertSame(0, itemRevisionResolveRetentionDays('0'));
+        self::assertSame(0, itemRevisionResolveRetentionDays(-10));
+    }
+
+    public function testPruningIsSkippedWhenDisabled(): void
+    {
+        self::assertNull(itemRevisionPruneCutoff(0, 1_800_000_000));
+        self::assertNull(itemRevisionPruneCutoff(-1, 1_800_000_000));
+    }
+
+    public function testPruneCutoffIsTheRetentionWindowBeforeNow(): void
+    {
+        self::assertSame(1_800_000_000 - (90 * 86400), itemRevisionPruneCutoff(90, 1_800_000_000));
+        self::assertSame(1_800_000_000 - 86400, itemRevisionPruneCutoff(1, 1_800_000_000));
+    }
 }
