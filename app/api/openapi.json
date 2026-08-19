@@ -1433,6 +1433,10 @@
                     "id": {
                         "type": "integer"
                     },
+                    "revision": {
+                        "type": "integer",
+                        "description": "Optional precondition, not an updatable field: the revision the edit was based on. The update is refused with 409 when the server has moved on since. Omitting it keeps the previous last-writer-wins behaviour."
+                    },
                     "label": {
                         "type": "string"
                     },

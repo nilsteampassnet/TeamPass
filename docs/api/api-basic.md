@@ -658,6 +658,7 @@ curl -X POST "https://your-teampass.com/api/index.php/item/create" \
 | Field | Type | Required | Description |
 | ----- | ---- | -------- | ----------- |
 | `id` | integer | ✅ | Item ID to update |
+| `revision` | integer | ❌ | Precondition, not an updatable field: the revision the edit was based on. The update is refused with `409` when the server has moved on since — see [Synchronize a cache](#item-changes). Omitting it keeps the previous last-writer-wins behaviour. |
 | `label` | string | ❌ | New label |
 | `password` | string | ❌ | New password |
 | `description` | string | ❌ | New description |
@@ -703,7 +704,7 @@ curl -X POST "https://your-teampass.com/api/index.php/item/create" \
 | 403 | Update permission denied or access denied — including a folder granted as `R`, `NE` or `NDNE` (check `can_edit` on [`folder/writableFolders`](#writable-folders)) |
 | 404 | Item not found |
 | 405 | HTTP method not supported (only `PUT` is accepted) |
-| 409 | The item was moved or re-encrypted by another request while this move was being prepared — retry |
+| 409 | The supplied `revision` no longer matches the item — someone changed it since; resolve the conflict instead of retrying blindly. Also returned when the item was moved or re-encrypted by another request while this move was being prepared, which is a plain retry |
 | 422 | Validation failed: a personal → shared move combined with another field, or one of the item's encryption keys could not be recovered (the item is left untouched) |
 | 500 | Server error |
 

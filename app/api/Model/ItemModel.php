@@ -1433,6 +1433,24 @@ class ItemModel
                 ];
             }
 
+            // Optimistic concurrency. A client that edited offline sends the revision its
+            // edit was based on; if the server has moved on since, the write is refused
+            // rather than silently overwriting whatever changed in the meantime.
+            // Omitting the field keeps the previous last-writer-wins behaviour.
+            if (isset($params['revision']) === true && $params['revision'] !== '') {
+                $expectedRevision = (int) $params['revision'];
+                $currentRevision = (int) ($currentItem['revision'] ?? 0);
+
+                if ($expectedRevision !== $currentRevision) {
+                    return [
+                        'error' => true,
+                        'error_message' => 'The item was modified since revision ' . $expectedRevision
+                            . '. Current revision is ' . $currentRevision . '.',
+                        'error_header' => 'HTTP/1.1 409 Conflict',
+                    ];
+                }
+            }
+
             // Prepare update data
             $updateData = [];
             $passwordKey = null;
