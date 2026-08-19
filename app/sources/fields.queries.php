@@ -470,6 +470,9 @@ if (null !== $post_type) {
                     $post_idToRemove
                 );
                 foreach ($rows as $record) {
+                    // Journal the items losing this field's values, before they are deleted
+                    bumpItemRevisionsForField((int) $record['id'], (int) $session->get('user-id'));
+
                     DB::delete(
                         prefixTable('categories_items'),
                         'field_id = %i',
@@ -498,6 +501,9 @@ if (null !== $post_type) {
                     'id = %i',
                     $post_idToRemove
                 );
+
+                // Journal the items losing this field's values, before they are deleted
+                bumpItemRevisionsForField((int) $post_idToRemove, (int) $session->get('user-id'));
 
                 // Delete all data
                 DB::delete(

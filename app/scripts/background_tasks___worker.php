@@ -81,6 +81,11 @@ class TaskWorker {
      */
     public function execute(): void {
         try {
+            // This process handles many tasks in a row. The item revision memo is scoped to
+            // one logical change, so it must not leak from a previous task: a later change
+            // to the same item is a new revision.
+            resetItemRevisionMemo();
+
             if (LOG_TASKS=== true) $this->logger->log('Processing task: ' . print_r($this->taskData, true), 'DEBUG');
             // Dispatch selon le type de processus
             switch ($this->processType) {

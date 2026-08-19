@@ -1681,6 +1681,8 @@ if (null !== $post_type) {
                                 '1'
                             );
                             foreach ($items as $item) {
+                                // Journal the purge first: nothing else survives the delete
+                                bumpItemRevision((int) $item['id'], 'purged', (int) $session->get('user-id'), (int) $folder->id);
                                 // Delete item
                                 DB::delete(prefixTable('items'), 'id = %i', $item['id']);
                                 // log
@@ -5505,6 +5507,9 @@ function purgeDeletedUserById(int $userId, bool $rebuildTree = true): array
                     '1'
                 );
                 foreach ($items as $item) {
+                    // Journal the purge first: nothing else survives the delete.
+                    // Attributed to the system: this runs outside any user session.
+                    bumpItemRevision((int) $item['id'], 'purged', 0, (int) $folder->id);
                     // Delete item
                     DB::delete(prefixTable('items'), 'id = %i', $item['id']);
                     // log
