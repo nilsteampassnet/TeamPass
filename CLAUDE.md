@@ -16,12 +16,26 @@ TeamPass is a collaborative on-premise password manager built in PHP. It emphasi
 
 ## Development Commands
 
+Run everything from the repository root. `composer.json` sets `vendor-dir` to `app/vendor`,
+so the Composer binaries live under `app/vendor/bin/`, not `vendor/bin/`.
+
 ```bash
-vendor/bin/phpstan analyse          # PHPStan level 4
-vendor/bin/composer-license-checker # License compliance
-composer install                    # PHP dependencies
-php scripts/background_tasks___handler.php  # Background tasks
+php app/vendor/bin/phpstan analyse --memory-limit=2G   # PHPStan level 4 (config: phpstan.neon)
+php app/vendor/bin/composer-license-checker            # License compliance
+composer install                                       # PHP dependencies
+php app/scripts/background_tasks___handler.php         # Background tasks
+php app/vendor/phpunit/phpunit/phpunit                 # Unit tests — see caveat below
 ```
+
+A full PHPStan run takes several minutes — launch it in the background rather than blocking on it.
+
+**PHPUnit usually does not run as-is.** The dev dependencies are untracked, so a checkout or a
+merge deletes them while leaving generated residue behind; Composer then believes they are still
+installed and skips them, and the committed `app/vendor/composer/` autoloader maps no dev package
+(`Class "PHPUnit\TextUI\Application" not found`). `composer dump-autoload` does **not** help —
+`phpunit/phpunit` is missing from `installed.json`. Apply the recovery from
+`.claude/skills/prepare-release/SKILL.md` §7 (`rm -rf` the three packages, `composer install`,
+run the tests, and only then `git checkout -- app/vendor/composer/`).
 
 Database schema: initial install via `/install/install.php`, upgrades via `/install/upgrade.php` + `/install/upgrade_run_*.php`.
 
@@ -194,7 +208,10 @@ switch ($type) {
 
 ## Testing and Debugging
 
-No PHPUnit test suite. Debugging: PHP error logging, TeamPass Admin > Logs, MeekroDB query hooks, browser console + network tab.
+A PHPUnit suite lives in `tests/` (74 test classes, `phpunit.xml` at the repository root) — it
+covers the DB-free logic modules and the sentinel tests that guard the dual-location class copies.
+See the Development Commands caveat before running it. Debugging: PHP error logging,
+TeamPass Admin > Logs, MeekroDB query hooks, browser console + network tab.
 
 **Manual testing checklist:** multiple user roles (admin, standard, read-only), personal folders on/off, encryption scenarios, audit log creation, LDAP/OAuth2 if auth changed.
 
