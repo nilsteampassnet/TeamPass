@@ -40,7 +40,7 @@ class CheckUserCrudRightsTest extends TestCase
             'allowed_to_delete' => 1,
         ];
 
-        $readActions = ['read', 'get', 'inFolders', 'findByUrl', 'getOtp', 'allTags', 'listFolders', 'writableFolders'];
+        $readActions = ['read', 'get', 'inFolders', 'findByUrl', 'getOtp', 'allTags', 'changes', 'listFolders', 'writableFolders'];
         foreach ($readActions as $action) {
             self::assertTrue(
                 $this->checkRights($userData, $action),
@@ -122,7 +122,7 @@ class CheckUserCrudRightsTest extends TestCase
     {
         if ($actionToPerform === 'create' && $userData['allowed_to_create'] === 1) {
             return true;
-        } elseif (in_array($actionToPerform, ['read', 'get', 'inFolders', 'findByUrl', 'getOtp', 'allTags', 'listFolders', 'writableFolders'], true) === true && $userData['allowed_to_read'] === 1) {
+        } elseif (in_array($actionToPerform, ['read', 'get', 'inFolders', 'findByUrl', 'getOtp', 'allTags', 'changes', 'listFolders', 'writableFolders'], true) === true && $userData['allowed_to_read'] === 1) {
             return true;
         } elseif ($actionToPerform === 'update' && $userData['allowed_to_update'] === 1) {
             return true;

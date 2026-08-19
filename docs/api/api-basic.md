@@ -22,6 +22,7 @@
    - [Update an item](#update-item)
    - [Delete an item](#delete-item)
    - [List Tags](#list-tags)
+   - [Synchronize a cache](#item-changes)
 4. [Folders Endpoints](#folders-endpoints)
    - [List accessible folders](#list-folders)
    - [List folders with access rights](#writable-folders)
@@ -818,6 +819,89 @@ curl -X DELETE "https://your-teampass.com/api/index.php/item/delete" \
 **Example:**
 ```bash
 curl -X GET "https://your-teampass.com/api/index.php/item/allTags" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+---
+
+### Synchronize a cache {#item-changes}
+
+> 🔄 Returns what changed since a given revision — the endpoint an offline client polls
+> instead of re-downloading the whole vault
+
+| Info | Description |
+| ---- | ----------- |
+| **Endpoint** | `item/changes` |
+| **Method** | GET |
+| **URL** | `<Teampass URL>/api/index.php/item/changes` |
+| **Parameters** | `since` (required), `limit` (optional) |
+| **Headers** | `Authorization: Bearer <token>` |
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+| --------- | ---- | -------- | ----------- |
+| `since` | integer | Yes | Cursor returned by the previous call, exclusive. `0` on a first synchronization. |
+| `limit` | integer | No | Journal entries scanned in one call. Default 200, maximum 1000. |
+
+**Response (success):**
+```json
+{
+  "cursor": 12345,
+  "has_more": false,
+  "full_sync_required": false,
+  "changed": [
+    { "id": 77, "revision": 12340, "label": "Prod database", "pwd": "…", "fields": [] }
+  ],
+  "removed": [
+    { "id": 91, "revision": 12331, "reason": "deleted" }
+  ]
+}
+```
+
+**Response Fields:**
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `cursor` | integer | Store it and send it as `since` on the next call |
+| `has_more` | boolean | More changes are waiting — call again with the returned cursor |
+| `full_sync_required` | boolean | The cursor cannot be served: rebuild the cache and adopt the returned cursor |
+| `changed` | array | Items to upsert, same shape as `item/get` |
+| `removed` | array | Items to drop, with `id`, `revision` and `reason` |
+
+`reason` is one of `deleted` (soft deleted), `purged` (permanently removed) or `out_of_scope`
+(the item still exists but the caller can no longer read it, typically after a move into a
+folder they have no access to).
+
+**Synchronization protocol:**
+
+1. **First run** — call with `since=0`. The answer is always `full_sync_required: true` plus a
+   cursor: items untouched since revision tracking was installed are still at revision `0` and
+   have no journal entry, so a delta would silently miss them. Read the vault through
+   [item/inFolders](#list-items-folders), store each item with its `revision`, and store the cursor.
+2. **Reconnect** — call with the stored cursor. Upsert `changed`, delete `removed`, store the new
+   cursor, and repeat while `has_more` is true. A `full_sync_required: true` sends you back to
+   step 1 — it also happens when the client has been offline longer than the journal retention.
+3. **Offline edits** — send the `revision` the edit was based on in
+   [item/update](#update-item). A `409` means the server moved on: resolve the conflict instead
+   of overwriting.
+4. **Folder scope** — also refresh [item rights](#writable-folders) and drop any cached item whose
+   folder is no longer listed. Losing access to a folder changes nothing on the items themselves,
+   so it produces no entry in this feed.
+
+**Response Codes:**
+
+| Code | Description |
+| ---- | ----------- |
+| 200 | Changes returned successfully |
+| 400 | Missing `since` parameter |
+| 401 | Invalid or expired token |
+| 405 | HTTP method not supported (must be GET) |
+| 500 | Server error |
+
+**Example:**
+```bash
+curl -X GET "https://your-teampass.com/api/index.php/item/changes?since=12300" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 

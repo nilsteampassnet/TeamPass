@@ -160,3 +160,145 @@ function itemRevisionShouldUpgradeEntry(string $journalAction, ?int $previousFol
     return itemRevisionIsTerminalAction($journalAction) === true
         || ($previousFolderId !== null && $previousFolderId > 0);
 }
+
+/**
+ * Default and maximum number of journal entries scanned in one delta call.
+ */
+const ITEM_REVISION_DEFAULT_LIMIT = 200;
+const ITEM_REVISION_MAX_LIMIT = 1000;
+
+/**
+ * Clamp the number of journal entries a client may scan in one call.
+ *
+ * @param int|null $limit Requested limit, null when not supplied
+ *
+ * @return int Effective limit
+ */
+function itemRevisionNormalizeLimit(?int $limit): int
+{
+    if ($limit === null || $limit <= 0) {
+        return ITEM_REVISION_DEFAULT_LIMIT;
+    }
+
+    return min($limit, ITEM_REVISION_MAX_LIMIT);
+}
+
+/**
+ * Tell whether a client must rebuild its whole cache instead of applying a delta.
+ *
+ * Three situations lead there, and they collapse into one rule:
+ *   - a first synchronization (cursor 0): items untouched since tracking was installed still
+ *     sit at revision 0 and have no journal entry, so a delta would silently miss them;
+ *   - a cursor older than the retained window: the entries proving what changed are pruned;
+ *   - an empty journal asked from cursor 0, same reason as the first case.
+ *
+ * @param int      $since              Client cursor
+ * @param int|null $minRetainedRevision Lowest revision still in the journal, null when empty
+ *
+ * @return bool True when a full resynchronization is required
+ */
+function itemRevisionNeedsFullSync(int $since, ?int $minRetainedRevision): bool
+{
+    if ($since <= 0) {
+        return true;
+    }
+
+    if ($minRetainedRevision === null) {
+        // Nothing was ever journalled: there is simply nothing to report.
+        return false;
+    }
+
+    // The client is served correctly only if every revision above its cursor is still stored.
+    return $since < $minRetainedRevision - 1;
+}
+
+/**
+ * Keep, for each item, only the last journal entry of the scanned window.
+ *
+ * An item modified three times since the client's cursor is one thing to download, not three.
+ *
+ * @param array<int, array<string, mixed>> $rows Journal rows, each with item_id and revision
+ *
+ * @return array<int, array<string, mixed>> Winning row per item id, keyed by item id
+ */
+function itemRevisionDedupeScan(array $rows): array
+{
+    $winners = [];
+
+    foreach ($rows as $row) {
+        $itemId = (int) ($row['item_id'] ?? 0);
+        if ($itemId <= 0) {
+            continue;
+        }
+
+        $revision = (int) ($row['revision'] ?? 0);
+        if (isset($winners[$itemId]) === false || $revision > (int) $winners[$itemId]['revision']) {
+            $winners[$itemId] = $row;
+        }
+    }
+
+    return $winners;
+}
+
+/**
+ * Decide what a client must do with an item that changed.
+ *
+ * @param int                 $itemId          Item id
+ * @param array<int, bool>    $visibleItemIds  Items currently readable by the caller, as a set
+ * @param bool                $stillExists     False once the item row is gone
+ * @param bool                $isDeleted       True when soft deleted
+ *
+ * @return array{classification: string, reason: string} changed, or removed with its reason
+ */
+function itemRevisionClassifyScanRow(
+    int $itemId,
+    array $visibleItemIds,
+    bool $stillExists,
+    bool $isDeleted
+): array {
+    if ($stillExists === false) {
+        return ['classification' => 'removed', 'reason' => 'purged'];
+    }
+
+    if ($isDeleted === true) {
+        return ['classification' => 'removed', 'reason' => 'deleted'];
+    }
+
+    if (isset($visibleItemIds[$itemId]) === false) {
+        // The item still exists but the caller can no longer read it — typically moved into
+        // a folder they have no access to. Their cached copy has to go.
+        return ['classification' => 'removed', 'reason' => 'out_of_scope'];
+    }
+
+    return ['classification' => 'changed', 'reason' => ''];
+}
+
+/**
+ * Compute the cursor a client must store after applying a delta.
+ *
+ * Two constraints: never go backwards, and never step over a change that could not be
+ * delivered. The second one matters right after an item is created, while the background
+ * task is still distributing the encryption keys: the item is visible but not yet readable,
+ * and stepping over it would hide it from that client for good.
+ *
+ * @param int             $since             Client cursor
+ * @param array<int, int> $scannedRevisions  Every revision read in this window
+ * @param array<int, int> $undeliverable     Revisions of changes that could not be materialized
+ *
+ * @return int Cursor to store
+ */
+function itemRevisionResolveCursor(int $since, array $scannedRevisions, array $undeliverable = []): int
+{
+    $cursor = $since;
+
+    if ($scannedRevisions !== []) {
+        $cursor = max($since, max($scannedRevisions));
+    }
+
+    if ($undeliverable !== []) {
+        // Stop just before the first change we could not hand over, so it is offered again.
+        $cursor = min($cursor, min($undeliverable) - 1);
+    }
+
+    return max($since, $cursor);
+}
