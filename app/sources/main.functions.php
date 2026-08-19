@@ -3168,6 +3168,35 @@ function bumpItemRevision(
 }
 
 /**
+ * Read the current revision of an item.
+ *
+ * Lets a write path report the revision it just produced without re-reading the whole item.
+ *
+ * @param int $itemId Item id
+ *
+ * @return int Current revision, 0 when unknown
+ */
+function getItemRevision(int $itemId): int
+{
+    if ($itemId <= 0) {
+        return 0;
+    }
+
+    try {
+        loadClasses('DB');
+
+        $row = DB::queryFirstRow(
+            'SELECT revision FROM ' . prefixTable('items') . ' WHERE id = %i',
+            $itemId
+        );
+
+        return $row === null ? 0 : (int) $row['revision'];
+    } catch (\Throwable $e) {
+        return 0;
+    }
+}
+
+/**
  * Allocate a revision for every item holding a value of a custom field.
  *
  * Deleting a field or a category strips its values from every item at once, with no audit

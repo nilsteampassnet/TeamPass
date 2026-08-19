@@ -595,7 +595,22 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "item_id": {
+                                            "type": "integer"
+                                        },
+                                        "revision": {
+                                            "type": "integer",
+                                            "description": "Revision of the item after the update"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1066,6 +1081,10 @@
                     "id": {
                         "type": "integer"
                     },
+                    "revision": {
+                        "type": "integer",
+                        "description": "Monotonic revision of the item, bumped on every content change. Compare it against a cached copy to detect staleness; the larger value is the newer one."
+                    },
                     "label": {
                         "type": "string"
                     },
@@ -1169,6 +1188,10 @@
                 "properties": {
                     "id": {
                         "type": "integer"
+                    },
+                    "revision": {
+                        "type": "integer",
+                        "description": "Monotonic revision of the item, bumped on every content change. Compare it against a cached copy to detect staleness; the larger value is the newer one."
                     },
                     "label": {
                         "type": "string"
@@ -1502,6 +1525,10 @@
                     },
                     "newId": {
                         "type": "integer"
+                    },
+                    "revision": {
+                        "type": "integer",
+                        "description": "Revision allocated to the new item"
                     }
                 }
             },

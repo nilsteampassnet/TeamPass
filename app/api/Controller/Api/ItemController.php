@@ -520,7 +520,7 @@ class ItemController extends BaseController
                 } else {
                     // Query items with the specific URL
                     $rows = DB::query(
-                        "SELECT i.id, i.label, i.login, i.url, i.id_tree, i.favicon_url,
+                        "SELECT i.id, i.label, i.login, i.url, i.id_tree, i.favicon_url, i.revision,
                                 CASE WHEN o.enabled = 1 THEN 1 ELSE 0 END AS has_otp
                         FROM " . prefixTable('items') . " AS i
                         LEFT JOIN " . prefixTable('items_otp') . " AS o ON (o.item_id = i.id)
@@ -554,6 +554,7 @@ class ItemController extends BaseController
 
                         $ret[] = [
                             'id' => (int) $row['id'],
+                            'revision' => (int) $row['revision'],
                             'label' => $row['label'],
                             'login' => $row['login'],
                             'url' => $row['url'],

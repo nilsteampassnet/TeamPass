@@ -80,6 +80,7 @@ class ItemModel
         $rows = DB::query(
             "SELECT i.id, i.label, i.description, i.pw, i.pw_iv, i.url, i.id_tree, i.login, i.email,
                 i.viewed_no, i.fa_icon, i.inactif, i.perso, i.favicon_url, i.anyone_can_modify,
+                i.revision,
                 t.title as folder_label,
                 io.secret as otp_secret,
                 io.algorithm as otp_algorithm,
@@ -166,6 +167,7 @@ class ItemModel
                 $ret,
                 [
                     'id' => (int) $row['id'],
+                    'revision' => (int) $row['revision'],
                     'label' => $row['label'],
                     'description' => $row['description'],
                     'pwd' => $pwd,
@@ -328,6 +330,7 @@ class ItemModel
                 'error' => false,
                 'message' => 'Item added successfully',
                 'newId' => $newID,
+                'revision' => getItemRevision((int) $newID),
             ];
 
         } catch (Exception $e) {
@@ -1617,6 +1620,7 @@ class ItemModel
                 'error' => false,
                 'message' => 'Item updated successfully',
                 'item_id' => $itemId,
+                'revision' => getItemRevision($itemId),
             ];
 
         } catch (InvalidArgumentException | UnexpectedValueException $e) {

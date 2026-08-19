@@ -268,6 +268,7 @@ curl -X GET "https://your-teampass.com/api/index.php/item/inFolders?folders=[1,2
 ```json
 {
   "id": 2053,
+  "revision": 4127,
   "label": "new object for #3500 v3",
   "description": "<p>bla bla</p>",
   "pwd": "SK^dsf123s_6A}]V$t^]",
@@ -289,6 +290,7 @@ curl -X GET "https://your-teampass.com/api/index.php/item/inFolders?folders=[1,2
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | `id` | integer | Unique item ID |
+| `revision` | integer | Monotonic revision, bumped on every content change of the item or its custom fields, tags, attachments and OTP. Compare it against a cached copy to detect staleness; the larger value is the newer one. `0` means the item has not changed since revision tracking was installed. |
 | `label` | string | Item label |
 | `description` | string | Description (may contain HTML) |
 | `pwd` | string | Password (decrypted according to rights) |
