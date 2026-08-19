@@ -115,6 +115,7 @@ if (
         remaining_lock_time: <?php echo json_encode($lang->get('remaining_lock_time')); ?>,
         seconds: <?php echo json_encode($lang->get('seconds')); ?>,
         close: <?php echo json_encode($lang->get('close')); ?>,
+        cancel: <?php echo json_encode($lang->get('cancel')); ?>,
         edit: <?php echo json_encode($lang->get('edit')); ?>,
         delete: <?php echo json_encode($lang->get('delete')); ?>,
         open: <?php echo json_encode($lang->get('open')); ?>,
@@ -991,37 +992,41 @@ if (
             return;
         }
 
-        if (window.confirm(kbTranslations.kb_delete_confirm) !== true) {
-            return;
-        }
+        launchConfirmDialog(
+            '<i class="fa-solid fa-trash mr-2"></i>' + htmlEncode(kbTranslations.delete),
+            htmlEncode(kbTranslations.kb_delete_confirm),
+            function() {
+                $.post(
+                    'sources/kb.queries.php',
+                    {
+                        type: 'delete_kb',
+                        data: kbEncodePayload({id: id}),
+                        key: kbSessionKey
+                    },
+                    function(response) {
+                        const data = kbDecodeResponse(response, 'delete_kb');
+                        if (data.error === true) {
+                            if (data.edition_locked === true) {
+                                window.tpBlockedEditKbId = id;
+                                kbToastEditionLocked(data);
+                            } else {
+                                kbToastError(data.message);
+                            }
+                            return;
+                        }
 
-        $.post(
-            'sources/kb.queries.php',
-            {
-                type: 'delete_kb',
-                data: kbEncodePayload({id: id}),
-                key: kbSessionKey
-            },
-            function(response) {
-                const data = kbDecodeResponse(response, 'delete_kb');
-                if (data.error === true) {
-                    if (data.edition_locked === true) {
-                        window.tpBlockedEditKbId = id;
-                        kbToastEditionLocked(data);
-                    } else {
-                        kbToastError(data.message);
+                        kbHideViewer();
+                        kbHideEditor(false);
+                        loadKbList();
+                        kbToastSuccess(kbTranslations.kb_deleted);
                     }
-                    return;
-                }
-
-                kbHideViewer();
-                kbHideEditor(false);
-                loadKbList();
-                kbToastSuccess(kbTranslations.kb_deleted);
-            }
-        ).fail(function() {
-            kbToastError(kbTranslations.server_answer_error);
-        });
+                ).fail(function() {
+                    kbToastError(kbTranslations.server_answer_error);
+                });
+            },
+            kbTranslations.delete,
+            kbTranslations.cancel
+        );
     }
 
     function kbUploadAttachments(kbId, onSuccess) {
@@ -1454,35 +1459,39 @@ if (
             return;
         }
 
-        if (window.confirm(kbTranslations.kb_delete_attachment_confirm) !== true) {
-            return;
-        }
+        launchConfirmDialog(
+            '<i class="fa-solid fa-trash mr-2"></i>' + htmlEncode(kbTranslations.delete),
+            htmlEncode(kbTranslations.kb_delete_attachment_confirm),
+            function() {
+                $.post(
+                    'sources/kb.queries.php',
+                    {
+                        type: 'delete_attachment',
+                        data: kbEncodePayload({attachment_id: attachmentId, kb_id: kbId}),
+                        key: kbSessionKey
+                    },
+                    function(response) {
+                        const data = kbDecodeResponse(response, 'delete_attachment');
+                        if (data.error === true) {
+                            if (data.edition_locked === true) {
+                                window.tpBlockedEditKbId = kbId;
+                                kbToastEditionLocked(data);
+                            } else {
+                                kbToastError(data.message);
+                            }
+                            return;
+                        }
 
-        $.post(
-            'sources/kb.queries.php',
-            {
-                type: 'delete_attachment',
-                data: kbEncodePayload({attachment_id: attachmentId, kb_id: kbId}),
-                key: kbSessionKey
-            },
-            function(response) {
-                const data = kbDecodeResponse(response, 'delete_attachment');
-                if (data.error === true) {
-                    if (data.edition_locked === true) {
-                        window.tpBlockedEditKbId = kbId;
-                        kbToastEditionLocked(data);
-                    } else {
-                        kbToastError(data.message);
+                        kbRenderEditorAttachments((data.entry && data.entry.attachments) ? data.entry.attachments : []);
+                        kbToastSuccess(kbTranslations.kb_attachment_deleted);
                     }
-                    return;
-                }
-
-                kbRenderEditorAttachments((data.entry && data.entry.attachments) ? data.entry.attachments : []);
-                kbToastSuccess(kbTranslations.kb_attachment_deleted);
-            }
-        ).fail(function() {
-            kbToastError(kbTranslations.server_answer_error);
-        });
+                ).fail(function() {
+                    kbToastError(kbTranslations.server_answer_error);
+                });
+            },
+            kbTranslations.delete,
+            kbTranslations.cancel
+        );
     }
 
     function kbAddComment() {
@@ -1532,29 +1541,33 @@ if (
             return;
         }
 
-        if (window.confirm(kbTranslations.kb_comment_delete_confirm) !== true) {
-            return;
-        }
+        launchConfirmDialog(
+            '<i class="fa-solid fa-trash mr-2"></i>' + htmlEncode(kbTranslations.delete),
+            htmlEncode(kbTranslations.kb_comment_delete_confirm),
+            function() {
+                $.post(
+                    'sources/kb.queries.php',
+                    {
+                        type: 'delete_comment',
+                        data: kbEncodePayload({comment_id: commentId, kb_id: kbId}),
+                        key: kbSessionKey
+                    },
+                    function(response) {
+                        const data = kbDecodeResponse(response, 'delete_comment');
+                        if (data.error === true) {
+                            kbToastError(data.message);
+                            return;
+                        }
 
-        $.post(
-            'sources/kb.queries.php',
-            {
-                type: 'delete_comment',
-                data: kbEncodePayload({comment_id: commentId, kb_id: kbId}),
-                key: kbSessionKey
+                        kbRenderViewer(data.entry || {});
+                        kbToastSuccess(kbTranslations.kb_comment_deleted);
+                    }
+                ).fail(function() {
+                    kbToastError(kbTranslations.server_answer_error);
+                });
             },
-            function(response) {
-                const data = kbDecodeResponse(response, 'delete_comment');
-                if (data.error === true) {
-                    kbToastError(data.message);
-                    return;
-                }
-
-                kbRenderViewer(data.entry || {});
-                kbToastSuccess(kbTranslations.kb_comment_deleted);
-            }
-        ).fail(function() {
-            kbToastError(kbTranslations.server_answer_error);
-        });
+            kbTranslations.delete,
+            kbTranslations.cancel
+        );
     }
 </script>
