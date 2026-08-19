@@ -432,6 +432,7 @@ class DatabaseInstaller
             `hibp_status` tinyint(1) NOT NULL DEFAULT '0',
             `hibp_count` int NOT NULL DEFAULT '0',
             `hibp_checked_at` varchar(30) NULL DEFAULT NULL,
+            `revision` INT UNSIGNED NOT NULL DEFAULT '0',
             PRIMARY KEY (`id`),
             KEY `restricted_inactif_idx` (`restricted_to`,`inactif`),
             INDEX items_perso_id_idx (`perso`, `id`),
@@ -765,7 +766,8 @@ class DatabaseInstaller
             array('admin', 'health_php_fpm_log_path', ''),
             // Kill switch of the emails customization layer. Set to 0 to ignore
             // every stored template without deleting them.
-            array('admin', 'emails_templates_enabled', '1')
+            array('admin', 'emails_templates_enabled', '1'),
+            array('admin', 'items_revisions_retention_days', '90')
         );
         foreach ($aMiscVal as $elem) {
             $value = isset($elem[3]) ? $elem[3] : 0;
@@ -2186,6 +2188,26 @@ class DatabaseInstaller
         KEY `idx_language` (`language`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     COMMENT='Administrator customizations of the emails subjects and bodies'"
+        );
+    }
+
+    // Create table items_revisions
+    private function items_revisions()
+    {
+        DB::query(
+            'CREATE TABLE IF NOT EXISTS `' . $this->inputData['tablePrefix'] . "items_revisions` (
+        `revision` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'Globally monotonic change sequence',
+        `item_id` INT(12) NOT NULL,
+        `folder_id` INT(12) NOT NULL DEFAULT '0' COMMENT 'Folder holding the item at change time',
+        `previous_folder_id` INT(12) NOT NULL DEFAULT '0' COMMENT 'Source folder, set on move only',
+        `action` VARCHAR(20) NOT NULL COMMENT 'created|updated|deleted|restored|moved|purged',
+        `changed_by` INT(12) NOT NULL DEFAULT '0',
+        `changed_at` INT(11) NOT NULL,
+        PRIMARY KEY (`revision`),
+        KEY `idx_items_revisions_item` (`item_id`, `revision`),
+        KEY `idx_items_revisions_changed_at` (`changed_at`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    COMMENT='Item change journal feeding the offline synchronization delta feed'"
         );
     }
 

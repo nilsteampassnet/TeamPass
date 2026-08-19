@@ -318,7 +318,8 @@ function performStep5() {
         { id: 'check70', action: 'access_review_items' },
         { id: 'check71', action: 'data_classification' },
         { id: 'check72', action: 'user_notifications' },
-        { id: 'check73', action: 'emails_templates' }
+        { id: 'check73', action: 'emails_templates' },
+        { id: 'check74', action: 'items_revisions' }
     ];
     
     let errorOccurred = false; // Variable to track errors

@@ -111,6 +111,52 @@ mysqli_query(
     "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'emails_templates_enabled', '1')"
 );
 
+// Offline synchronization: give every item a monotonic revision ID.
+// Default 0 means "never changed since revision tracking was installed", which is
+// a consistent starting point for every client, so no backfill is needed here.
+$res = addColumnIfNotExist(
+    $pre . 'items',
+    'revision',
+    "INT UNSIGNED NOT NULL DEFAULT '0'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error adding column revision to items table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Item change journal. Its AUTO_INCREMENT primary key is the globally monotonic
+// revision sequence, and its rows are the only tombstone left once an item row is
+// hard deleted or leaves the caller's visible folders.
+$res = mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . "items_revisions` (
+        `revision` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'Globally monotonic change sequence',
+        `item_id` INT(12) NOT NULL,
+        `folder_id` INT(12) NOT NULL DEFAULT '0' COMMENT 'Folder holding the item at change time',
+        `previous_folder_id` INT(12) NOT NULL DEFAULT '0' COMMENT 'Source folder, set on move only',
+        `action` VARCHAR(20) NOT NULL COMMENT 'created|updated|deleted|restored|moved|purged',
+        `changed_by` INT(12) NOT NULL DEFAULT '0',
+        `changed_at` INT(11) NOT NULL,
+        PRIMARY KEY (`revision`),
+        KEY `idx_items_revisions_item` (`item_id`, `revision`),
+        KEY `idx_items_revisions_changed_at` (`changed_at`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    COMMENT='Item change journal feeding the offline synchronization delta feed'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error creating items_revisions table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// How long the journal is kept. A client whose cursor is older than the retained
+// window is told to perform a full resynchronization instead.
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'items_revisions_retention_days', '90')"
+);
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,
