@@ -1399,6 +1399,10 @@ switch ($post_type) {
         if (in_array($post_field, ['nb_bad_authentication', 'nb_bad_authentication_by_ip', 'api_rate_limit_per_minute'], true) === true) {
             $post_value = (string) max(0, (int) $post_value);
         }
+        // Offline synchronization window. 0 means no limit; a negative value is meaningless.
+        if ($post_field === 'offline_sync_window_days') {
+            $post_value = (string) max(0, (int) $post_value);
+        }
         if ($post_field === 'bruteforce_lock_duration') {
             $intValue = (int) $post_value;
             $post_value = (string) max(1, $intValue === 0 ? 10 : $intValue);

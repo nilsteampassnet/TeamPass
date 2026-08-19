@@ -150,11 +150,12 @@ if ($res === false) {
     exit();
 }
 
-// How long the journal is kept. A client whose cursor is older than the retained
-// window is told to perform a full resynchronization instead.
+// Offline synchronization window: how long a device may stay offline and still catch up
+// incrementally. A client whose cursor falls outside it rebuilds its cache instead. This is
+// not a data retention — no item, password or history depends on it.
 mysqli_query(
     $db_link,
-    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'items_revisions_retention_days', '90')"
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'offline_sync_window_days', '90')"
 );
 
 // Save upgrade timestamp (upsert: always update if exists)

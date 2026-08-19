@@ -890,6 +890,19 @@ folder they have no access to).
    folder is no longer listed. Losing access to a folder changes nothing on the items themselves,
    so it produces no entry in this feed.
 
+**How far back the feed reaches:**
+
+The server keeps its change journal for the duration set in
+**Settings → API → Offline synchronization window** (`offline_sync_window_days`, 90 days by
+default, `0` for no limit). A device that reconnects within that window catches up
+incrementally; one that has been offline longer is answered `full_sync_required` and rebuilds
+its cache.
+
+> 🔔 This window is **not** a data retention. It deletes no item, no password and no history —
+> those are governed separately and are never affected. It only bounds how far back the
+> incremental catch-up reaches, so the only cost of a short window is bandwidth for devices
+> that were offline a long time.
+
 **Response Codes:**
 
 | Code | Description |

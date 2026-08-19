@@ -281,30 +281,30 @@ class ItemRevisionsLogicTest extends TestCase
         self::assertSame(10, itemRevisionResolveCursor(10, [11, 12], [11]));
     }
 
-    public function testRetentionFallsBackToTheDefaultRatherThanToKeepForever(): void
+    public function testWindowFallsBackToTheDefaultRatherThanToNeverTrim(): void
     {
-        self::assertSame(ITEM_REVISION_DEFAULT_RETENTION_DAYS, itemRevisionResolveRetentionDays(null));
-        self::assertSame(ITEM_REVISION_DEFAULT_RETENTION_DAYS, itemRevisionResolveRetentionDays(''));
-        self::assertSame(ITEM_REVISION_DEFAULT_RETENTION_DAYS, itemRevisionResolveRetentionDays('nonsense'));
+        self::assertSame(OFFLINE_SYNC_DEFAULT_WINDOW_DAYS, offlineSyncResolveWindowDays(null));
+        self::assertSame(OFFLINE_SYNC_DEFAULT_WINDOW_DAYS, offlineSyncResolveWindowDays(''));
+        self::assertSame(OFFLINE_SYNC_DEFAULT_WINDOW_DAYS, offlineSyncResolveWindowDays('nonsense'));
     }
 
-    public function testRetentionAcceptsNumericStringsAndDisablesOnZero(): void
+    public function testWindowAcceptsNumericStringsAndNeverTrimsOnZero(): void
     {
-        self::assertSame(30, itemRevisionResolveRetentionDays('30'));
-        self::assertSame(30, itemRevisionResolveRetentionDays(30));
-        self::assertSame(0, itemRevisionResolveRetentionDays('0'));
-        self::assertSame(0, itemRevisionResolveRetentionDays(-10));
+        self::assertSame(30, offlineSyncResolveWindowDays('30'));
+        self::assertSame(30, offlineSyncResolveWindowDays(30));
+        self::assertSame(0, offlineSyncResolveWindowDays('0'));
+        self::assertSame(0, offlineSyncResolveWindowDays(-10));
     }
 
-    public function testPruningIsSkippedWhenDisabled(): void
+    public function testPruningIsSkippedWhenTheWindowIsUnlimited(): void
     {
-        self::assertNull(itemRevisionPruneCutoff(0, 1_800_000_000));
-        self::assertNull(itemRevisionPruneCutoff(-1, 1_800_000_000));
+        self::assertNull(offlineSyncPruneCutoff(0, 1_800_000_000));
+        self::assertNull(offlineSyncPruneCutoff(-1, 1_800_000_000));
     }
 
-    public function testPruneCutoffIsTheRetentionWindowBeforeNow(): void
+    public function testPruneCutoffIsTheWindowBeforeNow(): void
     {
-        self::assertSame(1_800_000_000 - (90 * 86400), itemRevisionPruneCutoff(90, 1_800_000_000));
-        self::assertSame(1_800_000_000 - 86400, itemRevisionPruneCutoff(1, 1_800_000_000));
+        self::assertSame(1_800_000_000 - (90 * 86400), offlineSyncPruneCutoff(90, 1_800_000_000));
+        self::assertSame(1_800_000_000 - 86400, offlineSyncPruneCutoff(1, 1_800_000_000));
     }
 }

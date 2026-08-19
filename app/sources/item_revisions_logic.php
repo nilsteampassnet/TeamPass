@@ -304,24 +304,29 @@ function itemRevisionResolveCursor(int $since, array $scannedRevisions, array $u
 }
 
 /**
- * Default retention of the change journal, in days.
+ * Default offline synchronization window, in days.
  */
-const ITEM_REVISION_DEFAULT_RETENTION_DAYS = 90;
+const OFFLINE_SYNC_DEFAULT_WINDOW_DAYS = 90;
 
 /**
- * Resolve the configured journal retention.
+ * Resolve the configured offline synchronization window.
  *
- * Zero, or anything negative, disables pruning. A missing or unreadable setting falls back to
- * the default rather than to "keep forever": the journal grows with every change.
+ * This is NOT a data retention: no item, password or history depends on it. It bounds how
+ * long a device may stay offline and still catch up incrementally — past it, the device is
+ * told to rebuild its cache, which costs bandwidth and nothing else.
+ *
+ * Zero, or anything negative, means the journal is never trimmed. A missing or unreadable
+ * setting falls back to the default rather than to "never", because the journal grows with
+ * every change and an unbounded one is nobody's intent.
  *
  * @param mixed $rawSetting Value read from the settings
  *
- * @return int Retention in days, 0 to disable pruning
+ * @return int Window in days, 0 to never trim
  */
-function itemRevisionResolveRetentionDays($rawSetting): int
+function offlineSyncResolveWindowDays($rawSetting): int
 {
     if ($rawSetting === null || $rawSetting === '' || is_numeric($rawSetting) === false) {
-        return ITEM_REVISION_DEFAULT_RETENTION_DAYS;
+        return OFFLINE_SYNC_DEFAULT_WINDOW_DAYS;
     }
 
     $days = (int) $rawSetting;
@@ -330,18 +335,18 @@ function itemRevisionResolveRetentionDays($rawSetting): int
 }
 
 /**
- * Oldest change date the journal must keep.
+ * Oldest change entry the journal keeps to serve incremental synchronization.
  *
- * @param int $retentionDays Retention in days, 0 to disable pruning
- * @param int $now           Current timestamp
+ * @param int $windowDays Window in days, 0 to never trim
+ * @param int $now        Current timestamp
  *
- * @return int|null Cut-off timestamp, null when pruning is disabled
+ * @return int|null Cut-off timestamp, null when the journal is never trimmed
  */
-function itemRevisionPruneCutoff(int $retentionDays, int $now): ?int
+function offlineSyncPruneCutoff(int $windowDays, int $now): ?int
 {
-    if ($retentionDays <= 0) {
+    if ($windowDays <= 0) {
         return null;
     }
 
-    return $now - ($retentionDays * 86400);
+    return $now - ($windowDays * 86400);
 }

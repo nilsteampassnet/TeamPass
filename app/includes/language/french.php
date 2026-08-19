@@ -2420,6 +2420,8 @@ return array(
     'settings_api_require_https_tip' => 'Rejette les requêtes API envoyées en HTTP simple (403). Les identifiants et jetons ne doivent jamais circuler en clair. Activé par défaut sur les nouvelles installations ; à conserver activé sauf si TLS est terminé en amont sans l’entête X-Forwarded-Proto.',
     'settings_api_rate_limit' => 'Limite de débit API (requêtes par minute)',
     'settings_api_rate_limit_tip' => 'Nombre maximal de requêtes API authentifiées par minute, appliqué par utilisateur et par adresse IP (fenêtre glissante, HTTP 429 au-delà). Mettre 0 pour désactiver.',
+    'settings_offline_sync_window' => 'Fenêtre de synchronisation hors ligne (jours)',
+    'settings_offline_sync_window_tip' => 'Durée pendant laquelle un appareil mobile peut rester hors ligne et rattraper son retard de façon incrémentale à la reconnexion. Au-delà, l\'appareil reconstruit son cache local. <strong>Ce réglage ne supprime aucun élément, aucun mot de passe et aucun historique</strong> : ce n\'est pas une durée de rétention, il borne seulement la portée du rattrapage incrémental. Mettre 0 pour ne pas limiter.',
     'health_check_api_cors_open' => 'Politique CORS de l’API ouverte',
     'health_check_api_cors_open_message' => 'L’API accepte les requêtes cross-origin depuis n’importe quelle origine (Access-Control-Allow-Origin: *). Pensez à restreindre les origines autorisées dans Paramètres > API.',
     'health_check_api_https_off' => 'L’API n’exige pas HTTPS',

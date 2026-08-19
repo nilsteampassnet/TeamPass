@@ -58,10 +58,11 @@ $logID = doLog('ongoing', $logLabel, 1);
 // Perform maintenance tasks
 $integritySummary = cleanOrphanObjectsAndScanIntegrity();
 
-// Trim the item change journal. Entries for purged items are deliberately kept until they
-// age out: they are the only trace telling a synchronizing client the item is gone.
+// Trim the item change journal to the offline synchronization window. Entries for purged
+// items are deliberately kept until they age out: they are the only trace telling a
+// synchronizing client the item is gone.
 $prunedRevisions = pruneItemRevisionsJournal(
-    itemRevisionResolveRetentionDays($SETTINGS['items_revisions_retention_days'] ?? null)
+    offlineSyncResolveWindowDays($SETTINGS['offline_sync_window_days'] ?? null)
 );
 
 // log end

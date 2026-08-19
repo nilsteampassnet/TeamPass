@@ -3168,19 +3168,19 @@ function bumpItemRevision(
 }
 
 /**
- * Drop change journal entries older than the configured retention.
+ * Drop change journal entries older than the offline synchronization window.
  *
- * A client whose cursor falls below what is left is answered full_sync_required, so pruning
- * never loses information — it only shortens how long a device may stay offline and still
- * resynchronize incrementally.
+ * Nothing is lost: a client whose cursor falls outside the window is answered
+ * full_sync_required and rebuilds its cache. This only bounds how long a device may stay
+ * offline and still catch up incrementally.
  *
- * @param int $retentionDays Retention in days, 0 to disable pruning
+ * @param int $windowDays Window in days, 0 to never trim
  *
  * @return int Number of entries removed
  */
-function pruneItemRevisionsJournal(int $retentionDays): int
+function pruneItemRevisionsJournal(int $windowDays): int
 {
-    $cutoff = itemRevisionPruneCutoff($retentionDays, time());
+    $cutoff = offlineSyncPruneCutoff($windowDays, time());
     if ($cutoff === null) {
         return 0;
     }

@@ -159,6 +159,21 @@ Save-time normalization + token validation live in the DB-free `app/sources/emai
 
 **Rule: spawn background tasks with `getPHPBinary()`** — it resolves a real PHP CLI binary under FPM (never `php-fpm` / `'false'`). **Rule: `tpFinishRequestEarly()` only after the full response is echoed** — later output is not delivered. Admin settings: `cli_php_binary_path`, `enable_fastcgi_finish_request`.
 
+## Item Revisions & Offline Sync
+
+> Full architecture details: @.claude/docs/architecture-item-revisions.md
+
+Every item carries a monotonic `revision`, allocated from the `teampass_items_revisions` journal
+whose `AUTO_INCREMENT` key **is** the global sequence. It lets an offline client detect staleness,
+decide which side is newer, and pull only what changed (`GET /api/v1/item/changes`).
+
+**Rule: the bump rides on `logItems()`** — a new item write path that bypasses it (raw
+`DB::insert(log_items)`, hard delete, bulk field operations) must call `bumpItemRevision()`
+explicitly, and **before** the row disappears. **Rule: reads and ciphertext-only rewrites never
+bump** — re-encrypting does not change the plaintext a client caches. **Rule: the journal is not a
+history** (that is `log_items`), and its setting `offline_sync_window_days` is a sync window, never
+a "retention": pruning it loses nothing, a client outside the window just does a full resync.
+
 ## API
 
 > Full reference: @.claude/docs/api-reference.md

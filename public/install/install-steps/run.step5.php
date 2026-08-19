@@ -767,7 +767,7 @@ class DatabaseInstaller
             // Kill switch of the emails customization layer. Set to 0 to ignore
             // every stored template without deleting them.
             array('admin', 'emails_templates_enabled', '1'),
-            array('admin', 'items_revisions_retention_days', '90')
+            array('admin', 'offline_sync_window_days', '90')
         );
         foreach ($aMiscVal as $elem) {
             $value = isset($elem[3]) ? $elem[3] : 0;
