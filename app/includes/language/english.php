@@ -333,6 +333,7 @@ return array(
     'tools_select_backup' => 'Select the backup to restore',
     'tools_restore_keys' => 'Restore keys',
     'tools_delete_backup' => 'Delete backup',
+    'tools_delete_backup_confirm' => 'Are you sure you want to delete this backup file?',
     'select_user' => 'Select user',
     'oauth' => 'OAuth',
     'admin_oauth_configuration' => 'OAuth Configuration',
