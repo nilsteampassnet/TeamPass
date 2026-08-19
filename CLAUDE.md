@@ -29,13 +29,31 @@ php app/vendor/phpunit/phpunit/phpunit                 # Unit tests — see cave
 
 A full PHPStan run takes several minutes — launch it in the background rather than blocking on it.
 
-**PHPUnit usually does not run as-is.** The dev dependencies are untracked, so a checkout or a
-merge deletes them while leaving generated residue behind; Composer then believes they are still
-installed and skips them, and the committed `app/vendor/composer/` autoloader maps no dev package
-(`Class "PHPUnit\TextUI\Application" not found`). `composer dump-autoload` does **not** help —
-`phpunit/phpunit` is missing from `installed.json`. Apply the recovery from
-`.claude/skills/prepare-release/SKILL.md` §7 (`rm -rf` the three packages, `composer install`,
-run the tests, and only then `git checkout -- app/vendor/composer/`).
+**PHPUnit does not run from a fresh checkout — repair the toolchain first.** The dev
+dependencies are untracked, so any checkout or merge deletes them while leaving generated
+residue behind (`phpstan/phpstan/turbo-ext/`, the Redis proxies under `symfony/cache/Traits/`,
+the `Xdebug*` files). Their directory survives, Composer only checks that a package directory
+*exists*, so it considers them installed and skips them. On top of that the committed
+`app/vendor/composer/` is the **production** autoloader (`composer install --no-dev`) and maps
+no dev package. Symptom: `Class "PHPUnit\TextUI\Application" not found` with the package
+sitting right there. `composer dump-autoload` does **not** help — `phpunit/phpunit` is absent
+from `installed.json`.
+
+```bash
+rm -rf app/vendor/phpstan app/vendor/phpunit app/vendor/symfony/cache
+composer install
+php app/vendor/phpunit/phpunit/phpunit          # expect: OK (1344 tests, 38419 assertions)
+php app/vendor/bin/phpstan analyse --memory-limit=2G
+git checkout -- app/vendor/composer/            # LAST — it disarms the toolchain again
+```
+
+The `rm -rf` is not optional: without it `composer install` repairs nothing for those three
+packages. The order of the last three lines is not free either — `composer install` rewrites
+`app/vendor/composer/` into its *dev* form, which is what makes the tools runnable, and the
+final `git checkout` puts the production form back. Run the toolchain **between** the two.
+That restore is mandatory before committing: shipping the dev autoloader fatals every
+installation (the bug 3.2.1.7 had to fix). Full rationale in
+`.claude/skills/prepare-release/SKILL.md` §7.
 
 Database schema: initial install via `/install/install.php`, upgrades via `/install/upgrade.php` + `/install/upgrade_run_*.php`.
 
