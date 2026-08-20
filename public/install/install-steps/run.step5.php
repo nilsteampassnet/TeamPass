@@ -761,6 +761,8 @@ class DatabaseInstaller
             array('admin', 'network_trusted_proxies', ''),
             array('admin', 'show_online_users_list', '0'),
             array('admin', 'health_logs_mode', 'auto'),
+            array('admin', 'health_webserver_log_path', ''),
+            array('admin', 'health_webserver_access_log_path', ''),
             array('admin', 'health_teampass_log_path', ''),
             array('admin', 'health_php_fpm_log_path', ''),
             // Kill switch of the emails customization layer. Set to 0 to ignore
