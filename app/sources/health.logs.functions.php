@@ -450,9 +450,65 @@ function tpHealthUniqueNonEmptyStrings(array $values): array
 }
 
 /**
+ * Resolve APACHE_LOG_DIR from an Apache envvars file without executing shell code.
+ *
+ * Debian and Ubuntu declare `/var/log/apache2$SUFFIX`. For the default
+ * `/etc/apache2` instance the suffix is empty; named instances use the part
+ * following `apache2-` in their configuration directory. Only these known
+ * variables are expanded. Any other shell expression makes the value unusable.
+ *
+ * @param string $content         Contents of the envvars file.
+ * @param string $apacheConfigDir Directory containing the Apache configuration.
+ * @return string Resolved absolute directory, or an empty string.
+ */
+function tpHealthResolveApacheLogDirFromEnvvars(string $content, string $apacheConfigDir): string
+{
+    if (
+        preg_match(
+            '/^\s*(?:export\s+)?APACHE_LOG_DIR\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^\r\n#]*))/m',
+            $content,
+            $matches
+        ) !== 1
+    ) {
+        return '';
+    }
+
+    $rawValue = '';
+    foreach (array(1, 2, 3) as $matchIndex) {
+        if (isset($matches[$matchIndex]) === true && (string) $matches[$matchIndex] !== '') {
+            $rawValue = trim((string) $matches[$matchIndex]);
+            break;
+        }
+    }
+    if ($rawValue === '') {
+        return '';
+    }
+
+    $configDir = rtrim(str_replace('\\', '/', trim($apacheConfigDir)), '/');
+    $suffix = '';
+    if (preg_match('#/apache2-([^/]+)$#', $configDir, $suffixMatches) === 1) {
+        $suffix = '-' . (string) $suffixMatches[1];
+    }
+
+    $resolved = str_replace(
+        array('${APACHE_CONFDIR}', '$APACHE_CONFDIR', '${SUFFIX}', '$SUFFIX'),
+        array($configDir, $configDir, $suffix, $suffix),
+        $rawValue
+    );
+    $resolved = trim($resolved);
+
+    if ($resolved === '' || str_contains($resolved, '$') === true || tpHealthIsAbsolutePath($resolved) === false) {
+        return '';
+    }
+
+    return rtrim($resolved, '/');
+}
+
+/**
  * List the directories ${APACHE_LOG_DIR} may expand to, most reliable first.
  *
- * The value declared in /etc/apache2/envvars wins over the conventional paths.
+ * A concrete value declared in /etc/apache2/envvars wins over conventional
+ * paths. Values that still contain shell variables are discarded safely.
  *
  * @return list<string>
  */
@@ -463,8 +519,11 @@ function tpHealthGetApacheLogDirCandidates(): array
 
     if (is_file($envvarsPath) === true && is_readable($envvarsPath) === true) {
         $envvars = file_get_contents($envvarsPath);
-        if (is_string($envvars) === true && preg_match('/^\s*(?:export\s+)?APACHE_LOG_DIR=(["\']?)([^\r\n"\']+)\1/m', $envvars, $matches) === 1) {
-            $candidates[] = trim((string) $matches[2]);
+        if (is_string($envvars) === true) {
+            $resolvedDirectory = tpHealthResolveApacheLogDirFromEnvvars($envvars, dirname($envvarsPath));
+            if ($resolvedDirectory !== '') {
+                $candidates[] = $resolvedDirectory;
+            }
         }
     }
 
@@ -535,16 +594,29 @@ function tpHealthResolveApacheLogDirectivePath(
     }
 
     if (str_contains($path, '${APACHE_LOG_DIR}') === true) {
+        $firstResolvedCandidate = '';
+        $candidateWithExistingDirectory = '';
+
         foreach ($logDirectories ?? tpHealthGetApacheLogDirCandidates() as $logDirectory) {
             $candidate = str_replace('${APACHE_LOG_DIR}', rtrim($logDirectory, '/'), $path);
-            if (preg_match('/\$\{[A-Z0-9_]+\}/i', $candidate) !== 1) {
-                $path = $candidate;
-                break;
+            if (str_contains($candidate, '$') === true || tpHealthIsAbsolutePath($candidate) === false) {
+                continue;
+            }
+            if ($firstResolvedCandidate === '') {
+                $firstResolvedCandidate = $candidate;
+            }
+            if (is_file($candidate) === true) {
+                return $candidate;
+            }
+            if ($candidateWithExistingDirectory === '' && is_dir(dirname($candidate)) === true) {
+                $candidateWithExistingDirectory = $candidate;
             }
         }
+
+        $path = $candidateWithExistingDirectory !== '' ? $candidateWithExistingDirectory : $firstResolvedCandidate;
     }
 
-    if (preg_match('/\$\{[A-Z0-9_]+\}/i', $path) === 1) {
+    if ($path === '' || str_contains($path, '$') === true) {
         return '';
     }
     if (tpHealthIsAbsolutePath($path) === true) {
