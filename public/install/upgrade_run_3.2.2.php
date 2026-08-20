@@ -111,6 +111,22 @@ mysqli_query(
     "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'emails_templates_enabled', '1')"
 );
 
+// Independent manual overrides for the Health System runtime logs. The
+// 'teampass' and 'php_fpm' roles were seeded by upgrade_run_3.1.7.php; an empty
+// value keeps auto-detection for that log only.
+$healthLogsDefaults = [
+    'health_webserver_log_path'        => '',
+    'health_webserver_access_log_path' => '',
+];
+foreach ($healthLogsDefaults as $key => $value) {
+    mysqli_query(
+        $db_link,
+        "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES
+        ('admin', '" . mysqli_real_escape_string($db_link, $key) . "',
+         '" . mysqli_real_escape_string($db_link, $value) . "')"
+    );
+}
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,

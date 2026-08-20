@@ -5006,12 +5006,23 @@ function tpHealthGetInstanceAccessLogPaths(array $SETTINGS, string $serverFamily
 }
 
 /**
- * Stamp a resolved log result with the scope of the file that was selected.
+ * Stamp a resolved log result with the scope and the provenance of the selected file.
  *
- * `instance_scoped = false` means auto-detection fell back to a conventional
- * path such as /var/log/apache2/access.log, which aggregates the traffic of
- * every vhost hosted on the machine. A null value means a heuristic or manual
- * path whose scope cannot be proven from a readable vhost declaration.
+ * Two independent axes are reported, because a path can be declared by the vhost
+ * and still be shared with every other site on the machine:
+ *
+ * - `instance_scoped` (scope): `true` when the file carries only this instance's
+ *   traffic, `false` for a known server-wide file such as
+ *   /var/log/apache2/access.log, `null` when the scope cannot be proven from a
+ *   readable vhost declaration (heuristic or administrator-supplied path).
+ * - `selection_source` (provenance): `vhost_config` when the path comes from a
+ *   readable declaration of this instance, `server_fallback` for a conventional
+ *   server-wide path, `heuristic` otherwise. The `manual` value is stamped by
+ *   tpHealthResolveLogResult() before this function is reached.
+ *
+ * A vhost that explicitly declares the server-wide log therefore reports
+ * `vhost_config` with `instance_scoped = false`: the administrator still has to
+ * be told the excerpt mixes in the traffic of every other site.
  *
  * @param array<string, mixed> $result        Result returned by tpHealthInspectLogPath().
  * @param string               $role          Runtime log role being resolved.
@@ -5037,16 +5048,26 @@ function tpHealthFlagInstanceScopedLog(array $result, string $role, array $insta
         )
     );
 
-    if (in_array($selectedPath, $normalizedInstancePaths, true) === true) {
-        $result['instance_scoped'] = true;
-        $result['selection_source'] = 'vhost_config';
-    } elseif (in_array($selectedPath, $serverWidePaths, true) === true) {
+    $isDeclared = in_array($selectedPath, $normalizedInstancePaths, true);
+    $isServerWide = in_array($selectedPath, $serverWidePaths, true);
+
+    if ($isServerWide === true) {
+        // Checked before the declaration: a shared file stays shared even when
+        // the vhost names it explicitly.
         $result['instance_scoped'] = false;
-        $result['selection_source'] = 'server_fallback';
+    } elseif ($isDeclared === true) {
+        $result['instance_scoped'] = true;
     } else {
         // A hostname- or product-based heuristic may well point to a dedicated
         // file, but without a readable declaration its scope cannot be proven.
         $result['instance_scoped'] = null;
+    }
+
+    if ($isDeclared === true) {
+        $result['selection_source'] = 'vhost_config';
+    } elseif ($isServerWide === true) {
+        $result['selection_source'] = 'server_fallback';
+    } else {
         $result['selection_source'] = 'heuristic';
     }
 
@@ -5552,6 +5573,27 @@ function tpHealthResolveWebSocketLogResult(array $SETTINGS, int $lines): array
 }
 
 
+/**
+ * Resolve one runtime log role to a readable file plus its excerpt.
+ *
+ * Manual paths are **independent overrides**: in manual mode an empty field for
+ * a given role deliberately falls through to auto-detection for that role only.
+ *
+ * @param string               $role     One of 'server', 'server_access', 'teampass', 'php_fpm'.
+ * @param array<string, mixed> $SETTINGS Application settings.
+ * @param int                  $lines    Number of trailing lines requested.
+ * @return array<string, mixed> Payload carrying at least:
+ *                              - `role`, `mode`, `server_family`, `server_software`
+ *                              - `log_path`, `lines`, `content`, `content_length`, `source_files`
+ *                              - `access`: 'ok' | 'empty' | 'truncated' | 'not_readable'
+ *                                | 'not_found' | 'not_used' | 'not_configured' | 'invalid_path'
+ *                              - `fix_commands`, and `candidates` when auto-detection ran
+ *                              For the 'server_access' role only, two extra keys describe the
+ *                              selected file (see tpHealthFlagInstanceScopedLog()):
+ *                              - `instance_scoped`: bool|null
+ *                              - `selection_source`: 'vhost_config' | 'server_fallback'
+ *                                | 'heuristic' | 'manual'
+ */
 function tpHealthResolveLogResult(string $role, array $SETTINGS, int $lines): array
 {
     $context = tpHealthBuildRuntimeLogsContext($SETTINGS);

@@ -505,9 +505,34 @@ function tpHealthResolveApacheLogDirFromEnvvars(string $content, string $apacheC
 }
 
 /**
+ * List the Apache envvars files worth parsing, the default instance first.
+ *
+ * Debian and Ubuntu support several side-by-side instances, each with its own
+ * /etc/apache2-<name>/envvars declaring a distinct ${APACHE_LOG_DIR}. Reading
+ * only the default instance would resolve every named instance to
+ * /var/log/apache2, which is not where its logs are written.
+ *
+ * @return list<string>
+ */
+function tpHealthGetApacheEnvvarsPaths(): array
+{
+    $paths = array('/etc/apache2/envvars');
+
+    $namedInstances = glob('/etc/apache2-*/envvars');
+    if (is_array($namedInstances) === true) {
+        // Bounded on purpose: the list feeds a per-directive candidate loop.
+        foreach (array_slice($namedInstances, 0, 10) as $namedInstance) {
+            $paths[] = (string) $namedInstance;
+        }
+    }
+
+    return tpHealthUniqueNonEmptyStrings($paths);
+}
+
+/**
  * List the directories ${APACHE_LOG_DIR} may expand to, most reliable first.
  *
- * A concrete value declared in /etc/apache2/envvars wins over conventional
+ * A concrete value declared in an Apache envvars file wins over conventional
  * paths. Values that still contain shell variables are discarded safely.
  *
  * @return list<string>
@@ -515,15 +540,20 @@ function tpHealthResolveApacheLogDirFromEnvvars(string $content, string $apacheC
 function tpHealthGetApacheLogDirCandidates(): array
 {
     $candidates = array();
-    $envvarsPath = '/etc/apache2/envvars';
 
-    if (is_file($envvarsPath) === true && is_readable($envvarsPath) === true) {
+    foreach (tpHealthGetApacheEnvvarsPaths() as $envvarsPath) {
+        if (is_file($envvarsPath) === false || is_readable($envvarsPath) === false) {
+            continue;
+        }
+
         $envvars = file_get_contents($envvarsPath);
-        if (is_string($envvars) === true) {
-            $resolvedDirectory = tpHealthResolveApacheLogDirFromEnvvars($envvars, dirname($envvarsPath));
-            if ($resolvedDirectory !== '') {
-                $candidates[] = $resolvedDirectory;
-            }
+        if (is_string($envvars) === false) {
+            continue;
+        }
+
+        $resolvedDirectory = tpHealthResolveApacheLogDirFromEnvvars($envvars, dirname($envvarsPath));
+        if ($resolvedDirectory !== '') {
+            $candidates[] = $resolvedDirectory;
         }
     }
 

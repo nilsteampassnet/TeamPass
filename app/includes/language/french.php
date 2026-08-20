@@ -2117,8 +2117,6 @@ return array(
     'health_logs_mode_manual' => 'Surcharges manuelles indépendantes',
     'health_webserver_log_path' => 'Chemin du log d’erreurs du serveur web',
     'health_webserver_log_path_tip' => 'Surcharge absolue optionnelle. Laisse ce champ vide pour auto-détecter le log d’erreurs du serveur web.',
-    'health_webserver_access_log_path' => 'Chemin du log d’accès du serveur web',
-    'health_webserver_access_log_path_tip' => 'Surcharge absolue optionnelle. Laisse ce champ vide pour auto-détecter le log d’accès de l’instance.',
     'health_php_fpm_log_path' => 'Chemin du log PHP-FPM',
     'health_php_fpm_log_path_tip' => 'Surcharge absolue optionnelle. Laisse ce champ vide pour auto-détecter le log PHP-FPM ou du pool.',
     'health_webserver_error_log' => 'Log d’erreurs du serveur web',
@@ -3269,7 +3267,10 @@ return array(
     'health_runtime_log_partial' => 'Extrait partiel : la limite de lecture de sécurité a été atteinte avant d’avoir collecté le nombre de lignes demandé.',
     'health_runtime_log_sources_fmt' => 'Fusionné depuis : %s',
     'health_server_access_log_shared_notice' => 'Aucun log d’accès dédié exploitable n’a pu être détecté pour cette instance. Le fichier affiché ci-dessous est le log d’accès global du serveur et contient le trafic de tous les sites hébergés sur cette machine.',
-    'health_server_access_log_manual_notice' => 'Surcharge manuelle : la portée de ce log d’accès ne peut pas être vérifiée automatiquement.',
     'health_runtime_log_redacted' => 'Les valeurs secrètes transportées dans les URL (liens Secure Send, clés de téléchargement) sont masquées par [REDACTED].',
+    'tools_delete_backup_confirm' => 'Voulez-vous vraiment supprimer ce fichier de sauvegarde ?',
+    'health_webserver_access_log_path' => 'Chemin du log d’accès du serveur web',
+    'health_webserver_access_log_path_tip' => 'Surcharge absolue optionnelle. Laisse ce champ vide pour auto-détecter le log d’accès de l’instance.',
+    'health_server_access_log_manual_notice' => 'Surcharge manuelle : la portée de ce log d’accès ne peut pas être vérifiée automatiquement.',
 
 );

@@ -250,6 +250,22 @@ ENVVARS;
         $this->assertSame('', tpHealthResolveApacheLogDirFromEnvvars($envvars, '/etc/apache2'));
     }
 
+    public function testApacheEnvvarsDiscoveryStartsWithTheDefaultInstance(): void
+    {
+        // Named instances declare their own APACHE_LOG_DIR; reading only the
+        // default one resolves every instance to /var/log/apache2.
+        $paths = tpHealthGetApacheEnvvarsPaths();
+
+        $this->assertNotEmpty($paths);
+        $this->assertSame('/etc/apache2/envvars', $paths[0]);
+        $this->assertSame(array_values(array_unique($paths)), $paths);
+
+        foreach ($paths as $path) {
+            $this->assertStringStartsWith('/etc/apache2', $path);
+            $this->assertStringEndsWith('/envvars', $path);
+        }
+    }
+
     public function testApacheDirectiveSkipsAnUnresolvedDirectoryCandidate(): void
     {
         $content = 'CustomLog ${APACHE_LOG_DIR}/teampass_access.log combined';

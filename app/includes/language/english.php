@@ -2631,6 +2631,7 @@ return array(
     'health_runtime_log_sources_fmt' => 'Merged from: %s',
     'health_server_access_log_shared_notice' => 'No usable instance-specific access log could be detected. The file shown below is the server-wide access log and contains the traffic of every site hosted on this machine.',
     'health_server_access_log_manual_notice' => 'Manual override: the scope of this access log cannot be verified automatically.',
+    'health_server_access_log_declared_unavailable' => 'This instance declares its own access log. The server-wide access log is deliberately not shown in its place, so the excerpt never mixes in the traffic of the other sites hosted on this machine.',
     'health_runtime_log_redacted' => 'Secret values carried in URLs (Secure Send links, download keys) are masked as [REDACTED].',
     'health_corrupted_items_remaining' => 'Corrupted items remaining',
     'health_corrupted_items_by_reason' => 'Items by category',

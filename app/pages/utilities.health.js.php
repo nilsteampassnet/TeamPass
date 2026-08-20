@@ -160,6 +160,7 @@ var TP_HEALTH_L10N = {
     runtime_log_redacted: "<?php echo addslashes($lang->get('health_runtime_log_redacted')); ?>",
     server_access_log_shared_notice: "<?php echo addslashes($lang->get('health_server_access_log_shared_notice')); ?>",
     server_access_log_manual_notice: "<?php echo addslashes($lang->get('health_server_access_log_manual_notice')); ?>",
+    server_access_log_declared_unavailable: "<?php echo addslashes($lang->get('health_server_access_log_declared_unavailable')); ?>",
     runtime_log_fix_hint: "<?php echo addslashes($lang->get('health_runtime_log_fix_hint')); ?>",
     runtime_log_fix_hint_missing: "<?php echo addslashes($lang->get('health_runtime_log_fix_hint_missing')); ?>",
     runtime_logs_context_mode_fmt: "<?php echo addslashes($lang->get('health_runtime_logs_context_mode_fmt')); ?>",
@@ -1230,6 +1231,12 @@ function tpRuntimeLogNotes(result) {
             notes.push(TP_HEALTH_L10N.server_access_log_shared_notice);
         } else if (result.selection_source === 'manual' && result.log_path) {
             notes.push(TP_HEALTH_L10N.server_access_log_manual_notice);
+        }
+        // The declared log is authoritative: the server-wide file is never shown
+        // in its place, so say why nothing is displayed.
+        if (result.selection_source === 'vhost_config'
+            && (result.access === 'not_found' || result.access === 'not_readable')) {
+            notes.push(TP_HEALTH_L10N.server_access_log_declared_unavailable);
         }
         if (result.content_length > 0) {
             notes.push(TP_HEALTH_L10N.runtime_log_redacted);
