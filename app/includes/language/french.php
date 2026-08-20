@@ -3183,6 +3183,7 @@ return array(
     'tools_select_backup' => 'Sélectionnez la sauvegarde à restaurer',
     'tools_restore_keys' => 'Restaurer les clés',
     'tools_delete_backup' => 'Supprimer la sauvegarde',
+    'tools_delete_backup_confirm' => 'Voulez-vous vraiment supprimer ce fichier de sauvegarde ?',
     'health_websocket_log' => 'Log WebSocket',
     'health_websocket_log_disabled' => 'Le WebSocket est désactivé pour cette instance.',
     'health_websocket_log_file_not_writable_fmt' => 'Le log WebSocket est lisible, mais l’utilisateur d’exécution ne peut pas y écrire : %s',
@@ -3291,5 +3292,4 @@ return array(
     'health_runtime_log_sources_fmt' => 'Fusionné depuis : %s',
     'health_server_access_log_shared_notice' => 'Aucun log d’accès n’est déclaré par cette instance. Le fichier affiché ci-dessous est le log d’accès global du serveur et contient le trafic de tous les sites hébergés sur cette machine.',
     'health_runtime_log_redacted' => 'Les valeurs secrètes transportées dans les URL (liens Secure Send, clés de téléchargement) sont masquées par [REDACTED].',
-
 );

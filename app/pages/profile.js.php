@@ -763,26 +763,32 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     });
 
     $(document).on('click', '.revoke-extension-token', function() {
-        if (window.confirm('<?php echo $lang->get('extension_token_revoke_confirm'); ?>') === false) {
-            return;
-        }
         var tokenId = parseInt($(this).data('id'), 10);
-        $.post(
-            'sources/users.queries.php', {
-                type: 'revoke_extension_token',
-                data: prepareExchangedData(JSON.stringify({ id: tokenId }), 'encode', extensionTokenKey),
-                key: extensionTokenKey
+
+        launchConfirmDialog(
+            <?php echo json_encode($lang->get('extension_token_revoke'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+            <?php echo json_encode($lang->get('extension_token_revoke_confirm'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+            function() {
+                $.post(
+                    'sources/users.queries.php', {
+                        type: 'revoke_extension_token',
+                        data: prepareExchangedData(JSON.stringify({ id: tokenId }), 'encode', extensionTokenKey),
+                        key: extensionTokenKey
+                    },
+                    function(response) {
+                        response = prepareExchangedData(response, 'decode', extensionTokenKey);
+                        if (response.error === false) {
+                            loadExtensionTokens();
+                            toastr.remove();
+                            toastr.success('<?php echo $lang->get('done'); ?>', '', {
+                                timeOut: 1500
+                            });
+                        }
+                    }
+                );
             },
-            function(response) {
-                response = prepareExchangedData(response, 'decode', extensionTokenKey);
-                if (response.error === false) {
-                    loadExtensionTokens();
-                    toastr.remove();
-                    toastr.success('<?php echo $lang->get('done'); ?>', '', {
-                        timeOut: 1500
-                    });
-                }
-            }
+            <?php echo json_encode($lang->get('extension_token_revoke'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+            <?php echo json_encode($lang->get('cancel'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>
         );
     });
 
@@ -862,26 +868,32 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     }
 
     $(document).on('click', '.revoke-api-session', function() {
-        if (window.confirm('<?php echo $lang->get('api_session_revoke_confirm'); ?>') === false) {
-            return;
-        }
         var apiSessionId = parseInt($(this).data('id'), 10);
-        $.post(
-            'sources/users.queries.php', {
-                type: 'revoke_api_session',
-                data: prepareExchangedData(JSON.stringify({ id: apiSessionId }), 'encode', apiSessionsKey),
-                key: apiSessionsKey
+
+        launchConfirmDialog(
+            <?php echo json_encode($lang->get('api_session_revoke'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+            <?php echo json_encode($lang->get('api_session_revoke_confirm'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+            function() {
+                $.post(
+                    'sources/users.queries.php', {
+                        type: 'revoke_api_session',
+                        data: prepareExchangedData(JSON.stringify({ id: apiSessionId }), 'encode', apiSessionsKey),
+                        key: apiSessionsKey
+                    },
+                    function(response) {
+                        response = prepareExchangedData(response, 'decode', apiSessionsKey);
+                        if (response.error === false) {
+                            loadApiSessions();
+                            toastr.remove();
+                            toastr.success('<?php echo $lang->get('done'); ?>', '', {
+                                timeOut: 1500
+                            });
+                        }
+                    }
+                );
             },
-            function(response) {
-                response = prepareExchangedData(response, 'decode', apiSessionsKey);
-                if (response.error === false) {
-                    loadApiSessions();
-                    toastr.remove();
-                    toastr.success('<?php echo $lang->get('done'); ?>', '', {
-                        timeOut: 1500
-                    });
-                }
-            }
+            <?php echo json_encode($lang->get('api_session_revoke'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+            <?php echo json_encode($lang->get('cancel'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>
         );
     });
     <?php endif; ?>

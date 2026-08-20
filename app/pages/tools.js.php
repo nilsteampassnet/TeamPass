@@ -468,7 +468,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             if ($('#restore_items_master_keys_id').val() === 0) {
                 toastr.remove();
                 toastr.error(
-                    'You need to select a backup file',
+                    <?php echo json_encode($lang->get('tools_select_backup'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
                     '<?php echo $lang->get('caution'); ?>', {
                         timeOut: 5000,
                         progressBar: true
@@ -601,57 +601,61 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 return false;
             }
 
-            // Confirm action
-            if (confirm('Are you sure you want to delete this backup file?')) {
-                // continue
-                $(this).prop('disabled', true);
-                $('#restore_items_master_keys_results').html("");
-                toastr.remove();
-                toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            var $deleteBackupButton = $(this);
+            launchConfirmDialog(
+                <?php echo json_encode($lang->get('tools_delete_backup'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+                <?php echo json_encode($lang->get('tools_delete_backup_confirm'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+                function() {
+                    $deleteBackupButton.prop('disabled', true);
+                    $('#restore_items_master_keys_results').html("");
+                    toastr.remove();
+                    toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
-                var data = {
-                    'operationCode': $('#restore_items_master_keys_id').val(),
-                }
-
-                $.post(
-                    "sources/tools.queries.php", {
-                        type: "perform_delete_restore_backup",
-                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
-                        key: "<?php echo $session->get('key'); ?>"
-                    },
-                    function(dataStep) {
-                        dataStep = prepareExchangedData(dataStep, 'decode', '<?php echo $session->get('key'); ?>');
-
-                        $('#delete_restore_backup_but').prop('disabled', false);
-
-                        if (dataStep.error === true) {
-                            // Show error
-                            toastr.remove();
-                            toastr.error(
-                                dataStep.message,
-                                '<?php echo $lang->get('caution'); ?>', {
-                                    //timeOut: 5000,
-                                    progressBar: true
-                                }
-                            );
-                            $(this).prop('disabled', false);
-                        } else {
-                            $('#restore_items_master_keys_id')
-                                .find(":selected").remove()
-                                .val(0);
-
-                            // Inform user
-                            toastr.remove();
-                            toastr.success(
-                                dataStep.message,
-                                'Done', {
-                                    timeOut: 10000
-                                }
-                            );
-                        }
+                    var data = {
+                        'operationCode': $('#restore_items_master_keys_id').val(),
                     }
-                );
-            }
+
+                    $.post(
+                        "sources/tools.queries.php", {
+                            type: "perform_delete_restore_backup",
+                            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                            key: "<?php echo $session->get('key'); ?>"
+                        },
+                        function(dataStep) {
+                            dataStep = prepareExchangedData(dataStep, 'decode', '<?php echo $session->get('key'); ?>');
+
+                            $deleteBackupButton.prop('disabled', false);
+
+                            if (dataStep.error === true) {
+                                // Show error
+                                toastr.remove();
+                                toastr.error(
+                                    dataStep.message,
+                                    '<?php echo $lang->get('caution'); ?>', {
+                                        //timeOut: 5000,
+                                        progressBar: true
+                                    }
+                                );
+                            } else {
+                                $('#restore_items_master_keys_id')
+                                    .find(":selected").remove()
+                                    .val(0);
+
+                                // Inform user
+                                toastr.remove();
+                                toastr.success(
+                                    dataStep.message,
+                                    <?php echo json_encode($lang->get('done'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>, {
+                                        timeOut: 10000
+                                    }
+                                );
+                            }
+                        }
+                    );
+                },
+                <?php echo json_encode($lang->get('tools_delete_backup'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+                <?php echo json_encode($lang->get('cancel'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>
+            );
         }
 
         /**
