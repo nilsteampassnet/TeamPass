@@ -26,9 +26,9 @@
  * @see       https://www.teampass.net
  */
 
-define('TP_VERSION', '3.2.1');
+define('TP_VERSION', '3.2.2');
 define("UPGRADE_MIN_DATE", "1787041944");
-define('TP_VERSION_MINOR', '7');
+define('TP_VERSION_MINOR', '0');
 define('TP_TOOL_NAME', 'Teampass');
 define('TP_ONE_DAY_SECONDS', 86400);
 define('TP_ONE_WEEK_SECONDS', 604800);
@@ -152,6 +152,7 @@ $mngPages = array(
     'uploads' => 'uploads.php',
     'oauth' => 'oauth.php',
     'tools' => 'tools.php',
+    'admin_lapr' => 'admin_lapr.php',
     'reports' => 'reports.php',
     'reviews' => 'reviews.php',
 );

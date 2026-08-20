@@ -487,6 +487,66 @@ class ItemModel
     }
 
     /**
+     * Decrypt an item password for a change-detection comparison only.
+     *
+     * Used by the LAPR ownership guard so a client resending the unchanged
+     * password is not reported as a conflict. Returns a sentinel that can never
+     * equal a submitted password when the value cannot be recovered, so an
+     * undecryptable item fails closed (the update is treated as a change).
+     *
+     * @param int    $itemId         Item id
+     * @param int    $userId         Caller id
+     * @param string $userPrivateKey Caller RSA private key (cleartext)
+     * @param array  $currentItem    Current items row
+     * @return string Cleartext password, or a non-matchable sentinel
+     */
+    private function getItemPasswordForComparison(
+        int $itemId,
+        int $userId,
+        string $userPrivateKey,
+        array $currentItem
+    ): string {
+        if (empty($currentItem['pw']) === true) {
+            return '';
+        }
+
+        $userKey = DB::queryFirstRow(
+            'SELECT share_key, increment_id
+            FROM ' . prefixTable('sharekeys_items') . '
+            WHERE user_id = %i AND object_id = %i',
+            $userId,
+            $itemId
+        );
+        if (DB::count() === 0) {
+            return "\0lapr-undecryptable";
+        }
+
+        $userPublicKey = (string) DB::queryFirstField(
+            'SELECT public_key FROM ' . prefixTable('users') . ' WHERE id = %i',
+            $userId
+        );
+
+        try {
+            return teampassDecryptPasswordValue(
+                (string) $currentItem['pw'],
+                decryptUserObjectKeyWithMigration(
+                    $userKey['share_key'],
+                    $userPrivateKey,
+                    $userPublicKey,
+                    (int) $userKey['increment_id'],
+                    'sharekeys_items'
+                ),
+                (int) ($currentItem['pw_len'] ?? 0),
+                (string) ($currentItem['pw_iv'] ?? '')
+            );
+        } catch (Exception $e) {
+            error_log('[API] ItemModel LAPR password comparison failed for item ' . $itemId . ': ' . $e->getMessage());
+
+            return "\0lapr-undecryptable";
+        }
+    }
+
+    /**
      * Retrieves folder-specific settings, including permission to modify and create items.
      * @param int $folderId - The folder ID to fetch settings for
      * @return array - Returns an array with folder-specific permissions
@@ -1233,6 +1293,7 @@ class ItemModel
     {
         try {
             include_once API_ROOT_PATH . '/../sources/main.functions.php';
+            include_once API_ROOT_PATH . '/../sources/lapr.functions.php';
 
             // Load config
             $configManager = new ConfigManager();
@@ -1249,6 +1310,50 @@ class ItemModel
                     'error' => true,
                     'error_message' => 'Item not found',
                     'error_header' => 'HTTP/1.1 404 Not Found',
+                ];
+            }
+
+            $laprRelations = laprGetItemRelations([$itemId], $SETTINGS);
+            $laprRelation = $laprRelations[$itemId] ?? [];
+            $laprIsManaged = (bool) ($laprRelation['is_managed'] ?? false);
+            $laprIsCredential = (bool) ($laprRelation['is_credential'] ?? false);
+
+            if ($laprIsManaged === true) {
+                $laprLoginChanged = isset($params['login'])
+                    && (string) filter_var((string) $params['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)
+                        !== (string) ($currentItem['login'] ?? '');
+                // Mirror the web handler: only an actual change is a conflict, so a
+                // read-modify-write client resending the unchanged password is not
+                // rejected. A password that cannot be decrypted fails closed.
+                $laprPasswordChanged = isset($params['password'])
+                    && (string) $params['password'] !== ''
+                    && (string) $params['password'] !== $this->getItemPasswordForComparison(
+                        $itemId,
+                        (int) $userData['id'],
+                        $userPrivateKey,
+                        $currentItem
+                    );
+                if ($laprLoginChanged === true || $laprPasswordChanged === true) {
+                    return [
+                        'error' => true,
+                        'error_message' => 'This item is managed by LAPR. Rotate its password through LAPR or remove the managed account first.',
+                        'error_header' => 'HTTP/1.1 409 Conflict',
+                    ];
+                }
+            }
+
+            // LAPR reads item passwords server-side through the TP_USER key chain, which
+            // never covers personal items — moving a linked item into a personal folder
+            // would silently break every future rotation or endpoint connection.
+            if (($laprIsManaged === true || $laprIsCredential === true)
+                && isset($params['folder_id'])
+                && (int) $params['folder_id'] !== (int) $currentItem['id_tree']
+                && (int) ($this->getFolderSettings((int) $params['folder_id'])['personal_folder'] ?? 0) === 1
+            ) {
+                return [
+                    'error' => true,
+                    'error_message' => 'This item is linked to LAPR and cannot be moved to a personal folder. Remove the managed account or linked endpoint first.',
+                    'error_header' => 'HTTP/1.1 409 Conflict',
                 ];
             }
 
@@ -1668,6 +1773,7 @@ class ItemModel
     {
         try {
             include_once API_ROOT_PATH . '/../sources/main.functions.php';
+            include_once API_ROOT_PATH . '/../sources/lapr.functions.php';
 
             // Load config
             $configManager = new ConfigManager();
@@ -1684,6 +1790,18 @@ class ItemModel
                     'error' => true,
                     'error_message' => 'Item not found',
                     'error_header' => 'HTTP/1.1 404 Not Found',
+                ];
+            }
+
+            $laprRelations = laprGetItemRelations([$itemId], $SETTINGS);
+            $laprRelation = $laprRelations[$itemId] ?? [];
+            if ((bool) ($laprRelation['is_managed'] ?? false) === true
+                || (bool) ($laprRelation['is_credential'] ?? false) === true
+            ) {
+                return [
+                    'error' => true,
+                    'error_message' => 'This item is linked to LAPR. Remove the managed account or linked endpoint first.',
+                    'error_header' => 'HTTP/1.1 409 Conflict',
                 ];
             }
 

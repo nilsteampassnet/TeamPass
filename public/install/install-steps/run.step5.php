@@ -527,6 +527,21 @@ class DatabaseInstaller
             array('admin', 'security_nudges_email_enabled', '0'),
             array('admin', 'security_nudges_email_frequency_days', '7'),
             array('admin', 'security_nudges_stale_scan_days', '14'),
+            array('admin', 'lapr_enabled', '0'),
+            array('admin', 'lapr_allowlist_enabled', '0'),
+            array('admin', 'lapr_allowlist', ''),
+            array('admin', 'lapr_ssh_connect_timeout', '10'),
+            array('admin', 'lapr_rate_limit_max_attempts', '5'),
+            array('admin', 'lapr_rate_limit_window_seconds', '60'),
+            array('admin', 'lapr_rate_limit_block_seconds', '300'),
+            array('admin', 'lapr_alert_email_enabled', '0'),
+            array('admin', 'lapr_alert_email_recipient', ''),
+            array('admin', 'lapr_scheduler_enabled', '0'),
+            array('admin', 'lapr_scheduler_interval_minutes', '5'),
+            array('admin', 'lapr_scheduler_next_run_at', '0'),
+            array('admin', 'lapr_max_retries', '3'),
+            array('admin', 'lapr_retry_delay_minutes', '60'),
+            array('admin', 'lapr_audit_retention_days', '365'),
             array('admin', 'leaver_risk_enabled', '0'),
             array('admin', 'leaver_risk_auto_flag', '0'),
             array('admin', 'compliance_reports_enabled', '0'),
@@ -845,6 +860,7 @@ class DatabaseInstaller
             `admin` tinyint(1) NOT null DEFAULT '0',
             `last_connexion` varchar(30) NULL DEFAULT NULL,
             `gestionnaire` int(11) NOT null DEFAULT '0',
+            `can_manage_lapr` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'LAPR: user can manage endpoints/accounts/policies (0=no, 1=yes)',
             `email` varchar(250) NOT NULL DEFAULT 'none',
             `personal_folder` int(1) NOT null DEFAULT '0',
             `disabled` tinyint(1) NOT null DEFAULT '0',
@@ -1843,6 +1859,166 @@ class DatabaseInstaller
             `last_score_delta` SMALLINT NULL DEFAULT NULL,
             `last_score_at` INT(12) NOT NULL DEFAULT 0,
             PRIMARY KEY (`user_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        );
+    }
+
+    // Create table lapr_endpoints (LAPR — Linux Account Password Rotation)
+    private function lapr_endpoints()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "lapr_endpoints` (
+            `id` INT(12) NOT NULL AUTO_INCREMENT,
+            `label` VARCHAR(255) NOT NULL,
+            `hostname` VARCHAR(255) NOT NULL,
+            `port` SMALLINT UNSIGNED NOT NULL DEFAULT 22,
+            `ssh_username` VARCHAR(100) NOT NULL,
+            `ssh_auth_method` ENUM('password','key') NOT NULL DEFAULT 'password',
+            `ssh_credential_source` INT(12) NULL COMMENT 'teampass_items.id holding the SSH credential (app-level link)',
+            `os_info` TEXT NULL COMMENT 'JSON {os_name, kernel, user_info, is_root}',
+            `capabilities` TEXT NULL COMMENT 'JSON {has_chpasswd, has_passwd, has_sudo}',
+            `ssh_hostkey_fingerprint` VARCHAR(255) NULL,
+            `ssh_hostkey_verified` TINYINT(1) NOT NULL DEFAULT 1,
+            `status` ENUM('active','disabled','error','unreachable','deleted') NOT NULL DEFAULT 'active',
+            `last_check_at` DATETIME NULL,
+            `last_error` TEXT NULL,
+            `next_check_at` DATETIME NULL,
+            `allowed_by_policy` TINYINT(1) NOT NULL DEFAULT 1,
+            `created_by` INT(12) NOT NULL,
+            `updated_by` INT(12) NULL,
+            `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            INDEX `idx_hostname` (`hostname`),
+            INDEX `idx_status` (`status`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        );
+    }
+
+    // Create table lapr_accounts (LAPR managed accounts)
+    private function lapr_accounts()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "lapr_accounts` (
+            `id` INT(12) NOT NULL AUTO_INCREMENT,
+            `endpoint_id` INT(12) NOT NULL,
+            `item_id` INT(12) NOT NULL COMMENT 'teampass_items.id — LAPR manages this item password',
+            `username_cache` VARCHAR(100) NOT NULL COMMENT 'copy of item.login at add time',
+            `policy_id` INT(12) NULL,
+            `last_rotation_at` DATETIME NULL,
+            `last_rotation_status` ENUM('success','failure','never') NOT NULL DEFAULT 'never',
+            `last_rotation_error` TEXT NULL,
+            `next_rotation_at` DATETIME NULL,
+            `retry_count` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+            `retry_at` DATETIME NULL DEFAULT NULL,
+            `status` ENUM('active','paused','error','deleted') NOT NULL DEFAULT 'active',
+            `created_by` INT(12) NOT NULL,
+            `updated_by` INT(12) NULL,
+            `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `uniq_item_id` (`item_id`),
+            INDEX `idx_next_rotation` (`next_rotation_at`, `status`),
+            INDEX `idx_endpoint` (`endpoint_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        );
+    }
+
+    // Create table lapr_policies (LAPR rotation policies) + seed the 3 read-only presets
+    private function lapr_policies()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "lapr_policies` (
+            `id` INT(12) NOT NULL AUTO_INCREMENT,
+            `label` VARCHAR(255) NOT NULL,
+            `frequency_days` SMALLINT UNSIGNED NOT NULL DEFAULT 30,
+            `password_length` TINYINT UNSIGNED NOT NULL DEFAULT 24,
+            `use_uppercase` TINYINT(1) NOT NULL DEFAULT 1,
+            `use_lowercase` TINYINT(1) NOT NULL DEFAULT 1,
+            `use_digits` TINYINT(1) NOT NULL DEFAULT 1,
+            `use_symbols` TINYINT(1) NOT NULL DEFAULT 1,
+            `rotate_on_enroll` TINYINT(1) NOT NULL DEFAULT 0,
+            `is_preset` TINYINT(1) NOT NULL DEFAULT 0,
+            `created_by` INT(12) NOT NULL,
+            `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            INDEX `idx_preset` (`is_preset`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        );
+
+        // include constants (TP_USER_ID)
+        require_once TEAMPASS_ROOT . '/app/config/include.php';
+
+        $presets = array(
+            array('Standard (30 days)', 30, 24, 1, 1, 1, 1, 0),
+            array('High Security (7 days)', 7, 32, 1, 1, 1, 1, 0),
+            array('Weekly + rotate on enroll', 7, 20, 1, 1, 1, 0, 1),
+        );
+        foreach ($presets as $preset) {
+            $existing = DB::queryFirstField(
+                "SELECT COUNT(*) FROM `" . $this->inputData['tablePrefix'] . "lapr_policies`
+                 WHERE `label` = %s AND `is_preset` = 1",
+                $preset[0]
+            );
+            if ((int) $existing === 0) {
+                DB::insert(
+                    $this->inputData['tablePrefix'] . 'lapr_policies',
+                    array(
+                        'label' => $preset[0],
+                        'frequency_days' => $preset[1],
+                        'password_length' => $preset[2],
+                        'use_uppercase' => $preset[3],
+                        'use_lowercase' => $preset[4],
+                        'use_digits' => $preset[5],
+                        'use_symbols' => $preset[6],
+                        'rotate_on_enroll' => $preset[7],
+                        'is_preset' => 1,
+                        'created_by' => (int) TP_USER_ID,
+                    )
+                );
+            }
+        }
+    }
+
+    // Create table lapr_audit_log (LAPR audit trail — never contains secrets)
+    private function lapr_audit_log()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "lapr_audit_log` (
+            `id` INT(12) NOT NULL AUTO_INCREMENT,
+            `action_type` VARCHAR(50) NOT NULL COMMENT 'endpoint_add|endpoint_test|endpoint_edit|endpoint_delete|rotation|account_add|account_reset|hostkey_mismatch|ssh_credential_sync|rotation_retry_scheduled|rotation_suspended',
+            `endpoint_id` INT(12) NULL,
+            `account_id` INT(12) NULL,
+            `user_id` INT(12) NOT NULL,
+            `ip_address` VARCHAR(45) NOT NULL,
+            `action_details` TEXT NULL COMMENT 'JSON, never contains secrets',
+            `result` ENUM('success','failure','warning') NOT NULL,
+            `error_message` TEXT NULL,
+            `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            INDEX `idx_endpoint` (`endpoint_id`),
+            INDEX `idx_account` (`account_id`),
+            INDEX `idx_user` (`user_id`),
+            INDEX `idx_action` (`action_type`, `created_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        );
+    }
+
+    // Create table lapr_rate_limit (LAPR anti-abuse: per-IP and per-hostname throttling)
+    private function lapr_rate_limit()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "lapr_rate_limit` (
+            `id` INT(12) NOT NULL AUTO_INCREMENT,
+            `scope` ENUM('ip','hostname') NOT NULL,
+            `scope_value` VARCHAR(255) NOT NULL,
+            `attempts` INT(12) NOT NULL DEFAULT 0,
+            `window_start` INT(12) NOT NULL,
+            `blocked_until` INT(12) NULL DEFAULT NULL,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `uniq_scope` (`scope`, `scope_value`),
+            INDEX `idx_blocked` (`blocked_until`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
