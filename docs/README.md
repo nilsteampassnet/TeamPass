@@ -1,8 +1,7 @@
 # Introduction
 
 > **Teampass is an open-source credential vault you run yourself.**
-> Folder-level access control, authenticated AES-256-GCM encryption and built-in compliance
-> evidence — on your own servers, under GPL-3.0, maintained since 2009.
+> Folder-level access control, authenticated AES-256-GCM encryption and built-in compliance evidence — on your own servers, under GPL-3.0, maintained since 2009.
 
 [![Release](https://img.shields.io/github/v/release/nilsteampassnet/TeamPass?style=flat-square&color=24c8ff)](https://github.com/nilsteampassnet/TeamPass/releases/latest)
 [![License](https://img.shields.io/github/license/nilsteampassnet/TeamPass?style=flat-square&color=24c8ff)](https://github.com/nilsteampassnet/TeamPass/blob/master/LICENSE.md)
@@ -56,10 +55,8 @@
 
 ## Licence
 
-Teampass is free software distributed under the
-[GNU GPL-3.0](https://github.com/nilsteampassnet/TeamPass/blob/master/LICENSE.md).
+Teampass is free software distributed under the [GNU GPL-3.0](https://github.com/nilsteampassnet/TeamPass/blob/master/LICENSE.md).
 
 ## Support the project
 
-Teampass is maintained by one person and funded by its community. If it is useful to you,
-consider [sponsoring the work](https://github.com/sponsors/nilsteampassnet).
+Teampass is maintained by one person and funded by its community. If it is useful to you, consider [sponsoring the work](https://github.com/sponsors/nilsteampassnet).

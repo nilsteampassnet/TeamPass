@@ -24,8 +24,7 @@ define("DB_CONNECT_OPTIONS", array(
     MYSQLI_OPT_CONNECT_TIMEOUT => 10
 ));
 ```
-- Fill in the 5 expected keys in variable `DB_SSL`. 
-An example could be:
+- Fill in the 5 expected keys in variable `DB_SSL`. An example could be:
 ```
 define("DB_SSL", array(
     "key" => "/mysql_keys/server-key.pem",

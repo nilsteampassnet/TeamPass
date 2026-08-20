@@ -3,9 +3,7 @@
 
 ## Client-Server exchanges
 
-Exchanges between Client and Server are encrypted through AES counter (CTR) mode proposed by Chris Veness.
-Encryption relies on a random key generated when user starts his session.
-The key size used is 256 bits.
+Exchanges between Client and Server are encrypted through AES counter (CTR) mode proposed by Chris Veness. Encryption relies on a random key generated when user starts his session. The key size used is 256 bits.
 
 ## User credentials
 
@@ -26,7 +24,4 @@ When a user has to visualize an encrypted element, his password and private key 
 
 ## Personal items isolation
 
-Items stored in a **personal folder** are encrypted so that only their **owner** (plus the internal
-`TP_USER_ID` recovery account) holds a share key — no other user can decrypt them, even at the
-cryptographic layer. See [Security hardening](security-hardening.md) for the related maintenance
-steps and the one-off remediation script for instances upgraded from older versions.
+Items stored in a **personal folder** are encrypted so that only their **owner** (plus the internal `TP_USER_ID` recovery account) holds a share key — no other user can decrypt them, even at the cryptographic layer. See [Security hardening](security-hardening.md) for the related maintenance steps and the one-off remediation script for instances upgraded from older versions.

@@ -186,8 +186,7 @@ Application log:
 tail -f /path/to/teampass/app/websocket/logs/websocket.log
 ```
 
-The service user must be able to create and append this file. On Debian/Ubuntu with the bundled
-systemd unit, the service and PHP-FPM normally both run as `www-data`:
+The service user must be able to create and append this file. On Debian/Ubuntu with the bundled systemd unit, the service and PHP-FPM normally both run as `www-data`:
 
 ```
 sudo chown -R www-data:www-data /path/to/teampass/app/websocket/logs
@@ -195,9 +194,7 @@ sudo find /path/to/teampass/app/websocket/logs -type d -exec chmod 0750 {} \;
 sudo find /path/to/teampass/app/websocket/logs -type f -exec chmod 0640 {} \;
 ```
 
-If you changed `User=` in the systemd unit so the daemon no longer runs as the web server user,
-do **not** apply the commands above as-is: they would leave the daemon unable to write its own
-log. Give both accounts a shared group instead:
+If you changed `User=` in the systemd unit so the daemon no longer runs as the web server user, do **not** apply the commands above as-is: they would leave the daemon unable to write its own log. Give both accounts a shared group instead:
 
 ```
 sudo groupadd -f teampass
@@ -208,9 +205,7 @@ sudo chmod 2770 /path/to/teampass/app/websocket/logs
 sudo chmod 0660 /path/to/teampass/app/websocket/logs/websocket.log
 ```
 
-The **Utilities > System Health > Logs** page displays the recent WebSocket entries and reports
-when the runtime user cannot read the file or write to the log directory. The remediation
-commands it suggests assume the daemon and PHP share the same user, and say so.
+The **Utilities > System Health > Logs** page displays the recent WebSocket entries and reports when the runtime user cannot read the file or write to the log directory. The remediation commands it suggests assume the daemon and PHP share the same user, and say so.
 
 Systemd journal:
 
