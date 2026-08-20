@@ -373,9 +373,11 @@ mysqli_query(
 // Health logs settings (auto-detect by default, no manual paths set)
 // ==========================================
 $healthLogsDefaults = [
-    'health_logs_mode'          => 'auto',
-    'health_teampass_log_path'  => '',
-    'health_php_fpm_log_path'   => '',
+    'health_logs_mode'                     => 'auto',
+    'health_webserver_log_path'             => '',
+    'health_webserver_access_log_path'      => '',
+    'health_teampass_log_path'              => '',
+    'health_php_fpm_log_path'               => '',
 ];
 foreach ($healthLogsDefaults as $key => $value) {
     mysqli_query(
