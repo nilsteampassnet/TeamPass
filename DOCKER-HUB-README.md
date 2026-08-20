@@ -1,13 +1,15 @@
-# TeamPass - Collaborative Password Manager
+# Teampass — Self-hosted collaborative password manager
 
-![TeamPass Logo](https://teampass.net/wp-content/uploads/2021/01/logo-teampass.png)
+![Teampass Logo](https://raw.githubusercontent.com/nilsteampassnet/TeamPass/master/public/assets/images/teampass-logo2-login.png)
 
 [![Docker Pulls](https://img.shields.io/docker/pulls/teampass/teampass)](https://hub.docker.com/r/teampass/teampass)
 [![Docker Image Version](https://img.shields.io/docker/v/teampass/teampass?sort=semver)](https://hub.docker.com/r/teampass/teampass/tags)
 [![Docker Image Size](https://img.shields.io/docker/image-size/teampass/teampass/latest)](https://hub.docker.com/r/teampass/teampass)
 [![GitHub](https://img.shields.io/github/license/nilsteampassnet/TeamPass)](https://github.com/nilsteampassnet/TeamPass)
 
-TeamPass is a collaborative, on-premise password manager designed for teams. Store and share passwords securely with fine-grained access control, LDAP integration, and comprehensive audit trails.
+**Teampass is an open-source credential vault you run yourself.** Your secrets never leave your infrastructure: folder-level access control, authenticated AES-256-GCM encryption, per-user encryption keys and a full audit trail.
+
+Free and GPL-3.0, maintained since 2009 — [teampass.net](https://teampass.net)
 
 ## 🚀 Quick Start
 
@@ -32,7 +34,7 @@ docker-compose up -d
 ## 📦 Supported Tags
 
 - `latest` - Latest stable release
-- `3.1.5.2`, `3.1.5`, `3.1`, `3` - Specific versions
+- `3.2.1.7`, `3.2.1`, `3.2`, `3` - Specific versions
 - `develop` - Development branch (not for production)
 
 ## 🔧 Configuration
@@ -206,8 +208,8 @@ docker-compose up -d
 
 ## 📚 Documentation
 
-- **Full Docker Guide:** [DOCKER.md](https://github.com/nilsteampassnet/TeamPass/blob/master/DOCKER.md)
-- **Migration Guide:** [DOCKER-MIGRATION.md](https://github.com/nilsteampassnet/TeamPass/blob/master/DOCKER-MIGRATION.md)
+- **Full Docker Guide:** [DOCKER.md](https://github.com/nilsteampassnet/TeamPass/blob/master/docs/DOCKER.md)
+- **Migration Guide:** [DOCKER-MIGRATION.md](https://github.com/nilsteampassnet/TeamPass/blob/master/docs/DOCKER-MIGRATION.md)
 - **Official Docs:** https://documentation.teampass.net
 - **Website:** https://teampass.net
 
@@ -221,24 +223,48 @@ docker-compose up -d
 
 ## ✨ Features
 
-- 🔐 Secure password storage with encryption
-- 👥 Role-based access control (RBAC)
-- 📁 Hierarchical folder organization
-- 🔍 Advanced search and filtering
-- 📊 Comprehensive audit logs
-- 🔗 LDAP/Active Directory integration
-- 📱 Two-factor authentication (2FA)
-- 🌍 Multi-language support (19 languages)
-- 📤 Import/Export capabilities
-- 🔔 Email notifications
-- 📅 Password expiration policies
-- 🔄 API for integrations
+**Encryption you can describe to an auditor**
+
+- 🔐 AES-256-GCM with random nonces and per-secret salts, under 256-bit object keys
+- 🔑 Per-user key distribution — removing an account actually revokes access
+- 🛡️ Vulnerabilities triaged, fixed and published as [security advisories](https://github.com/nilsteampassnet/TeamPass/security/advisories)
+
+**Access control and audit**
+
+- 📁 Hierarchical folders with per-folder complexity rules
+- 👥 Role-based access control, resolved least-permissive-wins
+- 📊 A record of who accessed what, and when
+- 🏛️ Access recertification campaigns, compliance reports and evidence export
+
+**Identity and automation**
+
+- 🔗 LDAP / Active Directory with nested groups, OAuth2 SSO
+- 📱 Multi-factor: TOTP, Duo Security, YubiKey, AGSES
+- 🔄 JWT-authenticated REST API with an OpenAPI 3.1 spec
+- 🧩 Browser extension with one-click auto-configuration
+
+**Day to day**
+
+- 🔍 Search across labels, descriptions, tags and custom fields
+- 📤 Import from Bitwarden, LastPass, 1Password, KeePassXC — and export back out
+- 📅 Password expiration policies and breach detection
+- 🔔 Email notifications and a notification center
+- 🌍 Multi-language support (25 languages)
 
 ## 🆘 Support
 
-- **GitHub Issues:** https://github.com/nilsteampassnet/TeamPass/issues
-- **Community:** https://www.reddit.com/r/TeamPass/
-- **Email:** nils@teampass.net
+- **Questions & discussions:** https://github.com/nilsteampassnet/TeamPass/discussions
+- **Documentation:** https://documentation.teampass.net
+- **Bug reports:** https://github.com/nilsteampassnet/TeamPass/issues
+- **Security vulnerabilities:** https://github.com/nilsteampassnet/TeamPass/security/advisories/new
+- **Commercial support:** https://teampass.net/pricing.html — or nils@teampass.net
+
+## ❤️ Support the project
+
+Teampass is free, GPL-3.0, and maintained by one person. Sponsorship funds security work,
+releases, documentation and 25 translations.
+
+**[Sponsor on GitHub](https://github.com/sponsors/nilsteampassnet)**
 
 ## 📜 License
 

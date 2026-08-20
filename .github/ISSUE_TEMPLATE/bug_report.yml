@@ -1,0 +1,159 @@
+name: 🐛 Bug report
+description: Report a defect or unexpected behaviour in Teampass
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting an issue back to Teampass.
+
+        This form is **only for bugs and defects**. For questions, deployment advice or ideas,
+        please use [Discussions](https://github.com/nilsteampassnet/TeamPass/discussions) instead.
+
+        🔒 **Found a security vulnerability?** Do not report it here — use
+        [Security Advisories](https://github.com/nilsteampassnet/TeamPass/security/advisories/new).
+
+        > 💡 **Tip:** a diagnostic report can be generated from **Admin → Bug icon (bottom left)**.
+        > Attaching it speeds up the investigation significantly.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Before you start
+      options:
+        - label: I have searched the existing issues and this is not a duplicate
+          required: true
+        - label: I have read the [troubleshooting guide](https://documentation.teampass.net/#/misc/troubleshooting)
+          required: true
+        - label: This is a bug report, not a question
+          required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. See the error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      description: What should have happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: What happened instead?
+    validations:
+      required: true
+
+  - type: input
+    id: teampass-version
+    attributes:
+      label: Teampass version
+      placeholder: "3.2.1.7"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install-type
+    attributes:
+      label: Install type
+      options:
+        - Fresh install
+        - Upgraded from an older release
+    validations:
+      required: true
+
+  - type: input
+    id: upgraded-from
+    attributes:
+      label: If upgraded, from which release?
+      placeholder: "3.1.4"
+
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment
+      options:
+        - Bare metal / VM
+        - Docker
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: php-version
+    attributes:
+      label: PHP version
+      placeholder: "8.3.6"
+    validations:
+      required: true
+
+  - type: input
+    id: database
+    attributes:
+      label: Database
+      placeholder: "MariaDB 11.2 / MySQL 8.0"
+    validations:
+      required: true
+
+  - type: input
+    id: webserver
+    attributes:
+      label: Web server
+      placeholder: "Nginx 1.24 / Apache 2.4"
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Server operating system
+      placeholder: "Debian 12"
+    validations:
+      required: true
+
+  - type: input
+    id: client
+    attributes:
+      label: Browser and client OS
+      placeholder: "Firefox 128 on Windows 11"
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Teampass configuration variables
+      description: From the diagnostic report (Admin → Bug icon). Redact anything sensitive.
+      render: text
+
+  - type: textarea
+    id: server-log
+    attributes:
+      label: Web server / PHP error log
+      description: The relevant lines only.
+      render: shell
+
+  - type: textarea
+    id: console-log
+    attributes:
+      label: Browser console and network tab
+      description: >
+        Open the developer tools (F12) → Console and Network. Include the errors and,
+        especially, the response body of the request that failed.
+      render: shell
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Screenshots, workarounds you found, related issues.
