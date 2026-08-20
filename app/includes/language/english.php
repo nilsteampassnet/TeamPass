@@ -2717,6 +2717,8 @@ return array(
     'settings_api_require_https_tip' => 'Reject API requests sent over plain HTTP (403). Credentials and tokens must never travel unencrypted. Enabled by default on new installations; keep it enabled unless TLS is terminated upstream without the X-Forwarded-Proto header.',
     'settings_api_rate_limit' => 'API rate limit (requests per minute)',
     'settings_api_rate_limit_tip' => 'Maximum number of authenticated API requests per minute, enforced per user and per IP address (sliding window, HTTP 429 above the limit). Set 0 to disable.',
+    'settings_offline_sync_window' => 'Offline synchronization window (days)',
+    'settings_offline_sync_window_tip' => 'How long a mobile device may stay offline and still catch up incrementally when it reconnects. Beyond this delay, the device rebuilds its local cache instead. <strong>This deletes no item, no password and no history</strong> — it is not a data retention, it only bounds how far back the incremental catch-up reaches. Set 0 for no limit.',
     'health_check_api_cors_open' => 'API CORS policy is open',
     'health_check_api_cors_open_message' => 'The API accepts cross-origin requests from any origin (Access-Control-Allow-Origin: *). Consider restricting the allowed origins in Settings > API.',
     'health_check_api_https_off' => 'API does not require HTTPS',

@@ -55,6 +55,7 @@ require_once __DIR__ . '/otp.functions.php';
 require_once __DIR__ . '/security_posture_logic.php';
 require_once __DIR__ . '/operational_statistics_logic.php';
 require_once __DIR__ . '/log_display_logic.php';
+require_once __DIR__ . '/item_revisions_logic.php';
 require_once __DIR__ . '/password_strength.functions.php';
 require_once __DIR__ . '/roles_scope.functions.php';
 
@@ -2992,6 +2993,17 @@ function logItems(
         }
     }
 
+    // Allocate a revision for the offline synchronization feed. logItems() is the choke
+    // point every content change already goes through, satellites included: custom fields,
+    // tags, attachments and OTP all log at_modification with a dedicated reason.
+    if (itemRevisionShouldBump($action) === true) {
+        bumpItemRevision(
+            $item_id,
+            itemRevisionJournalAction($action, $raison),
+            $id_user
+        );
+    }
+
     // Prepare reason for syslog: remove internal source marker if present
     $raisonForSyslog = $raison === null ? null : (string) $raison;
     if ($isApiContext) {
@@ -3032,6 +3044,233 @@ function logItems(
 
     // send notification if enabled
     //notifyOnChange($item_id, $action, $SETTINGS);
+}
+
+/**
+ * Per-process store of the revisions already allocated, keyed by item id.
+ *
+ * update_item() calls logItems() once per changed attribute — around fifteen times for a
+ * single save. They all describe the same logical change, so they must share one revision
+ * instead of writing fifteen journal rows.
+ *
+ * @return array<int, int> Item id => allocated revision
+ */
+function &itemRevisionMemoStore(): array
+{
+    static $memo = [];
+    return $memo;
+}
+
+/**
+ * Forget the revisions allocated so far.
+ *
+ * Web requests are short-lived and never need this. Long-running CLI processes do:
+ * background_tasks___worker.php handles many subtasks in a row, and a later change to an
+ * item it already touched must get its own revision.
+ *
+ * @return void
+ */
+function resetItemRevisionMemo(): void
+{
+    $memo = &itemRevisionMemoStore();
+    $memo = [];
+}
+
+/**
+ * Allocate a revision for an item and record it in the change journal.
+ *
+ * The journal primary key is the globally monotonic revision sequence, so a client can both
+ * compare two revisions of one item and scan every change after a given cursor.
+ *
+ * @param int      $itemId           Item id
+ * @param string   $action           Journal action: created|updated|deleted|restored|moved|purged
+ * @param int      $userId           Author of the change
+ * @param int|null $folderId         Folder holding the item, resolved from the item when null
+ * @param int|null $previousFolderId Source folder, on a move only
+ *
+ * @return int The allocated revision, 0 when the journal could not be written
+ */
+function bumpItemRevision(
+    int $itemId,
+    string $action,
+    int $userId,
+    ?int $folderId = null,
+    ?int $previousFolderId = null
+): int {
+    if ($itemId <= 0) {
+        return 0;
+    }
+
+    $memo = &itemRevisionMemoStore();
+
+    try {
+        loadClasses('DB');
+
+        // Already allocated in this request: reuse it, and rewrite the stored row when this
+        // call knows something it did not — a deletion, or the folder a move came from.
+        if (isset($memo[$itemId]) === true) {
+            $revision = (int) $memo[$itemId];
+
+            if (itemRevisionShouldUpgradeEntry($action, $previousFolderId) === true) {
+                $upgrade = ['action' => $action];
+                if ($previousFolderId !== null && $previousFolderId > 0) {
+                    $upgrade['previous_folder_id'] = $previousFolderId;
+                }
+                if ($folderId !== null && $folderId > 0) {
+                    $upgrade['folder_id'] = $folderId;
+                }
+
+                DB::update(
+                    prefixTable('items_revisions'),
+                    $upgrade,
+                    'revision = %i',
+                    $revision
+                );
+            }
+
+            return $revision;
+        }
+
+        // A purge deletes the item row, so the folder must be read while it still exists.
+        if ($folderId === null) {
+            $folderId = getItemFolderIdFromDb($itemId);
+        }
+
+        DB::insert(
+            prefixTable('items_revisions'),
+            [
+                'item_id' => $itemId,
+                'folder_id' => $folderId === null ? 0 : (int) $folderId,
+                'previous_folder_id' => $previousFolderId === null ? 0 : (int) $previousFolderId,
+                'action' => $action,
+                'changed_by' => $userId,
+                'changed_at' => time(),
+            ]
+        );
+        $revision = (int) DB::insertId();
+
+        // Denormalized on the item so a client can compare revisions without touching the
+        // journal. A purge leaves no row to update, which is expected.
+        DB::update(
+            prefixTable('items'),
+            ['revision' => $revision],
+            'id = %i',
+            $itemId
+        );
+
+        $memo[$itemId] = $revision;
+
+        return $revision;
+    } catch (\Throwable $e) {
+        // Revision tracking must never break a save.
+        return 0;
+    }
+}
+
+/**
+ * Drop change journal entries older than the offline synchronization window.
+ *
+ * Nothing is lost: a client whose cursor falls outside the window is answered
+ * full_sync_required and rebuilds its cache. This only bounds how long a device may stay
+ * offline and still catch up incrementally.
+ *
+ * @param int $windowDays Window in days, 0 to never trim
+ *
+ * @return int Number of entries removed
+ */
+function pruneItemRevisionsJournal(int $windowDays): int
+{
+    $cutoff = offlineSyncPruneCutoff($windowDays, time());
+    if ($cutoff === null) {
+        return 0;
+    }
+
+    try {
+        loadClasses('DB');
+
+        DB::delete(
+            prefixTable('items_revisions'),
+            'changed_at < %i',
+            $cutoff
+        );
+
+        return (int) DB::affectedRows();
+    } catch (\Throwable $e) {
+        return 0;
+    }
+}
+
+/**
+ * Read the current revision of an item.
+ *
+ * Lets a write path report the revision it just produced without re-reading the whole item.
+ *
+ * @param int $itemId Item id
+ *
+ * @return int Current revision, 0 when unknown
+ */
+function getItemRevision(int $itemId): int
+{
+    if ($itemId <= 0) {
+        return 0;
+    }
+
+    try {
+        loadClasses('DB');
+
+        $row = DB::queryFirstRow(
+            'SELECT revision FROM ' . prefixTable('items') . ' WHERE id = %i',
+            $itemId
+        );
+
+        return $row === null ? 0 : (int) $row['revision'];
+    } catch (\Throwable $e) {
+        return 0;
+    }
+}
+
+/**
+ * Allocate a revision for every item holding a value of a custom field.
+ *
+ * Deleting a field or a category strips its values from every item at once, with no audit
+ * log and no touch on the items themselves. Without this, every client would keep serving a
+ * value the server no longer has, until its next full resynchronization.
+ *
+ * Must be called *before* the values are deleted — afterwards there is no way to know which
+ * items were concerned.
+ *
+ * @param int $fieldId Custom field id
+ * @param int $userId  Author of the change
+ *
+ * @return int Number of items journalled
+ */
+function bumpItemRevisionsForField(int $fieldId, int $userId): int
+{
+    if ($fieldId <= 0) {
+        return 0;
+    }
+
+    try {
+        loadClasses('DB');
+
+        $rows = DB::query(
+            'SELECT DISTINCT item_id
+            FROM ' . prefixTable('categories_items') . '
+            WHERE field_id = %i',
+            $fieldId
+        );
+
+        $count = 0;
+        foreach ($rows as $row) {
+            if (bumpItemRevision((int) $row['item_id'], 'updated', $userId) > 0) {
+                ++$count;
+            }
+        }
+
+        return $count;
+    } catch (\Throwable $e) {
+        return 0;
+    }
 }
 
 /**
@@ -6791,6 +7030,11 @@ function finalizeItemMoveSideEffects(
         $userLogin,
         'at_moved : ' . $sourceFolderTitle . ' -> ' . $targetFolderTitle
     );
+
+    // logItems() has journalled the move, but it cannot know where the item came from.
+    // The source folder is what lets the delta feed tell a client the item left its
+    // visible scope, so record it on the revision that was just allocated.
+    bumpItemRevision($itemId, 'moved', $userId, $targetFolderId, $sourceFolderId);
 
     if ($refreshCache === true) {
         updateCacheTable('update_value', $itemId, $userId);

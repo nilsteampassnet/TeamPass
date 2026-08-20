@@ -80,6 +80,7 @@ class ItemModel
         $rows = DB::query(
             "SELECT i.id, i.label, i.description, i.pw, i.pw_iv, i.url, i.id_tree, i.login, i.email,
                 i.viewed_no, i.fa_icon, i.inactif, i.perso, i.favicon_url, i.anyone_can_modify,
+                i.revision,
                 t.title as folder_label,
                 io.secret as otp_secret,
                 io.algorithm as otp_algorithm,
@@ -166,6 +167,7 @@ class ItemModel
                 $ret,
                 [
                     'id' => (int) $row['id'],
+                    'revision' => (int) $row['revision'],
                     'label' => $row['label'],
                     'description' => $row['description'],
                     'pwd' => $pwd,
@@ -234,6 +236,184 @@ class ItemModel
         );
     }
     //end countItems()
+
+    /**
+     * Bounds of the change journal.
+     *
+     * The lowest revision still stored tells whether a client cursor is old enough to have
+     * lost entries to retention; the highest is the cursor a full resynchronization adopts.
+     *
+     * @return array{min: int|null, max: int} Null min when the journal is empty
+     */
+    public function getRevisionBounds(): array
+    {
+        $row = DB::queryFirstRow(
+            'SELECT MIN(revision) AS min_revision, MAX(revision) AS max_revision
+            FROM ' . prefixTable('items_revisions')
+        );
+
+        if ($row === null || $row['min_revision'] === null) {
+            return ['min' => null, 'max' => 0];
+        }
+
+        return [
+            'min' => (int) $row['min_revision'],
+            'max' => (int) $row['max_revision'],
+        ];
+    }
+    //end getRevisionBounds()
+
+    /**
+     * Changes a client must apply to its cache since a given cursor.
+     *
+     * The journal is the scan target — not the items table — because it is the only place
+     * where an item that was hard deleted, or that left the caller's folders, still leaves
+     * a trace. Items are joined afterwards to resolve what the caller can currently read.
+     *
+     * @param int    $since             Client cursor, exclusive
+     * @param int    $limit             Maximum journal entries scanned
+     * @param string $journalScopeSql   Scope clause on the journal alias 'r', starting with AND
+     * @param string $itemVisibilitySql Access clause on the items alias 'i', starting with AND
+     * @param string $userPrivateKey    Caller private key, to decrypt the payloads
+     * @param int    $userId            Caller id
+     *
+     * @return array{cursor: int, has_more: bool, changed: array, removed: array}
+     */
+    public function getItemChanges(
+        int $since,
+        int $limit,
+        string $journalScopeSql,
+        string $itemVisibilitySql,
+        string $userPrivateKey,
+        int $userId
+    ): array {
+        // 1. Scan the journal window.
+        $journalRows = DB::query(
+            'SELECT r.revision, r.item_id, r.action
+            FROM ' . prefixTable('items_revisions') . ' AS r
+            WHERE r.revision > %i' . $journalScopeSql . '
+            ORDER BY r.revision ASC
+            LIMIT %i',
+            $since,
+            $limit
+        );
+
+        $scannedRevisions = array_map(static fn (array $row): int => (int) $row['revision'], $journalRows);
+        $hasMore = count($journalRows) >= $limit;
+
+        if ($journalRows === []) {
+            return [
+                'cursor' => $since,
+                'has_more' => false,
+                'changed' => [],
+                'removed' => [],
+            ];
+        }
+
+        // 2. One entry per item: three edits since the cursor are one download.
+        $winners = itemRevisionDedupeScan($journalRows);
+        $candidateIds = array_keys($winners);
+
+        // 3. Resolve the current state. Two queries: what the caller can read, and what
+        //    still exists at all — the difference tells a purge from a lost access.
+        $visibleItemIds = [];
+        $deletedItemIds = [];
+        $readableRows = DB::query(
+            'SELECT i.id, i.deleted_at
+            FROM ' . prefixTable('items') . ' AS i
+            WHERE i.id IN %li' . $itemVisibilitySql,
+            $candidateIds
+        );
+        foreach ($readableRows as $row) {
+            $visibleItemIds[(int) $row['id']] = true;
+            if (empty($row['deleted_at']) === false) {
+                $deletedItemIds[(int) $row['id']] = true;
+            }
+        }
+
+        $existingItemIds = [];
+        $existingRows = DB::query(
+            'SELECT id FROM ' . prefixTable('items') . ' WHERE id IN %li',
+            $candidateIds
+        );
+        foreach ($existingRows as $row) {
+            $existingItemIds[(int) $row['id']] = true;
+        }
+
+        // 4. Classify.
+        $removed = [];
+        $toDeliver = [];
+        foreach ($winners as $itemId => $row) {
+            $verdict = itemRevisionClassifyScanRow(
+                (int) $itemId,
+                $visibleItemIds,
+                isset($existingItemIds[(int) $itemId]),
+                isset($deletedItemIds[(int) $itemId])
+            );
+
+            if ($verdict['classification'] === 'removed') {
+                $removed[] = [
+                    'id' => (int) $itemId,
+                    'revision' => (int) $row['revision'],
+                    'reason' => $verdict['reason'],
+                ];
+                continue;
+            }
+
+            $toDeliver[(int) $itemId] = (int) $row['revision'];
+        }
+
+        // 5. Materialize the payloads, reusing the very code path item/get uses so the feed
+        //    stays byte-consistent with it: sharekeys, custom fields, TOTP and audit log.
+        $changed = [];
+        if ($toDeliver !== []) {
+            $changed = $this->getItems(
+                'WHERE i.id IN %li' . $itemVisibilitySql,
+                0,
+                $userPrivateKey,
+                $userId,
+                false,
+                0,
+                [array_keys($toDeliver)]
+            );
+        }
+
+        // 6. An item whose sharekeys are still being distributed cannot be handed over yet.
+        //    Its revision must hold the cursor back, or the client would never see it.
+        $delivered = [];
+        foreach ($changed as $item) {
+            $delivered[(int) $item['id']] = true;
+        }
+        $undeliverable = [];
+        foreach ($toDeliver as $itemId => $revision) {
+            if (isset($delivered[$itemId]) === false) {
+                $undeliverable[] = $revision;
+            }
+        }
+
+        $cursor = itemRevisionResolveCursor($since, $scannedRevisions, $undeliverable);
+
+        // Entries held back are offered again on the next call.
+        if ($undeliverable !== []) {
+            $hasMore = true;
+            $changed = array_values(array_filter(
+                $changed,
+                static fn (array $item): bool => (int) ($item['revision'] ?? 0) <= $cursor
+            ));
+            $removed = array_values(array_filter(
+                $removed,
+                static fn (array $entry): bool => (int) $entry['revision'] <= $cursor
+            ));
+        }
+
+        return [
+            'cursor' => $cursor,
+            'has_more' => $hasMore,
+            'changed' => $changed,
+            'removed' => $removed,
+        ];
+    }
+    //end getItemChanges()
 
     /**
      * Main function to add a new item to the database.
@@ -328,6 +508,7 @@ class ItemModel
                 'error' => false,
                 'message' => 'Item added successfully',
                 'newId' => $newID,
+                'revision' => getItemRevision((int) $newID),
             ];
 
         } catch (Exception $e) {
@@ -1313,6 +1494,24 @@ class ItemModel
                 ];
             }
 
+            // Optimistic concurrency. A client that edited offline sends the revision its
+            // edit was based on; if the server has moved on since, the write is refused
+            // rather than silently overwriting whatever changed in the meantime.
+            // Omitting the field keeps the previous last-writer-wins behaviour.
+            if (isset($params['revision']) === true && $params['revision'] !== '') {
+                $expectedRevision = (int) $params['revision'];
+                $currentRevision = (int) ($currentItem['revision'] ?? 0);
+
+                if ($expectedRevision !== $currentRevision) {
+                    return [
+                        'error' => true,
+                        'error_message' => 'The item was modified since revision ' . $expectedRevision
+                            . '. Current revision is ' . $currentRevision . '.',
+                        'error_header' => 'HTTP/1.1 409 Conflict',
+                    ];
+                }
+            }
+
             $laprRelations = laprGetItemRelations([$itemId], $SETTINGS);
             $laprRelation = $laprRelations[$itemId] ?? [];
             $laprIsManaged = (bool) ($laprRelation['is_managed'] ?? false);
@@ -1722,6 +1921,7 @@ class ItemModel
                 'error' => false,
                 'message' => 'Item updated successfully',
                 'item_id' => $itemId,
+                'revision' => getItemRevision($itemId),
             ];
 
         } catch (InvalidArgumentException | UnexpectedValueException $e) {

@@ -22,6 +22,7 @@
    - [Update an item](#update-item)
    - [Delete an item](#delete-item)
    - [List Tags](#list-tags)
+   - [Synchronize a cache](#item-changes)
 4. [Folders Endpoints](#folders-endpoints)
    - [List accessible folders](#list-folders)
    - [List folders with access rights](#writable-folders)
@@ -268,6 +269,7 @@ curl -X GET "https://your-teampass.com/api/index.php/item/inFolders?folders=[1,2
 ```json
 {
   "id": 2053,
+  "revision": 4127,
   "label": "new object for #3500 v3",
   "description": "<p>bla bla</p>",
   "pwd": "SK^dsf123s_6A}]V$t^]",
@@ -289,6 +291,7 @@ curl -X GET "https://your-teampass.com/api/index.php/item/inFolders?folders=[1,2
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | `id` | integer | Unique item ID |
+| `revision` | integer | Monotonic revision, bumped on every content change of the item or its custom fields, tags, attachments and OTP. Compare it against a cached copy to detect staleness; the larger value is the newer one. `0` means the item has not changed since revision tracking was installed. |
 | `label` | string | Item label |
 | `description` | string | Description (may contain HTML) |
 | `pwd` | string | Password (decrypted according to rights) |
@@ -655,6 +658,7 @@ curl -X POST "https://your-teampass.com/api/index.php/item/create" \
 | Field | Type | Required | Description |
 | ----- | ---- | -------- | ----------- |
 | `id` | integer | ✅ | Item ID to update |
+| `revision` | integer | ❌ | Precondition, not an updatable field: the revision the edit was based on. The update is refused with `409` when the server has moved on since — see [Synchronize a cache](#item-changes). Omitting it keeps the previous last-writer-wins behaviour. |
 | `label` | string | ❌ | New label |
 | `password` | string | ❌ | New password |
 | `description` | string | ❌ | New description |
@@ -700,7 +704,7 @@ curl -X POST "https://your-teampass.com/api/index.php/item/create" \
 | 403 | Update permission denied or access denied — including a folder granted as `R`, `NE` or `NDNE` (check `can_edit` on [`folder/writableFolders`](#writable-folders)) |
 | 404 | Item not found |
 | 405 | HTTP method not supported (only `PUT` is accepted) |
-| 409 | The item was moved or re-encrypted by another request while this move was being prepared — retry |
+| 409 | The supplied `revision` no longer matches the item — someone changed it since; resolve the conflict instead of retrying blindly. Also returned when the item was moved or re-encrypted by another request while this move was being prepared, which is a plain retry |
 | 422 | Validation failed: a personal → shared move combined with another field, or one of the item's encryption keys could not be recovered (the item is left untouched) |
 | 500 | Server error |
 
@@ -816,6 +820,102 @@ curl -X DELETE "https://your-teampass.com/api/index.php/item/delete" \
 **Example:**
 ```bash
 curl -X GET "https://your-teampass.com/api/index.php/item/allTags" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+---
+
+### Synchronize a cache {#item-changes}
+
+> 🔄 Returns what changed since a given revision — the endpoint an offline client polls
+> instead of re-downloading the whole vault
+
+| Info | Description |
+| ---- | ----------- |
+| **Endpoint** | `item/changes` |
+| **Method** | GET |
+| **URL** | `<Teampass URL>/api/index.php/item/changes` |
+| **Parameters** | `since` (required), `limit` (optional) |
+| **Headers** | `Authorization: Bearer <token>` |
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+| --------- | ---- | -------- | ----------- |
+| `since` | integer | Yes | Cursor returned by the previous call, exclusive. `0` on a first synchronization. |
+| `limit` | integer | No | Journal entries scanned in one call. Default 200, maximum 1000. |
+
+**Response (success):**
+```json
+{
+  "cursor": 12345,
+  "has_more": false,
+  "full_sync_required": false,
+  "changed": [
+    { "id": 77, "revision": 12340, "label": "Prod database", "pwd": "…", "fields": [] }
+  ],
+  "removed": [
+    { "id": 91, "revision": 12331, "reason": "deleted" }
+  ]
+}
+```
+
+**Response Fields:**
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `cursor` | integer | Store it and send it as `since` on the next call |
+| `has_more` | boolean | More changes are waiting — call again with the returned cursor |
+| `full_sync_required` | boolean | The cursor cannot be served: rebuild the cache and adopt the returned cursor |
+| `changed` | array | Items to upsert, same shape as `item/get` |
+| `removed` | array | Items to drop, with `id`, `revision` and `reason` |
+
+`reason` is one of `deleted` (soft deleted), `purged` (permanently removed) or `out_of_scope`
+(the item still exists but the caller can no longer read it, typically after a move into a
+folder they have no access to).
+
+**Synchronization protocol:**
+
+1. **First run** — call with `since=0`. The answer is always `full_sync_required: true` plus a
+   cursor: items untouched since revision tracking was installed are still at revision `0` and
+   have no journal entry, so a delta would silently miss them. Read the vault through
+   [item/inFolders](#list-items-folders), store each item with its `revision`, and store the cursor.
+2. **Reconnect** — call with the stored cursor. Upsert `changed`, delete `removed`, store the new
+   cursor, and repeat while `has_more` is true. A `full_sync_required: true` sends you back to
+   step 1 — it also happens when the client has been offline longer than the journal retention.
+3. **Offline edits** — send the `revision` the edit was based on in
+   [item/update](#update-item). A `409` means the server moved on: resolve the conflict instead
+   of overwriting.
+4. **Folder scope** — also refresh [item rights](#writable-folders) and drop any cached item whose
+   folder is no longer listed. Losing access to a folder changes nothing on the items themselves,
+   so it produces no entry in this feed.
+
+**How far back the feed reaches:**
+
+The server keeps its change journal for the duration set in
+**Settings → API → Offline synchronization window** (`offline_sync_window_days`, 90 days by
+default, `0` for no limit). A device that reconnects within that window catches up
+incrementally; one that has been offline longer is answered `full_sync_required` and rebuilds
+its cache.
+
+> 🔔 This window is **not** a data retention. It deletes no item, no password and no history —
+> those are governed separately and are never affected. It only bounds how far back the
+> incremental catch-up reaches, so the only cost of a short window is bandwidth for devices
+> that were offline a long time.
+
+**Response Codes:**
+
+| Code | Description |
+| ---- | ----------- |
+| 200 | Changes returned successfully |
+| 400 | Missing `since` parameter |
+| 401 | Invalid or expired token |
+| 405 | HTTP method not supported (must be GET) |
+| 500 | Server error |
+
+**Example:**
+```bash
+curl -X GET "https://your-teampass.com/api/index.php/item/changes?since=12300" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 

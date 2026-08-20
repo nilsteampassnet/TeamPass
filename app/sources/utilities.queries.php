@@ -2151,6 +2151,10 @@ function tpHardDeleteItem(int $itemId): void
         return;
     }
 
+    // Journal the purge before anything is removed: the item row is about to disappear,
+    // so this is the only trace left telling a synchronizing client to drop its copy.
+    bumpItemRevision($itemId, 'purged', (int) (SessionManager::getSession()->get('user-id') ?? 0));
+
     // Delete item logs
     DB::delete(prefixTable('log_items'), 'id_item = %i', $itemId);
 

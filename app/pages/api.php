@@ -206,6 +206,18 @@ function getDomainFromSettingsUrl(string $url): string
                             </div>
                         </div>
 
+                        <div class='row mb-3'>
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_offline_sync_window'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_offline_sync_window_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <input type='text' class='form-control form-control-sm' id='offline_sync_window_days' value='<?php echo isset($SETTINGS['offline_sync_window_days']) === true ? (int) $SETTINGS['offline_sync_window_days'] : 90; ?>'>
+                            </div>
+                        </div>
+
                         <ul class="nav nav-tabs">
                             <li class="nav-item">
                                 <a class="nav-link active" data-toggle="tab" href="#users" role="tab" aria-controls="users"><?php echo $lang->get('users'); ?></a>

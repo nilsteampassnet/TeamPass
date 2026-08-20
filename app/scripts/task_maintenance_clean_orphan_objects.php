@@ -58,12 +58,20 @@ $logID = doLog('ongoing', $logLabel, 1);
 // Perform maintenance tasks
 $integritySummary = cleanOrphanObjectsAndScanIntegrity();
 
+// Trim the item change journal to the offline synchronization window. Entries for purged
+// items are deliberately kept until they age out: they are the only trace telling a
+// synchronizing client the item is gone.
+$prunedRevisions = pruneItemRevisionsJournal(
+    offlineSyncResolveWindowDays($SETTINGS['offline_sync_window_days'] ?? null)
+);
+
 // log end
 doLog('completed', '', 1, $logID);
 
 echo sprintf(
-    'Items integrity scan completed: %d active corrupted item(s).',
-    (int) ($integritySummary['count'] ?? 0)
+    'Items integrity scan completed: %d active corrupted item(s). %d journal entry(ies) pruned.',
+    (int) ($integritySummary['count'] ?? 0),
+    $prunedRevisions
 );
 
 /**
