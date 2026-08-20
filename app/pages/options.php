@@ -1199,6 +1199,26 @@ $zones = timezone_list();
                                 </div>
                             </div>
 
+                            <div class='row mb-2 option <?php echo $healthLogsMode === 'manual' ? '' : 'hidden'; ?>' id='health-log-webserver-path-row' data-keywords="health logs webserver apache nginx server error log path">
+                                <div class='col-12'>
+                                    <?php echo $lang->get('health_webserver_log_path'); ?>
+                                    <small class='form-text text-muted'>
+                                        <?php echo $lang->get('health_webserver_log_path_tip'); ?>
+                                    </small>
+                                    <input type='text' class='form-control form-control-sm mt-2' id='health_webserver_log_path' value='<?php echo htmlspecialchars((string) ($SETTINGS['health_webserver_log_path'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>'>
+                                </div>
+                            </div>
+
+                            <div class='row mb-2 option <?php echo $healthLogsMode === 'manual' ? '' : 'hidden'; ?>' id='health-log-webserver-access-path-row' data-keywords="health logs webserver apache nginx server access log path">
+                                <div class='col-12'>
+                                    <?php echo $lang->get('health_webserver_access_log_path'); ?>
+                                    <small class='form-text text-muted'>
+                                        <?php echo $lang->get('health_webserver_access_log_path_tip'); ?>
+                                    </small>
+                                    <input type='text' class='form-control form-control-sm mt-2' id='health_webserver_access_log_path' value='<?php echo htmlspecialchars((string) ($SETTINGS['health_webserver_access_log_path'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>'>
+                                </div>
+                            </div>
+
                             <div class='row mb-2 option <?php echo $healthLogsMode === 'manual' ? '' : 'hidden'; ?>' id='health-log-teampass-path-row' data-keywords="health logs teampass dedicated vhost apache nginx error log path">
                                 <div class='col-12'>
                                     <?php echo $lang->get('health_teampass_log_path'); ?>
