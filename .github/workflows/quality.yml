@@ -1,0 +1,109 @@
+name: Quality
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+    branches: [master, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PHP_EXTENSIONS: openssl, mysqli, mbstring, bcmath, iconv, xml, gd, curl, gmp, ldap
+
+jobs:
+  autoloader-guard:
+    name: Committed autoloader is production-only
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Shipping the *dev* Composer autoloader fatals every installation (the bug 3.2.1.7
+      # had to fix). `composer install` rewrites app/vendor/composer/ into its dev form,
+      # so a contributor who forgets `git checkout -- app/vendor/composer/` before
+      # committing would break every deployment. This guard catches that in review.
+      - name: Verify app/vendor/composer/ is the production autoloader
+        run: |
+          set -euo pipefail
+          if [ ! -f app/vendor/composer/installed.json ]; then
+            echo "::error::app/vendor/composer/installed.json is missing from the repository."
+            exit 1
+          fi
+          dev=$(python3 -c "import json,sys; print(json.load(open('app/vendor/composer/installed.json')).get('dev'))")
+          if [ "$dev" != "False" ]; then
+            echo "::error file=app/vendor/composer/installed.json::The committed autoloader is in DEV form (dev=$dev). Run 'git checkout -- app/vendor/composer/' and commit again — shipping the dev autoloader fatals every installation."
+            exit 1
+          fi
+          if python3 -c "
+          import json, sys
+          names = [p['name'] for p in json.load(open('app/vendor/composer/installed.json'))['packages']]
+          sys.exit(0 if any(n.startswith(('phpunit/', 'phpstan/')) for n in names) else 1)
+          "; then
+            echo "::error file=app/vendor/composer/installed.json::Dev packages (phpunit/phpstan) are listed in the committed autoloader. Restore it with 'git checkout -- app/vendor/composer/'."
+            exit 1
+          fi
+          echo "OK — committed autoloader is production-only."
+
+  tests:
+    name: Tests (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: ${{ env.PHP_EXTENSIONS }}
+          coverage: none
+          tools: composer:v2
+
+      # The dev dependencies are untracked, and the committed app/vendor/composer/ is the
+      # production autoloader that maps no dev package. Removing the three directories is a
+      # no-op on a clean CI checkout but mirrors the documented local recovery, and
+      # `composer install` rewrites app/vendor/composer/ into the dev form the tools need.
+      - name: Repair the dev toolchain
+        run: |
+          rm -rf app/vendor/phpstan app/vendor/phpunit app/vendor/symfony/cache
+          composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Run the test suite
+        run: php app/vendor/phpunit/phpunit/phpunit --colors=never
+
+  static-analysis:
+    name: PHPStan (level 4)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: ${{ env.PHP_EXTENSIONS }}
+          coverage: none
+          tools: composer:v2
+
+      - name: Repair the dev toolchain
+        run: |
+          rm -rf app/vendor/phpstan app/vendor/phpunit app/vendor/symfony/cache
+          composer install --no-interaction --no-progress --prefer-dist
+
+      # phpstan.neon bootstraps app/config/settings.php, which is never committed
+      # (it holds the database credentials). The sample defines the same constants
+      # with empty values and opens no connection.
+      - name: Provide a placeholder settings.php
+        run: cp app/config/settings.sample.php app/config/settings.php
+
+      - name: Run PHPStan
+        run: php app/vendor/bin/phpstan analyse --memory-limit=2G --no-progress --error-format=github

@@ -1,11 +1,18 @@
-# Add/remove 'critical' label if issue contains the words 'urgent' or 'critical'
+# Regex → label map for automatic issue labelling.
+# NOTE: no workflow currently consumes this file. To enable it, add a workflow
+# using github/issue-labeler with `configuration-path: .github/labeler.yml`.
+
 critical:
     - '(critical|urgent)/gmi'
-3.0:
-    - '3.0'
-2.1.27:
-    - '2.1.27'
-2.1.26:
-    - '2.1.27'
 Feature Request:
     - '(Feature Request)/gmi'
+docker:
+    - '(docker|container|compose)/gmi'
+ldap:
+    - '(ldap|active directory|\bAD\b)/gmi'
+oauth2:
+    - '(oauth2|sso|azure|entra|keycloak)/gmi'
+api:
+    - '(\bAPI\b|jwt|endpoint)/gmi'
+upgrade:
+    - '(upgrade|migration|update from)/gmi'

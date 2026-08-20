@@ -1,5 +1,14 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Questions & Discussions
+  - name: 💬 Questions & Discussions
     url: https://github.com/nilsteampassnet/TeamPass/discussions
-    about: Please ask questions and start discussions here, not as issues.
+    about: Ask questions, share deployment advice and float ideas here — not as issues.
+  - name: 📖 Documentation
+    url: https://documentation.teampass.net
+    about: Installation, upgrade, features, administration and API reference.
+  - name: 🔒 Report a security vulnerability
+    url: https://github.com/nilsteampassnet/TeamPass/security/advisories/new
+    about: Never report security issues publicly. Use a private security advisory.
+  - name: ❤️ Support Teampass
+    url: https://github.com/sponsors/nilsteampassnet
+    about: Sponsorship funds security work, releases, documentation and translations.
