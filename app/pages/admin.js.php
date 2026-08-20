@@ -1452,11 +1452,13 @@ function performProjectFilesIntegrityCheck(refreshingData = false)
                         showModalDialogBox(
                             '#warningModal',
                             cautionModalTitle,
-                            '<div id="files-integrity-result">' + htmlEncode(deleteUnknownFilesMessage) + '</div>',
+                            '<div>' + htmlEncode(deleteUnknownFilesMessage) + '</div>',
                             deleteLabel,
                             cancelLabel,
                             false,
-                            true
+                            true,
+                            false // no cross: leaving the confirmation must go through
+                                  // Delete or Cancel, otherwise the report is lost
                         );
 
                         $('#warningModalButtonAction')

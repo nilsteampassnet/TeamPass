@@ -3184,6 +3184,7 @@ return array(
     'tools_restore_keys' => 'Restaurer les clés',
     'tools_delete_backup' => 'Supprimer la sauvegarde',
     'tools_delete_backup_confirm' => 'Voulez-vous vraiment supprimer ce fichier de sauvegarde ?',
+    'tools_no_backup_selected' => 'Vous devez sélectionner un fichier de sauvegarde.',
     'health_websocket_log' => 'Log WebSocket',
     'health_websocket_log_disabled' => 'Le WebSocket est désactivé pour cette instance.',
     'health_websocket_log_file_not_writable_fmt' => 'Le log WebSocket est lisible, mais l’utilisateur d’exécution ne peut pas y écrire : %s',

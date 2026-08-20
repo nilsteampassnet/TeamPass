@@ -465,10 +465,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
          */
         else if ($(this).data('action') === 'restore_items_master_keys_but') {
             // check if possible
-            if ($('#restore_items_master_keys_id').val() === 0) {
+            // An empty select yields null, never the number 0 the former test compared against.
+            if (!$('#restore_items_master_keys_id').val()) {
                 toastr.remove();
                 toastr.error(
-                    <?php echo json_encode($lang->get('tools_select_backup'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+                    <?php echo json_encode($lang->get('tools_no_backup_selected'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
                     '<?php echo $lang->get('caution'); ?>', {
                         timeOut: 5000,
                         progressBar: true
@@ -518,10 +519,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
          */
         else if ($(this).data('action') === 'restore_items_master_keys_confirm_but') {
             // check if possible
-            if ($('#restore_items_master_keys_id').val() === 0) {
+            // An empty select yields null, never the number 0 the former test compared against.
+            if (!$('#restore_items_master_keys_id').val()) {
                 toastr.remove();
                 toastr.error(
-                    'You need to select a backup file',
+                    <?php echo json_encode($lang->get('tools_no_backup_selected'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
                     '<?php echo $lang->get('caution'); ?>', {
                         timeOut: 5000,
                         progressBar: true
@@ -589,10 +591,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
          */
         else if ($(this).data('action') === 'delete_restore_backup_but') {
             // check if possible
-            if ($('#restore_items_master_keys_id').val() === 0) {
+            // An empty select yields null, never the number 0 the former test compared against.
+            if (!$('#restore_items_master_keys_id').val()) {
                 toastr.remove();
                 toastr.error(
-                    'You need to select a backup file',
+                    <?php echo json_encode($lang->get('tools_no_backup_selected'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
                     '<?php echo $lang->get('caution'); ?>', {
                         timeOut: 5000,
                         progressBar: true

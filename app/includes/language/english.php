@@ -334,6 +334,7 @@ return array(
     'tools_restore_keys' => 'Restore keys',
     'tools_delete_backup' => 'Delete backup',
     'tools_delete_backup_confirm' => 'Are you sure you want to delete this backup file?',
+    'tools_no_backup_selected' => 'You need to select a backup file.',
     'select_user' => 'Select user',
     'oauth' => 'OAuth',
     'admin_oauth_configuration' => 'OAuth Configuration',
