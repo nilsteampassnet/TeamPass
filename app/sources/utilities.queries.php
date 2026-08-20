@@ -4775,6 +4775,8 @@ function tpHealthBuildRuntimeLogsContext(array $SETTINGS): array
         'mode' => tpHealthNormalizeLogsMode((string) ($SETTINGS['health_logs_mode'] ?? 'auto')),
         'server_software' => $serverSoftware,
         'server_family' => tpHealthDetectWebServerFamily($serverSoftware),
+        'health_webserver_log_path' => tpHealthSanitizeManualLogPath((string) ($SETTINGS['health_webserver_log_path'] ?? '')),
+        'health_webserver_access_log_path' => tpHealthSanitizeManualLogPath((string) ($SETTINGS['health_webserver_access_log_path'] ?? '')),
         'health_teampass_log_path' => tpHealthSanitizeManualLogPath((string) ($SETTINGS['health_teampass_log_path'] ?? '')),
         'health_php_fpm_log_path' => tpHealthSanitizeManualLogPath((string) ($SETTINGS['health_php_fpm_log_path'] ?? '')),
         'php_fpm_enabled' => tpHealthPhpFpmIsEnabled(),
@@ -4932,11 +4934,17 @@ function tpHealthBuildServerAccessLogCandidates(array $SETTINGS, string $serverF
     $hostSlug = (string) ($hints['host_slug'] ?? '');
 
     $apacheCandidates = array(
+        '/var/log/apache2/teampass_access.log',
+        '/var/log/apache2/teampass-access.log',
         '/var/log/apache2/access.log',
+        '/var/log/httpd/teampass_access.log',
         '/var/log/httpd/access_log',
         '/usr/local/apache/logs/access_log',
     );
     $nginxCandidates = array(
+        '/var/log/nginx/teampass.access.log',
+        '/var/log/nginx/teampass_access.log',
+        '/var/log/nginx/teampass-access.log',
         '/var/log/nginx/access.log',
         '/usr/local/openresty/nginx/logs/access.log',
     );
@@ -5002,8 +5010,8 @@ function tpHealthGetInstanceAccessLogPaths(array $SETTINGS, string $serverFamily
  *
  * `instance_scoped = false` means auto-detection fell back to a conventional
  * path such as /var/log/apache2/access.log, which aggregates the traffic of
- * every vhost hosted on the machine. The administrator has to know that before
- * reading or exporting it.
+ * every vhost hosted on the machine. A null value means a heuristic or manual
+ * path whose scope cannot be proven from a readable vhost declaration.
  *
  * @param array<string, mixed> $result        Result returned by tpHealthInspectLogPath().
  * @param string               $role          Runtime log role being resolved.
@@ -5016,7 +5024,31 @@ function tpHealthFlagInstanceScopedLog(array $result, string $role, array $insta
         return $result;
     }
 
-    $result['instance_scoped'] = in_array((string) ($result['log_path'] ?? ''), $instancePaths, true);
+    $selectedPath = tpHealthNormalizeLogPath((string) ($result['log_path'] ?? ''));
+    $normalizedInstancePaths = array_map('tpHealthNormalizeLogPath', $instancePaths);
+    $serverWidePaths = array_map(
+        'tpHealthNormalizeLogPath',
+        array(
+            '/var/log/apache2/access.log',
+            '/var/log/httpd/access_log',
+            '/usr/local/apache/logs/access_log',
+            '/var/log/nginx/access.log',
+            '/usr/local/openresty/nginx/logs/access.log',
+        )
+    );
+
+    if (in_array($selectedPath, $normalizedInstancePaths, true) === true) {
+        $result['instance_scoped'] = true;
+        $result['selection_source'] = 'vhost_config';
+    } elseif (in_array($selectedPath, $serverWidePaths, true) === true) {
+        $result['instance_scoped'] = false;
+        $result['selection_source'] = 'server_fallback';
+    } else {
+        // A hostname- or product-based heuristic may well point to a dedicated
+        // file, but without a readable declaration its scope cannot be proven.
+        $result['instance_scoped'] = null;
+        $result['selection_source'] = 'heuristic';
+    }
 
     return $result;
 }
@@ -5527,12 +5559,16 @@ function tpHealthResolveLogResult(string $role, array $SETTINGS, int $lines): ar
     $serverFamily = (string) ($context['server_family'] ?? 'unknown');
     $serverSoftware = (string) ($context['server_software'] ?? '');
 
-    $manualPath = '';
-    if ($role === 'teampass') {
-        $manualPath = tpHealthSanitizeManualLogPath((string) ($SETTINGS['health_teampass_log_path'] ?? ''));
-    } elseif ($role === 'php_fpm') {
-        $manualPath = tpHealthSanitizeManualLogPath((string) ($SETTINGS['health_php_fpm_log_path'] ?? ''));
-    }
+    $manualSettingByRole = array(
+        'server' => 'health_webserver_log_path',
+        'server_access' => 'health_webserver_access_log_path',
+        'teampass' => 'health_teampass_log_path',
+        'php_fpm' => 'health_php_fpm_log_path',
+    );
+    $manualSetting = (string) ($manualSettingByRole[$role] ?? '');
+    $manualPath = $manualSetting !== ''
+        ? tpHealthSanitizeManualLogPath((string) ($SETTINGS[$manualSetting] ?? ''))
+        : '';
 
     $meta = array(
         'role' => $role,
@@ -5541,7 +5577,11 @@ function tpHealthResolveLogResult(string $role, array $SETTINGS, int $lines): ar
         'server_software' => $serverSoftware,
     );
 
-    if ($role === 'php_fpm' && $mode !== 'manual' && tpHealthPhpFpmIsEnabled() === false) {
+    if (
+        $role === 'php_fpm'
+        && ($mode !== 'manual' || $manualPath === '')
+        && tpHealthPhpFpmIsEnabled() === false
+    ) {
         return array_merge(
             $meta,
             array(
@@ -5556,22 +5596,9 @@ function tpHealthResolveLogResult(string $role, array $SETTINGS, int $lines): ar
         );
     }
 
-    if ($mode === 'manual' && in_array($role, array('teampass', 'php_fpm'), true) === true) {
-        if ($manualPath === '') {
-            return array_merge(
-                $meta,
-                array(
-                    'log_path' => '',
-                    'lines' => $lines,
-                    'access' => 'not_configured',
-                    'fix_commands' => array(),
-                    'content' => '',
-                    'content_length' => 0,
-                    'source_files' => array(),
-                )
-            );
-        }
-
+    // Manual paths are independent overrides. In manual mode, an empty field
+    // deliberately falls through to auto-detection for that specific role.
+    if ($mode === 'manual' && $manualPath !== '') {
         if (tpHealthIsAbsolutePath($manualPath) === false) {
             return array_merge(
                 $meta,
@@ -5587,7 +5614,15 @@ function tpHealthResolveLogResult(string $role, array $SETTINGS, int $lines): ar
             );
         }
 
-        return tpHealthInspectLogPath($manualPath, $lines, $meta);
+        $manualResult = tpHealthInspectLogPath($manualPath, $lines, $meta);
+        $manualResult['selection_source'] = 'manual';
+        if ($role === 'server_access') {
+            // The administrator explicitly selected this file. Its actual scope
+            // cannot be inferred safely from an arbitrary custom path.
+            $manualResult['instance_scoped'] = null;
+        }
+
+        return $manualResult;
     }
 
     $instancePaths = array();
@@ -5620,7 +5655,15 @@ function tpHealthResolveLogResult(string $role, array $SETTINGS, int $lines): ar
     $firstTruncated = null;
     $firstEmpty = null;
     $firstUnreadable = null;
+    $preferDeclaredAccessLog = $role === 'server_access' && empty($instancePaths) === false;
     foreach ($candidates as $candidate) {
+        $isDeclaredAccessLog = in_array($candidate, $instancePaths, true);
+        if ($preferDeclaredAccessLog === true && $isDeclaredAccessLog === false) {
+            // A vhost declaration is authoritative. Do not hide a missing or
+            // unreadable dedicated log behind a readable server-wide fallback.
+            break;
+        }
+
         $candidateResult = tpHealthInspectLogPath($candidate, $lines, $meta);
 
         if ($candidateResult['access'] === 'ok') {
@@ -5660,7 +5703,7 @@ function tpHealthResolveLogResult(string $role, array $SETTINGS, int $lines): ar
         return tpHealthFlagInstanceScopedLog($firstUnreadable, $role, $instancePaths);
     }
 
-    return array_merge(
+    $notFoundResult = array_merge(
         $meta,
         array(
             'log_path' => (string) ($candidates[0] ?? ''),
@@ -5673,6 +5716,8 @@ function tpHealthResolveLogResult(string $role, array $SETTINGS, int $lines): ar
             'source_files' => array(),
         )
     );
+
+    return tpHealthFlagInstanceScopedLog($notFoundResult, $role, $instancePaths);
 }
 
 
