@@ -793,6 +793,8 @@ switch ($post_type) {
                 'result' => [
                     'settings' => [
                         'health_logs_mode' => tpHealthNormalizeLogsModeForAdmin((string) ($SETTINGS['health_logs_mode'] ?? 'auto')),
+                        'health_webserver_log_path' => tpHealthSanitizeManualLogPathForAdmin((string) ($SETTINGS['health_webserver_log_path'] ?? '')),
+                        'health_webserver_access_log_path' => tpHealthSanitizeManualLogPathForAdmin((string) ($SETTINGS['health_webserver_access_log_path'] ?? '')),
                         'health_teampass_log_path' => tpHealthSanitizeManualLogPathForAdmin((string) ($SETTINGS['health_teampass_log_path'] ?? '')),
                         'health_php_fpm_log_path' => tpHealthSanitizeManualLogPathForAdmin((string) ($SETTINGS['health_php_fpm_log_path'] ?? '')),
                     ],
@@ -826,12 +828,44 @@ switch ($post_type) {
 
         $dataReceived = prepareExchangedData($post_data, 'decode');
         $healthLogsMode = tpHealthNormalizeLogsModeForAdmin((string) ($dataReceived['health_logs_mode'] ?? 'auto'));
+        $healthWebserverLogPath = tpHealthSanitizeManualLogPathForAdmin((string) ($dataReceived['health_webserver_log_path'] ?? ''));
+        $healthWebserverAccessLogPath = tpHealthSanitizeManualLogPathForAdmin((string) ($dataReceived['health_webserver_access_log_path'] ?? ''));
         $healthTeampassLogPath = tpHealthSanitizeManualLogPathForAdmin((string) ($dataReceived['health_teampass_log_path'] ?? ''));
         $healthPhpFpmLogPath = tpHealthSanitizeManualLogPathForAdmin((string) ($dataReceived['health_php_fpm_log_path'] ?? ''));
 
         if ($healthLogsMode !== 'manual') {
+            $healthWebserverLogPath = '';
+            $healthWebserverAccessLogPath = '';
             $healthTeampassLogPath = '';
             $healthPhpFpmLogPath = '';
+        }
+
+        if ($healthWebserverLogPath !== '' && tpHealthIsAbsolutePathForAdmin($healthWebserverLogPath) === false) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => sprintf(
+                        $lang->get('health_log_path_must_be_absolute_fmt'),
+                        $lang->get('health_webserver_log_path')
+                    ),
+                ],
+                'encode'
+            );
+            break;
+        }
+
+        if ($healthWebserverAccessLogPath !== '' && tpHealthIsAbsolutePathForAdmin($healthWebserverAccessLogPath) === false) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => sprintf(
+                        $lang->get('health_log_path_must_be_absolute_fmt'),
+                        $lang->get('health_webserver_access_log_path')
+                    ),
+                ],
+                'encode'
+            );
+            break;
         }
 
         if ($healthTeampassLogPath !== '' && tpHealthIsAbsolutePathForAdmin($healthTeampassLogPath) === false) {
@@ -863,7 +897,8 @@ switch ($post_type) {
         }
 
         teampassSaveAdminSetting('health_logs_mode', $healthLogsMode);
-        teampassSaveAdminSetting('health_webserver_log_path', '');
+        teampassSaveAdminSetting('health_webserver_log_path', $healthWebserverLogPath);
+        teampassSaveAdminSetting('health_webserver_access_log_path', $healthWebserverAccessLogPath);
         teampassSaveAdminSetting('health_teampass_log_path', $healthTeampassLogPath);
         teampassSaveAdminSetting('health_php_fpm_log_path', $healthPhpFpmLogPath);
 
@@ -876,6 +911,8 @@ switch ($post_type) {
                 'result' => [
                     'settings' => [
                         'health_logs_mode' => $healthLogsMode,
+                        'health_webserver_log_path' => $healthWebserverLogPath,
+                        'health_webserver_access_log_path' => $healthWebserverAccessLogPath,
                         'health_teampass_log_path' => $healthTeampassLogPath,
                         'health_php_fpm_log_path' => $healthPhpFpmLogPath,
                     ],

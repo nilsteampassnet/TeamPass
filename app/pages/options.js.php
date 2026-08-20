@@ -1138,11 +1138,15 @@ const tpHealthLogSettings = (function() {
         const isManual = String(mode || 'auto') === 'manual';
         const shouldClear = clearValues === true;
 
+        $('#health-log-webserver-path-row').toggleClass('hidden', !isManual);
+        $('#health-log-webserver-access-path-row').toggleClass('hidden', !isManual);
         $('#health-log-teampass-path-row').toggleClass('hidden', !isManual);
         $('#health-log-php-fpm-path-row').toggleClass('hidden', !isManual);
         $('#health-logs-settings-save-row').toggleClass('hidden', !isManual);
 
         if (isManual === false && shouldClear === true) {
+            $('#health_webserver_log_path').val('');
+            $('#health_webserver_access_log_path').val('');
             $('#health_teampass_log_path').val('');
             $('#health_php_fpm_log_path').val('');
         }
@@ -1152,6 +1156,8 @@ const tpHealthLogSettings = (function() {
         settings = settings || {};
         const mode = (settings.health_logs_mode || 'auto').toString();
         $('#health_logs_mode').val(mode);
+        $('#health_webserver_log_path').val((settings.health_webserver_log_path || '').toString());
+        $('#health_webserver_access_log_path').val((settings.health_webserver_access_log_path || '').toString());
         $('#health_teampass_log_path').val((settings.health_teampass_log_path || '').toString());
         $('#health_php_fpm_log_path').val((settings.health_php_fpm_log_path || '').toString());
         toggleManualRows(mode);
@@ -1175,6 +1181,8 @@ const tpHealthLogSettings = (function() {
             'health_logs_save_settings',
             {
                 health_logs_mode: mode,
+                health_webserver_log_path: mode === 'manual' ? $('#health_webserver_log_path').val() : '',
+                health_webserver_access_log_path: mode === 'manual' ? $('#health_webserver_access_log_path').val() : '',
                 health_teampass_log_path: mode === 'manual' ? $('#health_teampass_log_path').val() : '',
                 health_php_fpm_log_path: mode === 'manual' ? $('#health_php_fpm_log_path').val() : ''
             },

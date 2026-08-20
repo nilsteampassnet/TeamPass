@@ -24,6 +24,10 @@ class HealthSystemConsistencyTest extends TestCase
     private string $adminSource;
     private string $healthPage;
     private string $healthJavascript;
+    private string $optionsPage;
+    private string $optionsJavascript;
+    private string $installStep;
+    private string $upgradeScripts;
     private string $englishLanguage;
     private string $frenchLanguage;
 
@@ -37,6 +41,13 @@ class HealthSystemConsistencyTest extends TestCase
         $this->adminSource = $this->read($root . '/app/sources/admin.queries.php');
         $this->healthPage = $this->read($root . '/app/pages/utilities.health.php');
         $this->healthJavascript = $this->read($root . '/app/pages/utilities.health.js.php');
+        $this->optionsPage = $this->read($root . '/app/pages/options.php');
+        $this->optionsJavascript = $this->read($root . '/app/pages/options.js.php');
+        $this->installStep = $this->read($root . '/public/install/install-steps/run.step5.php');
+        // A setting may be seeded by the release that introduced it, so every
+        // upgrade script carrying health defaults is searched as one corpus.
+        $this->upgradeScripts = $this->read($root . '/public/install/upgrade_run_3.1.7.php')
+            . $this->read($root . '/public/install/upgrade_run_3.2.2.php');
         $this->englishLanguage = $this->read($root . '/app/includes/language/english.php');
         $this->frenchLanguage = $this->read($root . '/app/includes/language/french.php');
     }
@@ -253,10 +264,80 @@ class HealthSystemConsistencyTest extends TestCase
     {
         $this->assertStringContainsString('function tpHealthGetInstanceAccessLogPaths', $this->utilitiesSource);
         $this->assertStringContainsString('function tpHealthFlagInstanceScopedLog', $this->utilitiesSource);
-        $this->assertStringContainsString("\$result['instance_scoped'] = in_array(", $this->utilitiesSource);
+        $this->assertStringContainsString("\$result['instance_scoped'] = false", $this->utilitiesSource);
+        $this->assertStringContainsString("\$result['selection_source'] = 'server_fallback'", $this->utilitiesSource);
         $this->assertStringContainsString('result.instance_scoped === false', $this->healthJavascript);
         $this->assertStringContainsString("'health_server_access_log_shared_notice'", $this->englishLanguage);
         $this->assertStringContainsString("'health_server_access_log_shared_notice'", $this->frenchLanguage);
+    }
+
+    public function testManualLogOverridesAreIndependentAndCoverEveryRuntimeRole(): void
+    {
+        $settings = array(
+            'health_webserver_log_path',
+            'health_webserver_access_log_path',
+            'health_teampass_log_path',
+            'health_php_fpm_log_path',
+        );
+
+        foreach ($settings as $setting) {
+            $this->assertStringContainsString("'" . $setting . "'", $this->adminSource);
+            $this->assertStringContainsString("'" . $setting . "'", $this->utilitiesSource);
+            $this->assertStringContainsString("id='" . $setting . "'", $this->optionsPage);
+            $this->assertStringContainsString("$('#" . $setting . "')", $this->optionsJavascript);
+            $this->assertStringContainsString("'" . $setting . "'", $this->installStep);
+            $this->assertStringContainsString("'" . $setting . "'", $this->upgradeScripts);
+        }
+
+        $this->assertStringContainsString("'server' => 'health_webserver_log_path'", $this->utilitiesSource);
+        $this->assertStringContainsString("'server_access' => 'health_webserver_access_log_path'", $this->utilitiesSource);
+        $this->assertStringContainsString("'teampass' => 'health_teampass_log_path'", $this->utilitiesSource);
+        $this->assertStringContainsString("'php_fpm' => 'health_php_fpm_log_path'", $this->utilitiesSource);
+        $this->assertStringContainsString("if (\$mode === 'manual' && \$manualPath !== '')", $this->utilitiesSource);
+        $this->assertStringNotContainsString("teampassSaveAdminSetting('health_webserver_log_path', '');", $this->adminSource);
+    }
+
+    public function testDeclaredAccessLogIsNotHiddenByServerWideFallback(): void
+    {
+        $this->assertStringContainsString('$preferDeclaredAccessLog', $this->utilitiesSource);
+        $this->assertStringContainsString('Do not hide a missing or', $this->utilitiesSource);
+        $this->assertStringContainsString("'selection_source'", $this->utilitiesSource);
+        $this->assertStringContainsString('server_access_log_manual_notice', $this->healthJavascript);
+        $this->assertStringContainsString("'health_server_access_log_manual_notice'", $this->englishLanguage);
+        $this->assertStringContainsString("'health_server_access_log_manual_notice'", $this->frenchLanguage);
+    }
+
+    public function testDeclaredButUnavailableAccessLogTellsTheAdministratorWhyNothingIsShown(): void
+    {
+        // The break that protects the declaration is silent by itself: without
+        // this notice the administrator only sees an unexplained "not found".
+        $this->assertStringContainsString('server_access_log_declared_unavailable', $this->healthJavascript);
+        $this->assertStringContainsString("result.selection_source === 'vhost_config'", $this->healthJavascript);
+        $this->assertStringContainsString("result.access === 'not_found'", $this->healthJavascript);
+        $this->assertStringContainsString("result.access === 'not_readable'", $this->healthJavascript);
+        $this->assertStringContainsString("'health_server_access_log_declared_unavailable'", $this->englishLanguage);
+        $this->assertStringContainsString("'health_server_access_log_declared_unavailable'", $this->frenchLanguage);
+    }
+
+    public function testServerWideScopeIsDecidedBeforeTheVhostDeclaration(): void
+    {
+        // Scope and provenance are two independent axes: a vhost that declares
+        // the shared server-wide log must still be reported as not instance
+        // scoped, otherwise the sharing warning is silently suppressed.
+        $this->assertStringContainsString('$isDeclared = in_array(', $this->utilitiesSource);
+        $this->assertStringContainsString('$isServerWide = in_array(', $this->utilitiesSource);
+
+        $scopeBlock = strpos($this->utilitiesSource, '$isServerWide = in_array(');
+        $this->assertNotFalse($scopeBlock);
+
+        $serverWideScope = strpos($this->utilitiesSource, 'if ($isServerWide === true) {', $scopeBlock);
+        $declaredScope = strpos($this->utilitiesSource, '} elseif ($isDeclared === true) {', $scopeBlock);
+        $this->assertNotFalse($serverWideScope);
+        $this->assertNotFalse($declaredScope);
+        $this->assertLessThan($declaredScope, $serverWideScope);
+
+        // Provenance keeps the declaration as the more precise answer.
+        $this->assertStringContainsString("if (\$isDeclared === true) {\n        \$result['selection_source'] = 'vhost_config';", $this->utilitiesSource);
     }
 
     private function read(string $path): string
