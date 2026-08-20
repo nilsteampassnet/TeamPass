@@ -159,6 +159,7 @@ var TP_HEALTH_L10N = {
     runtime_log_sources_fmt: "<?php echo addslashes($lang->get('health_runtime_log_sources_fmt')); ?>",
     runtime_log_redacted: "<?php echo addslashes($lang->get('health_runtime_log_redacted')); ?>",
     server_access_log_shared_notice: "<?php echo addslashes($lang->get('health_server_access_log_shared_notice')); ?>",
+    server_access_log_manual_notice: "<?php echo addslashes($lang->get('health_server_access_log_manual_notice')); ?>",
     runtime_log_fix_hint: "<?php echo addslashes($lang->get('health_runtime_log_fix_hint')); ?>",
     runtime_log_fix_hint_missing: "<?php echo addslashes($lang->get('health_runtime_log_fix_hint_missing')); ?>",
     runtime_logs_context_mode_fmt: "<?php echo addslashes($lang->get('health_runtime_logs_context_mode_fmt')); ?>",
@@ -1227,6 +1228,8 @@ function tpRuntimeLogNotes(result) {
     if (result.role === 'server_access') {
         if (result.instance_scoped === false && result.log_path) {
             notes.push(TP_HEALTH_L10N.server_access_log_shared_notice);
+        } else if (result.selection_source === 'manual' && result.log_path) {
+            notes.push(TP_HEALTH_L10N.server_access_log_manual_notice);
         }
         if (result.content_length > 0) {
             notes.push(TP_HEALTH_L10N.runtime_log_redacted);
