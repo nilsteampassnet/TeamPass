@@ -131,7 +131,7 @@ date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
         <div class="modal-content">
             <div class="modal-header">
                 <h4 class="modal-title"><?php echo $lang->get('lapr_add_account'); ?></h4>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="<?php echo htmlspecialchars($lang->get('close'), ENT_QUOTES, 'UTF-8'); ?>"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
                 <div class="alert alert-info hidden" id="lapr-acc-discovered-context"></div>
@@ -166,7 +166,7 @@ date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
         <div class="modal-content">
             <div class="modal-header">
                 <h4 class="modal-title"><?php echo $lang->get('lapr_policy'); ?></h4>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="<?php echo htmlspecialchars($lang->get('close'), ENT_QUOTES, 'UTF-8'); ?>"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="lapr-editpolicy-account-id">
@@ -191,7 +191,7 @@ date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
         <div class="modal-content">
             <div class="modal-header">
                 <h4 class="modal-title"><?php echo $lang->get('lapr_history_title'); ?> — <span id="lapr_history_title"></span></h4>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="<?php echo htmlspecialchars($lang->get('close'), ENT_QUOTES, 'UTF-8'); ?>"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
                 <table class="table table-sm table-striped">
@@ -226,7 +226,7 @@ date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
         <div class="modal-content">
             <div class="modal-header">
                 <h4 class="modal-title"><?php echo $lang->get('lapr_discovered_accounts'); ?></h4>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="<?php echo htmlspecialchars($lang->get('close'), ENT_QUOTES, 'UTF-8'); ?>"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
