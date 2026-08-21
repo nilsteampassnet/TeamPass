@@ -42,6 +42,8 @@ use TeampassClasses\EmailService\EmailService;
 
 // Load functions
 require_once 'main.functions.php';
+require_once __DIR__ . '/lapr.functions.php';
+require_once __DIR__ . '/lapr.monitoring.functions.php';
 $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
 loadClasses('DB');
@@ -145,7 +147,8 @@ switch ($post_type) {
         $laprTargetId = (int) ($laprPermData['user_id'] ?? 0);
         $laprGranted = (int) ($laprPermData['granted'] ?? 0) === 1 ? 1 : 0;
 
-        // Only non-admin, non-deleted users can be targeted (admins have LAPR by default).
+        // Only non-admin, non-deleted users can receive operational LAPR access.
+        // Administrators configure the module through admin_lapr instead.
         $laprTarget = DB::queryFirstRow(
             'SELECT id, admin FROM ' . prefixTable('users') . ' WHERE id = %i AND deleted_at IS NULL',
             $laprTargetId
@@ -2410,6 +2413,25 @@ case 'get_operational_statistics':
             $topItemsLimit
         );
 
+        try {
+            $laprStatistics = laprBuildOperationalStatistics(
+                $SETTINGS,
+                $lang,
+                $fromTs,
+                $nowTs,
+                $granularity
+            );
+        } catch (Throwable $e) {
+            error_log('LAPR operational statistics failed: ' . $e->getMessage());
+            $laprStatistics = laprMonitoringEmptySnapshot(
+                (int) ($SETTINGS['lapr_enabled'] ?? 0) === 1,
+                'query_failed'
+            );
+            $laprStatistics['error'] = true;
+            $laprStatistics['overall']['status'] = 'danger';
+            $laprStatistics['overall']['reason'] = 'query_failed';
+        }
+
         // Prepare response
         $response = array(
             'error' => false,
@@ -2514,6 +2536,7 @@ case 'get_operational_statistics':
                 'usage_by_perso' => $usageByPerso,
                 'top_copied' => $topItemsCopied,
             ),
+            'lapr' => $laprStatistics,
         );
 
         echo prepareExchangedData($response, 'encode');
