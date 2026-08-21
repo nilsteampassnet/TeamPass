@@ -127,7 +127,7 @@ date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
         <div class="modal-content">
             <div class="modal-header">
                 <h4 class="modal-title" id="lapr-policy-modal-title"><?php echo $lang->get('lapr_add_policy'); ?></h4>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="<?php echo htmlspecialchars($lang->get('close'), ENT_QUOTES, 'UTF-8'); ?>"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="lapr-policy-id" value="0">
