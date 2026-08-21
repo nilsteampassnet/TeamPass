@@ -145,6 +145,11 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" id="tab-health-lapr" data-toggle="pill" href="#health-lapr" role="tab" aria-controls="health-lapr" aria-selected="false">
+                            <i class="fas fa-sync-alt mr-1"></i><?php echo $lang->get('lapr_monitor_tab'); ?>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" id="tab-health-logs" data-toggle="pill" href="#health-logs" role="tab" aria-controls="health-logs" aria-selected="false">
                             <i class="fas fa-file-alt mr-1"></i><?php echo $lang->get('health_logs'); ?>
                         </a>
@@ -181,7 +186,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 </div>
                             </div>
                             <div class="col-lg-3 col-6">
-                                <div class="small-box bg-warning">
+                                <div class="small-box bg-dark">
                                     <div class="inner">
                                         <h3 id="health-cron-status">-</h3>
                                         <p><?php echo $lang->get('health_cron_status'); ?></p>
@@ -303,12 +308,22 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                         </div>
 
                                         <div class="row">
-                                            <div class="col-sm-12">
+                                            <div class="col-sm-6">
                                                 <div class="info-box">
                                                     <span class="info-box-icon bg-success"><i class="fas fa-archive"></i></span>
                                                     <div class="info-box-content">
                                                         <span class="info-box-text"><?php echo $lang->get('health_backup_status'); ?></span>
                                                         <span class="info-box-number" id="health-backup-status">-</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-sm-6">
+                                                <div class="info-box">
+                                                    <span class="info-box-icon bg-info"><i class="fas fa-sync-alt"></i></span>
+                                                    <div class="info-box-content">
+                                                        <span class="info-box-text"><?php echo $lang->get('lapr_monitor_overall'); ?></span>
+                                                        <span class="info-box-number" id="health-lapr-overview-status">-</span>
+                                                        <span class="small text-muted" id="health-lapr-overview-detail"></span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -953,7 +968,136 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                         </div>
                     </div>
 
-<!-- LOGS -->
+                    <!-- LAPR -->
+                    <div class="tab-pane fade" id="health-lapr" role="tabpanel" aria-labelledby="tab-health-lapr">
+                        <div class="alert alert-info" id="health-lapr-availability" style="display:none;"></div>
+
+                        <div class="row">
+                            <div class="col-xl col-md-6">
+                                <div class="small-box bg-info">
+                                    <div class="inner">
+                                        <h3 id="health-lapr-status">-</h3>
+                                        <p><?php echo $lang->get('lapr_monitor_overall'); ?></p>
+                                    </div>
+                                    <div class="icon"><i class="fas fa-heartbeat"></i></div>
+                                </div>
+                            </div>
+                            <div class="col-xl col-md-6">
+                                <div class="small-box bg-primary">
+                                    <div class="inner">
+                                        <h3 id="health-lapr-endpoints">0</h3>
+                                        <p><?php echo $lang->get('lapr_monitor_endpoints'); ?></p>
+                                    </div>
+                                    <div class="icon"><i class="fas fa-server"></i></div>
+                                </div>
+                            </div>
+                            <div class="col-xl col-md-6">
+                                <div class="small-box bg-success">
+                                    <div class="inner">
+                                        <h3 id="health-lapr-accounts">0</h3>
+                                        <p><?php echo $lang->get('lapr_monitor_accounts_compliant'); ?></p>
+                                    </div>
+                                    <div class="icon"><i class="fas fa-user-check"></i></div>
+                                </div>
+                            </div>
+                            <div class="col-xl col-md-6">
+                                <div class="small-box bg-secondary">
+                                    <div class="inner">
+                                        <h3 id="health-lapr-scheduler">-</h3>
+                                        <p><?php echo $lang->get('lapr_monitor_scheduler'); ?></p>
+                                    </div>
+                                    <div class="icon"><i class="fas fa-clock"></i></div>
+                                </div>
+                            </div>
+                            <div class="col-xl col-md-6">
+                                <div class="small-box bg-warning">
+                                    <div class="inner">
+                                        <h3 id="health-lapr-operators">0</h3>
+                                        <p><?php echo $lang->get('lapr_monitor_active_operators'); ?></p>
+                                    </div>
+                                    <div class="icon"><i class="fas fa-user-shield"></i></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-warning py-2" id="health-lapr-disabled-grants" style="display:none;"></div>
+
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <div class="card h-100">
+                                    <div class="card-header">
+                                        <h3 class="card-title"><i class="fas fa-tasks mr-2"></i><?php echo $lang->get('lapr_monitor_account_states'); ?></h3>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-striped mb-0">
+                                                <tbody id="health-lapr-account-states"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="card h-100">
+                                    <div class="card-header">
+                                        <h3 class="card-title"><i class="fas fa-cogs mr-2"></i><?php echo $lang->get('lapr_monitor_scheduler_details'); ?></h3>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-striped mb-0">
+                                                <tbody id="health-lapr-scheduler-details"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fas fa-exclamation-triangle mr-2"></i><?php echo $lang->get('lapr_monitor_action_items'); ?></h3>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th><?php echo $lang->get('lapr_monitor_severity'); ?></th>
+                                                <th><?php echo $lang->get('lapr_endpoint'); ?></th>
+                                                <th><?php echo $lang->get('lapr_username'); ?></th>
+                                                <th><?php echo $lang->get('lapr_monitor_check'); ?></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="health-lapr-action-items"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fas fa-history mr-2"></i><?php echo $lang->get('lapr_monitor_recent_failures'); ?></h3>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th><?php echo $lang->get('date'); ?></th>
+                                                <th><?php echo $lang->get('lapr_endpoint'); ?></th>
+                                                <th><?php echo $lang->get('lapr_username'); ?></th>
+                                                <th><?php echo $lang->get('lapr_monitor_failure_cause'); ?></th>
+                                                <th><?php echo $lang->get('lapr_trigger'); ?></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="health-lapr-recent-failures"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LOGS -->
                     <div class="tab-pane fade" id="health-logs" role="tabpanel" aria-labelledby="tab-health-logs">
                         <div class="row">
                             <div class="col-lg-4 col-12">
