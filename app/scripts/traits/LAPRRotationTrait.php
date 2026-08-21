@@ -215,9 +215,10 @@ trait LAPRRotationTrait
                 'SELECT id, id_tree, label FROM ' . prefixTable('items') . ' WHERE id = %i',
                 (int) $account['ssh_credential_source']
             );
+            $credentialSynced = false;
             if ($credItem !== null) {
                 $syncOld = laprReadItemPasswordAsTpUser((int) $credItem['id'], $tpKeys['private_key'], $tpKeys['public_key']);
-                $this->laprUpdateItemPassword(
+                $credentialSynced = $this->laprUpdateItemPassword(
                     (int) $credItem['id'],
                     (int) $credItem['id_tree'],
                     (string) $credItem['label'],
@@ -226,10 +227,36 @@ trait LAPRRotationTrait
                     $tpKeys,
                     $actorId
                 );
-                laprAuditLog('ssh_credential_sync', (int) $account['endpoint_id'], $actorId, [
-                    'credential_item_id' => (int) $credItem['id'],
-                ], 'success', $accountId, null, 'system');
             }
+
+            if ($credentialSynced === false) {
+                DB::update(prefixTable('lapr_accounts'), [
+                    'status' => 'error',
+                    'last_rotation_at' => date('Y-m-d H:i:s'),
+                    'last_rotation_status' => 'failure',
+                    'last_rotation_error' => 'ERR_SSH_CREDENTIAL_SYNC_FAILED',
+                    'updated_by' => $actorId,
+                ], 'id = %i', $accountId);
+                laprAuditLog('ssh_credential_sync', (int) $account['endpoint_id'], $actorId, [
+                    'credential_item_id' => (int) ($account['ssh_credential_source'] ?? 0),
+                    'manual_resync_required' => true,
+                ], 'failure', $accountId, 'ERR_SSH_CREDENTIAL_SYNC_FAILED', 'system');
+                laprAuditLog('rotation', (int) $account['endpoint_id'], $actorId, [
+                    'trigger' => $trigger,
+                    'manual_resync_required' => true,
+                    'managed_item_updated' => true,
+                ], 'failure', $accountId, 'ERR_SSH_CREDENTIAL_SYNC_FAILED', 'system');
+
+                return [
+                    'success' => false,
+                    'error_code' => 'ERR_SSH_CREDENTIAL_SYNC_FAILED',
+                    'message' => 'SSH_CREDENTIAL_RESYNC_REQUIRED',
+                ];
+            }
+
+            laprAuditLog('ssh_credential_sync', (int) $account['endpoint_id'], $actorId, [
+                'credential_item_id' => (int) $account['ssh_credential_source'],
+            ], 'success', $accountId, null, 'system');
         }
 
         // Success — update account rotation state + next_rotation_at
