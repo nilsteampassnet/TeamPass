@@ -30,6 +30,7 @@ declare(strict_types=1);
  */
 
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
+use TeampassClasses\Language\Language;
 
 // Defaults used when a managed account has no policy (decision D3 — Option B)
 if (defined('LAPR_DEFAULT_PASSWORD_LENGTH') === false) {
@@ -251,6 +252,86 @@ function laprValidateUsername(string $username): bool
 }
 
 /**
+ * Whether a passwd entry is a candidate for LAPR account discovery.
+ *
+ * Only the real root account and regular users (UID >= 1000) are eligible.
+ * This keeps reserved system accounts such as Debian/Ubuntu's `sync` (UID 4,
+ * shell /bin/sync) out of the managed-account picker.
+ *
+ * @param array{username?: mixed, uid?: mixed, shell?: mixed} $account Passwd entry
+ *
+ * @return bool
+ */
+function laprIsDiscoverableAccount(array $account): bool
+{
+    if (
+        isset($account['username'], $account['uid'], $account['shell']) === false
+        || is_numeric($account['uid']) === false
+    ) {
+        return false;
+    }
+
+    $username = (string) $account['username'];
+    $uid = (int) $account['uid'];
+    $shell = trim((string) $account['shell']);
+    $isEligibleUid = ($username === 'root' && $uid === 0) || $uid >= 1000;
+    $isLoginShell = $shell !== ''
+        && strpos($shell, 'nologin') === false
+        && strpos($shell, '/false') === false;
+
+    return $isEligibleUid === true
+        && $isLoginShell === true
+        && laprValidateUsername($username) === true;
+}
+
+/**
+ * Return the localized display name of a built-in policy preset.
+ *
+ * Preset labels are stable English identifiers stored in the database by the
+ * installer. Custom policy labels and unknown future presets are returned
+ * verbatim because they are user/application data, not language keys.
+ *
+ * @param string   $storedLabel Label stored in lapr_policies
+ * @param bool     $isPreset    Whether the row is a built-in preset
+ * @param Language $lang        Language helper
+ *
+ * @return string
+ */
+function laprPolicyDisplayName(string $storedLabel, bool $isPreset, Language $lang): string
+{
+    if ($isPreset === false) {
+        return $storedLabel;
+    }
+
+    $presetKeys = [
+        'Standard (30 days)' => 'lapr_preset_standard',
+        'High Security (7 days)' => 'lapr_preset_high_security',
+        'Weekly + rotate on enroll' => 'lapr_preset_weekly_enroll',
+    ];
+    $key = $presetKeys[$storedLabel] ?? null;
+
+    return $key === null ? $storedLabel : $lang->get($key);
+}
+
+/**
+ * Add a localized rotation frequency to a policy name for select options.
+ *
+ * @param string   $displayName  Localized preset name or custom policy label
+ * @param int      $frequencyDays Rotation frequency in days
+ * @param Language $lang         Language helper
+ *
+ * @return string
+ */
+function laprPolicyOptionLabel(string $displayName, int $frequencyDays, Language $lang): string
+{
+    $key = $frequencyDays === 1
+        ? 'lapr_policy_option_label_singular'
+        : 'lapr_policy_option_label_plural';
+
+    return sprintf($lang->get($key), $displayName, $frequencyDays);
+}
+
+/**
  * Whether a generated password is safe for the chpasswd pipeline (risk R9):
  * no ':' (chpasswd field separator), no whitespace/newline, no backslash,
  * no quotes, printable ASCII only.
@@ -370,6 +451,40 @@ function laprComputeNextRotation(?string $lastRotationAt, int $frequencyDays, ?i
     }
 
     return date('Y-m-d H:i:s', $next);
+}
+
+/**
+ * Prepare a stored LAPR datetime for regional display and chronological sort.
+ *
+ * LAPR stores SQL DATETIME values in the TeamPass-configured timezone. The
+ * request handlers set that timezone before calling this helper, so parsing
+ * and formatting remain consistent with the rest of the application.
+ *
+ * @param string|null         $value    Stored 'Y-m-d H:i:s' value
+ * @param array<string, mixed> $settings TeamPass regional settings
+ *
+ * @return array{display: string, timestamp: int}
+ */
+function laprFormatDateTimeForDisplay(?string $value, array $settings): array
+{
+    if ($value === null || trim($value) === '') {
+        return ['display' => '', 'timestamp' => 0];
+    }
+
+    $timestamp = strtotime($value);
+    if ($timestamp === false) {
+        return ['display' => '', 'timestamp' => 0];
+    }
+
+    $dateFormat = trim((string) ($settings['date_format'] ?? ''));
+    $timeFormat = trim((string) ($settings['time_format'] ?? ''));
+    $dateFormat = $dateFormat === '' ? 'Y-m-d' : $dateFormat;
+    $timeFormat = $timeFormat === '' ? 'H:i:s' : $timeFormat;
+
+    return [
+        'display' => date($dateFormat . ' ' . $timeFormat, $timestamp),
+        'timestamp' => $timestamp,
+    ];
 }
 
 /**
@@ -574,7 +689,8 @@ function laprGetItemRelations(array $itemIds, array $SETTINGS): array
     $managedRows = DB::query(
         'SELECT a.id, a.item_id, a.username_cache, a.status, a.next_rotation_at,
                 a.last_rotation_status, e.id AS endpoint_id, e.label AS endpoint_label,
-                e.hostname, e.status AS endpoint_status, p.label AS policy_label
+                e.hostname, e.status AS endpoint_status, p.label AS policy_label,
+                p.frequency_days AS policy_frequency_days, p.is_preset AS policy_is_preset
          FROM ' . prefixTable('lapr_accounts') . ' AS a
          LEFT JOIN ' . prefixTable('lapr_endpoints') . ' AS e ON e.id = a.endpoint_id
          LEFT JOIN ' . prefixTable('lapr_policies') . ' AS p ON p.id = a.policy_id
@@ -599,6 +715,8 @@ function laprGetItemRelations(array $itemIds, array $SETTINGS): array
             'hostname' => (string) $row['hostname'],
             'endpoint_status' => (string) $row['endpoint_status'],
             'policy_label' => (string) ($row['policy_label'] ?? ''),
+            'policy_frequency_days' => (int) ($row['policy_frequency_days'] ?? 0),
+            'policy_is_preset' => (int) ($row['policy_is_preset'] ?? 0) === 1,
         ];
     }
 
