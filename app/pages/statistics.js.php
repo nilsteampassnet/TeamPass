@@ -83,7 +83,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
 
     // Re-render charts when a tab becomes visible (Chart.js needs visible canvases)
-    $(document).on('shown.bs.tab', '#tp-ops-tabs a[data-toggle="tab"]', function() {
+    $(document).on('shown.bs.tab', '#tp-ops-tabs a[data-toggle="tab"]', function(event) {
+        $('.tp-ops-standard-filter').toggle($(event.target).attr('href') !== '#tp-ops-lapr');
         tpOpsRerenderFromCache();
     });
 
@@ -100,7 +101,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         itemsCreatedComplexity: null,
         itemsHibp: null,
         itemsComplexity: null,
-        usersRanking: null
+        usersRanking: null,
+        laprRotations: null,
+        laprStates: null,
+        laprFailures: null,
+        laprPolicies: null
     };
 
     // Cache last payload to allow instant re-render when tabs become visible (Chart.js needs visible canvases)
@@ -141,6 +146,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 if (tpOpsCharts.itemsHibp) { tpOpsCharts.itemsHibp.resize(); }
                 if (tpOpsCharts.itemsComplexity) { tpOpsCharts.itemsComplexity.resize(); }
                 if (tpOpsCharts.usersRanking) { tpOpsCharts.usersRanking.resize(); }
+                if (tpOpsCharts.laprRotations) { tpOpsCharts.laprRotations.resize(); }
+                if (tpOpsCharts.laprStates) { tpOpsCharts.laprStates.resize(); }
+                if (tpOpsCharts.laprFailures) { tpOpsCharts.laprFailures.resize(); }
+                if (tpOpsCharts.laprPolicies) { tpOpsCharts.laprPolicies.resize(); }
             } catch (e) {}
         }
     }
@@ -219,6 +228,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         $('#tp-roles-top-body').html("<tr><td colspan='5' class='text-center text-muted'><i class='fas fa-circle-notch fa-spin'></i></td></tr>");
         $('#tp-users-ranking-body').html("<tr><td colspan='3' class='text-center text-muted'><i class='fas fa-circle-notch fa-spin'></i></td></tr>");
         $('#tp-items-topcopied-body').html("<tr><td colspan='6' class='text-center text-muted'><i class='fas fa-circle-notch fa-spin'></i></td></tr>");
+        $('#tp-lapr-endpoints-body').html("<tr><td colspan='5' class='text-center text-muted'><i class='fas fa-circle-notch fa-spin'></i></td></tr>");
 
         $.post(
             "sources/admin.queries.php",
@@ -758,6 +768,188 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         }
 
         renderTopCopiedItems(data);
+        renderLaprStatistics(data);
+    }
+
+    function renderLaprStatistics(data) {
+        var lapr = data && data.lapr ? data.lapr : {};
+        var endpoints = lapr.endpoints || {};
+        var accounts = lapr.accounts || {};
+        var rotations = lapr.rotations || {};
+        var $availability = $('#tp-lapr-availability');
+        var hasLaprData = !!lapr.enabled
+            || parseInt(endpoints.total || 0, 10) > 0
+            || parseInt(accounts.total || 0, 10) > 0
+            || parseInt(rotations.total || 0, 10) > 0;
+        $('#tp-ops-lapr-tab').closest('li').toggle(hasLaprData);
+
+        if (lapr.error) {
+            $availability.removeClass('alert-info alert-warning').addClass('alert-danger')
+                .text("<?php echo addslashes($lang->get('lapr_monitor_query_failed')); ?>").show();
+        } else if (!lapr.available) {
+            $availability.removeClass('alert-info alert-warning').addClass(lapr.enabled ? 'alert-danger' : 'alert-info')
+                .text(lapr.enabled
+                    ? "<?php echo addslashes($lang->get('lapr_monitor_schema_missing')); ?>"
+                    : "<?php echo addslashes($lang->get('lapr_monitor_module_disabled')); ?>")
+                .show();
+        } else if (!lapr.enabled) {
+            $availability.removeClass('alert-danger alert-warning').addClass('alert-info')
+                .text("<?php echo addslashes($lang->get('lapr_monitor_module_disabled')); ?>").show();
+        } else if (parseInt(accounts.total || 0, 10) === 0) {
+            $availability.removeClass('alert-danger alert-warning').addClass('alert-info')
+                .text("<?php echo addslashes($lang->get('lapr_monitor_no_accounts')); ?>").show();
+        } else {
+            $availability.hide().text('');
+        }
+
+        $('#tp-lapr-kpi-endpoints').text((endpoints.active || 0) + '/' + (endpoints.total || 0));
+        $('#tp-lapr-kpi-accounts').text((accounts.compliant || 0) + '/' + (accounts.total || 0));
+        $('#tp-lapr-kpi-rotations').text(rotations.total !== undefined ? rotations.total : 0);
+        $('#tp-lapr-kpi-success-rate').text(rotations.success_rate === null || rotations.success_rate === undefined ? '-' : rotations.success_rate + '%');
+
+        $('#tp-lapr-retention-warning').toggle(!!(lapr.period && lapr.period.retention_limited));
+        var workerFailures = parseInt(rotations.worker_failures || 0, 10);
+        $('#tp-lapr-worker-warning')
+            .text(tpOpsText("<?php echo addslashes($lang->get('ops_lapr_worker_failures')); ?>", {count: workerFailures}))
+            .toggle(workerFailures > 0);
+
+        var topEndpoints = Array.isArray(lapr.top_endpoints) ? lapr.top_endpoints : [];
+        var endpointRows = '';
+        if (topEndpoints.length === 0) {
+            endpointRows = "<tr><td colspan='5' class='text-center text-muted'><?php echo addslashes($lang->get('ops_lapr_no_problem_endpoints')); ?></td></tr>";
+        } else {
+            $.each(topEndpoints, function(_, endpoint) {
+                endpointRows += '<tr>' +
+                    '<td>' + escapeHtml(endpoint.label || ('#' + endpoint.id)) + '</td>' +
+                    '<td class="text-center">' + parseInt(endpoint.successes || 0, 10) + '</td>' +
+                    '<td class="text-center">' + parseInt(endpoint.failures || 0, 10) + '</td>' +
+                    '<td class="text-center">' + (endpoint.success_rate === null ? '-' : endpoint.success_rate + '%') + '</td>' +
+                    '<td class="text-center">' + escapeHtml(tpOpsLaprDate(endpoint.last_failure_at)) + '</td>' +
+                    '</tr>';
+            });
+        }
+        $('#tp-lapr-endpoints-body').html(endpointRows);
+
+        if (typeof Chart === 'undefined') {
+            return;
+        }
+
+        if (tpOpsCharts.laprRotations) tpOpsCharts.laprRotations.destroy();
+        var rotationCanvas = document.getElementById('tp-lapr-rotation-chart');
+        var rotationSeries = rotations.series || {labels: [], successes: [], failures: []};
+        if (rotationCanvas) {
+            tpOpsCharts.laprRotations = new Chart(rotationCanvas.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: rotationSeries.labels || [],
+                    datasets: [
+                        { label: "<?php echo addslashes($lang->get('ops_lapr_successes')); ?>", data: rotationSeries.successes || [], backgroundColor: tpOpsPalette().greenFill, borderColor: tpOpsPalette().green, borderWidth: 1 },
+                        { label: "<?php echo addslashes($lang->get('ops_lapr_failures')); ?>", data: rotationSeries.failures || [], backgroundColor: tpOpsPalette().redFill, borderColor: tpOpsPalette().red, borderWidth: 1 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    legend: { display: true },
+                    scales: {
+                        xAxes: [{ stacked: true, ticks: { autoSkip: true, maxRotation: 0 } }],
+                        yAxes: [{ stacked: true, ticks: { beginAtZero: true, precision: 0 } }]
+                    }
+                }
+            });
+        }
+
+        if (tpOpsCharts.laprStates) tpOpsCharts.laprStates.destroy();
+        var stateCanvas = document.getElementById('tp-lapr-state-chart');
+        if (stateCanvas) {
+            tpOpsCharts.laprStates = new Chart(stateCanvas.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: [
+                        "<?php echo addslashes($lang->get('lapr_monitor_state_healthy')); ?>",
+                        "<?php echo addslashes($lang->get('lapr_monitor_state_scheduled')); ?>",
+                        "<?php echo addslashes($lang->get('lapr_monitor_state_retrying')); ?>",
+                        "<?php echo addslashes($lang->get('lapr_monitor_state_overdue')); ?>",
+                        "<?php echo addslashes($lang->get('lapr_monitor_state_error')); ?>",
+                        "<?php echo addslashes($lang->get('lapr_monitor_state_paused')); ?>"
+                    ],
+                    datasets: [{
+                        data: [accounts.healthy || 0, accounts.scheduled || 0, accounts.retrying || 0, accounts.overdue || 0, accounts.error || 0, accounts.paused || 0],
+                        backgroundColor: [tpOpsPalette().greenFill, tpOpsPalette().blueFill, tpOpsPalette().orangeFill, tpOpsPalette().purpleFill, tpOpsPalette().redFill, tpOpsPalette().grayFill],
+                        borderColor: [tpOpsPalette().green, tpOpsPalette().blue, tpOpsPalette().orange, tpOpsPalette().purple, tpOpsPalette().red, tpOpsPalette().gray],
+                        borderWidth: 1
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, legend: { display: true } }
+            });
+        }
+
+        var failureNames = {
+            connectivity: "<?php echo addslashes($lang->get('lapr_monitor_failure_connectivity')); ?>",
+            authentication: "<?php echo addslashes($lang->get('lapr_monitor_failure_authentication')); ?>",
+            hostkey: "<?php echo addslashes($lang->get('lapr_monitor_failure_hostkey')); ?>",
+            password_change: "<?php echo addslashes($lang->get('lapr_monitor_failure_password_change')); ?>",
+            synchronization: "<?php echo addslashes($lang->get('lapr_monitor_failure_synchronization')); ?>",
+            password_generation: "<?php echo addslashes($lang->get('lapr_monitor_failure_password_generation')); ?>",
+            encryption: "<?php echo addslashes($lang->get('lapr_monitor_failure_encryption')); ?>",
+            configuration: "<?php echo addslashes($lang->get('lapr_monitor_failure_configuration')); ?>",
+            other: "<?php echo addslashes($lang->get('lapr_monitor_failure_other')); ?>"
+        };
+        var failureCategories = Array.isArray(lapr.failure_categories) ? lapr.failure_categories : [];
+        if (tpOpsCharts.laprFailures) tpOpsCharts.laprFailures.destroy();
+        var failureCanvas = document.getElementById('tp-lapr-failure-chart');
+        if (failureCanvas) {
+            tpOpsCharts.laprFailures = new Chart(failureCanvas.getContext('2d'), {
+                type: 'horizontalBar',
+                data: {
+                    labels: failureCategories.map(function(row) { return failureNames[row.category] || failureNames.other; }),
+                    datasets: [{
+                        label: "<?php echo addslashes($lang->get('ops_lapr_failures')); ?>",
+                        data: failureCategories.map(function(row) { return parseInt(row.count || 0, 10); }),
+                        backgroundColor: tpOpsPalette().redFill,
+                        borderColor: tpOpsPalette().red,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    legend: { display: false },
+                    scales: { xAxes: [{ ticks: { beginAtZero: true, precision: 0 } }], yAxes: [{ gridLines: { display: false } }] }
+                }
+            });
+        }
+
+        var policies = Array.isArray(lapr.policies) ? lapr.policies : [];
+        if (tpOpsCharts.laprPolicies) tpOpsCharts.laprPolicies.destroy();
+        var policyCanvas = document.getElementById('tp-lapr-policy-chart');
+        if (policyCanvas) {
+            tpOpsCharts.laprPolicies = new Chart(policyCanvas.getContext('2d'), {
+                type: 'horizontalBar',
+                data: {
+                    labels: policies.map(function(row) { return row.label || '-'; }),
+                    datasets: [{
+                        label: "<?php echo addslashes($lang->get('lapr_accounts')); ?>",
+                        data: policies.map(function(row) { return parseInt(row.count || 0, 10); }),
+                        backgroundColor: tpOpsPalette().blueFill,
+                        borderColor: tpOpsPalette().blue,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    legend: { display: false },
+                    scales: { xAxes: [{ ticks: { beginAtZero: true, precision: 0 } }], yAxes: [{ gridLines: { display: false } }] }
+                }
+            });
+        }
+    }
+
+    function tpOpsLaprDate(value) {
+        if (!value) return '-';
+        var date = new Date(String(value).replace(' ', 'T'));
+        return isNaN(date.getTime()) ? String(value) : date.toLocaleString(navigator.language || undefined);
     }
 
     function renderTopCopiedItems(data) {
