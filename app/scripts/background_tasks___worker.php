@@ -75,6 +75,7 @@ class TaskWorker {
         
         $configManager = new ConfigManager();
         $this->settings = $configManager->getAllSettings();
+        date_default_timezone_set($this->settings['timezone'] ?? 'UTC');
         $this->logger = new TaskLogger($this->settings, LOG_TASKS_FILE);
     }
 
