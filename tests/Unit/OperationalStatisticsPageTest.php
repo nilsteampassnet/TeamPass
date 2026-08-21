@@ -70,7 +70,7 @@ class OperationalStatisticsPageTest extends TestCase
     {
         $ids = $this->domIds($this->page());
 
-        foreach (['tp-ops-overview', 'tp-ops-security', 'tp-ops-activity', 'tp-ops-users'] as $section) {
+        foreach (['tp-ops-overview', 'tp-ops-security', 'tp-ops-activity', 'tp-ops-users', 'tp-ops-lapr'] as $section) {
             self::assertContains($section, $ids, 'Missing dashboard section: ' . $section);
         }
     }
@@ -162,10 +162,24 @@ class OperationalStatisticsPageTest extends TestCase
         $case = $this->statisticsCase();
         $javascript = $this->javascript();
 
-        foreach (['top_copied', 'rankings', 'created_complexity', 'hibp'] as $key) {
+        foreach (['top_copied', 'rankings', 'created_complexity', 'hibp', 'lapr'] as $key) {
             self::assertStringContainsString("'" . $key . "' =>", $case, 'Payload key not produced: ' . $key);
             self::assertStringContainsString($key, $javascript, 'Payload key not consumed: ' . $key);
         }
+    }
+
+    public function testLaprDashboardKeepsSnapshotAndPeriodMetricsSeparate(): void
+    {
+        $case = $this->statisticsCase();
+        $page = $this->page();
+        $javascript = $this->javascript();
+
+        self::assertStringContainsString('laprBuildOperationalStatistics(', $case);
+        self::assertStringContainsString('tp-lapr-rotation-chart', $page);
+        self::assertStringContainsString('tp-lapr-state-chart', $page);
+        self::assertStringContainsString('retention_limited', $javascript);
+        self::assertStringContainsString('worker_failures', $javascript);
+        self::assertStringContainsString("type: 'horizontalBar'", $javascript);
     }
 
     // -------------------------------------------------------- chart.js contract
