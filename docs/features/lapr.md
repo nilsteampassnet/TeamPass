@@ -72,7 +72,7 @@ Once enabled, an **LAPR** section appears directly below **Passwords** for non-a
 
 - Pick the endpoint, then search for an eligible TeamPass item (writable by you, non-personal, active, with a login, not already managed), then select a policy. The picker searches by item label or login and displays the folder path when labels are ambiguous.
 - The item's `login` must be a **valid Linux username**. Free-text logins that aren't valid usernames are rejected.
-- **Discover accounts** scans the endpoint (`getent passwd`) and lists real login accounts to help you pick which to manage. **Manage this account** opens the same form with the discovered endpoint locked and the item search restricted to the discovered Linux login.
+- **Discover accounts** scans the endpoint (`getent passwd`) and lists the real `root` account plus regular login accounts with UID 1000 or greater. Reserved system accounts and accounts using `nologin` or `false` are excluded. **Manage this account** opens the same form with the discovered endpoint locked and the item search restricted to the discovered Linux login.
 - Removing a managed account is a soft deletion so its audit history is preserved. Adding the same TeamPass item again safely reactivates the existing LAPR row and resets its scheduling/retry state.
 
 LAPR does not create vault items during discovery. Endpoint enrollment and managed-account creation are two separate relationships:
@@ -132,6 +132,8 @@ Generated passwords are always filtered to be **safe for `chpasswd`** — no `:`
 - The **scheduler** rotates due accounts automatically when enabled.
 - **History** shows a per-account, read-only, paginated timeline of every rotation, retry, suspension and reset.
 
+Endpoint checks, last and next rotations, and history timestamps use the TeamPass-configured timezone, date format, and time format. The web handlers, background scheduler, and worker share this timezone. Date columns keep chronological sorting independently of the selected regional display format.
+
 Editing an item's password never triggers an implicit remote operation. A rotation is always explicit (or scheduler-driven), runs as a background task, and preserves the SSH-first safety model described below.
 
 Each rotation:
@@ -146,6 +148,24 @@ Each rotation:
 - **SSH-first model.** The password is pushed to the server first. If the *item* update then fails, the account is marked **error** with a **MANUAL RESYNC REQUIRED** note — the server holds the new password, so reset it manually and re-sync.
 - **Host-key mismatch blocks rotation.** Because LAPR connects with a reusable, privileged credential, a changed host key (a MITM signal) **aborts** the rotation. Verify the server, then explicitly trust the new key.
 - **Scheduler retries** failed rotations up to `lapr_max_retries`, then **suspends** the account until an authorized LAPR operator uses **Reset & resume**.
+
+---
+
+## Monitoring and statistics
+
+Administrators can monitor LAPR without opening the item-dependent operational pages:
+
+- **System Health → LAPR** reports scheduler and worker status, rotation compliance, retries, overdue/error/paused accounts, referential-integrity problems, and recent failures. Overdue/error states are critical; paused/retrying states are warnings. The report is passive and never opens an SSH connection when the page loads.
+- The same Health tab reports effective human LAPR operators and separately highlights permissions still assigned to disabled accounts. Administrators are not counted as operators because they configure LAPR through the administration page rather than using its item-dependent operational pages.
+- **Statistics → LAPR** shows rotation volume and success rate for the selected period, success/failure trends, current account states, failure categories, policy adoption, and endpoints with failures.
+
+System Health treats a newly due rotation as normal during a grace period equal to the greater of ten minutes or two scheduler intervals. This prevents false alarms between two normal background-handler runs.
+
+Disabling automatic rotation is treated as an informational configuration state, not as a failure. Scheduler alerts are raised only for actual operational problems such as an overdue enabled scheduler, a stalled queue, or a failed worker.
+
+The selected Statistics period applies to audit events. Endpoint and account states remain a current snapshot, and the page warns when the requested period exceeds the configured LAPR audit retention.
+
+These administrator reports expose only operational metadata. Passwords, SSH keys, credential contents, and sharekeys are never included, including in the System Health JSON export.
 
 ---
 
