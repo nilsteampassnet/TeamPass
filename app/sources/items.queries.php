@@ -3748,7 +3748,27 @@ switch ($inputData['type']) {
             ];
             $canManageLaprItem = laprCheckPermission($session, $SETTINGS)
                 && laprUserCanWriteFolder((int) ($arrData['folder'] ?? 0), $session);
-            if ($canManageLaprItem === false) {
+            if ($canManageLaprItem === true && is_array($arrData['lapr']['managed_account'] ?? null)) {
+                // Built-in policies keep stable English identifiers in the database.
+                // Localize their name and duration only at the item-detail presentation boundary;
+                // custom policy labels remain untouched.
+                $managedAccount = &$arrData['lapr']['managed_account'];
+                $storedPolicyLabel = (string) ($managedAccount['policy_label'] ?? '');
+                $policyIsPreset = (bool) ($managedAccount['policy_is_preset'] ?? false);
+                if ($storedPolicyLabel !== '') {
+                    $displayPolicyLabel = laprPolicyDisplayName($storedPolicyLabel, $policyIsPreset, $lang);
+                    if ($policyIsPreset === true) {
+                        $displayPolicyLabel = laprPolicyOptionLabel(
+                            $displayPolicyLabel,
+                            (int) ($managedAccount['policy_frequency_days'] ?? 0),
+                            $lang
+                        );
+                    }
+                    $managedAccount['policy_label'] = $displayPolicyLabel;
+                }
+                unset($managedAccount['policy_frequency_days'], $managedAccount['policy_is_preset']);
+                unset($managedAccount);
+            } elseif ($canManageLaprItem === false) {
                 $arrData['lapr'] = [
                     'is_managed' => (bool) ($arrData['lapr']['is_managed'] ?? false),
                     'is_credential' => (bool) ($arrData['lapr']['is_credential'] ?? false),
