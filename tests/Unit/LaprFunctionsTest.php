@@ -9,6 +9,7 @@ require_once __DIR__ . '/../../app/includes/libraries/teampassclasses/lapr/src/L
 require_once __DIR__ . '/../../app/sources/lapr.functions.php';
 
 use TeampassClasses\Lapr\LAPRSshService;
+use TeampassClasses\Language\Language;
 
 /**
  * Unit tests for the DB-free LAPR helpers in app/sources/lapr.functions.php
@@ -16,6 +17,8 @@ use TeampassClasses\Lapr\LAPRSshService;
  *
  * Security-critical coverage:
  *   - laprValidateUsername()        (R1 — command-injection guard)
+ *   - laprIsDiscoverableAccount()   (system-account discovery filter)
+ *   - laprPolicyDisplayName()       (localized built-in presets)
  *   - laprIsPasswordSafeForLinux()  (R9 — chpasswd corruption guard)
  *   - laprValidatePolicyParams()    (Point 3 bounds)
  *   - laprComputeNextRotation()     (scheduling)
@@ -181,6 +184,79 @@ class LaprFunctionsTest extends TestCase
     }
 
     // =========================================================================
+    // Account discovery candidates
+    // =========================================================================
+
+    public function testDiscoveryAcceptsRootAndRegularLoginAccounts(): void
+    {
+        $this->assertTrue(laprIsDiscoverableAccount([
+            'username' => 'root',
+            'uid' => 0,
+            'shell' => '/bin/bash',
+        ]));
+        $this->assertTrue(laprIsDiscoverableAccount([
+            'username' => 'alice',
+            'uid' => 1000,
+            'shell' => '/bin/bash',
+        ]));
+    }
+
+    public function testDiscoveryRejectsReservedSystemAndNonLoginAccounts(): void
+    {
+        $this->assertFalse(laprIsDiscoverableAccount([
+            'username' => 'sync',
+            'uid' => 4,
+            'shell' => '/bin/sync',
+        ]));
+        $this->assertFalse(laprIsDiscoverableAccount([
+            'username' => 'daemon',
+            'uid' => 1,
+            'shell' => '/bin/bash',
+        ]));
+        $this->assertFalse(laprIsDiscoverableAccount([
+            'username' => 'service',
+            'uid' => 1001,
+            'shell' => '/usr/sbin/nologin',
+        ]));
+        $this->assertFalse(laprIsDiscoverableAccount([
+            'username' => 'root',
+            'uid' => 4,
+            'shell' => '/bin/bash',
+        ]));
+    }
+
+    // =========================================================================
+    // Localized policy display labels
+    // =========================================================================
+
+    public function testBuiltInPolicyNamesAndDurationsAreLocalized(): void
+    {
+        $english = new Language('english');
+        $french = new Language('french');
+
+        $this->assertSame(
+            'High security',
+            laprPolicyDisplayName('High Security (7 days)', true, $english)
+        );
+        $this->assertSame(
+            'Haute sécurité',
+            laprPolicyDisplayName('High Security (7 days)', true, $french)
+        );
+        $this->assertSame('High security (7 days)', laprPolicyOptionLabel('High security', 7, $english));
+        $this->assertSame('Haute sécurité (7 jours)', laprPolicyOptionLabel('Haute sécurité', 7, $french));
+        $this->assertSame('Daily (1 day)', laprPolicyOptionLabel('Daily', 1, $english));
+        $this->assertSame('Quotidienne (1 jour)', laprPolicyOptionLabel('Quotidienne', 1, $french));
+    }
+
+    public function testCustomAndUnknownPolicyLabelsRemainVerbatim(): void
+    {
+        $french = new Language('french');
+
+        $this->assertSame('Production policy', laprPolicyDisplayName('Production policy', false, $french));
+        $this->assertSame('Future preset', laprPolicyDisplayName('Future preset', true, $french));
+    }
+
+    // =========================================================================
     // laprIsPasswordSafeForLinux (R9)
     // =========================================================================
 
@@ -262,6 +338,53 @@ class LaprFunctionsTest extends TestCase
         $last = date('Y-m-d H:i:s', $now - 100 * 86400);
         $expected = date('Y-m-d H:i:s', $now);
         $this->assertSame($expected, laprComputeNextRotation($last, 7, $now));
+    }
+
+    // =========================================================================
+    // laprFormatDateTimeForDisplay
+    // =========================================================================
+
+    public function testDateTimeDisplayUsesConfiguredRegionalFormats(): void
+    {
+        $previousTimezone = date_default_timezone_get();
+        date_default_timezone_set('UTC');
+
+        try {
+            $formatted = laprFormatDateTimeForDisplay(
+                '2026-08-21 14:05:06',
+                ['date_format' => 'd/m/Y', 'time_format' => 'H:i:s']
+            );
+
+            $this->assertSame('21/08/2026 14:05:06', $formatted['display']);
+            $this->assertSame(1787321106, $formatted['timestamp']);
+        } finally {
+            date_default_timezone_set($previousTimezone);
+        }
+    }
+
+    public function testDateTimeDisplaySupportsTwelveHourRegionalFormat(): void
+    {
+        $previousTimezone = date_default_timezone_get();
+        date_default_timezone_set('UTC');
+
+        try {
+            $formatted = laprFormatDateTimeForDisplay(
+                '2026-08-21 14:05:06',
+                ['date_format' => 'm/d/Y', 'time_format' => 'g:i:s a']
+            );
+
+            $this->assertSame('08/21/2026 2:05:06 pm', $formatted['display']);
+        } finally {
+            date_default_timezone_set($previousTimezone);
+        }
+    }
+
+    public function testEmptyDateTimeDisplayUsesNeutralSortValue(): void
+    {
+        $this->assertSame(
+            ['display' => '', 'timestamp' => 0],
+            laprFormatDateTimeForDisplay(null, ['date_format' => 'd/m/Y', 'time_format' => 'H:i:s'])
+        );
     }
 
     // =========================================================================
