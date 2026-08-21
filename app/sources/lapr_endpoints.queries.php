@@ -102,7 +102,7 @@ $userId = (int) $session->get('user-id');
 
 switch ($post_type) {
     case 'list_endpoints':
-        laprListEndpoints($lang);
+        laprListEndpoints($lang, $SETTINGS);
         break;
     case 'search_credential_items':
         laprSearchCredentialItems($dataReceived, $session, $lang);
@@ -126,16 +126,17 @@ switch ($post_type) {
         laprTrustHostkey($dataReceived, $userId, $lang);
         break;
     default:
-        echo prepareExchangedData(['error' => true, 'message' => 'Unknown action'], 'encode');
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_unknown_action')], 'encode');
 }
 
 /**
  * List all non-deleted endpoints for the DataTable.
  *
- * @param Language $lang Language helper
+ * @param Language            $lang     Language helper
+ * @param array<string, mixed> $settings TeamPass regional settings
  * @return void
  */
-function laprListEndpoints(Language $lang): void
+function laprListEndpoints(Language $lang, array $settings): void
 {
     $rows = DB::query(
         'SELECT id, label, hostname, port, ssh_username, ssh_auth_method, status,
@@ -150,6 +151,10 @@ function laprListEndpoints(Language $lang): void
     foreach ($rows as $r) {
         $caps = json_decode((string) ($r['capabilities'] ?? '{}'), true) ?: [];
         $os = json_decode((string) ($r['os_info'] ?? '{}'), true) ?: [];
+        $lastCheckAt = laprFormatDateTimeForDisplay(
+            $r['last_check_at'] === null ? null : (string) $r['last_check_at'],
+            $settings
+        );
         $data[] = [
             'id' => (int) $r['id'],
             'label' => $r['label'],
@@ -159,7 +164,8 @@ function laprListEndpoints(Language $lang): void
             'ssh_auth_method' => $r['ssh_auth_method'],
             'status' => $r['status'],
             'hostkey_verified' => (int) $r['ssh_hostkey_verified'],
-            'last_check_at' => $r['last_check_at'],
+            'last_check_at' => $lastCheckAt['display'],
+            'last_check_at_ts' => $lastCheckAt['timestamp'],
             'os_name' => $os['os_name'] ?? '',
             'has_sudo' => (bool) ($caps['has_sudo'] ?? false),
             'is_root' => (bool) ($os['is_root'] ?? false),
@@ -329,7 +335,7 @@ function laprTestStatus(array $data, Language $lang): void
 {
     $taskId = (int) ($data['task_id'] ?? 0);
     if ($taskId <= 0) {
-        echo prepareExchangedData(['error' => true, 'message' => 'Invalid task'], 'encode');
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_invalid_task')], 'encode');
         return;
     }
 
@@ -341,7 +347,7 @@ function laprTestStatus(array $data, Language $lang): void
         'lapr_ssh_test'
     );
     if ($task === null) {
-        echo prepareExchangedData(['error' => true, 'message' => 'Task not found'], 'encode');
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_task_not_found')], 'encode');
         return;
     }
 
@@ -507,7 +513,7 @@ function laprDeleteEndpoint(array $data, int $userId, Language $lang): void
 {
     $endpointId = (int) ($data['id'] ?? 0);
     if ($endpointId <= 0) {
-        echo prepareExchangedData(['error' => true, 'message' => 'Invalid endpoint'], 'encode');
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_invalid_endpoint')], 'encode');
         return;
     }
 
@@ -517,7 +523,7 @@ function laprDeleteEndpoint(array $data, int $userId, Language $lang): void
         'deleted'
     );
     if ((int) $exists === 0) {
-        echo prepareExchangedData(['error' => true, 'message' => 'Endpoint not found'], 'encode');
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_endpoint_not_found')], 'encode');
         return;
     }
 
@@ -549,7 +555,7 @@ function laprRestoreEndpoint(array $data, int $userId, Language $lang): void
 {
     $endpointId = (int) ($data['id'] ?? 0);
     if ($endpointId <= 0) {
-        echo prepareExchangedData(['error' => true, 'message' => 'Invalid endpoint'], 'encode');
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_invalid_endpoint')], 'encode');
         return;
     }
 
