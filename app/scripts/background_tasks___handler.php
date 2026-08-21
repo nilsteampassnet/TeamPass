@@ -49,6 +49,7 @@ class BackgroundTasksHandler {
 
     public function __construct(array $settings) {
         $this->settings = $settings;
+        date_default_timezone_set($this->settings['timezone'] ?? 'UTC');
         $this->logger = new TaskLogger($settings, LOG_TASKS_FILE);
         $this->maxParallelTasks = (int) ($settings['max_parallel_tasks'] ?? 2);
         $this->maxExecutionTime = (int) ($settings['task_maximum_run_time'] ?? 600);
