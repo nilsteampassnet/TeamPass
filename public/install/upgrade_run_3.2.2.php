@@ -279,6 +279,7 @@ $laprSettings = array(
     array('lapr_enabled', '0'),
     array('lapr_allowlist_enabled', '0'),
     array('lapr_allowlist', ''),
+    array('lapr_allow_self_management', '0'),
     array('lapr_ssh_connect_timeout', '10'),
     array('lapr_rate_limit_max_attempts', '5'),
     array('lapr_rate_limit_window_seconds', '60'),
