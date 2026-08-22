@@ -211,6 +211,29 @@ class LaprSafetyWiringTest extends TestCase
         self::assertStringContainsString('ConfigManager::invalidateCache();', $handler);
     }
 
+    public function testItemHistoryIdentifiesAutomaticLaprRotations(): void
+    {
+        $items = $this->source('app/sources/items.queries.php');
+        $english = $this->source('app/includes/language/english.php');
+        $french = $this->source('app/includes/language/french.php');
+        $historyStart = strpos($items, "case 'load_item_history':");
+        $historyEnd = strpos($items, "case 'suggest_item_change':", (int) $historyStart);
+        self::assertIsInt($historyStart);
+        self::assertIsInt($historyEnd);
+        $history = substr($items, $historyStart, $historyEnd - $historyStart);
+
+        self::assertStringContainsString('l.id_user as id_user', $history);
+        self::assertStringContainsString('$isLaprSystemPasswordChange', $history);
+        self::assertStringContainsString("(int) TP_USER_ID", $history);
+        self::assertStringContainsString("\$reason[0] === 'at_pw'", $history);
+        self::assertGreaterThanOrEqual(
+            2,
+            substr_count($history, "\$lang->get('lapr_system_scheduler')")
+        );
+        self::assertStringContainsString("'lapr_system_scheduler' => 'LAPR system'", $english);
+        self::assertStringContainsString("'lapr_system_scheduler' => 'Système LAPR'", $french);
+    }
+
     public function testRemovingAnAccountCancelsPendingRotationsWithoutResurrection(): void
     {
         $accounts = $this->source('app/sources/lapr_accounts.queries.php');
