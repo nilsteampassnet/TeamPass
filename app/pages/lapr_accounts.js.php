@@ -64,6 +64,7 @@ $laprAccountTranslations = [
     'rotationSuccess' => $lang->get('lapr_rotation_success'),
     'rotationFailed' => $lang->get('lapr_rotation_failed'),
     'rotationTimeout' => $lang->get('lapr_rotation_status_timeout'),
+    'selfRotationWarning' => $lang->get('lapr_self_management_rotation_warning'),
     'manualResync' => $lang->get('lapr_manual_resync_required'),
     'credentialResync' => $lang->get('lapr_ssh_credential_resync_required'),
     'hostkeyMismatch' => $lang->get('lapr_hostkey_mismatch_blocked'),
@@ -87,6 +88,7 @@ $laprAccountTranslations = [
     'eventHostkeyMismatch' => $lang->get('lapr_event_hostkey_mismatch'),
     'triggerManual' => $lang->get('lapr_trigger_manual'),
     'triggerScheduler' => $lang->get('lapr_trigger_scheduler'),
+    'triggerEnroll' => $lang->get('lapr_trigger_enroll'),
     'resultSuccess' => $lang->get('lapr_result_success'),
     'resultFailure' => $lang->get('lapr_result_failure'),
     'resultWarning' => $lang->get('lapr_result_warning'),
@@ -129,7 +131,8 @@ const laprEventLabels = {
 }
 const laprTriggerLabels = {
   manual: laprAccLang.triggerManual,
-  scheduler: laprAccLang.triggerScheduler
+  scheduler: laprAccLang.triggerScheduler,
+  enroll: laprAccLang.triggerEnroll
 }
 const laprResultLabels = {
   success: laprAccLang.resultSuccess,
@@ -284,7 +287,7 @@ function laprAccStatusBadge(status) {
 function laprAccountActions(a) {
   const canRotate = a.status === 'active' || a.status === 'error'
   const canReset = a.status === 'paused' || a.status === 'error'
-  return (canRotate ? '<button class="btn btn-xs btn-success lapr-rotate-acc" data-id="' + a.id + '" title="' + laprAccLang.rotateTitle + '"><i class="fas fa-rotate"></i></button> ' : '') +
+  return (canRotate ? '<button class="btn btn-xs btn-success lapr-rotate-acc" data-id="' + a.id + '" data-self-target="' + (a.is_self_target ? '1' : '0') + '" title="' + laprAccLang.rotateTitle + '"><i class="fas fa-rotate"></i></button> ' : '') +
     (canReset ? '<button class="btn btn-xs btn-warning lapr-reset-acc" data-id="' + a.id + '" title="' + laprAccLang.resetTitle + '"><i class="fas fa-rotate-left"></i></button> ' : '') +
     '<button class="btn btn-xs btn-info lapr-history-acc" data-id="' + a.id + '" title="' + laprAccLang.historyTitle + '"><i class="fas fa-clock-rotate-left"></i></button> ' +
     '<button class="btn btn-xs btn-secondary lapr-editpolicy" data-id="' + a.id + '" data-policy="' + a.policy_id + '"><i class="fas fa-scroll"></i></button> ' +
@@ -302,10 +305,13 @@ function laprResetAccount(id) {
   })
 }
 
-function laprRotateAccount(id) {
+function laprRotateAccount(id, isSelfTarget) {
+  const confirmation = isSelfTarget
+    ? DOMPurify.sanitize(laprAccLang.selfRotationWarning) + '<br><br>' + DOMPurify.sanitize(laprAccLang.rotateConfirm)
+    : laprAccLang.rotateConfirm
   launchConfirmDialog(
     laprAccLang.rotateTitle,
-    DOMPurify.sanitize(laprAccLang.rotateConfirm),
+    DOMPurify.sanitize(confirmation),
     function () { laprStartAccountRotation(id) },
     laprAccLang.rotateTitle
   )
@@ -517,6 +523,13 @@ function laprSaveAccount() {
     toastr.success(data.message)
     $('#modal_lapr_account').modal('hide')
     laprLoadAccounts()
+    const taskId = parseInt(data.task_id, 10) || 0
+    if (taskId > 0) {
+      toastr.info('<i class="fas fa-circle-notch fa-spin mr-1"></i>' + laprAccLang.rotationInProgress)
+      laprPollRotation(taskId, 0)
+    } else if (data.rotation_skipped_manual_only === true) {
+      toastr.warning(laprAccLang.selfRotationWarning)
+    }
   }).always(function () {
     laprAccountSaveInProgress = false
     if ($('#modal_lapr_account').hasClass('show')) {
@@ -666,7 +679,7 @@ $(document).ready(function () {
     laprDeleteAccount($(this).data('id'))
   })
   $('#lapr-accounts-table').on('click', '.lapr-rotate-acc', function () {
-    laprRotateAccount($(this).data('id'))
+    laprRotateAccount($(this).data('id'), String($(this).attr('data-self-target')) === '1')
   })
   $('#lapr-accounts-table').on('click', '.lapr-reset-acc', function () {
     laprResetAccount($(this).data('id'))
