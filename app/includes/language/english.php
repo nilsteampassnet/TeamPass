@@ -2985,7 +2985,7 @@ return array(
     'lapr_result_failure' => 'Failure',
     'lapr_result_warning' => 'Warning',
     'lapr_by' => 'By',
-    'lapr_system_scheduler' => 'System (scheduler)',
+    'lapr_system_scheduler' => 'LAPR system',
     'lapr_unknown_user' => 'Unknown user',
     'lapr_admin_general' => 'General',
     'lapr_admin_security' => 'Security',
