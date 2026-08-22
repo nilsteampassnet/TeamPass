@@ -155,6 +155,8 @@ Endpoint checks, last and next rotations, and history timestamps use the TeamPas
 
 Editing an item's password never triggers an implicit remote operation. A rotation is always explicit (or scheduler-driven), runs as a background task, and preserves the SSH-first safety model described below.
 
+In the standard TeamPass item history, an automatic password change is attributed to the localized **LAPR system** actor instead of showing the internal TeamPass service account with an empty display name. Manual and enrollment-triggered rotations retain the name of the user who requested them. Existing automatic-rotation entries receive the same display label without a database migration.
+
 Each rotation:
 
 1. reads the current item password (proving the key chain works and capturing the previous value for password history);
