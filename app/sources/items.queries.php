@@ -7660,7 +7660,7 @@ switch ($inputData['type']) {
         $history = [];
         $previous_passwords = [];
         $rows = DB::query(
-            'SELECT l.date as date, l.action as action, l.raison as raison,
+            'SELECT l.date as date, l.action as action, l.raison as raison, l.id_user as id_user,
                 u.login as login, u.avatar_thumb as avatar_thumb, u.name as name, u.lastname as lastname,
                 l.old_value as old_value
             FROM ' . prefixTable('log_items') . ' as l
@@ -7677,6 +7677,17 @@ switch ($inputData['type']) {
             $reason = [''];
             if (empty($record['raison']) === false) {
                 $reason = array_map('trim', explode(':', (string) $record['raison']));
+            }
+
+            // Scheduled LAPR rotations are journalled with the internal TP user.
+            // Give both existing and future password-change entries an explicit,
+            // localized actor instead of rendering the special user's empty name.
+            $isLaprSystemPasswordChange = (int) ($record['id_user'] ?? 0) === (int) TP_USER_ID
+                && $reason[0] === 'at_pw';
+            if ($isLaprSystemPasswordChange === true) {
+                $record['login'] = $lang->get('lapr_system_scheduler');
+                $record['name'] = $lang->get('lapr_system_scheduler');
+                $record['lastname'] = '';
             }
             
             // imported via API
