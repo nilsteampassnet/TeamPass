@@ -167,6 +167,50 @@ class LaprSafetyWiringTest extends TestCase
         self::assertStringContainsString('laprPollRotation(taskId, 0)', $javascript);
     }
 
+    public function testAutomaticSchedulerUsesTheLaprAdminSettingsNamespace(): void
+    {
+        $handler = $this->source('app/scripts/background_tasks___handler.php');
+        $schedulerStart = strpos($handler, 'private function handleScheduledLAPRRotations(): void');
+        $schedulerEnd = strpos($handler, 'private function computeNextDailyRunAt(', (int) $schedulerStart);
+        self::assertIsInt($schedulerStart);
+        self::assertIsInt($schedulerEnd);
+        $scheduler = substr($handler, $schedulerStart, $schedulerEnd - $schedulerStart);
+
+        foreach ([
+            "getSettingValue('lapr_enabled', '0', 'admin')",
+            "getSettingValue('lapr_scheduler_enabled', '0', 'admin')",
+            "getSettingValue('lapr_scheduler_interval_minutes', '5', 'admin')",
+            "getSettingValue('lapr_scheduler_next_run_at', '0', 'admin')",
+        ] as $settingRead) {
+            self::assertStringContainsString($settingRead, $scheduler);
+        }
+
+        self::assertGreaterThanOrEqual(
+            2,
+            substr_count($scheduler, "'lapr_scheduler_next_run_at'")
+        );
+        // Four reads and both next-run writes must all target the same namespace.
+        self::assertGreaterThanOrEqual(6, substr_count($scheduler, "'admin'"));
+        self::assertDoesNotMatchRegularExpression(
+            "/getSettingValue\\('lapr_[^']+',\\s*'[^']*'\\)/",
+            $handler
+        );
+        self::assertStringContainsString(
+            "getSettingValue('lapr_audit_retention_days', '365', 'admin')",
+            $handler
+        );
+        self::assertStringContainsString(
+            "private function getSettingValue(string \$key, string \$default = '', string \$type = 'settings')",
+            $handler
+        );
+        self::assertStringContainsString(
+            "private function upsertSettingValue(string \$key, string \$value, string \$type = 'settings')",
+            $handler
+        );
+        self::assertStringContainsString("\$type = \$type === 'admin' ? 'admin' : 'settings';", $handler);
+        self::assertStringContainsString('ConfigManager::invalidateCache();', $handler);
+    }
+
     public function testRemovingAnAccountCancelsPendingRotationsWithoutResurrection(): void
     {
         $accounts = $this->source('app/sources/lapr_accounts.queries.php');
