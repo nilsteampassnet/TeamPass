@@ -3003,7 +3003,7 @@ return array(
     'lapr_result_failure' => 'Échec',
     'lapr_result_warning' => 'Avertissement',
     'lapr_by' => 'Par',
-    'lapr_system_scheduler' => 'Système (planificateur)',
+    'lapr_system_scheduler' => 'Système LAPR',
     'lapr_unknown_user' => 'Utilisateur inconnu',
     'lapr_admin_general' => 'Général',
     'lapr_admin_security' => 'Sécurité',
