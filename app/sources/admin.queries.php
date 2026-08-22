@@ -1655,6 +1655,34 @@ switch ($post_type) {
             }
         }
 
+        // A disabled LAPR module must not leave interactive or scheduled work
+        // waiting to run later. Pending tasks are completed with a neutral,
+        // explicit result; a worker already running performs its own fresh
+        // switch check immediately before any remote password mutation.
+        if ($post_field === 'lapr_enabled' && (int) $post_value !== 1) {
+            DB::update(
+                prefixTable('background_tasks'),
+                [
+                    'is_in_progress' => -1,
+                    'finished_at' => $timestamp,
+                    'updated_at' => $timestamp,
+                    'status' => 'completed',
+                    'output' => json_encode([
+                        'success' => false,
+                        'error_code' => 'ERR_LAPR_DISABLED',
+                        'message' => 'LAPR_DISABLED',
+                    ], JSON_UNESCAPED_SLASHES),
+                ],
+                '(process_type = %s OR process_type = %s OR process_type = %s)
+                 AND is_in_progress = 0
+                 AND (finished_at IS NULL OR finished_at = %s OR finished_at = 0)',
+                'lapr_ssh_test',
+                'lapr_discover',
+                'lapr_rotation',
+                ''
+            );
+        }
+
         // Keep local settings array aligned with the saved value
         $SETTINGS[$post_field] = $post_value;
         if ($post_field === 'enable_local_password_recovery') {
