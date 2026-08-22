@@ -35,6 +35,7 @@ use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
+use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
 // Load functions
 require_once 'main.functions.php';
@@ -114,7 +115,7 @@ switch ($post_type) {
         laprTestStatus($dataReceived, $lang);
         break;
     case 'add_endpoint':
-        laprAddEndpoint($dataReceived, $userId, $SETTINGS, $lang);
+        laprAddEndpoint($dataReceived, $session, $userId, $SETTINGS, $lang);
         break;
     case 'delete_endpoint':
         laprDeleteEndpoint($dataReceived, $userId, $lang);
@@ -273,6 +274,17 @@ function laprStartTest(array $data, $session, array $SETTINGS, int $userId, Lang
         return;
     }
 
+    if (laprEndpointTargetExists($hostname, $port) === true) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_endpoint_already_enrolled')], 'encode');
+        return;
+    }
+
+    $selfTarget = laprClassifySelfTarget($hostname, $SETTINGS);
+    if ($selfTarget['is_self'] === true && (int) ($SETTINGS['lapr_allow_self_management'] ?? 0) !== 1) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_self_management_blocked')], 'encode');
+        return;
+    }
+
     // Rate limiting (IP + hostname)
     $ip = getClientIpServer();
     $rl = laprCheckRateLimit($ip, $hostname, $SETTINGS);
@@ -298,6 +310,20 @@ function laprStartTest(array $data, $session, array $SETTINGS, int $userId, Lang
         return;
     }
 
+    $credentialConflict = laprEndpointCredentialConflict($credentialItemId, $authMethod);
+    if ($credentialConflict === 'managed_item') {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_managed_item_cannot_be_credential')], 'encode');
+        return;
+    }
+    if ($credentialConflict === 'shared_password') {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_password_credential_already_used')], 'encode');
+        return;
+    }
+    if ($credentialConflict === 'mixed_auth') {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_credential_auth_method_conflict')], 'encode');
+        return;
+    }
+
     $arguments = [
         'endpoint' => [
             'hostname' => $hostname,
@@ -306,6 +332,7 @@ function laprStartTest(array $data, $session, array $SETTINGS, int $userId, Lang
             'ssh_auth_method' => $authMethod,
         ],
         'credential_item_id' => $credentialItemId,
+        'self_target' => $selfTarget,
         'author' => $userId,
     ];
 
@@ -359,6 +386,9 @@ function laprTestStatus(array $data, Language $lang): void
     // different, non-allowlisted hostname).
     $taskArgs = json_decode((string) ($task['arguments'] ?? '{}'), true) ?: [];
     $testedEndpoint = is_array($taskArgs['endpoint'] ?? null) ? $taskArgs['endpoint'] : [];
+    $selfTarget = is_array($taskArgs['self_target'] ?? null)
+        ? $taskArgs['self_target']
+        : ['is_self' => false, 'confidence' => 'none', 'reason' => ''];
     $finished = (int) $task['is_in_progress'] === -1 || (string) $task['status'] === 'completed' || (string) $task['status'] === 'failed';
 
     if ($finished === false) {
@@ -390,6 +420,7 @@ function laprTestStatus(array $data, Language $lang): void
         'ssh_username' => (string) ($testedEndpoint['ssh_username'] ?? ''),
         'ssh_auth_method' => (string) ($testedEndpoint['ssh_auth_method'] ?? 'password'),
         'credential_item_id' => (int) ($taskArgs['credential_item_id'] ?? 0),
+        'self_target' => $selfTarget,
         'fingerprint' => (string) ($output['fingerprint'] ?? ''),
         'os_info' => $output['os_info'] ?? [],
         'capabilities' => $output['capabilities'] ?? [],
@@ -405,6 +436,7 @@ function laprTestStatus(array $data, Language $lang): void
         'fingerprint' => (string) ($output['fingerprint'] ?? ''),
         'os_info' => $output['os_info'] ?? [],
         'capabilities' => $output['capabilities'] ?? [],
+        'self_target' => $selfTarget,
         'snapshot' => $signed['payload'],
         'snapshot_sig' => $signed['sig'],
     ], 'encode');
@@ -421,15 +453,17 @@ function laprTestStatus(array $data, Language $lang): void
  * and the host-key-skip choice are honoured from the save form.
  *
  * @param array    $data     Decoded client payload
+ * @param SessionInterface $session Current user session
  * @param int      $userId   Acting user id
  * @param array    $SETTINGS TeamPass settings (allowlist re-check)
  * @param Language $lang     Language helper
  * @return void
  */
-function laprAddEndpoint(array $data, int $userId, array $SETTINGS, Language $lang): void
+function laprAddEndpoint(array $data, SessionInterface $session, int $userId, array $SETTINGS, Language $lang): void
 {
     $label = trim((string) ($data['label'] ?? ''));
     $skipHostkey = (int) ($data['skip_hostkey_verification'] ?? 0) === 1 ? 1 : 0;
+    $selfManagementAcknowledged = (int) ($data['self_management_ack'] ?? 0) === 1;
     $snapshot = (array) ($data['snapshot'] ?? []);
     $snapshotSig = (string) ($data['snapshot_sig'] ?? '');
 
@@ -451,10 +485,55 @@ function laprAddEndpoint(array $data, int $userId, array $SETTINGS, Language $la
         return;
     }
 
+    // Revalidate the credential item at the save boundary. Folder access or
+    // item state may have changed since the asynchronous SSH test started.
+    $credentialItem = DB::queryFirstRow(
+        'SELECT id, id_tree, perso FROM ' . prefixTable('items') . '
+         WHERE id = %i AND inactif = 0 AND deleted_at IS NULL',
+        $credentialItemId
+    );
+    if ($credentialItem === null || (int) $credentialItem['perso'] === 1
+        || laprUserCanReadFolder((int) $credentialItem['id_tree'], $session) === false
+    ) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+        return;
+    }
+
     // Defence in depth: re-check the allowlist against the (snapshot) hostname, in case
     // the allowlist changed between test and save, or the snapshot predates a tightening.
     if (laprIsHostnameAllowed($hostname, $SETTINGS) === false) {
         echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_hostname_not_allowed')], 'encode');
+        return;
+    }
+
+    if (laprEndpointTargetExists($hostname, $port) === true) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_endpoint_already_enrolled')], 'encode');
+        return;
+    }
+
+    $selfTarget = laprClassifySelfTarget($hostname, $SETTINGS);
+    if ($selfTarget['is_self'] === true) {
+        if ((int) ($SETTINGS['lapr_allow_self_management'] ?? 0) !== 1) {
+            echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_self_management_blocked')], 'encode');
+            return;
+        }
+        if ($selfManagementAcknowledged === false) {
+            echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_self_management_ack_required')], 'encode');
+            return;
+        }
+    }
+
+    $credentialConflict = laprEndpointCredentialConflict($credentialItemId, $authMethod);
+    if ($credentialConflict === 'managed_item') {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_managed_item_cannot_be_credential')], 'encode');
+        return;
+    }
+    if ($credentialConflict === 'shared_password') {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_password_credential_already_used')], 'encode');
+        return;
+    }
+    if ($credentialConflict === 'mixed_auth') {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_credential_auth_method_conflict')], 'encode');
         return;
     }
 
@@ -466,7 +545,9 @@ function laprAddEndpoint(array $data, int $userId, array $SETTINGS, Language $la
     }
 
     $fingerprint = (string) ($snapshot['fingerprint'] ?? '');
-    $osInfo = json_encode($snapshot['os_info'] ?? [], JSON_UNESCAPED_SLASHES);
+    $osInfoPayload = is_array($snapshot['os_info'] ?? null) ? $snapshot['os_info'] : [];
+    $osInfoPayload['lapr_self_target'] = $selfTarget;
+    $osInfo = json_encode($osInfoPayload, JSON_UNESCAPED_SLASHES);
     $capabilities = json_encode($snapshot['capabilities'] ?? [], JSON_UNESCAPED_SLASHES);
 
     DB::insert(prefixTable('lapr_endpoints'), [
@@ -492,6 +573,8 @@ function laprAddEndpoint(array $data, int $userId, array $SETTINGS, Language $la
         'hostname' => $hostname,
         'port' => $port,
         'hostkey_verified' => $skipHostkey === 1 ? 0 : 1,
+        'self_target' => $selfTarget['is_self'],
+        'self_target_confidence' => $selfTarget['confidence'],
     ], 'success', null);
 
     echo prepareExchangedData([
