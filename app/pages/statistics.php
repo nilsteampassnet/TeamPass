@@ -683,6 +683,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
                     <div class='tab-pane fade' id='tp-ops-lapr' role='tabpanel' aria-labelledby='tp-ops-lapr-tab'>
                         <div class='alert alert-info py-2' id='tp-lapr-availability' style='display:none;'></div>
+                        <div id='tp-lapr-content'>
                         <div class='alert alert-light border py-2'>
                             <i class='fas fa-info-circle text-info mr-1'></i><?php echo $lang->get('ops_lapr_snapshot_note'); ?>
                             <span class='d-block small text-muted mt-1'><?php echo $lang->get('ops_lapr_filters_not_applicable'); ?></span>
@@ -808,6 +809,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                     </table>
                                 </div>
                             </div>
+                        </div>
                         </div>
                     </div>
                 </div>
