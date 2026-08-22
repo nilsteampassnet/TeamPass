@@ -84,6 +84,7 @@ $laprEndpointTranslations = [
     'statusError' => $lang->get('lapr_status_error'),
     'statusUnreachable' => $lang->get('lapr_status_unreachable'),
     'statusDeleted' => $lang->get('lapr_status_deleted'),
+    'selfManagementAckRequired' => $lang->get('lapr_self_management_ack_required'),
 ];
 ?>
 <script>
@@ -278,10 +279,22 @@ function laprOpenEndpointModal() {
   $('#lapr-ep-auth-method').val('password')
   $('#lapr-ep-skip-hostkey').prop('checked', false)
   $('#lapr-ep-skip-hostkey-warning').hide()
+  $('#lapr-ep-self-management-ack').prop('checked', false)
+  $('#lapr-ep-self-management-warning').hide()
   $('#lapr-ep-test-result').hide().html('')
   $('#lapr-ep-save-btn').prop('disabled', true)
   laprInitCredentialPicker()
   $('#modal_lapr_endpoint').modal('show')
+}
+
+function laprRefreshEndpointSaveState() {
+  const snapshot = laprVerifiedSnapshot && laprVerifiedSnapshot.snapshot
+    ? laprVerifiedSnapshot.snapshot
+    : null
+  const canRotate = !!(snapshot && snapshot.can_rotate === true)
+  const isSelfTarget = !!(snapshot && snapshot.self_target && snapshot.self_target.is_self === true)
+  const selfTargetAccepted = !isSelfTarget || $('#lapr-ep-self-management-ack').is(':checked')
+  $('#lapr-ep-save-btn').prop('disabled', !canRotate || !selfTargetAccepted)
 }
 
 /**
@@ -404,6 +417,9 @@ function laprPollTest(taskId) {
       return
     }
     laprVerifiedSnapshot = { snapshot: data.snapshot, snapshot_sig: data.snapshot_sig }
+    const isSelfTarget = !!(data.self_target && data.self_target.is_self === true)
+    $('#lapr-ep-self-management-ack').prop('checked', false)
+    $('#lapr-ep-self-management-warning').toggle(isSelfTarget)
     let html = '<div class="text-success"><i class="fas fa-check mr-1"></i>' + laprLang.testSuccess + '</div>'
     html += '<div class="small mt-1"><strong>' + laprLang.hostkeyFingerprint + ':</strong> <code>' + DOMPurify.sanitize(data.fingerprint || '') + '</code></div>'
     html += '<div class="small text-muted">' + laprLang.hostkeyTofu + '</div>'
@@ -412,7 +428,7 @@ function laprPollTest(taskId) {
       html += laprBuildCapabilityRemediation(data)
     }
     $('#lapr-ep-test-result').html(html)
-    $('#lapr-ep-save-btn').prop('disabled', data.can_rotate !== true)
+    laprRefreshEndpointSaveState()
   })
 }
 
@@ -422,7 +438,13 @@ function laprSaveEndpoint() {
     return
   }
   const form = laprCollectEndpointForm()
+  const isSelfTarget = !!(laprVerifiedSnapshot.snapshot.self_target && laprVerifiedSnapshot.snapshot.self_target.is_self === true)
+  if (isSelfTarget && !$('#lapr-ep-self-management-ack').is(':checked')) {
+    toastr.warning(laprLang.selfManagementAckRequired)
+    return
+  }
   form.skip_hostkey_verification = $('#lapr-ep-skip-hostkey').is(':checked') ? 1 : 0
+  form.self_management_ack = $('#lapr-ep-self-management-ack').is(':checked') ? 1 : 0
   form.snapshot = laprVerifiedSnapshot.snapshot
   form.snapshot_sig = laprVerifiedSnapshot.snapshot_sig
   laprPost('add_endpoint', form, function (data) {
@@ -463,6 +485,7 @@ $(document).ready(function () {
   $('#lapr-ep-skip-hostkey').on('change', function () {
     $('#lapr-ep-skip-hostkey-warning').toggle($(this).is(':checked'))
   })
+  $('#lapr-ep-self-management-ack').on('change', laprRefreshEndpointSaveState)
   $(document).on('click', '#lapr-copy-remediation', function () {
     if (!laprRemediationCommands) { return }
     if (navigator.clipboard && window.isSecureContext) {
