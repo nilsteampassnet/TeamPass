@@ -531,6 +531,7 @@ class DatabaseInstaller
             array('admin', 'lapr_enabled', '0'),
             array('admin', 'lapr_allowlist_enabled', '0'),
             array('admin', 'lapr_allowlist', ''),
+            array('admin', 'lapr_allow_self_management', '0'),
             array('admin', 'lapr_ssh_connect_timeout', '10'),
             array('admin', 'lapr_rate_limit_max_attempts', '5'),
             array('admin', 'lapr_rate_limit_window_seconds', '60'),
