@@ -203,6 +203,10 @@ var TP_HEALTH_L10N = {
     lapr_issue_capability_missing: "<?php echo addslashes($lang->get('lapr_monitor_issue_capability_missing')); ?>",
     lapr_issue_duplicate_endpoint: "<?php echo addslashes($lang->get('lapr_monitor_issue_duplicate_endpoint')); ?>",
     lapr_issue_shared_credential: "<?php echo addslashes($lang->get('lapr_monitor_issue_shared_credential')); ?>",
+    lapr_issue_shared_password_credential: "<?php echo addslashes($lang->get('lapr_monitor_issue_shared_password_credential')); ?>",
+    lapr_issue_duplicate_managed_target: "<?php echo addslashes($lang->get('lapr_monitor_issue_duplicate_managed_target')); ?>",
+    lapr_issue_managed_key_credential: "<?php echo addslashes($lang->get('lapr_monitor_issue_managed_key_credential')); ?>",
+    lapr_issue_self_managed_endpoint: "<?php echo addslashes($lang->get('lapr_monitor_issue_self_managed_endpoint')); ?>",
     lapr_issue_endpoint_missing: "<?php echo addslashes($lang->get('lapr_monitor_issue_endpoint_missing')); ?>",
     lapr_issue_managed_item_missing: "<?php echo addslashes($lang->get('lapr_monitor_issue_managed_item_missing')); ?>",
     lapr_issue_managed_item_unavailable: "<?php echo addslashes($lang->get('lapr_monitor_issue_managed_item_unavailable')); ?>",
@@ -458,6 +462,31 @@ function tpRenderLapr(report) {
     var scheduler = lapr.scheduler || {};
     var reasonText = tpLaprReasonText(overall.reason || '');
 
+    if (lapr.enabled === false) {
+        $('#health-lapr-status').html(tpStatusToBadge('info'));
+        $('#health-lapr-endpoints,#health-lapr-accounts,#health-lapr-operators').text('—');
+        $('#health-lapr-scheduler').html(tpStatusToBadge('info'));
+        $('#health-lapr-disabled-grants').hide().text('');
+        $('#health-lapr-availability')
+            .removeClass('alert-warning alert-danger')
+            .addClass('alert-info')
+            .text(TP_HEALTH_L10N.lapr_module_disabled)
+            .show();
+        $('#health-lapr-account-states').html(
+            '<tr><td colspan="2" class="text-center text-muted">' + tpEscapeHtml(TP_HEALTH_L10N.lapr_module_disabled) + '</td></tr>'
+        );
+        $('#health-lapr-scheduler-details').html(
+            tpLaprDetailRow(TP_HEALTH_L10N.lapr_status, TP_HEALTH_L10N.lapr_module_disabled)
+        );
+        $('#health-lapr-action-items').html(
+            '<tr><td colspan="4" class="text-center text-muted">' + tpEscapeHtml(TP_HEALTH_L10N.lapr_module_disabled) + '</td></tr>'
+        );
+        $('#health-lapr-recent-failures').html(
+            '<tr><td colspan="5" class="text-center text-muted">' + tpEscapeHtml(TP_HEALTH_L10N.lapr_module_disabled) + '</td></tr>'
+        );
+        return;
+    }
+
     $('#health-lapr-status').html(tpStatusToBadge(overall.status || 'info'));
     $('#health-lapr-endpoints').text(Number(endpoints.active || 0) + '/' + Number(endpoints.total || 0));
     $('#health-lapr-accounts').text(Number(accounts.compliant || 0) + '/' + Number(accounts.total || 0));
@@ -601,6 +630,10 @@ function tpLaprIssueText(code) {
         capability_missing: TP_HEALTH_L10N.lapr_issue_capability_missing,
         duplicate_endpoint: TP_HEALTH_L10N.lapr_issue_duplicate_endpoint,
         shared_credential: TP_HEALTH_L10N.lapr_issue_shared_credential,
+        shared_password_credential: TP_HEALTH_L10N.lapr_issue_shared_password_credential,
+        duplicate_managed_target: TP_HEALTH_L10N.lapr_issue_duplicate_managed_target,
+        managed_key_credential: TP_HEALTH_L10N.lapr_issue_managed_key_credential,
+        self_managed_endpoint: TP_HEALTH_L10N.lapr_issue_self_managed_endpoint,
         endpoint_missing: TP_HEALTH_L10N.lapr_issue_endpoint_missing,
         managed_item_missing: TP_HEALTH_L10N.lapr_issue_managed_item_missing,
         managed_item_unavailable: TP_HEALTH_L10N.lapr_issue_managed_item_unavailable,
