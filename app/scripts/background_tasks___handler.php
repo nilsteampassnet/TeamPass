@@ -496,18 +496,22 @@ class BackgroundTasksHandler {
      */
     private function handleScheduledLAPRRotations(): void
     {
-        if ((int) $this->getSettingValue('lapr_enabled', '0') !== 1
-            || (int) $this->getSettingValue('lapr_scheduler_enabled', '0') !== 1
+        if ((int) $this->getSettingValue('lapr_enabled', '0', 'admin') !== 1
+            || (int) $this->getSettingValue('lapr_scheduler_enabled', '0', 'admin') !== 1
         ) {
             return;
         }
 
         $now = time();
-        $intervalMinutes = max(1, (int) $this->getSettingValue('lapr_scheduler_interval_minutes', '5'));
-        $nextRunAt = (int) $this->getSettingValue('lapr_scheduler_next_run_at', '0');
+        $intervalMinutes = max(1, (int) $this->getSettingValue('lapr_scheduler_interval_minutes', '5', 'admin'));
+        $nextRunAt = (int) $this->getSettingValue('lapr_scheduler_next_run_at', '0', 'admin');
 
         if ($nextRunAt <= 0) {
-            $this->upsertSettingValue('lapr_scheduler_next_run_at', (string) ($now + $intervalMinutes * 60));
+            $this->upsertSettingValue(
+                'lapr_scheduler_next_run_at',
+                (string) ($now + $intervalMinutes * 60),
+                'admin'
+            );
             return;
         }
         if ($now < $nextRunAt) {
@@ -573,7 +577,11 @@ class BackgroundTasksHandler {
             ++$enqueuedCount;
         }
 
-        $this->upsertSettingValue('lapr_scheduler_next_run_at', (string) ($now + $intervalMinutes * 60));
+        $this->upsertSettingValue(
+            'lapr_scheduler_next_run_at',
+            (string) ($now + $intervalMinutes * 60),
+            'admin'
+        );
         if (LOG_TASKS === true) {
             $this->logger->log('LAPR scheduler: enqueued ' . $enqueuedCount . ' due account(s)', 'INFO');
         }
@@ -707,16 +715,17 @@ class BackgroundTasksHandler {
     }
 
     /**
-     * Read a setting from teampass_misc (type='settings', intitule=key).
+     * Read a setting from teampass_misc.
      */
-    private function getSettingValue(string $key, string $default = ''): string
+    private function getSettingValue(string $key, string $default = '', string $type = 'settings'): string
     {
         $table = prefixTable('misc');
+        $type = $type === 'admin' ? 'admin' : 'settings';
 
         // Schéma TeamPass classique: misc(type, intitule, valeur)
         $val = DB::queryFirstField(
             'SELECT valeur FROM ' . $table . ' WHERE type = %s AND intitule = %s LIMIT 1',
-            'settings',
+            $type,
             $key
         );
 
@@ -728,26 +737,30 @@ class BackgroundTasksHandler {
     }
 
     /**
-     * Upsert a setting into teampass_misc (type='settings', intitule=key).
+     * Upsert a setting into teampass_misc.
      */
-    private function upsertSettingValue(string $key, string $value): void
+    private function upsertSettingValue(string $key, string $value, string $type = 'settings'): void
     {
         $table = prefixTable('misc');
+        $type = $type === 'admin' ? 'admin' : 'settings';
 
         $exists = intval(DB::queryFirstField(
             'SELECT COUNT(*) FROM ' . $table . ' WHERE type = %s AND intitule = %s',
-            'settings',
+            $type,
             $key
         ));
 
         if ($exists > 0) {
-            DB::update($table, ['valeur' => $value], 'type = %s AND intitule = %s', 'settings', $key);
+            DB::update($table, ['valeur' => $value], 'type = %s AND intitule = %s', $type, $key);
         } else {
-            DB::insert($table, ['type' => 'settings', 'intitule' => $key, 'valeur' => $value]);
+            DB::insert($table, ['type' => $type, 'intitule' => $key, 'valeur' => $value]);
         }
 
         // keep in memory too
         $this->settings[$key] = $value;
+        if ($type === 'admin') {
+            ConfigManager::invalidateCache();
+        }
     }
 
     /**
@@ -1282,7 +1295,7 @@ class BackgroundTasksHandler {
      */
     private function cleanLAPRMaintenance(): void
     {
-        $retentionDays = (int) $this->getSettingValue('lapr_audit_retention_days', '365');
+        $retentionDays = (int) $this->getSettingValue('lapr_audit_retention_days', '365', 'admin');
         if ($retentionDays > 0) {
             $cutoff = date('Y-m-d H:i:s', time() - $retentionDays * 86400);
             try {
