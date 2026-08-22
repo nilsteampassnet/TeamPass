@@ -777,11 +777,25 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         var accounts = lapr.accounts || {};
         var rotations = lapr.rotations || {};
         var $availability = $('#tp-lapr-availability');
-        var hasLaprData = !!lapr.enabled
-            || parseInt(endpoints.total || 0, 10) > 0
-            || parseInt(accounts.total || 0, 10) > 0
-            || parseInt(rotations.total || 0, 10) > 0;
-        $('#tp-ops-lapr-tab').closest('li').toggle(hasLaprData);
+        $('#tp-ops-lapr-tab').closest('li').show();
+
+        if (lapr.enabled === false) {
+            $('#tp-lapr-content').hide();
+            $('#tp-lapr-kpi-endpoints,#tp-lapr-kpi-accounts,#tp-lapr-kpi-rotations,#tp-lapr-kpi-success-rate').text('—');
+            $('#tp-lapr-retention-warning,#tp-lapr-worker-warning').hide();
+            $('#tp-lapr-endpoints-body').html("<tr><td colspan='5' class='text-center text-muted'><?php echo addslashes($lang->get('lapr_monitor_module_disabled')); ?></td></tr>");
+            ['laprRotations', 'laprStates', 'laprFailures', 'laprPolicies'].forEach(function(chartKey) {
+                if (tpOpsCharts[chartKey]) {
+                    tpOpsCharts[chartKey].destroy();
+                    tpOpsCharts[chartKey] = null;
+                }
+            });
+            $availability.removeClass('alert-danger alert-warning').addClass('alert-info')
+                .text("<?php echo addslashes($lang->get('lapr_monitor_module_disabled')); ?>").show();
+            return;
+        }
+
+        $('#tp-lapr-content').show();
 
         if (lapr.error) {
             $availability.removeClass('alert-info alert-warning').addClass('alert-danger')
