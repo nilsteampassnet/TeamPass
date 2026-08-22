@@ -135,7 +135,15 @@ function laprMonitoringFailureCategory(string $errorCode): string
     if ($errorCode === 'ERR_SERVER_KEY') {
         return 'encryption';
     }
-    if (in_array($errorCode, ['ERR_INVALID_USERNAME', 'ERR_HOSTNAME_NOT_ALLOWED', 'ERR_ACCOUNT_NOT_FOUND'], true)) {
+    if (in_array($errorCode, [
+        'ERR_INVALID_USERNAME',
+        'ERR_HOSTNAME_NOT_ALLOWED',
+        'ERR_ACCOUNT_NOT_FOUND',
+        'ERR_KEY_CREDENTIAL_MANAGED',
+        'ERR_CREDENTIAL_RELATION_CONFLICT',
+        'ERR_SHARED_PASSWORD_CREDENTIAL',
+        'ERR_DUPLICATE_ENDPOINT_TARGET',
+    ], true)) {
         return 'configuration';
     }
 
@@ -152,6 +160,10 @@ function laprMonitoringFailureCategory(string $errorCode): string
 function laprBuildMonitoringSnapshot(array $settings, int $nowTs): array
 {
     $enabled = (int) ($settings['lapr_enabled'] ?? 0) === 1;
+    if ($enabled === false) {
+        return laprMonitoringDisabledSnapshot();
+    }
+
     $requiredTables = [
         prefixTable('lapr_endpoints'),
         prefixTable('lapr_accounts'),
@@ -186,7 +198,8 @@ function laprBuildMonitoringSnapshot(array $settings, int $nowTs): array
 
     $endpointRows = DB::query(
         'SELECT endpoint.id, endpoint.label, endpoint.hostname, endpoint.port,
-                endpoint.ssh_credential_source, endpoint.capabilities,
+                endpoint.ssh_auth_method, endpoint.ssh_credential_source,
+                endpoint.os_info, endpoint.capabilities,
                 endpoint.ssh_hostkey_verified, endpoint.status,
                 credential_item.id AS credential_item_id,
                 credential_item.inactif AS credential_item_inactive,
@@ -227,6 +240,8 @@ function laprBuildMonitoringSnapshot(array $settings, int $nowTs): array
         'incapable' => 0,
         'duplicate_targets' => 0,
         'shared_credentials' => 0,
+        'shared_password_credentials' => 0,
+        'self_targets' => 0,
     ];
     $accountCounts = [
         'total' => count($accountRows),
@@ -239,10 +254,12 @@ function laprBuildMonitoringSnapshot(array $settings, int $nowTs): array
         'compliant' => 0,
         'attention' => 0,
         'compliance_pct' => 0,
+        'duplicate_targets' => 0,
     ];
     $issues = [];
     $targetMap = [];
     $credentialMap = [];
+    $keyCredentialItems = [];
     $invalidEndpointIds = [];
 
     foreach ($endpointRows as $endpoint) {
@@ -255,6 +272,14 @@ function laprBuildMonitoringSnapshot(array $settings, int $nowTs): array
             ++$endpointCounts['problem'];
             $invalidEndpointIds[$endpointId] = true;
             laprMonitoringAddIssue($issues, 'danger', 'endpoint_inactive', $endpointLabel, '', $endpointId, null);
+        }
+
+        $osInfo = json_decode((string) ($endpoint['os_info'] ?? ''), true) ?: [];
+        $storedSelfTarget = (bool) ($osInfo['lapr_self_target']['is_self'] ?? false);
+        $runtimeSelfTarget = laprClassifySelfTarget((string) $endpoint['hostname'], $settings);
+        if ($storedSelfTarget === true || $runtimeSelfTarget['is_self'] === true) {
+            ++$endpointCounts['self_targets'];
+            laprMonitoringAddIssue($issues, 'warning', 'self_managed_endpoint', $endpointLabel, '', $endpointId, null);
         }
 
         if ((int) $endpoint['ssh_hostkey_verified'] !== 1) {
@@ -282,11 +307,21 @@ function laprBuildMonitoringSnapshot(array $settings, int $nowTs): array
             laprMonitoringAddIssue($issues, 'danger', 'capability_missing', $endpointLabel, '', $endpointId, null);
         }
 
-        $targetKey = strtolower(trim((string) $endpoint['hostname'])) . ':' . (int) $endpoint['port'];
+        $targetKey = laprNormalizeHostname((string) $endpoint['hostname']) . ':' . (int) $endpoint['port'];
         $targetMap[$targetKey][] = ['id' => $endpointId, 'label' => $endpointLabel];
         $credentialId = (int) ($endpoint['ssh_credential_source'] ?? 0);
-        if ($credentialId > 0 && $endpointStatus === 'active') {
-            $credentialMap[$credentialId][] = ['id' => $endpointId, 'label' => $endpointLabel];
+        if ($credentialId > 0) {
+            $authMethod = (string) ($endpoint['ssh_auth_method'] ?? 'password');
+            if ($authMethod === 'key') {
+                $keyCredentialItems[$credentialId] = true;
+            }
+            if ($endpointStatus === 'active') {
+                $credentialMap[$credentialId][] = [
+                    'id' => $endpointId,
+                    'label' => $endpointLabel,
+                    'auth_method' => $authMethod,
+                ];
+            }
         }
     }
 
@@ -295,9 +330,12 @@ function laprBuildMonitoringSnapshot(array $settings, int $nowTs): array
             continue;
         }
         ++$endpointCounts['duplicate_targets'];
+        foreach ($endpoints as $duplicateEndpoint) {
+            $invalidEndpointIds[(int) $duplicateEndpoint['id']] = true;
+        }
         laprMonitoringAddIssue(
             $issues,
-            'warning',
+            'danger',
             'duplicate_endpoint',
             implode(', ', array_column($endpoints, 'label')),
             '',
@@ -310,14 +348,52 @@ function laprBuildMonitoringSnapshot(array $settings, int $nowTs): array
             continue;
         }
         ++$endpointCounts['shared_credentials'];
+        $containsPassword = count(array_filter(
+            $endpoints,
+            static fn (array $endpoint): bool => (string) ($endpoint['auth_method'] ?? '') === 'password'
+        )) > 0;
+        if ($containsPassword === true) {
+            ++$endpointCounts['shared_password_credentials'];
+        }
         laprMonitoringAddIssue(
             $issues,
-            'warning',
-            'shared_credential',
+            $containsPassword ? 'danger' : 'warning',
+            $containsPassword ? 'shared_password_credential' : 'shared_credential',
             implode(', ', array_column($endpoints, 'label')),
             '',
             (int) $endpoints[0]['id'],
             null
+        );
+    }
+
+    $managedTargetMap = [];
+    foreach ($accountRows as $account) {
+        $targetKey = (int) $account['endpoint_id'] . ':' . trim((string) $account['username_cache']);
+        $managedTargetMap[$targetKey][] = [
+            'id' => (int) $account['id'],
+            'endpoint_id' => (int) $account['endpoint_id'],
+            'endpoint_label' => (string) ($account['endpoint_label'] ?? ''),
+            'username' => (string) $account['username_cache'],
+        ];
+    }
+    $duplicateAccountIds = [];
+    foreach ($managedTargetMap as $accountsForTarget) {
+        if (count($accountsForTarget) < 2) {
+            continue;
+        }
+        ++$accountCounts['duplicate_targets'];
+        foreach ($accountsForTarget as $duplicateAccount) {
+            $duplicateAccountIds[(int) $duplicateAccount['id']] = true;
+        }
+        $firstDuplicate = $accountsForTarget[0];
+        laprMonitoringAddIssue(
+            $issues,
+            'danger',
+            'duplicate_managed_target',
+            (string) $firstDuplicate['endpoint_label'],
+            (string) $firstDuplicate['username'],
+            (int) $firstDuplicate['endpoint_id'],
+            (int) $firstDuplicate['id']
         );
     }
 
@@ -326,7 +402,20 @@ function laprBuildMonitoringSnapshot(array $settings, int $nowTs): array
         $username = (string) $account['username_cache'];
         $accountId = (int) $account['id'];
         $endpointId = (int) $account['endpoint_id'];
-        $accountIntegrityError = isset($invalidEndpointIds[$endpointId]);
+        $accountIntegrityError = isset($invalidEndpointIds[$endpointId]) || isset($duplicateAccountIds[$accountId]);
+
+        if (isset($keyCredentialItems[(int) ($account['item_id'] ?? 0)]) === true) {
+            $accountIntegrityError = true;
+            laprMonitoringAddIssue(
+                $issues,
+                'danger',
+                'managed_key_credential',
+                $endpointLabel,
+                $username,
+                $endpointId,
+                $accountId
+            );
+        }
 
         if (empty($account['endpoint_id_resolved']) === true) {
             $accountIntegrityError = true;
@@ -404,10 +493,7 @@ function laprBuildMonitoringSnapshot(array $settings, int $nowTs): array
 
     $overallStatus = 'success';
     $overallReason = 'healthy';
-    if ($enabled === false) {
-        $overallStatus = 'info';
-        $overallReason = 'module_disabled';
-    } elseif ($integrityCounts['critical'] > 0) {
+    if ($integrityCounts['critical'] > 0) {
         $overallStatus = 'danger';
         $overallReason = 'action_required';
     } elseif ($integrityCounts['warning'] > 0) {
@@ -480,6 +566,9 @@ function laprBuildOperationalStatistics(
     $snapshot = laprBuildMonitoringSnapshot($settings, $toTs);
     if ((bool) ($snapshot['available'] ?? false) === false) {
         return $snapshot;
+    }
+    if ((bool) ($snapshot['enabled'] ?? false) === false) {
+        return laprMonitoringEmptyStatisticsPayload($snapshot, $fromTs, $toTs, $settings);
     }
 
     $fromDate = date('Y-m-d H:i:s', $fromTs);
@@ -690,6 +779,20 @@ function laprMonitoringScheduler(array $settings, int $nowTs, int $graceSeconds)
     $intervalMinutes = max(1, (int) ($settings['lapr_scheduler_interval_minutes'] ?? 5));
     $nextRunAt = max(0, (int) ($settings['lapr_scheduler_next_run_at'] ?? 0));
 
+    if ($moduleEnabled === false) {
+        return [
+            'enabled' => false,
+            'status' => 'info',
+            'reason' => 'module_disabled',
+            'interval_minutes' => 0,
+            'next_run_at' => 0,
+            'pending' => 0,
+            'running' => 0,
+            'failed_24h' => 0,
+            'oldest_pending_at' => 0,
+        ];
+    }
+
     $pending = (int) DB::queryFirstField(
         'SELECT COUNT(*) FROM ' . prefixTable('background_tasks') . '
          WHERE process_type = %s AND is_in_progress = 0
@@ -723,9 +826,9 @@ function laprMonitoringScheduler(array $settings, int $nowTs, int $graceSeconds)
 
     $status = 'success';
     $reason = 'healthy';
-    if ($moduleEnabled === false || $enabled === false) {
+    if ($enabled === false) {
         $status = 'info';
-        $reason = $moduleEnabled === false ? 'module_disabled' : 'scheduler_disabled';
+        $reason = 'scheduler_disabled';
     } elseif ($nextRunAt > 0 && $nextRunAt < ($nowTs - $graceSeconds)) {
         $status = 'danger';
         $reason = 'scheduler_overdue';
@@ -829,6 +932,8 @@ function laprMonitoringEmptySnapshot(bool $enabled, string $reason): array
             'incapable' => 0,
             'duplicate_targets' => 0,
             'shared_credentials' => 0,
+            'shared_password_credentials' => 0,
+            'self_targets' => 0,
         ],
         'accounts' => [
             'total' => 0,
@@ -841,6 +946,7 @@ function laprMonitoringEmptySnapshot(bool $enabled, string $reason): array
             'compliant' => 0,
             'attention' => 0,
             'compliance_pct' => 0,
+            'duplicate_targets' => 0,
         ],
         'operators' => [
             'active' => 0,
@@ -864,4 +970,49 @@ function laprMonitoringEmptySnapshot(bool $enabled, string $reason): array
         'recent_failures' => [],
         'grace_seconds' => 0,
     ];
+}
+
+/**
+ * Return the stable, intentionally neutral monitoring contract used while the
+ * module is disabled. No LAPR tables are queried to build this snapshot.
+ *
+ * @return array<string,mixed>
+ */
+function laprMonitoringDisabledSnapshot(): array
+{
+    $snapshot = laprMonitoringEmptySnapshot(false, 'module_disabled');
+    $snapshot['available'] = true;
+
+    return $snapshot;
+}
+
+/**
+ * Add the complete statistics contract to a neutral LAPR snapshot.
+ *
+ * @param array<string,mixed> $snapshot
+ * @param array<string,mixed> $settings
+ *
+ * @return array<string,mixed>
+ */
+function laprMonitoringEmptyStatisticsPayload(array $snapshot, int $fromTs, int $toTs, array $settings): array
+{
+    return array_merge($snapshot, [
+        'period' => [
+            'from' => $fromTs,
+            'to' => $toTs,
+            'retention_days' => max(0, (int) ($settings['lapr_audit_retention_days'] ?? 365)),
+            'retention_limited' => false,
+        ],
+        'rotations' => [
+            'total' => 0,
+            'successes' => 0,
+            'failures' => 0,
+            'success_rate' => null,
+            'worker_failures' => 0,
+            'series' => ['labels' => [], 'successes' => [], 'failures' => []],
+        ],
+        'failure_categories' => [],
+        'top_endpoints' => [],
+        'policies' => [],
+    ]);
 }
