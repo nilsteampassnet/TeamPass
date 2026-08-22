@@ -110,7 +110,7 @@ switch ($post_type) {
         laprListPoliciesOptions($lang);
         break;
     case 'add_account':
-        laprAddAccount($dataReceived, $session, $userId, $lang);
+        laprAddAccount($dataReceived, $session, $userId, $lang, $SETTINGS);
         break;
     case 'delete_account':
         laprDeleteAccount($dataReceived, $userId, $lang);
@@ -152,7 +152,7 @@ function laprListAccounts(Language $lang, array $settings): void
     $rows = DB::query(
         'SELECT a.id, a.username_cache, a.status, a.last_rotation_at, a.last_rotation_status,
                 a.next_rotation_at, a.policy_id, a.item_id,
-                e.label AS ep_label, e.hostname, e.status AS ep_status,
+                e.label AS ep_label, e.hostname, e.os_info, e.status AS ep_status,
                 p.label AS policy_label, p.frequency_days AS policy_frequency_days,
                 p.is_preset AS policy_is_preset
          FROM ' . prefixTable('lapr_accounts') . ' AS a
@@ -188,6 +188,9 @@ function laprListAccounts(Language $lang, array $settings): void
                 );
             }
         }
+        $osInfo = json_decode((string) ($r['os_info'] ?? ''), true) ?: [];
+        $storedSelfTarget = (bool) ($osInfo['lapr_self_target']['is_self'] ?? false);
+        $runtimeSelfTarget = laprClassifySelfTarget((string) $r['hostname'], $settings);
 
         $data[] = [
             'id' => (int) $r['id'],
@@ -202,6 +205,7 @@ function laprListAccounts(Language $lang, array $settings): void
             'last_rotation_status' => $r['last_rotation_status'],
             'next_rotation_at' => $nextRotationAt['display'],
             'next_rotation_at_ts' => $nextRotationAt['timestamp'],
+            'is_self_target' => $storedSelfTarget || $runtimeSelfTarget['is_self'],
         ];
     }
 
@@ -356,15 +360,23 @@ function laprFindManageableItems(SessionInterface $session, array $data, int $li
 
 /**
  * Add a managed account. Validates the item (accessible, writable folder,
- * non-personal, valid Linux username) and computes the first next_rotation_at.
+ * non-personal, valid Linux username), computes the first next_rotation_at,
+ * and queues an enrollment rotation when requested by the policy.
  *
- * @param array            $data    Decoded client payload
- * @param SessionInterface $session Current session
- * @param int              $userId  Acting user id
- * @param Language         $lang    Language helper
+ * @param array               $data     Decoded client payload
+ * @param SessionInterface    $session  Current session
+ * @param int                 $userId   Acting user id
+ * @param Language            $lang     Language helper
+ * @param array<string,mixed> $settings TeamPass settings used for self-target detection
  * @return void
  */
-function laprAddAccount(array $data, SessionInterface $session, int $userId, Language $lang): void
+function laprAddAccount(
+    array $data,
+    SessionInterface $session,
+    int $userId,
+    Language $lang,
+    array $settings
+): void
 {
     $endpointId = (int) ($data['endpoint_id'] ?? 0);
     $itemId = (int) ($data['item_id'] ?? 0);
@@ -376,7 +388,8 @@ function laprAddAccount(array $data, SessionInterface $session, int $userId, Lan
     }
 
     $endpoint = DB::queryFirstRow(
-        'SELECT id FROM ' . prefixTable('lapr_endpoints') . ' WHERE id = %i AND status = %s',
+        'SELECT id, hostname, os_info, ssh_username, ssh_auth_method, ssh_credential_source
+         FROM ' . prefixTable('lapr_endpoints') . ' WHERE id = %i AND status = %s',
         $endpointId,
         'active'
     );
@@ -423,39 +436,67 @@ function laprAddAccount(array $data, SessionInterface $session, int $userId, Lan
         return;
     }
 
+    if (laprRemoteAccountAlreadyManaged($endpointId, $login, $existing === null ? 0 : (int) $existing['id']) === true) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_remote_account_already_managed')], 'encode');
+        return;
+    }
+
+    $credentialConflict = laprManagedItemCredentialConflict($itemId, $endpointId, $login);
+    if ($credentialConflict === 'key_credential') {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_key_credential_cannot_be_managed')], 'encode');
+        return;
+    }
+    if ($credentialConflict === 'password_credential') {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_credential_item_wrong_managed_account')], 'encode');
+        return;
+    }
+
     // Resolve frequency for the first next_rotation_at.
     $frequencyDays = LAPR_DEFAULT_FREQUENCY_DAYS;
+    $rotateOnEnroll = false;
     if ($policyId > 0) {
         $policy = DB::queryFirstRow(
-            'SELECT frequency_days FROM ' . prefixTable('lapr_policies') . ' WHERE id = %i',
+            'SELECT frequency_days, rotate_on_enroll FROM ' . prefixTable('lapr_policies') . ' WHERE id = %i',
             $policyId
         );
         if ($policy !== null) {
             $frequencyDays = (int) $policy['frequency_days'];
+            $rotateOnEnroll = (int) $policy['rotate_on_enroll'] === 1;
         } else {
             $policyId = 0;
         }
     }
     $nextRotation = laprComputeNextRotation(null, $frequencyDays);
+    $osInfo = json_decode((string) ($endpoint['os_info'] ?? ''), true) ?: [];
+    $storedSelfTarget = (bool) ($osInfo['lapr_self_target']['is_self'] ?? false);
+    $runtimeSelfTarget = laprClassifySelfTarget((string) $endpoint['hostname'], $settings);
+    $isSelfTarget = $storedSelfTarget || $runtimeSelfTarget['is_self'];
+    $queueEnrollmentRotation = laprShouldQueueEnrollmentRotation($rotateOnEnroll, $isSelfTarget);
 
     $reactivated = $existing !== null;
-    if ($reactivated === true) {
-        $accountId = (int) $existing['id'];
-        DB::update(prefixTable('lapr_accounts'), [
-            'endpoint_id' => $endpointId,
-            'username_cache' => $login,
-            'policy_id' => $policyId > 0 ? $policyId : null,
-            'last_rotation_at' => null,
-            'last_rotation_status' => 'never',
-            'last_rotation_error' => null,
-            'next_rotation_at' => $nextRotation,
-            'retry_count' => 0,
-            'retry_at' => null,
-            'status' => 'active',
-            'updated_by' => $userId,
-        ], 'id = %i', $accountId);
-    } else {
-        try {
+    $accountId = $reactivated === true ? (int) $existing['id'] : 0;
+    $rotationTaskId = 0;
+
+    // Account creation/reactivation, audit, and the optional enrollment task
+    // form one contract. A queueing failure must not leave an active account
+    // whose requested first rotation was silently lost.
+    DB::startTransaction();
+    try {
+        if ($reactivated === true) {
+            DB::update(prefixTable('lapr_accounts'), [
+                'endpoint_id' => $endpointId,
+                'username_cache' => $login,
+                'policy_id' => $policyId > 0 ? $policyId : null,
+                'last_rotation_at' => null,
+                'last_rotation_status' => 'never',
+                'last_rotation_error' => null,
+                'next_rotation_at' => $nextRotation,
+                'retry_count' => 0,
+                'retry_at' => null,
+                'status' => 'active',
+                'updated_by' => $userId,
+            ], 'id = %i', $accountId);
+        } else {
             DB::insert(prefixTable('lapr_accounts'), [
                 'endpoint_id' => $endpointId,
                 'item_id' => $itemId,
@@ -467,7 +508,47 @@ function laprAddAccount(array $data, SessionInterface $session, int $userId, Lan
                 'created_at' => date('Y-m-d H:i:s'),
             ]);
             $accountId = (int) DB::insertId();
-        } catch (MeekroDBException $exception) {
+        }
+
+        laprAuditLog('account_add', $endpointId, $userId, [
+            'item_id' => $itemId,
+            'username' => $login,
+            'policy_id' => $policyId,
+            'reactivated' => $reactivated,
+        ], 'success', $accountId);
+
+        if ($queueEnrollmentRotation === true) {
+            // A reactivated row may still have a pending task. Reuse it instead
+            // of creating two workers for the same managed account.
+            $rotationTaskId = (int) DB::queryFirstField(
+                'SELECT increment_id FROM ' . prefixTable('background_tasks') . '
+                 WHERE process_type = %s AND item_id = %i AND is_in_progress IN (0,1)
+                 AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)
+                 ORDER BY increment_id DESC LIMIT 1',
+                'lapr_rotation',
+                $accountId
+            );
+            if ($rotationTaskId <= 0) {
+                DB::insert(prefixTable('background_tasks'), [
+                    'created_at' => (string) time(),
+                    'process_type' => 'lapr_rotation',
+                    'arguments' => json_encode([
+                        'account_id' => $accountId,
+                        'trigger' => 'enroll',
+                        'author' => $userId,
+                    ], JSON_UNESCAPED_SLASHES),
+                    'is_in_progress' => 0,
+                    'item_id' => $accountId,
+                    'status' => 'new',
+                ]);
+                $rotationTaskId = (int) DB::insertId();
+            }
+        }
+
+        DB::commit();
+    } catch (MeekroDBException $exception) {
+        DB::rollback();
+        if ($reactivated === false) {
             // A concurrent request may have claimed the same item after the
             // availability check. Return a controlled conflict, not HTTP 500.
             $conflictingAccountId = (int) DB::queryFirstField(
@@ -478,18 +559,25 @@ function laprAddAccount(array $data, SessionInterface $session, int $userId, Lan
                 echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_item_already_managed')], 'encode');
                 return;
             }
-            throw $exception;
         }
+        throw $exception;
+    } catch (Throwable $exception) {
+        DB::rollback();
+        throw $exception;
     }
 
-    laprAuditLog('account_add', $endpointId, $userId, [
-        'item_id' => $itemId,
-        'username' => $login,
-        'policy_id' => $policyId,
-        'reactivated' => $reactivated,
-    ], 'success', $accountId);
+    if ($queueEnrollmentRotation === true) {
+        triggerBackgroundHandler();
+    }
 
-    echo prepareExchangedData(['error' => false, 'message' => $lang->get('lapr_account_added'), 'id' => $accountId], 'encode');
+    echo prepareExchangedData([
+        'error' => false,
+        'message' => $lang->get('lapr_account_added'),
+        'id' => $accountId,
+        'task_id' => $rotationTaskId,
+        'rotation_queued' => $rotationTaskId > 0,
+        'rotation_skipped_manual_only' => $rotateOnEnroll === true && $isSelfTarget === true,
+    ], 'encode');
 }
 
 /**
@@ -522,6 +610,27 @@ function laprDeleteAccount(array $data, int $userId, Language $lang): void
         'status' => 'deleted',
         'updated_by' => $userId,
     ], 'id = %i', $accountId);
+
+    // A removed relationship must not retain an executable rotation. Complete
+    // every task that has not started yet; a worker already running performs a
+    // fresh account-state check immediately before the remote password change.
+    $timestamp = time();
+    DB::update(prefixTable('background_tasks'), [
+        'is_in_progress' => -1,
+        'finished_at' => $timestamp,
+        'updated_at' => $timestamp,
+        'status' => 'completed',
+        'output' => json_encode([
+            'success' => false,
+            'error_code' => 'ERR_ACCOUNT_DELETED',
+            'message' => 'ACCOUNT_REMOVED',
+        ], JSON_UNESCAPED_SLASHES),
+    ], 'process_type = %s AND item_id = %i AND is_in_progress = 0
+        AND (finished_at IS NULL OR finished_at = %s OR finished_at = 0)',
+        'lapr_rotation',
+        $accountId,
+        ''
+    );
 
     laprAuditLog('account_add', (int) $account['endpoint_id'], $userId, ['deleted' => true], 'success', $accountId);
 
