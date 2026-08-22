@@ -104,6 +104,10 @@ class LaprMonitoringLogicTest extends TestCase
         self::assertSame('password_change', laprMonitoringFailureCategory('ERR_CHPASSWD_FAILED'));
         self::assertSame('synchronization', laprMonitoringFailureCategory('ERR_ITEM_UPDATE_FAILED'));
         self::assertSame('synchronization', laprMonitoringFailureCategory('ERR_SSH_CREDENTIAL_SYNC_FAILED'));
+        self::assertSame('configuration', laprMonitoringFailureCategory('ERR_KEY_CREDENTIAL_MANAGED'));
+        self::assertSame('configuration', laprMonitoringFailureCategory('ERR_CREDENTIAL_RELATION_CONFLICT'));
+        self::assertSame('configuration', laprMonitoringFailureCategory('ERR_SHARED_PASSWORD_CREDENTIAL'));
+        self::assertSame('configuration', laprMonitoringFailureCategory('ERR_DUPLICATE_ENDPOINT_TARGET'));
         self::assertSame('other', laprMonitoringFailureCategory('ERR_FUTURE_CODE'));
     }
 
@@ -142,16 +146,33 @@ class LaprMonitoringLogicTest extends TestCase
 
     public function testDisabledSchedulerIsNotPromotedToAHealthFailure(): void
     {
-        $source = file_get_contents(__DIR__ . '/../../app/sources/lapr.monitoring.functions.php');
-        self::assertIsString($source);
-        self::assertStringNotContainsString(
-            "&& (bool) \$scheduler['enabled'] === false",
-            $source
+        $snapshot = laprMonitoringDisabledSnapshot();
+
+        self::assertTrue($snapshot['available']);
+        self::assertFalse($snapshot['enabled']);
+        self::assertSame('info', $snapshot['overall']['status']);
+        self::assertSame('module_disabled', $snapshot['overall']['reason']);
+        self::assertSame(0, $snapshot['endpoints']['total']);
+        self::assertSame(0, $snapshot['accounts']['total']);
+        self::assertSame([], $snapshot['action_items']);
+        self::assertSame([], $snapshot['recent_failures']);
+    }
+
+    public function testDisabledStatisticsPayloadKeepsACompleteNeutralContract(): void
+    {
+        $payload = laprMonitoringEmptyStatisticsPayload(
+            laprMonitoringDisabledSnapshot(),
+            100,
+            200,
+            ['lapr_audit_retention_days' => 90]
         );
-        self::assertStringContainsString(
-            "\$reason = \$moduleEnabled === false ? 'module_disabled' : 'scheduler_disabled';",
-            $source
-        );
+
+        self::assertSame(['labels' => [], 'successes' => [], 'failures' => []], $payload['rotations']['series']);
+        self::assertNull($payload['rotations']['success_rate']);
+        self::assertSame([], $payload['failure_categories']);
+        self::assertSame([], $payload['top_endpoints']);
+        self::assertSame([], $payload['policies']);
+        self::assertFalse($payload['period']['retention_limited']);
     }
 
     public function testCredentialSynchronizationFailureCannotBeReportedAsRotationSuccess(): void
@@ -161,5 +182,24 @@ class LaprMonitoringLogicTest extends TestCase
         self::assertStringContainsString("'ERR_SSH_CREDENTIAL_SYNC_FAILED'", $source);
         self::assertStringContainsString("'SSH_CREDENTIAL_RESYNC_REQUIRED'", $source);
         self::assertStringContainsString("], 'failure', \$accountId, 'ERR_SSH_CREDENTIAL_SYNC_FAILED'", $source);
+        self::assertStringContainsString("(string) \$account['ssh_auth_method'] === 'password'", $source);
+    }
+
+    public function testDisabledModuleAndUnsafeCredentialRelationsAreCheckedBeforeSshMutation(): void
+    {
+        $worker = file_get_contents(__DIR__ . '/../../app/scripts/background_tasks___worker.php');
+        $rotation = file_get_contents(__DIR__ . '/../../app/scripts/traits/LAPRRotationTrait.php');
+        self::assertIsString($worker);
+        self::assertIsString($rotation);
+
+        self::assertStringContainsString("strpos(\$this->processType, 'lapr_') === 0", $worker);
+        self::assertStringContainsString("'ERR_LAPR_DISABLED'", $worker);
+        self::assertStringContainsString('laprManagedItemCredentialConflict(', $rotation);
+        self::assertStringContainsString("'ERR_KEY_CREDENTIAL_MANAGED'", $rotation);
+        self::assertStringContainsString('if (laprIsModuleEnabledFresh() === false)', $rotation);
+        self::assertLessThan(
+            strpos($rotation, '$service->changePassword('),
+            strrpos($rotation, 'if (laprIsModuleEnabledFresh() === false)')
+        );
     }
 }
