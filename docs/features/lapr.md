@@ -147,6 +147,10 @@ Generated passwords are always filtered to be **safe for `chpasswd`** — no `:`
 - The **scheduler** rotates due accounts automatically when enabled.
 - **History** shows a per-account, read-only, paginated timeline of every rotation, retry, suspension and reset.
 
+LAPR configuration is stored in the `admin` namespace of `teampass_misc`. The background handler reads the module switch, scheduler switch, interval, next-run timestamp, and audit-retention value from that same namespace. When `lapr_scheduler_next_run_at` is `0`, the first handler pass initializes it; due rotations are evaluated on a following pass after the configured interval.
+
+To test an overdue rotation, keep the TeamPass host, database, and targets synchronized to the real time. Make one test account due and set the LAPR scheduler next-run timestamp to the past instead of changing the operating-system clocks. Large clock jumps can legitimately make every stored due date appear overdue and can also disturb sessions, logs, certificates, and distributed services.
+
 Endpoint checks, last and next rotations, and history timestamps use the TeamPass-configured timezone, date format, and time format. The web handlers, background scheduler, and worker share this timezone. Date columns keep chronological sorting independently of the selected regional display format.
 
 Editing an item's password never triggers an implicit remote operation. A rotation is always explicit (or scheduler-driven), runs as a background task, and preserves the SSH-first safety model described below.
