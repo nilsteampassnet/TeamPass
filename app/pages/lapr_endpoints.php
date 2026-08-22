@@ -174,6 +174,14 @@ date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
                     <small class="form-text text-danger" id="lapr-ep-skip-hostkey-warning" style="display:none;"><?php echo $lang->get('lapr_skip_hostkey_warning'); ?></small>
                 </div>
 
+                <div class="alert alert-danger" id="lapr-ep-self-management-warning" style="display:none;">
+                    <div><i class="fas fa-triangle-exclamation mr-1"></i><?php echo $lang->get('lapr_self_management_warning'); ?></div>
+                    <div class="custom-control custom-checkbox mt-2">
+                        <input type="checkbox" class="custom-control-input" id="lapr-ep-self-management-ack">
+                        <label class="custom-control-label" for="lapr-ep-self-management-ack"><?php echo $lang->get('lapr_self_management_ack'); ?></label>
+                    </div>
+                </div>
+
                 <div id="lapr-ep-test-result" style="display:none;" class="mt-3"></div>
             </div>
             <div class="modal-footer justify-content-between">
