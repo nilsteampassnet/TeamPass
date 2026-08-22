@@ -182,6 +182,17 @@ class OperationalStatisticsPageTest extends TestCase
         self::assertStringContainsString("type: 'horizontalBar'", $javascript);
     }
 
+    public function testDisabledLaprTabRemainsVisibleAndClearsResidualMetrics(): void
+    {
+        $javascript = $this->javascript();
+
+        self::assertStringContainsString("$('#tp-ops-lapr-tab').closest('li').show()", $javascript);
+        self::assertStringContainsString('if (lapr.enabled === false)', $javascript);
+        self::assertStringContainsString("$('#tp-lapr-content').hide()", $javascript);
+        self::assertStringContainsString("tpOpsCharts[chartKey].destroy()", $javascript);
+        self::assertStringNotContainsString('.toggle(hasLaprData)', $javascript);
+    }
+
     // -------------------------------------------------------- chart.js contract
 
     public function testChartConfigurationTargetsTheBundledChartJsVersion(): void
