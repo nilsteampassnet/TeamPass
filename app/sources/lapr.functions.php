@@ -239,6 +239,215 @@ function laprIsHostnameAllowed(string $hostname, array $SETTINGS): bool
 }
 
 /**
+ * Normalize a hostname or IP address before LAPR compares endpoint targets.
+ *
+ * @param string $hostname Hostname or IP address
+ *
+ * @return string
+ */
+function laprNormalizeHostname(string $hostname): string
+{
+    $normalized = strtolower(trim($hostname));
+    if (strlen($normalized) > 1 && $normalized[0] === '[' && substr($normalized, -1) === ']') {
+        $normalized = substr($normalized, 1, -1);
+    }
+
+    return rtrim($normalized, '.');
+}
+
+/**
+ * Identify targets that are certainly or probably the TeamPass host itself.
+ *
+ * This deliberately relies on local/configured identifiers instead of DNS:
+ * DNS can be slow, mutable, and ambiguous behind proxies or containers.
+ * Strong local identifiers are classified as confirmed; the public TeamPass
+ * URL and the current HTTP host are classified as suspected because a reverse
+ * proxy may terminate them on another machine.
+ *
+ * @param string                   $hostname Target hostname or IP
+ * @param array<string,mixed>      $settings TeamPass settings
+ * @param array<string,mixed>|null $server   HTTP server variables (injectable for tests)
+ *
+ * @return array{is_self: bool, confidence: string, reason: string}
+ */
+function laprClassifySelfTarget(string $hostname, array $settings, ?array $server = null): array
+{
+    $target = laprNormalizeHostname($hostname);
+    if ($target === '') {
+        return ['is_self' => false, 'confidence' => 'none', 'reason' => ''];
+    }
+
+    if ($target === 'localhost' || $target === '::1'
+        || (filter_var($target, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false
+            && strpos($target, '127.') === 0)
+    ) {
+        return ['is_self' => true, 'confidence' => 'confirmed', 'reason' => 'loopback'];
+    }
+
+    $server = $server ?? $_SERVER;
+    $confirmed = [];
+    foreach ([gethostname(), php_uname('n'), $server['SERVER_ADDR'] ?? ''] as $candidate) {
+        $candidate = laprNormalizeHostname((string) $candidate);
+        if ($candidate !== '') {
+            $confirmed[$candidate] = true;
+        }
+    }
+    if (isset($confirmed[$target]) === true) {
+        return ['is_self' => true, 'confidence' => 'confirmed', 'reason' => 'local_host'];
+    }
+
+    $suspected = [];
+    $configuredUrl = trim((string) ($settings['cpassman_url'] ?? ''));
+    if ($configuredUrl !== '') {
+        if (strpos($configuredUrl, '://') === false) {
+            $configuredUrl = 'https://' . ltrim($configuredUrl, '/');
+        }
+        $configuredHost = parse_url($configuredUrl, PHP_URL_HOST);
+        if (is_string($configuredHost) === true && $configuredHost !== '') {
+            $suspected[laprNormalizeHostname($configuredHost)] = 'configured_url';
+        }
+    }
+    foreach (['HTTP_HOST', 'SERVER_NAME'] as $serverKey) {
+        $candidate = trim((string) ($server[$serverKey] ?? ''));
+        if ($candidate === '') {
+            continue;
+        }
+        $parsedHost = parse_url('http://' . $candidate, PHP_URL_HOST);
+        if (is_string($parsedHost) === true && $parsedHost !== '') {
+            $suspected[laprNormalizeHostname($parsedHost)] = 'request_host';
+        }
+    }
+    if (isset($suspected[$target]) === true) {
+        return ['is_self' => true, 'confidence' => 'suspected', 'reason' => $suspected[$target]];
+    }
+
+    return ['is_self' => false, 'confidence' => 'none', 'reason' => ''];
+}
+
+/**
+ * Read the LAPR master switch directly from the database.
+ *
+ * Background workers use this instead of their cached settings immediately
+ * before an SSH mutation, so disabling LAPR is authoritative without waiting
+ * for the ConfigManager cache to expire.
+ *
+ * @return bool
+ */
+function laprIsModuleEnabledFresh(): bool
+{
+    return (int) DB::queryFirstField(
+        'SELECT valeur FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s',
+        'admin',
+        'lapr_enabled'
+    ) === 1;
+}
+
+/**
+ * Whether another non-deleted endpoint targets the same normalized host and port.
+ */
+function laprEndpointTargetExists(string $hostname, int $port, int $excludeEndpointId = 0): bool
+{
+    $sql = 'SELECT COUNT(*) FROM ' . prefixTable('lapr_endpoints') . '
+            WHERE LOWER(TRIM(TRAILING \'.\' FROM hostname)) = %s AND port = %i AND status != %s';
+    if ($excludeEndpointId > 0) {
+        $sql .= ' AND id != %i';
+        return (int) DB::queryFirstField(
+            $sql,
+            laprNormalizeHostname($hostname),
+            $port,
+            'deleted',
+            $excludeEndpointId
+        ) > 0;
+    }
+
+    return (int) DB::queryFirstField($sql, laprNormalizeHostname($hostname), $port, 'deleted') > 0;
+}
+
+/**
+ * Return the unsafe relationship preventing an item from becoming a new
+ * endpoint credential, or an empty string when the relationship is safe.
+ *
+ * Private keys may intentionally be shared by a fleet. Password credentials
+ * may not: synchronizing one rotated SSH password would invalidate access to
+ * every other endpoint still holding the old password.
+ */
+function laprEndpointCredentialConflict(int $itemId, string $authMethod): string
+{
+    $managed = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('lapr_accounts') . '
+         WHERE item_id = %i AND status != %s',
+        $itemId,
+        'deleted'
+    );
+    if ($managed > 0) {
+        return 'managed_item';
+    }
+
+    $credentialEndpoints = DB::query(
+        'SELECT ssh_auth_method FROM ' . prefixTable('lapr_endpoints') . '
+         WHERE ssh_credential_source = %i AND status != %s',
+        $itemId,
+        'deleted'
+    );
+    if ($authMethod === 'password' && count($credentialEndpoints) > 0) {
+        return 'shared_password';
+    }
+    if ($authMethod === 'key') {
+        foreach ($credentialEndpoints as $endpoint) {
+            if ((string) $endpoint['ssh_auth_method'] !== 'key') {
+                return 'mixed_auth';
+            }
+        }
+    }
+
+    return '';
+}
+
+/**
+ * Return the unsafe credential role preventing an item from being managed as
+ * a Linux password. The only safe overlap is the password credential of this
+ * same endpoint for this same SSH login.
+ */
+function laprManagedItemCredentialConflict(int $itemId, int $endpointId, string $username): string
+{
+    $credentialEndpoints = DB::query(
+        'SELECT id, ssh_username, ssh_auth_method
+         FROM ' . prefixTable('lapr_endpoints') . '
+         WHERE ssh_credential_source = %i AND status != %s',
+        $itemId,
+        'deleted'
+    );
+    foreach ($credentialEndpoints as $endpoint) {
+        if ((string) $endpoint['ssh_auth_method'] === 'key') {
+            return 'key_credential';
+        }
+        if ((int) $endpoint['id'] !== $endpointId
+            || trim((string) $endpoint['ssh_username']) !== trim($username)
+        ) {
+            return 'password_credential';
+        }
+    }
+
+    return '';
+}
+
+/**
+ * A physical Linux login may only have one active LAPR managed-account row on
+ * an endpoint, even when several TeamPass items happen to use that login.
+ */
+function laprRemoteAccountAlreadyManaged(int $endpointId, string $username, int $excludeAccountId = 0): bool
+{
+    $sql = 'SELECT COUNT(*) FROM ' . prefixTable('lapr_accounts') . '
+            WHERE endpoint_id = %i AND username_cache = %s AND status != %s';
+    if ($excludeAccountId > 0) {
+        $sql .= ' AND id != %i';
+        return (int) DB::queryFirstField($sql, $endpointId, $username, 'deleted', $excludeAccountId) > 0;
+    }
+
+    return (int) DB::queryFirstField($sql, $endpointId, $username, 'deleted') > 0;
+}
+
+/**
  * Server-side validation of a managed account username (risk R1 — mandatory
  * before every rotation and at account add; item.login is free text).
  *
@@ -348,6 +557,22 @@ function laprIsPasswordSafeForLinux(string $password): bool
 
     return preg_match('/^[\x21-\x7E]+$/', $password) === 1
         && preg_match('/[:\\\\\'"]/', $password) !== 1;
+}
+
+/**
+ * Whether adding a managed account must enqueue its first rotation.
+ *
+ * TeamPass self-targets are intentionally manual-only even when their policy
+ * requests rotation on enrollment.
+ *
+ * @param bool $rotateOnEnroll Policy flag
+ * @param bool $isSelfTarget   Whether the endpoint appears to host TeamPass
+ *
+ * @return bool
+ */
+function laprShouldQueueEnrollmentRotation(bool $rotateOnEnroll, bool $isSelfTarget): bool
+{
+    return $rotateOnEnroll === true && $isSelfTarget === false;
 }
 
 /**
@@ -689,7 +914,7 @@ function laprGetItemRelations(array $itemIds, array $SETTINGS): array
     $managedRows = DB::query(
         'SELECT a.id, a.item_id, a.username_cache, a.status, a.next_rotation_at,
                 a.last_rotation_status, e.id AS endpoint_id, e.label AS endpoint_label,
-                e.hostname, e.status AS endpoint_status, p.label AS policy_label,
+                e.hostname, e.os_info, e.status AS endpoint_status, p.label AS policy_label,
                 p.frequency_days AS policy_frequency_days, p.is_preset AS policy_is_preset
          FROM ' . prefixTable('lapr_accounts') . ' AS a
          LEFT JOIN ' . prefixTable('lapr_endpoints') . ' AS e ON e.id = a.endpoint_id
@@ -703,6 +928,9 @@ function laprGetItemRelations(array $itemIds, array $SETTINGS): array
         if (isset($relations[$itemId]) === false) {
             continue;
         }
+        $osInfo = json_decode((string) ($row['os_info'] ?? ''), true) ?: [];
+        $storedSelfTarget = (bool) ($osInfo['lapr_self_target']['is_self'] ?? false);
+        $runtimeSelfTarget = laprClassifySelfTarget((string) ($row['hostname'] ?? ''), $SETTINGS);
         $relations[$itemId]['is_managed'] = true;
         $relations[$itemId]['managed_account'] = [
             'id' => (int) $row['id'],
@@ -714,6 +942,7 @@ function laprGetItemRelations(array $itemIds, array $SETTINGS): array
             'endpoint_label' => (string) $row['endpoint_label'],
             'hostname' => (string) $row['hostname'],
             'endpoint_status' => (string) $row['endpoint_status'],
+            'is_self_target' => $storedSelfTarget || $runtimeSelfTarget['is_self'],
             'policy_label' => (string) ($row['policy_label'] ?? ''),
             'policy_frequency_days' => (int) ($row['policy_frequency_days'] ?? 0),
             'policy_is_preset' => (int) ($row['policy_is_preset'] ?? 0) === 1,
