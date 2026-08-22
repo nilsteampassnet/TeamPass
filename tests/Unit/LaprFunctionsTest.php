@@ -21,6 +21,7 @@ use TeampassClasses\Language\Language;
  *   - laprPolicyDisplayName()       (localized built-in presets)
  *   - laprIsPasswordSafeForLinux()  (R9 — chpasswd corruption guard)
  *   - laprValidatePolicyParams()    (Point 3 bounds)
+ *   - laprShouldQueueEnrollmentRotation() (rotate-on-enrollment safety)
  *   - laprComputeNextRotation()     (scheduling)
  *   - laprIsHostnameAllowed()       (R3 — SSRF allowlist)
  *   - LAPRSshService::computeFingerprint() (TOFU)
@@ -313,6 +314,17 @@ class LaprFunctionsTest extends TestCase
     }
 
     // =========================================================================
+    // laprShouldQueueEnrollmentRotation
+    // =========================================================================
+
+    public function testEnrollmentRotationIsQueuedOnlyWhenRequestedForARemoteEndpoint(): void
+    {
+        $this->assertTrue(laprShouldQueueEnrollmentRotation(true, false));
+        $this->assertFalse(laprShouldQueueEnrollmentRotation(false, false));
+        $this->assertFalse(laprShouldQueueEnrollmentRotation(true, true));
+    }
+
+    // =========================================================================
     // laprComputeNextRotation
     // =========================================================================
 
@@ -418,6 +430,41 @@ class LaprFunctionsTest extends TestCase
         $this->assertTrue(laprIsHostnameAllowed('db.example.com', $settings));
         $this->assertFalse(laprIsHostnameAllowed('example.com', $settings));      // suffix requires a subdomain
         $this->assertFalse(laprIsHostnameAllowed('evil.example.org', $settings));
+    }
+
+    public function testSelfTargetDetectionConfirmsLoopbackAddresses(): void
+    {
+        foreach (['localhost', '127.0.0.1', '127.12.34.56', '::1', '[::1]'] as $hostname) {
+            $classification = laprClassifySelfTarget($hostname, [], []);
+            $this->assertTrue($classification['is_self'], $hostname);
+            $this->assertSame('confirmed', $classification['confidence'], $hostname);
+            $this->assertSame('loopback', $classification['reason'], $hostname);
+        }
+    }
+
+    public function testConfiguredTeamPassUrlIsAConservativeSelfTargetSignal(): void
+    {
+        $classification = laprClassifySelfTarget(
+            'vault.example.test.',
+            ['cpassman_url' => 'https://vault.example.test/teampass'],
+            []
+        );
+
+        $this->assertTrue($classification['is_self']);
+        $this->assertSame('suspected', $classification['confidence']);
+        $this->assertSame('configured_url', $classification['reason']);
+    }
+
+    public function testUnrelatedEndpointIsNotClassifiedAsTheTeamPassHost(): void
+    {
+        $classification = laprClassifySelfTarget(
+            'linux-01.example.test',
+            ['cpassman_url' => 'https://vault.example.test'],
+            ['HTTP_HOST' => 'vault.example.test', 'SERVER_ADDR' => '192.0.2.10']
+        );
+
+        $this->assertFalse($classification['is_self']);
+        $this->assertSame('none', $classification['confidence']);
     }
 
     // =========================================================================
