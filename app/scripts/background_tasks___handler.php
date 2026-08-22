@@ -33,6 +33,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 
 require_once __DIR__.'/../sources/main.functions.php';
 require_once __DIR__ . '/../sources/backup.functions.php';
+require_once __DIR__ . '/../sources/lapr.functions.php';
 require_once __DIR__ . '/taskLogger.php';
 
 class BackgroundTasksHandler {
@@ -517,7 +518,7 @@ class BackgroundTasksHandler {
         // and (retry gating) retry_at not in the future.
         $nowStr = date('Y-m-d H:i:s', $now);
         $dueAccounts = DB::query(
-            'SELECT a.id
+            'SELECT a.id, e.hostname, e.os_info
              FROM ' . prefixTable('lapr_accounts') . ' AS a
              INNER JOIN ' . prefixTable('lapr_endpoints') . ' AS e ON e.id = a.endpoint_id
              WHERE a.status = %s AND e.status = %s
@@ -531,8 +532,19 @@ class BackgroundTasksHandler {
             $nowStr
         );
 
+        $enqueuedCount = 0;
         foreach ($dueAccounts as $account) {
             $accountId = (int) $account['id'];
+
+            // Managing the TeamPass host itself remains a manual-only break-
+            // glass operation. Never let the scheduler rotate the account that
+            // may be required to repair TeamPass or its background handler.
+            $osInfo = json_decode((string) ($account['os_info'] ?? ''), true) ?: [];
+            $storedSelfTarget = (bool) ($osInfo['lapr_self_target']['is_self'] ?? false);
+            $runtimeSelfTarget = laprClassifySelfTarget((string) $account['hostname'], $this->settings);
+            if ($storedSelfTarget === true || $runtimeSelfTarget['is_self'] === true) {
+                continue;
+            }
 
             // Dedup: skip if a rotation task is already pending/running (C12, indexed item_id).
             $pending = (int) DB::queryFirstField(
@@ -558,11 +570,12 @@ class BackgroundTasksHandler {
                 'item_id' => $accountId,
                 'status' => 'new',
             ]);
+            ++$enqueuedCount;
         }
 
         $this->upsertSettingValue('lapr_scheduler_next_run_at', (string) ($now + $intervalMinutes * 60));
         if (LOG_TASKS === true) {
-            $this->logger->log('LAPR scheduler: enqueued ' . count($dueAccounts) . ' due account(s)', 'INFO');
+            $this->logger->log('LAPR scheduler: enqueued ' . $enqueuedCount . ' due account(s)', 'INFO');
         }
     }
 
