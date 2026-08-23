@@ -51,6 +51,8 @@ function notificationPersistableEvents(): array
         'user_keys_ready',
         'task_completed',
         'folder_permission_changed',
+        'local_password_expiring',
+        'kb_article_created',
     ];
 }
 
@@ -116,12 +118,66 @@ function notificationSanitizePayload(string $eventType, array $payload): array
             }
             break;
 
+        case 'local_password_expiring':
+            $clean['days_remaining'] = min(36500, max(0, (int) ($payload['days_remaining'] ?? 0)));
+            $clean['threshold'] = min(36500, max(0, (int) ($payload['threshold'] ?? 0)));
+            $clean['expires_at'] = max(0, (int) ($payload['expires_at'] ?? 0));
+            break;
+
+        case 'kb_article_created':
+            $clean['kb_id'] = max(0, (int) ($payload['kb_id'] ?? 0));
+            $clean['label'] = mb_substr((string) ($payload['label'] ?? ''), 0, 200);
+            break;
+
         default:
             // Unknown type: store nothing rather than arbitrary data.
             break;
     }
 
     return $clean;
+}
+
+/**
+ * Select the warning milestone for a local password expiry.
+ *
+ * The returned value doubles as the notification's stable threshold. A user
+ * who first connects between milestones receives the closest applicable one,
+ * while the persistence dedupe key prevents it from being repeated on every
+ * page load.
+ *
+ * @param int $daysRemaining Whole days before expiry (0 or less means expired)
+ *
+ * @return int|null 14, 7, 3, 1, 0 (expired), or null when no warning is due
+ */
+function notificationPasswordExpiryThreshold(int $daysRemaining): ?int
+{
+    if ($daysRemaining <= 0) {
+        return 0;
+    }
+
+    foreach ([1, 3, 7, 14] as $threshold) {
+        if ($daysRemaining <= $threshold) {
+            return $threshold;
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Build the idempotency key for one password cycle and warning milestone.
+ */
+function notificationPasswordExpiryDedupeKey(int $expiresAt, int $threshold): string
+{
+    return 'local_password_expiry:' . max(0, $expiresAt) . ':' . max(0, $threshold);
+}
+
+/**
+ * Build the idempotency key for a knowledge-base publication fan-out.
+ */
+function notificationKbPublicationDedupeKey(int $kbId): string
+{
+    return 'kb_article_created:' . max(0, $kbId);
 }
 
 /**
