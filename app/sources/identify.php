@@ -1030,6 +1030,7 @@ function buildUserSession(
     $session->set('user-admin', (int) $userInfo['admin']);
     $session->set('user-manager', (int) $userInfo['gestionnaire']);
     $session->set('user-can_manage_all_users', $userInfo['can_manage_all_users']);
+    $session->set('user-can_manage_lapr', (int) ($userInfo['can_manage_lapr'] ?? 0));
     $session->set('user-read_only', $userInfo['read_only']);
     $session->set('user-last_pw_change', $userInfo['last_pw_change']);
     $session->set('user-last_pw', $userInfo['last_pw']);

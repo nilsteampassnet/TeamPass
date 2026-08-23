@@ -93,8 +93,8 @@ Before users can install and use the browser extension, administrators must conf
 
    This setting controls which browsers and extensions are allowed to call the TeamPass API.
 
-   > **What is CORS?**
-   > When a browser extension (or any web page) calls an external server, the browser checks whether the server explicitly authorises that origin. If not, the browser silently blocks the response — even though the request reached the server. This is a browser-enforced security mechanism; it does not apply to mobile apps or Postman/curl.
+> **What is CORS?**
+> When a browser extension (or any web page) calls an external server, the browser checks whether the server explicitly authorises that origin. If not, the browser silently blocks the response — even though the request reached the server. This is a browser-enforced security mechanism; it does not apply to mobile apps or Postman/curl.
 
    **Two operating modes:**
 
@@ -110,7 +110,7 @@ Before users can install and use the browser extension, administrators must conf
    chrome-extension://cnlomomlocpdfojipnpkhhndpdbcolfn, moz-extension://12345678-abcd-1234-abcd-1234567890ab
    ```
 
-   > ⚠️ Origins are case-sensitive and must not have a trailing slash.
+> ⚠️ Origins are case-sensitive and must not have a trailing slash.
 
 4. **Find your extension's origin (if you use the restricted mode)**:
 
@@ -126,7 +126,7 @@ Before users can install and use the browser extension, administrators must conf
    3. The **Internal UUID** appears in the extension details (e.g., `12345678-abcd-1234-abcd-1234567890ab`)
    4. The origin to enter is: `moz-extension://<UUID>`
 
-   > **Note for Firefox:** the internal UUID changes when the extension is reinstalled or when the Firefox profile is reset. If users report the extension suddenly failing, verify the UUID has not changed.
+> **Note for Firefox:** the internal UUID changes when the extension is reinstalled or when the Firefox profile is reset. If users report the extension suddenly failing, verify the UUID has not changed.
 
 5. **Navigate to the "Browser extension" tab**:
    - Click on the **"Browser extension"** tab
@@ -147,7 +147,7 @@ Before users can install and use the browser extension, administrators must conf
    - When **off** (default), only OAuth2/SSO users can have the extension auto-configured (token-based access is reserved to SSO accounts).
    - When **on**, **any** user (local, LDAP or SSO) can let TeamPass configure the extension automatically using a Personal Access Token. The user's password is never transmitted — a token that can be revoked at any time from the profile is used instead.
 
-   > This toggle only widens **who** can use the one-click setup. It does not change how the extension talks to the API, and it is fully opt-in.
+> This toggle only widens **who** can use the one-click setup. It does not change how the extension talks to the API, and it is fully opt-in.
 
 #### Security Guidelines
 
@@ -205,31 +205,23 @@ You can set the extension up **automatically** (recommended) or **manually**.
 
 #### Automatic configuration (recommended)
 
-> Requires **TeamPass 3.2.0+** and the administrator to have enabled auto-configuration
-> for your account (see *For Administrators → step 8*). OAuth2/SSO users are eligible by
-> default.
+> Requires **TeamPass 3.2.0+** and the administrator to have enabled auto-configuration for your account (see *For Administrators → step 8*). OAuth2/SSO users are eligible by default.
 
 **Method A — one click from TeamPass (extension detected):**
 
 1. Log in to TeamPass in the same browser where the extension is installed.
-2. If the extension is not configured yet, a prompt appears automatically — or open
-   **Profile → Configure my extension**.
-3. Click **"Configure my extension"**. A small confirmation window opens, showing the
-   server and the account that will be configured.
+2. If the extension is not configured yet, a prompt appears automatically — or open **Profile → Configure my extension**.
+3. Click **"Configure my extension"**. A small confirmation window opens, showing the server and the account that will be configured.
 4. Click **Confirm**. ✅ The extension is configured — no data entry required.
 
 **Method B — configuration file (extension not detected):**
 
-1. In TeamPass, open **Profile → Configure my extension** and click
-   **"Download configuration file"**. A `teampass-extension-config.json` file is saved.
+1. In TeamPass, open **Profile → Configure my extension** and click **"Download configuration file"**. A `teampass-extension-config.json` file is saved.
 2. **Right-click** the extension icon → **Options**.
-3. In the **"Quick setup"** section, click **"Import configuration file"** and pick the
-   downloaded file.
+3. In the **"Quick setup"** section, click **"Import configuration file"** and pick the downloaded file.
 4. Confirm in the window that opens. ✅ The extension is configured.
 
-   > ⚠️ The configuration file contains an access token that can unlock your account in
-   > the extension. Import it, then **delete the file**. You can revoke the token at any
-   > time from your TeamPass profile.
+> ⚠️ The configuration file contains an access token that can unlock your account in the extension. Import it, then **delete the file**. You can revoke the token at any time from your TeamPass profile.
 
 #### Manual configuration
 

@@ -465,6 +465,130 @@ class ItemController extends BaseController
     //end getAction()
 
     /**
+     * Changes to apply to a client cache since a given revision.
+     *
+     * Answers the question an offline client cannot answer on its own: which of my cached
+     * items are stale, and which ones must I drop. Cursor based rather than offset based —
+     * a change feed has no stable total to paginate over.
+     *
+     * @param array $userData
+     *
+     * @return void
+     */
+    public function changesAction(array $userData): void
+    {
+        $request = symfonyRequest::createFromGlobals();
+
+        if (strtoupper($request->getMethod()) !== 'GET') {
+            $this->sendProblemFromHeader(
+                'HTTP/1.1 405 Method Not Allowed',
+                'Method not supported',
+                ['Allow: GET']
+            );
+            return;
+        }
+
+        $arrQueryStringParams = $this->getQueryStringParams();
+
+        if (isset($arrQueryStringParams['since']) === false) {
+            $this->sendProblem(400, 'Parameter since is mandatory');
+            return;
+        }
+        $since = max(0, (int) $arrQueryStringParams['since']);
+        $limit = itemRevisionNormalizeLimit(
+            isset($arrQueryStringParams['limit']) ? (int) $arrQueryStringParams['limit'] : null
+        );
+
+        try {
+            $itemModel = new ItemModel();
+
+            $userPrivateKey = $this->getUserPrivateKey($userData);
+            if ($userPrivateKey === null) {
+                $this->sendProblemFromHeader(
+                    'HTTP/1.1 401 Unauthorized',
+                    'Invalid session or user keys not found'
+                );
+                return;
+            }
+
+            $bounds = $itemModel->getRevisionBounds();
+
+            // A cursor of 0, or one older than the retained journal, cannot be served by a
+            // delta: the client rebuilds its cache and adopts the cursor returned here.
+            if (itemRevisionNeedsFullSync($since, $bounds['min']) === true) {
+                $this->sendOutput(
+                    json_encode([
+                        'cursor' => $bounds['max'],
+                        'has_more' => false,
+                        'full_sync_required' => true,
+                        'changed' => [],
+                        'removed' => [],
+                    ]),
+                    ['Content-Type: application/json', 'HTTP/1.1 200 OK']
+                );
+                return;
+            }
+
+            // Same access rules as item/get, expressed on both the journal and the items.
+            $folderAccessModel = new FolderAccessModel();
+            $safeFolders = implode(
+                ',',
+                $folderAccessModel->normalizeFolderIds($userData['folders_list'] ?? '')
+            ) ?: '0';
+            $safeRestricted = '';
+            if (empty($userData['restricted_items_list']) === false) {
+                $safeRestricted = implode(
+                    ',',
+                    array_filter(array_map('intval', explode(',', (string) $userData['restricted_items_list'])))
+                );
+            }
+
+            // The journal is scoped on the folder the item was in *at change time* as well
+            // as the one it came from: that is what surfaces an item leaving the caller's
+            // folders, which its current row can no longer tell.
+            $journalScopeSql = ' AND (r.folder_id IN (' . $safeFolders . ')'
+                . ' OR r.previous_folder_id IN (' . $safeFolders . ')';
+            if ($safeRestricted !== '') {
+                $journalScopeSql .= ' OR r.item_id IN (' . $safeRestricted . ')';
+            }
+            $journalScopeSql .= ')';
+
+            $itemVisibilitySql = ' AND (i.id_tree IN (' . $safeFolders . ')';
+            if ($safeRestricted !== '') {
+                $itemVisibilitySql .= ' OR i.id IN (' . $safeRestricted . ')';
+            }
+            $itemVisibilitySql .= ')' . $folderAccessModel->getItemFolderSqlConstraint('i.id_tree', (int) $userData['id']);
+
+            $changes = $itemModel->getItemChanges(
+                $since,
+                $limit,
+                $journalScopeSql,
+                $itemVisibilitySql,
+                $userPrivateKey,
+                (int) $userData['id']
+            );
+
+            $this->sendOutput(
+                json_encode([
+                    'cursor' => $changes['cursor'],
+                    'has_more' => $changes['has_more'],
+                    'full_sync_required' => false,
+                    'changed' => $changes['changed'],
+                    'removed' => $changes['removed'],
+                ]),
+                ['Content-Type: application/json', 'HTTP/1.1 200 OK']
+            );
+        } catch (Error | Exception $e) {
+            error_log('ItemController::changesAction error: ' . $e->getMessage());
+            $this->sendProblemFromHeader(
+                'HTTP/1.1 500 Internal Server Error',
+                'Something went wrong. Please contact support.'
+            );
+        }
+    }
+    //end changesAction()
+
+    /**
      * Find items by URL
      * Searches for items matching a specific URL
      *
@@ -520,7 +644,7 @@ class ItemController extends BaseController
                 } else {
                     // Query items with the specific URL
                     $rows = DB::query(
-                        "SELECT i.id, i.label, i.login, i.url, i.id_tree, i.favicon_url,
+                        "SELECT i.id, i.label, i.login, i.url, i.id_tree, i.favicon_url, i.revision,
                                 CASE WHEN o.enabled = 1 THEN 1 ELSE 0 END AS has_otp
                         FROM " . prefixTable('items') . " AS i
                         LEFT JOIN " . prefixTable('items_otp') . " AS o ON (o.item_id = i.id)
@@ -554,6 +678,7 @@ class ItemController extends BaseController
 
                         $ret[] = [
                             'id' => (int) $row['id'],
+                            'revision' => (int) $row['revision'],
                             'label' => $row['label'],
                             'login' => $row['login'],
                             'url' => $row['url'],

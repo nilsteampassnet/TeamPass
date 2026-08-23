@@ -1146,9 +1146,10 @@ function launchConfirmDialog(
         true   // closeCross
     );
 
-    // Attach the callback to the action button
-    // We use .off() to ensure we don't stack events from previous calls
-    $(modalId + 'ButtonAction').off('click').on('click', function(event) {
+    // Attach the callback to the action button.
+    // .off('click') clears whatever a previous flow left on that shared button, and the
+    // namespace lets the modal release this one again when it closes.
+    $(modalId + 'ButtonAction').off('click').on('click.tpConfirmDialog', function(event) {
         // Other flows bind their own handlers on document for that same button. They are
         // delegated, so the .off() above does not reach them and they would run alongside
         // our callback. Stopping the propagation keeps this dialog self-contained.
@@ -1162,4 +1163,13 @@ function launchConfirmDialog(
         // Close the modal
         $(modalId).modal('hide');
     });
+
+    // Whatever closes the dialog - action, cancel or cross - the callback must go with it.
+    // Without this, a cancelled dialog leaves its callback bound and the next flow reusing
+    // this modal with its own namespaced handler would fire both.
+    $(modalId)
+        .off('hidden.bs.modal.tpConfirmDialog')
+        .one('hidden.bs.modal.tpConfirmDialog', function() {
+            $(modalId + 'ButtonAction').off('click.tpConfirmDialog');
+        });
 }

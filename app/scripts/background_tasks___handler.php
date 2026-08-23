@@ -33,6 +33,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 
 require_once __DIR__.'/../sources/main.functions.php';
 require_once __DIR__ . '/../sources/backup.functions.php';
+require_once __DIR__ . '/../sources/lapr.functions.php';
 require_once __DIR__ . '/taskLogger.php';
 
 class BackgroundTasksHandler {
@@ -49,6 +50,7 @@ class BackgroundTasksHandler {
 
     public function __construct(array $settings) {
         $this->settings = $settings;
+        date_default_timezone_set($this->settings['timezone'] ?? 'UTC');
         $this->logger = new TaskLogger($settings, LOG_TASKS_FILE);
         $this->maxParallelTasks = (int) ($settings['max_parallel_tasks'] ?? 2);
         $this->maxExecutionTime = (int) ($settings['task_maximum_run_time'] ?? 600);
@@ -92,7 +94,9 @@ class BackgroundTasksHandler {
             $this->handleScheduledDatabaseBackup();
             $this->handleScheduledExternalizedBackup();
             $this->handleScheduledInactiveUsersMgmt();
+            $this->handleScheduledLocalPasswordExpiryNotifications();
             $this->handleScheduledSecurityNudgeDigest();
+            $this->handleScheduledLAPRRotations();
             $this->drainTaskPool();
             $this->performMaintenanceTasks();
         } catch (Exception $e) {
@@ -121,6 +125,7 @@ class BackgroundTasksHandler {
         if ($resolvedOutputDir['success'] === false) {
             $this->upsertSettingValue('bck_scheduled_last_status', 'failed');
             $this->upsertSettingValue('bck_scheduled_last_message', 'Invalid output directory');
+            $this->notifyBackupSchedulerFailure('scheduled', 'invalid_output_directory', 'Invalid output directory');
             if (LOG_TASKS === true) {
                 $this->logger->log('backup scheduler: invalid output directory: ' . $outputDirSetting, 'ERROR');
             }
@@ -166,24 +171,35 @@ class BackgroundTasksHandler {
         if ($includeDocuments === 1) {
             $backupFormat = tpBackupGetPackageExtension();
         }
-        DB::insert(
-            prefixTable('background_tasks'),
-            [
-                'created_at' => (string)$now,
-                'process_type' => 'database_backup',
-                'arguments' => json_encode(
-                    [
-                        'output_dir' => $outputDir,
-                        'source' => 'scheduler',
-                        'backup_format' => $backupFormat,
-                        'include_documents' => $includeDocuments,
-                    ],
-                    JSON_UNESCAPED_SLASHES
-                ),
-                'is_in_progress' => 0,
-                'status' => 'new',
-            ]
-        );
+        try {
+            DB::insert(
+                prefixTable('background_tasks'),
+                [
+                    'created_at' => (string)$now,
+                    'process_type' => 'database_backup',
+                    'arguments' => json_encode(
+                        [
+                            'output_dir' => $outputDir,
+                            'source' => 'scheduler',
+                            'backup_format' => $backupFormat,
+                            'include_documents' => $includeDocuments,
+                        ],
+                        JSON_UNESCAPED_SLASHES
+                    ),
+                    'is_in_progress' => 0,
+                    'status' => 'new',
+                ]
+            );
+        } catch (Throwable $e) {
+            $message = 'Unable to queue scheduled backup: ' . $e->getMessage();
+            $this->upsertSettingValue('bck_scheduled_last_status', 'failed');
+            $this->upsertSettingValue('bck_scheduled_last_message', mb_substr($message, 0, 500));
+            $this->notifyBackupSchedulerFailure('scheduled', 'queue_failed', $message);
+            if (LOG_TASKS === true) {
+                $this->logger->log('backup scheduler: ' . $message, 'ERROR');
+            }
+            return;
+        }
 
         $this->upsertSettingValue('bck_scheduled_last_run_at', (string)$now);
         $this->upsertSettingValue('bck_scheduled_last_status', 'queued');
@@ -219,7 +235,9 @@ class BackgroundTasksHandler {
         $destinationType = tpBackupResolveExternalizedDestinationType((string)$this->getSettingValue('bck_externalized_destination_type', 'local_directory'));
         if (tpBackupExternalizedDestinationTypeSupportsFileOperations($destinationType) === false) {
             $this->upsertSettingValue('bck_externalized_last_status', 'failed');
-            $this->upsertSettingValue('bck_externalized_last_message', 'Externalized destination type is not available for scheduled execution');
+            $message = 'Externalized destination type is not available for scheduled execution';
+            $this->upsertSettingValue('bck_externalized_last_message', $message);
+            $this->notifyBackupSchedulerFailure('externalized', 'unsupported_destination', $message);
             if (LOG_TASKS === true) {
                 $this->logger->log('externalized scheduler: unsupported destination type: ' . $destinationType, 'ERROR');
             }
@@ -301,8 +319,10 @@ class BackgroundTasksHandler {
         $emptyTargetAllowed = $destinationType === 's3';
         if ($validation['success'] !== true || ($targetDir === '' && $emptyTargetAllowed === false)) {
             $reason = $validation['reason'] !== '' ? $validation['reason'] : 'unknown';
+            $message = 'Invalid externalized backup destination: ' . $reason;
             $this->upsertSettingValue('bck_externalized_last_status', 'failed');
-            $this->upsertSettingValue('bck_externalized_last_message', 'Invalid externalized backup destination: ' . $reason);
+            $this->upsertSettingValue('bck_externalized_last_message', $message);
+            $this->notifyBackupSchedulerFailure('externalized', 'invalid_destination', $message);
             if (LOG_TASKS === true) {
                 $this->logger->log('externalized scheduler: invalid destination: ' . $reason, 'ERROR');
             }
@@ -319,7 +339,9 @@ class BackgroundTasksHandler {
             : '';
         if ($instanceKey === '') {
             $this->upsertSettingValue('bck_externalized_last_status', 'failed');
-            $this->upsertSettingValue('bck_externalized_last_message', 'Missing backup instance key');
+            $message = 'Missing backup instance key';
+            $this->upsertSettingValue('bck_externalized_last_message', $message);
+            $this->notifyBackupSchedulerFailure('externalized', 'missing_instance_key', $message);
             if (LOG_TASKS === true) {
                 $this->logger->log('externalized scheduler: missing backup instance key', 'ERROR');
             }
@@ -334,27 +356,38 @@ class BackgroundTasksHandler {
         $retryAttempts = max(1, min(5, (int)$this->getSettingValue('bck_externalized_retry_attempts', '3')));
         $retryDelaySeconds = max(0, min(60, (int)$this->getSettingValue('bck_externalized_retry_delay_seconds', '5')));
 
-        DB::insert(
-            prefixTable('background_tasks'),
-            [
-                'created_at' => (string)$now,
-                'process_type' => 'externalized_backup',
-                'arguments' => json_encode(
-                    [
-                        'output_dir' => $targetDir,
-                        'destination_type' => $destinationType,
-                        'source' => 'externalized_scheduler',
-                        'backup_format' => $backupFormat,
-                        'include_documents' => $includeDocuments,
-                        'retry_attempts' => $retryAttempts,
-                        'retry_delay_seconds' => $retryDelaySeconds,
-                    ],
-                    JSON_UNESCAPED_SLASHES
-                ),
-                'is_in_progress' => 0,
-                'status' => 'new',
-            ]
-        );
+        try {
+            DB::insert(
+                prefixTable('background_tasks'),
+                [
+                    'created_at' => (string)$now,
+                    'process_type' => 'externalized_backup',
+                    'arguments' => json_encode(
+                        [
+                            'output_dir' => $targetDir,
+                            'destination_type' => $destinationType,
+                            'source' => 'externalized_scheduler',
+                            'backup_format' => $backupFormat,
+                            'include_documents' => $includeDocuments,
+                            'retry_attempts' => $retryAttempts,
+                            'retry_delay_seconds' => $retryDelaySeconds,
+                        ],
+                        JSON_UNESCAPED_SLASHES
+                    ),
+                    'is_in_progress' => 0,
+                    'status' => 'new',
+                ]
+            );
+        } catch (Throwable $e) {
+            $message = 'Unable to queue externalized backup: ' . $e->getMessage();
+            $this->upsertSettingValue('bck_externalized_last_status', 'failed');
+            $this->upsertSettingValue('bck_externalized_last_message', mb_substr($message, 0, 500));
+            $this->notifyBackupSchedulerFailure('externalized', 'queue_failed', $message);
+            if (LOG_TASKS === true) {
+                $this->logger->log('externalized scheduler: ' . $message, 'ERROR');
+            }
+            return;
+        }
 
         $this->upsertSettingValue('bck_externalized_last_run_at', (string)$now);
         $this->upsertSettingValue('bck_externalized_last_status', 'queued');
@@ -481,6 +514,164 @@ class BackgroundTasksHandler {
         );
 
         $this->upsertSettingValue('security_nudges_next_run_at', (string) $this->computeNextDailyRunAt($now + 60, $timeStr));
+    }
+
+    /**
+     * Scheduler (LAPR Point 5): enqueue lapr_rotation tasks for accounts whose
+     * next_rotation_at is due. Paced by lapr_scheduler_interval_minutes. Each
+     * account is de-duplicated against pending/running rotation tasks by the
+     * indexed background_tasks.item_id (= account id). Runs as TP_USER.
+     *
+     * @return void
+     */
+    private function handleScheduledLAPRRotations(): void
+    {
+        if ((int) $this->getSettingValue('lapr_enabled', '0', 'admin') !== 1
+            || (int) $this->getSettingValue('lapr_scheduler_enabled', '0', 'admin') !== 1
+        ) {
+            return;
+        }
+
+        $now = time();
+        $intervalMinutes = max(1, (int) $this->getSettingValue('lapr_scheduler_interval_minutes', '5', 'admin'));
+        $nextRunAt = (int) $this->getSettingValue('lapr_scheduler_next_run_at', '0', 'admin');
+
+        if ($nextRunAt <= 0) {
+            $this->upsertSettingValue(
+                'lapr_scheduler_next_run_at',
+                (string) ($now + $intervalMinutes * 60),
+                'admin'
+            );
+            return;
+        }
+        if ($now < $nextRunAt) {
+            return;
+        }
+
+        // Due accounts: active, endpoint active, next_rotation_at reached,
+        // and (retry gating) retry_at not in the future.
+        $nowStr = date('Y-m-d H:i:s', $now);
+        $dueAccounts = DB::query(
+            'SELECT a.id, e.hostname, e.os_info
+             FROM ' . prefixTable('lapr_accounts') . ' AS a
+             INNER JOIN ' . prefixTable('lapr_endpoints') . ' AS e ON e.id = a.endpoint_id
+             WHERE a.status = %s AND e.status = %s
+             AND a.next_rotation_at IS NOT NULL AND a.next_rotation_at <= %s
+             AND (a.retry_at IS NULL OR a.retry_at <= %s)
+             ORDER BY a.next_rotation_at ASC
+             LIMIT 100',
+            'active',
+            'active',
+            $nowStr,
+            $nowStr
+        );
+
+        $enqueuedCount = 0;
+        foreach ($dueAccounts as $account) {
+            $accountId = (int) $account['id'];
+
+            // Managing the TeamPass host itself remains a manual-only break-
+            // glass operation. Never let the scheduler rotate the account that
+            // may be required to repair TeamPass or its background handler.
+            $osInfo = json_decode((string) ($account['os_info'] ?? ''), true) ?: [];
+            $storedSelfTarget = (bool) ($osInfo['lapr_self_target']['is_self'] ?? false);
+            $runtimeSelfTarget = laprClassifySelfTarget((string) $account['hostname'], $this->settings);
+            if ($storedSelfTarget === true || $runtimeSelfTarget['is_self'] === true) {
+                continue;
+            }
+
+            // Dedup: skip if a rotation task is already pending/running (C12, indexed item_id).
+            $pending = (int) DB::queryFirstField(
+                'SELECT COUNT(*) FROM ' . prefixTable('background_tasks') . '
+                 WHERE process_type = %s AND item_id = %i AND is_in_progress IN (0,1)
+                 AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)',
+                'lapr_rotation',
+                $accountId
+            );
+            if ($pending > 0) {
+                continue;
+            }
+
+            DB::insert(prefixTable('background_tasks'), [
+                'created_at' => (string) $now,
+                'process_type' => 'lapr_rotation',
+                'arguments' => json_encode([
+                    'account_id' => $accountId,
+                    'trigger' => 'scheduler',
+                    'author' => (int) TP_USER_ID,
+                ], JSON_UNESCAPED_SLASHES),
+                'is_in_progress' => 0,
+                'item_id' => $accountId,
+                'status' => 'new',
+            ]);
+            ++$enqueuedCount;
+        }
+
+        $this->upsertSettingValue(
+            'lapr_scheduler_next_run_at',
+            (string) ($now + $intervalMinutes * 60),
+            'admin'
+        );
+        if (LOG_TASKS === true) {
+            $this->logger->log('LAPR scheduler: enqueued ' . $enqueuedCount . ' due account(s)', 'INFO');
+        }
+    }
+
+    /**
+     * Scheduler: enqueue the daily local-password expiry notification sweep.
+     *
+     * The job is useful even though delivery is currently in-app only: every
+     * eligible user has the warning waiting in their inbox at next login. A
+     * login-time fallback covers installations whose background handler is not
+     * running.
+     */
+    private function handleScheduledLocalPasswordExpiryNotifications(): void
+    {
+        $notificationCenterEnabled = (int) ($this->settings['notification_center_enabled'] ?? 0);
+        $passwordLifetimeDays = (int) ($this->settings['pw_life_duration'] ?? 0);
+        if ($notificationCenterEnabled !== 1 || $passwordLifetimeDays <= 0) {
+            return;
+        }
+
+        $now = time();
+        $nextRunAt = (int) $this->getSettingValue('local_password_expiry_notifications_next_run_at', '0');
+        if ($nextRunAt <= 0) {
+            $this->upsertSettingValue(
+                'local_password_expiry_notifications_next_run_at',
+                (string) $this->computeNextDailyRunAt($now, '03:15')
+            );
+            return;
+        }
+
+        if ($now < $nextRunAt) {
+            return;
+        }
+
+        $pending = (int) DB::queryFirstField(
+            'SELECT COUNT(*)
+            FROM ' . prefixTable('background_tasks') . '
+            WHERE process_type = %s
+            AND is_in_progress IN (0,1)
+            AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)',
+            'local_password_expiry_notifications'
+        );
+        if ($pending === 0) {
+            DB::insert(
+                prefixTable('background_tasks'),
+                [
+                    'created_at' => (string) $now,
+                    'process_type' => 'local_password_expiry_notifications',
+                    'arguments' => json_encode(['source' => 'scheduler'], JSON_UNESCAPED_SLASHES),
+                    'is_in_progress' => 0,
+                    'status' => 'new',
+                ]
+            );
+        }
+
+        $this->upsertSettingValue(
+            'local_password_expiry_notifications_next_run_at',
+            (string) $this->computeNextDailyRunAt($now + 60, '03:15')
+        );
     }
 
     /**
@@ -611,16 +802,17 @@ class BackgroundTasksHandler {
     }
 
     /**
-     * Read a setting from teampass_misc (type='settings', intitule=key).
+     * Read a setting from teampass_misc.
      */
-    private function getSettingValue(string $key, string $default = ''): string
+    private function getSettingValue(string $key, string $default = '', string $type = 'settings'): string
     {
         $table = prefixTable('misc');
+        $type = $type === 'admin' ? 'admin' : 'settings';
 
         // Schéma TeamPass classique: misc(type, intitule, valeur)
         $val = DB::queryFirstField(
             'SELECT valeur FROM ' . $table . ' WHERE type = %s AND intitule = %s LIMIT 1',
-            'settings',
+            $type,
             $key
         );
 
@@ -632,26 +824,43 @@ class BackgroundTasksHandler {
     }
 
     /**
-     * Upsert a setting into teampass_misc (type='settings', intitule=key).
+     * Upsert a setting into teampass_misc.
      */
-    private function upsertSettingValue(string $key, string $value): void
+    private function upsertSettingValue(string $key, string $value, string $type = 'settings'): void
     {
         $table = prefixTable('misc');
+        $type = $type === 'admin' ? 'admin' : 'settings';
 
         $exists = intval(DB::queryFirstField(
             'SELECT COUNT(*) FROM ' . $table . ' WHERE type = %s AND intitule = %s',
-            'settings',
+            $type,
             $key
         ));
 
         if ($exists > 0) {
-            DB::update($table, ['valeur' => $value], 'type = %s AND intitule = %s', 'settings', $key);
+            DB::update($table, ['valeur' => $value], 'type = %s AND intitule = %s', $type, $key);
         } else {
-            DB::insert($table, ['type' => 'settings', 'intitule' => $key, 'valeur' => $value]);
+            DB::insert($table, ['type' => $type, 'intitule' => $key, 'valeur' => $value]);
         }
 
         // keep in memory too
         $this->settings[$key] = $value;
+        if ($type === 'admin') {
+            ConfigManager::invalidateCache();
+        }
+    }
+
+    /**
+     * Emit one administrator alert per scheduler preflight cause and day.
+     *
+     * Preflight failures happen before a background task exists and this
+     * handler may run every minute. The date-scoped failure id keeps the alert
+     * actionable without flooding every administrator on each scheduler tick.
+     */
+    private function notifyBackupSchedulerFailure(string $backupType, string $cause, string $message): void
+    {
+        $failureId = 'scheduler:' . date('Y-m-d') . ':' . $cause;
+        tpNotifyBackupFailure($failureId, $backupType, $message);
     }
 
     /**
@@ -1060,14 +1269,23 @@ class BackgroundTasksHandler {
         if (LOG_TASKS === true) $this->logger->log('Task ' . $taskId . ' failed: ' . $message, 'ERROR');
 
         try {
-            $processType = (string) DB::queryFirstField(
-                'SELECT process_type FROM ' . prefixTable('background_tasks') . ' WHERE increment_id = %i',
+            $task = DB::queryFirstRow(
+                'SELECT process_type, arguments FROM ' . prefixTable('background_tasks') . ' WHERE increment_id = %i',
                 $taskId
             );
+            $processType = (string) ($task['process_type'] ?? '');
+            $arguments = json_decode((string) ($task['arguments'] ?? ''), true);
+            $arguments = is_array($arguments) ? $arguments : [];
             if ($processType === 'externalized_backup') {
                 $this->upsertSettingValue('bck_externalized_last_status', 'failed');
                 $this->upsertSettingValue('bck_externalized_last_message', mb_substr($message, 0, 500));
                 $this->upsertSettingValue('bck_externalized_last_completed_at', (string)time());
+                tpNotifyBackupFailure($taskId, 'externalized', $message);
+            } elseif ($processType === 'database_backup' && (string) ($arguments['source'] ?? '') === 'scheduler') {
+                $this->upsertSettingValue('bck_scheduled_last_status', 'failed');
+                $this->upsertSettingValue('bck_scheduled_last_message', mb_substr($message, 0, 500));
+                $this->upsertSettingValue('bck_scheduled_last_completed_at', (string)time());
+                tpNotifyBackupFailure($taskId, 'scheduled', $message);
             }
         } catch (Throwable) {
             // best effort only
@@ -1174,6 +1392,47 @@ class BackgroundTasksHandler {
         $this->handleKbTokensExpiration();
         $this->cleanOldFinishedTasks();
         $this->cleanOldImportFiles();
+        $this->cleanLAPRMaintenance();
+    }
+
+    /**
+     * LAPR maintenance (Point 5/7): purge audit-log rows past the retention
+     * window (lapr_audit_retention_days; 0 = keep forever) and stale rate-limit
+     * rows (window expired and not currently blocked).
+     *
+     * @return void
+     */
+    private function cleanLAPRMaintenance(): void
+    {
+        $retentionDays = (int) $this->getSettingValue('lapr_audit_retention_days', '365', 'admin');
+        if ($retentionDays > 0) {
+            $cutoff = date('Y-m-d H:i:s', time() - $retentionDays * 86400);
+            try {
+                DB::query(
+                    'DELETE FROM ' . prefixTable('lapr_audit_log') . ' WHERE created_at < %s',
+                    $cutoff
+                );
+            } catch (Throwable $e) {
+                if (LOG_TASKS === true) {
+                    $this->logger->log('LAPR audit purge skipped: ' . $e->getMessage(), 'INFO');
+                }
+            }
+        }
+
+        // Purge stale rate-limit rows (window long expired and not blocked).
+        try {
+            DB::query(
+                'DELETE FROM ' . prefixTable('lapr_rate_limit') . '
+                 WHERE (blocked_until IS NULL OR blocked_until < %i)
+                 AND window_start < %i',
+                time(),
+                time() - 86400
+            );
+        } catch (Throwable $e) {
+            if (LOG_TASKS === true) {
+                $this->logger->log('LAPR rate-limit purge skipped: ' . $e->getMessage(), 'INFO');
+            }
+        }
     }
 
     /**
@@ -1292,11 +1551,13 @@ class BackgroundTasksHandler {
         $cutoffTimestamp = time() - $this->maxTimeBeforeRemoval;
     
         // 1. Get all finished tasks older than the cutoff timestamp
-        //    and that are not in progress
+        //    and that are not in progress. 'cancelled' covers the tasks closed
+        //    without execution (LAPR module disabled, managed account removed);
+        //    they are finished too and must be purged like completed ones.
         $tasks = DB::query(
             'SELECT increment_id FROM ' . prefixTable('background_tasks') . '
-            WHERE status = %s AND is_in_progress = %i AND finished_at < %i',
-            'completed',
+            WHERE status IN %ls AND is_in_progress = %i AND finished_at < %i',
+            ['completed', 'cancelled'],
             -1,
             $cutoffTimestamp
         );

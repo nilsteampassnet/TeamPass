@@ -125,10 +125,14 @@ foreach ($rows as $record) {
 
 $treeDesc = $tree->getDescendants();
 $foldersList = '';
+
+// Personal folders belong to their owner and are never granted or denied from here.
+$personalFolderIds = getPersonalFolderIdsWithDescendants();
+
 foreach ($treeDesc as $t) {
     if (
         in_array($t->id, $session->get('user-accessible_folders')) === true
-        && in_array($t->id, $session->get('user-personal_visible_folders')) === false
+        && in_array((int) $t->id, $personalFolderIds, true) === false
     ) {
         $ident = '';
         for ($y = 1; $y < $t->nlevel; ++$y) {

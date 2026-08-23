@@ -1442,3 +1442,55 @@ body.dark-mode .form-control:focus-visible {
         transition: none;
     }
 }
+
+/* ============================================================
+   Page transition indicator (navigation between TeamPass pages)
+   Driven by app/core/page-transition.js.php
+   ============================================================ */
+#tp-page-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 0;
+    overflow: hidden;
+    /* Above the fixed navbar, the modals backdrop staying below it */
+    z-index: 2100;
+    pointer-events: none;
+}
+#tp-page-progress.tp-page-progress-active {
+    height: 3px;
+}
+#tp-page-progress-bar {
+    height: 3px;
+    width: 0;
+    background-color: #007bff;
+    box-shadow: 0 0 8px rgba(0, 123, 255, 0.55);
+    transition: width 0.25s ease-out, opacity 0.35s ease;
+    will-change: width;
+}
+#tp-page-progress-bar.tp-page-progress-done {
+    opacity: 0;
+}
+.dark-mode #tp-page-progress-bar {
+    background-color: #4dabf7;
+    box-shadow: 0 0 8px rgba(77, 171, 247, 0.55);
+}
+
+/* The whole page acknowledges the click, not only the bar */
+body.tp-navigating,
+body.tp-navigating a,
+body.tp-navigating button,
+body.tp-navigating .nav-link,
+body.tp-navigating .dropdown-item {
+    cursor: progress;
+}
+.tp-nav-busy {
+    opacity: 0.7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #tp-page-progress-bar {
+        transition: none;
+    }
+}

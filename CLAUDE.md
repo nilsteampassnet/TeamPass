@@ -16,12 +16,44 @@ TeamPass is a collaborative on-premise password manager built in PHP. It emphasi
 
 ## Development Commands
 
+Run everything from the repository root. `composer.json` sets `vendor-dir` to `app/vendor`,
+so the Composer binaries live under `app/vendor/bin/`, not `vendor/bin/`.
+
 ```bash
-vendor/bin/phpstan analyse          # PHPStan level 4
-vendor/bin/composer-license-checker # License compliance
-composer install                    # PHP dependencies
-php scripts/background_tasks___handler.php  # Background tasks
+php app/vendor/bin/phpstan analyse --memory-limit=2G   # PHPStan level 4 (config: phpstan.neon)
+php app/vendor/bin/composer-license-checker            # License compliance
+composer install                                       # PHP dependencies
+php app/scripts/background_tasks___handler.php         # Background tasks
+php app/vendor/phpunit/phpunit/phpunit                 # Unit tests — see caveat below
 ```
+
+A full PHPStan run takes several minutes — launch it in the background rather than blocking on it.
+
+**PHPUnit does not run from a fresh checkout — repair the toolchain first.** The dev
+dependencies are untracked, so any checkout or merge deletes them while leaving generated
+residue behind (`phpstan/phpstan/turbo-ext/`, the Redis proxies under `symfony/cache/Traits/`,
+the `Xdebug*` files). Their directory survives, Composer only checks that a package directory
+*exists*, so it considers them installed and skips them. On top of that the committed
+`app/vendor/composer/` is the **production** autoloader (`composer install --no-dev`) and maps
+no dev package. Symptom: `Class "PHPUnit\TextUI\Application" not found` with the package
+sitting right there. `composer dump-autoload` does **not** help — `phpunit/phpunit` is absent
+from `installed.json`.
+
+```bash
+rm -rf app/vendor/phpstan app/vendor/phpunit app/vendor/symfony/cache
+composer install
+php app/vendor/phpunit/phpunit/phpunit          # expect: OK (1344 tests, 38419 assertions)
+php app/vendor/bin/phpstan analyse --memory-limit=2G
+git checkout -- app/vendor/composer/            # LAST — it disarms the toolchain again
+```
+
+The `rm -rf` is not optional: without it `composer install` repairs nothing for those three
+packages. The order of the last three lines is not free either — `composer install` rewrites
+`app/vendor/composer/` into its *dev* form, which is what makes the tools runnable, and the
+final `git checkout` puts the production form back. Run the toolchain **between** the two.
+That restore is mandatory before committing: shipping the dev autoloader fatals every
+installation (the bug 3.2.1.7 had to fix). Full rationale in
+`.claude/skills/prepare-release/SKILL.md` §7.
 
 Database schema: initial install via `/install/install.php`, upgrades via `/install/upgrade.php` + `/install/upgrade_run_*.php`.
 
@@ -127,11 +159,34 @@ Save-time normalization + token validation live in the DB-free `app/sources/emai
 
 **Rule: spawn background tasks with `getPHPBinary()`** — it resolves a real PHP CLI binary under FPM (never `php-fpm` / `'false'`). **Rule: `tpFinishRequestEarly()` only after the full response is echoed** — later output is not delivered. Admin settings: `cli_php_binary_path`, `enable_fastcgi_finish_request`.
 
+## Item Revisions & Offline Sync
+
+> Full architecture details: @.claude/docs/architecture-item-revisions.md
+
+Every item carries a monotonic `revision`, allocated from the `teampass_items_revisions` journal
+whose `AUTO_INCREMENT` key **is** the global sequence. It lets an offline client detect staleness,
+decide which side is newer, and pull only what changed (`GET /api/v1/item/changes`).
+
+**Rule: the bump rides on `logItems()`** — a new item write path that bypasses it (raw
+`DB::insert(log_items)`, hard delete, bulk field operations) must call `bumpItemRevision()`
+explicitly, and **before** the row disappears. **Rule: reads and ciphertext-only rewrites never
+bump** — re-encrypting does not change the plaintext a client caches. **Rule: the journal is not a
+history** (that is `log_items`), and its setting `offline_sync_window_days` is a sync window, never
+a "retention": pruning it loses nothing, a client outside the window just does a full resync.
+
 ## API
 
 > Full reference: @.claude/docs/api-reference.md
 
 Controllers in `/api/Controller/Api/`. JWT auth via `Authorization: Bearer <token>`. Key endpoints: `/api/authorize`, `/api/item/get`, `/api/item/create`, `/api/item/getOtp`, `/api/folder/listFolders`.
+
+## LAPR (Linux Account Password Rotation)
+
+> Full architecture details: @.claude/docs/architecture-lapr.md
+
+Agentless SSH rotation of local Linux account passwords (release 3.2.2, feature `feature/lapr-mvp1`). Pages `lapr_endpoints|lapr_accounts|lapr_policies|admin_lapr`, handlers `sources/lapr_*.queries.php`, SSH class `TeampassClasses\Lapr\LAPRSshService` (require_once, not PSR-4), background traits `LAPRSshTestTrait|LAPRDiscoverTrait|LAPRRotationTrait`.
+
+**Rule: all SSH work runs in background traits** — never in a `*.queries.php` request thread. **Rule: never log a secret** — `laprAuditLog()`/`action_details` are whitelisted, never a password. **Rule: read a credential/item as the server via `laprReadItemPasswordAsTpUser()`** (TP_USER chain, migration-aware) — non-personal items only. **Rule: write a rotated item password by mirroring `laprUpdateItemPassword()`** (pw_iv + sharekey fan-out via `apiUserId=TP_USER_ID` + history `old_value` + `emitItemEvent`). **Rule: gate every operational handler with `laprCheckPermission()`** (`lapr_enabled` + **non-admin** + `can_manage_lapr`) — TeamPass administrators configure LAPR through `admin_lapr` only; the operational pages depend on item access, which admins do not have, so `laprUserCanWriteFolder()`/`laprUserCanReadFolder()` reject them too. **Rule: read LAPR item roles through `laprGetItemRelations($itemIds, $SETTINGS)`** — it is module-aware (returns `[]` when `lapr_enabled != 1`), so disabling LAPR never leaves items frozen; the delete/move guards (`laprItemsDeletionBlocker()`, `laprItemsPersonalMoveBlocker()`) build on it and must be applied to **every** write path, single **and** mass. Host-key mismatch **blocks** rotation (D4); `username_cache` is hard-validated (R1) and generated passwords filtered for `chpasswd` safety (R9).
 
 ## Browser Extension Auto-Configuration
 
@@ -194,7 +249,10 @@ switch ($type) {
 
 ## Testing and Debugging
 
-No PHPUnit test suite. Debugging: PHP error logging, TeamPass Admin > Logs, MeekroDB query hooks, browser console + network tab.
+A PHPUnit suite lives in `tests/` (74 test classes, `phpunit.xml` at the repository root) — it
+covers the DB-free logic modules and the sentinel tests that guard the dual-location class copies.
+See the Development Commands caveat before running it. Debugging: PHP error logging,
+TeamPass Admin > Logs, MeekroDB query hooks, browser console + network tab.
 
 **Manual testing checklist:** multiple user roles (admin, standard, read-only), personal folders on/off, encryption scenarios, audit log creation, LDAP/OAuth2 if auth changed.
 

@@ -1339,12 +1339,18 @@ if (null !== $post_type) {
                     );
                 }
 
+                // Personal folders belong to their owner: they are never granted or denied
+                // to another user, so they stay out of both selection lists below.
+                $personalFolderIds = getPersonalFolderIdsWithDescendants();
+
                 // get FOLDERS FORBIDDEN
                 $forbiddenFolders = array();
                 $userForbidFolders = explode(';', is_null($rowUser['groupes_interdits']) === true ? '' : $rowUser['groupes_interdits']);
                 $tree_desc = $tree->getDescendants();
                 foreach ($tree_desc as $t) {
-                    if (in_array($t->id, $session->get('user-accessible_folders')) && in_array($t->id, $session->get('user-personal_visible_folders')) === false) {
+                    if (in_array($t->id, $session->get('user-accessible_folders'))
+                        && in_array((int) $t->id, $personalFolderIds, true) === false
+                    ) {
                         $selected = '';
                         if (in_array($t->id, $userForbidFolders)) {
                             $selected = 'selected';
@@ -1375,7 +1381,7 @@ if (null !== $post_type) {
                 foreach ($tree_desc as $t) {
                     if (
                         in_array($t->id, $session->get('user-accessible_folders')) === true
-                        && in_array($t->id, $session->get('user-personal_visible_folders')) === false
+                        && in_array((int) $t->id, $personalFolderIds, true) === false
                     ) {
                         $selected = '';
                         if (in_array($t->id, $userAllowFolders)) {
@@ -1675,6 +1681,8 @@ if (null !== $post_type) {
                                 '1'
                             );
                             foreach ($items as $item) {
+                                // Journal the purge first: nothing else survives the delete
+                                bumpItemRevision((int) $item['id'], 'purged', (int) $session->get('user-id'), (int) $folder->id);
                                 // Delete item
                                 DB::delete(prefixTable('items'), 'id = %i', $item['id']);
                                 // log
@@ -5499,6 +5507,9 @@ function purgeDeletedUserById(int $userId, bool $rebuildTree = true): array
                     '1'
                 );
                 foreach ($items as $item) {
+                    // Journal the purge first: nothing else survives the delete.
+                    // Attributed to the system: this runs outside any user session.
+                    bumpItemRevision((int) $item['id'], 'purged', 0, (int) $folder->id);
                     // Delete item
                     DB::delete(prefixTable('items'), 'id = %i', $item['id']);
                     // log

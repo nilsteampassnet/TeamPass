@@ -377,28 +377,40 @@ foreach ($rows as $record) {
     $accessLevel = $folderAccessLevel[$folderId] ?? 4;
     $canMassOperate = $massOperationEnabled === true && $accessLevel === 0;
 
-    // Column 0 — controls. Attribute values are escaped; the JSON encoder
-    // handles the quoting of the cell itself.
-    $controls = '<i class="fa fa-external-link-alt infotip mr-2" title="'
-        . htmlspecialchars($lang->get('open_url_link'), ENT_QUOTES, 'UTF-8')
-        . '" onClick="window.location.href=&#039;index.php?page=items&amp;group=' . $folderId
-        . '&amp;id=' . $itemId . '&#039;" style="cursor:pointer;"></i>'
-        . '<i class="fa fa-eye infotip mr-2 item-detail" title="'
-        . htmlspecialchars(stripslashes($lang->get('see_item_title')), ENT_QUOTES, 'UTF-8')
-        . '" data-id="' . $itemId . '"'
+    // Column 0 — selection only. The row actions live in the last column, where
+    // the eye ends its scan; the row itself opens the detail modal.
+    $controls = $canMassOperate === true
+        ? '<input type="checkbox" value="0" class="mass_op_cb" data-id="' . $itemId . '">'
+        : '';
+
+    // Last column — quick actions, revealed on hover/focus. Real buttons, so
+    // they are reachable with the keyboard. Everything the detail modal needs
+    // travels with them rather than being re-queried.
+    $actions = '<div class="search-row-actions"'
+        . ' data-id="' . $itemId . '"'
         . ' data-perso="' . (int) $record['perso'] . '"'
         . ' data-tree-id="' . $folderId . '"'
         . ' data-expired="' . $expired . '"'
         . ' data-restricted-to="' . htmlspecialchars((string) $record['restricted_to'], ENT_QUOTES, 'UTF-8') . '"'
-        . ' data-rights="' . ($canMassOperate ? 0 : 10) . '"'
-        . ' style="cursor:pointer;"></i>';
-    if ($canMassOperate === true) {
-        $controls .= '<input type="checkbox" value="0" class="mass_op_cb" data-id="' . $itemId . '">';
+        . ' data-rights="' . ($canMassOperate ? 0 : 10) . '">';
+    if ((string) $record['login'] !== '') {
+        $actions .= '<button type="button" class="search-row-action infotip" data-action="login" title="'
+            . htmlspecialchars($lang->get('favorites_copy_login'), ENT_QUOTES, 'UTF-8')
+            . '"><i class="fa-regular fa-clone" aria-hidden="true"></i></button>';
     }
+    $actions .= '<button type="button" class="search-row-action infotip" data-action="password" title="'
+        . htmlspecialchars($lang->get('favorites_copy_password'), ENT_QUOTES, 'UTF-8')
+        . '"><i class="fa-solid fa-key" aria-hidden="true"></i></button>'
+        . '<button type="button" class="search-row-action infotip" data-action="open" title="'
+        . htmlspecialchars($lang->get('favorites_open_item'), ENT_QUOTES, 'UTF-8')
+        . '"><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></button>'
+        . '</div>';
 
     // Column 1 — label, with the classification badge when the feature is on.
-    $label = '<span id="item_label-' . $itemId . '">'
-        . htmlspecialchars((string) $record['label'], ENT_QUOTES, 'UTF-8') . '</span>';
+    // The label is a real button: clicking anywhere on the row opens the detail
+    // modal, and this is what makes the same thing reachable with the keyboard.
+    $label = '<button type="button" class="search-label-btn" id="item_label-' . $itemId . '">'
+        . htmlspecialchars((string) $record['label'], ENT_QUOTES, 'UTF-8') . '</button>';
     if ($featureClassification === true && (int) ($record['classification_level'] ?? 0) > 0) {
         $level = (int) $record['classification_level'];
         $label .= ' <span class="badge badge-' . ($classificationColours[$level] ?? 'secondary') . ' ml-1">'
@@ -423,6 +435,7 @@ foreach ($rows as $record) {
         htmlspecialchars(stripslashes((string) $record['tags']), ENT_QUOTES, 'UTF-8'),
         $url,
         htmlspecialchars(stripslashes((string) $record['folder']), ENT_QUOTES, 'UTF-8'),
+        $actions,
     ];
 }
 

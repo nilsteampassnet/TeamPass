@@ -1,0 +1,73 @@
+name: 💡 Feature request
+description: Suggest an idea or improvement for Teampass
+title: "[FEATURE] "
+labels: ["Feature Request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement.
+
+        If the idea is still vague, or you would like to gauge interest first, consider starting a
+        [Discussion](https://github.com/nilsteampassnet/TeamPass/discussions) instead — it is a
+        better place for open-ended conversation.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Before you start
+      options:
+        - label: I have searched the existing issues and discussions for this idea
+          required: true
+        - label: I have checked the [documentation](https://documentation.teampass.net) in case it already exists
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: >
+        Describe the situation you run into. Concrete beats abstract — "our auditors ask for X
+        every quarter and I export it by hand" is far more useful than "add reporting".
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: What would you like to see?
+      description: Describe the behaviour you have in mind.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you have considered
+      description: Workarounds you currently use, or other ways this could be solved.
+
+  - type: dropdown
+    id: audience
+    attributes:
+      label: Who would benefit most?
+      options:
+        - Individuals / homelab
+        - Teams and small businesses
+        - Enterprise and regulated environments
+        - Everyone
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Would you be willing to help?
+      options:
+        - label: I would be willing to work on a pull request for this
+        - label: I would be willing to help test it
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Mockups, links to how other tools do it, related issues.

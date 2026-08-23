@@ -476,7 +476,7 @@ docker-compose up -d
 
 - **Documentation:** [DOCKER.md](DOCKER.md)
 - **Issues:** https://github.com/nilsteampassnet/TeamPass/issues
-- **Community:** https://www.reddit.com/r/TeamPass/
+- **Discussions:** https://github.com/nilsteampassnet/TeamPass/discussions
 
 ---
 

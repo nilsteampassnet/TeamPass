@@ -77,15 +77,12 @@ pm.max_spare_servers = 15
 request_terminate_timeout = 300
 ```
 
-> :warning: **Upload size — align the web server with PHP.** PHP-FPM never sees a request the
-> web server rejects first. Set the web-server body limit at least as high as the PHP limits
-> (`upload_max_filesize` / `post_max_size`):
+> :warning: **Upload size — align the web server with PHP.** PHP-FPM never sees a request the web server rejects first. Set the web-server body limit at least as high as the PHP limits (`upload_max_filesize` / `post_max_size`):
 >
 > * nginx: `client_max_body_size 100M;`
 > * Apache: `LimitRequestBody 104857600`
 >
-> A lower web-server limit returns **HTTP 413** before PHP runs. The admin health page reports
-> the effective PHP limits as a reminder.
+> A lower web-server limit returns **HTTP 413** before PHP runs. The admin health page reports the effective PHP limits as a reminder.
 
 ### TeamPass FPM settings
 

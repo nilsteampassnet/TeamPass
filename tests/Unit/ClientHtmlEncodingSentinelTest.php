@@ -73,6 +73,12 @@ class ClientHtmlEncodingSentinelTest extends TestCase
         'app/pages/utilities.logs.js.php' => ['opt.title'],
         // safe — info comes from the static client-side LEVELS map
         'app/core/item-classification.js.php' => ['info.label'],
+        // safe — item.login is returned as a string by a Select2 templateSelection, which
+        // Select2 passes through escapeMarkup; first.login goes to the Option constructor,
+        // whose text argument becomes a text node
+        'app/pages/lapr_accounts.js.php' => ['item.login', 'first.login'],
+        // safe — same Select2 templateSelection string contract
+        'app/pages/lapr_endpoints.js.php' => ['item.login'],
     ];
 
     /**

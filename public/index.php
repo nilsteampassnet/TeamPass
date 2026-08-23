@@ -313,7 +313,6 @@ $theme_navbar = $theme === 'dark' ? 'navbar-dark' : 'navbar-white navbar-light';
     <link rel="stylesheet" href="./assets/css/ionicons.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
     <!-- Theme style -->
     <link rel="stylesheet" href="./plugins/adminlte/css/adminlte.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
-    <link rel="stylesheet" href="./plugins/pace-progress/themes/corner-indicator.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" type="text/css" />
     <link rel="stylesheet" href="./plugins/select2/css/select2.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" type="text/css" />
     <link rel="stylesheet" href="./plugins/select2/theme/select2-bootstrap4.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" type="text/css" />
     <!-- Theme style -->
@@ -352,6 +351,12 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
 ) {
     ?>
     <body class="hold-transition sidebar-mini layout-navbar-fixed layout-fixed <?php echo $theme_body; ?>">
+        <?php
+        // Page transition indicator. Included first thing in <body> so it is live
+        // before jQuery: it has to react to the very first click, and it resumes
+        // the bar the previous page started.
+        include_once TEAMPASS_APP . '/core/page-transition.js.php';
+        ?>
         <a class="tp-skip-link" href="#tp-main-content"><?php echo $lang->get('a11y_skip_to_content'); ?></a>
         <div class="wrapper">
 
@@ -377,9 +382,10 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                 $tpShowScore     = (int) ($SETTINGS['security_dashboard_enabled'] ?? 0) === 1 && (int) $session_user_admin !== 1;
                 $tpShowBell      = (int) ($SETTINGS['notification_center_enabled'] ?? 0) === 1;
                 $tpShowAwareness = $tpShowScore === true || $tpShowBell === true;
-                // Quick access panel (right control sidebar). The Starred tab follows the
-                // Favorites page gate: feature enabled and caller not an administrator.
-                $tpShowQuickAccess = (int) ($SETTINGS['show_last_items'] ?? 1) === 1;
+                // Quick access panel (right control sidebar). Administrators never reach
+                // items, so the panel would always be empty for them. The Starred tab
+                // follows the Favorites page gate: feature enabled and caller not an admin.
+                $tpShowQuickAccess = (int) ($SETTINGS['show_last_items'] ?? 1) === 1 && (int) $session_user_admin !== 1;
                 $tpQuickAccessStarred = (int) ($SETTINGS['enable_favourites'] ?? 0) === 1 && (int) $session_user_admin !== 1;
                 // Account chip avatar (with initials fallback) + role label.
                 // The thumbnail is preferred over the full image: it is the size the badges
@@ -554,51 +560,50 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                                 }
 
                                 if ($session_user_admin === 0) {
-                                    // ITEMS & SEARCH
+                                    // Keep the historical direct link to the password vault.
                                     echo '
                     <li class="nav-item">
                         <a href="#" data-name="items" class="nav-link', $get['page'] === 'items' ? ' active' : '', '">
-                        <i class="nav-icon fa-solid fa-key"></i>
-                        <p>
-                            ' . $lang->get('pw') . '
-                        </p>
+                            <i class="nav-icon fa-solid fa-key"></i>
+                            <p>' . $lang->get('pw') . '</p>
                         </a>
                     </li>';
-                                }
 
-    // IMPORT menu
-    if (isset($SETTINGS['allow_import']) === true && (int) $SETTINGS['allow_import'] === 1 && (int) $session_user_admin === 0) {
-        echo '
-                    <li class="nav-item">
-                        <a href="#" data-name="import" class="nav-link', $get['page'] === 'import' ? ' active' : '', '">
-                        <i class="nav-icon fa-solid fa-file-import"></i>
-                        <p>
-                            ' . $lang->get('import') . '
-                        </p>
+                                    // LAPR is a separate entry immediately below Passwords.
+                                    if ((int) ($SETTINGS['lapr_enabled'] ?? 0) === 1
+                                        && (int) $session->get('user-can_manage_lapr') === 1
+                                    ) {
+                                        $laprUserPages = ['lapr_endpoints', 'lapr_accounts', 'lapr_policies'];
+                                        $laprUserMenuOpen = in_array($get['page'], $laprUserPages, true);
+                                        echo '
+                    <li class="nav-item has-treeview', $laprUserMenuOpen === true ? ' menu-open' : '', '">
+                        <a href="#" class="nav-link', $laprUserMenuOpen === true ? ' active' : '', '">
+                            <i class="nav-icon fa-solid fa-arrows-rotate"></i>
+                            <p>' . $lang->get('lapr') . '<i class="fa-solid fa-angle-left right"></i></p>
                         </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="#" data-name="lapr_endpoints" class="nav-link', $get['page'] === 'lapr_endpoints' ? ' active' : '', '">
+                                    <i class="fa-solid fa-server nav-icon"></i>
+                                    <p>' . $lang->get('lapr_endpoints') . '</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" data-name="lapr_accounts" class="nav-link', $get['page'] === 'lapr_accounts' ? ' active' : '', '">
+                                    <i class="fa-solid fa-user-gear nav-icon"></i>
+                                    <p>' . $lang->get('lapr_accounts') . '</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" data-name="lapr_policies" class="nav-link', $get['page'] === 'lapr_policies' ? ' active' : '', '">
+                                    <i class="fa-solid fa-scroll nav-icon"></i>
+                                    <p>' . $lang->get('lapr_policies') . '</p>
+                                </a>
+                            </li>
+                        </ul>
                     </li>';
-    }
-    // EXPORT menu
-    if (
-                                    isset($SETTINGS['allow_print']) === true && (int) $SETTINGS['allow_print'] === 1
-                                    && isset($SETTINGS['roles_allowed_to_print_select']) === true
-                                    && empty($SETTINGS['roles_allowed_to_print_select']) === false
-                                    && count(array_intersect(
-                                        explode(';', $session->get('user-roles')),
-                                        explode(',', str_replace(['"', '[', ']'], '', $SETTINGS['roles_allowed_to_print_select']))
-                                    )) > 0
-                                    && (int) $session_user_admin === 0
-                                ) {
-        echo '
-                    <li class="nav-item">
-                        <a href="#" data-name="export" class="nav-link', $get['page'] === 'export' ? ' active' : '', '">
-                        <i class="nav-icon fa-solid fa-file-export"></i>
-                        <p>
-                            ' . $lang->get('export') . '
-                        </p>
-                        </a>
-                    </li>';
-    }
+                                    }
+                                }
 
     if ($session_user_admin === 0) {
         echo '
@@ -639,6 +644,41 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                         </a>
                     </li>';
     }
+
+    // IMPORT menu
+    if (isset($SETTINGS['allow_import']) === true && (int) $SETTINGS['allow_import'] === 1 && (int) $session_user_admin === 0) {
+        echo '
+                    <li class="nav-item">
+                        <a href="#" data-name="import" class="nav-link', $get['page'] === 'import' ? ' active' : '', '">
+                        <i class="nav-icon fa-solid fa-file-import"></i>
+                        <p>
+                            ' . $lang->get('import') . '
+                        </p>
+                        </a>
+                    </li>';
+    }
+    // EXPORT menu
+    if (
+                                    isset($SETTINGS['allow_print']) === true && (int) $SETTINGS['allow_print'] === 1
+                                    && isset($SETTINGS['roles_allowed_to_print_select']) === true
+                                    && empty($SETTINGS['roles_allowed_to_print_select']) === false
+                                    && count(array_intersect(
+                                        explode(';', $session->get('user-roles')),
+                                        explode(',', str_replace(['"', '[', ']'], '', $SETTINGS['roles_allowed_to_print_select']))
+                                    )) > 0
+                                    && (int) $session_user_admin === 0
+                                ) {
+        echo '
+                    <li class="nav-item">
+                        <a href="#" data-name="export" class="nav-link', $get['page'] === 'export' ? ' active' : '', '">
+                        <i class="nav-icon fa-solid fa-file-export"></i>
+                        <p>
+                            ' . $lang->get('export') . '
+                        </p>
+                        </a>
+                    </li>';
+    }
+
     // SUGGESTION menu
     if (
                                     isset($SETTINGS['enable_suggestion']) && (int) $SETTINGS['enable_suggestion'] === 1
@@ -672,7 +712,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
     $menuGovernance = in_array($currentPage, ['reviews', 'reports'], true);
     $menuConfiguration = in_array($currentPage, ['options', 'fields', 'emails', 'emails_templates', 'uploads'], true);
     $menuAuthentication = in_array($currentPage, ['2fa', 'ldap', 'oauth', 'api'], true);
-    $menuOperations = in_array($currentPage, ['tasks', 'backups', 'utilities.database', 'import', 'utilities.renewal', 'utilities.deletion'], true);
+    $menuOperations = in_array($currentPage, ['tasks', 'backups', 'utilities.database', 'import', 'utilities.renewal', 'utilities.deletion', 'admin_lapr'], true);
     $menuMonitoring = in_array($currentPage, ['statistics', 'utilities.logs', 'utilities.health', 'tools'], true);
 
     // DASHBOARD (admin only)
@@ -878,7 +918,18 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                                     <i class="fa-solid fa-trash-alt nav-icon"></i>
                                     <p>' . $lang->get('deletion') . '</p>
                                 </a>
-                            </li>
+                            </li>';
+        // Admins configure LAPR but do not access its item-dependent operations.
+        if ($isAdmin === true) {
+            echo '
+                            <li class="nav-item">
+                                <a href="#" data-name="admin_lapr" class="nav-link', $currentPage === 'admin_lapr' ? ' active' : '', '">
+                                    <i class="fa-solid fa-circle-nodes nav-icon"></i>
+                                    <p>' . $lang->get('lapr_admin') . '</p>
+                                </a>
+                            </li>';
+        }
+        echo '
                         </ul>
                     </li>';
     }
@@ -1490,8 +1541,6 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
     <!-- cryptojs-aesphp -->
     <script type="text/javascript" src="./assets/lib/cryptojs/crypto-js.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <script type="text/javascript" src="./assets/lib/cryptojs/encryption.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
-    <!-- pace -->
-    <script type="text/javascript" data-pace-options='{ "ajax": true, "eventLag": false }' src="./plugins/pace-progress/pace.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <!-- select2 -->
     <script type="text/javascript" src="./plugins/select2/js/select2.full.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <!-- simplePassMeter -->
@@ -1578,7 +1627,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
             <link rel="stylesheet" href="./plugins/toggles/css/toggles-modern.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" />
             <script src="./plugins/toggles/toggles.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" type="text/javascript"></script>
         <?php
-        } elseif (in_array($get['page'], ['search', 'folders', 'users', 'roles', 'kb', 'utilities.deletion', 'utilities.logs', 'utilities.database', 'utilities.health', 'utilities.renewal', 'tasks', 'statistics']) === true) {
+        } elseif (in_array($get['page'], ['search', 'folders', 'users', 'roles', 'kb', 'utilities.deletion', 'utilities.logs', 'utilities.database', 'utilities.health', 'utilities.renewal', 'tasks', 'statistics', 'lapr_endpoints', 'lapr_accounts', 'lapr_policies']) === true) {
             ?>
             <!-- DataTables -->
             <link rel="stylesheet" src="./plugins/datatables/css/jquery.dataTables.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
@@ -1911,6 +1960,8 @@ if (isset($SETTINGS['cpassman_dir']) === true) {
             include_once TEAMPASS_APP . '/pages/oauth.js.php';        
         } elseif ($get['page'] === 'tools') {
             include_once TEAMPASS_APP . '/pages/tools.js.php';
+        } elseif ($get['page'] === 'admin_lapr') {
+            include_once TEAMPASS_APP . '/pages/admin_lapr.js.php';
         } elseif ($get['page'] === 'reports') {
             include_once TEAMPASS_APP . '/pages/reports.js.php';
         } elseif ($get['page'] === 'reviews') {
@@ -1949,6 +2000,10 @@ if (isset($SETTINGS['cpassman_dir']) === true) {
             include_once TEAMPASS_APP . '/pages/utilities.health.js.php';
         } elseif ($get['page'] === 'utilities.renewal') {
             include_once TEAMPASS_APP . '/pages/utilities.renewal.js.php';
+        } elseif (in_array($get['page'], ['lapr_endpoints', 'lapr_accounts', 'lapr_policies'], true) === true
+            && file_exists(TEAMPASS_APP . '/pages/' . $get['page'] . '.js.php') === true
+        ) {
+            include_once TEAMPASS_APP . '/pages/' . basename($get['page']) . '.js.php';
         }
     } else {
         include_once TEAMPASS_APP . '/core/login.js.php';

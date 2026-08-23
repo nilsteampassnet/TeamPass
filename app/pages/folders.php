@@ -113,10 +113,13 @@ $droplist = '<option value="na">---' . $lang->get('select') . '---</option>';
 if ((int) $session->get('user-admin') === 1 || (int) $session->get('user-manager') === 1 || (int) $session->get('user-can_create_root_folder') === 1) {
     $droplist .= '<option value="0">' . $lang->get('root') . '</option>';
 }
+// Personal folders are not managed from this page: keep them out of the parent list.
+$personalFolderIds = getPersonalFolderIdsWithDescendants();
+
 foreach ($tst as $t) {
     if (
         in_array($t->id, $session->get('user-accessible_folders')) === true
-        && in_array($t->id, $session->get('user-personal_visible_folders')) === false
+        && in_array((int) $t->id, $personalFolderIds, true) === false
     ) {
         $droplist .= '<option value="' . $t->id . '">' . addslashes($t->title);
         $text = '';

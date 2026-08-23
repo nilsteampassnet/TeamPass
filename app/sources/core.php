@@ -606,6 +606,31 @@ if (isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1
     }
 }
 
+// In-app warning for local TeamPass passwords. One check per user/day is
+// enough; the persistence layer also enforces an atomic per-cycle/per-threshold
+// dedupe key, so concurrent tabs cannot create duplicates. The fingerprint
+// changes immediately after a password or policy update.
+if (empty($session->get('user-id')) === false) {
+    $passwordNotificationFingerprint = implode(':', [
+        date('Y-m-d'),
+        (string) ($SETTINGS['notification_center_enabled'] ?? '0'),
+        (string) $session->get('user-auth_type'),
+        (string) $session->get('user-last_pw_change'),
+        (string) ($SETTINGS['pw_life_duration'] ?? '0'),
+    ]);
+    if ($session->get('local-password-notification-check') !== $passwordNotificationFingerprint) {
+        $daysBeforeExpiry = $session->get('user-num_days_before_exp');
+        tpNotifyLocalPasswordExpiry(
+            (int) $session->get('user-id'),
+            (string) $session->get('user-auth_type'),
+            (int) $session->get('user-last_pw_change'),
+            (int) ($SETTINGS['pw_life_duration'] ?? 0),
+            is_numeric($daysBeforeExpiry) ? (int) $daysBeforeExpiry : 0
+        );
+        $session->set('local-password-notification-check', $passwordNotificationFingerprint);
+    }
+}
+
 $session->set('user-can_printout', 0);
 if (
     isset($SETTINGS['roles_allowed_to_print']) === true

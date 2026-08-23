@@ -148,13 +148,16 @@ if (null !== $post_type) {
             // Load the full tree once (1 query) — result is indexed by node id
             $treeDesc = $tree->getDescendants();
 
-            // Filter accessible non-personal folders
+            // Filter accessible non-personal folders.
+            // The raw personal_folder flag is not enough: a sub-folder of a personal root can
+            // carry 0 when the flag was never written, and would then show up in this list.
+            $personalFolderIds = getPersonalFolderIdsWithDescendants();
+
             $accessibleFolders = [];
             foreach ($treeDesc as $t) {
                 if (
                     in_array($t->id, $session->get('user-accessible_folders')) === true
-                    && in_array($t->id, $session->get('user-personal_visible_folders')) === false
-                    && $t->personal_folder == 0
+                    && in_array((int) $t->id, $personalFolderIds, true) === false
                 ) {
                     $accessibleFolders[] = $t;
                 }
@@ -1647,11 +1650,15 @@ if (null !== $post_type) {
 
             // Get through each subfolder
             $folders = $tree->getDescendants(0, false);
-            
+
+            // Same filter as the server-rendered list in pages/folders.php: personal folders
+            // must not appear as a possible parent.
+            $personalFolderIds = getPersonalFolderIdsWithDescendants();
+
             foreach ($folders as $folder) {
                 if (
                     in_array($folder->id, $session->get('user-accessible_folders')) === true
-                    && in_array($folder->id, $session->get('user-personal_visible_folders')) === false
+                    && in_array((int) $folder->id, $personalFolderIds, true) === false
                 ) {
                     // Get path
                     $text = '';

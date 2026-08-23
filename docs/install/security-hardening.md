@@ -4,16 +4,12 @@
 
 ## About this document
 
-This **cumulative** document tracks the encryption and data-security hardening changes of TeamPass.
-Each change (a "phase") adds a section: **what changes**, **why**, **the administrator action (if
-any)**, **how to verify** and **how to roll back**.
+This **cumulative** document tracks the encryption and data-security hardening changes of TeamPass. Each change (a "phase") adds a section: **what changes**, **why**, **the administrator action (if any)**, **how to verify** and **how to roll back**.
 
-> 📌 **Read this before any upgrade that touches encryption.** Some changes ship a **data
-> remediation script** that must be run manually, always **after a database backup**.
+> 📌 **Read this before any upgrade that touches encryption.** Some changes ship a **data remediation script** that must be run manually, always **after a database backup**.
 
 **Audience:** TeamPass instance administrators.
-**Technical references:** `.claude/docs/architecture-encryption.md` (architecture),
-[phpseclib v1→v3 migration](../PHPSECLIB_V3_MIGRATION.md).
+**Technical references:** `.claude/docs/architecture-encryption.md` (architecture), [phpseclib v1→v3 migration](../PHPSECLIB_V3_MIGRATION.md).
 
 | Phase | Topic | Status | Admin action required |
 |---|---|---|---|
@@ -26,8 +22,7 @@ any)**, **how to verify** and **how to roll back**.
 
 ## Golden rule: always back up before running a remediation script
 
-Any remediation script that **deletes** or **rewrites** data is **irreversible** without a backup.
-Before running anything with `--execute`:
+Any remediation script that **deletes** or **rewrites** data is **irreversible** without a backup. Before running anything with `--execute`:
 
 ```bash
 mysqldump -u <user> -p <database> > teampass_backup_$(date +%Y%m%d_%H%M%S).sql
@@ -45,30 +40,21 @@ Ideally, first replay the remediation on a **staging copy** restored from that d
 
 ### What changes
 
-When **creating a personal item** (in a personal folder), TeamPass now distributes the share key
-**only to the owner** and to the internal recovery account **`TP_USER_ID`**. Previously, due to a
-parameter bug, the key was distributed to **all** users of the instance.
+When **creating a personal item** (in a personal folder), TeamPass now distributes the share key **only to the owner** and to the internal recovery account **`TP_USER_ID`**. Previously, due to a parameter bug, the key was distributed to **all** users of the instance.
 
 This fix covers web **and** API creation, as well as import.
 
 ### Why (the risk being fixed)
 
-A personal item must remain decryptable only by its owner (cryptographic isolation). With the old
-code, any account holding a public key received a share key for someone else's personal item: only
-the application access control (folder rights) still prevented reading it. The cryptographic layer
-itself was bypassed.
+A personal item must remain decryptable only by its owner (cryptographic isolation). With the old code, any account holding a public key received a share key for someone else's personal item: only the application access control (folder rights) still prevented reading it. The cryptographic layer itself was bypassed.
 
-> ℹ️ The internal `TP_USER_ID` account deliberately keeps a recovery key on personal items (this
-> already matched the cleanup and migration behaviour). It enables server-side recovery without
-> restoring access for any other user.
+> ℹ️ The internal `TP_USER_ID` account deliberately keeps a recovery key on personal items (this already matched the cleanup and migration behaviour). It enables server-side recovery without restoring access for any other user.
 
 ### Administrator action — remediating existing data
 
-Personal items **created before** this fix and **never modified since** may still carry foreign
-share keys in the database. A script cleans them up.
+Personal items **created before** this fix and **never modified since** may still carry foreign share keys in the database. A script cleans them up.
 
-> ⚠️ The script **deletes rows**: **back up the database first** (see the golden rule). It
-> **never** deletes anything for an item with an ambiguous owner (see "Reading the report").
+> ⚠️ The script **deletes rows**: **back up the database first** (see the golden rule). It **never** deletes anything for an item with an ambiguous owner (see "Reading the report").
 
 **1. Analyse (`--dry-run` mode, the default, makes no change):**
 
@@ -98,19 +84,15 @@ Foreign sharekeys found   : 0     ← total foreign keys detected
 ```
 
 - **Already clean** — compliant items (earlier automatic cleanups already did the work). No action.
-- **Skipped (unresolved owner)** — a personal item whose tree root is not a valid personal folder
-  (data inconsistency). **Intentionally left untouched.**
-- **Skipped (owner conflict)** — the owner derived from the personal folder differs from the user
-  recorded as the creator (`at_creation`). **Intentionally left untouched** — inspect such items
-  manually if needed.
+- **Skipped (unresolved owner)** — a personal item whose tree root is not a valid personal folder (data inconsistency). **Intentionally left untouched.**
+- **Skipped (owner conflict)** — the owner derived from the personal folder differs from the user recorded as the creator (`at_creation`). **Intentionally left untouched** — inspect such items manually if needed.
 - **Items with foreign keys** — only these are cleaned in `--execute` mode.
 
 ### Verification
 
 Re-run `--dry-run` after applying: `Foreign sharekeys found` must be `0`.
 
-Additional SQL check (replace `<item_id>`; the system account ids are `9999997` TP, `9999999` API,
-`9999991` OTV, `9999998` SSH):
+Additional SQL check (replace `<item_id>`; the system account ids are `9999997` TP, `9999999` API, `9999991` OTV, `9999998` SSH):
 
 ```sql
 -- Share key holders for a given personal item: only the owner and the system
@@ -127,12 +109,9 @@ WHERE object_id = <item_id>;
 
 ### Technical details
 
-- Distribution: `storeUsersShareKey()` (`app/sources/main.functions.php`) — owner-only branch on
-  the "personal folder" flag.
-- Key reads unified on the migration-aware path `decryptUserObjectKeyWithMigration()` (SEC-7); item
-  creation made atomic with a transaction (FUNC-6).
-- Tested decision logic: `app/scripts/personal_sharekeys_logic.php` +
-  `tests/Unit/PersonalSharekeysLogicTest.php`.
+- Distribution: `storeUsersShareKey()` (`app/sources/main.functions.php`) — owner-only branch on the "personal folder" flag.
+- Key reads unified on the migration-aware path `decryptUserObjectKeyWithMigration()` (SEC-7); item creation made atomic with a transaction (FUNC-6).
+- Tested decision logic: `app/scripts/personal_sharekeys_logic.php` + `tests/Unit/PersonalSharekeysLogicTest.php`.
 - Full analysis: `.claude/docs/architecture-encryption.md`.
 
 ---
@@ -159,20 +138,16 @@ WHERE object_id = <item_id>;
 ## FAQ
 
 **Q: Do I have to run the Phase 1 remediation script?**
-A: No. The fix protects every **new** creation. The script only cleans foreign share keys inherited
-by old personal items. If it reports `Foreign sharekeys found: 0`, no action is needed.
+A: No. The fix protects every **new** creation. The script only cleans foreign share keys inherited by old personal items. If it reports `Foreign sharekeys found: 0`, no action is needed.
 
 **Q: Can the script delete a legitimate key?**
-A: No, by design: it only touches keys belonging neither to the owner nor to the system accounts,
-and it **skips** any item with an ambiguous owner (reported under "Skipped").
+A: No, by design: it only touches keys belonging neither to the owner nor to the system accounts, and it **skips** any item with an ambiguous owner (reported under "Skipped").
 
 **Q: Do users lose access to their personal items?**
-A: No. The owner always keeps their key; only the cryptographic access wrongly granted to other
-accounts is removed.
+A: No. The owner always keeps their key; only the cryptographic access wrongly granted to other accounts is removed.
 
 **Q: Can I run the script multiple times?**
 A: Yes. It is idempotent: a second run will find no more foreign keys.
 
 **Q: Is a maintenance window / downtime required?**
-A: No. `--dry-run` is read-only; `--execute` works item by item in short transactions. A prior
-backup remains mandatory.
+A: No. `--dry-run` is read-only; `--execute` works item by item in short transactions. A prior backup remains mandatory.

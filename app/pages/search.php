@@ -103,6 +103,165 @@ $featureFavourites = (int) ($SETTINGS['enable_favourites'] ?? 0) === 1;
         font-size: .875rem;
         line-height: 1.35;
     }
+
+    /* ---- Result rows -------------------------------------------------- */
+
+    /* The whole row opens the detail modal. */
+    #search-results-items tbody tr {
+        cursor: pointer;
+    }
+    #search-results-items tbody tr:hover {
+        background-color: rgba(0, 123, 255, .06);
+    }
+    .dark-mode #search-results-items tbody tr:hover {
+        background-color: rgba(255, 255, 255, .05);
+    }
+    /* The label is a button so the detail modal has a keyboard entry point;
+       it must still read as plain text in the table. */
+    .search-label-btn {
+        border: 0;
+        background: transparent;
+        padding: 0;
+        color: inherit;
+        font: inherit;
+        text-align: left;
+    }
+    .search-label-btn:hover,
+    .search-label-btn:focus {
+        text-decoration: underline;
+    }
+    #search-results-items td.search-col-select {
+        width: 34px;
+        text-align: center;
+    }
+
+    /* The actions do not deserve a column of their own: a fixed one wastes
+       width on every row and the buttons spill out of it. The cell is reduced
+       to nothing and its content taken out of the flow, so the buttons float
+       over the right edge of the row they belong to. */
+    #search-results-items td.search-col-actions {
+        width: 1px;
+        padding: 0;
+        position: relative;
+        border-left: 0;
+    }
+
+    /* Quiet until the row is hovered, so the table stays readable. Keyboard
+       focus reveals them too, otherwise they would be unreachable without a
+       mouse. pointer-events follows the opacity: an invisible button must not
+       swallow a click meant for the row underneath. */
+    .search-row-actions {
+        position: absolute;
+        top: 50%;
+        right: .5rem;
+        transform: translateY(-50%);
+        z-index: 2;
+        display: inline-flex;
+        gap: .25rem;
+        padding: .15rem .25rem;
+        border-radius: .25rem;
+        background-color: #fff;
+        box-shadow: 0 1px 5px rgba(0, 0, 0, .2);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .12s ease-in-out;
+    }
+    #search-results-items tbody tr:hover .search-row-actions,
+    .search-row-actions:focus-within {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    .dark-mode .search-row-actions {
+        background-color: #454d55;
+        box-shadow: 0 1px 5px rgba(0, 0, 0, .5);
+    }
+    .search-row-action {
+        border: 0;
+        background: transparent;
+        color: #6c757d;
+        padding: .2rem .4rem;
+        border-radius: .2rem;
+        line-height: 1;
+    }
+    .search-row-action:hover,
+    .search-row-action:focus {
+        color: #007bff;
+        background-color: rgba(0, 123, 255, .12);
+    }
+    .dark-mode .search-row-action {
+        color: #adb5bd;
+    }
+    .dark-mode .search-row-action:hover,
+    .dark-mode .search-row-action:focus {
+        color: #4dabf7;
+        background-color: rgba(77, 171, 247, .16);
+    }
+
+    /* Touch devices have no hover: keep the actions visible there. */
+    @media (hover: none) {
+        .search-row-actions {
+            opacity: 1;
+            pointer-events: auto;
+        }
+    }
+
+    /* ---- Detail modal -------------------------------------------------- */
+
+    #search-item-modal .search-item-icon {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: .35rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(0, 123, 255, .12);
+        color: #007bff;
+        flex: 0 0 auto;
+    }
+    .dark-mode #search-item-modal .search-item-icon {
+        background-color: rgba(77, 171, 247, .16);
+        color: #4dabf7;
+    }
+    /* Without this a long label stretches the flex item instead of wrapping. */
+    #search-item-modal .search-item-head {
+        min-width: 0;
+    }
+    #search-item-modal .search-item-path {
+        font-size: .8125rem;
+    }
+    /* Two-column definition layout: label column fixed so every value aligns. */
+    #search-item-modal .search-item-field {
+        display: flex;
+        align-items: flex-start;
+        padding: .4rem 0;
+    }
+    #search-item-modal .search-item-field + .search-item-field {
+        border-top: 1px solid rgba(0, 0, 0, .05);
+    }
+    .dark-mode #search-item-modal .search-item-field + .search-item-field {
+        border-top-color: rgba(255, 255, 255, .08);
+    }
+    #search-item-modal .search-item-field-label {
+        flex: 0 0 8.5rem;
+        color: #6c757d;
+        font-size: .8125rem;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        padding-top: .15rem;
+    }
+    #search-item-modal .search-item-field-value {
+        flex: 1 1 auto;
+        min-width: 0;
+        word-break: break-word;
+    }
+    #search-item-modal .search-item-field-actions {
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+    #search-item-modal .search-item-description {
+        max-height: 12rem;
+        overflow-y: auto;
+    }
 </style>
 
 <!-- Content Header (Page header) -->
@@ -323,6 +482,7 @@ $featureFavourites = (int) ($SETTINGS['enable_favourites'] ?? 0) === 1;
                                 <th><?php echo $lang->get('tags'); ?></th>
                                 <th><?php echo $lang->get('url'); ?></th>
                                 <th><?php echo $lang->get('group'); ?></th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -333,3 +493,120 @@ $featureFavourites = (int) ($SETTINGS['enable_favourites'] ?? 0) === 1;
         </div>
     </div>
 </section>
+
+<!-- ITEM DETAIL MODAL
+     Replaces the former DataTables child row: that one collided with the
+     Responsive extension (both drive row.child()) and pushed every row below
+     it out of place. -->
+<div class="modal fade" id="search-item-modal" tabindex="-1" role="dialog"
+    aria-labelledby="search-item-modal-label" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+
+            <div class="modal-header align-items-start">
+                <span class="search-item-icon mr-3"><i class="fa-solid fa-key" id="search-item-glyph" aria-hidden="true"></i></span>
+                <div class="flex-grow-1 search-item-head">
+                    <h5 class="modal-title mb-0 d-inline-block mr-2" id="search-item-modal-label"></h5><span id="search-item-badge"></span>
+                    <div class="text-muted search-item-path" id="search-item-path"></div>
+                </div>
+                <button type="button" class="close ml-2" data-dismiss="modal"
+                    aria-label="<?php echo $lang->get('close'); ?>">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body" id="search-item-modal-body">
+
+                <!-- Loading state: the payload needs a server round-trip and a
+                     decryption, so show the shape of the answer meanwhile. -->
+                <div id="search-item-loading">
+                    <div class="search-item-field">
+                        <div class="search-item-field-label"><span class="skeleton-line skeleton-sm"></span></div>
+                        <div class="search-item-field-value"><span class="skeleton-line skeleton-lg"></span></div>
+                    </div>
+                    <div class="search-item-field">
+                        <div class="search-item-field-label"><span class="skeleton-line skeleton-sm"></span></div>
+                        <div class="search-item-field-value"><span class="skeleton-line skeleton-md"></span></div>
+                    </div>
+                    <div class="search-item-field">
+                        <div class="search-item-field-label"><span class="skeleton-line skeleton-sm"></span></div>
+                        <div class="search-item-field-value"><span class="skeleton-line skeleton-xl"></span></div>
+                    </div>
+                </div>
+
+                <!-- Refusal / error state (expired item, no rights, ...) -->
+                <div class="alert alert-warning hidden" id="search-item-message"></div>
+
+                <div class="hidden" id="search-item-content">
+
+                    <div class="search-item-field hidden" id="search-item-login-row">
+                        <div class="search-item-field-label"><?php echo $lang->get('index_login'); ?></div>
+                        <div class="search-item-field-value" id="search-item-login"></div>
+                        <div class="search-item-field-actions">
+                            <button type="button" class="btn btn-sm btn-outline-secondary infotip"
+                                id="search-item-copy-login"
+                                title="<?php echo $lang->get('favorites_copy_login'); ?>">
+                                <i class="fa-regular fa-clone" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="search-item-field" id="search-item-pwd-row">
+                        <div class="search-item-field-label"><?php echo $lang->get('pw'); ?></div>
+                        <!-- Filled by the JS with a span carrying the per-item id
+                             (pwd-show_<id>) the existing .btn-show-pwd reveal and
+                             long-press handlers expect. -->
+                        <div class="search-item-field-value" id="search-item-pwd-holder"></div>
+                        <div class="search-item-field-actions">
+                            <button type="button" class="btn btn-sm btn-outline-secondary btn-show-pwd infotip"
+                                id="search-item-show-pwd" title="<?php echo $lang->get('mask_pw'); ?>">
+                                <i class="fa-regular fa-eye pwd-show-spinner" aria-hidden="true"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary infotip ml-1"
+                                id="search-item-copy-pwd"
+                                title="<?php echo $lang->get('favorites_copy_password'); ?>">
+                                <i class="fa-regular fa-clone" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="search-item-field hidden" id="search-item-url-row">
+                        <div class="search-item-field-label"><?php echo $lang->get('url'); ?></div>
+                        <div class="search-item-field-value" id="search-item-url"></div>
+                        <div class="search-item-field-actions">
+                            <a class="btn btn-sm btn-outline-secondary infotip" id="search-item-open-url"
+                                href="#" target="_blank" rel="noopener noreferrer"
+                                title="<?php echo $lang->get('open_url_link'); ?>">
+                                <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                            </a>
+                            <button type="button" class="btn btn-sm btn-outline-secondary infotip ml-1"
+                                id="search-item-copy-url"
+                                title="<?php echo $lang->get('copy'); ?>">
+                                <i class="fa-regular fa-clone" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="search-item-field hidden" id="search-item-tags-row">
+                        <div class="search-item-field-label"><?php echo $lang->get('tags'); ?></div>
+                        <div class="search-item-field-value" id="search-item-tags"></div>
+                    </div>
+
+                    <div class="search-item-field hidden" id="search-item-description-row">
+                        <div class="search-item-field-label"><?php echo $lang->get('description'); ?></div>
+                        <div class="search-item-field-value search-item-description" id="search-item-description"></div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary mr-auto" id="search-item-open">
+                    <i class="fa-solid fa-arrow-up-right-from-square mr-2" aria-hidden="true"></i><?php echo $lang->get('favorites_open_item'); ?>
+                </button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal"><?php echo $lang->get('close'); ?></button>
+            </div>
+
+        </div>
+    </div>
+</div>

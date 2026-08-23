@@ -81,12 +81,17 @@ jobs:
           images: |
             ${{ env.IMAGE_NAME_DOCKERHUB }}
             ${{ env.IMAGE_NAME_GHCR }}
+          # TeamPass versions carry four digits (3.2.1.7), which is not valid semver,
+          # so the three semver patterns below never match a release tag and silently
+          # produce nothing. The raw ref_name entry publishes the tag name verbatim,
+          # so the versioned image exists and can be pinned.
           tags: |
             type=ref,event=branch
             type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
+            type=raw,value=${{ github.ref_name }},enable=${{ startsWith(github.ref, 'refs/tags/') }}
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,prefix=sha-
           labels: |
@@ -183,6 +188,11 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request'
+
+    # The job only checks out the repository and pulls the image that
+    # build-and-push published, so read access to the contents is all it needs.
+    permissions:
+      contents: read
 
     # Add MariaDB service to allow the entrypoint to succeed
     services:

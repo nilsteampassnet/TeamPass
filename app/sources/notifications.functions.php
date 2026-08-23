@@ -51,6 +51,9 @@ function notificationPersistableEvents(): array
         'user_keys_ready',
         'task_completed',
         'folder_permission_changed',
+        'local_password_expiring',
+        'kb_article_created',
+        'backup_failed',
     ];
 }
 
@@ -116,12 +119,104 @@ function notificationSanitizePayload(string $eventType, array $payload): array
             }
             break;
 
+        case 'local_password_expiring':
+            $clean['days_remaining'] = min(36500, max(0, (int) ($payload['days_remaining'] ?? 0)));
+            $clean['threshold'] = min(36500, max(0, (int) ($payload['threshold'] ?? 0)));
+            $clean['expires_at'] = max(0, (int) ($payload['expires_at'] ?? 0));
+            break;
+
+        case 'kb_article_created':
+            $clean['kb_id'] = max(0, (int) ($payload['kb_id'] ?? 0));
+            $clean['label'] = mb_substr((string) ($payload['label'] ?? ''), 0, 200);
+            break;
+
+        case 'backup_failed':
+            $clean['backup_type'] = (string) ($payload['backup_type'] ?? '') === 'externalized'
+                ? 'externalized'
+                : 'scheduled';
+            // Backup failures often quote shell, driver or filesystem output
+            // that is not valid UTF-8. Repair it first: the /u modifier would
+            // otherwise return null and silently drop the whole cause.
+            $rawMessage = trim((string) ($payload['message'] ?? ''));
+            if ($rawMessage !== '' && mb_check_encoding($rawMessage, 'UTF-8') === false) {
+                $rawMessage = (string) mb_convert_encoding($rawMessage, 'UTF-8', 'UTF-8');
+            }
+            $message = preg_replace('/\s+/u', ' ', $rawMessage);
+            $clean['message'] = mb_substr(is_string($message) ? $message : '', 0, 300);
+            break;
+
         default:
             // Unknown type: store nothing rather than arbitrary data.
             break;
     }
 
     return $clean;
+}
+
+/**
+ * Select the warning milestone for a local password expiry.
+ *
+ * The returned value doubles as the notification's stable threshold. A user
+ * who first connects between milestones receives the closest applicable one,
+ * while the persistence dedupe key prevents it from being repeated on every
+ * page load.
+ *
+ * @param int $daysRemaining Whole days before expiry (0 or less means expired)
+ *
+ * @return int|null 14, 7, 3, 1, 0 (expired), or null when no warning is due
+ */
+function notificationPasswordExpiryThreshold(int $daysRemaining): ?int
+{
+    if ($daysRemaining <= 0) {
+        return 0;
+    }
+
+    foreach ([1, 3, 7, 14] as $threshold) {
+        if ($daysRemaining <= $threshold) {
+            return $threshold;
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Build the idempotency key for one password cycle and warning milestone.
+ */
+function notificationPasswordExpiryDedupeKey(int $expiresAt, int $threshold): string
+{
+    return 'local_password_expiry:' . max(0, $expiresAt) . ':' . max(0, $threshold);
+}
+
+/**
+ * Build the idempotency key for a knowledge-base publication fan-out.
+ */
+function notificationKbPublicationDedupeKey(int $kbId): string
+{
+    return 'kb_article_created:' . max(0, $kbId);
+}
+
+/**
+ * Build the idempotency key for an administrator backup-failure alert.
+ *
+ * A created task uses its numeric id; a scheduler preflight uses a stable
+ * date-and-cause identifier. The backup type is part of the key because a
+ * successful scheduled task may still report that its chained
+ * externalization could not be queued.
+ */
+function notificationBackupFailureDedupeKey(int|string $failureId, string $backupType): string
+{
+    $normalizedType = $backupType === 'externalized' ? 'externalized' : 'scheduled';
+    $normalizedFailureId = preg_replace(
+        '/[^a-zA-Z0-9_.:-]+/',
+        '_',
+        substr(trim((string) $failureId), 0, 80)
+    );
+    if (is_string($normalizedFailureId) === false || $normalizedFailureId === '') {
+        $normalizedFailureId = 'unknown';
+    }
+
+    return 'backup_failed:' . $normalizedType . ':' . $normalizedFailureId;
 }
 
 /**

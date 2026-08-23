@@ -4,9 +4,7 @@
 
 ## Generalities
 
-In Teampass, all encrypted elements (such as passwords and encrypted fields) have a unique key for each user. 
-This key is encrypted with his/hers login password.
-Such a process ensures a high level of security for all data stored in the database through Teampass.
+In Teampass, all encrypted elements (such as passwords and encrypted fields) have a unique key for each user. This key is encrypted with his/hers login password. Such a process ensures a high level of security for all data stored in the database through Teampass.
 
 💡 [Read more](../install/encryption.md) about this encryption process.
 

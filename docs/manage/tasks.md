@@ -17,8 +17,7 @@ Mandatory tasks are:
 * managing user keys,
 * performing statistics (used in the tree view).
 
-For those, you need to the frequency at which they have to be executed.
-They need to run several times by hour in order to garantee a kind of real-time for users.
+For those, you need to the frequency at which they have to be executed. They need to run several times by hour in order to garantee a kind of real-time for users.
 
 Maintenance tasks can run on lower frequencies. You can select how to run them or keep them to value `Not defined` to disabled the corresponding task.
 
@@ -31,28 +30,23 @@ Maintenance tasks can run on lower frequencies. You can select how to run them o
 
 ![Settings tasks options](../_media/tp3_tasks_05.png)
 
-1. Define if logging in database each task execution is requested.
-_It permits to check if everything works as defined and should be disabled once working_
+1. Define if logging in database each task execution is requested. _It permits to check if everything works as defined and should be disabled once working_
 2. Set the maximum duration a script can execute in background. 
 _It is suggested to define a higher value that the `max_execution_time` defined in `php.ini` file. Value `0` indicates that any time for the script is allowed._ 
-1. Set the number of items will be treated by the script.
-_This value is to adapt depending on what happen. But you should not change it._
+1. Set the number of items will be treated by the script. _This value is to adapt depending on what happen. But you should not change it._
 1. Set the delay after which the data is refreshed in the tasks management follow up page.
 
 
 ## Setting up the cron job
 
-To be enabled, it is required to add a new entry inside the crontab.
-Only one entry is expected, each job has its own execution frequency.
+To be enabled, it is required to add a new entry inside the crontab. Only one entry is expected, each job has its own execution frequency.
 
 First you need to get the location to php (you can run `locate php`).
 
 Notice that during installation, the server crontab is updated with the next job.
 More details may be found on how this works by reading [CrontabManager documentation](https://github.com/TiBeN/CrontabManager).
 
-Then open the crons manager with the same user as the one used by php (example: `crontab -u www-data -e`)
-and add the input permitting the job to run each 5 minutes for example.
-``* * * * * /path/to/phpbin /path/to/Teampass/app/sources/scheduler.php #Teampass scheduler``
+Then open the crons manager with the same user as the one used by php (example: `crontab -u www-data -e`) and add the input permitting the job to run each 5 minutes for example. ``* * * * * /path/to/phpbin /path/to/Teampass/app/sources/scheduler.php #Teampass scheduler``
 
 > :pushpin: 
 > Set it to run every minute.

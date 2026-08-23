@@ -73,16 +73,13 @@ docker compose up -d
 
 ### 4. Create the secure key directory
 
-TeamPass needs a directory to store its master encryption key. This directory must exist
-and be writable by the PHP-FPM process (`nginx` user inside the container).
+TeamPass needs a directory to store its master encryption key. This directory must exist and be writable by the PHP-FPM process (`nginx` user inside the container).
 
 ```bash
 docker exec teampass-app sh -c "mkdir -p /var/TeampassSecurity && chown nginx:nginx /var/TeampassSecurity && chmod 750 /var/TeampassSecurity"
 ```
 
-> **Persistence warning:** This directory is inside the container and will be lost if the
-> container is recreated (`docker compose down -v`). For production, mount it as a volume
-> (see [Advanced Usage](#advanced-usage)).
+> **Persistence warning:** This directory is inside the container and will be lost if the container is recreated (`docker compose down -v`). For production, mount it as a volume (see [Advanced Usage](#advanced-usage)).
 
 ### 5. Complete the installation wizard
 
@@ -182,9 +179,7 @@ For testing, use `latest`. Versioned tags only appear after a GitHub Release is 
 | `teampass-secrets` | `/var/www/html/secrets` | Defuse master key |
 | `teampass-db` | `/var/lib/mysql` | Database data |
 
-> `teampass-config` and `teampass-secrets` are required: without them TeamPass
-> loses its install state and master key on container recreation and tries to
-> reinstall itself on every restart.
+> `teampass-config` and `teampass-secrets` are required: without them TeamPass loses its install state and master key on container recreation and tries to reinstall itself on every restart.
 
 ---
 
@@ -299,12 +294,9 @@ newgrp docker
 
 ### "MySQL server has gone away" during installation
 
-This error occurs when the installer sets an empty SSL array, which causes mysqli to fail
-over TCP connections (required in Docker). It does not occur on traditional (non-Docker)
-installations because PHP uses Unix sockets there.
+This error occurs when the installer sets an empty SSL array, which causes mysqli to fail over TCP connections (required in Docker). It does not occur on traditional (non-Docker) installations because PHP uses Unix sockets there.
 
-**Workaround (already applied in latest image):** The installer files `run.step3.php`
-through `run.step6.php` must have `DB::$ssl = null` instead of an empty SSL array.
+**Workaround (already applied in latest image):** The installer files `run.step3.php` through `run.step6.php` must have `DB::$ssl = null` instead of an empty SSL array.
 
 If you encounter this on an older image, patch the files manually:
 
@@ -318,8 +310,7 @@ done
 
 ### Database password rejected / "Access denied"
 
-After changing `DB_PASSWORD` in `.env`, you **must** destroy the database volume to force
-MariaDB to reinitialize with the new password:
+After changing `DB_PASSWORD` in `.env`, you **must** destroy the database volume to force MariaDB to reinitialize with the new password:
 
 ```bash
 docker compose down -v   # destroys all volumes including database
@@ -330,8 +321,7 @@ docker compose up -d
 
 ### MariaDB crashes on WSL2 (io_uring error)
 
-WSL2 does not support `O_DIRECT` for InnoDB. The `docker/mariadb/custom.cnf` is already
-configured with `innodb_flush_method = fsync` to work around this. If you see:
+WSL2 does not support `O_DIRECT` for InnoDB. The `docker/mariadb/custom.cnf` is already configured with `innodb_flush_method = fsync` to work around this. If you see:
 
 ```
 InnoDB: liburing disabled: falling back to innodb_use_native_aio=OFF
@@ -383,10 +373,7 @@ TeamPass 3.2 stores its install state and master key under:
 - `/var/www/html/secrets` — Defuse master key (saltkey)
 - `/var/www/html/storage/config` — `settings.php` and `csrfp.config.php`
 
-The provided `docker-compose.yml` already mounts `teampass-secrets` and
-`teampass-config` for these paths, so the installation survives container
-recreation out of the box. If you maintain your own compose file, make sure
-both volumes are present:
+The provided `docker-compose.yml` already mounts `teampass-secrets` and `teampass-config` for these paths, so the installation survives container recreation out of the box. If you maintain your own compose file, make sure both volumes are present:
 
 ```yaml
 services:
@@ -405,8 +392,7 @@ volumes:
     driver: local
 ```
 
-Without these volumes TeamPass loses its configuration on `docker compose down`
-and shows the installer again on the next start.
+Without these volumes TeamPass loses its configuration on `docker compose down` and shows the installer again on the next start.
 
 ### Custom PHP configuration
 
