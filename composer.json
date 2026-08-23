@@ -12,7 +12,7 @@
             "php": "8.2"
         }
     },
-    "version": "3.2.1.7",
+    "version": "3.2.2.0",
     "keywords": ["passwords", "manager", "collaborative", "vault", "security"],
     "homepage": "https://www.teampass.net",
     "license": [
