@@ -1597,6 +1597,16 @@ switch ($type) {
             (int) $session->get('user-id')
         );
 
+        if ($oldKb === null) {
+            // Fan-out to every eligible recipient runs in a background task:
+            // the recipient list is the whole non-administrator user base.
+            tpQueueKnowledgeBasePublicationNotification(
+                $kbId,
+                $label,
+                (int) $session->get('user-id')
+            );
+        }
+
         if ($oldKb !== null && $keepLockAfterSave !== 1) {
             kbReleaseAllEditionLocks($kbId, (string) ($session->get('user-login') ?? ''), (int) $session->get('user-id'));
         }

@@ -157,6 +157,12 @@ class TaskWorker {
                 case 'lapr_rotation':
                     $this->handleLaprRotation($this->taskData);
                     break;
+                case 'local_password_expiry_notifications':
+                    $this->handleLocalPasswordExpiryNotifications();
+                    break;
+                case 'kb_publication_notifications':
+                    $this->handleKbPublicationNotifications($this->taskData);
+                    break;
                 default:
                     throw new Exception("Type of subtask unknown: {$this->processType}");
             }
@@ -314,6 +320,7 @@ class TaskWorker {
                     ]);
                     $reportStatus = 'failed';
                     $reportMessage = $scheduledMessage . '. Externalized backup was not completed: ' . $externalizedMessage;
+                    tpNotifyBackupFailure($this->taskId, 'externalized', $externalizedMessage);
                 }
 
                 try {
@@ -885,6 +892,75 @@ class TaskWorker {
 
         $msgKey = $errors > 0 ? 'inactive_users_mgmt_msg_task_completed_with_errors' : 'inactive_users_mgmt_msg_task_completed';
         $this->updateInactiveUsersMgmtState('completed', $msgKey, $details);
+    }
+
+    /**
+     * Create in-app password-expiry notifications for every active local
+     * account, including administrators. External identities and internal
+     * TeamPass service accounts are deliberately excluded.
+     */
+    private function handleLocalPasswordExpiryNotifications(): void
+    {
+        $notificationCenterEnabled = (int) ($this->settings['notification_center_enabled'] ?? 0);
+        $passwordLifetimeDays = (int) ($this->settings['pw_life_duration'] ?? 0);
+        if ($notificationCenterEnabled !== 1 || $passwordLifetimeDays <= 0) {
+            return;
+        }
+
+        // Accounts without a password-change timestamp have no computable cycle:
+        // filter them in SQL rather than loading and skipping them one by one.
+        $excludedIds = teampassGetSystemAccountIds();
+        $sql = 'SELECT id, last_pw_change
+            FROM ' . prefixTable('users') . '
+            WHERE auth_type = %s
+            AND disabled = 0
+            AND last_pw_change IS NOT NULL
+            AND last_pw_change > 0
+            AND (deleted_at IS NULL OR deleted_at = "" OR deleted_at = 0)';
+        if (count($excludedIds) > 0) {
+            $sql .= ' AND id NOT IN %li';
+            $users = DB::query($sql, 'local', $excludedIds);
+        } else {
+            $users = DB::query($sql, 'local');
+        }
+
+        $today = mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'));
+        foreach ($users as $user) {
+            $lastPasswordChange = (int) ($user['last_pw_change'] ?? 0);
+            if ($lastPasswordChange <= 0) {
+                continue;
+            }
+
+            $elapsedDays = (int) round(($today - $lastPasswordChange) / TP_ONE_DAY_SECONDS);
+            tpNotifyLocalPasswordExpiry(
+                (int) ($user['id'] ?? 0),
+                'local',
+                $lastPasswordChange,
+                $passwordLifetimeDays,
+                $passwordLifetimeDays - $elapsedDays
+            );
+        }
+    }
+
+    /**
+     * Fan out a knowledge-base publication notification to every eligible
+     * recipient. Queued by tpQueueKnowledgeBasePublicationNotification() so the
+     * article save request never carries the whole user base.
+     *
+     * @param array $taskData Task arguments: kb_id, label, author_id
+     */
+    private function handleKbPublicationNotifications(array $taskData): void
+    {
+        $kbId = (int) ($taskData['kb_id'] ?? 0);
+        if ($kbId <= 0) {
+            return;
+        }
+
+        tpNotifyKnowledgeBasePublication(
+            $kbId,
+            (string) ($taskData['label'] ?? ''),
+            (int) ($taskData['author_id'] ?? 0)
+        );
     }
 
     private function updateInactiveUsersMgmtState(string $status, string $messageKey, array $details = []): void
@@ -1674,6 +1750,7 @@ class TaskWorker {
             } catch (Throwable) {
                 // best effort only
             }
+            tpNotifyBackupFailure($this->taskId, 'scheduled', $e->getMessage());
         }
 
         if ($this->processType === 'externalized_backup') {
@@ -1695,6 +1772,7 @@ class TaskWorker {
             } catch (Throwable) {
                 // best effort only
             }
+            tpNotifyBackupFailure($this->taskId, 'externalized', $e->getMessage());
         }
 
         // Purge retention even on failure (safe: only files matching the task source prefix)

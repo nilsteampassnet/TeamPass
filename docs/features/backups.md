@@ -113,6 +113,8 @@ You can enable email reports for scheduled backups:
 
 When externalized backups are configured to run after scheduled backups, Teampass sends a single consolidated report after the externalized step completes. No separate scheduled-only email is sent for that run.
 
+When the in-app notification centre is enabled, every active administrator also receives a durable alert if a scheduled backup fails, an externalized backup exhausts its retries, or a successful scheduled backup cannot queue its configured externalization. These alerts are independent of the optional email report settings and link directly to the Backups page. Successful backups do not generate in-app alerts.
+
 ### Buttons
 
 | Button | Description |
@@ -275,7 +277,7 @@ Remote externalized destinations are not included in this local storage usage in
 2. **Off-site storage**: Use externalized backups or periodically download backups and store them in a separate location
 3. **Test restores**: Regularly test that backups can be restored successfully
 4. **Secure keys**: Store encryption keys securely, separate from the backup files
-5. **Monitor notifications**: Enable email reports to be alerted of backup failures
+5. **Monitor notifications**: Enable the in-app notification centre for administrator alerts, and optionally enable email reports for backup failures
 6. **Retention policy**: Balance storage space with your recovery requirements
 7. **Destination tests**: Use the externalized destination test before relying on a remote target
 8. **Recovery Package**: Generate a Recovery Package and keep it in a secure offline location

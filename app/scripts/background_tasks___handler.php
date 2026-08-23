@@ -94,6 +94,7 @@ class BackgroundTasksHandler {
             $this->handleScheduledDatabaseBackup();
             $this->handleScheduledExternalizedBackup();
             $this->handleScheduledInactiveUsersMgmt();
+            $this->handleScheduledLocalPasswordExpiryNotifications();
             $this->handleScheduledSecurityNudgeDigest();
             $this->handleScheduledLAPRRotations();
             $this->drainTaskPool();
@@ -124,6 +125,7 @@ class BackgroundTasksHandler {
         if ($resolvedOutputDir['success'] === false) {
             $this->upsertSettingValue('bck_scheduled_last_status', 'failed');
             $this->upsertSettingValue('bck_scheduled_last_message', 'Invalid output directory');
+            $this->notifyBackupSchedulerFailure('scheduled', 'invalid_output_directory', 'Invalid output directory');
             if (LOG_TASKS === true) {
                 $this->logger->log('backup scheduler: invalid output directory: ' . $outputDirSetting, 'ERROR');
             }
@@ -169,24 +171,35 @@ class BackgroundTasksHandler {
         if ($includeDocuments === 1) {
             $backupFormat = tpBackupGetPackageExtension();
         }
-        DB::insert(
-            prefixTable('background_tasks'),
-            [
-                'created_at' => (string)$now,
-                'process_type' => 'database_backup',
-                'arguments' => json_encode(
-                    [
-                        'output_dir' => $outputDir,
-                        'source' => 'scheduler',
-                        'backup_format' => $backupFormat,
-                        'include_documents' => $includeDocuments,
-                    ],
-                    JSON_UNESCAPED_SLASHES
-                ),
-                'is_in_progress' => 0,
-                'status' => 'new',
-            ]
-        );
+        try {
+            DB::insert(
+                prefixTable('background_tasks'),
+                [
+                    'created_at' => (string)$now,
+                    'process_type' => 'database_backup',
+                    'arguments' => json_encode(
+                        [
+                            'output_dir' => $outputDir,
+                            'source' => 'scheduler',
+                            'backup_format' => $backupFormat,
+                            'include_documents' => $includeDocuments,
+                        ],
+                        JSON_UNESCAPED_SLASHES
+                    ),
+                    'is_in_progress' => 0,
+                    'status' => 'new',
+                ]
+            );
+        } catch (Throwable $e) {
+            $message = 'Unable to queue scheduled backup: ' . $e->getMessage();
+            $this->upsertSettingValue('bck_scheduled_last_status', 'failed');
+            $this->upsertSettingValue('bck_scheduled_last_message', mb_substr($message, 0, 500));
+            $this->notifyBackupSchedulerFailure('scheduled', 'queue_failed', $message);
+            if (LOG_TASKS === true) {
+                $this->logger->log('backup scheduler: ' . $message, 'ERROR');
+            }
+            return;
+        }
 
         $this->upsertSettingValue('bck_scheduled_last_run_at', (string)$now);
         $this->upsertSettingValue('bck_scheduled_last_status', 'queued');
@@ -222,7 +235,9 @@ class BackgroundTasksHandler {
         $destinationType = tpBackupResolveExternalizedDestinationType((string)$this->getSettingValue('bck_externalized_destination_type', 'local_directory'));
         if (tpBackupExternalizedDestinationTypeSupportsFileOperations($destinationType) === false) {
             $this->upsertSettingValue('bck_externalized_last_status', 'failed');
-            $this->upsertSettingValue('bck_externalized_last_message', 'Externalized destination type is not available for scheduled execution');
+            $message = 'Externalized destination type is not available for scheduled execution';
+            $this->upsertSettingValue('bck_externalized_last_message', $message);
+            $this->notifyBackupSchedulerFailure('externalized', 'unsupported_destination', $message);
             if (LOG_TASKS === true) {
                 $this->logger->log('externalized scheduler: unsupported destination type: ' . $destinationType, 'ERROR');
             }
@@ -304,8 +319,10 @@ class BackgroundTasksHandler {
         $emptyTargetAllowed = $destinationType === 's3';
         if ($validation['success'] !== true || ($targetDir === '' && $emptyTargetAllowed === false)) {
             $reason = $validation['reason'] !== '' ? $validation['reason'] : 'unknown';
+            $message = 'Invalid externalized backup destination: ' . $reason;
             $this->upsertSettingValue('bck_externalized_last_status', 'failed');
-            $this->upsertSettingValue('bck_externalized_last_message', 'Invalid externalized backup destination: ' . $reason);
+            $this->upsertSettingValue('bck_externalized_last_message', $message);
+            $this->notifyBackupSchedulerFailure('externalized', 'invalid_destination', $message);
             if (LOG_TASKS === true) {
                 $this->logger->log('externalized scheduler: invalid destination: ' . $reason, 'ERROR');
             }
@@ -322,7 +339,9 @@ class BackgroundTasksHandler {
             : '';
         if ($instanceKey === '') {
             $this->upsertSettingValue('bck_externalized_last_status', 'failed');
-            $this->upsertSettingValue('bck_externalized_last_message', 'Missing backup instance key');
+            $message = 'Missing backup instance key';
+            $this->upsertSettingValue('bck_externalized_last_message', $message);
+            $this->notifyBackupSchedulerFailure('externalized', 'missing_instance_key', $message);
             if (LOG_TASKS === true) {
                 $this->logger->log('externalized scheduler: missing backup instance key', 'ERROR');
             }
@@ -337,27 +356,38 @@ class BackgroundTasksHandler {
         $retryAttempts = max(1, min(5, (int)$this->getSettingValue('bck_externalized_retry_attempts', '3')));
         $retryDelaySeconds = max(0, min(60, (int)$this->getSettingValue('bck_externalized_retry_delay_seconds', '5')));
 
-        DB::insert(
-            prefixTable('background_tasks'),
-            [
-                'created_at' => (string)$now,
-                'process_type' => 'externalized_backup',
-                'arguments' => json_encode(
-                    [
-                        'output_dir' => $targetDir,
-                        'destination_type' => $destinationType,
-                        'source' => 'externalized_scheduler',
-                        'backup_format' => $backupFormat,
-                        'include_documents' => $includeDocuments,
-                        'retry_attempts' => $retryAttempts,
-                        'retry_delay_seconds' => $retryDelaySeconds,
-                    ],
-                    JSON_UNESCAPED_SLASHES
-                ),
-                'is_in_progress' => 0,
-                'status' => 'new',
-            ]
-        );
+        try {
+            DB::insert(
+                prefixTable('background_tasks'),
+                [
+                    'created_at' => (string)$now,
+                    'process_type' => 'externalized_backup',
+                    'arguments' => json_encode(
+                        [
+                            'output_dir' => $targetDir,
+                            'destination_type' => $destinationType,
+                            'source' => 'externalized_scheduler',
+                            'backup_format' => $backupFormat,
+                            'include_documents' => $includeDocuments,
+                            'retry_attempts' => $retryAttempts,
+                            'retry_delay_seconds' => $retryDelaySeconds,
+                        ],
+                        JSON_UNESCAPED_SLASHES
+                    ),
+                    'is_in_progress' => 0,
+                    'status' => 'new',
+                ]
+            );
+        } catch (Throwable $e) {
+            $message = 'Unable to queue externalized backup: ' . $e->getMessage();
+            $this->upsertSettingValue('bck_externalized_last_status', 'failed');
+            $this->upsertSettingValue('bck_externalized_last_message', mb_substr($message, 0, 500));
+            $this->notifyBackupSchedulerFailure('externalized', 'queue_failed', $message);
+            if (LOG_TASKS === true) {
+                $this->logger->log('externalized scheduler: ' . $message, 'ERROR');
+            }
+            return;
+        }
 
         $this->upsertSettingValue('bck_externalized_last_run_at', (string)$now);
         $this->upsertSettingValue('bck_externalized_last_status', 'queued');
@@ -588,6 +618,63 @@ class BackgroundTasksHandler {
     }
 
     /**
+     * Scheduler: enqueue the daily local-password expiry notification sweep.
+     *
+     * The job is useful even though delivery is currently in-app only: every
+     * eligible user has the warning waiting in their inbox at next login. A
+     * login-time fallback covers installations whose background handler is not
+     * running.
+     */
+    private function handleScheduledLocalPasswordExpiryNotifications(): void
+    {
+        $notificationCenterEnabled = (int) ($this->settings['notification_center_enabled'] ?? 0);
+        $passwordLifetimeDays = (int) ($this->settings['pw_life_duration'] ?? 0);
+        if ($notificationCenterEnabled !== 1 || $passwordLifetimeDays <= 0) {
+            return;
+        }
+
+        $now = time();
+        $nextRunAt = (int) $this->getSettingValue('local_password_expiry_notifications_next_run_at', '0');
+        if ($nextRunAt <= 0) {
+            $this->upsertSettingValue(
+                'local_password_expiry_notifications_next_run_at',
+                (string) $this->computeNextDailyRunAt($now, '03:15')
+            );
+            return;
+        }
+
+        if ($now < $nextRunAt) {
+            return;
+        }
+
+        $pending = (int) DB::queryFirstField(
+            'SELECT COUNT(*)
+            FROM ' . prefixTable('background_tasks') . '
+            WHERE process_type = %s
+            AND is_in_progress IN (0,1)
+            AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)',
+            'local_password_expiry_notifications'
+        );
+        if ($pending === 0) {
+            DB::insert(
+                prefixTable('background_tasks'),
+                [
+                    'created_at' => (string) $now,
+                    'process_type' => 'local_password_expiry_notifications',
+                    'arguments' => json_encode(['source' => 'scheduler'], JSON_UNESCAPED_SLASHES),
+                    'is_in_progress' => 0,
+                    'status' => 'new',
+                ]
+            );
+        }
+
+        $this->upsertSettingValue(
+            'local_password_expiry_notifications_next_run_at',
+            (string) $this->computeNextDailyRunAt($now + 60, '03:15')
+        );
+    }
+
+    /**
      * Compute next daily run timestamp (HH:MM) using TeamPass timezone stored in teampass_misc.
      */
     private function computeNextDailyRunAt(int $fromTs, string $hhmm): int
@@ -761,6 +848,19 @@ class BackgroundTasksHandler {
         if ($type === 'admin') {
             ConfigManager::invalidateCache();
         }
+    }
+
+    /**
+     * Emit one administrator alert per scheduler preflight cause and day.
+     *
+     * Preflight failures happen before a background task exists and this
+     * handler may run every minute. The date-scoped failure id keeps the alert
+     * actionable without flooding every administrator on each scheduler tick.
+     */
+    private function notifyBackupSchedulerFailure(string $backupType, string $cause, string $message): void
+    {
+        $failureId = 'scheduler:' . date('Y-m-d') . ':' . $cause;
+        tpNotifyBackupFailure($failureId, $backupType, $message);
     }
 
     /**
@@ -1169,14 +1269,23 @@ class BackgroundTasksHandler {
         if (LOG_TASKS === true) $this->logger->log('Task ' . $taskId . ' failed: ' . $message, 'ERROR');
 
         try {
-            $processType = (string) DB::queryFirstField(
-                'SELECT process_type FROM ' . prefixTable('background_tasks') . ' WHERE increment_id = %i',
+            $task = DB::queryFirstRow(
+                'SELECT process_type, arguments FROM ' . prefixTable('background_tasks') . ' WHERE increment_id = %i',
                 $taskId
             );
+            $processType = (string) ($task['process_type'] ?? '');
+            $arguments = json_decode((string) ($task['arguments'] ?? ''), true);
+            $arguments = is_array($arguments) ? $arguments : [];
             if ($processType === 'externalized_backup') {
                 $this->upsertSettingValue('bck_externalized_last_status', 'failed');
                 $this->upsertSettingValue('bck_externalized_last_message', mb_substr($message, 0, 500));
                 $this->upsertSettingValue('bck_externalized_last_completed_at', (string)time());
+                tpNotifyBackupFailure($taskId, 'externalized', $message);
+            } elseif ($processType === 'database_backup' && (string) ($arguments['source'] ?? '') === 'scheduler') {
+                $this->upsertSettingValue('bck_scheduled_last_status', 'failed');
+                $this->upsertSettingValue('bck_scheduled_last_message', mb_substr($message, 0, 500));
+                $this->upsertSettingValue('bck_scheduled_last_completed_at', (string)time());
+                tpNotifyBackupFailure($taskId, 'scheduled', $message);
             }
         } catch (Throwable) {
             // best effort only
