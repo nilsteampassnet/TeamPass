@@ -111,6 +111,45 @@ mysqli_query(
     "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'emails_templates_enabled', '1')"
 );
 
+// Notification idempotency. Event producers can provide a stable dedupe key,
+// allowing threshold-based and fan-out notifications to be retried safely.
+// NULL keeps the historical append-only behaviour for events without a key.
+$notificationsTable = $pre . 'user_notifications';
+$dedupeColumnExists = mysqli_fetch_array(mysqli_query(
+    $db_link,
+    "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = '" . $database . "'
+     AND TABLE_NAME = '" . $notificationsTable . "'
+     AND COLUMN_NAME = 'dedupe_key'"
+));
+if (empty($dedupeColumnExists[0])) {
+    if (mysqli_query(
+        $db_link,
+        "ALTER TABLE `" . $notificationsTable . "`
+         ADD `dedupe_key` VARCHAR(120) NULL DEFAULT NULL AFTER `event_type`"
+    ) === false) {
+        echo '[{"finish":"1", "msg":"", "error":"Error adding user_notifications.dedupe_key: ' . addslashes(mysqli_error($db_link)) . '"}]';
+        mysqli_close($db_link);
+        exit();
+    }
+}
+
+$dedupeIndex = mysqli_query(
+    $db_link,
+    "SHOW INDEX FROM `" . $notificationsTable . "` WHERE key_name = 'uk_user_event_dedupe'"
+);
+if ($dedupeIndex !== false && mysqli_num_rows($dedupeIndex) === 0) {
+    if (mysqli_query(
+        $db_link,
+        "ALTER TABLE `" . $notificationsTable . "`
+         ADD UNIQUE KEY `uk_user_event_dedupe` (`user_id`, `event_type`, `dedupe_key`)"
+    ) === false) {
+        echo '[{"finish":"1", "msg":"", "error":"Error adding user_notifications dedupe index: ' . addslashes(mysqli_error($db_link)) . '"}]';
+        mysqli_close($db_link);
+        exit();
+    }
+}
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,
