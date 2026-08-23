@@ -10485,6 +10485,11 @@ function tpNotifyUser(string $eventType, int $userId, array $payload, string $de
         return false;
     }
 
+    // Sanitize once here so both channels carry exactly the same whitelisted
+    // payload: the live WebSocket copy must never expose more than what is
+    // stored. tpPersistUserNotification() sanitizes again, which is idempotent.
+    $payload = notificationSanitizePayload($eventType, $payload);
+
     if (tpPersistUserNotification($eventType, $userId, $payload, $dedupeKey) !== true) {
         return false;
     }
@@ -10517,7 +10522,13 @@ function tpClearObsoleteLocalPasswordExpiryNotifications(int $userId, ?int $curr
             return;
         }
 
-        $dedupePrefix = 'local_password_expiry:' . $currentExpiresAt . ':';
+        // The prefix contains `_`, a LIKE wildcard: escape it (and `%`) so the
+        // pattern only ever matches the current cycle's own keys.
+        $dedupePrefix = str_replace(
+            ['\\', '%', '_'],
+            ['\\\\', '\%', '\_'],
+            'local_password_expiry:' . $currentExpiresAt . ':'
+        );
         DB::query(
             'DELETE FROM ' . prefixTable('user_notifications') . '
             WHERE user_id = %i
@@ -10721,11 +10732,67 @@ function emitKbEvent(
 }
 
 /**
+ * Queue the knowledge-base publication fan-out as a background task.
+ *
+ * The recipient list is the whole non-administrator user base, so the fan-out
+ * must not run in the HTTP thread: a large installation would issue thousands
+ * of statements inside the article save and risk the FPM request timeout.
+ * Delivery stays idempotent (dedupe key), so a re-run stores nothing twice.
+ *
+ * @param int    $kbId     Newly created article id
+ * @param string $label    Public article label
+ * @param int    $authorId Author, excluded from the fan-out
+ *
+ * @return bool True when the task was queued
+ */
+function tpQueueKnowledgeBasePublicationNotification(int $kbId, string $label, int $authorId): bool
+{
+    if ($kbId <= 0 || tpNotificationCenterIsEnabled() !== true) {
+        return false;
+    }
+
+    $arguments = json_encode(
+        [
+            'kb_id' => $kbId,
+            'label' => mb_substr($label, 0, 200),
+            'author_id' => $authorId,
+        ],
+        JSON_UNESCAPED_SLASHES
+    );
+    if (is_string($arguments) === false) {
+        error_log('tpQueueKnowledgeBasePublicationNotification: unable to encode arguments for article ' . $kbId);
+        return false;
+    }
+
+    try {
+        DB::insert(
+            prefixTable('background_tasks'),
+            [
+                'created_at' => (string) time(),
+                'process_type' => 'kb_publication_notifications',
+                'arguments' => $arguments,
+                'is_in_progress' => 0,
+                'status' => 'new',
+            ]
+        );
+    } catch (Throwable $e) {
+        error_log('tpQueueKnowledgeBasePublicationNotification: unable to queue - ' . $e->getMessage());
+        return false;
+    }
+
+    triggerBackgroundHandler();
+
+    return true;
+}
+
+/**
  * Fan out a newly published knowledge-base article to active non-admin users.
  *
+ * Runs in the background worker (queued by
+ * tpQueueKnowledgeBasePublicationNotification()), never in a request thread.
  * The author is excluded because the publication is their own action. System,
- * disabled, and deleted accounts never receive user-facing notifications.
- * Delivery failures are isolated from the article save operation.
+ * disabled, not yet provisioned, and deleted accounts never receive
+ * user-facing notifications.
  *
  * @return int Number of newly persisted user notifications
  */
@@ -10745,6 +10812,7 @@ function tpNotifyKnowledgeBasePublication(int $kbId, string $label, int $authorI
             FROM ' . prefixTable('users') . '
             WHERE admin = 0
             AND disabled = 0
+            AND is_ready_for_usage = 1
             AND (deleted_at IS NULL OR deleted_at = "" OR deleted_at = 0)';
         if (count($excludedIds) > 0) {
             $sql .= ' AND id NOT IN %li';
@@ -10808,10 +10876,7 @@ function tpNotifyBackupFailure(int|string $failureId, string $backupType, string
     }
 
     require_once __DIR__ . '/notifications.functions.php';
-    $payload = notificationSanitizePayload(
-        'backup_failed',
-        ['backup_type' => $backupType, 'message' => $message]
-    );
+    $payload = ['backup_type' => $backupType, 'message' => $message];
     $stored = 0;
     $dedupeKey = notificationBackupFailureDedupeKey($failureId, $backupType);
     foreach ($admins as $admin) {

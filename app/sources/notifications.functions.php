@@ -134,7 +134,14 @@ function notificationSanitizePayload(string $eventType, array $payload): array
             $clean['backup_type'] = (string) ($payload['backup_type'] ?? '') === 'externalized'
                 ? 'externalized'
                 : 'scheduled';
-            $message = preg_replace('/\s+/u', ' ', trim((string) ($payload['message'] ?? '')));
+            // Backup failures often quote shell, driver or filesystem output
+            // that is not valid UTF-8. Repair it first: the /u modifier would
+            // otherwise return null and silently drop the whole cause.
+            $rawMessage = trim((string) ($payload['message'] ?? ''));
+            if ($rawMessage !== '' && mb_check_encoding($rawMessage, 'UTF-8') === false) {
+                $rawMessage = (string) mb_convert_encoding($rawMessage, 'UTF-8', 'UTF-8');
+            }
+            $message = preg_replace('/\s+/u', ' ', $rawMessage);
             $clean['message'] = mb_substr(is_string($message) ? $message : '', 0, 300);
             break;
 

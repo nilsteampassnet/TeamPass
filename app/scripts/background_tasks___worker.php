@@ -126,6 +126,9 @@ class TaskWorker {
                 case 'local_password_expiry_notifications':
                     $this->handleLocalPasswordExpiryNotifications();
                     break;
+                case 'kb_publication_notifications':
+                    $this->handleKbPublicationNotifications($this->taskData);
+                    break;
                 default:
                     throw new Exception("Type of subtask unknown: {$this->processType}");
             }
@@ -870,11 +873,15 @@ class TaskWorker {
             return;
         }
 
+        // Accounts without a password-change timestamp have no computable cycle:
+        // filter them in SQL rather than loading and skipping them one by one.
         $excludedIds = teampassGetSystemAccountIds();
         $sql = 'SELECT id, last_pw_change
             FROM ' . prefixTable('users') . '
             WHERE auth_type = %s
             AND disabled = 0
+            AND last_pw_change IS NOT NULL
+            AND last_pw_change > 0
             AND (deleted_at IS NULL OR deleted_at = "" OR deleted_at = 0)';
         if (count($excludedIds) > 0) {
             $sql .= ' AND id NOT IN %li';
@@ -899,6 +906,27 @@ class TaskWorker {
                 $passwordLifetimeDays - $elapsedDays
             );
         }
+    }
+
+    /**
+     * Fan out a knowledge-base publication notification to every eligible
+     * recipient. Queued by tpQueueKnowledgeBasePublicationNotification() so the
+     * article save request never carries the whole user base.
+     *
+     * @param array $taskData Task arguments: kb_id, label, author_id
+     */
+    private function handleKbPublicationNotifications(array $taskData): void
+    {
+        $kbId = (int) ($taskData['kb_id'] ?? 0);
+        if ($kbId <= 0) {
+            return;
+        }
+
+        tpNotifyKnowledgeBasePublication(
+            $kbId,
+            (string) ($taskData['label'] ?? ''),
+            (int) ($taskData['author_id'] ?? 0)
+        );
     }
 
     private function updateInactiveUsersMgmtState(string $status, string $messageKey, array $details = []): void

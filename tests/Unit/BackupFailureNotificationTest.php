@@ -36,12 +36,31 @@ class BackupFailureNotificationTest extends TestCase
     {
         $source = $this->source('app/scripts/background_tasks___worker.php');
 
-        self::assertSame(1, substr_count($source, "tpNotifyBackupFailure(\$this->taskId, 'scheduled'"));
-        self::assertSame(2, substr_count($source, "tpNotifyBackupFailure(\$this->taskId, 'externalized'"));
+        // Coverage, not an exact call count: a legitimate new terminal failure
+        // path must be free to add its own alert without failing this guard.
+        self::assertGreaterThanOrEqual(
+            1,
+            substr_count($source, "tpNotifyBackupFailure(\$this->taskId, 'scheduled'"),
+            'A scheduler-originated database_backup failure must alert administrators.'
+        );
+        self::assertGreaterThanOrEqual(
+            2,
+            substr_count($source, "tpNotifyBackupFailure(\$this->taskId, 'externalized'"),
+            'Both the terminal externalized failure and the chained queueing failure must alert.'
+        );
         self::assertStringContainsString(
             "tpNotifyBackupFailure(\$this->taskId, 'externalized', \$externalizedMessage);",
             $source,
             'A chained externalization that cannot be queued must also alert administrators.'
+        );
+        // The two terminal alerts belong to handleTaskFailure()'s per-type branches.
+        self::assertMatchesRegularExpression(
+            '/processType === \'database_backup\'[^{]*\'scheduler\'\s*\)\s*\{.*?tpNotifyBackupFailure\(\$this->taskId, \'scheduled\'/s',
+            $source
+        );
+        self::assertMatchesRegularExpression(
+            '/processType === \'externalized_backup\'\s*\)\s*\{.*?tpNotifyBackupFailure\(\$this->taskId, \'externalized\'/s',
+            $source
         );
     }
 

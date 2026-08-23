@@ -181,7 +181,14 @@ $lang = new Language($session->get('user-language') ?? 'english');
             'local_password_expiring': {
                 theme: function () { return L.themePassword },
                 detail: function (p) {
+                    // One row is stored per milestone, so days_remaining is frozen at
+                    // delivery time (a D-14 warning would still read "14 days" at D-8).
+                    // Recompute from the absolute expiry when the payload carries it.
                     var days = parseInt(p.days_remaining, 10) || 0
+                    var expiresAt = parseInt(p.expires_at, 10) || 0
+                    if (expiresAt > 0) {
+                        days = Math.ceil((expiresAt * 1000 - Date.now()) / 86400000)
+                    }
                     if (days <= 0) return L.passwordExpired
                     if (days === 1) return L.passwordExpiresTomorrow
                     return L.passwordExpiring.replace('%s', String(days))

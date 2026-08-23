@@ -18,6 +18,7 @@ The **notification centre** adds a bell to the top bar collecting the events tha
 | Folder access rights updated | An administrator or manager changed a role/folder grant that affects you. |
 | Local TeamPass password expiry | A local account password reaches 14, 7, 3, or 1 day before expiry, or is expired. Administrators are included; LDAP and OAuth2 accounts are excluded. Clicking opens the profile page. |
 | Knowledge-base article published | A new article was created. It is sent to active non-admin users except the author. Clicking opens the article directly. |
+| Backup failure (administrators only) | A scheduled backup failed, an externalized backup exhausted its retries, or a successful scheduled backup could not queue its configured externalization. Clicking opens the Backups page. |
 
 Transient events are deliberately **not** stored: session-expiry (you are being logged out) and task progress heartbeats.
 
@@ -35,6 +36,8 @@ Each user keeps their **latest 50** notifications; older ones are pruned automat
 - When the [WebSocket server](../install/websocket.md) is enabled, the same events refresh the inbox **live** — no reload needed.
 
 Local-password warnings are populated by a daily background sweep at 03:15 in the TeamPass timezone. A once-per-day check during an authenticated page load is a fallback for installations whose background task handler is unavailable. Both paths use the same dedupe key.
+
+A knowledge-base publication is fanned out by a background task rather than by the article save itself: the recipient list is the whole non-administrator user base, which must never be walked inside a request. The dedupe key makes the deferred delivery safe to retry.
 
 ---
 

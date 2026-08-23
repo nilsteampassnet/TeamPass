@@ -1598,7 +1598,9 @@ switch ($type) {
         );
 
         if ($oldKb === null) {
-            tpNotifyKnowledgeBasePublication(
+            // Fan-out to every eligible recipient runs in a background task:
+            // the recipient list is the whole non-administrator user base.
+            tpQueueKnowledgeBasePublicationNotification(
                 $kbId,
                 $label,
                 (int) $session->get('user-id')

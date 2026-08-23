@@ -176,6 +176,22 @@ class NotificationCenterLogicTest extends TestCase
         $this->assertArrayNotHasKey('task_id', $clean);
     }
 
+    public function testBackupFailureMessageSurvivesInvalidUtf8(): void
+    {
+        // Backup failures quote shell / driver output that is often not UTF-8.
+        // The /u modifier returns null on such input, which used to blank the
+        // whole cause and leave administrators with "Backup failed: ".
+        $clean = notificationSanitizePayload('backup_failed', [
+            'backup_type' => 'externalized',
+            'message' => "rsync: cannot open \xC3\x28file\x80\n  /srv/dump",
+        ]);
+
+        $this->assertStringContainsString('rsync: cannot open', $clean['message']);
+        $this->assertStringContainsString('/srv/dump', $clean['message']);
+        $this->assertStringNotContainsString("\n", $clean['message']);
+        $this->assertTrue(mb_check_encoding($clean['message'], 'UTF-8'));
+    }
+
     public function testPasswordExpiryMilestones(): void
     {
         $this->assertNull(notificationPasswordExpiryThreshold(15));
