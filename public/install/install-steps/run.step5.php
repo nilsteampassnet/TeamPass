@@ -1674,7 +1674,8 @@ class DatabaseInstaller
             `error_message` TEXT NULL DEFAULT NULL,
             PRIMARY KEY (`increment_id`),
             INDEX idx_finished (`finished_at`),
-            INDEX idx_progress (`is_in_progress`)
+            INDEX idx_progress (`is_in_progress`),
+            INDEX idx_process_item (`process_type`, `item_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }

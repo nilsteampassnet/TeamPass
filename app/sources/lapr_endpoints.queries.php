@@ -389,7 +389,8 @@ function laprTestStatus(array $data, Language $lang): void
     $selfTarget = is_array($taskArgs['self_target'] ?? null)
         ? $taskArgs['self_target']
         : ['is_self' => false, 'confidence' => 'none', 'reason' => ''];
-    $finished = (int) $task['is_in_progress'] === -1 || (string) $task['status'] === 'completed' || (string) $task['status'] === 'failed';
+    $finished = (int) $task['is_in_progress'] === -1
+        || in_array((string) $task['status'], ['completed', 'failed', 'cancelled'], true);
 
     if ($finished === false) {
         echo prepareExchangedData([
@@ -639,6 +640,29 @@ function laprRestoreEndpoint(array $data, int $userId, Language $lang): void
     $endpointId = (int) ($data['id'] ?? 0);
     if ($endpointId <= 0) {
         echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_invalid_endpoint')], 'encode');
+        return;
+    }
+
+    // The same host:port may have been enrolled again while this endpoint was
+    // deleted. Restoring it would create the duplicate target that rotation now
+    // refuses permanently (ERR_DUPLICATE_ENDPOINT_TARGET), leaving both accounts
+    // in error with no way back through the interface.
+    $deletedEndpoint = DB::queryFirstRow(
+        'SELECT hostname, port FROM ' . prefixTable('lapr_endpoints') . '
+         WHERE id = %i AND status = %s',
+        $endpointId,
+        'deleted'
+    );
+    if ($deletedEndpoint === null) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_endpoint_not_found')], 'encode');
+        return;
+    }
+    if (laprEndpointTargetExists(
+        (string) $deletedEndpoint['hostname'],
+        (int) $deletedEndpoint['port'],
+        $endpointId
+    ) === true) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_endpoint_already_enrolled')], 'encode');
         return;
     }
 

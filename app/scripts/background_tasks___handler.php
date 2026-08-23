@@ -1442,11 +1442,13 @@ class BackgroundTasksHandler {
         $cutoffTimestamp = time() - $this->maxTimeBeforeRemoval;
     
         // 1. Get all finished tasks older than the cutoff timestamp
-        //    and that are not in progress
+        //    and that are not in progress. 'cancelled' covers the tasks closed
+        //    without execution (LAPR module disabled, managed account removed);
+        //    they are finished too and must be purged like completed ones.
         $tasks = DB::query(
             'SELECT increment_id FROM ' . prefixTable('background_tasks') . '
-            WHERE status = %s AND is_in_progress = %i AND finished_at < %i',
-            'completed',
+            WHERE status IN %ls AND is_in_progress = %i AND finished_at < %i',
+            ['completed', 'cancelled'],
             -1,
             $cutoffTimestamp
         );

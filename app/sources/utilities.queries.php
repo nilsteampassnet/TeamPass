@@ -43,8 +43,6 @@ use TeampassClasses\NestedTree\NestedTree;
 require_once 'main.functions.php';
 require_once __DIR__ . '/backup.functions.php';
 require_once __DIR__ . '/health.logs.functions.php';
-require_once __DIR__ . '/lapr.functions.php';
-require_once __DIR__ . '/lapr.monitoring.functions.php';
 
 // init
 loadClasses('DB');
@@ -1444,6 +1442,11 @@ logItems(
                     'complete' => $aesV2Total > 0 && $aesV2Legacy === 0,
                 ),
             );
+
+            // Loaded here only: the LAPR reporting helpers are ~1400 lines of
+            // function definitions that no other utilities action needs.
+            require_once __DIR__ . '/lapr.functions.php';
+            require_once __DIR__ . '/lapr.monitoring.functions.php';
 
             try {
                 $laprHealth = laprBuildMonitoringSnapshot($SETTINGS, $now);

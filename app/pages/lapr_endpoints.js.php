@@ -35,22 +35,10 @@ use TeampassClasses\Language\Language;
 $session = SessionManager::getSession();
 $lang = new Language($session->get('user-language') ?? 'english');
 $laprEndpointJsJsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE;
-$laprEndpointDataTablesLanguage = basename(strtolower((string) ($session->get('user-language') ?? 'english')));
-$laprEndpointDataTablesLanguageFile = TEAMPASS_PUBLIC
-    . '/includes/language/datatables.'
-    . $laprEndpointDataTablesLanguage
-    . '.txt';
-if (is_file($laprEndpointDataTablesLanguageFile) === false) {
-    $laprEndpointDataTablesLanguageFile = TEAMPASS_PUBLIC . '/includes/language/datatables.english.txt';
-}
-$laprEndpointDataTablesLang = json_decode(
-    (string) file_get_contents($laprEndpointDataTablesLanguageFile),
-    true
+$laprEndpointDataTablesLang = teampassDataTablesLanguage(
+    (string) ($session->get('user-language') ?? 'english'),
+    $lang->get('lapr_no_endpoints')
 );
-if (is_array($laprEndpointDataTablesLang) === false) {
-    $laprEndpointDataTablesLang = [];
-}
-$laprEndpointDataTablesLang['sEmptyTable'] = $lang->get('lapr_no_endpoints');
 $laprEndpointTranslations = [
     'testInProgress' => $lang->get('lapr_test_in_progress'),
     'testSuccess' => $lang->get('lapr_test_success'),

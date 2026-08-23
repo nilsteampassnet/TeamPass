@@ -272,6 +272,29 @@ if (empty($laprColumnExists[0])) {
     }
 }
 
+// background_tasks(process_type, item_id) index. Every LAPR dedup guard filters
+// on process_type (+ item_id for the rotation guard), and the LAPR Health and
+// Statistics reports run several counters on process_type alone. Without it each
+// of them is a full table scan of a table that grows with every task.
+$laprTaskIndexExists = mysqli_fetch_array(mysqli_query(
+    $db_link,
+    "SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS
+     WHERE TABLE_SCHEMA = '" . $database . "'
+     AND TABLE_NAME = '" . $pre . "background_tasks'
+     AND INDEX_NAME = 'idx_process_item'"
+));
+if (empty($laprTaskIndexExists[0])) {
+    if (mysqli_query(
+        $db_link,
+        "ALTER TABLE `" . $pre . "background_tasks`
+         ADD INDEX `idx_process_item` (`process_type`, `item_id`)"
+    ) === false) {
+        echo '[{"finish":"1", "msg":"", "error":"Error adding background_tasks.idx_process_item: ' . addslashes(mysqli_error($db_link)) . '"}]';
+        mysqli_close($db_link);
+        exit();
+    }
+}
+
 // LAPR settings (type 'admin' — read through ConfigManager, saved by the
 // generic save_option_change handler). All disabled by default: the module
 // is fully opt-in.

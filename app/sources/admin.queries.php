@@ -42,8 +42,6 @@ use TeampassClasses\EmailService\EmailService;
 
 // Load functions
 require_once 'main.functions.php';
-require_once __DIR__ . '/lapr.functions.php';
-require_once __DIR__ . '/lapr.monitoring.functions.php';
 $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
 loadClasses('DB');
@@ -1666,20 +1664,22 @@ switch ($post_type) {
                     'is_in_progress' => -1,
                     'finished_at' => $timestamp,
                     'updated_at' => $timestamp,
-                    'status' => 'completed',
+                    // Closed without ever running: not a success, not a failure.
+                    // 'failed' would raise a LAPR Health alert for an administrator
+                    // action, 'completed' would show up as a success on the Tasks page.
+                    'status' => 'cancelled',
                     'output' => json_encode([
                         'success' => false,
                         'error_code' => 'ERR_LAPR_DISABLED',
                         'message' => 'LAPR_DISABLED',
                     ], JSON_UNESCAPED_SLASHES),
                 ],
-                '(process_type = %s OR process_type = %s OR process_type = %s)
+                'process_type IN %ls
                  AND is_in_progress = 0
-                 AND (finished_at IS NULL OR finished_at = %s OR finished_at = 0)',
-                'lapr_ssh_test',
-                'lapr_discover',
-                'lapr_rotation',
-                ''
+                 AND (finished_at IS NULL OR finished_at = %s OR finished_at = %s)',
+                ['lapr_ssh_test', 'lapr_discover', 'lapr_rotation'],
+                '',
+                '0'
             );
         }
 
@@ -2440,6 +2440,11 @@ case 'get_operational_statistics':
             $tpApiLike,
             $topItemsLimit
         );
+
+        // Loaded here only: the LAPR reporting helpers are ~1400 lines of function
+        // definitions that no other admin action needs.
+        require_once __DIR__ . '/lapr.functions.php';
+        require_once __DIR__ . '/lapr.monitoring.functions.php';
 
         try {
             $laprStatistics = laprBuildOperationalStatistics(

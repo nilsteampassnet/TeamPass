@@ -35,6 +35,10 @@ use TeampassClasses\Language\Language;
  * Return the grace period used before a due rotation or scheduler tick is
  * considered late. Two scheduler intervals avoid false alarms while the
  * background handler is between two normal runs; ten minutes is the floor.
+ *
+ * @param array<string,mixed> $settings TeamPass settings
+ *
+ * @return int
  */
 function laprMonitoringGraceSeconds(array $settings): int
 {
@@ -47,7 +51,9 @@ function laprMonitoringGraceSeconds(array $settings): int
  * Normalize the human LAPR access counters. A granted enabled user becomes an
  * effective operator only while the module itself is enabled.
  *
- * @param array<string,mixed> $row
+ * @param bool                $moduleEnabled Whether LAPR itself is enabled
+ * @param array<string,mixed> $row           Aggregated grant counters
+ *
  * @return array<string,int>
  */
 function laprMonitoringAccessSummary(bool $moduleEnabled, array $row): array
@@ -67,7 +73,17 @@ function laprMonitoringAccessSummary(bool $moduleEnabled, array $row): array
 /**
  * Classify one managed account without touching the database.
  *
- * @param array<string,mixed> $account
+ * A self-target account is never picked up by the scheduler (rotating the host
+ * that runs TeamPass stays a manual break-glass operation), so its due date is
+ * expected to drift into the past. Reporting it as overdue would leave the whole
+ * LAPR status permanently red for a deliberate configuration, so it gets its own
+ * 'manual_only' state, counted as an attention item, not as a failure.
+ *
+ * @param array<string,mixed> $account      Account row + monitoring_* metadata
+ * @param int                 $nowTs        Reference time
+ * @param int                 $graceSeconds Grace period before a due date is late
+ *
+ * @return string One of healthy|scheduled|manual_only|retrying|overdue|error|paused
  */
 function laprMonitoringClassifyAccount(array $account, int $nowTs, int $graceSeconds): string
 {
@@ -103,7 +119,7 @@ function laprMonitoringClassifyAccount(array $account, int $nowTs, int $graceSec
         return 'error';
     }
     if ($nextRotationAt < ($nowTs - $graceSeconds)) {
-        return 'overdue';
+        return (bool) ($account['monitoring_self_target'] ?? false) === true ? 'manual_only' : 'overdue';
     }
 
     return $lastStatus === 'never' ? 'scheduled' : 'healthy';
@@ -111,6 +127,10 @@ function laprMonitoringClassifyAccount(array $account, int $nowTs, int $graceSec
 
 /**
  * Map a secret-free LAPR error code to a stable presentation category.
+ *
+ * @param string $errorCode Secret-free LAPR error identifier
+ *
+ * @return string
  */
 function laprMonitoringFailureCategory(string $errorCode): string
 {
@@ -154,6 +174,9 @@ function laprMonitoringFailureCategory(string $errorCode): string
  * Build the point-in-time LAPR report shared by Health System and statistics.
  * Only operational metadata is returned; item contents and SSH secrets are
  * deliberately never selected.
+ *
+ * @param array<string,mixed> $settings TeamPass settings
+ * @param int                 $nowTs    Reference time
  *
  * @return array<string,mixed>
  */
@@ -247,6 +270,7 @@ function laprBuildMonitoringSnapshot(array $settings, int $nowTs): array
         'total' => count($accountRows),
         'healthy' => 0,
         'scheduled' => 0,
+        'manual_only' => 0,
         'retrying' => 0,
         'overdue' => 0,
         'error' => 0,
@@ -261,6 +285,7 @@ function laprBuildMonitoringSnapshot(array $settings, int $nowTs): array
     $credentialMap = [];
     $keyCredentialItems = [];
     $invalidEndpointIds = [];
+    $selfTargetEndpointIds = [];
 
     foreach ($endpointRows as $endpoint) {
         $endpointId = (int) $endpoint['id'];
@@ -279,6 +304,7 @@ function laprBuildMonitoringSnapshot(array $settings, int $nowTs): array
         $runtimeSelfTarget = laprClassifySelfTarget((string) $endpoint['hostname'], $settings);
         if ($storedSelfTarget === true || $runtimeSelfTarget['is_self'] === true) {
             ++$endpointCounts['self_targets'];
+            $selfTargetEndpointIds[$endpointId] = true;
             laprMonitoringAddIssue($issues, 'warning', 'self_managed_endpoint', $endpointLabel, '', $endpointId, null);
         }
 
@@ -350,7 +376,7 @@ function laprBuildMonitoringSnapshot(array $settings, int $nowTs): array
         ++$endpointCounts['shared_credentials'];
         $containsPassword = count(array_filter(
             $endpoints,
-            static fn (array $endpoint): bool => (string) ($endpoint['auth_method'] ?? '') === 'password'
+            static fn (array $endpoint): bool => (string) $endpoint['auth_method'] === 'password'
         )) > 0;
         if ($containsPassword === true) {
             ++$endpointCounts['shared_password_credentials'];
@@ -445,13 +471,14 @@ function laprBuildMonitoringSnapshot(array $settings, int $nowTs): array
         }
 
         $account['monitoring_integrity_error'] = $accountIntegrityError;
+        $account['monitoring_self_target'] = isset($selfTargetEndpointIds[$endpointId]);
         $state = laprMonitoringClassifyAccount($account, $nowTs, $graceSeconds);
         $account['monitoring_state'] = $state;
         ++$accountCounts[$state];
 
         if (in_array($state, ['overdue', 'error'], true)) {
             laprMonitoringAddIssue($issues, 'danger', 'account_' . $state, $endpointLabel, $username, $endpointId, $accountId);
-        } elseif (in_array($state, ['retrying', 'paused'], true)) {
+        } elseif (in_array($state, ['retrying', 'paused', 'manual_only'], true)) {
             laprMonitoringAddIssue($issues, 'warning', 'account_' . $state, $endpointLabel, $username, $endpointId, $accountId);
         }
     }
@@ -459,7 +486,7 @@ function laprBuildMonitoringSnapshot(array $settings, int $nowTs): array
 
     $accountCounts['compliant'] = $accountCounts['healthy'] + $accountCounts['scheduled'];
     $accountCounts['attention'] = $accountCounts['retrying'] + $accountCounts['overdue']
-        + $accountCounts['error'] + $accountCounts['paused'];
+        + $accountCounts['error'] + $accountCounts['paused'] + $accountCounts['manual_only'];
     $accountCounts['compliance_pct'] = $accountCounts['total'] > 0
         ? (int) round(($accountCounts['compliant'] / $accountCounts['total']) * 100)
         : 0;
@@ -553,6 +580,12 @@ function laprBuildMonitoringSnapshot(array $settings, int $nowTs): array
 
 /**
  * Build the period-based LAPR statistics payload.
+ *
+ * @param array<string,mixed> $settings    TeamPass settings
+ * @param Language            $lang        Language helper (policy labels)
+ * @param int                 $fromTs      Period start
+ * @param int                 $toTs        Period end
+ * @param string              $granularity 'hour' or 'day'
  *
  * @return array<string,mixed>
  */
@@ -727,7 +760,8 @@ function laprBuildOperationalStatistics(
  * Add the global TeamPass background-handler result to the LAPR Health view.
  * Statistics intentionally remains based on LAPR-specific data only.
  *
- * @param array<string,mixed> $snapshot
+ * @param array<string,mixed> $snapshot   LAPR monitoring snapshot
+ * @param string              $cronStatus Global background-handler status
  *
  * @return array<string,mixed>
  */
@@ -770,6 +804,12 @@ function laprMonitoringApplyCronStatus(array $snapshot, string $cronStatus): arr
 }
 
 /**
+ * Report the LAPR scheduler and its rotation-task queue.
+ *
+ * @param array<string,mixed> $settings     TeamPass settings
+ * @param int                 $nowTs        Reference time
+ * @param int                 $graceSeconds Grace period before a run is late
+ *
  * @return array<string,mixed>
  */
 function laprMonitoringScheduler(array $settings, int $nowTs, int $graceSeconds): array
@@ -796,16 +836,18 @@ function laprMonitoringScheduler(array $settings, int $nowTs, int $graceSeconds)
     $pending = (int) DB::queryFirstField(
         'SELECT COUNT(*) FROM ' . prefixTable('background_tasks') . '
          WHERE process_type = %s AND is_in_progress = 0
-         AND (finished_at IS NULL OR finished_at = %s OR finished_at = 0)',
+         AND (finished_at IS NULL OR finished_at = %s OR finished_at = %s)',
         'lapr_rotation',
-        ''
+        '',
+        '0'
     );
     $running = (int) DB::queryFirstField(
         'SELECT COUNT(*) FROM ' . prefixTable('background_tasks') . '
          WHERE process_type = %s AND is_in_progress = 1
-         AND (finished_at IS NULL OR finished_at = %s OR finished_at = 0)',
+         AND (finished_at IS NULL OR finished_at = %s OR finished_at = %s)',
         'lapr_rotation',
-        ''
+        '',
+        '0'
     );
     $failed24h = (int) DB::queryFirstField(
         'SELECT COUNT(*) FROM ' . prefixTable('background_tasks') . '
@@ -819,9 +861,10 @@ function laprMonitoringScheduler(array $settings, int $nowTs, int $graceSeconds)
         'SELECT COALESCE(MIN(CAST(created_at AS UNSIGNED)), 0)
          FROM ' . prefixTable('background_tasks') . '
          WHERE process_type = %s AND is_in_progress = 0
-         AND (finished_at IS NULL OR finished_at = %s OR finished_at = 0)',
+         AND (finished_at IS NULL OR finished_at = %s OR finished_at = %s)',
         'lapr_rotation',
-        ''
+        '',
+        '0'
     );
 
     $status = 'success';
@@ -859,7 +902,11 @@ function laprMonitoringScheduler(array $settings, int $nowTs, int $graceSeconds)
 }
 
 /**
- * @param mixed $value
+ * Read a stored LAPR date as a Unix timestamp, or null when it carries no date.
+ *
+ * @param mixed $value SQL DATETIME string, Unix timestamp, null or ''
+ *
+ * @return int|null
  */
 function laprMonitoringTimestamp($value): ?int
 {
@@ -877,9 +924,13 @@ function laprMonitoringTimestamp($value): ?int
 }
 
 /**
- * @param mixed $inactive
- * @param mixed $personal
- * @param mixed $deletedAt
+ * Whether an item can no longer be used by the server-side rotator.
+ *
+ * @param mixed $inactive  items.inactif
+ * @param mixed $personal  items.perso
+ * @param mixed $deletedAt items.deleted_at
+ *
+ * @return bool
  */
 function laprMonitoringItemUnavailable($inactive, $personal, $deletedAt): bool
 {
@@ -889,7 +940,17 @@ function laprMonitoringItemUnavailable($inactive, $personal, $deletedAt): bool
 }
 
 /**
- * @param array<int,array<string,mixed>> $issues
+ * Append one finding to the action-item list.
+ *
+ * @param array<int,array<string,mixed>> $issues        Findings, by reference
+ * @param string                         $severity      danger|warning|info
+ * @param string                         $code          Stable finding identifier
+ * @param string                         $endpointLabel Endpoint label, '' when global
+ * @param string                         $username      Linux username, '' when global
+ * @param int|null                       $endpointId    Related endpoint id
+ * @param int|null                       $accountId     Related managed-account id
+ *
+ * @return void
  */
 function laprMonitoringAddIssue(
     array &$issues,
@@ -911,6 +972,11 @@ function laprMonitoringAddIssue(
 }
 
 /**
+ * Neutral snapshot returned when no LAPR figure can be produced.
+ *
+ * @param bool   $enabled Whether the module is enabled
+ * @param string $reason  Stable reason identifier
+ *
  * @return array<string,mixed>
  */
 function laprMonitoringEmptySnapshot(bool $enabled, string $reason): array
@@ -939,6 +1005,7 @@ function laprMonitoringEmptySnapshot(bool $enabled, string $reason): array
             'total' => 0,
             'healthy' => 0,
             'scheduled' => 0,
+            'manual_only' => 0,
             'retrying' => 0,
             'overdue' => 0,
             'error' => 0,
@@ -989,8 +1056,10 @@ function laprMonitoringDisabledSnapshot(): array
 /**
  * Add the complete statistics contract to a neutral LAPR snapshot.
  *
- * @param array<string,mixed> $snapshot
- * @param array<string,mixed> $settings
+ * @param array<string,mixed> $snapshot LAPR monitoring snapshot
+ * @param int                 $fromTs   Period start
+ * @param int                 $toTs     Period end
+ * @param array<string,mixed> $settings TeamPass settings
  *
  * @return array<string,mixed>
  */

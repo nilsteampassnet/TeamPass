@@ -11119,6 +11119,44 @@ function validateWebSocketToken(string $token): ?array
     }
 }
 /**
+ * Load the DataTables translation catalog shipped for a TeamPass language.
+ *
+ * Most pages hand DataTables a `language: { url: ... }` and let the browser
+ * fetch the catalog. That form cannot override a single message, so pages that
+ * need their own "empty table" text read the catalog server-side instead and
+ * inline it. This helper is that read, in one place.
+ *
+ * The language name is reduced with basename() and framed by a fixed directory
+ * and extension, so a tampered session value can only ever miss and fall back
+ * to English.
+ *
+ * @param string      $language           TeamPass language name (e.g. 'french')
+ * @param string|null $emptyTableMessage  Replaces sEmptyTable when provided
+ *
+ * @return array<string, mixed> Catalog ready to be passed to DataTables
+ */
+function teampassDataTablesLanguage(string $language, ?string $emptyTableMessage = null): array
+{
+    $directory = TEAMPASS_PUBLIC . '/includes/language/';
+    $file = $directory . 'datatables.' . basename(strtolower($language)) . '.txt';
+    if (is_file($file) === false) {
+        $file = $directory . 'datatables.english.txt';
+    }
+
+    $catalog = is_file($file) === true
+        ? json_decode((string) file_get_contents($file), true)
+        : null;
+    if (is_array($catalog) === false) {
+        $catalog = [];
+    }
+    if ($emptyTableMessage !== null) {
+        $catalog['sEmptyTable'] = $emptyTableMessage;
+    }
+
+    return $catalog;
+}
+
+/**
  * Checks whether a table exists in the current TeamPass database.
  *
  * @param string $tableName Fully prefixed table name

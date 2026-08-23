@@ -181,6 +181,7 @@ var TP_HEALTH_L10N = {
     lapr_disabled_grants_warning: "<?php echo addslashes($lang->get('lapr_monitor_disabled_grants_warning')); ?>",
     lapr_state_healthy: "<?php echo addslashes($lang->get('lapr_monitor_state_healthy')); ?>",
     lapr_state_scheduled: "<?php echo addslashes($lang->get('lapr_monitor_state_scheduled')); ?>",
+    lapr_state_manual_only: "<?php echo addslashes($lang->get('lapr_monitor_state_manual_only')); ?>",
     lapr_state_retrying: "<?php echo addslashes($lang->get('lapr_monitor_state_retrying')); ?>",
     lapr_state_overdue: "<?php echo addslashes($lang->get('lapr_monitor_state_overdue')); ?>",
     lapr_state_error: "<?php echo addslashes($lang->get('lapr_monitor_state_error')); ?>",
@@ -218,6 +219,7 @@ var TP_HEALTH_L10N = {
     lapr_issue_account_error: "<?php echo addslashes($lang->get('lapr_monitor_issue_account_error')); ?>",
     lapr_issue_account_paused: "<?php echo addslashes($lang->get('lapr_monitor_issue_account_paused')); ?>",
     lapr_issue_account_retrying: "<?php echo addslashes($lang->get('lapr_monitor_issue_account_retrying')); ?>",
+    lapr_issue_account_manual_only: "<?php echo addslashes($lang->get('lapr_monitor_issue_account_manual_only')); ?>",
     lapr_issue_worker_failed: "<?php echo addslashes($lang->get('lapr_monitor_issue_worker_failed')); ?>",
     lapr_issue_scheduler_unhealthy: "<?php echo addslashes($lang->get('lapr_monitor_issue_scheduler_unhealthy')); ?>",
     lapr_issue_cron_unhealthy: "<?php echo addslashes($lang->get('lapr_monitor_issue_cron_unhealthy')); ?>",
@@ -522,13 +524,14 @@ function tpRenderLapr(report) {
     var stateLabels = {
         healthy: TP_HEALTH_L10N.lapr_state_healthy,
         scheduled: TP_HEALTH_L10N.lapr_state_scheduled,
+        manual_only: TP_HEALTH_L10N.lapr_state_manual_only,
         retrying: TP_HEALTH_L10N.lapr_state_retrying,
         overdue: TP_HEALTH_L10N.lapr_state_overdue,
         error: TP_HEALTH_L10N.lapr_state_error,
         paused: TP_HEALTH_L10N.lapr_state_paused
     };
     var stateRows = '';
-    $.each(['healthy', 'scheduled', 'retrying', 'overdue', 'error', 'paused'], function(_, state) {
+    $.each(['healthy', 'scheduled', 'manual_only', 'retrying', 'overdue', 'error', 'paused'], function(_, state) {
         stateRows += '<tr><th>' + tpEscapeHtml(stateLabels[state]) + '</th>' +
             '<td class="text-right">' + Number(accounts[state] || 0) + '</td></tr>';
     });
@@ -645,6 +648,7 @@ function tpLaprIssueText(code) {
         account_error: TP_HEALTH_L10N.lapr_issue_account_error,
         account_paused: TP_HEALTH_L10N.lapr_issue_account_paused,
         account_retrying: TP_HEALTH_L10N.lapr_issue_account_retrying,
+        account_manual_only: TP_HEALTH_L10N.lapr_issue_account_manual_only,
         worker_failed: TP_HEALTH_L10N.lapr_issue_worker_failed,
         scheduler_unhealthy: TP_HEALTH_L10N.lapr_issue_scheduler_unhealthy,
         cron_unhealthy: TP_HEALTH_L10N.lapr_issue_cron_unhealthy

@@ -331,6 +331,13 @@ function laprClassifySelfTarget(string $hostname, array $settings, ?array $serve
  * before an SSH mutation, so disabling LAPR is authoritative without waiting
  * for the ConfigManager cache to expire.
  *
+ * Marked impure on purpose: the value is mutable administrator state, so two
+ * calls in the same request may legitimately disagree. Without this, static
+ * analysis memoizes the first result and reports the deliberate re-check
+ * performed just before a remote password change as dead code.
+ *
+ * @phpstan-impure
+ *
  * @return bool
  */
 function laprIsModuleEnabledFresh(): bool
@@ -344,23 +351,42 @@ function laprIsModuleEnabledFresh(): bool
 
 /**
  * Whether another non-deleted endpoint targets the same normalized host and port.
+ *
+ * The comparison is done in PHP with laprNormalizeHostname() rather than in SQL:
+ * an equivalent SQL expression cannot strip the IPv6 brackets, so '[2001:db8::1]'
+ * and '2001:db8::1' would be seen as two different targets here while the Health
+ * monitor - which normalizes in PHP - reports them as a duplicate. Endpoints are
+ * counted in tens, and the port filter keeps the scanned set small.
+ *
+ * @param string $hostname          Hostname or IP to look for
+ * @param int    $port              SSH port
+ * @param int    $excludeEndpointId Endpoint to ignore (its own row on an update)
+ *
+ * @return bool
  */
 function laprEndpointTargetExists(string $hostname, int $port, int $excludeEndpointId = 0): bool
 {
-    $sql = 'SELECT COUNT(*) FROM ' . prefixTable('lapr_endpoints') . '
-            WHERE LOWER(TRIM(TRAILING \'.\' FROM hostname)) = %s AND port = %i AND status != %s';
-    if ($excludeEndpointId > 0) {
-        $sql .= ' AND id != %i';
-        return (int) DB::queryFirstField(
-            $sql,
-            laprNormalizeHostname($hostname),
-            $port,
-            'deleted',
-            $excludeEndpointId
-        ) > 0;
+    $target = laprNormalizeHostname($hostname);
+    if ($target === '') {
+        return false;
     }
 
-    return (int) DB::queryFirstField($sql, laprNormalizeHostname($hostname), $port, 'deleted') > 0;
+    $rows = DB::query(
+        'SELECT id, hostname FROM ' . prefixTable('lapr_endpoints') . '
+         WHERE port = %i AND status != %s',
+        $port,
+        'deleted'
+    );
+    foreach ($rows as $row) {
+        if ($excludeEndpointId > 0 && (int) $row['id'] === $excludeEndpointId) {
+            continue;
+        }
+        if (laprNormalizeHostname((string) $row['hostname']) === $target) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 /**

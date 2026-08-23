@@ -468,6 +468,42 @@ class LaprFunctionsTest extends TestCase
     }
 
     // =========================================================================
+    // laprNormalizeHostname (endpoint target identity)
+    // =========================================================================
+
+    public function testHostnameNormalizationIgnoresCaseTrailingDotAndIpv6Brackets(): void
+    {
+        $this->assertSame('server.example.com', laprNormalizeHostname('  Server.Example.COM.  '));
+        $this->assertSame('2001:db8::1', laprNormalizeHostname('[2001:DB8::1]'));
+        $this->assertSame('2001:db8::1', laprNormalizeHostname('2001:db8::1'));
+        $this->assertSame('', laprNormalizeHostname('   '));
+    }
+
+    public function testBracketedAndBareIpv6AreTheSameTarget(): void
+    {
+        // The duplicate-endpoint guard and the Health monitor must agree, so both
+        // compare through this helper rather than through an SQL expression that
+        // cannot strip the brackets.
+        $this->assertSame(
+            laprNormalizeHostname('[2001:db8::1]'),
+            laprNormalizeHostname('2001:db8::1')
+        );
+    }
+
+    public function testEndpointTargetLookupComparesThroughTheSharedNormalizer(): void
+    {
+        $source = file_get_contents(__DIR__ . '/../../app/sources/lapr.functions.php');
+        $this->assertIsString($source);
+
+        $start = strpos((string) $source, 'function laprEndpointTargetExists(');
+        $this->assertIsInt($start);
+        $body = substr((string) $source, $start, 1400);
+
+        $this->assertStringContainsString('laprNormalizeHostname((string) $row[\'hostname\'])', $body);
+        $this->assertStringNotContainsString('TRIM(TRAILING', $body);
+    }
+
+    // =========================================================================
     // LAPRSshService::computeFingerprint (TOFU)
     // =========================================================================
 

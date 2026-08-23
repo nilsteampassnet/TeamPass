@@ -882,15 +882,16 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     labels: [
                         "<?php echo addslashes($lang->get('lapr_monitor_state_healthy')); ?>",
                         "<?php echo addslashes($lang->get('lapr_monitor_state_scheduled')); ?>",
+                        "<?php echo addslashes($lang->get('lapr_monitor_state_manual_only')); ?>",
                         "<?php echo addslashes($lang->get('lapr_monitor_state_retrying')); ?>",
                         "<?php echo addslashes($lang->get('lapr_monitor_state_overdue')); ?>",
                         "<?php echo addslashes($lang->get('lapr_monitor_state_error')); ?>",
                         "<?php echo addslashes($lang->get('lapr_monitor_state_paused')); ?>"
                     ],
                     datasets: [{
-                        data: [accounts.healthy || 0, accounts.scheduled || 0, accounts.retrying || 0, accounts.overdue || 0, accounts.error || 0, accounts.paused || 0],
-                        backgroundColor: [tpOpsPalette().greenFill, tpOpsPalette().blueFill, tpOpsPalette().orangeFill, tpOpsPalette().purpleFill, tpOpsPalette().redFill, tpOpsPalette().grayFill],
-                        borderColor: [tpOpsPalette().green, tpOpsPalette().blue, tpOpsPalette().orange, tpOpsPalette().purple, tpOpsPalette().red, tpOpsPalette().gray],
+                        data: [accounts.healthy || 0, accounts.scheduled || 0, accounts.manual_only || 0, accounts.retrying || 0, accounts.overdue || 0, accounts.error || 0, accounts.paused || 0],
+                        backgroundColor: [tpOpsPalette().greenFill, tpOpsPalette().blueFill, tpOpsPalette().grayFill, tpOpsPalette().orangeFill, tpOpsPalette().purpleFill, tpOpsPalette().redFill, tpOpsPalette().grayFill],
+                        borderColor: [tpOpsPalette().green, tpOpsPalette().blue, tpOpsPalette().gray, tpOpsPalette().orange, tpOpsPalette().purple, tpOpsPalette().red, tpOpsPalette().gray],
                         borderWidth: 1
                     }]
                 },

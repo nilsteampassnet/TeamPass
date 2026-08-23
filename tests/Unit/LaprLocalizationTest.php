@@ -120,9 +120,15 @@ class LaprLocalizationTest extends TestCase
         self::assertStringContainsString('language: laprPolDataTablesLang', $policiesJs);
         self::assertStringContainsString('language: laprAccDataTablesLang', $accountsJs);
         self::assertStringContainsString('language: laprEndpointDataTablesLang', $endpointsJs);
-        self::assertStringContainsString('datatables.english.txt', $policiesJs);
-        self::assertStringContainsString('datatables.english.txt', $accountsJs);
-        self::assertStringContainsString('datatables.english.txt', $endpointsJs);
+        // The catalog is read by the shared helper, which owns the English fallback.
+        self::assertStringContainsString('teampassDataTablesLanguage(', $policiesJs);
+        self::assertStringContainsString('teampassDataTablesLanguage(', $accountsJs);
+        self::assertStringContainsString('teampassDataTablesLanguage(', $endpointsJs);
+        $mainFunctions = (string) file_get_contents($root . '/app/sources/main.functions.php');
+        self::assertStringContainsString('function teampassDataTablesLanguage(', $mainFunctions);
+        self::assertStringContainsString('datatables.english.txt', $mainFunctions);
+        // basename() + fixed directory and extension: a tampered language can only miss.
+        self::assertStringContainsString("basename(strtolower(\$language))", $mainFunctions);
         self::assertIsArray($dataTablesFrench);
         self::assertSame('Afficher _MENU_ &eacute;l&eacute;ments', $dataTablesFrench['sLengthMenu']);
         self::assertSame(

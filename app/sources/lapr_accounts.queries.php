@@ -523,10 +523,12 @@ function laprAddAccount(
             $rotationTaskId = (int) DB::queryFirstField(
                 'SELECT increment_id FROM ' . prefixTable('background_tasks') . '
                  WHERE process_type = %s AND item_id = %i AND is_in_progress IN (0,1)
-                 AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)
+                 AND (finished_at IS NULL OR finished_at = %s OR finished_at = %s)
                  ORDER BY increment_id DESC LIMIT 1',
                 'lapr_rotation',
-                $accountId
+                $accountId,
+                '',
+                '0'
             );
             if ($rotationTaskId <= 0) {
                 DB::insert(prefixTable('background_tasks'), [
@@ -619,17 +621,19 @@ function laprDeleteAccount(array $data, int $userId, Language $lang): void
         'is_in_progress' => -1,
         'finished_at' => $timestamp,
         'updated_at' => $timestamp,
-        'status' => 'completed',
+        // Closed without ever running — see admin.queries.php (lapr_enabled off).
+        'status' => 'cancelled',
         'output' => json_encode([
             'success' => false,
             'error_code' => 'ERR_ACCOUNT_DELETED',
             'message' => 'ACCOUNT_REMOVED',
         ], JSON_UNESCAPED_SLASHES),
     ], 'process_type = %s AND item_id = %i AND is_in_progress = 0
-        AND (finished_at IS NULL OR finished_at = %s OR finished_at = 0)',
+        AND (finished_at IS NULL OR finished_at = %s OR finished_at = %s)',
         'lapr_rotation',
         $accountId,
-        ''
+        '',
+        '0'
     );
 
     laprAuditLog('account_add', (int) $account['endpoint_id'], $userId, ['deleted' => true], 'success', $accountId);
@@ -777,9 +781,11 @@ function laprStartRotation(array $data, SessionInterface $session, int $userId, 
     $pending = DB::queryFirstField(
         'SELECT COUNT(*) FROM ' . prefixTable('background_tasks') . '
          WHERE process_type = %s AND item_id = %i AND is_in_progress IN (0,1)
-         AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)',
+         AND (finished_at IS NULL OR finished_at = %s OR finished_at = %s)',
         'lapr_rotation',
-        $accountId
+        $accountId,
+        '',
+        '0'
     );
     if ((int) $pending > 0) {
         echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_rotation_already_running')], 'encode');
@@ -889,7 +895,8 @@ function laprRotationStatus(array $data, Language $lang): void
     }
 
     $output = json_decode((string) ($task['output'] ?? '{}'), true) ?: [];
-    $finished = (int) $task['is_in_progress'] === -1 || (string) $task['status'] === 'completed' || (string) $task['status'] === 'failed';
+    $finished = (int) $task['is_in_progress'] === -1
+        || in_array((string) $task['status'], ['completed', 'failed', 'cancelled'], true);
 
     if ($finished === false) {
         echo prepareExchangedData(['error' => false, 'finished' => false], 'encode');
@@ -1025,7 +1032,8 @@ function laprDiscoverStatus(array $data, Language $lang): void
     }
 
     $output = json_decode((string) ($task['output'] ?? '{}'), true) ?: [];
-    $finished = (int) $task['is_in_progress'] === -1 || (string) $task['status'] === 'completed' || (string) $task['status'] === 'failed';
+    $finished = (int) $task['is_in_progress'] === -1
+        || in_array((string) $task['status'], ['completed', 'failed', 'cancelled'], true);
 
     if ($finished === false) {
         echo prepareExchangedData(['error' => false, 'finished' => false, 'step' => $output['step'] ?? 'connecting'], 'encode');

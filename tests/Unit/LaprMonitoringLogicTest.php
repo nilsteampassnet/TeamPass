@@ -35,6 +35,64 @@ class LaprMonitoringLogicTest extends TestCase
         ];
     }
 
+    public function testSelfTargetAccountsAreManualOnlyInsteadOfOverdue(): void
+    {
+        $now = 1_700_000_000;
+        $account = $this->healthyAccount($now);
+        $account['last_rotation_status'] = 'never';
+        $account['next_rotation_at'] = date('Y-m-d H:i:s', $now - 86400);
+
+        // The scheduler never picks up an endpoint hosting TeamPass, so its due
+        // date always drifts into the past: that must not be reported as a failure.
+        self::assertSame('overdue', laprMonitoringClassifyAccount($account, $now, 600));
+
+        $account['monitoring_self_target'] = true;
+        self::assertSame('manual_only', laprMonitoringClassifyAccount($account, $now, 600));
+    }
+
+    public function testSelfTargetDoesNotMaskARealAccountProblem(): void
+    {
+        $now = 1_700_000_000;
+        $account = $this->healthyAccount($now);
+        $account['monitoring_self_target'] = true;
+
+        $broken = $account;
+        $broken['monitoring_integrity_error'] = true;
+        self::assertSame('error', laprMonitoringClassifyAccount($broken, $now, 600));
+
+        $paused = $account;
+        $paused['status'] = 'paused';
+        self::assertSame('paused', laprMonitoringClassifyAccount($paused, $now, 600));
+
+        $retrying = $account;
+        $retrying['last_rotation_status'] = 'failure';
+        $retrying['retry_at'] = date('Y-m-d H:i:s', $now + 600);
+        self::assertSame('retrying', laprMonitoringClassifyAccount($retrying, $now, 600));
+
+        // A self-target account that is simply up to date stays healthy.
+        self::assertSame('healthy', laprMonitoringClassifyAccount($account, $now, 600));
+    }
+
+    public function testManualOnlyIsCountedAsAnAttentionStateNotAsCompliance(): void
+    {
+        $source = file_get_contents(__DIR__ . '/../../app/sources/lapr.monitoring.functions.php');
+
+        self::assertStringContainsString("'manual_only' => 0,", (string) $source);
+        self::assertStringContainsString(
+            "+ \$accountCounts['error'] + \$accountCounts['paused'] + \$accountCounts['manual_only']",
+            (string) $source
+        );
+        self::assertStringContainsString(
+            "in_array(\$state, ['retrying', 'paused', 'manual_only'], true)",
+            (string) $source
+        );
+        // Compliance must remain healthy + scheduled only.
+        self::assertStringContainsString(
+            "\$accountCounts['compliant'] = \$accountCounts['healthy'] + \$accountCounts['scheduled'];",
+            (string) $source
+        );
+    }
+
     public function testGracePeriodUsesTwoSchedulerIntervalsWithTenMinuteFloor(): void
     {
         self::assertSame(600, laprMonitoringGraceSeconds(['lapr_scheduler_interval_minutes' => 2]));

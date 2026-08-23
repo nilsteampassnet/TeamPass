@@ -38,19 +38,10 @@ $lang = new Language($session->get('user-language') ?? 'english');
 $laprSettings = (new ConfigManager())->getAllSettings();
 $laprRetentionDays = (int) ($laprSettings['lapr_audit_retention_days'] ?? 365);
 $laprJsJsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE;
-$laprAccDataTablesLanguage = basename(strtolower((string) ($session->get('user-language') ?? 'english')));
-$laprAccDataTablesLanguageFile = TEAMPASS_PUBLIC
-    . '/includes/language/datatables.'
-    . $laprAccDataTablesLanguage
-    . '.txt';
-if (is_file($laprAccDataTablesLanguageFile) === false) {
-    $laprAccDataTablesLanguageFile = TEAMPASS_PUBLIC . '/includes/language/datatables.english.txt';
-}
-$laprAccDataTablesLang = json_decode((string) file_get_contents($laprAccDataTablesLanguageFile), true);
-if (is_array($laprAccDataTablesLang) === false) {
-    $laprAccDataTablesLang = [];
-}
-$laprAccDataTablesLang['sEmptyTable'] = $lang->get('lapr_no_accounts');
+$laprAccDataTablesLang = teampassDataTablesLanguage(
+    (string) ($session->get('user-language') ?? 'english'),
+    $lang->get('lapr_no_accounts')
+);
 $laprAccountTranslations = [
     'confirmDelete' => $lang->get('please_confirm_deletion'),
     'caution' => $lang->get('caution'),

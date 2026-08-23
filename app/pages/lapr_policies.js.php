@@ -38,19 +38,10 @@ $lang = new Language($session->get('user-language') ?? 'english');
 // and a PHP tag closing a line makes PHP swallow the newline, concatenating the
 // next statement onto the generated one.
 $laprPolJsJsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE;
-$laprPolDataTablesLanguage = basename(strtolower((string) ($session->get('user-language') ?? 'english')));
-$laprPolDataTablesLanguageFile = TEAMPASS_PUBLIC
-    . '/includes/language/datatables.'
-    . $laprPolDataTablesLanguage
-    . '.txt';
-if (is_file($laprPolDataTablesLanguageFile) === false) {
-    $laprPolDataTablesLanguageFile = TEAMPASS_PUBLIC . '/includes/language/datatables.english.txt';
-}
-$laprPolDataTablesLang = json_decode((string) file_get_contents($laprPolDataTablesLanguageFile), true);
-if (is_array($laprPolDataTablesLang) === false) {
-    $laprPolDataTablesLang = [];
-}
-$laprPolDataTablesLang['sEmptyTable'] = $lang->get('lapr_no_policies');
+$laprPolDataTablesLang = teampassDataTablesLanguage(
+    (string) ($session->get('user-language') ?? 'english'),
+    $lang->get('lapr_no_policies')
+);
 $laprPolicyTranslations = [
     'confirmDelete' => $lang->get('please_confirm_deletion'),
     'caution' => $lang->get('caution'),

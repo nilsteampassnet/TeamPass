@@ -31,6 +31,67 @@ class LaprSafetyWiringTest extends TestCase
         return $source;
     }
 
+    public function testRestoringAnEndpointCannotRecreateADuplicateTarget(): void
+    {
+        $endpoints = $this->source('app/sources/lapr_endpoints.queries.php');
+
+        $restorePosition = strpos($endpoints, 'function laprRestoreEndpoint(');
+        self::assertIsInt($restorePosition);
+        $body = substr($endpoints, $restorePosition, 1600);
+
+        // The guard must run before the row is set back to 'active'.
+        $guardPosition = strpos($body, 'laprEndpointTargetExists(');
+        $updatePosition = strpos($body, "'status' => 'active',");
+        self::assertIsInt($guardPosition);
+        self::assertIsInt($updatePosition);
+        self::assertLessThan($updatePosition, $guardPosition);
+        self::assertStringContainsString('lapr_endpoint_already_enrolled', $body);
+    }
+
+    public function testTasksClosedWithoutExecutionAreCancelledAndStillPurged(): void
+    {
+        $admin = $this->source('app/sources/admin.queries.php');
+        $accounts = $this->source('app/sources/lapr_accounts.queries.php');
+        $handler = $this->source('app/scripts/background_tasks___handler.php');
+
+        // Never 'failed': that would raise a LAPR Health alert for an operator action.
+        self::assertStringContainsString("'status' => 'cancelled',", $admin);
+        self::assertStringContainsString("'status' => 'cancelled',", $accounts);
+
+        // ... but the retention purge must still reclaim them.
+        self::assertStringContainsString("['completed', 'cancelled']", $handler);
+
+        // The pollers must consider them finished.
+        self::assertStringContainsString("['completed', 'failed', 'cancelled']", $accounts);
+    }
+
+    public function testLaprReportingHelpersAreOnlyLoadedByTheirOwnHandlers(): void
+    {
+        $admin = $this->source('app/sources/admin.queries.php');
+        $utilities = $this->source('app/sources/utilities.queries.php');
+
+        foreach ([$admin, $utilities] as $source) {
+            $requirePosition = strpos($source, "lapr.monitoring.functions.php");
+            self::assertIsInt($requirePosition);
+            // Not part of the file preamble: LAPR reporting is ~1400 lines of
+            // function definitions no other action of these handlers needs.
+            self::assertGreaterThan(strpos($source, 'switch ('), $requirePosition);
+        }
+    }
+
+    public function testBackgroundTaskLookupsAreIndexedOnProcessType(): void
+    {
+        $install = $this->source('public/install/install-steps/run.step5.php');
+        $upgrade = $this->source('public/install/upgrade_run_3.2.2.php');
+
+        self::assertStringContainsString(
+            'INDEX idx_process_item (`process_type`, `item_id`)',
+            $install
+        );
+        self::assertStringContainsString('idx_process_item', $upgrade);
+        self::assertStringContainsString('INFORMATION_SCHEMA.STATISTICS', $upgrade);
+    }
+
     public function testDisablingTheModuleCancelsPendingTasksAndStopsWorkers(): void
     {
         $admin = $this->source('app/sources/admin.queries.php');
