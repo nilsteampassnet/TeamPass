@@ -14,6 +14,7 @@ require_once __DIR__ . '/../../app/sources/notifications.functions.php';
  * Covers:
  *   - notificationShouldPersist()   — event whitelist + target gating
  *   - notificationSanitizePayload() — per-type payload whitelists
+ *   - password-expiry milestones and notification idempotency keys
  *   - notificationShapeRows()       — stored rows -> client rows
  *   - notificationSanitizeIds()     — mark-as-read input hardening
  */
@@ -25,7 +26,14 @@ class NotificationCenterLogicTest extends TestCase
 
     public function testPersistsWhitelistedUserEvents(): void
     {
-        foreach (['security_nudge', 'user_keys_ready', 'task_completed', 'folder_permission_changed'] as $type) {
+        foreach ([
+            'security_nudge',
+            'user_keys_ready',
+            'task_completed',
+            'folder_permission_changed',
+            'local_password_expiring',
+            'kb_article_created',
+        ] as $type) {
             $this->assertTrue(notificationShouldPersist($type, 'user', 42), $type);
         }
     }
@@ -119,6 +127,57 @@ class NotificationCenterLogicTest extends TestCase
     public function testUnknownEventTypeStoresNothing(): void
     {
         $this->assertSame([], notificationSanitizePayload('something_new', ['a' => 1]));
+    }
+
+    public function testLocalPasswordExpiryPayloadIsTypedAndBounded(): void
+    {
+        $clean = notificationSanitizePayload('local_password_expiring', [
+            'days_remaining' => '7',
+            'threshold' => 7,
+            'expires_at' => '1787500000',
+            'auth_type' => 'local',
+        ]);
+
+        $this->assertSame([
+            'days_remaining' => 7,
+            'threshold' => 7,
+            'expires_at' => 1787500000,
+        ], $clean);
+        $this->assertArrayNotHasKey('auth_type', $clean);
+    }
+
+    public function testKnowledgeBasePublicationPayloadIsSafeAndBounded(): void
+    {
+        $clean = notificationSanitizePayload('kb_article_created', [
+            'kb_id' => '42',
+            'label' => str_repeat('x', 250),
+            'created_by' => 'alice',
+        ]);
+
+        $this->assertSame(42, $clean['kb_id']);
+        $this->assertSame(200, mb_strlen($clean['label']));
+        $this->assertArrayNotHasKey('created_by', $clean);
+    }
+
+    public function testPasswordExpiryMilestones(): void
+    {
+        $this->assertNull(notificationPasswordExpiryThreshold(15));
+        $this->assertSame(14, notificationPasswordExpiryThreshold(14));
+        $this->assertSame(14, notificationPasswordExpiryThreshold(8));
+        $this->assertSame(7, notificationPasswordExpiryThreshold(7));
+        $this->assertSame(3, notificationPasswordExpiryThreshold(2));
+        $this->assertSame(1, notificationPasswordExpiryThreshold(1));
+        $this->assertSame(0, notificationPasswordExpiryThreshold(0));
+        $this->assertSame(0, notificationPasswordExpiryThreshold(-2));
+    }
+
+    public function testNotificationDedupeKeysAreStable(): void
+    {
+        $this->assertSame(
+            'local_password_expiry:1787500000:7',
+            notificationPasswordExpiryDedupeKey(1787500000, 7)
+        );
+        $this->assertSame('kb_article_created:42', notificationKbPublicationDedupeKey(42));
     }
 
     // -------------------------------------------------------------------
