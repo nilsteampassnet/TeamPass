@@ -113,10 +113,10 @@ switch ($post_type) {
         laprAddAccount($dataReceived, $session, $userId, $lang, $SETTINGS);
         break;
     case 'delete_account':
-        laprDeleteAccount($dataReceived, $userId, $lang);
+        laprDeleteAccount($dataReceived, $session, $userId, $lang);
         break;
     case 'update_account_policy':
-        laprUpdateAccountPolicy($dataReceived, $userId, $lang);
+        laprUpdateAccountPolicy($dataReceived, $session, $userId, $lang);
         break;
     case 'start_discover':
         laprStartDiscover($dataReceived, $session, $userId, $lang);
@@ -610,12 +610,13 @@ function laprAddAccount(
 /**
  * Soft-delete a managed account.
  *
- * @param array    $data   Decoded client payload
- * @param int      $userId Acting user id
- * @param Language $lang   Language helper
+ * @param array            $data    Decoded client payload
+ * @param SessionInterface $session Current session
+ * @param int              $userId  Acting user id
+ * @param Language         $lang    Language helper
  * @return void
  */
-function laprDeleteAccount(array $data, int $userId, Language $lang): void
+function laprDeleteAccount(array $data, SessionInterface $session, int $userId, Language $lang): void
 {
     $accountId = (int) ($data['id'] ?? 0);
     if ($accountId <= 0) {
@@ -624,12 +625,23 @@ function laprDeleteAccount(array $data, int $userId, Language $lang): void
     }
 
     $account = DB::queryFirstRow(
-        'SELECT id, endpoint_id FROM ' . prefixTable('lapr_accounts') . ' WHERE id = %i AND status != %s',
+        'SELECT a.id, a.endpoint_id, i.id_tree
+         FROM ' . prefixTable('lapr_accounts') . ' AS a
+         INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = a.item_id
+         WHERE a.id = %i AND a.status != %s',
         $accountId,
         'deleted'
     );
     if ($account === null) {
         echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_account_not_found')], 'encode');
+        return;
+    }
+
+    // Same folder scope as every other mutating account handler.
+    if (laprUserCanWriteFolder((int) $account['id_tree'], $session) === false
+        || laprUserCanUseEndpoint((int) $account['endpoint_id'], $session) === false
+    ) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
         return;
     }
 
@@ -670,12 +682,13 @@ function laprDeleteAccount(array $data, int $userId, Language $lang): void
  * Change the policy of a managed account and recompute next_rotation_at
  * (spec Option A: last_rotation_at + new frequency, clamped to now).
  *
- * @param array    $data   Decoded client payload
- * @param int      $userId Acting user id
- * @param Language $lang   Language helper
+ * @param array            $data    Decoded client payload
+ * @param SessionInterface $session Current session
+ * @param int              $userId  Acting user id
+ * @param Language         $lang    Language helper
  * @return void
  */
-function laprUpdateAccountPolicy(array $data, int $userId, Language $lang): void
+function laprUpdateAccountPolicy(array $data, SessionInterface $session, int $userId, Language $lang): void
 {
     $accountId = (int) ($data['id'] ?? 0);
     $policyId = (int) ($data['policy_id'] ?? 0);
@@ -685,13 +698,25 @@ function laprUpdateAccountPolicy(array $data, int $userId, Language $lang): void
     }
 
     $account = DB::queryFirstRow(
-        'SELECT id, last_rotation_at, endpoint_id FROM ' . prefixTable('lapr_accounts') . '
-         WHERE id = %i AND status != %s',
+        'SELECT a.id, a.last_rotation_at, a.endpoint_id, i.id_tree
+         FROM ' . prefixTable('lapr_accounts') . ' AS a
+         INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = a.item_id
+         WHERE a.id = %i AND a.status != %s',
         $accountId,
         'deleted'
     );
     if ($account === null) {
         echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_account_not_found')], 'encode');
+        return;
+    }
+
+    // The policy dictates the strength of the password pushed to a privileged
+    // Linux account, and laprComputeNextRotation() clamps a past due date to
+    // now: without this check any operator could weaken any managed account.
+    if (laprUserCanWriteFolder((int) $account['id_tree'], $session) === false
+        || laprUserCanUseEndpoint((int) $account['endpoint_id'], $session) === false
+    ) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
         return;
     }
 
