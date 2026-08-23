@@ -1743,10 +1743,12 @@ class DatabaseInstaller
             `user_id` INT(12) NOT NULL,
             `created_at` INT(12) NOT NULL DEFAULT 0,
             `event_type` VARCHAR(50) NOT NULL,
+            `dedupe_key` VARCHAR(120) NULL DEFAULT NULL,
             `payload` TEXT NULL,
             `is_read` TINYINT(1) NOT NULL DEFAULT 0,
             `read_at` INT(12) NULL DEFAULT NULL,
             PRIMARY KEY (`increment_id`),
+            UNIQUE KEY `uk_user_event_dedupe` (`user_id`, `event_type`, `dedupe_key`),
             KEY `idx_user_unread` (`user_id`, `is_read`, `increment_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
