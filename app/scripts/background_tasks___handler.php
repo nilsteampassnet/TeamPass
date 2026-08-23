@@ -92,6 +92,7 @@ class BackgroundTasksHandler {
             $this->handleScheduledDatabaseBackup();
             $this->handleScheduledExternalizedBackup();
             $this->handleScheduledInactiveUsersMgmt();
+            $this->handleScheduledLocalPasswordExpiryNotifications();
             $this->handleScheduledSecurityNudgeDigest();
             $this->drainTaskPool();
             $this->performMaintenanceTasks();
@@ -481,6 +482,63 @@ class BackgroundTasksHandler {
         );
 
         $this->upsertSettingValue('security_nudges_next_run_at', (string) $this->computeNextDailyRunAt($now + 60, $timeStr));
+    }
+
+    /**
+     * Scheduler: enqueue the daily local-password expiry notification sweep.
+     *
+     * The job is useful even though delivery is currently in-app only: every
+     * eligible user has the warning waiting in their inbox at next login. A
+     * login-time fallback covers installations whose background handler is not
+     * running.
+     */
+    private function handleScheduledLocalPasswordExpiryNotifications(): void
+    {
+        $notificationCenterEnabled = (int) ($this->settings['notification_center_enabled'] ?? 0);
+        $passwordLifetimeDays = (int) ($this->settings['pw_life_duration'] ?? 0);
+        if ($notificationCenterEnabled !== 1 || $passwordLifetimeDays <= 0) {
+            return;
+        }
+
+        $now = time();
+        $nextRunAt = (int) $this->getSettingValue('local_password_expiry_notifications_next_run_at', '0');
+        if ($nextRunAt <= 0) {
+            $this->upsertSettingValue(
+                'local_password_expiry_notifications_next_run_at',
+                (string) $this->computeNextDailyRunAt($now, '03:15')
+            );
+            return;
+        }
+
+        if ($now < $nextRunAt) {
+            return;
+        }
+
+        $pending = (int) DB::queryFirstField(
+            'SELECT COUNT(*)
+            FROM ' . prefixTable('background_tasks') . '
+            WHERE process_type = %s
+            AND is_in_progress IN (0,1)
+            AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)',
+            'local_password_expiry_notifications'
+        );
+        if ($pending === 0) {
+            DB::insert(
+                prefixTable('background_tasks'),
+                [
+                    'created_at' => (string) $now,
+                    'process_type' => 'local_password_expiry_notifications',
+                    'arguments' => json_encode(['source' => 'scheduler'], JSON_UNESCAPED_SLASHES),
+                    'is_in_progress' => 0,
+                    'status' => 'new',
+                ]
+            );
+        }
+
+        $this->upsertSettingValue(
+            'local_password_expiry_notifications_next_run_at',
+            (string) $this->computeNextDailyRunAt($now + 60, '03:15')
+        );
     }
 
     /**
