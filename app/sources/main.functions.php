@@ -10279,87 +10279,40 @@ function tpFinishRequestEarly(): bool
 }
 
 /**
- * Emit a WebSocket event for real-time notifications
+ * Queue a real-time event without performing durable notification delivery.
  *
- * This function inserts an event into the websocket_events table,
- * which is then picked up by the WebSocket server and broadcast
- * to connected clients.
- *
- * @param string $eventType Type of event (item_created, item_updated, folder_created, etc.)
- * @param string $targetType Target type for routing: 'user', 'folder', 'kb', or 'broadcast'
- * @param int|null $targetId Target ID (user_id for 'user', folder_id for 'folder', null for 'broadcast')
- * @param array $payload Event payload data to send to clients
- * @param int|null $excludeUserId Optional user ID to exclude from receiving the event
- * @return bool True if event was queued successfully, false otherwise
- *
- * @example
- * // Notify all users viewing a folder that an item was updated
- * emitWebSocketEvent(
- *     'item_updated',
- *     'folder',
- *     $folderId,
- *     [
- *         'item_id' => $itemId,
- *         'folder_id' => $folderId,
- *         'label' => $itemLabel,
- *         'updated_by' => $userLogin
- *     ],
- *     $currentUserId // Don't notify the user who made the change
- * );
- *
- * @example
- * // Notify a specific user that their encryption keys are ready
- * emitWebSocketEvent(
- *     'user_keys_ready',
- *     'user',
- *     $userId,
- *     ['status' => 'ready', 'message' => 'Your account is now ready']
- * );
- *
- * @example
- * // Broadcast to all connected users (e.g., maintenance notice)
- * emitWebSocketEvent(
- *     'system_maintenance',
- *     'broadcast',
- *     null,
- *     ['message' => 'System will restart in 5 minutes']
- * );
+ * Internal low-level channel helper. Business notification producers should
+ * call tpNotifyUser() so persistence, idempotency, and future channel choices
+ * remain centralized.
  */
-function emitWebSocketEvent(
+function tpQueueWebSocketEvent(
     string $eventType,
     string $targetType,
     ?int $targetId,
     array $payload,
     ?int $excludeUserId = null
 ): bool {
-    // D2 — Notification centre: persist whitelisted user-target events in the
-    // user's inbox. Runs before the WebSocket gate on purpose: the inbox works
-    // even when the WebSocket daemon is disabled.
-    require_once __DIR__ . '/notifications.functions.php';
-    if (notificationShouldPersist($eventType, $targetType, $targetId) === true) {
-        tpPersistUserNotification($eventType, (int) $targetId, $payload);
-    }
-
-    // Check if WebSocket is enabled
-    try {
-        $wsEnabled = DB::queryFirstField(
-            'SELECT valeur FROM %l WHERE intitule = %s',
-            prefixTable('misc'),
-            'websocket_enabled'
-        );
-
-        if ($wsEnabled !== '1') {
-            // WebSocket not enabled, silently skip
-            return false;
-        }
-    } catch (Exception $e) {
-        // Table might not exist yet (before migration)
+    // Validate target type
+    if (!in_array($targetType, ['user', 'folder', 'kb', 'broadcast'], true)) {
+        error_log("tpQueueWebSocketEvent: Invalid target type '{$targetType}'");
         return false;
     }
 
-    // Validate target type
-    if (!in_array($targetType, ['user', 'folder', 'kb', 'broadcast'], true)) {
-        error_log("emitWebSocketEvent: Invalid target type '{$targetType}'");
+    // Cache the setting for the lifetime of this request. Publication fan-out
+    // can target many users and must not issue one misc lookup per recipient.
+    static $wsEnabled = null;
+    if ($wsEnabled === null) {
+        try {
+            $wsEnabled = DB::queryFirstField(
+                'SELECT valeur FROM %l WHERE intitule = %s',
+                prefixTable('misc'),
+                'websocket_enabled'
+            ) === '1';
+        } catch (Exception $e) {
+            $wsEnabled = false;
+        }
+    }
+    if ($wsEnabled !== true) {
         return false;
     }
 
@@ -10385,9 +10338,56 @@ function emitWebSocketEvent(
         return true;
 
     } catch (Exception $e) {
-        error_log("emitWebSocketEvent: Failed to insert event - " . $e->getMessage());
+        error_log("tpQueueWebSocketEvent: Failed to insert event - " . $e->getMessage());
         return false;
     }
+}
+
+/**
+ * Emit a WebSocket event and persist it when it is a whitelisted user event.
+ *
+ * Kept as the compatibility entry point for existing emitters. New durable
+ * business notifications should use tpNotifyUser().
+ */
+function emitWebSocketEvent(
+    string $eventType,
+    string $targetType,
+    ?int $targetId,
+    array $payload,
+    ?int $excludeUserId = null
+): bool {
+    // D2 — Notification centre: persist whitelisted user-target events in the
+    // user's inbox. Runs before the WebSocket gate on purpose: the inbox works
+    // even when the WebSocket daemon is disabled.
+    require_once __DIR__ . '/notifications.functions.php';
+    if (notificationShouldPersist($eventType, $targetType, $targetId) === true) {
+        tpPersistUserNotification($eventType, (int) $targetId, $payload);
+    }
+
+    return tpQueueWebSocketEvent($eventType, $targetType, $targetId, $payload, $excludeUserId);
+}
+
+/**
+ * Check whether the persistent in-app channel is enabled for this request.
+ */
+function tpNotificationCenterIsEnabled(): bool
+{
+    static $enabled = null;
+    if ($enabled !== null) {
+        return $enabled;
+    }
+
+    try {
+        $enabled = DB::queryFirstField(
+            'SELECT valeur FROM %l WHERE intitule = %s',
+            prefixTable('misc'),
+            'notification_center_enabled'
+        ) === '1';
+    } catch (Exception $e) {
+        $enabled = false;
+    }
+
+    return $enabled;
 }
 
 /**
@@ -10399,9 +10399,15 @@ function emitWebSocketEvent(
  * @param string $eventType Whitelisted event type (see notificationPersistableEvents())
  * @param int    $userId    Target user id
  * @param array  $payload   Raw event payload (sanitized before storage)
- * @return bool True when a row was stored
+ * @param string|null $dedupeKey Optional stable idempotency key (max 120 chars)
+ * @return bool True when a new row was stored, false when disabled or duplicate
  */
-function tpPersistUserNotification(string $eventType, int $userId, array $payload): bool
+function tpPersistUserNotification(
+    string $eventType,
+    int $userId,
+    array $payload,
+    ?string $dedupeKey = null
+): bool
 {
     if ($userId <= 0) {
         return false;
@@ -10410,28 +10416,31 @@ function tpPersistUserNotification(string $eventType, int $userId, array $payloa
     require_once __DIR__ . '/notifications.functions.php';
 
     try {
-        $enabled = DB::queryFirstField(
-            'SELECT valeur FROM %l WHERE intitule = %s',
-            prefixTable('misc'),
-            'notification_center_enabled'
-        );
-        if ($enabled !== '1') {
+        if (tpNotificationCenterIsEnabled() !== true) {
             return false;
         }
 
-        DB::insert(
-            prefixTable('user_notifications'),
-            [
-                'user_id' => $userId,
-                'created_at' => time(),
-                'event_type' => $eventType,
-                'payload' => json_encode(
-                    notificationSanitizePayload($eventType, $payload),
-                    JSON_UNESCAPED_UNICODE
-                ),
-                'is_read' => 0,
-            ]
-        );
+        $row = [
+            'user_id' => $userId,
+            'created_at' => time(),
+            'event_type' => $eventType,
+            'payload' => json_encode(
+                notificationSanitizePayload($eventType, $payload),
+                JSON_UNESCAPED_UNICODE
+            ),
+            'is_read' => 0,
+        ];
+
+        $dedupeKey = $dedupeKey !== null ? substr(trim($dedupeKey), 0, 120) : null;
+        if ($dedupeKey !== null && $dedupeKey !== '') {
+            $row['dedupe_key'] = $dedupeKey;
+            DB::insertIgnore(prefixTable('user_notifications'), $row);
+            if (DB::affectedRows() === 0) {
+                return false;
+            }
+        } else {
+            DB::insert(prefixTable('user_notifications'), $row);
+        }
 
         // Prune: keep the latest 50 rows for this user.
         $pruneBelow = DB::queryFirstField(
@@ -10453,6 +10462,125 @@ function tpPersistUserNotification(string $eventType, int $userId, array $payloa
         // Table might not exist yet (before migration) — never break the caller.
         return false;
     }
+}
+
+/**
+ * Dispatch a durable user notification through the currently supported
+ * channels. The business event has a channel-neutral entry point so future
+ * per-user preferences can decide whether in-app, email, or both are used.
+ *
+ * For now, the persistent in-app channel is authoritative and WebSocket is a
+ * best-effort live refresh. Duplicate events are neither stored nor broadcast.
+ *
+ * @param string $eventType Persistable event type
+ * @param int $userId Target user id
+ * @param array $payload Raw payload, sanitized before storage
+ * @param string $dedupeKey Stable idempotency key
+ * @return bool True when a new notification was stored
+ */
+function tpNotifyUser(string $eventType, int $userId, array $payload, string $dedupeKey): bool
+{
+    require_once __DIR__ . '/notifications.functions.php';
+    if (notificationShouldPersist($eventType, 'user', $userId) !== true) {
+        return false;
+    }
+
+    if (tpPersistUserNotification($eventType, $userId, $payload, $dedupeKey) !== true) {
+        return false;
+    }
+
+    tpQueueWebSocketEvent($eventType, 'user', $userId, $payload);
+
+    return true;
+}
+
+/**
+ * Remove password-expiry notifications from earlier password-policy cycles.
+ *
+ * @param int      $userId          Target local user
+ * @param int|null $currentExpiresAt Current cycle expiry, or null to clear all
+ */
+function tpClearObsoleteLocalPasswordExpiryNotifications(int $userId, ?int $currentExpiresAt): void
+{
+    if ($userId <= 0 || tpNotificationCenterIsEnabled() !== true) {
+        return;
+    }
+
+    try {
+        if ($currentExpiresAt === null || $currentExpiresAt <= 0) {
+            DB::delete(
+                prefixTable('user_notifications'),
+                'user_id = %i AND event_type = %s',
+                $userId,
+                'local_password_expiring'
+            );
+            return;
+        }
+
+        $dedupePrefix = 'local_password_expiry:' . $currentExpiresAt . ':';
+        DB::query(
+            'DELETE FROM ' . prefixTable('user_notifications') . '
+            WHERE user_id = %i
+            AND event_type = %s
+            AND (dedupe_key IS NULL OR dedupe_key NOT LIKE %s)',
+            $userId,
+            'local_password_expiring',
+            $dedupePrefix . '%'
+        );
+    } catch (Exception $e) {
+        // Pre-upgrade schemas do not have dedupe_key yet. Never break login.
+    }
+}
+
+/**
+ * Notify one local user when their TeamPass password reaches a warning
+ * milestone. Administrators are intentionally included; directory and OAuth
+ * accounts are explicitly excluded by auth_type.
+ */
+function tpNotifyLocalPasswordExpiry(
+    int $userId,
+    string $authType,
+    int $lastPasswordChange,
+    int $passwordLifetimeDays,
+    int $daysRemaining
+): bool {
+    if ($userId <= 0 || tpNotificationCenterIsEnabled() !== true) {
+        return false;
+    }
+
+    static $systemAccountIds = null;
+    if ($systemAccountIds === null) {
+        $systemAccountIds = teampassGetSystemAccountIds();
+    }
+    if (in_array($userId, $systemAccountIds, true)) {
+        return false;
+    }
+
+    if ($authType !== 'local' || $passwordLifetimeDays <= 0 || $lastPasswordChange <= 0) {
+        tpClearObsoleteLocalPasswordExpiryNotifications($userId, null);
+        return false;
+    }
+
+    require_once __DIR__ . '/notifications.functions.php';
+
+    $expiresAt = $lastPasswordChange + ($passwordLifetimeDays * TP_ONE_DAY_SECONDS);
+    tpClearObsoleteLocalPasswordExpiryNotifications($userId, $expiresAt);
+
+    $threshold = notificationPasswordExpiryThreshold($daysRemaining);
+    if ($threshold === null) {
+        return false;
+    }
+
+    return tpNotifyUser(
+        'local_password_expiring',
+        $userId,
+        [
+            'days_remaining' => max(0, $daysRemaining),
+            'threshold' => $threshold,
+            'expires_at' => $expiresAt,
+        ],
+        notificationPasswordExpiryDedupeKey($expiresAt, $threshold)
+    );
 }
 
 /**
@@ -10590,6 +10718,61 @@ function emitKbEvent(
     ];
 
     return emitWebSocketEvent($eventType, 'kb', null, $payload, $excludeUserId);
+}
+
+/**
+ * Fan out a newly published knowledge-base article to active non-admin users.
+ *
+ * The author is excluded because the publication is their own action. System,
+ * disabled, and deleted accounts never receive user-facing notifications.
+ * Delivery failures are isolated from the article save operation.
+ *
+ * @return int Number of newly persisted user notifications
+ */
+function tpNotifyKnowledgeBasePublication(int $kbId, string $label, int $authorId): int
+{
+    if ($kbId <= 0 || tpNotificationCenterIsEnabled() !== true) {
+        return 0;
+    }
+
+    $excludedIds = array_values(array_unique(array_merge(
+        teampassGetSystemAccountIds(),
+        $authorId > 0 ? [$authorId] : []
+    )));
+
+    try {
+        $sql = 'SELECT id
+            FROM ' . prefixTable('users') . '
+            WHERE admin = 0
+            AND disabled = 0
+            AND (deleted_at IS NULL OR deleted_at = "" OR deleted_at = 0)';
+        if (count($excludedIds) > 0) {
+            $sql .= ' AND id NOT IN %li';
+            $users = DB::query($sql, $excludedIds);
+        } else {
+            $users = DB::query($sql);
+        }
+    } catch (Exception $e) {
+        error_log('tpNotifyKnowledgeBasePublication: recipient lookup failed - ' . $e->getMessage());
+        return 0;
+    }
+
+    require_once __DIR__ . '/notifications.functions.php';
+    $stored = 0;
+    $dedupeKey = notificationKbPublicationDedupeKey($kbId);
+    foreach ($users as $user) {
+        $recipientId = (int) ($user['id'] ?? 0);
+        if (tpNotifyUser(
+            'kb_article_created',
+            $recipientId,
+            ['kb_id' => $kbId, 'label' => $label],
+            $dedupeKey
+        ) === true) {
+            $stored++;
+        }
+    }
+
+    return $stored;
 }
 
 /**
