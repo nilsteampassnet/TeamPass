@@ -1,6 +1,6 @@
 ---
 name: prepare-release
-description: Prepare, cut and publish a TeamPass release following the 3.2.1.x model — scope the commit range, decide the version number, run the release gate, bump the version constants, refresh the Docker image (version arg and base image), regenerate the integrity checksums, finish git flow manually, and draft the GitHub release notes. Use when asked to prepare a release, cut a version, bump TP_VERSION_MINOR, or publish release notes.
+description: Prepare, cut and publish a TeamPass release following the 3.2.1.x model — scope the commit range, decide the version number, run the release gate, bump the version constants, refresh the Docker image (version arg and base image), regenerate the integrity checksums, finish git flow manually, draft the GitHub release notes, and update the teampass.net changelog. Use when asked to prepare a release, cut a version, bump TP_VERSION_MINOR, or publish release notes.
 ---
 
 # Prepare a TeamPass release
@@ -432,6 +432,85 @@ gh release create <VERSION> \
 
 ---
 
+## 10. Update the teampass.net changelog
+
+The website carries a condensed changelog at <https://teampass.net/whats-new.html>. It is a
+**separate Jekyll repository**, not part of this one:
+
+| | |
+|---|---|
+| Windows | `C:\Personnel\Développements\siteweb` |
+| WSL | `/mnt/c/Personnel/Développements/siteweb` |
+
+**Edit `_data/releases.yml`, never `whats-new.html`.** The page only iterates
+`site.data.releases.versions`; a new release is a data entry, and the HTML never changes.
+
+Entries are **newest first**, so the new one goes immediately above the previous version. The
+shape is fixed:
+
+```yaml
+  - version: 3.2.2.0
+    date: 2026-08-23
+    summary: One sentence naming the headline change.
+    changes:
+      - group: Security        # Security | New | Improved | Upgrade notes
+        items:
+          - One short phrase per line, no trailing period
+          - "Advisory identifiers go in parentheses at the end (GHSA-xxxx-xxxx-xxxx)"
+```
+
+Writing rules — this is a **condensation**, not a copy of the GitHub notes:
+
+- One short phrase per item. The GitHub release is where the paragraph lives; the site says what
+  changed and stops. Aim for the density of the existing 3.2.1.x entries.
+- Group order follows what dominates the release. `Upgrade notes` last, and only when an
+  administrator has something to do or expect.
+- The site's own editorial rule applies (see its `CLAUDE.md`): **every claim must be checkable
+  against the published release notes**. Work from `gh release view <VERSION> --json body`, not
+  from the commit range or from memory.
+- **No backticks.** `{{ change }}` is not markdownified, so a backtick renders as a literal
+  backtick on the page. Same for any other markdown syntax.
+- The site spells the product **Teampass**, not TeamPass.
+
+YAML quoting, the two ways this breaks:
+
+- An item containing `: ` must be quoted.
+- Inside a double-quoted item, an inner double quote must be escaped `\"`. Writing a bare `"`
+  silently terminates the string and the build fails much later with an unhelpful parser error.
+
+**Ruby and Jekyll are not installed in WSL** — do not try `jekyll build` from there. Validate the
+data file instead, which is what actually catches the mistakes above:
+
+```bash
+cd "/mnt/c/Personnel/Développements/siteweb"
+python3 -c "
+import yaml
+d = yaml.safe_load(open('_data/releases.yml'))
+print('versions:', len(d['versions']))
+for v in d['versions'][:2]:
+    print(v['version'], v['date'])
+    for g in v['changes']:
+        for i in g['items']:
+            print('   -', i)
+"
+```
+
+**The `highlights` block is not part of a routine release.** It feeds the home page cards and the
+top of `/whats-new.html` ("Four changes worth upgrading for") — four entries, in a `tp-grid--4`.
+Leave it alone for a patch. Only a genuinely headline feature justifies touching it, and then it
+is a **swap**, not an addition, plus a matching edit to the page's `lead` front matter, which
+describes the line as a whole. Raise it with the user rather than deciding alone.
+
+Commit in that repository separately (it has its own history and often carries unrelated work in
+progress — check `git status` before staging, and stage only `_data/releases.yml`):
+
+```bash
+git add _data/releases.yml
+git commit -m "Add <VERSION> to the changelog"
+```
+
+---
+
 ## Traps, in one place
 
 | Trap | Consequence |
@@ -449,6 +528,8 @@ gh release create <VERSION> \
 | A path untracked on `develop` that `master` still tracks | `git checkout master` adopts the on-disk copy, the merge then **deletes it from disk** — pre-check with `--diff-filter=D`, restore with `git archive \| tar -x` (§7) |
 | Multi-line checksum pipeline inlined into `bash -c` | Syntax error on `done \` — always use the script |
 | Chained `&&` git commands | Mangled by the rtk hook — one command per line |
+| Editing `whats-new.html` to add a release | The page iterates `_data/releases.yml`; the entry belongs there and the HTML never changes (§10) |
+| Backticks or markdown in a `releases.yml` item | `{{ change }}` is not markdownified — they render literally on the published page (§10) |
 | Bumping `include.php` without `Dockerfile` | Locally built images carry the previous version (check 1 now fails) |
 | Treating the base image as code-only | It ages on its own: an end-of-life Alpine makes every Trivy CVE unfixable until `FROM` moves (§3) |
 | Changing `FROM` without running `docker-publish` | No Docker locally ⇒ a broken build is only discovered after the release is published |
