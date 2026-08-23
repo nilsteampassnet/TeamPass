@@ -53,6 +53,7 @@ function notificationPersistableEvents(): array
         'folder_permission_changed',
         'local_password_expiring',
         'kb_article_created',
+        'backup_failed',
     ];
 }
 
@@ -129,6 +130,14 @@ function notificationSanitizePayload(string $eventType, array $payload): array
             $clean['label'] = mb_substr((string) ($payload['label'] ?? ''), 0, 200);
             break;
 
+        case 'backup_failed':
+            $clean['backup_type'] = (string) ($payload['backup_type'] ?? '') === 'externalized'
+                ? 'externalized'
+                : 'scheduled';
+            $message = preg_replace('/\s+/u', ' ', trim((string) ($payload['message'] ?? '')));
+            $clean['message'] = mb_substr(is_string($message) ? $message : '', 0, 300);
+            break;
+
         default:
             // Unknown type: store nothing rather than arbitrary data.
             break;
@@ -178,6 +187,29 @@ function notificationPasswordExpiryDedupeKey(int $expiresAt, int $threshold): st
 function notificationKbPublicationDedupeKey(int $kbId): string
 {
     return 'kb_article_created:' . max(0, $kbId);
+}
+
+/**
+ * Build the idempotency key for an administrator backup-failure alert.
+ *
+ * A created task uses its numeric id; a scheduler preflight uses a stable
+ * date-and-cause identifier. The backup type is part of the key because a
+ * successful scheduled task may still report that its chained
+ * externalization could not be queued.
+ */
+function notificationBackupFailureDedupeKey(int|string $failureId, string $backupType): string
+{
+    $normalizedType = $backupType === 'externalized' ? 'externalized' : 'scheduled';
+    $normalizedFailureId = preg_replace(
+        '/[^a-zA-Z0-9_.:-]+/',
+        '_',
+        substr(trim((string) $failureId), 0, 80)
+    );
+    if (is_string($normalizedFailureId) === false || $normalizedFailureId === '') {
+        $normalizedFailureId = 'unknown';
+    }
+
+    return 'backup_failed:' . $normalizedType . ':' . $normalizedFailureId;
 }
 
 /**
