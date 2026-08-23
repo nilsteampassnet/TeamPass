@@ -283,6 +283,7 @@ class TaskWorker {
                     ]);
                     $reportStatus = 'failed';
                     $reportMessage = $scheduledMessage . '. Externalized backup was not completed: ' . $externalizedMessage;
+                    tpNotifyBackupFailure($this->taskId, 'externalized', $externalizedMessage);
                 }
 
                 try {
@@ -1630,6 +1631,7 @@ class TaskWorker {
             } catch (Throwable) {
                 // best effort only
             }
+            tpNotifyBackupFailure($this->taskId, 'scheduled', $e->getMessage());
         }
 
         if ($this->processType === 'externalized_backup') {
@@ -1651,6 +1653,7 @@ class TaskWorker {
             } catch (Throwable) {
                 // best effort only
             }
+            tpNotifyBackupFailure($this->taskId, 'externalized', $e->getMessage());
         }
 
         // Purge retention even on failure (safe: only files matching the task source prefix)
