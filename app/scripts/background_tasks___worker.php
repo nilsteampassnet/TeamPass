@@ -41,6 +41,9 @@ require_once __DIR__.'/traits/MigrateUserHandlerTrait.php';
 require_once __DIR__.'/traits/PhpseclibV3MigrationTrait.php';
 require_once __DIR__.'/traits/SecurityNudgeTrait.php';
 require_once __DIR__.'/traits/SharekeysRepairTrait.php';
+require_once __DIR__.'/traits/LAPRSshTestTrait.php';
+require_once __DIR__.'/traits/LAPRDiscoverTrait.php';
+require_once __DIR__.'/traits/LAPRRotationTrait.php';
 require_once __DIR__ . '/taskLogger.php';
 
 class TaskWorker {
@@ -51,6 +54,9 @@ class TaskWorker {
     use PhpseclibV3MigrationTrait;
     use SecurityNudgeTrait;
     use SharekeysRepairTrait;
+    use LAPRSshTestTrait;
+    use LAPRDiscoverTrait;
+    use LAPRRotationTrait;
 
     private int $taskId;
     private string $processType;
@@ -69,6 +75,7 @@ class TaskWorker {
         
         $configManager = new ConfigManager();
         $this->settings = $configManager->getAllSettings();
+        date_default_timezone_set($this->settings['timezone'] ?? 'UTC');
         $this->logger = new TaskLogger($this->settings, LOG_TASKS_FILE);
     }
 
@@ -81,7 +88,25 @@ class TaskWorker {
      */
     public function execute(): void {
         try {
+            // This process handles many tasks in a row. The item revision memo is scoped to
+            // one logical change, so it must not leak from a previous task: a later change
+            // to the same item is a new revision.
+            resetItemRevisionMemo();
+
             if (LOG_TASKS=== true) $this->logger->log('Processing task: ' . print_r($this->taskData, true), 'DEBUG');
+
+            // The LAPR master switch is authoritative for tasks that were
+            // already queued when an administrator disabled the module.
+            if (strpos($this->processType, 'lapr_') === 0 && laprIsModuleEnabledFresh() === false) {
+                $this->updateTaskResult([
+                    'success' => false,
+                    'error_code' => 'ERR_LAPR_DISABLED',
+                    'message' => 'LAPR_DISABLED',
+                ]);
+                $this->completeTask();
+                return;
+            }
+
             // Dispatch selon le type de processus
             switch ($this->processType) {
                 case 'item_copy':
@@ -122,6 +147,21 @@ class TaskWorker {
                     break;
                 case 'security_nudge_digest':
                     $this->handleSecurityNudgeDigest();
+                    break;
+                case 'lapr_ssh_test':
+                    $this->handleLaprSshTest($this->taskData);
+                    break;
+                case 'lapr_discover':
+                    $this->handleLaprDiscover($this->taskData);
+                    break;
+                case 'lapr_rotation':
+                    $this->handleLaprRotation($this->taskData);
+                    break;
+                case 'local_password_expiry_notifications':
+                    $this->handleLocalPasswordExpiryNotifications();
+                    break;
+                case 'kb_publication_notifications':
+                    $this->handleKbPublicationNotifications($this->taskData);
                     break;
                 default:
                     throw new Exception("Type of subtask unknown: {$this->processType}");
@@ -280,6 +320,7 @@ class TaskWorker {
                     ]);
                     $reportStatus = 'failed';
                     $reportMessage = $scheduledMessage . '. Externalized backup was not completed: ' . $externalizedMessage;
+                    tpNotifyBackupFailure($this->taskId, 'externalized', $externalizedMessage);
                 }
 
                 try {
@@ -851,6 +892,75 @@ class TaskWorker {
 
         $msgKey = $errors > 0 ? 'inactive_users_mgmt_msg_task_completed_with_errors' : 'inactive_users_mgmt_msg_task_completed';
         $this->updateInactiveUsersMgmtState('completed', $msgKey, $details);
+    }
+
+    /**
+     * Create in-app password-expiry notifications for every active local
+     * account, including administrators. External identities and internal
+     * TeamPass service accounts are deliberately excluded.
+     */
+    private function handleLocalPasswordExpiryNotifications(): void
+    {
+        $notificationCenterEnabled = (int) ($this->settings['notification_center_enabled'] ?? 0);
+        $passwordLifetimeDays = (int) ($this->settings['pw_life_duration'] ?? 0);
+        if ($notificationCenterEnabled !== 1 || $passwordLifetimeDays <= 0) {
+            return;
+        }
+
+        // Accounts without a password-change timestamp have no computable cycle:
+        // filter them in SQL rather than loading and skipping them one by one.
+        $excludedIds = teampassGetSystemAccountIds();
+        $sql = 'SELECT id, last_pw_change
+            FROM ' . prefixTable('users') . '
+            WHERE auth_type = %s
+            AND disabled = 0
+            AND last_pw_change IS NOT NULL
+            AND last_pw_change > 0
+            AND (deleted_at IS NULL OR deleted_at = "" OR deleted_at = 0)';
+        if (count($excludedIds) > 0) {
+            $sql .= ' AND id NOT IN %li';
+            $users = DB::query($sql, 'local', $excludedIds);
+        } else {
+            $users = DB::query($sql, 'local');
+        }
+
+        $today = mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'));
+        foreach ($users as $user) {
+            $lastPasswordChange = (int) ($user['last_pw_change'] ?? 0);
+            if ($lastPasswordChange <= 0) {
+                continue;
+            }
+
+            $elapsedDays = (int) round(($today - $lastPasswordChange) / TP_ONE_DAY_SECONDS);
+            tpNotifyLocalPasswordExpiry(
+                (int) ($user['id'] ?? 0),
+                'local',
+                $lastPasswordChange,
+                $passwordLifetimeDays,
+                $passwordLifetimeDays - $elapsedDays
+            );
+        }
+    }
+
+    /**
+     * Fan out a knowledge-base publication notification to every eligible
+     * recipient. Queued by tpQueueKnowledgeBasePublicationNotification() so the
+     * article save request never carries the whole user base.
+     *
+     * @param array $taskData Task arguments: kb_id, label, author_id
+     */
+    private function handleKbPublicationNotifications(array $taskData): void
+    {
+        $kbId = (int) ($taskData['kb_id'] ?? 0);
+        if ($kbId <= 0) {
+            return;
+        }
+
+        tpNotifyKnowledgeBasePublication(
+            $kbId,
+            (string) ($taskData['label'] ?? ''),
+            (int) ($taskData['author_id'] ?? 0)
+        );
     }
 
     private function updateInactiveUsersMgmtState(string $status, string $messageKey, array $details = []): void
@@ -1495,6 +1605,63 @@ class TaskWorker {
         return '';
     }
 
+    /**
+     * Update the status of the current task (LAPR & interactive tasks).
+     * Vocabulary aligned with the handler: 'new' | 'in_progress' | 'completed' | 'failed'.
+     *
+     * @param string $status New status value
+     * @return void
+     */
+    private function updateTaskStatus(string $status): void {
+        DB::update(
+            prefixTable('background_tasks'),
+            [
+                'status' => $status,
+                'updated_at' => time(),
+            ],
+            'increment_id = %i',
+            $this->taskId
+        );
+    }
+
+    /**
+     * Store a structured result for the current task in the `output` column,
+     * where interactive AJAX pollers (e.g. LAPR test_status) read it back.
+     * Secrets must never be part of $result.
+     *
+     * @param array $result Result payload (JSON-encoded)
+     * @return void
+     */
+    private function updateTaskResult(array $result): void {
+        DB::update(
+            prefixTable('background_tasks'),
+            [
+                'output' => json_encode($result, JSON_UNESCAPED_SLASHES),
+                'updated_at' => time(),
+            ],
+            'increment_id = %i',
+            $this->taskId
+        );
+    }
+
+    /**
+     * Record the current progress step of the task inside the `output` JSON
+     * (merged with any existing content) so pollers can display progress.
+     *
+     * @param string $step Step identifier
+     * @return void
+     */
+    private function updateTaskStep(string $step): void {
+        $current = DB::queryFirstField(
+            'SELECT output FROM ' . prefixTable('background_tasks') . ' WHERE increment_id = %i',
+            $this->taskId
+        );
+        $payload = is_string($current) ? (json_decode($current, true) ?: []) : [];
+        $payload['step'] = $step;
+
+        $this->updateTaskResult($payload);
+    }
+
     private function completeTask(): void {
         // Prepare data for updating the task status
         $updateData = [
@@ -1583,6 +1750,7 @@ class TaskWorker {
             } catch (Throwable) {
                 // best effort only
             }
+            tpNotifyBackupFailure($this->taskId, 'scheduled', $e->getMessage());
         }
 
         if ($this->processType === 'externalized_backup') {
@@ -1604,6 +1772,7 @@ class TaskWorker {
             } catch (Throwable) {
                 // best effort only
             }
+            tpNotifyBackupFailure($this->taskId, 'externalized', $e->getMessage());
         }
 
         // Purge retention even on failure (safe: only files matching the task source prefix)

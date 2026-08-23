@@ -151,7 +151,9 @@ Get item(s) by ID or label.
 
 **Pagination:** label/description searches return `X-Total-Count` (total matches in accessible folders, before per-item sharekey filtering).
 
-**Response:** array of item objects `{ id, label, description, login, email, url, password, path, folder_id, folder_label, has_otp, favicon_url, tags, fields }`.
+**Response:** array of item objects `{ id, revision, label, description, login, email, url, password, path, folder_id, folder_label, has_otp, favicon_url, tags, fields }`.
+
+**`revision`** — monotonic item revision, allocated from the `teampass_items_revisions` journal on every content change (item row, custom fields, tags, attachments, OTP, move, delete, restore). `0` = never changed since the column was introduced. Also returned by `item/inFolders`, `item/findByUrl`, `item/create` and `item/update`. See `architecture-item-revisions.md`.
 
 **Custom fields:** `fields` is an array of `{ id, title, type, masked, value }` for the item's folder-associated categories. Encrypted values are decrypted via `decryptUserObjectKeyWithMigration()` on `sharekeys_fields` (+ `base64_decode`); empty when no sharekey is available yet. Only present when `item_extra_fields` is enabled. Also returned by `item/inFolders`.
 
@@ -202,6 +204,28 @@ Get current TOTP code for an item.
 
 ---
 
+### `GET /api/item/changes`
+
+Delta feed for offline clients (mobile vault). Answers "what must I apply since revision N".
+
+**Params:** `since` (int, **required**, exclusive; `0` on a first sync), `limit` (default 200, max 1000).
+
+**Response:** `{ cursor, has_more, full_sync_required, changed[], removed[] }`. `changed` carries full item payloads (same shape and same code path as `item/get`); `removed` is `{ id, revision, reason }` with `reason` in `deleted` | `purged` | `out_of_scope`.
+
+**Cursor-based, not offset-based** — a change feed has no stable total, so no `X-Total-Count`. Store `cursor`, resend it as `since`, repeat while `has_more`.
+
+**`full_sync_required: true`** when `since === 0` or `since < MIN(revision) - 1`. Covers a first sync (items untouched since the column was introduced are at revision `0` and have **no journal entry**, so a delta would miss them), a client older than the sync window, and an empty journal. The client reads the vault via `item/inFolders` and adopts the returned `cursor`.
+
+**The journal is the scan target, not `items`** — it is the only place where a hard-deleted item, or one that left the caller's folders, still leaves a trace. `items_revisions.previous_folder_id` (set on move) is what makes `out_of_scope` detectable without leaking any item id the caller never had access to.
+
+**Rule: the cursor stops before an undeliverable change.** An item whose sharekeys are still being distributed by the background task is visible but not readable; advancing past it would hide it from that client permanently. `has_more` stays true and it is offered again.
+
+**Not covered:** losing access to a whole folder produces **no** journal entry (nothing changed on the items). Clients must also reconcile against `folder/writableFolders` and drop cached items whose folder disappeared.
+
+**Permissions:** `allowed_to_read` (`'changes'` is in the `checkUSerCRUDRights()` read whitelist, `api/inc/bootstrap.php`).
+
+---
+
 ### `GET /api/item/allTags`
 
 Get all distinct item tags accessible to the user.
@@ -231,6 +255,8 @@ Create a new item.
 Update an existing item. **Only PUT is accepted** — POST returns 405.
 
 **Body:** `id` (required), at least one of: `label`, `password`, `description`, `login`, `email`, `url`, `tags`, `anyone_can_modify`, `icon`, `folder_id`, `totp`, `fields`.
+
+**Optimistic concurrency — `revision` (optional).** The revision the client's edit was based on. When it differs from `items.revision`, the update is rejected with `409` and **nothing is written**; omitting it keeps last-writer-wins, so existing clients are unaffected. It is a **precondition, not an updatable field**: it is absent from the `$updateableFields` list in `ItemController::updateAction()`, so `{id, revision}` alone still answers `400 'At least one supported field to update must be provided.'`, and it never triggers the personal→shared move conflict guard.
 
 **Custom fields:** `fields` = array of `{ id, value }`. Created if absent, updated only when the value changed (current value decrypted for comparison); encrypted fields re-encrypted and sharekeys refreshed synchronously for all eligible users (consistent with the password path). Empty values ignored. Requires `item_extra_fields`.
 
@@ -411,7 +437,7 @@ The key is `extension_url` (value = `cpassman_url`) — the doc previously named
 | 403 | Permission denied (folder read-only, admin required, CRUD rights missing) |
 | 404 | Resource not found / unknown route |
 | 405 | HTTP method not supported for this endpoint (`Allow:` header lists supported methods) |
-| 409 | The resource changed while the request was being processed (concurrent personal→shared item move), or the operation conflicts with a LAPR relationship (managed login/password update, move to a personal folder, delete of a linked item) |
+| 409 | The supplied `revision` no longer matches the item (optimistic concurrency on `item/update`), the resource changed while the request was being processed (concurrent personal→shared item move), or the operation conflicts with a LAPR relationship (managed login/password update, move to a personal folder, delete of a linked item) |
 | 422 | Validation failed (password rules, invalid complexity/access_rights, personal→shared move combined with another update or with unrecoverable keys) |
 | 429 | Rate limit exceeded (`api_rate_limit_per_minute`) — `Retry-After` header gives the wait in seconds |
 | 500 | Internal server error (details logged server-side, not returned to client) |

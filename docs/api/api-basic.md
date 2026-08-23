@@ -22,6 +22,7 @@
    - [Update an item](#update-item)
    - [Delete an item](#delete-item)
    - [List Tags](#list-tags)
+   - [Synchronize a cache](#item-changes)
 4. [Folders Endpoints](#folders-endpoints)
    - [List accessible folders](#list-folders)
    - [List folders with access rights](#writable-folders)
@@ -113,11 +114,7 @@ This directive defines the limit on the allowed size of an HTTP request-header f
 | `teampass_version_major` | string | Base server version, `<major>.<minor>.<patch>` |
 | `teampass_version_minor` | string | Final release revision component |
 
-> The three `teampass_version*` fields are returned in the **response body**, not as JWT claims:
-> the token stays a pure credential, and a server upgraded during a token's lifetime reports its
-> new version at the next authentication rather than at token expiry. A long-lived client that
-> needs to refresh the value without re-authenticating can read the same three fields from
-> `misc/refreshExtensionSettings`.
+> The three `teampass_version*` fields are returned in the **response body**, not as JWT claims: the token stays a pure credential, and a server upgraded during a token's lifetime reports its new version at the next authentication rather than at token expiry. A long-lived client that needs to refresh the value without re-authenticating can read the same three fields from `misc/refreshExtensionSettings`.
 
 **Response Codes:**
 
@@ -166,8 +163,7 @@ OAuth2/SSO users have no usable password (their stored credential is a hash of t
 
 > The `token` must be a 64-character hexadecimal string (`^[a-f0-9]{64}$`). Credentials must be sent in the body — query-string credentials are rejected with `400`.
 
-**Response (success):** identical in shape to [`authorize`](#authorize) — the JWT plus the three
-server version fields.
+**Response (success):** identical in shape to [`authorize`](#authorize) — the JWT plus the three server version fields.
 ```json
 {
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
@@ -268,6 +264,7 @@ curl -X GET "https://your-teampass.com/api/index.php/item/inFolders?folders=[1,2
 ```json
 {
   "id": 2053,
+  "revision": 4127,
   "label": "new object for #3500 v3",
   "description": "<p>bla bla</p>",
   "pwd": "SK^dsf123s_6A}]V$t^]",
@@ -289,6 +286,7 @@ curl -X GET "https://your-teampass.com/api/index.php/item/inFolders?folders=[1,2
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | `id` | integer | Unique item ID |
+| `revision` | integer | Monotonic revision, bumped on every content change of the item or its custom fields, tags, attachments and OTP. Compare it against a cached copy to detect staleness; the larger value is the newer one. `0` means the item has not changed since revision tracking was installed. |
 | `label` | string | Item label |
 | `description` | string | Description (may contain HTML) |
 | `pwd` | string | Password (decrypted according to rights) |
@@ -655,6 +653,7 @@ curl -X POST "https://your-teampass.com/api/index.php/item/create" \
 | Field | Type | Required | Description |
 | ----- | ---- | -------- | ----------- |
 | `id` | integer | ✅ | Item ID to update |
+| `revision` | integer | ❌ | Precondition, not an updatable field: the revision the edit was based on. The update is refused with `409` when the server has moved on since — see [Synchronize a cache](#item-changes). Omitting it keeps the previous last-writer-wins behaviour. |
 | `label` | string | ❌ | New label |
 | `password` | string | ❌ | New password |
 | `description` | string | ❌ | New description |
@@ -673,13 +672,7 @@ curl -X POST "https://your-teampass.com/api/index.php/item/create" \
 
 > ⚠️ **Important**: At least one field to update must be provided in addition to the ID.
 
-> ⚠️ **Moving an item out of a personal folder into a shared one must be a request of its own.**
-> That move re-encrypts the item's keys for every user who will now have access, and it is
-> committed immediately. Combining it with any other updatable field (`label`, `password`,
-> `description`, `login`, `email`, `url`, `tags`, `anyone_can_modify`, `icon`, `fields`, `totp*`)
-> is rejected with `422` — send `{ "id": ..., "folder_id": ... }` alone, then send the rest in a
-> second request. All other moves (shared → shared, shared → personal, personal → personal) can
-> still be combined freely with other fields.
+> ⚠️ **Moving an item out of a personal folder into a shared one must be a request of its own.** That move re-encrypts the item's keys for every user who will now have access, and it is committed immediately. Combining it with any other updatable field (`label`, `password`, `description`, `login`, `email`, `url`, `tags`, `anyone_can_modify`, `icon`, `fields`, `totp*`) is rejected with `422` — send `{ "id": ..., "folder_id": ... }` alone, then send the rest in a second request. All other moves (shared → shared, shared → personal, personal → personal) can still be combined freely with other fields.
 
 **Response (success):**
 ```json
@@ -700,7 +693,7 @@ curl -X POST "https://your-teampass.com/api/index.php/item/create" \
 | 403 | Update permission denied or access denied — including a folder granted as `R`, `NE` or `NDNE` (check `can_edit` on [`folder/writableFolders`](#writable-folders)) |
 | 404 | Item not found |
 | 405 | HTTP method not supported (only `PUT` is accepted) |
-| 409 | The item was moved or re-encrypted by another request while this move was being prepared — retry |
+| 409 | The supplied `revision` no longer matches the item — someone changed it since; resolve the conflict instead of retrying blindly. Also returned when the item was moved or re-encrypted by another request while this move was being prepared, which is a plain retry |
 | 422 | Validation failed: a personal → shared move combined with another field, or one of the item's encryption keys could not be recovered (the item is left untouched) |
 | 500 | Server error |
 
@@ -821,6 +814,83 @@ curl -X GET "https://your-teampass.com/api/index.php/item/allTags" \
 
 ---
 
+### Synchronize a cache {#item-changes}
+
+> 🔄 Returns what changed since a given revision — the endpoint an offline client polls instead of re-downloading the whole vault
+
+| Info | Description |
+| ---- | ----------- |
+| **Endpoint** | `item/changes` |
+| **Method** | GET |
+| **URL** | `<Teampass URL>/api/index.php/item/changes` |
+| **Parameters** | `since` (required), `limit` (optional) |
+| **Headers** | `Authorization: Bearer <token>` |
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+| --------- | ---- | -------- | ----------- |
+| `since` | integer | Yes | Cursor returned by the previous call, exclusive. `0` on a first synchronization. |
+| `limit` | integer | No | Journal entries scanned in one call. Default 200, maximum 1000. |
+
+**Response (success):**
+```json
+{
+  "cursor": 12345,
+  "has_more": false,
+  "full_sync_required": false,
+  "changed": [
+    { "id": 77, "revision": 12340, "label": "Prod database", "pwd": "…", "fields": [] }
+  ],
+  "removed": [
+    { "id": 91, "revision": 12331, "reason": "deleted" }
+  ]
+}
+```
+
+**Response Fields:**
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `cursor` | integer | Store it and send it as `since` on the next call |
+| `has_more` | boolean | More changes are waiting — call again with the returned cursor |
+| `full_sync_required` | boolean | The cursor cannot be served: rebuild the cache and adopt the returned cursor |
+| `changed` | array | Items to upsert, same shape as `item/get` |
+| `removed` | array | Items to drop, with `id`, `revision` and `reason` |
+
+`reason` is one of `deleted` (soft deleted), `purged` (permanently removed) or `out_of_scope` (the item still exists but the caller can no longer read it, typically after a move into a folder they have no access to).
+
+**Synchronization protocol:**
+
+1. **First run** — call with `since=0`. The answer is always `full_sync_required: true` plus a cursor: items untouched since revision tracking was installed are still at revision `0` and have no journal entry, so a delta would silently miss them. Read the vault through [item/inFolders](#list-items-folders), store each item with its `revision`, and store the cursor.
+2. **Reconnect** — call with the stored cursor. Upsert `changed`, delete `removed`, store the new cursor, and repeat while `has_more` is true. A `full_sync_required: true` sends you back to step 1 — it also happens when the client has been offline longer than the journal retention.
+3. **Offline edits** — send the `revision` the edit was based on in [item/update](#update-item). A `409` means the server moved on: resolve the conflict instead of overwriting.
+4. **Folder scope** — also refresh [item rights](#writable-folders) and drop any cached item whose folder is no longer listed. Losing access to a folder changes nothing on the items themselves, so it produces no entry in this feed.
+
+**How far back the feed reaches:**
+
+The server keeps its change journal for the duration set in **Settings → API → Offline synchronization window** (`offline_sync_window_days`, 90 days by default, `0` for no limit). A device that reconnects within that window catches up incrementally; one that has been offline longer is answered `full_sync_required` and rebuilds its cache.
+
+> 🔔 This window is **not** a data retention. It deletes no item, no password and no history — those are governed separately and are never affected. It only bounds how far back the incremental catch-up reaches, so the only cost of a short window is bandwidth for devices that were offline a long time.
+
+**Response Codes:**
+
+| Code | Description |
+| ---- | ----------- |
+| 200 | Changes returned successfully |
+| 400 | Missing `since` parameter |
+| 401 | Invalid or expired token |
+| 405 | HTTP method not supported (must be GET) |
+| 500 | Server error |
+
+**Example:**
+```bash
+curl -X GET "https://your-teampass.com/api/index.php/item/changes?since=12300" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+---
+
 ## Folders Endpoints {#folders-endpoints}
 
 ### List accessible folders {#list-folders}
@@ -895,8 +965,7 @@ curl -X GET "https://your-teampass.com/api/index.php/folder/listFolders" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
-> 💡 Need the access rights on each folder, or a flat list that is easier to iterate?
-> Use [`folder/writableFolders`](#writable-folders) instead.
+> 💡 Need the access rights on each folder, or a flat list that is easier to iterate? Use [`folder/writableFolders`](#writable-folders) instead.
 
 ---
 
@@ -904,11 +973,9 @@ curl -X GET "https://your-teampass.com/api/index.php/folder/listFolders" \
 
 > 📋 Returns every folder accessible to the authenticated user as a **flat list in tree order**, with the read-only flag on each entry
 
-The name is historical: the endpoint returns **all** accessible folders, not only the writable
-ones — check `is_readonly` on each entry.
+The name is historical: the endpoint returns **all** accessible folders, not only the writable ones — check `is_readonly` on each entry.
 
-Rows are sorted by `position` (the folder tree's own order, siblings included), so
-`parent_id` + `level` + `position` are enough to rebuild the exact hierarchy in a single call.
+Rows are sorted by `position` (the folder tree's own order, siblings included), so `parent_id` + `level` + `position` are enough to rebuild the exact hierarchy in a single call.
 
 | Info | Description |
 | ---- | ----------- |
@@ -920,12 +987,7 @@ Rows are sorted by `position` (the folder tree's own order, siblings included), 
 
 **Response (success):**
 
-> The example below is the response seen by a user who passes the global
-> folder-management gate (administrator, manager, or the
-> `enable_user_can_create_folders` setting turned on) and holds the three API CRUD
-> permissions. A standard user who does not pass that gate gets `0` on every
-> `can_*_folder` field of the **shared** folders, while keeping them on his own
-> personal tree.
+> The example below is the response seen by a user who passes the global folder-management gate (administrator, manager, or the `enable_user_can_create_folders` setting turned on) and holds the three API CRUD permissions. A standard user who does not pass that gate gets `0` on every `can_*_folder` field of the **shared** folders, while keeping them on his own personal tree.
 
 ```json
 [
@@ -1015,13 +1077,9 @@ Rows are sorted by `position` (the folder tree's own order, siblings included), 
 | `can_move_folder` | integer | **Folder capability** — `1` when this folder is eligible to be moved. Describes the **source only**, see the warning below |
 | `can_delete_folder` | integer | **Folder capability** — `1` when this folder is eligible for deletion through [`folder/delete`](#folder-delete) |
 
-> ⚠️ `is_readonly: 0` does **not** mean full write access. A folder granted as `ND`, `NE` or
-> `NDNE` is writable but restricts deletion and/or edition — rely on `can_edit` / `can_delete`
-> rather than on `is_readonly` alone, otherwise a legitimate call will come back as `403`.
+> ⚠️ `is_readonly: 0` does **not** mean full write access. A folder granted as `ND`, `NE` or `NDNE` is writable but restricts deletion and/or edition — rely on `can_edit` / `can_delete` rather than on `is_readonly` alone, otherwise a legitimate call will come back as `403`.
 >
-> When several roles grant different levels on the same folder, the **least permissive wins**
-> (`R` > `NDNE` > `NE` = `ND` > `W`), exactly like the web interface. See
-> [Rights management](../features/rights.md).
+> When several roles grant different levels on the same folder, the **least permissive wins** (`R` > `NDNE` > `NE` = `ND` > `W`), exactly like the web interface. See [Rights management](../features/rights.md).
 
 #### Item rights vs folder capabilities {#item-rights-vs-folder-capabilities}
 
@@ -1032,21 +1090,13 @@ The two families answer different questions and are **not** interchangeable:
 | Scope | The **items stored in** the folder | The **folder itself** |
 | Driven by | The folder access level (`W`, `ND`, `NE`, `NDNE`, `R`) | Access level **+** the global folder-management gate **+** personal-root protection |
 
-A folder granted as `ND` illustrates the difference: `can_delete: 0` (you may not delete the
-items it contains) while `can_delete_folder: 1` (you may delete the folder itself).
+A folder granted as `ND` illustrates the difference: `can_delete: 0` (you may not delete the items it contains) while `can_delete_folder: 1` (you may delete the folder itself).
 
-The global folder-management gate is passed when **any** of these is true: you are an
-administrator, a manager, you hold *manage all users* or *create root folder*, the
-`enable_user_can_create_folders` setting is on, or the folder belongs to your personal tree.
+The global folder-management gate is passed when **any** of these is true: you are an administrator, a manager, you hold *manage all users* or *create root folder*, the `enable_user_can_create_folders` setting is on, or the folder belongs to your personal tree.
 
-> ⚠️ These four fields are **UI hints**. The server stays authoritative and re-runs every
-> check when the mutation is actually attempted — never treat a `1` as a guarantee of success.
+> ⚠️ These four fields are **UI hints**. The server stays authoritative and re-runs every check when the mutation is actually attempted — never treat a `1` as a guarantee of success.
 >
-> ⚠️ `can_move_folder` qualifies the **source folder only**. [`folder/update`](#folder-update)
-> separately validates the chosen destination: accessibility, read-only state, move into itself
-> or into one of its own descendants, personal ↔ shared boundary, and the permission to move to
-> the root. A `can_move_folder: 1` can therefore still be answered with a `403` or `422`
-> depending on the destination you pick.
+> ⚠️ `can_move_folder` qualifies the **source folder only**. [`folder/update`](#folder-update) separately validates the chosen destination: accessibility, read-only state, move into itself or into one of its own descendants, personal ↔ shared boundary, and the permission to move to the root. A `can_move_folder: 1` can therefore still be answered with a `403` or `422` depending on the destination you pick.
 
 **Response Codes:**
 
@@ -1393,21 +1443,16 @@ All API endpoints may return the following standard HTTP error codes:
 
 ## Command-line client {#cli}
 
-Teampass ships a small command-line client that wraps the JWT authentication and the most
-common endpoints. Two equivalent implementations are provided:
+Teampass ships a small command-line client that wraps the JWT authentication and the most common endpoints. Two equivalent implementations are provided:
 
 | Script | Platform | Requirements |
 |---|---|---|
 | `app/scripts/teampass-cli.sh` | Linux / macOS / any Bash shell | `curl` and `jq` |
 | `app/scripts/teampass-cli.ps1` | Windows (native PowerShell) | PowerShell 5.1+ (built-in `Invoke-RestMethod`) |
 
-The PowerShell version provides full feature parity with the Bash one — same commands, same
-options, same output — so Windows environments no longer need WSL, Git Bash or any
-third-party Bash runtime to use the API from the command line, Task Scheduler or an
-automation script.
+The PowerShell version provides full feature parity with the Bash one — same commands, same options, same output — so Windows environments no longer need WSL, Git Bash or any third-party Bash runtime to use the API from the command line, Task Scheduler or an automation script.
 
-**Configuration** — environment variables, or a configuration file
-(`~/.config/teampass/config` on Bash, `%LOCALAPPDATA%\teampass\config` on PowerShell):
+**Configuration** — environment variables, or a configuration file (`~/.config/teampass/config` on Bash, `%LOCALAPPDATA%\teampass\config` on PowerShell):
 
 ```bash
 export TEAMPASS_URL="https://your-teampass.com"
@@ -1421,8 +1466,7 @@ export TEAMPASS_APIKEY="..."
 export TEAMPASS_TOKEN="..."
 ```
 
-On PowerShell, the same variables are set with `$ENV:TEAMPASS_URL = "https://your-teampass.com"`,
-or written as `TEAMPASS_URL="https://your-teampass.com"` lines in the configuration file.
+On PowerShell, the same variables are set with `$ENV:TEAMPASS_URL = "https://your-teampass.com"`, or written as `TEAMPASS_URL="https://your-teampass.com"` lines in the configuration file.
 
 **Commands (Bash):**
 
@@ -1448,8 +1492,7 @@ or written as `TEAMPASS_URL="https://your-teampass.com"` lines in the configurat
 .\app\scripts\teampass-cli.ps1 search "https://app" --by-url
 ```
 
-`folders --tree` renders the hierarchy directly, because
-[`folder/writableFolders`](#writable-folders) already returns the folders in tree order:
+`folders --tree` renders the hierarchy directly, because [`folder/writableFolders`](#writable-folders) already returns the folders in tree order:
 
 ```
 jdoe [12]
@@ -1459,12 +1502,7 @@ Production [1]
 ```
 
 **Notes:**
-- The JWT is requested **once per invocation** and kept in memory — never written to disk.
-  Each authentication opens a server-side API session, so a script must not re-authenticate
-  on every request.
+- The JWT is requested **once per invocation** and kept in memory — never written to disk. Each authentication opens a server-side API session, so a script must not re-authenticate on every request.
 - A `429` answer is retried once, honouring the `Retry-After` header.
-- The configuration file holds credentials in clear text: keep it at `chmod 600` (Bash) or
-  restrict its NTFS permissions to the current user (PowerShell).
-- On Windows, an execution policy may block the script. Run it in the current session with
-  `powershell -ExecutionPolicy Bypass -File .\app\scripts\teampass-cli.ps1 <command>`, or
-  unblock the file with `Unblock-File .\app\scripts\teampass-cli.ps1`.
+- The configuration file holds credentials in clear text: keep it at `chmod 600` (Bash) or restrict its NTFS permissions to the current user (PowerShell).
+- On Windows, an execution policy may block the script. Run it in the current session with `powershell -ExecutionPolicy Bypass -File .\app\scripts\teampass-cli.ps1 <command>`, or unblock the file with `Unblock-File .\app\scripts\teampass-cli.ps1`.

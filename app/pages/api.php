@@ -84,6 +84,9 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
 // Get FQDN and API Key settings
 $browserFqdn = getDomainFromSettingsUrl($SETTINGS['cpassman_url'] ?? '');
+// The extension key can only be generated once - regenerating it would break every
+// extension already configured with it.
+$browserExtensionKey = (string) ($SETTINGS['browser_extension_key'] ?? '');
 
 /**
  * Extract the domain name (host) from the application URL setting.
@@ -206,6 +209,18 @@ function getDomainFromSettingsUrl(string $url): string
                             </div>
                         </div>
 
+                        <div class='row mb-3'>
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_offline_sync_window'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_offline_sync_window_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <input type='text' class='form-control form-control-sm' id='offline_sync_window_days' value='<?php echo isset($SETTINGS['offline_sync_window_days']) === true ? (int) $SETTINGS['offline_sync_window_days'] : 90; ?>'>
+                            </div>
+                        </div>
+
                         <ul class="nav nav-tabs">
                             <li class="nav-item">
                                 <a class="nav-link active" data-toggle="tab" href="#users" role="tab" aria-controls="users"><?php echo $lang->get('users'); ?></a>
@@ -321,11 +336,13 @@ function getDomainFromSettingsUrl(string $url): string
                                         </small>
                                     </div>
                                     <div class='col-5'>
-                                        <input type='text' class='form-control form-control-sm' disabled="disabled" id='browser_extension_key' value='<?php echo isset($SETTINGS['browser_extension_key']) === true ? (string) $SETTINGS['browser_extension_key'] : 'Please upgrade'; ?>'>
+                                        <input type='text' class='form-control form-control-sm' disabled="disabled" id='browser_extension_key' value='<?php echo $browserExtensionKey; ?>'>
                                     </div>
                                     <div class='col-2'>
                                         <button class="btn btn-sm btn-primary ml-1" id="copy-extension-key"><i class="fa-regular fa-copy pointer"></i></button>
+<?php if ($browserExtensionKey === '') { ?>
                                         <button class="btn btn-sm btn-primary ml-1" id="generate-extension-key"><i class="fa-solid fa-rotate pointer"></i></button>
+<?php } ?>
                                     </div>
                                 </div>
 

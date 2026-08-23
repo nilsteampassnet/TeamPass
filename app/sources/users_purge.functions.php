@@ -105,6 +105,8 @@ function tpPurgeDeletedUserById(int $userId): array
                     1
                 );
                 foreach ($items as $item) {
+                    // Journal the purge first: nothing else survives the delete
+                    bumpItemRevision((int) $item['id'], 'purged', 0, (int) $folder->id);
                     DB::delete(prefixTable('items'), 'id = %i', (int) $item['id']);
                     DB::delete(prefixTable('log_items'), 'id_item = %i', (int) $item['id']);
                 }

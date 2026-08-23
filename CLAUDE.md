@@ -159,11 +159,34 @@ Save-time normalization + token validation live in the DB-free `app/sources/emai
 
 **Rule: spawn background tasks with `getPHPBinary()`** — it resolves a real PHP CLI binary under FPM (never `php-fpm` / `'false'`). **Rule: `tpFinishRequestEarly()` only after the full response is echoed** — later output is not delivered. Admin settings: `cli_php_binary_path`, `enable_fastcgi_finish_request`.
 
+## Item Revisions & Offline Sync
+
+> Full architecture details: @.claude/docs/architecture-item-revisions.md
+
+Every item carries a monotonic `revision`, allocated from the `teampass_items_revisions` journal
+whose `AUTO_INCREMENT` key **is** the global sequence. It lets an offline client detect staleness,
+decide which side is newer, and pull only what changed (`GET /api/v1/item/changes`).
+
+**Rule: the bump rides on `logItems()`** — a new item write path that bypasses it (raw
+`DB::insert(log_items)`, hard delete, bulk field operations) must call `bumpItemRevision()`
+explicitly, and **before** the row disappears. **Rule: reads and ciphertext-only rewrites never
+bump** — re-encrypting does not change the plaintext a client caches. **Rule: the journal is not a
+history** (that is `log_items`), and its setting `offline_sync_window_days` is a sync window, never
+a "retention": pruning it loses nothing, a client outside the window just does a full resync.
+
 ## API
 
 > Full reference: @.claude/docs/api-reference.md
 
 Controllers in `/api/Controller/Api/`. JWT auth via `Authorization: Bearer <token>`. Key endpoints: `/api/authorize`, `/api/item/get`, `/api/item/create`, `/api/item/getOtp`, `/api/folder/listFolders`.
+
+## LAPR (Linux Account Password Rotation)
+
+> Full architecture details: @.claude/docs/architecture-lapr.md
+
+Agentless SSH rotation of local Linux account passwords (release 3.2.2, feature `feature/lapr-mvp1`). Pages `lapr_endpoints|lapr_accounts|lapr_policies|admin_lapr`, handlers `sources/lapr_*.queries.php`, SSH class `TeampassClasses\Lapr\LAPRSshService` (require_once, not PSR-4), background traits `LAPRSshTestTrait|LAPRDiscoverTrait|LAPRRotationTrait`.
+
+**Rule: all SSH work runs in background traits** — never in a `*.queries.php` request thread. **Rule: never log a secret** — `laprAuditLog()`/`action_details` are whitelisted, never a password. **Rule: read a credential/item as the server via `laprReadItemPasswordAsTpUser()`** (TP_USER chain, migration-aware) — non-personal items only. **Rule: write a rotated item password by mirroring `laprUpdateItemPassword()`** (pw_iv + sharekey fan-out via `apiUserId=TP_USER_ID` + history `old_value` + `emitItemEvent`). **Rule: gate every operational handler with `laprCheckPermission()`** (`lapr_enabled` + **non-admin** + `can_manage_lapr`) — TeamPass administrators configure LAPR through `admin_lapr` only; the operational pages depend on item access, which admins do not have, so `laprUserCanWriteFolder()`/`laprUserCanReadFolder()` reject them too. **Rule: read LAPR item roles through `laprGetItemRelations($itemIds, $SETTINGS)`** — it is module-aware (returns `[]` when `lapr_enabled != 1`), so disabling LAPR never leaves items frozen; the delete/move guards (`laprItemsDeletionBlocker()`, `laprItemsPersonalMoveBlocker()`) build on it and must be applied to **every** write path, single **and** mass. Host-key mismatch **blocks** rotation (D4); `username_cache` is hard-validated (R1) and generated passwords filtered for `chpasswd` safety (R9).
 
 ## Browser Extension Auto-Configuration
 

@@ -1,5 +1,7 @@
-# These are supported funding model platforms
+# Funding options shown in the "Sponsor" button on the repository.
+# Sponsorship funds security work, releases, documentation and 25 translations.
 
-github: nilsteampassnet 
-# patreon: teampass
-# open_collective: teampass
+github: nilsteampassnet
+custom:
+  - "https://teampass.net/pricing.html"
+  - "https://www.paypal.com/donate/?hosted_button_id=XUVWYJ7J92X6L"

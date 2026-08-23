@@ -486,6 +486,110 @@
                 }
             }
         },
+        "/item/changes": {
+            "get": {
+                "operationId": "itemChanges",
+                "summary": "Changes to apply to a client cache since a revision",
+                "description": "Delta feed for offline clients. Returns the items that changed after the given revision, and the ones the client must drop. Cursor based: store the returned cursor and pass it as `since` on the next call, repeating while `has_more` is true. A `full_sync_required` of true means the cursor cannot be served — read the vault through item/inFolders and adopt the returned cursor. Start there on a first synchronization, with `since=0`.",
+                "parameters": [
+                    {
+                        "name": "since",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 0
+                        },
+                        "description": "Cursor returned by the previous call, exclusive. 0 on a first synchronization."
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 1000,
+                            "default": 200
+                        },
+                        "description": "Maximum journal entries scanned in one call."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Changes since the given revision",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "cursor": {
+                                            "type": "integer",
+                                            "description": "Cursor to store and send as `since` on the next call."
+                                        },
+                                        "has_more": {
+                                            "type": "boolean",
+                                            "description": "More changes are waiting: call again with the returned cursor."
+                                        },
+                                        "full_sync_required": {
+                                            "type": "boolean",
+                                            "description": "The cursor cannot be served. Rebuild the cache and adopt the returned cursor."
+                                        },
+                                        "changed": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Item"
+                                            }
+                                        },
+                                        "removed": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "revision": {
+                                                        "type": "integer"
+                                                    },
+                                                    "reason": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "deleted",
+                                                            "purged",
+                                                            "out_of_scope"
+                                                        ],
+                                                        "description": "deleted: soft deleted. purged: permanently removed. out_of_scope: still exists but no longer readable by the caller."
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    }
+                }
+            }
+        },
         "/item/allTags": {
             "get": {
                 "operationId": "itemAllTags",
@@ -595,7 +699,22 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "item_id": {
+                                            "type": "integer"
+                                        },
+                                        "revision": {
+                                            "type": "integer",
+                                            "description": "Revision of the item after the update"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1066,6 +1185,10 @@
                     "id": {
                         "type": "integer"
                     },
+                    "revision": {
+                        "type": "integer",
+                        "description": "Monotonic revision of the item, bumped on every content change. Compare it against a cached copy to detect staleness; the larger value is the newer one."
+                    },
                     "label": {
                         "type": "string"
                     },
@@ -1169,6 +1292,10 @@
                 "properties": {
                     "id": {
                         "type": "integer"
+                    },
+                    "revision": {
+                        "type": "integer",
+                        "description": "Monotonic revision of the item, bumped on every content change. Compare it against a cached copy to detect staleness; the larger value is the newer one."
                     },
                     "label": {
                         "type": "string"
@@ -1305,6 +1432,10 @@
                 "properties": {
                     "id": {
                         "type": "integer"
+                    },
+                    "revision": {
+                        "type": "integer",
+                        "description": "Optional precondition, not an updatable field: the revision the edit was based on. The update is refused with 409 when the server has moved on since. Omitting it keeps the previous last-writer-wins behaviour."
                     },
                     "label": {
                         "type": "string"
@@ -1502,6 +1633,10 @@
                     },
                     "newId": {
                         "type": "integer"
+                    },
+                    "revision": {
+                        "type": "integer",
+                        "description": "Revision allocated to the new item"
                     }
                 }
             },

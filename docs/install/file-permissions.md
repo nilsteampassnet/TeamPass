@@ -36,9 +36,7 @@ The upgrade wizard (**Step 1 — Requirements check**) verifies every item liste
     └── <SECUREFILE>          ← random file name chosen by the installer
 ```
 
-> :information_source: **The key file name is random.** The installer generates it and stores it in
-> the `SECUREFILE` constant of `app/config/settings.php`. `teampass-seckey.txt` is only the legacy
-> name still found on installs upgraded from older versions. To resolve it on your server:
+> :information_source: **The key file name is random.** The installer generates it and stores it in the `SECUREFILE` constant of `app/config/settings.php`. `teampass-seckey.txt` is only the legacy name still found on installs upgraded from older versions. To resolve it on your server:
 > ```bash
 > grep -oP 'define\("SECUREFILE",\s*"\K[^"]+' /path/to/teampass/app/config/settings.php
 > ```
@@ -65,14 +63,7 @@ Teampass follows the **principle of least privilege**: each path is granted only
 
 The upgrade wizard raises a warning (non-blocking) when these directories are writable — it indicates a configuration weakness that should be corrected.
 
-> :information_source: **Why `0755` alone does not clear this warning.** `0755` grants the *owner*
-> full `rwx`. If the owner **is** the web server user (`www-data`), the web server can still write,
-> so the check (`is_writable()`) keeps flagging the path even at `0755`. To clear it, the code must
-> not be **owned** by the web server: either use the hardened split-owner model (own the code with a
-> separate account, web server in the group with read-only — see [Ownership](#ownership)), or, if
-> you keep a single owner, drop owner-write from the directory node
-> (`chown root:www-data app && chmod g-w,o-w app`) and restore it before the next upgrade. The
-> warning is non-blocking — the upgrade proceeds either way.
+> :information_source: **Why `0755` alone does not clear this warning.** `0755` grants the *owner* full `rwx`. If the owner **is** the web server user (`www-data`), the web server can still write, so the check (`is_writable()`) keeps flagging the path even at `0755`. To clear it, the code must not be **owned** by the web server: either use the hardened split-owner model (own the code with a separate account, web server in the group with read-only — see [Ownership](#ownership)), or, if you keep a single owner, drop owner-write from the directory node (`chown root:www-data app && chmod g-w,o-w app`) and restore it before the next upgrade. The warning is non-blocking — the upgrade proceeds either way.
 
 | Directory | Recommended perms | Rationale |
 |-----------|------------------|-----------|
@@ -133,15 +124,9 @@ The Defuse encryption master key must be stored **outside the webroot** (`public
 
 > :warning: **`secrets/` must not be inside `public/`.** It lives at the project root, one level above the webroot, and is therefore unreachable via HTTP. In Docker deployments the key is stored at `/var/www/html/secrets/`.
 
-> :bulb: **`0600` and not `0400`.** At runtime Teampass only *reads* the key file, so `0400` also
-> works — but it is not a real boundary: when the owner is the web server user, that same process
-> can `chmod` the file back to `rw` at will. What protects the key is the empty group/other bits
-> plus `0750` on `secrets/`. Write access is needed when the installer *creates* the key, and when
-> the upgrade wizard migrates a legacy `teampass-seckey.txt` (copy + rename) — the latter needs
-> write on the **directory**, not on the file.
+> :bulb: **`0600` and not `0400`.** At runtime Teampass only *reads* the key file, so `0400` also works — but it is not a real boundary: when the owner is the web server user, that same process can `chmod` the file back to `rw` at will. What protects the key is the empty group/other bits plus `0750` on `secrets/`. Write access is needed when the installer *creates* the key, and when the upgrade wizard migrates a legacy `teampass-seckey.txt` (copy + rename) — the latter needs write on the **directory**, not on the file.
 >
-> For real defense-in-depth, apply the hardened split-owner model to the key as well — the web
-> server can then read the key but never rewrite or replace it:
+> For real defense-in-depth, apply the hardened split-owner model to the key as well — the web server can then read the key but never rewrite or replace it:
 > ```bash
 > TEAMPASS=/var/www/html/teampass
 > SECKEY=$(grep -oP 'define\("SECUREFILE",\s*"\K[^"]+' ${TEAMPASS}/app/config/settings.php)
@@ -159,19 +144,12 @@ The Defuse encryption master key must be stored **outside the webroot** (`public
 Two ownership models are supported — choose one **before** running the quick-setup commands.
 
 **Simple model — everything owned by the web server user** (`www-data:www-data`)
-The easiest setup: every path is owned by the account that runs PHP (see the table below). It works,
-but because the web server *is* the owner, `app/` and `public/` stay writable by it even at `0755`,
-so the upgrade wizard shows a **non-blocking** "should not be writable" warning for those two paths
-(see [Must NOT be writable by the web server](#must-not-be-writable-by-the-web-server)).
+The easiest setup: every path is owned by the account that runs PHP (see the table below). It works, but because the web server *is* the owner, `app/` and `public/` stay writable by it even at `0755`, so the upgrade wizard shows a **non-blocking** "should not be writable" warning for those two paths (see [Must NOT be writable by the web server](#must-not-be-writable-by-the-web-server)).
 
 **Hardened model — code owned by a separate account** (recommended)
-Own the application code with a dedicated non-login account and give the web server only group
-*read* access, so a compromised PHP process cannot rewrite its own code. This is the model the
-"must NOT be writable" checks expect, and it clears the warning. See
-[Advanced: separate owner from web server user](#advanced-separate-owner-from-web-server-user) below.
+Own the application code with a dedicated non-login account and give the web server only group *read* access, so a compromised PHP process cannot rewrite its own code. This is the model the "must NOT be writable" checks expect, and it clears the warning. See [Advanced: separate owner from web server user](#advanced-separate-owner-from-web-server-user) below.
 
-The table below lists the web server user/group per stack — used directly in the simple model, and
-as the **group** in the hardened model.
+The table below lists the web server user/group per stack — used directly in the simple model, and as the **group** in the hardened model.
 
 | Server stack | Web server user | Web server group |
 |-------------|-------------|---------------|
@@ -341,12 +319,7 @@ echo "=== World-writable check (expect no output) ==="
 find ${TEAMPASS} -not -path "*/vendor/*" ! -type l -perm -o+w -ls
 ```
 
-> :information_source: **Why `! -type l` in the last check.** `public/includes/language/datatables.*.txt`
-> are symbolic links to `app/includes/language/` (DataTables loads its translation file over HTTP, so
-> it must exist under the webroot while the real file stays in `app/`). On Linux a symlink's own mode
-> is always `0777` and is **never** used for access control — the kernel checks the target's
-> permissions — and `chmod` follows the link, so those bits cannot be changed. Excluding symlinks
-> removes those false positives while still auditing every real file.
+> :information_source: **Why `! -type l` in the last check.** `public/includes/language/datatables.*.txt` are symbolic links to `app/includes/language/` (DataTables loads its translation file over HTTP, so it must exist under the webroot while the real file stays in `app/`). On Linux a symlink's own mode is always `0777` and is **never** used for access control — the kernel checks the target's permissions — and `chmod` follows the link, so those bits cannot be changed. Excluding symlinks removes those false positives while still auditing every real file.
 
 ---
 
@@ -356,8 +329,7 @@ find ${TEAMPASS} -not -path "*/vendor/*" ! -type l -perm -o+w -ls
 
 **Symptoms**
 
-- Admin dashboard → *System Health* → *Cron Jobs* shows **Delayed** (or **Error**). Hover the
-  info icon next to the badge for the same hint.
+- Admin dashboard → *System Health* → *Cron Jobs* shows **Delayed** (or **Error**). Hover the info icon next to the badge for the same hint.
 - Tasks pile up in *Tasks → In progress* and only complete when the handler is launched by hand.
 - The PHP / web-server error log contains one of:
   - `Teampass Background Tasks: cannot create lock file ".../storage/logs/teampass_background_tasks.lock" - check that the web server user can write to this directory.`
@@ -365,11 +337,7 @@ find ${TEAMPASS} -not -path "*/vendor/*" ! -type l -perm -o+w -ls
 
 **Cause**
 
-The web server user (for example `www-data`) cannot write to `storage/logs/`. The task handler
-writes its lock and trigger files there; if it cannot create the lock file it aborts immediately
-and **silently**, so no background task is processed. Running the handler from a shell as your own
-user appears to work because that user owns the directory — which is exactly why the problem is
-easy to miss.
+The web server user (for example `www-data`) cannot write to `storage/logs/`. The task handler writes its lock and trigger files there; if it cannot create the lock file it aborts immediately and **silently**, so no background task is processed. Running the handler from a shell as your own user appears to work because that user owns the directory — which is exactly why the problem is easy to miss.
 
 **Fix**
 
@@ -389,10 +357,7 @@ Then confirm a background task completes — create or edit an item, or run the 
 sudo -u ${WEB_USER} php ${TEAMPASS}/app/scripts/background_tasks___handler.php
 ```
 
-> The cron that runs `app/sources/scheduler.php` must also be configured (see
-> [Tasks](../manage/tasks.md)). The event-driven trigger only covers tasks created by a web
-> action; purely scheduled jobs (scheduled backups, inactive-user housekeeping, maintenance)
-> rely on the cron.
+> The cron that runs `app/sources/scheduler.php` must also be configured (see [Tasks](../manage/tasks.md)). The event-driven trigger only covers tasks created by a web action; purely scheduled jobs (scheduled backups, inactive-user housekeeping, maintenance) rely on the cron.
 
 ---
 

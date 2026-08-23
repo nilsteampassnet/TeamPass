@@ -2,21 +2,15 @@
 
 ## Upgrading an existing 3.2.x installation
 
-> You are **already running 3.2.x** and want to move to a newer 3.2.x release
-> (e.g. `3.2.0.4` → `3.2.0.5`). This is the common, recurring case.
+> You are **already running 3.2.x** and want to move to a newer 3.2.x release (e.g. `3.2.0.4` → `3.2.0.5`). This is the common, recurring case.
 
-The 3.2.0 directory layout (`app/` / `public/` / `storage/` / `secrets/`) is already in place,
-so the procedure is short — only three of the steps from
-[Upgrading to version 3.2.x](#upgrading-to-version-32x) apply:
+The 3.2.0 directory layout (`app/` / `public/` / `storage/` / `secrets/`) is already in place, so the procedure is short — only three of the steps from [Upgrading to version 3.2.x](#upgrading-to-version-32x) apply:
 
 1. [**Step 1 — Back up your instance**](#step-1--back-up-your-instance)
 2. [**Step 2 — Get the new code**](#step-2--get-the-new-code)
-3. [**Step 4a — Run the web-based upgrade wizard**](#step-4a--run-the-web-based-upgrade-wizard)
-   — followed by [Step 4b](#step-4b--restart-websocket-daemon-if-websocket-is-enabled) only if
-   the WebSocket feature is enabled.
+3. [**Step 4a — Run the web-based upgrade wizard**](#step-4a--run-the-web-based-upgrade-wizard) — followed by [Step 4b](#step-4b--restart-websocket-daemon-if-websocket-is-enabled) only if the WebSocket feature is enabled.
 
-There is **nothing else to do.** The following 3.2.0-only steps must be **skipped** because your
-installation has already been migrated:
+There is **nothing else to do.** The following 3.2.0-only steps must be **skipped** because your installation has already been migrated:
 
 | Skipped step | Why it no longer applies |
 |---|---|
@@ -24,8 +18,7 @@ installation has already been migrated:
 | [Step 5 — Apache / Nginx `DocumentRoot` change](#step-5--update-apache--nginx-configuration-320-only) | Your `DocumentRoot` already points to `public/` |
 | [Step 5b — Lock down the install directory](#step-5b--lock-down-the-install-directory) | Already done during your first 3.2.0 upgrade |
 
-> The web-based wizard only applies the database schema deltas between your current patch
-> release and the new one — no file moves, no permission changes, no web server reconfiguration.
+> The web-based wizard only applies the database schema deltas between your current patch release and the new one — no file moves, no permission changes, no web server reconfiguration.
 
 ---
 
@@ -61,15 +54,9 @@ Before anything else:
 
 > **Recommended for 3.1.x → 3.2.0 upgrades: use the release archive (Option A).**
 >
-> `git pull` removes files that were deleted from the repository between 3.1.x and 3.2.0
-> (language files, library stubs, template files, etc.).  Your **user data** is safe because
-> it lives in gitignored directories (`files/`, `upload/`, `backups/`, `includes/config/`),
-> but the deletion of other tracked files can leave the repository in an inconsistent state
-> that is harder to reason about.
+> `git pull` removes files that were deleted from the repository between 3.1.x and 3.2.0 (language files, library stubs, template files, etc.).  Your **user data** is safe because it lives in gitignored directories (`files/`, `upload/`, `backups/`, `includes/config/`), but the deletion of other tracked files can leave the repository in an inconsistent state that is harder to reason about.
 >
-> Extracting the release archive over the existing installation is simpler and unambiguous:
-> it **adds** new files and **overwrites** existing ones without deleting anything, so the
-> filesystem migration script (Step 3) always finds what it expects.
+> Extracting the release archive over the existing installation is simpler and unambiguous: it **adds** new files and **overwrites** existing ones without deleting anything, so the filesystem migration script (Step 3) always finds what it expects.
 
 #### Option A — Release archive (recommended)
 
@@ -90,10 +77,7 @@ rsync -av --no-perms /tmp/tp-new/TeamPass-3.2.0/ teampass/
 rm -rf /tmp/tp-new 3.2.0.zip
 ```
 
-> `rsync` copies new and updated files without touching your data directories.
-> Any old 3.1.x code files that were removed from the repository will simply remain
-> on disk — they are harmless because after Step 3 the web server DocumentRoot will
-> point to `public/`, leaving the old root-level code outside the webroot.
+> `rsync` copies new and updated files without touching your data directories. Any old 3.1.x code files that were removed from the repository will simply remain on disk — they are harmless because after Step 3 the web server DocumentRoot will point to `public/`, leaving the old root-level code outside the webroot.
 
 #### Option B — Git (existing git-based deployments)
 
@@ -102,10 +86,7 @@ cd /path/to/teampass
 git pull
 ```
 
-> **Important:** `git pull` will delete files that were removed from the repository.
-> Your user data is safe only if all data directories (`files/`, `upload/`, `backups/`,
-> `includes/config/`, `includes/avatars/`) are listed in `.gitignore`.
-> If you have any doubt, use Option A instead.
+> **Important:** `git pull` will delete files that were removed from the repository. Your user data is safe only if all data directories (`files/`, `upload/`, `backups/`, `includes/config/`, `includes/avatars/`) are listed in `.gitignore`. If you have any doubt, use Option A instead.
 
 ---
 
@@ -114,8 +95,7 @@ git pull
 > **Required when upgrading from any version earlier than 3.2.0 (including all 3.1.x releases).**
 > Skip this step if you are already on 3.2.x.
 
-TeamPass 3.2.0 moves user data from the old flat layout to the new `app/` / `storage/` structure.
-This migration **must** be done from the command line before the web-based upgrade wizard is launched.
+TeamPass 3.2.0 moves user data from the old flat layout to the new `app/` / `storage/` structure. This migration **must** be done from the command line before the web-based upgrade wizard is launched.
 
 ```bash
 cd /path/to/teampass
@@ -132,8 +112,7 @@ php migrate_3.2.x.php
 | `--web-group=GROUP`  | Web server group for permission setup (default: primary group of `--web-user`). Useful on systems where the user and group names differ (e.g. openSUSE: `wwwrun` / `www`) |
 | `--no-color`         | Disable ANSI colour output                               |
 
-> **Tip:** Run `--check` first for a quick pre-flight summary, then `--dry-run` for a
-> full step-by-step simulation, and finally run without flags to apply the migration.
+> **Tip:** Run `--check` first for a quick pre-flight summary, then `--dry-run` for a full step-by-step simulation, and finally run without flags to apply the migration.
 
 **What the script does:**
 
@@ -162,12 +141,9 @@ Once the script completes successfully, refresh the upgrade page and proceed to 
 
 ### Step 4b — Restart WebSocket daemon (if WebSocket is enabled)
 
-> Skip this step if the WebSocket feature is disabled in your instance
-> (Admin → Settings → WebSocket → `websocket_enabled = 0`).
+> Skip this step if the WebSocket feature is disabled in your instance (Admin → Settings → WebSocket → `websocket_enabled = 0`).
 
-Any upgrade that modifies files under `app/websocket/src/` requires a daemon restart.
-Without it, the running process continues to use the old code and silently ignores new
-client actions (e.g., `start_item_view`).
+Any upgrade that modifies files under `app/websocket/src/` requires a daemon restart. Without it, the running process continues to use the old code and silently ignores new client actions (e.g., `start_item_view`).
 
 ```bash
 sudo systemctl restart teampass-websocket.service
@@ -179,9 +155,7 @@ Check that the service restarted cleanly:
 sudo systemctl status teampass-websocket.service
 ```
 
-**Hard browser refresh recommended** if the application version number is unchanged between
-releases, because `teampass-websocket-init.js` is cached using the version as a query string.
-Use `Ctrl + Shift + R` (or `Cmd + Shift + R` on macOS) to bypass the cache.
+**Hard browser refresh recommended** if the application version number is unchanged between releases, because `teampass-websocket-init.js` is cached using the version as a query string. Use `Ctrl + Shift + R` (or `Cmd + Shift + R` on macOS) to bypass the cache.
 
 ---
 

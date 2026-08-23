@@ -1391,6 +1391,14 @@ function performProjectFilesIntegrityCheck(refreshingData = false)
             }
 
             let html = '';
+            const integrityModalTitle = '<i class="fas fa-eye fa-lg warning mr-2"></i>'
+                + htmlEncode(<?php echo json_encode($lang->get('files_integrity_check'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>);
+            const cautionModalTitle = '<i class="fa-solid fa-triangle-exclamation fa-lg warning mr-2"></i>'
+                + htmlEncode(<?php echo json_encode($lang->get('caution'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>);
+            const deleteUnknownFilesMessage = <?php echo json_encode($lang->get('delete_unknown_files'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+            const deleteLabel = <?php echo json_encode($lang->get('delete'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+            const cancelLabel = <?php echo json_encode($lang->get('cancel'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+            const closeLabel = <?php echo json_encode($lang->get('close'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
             if (data.error === false) {
                 html = warningsHtml + '<i class="fa-solid fa-circle-check text-success mr-2"></i>Project files integrity check is successfull';
             } else {
@@ -1414,7 +1422,8 @@ function performProjectFilesIntegrityCheck(refreshingData = false)
 
                 // Create the button to show/hide the list
                 $(document)
-                    .on('click', '#refresh_unknown_files', function(event) {
+                    .off('click.tpFilesIntegrity', '#refresh_unknown_files')
+                    .on('click.tpFilesIntegrity', '#refresh_unknown_files', function(event) {
                         event.preventDefault();
                         event.stopPropagation();
                         // Show loader
@@ -1422,19 +1431,63 @@ function performProjectFilesIntegrityCheck(refreshingData = false)
                         // Launch the integrity check
                         performProjectFilesIntegrityCheck(true);
                     })
-                    .on('click', '#delete_unknown_files', function(event) {   
+                    .off('click.tpFilesIntegrity', '#delete_unknown_files')
+                    .on('click.tpFilesIntegrity', '#delete_unknown_files', function(event) {
                         event.preventDefault();
-                        event.stopPropagation();                         
-                        // Ask the user if he wants to delete the files
-                        if (confirm('<?php echo $lang->get('delete_unknown_files'); ?>')) {
-                            // Show loader
-                            $('#files-integrity-result').html('<i class="fa-solid fa-spinner fa-spin"></i>');
-                        } else {
-                            // Cancel
-                            return false;
-                        }
-                        // Launch delete unknown files
-                        performDeleteFilesIntegrityCheck();
+                        event.stopPropagation();
+
+                        const restoreIntegrityResults = function() {
+                            $('#warningModalButtonAction').off('click.tpDeleteUnknownFiles');
+                            $('#warningModalButtonClose').off('click.tpDeleteUnknownFiles');
+                            showModalDialogBox(
+                                '#warningModal',
+                                integrityModalTitle,
+                                html,
+                                '',
+                                closeLabel,
+                                true
+                            );
+                        };
+
+                        showModalDialogBox(
+                            '#warningModal',
+                            cautionModalTitle,
+                            '<div>' + htmlEncode(deleteUnknownFilesMessage) + '</div>',
+                            deleteLabel,
+                            cancelLabel,
+                            false,
+                            true,
+                            false // no cross: leaving the confirmation must go through
+                                  // Delete or Cancel, otherwise the report is lost
+                        );
+
+                        $('#warningModalButtonAction')
+                            .off('click')
+                            .one('click.tpDeleteUnknownFiles', function(confirmEvent) {
+                                confirmEvent.preventDefault();
+                                confirmEvent.stopPropagation();
+                                restoreIntegrityResults();
+                                $('#files-integrity-result').html('<i class="fa-solid fa-spinner fa-spin"></i>');
+                                performDeleteFilesIntegrityCheck();
+                            });
+
+                        $('#warningModalButtonClose')
+                            .off('click.tpDeleteUnknownFiles')
+                            .one('click.tpDeleteUnknownFiles', function(cancelEvent) {
+                                cancelEvent.preventDefault();
+                                cancelEvent.stopImmediatePropagation();
+                                restoreIntegrityResults();
+                                return false;
+                            });
+
+                        $('#warningModal')
+                            .off('hidden.bs.modal.tpDeleteUnknownFiles')
+                            .one('hidden.bs.modal.tpDeleteUnknownFiles', function() {
+                                $('#warningModalButtonAction').off('click.tpDeleteUnknownFiles');
+                                $('#warningModalButtonClose').off('click.tpDeleteUnknownFiles');
+                            });
+
+                        return false;
                     });
             }
             // Display the result
@@ -1443,17 +1496,12 @@ function performProjectFilesIntegrityCheck(refreshingData = false)
             // Prepare modal
             showModalDialogBox(
                 '#warningModal',
-                '<i class="fas fa-eye fa-lg warning mr-2"></i><?php echo $lang->get('files_integrity_check'); ?>',
+                integrityModalTitle,
                 html,
                 '',
-                '<?php echo $lang->get('close'); ?>',
+                closeLabel,
                 true
             );
-
-            // Actions on modal buttons
-            $(document).on('click', '#warningModalButtonClose', function() {
-                // Nothing
-            });
 
             $('#check-project-files-btn').html('<i class="fas fa-caret-right"></i>');
 

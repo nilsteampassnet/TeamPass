@@ -1141,6 +1141,10 @@ switch ($inputData['type']) {
                     )
                 );
 
+                // This path writes log_items directly, so it never reaches the revision
+                // hook in logItems(): allocate the creation revision explicitly.
+                bumpItemRevision((int) $newId, 'created', (int) $session->get('user-id'), (int) $itemFolderId);
+
                 // Add item to cache table
                 updateCacheTable('add_value', (int) $newId);
 
@@ -1715,6 +1719,10 @@ switch ($inputData['type']) {
                     'raison' => 'at_import',
                 )
             );
+
+            // This path writes log_items directly, so it never reaches the revision
+            // hook in logItems(): allocate the creation revision explicitly.
+            bumpItemRevision((int) $newId, 'created', (int) $session->get('user-id'), (int) $folderId);
 
             // prepare return
             $returnedItems[] = array(

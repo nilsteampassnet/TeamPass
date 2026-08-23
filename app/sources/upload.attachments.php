@@ -478,6 +478,10 @@ if (null !== $post_type_upload && $post_type_upload === 'item_attachments') {
                 'raison' => 'at_add_file : ' . $fileName . ':' . $newID,
             )
         );
+
+        // Same as the import paths: this log entry bypasses logItems(), so the attachment
+        // would otherwise be invisible to a synchronizing client.
+        bumpItemRevision((int) $post_itemId, 'updated', (int) $session->get('user-id'));
     }
 }
 

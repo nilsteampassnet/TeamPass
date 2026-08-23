@@ -283,6 +283,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 // Update key value
                 $('#browser_extension_key').val(data.token);
 
+                // The key exists now - generating a new one would invalidate every
+                // extension already configured with it.
+                $('#generate-extension-key').remove();
+
                 // Store in DB
                 var data = {
                     "field": 'browser_extension_key',

@@ -20,8 +20,7 @@ When LDAP server is set up in Teampass, the authentication of a user credentials
 It has been decided to have a semi-automatic synchronization between the users annuary in Teampass and in the AD remote server. Indeed an administrator must validated what users from the AD remote server will be created inside Teampass. No automatic synchronization is available.
 That said, Teampass will offer the possibility to select what users from the AD remote server will be added in Teampass. Once done, the user will be identified as an AD user and his authentication will always be performed versus the AD remote server.
 
-This strategy permits to keep control on users that can access your sensitive items stored in Teampass.
-It laso permit to have local users in parallel. That means that those users are not synchronized with the AD remote server.
+This strategy permits to keep control on users that can access your sensitive items stored in Teampass. It laso permit to have local users in parallel. That means that those users are not synchronized with the AD remote server.
 
 ### Setting up
 
@@ -129,47 +128,33 @@ If disabled for a user, a red fingerprint symbol is shown in the users list.
 
 ### Google Authenticator enrollment
 
-When `Google Authenticator` is the selected MFA protocol, a user has to enroll their
-authenticator app (Google Authenticator, FreeOTP, Authy, etc.) the first time. The flow is:
+When `Google Authenticator` is the selected MFA protocol, a user has to enroll their authenticator app (Google Authenticator, FreeOTP, Authy, etc.) the first time. The flow is:
 
-1. A **temporary code** is sent to the user by e-mail (automatically when MFA is first required,
-   or when an administrator generates one — see below).
+1. A **temporary code** is sent to the user by e-mail (automatically when MFA is first required, or when an administrator generates one — see below).
 2. On the login page the user enters their **login**, **password** and this **temporary code**.
-3. Once the temporary code is accepted, Teampass displays a **QR code**. The user scans it with
-   their authenticator app.
-4. The user logs in again, this time entering the **6-digit code** produced by the app.
-   Enrollment is complete only at this step.
+3. Once the temporary code is accepted, Teampass displays a **QR code**. The user scans it with their authenticator app.
+4. The user logs in again, this time entering the **6-digit code** produced by the app. Enrollment is complete only at this step.
 
-> **Anti-lockout** — the account is marked as fully enrolled **only after the first valid 6-digit
-> code has been verified**, not as soon as the QR code is shown. As long as enrollment is not
-> finished, a new QR code can still be issued (login-page link or administrator). A failed or
-> missed scan can therefore never leave a user enrolled without a working authenticator.
+> **Anti-lockout** — the account is marked as fully enrolled **only after the first valid 6-digit code has been verified**, not as soon as the QR code is shown. As long as enrollment is not finished, a new QR code can still be issued (login-page link or administrator). A failed or missed scan can therefore never leave a user enrolled without a working authenticator.
 
 ### QR code generation (offline)
 
-The QR code is built from the standard `otpauth://` provisioning URI and **rendered entirely in
-the user's browser**. Teampass does **not** contact any external service (such as
-`api.qrserver.com` or the discontinued `chart.googleapis.com`) to draw it.
+The QR code is built from the standard `otpauth://` provisioning URI and **rendered entirely in the user's browser**. Teampass does **not** contact any external service (such as `api.qrserver.com` or the discontinued `chart.googleapis.com`) to draw it.
 
-👉 This means the QR code works on **on-premise and air-gapped servers with no outbound internet
-access**. Nothing has to be configured for this — it is the default behaviour.
+👉 This means the QR code works on **on-premise and air-gapped servers with no outbound internet access**. Nothing has to be configured for this — it is the default behaviour.
 
-If the user prefers manual entry, the same secret can be typed into the authenticator app instead
-of scanning.
+If the user prefers manual entry, the same secret can be typed into the authenticator app instead of scanning.
 
 ### Resetting a user's Google Authenticator code
 
-If a user changes phone or loses their authenticator, a new code can be issued. Who is allowed to
-do this is controlled by the **User can reset his 2FA code** option (`Settings → MFA`):
+If a user changes phone or loses their authenticator, a new code can be issued. Who is allowed to do this is controlled by the **User can reset his 2FA code** option (`Settings → MFA`):
 
 | `User can reset his 2FA code` | Behaviour |
 |---|---|
 | **Enabled** | The user can request a new code themselves, using the dedicated link on the login page. |
 | **Disabled** (default) | The user **cannot** reset their own code. They see the message *"Your administrator has disabled self-reset of the 2FA code. Please ask them to send you a new code."* and must contact an administrator. |
 
-**Administrator reset** — from the `Users` page, select the user and use the action that sends a
-Google Authenticator code by e-mail. This **always works**, regardless of the *User can reset his
-2FA code* option, and puts the user back at step 1 of the enrollment flow above.
+**Administrator reset** — from the `Users` page, select the user and use the action that sends a Google Authenticator code by e-mail. This **always works**, regardless of the *User can reset his 2FA code* option, and puts the user back at step 1 of the enrollment flow above.
 
 ### Troubleshooting
 
@@ -190,8 +175,7 @@ Users can authenticate through your Entra AD. The first time a user is authentic
 
 You need to create a new `App registration` for example called `Teampass`.
 
-This App will have an `Application (client) ID` and a `Directory (tenant) ID`.
-A `Client secret` is also expected, not the `Secret ID` but the `Value` (the one that is only seen once).
+This App will have an `Application (client) ID` and a `Directory (tenant) ID`. A `Client secret` is also expected, not the `Secret ID` but the `Value` (the one that is only seen once).
 
 You will have to define a new `Redirect URIs` with the value provided from Teampass OAuth configuration page.
 And it is requested to use option `Accounts in this organizational directory only (Default Directory only - Single tenant)` as `Supported account types`.
@@ -223,30 +207,17 @@ It is suggested to perform a test with a fake user.
 
 ### Allowing OAuth2 users to access the API
 
-By default OAuth2 (SSO) users **cannot** use the REST API or the browser extension. The API
-authenticates a user with their login, password and API key, but an OAuth2 user never sets a
-TeamPass password — so the password-based path cannot work for them.
+By default OAuth2 (SSO) users **cannot** use the REST API or the browser extension. The API authenticates a user with their login, password and API key, but an OAuth2 user never sets a TeamPass password — so the password-based path cannot work for them.
 
-To enable API access for OAuth2 users, turn on **`Allow OAuth2 users to access the API`** on the
-`OAuth` administration page. This toggle is **disabled by default** and is independent from the
-global API switch on the `API` page: both must be enabled.
+To enable API access for OAuth2 users, turn on **`Allow OAuth2 users to access the API`** on the `OAuth` administration page. This toggle is **disabled by default** and is independent from the global API switch on the `API` page: both must be enabled.
 
-Local and LDAP users are not affected — they keep authenticating the API with their password and
-API key.
+Local and LDAP users are not affected — they keep authenticating the API with their password and API key.
 
 #### How an OAuth2 user connects the API / browser extension
 
 1. The OAuth2 user logs into the TeamPass web interface as usual (through Entra).
-2. In **Profile → Browser extension tokens**, they click *Generate a new token*. A 256-bit
-   **Personal Access Token** is shown **once** — they copy it immediately (it is never displayed
-   again).
-3. In the API client / browser extension they authenticate with their **login** and this
-   **token** (no password, no API key). The server returns the same kind of session as the
-   password path.
-4. Tokens can be **revoked** at any time from the same profile screen; a revoked token stops
-   working immediately.
+2. In **Profile → Browser extension tokens**, they click *Generate a new token*. A 256-bit **Personal Access Token** is shown **once** — they copy it immediately (it is never displayed again).
+3. In the API client / browser extension they authenticate with their **login** and this **token** (no password, no API key). The server returns the same kind of session as the password path.
+4. Tokens can be **revoked** at any time from the same profile screen; a revoked token stops working immediately.
 
-Security: the server never stores the token itself — only a hash of it, plus a copy of the user's
-private key re-wrapped with a key derived from the token. A database dump alone therefore cannot
-decrypt anything, and the token can only be created while the user is fully authenticated in the
-web interface.
+Security: the server never stores the token itself — only a hash of it, plus a copy of the user's private key re-wrapped with a key derived from the token. A database dump alone therefore cannot decrypt anything, and the token can only be created while the user is fully authenticated in the web interface.

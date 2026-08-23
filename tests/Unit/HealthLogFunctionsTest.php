@@ -216,6 +216,70 @@ APACHE;
         );
     }
 
+    public function testDebianApacheLogDirectoryResolvesTheDefaultEmptySuffix(): void
+    {
+        $envvars = <<<'ENVVARS'
+if [ "${APACHE_CONFDIR##/etc/apache2-}" != "${APACHE_CONFDIR}" ] ; then
+    SUFFIX="-${APACHE_CONFDIR##/etc/apache2-}"
+else
+    SUFFIX=
+fi
+export APACHE_LOG_DIR=/var/log/apache2$SUFFIX
+ENVVARS;
+
+        $this->assertSame(
+            '/var/log/apache2',
+            tpHealthResolveApacheLogDirFromEnvvars($envvars, '/etc/apache2')
+        );
+    }
+
+    public function testDebianApacheLogDirectoryResolvesNamedInstanceSuffix(): void
+    {
+        $envvars = 'export APACHE_LOG_DIR=/var/log/apache2$SUFFIX';
+
+        $this->assertSame(
+            '/var/log/apache2-customer',
+            tpHealthResolveApacheLogDirFromEnvvars($envvars, '/etc/apache2-customer')
+        );
+    }
+
+    public function testApacheLogDirectoryRejectsUnknownShellExpressions(): void
+    {
+        $envvars = 'export APACHE_LOG_DIR=/srv/$CUSTOM_LOG_ROOT/apache2';
+
+        $this->assertSame('', tpHealthResolveApacheLogDirFromEnvvars($envvars, '/etc/apache2'));
+    }
+
+    public function testApacheEnvvarsDiscoveryStartsWithTheDefaultInstance(): void
+    {
+        // Named instances declare their own APACHE_LOG_DIR; reading only the
+        // default one resolves every instance to /var/log/apache2.
+        $paths = tpHealthGetApacheEnvvarsPaths();
+
+        $this->assertNotEmpty($paths);
+        $this->assertSame('/etc/apache2/envvars', $paths[0]);
+        $this->assertSame(array_values(array_unique($paths)), $paths);
+
+        foreach ($paths as $path) {
+            $this->assertStringStartsWith('/etc/apache2', $path);
+            $this->assertStringEndsWith('/envvars', $path);
+        }
+    }
+
+    public function testApacheDirectiveSkipsAnUnresolvedDirectoryCandidate(): void
+    {
+        $content = 'CustomLog ${APACHE_LOG_DIR}/teampass_access.log combined';
+
+        $paths = tpHealthExtractApacheLogPathsFromContent(
+            $content,
+            'CustomLog',
+            '/etc/apache2/sites-enabled/teampass.conf',
+            array('/var/log/apache2$SUFFIX', '/var/log/apache2')
+        );
+
+        $this->assertSame(array('/var/log/apache2/teampass_access.log'), $paths);
+    }
+
     public function testNginxAccessLogExtractionRejectsOffAndSyslogDestinations(): void
     {
         $content = <<<'NGINX'

@@ -185,23 +185,15 @@ The account creation background task (key generation) may not have completed bef
 
 ### Symptom
 
-During Google Authenticator setup, no QR code is shown (not even a broken image), or the user
-gets the message *"Your administrator has disabled self-reset of the 2FA code…"* when trying to
-get a new code from the login page.
+During Google Authenticator setup, no QR code is shown (not even a broken image), or the user gets the message *"Your administrator has disabled self-reset of the 2FA code…"* when trying to get a new code from the login page.
 
 ### Cause / resolution
 
-- **No QR code** — the QR is generated **locally in the browser** from the `otpauth://` URI and
-  needs **no external service or internet access**. If nothing appears, do a hard refresh (the QR
-  library is served with a version query string and may be cached) and check the browser console
-  for JavaScript errors.
-- **"…disabled self-reset of the 2FA code…"** — the **User can reset his 2FA code** option
-  (`Settings → MFA`) is disabled, so users cannot reset their own code. Ask an administrator to
-  send a new code from the **Users** page (this always works), or enable the option.
+- **No QR code** — the QR is generated **locally in the browser** from the `otpauth://` URI and needs **no external service or internet access**. If nothing appears, do a hard refresh (the QR library is served with a version query string and may be cached) and check the browser console for JavaScript errors.
+- **"…disabled self-reset of the 2FA code…"** — the **User can reset his 2FA code** option (`Settings → MFA`) is disabled, so users cannot reset their own code. Ask an administrator to send a new code from the **Users** page (this always works), or enable the option.
 - **User enrolled but no working code** — an administrator must reset it from the **Users** page.
 
-See [Authentication → Multi Factor Authentication](../features/authentication.md) for the full
-enrollment flow.
+See [Authentication → Multi Factor Authentication](../features/authentication.md) for the full enrollment flow.
 
 ---
 
