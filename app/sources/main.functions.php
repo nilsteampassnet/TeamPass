@@ -10383,7 +10383,7 @@ function tpNotificationCenterIsEnabled(): bool
             prefixTable('misc'),
             'notification_center_enabled'
         ) === '1';
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
         $enabled = false;
     }
 
@@ -10769,6 +10769,60 @@ function tpNotifyKnowledgeBasePublication(int $kbId, string $label, int $authorI
             $dedupeKey
         ) === true) {
             $stored++;
+        }
+    }
+
+    return $stored;
+}
+
+/**
+ * Notify every active administrator that a scheduled or externalized backup
+ * failed. Internal service accounts are excluded and each failure/type pair
+ * is persisted at most once, even if a task or scheduler preflight is retried.
+ *
+ * @return int Number of newly persisted administrator notifications
+ */
+function tpNotifyBackupFailure(int|string $failureId, string $backupType, string $message): int
+{
+    if (trim((string) $failureId) === '' || tpNotificationCenterIsEnabled() !== true) {
+        return 0;
+    }
+
+    try {
+        $backupType = $backupType === 'externalized' ? 'externalized' : 'scheduled';
+        $excludedIds = teampassGetSystemAccountIds();
+        $sql = 'SELECT id
+            FROM ' . prefixTable('users') . '
+            WHERE admin = %i
+            AND disabled = %i
+            AND (deleted_at IS NULL OR deleted_at = "" OR deleted_at = 0)';
+        if (count($excludedIds) > 0) {
+            $sql .= ' AND id NOT IN %li';
+            $admins = DB::query($sql, 1, 0, $excludedIds);
+        } else {
+            $admins = DB::query($sql, 1, 0);
+        }
+    } catch (Throwable $e) {
+        error_log('tpNotifyBackupFailure: administrator lookup failed - ' . $e->getMessage());
+        return 0;
+    }
+
+    require_once __DIR__ . '/notifications.functions.php';
+    $payload = notificationSanitizePayload(
+        'backup_failed',
+        ['backup_type' => $backupType, 'message' => $message]
+    );
+    $stored = 0;
+    $dedupeKey = notificationBackupFailureDedupeKey($failureId, $backupType);
+    foreach ($admins as $admin) {
+        $recipientId = (int) ($admin['id'] ?? 0);
+        try {
+            if (tpNotifyUser('backup_failed', $recipientId, $payload, $dedupeKey) === true) {
+                $stored++;
+            }
+        } catch (Throwable $e) {
+            // A notification must never interfere with backup failure handling.
+            error_log('tpNotifyBackupFailure: delivery failed - ' . $e->getMessage());
         }
     }
 
