@@ -123,6 +123,9 @@ class TaskWorker {
                 case 'security_nudge_digest':
                     $this->handleSecurityNudgeDigest();
                     break;
+                case 'local_password_expiry_notifications':
+                    $this->handleLocalPasswordExpiryNotifications();
+                    break;
                 default:
                     throw new Exception("Type of subtask unknown: {$this->processType}");
             }
@@ -851,6 +854,50 @@ class TaskWorker {
 
         $msgKey = $errors > 0 ? 'inactive_users_mgmt_msg_task_completed_with_errors' : 'inactive_users_mgmt_msg_task_completed';
         $this->updateInactiveUsersMgmtState('completed', $msgKey, $details);
+    }
+
+    /**
+     * Create in-app password-expiry notifications for every active local
+     * account, including administrators. External identities and internal
+     * TeamPass service accounts are deliberately excluded.
+     */
+    private function handleLocalPasswordExpiryNotifications(): void
+    {
+        $notificationCenterEnabled = (int) ($this->settings['notification_center_enabled'] ?? 0);
+        $passwordLifetimeDays = (int) ($this->settings['pw_life_duration'] ?? 0);
+        if ($notificationCenterEnabled !== 1 || $passwordLifetimeDays <= 0) {
+            return;
+        }
+
+        $excludedIds = teampassGetSystemAccountIds();
+        $sql = 'SELECT id, last_pw_change
+            FROM ' . prefixTable('users') . '
+            WHERE auth_type = %s
+            AND disabled = 0
+            AND (deleted_at IS NULL OR deleted_at = "" OR deleted_at = 0)';
+        if (count($excludedIds) > 0) {
+            $sql .= ' AND id NOT IN %li';
+            $users = DB::query($sql, 'local', $excludedIds);
+        } else {
+            $users = DB::query($sql, 'local');
+        }
+
+        $today = mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'));
+        foreach ($users as $user) {
+            $lastPasswordChange = (int) ($user['last_pw_change'] ?? 0);
+            if ($lastPasswordChange <= 0) {
+                continue;
+            }
+
+            $elapsedDays = (int) round(($today - $lastPasswordChange) / TP_ONE_DAY_SECONDS);
+            tpNotifyLocalPasswordExpiry(
+                (int) ($user['id'] ?? 0),
+                'local',
+                $lastPasswordChange,
+                $passwordLifetimeDays,
+                $passwordLifetimeDays - $elapsedDays
+            );
+        }
     }
 
     private function updateInactiveUsersMgmtState(string $status, string $messageKey, array $details = []): void
