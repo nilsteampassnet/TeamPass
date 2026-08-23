@@ -88,8 +88,8 @@ $lang = new Language($session->get('user-language') ?? 'english');
      *
      * Injects a bell with an unread badge in the top navbar. The inbox is
      * fed server-side from whitelisted user-target events (scan results,
-     * password expiry, knowledge-base publications, task completions,
-     * permission changes, keys ready) so it works with or without the
+     * password expiry, knowledge-base publications, backup failures, task
+     * completions, permission changes, keys ready) so it works with or without the
      * WebSocket daemon; when WebSocket is up, the same events refresh the
      * inbox live.
      */
@@ -126,6 +126,7 @@ $lang = new Language($session->get('user-language') ?? 'english');
             themePermission: <?php echo json_encode($lang->get('notification_theme_permission'), JSON_UNESCAPED_UNICODE); ?>,
             themePassword: <?php echo json_encode($lang->get('notification_theme_password'), JSON_UNESCAPED_UNICODE); ?>,
             themeKb: <?php echo json_encode($lang->get('notification_theme_kb'), JSON_UNESCAPED_UNICODE); ?>,
+            themeBackup: <?php echo json_encode($lang->get('notification_theme_backup'), JSON_UNESCAPED_UNICODE); ?>,
             securityNudge: <?php echo json_encode($lang->get('notification_type_security_nudge'), JSON_UNESCAPED_UNICODE); ?>,
             keysReady: <?php echo json_encode($lang->get('notification_type_user_keys_ready'), JSON_UNESCAPED_UNICODE); ?>,
             statusCompleted: <?php echo json_encode($lang->get('notification_type_task_completed'), JSON_UNESCAPED_UNICODE); ?>,
@@ -134,7 +135,9 @@ $lang = new Language($session->get('user-language') ?? 'english');
             passwordExpired: <?php echo json_encode($lang->get('notification_type_local_password_expired'), JSON_UNESCAPED_UNICODE); ?>,
             passwordExpiresTomorrow: <?php echo json_encode($lang->get('notification_type_local_password_expires_tomorrow'), JSON_UNESCAPED_UNICODE); ?>,
             passwordExpiring: <?php echo json_encode($lang->get('notification_type_local_password_expiring'), JSON_UNESCAPED_UNICODE); ?>,
-            kbArticleCreated: <?php echo json_encode($lang->get('notification_type_kb_article_created'), JSON_UNESCAPED_UNICODE); ?>
+            kbArticleCreated: <?php echo json_encode($lang->get('notification_type_kb_article_created'), JSON_UNESCAPED_UNICODE); ?>,
+            scheduledBackupFailed: <?php echo json_encode($lang->get('notification_type_scheduled_backup_failed'), JSON_UNESCAPED_UNICODE); ?>,
+            externalizedBackupFailed: <?php echo json_encode($lang->get('notification_type_externalized_backup_failed'), JSON_UNESCAPED_UNICODE); ?>
         }
 
         var EVENT_TYPES = [
@@ -143,7 +146,8 @@ $lang = new Language($session->get('user-language') ?? 'english');
             'task_completed',
             'folder_permission_changed',
             'local_password_expiring',
-            'kb_article_created'
+            'kb_article_created',
+            'backup_failed'
         ]
 
         // Type -> { theme(payload), detail(payload), link } presentation map.
@@ -191,6 +195,16 @@ $lang = new Language($session->get('user-language') ?? 'english');
                     var kbId = parseInt(p.kb_id, 10) || 0
                     return kbId > 0 ? 'index.php?page=kb&id=' + kbId : 'index.php?page=kb'
                 }
+            },
+            'backup_failed': {
+                theme: function () { return L.themeBackup },
+                detail: function (p) {
+                    var template = String(p.backup_type) === 'externalized'
+                        ? L.externalizedBackupFailed
+                        : L.scheduledBackupFailed
+                    return template.replace('%s', String(p.message || ''))
+                },
+                link: 'index.php?page=backups'
             }
         }
 
