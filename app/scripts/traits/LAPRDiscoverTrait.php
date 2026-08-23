@@ -58,7 +58,8 @@ trait LAPRDiscoverTrait
         $this->updateTaskStep('connecting');
 
         $endpoint = DB::queryFirstRow(
-            'SELECT id, hostname, port, ssh_username, ssh_auth_method, ssh_credential_source
+            'SELECT id, hostname, port, ssh_username, ssh_auth_method, ssh_credential_source,
+                    ssh_hostkey_fingerprint, ssh_hostkey_verified
              FROM ' . prefixTable('lapr_endpoints') . '
              WHERE id = %i AND status != %s',
             $endpointId,
@@ -89,6 +90,15 @@ trait LAPRDiscoverTrait
             return;
         }
 
+        // D4 — discovery sends the same privileged credential as a rotation, so
+        // it enforces the stored host key too. connect() checks it before login().
+        $expectedFingerprint = null;
+        if ((int) $endpoint['ssh_hostkey_verified'] === 1
+            && (string) $endpoint['ssh_hostkey_fingerprint'] !== ''
+        ) {
+            $expectedFingerprint = (string) $endpoint['ssh_hostkey_fingerprint'];
+        }
+
         $timeout = (int) ($this->settings['lapr_ssh_connect_timeout'] ?? 10);
         $service = new LAPRSshService($timeout);
         $connect = $service->connect(
@@ -96,13 +106,27 @@ trait LAPRDiscoverTrait
             (int) $endpoint['port'],
             (string) $endpoint['ssh_username'],
             (string) $endpoint['ssh_auth_method'],
-            $secret
+            $secret,
+            $expectedFingerprint
         );
         if ($connect['success'] !== true) {
             $service->disconnect();
+            $errorCode = isset($connect['error_code']) ? (string) $connect['error_code'] : LAPRSshService::ERR_UNKNOWN;
+            if ($errorCode === LAPRSshService::ERR_HOSTKEY_MISMATCH) {
+                laprAuditLog(
+                    'hostkey_mismatch',
+                    $endpointId,
+                    $authorId,
+                    [],
+                    'failure',
+                    null,
+                    'ERR_HOSTKEY_MISMATCH',
+                    'system'
+                );
+            }
             $this->updateTaskResult([
                 'success' => false,
-                'error_code' => isset($connect['error_code']) ? (string) $connect['error_code'] : LAPRSshService::ERR_UNKNOWN,
+                'error_code' => $errorCode,
             ]);
             $this->updateTaskStatus('completed');
             return;

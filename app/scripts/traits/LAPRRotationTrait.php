@@ -189,6 +189,17 @@ trait LAPRRotationTrait
         }
 
         // Step 3 — SSH push
+        // D4 — host key verification BLOCKS on mismatch (unless verification was
+        // deliberately disabled at enrollment). A changed key while we hold a
+        // reusable SSH credential is exactly the MITM signal (risk R2), so the
+        // check is enforced inside connect() BEFORE the credential is sent.
+        $expectedFingerprint = null;
+        if ((int) $account['ssh_hostkey_verified'] === 1
+            && (string) $account['ssh_hostkey_fingerprint'] !== ''
+        ) {
+            $expectedFingerprint = (string) $account['ssh_hostkey_fingerprint'];
+        }
+
         $timeout = (int) ($this->settings['lapr_ssh_connect_timeout'] ?? 10);
         $service = new LAPRSshService($timeout);
         $connect = $service->connect(
@@ -196,29 +207,19 @@ trait LAPRRotationTrait
             (int) $account['port'],
             (string) $account['ssh_username'],
             (string) $account['ssh_auth_method'],
-            $sshSecret
+            $sshSecret,
+            $expectedFingerprint
         );
         if ($connect['success'] !== true) {
             $service->disconnect();
             $code = isset($connect['error_code']) ? (string) $connect['error_code'] : LAPRSshService::ERR_UNKNOWN;
-            $this->laprFinalizeFailure($account, $actorId, $code, $trigger);
-            return ['success' => false, 'error_code' => $code];
-        }
-
-        // D4 — host key verification BLOCKS on mismatch (unless verification was
-        // deliberately disabled at enrollment). A changed key while we hold a
-        // reusable SSH credential is exactly the MITM signal (risk R2).
-        if ((int) $account['ssh_hostkey_verified'] === 1) {
-            $currentFp = (string) $service->getFingerprint();
-            $storedFp = (string) $account['ssh_hostkey_fingerprint'];
-            if ($storedFp !== '' && $currentFp !== '' && hash_equals($storedFp, $currentFp) === false) {
-                $service->disconnect();
+            if ($code === LAPRSshService::ERR_HOSTKEY_MISMATCH) {
                 laprAuditLog('hostkey_mismatch', (int) $account['endpoint_id'], $actorId, [
                     'account_id' => $accountId,
                 ], 'failure', $accountId, 'ERR_HOSTKEY_MISMATCH', 'system');
-                $this->laprFinalizeFailure($account, $actorId, 'ERR_HOSTKEY_MISMATCH', $trigger);
-                return ['success' => false, 'error_code' => 'ERR_HOSTKEY_MISMATCH'];
             }
+            $this->laprFinalizeFailure($account, $actorId, $code, $trigger);
+            return ['success' => false, 'error_code' => $code];
         }
 
         // D5 — root vs passwordless sudo for chpasswd

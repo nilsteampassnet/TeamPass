@@ -76,20 +76,62 @@ class LAPRSshService
     /**
      * Open the SSH connection and authenticate.
      *
-     * @param string $host       Hostname or IP
-     * @param int    $port       SSH port
-     * @param string $username   SSH username
-     * @param string $authMethod 'password' or 'key'
-     * @param string $secret     Password, or private key PEM (optionally "key\n:::\npassphrase")
+     * When $expectedFingerprint is provided, the host key is verified BEFORE
+     * any credential is transmitted: phpseclib performs the key exchange
+     * lazily inside getServerPublicHostKey(), so the server identity is known
+     * without authenticating. Verifying after login() would hand the SSH
+     * password of a privileged account to a man-in-the-middle (risk R2).
+     *
+     * @param string      $host                Hostname or IP
+     * @param int         $port                SSH port
+     * @param string      $username            SSH username
+     * @param string      $authMethod          'password' or 'key'
+     * @param string      $secret              Password, or private key PEM (optionally "key\n:::\npassphrase")
+     * @param string|null $expectedFingerprint TOFU fingerprint to enforce, null to skip (first contact)
      *
      * @return array{success: bool, error_code?: string, error_detail?: string, fingerprint?: string}
      */
-    public function connect(string $host, int $port, string $username, string $authMethod, string $secret): array
-    {
+    public function connect(
+        string $host,
+        int $port,
+        string $username,
+        string $authMethod,
+        string $secret,
+        ?string $expectedFingerprint = null
+    ): array {
         try {
             $ssh = new SSH2($host, $port, $this->timeout);
         } catch (Throwable $e) {
             return ['success' => false, 'error_code' => self::ERR_UNKNOWN, 'error_detail' => $e->getMessage()];
+        }
+
+        // D4 — host key check happens here, before login(), so a mismatch never
+        // costs us the credential. Key exchange runs on this first call.
+        try {
+            $hostKey = $ssh->getServerPublicHostKey();
+        } catch (Throwable $e) {
+            return ['success' => false] + $this->classifyConnectError($e->getMessage());
+        }
+        if (is_string($hostKey) === false || $hostKey === '') {
+            $ssh->disconnect();
+            return [
+                'success' => false,
+                'error_code' => self::ERR_HOSTKEY_MISMATCH,
+                'error_detail' => 'Server host key could not be validated',
+            ];
+        }
+        $presentedFingerprint = self::computeFingerprint($hostKey);
+
+        if ($expectedFingerprint !== null
+            && $expectedFingerprint !== ''
+            && hash_equals($expectedFingerprint, $presentedFingerprint) === false
+        ) {
+            $ssh->disconnect();
+            return [
+                'success' => false,
+                'error_code' => self::ERR_HOSTKEY_MISMATCH,
+                'error_detail' => 'Host key does not match the trusted fingerprint',
+            ];
         }
 
         try {
@@ -120,7 +162,7 @@ class LAPRSshService
 
         return [
             'success' => true,
-            'fingerprint' => $this->getFingerprint() ?? '',
+            'fingerprint' => $presentedFingerprint,
         ];
     }
 
