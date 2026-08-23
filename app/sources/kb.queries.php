@@ -1597,6 +1597,14 @@ switch ($type) {
             (int) $session->get('user-id')
         );
 
+        if ($oldKb === null) {
+            tpNotifyKnowledgeBasePublication(
+                $kbId,
+                $label,
+                (int) $session->get('user-id')
+            );
+        }
+
         if ($oldKb !== null && $keepLockAfterSave !== 1) {
             kbReleaseAllEditionLocks($kbId, (string) ($session->get('user-login') ?? ''), (int) $session->get('user-id'));
         }
