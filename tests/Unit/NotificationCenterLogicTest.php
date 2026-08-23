@@ -33,6 +33,7 @@ class NotificationCenterLogicTest extends TestCase
             'folder_permission_changed',
             'local_password_expiring',
             'kb_article_created',
+            'backup_failed',
         ] as $type) {
             $this->assertTrue(notificationShouldPersist($type, 'user', 42), $type);
         }
@@ -159,6 +160,22 @@ class NotificationCenterLogicTest extends TestCase
         $this->assertArrayNotHasKey('created_by', $clean);
     }
 
+    public function testBackupFailurePayloadIsTypedBoundedAndSingleLine(): void
+    {
+        $clean = notificationSanitizePayload('backup_failed', [
+            'backup_type' => 'externalized',
+            'message' => "Upload failed\n" . str_repeat('x', 400),
+            'destination_password' => 'must-not-be-stored',
+            'task_id' => 42,
+        ]);
+
+        $this->assertSame('externalized', $clean['backup_type']);
+        $this->assertSame(300, mb_strlen($clean['message']));
+        $this->assertStringNotContainsString("\n", $clean['message']);
+        $this->assertArrayNotHasKey('destination_password', $clean);
+        $this->assertArrayNotHasKey('task_id', $clean);
+    }
+
     public function testPasswordExpiryMilestones(): void
     {
         $this->assertNull(notificationPasswordExpiryThreshold(15));
@@ -178,6 +195,12 @@ class NotificationCenterLogicTest extends TestCase
             notificationPasswordExpiryDedupeKey(1787500000, 7)
         );
         $this->assertSame('kb_article_created:42', notificationKbPublicationDedupeKey(42));
+        $this->assertSame('backup_failed:scheduled:91', notificationBackupFailureDedupeKey(91, 'scheduled'));
+        $this->assertSame('backup_failed:externalized:91', notificationBackupFailureDedupeKey(91, 'externalized'));
+        $this->assertSame(
+            'backup_failed:externalized:scheduler:2026-08-23:invalid_destination',
+            notificationBackupFailureDedupeKey('scheduler:2026-08-23:invalid_destination', 'externalized')
+        );
     }
 
     // -------------------------------------------------------------------
