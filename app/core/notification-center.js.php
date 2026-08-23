@@ -88,9 +88,10 @@ $lang = new Language($session->get('user-language') ?? 'english');
      *
      * Injects a bell with an unread badge in the top navbar. The inbox is
      * fed server-side from whitelisted user-target events (scan results,
-     * task completions, permission changes, keys ready) so it works with or
-     * without the WebSocket daemon; when WebSocket is up, the same events
-     * refresh the inbox live.
+     * password expiry, knowledge-base publications, task completions,
+     * permission changes, keys ready) so it works with or without the
+     * WebSocket daemon; when WebSocket is up, the same events refresh the
+     * inbox live.
      */
     (function () {
         'use strict'
@@ -123,14 +124,27 @@ $lang = new Language($session->get('user-language') ?? 'english');
             themeTask: <?php echo json_encode($lang->get('notification_theme_task'), JSON_UNESCAPED_UNICODE); ?>,
             themeItemEncryption: <?php echo json_encode($lang->get('notification_theme_item_encryption'), JSON_UNESCAPED_UNICODE); ?>,
             themePermission: <?php echo json_encode($lang->get('notification_theme_permission'), JSON_UNESCAPED_UNICODE); ?>,
+            themePassword: <?php echo json_encode($lang->get('notification_theme_password'), JSON_UNESCAPED_UNICODE); ?>,
+            themeKb: <?php echo json_encode($lang->get('notification_theme_kb'), JSON_UNESCAPED_UNICODE); ?>,
             securityNudge: <?php echo json_encode($lang->get('notification_type_security_nudge'), JSON_UNESCAPED_UNICODE); ?>,
             keysReady: <?php echo json_encode($lang->get('notification_type_user_keys_ready'), JSON_UNESCAPED_UNICODE); ?>,
             statusCompleted: <?php echo json_encode($lang->get('notification_type_task_completed'), JSON_UNESCAPED_UNICODE); ?>,
             statusFailed: <?php echo json_encode($lang->get('notification_type_task_failed'), JSON_UNESCAPED_UNICODE); ?>,
-            permissionChanged: <?php echo json_encode($lang->get('notification_type_folder_permission_changed'), JSON_UNESCAPED_UNICODE); ?>
+            permissionChanged: <?php echo json_encode($lang->get('notification_type_folder_permission_changed'), JSON_UNESCAPED_UNICODE); ?>,
+            passwordExpired: <?php echo json_encode($lang->get('notification_type_local_password_expired'), JSON_UNESCAPED_UNICODE); ?>,
+            passwordExpiresTomorrow: <?php echo json_encode($lang->get('notification_type_local_password_expires_tomorrow'), JSON_UNESCAPED_UNICODE); ?>,
+            passwordExpiring: <?php echo json_encode($lang->get('notification_type_local_password_expiring'), JSON_UNESCAPED_UNICODE); ?>,
+            kbArticleCreated: <?php echo json_encode($lang->get('notification_type_kb_article_created'), JSON_UNESCAPED_UNICODE); ?>
         }
 
-        var EVENT_TYPES = ['security_nudge', 'user_keys_ready', 'task_completed', 'folder_permission_changed']
+        var EVENT_TYPES = [
+            'security_nudge',
+            'user_keys_ready',
+            'task_completed',
+            'folder_permission_changed',
+            'local_password_expiring',
+            'kb_article_created'
+        ]
 
         // Type -> { theme(payload), detail(payload), link } presentation map.
         // theme  = short category shown on line 1 (next to the timestamp)
@@ -159,6 +173,24 @@ $lang = new Language($session->get('user-language') ?? 'english');
                 theme: function () { return L.themePermission },
                 detail: function () { return L.permissionChanged },
                 link: null
+            },
+            'local_password_expiring': {
+                theme: function () { return L.themePassword },
+                detail: function (p) {
+                    var days = parseInt(p.days_remaining, 10) || 0
+                    if (days <= 0) return L.passwordExpired
+                    if (days === 1) return L.passwordExpiresTomorrow
+                    return L.passwordExpiring.replace('%s', String(days))
+                },
+                link: 'index.php?page=profile'
+            },
+            'kb_article_created': {
+                theme: function () { return L.themeKb },
+                detail: function (p) { return L.kbArticleCreated.replace('%s', String(p.label || '')) },
+                link: function (p) {
+                    var kbId = parseInt(p.kb_id, 10) || 0
+                    return kbId > 0 ? 'index.php?page=kb&id=' + kbId : 'index.php?page=kb'
+                }
             }
         }
 
@@ -217,7 +249,8 @@ $lang = new Language($session->get('user-language') ?? 'english');
                 var detail = escapeText(renderer.detail(payload))
                 var when = row.created_at > 0 ? new Date(row.created_at * 1000).toLocaleString() : ''
                 var weight = row.is_read === 1 ? '' : ' font-weight-bold'
-                var href = renderer.link || '#'
+                var rendererLink = typeof renderer.link === 'function' ? renderer.link(payload) : renderer.link
+                var href = escapeText(rendererLink || '#')
                 html += '<div class="dropdown-divider"></div>' +
                     '<a href="' + href + '" class="dropdown-item tp-notification-row' + weight + '" data-id="' + parseInt(row.id, 10) + '">' +
                     '<div class="d-flex justify-content-between align-items-baseline">' +
