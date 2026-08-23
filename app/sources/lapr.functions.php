@@ -895,6 +895,111 @@ function laprUserCanReadFolder(int $folderId, SessionInterface $session): bool
 }
 
 /**
+ * Endpoint ids whose SSH credential item sits in a folder the user can read.
+ *
+ * Endpoint enrollment requires read access to the credential item's folder
+ * (laprStartTest / laprAddEndpoint), but nothing re-established that link
+ * afterwards: every operation driven by an endpoint reads its SSH credential
+ * as TP_USER, which bypasses per-user folder ACLs by design. Scoping the
+ * endpoint itself is what keeps that server-side key chain from becoming a
+ * way to reach hosts the caller was never authorized to touch.
+ *
+ * Fails closed: an endpoint whose credential item is gone, personal or
+ * inaccessible is not returned. Such an endpoint cannot rotate anyway.
+ *
+ * @param SessionInterface $session Current session
+ *
+ * @return array<int, int> Endpoint ids
+ */
+function laprGetUserAccessibleEndpointIds(SessionInterface $session): array
+{
+    if ((int) $session->get('user-admin') === 1) {
+        return [];
+    }
+
+    $accessible = array_values(array_unique(array_map(
+        'intval',
+        (array) ($session->get('user-accessible_folders') ?? [])
+    )));
+    if ($accessible === []) {
+        return [];
+    }
+
+    $rows = DB::query(
+        'SELECT e.id
+         FROM ' . prefixTable('lapr_endpoints') . ' AS e
+         INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = e.ssh_credential_source
+         WHERE e.status != %s
+           AND i.perso = 0
+           AND i.inactif = 0
+           AND i.deleted_at IS NULL
+           AND i.id_tree IN %li',
+        'deleted',
+        $accessible
+    );
+
+    return array_map(static fn (array $row): int => (int) $row['id'], $rows);
+}
+
+/**
+ * Whether a LAPR background task was started by the given user.
+ *
+ * Task ids are a sequential AUTO_INCREMENT, so polling handlers must bind the
+ * result to the operator who queued the task. Scheduler-driven rotations carry
+ * TP_USER_ID as author and are never pollable by a human.
+ *
+ * @param mixed $arguments JSON arguments column of background_tasks
+ * @param int   $userId    Acting user id
+ *
+ * @return bool
+ */
+function laprTaskBelongsToUser($arguments, int $userId): bool
+{
+    if ($userId <= 0) {
+        return false;
+    }
+
+    $decoded = json_decode((string) ($arguments ?? ''), true);
+    if (is_array($decoded) === false || isset($decoded['author']) === false) {
+        return false;
+    }
+
+    return (int) $decoded['author'] === $userId;
+}
+
+/**
+ * Whether the user may drive operations on an endpoint (rotate, discover,
+ * attach an account, reset). Mirrors the read check applied to the credential
+ * item at enrollment time.
+ *
+ * @param int              $endpointId Endpoint id
+ * @param SessionInterface $session    Current session
+ *
+ * @return bool
+ */
+function laprUserCanUseEndpoint(int $endpointId, SessionInterface $session): bool
+{
+    if ($endpointId <= 0 || (int) $session->get('user-admin') === 1) {
+        return false;
+    }
+
+    $credentialFolderId = DB::queryFirstField(
+        'SELECT i.id_tree
+         FROM ' . prefixTable('lapr_endpoints') . ' AS e
+         INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = e.ssh_credential_source
+         WHERE e.id = %i AND e.status != %s AND i.perso = 0
+           AND i.inactif = 0 AND i.deleted_at IS NULL',
+        $endpointId,
+        'deleted'
+    );
+    if ($credentialFolderId === null) {
+        return false;
+    }
+
+    return laprUserCanReadFolder((int) $credentialFolderId, $session);
+}
+
+/**
  * Load the active LAPR roles attached to a set of TeamPass items.
  *
  * A vault item can be the password target of one managed account, the SSH

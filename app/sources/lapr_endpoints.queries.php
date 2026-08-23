@@ -103,7 +103,7 @@ $userId = (int) $session->get('user-id');
 
 switch ($post_type) {
     case 'list_endpoints':
-        laprListEndpoints($lang, $SETTINGS);
+        laprListEndpoints($session, $lang, $SETTINGS);
         break;
     case 'search_credential_items':
         laprSearchCredentialItems($dataReceived, $session, $lang);
@@ -112,19 +112,19 @@ switch ($post_type) {
         laprStartTest($dataReceived, $session, $SETTINGS, $userId, $lang);
         break;
     case 'test_status':
-        laprTestStatus($dataReceived, $lang);
+        laprTestStatus($dataReceived, $userId, $lang);
         break;
     case 'add_endpoint':
         laprAddEndpoint($dataReceived, $session, $userId, $SETTINGS, $lang);
         break;
     case 'delete_endpoint':
-        laprDeleteEndpoint($dataReceived, $userId, $lang);
+        laprDeleteEndpoint($dataReceived, $session, $userId, $lang);
         break;
     case 'restore_endpoint':
-        laprRestoreEndpoint($dataReceived, $userId, $lang);
+        laprRestoreEndpoint($dataReceived, $session, $userId, $lang);
         break;
     case 'trust_hostkey':
-        laprTrustHostkey($dataReceived, $userId, $lang);
+        laprTrustHostkey($dataReceived, $session, $userId, $lang);
         break;
     default:
         echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_unknown_action')], 'encode');
@@ -133,19 +133,29 @@ switch ($post_type) {
 /**
  * List all non-deleted endpoints for the DataTable.
  *
- * @param Language            $lang     Language helper
+ * @param SessionInterface     $session  Current session
+ * @param Language             $lang     Language helper
  * @param array<string, mixed> $settings TeamPass regional settings
  * @return void
  */
-function laprListEndpoints(Language $lang, array $settings): void
+function laprListEndpoints(SessionInterface $session, Language $lang, array $settings): void
 {
+    // The hostname and SSH username of an endpoint are infrastructure details:
+    // only disclose them to operators who can read its SSH credential.
+    $endpointIds = laprGetUserAccessibleEndpointIds($session);
+    if ($endpointIds === []) {
+        echo prepareExchangedData(['error' => false, 'data' => []], 'encode');
+        return;
+    }
+
     $rows = DB::query(
         'SELECT id, label, hostname, port, ssh_username, ssh_auth_method, status,
                 ssh_hostkey_verified, last_check_at, last_error, capabilities, os_info
          FROM ' . prefixTable('lapr_endpoints') . '
-         WHERE status != %s
+         WHERE status != %s AND id IN %li
          ORDER BY label ASC',
-        'deleted'
+        'deleted',
+        $endpointIds
     );
 
     $data = [];
@@ -354,11 +364,12 @@ function laprStartTest(array $data, $session, array $SETTINGS, int $userId, Lang
  * Poll a running SSH test task. On success, returns an HMAC-signed snapshot the
  * client sends back at save time (test→save integrity).
  *
- * @param array    $data Decoded client payload
- * @param Language $lang Language helper
+ * @param array    $data   Decoded client payload
+ * @param int      $userId Acting user id
+ * @param Language $lang   Language helper
  * @return void
  */
-function laprTestStatus(array $data, Language $lang): void
+function laprTestStatus(array $data, int $userId, Language $lang): void
 {
     $taskId = (int) ($data['task_id'] ?? 0);
     if ($taskId <= 0) {
@@ -373,7 +384,9 @@ function laprTestStatus(array $data, Language $lang): void
         $taskId,
         'lapr_ssh_test'
     );
-    if ($task === null) {
+    // Task ids are sequential: bind the result to the operator who started the
+    // test, or polling by id would disclose another operator's enrollment data.
+    if ($task === null || laprTaskBelongsToUser($task['arguments'] ?? null, $userId) === false) {
         echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_task_not_found')], 'encode');
         return;
     }
@@ -588,16 +601,22 @@ function laprAddEndpoint(array $data, SessionInterface $session, int $userId, ar
 /**
  * Soft-delete an endpoint and pause its managed accounts.
  *
- * @param array    $data   Decoded client payload
- * @param int      $userId Acting user id
- * @param Language $lang   Language helper
+ * @param array            $data    Decoded client payload
+ * @param SessionInterface $session Current session
+ * @param int              $userId  Acting user id
+ * @param Language         $lang    Language helper
  * @return void
  */
-function laprDeleteEndpoint(array $data, int $userId, Language $lang): void
+function laprDeleteEndpoint(array $data, SessionInterface $session, int $userId, Language $lang): void
 {
     $endpointId = (int) ($data['id'] ?? 0);
     if ($endpointId <= 0) {
         echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_invalid_endpoint')], 'encode');
+        return;
+    }
+
+    if (laprUserCanUseEndpoint($endpointId, $session) === false) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
         return;
     }
 
@@ -630,16 +649,22 @@ function laprDeleteEndpoint(array $data, int $userId, Language $lang): void
 /**
  * Restore a soft-deleted endpoint (accounts stay paused until manually resumed).
  *
- * @param array    $data   Decoded client payload
- * @param int      $userId Acting user id
- * @param Language $lang   Language helper
+ * @param array            $data    Decoded client payload
+ * @param SessionInterface $session Current session
+ * @param int              $userId  Acting user id
+ * @param Language         $lang    Language helper
  * @return void
  */
-function laprRestoreEndpoint(array $data, int $userId, Language $lang): void
+function laprRestoreEndpoint(array $data, SessionInterface $session, int $userId, Language $lang): void
 {
     $endpointId = (int) ($data['id'] ?? 0);
     if ($endpointId <= 0) {
         echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_invalid_endpoint')], 'encode');
+        return;
+    }
+
+    if (laprUserCanUseEndpoint($endpointId, $session) === false) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
         return;
     }
 
@@ -680,12 +705,13 @@ function laprRestoreEndpoint(array $data, int $userId, Language $lang): void
  * Trust a new host key after a mismatch (re-TOFU). Requires a verified test
  * snapshot carrying the new fingerprint.
  *
- * @param array    $data   Decoded client payload
- * @param int      $userId Acting user id
- * @param Language $lang   Language helper
+ * @param array            $data    Decoded client payload
+ * @param SessionInterface $session Current session
+ * @param int              $userId  Acting user id
+ * @param Language         $lang    Language helper
  * @return void
  */
-function laprTrustHostkey(array $data, int $userId, Language $lang): void
+function laprTrustHostkey(array $data, SessionInterface $session, int $userId, Language $lang): void
 {
     $endpointId = (int) ($data['id'] ?? 0);
     $snapshot = (array) ($data['snapshot'] ?? []);
@@ -693,6 +719,13 @@ function laprTrustHostkey(array $data, int $userId, Language $lang): void
 
     if ($endpointId <= 0 || $snapshotSig === '' || laprVerifySnapshot($snapshot, $snapshotSig) === false) {
         echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_test_required_before_save')], 'encode');
+        return;
+    }
+
+    // Accepting a new host key is a trust decision on the endpoint: restrict it
+    // to operators who can read the SSH credential that will be sent to it.
+    if (laprUserCanUseEndpoint($endpointId, $session) === false) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
         return;
     }
 
