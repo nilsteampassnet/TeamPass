@@ -93,7 +93,7 @@ $userId = (int) $session->get('user-id');
 
 switch ($post_type) {
     case 'list_policies':
-        laprListPolicies();
+        laprListPolicies($lang);
         break;
     case 'create_policy':
         laprCreatePolicy($dataReceived, $userId, $lang);
@@ -108,15 +108,16 @@ switch ($post_type) {
         laprPreviewPassword($dataReceived, $lang);
         break;
     default:
-        echo prepareExchangedData(['error' => true, 'message' => 'Unknown action'], 'encode');
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_unknown_action')], 'encode');
 }
 
 /**
  * List all rotation policies (presets first), with in-use count.
  *
+ * @param Language $lang Language helper
  * @return void
  */
-function laprListPolicies(): void
+function laprListPolicies(Language $lang): void
 {
     $rows = DB::query(
         'SELECT p.id, p.label, p.frequency_days, p.password_length, p.use_uppercase,
@@ -131,7 +132,11 @@ function laprListPolicies(): void
     foreach ($rows as $r) {
         $data[] = [
             'id' => (int) $r['id'],
-            'label' => $r['label'],
+            'label' => laprPolicyDisplayName(
+                (string) $r['label'],
+                (int) $r['is_preset'] === 1,
+                $lang
+            ),
             'frequency_days' => (int) $r['frequency_days'],
             'password_length' => (int) $r['password_length'],
             'use_uppercase' => (int) $r['use_uppercase'],
@@ -223,7 +228,7 @@ function laprUpdatePolicy(array $data, Language $lang): void
 {
     $policyId = (int) ($data['id'] ?? 0);
     if ($policyId <= 0) {
-        echo prepareExchangedData(['error' => true, 'message' => 'Invalid policy'], 'encode');
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_invalid_policy')], 'encode');
         return;
     }
 
@@ -232,7 +237,7 @@ function laprUpdatePolicy(array $data, Language $lang): void
         $policyId
     );
     if ($policy === null) {
-        echo prepareExchangedData(['error' => true, 'message' => 'Policy not found'], 'encode');
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_policy_not_found')], 'encode');
         return;
     }
     if ((int) $policy['is_preset'] === 1) {
@@ -282,7 +287,7 @@ function laprDeletePolicy(array $data, Language $lang): void
 {
     $policyId = (int) ($data['id'] ?? 0);
     if ($policyId <= 0) {
-        echo prepareExchangedData(['error' => true, 'message' => 'Invalid policy'], 'encode');
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_invalid_policy')], 'encode');
         return;
     }
 
@@ -291,7 +296,7 @@ function laprDeletePolicy(array $data, Language $lang): void
         $policyId
     );
     if ($policy === null) {
-        echo prepareExchangedData(['error' => true, 'message' => 'Policy not found'], 'encode');
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_policy_not_found')], 'encode');
         return;
     }
     if ((int) $policy['is_preset'] === 1) {

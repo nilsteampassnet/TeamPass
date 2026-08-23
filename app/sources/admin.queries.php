@@ -145,7 +145,8 @@ switch ($post_type) {
         $laprTargetId = (int) ($laprPermData['user_id'] ?? 0);
         $laprGranted = (int) ($laprPermData['granted'] ?? 0) === 1 ? 1 : 0;
 
-        // Only non-admin, non-deleted users can be targeted (admins have LAPR by default).
+        // Only non-admin, non-deleted users can receive operational LAPR access.
+        // Administrators configure the module through admin_lapr instead.
         $laprTarget = DB::queryFirstRow(
             'SELECT id, admin FROM ' . prefixTable('users') . ' WHERE id = %i AND deleted_at IS NULL',
             $laprTargetId
@@ -1652,6 +1653,36 @@ switch ($post_type) {
             }
         }
 
+        // A disabled LAPR module must not leave interactive or scheduled work
+        // waiting to run later. Pending tasks are completed with a neutral,
+        // explicit result; a worker already running performs its own fresh
+        // switch check immediately before any remote password mutation.
+        if ($post_field === 'lapr_enabled' && (int) $post_value !== 1) {
+            DB::update(
+                prefixTable('background_tasks'),
+                [
+                    'is_in_progress' => -1,
+                    'finished_at' => $timestamp,
+                    'updated_at' => $timestamp,
+                    // Closed without ever running: not a success, not a failure.
+                    // 'failed' would raise a LAPR Health alert for an administrator
+                    // action, 'completed' would show up as a success on the Tasks page.
+                    'status' => 'cancelled',
+                    'output' => json_encode([
+                        'success' => false,
+                        'error_code' => 'ERR_LAPR_DISABLED',
+                        'message' => 'LAPR_DISABLED',
+                    ], JSON_UNESCAPED_SLASHES),
+                ],
+                'process_type IN %ls
+                 AND is_in_progress = 0
+                 AND (finished_at IS NULL OR finished_at = %s OR finished_at = %s)',
+                ['lapr_ssh_test', 'lapr_discover', 'lapr_rotation'],
+                '',
+                '0'
+            );
+        }
+
         // Keep local settings array aligned with the saved value
         $SETTINGS[$post_field] = $post_value;
         if ($post_field === 'enable_local_password_recovery') {
@@ -2410,6 +2441,30 @@ case 'get_operational_statistics':
             $topItemsLimit
         );
 
+        // Loaded here only: the LAPR reporting helpers are ~1400 lines of function
+        // definitions that no other admin action needs.
+        require_once __DIR__ . '/lapr.functions.php';
+        require_once __DIR__ . '/lapr.monitoring.functions.php';
+
+        try {
+            $laprStatistics = laprBuildOperationalStatistics(
+                $SETTINGS,
+                $lang,
+                $fromTs,
+                $nowTs,
+                $granularity
+            );
+        } catch (Throwable $e) {
+            error_log('LAPR operational statistics failed: ' . $e->getMessage());
+            $laprStatistics = laprMonitoringEmptySnapshot(
+                (int) ($SETTINGS['lapr_enabled'] ?? 0) === 1,
+                'query_failed'
+            );
+            $laprStatistics['error'] = true;
+            $laprStatistics['overall']['status'] = 'danger';
+            $laprStatistics['overall']['reason'] = 'query_failed';
+        }
+
         // Prepare response
         $response = array(
             'error' => false,
@@ -2514,6 +2569,7 @@ case 'get_operational_statistics':
                 'usage_by_perso' => $usageByPerso,
                 'top_copied' => $topItemsCopied,
             ),
+            'lapr' => $laprStatistics,
         );
 
         echo prepareExchangedData($response, 'encode');

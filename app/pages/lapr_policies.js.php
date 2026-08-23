@@ -38,6 +38,10 @@ $lang = new Language($session->get('user-language') ?? 'english');
 // and a PHP tag closing a line makes PHP swallow the newline, concatenating the
 // next statement onto the generated one.
 $laprPolJsJsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE;
+$laprPolDataTablesLang = teampassDataTablesLanguage(
+    (string) ($session->get('user-language') ?? 'english'),
+    $lang->get('lapr_no_policies')
+);
 $laprPolicyTranslations = [
     'confirmDelete' => $lang->get('please_confirm_deletion'),
     'caution' => $lang->get('caution'),
@@ -46,6 +50,7 @@ $laprPolicyTranslations = [
     'addPolicy' => $lang->get('lapr_add_policy'),
     'editPolicy' => $lang->get('lapr_edit_policy'),
     'preset' => $lang->get('lapr_preset'),
+    'readOnly' => $lang->get('read_only'),
     'errorGeneric' => $lang->get('error'),
 ];
 ?>
@@ -57,6 +62,7 @@ const laprPoliciesUrl = 'sources/lapr_policies.queries.php'
 let laprPoliciesTable = null
 
 const laprPolLang = <?php echo json_encode($laprPolicyTranslations, $laprPolJsJsonFlags); ?>;
+const laprPolDataTablesLang = <?php echo json_encode($laprPolDataTablesLang, $laprPolJsJsonFlags); ?>;
 
 function laprPolPost(type, payload, onDone) {
   $.post(laprPoliciesUrl, {
@@ -88,7 +94,11 @@ function laprLoadPolicies() {
         p.use_digits ? '0-9' : '',
         p.use_symbols ? '#!@' : ''
       ].filter(Boolean).join(' ')
-      const label = DOMPurify.sanitize(p.label) + (p.is_preset ? ' <span class="badge badge-info">' + laprPolLang.preset + '</span>' : '')
+      const presetBadge = p.is_preset
+        ? ' <span class="badge badge-info">' + laprPolLang.preset + '</span>'
+        : ''
+      const labelContent = DOMPurify.sanitize(p.label) + presetBadge
+      const label = p.is_preset ? '<span class="text-nowrap">' + labelContent + '</span>' : labelContent
       return [
         label,
         p.frequency_days,
@@ -104,7 +114,7 @@ function laprLoadPolicies() {
       laprPoliciesTable = $('#lapr-policies-table').DataTable({
         data: rows,
         columnDefs: [{ orderable: false, targets: 5 }],
-        language: { emptyTable: 'No policies yet' }
+        language: laprPolDataTablesLang
       })
     }
   })
@@ -112,7 +122,7 @@ function laprLoadPolicies() {
 
 function laprPolicyActions(p) {
   if (p.is_preset) {
-    return '<span class="text-muted small">read-only</span>'
+    return '<span class="text-muted small">' + DOMPurify.sanitize(laprPolLang.readOnly) + '</span>'
   }
   return '<button class="btn btn-xs btn-secondary lapr-edit-policy" data-id="' + p.id + '"><i class="fas fa-pen"></i></button> ' +
     '<button class="btn btn-xs btn-danger lapr-delete-policy" data-id="' + p.id + '"><i class="fas fa-trash"></i></button>'

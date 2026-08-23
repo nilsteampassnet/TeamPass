@@ -531,6 +531,7 @@ class DatabaseInstaller
             array('admin', 'lapr_enabled', '0'),
             array('admin', 'lapr_allowlist_enabled', '0'),
             array('admin', 'lapr_allowlist', ''),
+            array('admin', 'lapr_allow_self_management', '0'),
             array('admin', 'lapr_ssh_connect_timeout', '10'),
             array('admin', 'lapr_rate_limit_max_attempts', '5'),
             array('admin', 'lapr_rate_limit_window_seconds', '60'),
@@ -1673,7 +1674,8 @@ class DatabaseInstaller
             `error_message` TEXT NULL DEFAULT NULL,
             PRIMARY KEY (`increment_id`),
             INDEX idx_finished (`finished_at`),
-            INDEX idx_progress (`is_in_progress`)
+            INDEX idx_progress (`is_in_progress`),
+            INDEX idx_process_item (`process_type`, `item_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }

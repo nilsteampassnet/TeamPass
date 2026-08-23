@@ -34,38 +34,59 @@ use TeampassClasses\Language\Language;
 
 $session = SessionManager::getSession();
 $lang = new Language($session->get('user-language') ?? 'english');
+$laprEndpointJsJsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE;
+$laprEndpointDataTablesLang = teampassDataTablesLanguage(
+    (string) ($session->get('user-language') ?? 'english'),
+    $lang->get('lapr_no_endpoints')
+);
+$laprEndpointTranslations = [
+    'testInProgress' => $lang->get('lapr_test_in_progress'),
+    'testSuccess' => $lang->get('lapr_test_success'),
+    'testFailed' => $lang->get('lapr_test_failed'),
+    'testRequired' => $lang->get('lapr_test_required_before_save'),
+    'cannotRotate' => $lang->get('lapr_endpoint_cannot_rotate'),
+    'confirmDelete' => $lang->get('please_confirm_deletion'),
+    'caution' => $lang->get('caution'),
+    'deleteLabel' => $lang->get('delete'),
+    'closeLabel' => $lang->get('close'),
+    'hostkeyFingerprint' => $lang->get('lapr_hostkey_fingerprint'),
+    'hostkeyTofu' => $lang->get('lapr_hostkey_tofu_note'),
+    'hostkeyUnchecked' => $lang->get('lapr_no_hostkey_check'),
+    'errorGeneric' => $lang->get('error'),
+    'searchItemPlaceholder' => $lang->get('lapr_search_item_placeholder'),
+    'remediationTitle' => $lang->get('lapr_remediation_title'),
+    'remediationIntro' => $lang->get('lapr_remediation_intro'),
+    'remediationUnknownOs' => $lang->get('lapr_remediation_unknown_os'),
+    'remediationInstallPackages' => $lang->get('lapr_remediation_install_packages'),
+    'remediationFromTeamPass' => $lang->get('lapr_remediation_from_teampass'),
+    'remediationFromEndpoint' => $lang->get('lapr_remediation_from_endpoint'),
+    'remediationCheckCommands' => $lang->get('lapr_remediation_check_commands'),
+    'remediationPrerequisites' => $lang->get('lapr_remediation_prerequisites'),
+    'remediationRootNoSudo' => $lang->get('lapr_remediation_root_no_sudo'),
+    'remediationGrantPrivilege' => $lang->get('lapr_remediation_grant_privilege'),
+    'detectedOs' => $lang->get('lapr_detected_os'),
+    'copyCommands' => $lang->get('lapr_copy_commands'),
+    'commandsCopied' => $lang->get('lapr_commands_copied'),
+    'statusActive' => $lang->get('lapr_status_active'),
+    'statusDisabled' => $lang->get('lapr_status_disabled'),
+    'statusError' => $lang->get('lapr_status_error'),
+    'statusUnreachable' => $lang->get('lapr_status_unreachable'),
+    'statusDeleted' => $lang->get('lapr_status_deleted'),
+    'selfManagementAckRequired' => $lang->get('lapr_self_management_ack_required'),
+];
 ?>
 <script>
 'use strict'
 
-const laprSessionKey = <?php echo json_encode((string) $session->get('key'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+const laprSessionKey = <?php echo json_encode((string) $session->get('key'), $laprEndpointJsJsonFlags); ?>;
 const laprEndpointsUrl = 'sources/lapr_endpoints.queries.php'
 let laprEndpointsTable = null
 let laprTestPollTimer = null
 let laprVerifiedSnapshot = null
 let laprRemediationCommands = ''
 
-const laprLang = {
-  testInProgress: <?php echo json_encode($lang->get('lapr_test_in_progress'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
-  testSuccess: <?php echo json_encode($lang->get('lapr_test_success'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
-  testFailed: <?php echo json_encode($lang->get('lapr_test_failed'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
-  testRequired: <?php echo json_encode($lang->get('lapr_test_required_before_save'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
-  cannotRotate: <?php echo json_encode($lang->get('lapr_endpoint_cannot_rotate'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
-  confirmDelete: <?php echo json_encode($lang->get('please_confirm_deletion'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
-  caution: <?php echo json_encode($lang->get('caution'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
-  deleteLabel: <?php echo json_encode($lang->get('delete'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
-  closeLabel: <?php echo json_encode($lang->get('close'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
-  hostkeyFingerprint: <?php echo json_encode($lang->get('lapr_hostkey_fingerprint'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
-  hostkeyTofu: <?php echo json_encode($lang->get('lapr_hostkey_tofu_note'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
-  errorGeneric: <?php echo json_encode($lang->get('error'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
-  searchItemPlaceholder: <?php echo json_encode($lang->get('lapr_search_item_placeholder'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
-  remediationTitle: <?php echo json_encode($lang->get('lapr_remediation_title'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
-  remediationIntro: <?php echo json_encode($lang->get('lapr_remediation_intro'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
-  remediationUnknownOs: <?php echo json_encode($lang->get('lapr_remediation_unknown_os'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
-  detectedOs: <?php echo json_encode($lang->get('lapr_detected_os'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
-  copyCommands: <?php echo json_encode($lang->get('lapr_copy_commands'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
-  commandsCopied: <?php echo json_encode($lang->get('lapr_commands_copied'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>
-}
+const laprLang = <?php echo json_encode($laprEndpointTranslations, $laprEndpointJsJsonFlags); ?>;
+const laprEndpointDataTablesLang = <?php echo json_encode($laprEndpointDataTablesLang, $laprEndpointJsJsonFlags); ?>;
 
 function laprHtml(value) {
   return $('<div>').text(value === null || value === undefined ? '' : String(value)).html()
@@ -83,7 +104,7 @@ function laprPackageCommands(osFamily) {
     suse: ['sudo zypper install -y shadow sudo'],
     arch: ['sudo pacman -S --needed shadow sudo'],
     alpine: ['sudo apk add shadow sudo'],
-    generic: ['# Install the packages providing chpasswd and sudo with your OS package manager']
+    generic: ['# ' + laprLang.remediationInstallPackages]
   }
   return commands[osFamily] || commands.generic
 }
@@ -107,11 +128,11 @@ function laprBuildConnectionRemediation(errorCode) {
   const hostname = /^[a-z0-9_.:-]+$/i.test(form.hostname) ? form.hostname : '<hostname>'
   const username = laprSafeSshUsername()
   const commands = [
-    '# From the TeamPass server',
+    '# ' + laprLang.remediationFromTeamPass,
     'getent hosts ' + hostname,
     'nc -vz ' + hostname + ' ' + form.port,
     '',
-    '# From the endpoint console',
+    '# ' + laprLang.remediationFromEndpoint,
     'sudo systemctl status ssh || sudo systemctl status sshd',
     'sudo ss -lntp',
     'id ' + username
@@ -138,19 +159,19 @@ function laprBuildCapabilityRemediation(data) {
     generic: 'Linux'
   }
   const commands = [
-    '# Check the required commands',
+    '# ' + laprLang.remediationCheckCommands,
     'command -v chpasswd',
     'command -v sudo',
     '',
-    '# ' + familyLabels[family] + ' prerequisites (only if a command above is missing)'
+    '# ' + familyLabels[family] + ' — ' + laprLang.remediationPrerequisites
   ].concat(laprPackageCommands(family))
 
   if (osInfo.is_root === true) {
-    commands.push('', '# Root requires no sudoers rule', 'chpasswd </dev/null; echo $?')
+    commands.push('', '# ' + laprLang.remediationRootNoSudo, 'chpasswd </dev/null; echo $?')
   } else {
     commands.push(
       '',
-      '# Grant only the privilege LAPR needs',
+      '# ' + laprLang.remediationGrantPrivilege,
       'CHPASSWD_PATH="$(command -v chpasswd)"',
       'test -n "$CHPASSWD_PATH" || { echo "chpasswd not found" >&2; exit 1; }',
       'printf \'%s\\n\' \'' + username + ' ALL=(root) NOPASSWD: \'"$CHPASSWD_PATH" | sudo tee /etc/sudoers.d/teampass-lapr >/dev/null',
@@ -192,8 +213,13 @@ function laprLoadEndpoints() {
         DOMPurify.sanitize(ep.hostname) + ':' + ep.port,
         DOMPurify.sanitize(ep.ssh_username),
         DOMPurify.sanitize(ep.os_name || '') + (ep.is_root ? ' <span class="badge badge-secondary">root</span>' : (ep.has_sudo ? ' <span class="badge badge-secondary">sudo</span>' : '')),
-        laprStatusBadge(ep.status) + (ep.hostkey_verified === 0 ? ' <span class="badge badge-warning">no host key check</span>' : ''),
-        DOMPurify.sanitize(ep.last_check_at || '—'),
+        laprStatusBadge(ep.status) + (ep.hostkey_verified === 0
+          ? ' <span class="badge badge-warning">' + DOMPurify.sanitize(laprLang.hostkeyUnchecked) + '</span>'
+          : ''),
+        {
+          display: DOMPurify.sanitize(ep.last_check_at || '—'),
+          timestamp: Number(ep.last_check_at_ts || 0)
+        },
         laprEndpointActions(ep)
       ]
     })
@@ -202,8 +228,16 @@ function laprLoadEndpoints() {
     } else {
       laprEndpointsTable = $('#lapr-endpoints-table').DataTable({
         data: rows,
-        columnDefs: [{ orderable: false, targets: 6 }],
-        language: { emptyTable: 'No endpoints yet' }
+        columnDefs: [
+          {
+            targets: 5,
+            render: function (data, type) {
+              return type === 'sort' || type === 'type' ? data.timestamp : data.display
+            }
+          },
+          { orderable: false, targets: 6 }
+        ],
+        language: laprEndpointDataTablesLang
       })
     }
   })
@@ -211,7 +245,15 @@ function laprLoadEndpoints() {
 
 function laprStatusBadge(status) {
   const map = { active: 'success', disabled: 'secondary', error: 'danger', unreachable: 'warning', deleted: 'dark' }
-  return '<span class="badge badge-' + (map[status] || 'secondary') + '">' + DOMPurify.sanitize(status) + '</span>'
+  const labels = {
+    active: laprLang.statusActive,
+    disabled: laprLang.statusDisabled,
+    error: laprLang.statusError,
+    unreachable: laprLang.statusUnreachable,
+    deleted: laprLang.statusDeleted
+  }
+  return '<span class="badge badge-' + (map[status] || 'secondary') + '">' +
+    DOMPurify.sanitize(labels[status] || status) + '</span>'
 }
 
 function laprEndpointActions(ep) {
@@ -225,10 +267,22 @@ function laprOpenEndpointModal() {
   $('#lapr-ep-auth-method').val('password')
   $('#lapr-ep-skip-hostkey').prop('checked', false)
   $('#lapr-ep-skip-hostkey-warning').hide()
+  $('#lapr-ep-self-management-ack').prop('checked', false)
+  $('#lapr-ep-self-management-warning').hide()
   $('#lapr-ep-test-result').hide().html('')
   $('#lapr-ep-save-btn').prop('disabled', true)
   laprInitCredentialPicker()
   $('#modal_lapr_endpoint').modal('show')
+}
+
+function laprRefreshEndpointSaveState() {
+  const snapshot = laprVerifiedSnapshot && laprVerifiedSnapshot.snapshot
+    ? laprVerifiedSnapshot.snapshot
+    : null
+  const canRotate = !!(snapshot && snapshot.can_rotate === true)
+  const isSelfTarget = !!(snapshot && snapshot.self_target && snapshot.self_target.is_self === true)
+  const selfTargetAccepted = !isSelfTarget || $('#lapr-ep-self-management-ack').is(':checked')
+  $('#lapr-ep-save-btn').prop('disabled', !canRotate || !selfTargetAccepted)
 }
 
 /**
@@ -351,6 +405,9 @@ function laprPollTest(taskId) {
       return
     }
     laprVerifiedSnapshot = { snapshot: data.snapshot, snapshot_sig: data.snapshot_sig }
+    const isSelfTarget = !!(data.self_target && data.self_target.is_self === true)
+    $('#lapr-ep-self-management-ack').prop('checked', false)
+    $('#lapr-ep-self-management-warning').toggle(isSelfTarget)
     let html = '<div class="text-success"><i class="fas fa-check mr-1"></i>' + laprLang.testSuccess + '</div>'
     html += '<div class="small mt-1"><strong>' + laprLang.hostkeyFingerprint + ':</strong> <code>' + DOMPurify.sanitize(data.fingerprint || '') + '</code></div>'
     html += '<div class="small text-muted">' + laprLang.hostkeyTofu + '</div>'
@@ -359,7 +416,7 @@ function laprPollTest(taskId) {
       html += laprBuildCapabilityRemediation(data)
     }
     $('#lapr-ep-test-result').html(html)
-    $('#lapr-ep-save-btn').prop('disabled', data.can_rotate !== true)
+    laprRefreshEndpointSaveState()
   })
 }
 
@@ -369,7 +426,13 @@ function laprSaveEndpoint() {
     return
   }
   const form = laprCollectEndpointForm()
+  const isSelfTarget = !!(laprVerifiedSnapshot.snapshot.self_target && laprVerifiedSnapshot.snapshot.self_target.is_self === true)
+  if (isSelfTarget && !$('#lapr-ep-self-management-ack').is(':checked')) {
+    toastr.warning(laprLang.selfManagementAckRequired)
+    return
+  }
   form.skip_hostkey_verification = $('#lapr-ep-skip-hostkey').is(':checked') ? 1 : 0
+  form.self_management_ack = $('#lapr-ep-self-management-ack').is(':checked') ? 1 : 0
   form.snapshot = laprVerifiedSnapshot.snapshot
   form.snapshot_sig = laprVerifiedSnapshot.snapshot_sig
   laprPost('add_endpoint', form, function (data) {
@@ -410,6 +473,7 @@ $(document).ready(function () {
   $('#lapr-ep-skip-hostkey').on('change', function () {
     $('#lapr-ep-skip-hostkey-warning').toggle($(this).is(':checked'))
   })
+  $('#lapr-ep-self-management-ack').on('change', laprRefreshEndpointSaveState)
   $(document).on('click', '#lapr-copy-remediation', function () {
     if (!laprRemediationCommands) { return }
     if (navigator.clipboard && window.isSecureContext) {

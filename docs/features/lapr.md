@@ -38,6 +38,7 @@ Once enabled, an **LAPR** section appears directly below **Passwords** for non-a
 | Enable LAPR module | `lapr_enabled` | `0` |
 | Restrict endpoints to an allowlist | `lapr_allowlist_enabled` | `0` |
 | Allowed hostnames | `lapr_allowlist` | *(empty)* |
+| Allow TeamPass host self-management | `lapr_allow_self_management` | `0` |
 | SSH connect timeout (seconds) | `lapr_ssh_connect_timeout` | `10` |
 | Rate limit: max attempts / window / block | `lapr_rate_limit_*` | `5 / 60s / 300s` |
 | Enable automatic rotations | `lapr_scheduler_enabled` | `0` |
@@ -60,6 +61,15 @@ Once enabled, an **LAPR** section appears directly below **Passwords** for non-a
    - checks that the account can actually change passwords — it must be **root** or have **passwordless sudo**. If neither, enrollment is refused (every future rotation would fail).
 4. On success, click **Save**. The tested parameters are protected by a signed snapshot so the saved endpoint always matches what was tested.
 
+The same normalized hostname/IP and SSH port can be enrolled only once. Credential relationships are also checked server-side both before the SSH test and again before saving:
+
+- a password-based SSH credential item belongs to one endpoint only because synchronizing a rotated connection password would invalidate every other endpoint still using the old value;
+- a private-key credential item may be shared by several key-authenticated endpoints;
+- the same item cannot be mixed between password and key authentication;
+- an item already managed as a Linux password cannot later become an endpoint credential.
+
+LAPR also detects targets that certainly or probably host the current TeamPass instance. Self-management is blocked by default. An administrator may enable the high-risk **Allow the TeamPass host to be managed by LAPR** setting, but enrollment still requires an explicit acknowledgement. These endpoints remain manual-rotation-only and are never selected by the scheduler.
+
 > ⚠️ **Store SSH credential items in a tightly restricted folder.** Anyone who can read that folder obtains the endpoint's SSH credential — often root. This folder is part of your crown jewels.
 
 > ℹ️ The host key fingerprint format is **TeamPass-internal** and will not match `ssh-keygen -lf`. Enroll from a trusted network segment; TOFU then protects against later host-key changes.
@@ -72,15 +82,21 @@ Once enabled, an **LAPR** section appears directly below **Passwords** for non-a
 
 - Pick the endpoint, then search for an eligible TeamPass item (writable by you, non-personal, active, with a login, not already managed), then select a policy. The picker searches by item label or login and displays the folder path when labels are ambiguous.
 - The item's `login` must be a **valid Linux username**. Free-text logins that aren't valid usernames are rejected.
-- **Discover accounts** scans the endpoint (`getent passwd`) and lists real login accounts to help you pick which to manage. **Manage this account** opens the same form with the discovered endpoint locked and the item search restricted to the discovered Linux login.
-- Removing a managed account is a soft deletion so its audit history is preserved. Adding the same TeamPass item again safely reactivates the existing LAPR row and resets its scheduling/retry state.
+- **Discover accounts** scans the endpoint (`getent passwd`) and lists the real `root` account plus regular login accounts with UID 1000 or greater. Reserved system accounts and accounts using `nologin` or `false` are excluded. This is a discovery filter, not an eligibility rule: on a host with a lower `UID_MIN` (older RHEL derivatives used 500), an account below 1000 simply does not appear in the list and is still added manually through the item picker, which validates the username rather than the UID. **Manage this account** opens the same form with the discovered endpoint locked and the item search restricted to the discovered Linux login.
+- Removing a managed account is a soft deletion so its audit history is preserved. Pending rotations are completed without execution, and a worker already connecting re-checks the relationship immediately before changing the remote password. Adding the same TeamPass item again safely reactivates the existing LAPR row, resets its scheduling/retry state, and creates a fresh enrollment task when its policy requests one.
 
 LAPR does not create vault items during discovery. Endpoint enrollment and managed-account creation are two separate relationships:
 
 - the endpoint's **SSH credential item** lets LAPR connect to the server;
 - a **managed-account item** represents one local Linux account whose password LAPR rotates.
 
-The same endpoint can therefore own several managed accounts. An item may also play both roles when the SSH account itself is managed.
+The same endpoint can therefore own several managed accounts, provided that every item represents a different Linux login. A given endpoint/login pair can be managed only once, and a TeamPass item can be attached as a managed password to only one endpoint.
+
+A password credential item may also be the managed-account item only when it represents the same endpoint and the same SSH login. Private-key credential items can never become managed passwords: rotating one would overwrite the private key and make future SSH connections impossible. The same relationship checks run again immediately before every rotation to protect legacy data created before these guards existed.
+
+When a legacy duplicate endpoint or unsafe credential relationship reaches the worker, the rotation is refused before SSH, audited as a configuration failure, and the managed account is placed in an error state instead of being retried indefinitely.
+
+> ⚠️ **Upgrading from an earlier 3.2.2 pre-release.** These relationship rules are also applied to data created before they existed. A setup that used to work — one password credential item shared by several endpoints, or an item managed as a Linux password while also serving as a private-key credential — now fails its next rotation with `ERR_SHARED_PASSWORD_CREDENTIAL`, `ERR_CREDENTIAL_RELATION_CONFLICT` or `ERR_KEY_CREDENTIAL_MANAGED`. The failure is deliberate and final rather than retried: split the credential items, then use **Reset & resume** on the affected accounts. **System Health → LAPR** lists every such relationship before the first rotation is attempted.
 
 Deleting a TeamPass item that a managed account or enrolled endpoint still references is **blocked** — remove the managed account or reconfigure/remove the endpoint first.
 
@@ -107,7 +123,7 @@ Three operations are refused while an item is linked to LAPR, on **every** path 
 
 Bulk move and bulk delete skip the linked items and tell you how many were skipped, instead of failing the whole selection. The REST API answers `409 Conflict` in all three cases. Resending an unchanged password is **not** a conflict, so an API client that reads an item and writes it back untouched keeps working.
 
-> **Disabling the module releases everything.** When **Enable LAPR module** is off, linked items behave exactly like ordinary items: no badge, no read-only field, no blocked delete or move. This is deliberate — the only way to remove a managed account goes through the LAPR pages, which are themselves hidden when the module is off. Managed accounts are kept and resume where they left off when you re-enable LAPR.
+> **Disabling the module releases everything and stops LAPR work.** When **Enable LAPR module** is off, linked items behave exactly like ordinary items: no badge, no read-only field, no blocked delete or move. Pending LAPR tasks are cancelled neutrally, and workers re-read the switch before dispatch and again immediately before changing a remote password. If the remote change has already succeeded, TeamPass completes the local item synchronization to avoid leaving different passwords on the server and in the vault. Managed endpoints, accounts, and audit history remain stored and resume where they left off when you re-enable LAPR.
 
 ---
 
@@ -129,10 +145,19 @@ Generated passwords are always filtered to be **safe for `chpasswd`** — no `:`
 ## Rotating
 
 - **Rotate now** on a managed account, or from its TeamPass item detail panel, runs an immediate rotation and shows live progress after the standard TeamPass confirmation dialog.
+- A policy with **Rotate on enrollment** queues the first rotation as soon as the managed account is added. The SSH operation still runs asynchronously through the background worker and does not depend on the automatic scheduler switch. Endpoints identified as the TeamPass host remain manual-only and skip this automatic first rotation.
 - The **scheduler** rotates due accounts automatically when enabled.
 - **History** shows a per-account, read-only, paginated timeline of every rotation, retry, suspension and reset.
 
+LAPR configuration is stored in the `admin` namespace of `teampass_misc`. The background handler reads the module switch, scheduler switch, interval, next-run timestamp, and audit-retention value from that same namespace. When `lapr_scheduler_next_run_at` is `0`, the first handler pass initializes it; due rotations are evaluated on a following pass after the configured interval.
+
+To test an overdue rotation, keep the TeamPass host, database, and targets synchronized to the real time. Make one test account due and set the LAPR scheduler next-run timestamp to the past instead of changing the operating-system clocks. Large clock jumps can legitimately make every stored due date appear overdue and can also disturb sessions, logs, certificates, and distributed services.
+
+Endpoint checks, last and next rotations, and history timestamps use the TeamPass-configured timezone, date format, and time format. The web handlers, background scheduler, and worker share this timezone. Date columns keep chronological sorting independently of the selected regional display format.
+
 Editing an item's password never triggers an implicit remote operation. A rotation is always explicit (or scheduler-driven), runs as a background task, and preserves the SSH-first safety model described below.
+
+In the standard TeamPass item history, an automatic password change is attributed to the localized **LAPR system** actor instead of showing the internal TeamPass service account with an empty display name. Manual and enrollment-triggered rotations retain the name of the user who requested them. Existing automatic-rotation entries receive the same display label without a database migration.
 
 Each rotation:
 
@@ -141,11 +166,35 @@ Each rotation:
 3. pushes it with `chpasswd` (via `sudo -n` when the SSH account is not root);
 4. re-encrypts the item and refreshes every sharekey, logs the change (with history), and emits a real-time update event.
 
+When the managed Linux login is also the endpoint's password-authenticated SSH login, LAPR synchronizes the dedicated SSH credential item after the managed item. This synchronization is never performed for key authentication, so a private-key item cannot be overwritten with the generated Linux password.
+
 ### Failure handling
 
 - **SSH-first model.** The password is pushed to the server first. If the *item* update then fails, the account is marked **error** with a **MANUAL RESYNC REQUIRED** note — the server holds the new password, so reset it manually and re-sync.
 - **Host-key mismatch blocks rotation.** Because LAPR connects with a reusable, privileged credential, a changed host key (a MITM signal) **aborts** the rotation. Verify the server, then explicitly trust the new key.
 - **Scheduler retries** failed rotations up to `lapr_max_retries`, then **suspends** the account until an authorized LAPR operator uses **Reset & resume**.
+
+---
+
+## Monitoring and statistics
+
+Administrators can monitor LAPR without opening the item-dependent operational pages:
+
+- **System Health → LAPR** reports scheduler and worker status, rotation compliance, retries, overdue/error/paused accounts, referential-integrity problems, and recent failures. Overdue/error states are critical; paused, retrying and manual-only states are warnings. An account hosted on the TeamPass server is reported as **manual rotation only**, never as overdue: the scheduler deliberately skips it, so its due date is expected to drift into the past. The report is passive and never opens an SSH connection when the page loads.
+- The same Health tab reports effective human LAPR operators and separately highlights permissions still assigned to disabled accounts. Administrators are not counted as operators because they configure LAPR through the administration page rather than using its item-dependent operational pages.
+- **Statistics → LAPR** shows rotation volume and success rate for the selected period, success/failure trends, current account states, failure categories, policy adoption, and endpoints with failures.
+
+Both LAPR tabs remain visible when the module is disabled to support feature discovery. They show a neutral **module disabled** state and no retained endpoint, account, operator, queue, or historical metrics, so stored relationships are never mistaken for active management.
+
+The Health report also detects unsafe legacy relationships: duplicate endpoint targets, duplicate managed endpoint/login pairs, shared password credentials, managed items reused as private-key credentials, and endpoints that appear to host TeamPass itself.
+
+System Health treats a newly due rotation as normal during a grace period equal to the greater of ten minutes or two scheduler intervals. This prevents false alarms between two normal background-handler runs.
+
+Disabling automatic rotation is treated as an informational configuration state, not as a failure. Scheduler alerts are raised only for actual operational problems such as an overdue enabled scheduler, a stalled queue, or a failed worker.
+
+The selected Statistics period applies to audit events. Endpoint and account states remain a current snapshot, and the page warns when the requested period exceeds the configured LAPR audit retention.
+
+These administrator reports expose only operational metadata. Passwords, SSH keys, credential contents, and sharekeys are never included, including in the System Health JSON export.
 
 ---
 

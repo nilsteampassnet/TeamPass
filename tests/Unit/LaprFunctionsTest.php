@@ -9,6 +9,7 @@ require_once __DIR__ . '/../../app/includes/libraries/teampassclasses/lapr/src/L
 require_once __DIR__ . '/../../app/sources/lapr.functions.php';
 
 use TeampassClasses\Lapr\LAPRSshService;
+use TeampassClasses\Language\Language;
 
 /**
  * Unit tests for the DB-free LAPR helpers in app/sources/lapr.functions.php
@@ -16,8 +17,11 @@ use TeampassClasses\Lapr\LAPRSshService;
  *
  * Security-critical coverage:
  *   - laprValidateUsername()        (R1 — command-injection guard)
+ *   - laprIsDiscoverableAccount()   (system-account discovery filter)
+ *   - laprPolicyDisplayName()       (localized built-in presets)
  *   - laprIsPasswordSafeForLinux()  (R9 — chpasswd corruption guard)
  *   - laprValidatePolicyParams()    (Point 3 bounds)
+ *   - laprShouldQueueEnrollmentRotation() (rotate-on-enrollment safety)
  *   - laprComputeNextRotation()     (scheduling)
  *   - laprIsHostnameAllowed()       (R3 — SSRF allowlist)
  *   - LAPRSshService::computeFingerprint() (TOFU)
@@ -181,6 +185,79 @@ class LaprFunctionsTest extends TestCase
     }
 
     // =========================================================================
+    // Account discovery candidates
+    // =========================================================================
+
+    public function testDiscoveryAcceptsRootAndRegularLoginAccounts(): void
+    {
+        $this->assertTrue(laprIsDiscoverableAccount([
+            'username' => 'root',
+            'uid' => 0,
+            'shell' => '/bin/bash',
+        ]));
+        $this->assertTrue(laprIsDiscoverableAccount([
+            'username' => 'alice',
+            'uid' => 1000,
+            'shell' => '/bin/bash',
+        ]));
+    }
+
+    public function testDiscoveryRejectsReservedSystemAndNonLoginAccounts(): void
+    {
+        $this->assertFalse(laprIsDiscoverableAccount([
+            'username' => 'sync',
+            'uid' => 4,
+            'shell' => '/bin/sync',
+        ]));
+        $this->assertFalse(laprIsDiscoverableAccount([
+            'username' => 'daemon',
+            'uid' => 1,
+            'shell' => '/bin/bash',
+        ]));
+        $this->assertFalse(laprIsDiscoverableAccount([
+            'username' => 'service',
+            'uid' => 1001,
+            'shell' => '/usr/sbin/nologin',
+        ]));
+        $this->assertFalse(laprIsDiscoverableAccount([
+            'username' => 'root',
+            'uid' => 4,
+            'shell' => '/bin/bash',
+        ]));
+    }
+
+    // =========================================================================
+    // Localized policy display labels
+    // =========================================================================
+
+    public function testBuiltInPolicyNamesAndDurationsAreLocalized(): void
+    {
+        $english = new Language('english');
+        $french = new Language('french');
+
+        $this->assertSame(
+            'High security',
+            laprPolicyDisplayName('High Security (7 days)', true, $english)
+        );
+        $this->assertSame(
+            'Haute sécurité',
+            laprPolicyDisplayName('High Security (7 days)', true, $french)
+        );
+        $this->assertSame('High security (7 days)', laprPolicyOptionLabel('High security', 7, $english));
+        $this->assertSame('Haute sécurité (7 jours)', laprPolicyOptionLabel('Haute sécurité', 7, $french));
+        $this->assertSame('Daily (1 day)', laprPolicyOptionLabel('Daily', 1, $english));
+        $this->assertSame('Quotidienne (1 jour)', laprPolicyOptionLabel('Quotidienne', 1, $french));
+    }
+
+    public function testCustomAndUnknownPolicyLabelsRemainVerbatim(): void
+    {
+        $french = new Language('french');
+
+        $this->assertSame('Production policy', laprPolicyDisplayName('Production policy', false, $french));
+        $this->assertSame('Future preset', laprPolicyDisplayName('Future preset', true, $french));
+    }
+
+    // =========================================================================
     // laprIsPasswordSafeForLinux (R9)
     // =========================================================================
 
@@ -237,6 +314,17 @@ class LaprFunctionsTest extends TestCase
     }
 
     // =========================================================================
+    // laprShouldQueueEnrollmentRotation
+    // =========================================================================
+
+    public function testEnrollmentRotationIsQueuedOnlyWhenRequestedForARemoteEndpoint(): void
+    {
+        $this->assertTrue(laprShouldQueueEnrollmentRotation(true, false));
+        $this->assertFalse(laprShouldQueueEnrollmentRotation(false, false));
+        $this->assertFalse(laprShouldQueueEnrollmentRotation(true, true));
+    }
+
+    // =========================================================================
     // laprComputeNextRotation
     // =========================================================================
 
@@ -262,6 +350,53 @@ class LaprFunctionsTest extends TestCase
         $last = date('Y-m-d H:i:s', $now - 100 * 86400);
         $expected = date('Y-m-d H:i:s', $now);
         $this->assertSame($expected, laprComputeNextRotation($last, 7, $now));
+    }
+
+    // =========================================================================
+    // laprFormatDateTimeForDisplay
+    // =========================================================================
+
+    public function testDateTimeDisplayUsesConfiguredRegionalFormats(): void
+    {
+        $previousTimezone = date_default_timezone_get();
+        date_default_timezone_set('UTC');
+
+        try {
+            $formatted = laprFormatDateTimeForDisplay(
+                '2026-08-21 14:05:06',
+                ['date_format' => 'd/m/Y', 'time_format' => 'H:i:s']
+            );
+
+            $this->assertSame('21/08/2026 14:05:06', $formatted['display']);
+            $this->assertSame(1787321106, $formatted['timestamp']);
+        } finally {
+            date_default_timezone_set($previousTimezone);
+        }
+    }
+
+    public function testDateTimeDisplaySupportsTwelveHourRegionalFormat(): void
+    {
+        $previousTimezone = date_default_timezone_get();
+        date_default_timezone_set('UTC');
+
+        try {
+            $formatted = laprFormatDateTimeForDisplay(
+                '2026-08-21 14:05:06',
+                ['date_format' => 'm/d/Y', 'time_format' => 'g:i:s a']
+            );
+
+            $this->assertSame('08/21/2026 2:05:06 pm', $formatted['display']);
+        } finally {
+            date_default_timezone_set($previousTimezone);
+        }
+    }
+
+    public function testEmptyDateTimeDisplayUsesNeutralSortValue(): void
+    {
+        $this->assertSame(
+            ['display' => '', 'timestamp' => 0],
+            laprFormatDateTimeForDisplay(null, ['date_format' => 'd/m/Y', 'time_format' => 'H:i:s'])
+        );
     }
 
     // =========================================================================
@@ -295,6 +430,77 @@ class LaprFunctionsTest extends TestCase
         $this->assertTrue(laprIsHostnameAllowed('db.example.com', $settings));
         $this->assertFalse(laprIsHostnameAllowed('example.com', $settings));      // suffix requires a subdomain
         $this->assertFalse(laprIsHostnameAllowed('evil.example.org', $settings));
+    }
+
+    public function testSelfTargetDetectionConfirmsLoopbackAddresses(): void
+    {
+        foreach (['localhost', '127.0.0.1', '127.12.34.56', '::1', '[::1]'] as $hostname) {
+            $classification = laprClassifySelfTarget($hostname, [], []);
+            $this->assertTrue($classification['is_self'], $hostname);
+            $this->assertSame('confirmed', $classification['confidence'], $hostname);
+            $this->assertSame('loopback', $classification['reason'], $hostname);
+        }
+    }
+
+    public function testConfiguredTeamPassUrlIsAConservativeSelfTargetSignal(): void
+    {
+        $classification = laprClassifySelfTarget(
+            'vault.example.test.',
+            ['cpassman_url' => 'https://vault.example.test/teampass'],
+            []
+        );
+
+        $this->assertTrue($classification['is_self']);
+        $this->assertSame('suspected', $classification['confidence']);
+        $this->assertSame('configured_url', $classification['reason']);
+    }
+
+    public function testUnrelatedEndpointIsNotClassifiedAsTheTeamPassHost(): void
+    {
+        $classification = laprClassifySelfTarget(
+            'linux-01.example.test',
+            ['cpassman_url' => 'https://vault.example.test'],
+            ['HTTP_HOST' => 'vault.example.test', 'SERVER_ADDR' => '192.0.2.10']
+        );
+
+        $this->assertFalse($classification['is_self']);
+        $this->assertSame('none', $classification['confidence']);
+    }
+
+    // =========================================================================
+    // laprNormalizeHostname (endpoint target identity)
+    // =========================================================================
+
+    public function testHostnameNormalizationIgnoresCaseTrailingDotAndIpv6Brackets(): void
+    {
+        $this->assertSame('server.example.com', laprNormalizeHostname('  Server.Example.COM.  '));
+        $this->assertSame('2001:db8::1', laprNormalizeHostname('[2001:DB8::1]'));
+        $this->assertSame('2001:db8::1', laprNormalizeHostname('2001:db8::1'));
+        $this->assertSame('', laprNormalizeHostname('   '));
+    }
+
+    public function testBracketedAndBareIpv6AreTheSameTarget(): void
+    {
+        // The duplicate-endpoint guard and the Health monitor must agree, so both
+        // compare through this helper rather than through an SQL expression that
+        // cannot strip the brackets.
+        $this->assertSame(
+            laprNormalizeHostname('[2001:db8::1]'),
+            laprNormalizeHostname('2001:db8::1')
+        );
+    }
+
+    public function testEndpointTargetLookupComparesThroughTheSharedNormalizer(): void
+    {
+        $source = file_get_contents(__DIR__ . '/../../app/sources/lapr.functions.php');
+        $this->assertIsString($source);
+
+        $start = strpos((string) $source, 'function laprEndpointTargetExists(');
+        $this->assertIsInt($start);
+        $body = substr((string) $source, $start, 1400);
+
+        $this->assertStringContainsString('laprNormalizeHostname((string) $row[\'hostname\'])', $body);
+        $this->assertStringNotContainsString('TRIM(TRAILING', $body);
     }
 
     // =========================================================================

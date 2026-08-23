@@ -131,7 +131,7 @@ date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
         <div class="modal-content">
             <div class="modal-header">
                 <h4 class="modal-title"><?php echo $lang->get('lapr_add_endpoint'); ?></h4>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="<?php echo htmlspecialchars($lang->get('close'), ENT_QUOTES, 'UTF-8'); ?>"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
@@ -172,6 +172,14 @@ date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
                         <label class="custom-control-label" for="lapr-ep-skip-hostkey"><?php echo $lang->get('lapr_skip_hostkey_verification'); ?></label>
                     </div>
                     <small class="form-text text-danger" id="lapr-ep-skip-hostkey-warning" style="display:none;"><?php echo $lang->get('lapr_skip_hostkey_warning'); ?></small>
+                </div>
+
+                <div class="alert alert-danger" id="lapr-ep-self-management-warning" style="display:none;">
+                    <div><i class="fas fa-triangle-exclamation mr-1"></i><?php echo $lang->get('lapr_self_management_warning'); ?></div>
+                    <div class="custom-control custom-checkbox mt-2">
+                        <input type="checkbox" class="custom-control-input" id="lapr-ep-self-management-ack">
+                        <label class="custom-control-label" for="lapr-ep-self-management-ack"><?php echo $lang->get('lapr_self_management_ack'); ?></label>
+                    </div>
                 </div>
 
                 <div id="lapr-ep-test-result" style="display:none;" class="mt-3"></div>

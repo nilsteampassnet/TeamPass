@@ -3748,7 +3748,27 @@ switch ($inputData['type']) {
             ];
             $canManageLaprItem = laprCheckPermission($session, $SETTINGS)
                 && laprUserCanWriteFolder((int) ($arrData['folder'] ?? 0), $session);
-            if ($canManageLaprItem === false) {
+            if ($canManageLaprItem === true && is_array($arrData['lapr']['managed_account'] ?? null)) {
+                // Built-in policies keep stable English identifiers in the database.
+                // Localize their name and duration only at the item-detail presentation boundary;
+                // custom policy labels remain untouched.
+                $managedAccount = &$arrData['lapr']['managed_account'];
+                $storedPolicyLabel = (string) ($managedAccount['policy_label'] ?? '');
+                $policyIsPreset = (bool) ($managedAccount['policy_is_preset'] ?? false);
+                if ($storedPolicyLabel !== '') {
+                    $displayPolicyLabel = laprPolicyDisplayName($storedPolicyLabel, $policyIsPreset, $lang);
+                    if ($policyIsPreset === true) {
+                        $displayPolicyLabel = laprPolicyOptionLabel(
+                            $displayPolicyLabel,
+                            (int) ($managedAccount['policy_frequency_days'] ?? 0),
+                            $lang
+                        );
+                    }
+                    $managedAccount['policy_label'] = $displayPolicyLabel;
+                }
+                unset($managedAccount['policy_frequency_days'], $managedAccount['policy_is_preset']);
+                unset($managedAccount);
+            } elseif ($canManageLaprItem === false) {
                 $arrData['lapr'] = [
                     'is_managed' => (bool) ($arrData['lapr']['is_managed'] ?? false),
                     'is_credential' => (bool) ($arrData['lapr']['is_credential'] ?? false),
@@ -7640,7 +7660,7 @@ switch ($inputData['type']) {
         $history = [];
         $previous_passwords = [];
         $rows = DB::query(
-            'SELECT l.date as date, l.action as action, l.raison as raison,
+            'SELECT l.date as date, l.action as action, l.raison as raison, l.id_user as id_user,
                 u.login as login, u.avatar_thumb as avatar_thumb, u.name as name, u.lastname as lastname,
                 l.old_value as old_value
             FROM ' . prefixTable('log_items') . ' as l
@@ -7657,6 +7677,17 @@ switch ($inputData['type']) {
             $reason = [''];
             if (empty($record['raison']) === false) {
                 $reason = array_map('trim', explode(':', (string) $record['raison']));
+            }
+
+            // Scheduled LAPR rotations are journalled with the internal TP user.
+            // Give both existing and future password-change entries an explicit,
+            // localized actor instead of rendering the special user's empty name.
+            $isLaprSystemPasswordChange = (int) ($record['id_user'] ?? 0) === (int) TP_USER_ID
+                && $reason[0] === 'at_pw';
+            if ($isLaprSystemPasswordChange === true) {
+                $record['login'] = $lang->get('lapr_system_scheduler');
+                $record['name'] = $lang->get('lapr_system_scheduler');
+                $record['lastname'] = '';
             }
             
             // imported via API

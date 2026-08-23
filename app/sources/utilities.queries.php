@@ -1443,6 +1443,25 @@ logItems(
                 ),
             );
 
+            // Loaded here only: the LAPR reporting helpers are ~1400 lines of
+            // function definitions that no other utilities action needs.
+            require_once __DIR__ . '/lapr.functions.php';
+            require_once __DIR__ . '/lapr.monitoring.functions.php';
+
+            try {
+                $laprHealth = laprBuildMonitoringSnapshot($SETTINGS, $now);
+                $laprHealth = laprMonitoringApplyCronStatus($laprHealth, $cronStatus);
+            } catch (Throwable $e) {
+                error_log('LAPR health report failed: ' . $e->getMessage());
+                $laprHealth = laprMonitoringEmptySnapshot(
+                    (int) ($SETTINGS['lapr_enabled'] ?? 0) === 1,
+                    'query_failed'
+                );
+                $laprHealth['error'] = true;
+                $laprHealth['overall']['status'] = 'danger';
+                $laprHealth['overall']['reason'] = 'query_failed';
+            }
+
             $report = array(
                 'generated_at' => $now,
                 'generated_at_human' => date('Y-m-d H:i:s', $now),
@@ -1491,6 +1510,8 @@ logItems(
                         'integrity_mismatch' => (int) ($integrity['mismatch'] ?? 0),
                         'inconsistent_users' => $inconsistentUsersCount,
                         'backup_status' => (string) ($backupInfo['summary']['status'] ?? 'info'),
+                        'lapr_status' => (string) ($laprHealth['overall']['status'] ?? 'info'),
+                        'lapr_attention' => (int) ($laprHealth['overall']['attention'] ?? 0),
                     ),
                 ),
                 'system' => array(
@@ -1531,6 +1552,7 @@ logItems(
                     'users_sharekeys_mismatch' => $usersSharekeysMismatch,
                 ),
                 'backups' => $backupInfo,
+                'lapr' => $laprHealth,
                 'logs' => array(
                     'from' => $from,
                     'to' => $now,

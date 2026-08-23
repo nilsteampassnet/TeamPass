@@ -90,11 +90,67 @@ trait LAPRRotationTrait
             return ['success' => false, 'error_code' => 'ERR_ACCOUNT_NOT_FOUND'];
         }
 
+        if (laprIsModuleEnabledFresh() === false) {
+            return ['success' => false, 'error_code' => 'ERR_LAPR_DISABLED', 'message' => 'LAPR_DISABLED'];
+        }
+
         $username = (string) $account['username_cache'];
         // R1 — hard username validation before anything reaches SSH.
         if (laprValidateUsername($username) === false) {
             $this->laprFinalizeFailure($account, $actorId, 'ERR_INVALID_USERNAME', $trigger);
             return ['success' => false, 'error_code' => 'ERR_INVALID_USERNAME'];
+        }
+
+        $osInfo = json_decode((string) ($account['os_info'] ?? '{}'), true) ?: [];
+        $storedSelfTarget = (bool) ($osInfo['lapr_self_target']['is_self'] ?? false);
+        $runtimeSelfTarget = laprClassifySelfTarget((string) $account['hostname'], $this->settings);
+        if ($trigger !== 'manual' && ($storedSelfTarget === true || $runtimeSelfTarget['is_self'] === true)) {
+            return [
+                'success' => false,
+                'error_code' => 'ERR_SELF_TARGET_AUTOMATIC_ROTATION_BLOCKED',
+                'message' => 'SELF_TARGET_MANUAL_ONLY',
+            ];
+        }
+
+        if (laprEndpointTargetExists(
+            (string) $account['hostname'],
+            (int) $account['port'],
+            (int) $account['endpoint_id']
+        ) === true) {
+            $this->laprFinalizeFailure($account, $actorId, 'ERR_DUPLICATE_ENDPOINT_TARGET', $trigger);
+            return ['success' => false, 'error_code' => 'ERR_DUPLICATE_ENDPOINT_TARGET'];
+        }
+
+        // Legacy-data safety: never rotate an item that is also used as an SSH
+        // private key, nor a password credential belonging to another login or
+        // endpoint. New relationships are blocked at enrollment/account add,
+        // but this pre-flight protects databases created before those guards.
+        $credentialConflict = laprManagedItemCredentialConflict(
+            (int) $account['item_id'],
+            (int) $account['endpoint_id'],
+            $username
+        );
+        if ($credentialConflict === 'key_credential') {
+            $this->laprFinalizeFailure($account, $actorId, 'ERR_KEY_CREDENTIAL_MANAGED', $trigger);
+            return ['success' => false, 'error_code' => 'ERR_KEY_CREDENTIAL_MANAGED'];
+        }
+        if ($credentialConflict === 'password_credential') {
+            $this->laprFinalizeFailure($account, $actorId, 'ERR_CREDENTIAL_RELATION_CONFLICT', $trigger);
+            return ['success' => false, 'error_code' => 'ERR_CREDENTIAL_RELATION_CONFLICT'];
+        }
+        if ((string) $account['ssh_auth_method'] === 'password'
+            && $username === (string) $account['ssh_username']
+        ) {
+            $credentialUseCount = (int) DB::queryFirstField(
+                'SELECT COUNT(*) FROM ' . prefixTable('lapr_endpoints') . '
+                 WHERE ssh_credential_source = %i AND status != %s',
+                (int) $account['ssh_credential_source'],
+                'deleted'
+            );
+            if ($credentialUseCount > 1) {
+                $this->laprFinalizeFailure($account, $actorId, 'ERR_SHARED_PASSWORD_CREDENTIAL', $trigger);
+                return ['success' => false, 'error_code' => 'ERR_SHARED_PASSWORD_CREDENTIAL'];
+            }
         }
 
         // Load TP_USER key chain (server-side decryptable)
@@ -166,10 +222,29 @@ trait LAPRRotationTrait
         }
 
         // D5 — root vs passwordless sudo for chpasswd
-        $osInfo = json_decode((string) ($account['os_info'] ?? '{}'), true) ?: [];
         $caps = json_decode((string) ($account['capabilities'] ?? '{}'), true) ?: [];
         $isRoot = (bool) ($osInfo['is_root'] ?? false);
         $useSudo = $isRoot === false && (bool) ($caps['has_sudo'] ?? false);
+
+        // Re-read the switch and relationship state at the last safe instant.
+        // If LAPR was disabled or the managed account was removed while this
+        // worker was connecting, do not mutate the remote account. Once
+        // changePassword succeeds, the TeamPass update below must always
+        // finish to avoid desynchronization.
+        if (laprIsModuleEnabledFresh() === false) {
+            $service->disconnect();
+            return ['success' => false, 'error_code' => 'ERR_LAPR_DISABLED', 'message' => 'LAPR_DISABLED'];
+        }
+        $accountStillManaged = (int) DB::queryFirstField(
+            'SELECT COUNT(*) FROM ' . prefixTable('lapr_accounts') . '
+             WHERE id = %i AND status != %s',
+            $accountId,
+            'deleted'
+        );
+        if ($accountStillManaged === 0) {
+            $service->disconnect();
+            return ['success' => false, 'error_code' => 'ERR_ACCOUNT_DELETED', 'message' => 'ACCOUNT_REMOVED'];
+        }
 
         $change = $service->changePassword($username, $newPassword, $useSudo);
         $service->disconnect();
@@ -197,7 +272,7 @@ trait LAPRRotationTrait
                 'last_rotation_status' => 'failure',
                 'last_rotation_error' => 'ERR_ITEM_UPDATE_FAILED',
                 'updated_by' => $actorId,
-            ], 'id = %i', $accountId);
+            ], 'id = %i AND status != %s', $accountId, 'deleted');
             laprAuditLog('rotation', (int) $account['endpoint_id'], $actorId, [
                 'trigger' => $trigger,
                 'manual_resync_required' => true,
@@ -207,7 +282,8 @@ trait LAPRRotationTrait
 
         // R5 — SSH credential sync: when the managed account IS the SSH connection
         // account, keep the credential item in step so the next connection works.
-        if ((int) $account['ssh_credential_source'] > 0
+        if ((string) $account['ssh_auth_method'] === 'password'
+            && (int) $account['ssh_credential_source'] > 0
             && $username === (string) $account['ssh_username']
             && (int) $account['ssh_credential_source'] !== (int) $account['item_id']
         ) {
@@ -215,9 +291,10 @@ trait LAPRRotationTrait
                 'SELECT id, id_tree, label FROM ' . prefixTable('items') . ' WHERE id = %i',
                 (int) $account['ssh_credential_source']
             );
+            $credentialSynced = false;
             if ($credItem !== null) {
                 $syncOld = laprReadItemPasswordAsTpUser((int) $credItem['id'], $tpKeys['private_key'], $tpKeys['public_key']);
-                $this->laprUpdateItemPassword(
+                $credentialSynced = $this->laprUpdateItemPassword(
                     (int) $credItem['id'],
                     (int) $credItem['id_tree'],
                     (string) $credItem['label'],
@@ -226,10 +303,36 @@ trait LAPRRotationTrait
                     $tpKeys,
                     $actorId
                 );
-                laprAuditLog('ssh_credential_sync', (int) $account['endpoint_id'], $actorId, [
-                    'credential_item_id' => (int) $credItem['id'],
-                ], 'success', $accountId, null, 'system');
             }
+
+            if ($credentialSynced === false) {
+                DB::update(prefixTable('lapr_accounts'), [
+                    'status' => 'error',
+                    'last_rotation_at' => date('Y-m-d H:i:s'),
+                    'last_rotation_status' => 'failure',
+                    'last_rotation_error' => 'ERR_SSH_CREDENTIAL_SYNC_FAILED',
+                    'updated_by' => $actorId,
+                ], 'id = %i AND status != %s', $accountId, 'deleted');
+                laprAuditLog('ssh_credential_sync', (int) $account['endpoint_id'], $actorId, [
+                    'credential_item_id' => (int) ($account['ssh_credential_source'] ?? 0),
+                    'manual_resync_required' => true,
+                ], 'failure', $accountId, 'ERR_SSH_CREDENTIAL_SYNC_FAILED', 'system');
+                laprAuditLog('rotation', (int) $account['endpoint_id'], $actorId, [
+                    'trigger' => $trigger,
+                    'manual_resync_required' => true,
+                    'managed_item_updated' => true,
+                ], 'failure', $accountId, 'ERR_SSH_CREDENTIAL_SYNC_FAILED', 'system');
+
+                return [
+                    'success' => false,
+                    'error_code' => 'ERR_SSH_CREDENTIAL_SYNC_FAILED',
+                    'message' => 'SSH_CREDENTIAL_RESYNC_REQUIRED',
+                ];
+            }
+
+            laprAuditLog('ssh_credential_sync', (int) $account['endpoint_id'], $actorId, [
+                'credential_item_id' => (int) $account['ssh_credential_source'],
+            ], 'success', $accountId, null, 'system');
         }
 
         // Success — update account rotation state + next_rotation_at
@@ -244,7 +347,7 @@ trait LAPRRotationTrait
             'retry_count' => 0,
             'retry_at' => null,
             'updated_by' => $actorId,
-        ], 'id = %i', $accountId);
+        ], 'id = %i AND status != %s', $accountId, 'deleted');
 
         laprAuditLog('rotation', (int) $account['endpoint_id'], $actorId, [
             'trigger' => $trigger,
@@ -411,14 +514,20 @@ trait LAPRRotationTrait
             'username' => (string) $account['username_cache'],
         ], 'failure', $accountId, $errorCode, 'system');
 
-        if ($trigger !== 'scheduler') {
+        $permanentConfigurationFailure = in_array($errorCode, [
+            'ERR_KEY_CREDENTIAL_MANAGED',
+            'ERR_CREDENTIAL_RELATION_CONFLICT',
+            'ERR_SHARED_PASSWORD_CREDENTIAL',
+            'ERR_DUPLICATE_ENDPOINT_TARGET',
+        ], true);
+        if ($trigger !== 'scheduler' || $permanentConfigurationFailure === true) {
             DB::update(prefixTable('lapr_accounts'), [
                 'last_rotation_at' => $now,
                 'last_rotation_status' => 'failure',
                 'last_rotation_error' => $errorCode,
                 'status' => 'error',
                 'updated_by' => $actorId,
-            ], 'id = %i', $accountId);
+            ], 'id = %i AND status != %s', $accountId, 'deleted');
             return;
         }
 
@@ -442,7 +551,7 @@ trait LAPRRotationTrait
                 'retry_count' => $retryCount,
                 'retry_at' => null,
                 'updated_by' => $actorId,
-            ], 'id = %i', $accountId);
+            ], 'id = %i AND status != %s', $accountId, 'deleted');
 
             laprAuditLog('rotation_suspended', (int) $account['endpoint_id'], $actorId, [
                 'retry_count' => $retryCount,
@@ -462,7 +571,7 @@ trait LAPRRotationTrait
             'retry_at' => $retryAt,
             'next_rotation_at' => $retryAt,
             'updated_by' => $actorId,
-        ], 'id = %i', $accountId);
+        ], 'id = %i AND status != %s', $accountId, 'deleted');
 
         laprAuditLog('rotation_retry_scheduled', (int) $account['endpoint_id'], $actorId, [
             'trigger' => $trigger,

@@ -147,6 +147,12 @@ function laprAdminToggle(string $field, array $SETTINGS): string
                             <div class="col-5"><textarea class="form-control form-control-sm" id="lapr_allowlist" rows="3"><?php echo htmlspecialchars((string) ($SETTINGS['lapr_allowlist'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></textarea></div>
                         </div>
                         <div class="form-group row">
+                            <div class="col-7"><?php echo $lang->get('lapr_allow_self_management_setting'); ?>
+                                <small class="form-text text-danger"><?php echo $lang->get('lapr_allow_self_management_tip'); ?></small>
+                            </div>
+                            <div class="col-5"><?php echo laprAdminToggle('lapr_allow_self_management', $SETTINGS); ?></div>
+                        </div>
+                        <div class="form-group row">
                             <div class="col-7"><?php echo $lang->get('lapr_rate_limit_max_attempts_setting'); ?></div>
                             <div class="col-5"><input type="number" min="1" class="form-control form-control-sm" id="lapr_rate_limit_max_attempts" value="<?php echo (int) ($SETTINGS['lapr_rate_limit_max_attempts'] ?? 5); ?>"></div>
                         </div>

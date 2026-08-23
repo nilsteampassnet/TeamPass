@@ -21,6 +21,7 @@ class HealthSystemConsistencyTest extends TestCase
     private string $backupSource;
     private string $utilitiesSource;
     private string $healthLogsFunctionsSource;
+    private string $laprMonitoringSource;
     private string $adminSource;
     private string $healthPage;
     private string $healthJavascript;
@@ -38,6 +39,7 @@ class HealthSystemConsistencyTest extends TestCase
         $this->backupSource = $this->read($root . '/app/sources/backup.functions.php');
         $this->utilitiesSource = $this->read($root . '/app/sources/utilities.queries.php');
         $this->healthLogsFunctionsSource = $this->read($root . '/app/sources/health.logs.functions.php');
+        $this->laprMonitoringSource = $this->read($root . '/app/sources/lapr.monitoring.functions.php');
         $this->adminSource = $this->read($root . '/app/sources/admin.queries.php');
         $this->healthPage = $this->read($root . '/app/pages/utilities.health.php');
         $this->healthJavascript = $this->read($root . '/app/pages/utilities.health.js.php');
@@ -88,6 +90,47 @@ class HealthSystemConsistencyTest extends TestCase
             "\$SETTINGS['TEAMPASS_SECRETS'] . DIRECTORY_SEPARATOR . \$SETTINGS['securefile']",
             $adminHealthBlock
         );
+    }
+
+    public function testHealthReportIncludesAnAdminSafeLaprDiagnostic(): void
+    {
+        $this->assertStringContainsString('laprBuildMonitoringSnapshot($SETTINGS, $now)', $this->utilitiesSource);
+        $this->assertStringContainsString("'lapr' => \$laprHealth", $this->utilitiesSource);
+        $this->assertStringContainsString('id="tab-health-lapr"', $this->healthPage);
+        $this->assertStringContainsString('id="health-lapr"', $this->healthPage);
+        $this->assertStringContainsString('tpRenderLapr(report)', $this->healthJavascript);
+        $this->assertStringContainsString("'operators' => \$operators", $this->laprMonitoringSource);
+        $this->assertStringContainsString(
+            'WHERE admin = 0 AND deleted_at IS NULL AND can_manage_lapr = 1',
+            $this->laprMonitoringSource
+        );
+        $this->assertStringContainsString('teampassGetSystemAccountIds()', $this->laprMonitoringSource);
+        $this->assertStringContainsString('id="health-lapr-operators"', $this->healthPage);
+        $this->assertStringContainsString('id="health-lapr-disabled-grants"', $this->healthPage);
+        $this->assertStringContainsString("prefixTable('background_tasks')", $this->laprMonitoringSource);
+        $this->assertStringContainsString("prefixTable('lapr_audit_log')", $this->laprMonitoringSource);
+        $this->assertStringNotContainsString('managed_item.pw', $this->laprMonitoringSource);
+        $this->assertStringNotContainsString('credential.pw', $this->laprMonitoringSource);
+    }
+
+    public function testEveryHealthTranslationKeyExistsInEnglishAndFrench(): void
+    {
+        /** @var array<string,string> $english */
+        $english = include __DIR__ . '/../../app/includes/language/english.php';
+        /** @var array<string,string> $french */
+        $french = include __DIR__ . '/../../app/includes/language/french.php';
+
+        preg_match_all(
+            '/\$lang->get\(\'([A-Za-z0-9_]+)\'\)/',
+            $this->healthPage . $this->healthJavascript,
+            $matches
+        );
+        foreach (array_unique($matches[1]) as $key) {
+            $this->assertArrayHasKey($key, $english, 'english: ' . $key);
+            $this->assertNotSame('', trim((string) $english[$key]), 'english: ' . $key);
+            $this->assertArrayHasKey($key, $french, 'french: ' . $key);
+            $this->assertNotSame('', trim((string) $french[$key]), 'french: ' . $key);
+        }
     }
 
     public function testSecureFileHealthUsesRuntimeConstantsAndValidatesTheKey(): void

@@ -112,18 +112,16 @@ trait LAPRDiscoverTrait
         $accounts = $service->listLocalAccounts();
         $service->disconnect();
 
-        // Keep real login accounts (a shell other than nologin/false), and
-        // usernames that pass the POSIX validation used for rotation (R1).
+        // Keep root and regular users (UID >= 1000) with a real login shell.
+        // The shared helper also applies the POSIX username validation used
+        // for rotation (R1).
         $candidates = [];
         foreach ($accounts as $acct) {
-            $shell = (string) $acct['shell'];
-            $username = (string) $acct['username'];
-            $isLoginShell = $shell !== '' && strpos($shell, 'nologin') === false && strpos($shell, '/false') === false;
-            if ($isLoginShell === true && laprValidateUsername($username) === true) {
+            if (laprIsDiscoverableAccount($acct) === true) {
                 $candidates[] = [
-                    'username' => $username,
+                    'username' => (string) $acct['username'],
                     'uid' => (int) $acct['uid'],
-                    'shell' => $shell,
+                    'shell' => (string) $acct['shell'],
                 ];
             }
         }

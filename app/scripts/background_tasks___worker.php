@@ -75,6 +75,7 @@ class TaskWorker {
         
         $configManager = new ConfigManager();
         $this->settings = $configManager->getAllSettings();
+        date_default_timezone_set($this->settings['timezone'] ?? 'UTC');
         $this->logger = new TaskLogger($this->settings, LOG_TASKS_FILE);
     }
 
@@ -93,6 +94,19 @@ class TaskWorker {
             resetItemRevisionMemo();
 
             if (LOG_TASKS=== true) $this->logger->log('Processing task: ' . print_r($this->taskData, true), 'DEBUG');
+
+            // The LAPR master switch is authoritative for tasks that were
+            // already queued when an administrator disabled the module.
+            if (strpos($this->processType, 'lapr_') === 0 && laprIsModuleEnabledFresh() === false) {
+                $this->updateTaskResult([
+                    'success' => false,
+                    'error_code' => 'ERR_LAPR_DISABLED',
+                    'message' => 'LAPR_DISABLED',
+                ]);
+                $this->completeTask();
+                return;
+            }
+
             // Dispatch selon le type de processus
             switch ($this->processType) {
                 case 'item_copy':

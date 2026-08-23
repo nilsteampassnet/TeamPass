@@ -33,6 +33,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 
 require_once __DIR__.'/../sources/main.functions.php';
 require_once __DIR__ . '/../sources/backup.functions.php';
+require_once __DIR__ . '/../sources/lapr.functions.php';
 require_once __DIR__ . '/taskLogger.php';
 
 class BackgroundTasksHandler {
@@ -49,6 +50,7 @@ class BackgroundTasksHandler {
 
     public function __construct(array $settings) {
         $this->settings = $settings;
+        date_default_timezone_set($this->settings['timezone'] ?? 'UTC');
         $this->logger = new TaskLogger($settings, LOG_TASKS_FILE);
         $this->maxParallelTasks = (int) ($settings['max_parallel_tasks'] ?? 2);
         $this->maxExecutionTime = (int) ($settings['task_maximum_run_time'] ?? 600);
@@ -494,18 +496,22 @@ class BackgroundTasksHandler {
      */
     private function handleScheduledLAPRRotations(): void
     {
-        if ((int) $this->getSettingValue('lapr_enabled', '0') !== 1
-            || (int) $this->getSettingValue('lapr_scheduler_enabled', '0') !== 1
+        if ((int) $this->getSettingValue('lapr_enabled', '0', 'admin') !== 1
+            || (int) $this->getSettingValue('lapr_scheduler_enabled', '0', 'admin') !== 1
         ) {
             return;
         }
 
         $now = time();
-        $intervalMinutes = max(1, (int) $this->getSettingValue('lapr_scheduler_interval_minutes', '5'));
-        $nextRunAt = (int) $this->getSettingValue('lapr_scheduler_next_run_at', '0');
+        $intervalMinutes = max(1, (int) $this->getSettingValue('lapr_scheduler_interval_minutes', '5', 'admin'));
+        $nextRunAt = (int) $this->getSettingValue('lapr_scheduler_next_run_at', '0', 'admin');
 
         if ($nextRunAt <= 0) {
-            $this->upsertSettingValue('lapr_scheduler_next_run_at', (string) ($now + $intervalMinutes * 60));
+            $this->upsertSettingValue(
+                'lapr_scheduler_next_run_at',
+                (string) ($now + $intervalMinutes * 60),
+                'admin'
+            );
             return;
         }
         if ($now < $nextRunAt) {
@@ -516,7 +522,7 @@ class BackgroundTasksHandler {
         // and (retry gating) retry_at not in the future.
         $nowStr = date('Y-m-d H:i:s', $now);
         $dueAccounts = DB::query(
-            'SELECT a.id
+            'SELECT a.id, e.hostname, e.os_info
              FROM ' . prefixTable('lapr_accounts') . ' AS a
              INNER JOIN ' . prefixTable('lapr_endpoints') . ' AS e ON e.id = a.endpoint_id
              WHERE a.status = %s AND e.status = %s
@@ -530,8 +536,19 @@ class BackgroundTasksHandler {
             $nowStr
         );
 
+        $enqueuedCount = 0;
         foreach ($dueAccounts as $account) {
             $accountId = (int) $account['id'];
+
+            // Managing the TeamPass host itself remains a manual-only break-
+            // glass operation. Never let the scheduler rotate the account that
+            // may be required to repair TeamPass or its background handler.
+            $osInfo = json_decode((string) ($account['os_info'] ?? ''), true) ?: [];
+            $storedSelfTarget = (bool) ($osInfo['lapr_self_target']['is_self'] ?? false);
+            $runtimeSelfTarget = laprClassifySelfTarget((string) $account['hostname'], $this->settings);
+            if ($storedSelfTarget === true || $runtimeSelfTarget['is_self'] === true) {
+                continue;
+            }
 
             // Dedup: skip if a rotation task is already pending/running (C12, indexed item_id).
             $pending = (int) DB::queryFirstField(
@@ -557,11 +574,16 @@ class BackgroundTasksHandler {
                 'item_id' => $accountId,
                 'status' => 'new',
             ]);
+            ++$enqueuedCount;
         }
 
-        $this->upsertSettingValue('lapr_scheduler_next_run_at', (string) ($now + $intervalMinutes * 60));
+        $this->upsertSettingValue(
+            'lapr_scheduler_next_run_at',
+            (string) ($now + $intervalMinutes * 60),
+            'admin'
+        );
         if (LOG_TASKS === true) {
-            $this->logger->log('LAPR scheduler: enqueued ' . count($dueAccounts) . ' due account(s)', 'INFO');
+            $this->logger->log('LAPR scheduler: enqueued ' . $enqueuedCount . ' due account(s)', 'INFO');
         }
     }
 
@@ -693,16 +715,17 @@ class BackgroundTasksHandler {
     }
 
     /**
-     * Read a setting from teampass_misc (type='settings', intitule=key).
+     * Read a setting from teampass_misc.
      */
-    private function getSettingValue(string $key, string $default = ''): string
+    private function getSettingValue(string $key, string $default = '', string $type = 'settings'): string
     {
         $table = prefixTable('misc');
+        $type = $type === 'admin' ? 'admin' : 'settings';
 
         // Schéma TeamPass classique: misc(type, intitule, valeur)
         $val = DB::queryFirstField(
             'SELECT valeur FROM ' . $table . ' WHERE type = %s AND intitule = %s LIMIT 1',
-            'settings',
+            $type,
             $key
         );
 
@@ -714,26 +737,30 @@ class BackgroundTasksHandler {
     }
 
     /**
-     * Upsert a setting into teampass_misc (type='settings', intitule=key).
+     * Upsert a setting into teampass_misc.
      */
-    private function upsertSettingValue(string $key, string $value): void
+    private function upsertSettingValue(string $key, string $value, string $type = 'settings'): void
     {
         $table = prefixTable('misc');
+        $type = $type === 'admin' ? 'admin' : 'settings';
 
         $exists = intval(DB::queryFirstField(
             'SELECT COUNT(*) FROM ' . $table . ' WHERE type = %s AND intitule = %s',
-            'settings',
+            $type,
             $key
         ));
 
         if ($exists > 0) {
-            DB::update($table, ['valeur' => $value], 'type = %s AND intitule = %s', 'settings', $key);
+            DB::update($table, ['valeur' => $value], 'type = %s AND intitule = %s', $type, $key);
         } else {
-            DB::insert($table, ['type' => 'settings', 'intitule' => $key, 'valeur' => $value]);
+            DB::insert($table, ['type' => $type, 'intitule' => $key, 'valeur' => $value]);
         }
 
         // keep in memory too
         $this->settings[$key] = $value;
+        if ($type === 'admin') {
+            ConfigManager::invalidateCache();
+        }
     }
 
     /**
@@ -1268,7 +1295,7 @@ class BackgroundTasksHandler {
      */
     private function cleanLAPRMaintenance(): void
     {
-        $retentionDays = (int) $this->getSettingValue('lapr_audit_retention_days', '365');
+        $retentionDays = (int) $this->getSettingValue('lapr_audit_retention_days', '365', 'admin');
         if ($retentionDays > 0) {
             $cutoff = date('Y-m-d H:i:s', time() - $retentionDays * 86400);
             try {
@@ -1415,11 +1442,13 @@ class BackgroundTasksHandler {
         $cutoffTimestamp = time() - $this->maxTimeBeforeRemoval;
     
         // 1. Get all finished tasks older than the cutoff timestamp
-        //    and that are not in progress
+        //    and that are not in progress. 'cancelled' covers the tasks closed
+        //    without execution (LAPR module disabled, managed account removed);
+        //    they are finished too and must be purged like completed ones.
         $tasks = DB::query(
             'SELECT increment_id FROM ' . prefixTable('background_tasks') . '
-            WHERE status = %s AND is_in_progress = %i AND finished_at < %i',
-            'completed',
+            WHERE status IN %ls AND is_in_progress = %i AND finished_at < %i',
+            ['completed', 'cancelled'],
             -1,
             $cutoffTimestamp
         );

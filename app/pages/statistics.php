@@ -112,12 +112,12 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                             </select>
                         </div>
 
-                        <div class='form-check mr-3'>
+                        <div class='form-check mr-3 tp-ops-standard-filter'>
                             <input class='form-check-input flat-blue' type='checkbox' id='tp-ops-include-personal' checked>
                             <label class='form-check-label' for='tp-ops-include-personal'><?php echo $lang->get('ops_include_personal'); ?></label>
                         </div>
 
-                        <div class='form-check mr-3'>
+                        <div class='form-check mr-3 tp-ops-standard-filter'>
                             <input class='form-check-input flat-blue' type='checkbox' id='tp-ops-include-api' checked>
                             <label class='form-check-label' for='tp-ops-include-api'><?php echo $lang->get('ops_include_api'); ?></label>
                         </div>
@@ -149,6 +149,11 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                     <li class='nav-item'>
                         <a class='nav-link' id='tp-ops-users-tab' data-toggle='tab' href='#tp-ops-users' role='tab' aria-controls='tp-ops-users' aria-selected='false'>
                             <i class='fas fa-users mr-1'></i><?php echo $lang->get('ops_tab_users'); ?>
+                        </a>
+                    </li>
+                    <li class='nav-item'>
+                        <a class='nav-link' id='tp-ops-lapr-tab' data-toggle='tab' href='#tp-ops-lapr' role='tab' aria-controls='tp-ops-lapr' aria-selected='false'>
+                            <i class='fas fa-sync-alt mr-1'></i><?php echo $lang->get('ops_tab_lapr'); ?>
                         </a>
                     </li>
                 </ul>
@@ -673,6 +678,138 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                     <?php echo $lang->get('ops_users_ranking_scope'); ?>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <div class='tab-pane fade' id='tp-ops-lapr' role='tabpanel' aria-labelledby='tp-ops-lapr-tab'>
+                        <div class='alert alert-info py-2' id='tp-lapr-availability' style='display:none;'></div>
+                        <div id='tp-lapr-content'>
+                        <div class='alert alert-light border py-2'>
+                            <i class='fas fa-info-circle text-info mr-1'></i><?php echo $lang->get('ops_lapr_snapshot_note'); ?>
+                            <span class='d-block small text-muted mt-1'><?php echo $lang->get('ops_lapr_filters_not_applicable'); ?></span>
+                        </div>
+
+                        <div class='row'>
+                            <div class='col-xl-3 col-md-6'>
+                                <div class='small-box bg-primary tp-ops-small-box'>
+                                    <div class='inner'>
+                                        <h3 id='tp-lapr-kpi-endpoints'>-</h3>
+                                        <p><?php echo $lang->get('lapr_monitor_endpoints'); ?></p>
+                                    </div>
+                                    <div class='icon'><i class='fas fa-server'></i></div>
+                                </div>
+                            </div>
+                            <div class='col-xl-3 col-md-6'>
+                                <div class='small-box bg-success tp-ops-small-box'>
+                                    <div class='inner'>
+                                        <h3 id='tp-lapr-kpi-accounts'>-</h3>
+                                        <p><?php echo $lang->get('lapr_monitor_accounts_compliant'); ?></p>
+                                    </div>
+                                    <div class='icon'><i class='fas fa-user-check'></i></div>
+                                </div>
+                            </div>
+                            <div class='col-xl-3 col-md-6'>
+                                <div class='small-box bg-info tp-ops-small-box'>
+                                    <div class='inner'>
+                                        <h3 id='tp-lapr-kpi-rotations'>-</h3>
+                                        <p><?php echo $lang->get('ops_lapr_rotations'); ?></p>
+                                    </div>
+                                    <div class='icon'><i class='fas fa-sync-alt'></i></div>
+                                </div>
+                            </div>
+                            <div class='col-xl-3 col-md-6'>
+                                <div class='small-box bg-warning tp-ops-small-box'>
+                                    <div class='inner'>
+                                        <h3 id='tp-lapr-kpi-success-rate'>-</h3>
+                                        <p><?php echo $lang->get('ops_lapr_success_rate'); ?></p>
+                                    </div>
+                                    <div class='icon'><i class='fas fa-percentage'></i></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class='alert alert-warning py-2' id='tp-lapr-retention-warning' style='display:none;'>
+                            <i class='fas fa-exclamation-triangle mr-1'></i><?php echo $lang->get('ops_lapr_retention_limited'); ?>
+                        </div>
+                        <div class='alert alert-danger py-2' id='tp-lapr-worker-warning' style='display:none;'></div>
+
+                        <div class='row'>
+                            <div class='col-xl-8 mb-3'>
+                                <div class='card h-100'>
+                                    <div class='card-header'>
+                                        <h3 class='card-title'><i class='fas fa-chart-line mr-2'></i><?php echo $lang->get('ops_lapr_rotation_trend'); ?></h3>
+                                    </div>
+                                    <div class='card-body'>
+                                        <div class='tp-ops-chart' style='height: 290px;'>
+                                            <canvas id='tp-lapr-rotation-chart'></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class='col-xl-4 mb-3'>
+                                <div class='card h-100'>
+                                    <div class='card-header'>
+                                        <h3 class='card-title'><i class='fas fa-tasks mr-2'></i><?php echo $lang->get('ops_lapr_current_states'); ?></h3>
+                                    </div>
+                                    <div class='card-body'>
+                                        <div class='tp-ops-chart tp-ops-chart-doughnut' style='height: 290px;'>
+                                            <canvas id='tp-lapr-state-chart'></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class='row'>
+                            <div class='col-lg-6 mb-3'>
+                                <div class='card h-100'>
+                                    <div class='card-header'>
+                                        <h3 class='card-title'><i class='fas fa-exclamation-circle mr-2'></i><?php echo $lang->get('ops_lapr_failure_causes'); ?></h3>
+                                    </div>
+                                    <div class='card-body'>
+                                        <div class='tp-ops-chart' style='height: 250px;'>
+                                            <canvas id='tp-lapr-failure-chart'></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class='col-lg-6 mb-3'>
+                                <div class='card h-100'>
+                                    <div class='card-header'>
+                                        <h3 class='card-title'><i class='fas fa-shield-alt mr-2'></i><?php echo $lang->get('ops_lapr_policy_distribution'); ?></h3>
+                                    </div>
+                                    <div class='card-body'>
+                                        <div class='tp-ops-chart' style='height: 250px;'>
+                                            <canvas id='tp-lapr-policy-chart'></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class='card'>
+                            <div class='card-header'>
+                                <h3 class='card-title'><i class='fas fa-server mr-2'></i><?php echo $lang->get('ops_lapr_problem_endpoints'); ?></h3>
+                            </div>
+                            <div class='card-body p-0'>
+                                <div class='table-responsive'>
+                                    <table class='table table-sm table-hover mb-0'>
+                                        <thead>
+                                            <tr>
+                                                <th><?php echo $lang->get('lapr_endpoint'); ?></th>
+                                                <th class='text-center'><?php echo $lang->get('ops_lapr_successes'); ?></th>
+                                                <th class='text-center'><?php echo $lang->get('ops_lapr_failures'); ?></th>
+                                                <th class='text-center'><?php echo $lang->get('ops_lapr_success_rate'); ?></th>
+                                                <th class='text-center'><?php echo $lang->get('ops_lapr_last_failure'); ?></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id='tp-lapr-endpoints-body'>
+                                            <tr><td colspan='5' class='text-center text-muted'>-</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                         </div>
                     </div>
                 </div>

@@ -38,6 +38,10 @@ $lang = new Language($session->get('user-language') ?? 'english');
 $laprSettings = (new ConfigManager())->getAllSettings();
 $laprRetentionDays = (int) ($laprSettings['lapr_audit_retention_days'] ?? 365);
 $laprJsJsonFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE;
+$laprAccDataTablesLang = teampassDataTablesLanguage(
+    (string) ($session->get('user-language') ?? 'english'),
+    $lang->get('lapr_no_accounts')
+);
 $laprAccountTranslations = [
     'confirmDelete' => $lang->get('please_confirm_deletion'),
     'caution' => $lang->get('caution'),
@@ -51,7 +55,9 @@ $laprAccountTranslations = [
     'rotationSuccess' => $lang->get('lapr_rotation_success'),
     'rotationFailed' => $lang->get('lapr_rotation_failed'),
     'rotationTimeout' => $lang->get('lapr_rotation_status_timeout'),
+    'selfRotationWarning' => $lang->get('lapr_self_management_rotation_warning'),
     'manualResync' => $lang->get('lapr_manual_resync_required'),
+    'credentialResync' => $lang->get('lapr_ssh_credential_resync_required'),
     'hostkeyMismatch' => $lang->get('lapr_hostkey_mismatch_blocked'),
     'rotateTitle' => $lang->get('lapr_rotate_now'),
     'resetTitle' => $lang->get('lapr_reset_resume'),
@@ -64,6 +70,28 @@ $laprAccountTranslations = [
     'noMatchingItem' => $lang->get('lapr_no_matching_item'),
     'multipleMatchingItems' => $lang->get('lapr_multiple_matching_items'),
     'searchItemPlaceholder' => $lang->get('lapr_search_item_placeholder'),
+    'eventRotation' => $lang->get('lapr_event_rotation'),
+    'eventRotationRetry' => $lang->get('lapr_event_rotation_retry_scheduled'),
+    'eventRotationSuspended' => $lang->get('lapr_event_rotation_suspended'),
+    'eventAccountAdded' => $lang->get('lapr_event_account_added'),
+    'eventAccountReset' => $lang->get('lapr_event_account_reset'),
+    'eventCredentialSync' => $lang->get('lapr_event_ssh_credential_sync'),
+    'eventHostkeyMismatch' => $lang->get('lapr_event_hostkey_mismatch'),
+    'triggerManual' => $lang->get('lapr_trigger_manual'),
+    'triggerScheduler' => $lang->get('lapr_trigger_scheduler'),
+    'triggerEnroll' => $lang->get('lapr_trigger_enroll'),
+    'resultSuccess' => $lang->get('lapr_result_success'),
+    'resultFailure' => $lang->get('lapr_result_failure'),
+    'resultWarning' => $lang->get('lapr_result_warning'),
+    'historyRange' => $lang->get('lapr_history_range'),
+    'statusActive' => $lang->get('lapr_status_active'),
+    'statusPaused' => $lang->get('lapr_status_paused'),
+    'statusError' => $lang->get('lapr_status_error'),
+    'statusDeleted' => $lang->get('lapr_status_deleted'),
+    'discoveredUser' => $lang->get('lapr_discovered_user'),
+    'discoveredUid' => $lang->get('lapr_discovered_uid'),
+    'discoveredShell' => $lang->get('lapr_discovered_shell'),
+    'discoveryEmpty' => $lang->get('lapr_discovery_empty'),
 ];
 ?>
 <script>
@@ -77,19 +105,36 @@ let laprDiscoverPollTimer = null
 let laprAccountSaveInProgress = false
 
 const laprAccLang = <?php echo json_encode($laprAccountTranslations, $laprJsJsonFlags); ?>;
+const laprAccDataTablesLang = <?php echo json_encode($laprAccDataTablesLang, $laprJsJsonFlags); ?>;
 
 const laprRetentionDays = <?php echo (int) $laprRetentionDays; ?>;
 const laprRetentionNote = <?php echo json_encode($lang->get('lapr_history_retention_note'), $laprJsJsonFlags); ?>;
 let laprHistoryState = { accountId: null, offset: 0, limit: 20, total: 0 }
 
 const laprEventLabels = {
-  rotation: 'Rotation',
-  rotation_retry_scheduled: 'Retry scheduled',
-  rotation_suspended: 'Suspended',
-  account_add: 'Account added',
-  account_reset: 'Reset & resume',
-  ssh_credential_sync: 'SSH credential sync',
-  hostkey_mismatch: 'Host key mismatch'
+  rotation: laprAccLang.eventRotation,
+  rotation_retry_scheduled: laprAccLang.eventRotationRetry,
+  rotation_suspended: laprAccLang.eventRotationSuspended,
+  account_add: laprAccLang.eventAccountAdded,
+  account_reset: laprAccLang.eventAccountReset,
+  ssh_credential_sync: laprAccLang.eventCredentialSync,
+  hostkey_mismatch: laprAccLang.eventHostkeyMismatch
+}
+const laprTriggerLabels = {
+  manual: laprAccLang.triggerManual,
+  scheduler: laprAccLang.triggerScheduler,
+  enroll: laprAccLang.triggerEnroll
+}
+const laprResultLabels = {
+  success: laprAccLang.resultSuccess,
+  failure: laprAccLang.resultFailure,
+  warning: laprAccLang.resultWarning
+}
+const laprAccountStatusLabels = {
+  active: laprAccLang.statusActive,
+  paused: laprAccLang.statusPaused,
+  error: laprAccLang.statusError,
+  deleted: laprAccLang.statusDeleted
 }
 
 function laprOpenHistory(accountId) {
@@ -124,11 +169,13 @@ function laprRenderHistory(data) {
     data.rows.forEach(function (r) {
       const badge = r.result === 'success' ? 'success' : (r.result === 'warning' ? 'warning' : 'danger')
       const by = r.is_system ? laprAccLang.system : (r.user_login ? DOMPurify.sanitize(r.user_login) : laprAccLang.unknownUser)
+      const trigger = laprTriggerLabels[r.trigger] || r.trigger || '—'
+      const result = laprResultLabels[r.result] || r.result
       html += '<tr>' +
         '<td>' + DOMPurify.sanitize(r.created_at) + '</td>' +
         '<td>' + DOMPurify.sanitize(laprEventLabels[r.action_type] || r.action_type) + '</td>' +
-        '<td>' + DOMPurify.sanitize(r.trigger || '—') + '</td>' +
-        '<td><span class="badge badge-' + badge + '">' + DOMPurify.sanitize(r.result) + '</span></td>' +
+        '<td>' + DOMPurify.sanitize(trigger) + '</td>' +
+        '<td><span class="badge badge-' + badge + '">' + DOMPurify.sanitize(result) + '</span></td>' +
         '<td>' + by + '</td>' +
         '</tr>'
       if (r.error) {
@@ -142,7 +189,12 @@ function laprRenderHistory(data) {
   const to = Math.min(data.offset + data.limit, data.total)
   const page = Math.floor(data.offset / data.limit) + 1
   const pages = Math.max(1, Math.ceil(data.total / data.limit))
-  $('#lapr_history_range').text('Showing ' + from + '–' + to + ' of ' + data.total)
+  $('#lapr_history_range').text(
+    laprAccLang.historyRange
+      .replace('#start#', String(from))
+      .replace('#end#', String(to))
+      .replace('#total#', String(data.total))
+  )
   $('#lapr_history_page').text(page + '/' + pages)
   $('#lapr_history_prev').prop('disabled', data.offset <= 0)
   $('#lapr_history_next').prop('disabled', to >= data.total)
@@ -177,8 +229,14 @@ function laprLoadAccounts() {
         DOMPurify.sanitize(a.username),
         DOMPurify.sanitize(a.endpoint),
         DOMPurify.sanitize(a.policy || '—'),
-        (a.last_rotation_at ? DOMPurify.sanitize(a.last_rotation_at) : '—') + ' ' + laprRotationBadge(a.last_rotation_status),
-        DOMPurify.sanitize(a.next_rotation_at || '—'),
+        {
+          display: (a.last_rotation_at ? DOMPurify.sanitize(a.last_rotation_at) : '—') + ' ' + laprRotationBadge(a.last_rotation_status),
+          timestamp: Number(a.last_rotation_at_ts || 0)
+        },
+        {
+          display: DOMPurify.sanitize(a.next_rotation_at || '—'),
+          timestamp: Number(a.next_rotation_at_ts || 0)
+        },
         laprAccStatusBadge(a.status),
         laprAccountActions(a)
       ]
@@ -188,8 +246,16 @@ function laprLoadAccounts() {
     } else {
       laprAccountsTable = $('#lapr-accounts-table').DataTable({
         data: rows,
-        columnDefs: [{ orderable: false, targets: 6 }],
-        language: { emptyTable: 'No managed accounts yet' }
+        columnDefs: [
+          {
+            targets: [3, 4],
+            render: function (data, type) {
+              return type === 'sort' || type === 'type' ? data.timestamp : data.display
+            }
+          },
+          { orderable: false, targets: 6 }
+        ],
+        language: laprAccDataTablesLang
       })
     }
   })
@@ -197,19 +263,22 @@ function laprLoadAccounts() {
 
 function laprRotationBadge(status) {
   if (status === 'success') { return '<span class="badge badge-success">OK</span>' }
-  if (status === 'failure') { return '<span class="badge badge-danger">fail</span>' }
+  if (status === 'failure') {
+    return '<span class="badge badge-danger">' + DOMPurify.sanitize(laprAccLang.resultFailure) + '</span>'
+  }
   return ''
 }
 
 function laprAccStatusBadge(status) {
   const map = { active: 'success', paused: 'secondary', error: 'danger', deleted: 'dark' }
-  return '<span class="badge badge-' + (map[status] || 'secondary') + '">' + DOMPurify.sanitize(status) + '</span>'
+  return '<span class="badge badge-' + (map[status] || 'secondary') + '">' +
+    DOMPurify.sanitize(laprAccountStatusLabels[status] || status) + '</span>'
 }
 
 function laprAccountActions(a) {
   const canRotate = a.status === 'active' || a.status === 'error'
   const canReset = a.status === 'paused' || a.status === 'error'
-  return (canRotate ? '<button class="btn btn-xs btn-success lapr-rotate-acc" data-id="' + a.id + '" title="' + laprAccLang.rotateTitle + '"><i class="fas fa-rotate"></i></button> ' : '') +
+  return (canRotate ? '<button class="btn btn-xs btn-success lapr-rotate-acc" data-id="' + a.id + '" data-self-target="' + (a.is_self_target ? '1' : '0') + '" title="' + laprAccLang.rotateTitle + '"><i class="fas fa-rotate"></i></button> ' : '') +
     (canReset ? '<button class="btn btn-xs btn-warning lapr-reset-acc" data-id="' + a.id + '" title="' + laprAccLang.resetTitle + '"><i class="fas fa-rotate-left"></i></button> ' : '') +
     '<button class="btn btn-xs btn-info lapr-history-acc" data-id="' + a.id + '" title="' + laprAccLang.historyTitle + '"><i class="fas fa-clock-rotate-left"></i></button> ' +
     '<button class="btn btn-xs btn-secondary lapr-editpolicy" data-id="' + a.id + '" data-policy="' + a.policy_id + '"><i class="fas fa-scroll"></i></button> ' +
@@ -227,10 +296,13 @@ function laprResetAccount(id) {
   })
 }
 
-function laprRotateAccount(id) {
+function laprRotateAccount(id, isSelfTarget) {
+  const confirmation = isSelfTarget
+    ? DOMPurify.sanitize(laprAccLang.selfRotationWarning) + '<br><br>' + DOMPurify.sanitize(laprAccLang.rotateConfirm)
+    : laprAccLang.rotateConfirm
   launchConfirmDialog(
     laprAccLang.rotateTitle,
-    DOMPurify.sanitize(laprAccLang.rotateConfirm),
+    DOMPurify.sanitize(confirmation),
     function () { laprStartAccountRotation(id) },
     laprAccLang.rotateTitle
   )
@@ -272,6 +344,8 @@ function laprPollRotation(taskId, attempt) {
       toastr.success(laprAccLang.rotationSuccess)
     } else if (data.message_code === 'MANUAL_RESYNC_REQUIRED') {
       toastr.error(laprAccLang.manualResync)
+    } else if (data.message_code === 'SSH_CREDENTIAL_RESYNC_REQUIRED') {
+      toastr.error(laprAccLang.credentialResync)
     } else if (data.error_code === 'ERR_HOSTKEY_MISMATCH') {
       toastr.error(laprAccLang.hostkeyMismatch)
     } else {
@@ -440,6 +514,13 @@ function laprSaveAccount() {
     toastr.success(data.message)
     $('#modal_lapr_account').modal('hide')
     laprLoadAccounts()
+    const taskId = parseInt(data.task_id, 10) || 0
+    if (taskId > 0) {
+      toastr.info('<i class="fas fa-circle-notch fa-spin mr-1"></i>' + laprAccLang.rotationInProgress)
+      laprPollRotation(taskId, 0)
+    } else if (data.rotation_skipped_manual_only === true) {
+      toastr.warning(laprAccLang.selfRotationWarning)
+    }
   }).always(function () {
     laprAccountSaveInProgress = false
     if ($('#modal_lapr_account').hasClass('show')) {
@@ -512,7 +593,7 @@ function laprStartDiscover() {
   $('#lapr-discover-result').html('<i class="fas fa-circle-notch fa-spin mr-1"></i>' + laprAccLang.discoverInProgress)
   laprAccPost('start_discover', { endpoint_id: endpointId }, function (data) {
     if (data.error === true) {
-      $('#lapr-discover-result').html('<span class="text-danger">' + DOMPurify.sanitize(data.message || '') + '</span>')
+      $('#lapr-discover-result').html('<span class="text-danger">' + DOMPurify.sanitize(data.message || laprAccLang.errorGeneric) + '</span>')
       return
     }
     laprPollDiscover(data.task_id, endpointId)
@@ -523,7 +604,7 @@ function laprPollDiscover(taskId, endpointId) {
   if (laprDiscoverPollTimer) { clearTimeout(laprDiscoverPollTimer) }
   laprAccPost('discover_status', { task_id: taskId }, function (data) {
     if (data.error === true) {
-      $('#lapr-discover-result').html('<span class="text-danger">' + DOMPurify.sanitize(data.message || '') + '</span>')
+      $('#lapr-discover-result').html('<span class="text-danger">' + DOMPurify.sanitize(data.message || laprAccLang.errorGeneric) + '</span>')
       return
     }
     if (data.finished !== true) {
@@ -536,15 +617,15 @@ function laprPollDiscover(taskId, endpointId) {
     }
     const accounts = data.accounts || []
     if (!accounts.length) {
-      $('#lapr-discover-result').html('<div class="text-muted">' + DOMPurify.sanitize(laprAccLang.errorGeneric) + '</div>')
+      $('#lapr-discover-result').html('<div class="text-muted">' + DOMPurify.sanitize(laprAccLang.discoveryEmpty) + '</div>')
       return
     }
 
     const $table = $('<table>', { class: 'table table-sm table-striped' })
     const $header = $('<tr>')
-      .append($('<th>').text('User'))
-      .append($('<th>').text('UID'))
-      .append($('<th>').text('Shell'))
+      .append($('<th>').text(laprAccLang.discoveredUser))
+      .append($('<th>').text(laprAccLang.discoveredUid))
+      .append($('<th>').text(laprAccLang.discoveredShell))
       .append($('<th>'))
     const $tbody = $('<tbody>')
 
@@ -589,7 +670,7 @@ $(document).ready(function () {
     laprDeleteAccount($(this).data('id'))
   })
   $('#lapr-accounts-table').on('click', '.lapr-rotate-acc', function () {
-    laprRotateAccount($(this).data('id'))
+    laprRotateAccount($(this).data('id'), String($(this).attr('data-self-target')) === '1')
   })
   $('#lapr-accounts-table').on('click', '.lapr-reset-acc', function () {
     laprResetAccount($(this).data('id'))

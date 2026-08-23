@@ -168,7 +168,73 @@ var TP_HEALTH_L10N = {
     logs_mode_auto: "<?php echo addslashes($lang->get('health_logs_mode_auto')); ?>",
     logs_mode_manual: "<?php echo addslashes($lang->get('health_logs_mode_manual')); ?>",
     copied: "<?php echo addslashes($lang->get('copied')); ?>",
-    clipboard_error: "<?php echo addslashes($lang->get('clipboard_error')); ?>"
+    clipboard_error: "<?php echo addslashes($lang->get('clipboard_error')); ?>",
+    lapr_module_disabled: "<?php echo addslashes($lang->get('lapr_monitor_module_disabled')); ?>",
+    lapr_schema_missing: "<?php echo addslashes($lang->get('lapr_monitor_schema_missing')); ?>",
+    lapr_query_failed: "<?php echo addslashes($lang->get('lapr_monitor_query_failed')); ?>",
+    lapr_no_accounts: "<?php echo addslashes($lang->get('lapr_monitor_no_accounts')); ?>",
+    lapr_action_required: "<?php echo addslashes($lang->get('lapr_monitor_action_required')); ?>",
+    lapr_warnings: "<?php echo addslashes($lang->get('lapr_monitor_warnings')); ?>",
+    lapr_healthy: "<?php echo addslashes($lang->get('lapr_monitor_healthy')); ?>",
+    lapr_no_data: "<?php echo addslashes($lang->get('lapr_monitor_no_data')); ?>",
+    lapr_disabled_grant_warning: "<?php echo addslashes($lang->get('lapr_monitor_disabled_grant_warning')); ?>",
+    lapr_disabled_grants_warning: "<?php echo addslashes($lang->get('lapr_monitor_disabled_grants_warning')); ?>",
+    lapr_state_healthy: "<?php echo addslashes($lang->get('lapr_monitor_state_healthy')); ?>",
+    lapr_state_scheduled: "<?php echo addslashes($lang->get('lapr_monitor_state_scheduled')); ?>",
+    lapr_state_manual_only: "<?php echo addslashes($lang->get('lapr_monitor_state_manual_only')); ?>",
+    lapr_state_retrying: "<?php echo addslashes($lang->get('lapr_monitor_state_retrying')); ?>",
+    lapr_state_overdue: "<?php echo addslashes($lang->get('lapr_monitor_state_overdue')); ?>",
+    lapr_state_error: "<?php echo addslashes($lang->get('lapr_monitor_state_error')); ?>",
+    lapr_state_paused: "<?php echo addslashes($lang->get('lapr_monitor_state_paused')); ?>",
+    lapr_scheduler_next: "<?php echo addslashes($lang->get('lapr_monitor_scheduler_next')); ?>",
+    lapr_scheduler_interval: "<?php echo addslashes($lang->get('lapr_monitor_scheduler_interval')); ?>",
+    lapr_scheduler_pending: "<?php echo addslashes($lang->get('lapr_monitor_scheduler_pending')); ?>",
+    lapr_scheduler_running: "<?php echo addslashes($lang->get('lapr_monitor_scheduler_running')); ?>",
+    lapr_scheduler_failed_24h: "<?php echo addslashes($lang->get('lapr_monitor_scheduler_failed_24h')); ?>",
+    lapr_scheduler_initializing: "<?php echo addslashes($lang->get('lapr_monitor_scheduler_initializing')); ?>",
+    lapr_scheduler_disabled_notice: "<?php echo addslashes($lang->get('lapr_monitor_scheduler_disabled_notice')); ?>",
+    lapr_scheduler_overdue: "<?php echo addslashes($lang->get('lapr_monitor_scheduler_overdue')); ?>",
+    lapr_queue_stalled: "<?php echo addslashes($lang->get('lapr_monitor_queue_stalled')); ?>",
+    lapr_worker_failed: "<?php echo addslashes($lang->get('lapr_monitor_worker_failed')); ?>",
+    lapr_cron_unhealthy: "<?php echo addslashes($lang->get('lapr_monitor_cron_unhealthy')); ?>",
+    lapr_status: "<?php echo addslashes($lang->get('lapr_status')); ?>",
+    minutes: "<?php echo addslashes($lang->get('minutes')); ?>",
+    lapr_issue_endpoint_inactive: "<?php echo addslashes($lang->get('lapr_monitor_issue_endpoint_inactive')); ?>",
+    lapr_issue_hostkey_unverified: "<?php echo addslashes($lang->get('lapr_monitor_issue_hostkey_unverified')); ?>",
+    lapr_issue_capability_missing: "<?php echo addslashes($lang->get('lapr_monitor_issue_capability_missing')); ?>",
+    lapr_issue_duplicate_endpoint: "<?php echo addslashes($lang->get('lapr_monitor_issue_duplicate_endpoint')); ?>",
+    lapr_issue_shared_credential: "<?php echo addslashes($lang->get('lapr_monitor_issue_shared_credential')); ?>",
+    lapr_issue_shared_password_credential: "<?php echo addslashes($lang->get('lapr_monitor_issue_shared_password_credential')); ?>",
+    lapr_issue_duplicate_managed_target: "<?php echo addslashes($lang->get('lapr_monitor_issue_duplicate_managed_target')); ?>",
+    lapr_issue_managed_key_credential: "<?php echo addslashes($lang->get('lapr_monitor_issue_managed_key_credential')); ?>",
+    lapr_issue_self_managed_endpoint: "<?php echo addslashes($lang->get('lapr_monitor_issue_self_managed_endpoint')); ?>",
+    lapr_issue_endpoint_missing: "<?php echo addslashes($lang->get('lapr_monitor_issue_endpoint_missing')); ?>",
+    lapr_issue_managed_item_missing: "<?php echo addslashes($lang->get('lapr_monitor_issue_managed_item_missing')); ?>",
+    lapr_issue_managed_item_unavailable: "<?php echo addslashes($lang->get('lapr_monitor_issue_managed_item_unavailable')); ?>",
+    lapr_issue_credential_missing: "<?php echo addslashes($lang->get('lapr_monitor_issue_credential_missing')); ?>",
+    lapr_issue_credential_unavailable: "<?php echo addslashes($lang->get('lapr_monitor_issue_credential_unavailable')); ?>",
+    lapr_issue_policy_missing: "<?php echo addslashes($lang->get('lapr_monitor_issue_policy_missing')); ?>",
+    lapr_issue_username_mismatch: "<?php echo addslashes($lang->get('lapr_monitor_issue_username_mismatch')); ?>",
+    lapr_issue_account_overdue: "<?php echo addslashes($lang->get('lapr_monitor_issue_account_overdue')); ?>",
+    lapr_issue_account_error: "<?php echo addslashes($lang->get('lapr_monitor_issue_account_error')); ?>",
+    lapr_issue_account_paused: "<?php echo addslashes($lang->get('lapr_monitor_issue_account_paused')); ?>",
+    lapr_issue_account_retrying: "<?php echo addslashes($lang->get('lapr_monitor_issue_account_retrying')); ?>",
+    lapr_issue_account_manual_only: "<?php echo addslashes($lang->get('lapr_monitor_issue_account_manual_only')); ?>",
+    lapr_issue_worker_failed: "<?php echo addslashes($lang->get('lapr_monitor_issue_worker_failed')); ?>",
+    lapr_issue_scheduler_unhealthy: "<?php echo addslashes($lang->get('lapr_monitor_issue_scheduler_unhealthy')); ?>",
+    lapr_issue_cron_unhealthy: "<?php echo addslashes($lang->get('lapr_monitor_issue_cron_unhealthy')); ?>",
+    lapr_failure_connectivity: "<?php echo addslashes($lang->get('lapr_monitor_failure_connectivity')); ?>",
+    lapr_failure_authentication: "<?php echo addslashes($lang->get('lapr_monitor_failure_authentication')); ?>",
+    lapr_failure_hostkey: "<?php echo addslashes($lang->get('lapr_monitor_failure_hostkey')); ?>",
+    lapr_failure_password_change: "<?php echo addslashes($lang->get('lapr_monitor_failure_password_change')); ?>",
+    lapr_failure_synchronization: "<?php echo addslashes($lang->get('lapr_monitor_failure_synchronization')); ?>",
+    lapr_failure_password_generation: "<?php echo addslashes($lang->get('lapr_monitor_failure_password_generation')); ?>",
+    lapr_failure_encryption: "<?php echo addslashes($lang->get('lapr_monitor_failure_encryption')); ?>",
+    lapr_failure_configuration: "<?php echo addslashes($lang->get('lapr_monitor_failure_configuration')); ?>",
+    lapr_failure_other: "<?php echo addslashes($lang->get('lapr_monitor_failure_other')); ?>",
+    lapr_trigger_manual: "<?php echo addslashes($lang->get('lapr_trigger_manual')); ?>",
+    lapr_trigger_scheduler: "<?php echo addslashes($lang->get('lapr_trigger_scheduler')); ?>",
+    lapr_trigger_enroll: "<?php echo addslashes($lang->get('lapr_trigger_enroll')); ?>"
 
 };
 
@@ -265,6 +331,7 @@ function tpRenderHealthReport(report) {
     tpRenderDatabase(report);
     tpRenderCrypto(report);
     tpRenderBackups(report);
+    tpRenderLapr(report);
     tpRenderLogs(report);
 }
 
@@ -375,7 +442,252 @@ function tpRenderOverview(report) {
 
     $('#health-backup-status').html(tpStatusToBadge(find.backup_status || 'info'));
 
+    var lapr = report.lapr || {};
+    $('#health-lapr-overview-status').html(tpStatusToBadge(lapr.overall ? lapr.overall.status : 'info'));
+    if (lapr.accounts && Number(lapr.accounts.total || 0) > 0) {
+        $('#health-lapr-overview-detail').text(
+            Number(lapr.accounts.compliant || 0) + '/' + Number(lapr.accounts.total || 0)
+        );
+    } else {
+        $('#health-lapr-overview-detail').text('');
+    }
+
     $('#health-findings-details').text('');
+}
+
+function tpRenderLapr(report) {
+    var lapr = report && report.lapr ? report.lapr : {};
+    var overall = lapr.overall || {};
+    var endpoints = lapr.endpoints || {};
+    var accounts = lapr.accounts || {};
+    var operators = lapr.operators || {};
+    var scheduler = lapr.scheduler || {};
+    var reasonText = tpLaprReasonText(overall.reason || '');
+
+    if (lapr.enabled === false) {
+        $('#health-lapr-status').html(tpStatusToBadge('info'));
+        $('#health-lapr-endpoints,#health-lapr-accounts,#health-lapr-operators').text('—');
+        $('#health-lapr-scheduler').html(tpStatusToBadge('info'));
+        $('#health-lapr-disabled-grants').hide().text('');
+        $('#health-lapr-availability')
+            .removeClass('alert-warning alert-danger')
+            .addClass('alert-info')
+            .text(TP_HEALTH_L10N.lapr_module_disabled)
+            .show();
+        $('#health-lapr-account-states').html(
+            '<tr><td colspan="2" class="text-center text-muted">' + tpEscapeHtml(TP_HEALTH_L10N.lapr_module_disabled) + '</td></tr>'
+        );
+        $('#health-lapr-scheduler-details').html(
+            tpLaprDetailRow(TP_HEALTH_L10N.lapr_status, TP_HEALTH_L10N.lapr_module_disabled)
+        );
+        $('#health-lapr-action-items').html(
+            '<tr><td colspan="4" class="text-center text-muted">' + tpEscapeHtml(TP_HEALTH_L10N.lapr_module_disabled) + '</td></tr>'
+        );
+        $('#health-lapr-recent-failures').html(
+            '<tr><td colspan="5" class="text-center text-muted">' + tpEscapeHtml(TP_HEALTH_L10N.lapr_module_disabled) + '</td></tr>'
+        );
+        return;
+    }
+
+    $('#health-lapr-status').html(tpStatusToBadge(overall.status || 'info'));
+    $('#health-lapr-endpoints').text(Number(endpoints.active || 0) + '/' + Number(endpoints.total || 0));
+    $('#health-lapr-accounts').text(Number(accounts.compliant || 0) + '/' + Number(accounts.total || 0));
+    $('#health-lapr-operators').text(Number(operators.active || 0));
+    $('#health-lapr-scheduler').html(tpStatusToBadge(scheduler.status || 'info'));
+
+    var disabledGrants = Number(operators.disabled_grants || 0);
+    $('#health-lapr-disabled-grants')
+        .text((disabledGrants === 1
+            ? TP_HEALTH_L10N.lapr_disabled_grant_warning
+            : TP_HEALTH_L10N.lapr_disabled_grants_warning.replace('{count}', disabledGrants)))
+        .toggle(disabledGrants > 0);
+
+    var $availability = $('#health-lapr-availability');
+    if (!lapr.available || !lapr.enabled || lapr.error) {
+        $availability
+            .removeClass('alert-info alert-warning alert-danger')
+            .addClass(lapr.error || (lapr.enabled && !lapr.available) ? 'alert-danger' : 'alert-info')
+            .text(reasonText || TP_HEALTH_L10N.lapr_no_data)
+            .show();
+    } else if (reasonText && overall.reason !== 'healthy') {
+        $availability.removeClass('alert-info alert-danger').addClass('alert-warning').text(reasonText).show();
+    } else if (!scheduler.enabled) {
+        $availability
+            .removeClass('alert-warning alert-danger')
+            .addClass('alert-info')
+            .text(TP_HEALTH_L10N.lapr_scheduler_disabled_notice)
+            .show();
+    } else {
+        $availability.hide().text('');
+    }
+
+    var stateLabels = {
+        healthy: TP_HEALTH_L10N.lapr_state_healthy,
+        scheduled: TP_HEALTH_L10N.lapr_state_scheduled,
+        manual_only: TP_HEALTH_L10N.lapr_state_manual_only,
+        retrying: TP_HEALTH_L10N.lapr_state_retrying,
+        overdue: TP_HEALTH_L10N.lapr_state_overdue,
+        error: TP_HEALTH_L10N.lapr_state_error,
+        paused: TP_HEALTH_L10N.lapr_state_paused
+    };
+    var stateRows = '';
+    $.each(['healthy', 'scheduled', 'manual_only', 'retrying', 'overdue', 'error', 'paused'], function(_, state) {
+        stateRows += '<tr><th>' + tpEscapeHtml(stateLabels[state]) + '</th>' +
+            '<td class="text-right">' + Number(accounts[state] || 0) + '</td></tr>';
+    });
+    $('#health-lapr-account-states').html(stateRows);
+
+    var schedulerRows = '';
+    schedulerRows += tpLaprDetailRow(TP_HEALTH_L10N.lapr_status, tpLaprSchedulerReasonText(scheduler.reason || ''));
+    schedulerRows += tpLaprDetailRow(TP_HEALTH_L10N.enabled, scheduler.enabled ? TP_HEALTH_L10N.enabled : TP_HEALTH_L10N.disabled);
+    schedulerRows += tpLaprDetailRow(TP_HEALTH_L10N.lapr_scheduler_next, tpLaprFormatTimestamp(scheduler.next_run_at));
+    schedulerRows += tpLaprDetailRow(
+        TP_HEALTH_L10N.lapr_scheduler_interval,
+        Number(scheduler.interval_minutes || 0) + ' ' + TP_HEALTH_L10N.minutes
+    );
+    schedulerRows += tpLaprDetailRow(TP_HEALTH_L10N.lapr_scheduler_pending, Number(scheduler.pending || 0));
+    schedulerRows += tpLaprDetailRow(TP_HEALTH_L10N.lapr_scheduler_running, Number(scheduler.running || 0));
+    schedulerRows += tpLaprDetailRow(TP_HEALTH_L10N.lapr_scheduler_failed_24h, Number(scheduler.failed_24h || 0));
+    $('#health-lapr-scheduler-details').html(schedulerRows);
+
+    var actionRows = '';
+    var actionItems = Array.isArray(lapr.action_items) ? lapr.action_items : [];
+    if (actionItems.length === 0) {
+        actionRows = '<tr><td colspan="4" class="text-center text-muted">' + tpEscapeHtml(TP_HEALTH_L10N.lapr_healthy) + '</td></tr>';
+    } else {
+        $.each(actionItems, function(_, issue) {
+            actionRows += '<tr>' +
+                '<td>' + tpStatusToBadge(issue.severity || 'info') + '</td>' +
+                '<td>' + tpEscapeHtml(issue.endpoint_label || '-') + '</td>' +
+                '<td>' + tpEscapeHtml(issue.username || '-') + '</td>' +
+                '<td>' + tpEscapeHtml(tpLaprIssueText(issue.code || '')) + '</td>' +
+                '</tr>';
+        });
+    }
+    $('#health-lapr-action-items').html(actionRows);
+
+    var failureRows = '';
+    var recentFailures = Array.isArray(lapr.recent_failures) ? lapr.recent_failures : [];
+    if (recentFailures.length === 0) {
+        failureRows = '<tr><td colspan="5" class="text-center text-muted">' + tpEscapeHtml(TP_HEALTH_L10N.no_data) + '</td></tr>';
+    } else {
+        $.each(recentFailures, function(_, failure) {
+            var cause = tpLaprFailureText(failure.category || 'other');
+            if (failure.error_code) {
+                cause += ' (' + failure.error_code + ')';
+            }
+            failureRows += '<tr>' +
+                '<td>' + tpEscapeHtml(tpLaprFormatTimestamp(failure.created_at)) + '</td>' +
+                '<td>' + tpEscapeHtml(failure.endpoint_label || '-') + '</td>' +
+                '<td>' + tpEscapeHtml(failure.username || '-') + '</td>' +
+                '<td>' + tpEscapeHtml(cause) + '</td>' +
+                '<td>' + tpEscapeHtml(tpLaprTriggerText(failure.trigger || '')) + '</td>' +
+                '</tr>';
+        });
+    }
+    $('#health-lapr-recent-failures').html(failureRows);
+}
+
+function tpLaprDetailRow(label, value) {
+    return '<tr><th>' + tpEscapeHtml(label) + '</th><td class="text-right">' + tpEscapeHtml(value) + '</td></tr>';
+}
+
+function tpLaprReasonText(reason) {
+    var reasons = {
+        module_disabled: TP_HEALTH_L10N.lapr_module_disabled,
+        schema_missing: TP_HEALTH_L10N.lapr_schema_missing,
+        query_failed: TP_HEALTH_L10N.lapr_query_failed,
+        no_accounts: TP_HEALTH_L10N.lapr_no_accounts,
+        action_required: TP_HEALTH_L10N.lapr_action_required,
+        warnings: TP_HEALTH_L10N.lapr_warnings,
+        healthy: TP_HEALTH_L10N.lapr_healthy,
+        scheduler_disabled: TP_HEALTH_L10N.lapr_scheduler_disabled_notice,
+        scheduler_initializing: TP_HEALTH_L10N.status_info,
+        scheduler_overdue: TP_HEALTH_L10N.lapr_action_required,
+        queue_stalled: TP_HEALTH_L10N.lapr_action_required,
+        worker_failed: TP_HEALTH_L10N.lapr_action_required
+    };
+    return reasons[reason] || TP_HEALTH_L10N.lapr_no_data;
+}
+
+function tpLaprSchedulerReasonText(reason) {
+    var reasons = {
+        healthy: TP_HEALTH_L10N.lapr_healthy,
+        module_disabled: TP_HEALTH_L10N.lapr_module_disabled,
+        scheduler_disabled: TP_HEALTH_L10N.lapr_scheduler_disabled_notice,
+        scheduler_initializing: TP_HEALTH_L10N.lapr_scheduler_initializing,
+        scheduler_overdue: TP_HEALTH_L10N.lapr_scheduler_overdue,
+        queue_stalled: TP_HEALTH_L10N.lapr_queue_stalled,
+        worker_failed: TP_HEALTH_L10N.lapr_worker_failed,
+        cron_unhealthy: TP_HEALTH_L10N.lapr_cron_unhealthy,
+        schema_missing: TP_HEALTH_L10N.lapr_schema_missing,
+        query_failed: TP_HEALTH_L10N.lapr_query_failed
+    };
+    return reasons[reason] || TP_HEALTH_L10N.lapr_no_data;
+}
+
+function tpLaprIssueText(code) {
+    var issues = {
+        endpoint_inactive: TP_HEALTH_L10N.lapr_issue_endpoint_inactive,
+        hostkey_unverified: TP_HEALTH_L10N.lapr_issue_hostkey_unverified,
+        capability_missing: TP_HEALTH_L10N.lapr_issue_capability_missing,
+        duplicate_endpoint: TP_HEALTH_L10N.lapr_issue_duplicate_endpoint,
+        shared_credential: TP_HEALTH_L10N.lapr_issue_shared_credential,
+        shared_password_credential: TP_HEALTH_L10N.lapr_issue_shared_password_credential,
+        duplicate_managed_target: TP_HEALTH_L10N.lapr_issue_duplicate_managed_target,
+        managed_key_credential: TP_HEALTH_L10N.lapr_issue_managed_key_credential,
+        self_managed_endpoint: TP_HEALTH_L10N.lapr_issue_self_managed_endpoint,
+        endpoint_missing: TP_HEALTH_L10N.lapr_issue_endpoint_missing,
+        managed_item_missing: TP_HEALTH_L10N.lapr_issue_managed_item_missing,
+        managed_item_unavailable: TP_HEALTH_L10N.lapr_issue_managed_item_unavailable,
+        credential_missing: TP_HEALTH_L10N.lapr_issue_credential_missing,
+        credential_unavailable: TP_HEALTH_L10N.lapr_issue_credential_unavailable,
+        policy_missing: TP_HEALTH_L10N.lapr_issue_policy_missing,
+        username_mismatch: TP_HEALTH_L10N.lapr_issue_username_mismatch,
+        account_overdue: TP_HEALTH_L10N.lapr_issue_account_overdue,
+        account_error: TP_HEALTH_L10N.lapr_issue_account_error,
+        account_paused: TP_HEALTH_L10N.lapr_issue_account_paused,
+        account_retrying: TP_HEALTH_L10N.lapr_issue_account_retrying,
+        account_manual_only: TP_HEALTH_L10N.lapr_issue_account_manual_only,
+        worker_failed: TP_HEALTH_L10N.lapr_issue_worker_failed,
+        scheduler_unhealthy: TP_HEALTH_L10N.lapr_issue_scheduler_unhealthy,
+        cron_unhealthy: TP_HEALTH_L10N.lapr_issue_cron_unhealthy
+    };
+    return issues[code] || code;
+}
+
+function tpLaprFailureText(category) {
+    var categories = {
+        connectivity: TP_HEALTH_L10N.lapr_failure_connectivity,
+        authentication: TP_HEALTH_L10N.lapr_failure_authentication,
+        hostkey: TP_HEALTH_L10N.lapr_failure_hostkey,
+        password_change: TP_HEALTH_L10N.lapr_failure_password_change,
+        synchronization: TP_HEALTH_L10N.lapr_failure_synchronization,
+        password_generation: TP_HEALTH_L10N.lapr_failure_password_generation,
+        encryption: TP_HEALTH_L10N.lapr_failure_encryption,
+        configuration: TP_HEALTH_L10N.lapr_failure_configuration,
+        other: TP_HEALTH_L10N.lapr_failure_other
+    };
+    return categories[category] || categories.other;
+}
+
+function tpLaprTriggerText(trigger) {
+    if (trigger === 'manual') return TP_HEALTH_L10N.lapr_trigger_manual;
+    if (trigger === 'scheduler') return TP_HEALTH_L10N.lapr_trigger_scheduler;
+    if (trigger === 'enroll') return TP_HEALTH_L10N.lapr_trigger_enroll;
+    return trigger || '-';
+}
+
+function tpLaprFormatTimestamp(value) {
+    if (!value) return '-';
+    var dateValue = value;
+    if (/^\d+$/.test(String(value))) {
+        dateValue = Number(value) * 1000;
+    } else if (typeof value === 'string' && value.indexOf(' ') > 0) {
+        dateValue = value.replace(' ', 'T');
+    }
+    var date = new Date(dateValue);
+    return isNaN(date.getTime()) ? String(value) : date.toLocaleString(navigator.language || undefined);
 }
 
 function tpRenderSystem(report) {
