@@ -552,6 +552,10 @@
                                                     "revision": {
                                                         "type": "integer"
                                                     },
+                                                    "revision_changed_at": {
+                                                        "type": "integer",
+                                                        "description": "Unix UTC timestamp in seconds of the winning journal revision."
+                                                    },
                                                     "reason": {
                                                         "type": "string",
                                                         "enum": [
@@ -713,6 +717,13 @@
                                         "revision": {
                                             "type": "integer",
                                             "description": "Revision of the item after the update"
+                                        },
+                                        "revision_changed_at": {
+                                            "type": [
+                                                "integer",
+                                                "null"
+                                            ],
+                                            "description": "Unix UTC timestamp in seconds paired with the returned revision; null when the date is unknown."
                                         }
                                     }
                                 }
@@ -1189,6 +1200,13 @@
                         "type": "integer",
                         "description": "Monotonic revision of the item, bumped on every content change. Compare it against a cached copy to detect staleness; the larger value is the newer one."
                     },
+                    "revision_changed_at": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "description": "Unix UTC timestamp in seconds paired with revision. It changes on functional content revisions, never on reads or ciphertext-only rewrites; null means the date is unknown."
+                    },
                     "label": {
                         "type": "string"
                     },
@@ -1296,6 +1314,13 @@
                     "revision": {
                         "type": "integer",
                         "description": "Monotonic revision of the item, bumped on every content change. Compare it against a cached copy to detect staleness; the larger value is the newer one."
+                    },
+                    "revision_changed_at": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "description": "Unix UTC timestamp in seconds paired with revision; null when the date is unknown."
                     },
                     "label": {
                         "type": "string"
@@ -1637,6 +1662,13 @@
                     "revision": {
                         "type": "integer",
                         "description": "Revision allocated to the new item"
+                    },
+                    "revision_changed_at": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "description": "Unix UTC timestamp in seconds paired with the allocated revision; null when the date is unknown."
                     }
                 }
             },
