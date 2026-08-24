@@ -10,7 +10,7 @@
 .claude/docs/architecture-websocket.md a13c93e7892930eecbc28fb2bf0625cb
 .claude/skills/debug-issue/skill.md f6ca42b7fce135a9dbe1b01f651e35a4
 .claude/skills/explore-codebase/skill.md 72bcdd4382c8389e22970964cbdf73e3
-.claude/skills/prepare-release/SKILL.md 20607344865ea17668491fb926a159f1
+.claude/skills/prepare-release/SKILL.md 10bbef022dfb81ea42b637aa40883dbe
 .claude/skills/prepare-release/references/release-notes-template.md badd1136b921f1688af11ad73280e59e
 .claude/skills/prepare-release/scripts/regenerate_checksums.sh 5fd902eff9daf706d5dc864356f814a2
 .claude/skills/refactor-safely/skill.md 48b6d7fd4e9a3dcef923e9e32f8a75d0
