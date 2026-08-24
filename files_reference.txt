@@ -67,7 +67,7 @@ app/config/.htaccess 81594a7af3d0a392c24aada056204b79
 app/config/emails_templates.php 5dd31985ddd8bd531e8b7392053db9db
 app/config/include.php b2b9189c72326c976bc96bd2d35ff173
 app/config/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
-app/config/settings.sample.php b428568d86d89390da3f0e0137a14802
+app/config/settings.sample.php 15ed7c39ba4b70e0157292265f938860
 app/core/command-palette.js.php e4e3fd01a173bfdcbd02c96ea679375a
 app/core/extension-autoconfig.js.php 55768fb83ec46e63557dcb0bb247d22d
 app/core/item-classification.js.php dde3300540213102eefcd528af22f9aa
