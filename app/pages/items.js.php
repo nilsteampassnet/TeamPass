@@ -6948,7 +6948,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         $pwBadge.addClass('hidden').removeClass('badge-success badge-danger badge-warning badge-secondary')
                     }
 
-                    $('#card-item-login').html(data.login);
+                    // .text(), like the email and url below: the login is data, and it is
+                    // also the clipboard target, which reads the node's text.
+                    $('#card-item-login').text(data.login);
                     $('#form-item-login, #form-item-suggestion-login, #form-item-server-login').val(data.login);
 
                     $('#card-item-email').text(data.email);
