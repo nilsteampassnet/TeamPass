@@ -531,10 +531,8 @@ class ItemController extends BaseController
 
             // Same access rules as item/get, expressed on both the journal and the items.
             $folderAccessModel = new FolderAccessModel();
-            $safeFolders = implode(
-                ',',
-                $folderAccessModel->normalizeFolderIds($userData['folders_list'] ?? '')
-            ) ?: '0';
+            $normalizedFolders = $folderAccessModel->normalizeFolderIds($userData['folders_list'] ?? '');
+            $safeFolders = implode(',', $normalizedFolders) ?: '0';
             $safeRestricted = '';
             if (empty($userData['restricted_items_list']) === false) {
                 $safeRestricted = implode(
@@ -543,11 +541,31 @@ class ItemController extends BaseController
                 );
             }
 
+            // A caller with neither an accessible folder nor a restricted item has an
+            // empty delta by definition. Returning early avoids relying on the '0'
+            // sentinel, which is only inert against columns no row can hold.
+            if ($normalizedFolders === [] && $safeRestricted === '') {
+                $this->sendOutput(
+                    json_encode([
+                        'cursor' => $bounds['max'],
+                        'has_more' => false,
+                        'full_sync_required' => false,
+                        'changed' => [],
+                        'removed' => [],
+                    ]),
+                    ['Content-Type: application/json', 'HTTP/1.1 200 OK']
+                );
+                return;
+            }
+
             // The journal is scoped on the folder the item was in *at change time* as well
             // as the one it came from: that is what surfaces an item leaving the caller's
             // folders, which its current row can no longer tell.
+            // previous_folder_id is NOT NULL DEFAULT 0 and only written on a move, so it
+            // must be constrained to a real folder — otherwise every non-move journal row
+            // in the instance matches the sentinel and leaks through `removed`.
             $journalScopeSql = ' AND (r.folder_id IN (' . $safeFolders . ')'
-                . ' OR r.previous_folder_id IN (' . $safeFolders . ')';
+                . ' OR (r.previous_folder_id > 0 AND r.previous_folder_id IN (' . $safeFolders . '))';
             if ($safeRestricted !== '') {
                 $journalScopeSql .= ' OR r.item_id IN (' . $safeRestricted . ')';
             }
