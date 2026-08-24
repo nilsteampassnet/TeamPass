@@ -7670,6 +7670,21 @@ switch ($inputData['type']) {
             $inputData['itemId'],
             '"at_shown","at_password_copied", "at_shown", "at_password_shown", "at_password_shown_edit_form"'
         );
+
+        // The detail string below is markup, and the fragments interpolated into it are
+        // item values an attacker controls (a previous label, login, url, tag, custom
+        // field, folder name or attachment name). Escaping them here keeps the server
+        // from emitting attacker markup at all.
+        //
+        // This is defence in depth, NOT what makes the value safe to render: the client
+        // purifier strips two entity layers from every answer, so any encoding added here
+        // is consumed before the value reaches the DOM. The sink in loadItemHistory()
+        // (app/pages/items.js.php) is what has to encode - see the contract on
+        // purifyData() in app/includes/js/functions.js.
+        $escapeDetail = static function ($value): string {
+            return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+        };
+
         foreach ($rows as $record) {
             $parsedReason = parseItemLogReasonSource(isset($record['raison']) === true ? (string) $record['raison'] : null);
             $record['raison'] = $parsedReason['reason'];
@@ -7728,7 +7743,7 @@ switch ($inputData['type']) {
                     );
                 }
             } elseif ($record['action'] === 'at_manual') {
-                $detail = $reason[0];
+                $detail = $escapeDetail($reason[0]);
                 $action = $lang->get($record['action']);
             } elseif ($reason[0] === 'at_description') {
                 $action = $lang->get('description_has_changed');
@@ -7736,19 +7751,19 @@ switch ($inputData['type']) {
                 $action = $lang->get($reason[0]);
                 if ($reason[0] === 'at_moved') {
                     $tmp = explode(' -> ', $reason[1]);
-                    $detail = $lang->get('from') . ' <span class="font-weight-light">' . $tmp[0] . '</span> ' . $lang->get('to') . ' <span class="font-weight-light">' . $tmp[1] . ' </span>';
+                    $detail = $lang->get('from') . ' <span class="font-weight-light">' . $escapeDetail($tmp[0]) . '</span> ' . $lang->get('to') . ' <span class="font-weight-light">' . $escapeDetail($tmp[1]) . ' </span>';
                 } elseif ($reason[0] === 'at_field') {
                     $tmp = explode(' => ', $reason[1]);
                     if (count($tmp) > 1) {
-                        $detail = '<b>' . trim($tmp[0]) . '</b> | ' . $lang->get('previous_value') .
-                            ': <span class="font-weight-light">' . trim($tmp[1]) . '</span>';
+                        $detail = '<b>' . $escapeDetail(trim($tmp[0])) . '</b> | ' . $lang->get('previous_value') .
+                            ': <span class="font-weight-light">' . $escapeDetail(trim($tmp[1])) . '</span>';
                     } else {
-                        $detail = trim($reason[1]);
+                        $detail = $escapeDetail(trim($reason[1]));
                     }
                 } elseif (in_array($reason[0], array('at_restriction', 'at_email', 'at_login', 'at_label', 'at_url', 'at_tag')) === true) {
                     $tmp = explode(' => ', $reason[1]);
                     $detail = empty(trim($tmp[0])) === true ?
-                        $lang->get('no_previous_value') : $lang->get('previous_value') . ': <span class="font-weight-light">' . $tmp[0] . ' </span>';
+                        $lang->get('no_previous_value') : $lang->get('previous_value') . ': <span class="font-weight-light">' . $escapeDetail($tmp[0]) . ' </span>';
                 } elseif ($reason[0] === 'at_classification_changed') {
                     // Reason is '<previous level> => <new level>'; legacy
                     // entries only carry the new level.
@@ -7769,15 +7784,16 @@ switch ($inputData['type']) {
                 } elseif ($reason[0] === 'at_add_file' || $reason[0] === 'at_del_file') {
                     $tmp = explode(':', $reason[1]);
                     $tmp = explode('.', $tmp[0]);
-                    $detail = isBase64($tmp[0]) === true ?
-                        base64_decode($tmp[0]) . '.' . $tmp[1] : $tmp[0];
+                    $detail = $escapeDetail(
+                        isBase64($tmp[0]) === true ? base64_decode($tmp[0]) . '.' . $tmp[1] : $tmp[0]
+                    );
                 } elseif ($reason[0] === 'at_import') {
                     $detail = '';
                 } elseif (in_array($reason[0], array('csv', 'pdf')) === true) {
                     $detail = $reason[0];
                     $action = $lang->get('exported_to_file');
                 } else {
-                    $detail = $reason[0];
+                    $detail = $escapeDetail($reason[0]);
                 }
             } else {
                 $action = $lang->get($record['action']);

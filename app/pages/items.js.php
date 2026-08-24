@@ -8167,7 +8167,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             '<img class="direct-chat-img" src="' + value.avatar + '" alt="Message User Image">' +
                             '<div class="direct-chat-text"><span class="text-capitalize">' +
                             (value.action === '' ? '' : (value.action)) + '</span> ' +
-                            (value.detail === '' ? '' : (' | ' + value.detail)) + '</div></div>';
+                            (value.detail === '' ? '' : (' | ' + htmlEncode(value.detail))) + '</div></div>';
                         nbHistoryEvents += 1;
                     });
                     // Display

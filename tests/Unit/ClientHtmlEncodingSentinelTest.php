@@ -32,7 +32,7 @@ class ClientHtmlEncodingSentinelTest extends TestCase
     private const WATCHED_FIELDS = [
         'title', 'label', 'name', 'login', 'email', 'folder', 'path',
         'lastname', 'description', 'message', 'reason', 'task_type',
-        'changed_by', 'deleted_by', 'updated_by',
+        'changed_by', 'deleted_by', 'updated_by', 'detail',
     ];
 
     /**
