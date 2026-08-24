@@ -21,39 +21,64 @@ so the Composer binaries live under `app/vendor/bin/`, not `vendor/bin/`.
 
 ```bash
 php app/vendor/bin/phpstan analyse --memory-limit=2G   # PHPStan level 4 (config: phpstan.neon)
+php _tools/phpunit.phar                                # Unit tests
 php app/vendor/bin/composer-license-checker            # License compliance
 composer install                                       # PHP dependencies
 php app/scripts/background_tasks___handler.php         # Background tasks
-php app/vendor/phpunit/phpunit/phpunit                 # Unit tests — see caveat below
 ```
 
 A full PHPStan run takes several minutes — launch it in the background rather than blocking on it.
 
-**PHPUnit does not run from a fresh checkout — repair the toolchain first.** The dev
-dependencies are untracked, so any checkout or merge deletes them while leaving generated
-residue behind (`phpstan/phpstan/turbo-ext/`, the Redis proxies under `symfony/cache/Traits/`,
-the `Xdebug*` files). Their directory survives, Composer only checks that a package directory
-*exists*, so it considers them installed and skips them. On top of that the committed
-`app/vendor/composer/` is the **production** autoloader (`composer install --no-dev`) and maps
-no dev package. Symptom: `Class "PHPUnit\TextUI\Application" not found` with the package
-sitting right there. `composer dump-autoload` does **not** help — `phpunit/phpunit` is absent
-from `installed.json`.
+**Run the tests with `_tools/phpunit.phar`, never with `app/vendor/phpunit/phpunit/phpunit`.**
+The Composer-installed entry point resolves its classes through `app/vendor/composer/`, and that
+directory is committed in its **production** form (`composer install --no-dev`), which maps no
+dev package. Symptom: `Class "PHPUnit\TextUI\Application" not found` with the package sitting
+right there. `composer dump-autoload` does not help — `phpunit/phpunit` is absent from
+`installed.json`. Worse, the obvious repair (`composer install`) rewrites the autoloader into its
+dev form, and the mandatory `git checkout -- app/vendor/composer/` that must follow disarms the
+tests again. The loop has no stable exit.
+
+The phar has none of that coupling — it carries its own dependencies and never reads
+`app/vendor/composer/`, exactly like `app/vendor/bin/phpstan` does with `phpstan.phar`. It lives
+in `_tools/`, which is gitignored (`/_tools/*`) and excluded from the admin integrity check
+(`$excludeDirs` in `getAllFiles()`), so no checkout, merge or release can remove it.
+
+```bash
+php _tools/phpunit.phar                         # expect: OK (~1500 tests, all green)
+php app/vendor/bin/phpstan analyse --memory-limit=2G
+```
+
+If `_tools/phpunit.phar` is missing (fresh clone — it is untracked by design), reinstall it and
+verify the signature. Keep the version aligned with `.github/workflows/quality.yml`, which runs
+whatever `composer install` resolves for `phpunit/phpunit: ^10.5`:
+
+```bash
+mkdir -p _tools
+curl -sL -o _tools/phpunit.phar     https://phar.phpunit.de/phpunit-10.5.64.phar
+curl -sL -o /tmp/phpunit.phar.asc   https://phar.phpunit.de/phpunit-10.5.64.phar.asc
+gpg --keyserver hkps://keys.openpgp.org \
+    --recv-keys D8406D0D82947747293778314AA394086372C20A          # Sebastian Bergmann
+gpg --verify /tmp/phpunit.phar.asc _tools/phpunit.phar            # expect: Good signature
+chmod +x _tools/phpunit.phar
+```
+
+**`composer install` is still needed for the other dev tools** (`composer-license-checker`, and
+PHPStan on a fresh clone). It leaves the same trap behind, so the old recovery still applies to
+them — and only to them:
 
 ```bash
 rm -rf app/vendor/phpstan app/vendor/phpunit app/vendor/symfony/cache
 composer install
-php app/vendor/phpunit/phpunit/phpunit          # expect: OK (1344 tests, 38419 assertions)
-php app/vendor/bin/phpstan analyse --memory-limit=2G
-git checkout -- app/vendor/composer/            # LAST — it disarms the toolchain again
+git checkout -- app/vendor/composer/            # restore the production autoloader
 ```
 
-The `rm -rf` is not optional: without it `composer install` repairs nothing for those three
-packages. The order of the last three lines is not free either — `composer install` rewrites
-`app/vendor/composer/` into its *dev* form, which is what makes the tools runnable, and the
-final `git checkout` puts the production form back. Run the toolchain **between** the two.
-That restore is mandatory before committing: shipping the dev autoloader fatals every
-installation (the bug 3.2.1.7 had to fix). Full rationale in
-`.claude/skills/prepare-release/SKILL.md` §7.
+The `rm -rf` is not optional: any checkout or merge deletes the untracked dev packages while
+leaving generated residue behind (`phpstan/phpstan/turbo-ext/`, the Redis proxies under
+`symfony/cache/Traits/`, the `Xdebug*` files); the directory survives, Composer only checks that a
+package directory *exists*, so it considers them installed and skips them. The final restore is
+mandatory before committing: shipping the dev autoloader fatals every installation (the bug
+3.2.1.7 had to fix), and the `Committed autoloader is production-only` CI job rejects it. Full
+rationale in `.claude/skills/prepare-release/SKILL.md` §7.
 
 Database schema: initial install via `/install/install.php`, upgrades via `/install/upgrade.php` + `/install/upgrade_run_*.php`.
 
