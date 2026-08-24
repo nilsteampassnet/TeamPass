@@ -3136,6 +3136,8 @@ function bumpItemRevision(
             $folderId = getItemFolderIdFromDb($itemId);
         }
 
+        $changedAt = time();
+
         DB::insert(
             prefixTable('items_revisions'),
             [
@@ -3144,7 +3146,7 @@ function bumpItemRevision(
                 'previous_folder_id' => $previousFolderId === null ? 0 : (int) $previousFolderId,
                 'action' => $action,
                 'changed_by' => $userId,
-                'changed_at' => time(),
+                'changed_at' => $changedAt,
             ]
         );
         $revision = (int) DB::insertId();
@@ -3153,7 +3155,10 @@ function bumpItemRevision(
         // journal. A purge leaves no row to update, which is expected.
         DB::update(
             prefixTable('items'),
-            ['revision' => $revision],
+            [
+                'revision' => $revision,
+                'revision_changed_at' => $changedAt,
+            ],
             'id = %i',
             $itemId
         );
@@ -3211,21 +3216,35 @@ function pruneItemRevisionsJournal(int $windowDays): int
  */
 function getItemRevision(int $itemId): int
 {
+    return getItemRevisionMetadata($itemId)['revision'];
+}
+
+/**
+ * Read the current revision and its functional change timestamp.
+ *
+ * @param int $itemId Item id
+ *
+ * @return array{revision: int, revision_changed_at: int|null}
+ */
+function getItemRevisionMetadata(int $itemId): array
+{
     if ($itemId <= 0) {
-        return 0;
+        return itemRevisionMetadataFromRow(null);
     }
 
     try {
         loadClasses('DB');
 
         $row = DB::queryFirstRow(
-            'SELECT revision FROM ' . prefixTable('items') . ' WHERE id = %i',
+            'SELECT revision, revision_changed_at
+            FROM ' . prefixTable('items') . '
+            WHERE id = %i',
             $itemId
         );
 
-        return $row === null ? 0 : (int) $row['revision'];
+        return itemRevisionMetadataFromRow($row);
     } catch (\Throwable $e) {
-        return 0;
+        return itemRevisionMetadataFromRow(null);
     }
 }
 
