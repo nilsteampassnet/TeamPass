@@ -80,7 +80,7 @@ class ItemModel
         $rows = DB::query(
             "SELECT i.id, i.label, i.description, i.pw, i.pw_iv, i.url, i.id_tree, i.login, i.email,
                 i.viewed_no, i.fa_icon, i.inactif, i.perso, i.favicon_url, i.anyone_can_modify,
-                i.revision,
+                i.revision, i.revision_changed_at,
                 t.title as folder_label,
                 io.secret as otp_secret,
                 io.algorithm as otp_algorithm,
@@ -168,6 +168,9 @@ class ItemModel
                 [
                     'id' => (int) $row['id'],
                     'revision' => (int) $row['revision'],
+                    'revision_changed_at' => $row['revision_changed_at'] === null
+                        ? null
+                        : (int) $row['revision_changed_at'],
                     'label' => $row['label'],
                     'description' => $row['description'],
                     'pwd' => $pwd,
@@ -289,7 +292,7 @@ class ItemModel
     ): array {
         // 1. Scan the journal window.
         $journalRows = DB::query(
-            'SELECT r.revision, r.item_id, r.action
+            'SELECT r.revision, r.item_id, r.action, r.changed_at
             FROM ' . prefixTable('items_revisions') . ' AS r
             WHERE r.revision > %i' . $journalScopeSql . '
             ORDER BY r.revision ASC
@@ -355,6 +358,7 @@ class ItemModel
                 $removed[] = [
                     'id' => (int) $itemId,
                     'revision' => (int) $row['revision'],
+                    'revision_changed_at' => (int) $row['changed_at'],
                     'reason' => $verdict['reason'],
                 ];
                 continue;
@@ -376,6 +380,18 @@ class ItemModel
                 0,
                 [array_keys($toDeliver)]
             );
+
+            // The journal winner defines the cursor contract. A concurrent later update may
+            // already be visible in items, so explicitly keep the revision/timestamp pair from
+            // the winning journal row scanned by this page.
+            foreach ($changed as &$item) {
+                $changedItemId = (int) $item['id'];
+                if (isset($winners[$changedItemId]) === true) {
+                    $item['revision'] = (int) $winners[$changedItemId]['revision'];
+                    $item['revision_changed_at'] = (int) $winners[$changedItemId]['changed_at'];
+                }
+            }
+            unset($item);
         }
 
         // 6. An item whose sharekeys are still being distributed cannot be handed over yet.
@@ -503,12 +519,15 @@ class ItemModel
             // waiting for a manual dashboard scan (no-op when the dashboard is disabled).
             refreshItemHealthAfterSave((int) $newID, $userId, (string) $plaintextPasswordForHealth, $SETTINGS);
 
+            $revisionMetadata = getItemRevisionMetadata((int) $newID);
+
             // Success response
             return [
                 'error' => false,
                 'message' => 'Item added successfully',
                 'newId' => $newID,
-                'revision' => getItemRevision((int) $newID),
+                'revision' => $revisionMetadata['revision'],
+                'revision_changed_at' => $revisionMetadata['revision_changed_at'],
             ];
 
         } catch (Exception $e) {
@@ -687,6 +706,41 @@ class ItemModel
         string $userPrivateKey,
         array $currentItem
     ): string {
+        try {
+            return $this->getItemPasswordForUpdate(
+                $itemId,
+                $userId,
+                $userPrivateKey,
+                $currentItem
+            );
+        } catch (UnexpectedValueException $e) {
+            error_log('[API] ItemModel password comparison failed for item ' . $itemId);
+
+            return "\0lapr-undecryptable";
+        }
+    }
+
+    /**
+     * Recover the current cleartext password before an API password update.
+     *
+     * The migration-aware sharekey path is mandatory. Any missing or unusable key fails
+     * before the caller mutates the item, so a successful password update never knowingly
+     * creates a gap in the encrypted password history.
+     *
+     * @param int    $itemId         Item id
+     * @param int    $userId         Caller id
+     * @param string $userPrivateKey Caller RSA private key (cleartext)
+     * @param array  $currentItem    Current items row
+     *
+     * @return string Current cleartext password
+     * @throws UnexpectedValueException When the password cannot be recovered safely
+     */
+    private function getItemPasswordForUpdate(
+        int $itemId,
+        int $userId,
+        string $userPrivateKey,
+        array $currentItem
+    ): string {
         if (empty($currentItem['pw']) === true) {
             return '';
         }
@@ -698,33 +752,40 @@ class ItemModel
             $userId,
             $itemId
         );
-        if (DB::count() === 0) {
-            return "\0lapr-undecryptable";
+        if ($userKey === null) {
+            throw new UnexpectedValueException('The current item password cannot be decrypted.');
         }
 
         $userPublicKey = (string) DB::queryFirstField(
             'SELECT public_key FROM ' . prefixTable('users') . ' WHERE id = %i',
             $userId
         );
-
-        try {
-            return teampassDecryptPasswordValue(
-                (string) $currentItem['pw'],
-                decryptUserObjectKeyWithMigration(
-                    $userKey['share_key'],
-                    $userPrivateKey,
-                    $userPublicKey,
-                    (int) $userKey['increment_id'],
-                    'sharekeys_items'
-                ),
-                (int) ($currentItem['pw_len'] ?? 0),
-                (string) ($currentItem['pw_iv'] ?? '')
-            );
-        } catch (Exception $e) {
-            error_log('[API] ItemModel LAPR password comparison failed for item ' . $itemId . ': ' . $e->getMessage());
-
-            return "\0lapr-undecryptable";
+        if ($userPublicKey === '') {
+            throw new UnexpectedValueException('The current item password cannot be decrypted.');
         }
+
+        $objectKey = decryptUserObjectKeyWithMigration(
+            (string) $userKey['share_key'],
+            $userPrivateKey,
+            $userPublicKey,
+            (int) $userKey['increment_id'],
+            'sharekeys_items'
+        );
+        if ($objectKey === '') {
+            throw new UnexpectedValueException('The current item password cannot be decrypted.');
+        }
+
+        $password = teampassDecryptPasswordValue(
+            (string) $currentItem['pw'],
+            $objectKey,
+            (int) ($currentItem['pw_len'] ?? 0),
+            (string) ($currentItem['pw_iv'] ?? '')
+        );
+        if ($password === '' && (int) ($currentItem['pw_len'] ?? 0) > 0) {
+            throw new UnexpectedValueException('The current item password cannot be decrypted.');
+        }
+
+        return $password;
     }
 
     /**
@@ -1475,6 +1536,7 @@ class ItemModel
         try {
             include_once API_ROOT_PATH . '/../sources/main.functions.php';
             include_once API_ROOT_PATH . '/../sources/lapr.functions.php';
+            include_once API_ROOT_PATH . '/../sources/item_update_logic.php';
 
             // Load config
             $configManager = new ConfigManager();
@@ -1526,11 +1588,14 @@ class ItemModel
                 // rejected. A password that cannot be decrypted fails closed.
                 $laprPasswordChanged = isset($params['password'])
                     && (string) $params['password'] !== ''
-                    && (string) $params['password'] !== $this->getItemPasswordForComparison(
-                        $itemId,
-                        (int) $userData['id'],
-                        $userPrivateKey,
-                        $currentItem
+                    && itemPasswordHasChanged(
+                        $this->getItemPasswordForComparison(
+                            $itemId,
+                            (int) $userData['id'],
+                            $userPrivateKey,
+                            $currentItem
+                        ),
+                        (string) $params['password']
                     );
                 if ($laprLoginChanged === true || $laprPasswordChanged === true) {
                     return [
@@ -1560,6 +1625,8 @@ class ItemModel
             $updateData = [];
             $passwordKey = null;
             $newPassword = null;
+            $encryptedPreviousPassword = null;
+            $passwordChanged = false;
             $hasTotpUpdate = array_key_exists('totp', $params)
                 || array_key_exists('totp_algorithm', $params)
                 || array_key_exists('totp_digits', $params)
@@ -1696,11 +1763,6 @@ class ItemModel
                 }
             }
 
-            // Generate favicon URL if URL is provided and favicon_url is empty
-            if (empty($currentItem['url']) === false) {
-                $updateData['favicon_url'] = $this->getFaviconUrl($currentItem['url']);
-            }
-
             // Each field is stored the way the web form stores it, so an update cannot
             // reintroduce the markup that validateData() strips on creation
             // (GHSA-r298-6mxv-j9hc).
@@ -1730,9 +1792,16 @@ class ItemModel
                 }
             }
 
+            // Regenerate the favicon only when this request actually changes the URL.
+            if (isset($params['url']) && isset($params['favicon_url']) === false) {
+                $updateData['favicon_url'] = empty($updateData['url']) === true
+                    ? ''
+                    : $this->getFaviconUrl((string) $updateData['url']);
+            }
+
             // Handle password update
             if (isset($params['password']) && !empty($params['password'])) {
-                $newPassword = $params['password'];
+                $newPassword = (string) $params['password'];
 
                 // Validate password length
                 if (strlen($newPassword) > $SETTINGS['pwd_maximum_length']) {
@@ -1743,22 +1812,42 @@ class ItemModel
                     ];
                 }
 
-                // Get folder ID for complexity check
-                $folderId = isset($updateData['id_tree']) ? $updateData['id_tree'] : $currentItem['id_tree'];
+                $currentPassword = $this->getItemPasswordForUpdate(
+                    $itemId,
+                    (int) $userData['id'],
+                    $userPrivateKey,
+                    $currentItem
+                );
 
-                // Get folder settings
-                $itemInfos = $this->getFolderSettings((int) $folderId);
+                if (itemPasswordHasChanged($currentPassword, $newPassword) === true) {
+                    // Prepare the history ciphertext before mutating the item. A master-key
+                    // failure therefore cannot produce a successful update with no old_value.
+                    $previousValue = cryption($currentPassword, '', 'encrypt');
+                    if (($previousValue['error'] ?? true) !== false
+                        || empty($previousValue['string']) === true
+                    ) {
+                        throw new RuntimeException('Failed to prepare encrypted password history.');
+                    }
+                    $encryptedPreviousPassword = (string) $previousValue['string'];
 
-                // Check password complexity — capture score to avoid re-running zxcvbn on the ciphertext
-                $complexityLevel = $this->checkPasswordComplexity($newPassword, array_merge($itemInfos, ['folderId' => $folderId]));
+                    // Get folder ID for complexity check
+                    $folderId = isset($updateData['id_tree']) ? $updateData['id_tree'] : $currentItem['id_tree'];
 
-                // Encrypt password
-                $cryptedData = $this->encryptPassword($newPassword);
-                $passwordKey = $cryptedData['passwordKey'];
-                $updateData['pw'] = $cryptedData['encrypted'];
-                $updateData['pw_iv'] = $cryptedData['meta'] ?? '';
-                $updateData['pw_len'] = strlen($newPassword);
-                $updateData['complexity_level'] = $complexityLevel;
+                    // Get folder settings
+                    $itemInfos = $this->getFolderSettings((int) $folderId);
+
+                    // Check password complexity — capture score to avoid re-running zxcvbn on the ciphertext
+                    $complexityLevel = $this->checkPasswordComplexity($newPassword, array_merge($itemInfos, ['folderId' => $folderId]));
+
+                    // Encrypt password
+                    $cryptedData = $this->encryptPassword($newPassword);
+                    $passwordKey = $cryptedData['passwordKey'];
+                    $updateData['pw'] = $cryptedData['encrypted'];
+                    $updateData['pw_iv'] = $cryptedData['meta'] ?? '';
+                    $updateData['pw_len'] = strlen($newPassword);
+                    $updateData['complexity_level'] = $complexityLevel;
+                    $passwordChanged = true;
+                }
             }
 
             $otpConfiguration = null;
@@ -1799,8 +1888,13 @@ class ItemModel
                 );
             }
             
+            $hasGeneralUpdate = empty($updateData) === false
+                || $hasTotpUpdate === true
+                || isset($params['tags'])
+                || (isset($params['fields']) && is_array($params['fields']));
+
             // Update the item
-            if (!empty($updateData) || $hasTotpUpdate === true) {
+            if (empty($updateData) === false || $hasTotpUpdate === true) {
                 $updateData['updated_at'] = time();
 
                 DB::update(
@@ -1911,17 +2005,38 @@ class ItemModel
                     $moveContext['target_folder_id'],
                     $moveContext['target_folder_title']
                 );
-            } else {
+            }
+
+            if ($passwordChanged === true && $encryptedPreviousPassword !== null) {
+                logItems(
+                    $SETTINGS,
+                    $itemId,
+                    (string) $label,
+                    (int) $userData['id'],
+                    'at_modification',
+                    (string) $userData['username'],
+                    'at_pw',
+                    TP_ENCRYPTION_NAME,
+                    null,
+                    $encryptedPreviousPassword
+                );
+            } elseif (is_array($moveContext) === false && $hasGeneralUpdate === true) {
                 logItems($SETTINGS, $itemId, $label, $userData['id'], 'at_modification', $userData['username']);
+            }
+
+            if (is_array($moveContext) === false && $hasGeneralUpdate === true) {
                 updateCacheTable('update_value', $itemId, (int) $userData['id']);
             }
+
+            $revisionMetadata = getItemRevisionMetadata($itemId);
 
             // Success response
             return [
                 'error' => false,
                 'message' => 'Item updated successfully',
                 'item_id' => $itemId,
-                'revision' => getItemRevision($itemId),
+                'revision' => $revisionMetadata['revision'],
+                'revision_changed_at' => $revisionMetadata['revision_changed_at'],
             ];
 
         } catch (InvalidArgumentException | UnexpectedValueException $e) {
