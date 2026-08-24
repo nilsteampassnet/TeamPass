@@ -1525,6 +1525,7 @@ return array(
     'inactive_users_select_at_least_one' => 'Veuillez sélectionner au moins un utilisateur.',
     'private_key_decryption_failed' => 'Impossible de déchiffrer vos clés de chiffrement. Veuillez contacter votre administrateur pour régénérer vos clés.',
     'decryption_failed_for_some_fields' => 'Certains champs personnalisés n’ont pas pu être déchiffrés. Ils peuvent être corrompus ou chiffrés avec une clé obsolète.',
+    'custom_fields_preserved_undecryptable' => 'Certains champs personnalisés ont été soumis vides mais n’ont pas pu être déchiffrés avec vos clés. Ils ont été conservés en l’état afin de ne pas perdre leur contenu. Demandez à un administrateur de lancer l’outil de réparation des sharekeys.',
     'bck_onthefly_col_comment' => 'Commentaire',
     'bck_onthefly_comment_label' => 'Commentaire (optionnel)',
     'bck_onthefly_comment_placeholder' => 'Ajouter une note sur cette sauvegarde…',

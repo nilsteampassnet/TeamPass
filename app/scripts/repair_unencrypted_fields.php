@@ -13,7 +13,7 @@
  *   4. Deletes all orphaned sharekeys_fields rows for that categories_items id.
  *
  * Usage (CLI only):
- *   php scripts/repair_unencrypted_fields.php [--diagnose|--repair]
+ *   php app/scripts/repair_unencrypted_fields.php [--diagnose|--repair]
  *
  * Options:
  *   --diagnose   Show affected rows without making any change (default).
@@ -31,9 +31,9 @@ if (php_sapi_name() !== 'cli') {
     die("This script must be run from the command line.\n");
 }
 
-$rootPath = dirname(__DIR__);
-require_once $rootPath . '/app/config/settings.php';
-require_once $rootPath . '/app/config/include.php';
+$rootPath = dirname(__DIR__); // application root: <install>/app
+require_once $rootPath . '/config/settings.php';
+require_once $rootPath . '/config/include.php';
 require_once $rootPath . '/sources/main.functions.php';
 
 loadClasses('DB');
@@ -45,7 +45,7 @@ if (isset($options['help'])) {
 TeamPass — Repair unencrypted custom fields (issue #5161)
 ==========================================================
 
-Usage: php scripts/repair_unencrypted_fields.php [OPTIONS]
+Usage: php app/scripts/repair_unencrypted_fields.php [OPTIONS]
 
 Options:
   --diagnose   List affected rows without making changes (default)

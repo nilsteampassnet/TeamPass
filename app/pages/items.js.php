@@ -4558,6 +4558,19 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                                 // Clear loading toast
                                 toastr.clear(loadingToast);
 
+                                // Custom fields submitted empty but kept untouched because
+                                // their stored value could not be decrypted (#5342)
+                                if (Array.isArray(data.preserved_fields) && data.preserved_fields.length > 0) {
+                                    toastr.warning(
+                                        '<?php echo $lang->get('custom_fields_preserved_undecryptable'); ?>',
+                                        '<?php echo $lang->get('warning'); ?>', {
+                                            timeOut: 15000,
+                                            progressBar: true,
+                                            positionClass: 'toast-top-right'
+                                        }
+                                    );
+                                }
+
                                 // Reload item details
                                 // When an encryption task exists, prefer the WebSocket refresh path
                                 // but keep a timed fallback for instances where WebSocket is disabled

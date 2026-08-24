@@ -1161,6 +1161,7 @@ switch ($inputData['type']) {
         $itemFilesForTasks = [];
         $itemFieldsForTasks = [];
         $tasksToBePerformed = [];
+        $preservedFieldIds = [];
         $encrypted_password = '';
         $encrypted_password_key = '';
         $encrypted_password_iv = '';
@@ -1727,26 +1728,86 @@ switch ($inputData['type']) {
                             $encryptionTaskIsRequested = true;
                         }
                     } else {
-                        // Field value is empty - delete field entry and its sharekeys
+                        // Field value is empty - delete field entry and its sharekeys.
+                        //
+                        // Before destroying anything, make sure the empty value really is a
+                        // user intent. When the stored value is encrypted and the caller has
+                        // no usable sharekey, the item card renders the field blank with no
+                        // feedback, the edit form is populated from that blank value and posts
+                        // it back here (#5342). Deleting would then wipe the only remaining
+                        // copy of a ciphertext that a sharekey repair could still recover.
                         $existingField = DB::queryFirstRow(
-                            'SELECT id FROM ' . prefixTable('categories_items') . '
+                            'SELECT id, data, data_iv, encryption_type
+                            FROM ' . prefixTable('categories_items') . '
                             WHERE item_id = %i AND field_id = %i',
                             $inputData['itemId'],
                             $field['id']
                         );
                         if (DB::count() > 0) {
-                            // Delete associated sharekeys first
-                            DB::delete(
-                                prefixTable('sharekeys_fields'),
-                                'object_id = %i',
-                                $existingField['id']
-                            );
-                            // Then delete the field entry
-                            DB::delete(
-                                prefixTable('categories_items'),
-                                'id = %i',
-                                $existingField['id']
-                            );
+                            $fieldIsUnreadable = false;
+
+                            // An encrypted row with no stored data holds nothing to protect,
+                            // so it stays deletable.
+                            if (
+                                $existingField['encryption_type'] !== 'not_set'
+                                && empty($existingField['data']) === false
+                            ) {
+                                $userKey = DB::queryFirstRow(
+                                    'SELECT share_key, increment_id
+                                    FROM ' . prefixTable('sharekeys_fields') . '
+                                    WHERE user_id = %i AND object_id = %i',
+                                    $session->get('user-id'),
+                                    $existingField['id']
+                                );
+
+                                if (DB::count() === 0) {
+                                    // No sharekey at all: the value was never displayed to this user
+                                    $fieldIsUnreadable = true;
+                                } else {
+                                    // A sharekey exists but may be unusable (broken v1->v3 migration)
+                                    $fieldObjectKey = decryptUserObjectKeyWithMigration(
+                                        $userKey['share_key'],
+                                        $session->get('user-private_key'),
+                                        $session->get('user-public_key'),
+                                        intval($userKey['increment_id']),
+                                        'sharekeys_fields'
+                                    );
+                                    $fieldIsUnreadable = empty($fieldObjectKey) === true
+                                        || doDataDecryption(
+                                            $existingField['data'],
+                                            $fieldObjectKey,
+                                            (string) ($existingField['data_iv'] ?? '')
+                                        ) === '';
+                                }
+                            }
+
+                            if ($fieldIsUnreadable === true) {
+                                // Keep the row untouched and report it so the user is told
+                                // the field was preserved instead of silently cleared.
+                                array_push($preservedFieldIds, (int) $field['id']);
+
+                                if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                                    error_log(
+                                        'TEAMPASS update_item: custom field ' . (int) $field['id']
+                                        . ' of item ' . (int) $inputData['itemId']
+                                        . ' was submitted empty but cannot be decrypted by user '
+                                        . (int) $session->get('user-id') . ' - kept to avoid data loss'
+                                    );
+                                }
+                            } else {
+                                // Delete associated sharekeys first
+                                DB::delete(
+                                    prefixTable('sharekeys_fields'),
+                                    'object_id = %i',
+                                    $existingField['id']
+                                );
+                                // Then delete the field entry
+                                DB::delete(
+                                    prefixTable('categories_items'),
+                                    'id = %i',
+                                    $existingField['id']
+                                );
+                            }
                         }
                     }
                 }
@@ -2424,6 +2485,9 @@ switch ($inputData['type']) {
                 'error' => false,
                 'message' => '',
                 'encryption_task_created' => ($encryptionTaskIsRequested === true && intval($dataItem['perso']) !== 1),
+                // Custom fields submitted empty but kept because their stored value
+                // could not be decrypted by this user (#5342)
+                'preserved_fields' => $preservedFieldIds,
             );
         } else {
             echo (string) prepareExchangedData(

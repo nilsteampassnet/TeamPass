@@ -6,7 +6,7 @@
  * where the stored hash doesn't match the expected hash based on current data.
  * It also verifies if the private_key_backup can be decrypted.
  *
- * Usage: php scripts/fix_integrity_hash.php [--dry-run] [--verify-backup]
+ * Usage: php app/scripts/fix_integrity_hash.php [--dry-run] [--verify-backup]
  *
  * Options:
  *   --dry-run        Show what would be fixed without making changes

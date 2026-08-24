@@ -23,7 +23,7 @@
  * false positives). A SHA-256 failure is definitive - the data was SHA-1 encrypted.
  *
  * Usage:
- *   php scripts/migrate_tp_user_to_v3.php [--dry-run|--migrate]
+ *   php app/scripts/migrate_tp_user_to_v3.php [--dry-run|--migrate]
  *
  * Options:
  *   --dry-run   Show analysis without making changes (default)
@@ -41,9 +41,9 @@ if (php_sapi_name() !== 'cli') {
     die("This script must be run from the command line.\n");
 }
 
-$rootPath = dirname(__DIR__);
-require_once $rootPath . '/app/config/settings.php';
-require_once $rootPath . '/app/config/include.php';
+$rootPath = dirname(__DIR__); // application root: <install>/app
+require_once $rootPath . '/config/settings.php';
+require_once $rootPath . '/config/include.php';
 require_once $rootPath . '/sources/main.functions.php';
 
 use TeampassClasses\CryptoManager\CryptoManager;
@@ -63,7 +63,7 @@ TeamPass TP_USER Migration to phpseclib v3
 TP_USER never logs in, so it is excluded from the normal login-time migration.
 This script performs the migration for TP_USER specifically.
 
-Usage: php scripts/migrate_tp_user_to_v3.php [OPTIONS]
+Usage: php app/scripts/migrate_tp_user_to_v3.php [OPTIONS]
 
 Options:
   --dry-run   Analyse and report without making any changes (default)

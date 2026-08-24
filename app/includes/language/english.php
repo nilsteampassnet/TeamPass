@@ -2309,6 +2309,7 @@ return array(
     'ws_systemd_sudo_required' => 'Service is managed by systemd (Restart=always). Configure sudoers so www-data can stop/start it: www-data ALL=(ALL) NOPASSWD: /bin/systemctl stop teampass-websocket, /bin/systemctl start teampass-websocket',
     'websocket' => 'Websocket',
     'decryption_failed_for_some_fields' => 'Some custom fields could not be decrypted. They may be corrupted or encrypted with an outdated key.',
+    'custom_fields_preserved_undecryptable' => 'Some custom fields were submitted empty but could not be decrypted with your keys. They have been kept unchanged to avoid losing their content. Ask an administrator to run the sharekeys repair tool.',
     'settings_realtime_title' => 'Real-time',
     'settings_realtime_title_goal' => 'Configure real-time features including WebSockets and high-performance session storage.',
     'settings_websocket_title' => 'WebSocket',

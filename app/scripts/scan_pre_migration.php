@@ -42,7 +42,7 @@ declare(strict_types=1);
  * This script is READ-ONLY: it never writes to the database.
  *
  * Usage:
- *   php scripts/scan_pre_migration.php [limit]
+ *   php app/scripts/scan_pre_migration.php [limit]
  *
  *   limit  Maximum number of corrupted items to report (default: 2000).
  *
@@ -66,12 +66,12 @@ if (php_sapi_name() !== 'cli') {
     exit;
 }
 
-$rootPath = dirname(__DIR__);
+$rootPath = dirname(__DIR__); // application root: <install>/app
 
 // ── Bootstrap ──────────────────────────────────────────────────────────────────
 
-require_once $rootPath . '/app/config/settings.php';
-require_once $rootPath . '/app/config/include.php';
+require_once $rootPath . '/config/settings.php';
+require_once $rootPath . '/config/include.php';
 require_once $rootPath . '/vendor/autoload.php';
 
 // Locate phpseclib v1: try 3.1.6.x path first, then 3.1.5.x typical location
