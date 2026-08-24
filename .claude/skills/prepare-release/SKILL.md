@@ -111,11 +111,12 @@ runs green in the normal dev state. Exit code is non-zero on any failure; warnin
 **Failures block the release. Warnings are triaged, not ignored** — each one is either fixed
 or explicitly justified to the user.
 
-Binaries (Composer vendor dir is `app/vendor`, and `app/vendor/bin/phpunit` is not executable):
+Binaries (Composer vendor dir is `app/vendor`; PHPUnit runs from the standalone phar, which is
+the only entry point that works against the committed production autoloader):
 
 ```bash
 php app/vendor/bin/phpstan analyse --no-progress --memory-limit=1G
-php app/vendor/phpunit/phpunit/phpunit --no-coverage
+php _tools/phpunit.phar --no-coverage
 ```
 
 Manual checks the gate does not cover — run them when the range touches the matching area:
@@ -304,10 +305,15 @@ the stale one. Run this after the merge instead:
 ```bash
 rm -rf app/vendor/phpstan app/vendor/phpunit app/vendor/symfony/cache
 composer install
-php app/vendor/phpunit/phpunit/phpunit          # expect: OK (1344 tests, 38419 assertions)
+git checkout -- app/vendor/composer/            # restores the production autoloader
+php _tools/phpunit.phar                         # expect: OK (~1500 tests, all green)
 php app/vendor/bin/phpstan analyse --memory-limit=2G
-git checkout -- app/vendor/composer/            # LAST — see below, it disarms the toolchain
 ```
+
+The tests no longer have to run *between* the install and the restore: `_tools/phpunit.phar`
+carries its own dependencies and never reads `app/vendor/composer/`. PHPStan is the same story —
+`app/vendor/bin/phpstan` loads `phpstan.phar`. Only `composer-license-checker` still needs the
+dev autoloader, so run it before the restore if the release calls for it.
 
 The `rm -rf` is **not** optional, and it is the part nobody guesses. Those three packages keep
 untracked *generated* files that git has no reason to delete — `phpstan/phpstan/turbo-ext/`
@@ -319,19 +325,21 @@ with `Could not scan for classes inside ".../symfony/cache/Traits/ValueWrapper.p
 not appear to be a file nor a folder`, leaving the autoloader ungenerated. Deleting a directory
 that happens to be already gone costs nothing; missing one breaks the whole install.
 
-**The order of those last three lines is not free, and it changed in 3.2.1.7.** The committed
-`app/vendor/composer/` is now the **production** autoloader (`composer install --no-dev`), because
-the archive is built from the index and must not require dev files it does not carry — see check 10
-of the release gate. `composer install` rewrites those seven tracked files into their *dev* form,
-which is what makes PHPUnit and PHPStan runnable at all; `git checkout -- app/vendor/composer/`
-puts the production form back. So run the toolchain **between** the two, never after: with the
-production autoloader on disk, `php app/vendor/phpunit/phpunit/phpunit` dies with
-`Class "PHPUnit\TextUI\Application" not found` even though the package sits right there.
+**Why the restore matters.** The committed `app/vendor/composer/` is the **production**
+autoloader (`composer install --no-dev`), because the archive is built from the index and must not
+require dev files it does not carry — see check 10 of the release gate. `composer install` rewrites
+those seven tracked files into their *dev* form, and `git checkout -- app/vendor/composer/` puts
+the production form back. That restore is mandatory before committing anything or regenerating the
+checksums — committing the dev autoloader is exactly the bug 3.2.1.7 had to fix, it fatals every
+installation, and the `Committed autoloader is production-only` CI job now rejects it.
 
-That `git checkout` is still mandatory before committing anything or regenerating the checksums —
-committing the dev autoloader is exactly the bug 3.2.1.7 had to fix, and it fatals every
-installation. The same rule holds outside a release: to run the suite locally, `composer install`
-first, and restore `app/vendor/composer/` before you commit.
+Historically the toolchain had to run *between* the install and the restore, because
+`php app/vendor/phpunit/phpunit/phpunit` dies with `Class "PHPUnit\TextUI\Application" not found`
+against the production autoloader. That constraint is gone: run the tests from
+`_tools/phpunit.phar` (untracked, gitignored via `/_tools/*`, excluded from the admin integrity
+check) and the restore can happen first. Reinstall the phar with the snippet in
+`.github/CONTRIBUTING.md` if it is missing, keeping its version aligned with
+`.github/workflows/quality.yml`.
 
 ```bash
 git checkout master
