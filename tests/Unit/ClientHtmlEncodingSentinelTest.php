@@ -32,7 +32,7 @@ class ClientHtmlEncodingSentinelTest extends TestCase
     private const WATCHED_FIELDS = [
         'title', 'label', 'name', 'login', 'email', 'folder', 'path',
         'lastname', 'description', 'message', 'reason', 'task_type',
-        'changed_by', 'deleted_by', 'updated_by',
+        'changed_by', 'deleted_by', 'updated_by', 'detail', 'url',
     ];
 
     /**
@@ -44,6 +44,17 @@ class ClientHtmlEncodingSentinelTest extends TestCase
     private const ENCODERS = [
         'htmlEncode', 'escapeHtml', 'escapeHtmlString', 'escapeText',
         'escapeAttribute', 'esc', 'tpEscapeHtml',
+    ];
+
+    /**
+     * jQuery methods that parse their argument as HTML.
+     *
+     * The concatenation pattern only sees a value glued to a string. A value handed
+     * straight to one of these is just as live, and that direct form is what hid the item
+     * login sink (GHSA-47xg-w656-j4v4) from this test.
+     */
+    private const HTML_SINK_METHODS = [
+        'html', 'append', 'prepend', 'before', 'after', 'replaceWith',
     ];
 
     private const SCANNED_GLOBS = [
@@ -68,7 +79,18 @@ class ClientHtmlEncodingSentinelTest extends TestCase
         // safe — inside a /* … */ block, never executed
         'app/pages/export.js.php' => ['item.title'],
         // safe — builds a lowercase needle for .indexOf(), never inserted in the DOM
-        'app/pages/favorites.js.php' => ['item.login', 'item.description', 'item.folder'],
+        'app/pages/favorites.js.php' => ['item.login', 'item.description', 'item.folder', 'item.url'],
+        // safe — ldap_test_configuration answers with language strings and fixed diagnostics
+        // only; no directory value is interpolated into the message
+        'app/pages/ldap.js.php' => ['data.message'],
+        // safe — same handler (sources/ldap.queries.php, ldap_test_configuration)
+        'app/pages/oauth.js.php' => ['data.message'],
+        // safe — the master-key repair steps answer with language strings and counters; the
+        // message is server-built markup that has to stay markup
+        'app/pages/tools.js.php' => ['dataStep1.message', 'dataStep3.message'],
+        // safe — showUsersActionModal() is fed by six local call sites, each passing a
+        // language string plus a page-owned <i> icon and a numeric count
+        'app/pages/users.js.php' => ['opts.title', 'opts.message'],
         // safe — opt.title comes from a static local array of column labels
         'app/pages/utilities.logs.js.php' => ['opt.title'],
         // safe — info comes from the static client-side LEVELS map
@@ -89,8 +111,14 @@ class ClientHtmlEncodingSentinelTest extends TestCase
         $root = dirname(__DIR__, 2) . '/';
         // The path part is greedy across dots so a nested sink such as err.file.name or
         // data.corruption_notice.message is caught, not only the single-level form.
-        $pattern = '/\+\s*([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)*)\.('
-            . implode('|', self::WATCHED_FIELDS) . ')\b/';
+        $value = '([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)*)\.('
+            . implode('|', self::WATCHED_FIELDS) . ')\b';
+        $patterns = [
+            // Interpolated into a markup string: '<span>' + data.label
+            '/\+\s*' . $value . '/',
+            // Handed straight to a method that parses HTML: .html(data.login)
+            '/\.(?:' . implode('|', self::HTML_SINK_METHODS) . ')\(\s*' . $value . '/',
+        ];
 
         $violations = [];
         foreach (self::SCANNED_GLOBS as $glob) {
@@ -102,37 +130,44 @@ class ClientHtmlEncodingSentinelTest extends TestCase
                 }
 
                 foreach ($lines as $index => $line) {
-                    if (preg_match_all($pattern, $line, $matches, PREG_OFFSET_CAPTURE) === 0) {
+                    // A commented-out sink renders nothing.
+                    if (str_starts_with(ltrim($line), '//') === true) {
                         continue;
                     }
 
-                    foreach ($matches[0] as $position => $match) {
-                        // An encoder call sitting between the '+' and the identifier means
-                        // this occurrence is already wrapped.
-                        $before = rtrim(substr($line, 0, (int) $match[1]));
-                        $wrapped = false;
-                        foreach (self::ENCODERS as $encoder) {
-                            if (preg_match('/' . $encoder . '\($/', $before) === 1) {
-                                $wrapped = true;
-                                break;
+                    foreach ($patterns as $pattern) {
+                        if (preg_match_all($pattern, $line, $matches, PREG_OFFSET_CAPTURE) === 0) {
+                            continue;
+                        }
+
+                        foreach ($matches[1] as $position => $identifier) {
+                            // An encoder call opening right before the identifier means this
+                            // occurrence is already wrapped.
+                            $before = rtrim(substr($line, 0, (int) $identifier[1]));
+                            $wrapped = false;
+                            foreach (self::ENCODERS as $encoder) {
+                                if (preg_match('/' . $encoder . '\($/', $before) === 1) {
+                                    $wrapped = true;
+                                    break;
+                                }
                             }
-                        }
 
-                        if ($wrapped === true) {
-                            continue;
-                        }
+                            if ($wrapped === true) {
+                                continue;
+                            }
 
-                        $expression = $matches[1][$position][0] . '.' . $matches[2][$position][0];
-                        if (in_array($expression, self::ALLOWED[$relative] ?? [], true) === true) {
-                            continue;
-                        }
+                            $expression = $identifier[0] . '.' . $matches[2][$position][0];
+                            if (in_array($expression, self::ALLOWED[$relative] ?? [], true) === true) {
+                                continue;
+                            }
 
-                        $violations[] = [
-                            'file' => $relative,
-                            'line' => $index + 1,
-                            'expression' => $expression,
-                            'snippet' => trim($line),
-                        ];
+                            $violations[] = [
+                                'file' => $relative,
+                                'line' => $index + 1,
+                                'expression' => $expression,
+                                'snippet' => trim($line),
+                            ];
+                        }
                     }
                 }
             }
@@ -179,8 +214,14 @@ class ClientHtmlEncodingSentinelTest extends TestCase
             $source = (string) file_get_contents($root . $relative);
 
             foreach ($expressions as $expression) {
+                // Both shapes the scanner reports: interpolated, or passed straight to a
+                // method that parses HTML.
+                $quoted = preg_quote($expression, '/');
+                $pattern = '/(?:\+\s*|\.(?:' . implode('|', self::HTML_SINK_METHODS) . ')\(\s*)'
+                    . $quoted . '\b/';
+
                 $this->assertMatchesRegularExpression(
-                    '/\+\s*' . preg_quote($expression, '/') . '\b/',
+                    $pattern,
                     $source,
                     sprintf(
                         'Stale exemption: "%s" no longer appears unencoded in %s — remove it '

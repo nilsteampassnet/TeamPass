@@ -6914,7 +6914,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     if (actionType === 'show' && typeof window.tpWsStartItemView === 'function') {
                         window.tpWsStartItemView(data.id, data.folder);
                     }
-                    $('#form-item-label, #form-item-suggestion-label').val($('<div>').html(data.label).text());
+                    // htmlDecode() parses in an inert DOMParser document. The former
+                    // $('<div>').html(...) built a live detached node, so a payload that
+                    // survived the purifier fired its handlers before .text() dropped it.
+                    $('#form-item-label, #form-item-suggestion-label').val(htmlDecode(data.label));
                     $('#card-item-description, #form-item-suggestion-description').html(
                         DOMPurify.sanitize(
                             htmlDecode(data.description || ''),
@@ -6948,7 +6951,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         $pwBadge.addClass('hidden').removeClass('badge-success badge-danger badge-warning badge-secondary')
                     }
 
-                    $('#card-item-login').html(data.login);
+                    // .text(), like the email and url below: the login is data, and it is
+                    // also the clipboard target, which reads the node's text.
+                    $('#card-item-login').text(data.login);
                     $('#form-item-login, #form-item-suggestion-login, #form-item-server-login').val(data.login);
 
                     $('#card-item-email').text(data.email);
@@ -6960,7 +6965,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     $('#form-item-restrictedToUsers').val(JSON.stringify(data.id_restricted_to));
                     $('#form-item-restrictedToRoles').val(JSON.stringify(data.id_restricted_to_roles));
                     $('#form-item-folder').val(data.folder);
-                    $('#form-item-tags').val($('<div>').html(data.tags.join(' ')).text());
+                    $('#form-item-tags').val(htmlDecode(data.tags.join(' ')));
                     $('#form-item-icon').val(data.fa_icon);
                     $('#form-item-icon-show').html(itemIcon);
 
@@ -8167,7 +8172,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             '<img class="direct-chat-img" src="' + value.avatar + '" alt="Message User Image">' +
                             '<div class="direct-chat-text"><span class="text-capitalize">' +
                             (value.action === '' ? '' : (value.action)) + '</span> ' +
-                            (value.detail === '' ? '' : (' | ' + value.detail)) + '</div></div>';
+                            (value.detail === '' ? '' : (' | ' + htmlEncode(value.detail))) + '</div></div>';
                         nbHistoryEvents += 1;
                     });
                     // Display
