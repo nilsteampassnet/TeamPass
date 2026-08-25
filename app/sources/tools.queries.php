@@ -935,8 +935,9 @@ case 'perform_fix_pf_items-step3':
         }
 
         // Personal objects are a different problem, so they get their own table. Only the owner and
-        // the internal account may hold a key (SEC-8), which is also why an administrator cannot
-        // repair every case: with no internal reference key, only the owner's own session can.
+        // the internal account may hold a key (SEC-8), which splits them into three very different
+        // situations: the repair can rebuild the owner's key from the internal one, only the owner
+        // can rebuild the internal one from theirs, and when both are gone nobody can do either.
         $nonOwnerIds = array_merge($specialUserIds, [TP_USER_ID]);
         $personalAnalysis = [];
         foreach (restoreSharekeysScopeDefs(true) as $scopeName => $def) {
@@ -950,20 +951,29 @@ case 'perform_fix_pf_items-step3':
                 WHERE ' . $def['where'] . ' AND sk.increment_id IS NULL',
                 $nonOwnerIds
             );
-            // ... and the internal account can still decrypt it, so the repair task can rebuild it.
-            $repairable = (int) DB::queryFirstField(
+            // No internal reference key: nothing server side can open the object.
+            $tpMissing = (int) DB::queryFirstField(
                 'SELECT COUNT(*) FROM ' . $def['from'] . '
-                INNER JOIN ' . prefixTable($def['table']) . ' AS sktp ON (sktp.object_id = o.id AND sktp.user_id = ' . TP_USER_ID . ' AND sktp.share_key != "")
+                LEFT JOIN ' . prefixTable($def['table']) . ' AS sktp ON (sktp.object_id = o.id AND sktp.user_id = ' . TP_USER_ID . ' AND sktp.share_key != "")
+                WHERE ' . $def['where'] . ' AND sktp.increment_id IS NULL'
+            );
+            // Neither: no key left at all.
+            $noKeyAtAll = (int) DB::queryFirstField(
+                'SELECT COUNT(*) FROM ' . $def['from'] . '
                 LEFT JOIN ' . prefixTable($def['table']) . ' AS sk ON (sk.object_id = o.id AND sk.user_id NOT IN %li AND sk.share_key != "" AND sk.encryption_version = 3)
-                WHERE ' . $def['where'] . ' AND sk.increment_id IS NULL',
+                LEFT JOIN ' . prefixTable($def['table']) . ' AS sktp ON (sktp.object_id = o.id AND sktp.user_id = ' . TP_USER_ID . ' AND sktp.share_key != "")
+                WHERE ' . $def['where'] . ' AND sk.increment_id IS NULL AND sktp.increment_id IS NULL',
                 $nonOwnerIds
             );
 
             $personalAnalysis[$scopeName] = [
                 'objects' => $personalObjects,
                 'owner_missing' => $ownerMissing,
-                'repairable' => $repairable,
-                'needs_owner' => max(0, $ownerMissing - $repairable),
+                // Owner key gone, reference key still there: this repair rebuilds it.
+                'repairable' => max(0, $ownerMissing - $noKeyAtAll),
+                // Reference key gone, owner can still read: only the owner can rebuild it.
+                'needs_owner' => max(0, $tpMissing - $noKeyAtAll),
+                'unrecoverable' => $noKeyAtAll,
             ];
         }
 
@@ -1077,9 +1087,10 @@ case 'perform_fix_pf_items-step3':
             ];
         }
 
-        // Personal objects an administrator cannot repair: no internal reference key, so the owner's
-        // own session is the only place the object key can still be unwrapped. Naming the owner is
-        // the whole point of the list - it tells the administrator who to ask.
+        // Personal objects with no internal reference key - the ones this repair cannot touch. Naming
+        // the owner is the whole point of the list: when the owner can still read the object they
+        // rebuild the reference key themselves from their profile, and when they cannot, nothing
+        // automatic is left. The two need different words, so the row says which case it is.
         $nonOwnerIds = array_merge($specialUserIds, [TP_USER_ID]);
         $personalDetails = [];
         foreach (restoreSharekeysScopeDefs(true) as $scopeName => $def) {
@@ -1092,7 +1103,7 @@ case 'perform_fix_pf_items-step3':
 
             $total = (int) DB::queryFirstField(
                 'SELECT COUNT(*) FROM ' . $def['from'] . $missingBoth . '
-                WHERE ' . $def['where'] . ' AND sk.increment_id IS NULL AND sktp.increment_id IS NULL',
+                WHERE ' . $def['where'] . ' AND sktp.increment_id IS NULL',
                 $nonOwnerIds
             );
 
@@ -1100,9 +1111,10 @@ case 'perform_fix_pf_items-step3':
             if ($total > 0) {
                 $rows = DB::query(
                     'SELECT o.id AS object_id, ' . $detailDefs[$scopeName]['label'] . ', ' . $detailDefs[$scopeName]['extra'] . ',
-                        IFNULL(ow.login, "") AS owner_login
+                        IFNULL(ow.login, "") AS owner_login,
+                        IF(sk.increment_id IS NULL, 0, 1) AS owner_can_read
                     FROM ' . $def['from'] . $detailDefs[$scopeName]['extraJoin'] . $ownerJoins . $missingBoth . '
-                    WHERE ' . $def['where'] . ' AND sk.increment_id IS NULL AND sktp.increment_id IS NULL
+                    WHERE ' . $def['where'] . ' AND sktp.increment_id IS NULL
                     ORDER BY o.id ASC
                     LIMIT %i',
                     $nonOwnerIds,
@@ -1119,6 +1131,7 @@ case 'perform_fix_pf_items-step3':
                             'label' => (string) $row['label'],
                             'extra' => (string) $row['extra'],
                             'owner_login' => (string) $row['owner_login'],
+                            'owner_can_read' => (int) $row['owner_can_read'],
                         ];
                     },
                     $rows

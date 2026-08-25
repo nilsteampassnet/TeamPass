@@ -718,34 +718,41 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     // Personal objects: a separate table, because the repair is a different one -
                     // one key for the owner, and nothing an administrator can do without the
                     // internal reference key.
-                    var totalPersonalOwnerMissing = 0,
-                        totalPersonalNeedsOwner = 0;
+                    var totalPersonalToFix = 0,
+                        totalPersonalNeedsOwner = 0,
+                        totalPersonalUnrecoverable = 0;
                     var personalHtml = '<table class="table table-sm table-bordered"><thead><tr>' +
                         '<th></th>' +
                         '<th><?php echo $lang->get('restore_missing_sharekeys_objects'); ?></th>' +
                         '<th><?php echo $lang->get('restore_missing_sharekeys_owner_missing'); ?></th>' +
                         '<th><?php echo $lang->get('restore_missing_sharekeys_personal_repairable'); ?></th>' +
                         '<th><?php echo $lang->get('restore_missing_sharekeys_needs_owner'); ?></th>' +
+                        '<th><?php echo $lang->get('restore_missing_sharekeys_unrecoverable'); ?></th>' +
                         '</tr></thead><tbody>';
                     $.each(data.personal_analysis, function(scope, row) {
-                        totalPersonalOwnerMissing += row.owner_missing;
+                        totalPersonalToFix += row.repairable + row.needs_owner + row.unrecoverable;
                         totalPersonalNeedsOwner += row.needs_owner;
+                        totalPersonalUnrecoverable += row.unrecoverable;
                         personalHtml += '<tr><td>' + scope + '</td>' +
                             '<td>' + row.objects + '</td>' +
                             '<td>' + row.owner_missing + '</td>' +
                             '<td>' + row.repairable + '</td>' +
-                            '<td>' + row.needs_owner + '</td></tr>';
+                            '<td>' + row.needs_owner + '</td>' +
+                            '<td>' + row.unrecoverable + '</td></tr>';
                     });
                     personalHtml += '</tbody></table>';
 
-                    if (totalPersonalOwnerMissing > 0) {
+                    if (totalPersonalToFix > 0) {
                         html += '<h6 class="mt-3"><?php echo $lang->get('restore_missing_sharekeys_personal'); ?></h6>' + personalHtml;
                         if (totalPersonalNeedsOwner > 0) {
                             html += '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle mr-2"></i><?php echo $lang->get('restore_missing_sharekeys_needs_owner_tip'); ?></div>';
                         }
+                        if (totalPersonalUnrecoverable > 0) {
+                            html += '<div class="alert alert-danger"><i class="fas fa-triangle-exclamation mr-2"></i><?php echo $lang->get('restore_missing_sharekeys_personal_unrecoverable_tip'); ?></div>';
+                        }
                     }
 
-                    if (totalMissing === 0 && totalSeedable === 0 && totalPersonalOwnerMissing === 0) {
+                    if (totalMissing === 0 && totalSeedable === 0 && totalPersonalToFix === 0) {
                         html += '<div class="alert alert-success"><i class="fas fa-check mr-2"></i><?php echo $lang->get('restore_missing_sharekeys_no_missing'); ?></div>';
                     } else {
                         html += '<div class="alert alert-info"><i class="fas fa-info-circle mr-2"></i><?php echo $lang->get('restore_missing_sharekeys_found'); ?></div>';
@@ -754,7 +761,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     if (totalUnrecoverable > 0) {
                         html += '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle mr-2"></i><?php echo $lang->get('restore_missing_sharekeys_unrecoverable_tip'); ?></div>';
                     }
-                    if (totalTpMissing > 0 || totalPersonalNeedsOwner > 0) {
+                    if (totalTpMissing > 0 || totalPersonalNeedsOwner > 0 || totalPersonalUnrecoverable > 0) {
                         html += '<button type="button" class="btn btn-secondary btn-sm tp-action" id="restore_missing_sharekeys_details_but" data-action="restore_missing_sharekeys_details_but">' +
                             '<i class="fas fa-list mr-2"></i><?php echo $lang->get('restore_missing_sharekeys_details'); ?></button>' +
                             '<div id="restore_missing_sharekeys_details"></div>';
@@ -832,10 +839,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             var owner = obj.owner_login !== '' ?
                                 restoreSharekeysEscape(obj.owner_login) :
                                 '<span class="badge badge-danger"><?php echo $lang->get('restore_missing_sharekeys_owner_unresolved'); ?></span>';
+                            var status = parseInt(obj.owner_can_read, 10) === 1 ?
+                                '<span class="badge badge-warning"><?php echo $lang->get('restore_missing_sharekeys_needs_owner'); ?></span>' :
+                                '<span class="badge badge-danger"><?php echo $lang->get('restore_missing_sharekeys_unrecoverable'); ?></span>';
                             personalRows += '<tr><td>' + scope + '</td>' +
                                 '<td>' + obj.id + '</td>' +
                                 '<td>' + label + '</td>' +
-                                '<td>' + owner + '</td></tr>';
+                                '<td>' + owner + '</td>' +
+                                '<td>' + status + '</td></tr>';
                         });
                     });
                     if (personalRows !== '') {
@@ -845,6 +856,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             '<th>ID</th>' +
                             '<th><?php echo $lang->get('label'); ?></th>' +
                             '<th><?php echo $lang->get('restore_missing_sharekeys_owner'); ?></th>' +
+                            '<th><?php echo $lang->get('status'); ?></th>' +
                             '</tr></thead><tbody>' + personalRows + '</tbody></table>';
                     }
 

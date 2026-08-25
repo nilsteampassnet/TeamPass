@@ -948,7 +948,10 @@ function getPersonalFolderIdsWithDescendants(): array
  *
  * @param bool $personal false = shared objects only (default), true = personal objects only.
  *
- * @return array<string, array{table: string, from: string, where: string, itemAlias: string}>
+ * 'objectWhere' is the object-type condition alone, without the scope test - what a caller needs
+ * when it scopes the objects itself, as the personal self-repair does on one user's own tree.
+ *
+ * @return array<string, array{table: string, from: string, where: string, itemAlias: string, objectWhere: string}>
  */
 function restoreSharekeysScopeDefs(bool $personal = false): array
 {
@@ -966,24 +969,38 @@ function restoreSharekeysScopeDefs(bool $personal = false): array
         return $personal === true ? '(' . $isPersonal . ')' : 'NOT (' . $isPersonal . ')';
     };
 
+    $objectWhere = [
+        'items' => '',
+        'fields' => 'o.encryption_type = "' . TP_ENCRYPTION_NAME . '"',
+        'files' => 'o.status = "' . TP_ENCRYPTION_NAME . '"',
+    ];
+    $where = static function (string $scope, string $alias) use ($objectWhere, $scopeTest): string {
+        return $objectWhere[$scope] === ''
+            ? $scopeTest($alias)
+            : $objectWhere[$scope] . ' AND ' . $scopeTest($alias);
+    };
+
     return [
         'items' => [
             'table' => 'sharekeys_items',
             'from' => prefixTable('items') . ' AS o',
             'itemAlias' => 'o',
-            'where' => $scopeTest('o'),
+            'objectWhere' => $objectWhere['items'],
+            'where' => $where('items', 'o'),
         ],
         'fields' => [
             'table' => 'sharekeys_fields',
             'from' => prefixTable('categories_items') . ' AS o INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = o.item_id)',
             'itemAlias' => 'i',
-            'where' => 'o.encryption_type = "' . TP_ENCRYPTION_NAME . '" AND ' . $scopeTest('i'),
+            'objectWhere' => $objectWhere['fields'],
+            'where' => $where('fields', 'i'),
         ],
         'files' => [
             'table' => 'sharekeys_files',
             'from' => prefixTable('files') . ' AS o INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = o.id_item)',
             'itemAlias' => 'i',
-            'where' => 'o.status = "' . TP_ENCRYPTION_NAME . '" AND ' . $scopeTest('i'),
+            'objectWhere' => $objectWhere['files'],
+            'where' => $where('files', 'i'),
         ],
     ];
 }

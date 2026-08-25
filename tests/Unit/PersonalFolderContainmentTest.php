@@ -55,9 +55,14 @@ class PersonalFolderContainmentTest extends TestCase
         // The items scope carries the object itself (alias "o"), fields and files join their parent
         // item (alias "i"): every scope must be filtered, on its own alias.
         self::assertMatchesRegularExpression(
-            '/function restoreSharekeysScopeDefs\(.*?\$scopeTest\(\'o\'\).*?\$scopeTest\(\'i\'\).*?\$scopeTest\(\'i\'\)/s',
+            '/function restoreSharekeysScopeDefs\(.*?\$where\(\'items\', \'o\'\).*?\$where\(\'fields\', \'i\'\).*?\$where\(\'files\', \'i\'\)/s',
             $mainFunctions,
             'An unfiltered scope hands its personal objects to every eligible user.'
+        );
+        self::assertMatchesRegularExpression(
+            '/\$where = static function \(string \$scope, string \$alias\).*?\$scopeTest\(\$alias\)/s',
+            $mainFunctions,
+            'Every scope must carry the shared/personal test, on its own alias.'
         );
     }
 
@@ -124,6 +129,44 @@ class PersonalFolderContainmentTest extends TestCase
             '/if \(isset\(\$tpRefs\[\$objectId\]\) === false\) \{\s*\+\+\$stats\[\'no_reference\'\];\s*continue;/s',
             $trait,
             'With no reference key the foreign sharekeys are the only way back: leave them alone.'
+        );
+    }
+
+    public function testOwnerSelfRepairIsScopedToTheCallersOwnTree(): void
+    {
+        $users = $this->source('app/sources/users.queries.php');
+
+        self::assertStringContainsString("case 'seed_personal_sharekeys':", $users);
+        self::assertStringContainsString(
+            "'seed_personal_sharekeys',",
+            $users,
+            'The handler is user scoped, so it must be listed in $all_users_can_access.'
+        );
+
+        $handler = substr(
+            $users,
+            strpos($users, "case 'seed_personal_sharekeys':"),
+            strpos($users, "case 'list_api_sessions':") - strpos($users, "case 'seed_personal_sharekeys':")
+        );
+
+        // The tree is the caller's own, never the instance-wide personal scope.
+        self::assertStringContainsString('getOwnPersonalFolderIds($userId)', $handler);
+        self::assertStringContainsString("\$def['itemAlias'] . '.id_tree IN ('", $handler);
+        // ... and the object key comes from a key the caller already holds.
+        self::assertStringContainsString('skme.user_id = %i', $handler);
+        // The only row it may write is the internal reference key.
+        self::assertStringContainsString('(int) TP_USER_ID,', $handler);
+        self::assertStringNotContainsString('batchUpsertSharekeys(', $handler);
+    }
+
+    public function testOwnerSelfRepairRequiresTheSessionPrivateKey(): void
+    {
+        $users = $this->source('app/sources/users.queries.php');
+
+        // The whole point of the handler is that the key exists only in the owner's session.
+        self::assertMatchesRegularExpression(
+            "/\\\$userPrivateKey = \(string\) \\\$session->get\('user-private_key'\);\s*if \(\\\$userPrivateKey === ''\) \{/s",
+            $users
         );
     }
 
