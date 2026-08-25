@@ -87,6 +87,24 @@ trait SharekeysRepairTrait {
             $summary[] = $scopeName . ': ' . $result['created'] . ' key(s) created/rebuilt, '
                 . $result['unrecoverable'] . ' object(s) without reference key';
         }
+
+        // Personal objects: one key, for the owner alone. Never the fan-out above - that is the
+        // SEC-8 leak. The owner is resolved from the personal tree, cross-checked against the
+        // item creator, and anything unresolved is reported rather than guessed.
+        $folderOwners = personalFolderOwnersMap();
+        foreach (restoreSharekeysScopeDefs(true) as $scopeName => $def) {
+            $result = $this->restorePersonalScopeSharekeys(
+                $def,
+                $tpPrivateKey,
+                (string) $userTpInfo['public_key'],
+                $folderOwners
+            );
+            $summary[] = 'personal ' . $scopeName . ': ' . $result['owner_keys'] . ' owner key(s) restored, '
+                . $result['foreign_removed'] . ' foreign key(s) removed, '
+                . $result['no_reference'] . ' object(s) without reference key, '
+                . $result['owner_unresolved'] . ' object(s) with no resolvable owner';
+        }
+
         $summaryText = implode(' | ', $summary);
 
         $this->logger->log('restore_missing_sharekeys: ' . $summaryText, 'INFO');
@@ -95,6 +113,186 @@ trait SharekeysRepairTrait {
         if ($authorId > 0) {
             emitTaskProgress($authorId, (string) $this->taskId, 'restore_missing_sharekeys', 1, 1, 'completed', $summaryText);
         }
+    }
+
+    /**
+     * Restore the owner sharekey of one personal object type (items, fields or files).
+     *
+     * A personal object must carry sharekeys for its owner and the system accounts only - invariant
+     * I1, the SEC-8 fix. So this pass never distributes: it decrypts the object key with the TP_USER
+     * reference sharekey and writes back exactly one row, for the owner, when the owner's own key is
+     * missing or still in legacy v1 encryption. Foreign sharekeys left by a pre-SEC-8 install are
+     * removed at the same time, which is what EnsurePersonalItemHasOnlyKeysForOwner() does lazily
+     * and remediate_personal_sharekeys.php does in bulk.
+     *
+     * Two deliberate refusals, both conservative:
+     *  - an owner that cannot be resolved, or that disagrees with the item creator, is reported and
+     *    the object is left untouched - the same rule as the remediation script;
+     *  - an object with no usable TP_USER reference key keeps its foreign sharekeys. They are the
+     *    only remaining way to recover it: a holder can still open the item and save it again, which
+     *    is precisely what the Tools page tells the administrator to arrange. Deleting them here
+     *    would turn a repairable object into a lost one.
+     *
+     * @param array{table: string, from: string, where: string, itemAlias: string} $def Scope definition
+     * @param string             $tpPrivateKey TP_USER decrypted private key
+     * @param string             $tpPublicKey  TP_USER public key (for v1->v3 sharekey migration)
+     * @param array<int, int>    $folderOwners Folder id => owner user id
+     *
+     * @return array{owner_keys: int, foreign_removed: int, no_reference: int, owner_unresolved: int}
+     */
+    private function restorePersonalScopeSharekeys(
+        array $def,
+        string $tpPrivateKey,
+        string $tpPublicKey,
+        array $folderOwners
+    ): array {
+        $sharekeysTable = $def['table'];
+        $itemAlias = $def['itemAlias'];
+        $systemUserIds = [(int) TP_USER_ID, (int) API_USER_ID, (int) OTV_USER_ID, (int) SSH_USER_ID];
+
+        $stats = ['owner_keys' => 0, 'foreign_removed' => 0, 'no_reference' => 0, 'owner_unresolved' => 0];
+        $ownerPublicKeys = [];
+        $lastId = 0;
+        $batchSize = 100;
+
+        while (true) {
+            $objects = DB::query(
+                'SELECT o.id AS id, ' . $itemAlias . '.id AS item_id, ' . $itemAlias . '.id_tree AS folder_id
+                FROM ' . $def['from'] . '
+                WHERE ' . $def['where'] . ' AND o.id > %i
+                ORDER BY o.id ASC LIMIT %i',
+                $lastId,
+                $batchSize
+            );
+            if (count($objects) === 0) {
+                break;
+            }
+
+            $objectIds = [];
+            $itemIds = [];
+            foreach ($objects as $object) {
+                $objectIds[] = (int) $object['id'];
+                $itemIds[] = (int) $object['item_id'];
+            }
+            $lastId = max($objectIds);
+            $itemIds = array_values(array_unique($itemIds));
+
+            // Creators of the batch's items, to cross-check the owner resolved from the folder.
+            $creators = [];
+            $logs = DB::query(
+                'SELECT id_item, id_user FROM ' . prefixTable('log_items') . '
+                WHERE id_item IN %li AND action = %s',
+                $itemIds,
+                'at_creation'
+            );
+            foreach ($logs as $log) {
+                $creators[(int) $log['id_item']] = $log['id_user'];
+            }
+
+            // Every sharekey of the batch, read once: current holders, valid v3 keys, TP_USER refs.
+            $holders = [];
+            $validV3 = [];
+            $tpRefs = [];
+            $pairs = DB::query(
+                'SELECT object_id, user_id, share_key, increment_id, encryption_version
+                FROM ' . prefixTable($sharekeysTable) . '
+                WHERE object_id IN %li AND share_key != ""',
+                $objectIds
+            );
+            foreach ($pairs as $pair) {
+                $objectId = (int) $pair['object_id'];
+                $userId = (int) $pair['user_id'];
+                $holders[$objectId][] = $userId;
+                if ((int) $pair['encryption_version'] === 3) {
+                    $validV3[$objectId][$userId] = true;
+                }
+                if ($userId === (int) TP_USER_ID) {
+                    $tpRefs[$objectId] = $pair;
+                }
+            }
+
+            foreach ($objects as $object) {
+                $objectId = (int) $object['id'];
+                $ownerId = $folderOwners[(int) $object['folder_id']] ?? null;
+                if ($ownerId === null
+                    || personalOwnerConflictsWithCreator($ownerId, $creators[(int) $object['item_id']] ?? null) === true
+                ) {
+                    ++$stats['owner_unresolved'];
+                    continue;
+                }
+
+                if (isset($ownerPublicKeys[$ownerId]) === false) {
+                    $ownerPublicKeys[$ownerId] = (string) DB::queryFirstField(
+                        'SELECT public_key FROM ' . prefixTable('users') . '
+                        WHERE id = %i AND deleted_at IS NULL',
+                        $ownerId
+                    );
+                }
+                if ($ownerPublicKeys[$ownerId] === '') {
+                    ++$stats['owner_unresolved'];
+                    continue;
+                }
+
+                // No reference key: leave the object exactly as it is, foreign keys included.
+                if (isset($tpRefs[$objectId]) === false) {
+                    ++$stats['no_reference'];
+                    continue;
+                }
+                $objectKey = decryptUserObjectKeyWithMigration(
+                    (string) $tpRefs[$objectId]['share_key'],
+                    $tpPrivateKey,
+                    $tpPublicKey,
+                    (int) $tpRefs[$objectId]['increment_id'],
+                    $sharekeysTable
+                );
+                if (empty($objectKey) === true) {
+                    ++$stats['no_reference'];
+                    $this->logger->log('restore_missing_sharekeys: cannot decrypt TP_USER sharekey for personal ' . $sharekeysTable . ' object #' . $objectId, 'WARNING');
+                    continue;
+                }
+
+                if (isset($validV3[$objectId][$ownerId]) === false) {
+                    try {
+                        if (insertOrUpdateSharekey(
+                            prefixTable($sharekeysTable),
+                            $objectId,
+                            $ownerId,
+                            encryptUserObjectKey($objectKey, $ownerPublicKeys[$ownerId])
+                        ) === true) {
+                            ++$stats['owner_keys'];
+                        }
+                    } catch (Exception $e) {
+                        $this->logger->log('restore_missing_sharekeys: cannot encrypt for owner #' . $ownerId . ' (personal ' . $sharekeysTable . ' object #' . $objectId . '): ' . $e->getMessage(), 'WARNING');
+                        continue;
+                    }
+                }
+
+                // The object is recoverable from now on, so the foreign keys can go (invariant I1).
+                $foreignUserIds = foreignSharekeyUserIds(
+                    $holders[$objectId] ?? [],
+                    personalSharekeyKeepList($ownerId, $systemUserIds)
+                );
+                if (count($foreignUserIds) > 0) {
+                    DB::delete(
+                        prefixTable($sharekeysTable),
+                        'object_id = %i AND user_id IN %li',
+                        $objectId,
+                        $foreignUserIds
+                    );
+                    $stats['foreign_removed'] += count($foreignUserIds);
+                }
+            }
+
+            // Heartbeat so the task is not considered stalled
+            DB::update(
+                prefixTable('background_tasks'),
+                ['updated_at' => time()],
+                'increment_id = %i',
+                $this->taskId
+            );
+        }
+
+        return $stats;
     }
 
     /**

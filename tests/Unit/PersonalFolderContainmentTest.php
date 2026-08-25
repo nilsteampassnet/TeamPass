@@ -28,22 +28,54 @@ class PersonalFolderContainmentTest extends TestCase
         return $content;
     }
 
-    public function testRestoreSharekeysScopesExcludePersonalObjectsByContainment(): void
+    /**
+     * Source of one method, bounded by the next method declaration, so an assertion about it
+     * cannot accidentally read its neighbours.
+     */
+    private function methodBody(string $source, string $method): string
+    {
+        $start = strpos($source, 'private function ' . $method);
+        self::assertIsInt($start, 'Method ' . $method . '() not found.');
+
+        $next = strpos($source, "\n    private function ", $start + 1);
+
+        return $next === false ? substr($source, $start) : substr($source, $start, $next - $start);
+    }
+
+    public function testRestoreSharekeysScopesSelectPersonalObjectsByContainment(): void
     {
         $mainFunctions = $this->source('app/sources/main.functions.php');
 
         self::assertMatchesRegularExpression(
-            '/function restoreSharekeysScopeDefs\(\): array\s*\{\s*\$personalFolders = getPersonalFolderIdsWithDescendants\(\);/s',
+            '/function restoreSharekeysScopeDefs\(bool \$personal = false\): array\s*\{\s*\$personalFolders = getPersonalFolderIdsWithDescendants\(\);/s',
             $mainFunctions,
             'A flag-based list lets the repair task fan a personal item out to every user (SEC-8).'
         );
 
-        // The items scope carries the object itself (alias "o"), fields and files join their
-        // parent item (alias "i"): every scope must apply the exclusion, on its own alias.
+        // The items scope carries the object itself (alias "o"), fields and files join their parent
+        // item (alias "i"): every scope must be filtered, on its own alias.
         self::assertMatchesRegularExpression(
-            '/function restoreSharekeysScopeDefs\(\).*?\$notPersonal\(\'o\'\).*?\$notPersonal\(\'i\'\).*?\$notPersonal\(\'i\'\)/s',
+            '/function restoreSharekeysScopeDefs\(.*?\$scopeTest\(\'o\'\).*?\$scopeTest\(\'i\'\).*?\$scopeTest\(\'i\'\)/s',
             $mainFunctions,
-            'A scope with no exclusion hands its personal objects to every eligible user.'
+            'An unfiltered scope hands its personal objects to every eligible user.'
+        );
+    }
+
+    public function testSharedAndPersonalScopesArePartitionedByOneNegatedPredicate(): void
+    {
+        $mainFunctions = $this->source('app/sources/main.functions.php');
+
+        // One predicate and its negation: an object belongs to exactly one scope, so none can fall
+        // outside both and stay invisible to the tool.
+        self::assertMatchesRegularExpression(
+            '/return \$personal === true \? \'\(\' \. \$isPersonal \. \'\)\' : \'NOT \(\' \. \$isPersonal \. \'\)\';/',
+            $mainFunctions
+        );
+        // An item whose folder was deleted has id_tree = NULL: without COALESCE the predicate and
+        // its negation are both NULL and the object belongs to neither scope.
+        self::assertMatchesRegularExpression(
+            '/COALESCE\(\' \. \$alias \. \'\.id_tree, 0\) IN \(/',
+            $mainFunctions
         );
     }
 
@@ -52,13 +84,63 @@ class PersonalFolderContainmentTest extends TestCase
         // The Tools analysis is read as a prediction of what the repair task will do, so the two
         // must describe the same object set. One definition, shared, is what guarantees it.
         self::assertStringContainsString(
-            'function restoreSharekeysScopeDefs(): array',
+            'function restoreSharekeysScopeDefs(bool $personal = false): array',
             $this->source('app/sources/main.functions.php')
         );
         self::assertStringNotContainsString(
             'function restoreSharekeysScopeDefs',
             $this->source('app/sources/tools.queries.php'),
             'A second copy is how the analysis and the repair drifted apart in the first place.'
+        );
+    }
+
+    public function testPersonalRepairIsOwnerOnlyAndNeverFansOut(): void
+    {
+        $trait = $this->source('app/scripts/traits/SharekeysRepairTrait.php');
+
+        self::assertStringContainsString(
+            'foreach (restoreSharekeysScopeDefs(true) as $scopeName => $def) {',
+            $trait,
+            'The personal pass must run on the personal scope, not on a filtered shared one.'
+        );
+
+        // batchUpsertSharekeys() is the fan-out primitive: one call per object, N rows. It must
+        // stay in the shared pass only - a personal object gets exactly one row, for its owner.
+        $personalPass = $this->methodBody($trait, 'restorePersonalScopeSharekeys');
+        self::assertStringNotContainsString(
+            'batchUpsertSharekeys(',
+            $personalPass,
+            'Fanning a personal object out to every eligible user is SEC-8, the leak this guards.'
+        );
+        self::assertStringContainsString('personalSharekeyKeepList($ownerId, $systemUserIds)', $personalPass);
+    }
+
+    public function testPersonalRepairRefusesToGuessAnOwner(): void
+    {
+        $trait = $this->source('app/scripts/traits/SharekeysRepairTrait.php');
+
+        self::assertStringContainsString('personalOwnerConflictsWithCreator(', $trait);
+        self::assertMatchesRegularExpression(
+            '/if \(isset\(\$tpRefs\[\$objectId\]\) === false\) \{\s*\+\+\$stats\[\'no_reference\'\];\s*continue;/s',
+            $trait,
+            'With no reference key the foreign sharekeys are the only way back: leave them alone.'
+        );
+    }
+
+    public function testPersonalFolderOwnersMapReadsTheAbsoluteRootOnly(): void
+    {
+        $mainFunctions = $this->source('app/sources/main.functions.php');
+
+        // Sub-folders of a personal tree carry personal_folder = 1 too, so matching every flagged
+        // ancestor reports several owners for one folder and loses it as ambiguous.
+        self::assertMatchesRegularExpression(
+            '/function personalFolderOwnersMap\(\).*?personal_root\.personal_folder = %i\s*AND personal_root\.parent_id = %i/s',
+            $mainFunctions
+        );
+        self::assertMatchesRegularExpression(
+            '/function personalFolderOwnersMap\(\).*?\$ownerId = personalRootOwnerId\(/s',
+            $mainFunctions,
+            'The owner decision stays in the shared, unit-tested logic module.'
         );
     }
 
