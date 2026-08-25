@@ -137,7 +137,9 @@ class SecurityPostureAuthorizationTest extends TestCase
         self::assertStringContainsString('function getOwnPersonalFolderIds(', $source);
         self::assertStringContainsString("\$postureSettings['enable_pf_feature']", $source);
         self::assertStringContainsString('$userPersonalFolderEnabled === 1', $source);
-        self::assertStringContainsString('getAllPersonalFolderIds()', $source);
+        // Containment, not the personal_folder flag: a personal sub-folder whose flag was never
+        // written must still be subtracted from the shared grants.
+        self::assertStringContainsString('getPersonalFolderIdsWithDescendants()', $source);
     }
 
     public function testAdministratorExclusionIsDocumentedAsIntentional(): void

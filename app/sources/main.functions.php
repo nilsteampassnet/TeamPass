@@ -923,6 +923,53 @@ function getPersonalFolderIdsWithDescendants(): array
 }
 
 /**
+ * Definition of the object scopes handled by the "Restore missing sharekeys" tool.
+ *
+ * Each scope maps an object source (always aliased "o", its parent item aliased "i" when a join is
+ * needed) to its sharekeys table, plus the WHERE clause that keeps personal objects out. Callers
+ * build their own SELECT on top: the Tools page counts, the background task paginates.
+ *
+ * It lives here rather than next to one of its callers because both must agree: the analysis is
+ * read by an administrator as a prediction of what the repair will do, so a scope the analysis
+ * counts and the task skips shows up as a number that never reaches zero.
+ *
+ * Personal objects are excluded because rebuilding their keys for every eligible user would hand
+ * them to the whole instance (SEC-8). Neither flag is a safe filter on its own - items.perso is 0
+ * on items created while the client sent folder_is_personal = 0, and a sub-folder created under a
+ * personal root keeps personal_folder = 0 when the flag was never written (legacy data,
+ * copy_folder, import) - so containment decides.
+ *
+ * @return array<string, array{table: string, from: string, where: string}>
+ */
+function restoreSharekeysScopeDefs(): array
+{
+    $personalFolders = getPersonalFolderIdsWithDescendants();
+    $notPersonal = static function (string $alias) use ($personalFolders): string {
+        return count($personalFolders) > 0
+            ? ' AND ' . $alias . '.id_tree NOT IN (' . implode(',', $personalFolders) . ')'
+            : '';
+    };
+
+    return [
+        'items' => [
+            'table' => 'sharekeys_items',
+            'from' => prefixTable('items') . ' AS o',
+            'where' => 'o.perso = 0' . $notPersonal('o'),
+        ],
+        'fields' => [
+            'table' => 'sharekeys_fields',
+            'from' => prefixTable('categories_items') . ' AS o INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = o.item_id AND i.perso = 0)',
+            'where' => 'o.encryption_type = "' . TP_ENCRYPTION_NAME . '"' . $notPersonal('i'),
+        ],
+        'files' => [
+            'table' => 'sharekeys_files',
+            'from' => prefixTable('files') . ' AS o INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = o.id_item AND i.perso = 0)',
+            'where' => 'o.status = "' . TP_ENCRYPTION_NAME . '"' . $notPersonal('i'),
+        ],
+    ];
+}
+
+/**
  * List the personal folders that do NOT belong to the given user.
  *
  * Since the SEC-8 fix, TP_USER holds a recovery sharekey on every personal object. Any process
@@ -935,13 +982,18 @@ function getPersonalFolderIdsWithDescendants(): array
  * the same signal as identUserGetPFList(); the items.perso column is not used as it is known to be
  * unreliable on items created before the folder flag was repaired.
  *
+ * The full list is resolved by containment, not by the personal_folder flag: a sub-folder created
+ * under someone else's personal root keeps the flag at 0 when it was never written, and a
+ * flag-based list would leave that sub-folder out of the exclusion - handing the target user a
+ * valid sharekey on another user's personal items.
+ *
  * @param int $userId User whose own personal tree must stay in scope.
  *
  * @return int[] Folder ids belonging to another user's personal tree (empty when there is none).
  */
 function getForeignPersonalFolderIds(int $userId): array
 {
-    $allPersonalFolders = getAllPersonalFolderIds();
+    $allPersonalFolders = getPersonalFolderIdsWithDescendants();
     if (count($allPersonalFolders) === 0) {
         return [];
     }
@@ -1177,7 +1229,9 @@ function securityPostureAuthorizedFolderIds(int $userId): array
         $roleGrantFolders,
         $deniedFolders,
         $ownPersonalFolders,
-        getAllPersonalFolderIds()
+        // Containment, not the flag: a personal sub-folder whose personal_folder was never
+        // written would survive the subtraction and stay authorized through a role grant.
+        getPersonalFolderIdsWithDescendants()
     );
 
     return $cache[$userId];

@@ -1244,31 +1244,3 @@ case 'perform_fix_pf_items-step3':
         break;
 
 }
-
-/**
- * Definition of the object scopes handled by the "Restore missing sharekeys"
- * tool. Each scope maps an object source (aliased "o", personal items excluded)
- * to its sharekeys table.
- *
- * @return array<string, array{table: string, from: string, where: string}>
- */
-function restoreSharekeysScopeDefs(): array
-{
-    return [
-        'items' => [
-            'table' => 'sharekeys_items',
-            'from' => prefixTable('items') . ' AS o',
-            'where' => 'o.perso = 0',
-        ],
-        'fields' => [
-            'table' => 'sharekeys_fields',
-            'from' => prefixTable('categories_items') . ' AS o INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = o.item_id AND i.perso = 0)',
-            'where' => 'o.encryption_type = "' . TP_ENCRYPTION_NAME . '"',
-        ],
-        'files' => [
-            'table' => 'sharekeys_files',
-            'from' => prefixTable('files') . ' AS o INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = o.id_item AND i.perso = 0)',
-            'where' => 'o.status = "' . TP_ENCRYPTION_NAME . '"',
-        ],
-    ];
-}
