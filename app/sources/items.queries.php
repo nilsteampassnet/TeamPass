@@ -1772,12 +1772,15 @@ switch ($inputData['type']) {
                                         intval($userKey['increment_id']),
                                         'sharekeys_fields'
                                     );
+                                    // Only a real decryption failure protects the row. A value
+                                    // that decrypts to an empty string is readable, so clearing
+                                    // it stays a legitimate user intent (#5342).
                                     $fieldIsUnreadable = empty($fieldObjectKey) === true
-                                        || doDataDecryption(
+                                        || doDataDecryptionWithStatus(
                                             $existingField['data'],
                                             $fieldObjectKey,
                                             (string) ($existingField['data_iv'] ?? '')
-                                        ) === '';
+                                        )['success'] === false;
                                 }
                             }
 
@@ -3606,12 +3609,15 @@ switch ($inputData['type']) {
                                 intval($userKey['increment_id']),
                                 'sharekeys_fields'
                             );
-                            $decryptedValue = doDataDecryption(
+                            // A value that decrypts to an empty string is a normal empty
+                            // field, not a failure: reporting it as one puts the "cannot be
+                            // decrypted" warning on a perfectly readable item (#5342).
+                            $decryptedField = doDataDecryptionWithStatus(
                                 $row['data'],
                                 $fieldObjectKey,
                                 (string) ($row['data_iv'] ?? '')
                             );
-                            if ($decryptedValue === '') {
+                            if ($decryptedField['success'] === false) {
                                 $fieldText = [
                                     'string' => '',
                                     'encrypted' => true,
@@ -3620,22 +3626,24 @@ switch ($inputData['type']) {
                                 $decryptionErrors[] = intval($row['field_id']);
                             } else {
                                 $fieldText = [
-                                    'string' => $decryptedValue,
+                                    'string' => $decryptedField['string'],
                                     'encrypted' => true,
                                     'error' => '',
                                 ];
 
                                 // Lazily upgrade a legacy-encrypted field to AES v2 on read
                                 // (no-op unless v2 writes are enabled and the row is still legacy).
-                                doDataReEncryption(
-                                    'categories_items',
-                                    'data',
-                                    'data_iv',
-                                    (int) $row['id'],
-                                    (string) $row['data'],
-                                    (string) ($row['data_iv'] ?? ''),
-                                    $fieldObjectKey
-                                );
+                                if ($decryptedField['string'] !== '') {
+                                    doDataReEncryption(
+                                        'categories_items',
+                                        'data',
+                                        'data_iv',
+                                        (int) $row['id'],
+                                        (string) $row['data'],
+                                        (string) ($row['data_iv'] ?? ''),
+                                        $fieldObjectKey
+                                    );
+                                }
                             }
                         }
 

@@ -807,7 +807,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             toastr.remove();
             toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
-            restoreSharekeysSeedScope(['items', 'fields', 'files'], 0);
+            restoreSharekeysSeedScope(['items', 'fields', 'files'], 0, {seeded: 0, failed: 0});
         }
     });
 
@@ -820,11 +820,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     /**
      * Seed the missing TP_USER reference keys, one scope at a time, then
-     * launch the background repair task.
+     * launch the background repair task. The running totals are carried along
+     * so the operator is told how many objects the repair could actually open:
+     * a silent "Done" on a batch where every seed failed reads as a success.
      */
-    function restoreSharekeysSeedScope(scopes, lastId) {
+    function restoreSharekeysSeedScope(scopes, lastId, totals) {
         if (scopes.length === 0) {
-            restoreSharekeysLaunchTask();
+            restoreSharekeysLaunchTask(totals);
             return;
         }
 
@@ -854,10 +856,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     return;
                 }
 
+                totals.seeded += parseInt(ret.seeded, 10) || 0;
+                totals.failed += parseInt(ret.failed, 10) || 0;
+
                 if (ret.finished === true) {
-                    restoreSharekeysSeedScope(scopes.slice(1), 0);
+                    restoreSharekeysSeedScope(scopes.slice(1), 0, totals);
                 } else {
-                    restoreSharekeysSeedScope(scopes, ret.lastId);
+                    restoreSharekeysSeedScope(scopes, ret.lastId, totals);
                 }
             }
         );
@@ -866,7 +871,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     /**
      * Launch the background task that recreates the missing sharekeys.
      */
-    function restoreSharekeysLaunchTask() {
+    function restoreSharekeysLaunchTask(totals) {
         $.post(
             'sources/tools.queries.php', {
                 type: 'restore_missing_sharekeys-launch',
@@ -889,6 +894,16 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                 $('#restore_missing_sharekeys_results').append(
                     '<div class="alert alert-success"><i class="fas fa-check mr-2"></i>' + htmlEncode(ret.message) + '</div>'
+                );
+
+                // json_encode, not a quoted echo: a translation carrying an apostrophe
+                // would otherwise break out of the JS string literal.
+                var seedReport = <?php echo json_encode($lang->get('restore_missing_sharekeys_seed_report'), JSON_UNESCAPED_UNICODE); ?>
+                    .replace('#seeded#', String(totals.seeded))
+                    .replace('#failed#', String(totals.failed));
+                $('#restore_missing_sharekeys_results').append(
+                    '<div class="alert alert-' + (totals.failed > 0 ? 'warning' : 'info') + '">' +
+                    '<i class="fas fa-key mr-2"></i>' + htmlEncode(seedReport) + '</div>'
                 );
                 toastr.success(
                     '<?php echo $lang->get('done'); ?>',

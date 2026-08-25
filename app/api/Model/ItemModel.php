@@ -1091,7 +1091,11 @@ class ItemModel
             }
 
             $value = '';
-            $isEncrypted = (int) $row['encrypted_data'] === 1 && $row['encryption_type'] !== 'not_set';
+            // The stored row is what decides, not the category flag: a value encrypted while
+            // the field was flagged "encrypted" stays encrypted after the flag is turned off
+            // (#5161). Trusting the flag returns the raw ciphertext as the field value, which a
+            // read-modify-write client then writes back as plaintext (#5342).
+            $isEncrypted = $row['encryption_type'] !== 'not_set';
 
             if ($isEncrypted === true) {
                 $userKey = DB::queryFirstRow(
