@@ -115,6 +115,7 @@ if (null !== $post_type) {
         'list_api_sessions',
         'revoke_api_session',
         'set_onboarding_completed',
+        'seed_personal_sharekeys',
     ];
 
     // decrypt and retrieve data in JSON format
@@ -340,6 +341,158 @@ if (null !== $post_type) {
          * extension, mobile clients). Revocation flags the row — the matching JWT
          * is then rejected on every API endpoint until it expires.
          */
+        /*
+         * Rebuild the internal reference key of the caller's own personal objects.
+         *
+         * A personal object carries sharekeys for its owner and for the TP internal account only
+         * (SEC-8). When the internal one is missing, nothing running server side can open the
+         * object any more - not even an administrator - so the Tools repair skips it. The owner
+         * still holds a usable key in their own session, which makes this the one place the
+         * reference key can be recreated. Once it exists the object is repairable again, and the
+         * background task takes over.
+         *
+         * Deliberately scoped to the caller's own personal tree, deliberately synchronous and
+         * batched by the client: the caller's private key exists only for the length of their
+         * session, so it cannot be handed to a background task.
+         */
+        case 'seed_personal_sharekeys':
+            // Check KEY
+            if (!hash_equals((string) $session->get('key'), (string) $post_key)) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $userId = (int) $session->get('user-id');
+            $userPrivateKey = (string) $session->get('user-private_key');
+            if ($userPrivateKey === '') {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $scopeDefs = restoreSharekeysScopeDefs(true);
+            $scopeName = filter_var($dataReceived['scope'] ?? '', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            if (isset($scopeDefs[$scopeName]) === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $ownPersonalFolders = getOwnPersonalFolderIds($userId);
+            if (count($ownPersonalFolders) === 0) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'scope' => $scopeName,
+                        'seeded' => 0,
+                        'failed' => 0,
+                        'lastId' => 0,
+                        'finished' => true,
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $def = $scopeDefs[$scopeName];
+            $lastId = (int) filter_var($dataReceived['lastId'] ?? 0, FILTER_SANITIZE_NUMBER_INT);
+            $batchSize = 25;
+
+            // The caller's own tree only - never restoreSharekeysScopeDefs()'s personal scope, which
+            // spans every user. A sharekey the caller holds is proof enough that the object is
+            // theirs to repair; the folder filter makes sure the object is theirs to begin with.
+            //
+            // A legacy v1 reference key counts as missing here, exactly as in the shared seed: one
+            // that survived a "completed" migration never self-migrated on access and is very
+            // likely broken (#5252). So this repairs strictly more than the administrator's
+            // analysis reports as "needs the owner" - the task can still decrypt a v1 key, it just
+            // should not have to.
+            $ownScope = ($def['objectWhere'] === '' ? '' : $def['objectWhere'] . ' AND ')
+                . $def['itemAlias'] . '.id_tree IN (' . implode(',', $ownPersonalFolders) . ')';
+
+            $rows = DB::query(
+                'SELECT o.id AS object_id, skme.share_key AS my_share_key, skme.increment_id AS my_key_id
+                FROM ' . $def['from'] . '
+                INNER JOIN ' . prefixTable($def['table']) . ' AS skme ON (skme.object_id = o.id AND skme.user_id = %i AND skme.share_key != "")
+                LEFT JOIN ' . prefixTable($def['table']) . ' AS sk ON (sk.object_id = o.id AND sk.user_id = ' . TP_USER_ID . ' AND sk.share_key != "" AND sk.encryption_version = 3)
+                WHERE ' . $ownScope . ' AND sk.increment_id IS NULL AND o.id > %i
+                ORDER BY o.id ASC
+                LIMIT %i',
+                $userId,
+                $lastId,
+                $batchSize
+            );
+
+            $tpUserPublicKey = (string) DB::queryFirstField(
+                'SELECT public_key FROM ' . prefixTable('users') . ' WHERE id = %i',
+                TP_USER_ID
+            );
+
+            $seeded = 0;
+            $failed = 0;
+            foreach ($rows as $record) {
+                $lastId = (int) $record['object_id'];
+                $objectKey = decryptUserObjectKeyWithMigration(
+                    (string) $record['my_share_key'],
+                    $userPrivateKey,
+                    (string) $session->get('user-public_key'),
+                    (int) $record['my_key_id'],
+                    $def['table']
+                );
+                if (empty($objectKey) === true) {
+                    ++$failed;
+                    continue;
+                }
+                try {
+                    if (insertOrUpdateSharekey(
+                        prefixTable($def['table']),
+                        (int) $record['object_id'],
+                        (int) TP_USER_ID,
+                        encryptUserObjectKey($objectKey, $tpUserPublicKey)
+                    ) === true) {
+                        ++$seeded;
+                    } else {
+                        ++$failed;
+                    }
+                } catch (Exception $e) {
+                    ++$failed;
+                    error_log('TEAMPASS Error - seed_personal_sharekeys - object #' . $record['object_id'] . ' (' . $def['table'] . '): ' . $e->getMessage());
+                }
+            }
+
+            if ($seeded > 0) {
+                logEvents($SETTINGS, 'user_mngt', 'at_personal_sharekeys_seeded', (string) $userId, (string) $session->get('user-login'), $scopeName . ':' . $seeded);
+            }
+
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'scope' => $scopeName,
+                    'seeded' => $seeded,
+                    'failed' => $failed,
+                    'lastId' => $lastId,
+                    'finished' => count($rows) < $batchSize,
+                ),
+                'encode'
+            );
+            break;
+
         case 'list_api_sessions':
         case 'revoke_api_session':
             // Feature gate: API enabled

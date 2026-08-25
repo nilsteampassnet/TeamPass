@@ -357,6 +357,23 @@ foreach ($session->get('user-roles_array') as $role) {
                                         <div class="mt-2" id="api-sessions-list"></div>
                                     </li>';
                                     }
+                                    // Personal items encryption keys — self-repair. A personal object
+                                    // only ever has keys for its owner and the internal account, so
+                                    // when the internal one is gone the owner's own session is the
+                                    // only place it can be rebuilt: no administrator can do it.
+                                    if ((int) $session->get('user-personal_folder_enabled') === 1
+                                        && isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1
+                                    ) {
+                                        echo '
+                                    <li class="list-group-item" id="personal-sharekeys-block">
+                                        <b><i class="fa-solid fa-key fa-fw fa-lg mr-2"></i>' . $lang->get('personal_sharekeys_selfrepair') . '</b>
+                                        <small class="form-text text-muted">' . $lang->get('personal_sharekeys_selfrepair_tip') . '</small>
+                                        <div class="mt-2">
+                                            <button type="button" class="btn btn-sm btn-primary" id="personal-sharekeys-repair"><i class="fa-solid fa-wrench mr-1"></i>' . $lang->get('personal_sharekeys_selfrepair') . '</button>
+                                            <span class="ml-2" id="personal-sharekeys-result"></span>
+                                        </div>
+                                    </li>';
+                                    }
                                     // Browser extension auto-configuration — when token-based access is
                                     // available to this user (OAuth2, or all-auth-types toggle on).
                                     if (isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1

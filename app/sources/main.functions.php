@@ -58,6 +58,8 @@ require_once __DIR__ . '/log_display_logic.php';
 require_once __DIR__ . '/item_revisions_logic.php';
 require_once __DIR__ . '/password_strength.functions.php';
 require_once __DIR__ . '/roles_scope.functions.php';
+// Owner resolution rules for personal objects, shared with the remediation tooling and its tests.
+require_once __DIR__ . '/../scripts/personal_sharekeys_logic.php';
 
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
@@ -926,47 +928,137 @@ function getPersonalFolderIdsWithDescendants(): array
  * Definition of the object scopes handled by the "Restore missing sharekeys" tool.
  *
  * Each scope maps an object source (always aliased "o", its parent item aliased "i" when a join is
- * needed) to its sharekeys table, plus the WHERE clause that keeps personal objects out. Callers
+ * needed) to its sharekeys table, plus the WHERE clause selecting the objects to work on. Callers
  * build their own SELECT on top: the Tools page counts, the background task paginates.
  *
  * It lives here rather than next to one of its callers because both must agree: the analysis is
  * read by an administrator as a prediction of what the repair will do, so a scope the analysis
  * counts and the task skips shows up as a number that never reaches zero.
  *
- * Personal objects are excluded because rebuilding their keys for every eligible user would hand
- * them to the whole instance (SEC-8). Neither flag is a safe filter on its own - items.perso is 0
- * on items created while the client sent folder_is_personal = 0, and a sub-folder created under a
- * personal root keeps personal_folder = 0 when the flag was never written (legacy data,
- * copy_folder, import) - so containment decides.
+ * Shared and personal objects need opposite treatments - a shared object key goes to every eligible
+ * user, a personal one to its owner alone (SEC-8 invariant I1) - so they are two scopes, selected
+ * by one predicate and its negation. That is deliberate: it makes them a partition, and an object
+ * can never fall outside both and become invisible to the tool.
  *
- * @return array<string, array{table: string, from: string, where: string}>
+ * The predicate is containment first: a sub-folder created under a personal root keeps
+ * personal_folder = 0 when the flag was never written (legacy data, copy_folder, import). items.perso
+ * is kept as a second, independent signal because it is 0 on items created while the client sent
+ * folder_is_personal = 0, and 1 on the rare item flagged personal outside any personal tree - which
+ * the personal pass then reports as "owner unresolved" instead of silently redistributing.
+ *
+ * @param bool $personal false = shared objects only (default), true = personal objects only.
+ *
+ * 'objectWhere' is the object-type condition alone, without the scope test - what a caller needs
+ * when it scopes the objects itself, as the personal self-repair does on one user's own tree.
+ *
+ * @return array<string, array{table: string, from: string, where: string, itemAlias: string, objectWhere: string}>
  */
-function restoreSharekeysScopeDefs(): array
+function restoreSharekeysScopeDefs(bool $personal = false): array
 {
     $personalFolders = getPersonalFolderIdsWithDescendants();
-    $notPersonal = static function (string $alias) use ($personalFolders): string {
-        return count($personalFolders) > 0
-            ? ' AND ' . $alias . '.id_tree NOT IN (' . implode(',', $personalFolders) . ')'
-            : '';
+
+    $scopeTest = static function (string $alias) use ($personal, $personalFolders): string {
+        // COALESCE, because an item whose folder was deleted carries id_tree = NULL: without it
+        // the IN() yields NULL, the predicate and its negation are both NULL, and the object
+        // silently belongs to neither scope. Folder id 0 is the tree root, never a personal folder.
+        $isPersonal = $alias . '.perso = 1';
+        if (count($personalFolders) > 0) {
+            $isPersonal = '(' . $isPersonal . ' OR COALESCE(' . $alias . '.id_tree, 0) IN (' . implode(',', $personalFolders) . '))';
+        }
+
+        return $personal === true ? '(' . $isPersonal . ')' : 'NOT (' . $isPersonal . ')';
+    };
+
+    $objectWhere = [
+        'items' => '',
+        'fields' => 'o.encryption_type = "' . TP_ENCRYPTION_NAME . '"',
+        'files' => 'o.status = "' . TP_ENCRYPTION_NAME . '"',
+    ];
+    $where = static function (string $scope, string $alias) use ($objectWhere, $scopeTest): string {
+        return $objectWhere[$scope] === ''
+            ? $scopeTest($alias)
+            : $objectWhere[$scope] . ' AND ' . $scopeTest($alias);
     };
 
     return [
         'items' => [
             'table' => 'sharekeys_items',
             'from' => prefixTable('items') . ' AS o',
-            'where' => 'o.perso = 0' . $notPersonal('o'),
+            'itemAlias' => 'o',
+            'objectWhere' => $objectWhere['items'],
+            'where' => $where('items', 'o'),
         ],
         'fields' => [
             'table' => 'sharekeys_fields',
-            'from' => prefixTable('categories_items') . ' AS o INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = o.item_id AND i.perso = 0)',
-            'where' => 'o.encryption_type = "' . TP_ENCRYPTION_NAME . '"' . $notPersonal('i'),
+            'from' => prefixTable('categories_items') . ' AS o INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = o.item_id)',
+            'itemAlias' => 'i',
+            'objectWhere' => $objectWhere['fields'],
+            'where' => $where('fields', 'i'),
         ],
         'files' => [
             'table' => 'sharekeys_files',
-            'from' => prefixTable('files') . ' AS o INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = o.id_item AND i.perso = 0)',
-            'where' => 'o.status = "' . TP_ENCRYPTION_NAME . '"' . $notPersonal('i'),
+            'from' => prefixTable('files') . ' AS o INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = o.id_item)',
+            'itemAlias' => 'i',
+            'objectWhere' => $objectWhere['files'],
+            'where' => $where('files', 'i'),
         ],
     ];
+}
+
+/**
+ * Map every folder of every personal tree to the user who owns it.
+ *
+ * The owner is the numeric title of the personal root above the folder - the same signal as
+ * identUserGetPFList() and resolvePersonalFolderOwner(). It is resolved here for the whole tree in
+ * a single query because the callers walk thousands of objects, and climbing the hierarchy per
+ * object costs one query per level.
+ *
+ * Only the ABSOLUTE root counts (parent_id = 0), as in resolvePersonalFolderOwner(), which climbs
+ * until it runs out of parents. Sub-folders of a personal tree carry personal_folder = 1 as well, so
+ * matching every flagged ancestor would report several owners for the same folder and lose it as
+ * ambiguous.
+ *
+ * The decision itself stays in personalRootOwnerId(): a root that is not flagged personal, or whose
+ * title is not a plain user id, or is a system account, yields no owner. A folder still contained in
+ * more than one personal root is ambiguous and deliberately left out of the map - callers must read
+ * an absent owner as "do not touch", never as "guess".
+ *
+ * @return array<int, int> Folder id => owner user id.
+ */
+function personalFolderOwnersMap(): array
+{
+    loadClasses('DB');
+
+    $rows = DB::query(
+        'SELECT folder.id AS folder_id, personal_root.title AS owner_title
+        FROM ' . prefixTable('nested_tree') . ' AS folder
+        INNER JOIN ' . prefixTable('nested_tree') . ' AS personal_root
+            ON personal_root.personal_folder = %i
+            AND personal_root.parent_id = %i
+            AND folder.nleft >= personal_root.nleft
+            AND folder.nright <= personal_root.nright',
+        1,
+        0
+    );
+
+    $systemUserIds = [(int) TP_USER_ID, (int) API_USER_ID, (int) OTV_USER_ID, (int) SSH_USER_ID];
+    $owners = [];
+    $ambiguous = [];
+
+    foreach ($rows as $row) {
+        $folderId = (int) $row['folder_id'];
+        $ownerId = personalRootOwnerId(
+            ['personal_folder' => 1, 'title' => (string) $row['owner_title']],
+            $systemUserIds
+        );
+        if ($ownerId === null || (isset($owners[$folderId]) === true && $owners[$folderId] !== $ownerId)) {
+            $ambiguous[$folderId] = true;
+            continue;
+        }
+        $owners[$folderId] = $ownerId;
+    }
+
+    return array_diff_key($owners, $ambiguous);
 }
 
 /**
