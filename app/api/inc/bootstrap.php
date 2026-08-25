@@ -46,6 +46,7 @@ require API_ROOT_PATH . "/Controller/Api/BaseController.php";
 
 // include the use model file
 require API_ROOT_PATH . "/Model/UserModel.php";
+require API_ROOT_PATH . "/Model/ApiIdempotencyModel.php";
 require API_ROOT_PATH . "/Model/ItemModel.php";
 require API_ROOT_PATH . "/Model/FolderModel.php";
 require API_ROOT_PATH . "/Model/FolderAccessModel.php";

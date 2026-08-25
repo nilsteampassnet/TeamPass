@@ -64,14 +64,16 @@ $integritySummary = cleanOrphanObjectsAndScanIntegrity();
 $prunedRevisions = pruneItemRevisionsJournal(
     offlineSyncResolveWindowDays($SETTINGS['offline_sync_window_days'] ?? null)
 );
+$prunedIdempotencyRecords = pruneApiIdempotencyRecords();
 
 // log end
 doLog('completed', '', 1, $logID);
 
 echo sprintf(
-    'Items integrity scan completed: %d active corrupted item(s). %d journal entry(ies) pruned.',
+    'Items integrity scan completed: %d active corrupted item(s). %d journal entry(ies) pruned. %d API idempotency record(s) pruned.',
     (int) ($integritySummary['count'] ?? 0),
-    $prunedRevisions
+    $prunedRevisions,
+    $prunedIdempotencyRecords
 );
 
 /**

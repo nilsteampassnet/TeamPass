@@ -63,8 +63,8 @@ if ($corsOriginsRaw === '') {
 header('Content-Type: application/json; charset=UTF-8');
 header('Access-Control-Allow-Methods: POST, GET, PUT, DELETE');
 header('Access-Control-Max-Age: 3600');
-header('Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With');
-header('Access-Control-Expose-Headers: X-Api-Version, X-Total-Count, Location, Allow');
+header('Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With, Idempotency-Key');
+header('Access-Control-Expose-Headers: X-Api-Version, X-Total-Count, Location, Allow, Idempotency-Replayed, Retry-After');
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: DENY');
 header('Referrer-Policy: no-referrer');
