@@ -62,6 +62,12 @@ class ItemPasswordHistoryTest extends TestCase
         self::assertLessThan($itemWrite, $prepareHistory);
         self::assertLessThan($passwordAudit, $sharekeys);
         self::assertStringContainsString('$encryptedPreviousPassword', $updatePath);
+        self::assertStringContainsString('if ($passwordChanged === true) {', $updatePath);
+        self::assertStringContainsString('(string) $encryptedPreviousPassword', $updatePath);
+        self::assertStringNotContainsString(
+            'if ($passwordChanged === true && $encryptedPreviousPassword !== null)',
+            $updatePath
+        );
     }
 
     public function testSecretsAreNotIncludedInApiErrorLogs(): void

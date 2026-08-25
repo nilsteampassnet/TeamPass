@@ -2007,7 +2007,7 @@ class ItemModel
                 );
             }
 
-            if ($passwordChanged === true && $encryptedPreviousPassword !== null) {
+            if ($passwordChanged === true) {
                 logItems(
                     $SETTINGS,
                     $itemId,
@@ -2018,7 +2018,7 @@ class ItemModel
                     'at_pw',
                     TP_ENCRYPTION_NAME,
                     null,
-                    $encryptedPreviousPassword
+                    (string) $encryptedPreviousPassword
                 );
             } elseif (is_array($moveContext) === false && $hasGeneralUpdate === true) {
                 logItems($SETTINGS, $itemId, $label, $userData['id'], 'at_modification', $userData['username']);
