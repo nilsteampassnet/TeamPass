@@ -553,7 +553,13 @@ curl -X GET "https://your-teampass.com/api/index.php/item/getOtp?id=123" \
 | **Method** | POST |
 | **URL** | `<Teampass URL>/api/index.php/item/create` |
 | **Content-Type** | `application/json` |
-| **Headers** | `Authorization: Bearer <token>` |
+| **Headers** | `Authorization: Bearer <token>`; optional `Idempotency-Key: <opaque-key>` |
+
+`Idempotency-Key` accepts 1–128 visible ASCII characters without spaces. It is scoped to the
+authenticated user and this operation. TeamPass keeps the completed result for 90 days: retrying
+the same functional request returns the original `201`, `Location` and body without creating
+anything again, and adds `Idempotency-Replayed: true`. Reusing the key with a changed payload
+returns `409`. A duplicate request still processing returns `409` and `Retry-After`.
 
 **Request Body (JSON):**
 ```json
@@ -607,10 +613,12 @@ curl -X GET "https://your-teampass.com/api/index.php/item/getOtp?id=123" \
 
 | Code | Description |
 | ---- | ----------- |
-| 200 | Item created successfully |
-| 400 | Missing or invalid parameters |
+| 201 | Item created successfully (including an idempotent replay) |
+| 400 | Missing/invalid parameters or invalid `Idempotency-Key` |
 | 401 | Invalid token or expired session |
 | 403 | Create permission denied or access denied to folder |
+| 409 | Key already used with another payload, or an identical request is still processing |
+| 422 | Item validation failed |
 | 500 | Server error |
 
 **Example:**
@@ -618,6 +626,7 @@ curl -X GET "https://your-teampass.com/api/index.php/item/getOtp?id=123" \
 curl -X POST "https://your-teampass.com/api/index.php/item/create" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
+  -H "Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000" \
   -d '{
     "label": "My new item",
     "folder_id": 5,
@@ -631,6 +640,11 @@ curl -X POST "https://your-teampass.com/api/index.php/item/create" \
     "icon": "fa-solid fa-key"
   }'
 ```
+
+Run the same command again to replay its result. Keeping the key but changing, for example,
+`label` or `password` demonstrates the `409` key/payload conflict. TeamPass stores only
+server-secret HMACs of the key and functional payload, never the raw key, body, password, TOTP
+secret or custom-field values.
 
 ---
 
@@ -754,51 +768,52 @@ curl -X PUT "https://your-teampass.com/api/index.php/item/update" \
 | ---- | ----------- |
 | **Endpoint** | `item/delete` |
 | **Method** | DELETE |
-| **URL** | `<Teampass URL>/api/index.php/item/delete` |
-| **Content-Type** | `application/json` |
-| **Headers** | `Authorization: Bearer <token>` |
+| **URL** | `<Teampass URL>/api/index.php/item/delete?id=<id>&revision=<revision>` |
+| **Content-Type** | Not required (parameters are in the query string) |
+| **Headers** | `Authorization: Bearer <token>`; optional `Idempotency-Key: <opaque-key>` |
 
-**Request Body (JSON):**
-```json
-{
-  "id": 123
-}
-```
-
-**Body Parameters:**
+**Query Parameters:**
 
 | Field | Type | Required | Description |
 | ----- | ---- | -------- | ----------- |
 | `id` | integer | ✅ | Item ID to delete |
+| `revision` | integer | ❌ | Current unsigned item revision. A mismatch returns `409` before any mutation. Omitting it retains the historical last-writer-wins behavior. |
+
+The optional idempotency key uses the same syntax, user/operation scope and 90-day window as
+create. Its fingerprint includes both `id` and the optional `revision`. A replay returns the
+original success body plus `Idempotency-Replayed: true` without a second delete, audit, revision,
+cache update or WebSocket event. It therefore cannot delete an item again after a later restore.
 
 **Response (success):**
 ```json
 {
   "error": false,
   "message": "Item deleted successfully",
-  "item_id": "123"
+  "item_id": 123,
+  "revision": 4128,
+  "revision_changed_at": 1787563490
 }
 ```
+
+The revision/date pair is the delete tombstone subsequently returned by `GET /item/changes`.
 
 **Response Codes:**
 
 | Code | Description |
 | ---- | ----------- |
 | 200 | Item deleted successfully |
-| 400 | Missing ID or inconsistent data |
+| 400 | Missing ID, invalid revision or invalid idempotency key |
 | 403 | Delete permission denied or access denied — including a folder granted as `R`, `ND` or `NDNE` (check `can_delete` on [`folder/writableFolders`](#writable-folders)) |
 | 404 | Item not found |
-| 422 | HTTP method not supported (must be DELETE) |
+| 405 | HTTP method not supported (must be DELETE) |
+| 409 | Stale revision, LAPR protection, key/request conflict, or identical request still processing |
 | 500 | Server error |
 
 **Example:**
 ```bash
-curl -X DELETE "https://your-teampass.com/api/index.php/item/delete" \
+curl -X DELETE "https://your-teampass.com/api/index.php/item/delete?id=123&revision=4127" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "id": 123
-  }'
+  -H "Idempotency-Key: 8fe52f47-6f72-4a1a-b0d8-68a01c884d41"
 ```
 
 ---
