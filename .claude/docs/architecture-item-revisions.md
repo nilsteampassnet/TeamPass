@@ -1,6 +1,6 @@
 # Item Revisions & Offline Synchronization
 
-> Last updated: 2026-08-24 — target release 3.2.2
+> Last updated: 2026-08-25 — target release 3.2.2
 > Design study: `workReadmeFiles/item-revision-id-study.md`
 
 Gives every item a **monotonic revision ID** so an offline client (the mobile vault) can tell
@@ -92,9 +92,17 @@ five that exist today:
 ## API surface
 
 - `revision` and `revision_changed_at` returned by `item/get`, `item/inFolders`,
-  `item/findByUrl`, `item/create`, `item/update`
+  `item/findByUrl`, `item/create`, `item/update`, `item/delete`
 - `GET /api/v1/item/changes?since=&limit=` — the delta feed (see `api-reference.md`)
 - `PUT /api/v1/item/update` accepts an optional `revision` precondition → `409` on mismatch
+- `DELETE /api/v1/item/delete` accepts the same optional precondition. The row is locked and the
+  comparison runs immediately before soft deletion; a mismatch produces no audit, revision,
+  cache update or WebSocket event. A successful response carries the exact deletion
+  `revision`/`revision_changed_at` pair that the next delta scan uses for its tombstone.
+
+`POST /item/create` and `DELETE /item/delete` also accept an optional persistent idempotency key.
+The completion record is committed in the functional SQL transaction, so replay never allocates
+another journal row. See `architecture-api-idempotency.md`.
 
 `revision_changed_at` is a Unix UTC timestamp in seconds, or `NULL` when no reliable date exists.
 The delta feed takes the pair from the winning journal row after deduplication; tombstones cannot
