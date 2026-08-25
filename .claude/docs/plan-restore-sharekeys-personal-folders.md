@@ -77,7 +77,7 @@ a pre-SEC-8 leftover would be both unreliable and contrary to the remediation sc
 
 ---
 
-## 4. Bugs found while designing (Phase 0 — standalone, R1 already shipped)
+## 4. Bugs found while designing (Phase 0 — ✅ both shipped on `develop`)
 
 ### R1 — the personal exclusion is flag-only, so it leaks legacy personal sub-folders — ✅ FIXED
 
@@ -106,16 +106,24 @@ a foreign personal sub-folder could therefore stay authorized through a role gra
 it is a correct primitive ("folders whose own flag is set"), and the sentinel test is what stops
 it being wired back into an exclusion path.
 
-### R2 — Analyze and the repair task do not cover the same objects
+### R2 — Analyze and the repair task did not cover the same objects — ✅ FIXED
 
-`restoreSharekeysScopeDefs()` filters on `perso` **only** (no `nested_tree` join at all), while the
-trait additionally excludes personal folders. Analyze therefore counts objects the repair task will
-never touch: `missing_pairs` is inflated, and an admin can watch a number stay non-zero across
-repeated repairs with no explanation.
+`restoreSharekeysScopeDefs()` filtered on `perso` **only** (no `nested_tree` join at all), while the
+trait additionally excluded personal folders. Analyze therefore counted objects the repair task
+would never touch: `missing_pairs` inflated, and a number that never reaches zero across repeated
+repairs with nothing on screen to explain it. Measured on the development database: **27 phantom
+items**, 0 fields, 0 files.
 
-**Fix:** make one definition authoritative. Extract the scope/exclusion SQL into a shared helper
-(see §6) so `tools.queries.php` and `SharekeysRepairTrait.php` cannot drift again — this is also a
-prerequisite for adding a fourth "personal" scope cleanly.
+**Fixed on `develop` at `16fa65333`** (2026-08-25): `restoreSharekeysScopeDefs()` moved to
+`app/sources/main.functions.php` — loaded by `tools.queries.php:42` and
+`background_tasks___worker.php:33` alike — and now carries the personal exclusion itself
+(`$notPersonal($alias)`, containment-based). `SharekeysRepairTrait` builds its paginated query from
+those definitions instead of repeating the `FROM` clauses; its `$scopes` array is gone.
+`tests/Unit/PersonalFolderContainmentTest.php` guards the single definition and the task's use of
+it.
+
+Side effect worth remembering: `-seed` no longer relies on an administrator sharekey left on a
+personal object by a pre-SEC-8 install — a key `remediate_personal_sharekeys.php` exists to delete.
 
 ---
 
@@ -149,9 +157,11 @@ objects missing their reference key (one `COUNT(*)`, cached per session).
 
 ## 6. Implementation
 
-### 6.1 Shared scope definition (Phase 0, fixes R2)
+### 6.1 Shared scope definition — mostly done
 
-New DB-free-ish helper next to `restoreSharekeysScopeDefs()`, used by **both** consumers:
+`restoreSharekeysScopeDefs()` already lives in `app/sources/main.functions.php`, is shared by both
+consumers and resolves personal containment through `$notPersonal($alias)` (R2). What is left is
+the parameter that flips the exclusion into a selection:
 
 ```php
 /**
@@ -161,17 +171,17 @@ New DB-free-ish helper next to `restoreSharekeysScopeDefs()`, used by **both** c
 function restoreSharekeysScopeDefs(bool $personal = false): array
 ```
 
-Personal containment is folder-based, never `perso`:
-
 ```sql
--- shared  (existing behaviour, now folder-aware)
+-- shared   (current behaviour)
 ... AND i.id_tree NOT IN (:personalFolderIdsWithDescendants)
--- personal
+-- personal (to add)
 ... AND i.id_tree     IN (:personalFolderIdsWithDescendants)
 ```
 
-`getPersonalFolderIdsWithDescendants()` returns `[]` when the feature was never used — both
-branches must handle the empty list (shared ⇒ no filter, personal ⇒ no objects, skip entirely).
+Watch the empty list: `getPersonalFolderIdsWithDescendants()` returns `[]` when the feature was
+never used. Today the shared branch correctly degrades to "no filter"; the personal branch must
+degrade to **no objects at all** — an `IN ()` is invalid SQL, so the caller has to skip the scope
+outright rather than build a query.
 
 ### 6.2 Owner resolution
 
@@ -244,9 +254,9 @@ is required. A **new** `*.queries.php` would need one.
 
 | File | Change |
 |---|---|
-| `app/sources/tools.queries.php` | `restoreSharekeysScopeDefs(bool $personal)`; personal counters in `-analyze`; personal rows in `-details`; **`-seed` unchanged** |
-| `app/scripts/traits/SharekeysRepairTrait.php` | `getPersonalFolderIdsWithDescendants()` (R1); shared defs (R2); new `restoreScopePersonalSharekeys()` |
-| `app/sources/main.functions.php` | `getForeignPersonalFolderIds()` → descendants-aware (R1) |
+| `app/sources/main.functions.php` | `restoreSharekeysScopeDefs()` gains the `$personal` parameter |
+| `app/sources/tools.queries.php` | personal counters in `-analyze`; personal rows in `-details`; **`-seed` unchanged** |
+| `app/scripts/traits/SharekeysRepairTrait.php` | new `restoreScopePersonalSharekeys()` |
 | `app/sources/users.queries.php` | `seed_personal_sharekeys` |
 | `app/pages/tools.php` / `tools.js.php` | second results table + personal details rows |
 | `app/pages/profile.php` / `profile.js.php` | self-repair button + notice |
@@ -318,7 +328,8 @@ Manual matrix (each in a personal folder, with a second non-admin user to prove 
 
 1. ~~`Fix: exclude legacy personal sub-folders from sharekey redistribution` (R1)~~ — done,
    `398b63ebc` on `develop`
-2. `Refactor: one scope definition for the sharekeys repair tool` (R2)
+2. ~~`Refactor: one scope definition for the sharekeys repair tool` (R2)~~ — done,
+   `16fa65333` on `develop`
 3. `Add personal objects to the Restore missing sharekeys analysis`
 4. `Repair personal object sharekeys owner-only in the background task`
 5. `Let a user rebuild the reference key of their own personal items`
