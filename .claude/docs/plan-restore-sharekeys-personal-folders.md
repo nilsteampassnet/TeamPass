@@ -1,7 +1,8 @@
 # Restore missing sharekeys — extension to personal folders
 
 > Branch `improve/restore-sharekeys-personal-folders`, cut from `develop` at `966318be0`
-> (the merge of `fix/5342-custom-fields-data-loss`). **Plan only — no implementation yet.**
+> (the merge of `fix/5342-custom-fields-data-loss`). **Implemented 2026-08-25** — see §10 for what
+> shipped and what did not.
 > Target release: 3.2.2. Delete this file once the feature has shipped — it is a plan,
 > not an architecture reference.
 >
@@ -334,3 +335,55 @@ Manual matrix (each in a personal folder, with a second non-admin user to prove 
 4. `Repair personal object sharekeys owner-only in the background task`
 5. `Let a user rebuild the reference key of their own personal items`
 6. `Add tests for the personal sharekeys repair scope`
+
+---
+
+## 10. What shipped (2026-08-25)
+
+| Commit | Content |
+|---|---|
+| `398b63ebc` (develop) | R1 — personal exclusion by containment, three sites |
+| `16fa65333` (develop) | R2 — one shared scope definition |
+| `e73b5309f` | `$personal` scope + `personalFolderOwnersMap()` + owner-only repair pass |
+| `f84b81085` | Personal objects in the Analyze table and in the details list |
+| `484c85980` | Owner self-repair (`seed_personal_sharekeys` + My Profile) |
+
+### Where the implementation diverged from this plan
+
+- **The three states were wrong in §3, and the first analysis shipped them wrong.** §3 listed state B
+  as "TP_USER key missing, owner key present" but the counters first written for it measured
+  `owner_missing AND tp_missing`, which is state C. Caught by running the owner self-repair query on
+  real data: it found 27 candidate objects where the analysis reported 1. The table now carries five
+  columns — objects, owner cannot read, repairable here, needs the owner, not recoverable — and the
+  details list says, per row, which of the last two a row is.
+- **The scopes are one predicate and its negation**, not two independent WHERE clauses. That makes
+  them a partition, so no object can fall outside both. It also settled the empty-list case §6.1
+  worried about: with no personal folder the predicate degrades to `perso = 1` / `NOT (perso = 1)`,
+  no `IN ()` is ever built and no scope has to be skipped.
+- **`COALESCE(id_tree, 0)`** — an item whose folder was deleted has `id_tree = NULL`, so the
+  predicate and its negation were both NULL and the object belonged to neither scope. 23 such items
+  exist on the development database; they were invisible to the repair task before this branch.
+- **`personalFolderOwnersMap()` had to restrict to the absolute root** (`parent_id = 0`). Sub-folders
+  of a personal tree carry `personal_folder = 1` too, so the first version matched several roots per
+  folder and dropped 35 folders as ambiguous — 41 of 50 personal items came back "owner unresolved".
+- **Foreign sharekeys are removed only once the object is known to be recoverable.** §6.3 had the
+  cleanup unconditional. On an object with no reference key those foreign keys are the only way back:
+  a holder can still open the item and save it again, which is exactly what the Tools page advises.
+- **`objectWhere`** was added to the scope definitions so the self-repair can scope objects itself
+  (one user's own tree) without re-deriving the object-type condition.
+- **The self-repair treats a legacy v1 reference key as missing**, like the shared seed (#5252). It
+  therefore repairs strictly more than the analysis reports as "needs the owner"; the task can still
+  decrypt a v1 key, it just should not have to.
+
+### Not done
+
+- **The manual matrix in §7 was not executed** — it needs a live instance with a second non-admin
+  user. Everything was verified read-only against the development database instead: the scope
+  partition, the owner map, the classification of all 51 personal objects, the analysis counters and
+  the self-repair candidate query.
+- **No write was performed on the development database.** The repair pass and the self-repair have
+  never actually written a sharekey; only their SELECTs, their classification and their arithmetic
+  were run.
+- The three objects the pass refuses on that database are the intended refusals: an imported item in
+  another user's tree, an item flagged personal outside any personal tree, and a personal root whose
+  owner is not the item creator.
