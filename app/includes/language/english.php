@@ -30,7 +30,7 @@
 
 return array(
     'restore_missing_sharekeys' => 'Restore missing sharekeys',
-    'restore_missing_sharekeys_tip' => 'This tool detects and recreates missing encryption sharekeys (items, custom fields and files). Users without a sharekey see the object but cannot decrypt it (crossed-out password icon). The analysis is a read-only pass. The repair first restores the missing TP internal account reference keys using your own account, then a background task distributes the missing keys to every user. Only missing keys are created - existing keys are never modified. Personal items are excluded.',
+    'restore_missing_sharekeys_tip' => 'This tool detects and recreates missing encryption sharekeys (items, custom fields and files). Users without a sharekey see the object but cannot decrypt it (crossed-out password icon). The analysis is a read-only pass. The repair first restores the missing TP internal account reference keys using your own account, then a background task distributes the missing keys to every user. Only missing keys are created - existing keys are never modified. Personal items are handled separately: their key is rebuilt for their owner alone, never distributed.',
     'restore_missing_sharekeys_analyze' => 'Analyze',
     'restore_missing_sharekeys_repair' => 'Repair',
     'restore_missing_sharekeys_objects' => 'Objects',
@@ -47,6 +47,13 @@ return array(
     'restore_missing_sharekeys_no_holder' => 'No user has a valid key',
     'restore_missing_sharekeys_details_limit' => 'Only the first 100 objects of each type are listed.',
     'restore_missing_sharekeys_seed_report' => 'Reference keys rebuilt from your account: #seeded#. Objects your own keys could not open: #failed# - these need a user who can still read them to save the item again.',
+    'restore_missing_sharekeys_personal' => 'Personal objects',
+    'restore_missing_sharekeys_owner_missing' => 'Owner cannot read',
+    'restore_missing_sharekeys_personal_repairable' => 'Repairable here',
+    'restore_missing_sharekeys_needs_owner' => 'Needs the owner',
+    'restore_missing_sharekeys_needs_owner_tip' => 'A personal object only ever has keys for its owner and for the TP internal account, so these ones cannot be repaired from here: no internal reference key is left and your own account never had one. Their owner can rebuild them from My Profile > Repair my personal items encryption keys, then this repair finishes the job.',
+    'restore_missing_sharekeys_owner' => 'Owner',
+    'restore_missing_sharekeys_owner_unresolved' => 'Owner unknown',
     'remaining_lock_time' => 'Remaining lock time',
     'extension_promo_text' => 'Enhance your TeamPass experience and access the passwords directly from your browser!',
     'learn_more' => 'Learn more',
