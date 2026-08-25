@@ -19,6 +19,10 @@ define("DB_SSL", false); // if DB over SSL then comment this line
 define("DB_CONNECT_OPTIONS", array(
     MYSQLI_OPT_CONNECT_TIMEOUT => 10
 ));
+// Name of the file holding the application master key, inside TEAMPASS_SECRETS
+// (a constant defined in app/config/include.php as TEAMPASS_ROOT/secrets).
+// The installer replaces this empty value with a random file name.
+define("SECUREFILE", "");
 define("IKEY", "");
 define("SKEY", "");
 define("HOST", "");

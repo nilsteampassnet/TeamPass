@@ -55,40 +55,54 @@ composer install
 The web root is `public/`; the application code lives in `app/`. Install through
 `/install/install.php`.
 
-### ⚠️ Repairing the dev toolchain
+### Setting up the dev toolchain
 
 `composer.json` sets `vendor-dir` to `app/vendor`, so Composer binaries live in `app/vendor/bin/`
 — **not** `vendor/bin/`.
 
-The dev dependencies are untracked, so any checkout or merge deletes them while leaving generated
-residue behind. Because their directories still exist, Composer believes they are installed and
-skips them. On top of that, the committed `app/vendor/composer/` is the **production** autoloader
-and maps no dev package. The symptom is `Class "PHPUnit\TextUI\Application" not found` with the
-package sitting right there — and `composer dump-autoload` does not fix it.
+**Install PHPUnit as a standalone phar.** Do not use `app/vendor/phpunit/phpunit/phpunit`: it
+resolves its classes through `app/vendor/composer/`, which is committed in its **production**
+form and maps no dev package. The symptom is `Class "PHPUnit\TextUI\Application" not found`
+with the package sitting right there, and `composer dump-autoload` does not fix it. The phar
+carries its own dependencies and is immune — the same reason `app/vendor/bin/phpstan` works
+(it is a phar too).
+
+```bash
+mkdir -p _tools
+curl -sL -o _tools/phpunit.phar    https://phar.phpunit.de/phpunit-10.5.64.phar
+curl -sL -o /tmp/phpunit.phar.asc  https://phar.phpunit.de/phpunit-10.5.64.phar.asc
+gpg --keyserver hkps://keys.openpgp.org \
+    --recv-keys D8406D0D82947747293778314AA394086372C20A         # Sebastian Bergmann
+gpg --verify /tmp/phpunit.phar.asc _tools/phpunit.phar           # expect: Good signature
+chmod +x _tools/phpunit.phar
+```
+
+`_tools/` is gitignored, so the phar survives every checkout and merge. Keep its version in step
+with `.github/workflows/quality.yml`, which resolves `phpunit/phpunit: ^10.5` from the lock file.
+
+**The other dev tools still come from Composer**, and they carry a trap. The dev dependencies are
+untracked, so any checkout or merge deletes them while leaving generated residue behind; because
+their directories still exist, Composer believes they are installed and skips them.
 
 ```bash
 rm -rf app/vendor/phpstan app/vendor/phpunit app/vendor/symfony/cache
 composer install
-
-php app/vendor/phpunit/phpunit/phpunit                  # run the tests
-php app/vendor/bin/phpstan analyse --memory-limit=2G    # run the analyser
-
-git checkout -- app/vendor/composer/                    # LAST — restores the production autoloader
+git checkout -- app/vendor/composer/                    # restores the production autoloader
 ```
 
-The `rm -rf` is not optional and the order of the last three commands is not free: `composer
-install` rewrites `app/vendor/composer/` into its *dev* form (which is what makes the tools
-runnable), so run them **between** the install and the restore.
+The `rm -rf` is not optional — without it `composer install` repairs nothing for those three
+packages.
 
-> **Always run `git checkout -- app/vendor/composer/` before committing.** Shipping the dev
-> autoloader fatals every installation.
+> **Always run `git checkout -- app/vendor/composer/` before committing.** `composer install`
+> rewrites it into its *dev* form, and shipping that autoloader fatals every installation. The
+> `Committed autoloader is production-only` CI job rejects a pull request that carries it.
 
 ---
 
 ## Running the checks
 
 ```bash
-php app/vendor/phpunit/phpunit/phpunit                  # unit tests
+php _tools/phpunit.phar                                 # unit tests
 php app/vendor/bin/phpstan analyse --memory-limit=2G    # static analysis, level 4
 php app/vendor/bin/composer-license-checker             # dependency license compliance
 ```

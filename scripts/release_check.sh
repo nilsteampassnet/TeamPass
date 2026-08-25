@@ -40,7 +40,13 @@ cd "$ROOT"
 # --- Resolve binaries ----------------------------------------------------------
 PHP_BIN="$(command -v php || true)"
 PHPSTAN="$ROOT/app/vendor/bin/phpstan"
-PHPUNIT_PHAR="$ROOT/app/vendor/phpunit/phpunit/phpunit"
+# The standalone phar is preferred: it carries its own dependencies, so it runs against the
+# committed *production* autoloader, which the Composer entry point cannot do. Fall back to
+# the Composer binary for a tree where `composer install` was just run.
+PHPUNIT_PHAR="$ROOT/_tools/phpunit.phar"
+if [ ! -f "$PHPUNIT_PHAR" ]; then
+    PHPUNIT_PHAR="$ROOT/app/vendor/phpunit/phpunit/phpunit"
+fi
 
 EN_LANG="app/includes/language/english.php"
 FR_LANG="app/includes/language/french.php"

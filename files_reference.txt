@@ -10,7 +10,7 @@
 .claude/docs/architecture-websocket.md a13c93e7892930eecbc28fb2bf0625cb
 .claude/skills/debug-issue/skill.md f6ca42b7fce135a9dbe1b01f651e35a4
 .claude/skills/explore-codebase/skill.md 72bcdd4382c8389e22970964cbdf73e3
-.claude/skills/prepare-release/SKILL.md fce84d491864b96b8fc0b6cdf5eb711b
+.claude/skills/prepare-release/SKILL.md 20607344865ea17668491fb926a159f1
 .claude/skills/prepare-release/references/release-notes-template.md badd1136b921f1688af11ad73280e59e
 .claude/skills/prepare-release/scripts/regenerate_checksums.sh 5fd902eff9daf706d5dc864356f814a2
 .claude/skills/refactor-safely/skill.md 48b6d7fd4e9a3dcef923e9e32f8a75d0
@@ -18,12 +18,12 @@
 .dockerignore e7e9c8e0c6d6cde4bf3246467c908427
 .eslintignore cc8a871db6475bf238fe4c09602f181d
 .eslintrc 92303d813331f34d6428b5eec6979e63
-.github/CONTRIBUTING.md 34328f0cf40fe975fe942578530162cb
+.github/CONTRIBUTING.md a04eda68c2801928f5ce356310814154
 .github/FUNDING.yml 85b41af5b443f15df8041493159da95e
 .github/ISSUE_TEMPLATE/bug_report.yml 73c9532a938fa5941c6afe63f66ef968
 .github/ISSUE_TEMPLATE/config.yml 3f877caabd7f83d65a66fd8d25a6738d
 .github/ISSUE_TEMPLATE/feature_request.yml f7d1a2cabea59be111b30ea228a2eadb
-.github/PULL_REQUEST_TEMPLATE.md 58b4d08036d3a909d757cbeb03055fa0
+.github/PULL_REQUEST_TEMPLATE.md c83e119d1ad35bc879b4ab75fef6a462
 .github/SUPPORT.md d839d7ce6f3691728500132503bf6d6d
 .github/codeql/codeql-config.yml 58dc1dba0781d7eaf775ef42ce22ef3c
 .github/dependabot.yml 123b62ac94b15d370328f5ebcbeaf627
@@ -34,7 +34,7 @@
 .gitignore 23549df59304608d467850acdecc37e3
 .phpstan-baseline.neon 67f61e8b639c017bee8a946b3799e46c
 .scrutinizer.yml 81051bcc2cf1bedf378224b0a93e2877
-CLAUDE.md 751ec3965bea977fa590c7dccd51accb
+CLAUDE.md 98afbdf010a8467134fad8c3f9412946
 CODE_OF_CONDUCT.md b0a15b407957b5a13797b84f3ce4e171
 DOCKER-HUB-README.md 12807831b6f0b750407a50d125068032
 Dockerfile 61be1cd79a32134c1ac82bc4375c50fe
@@ -67,7 +67,7 @@ app/config/.htaccess 81594a7af3d0a392c24aada056204b79
 app/config/emails_templates.php 5dd31985ddd8bd531e8b7392053db9db
 app/config/include.php b2b9189c72326c976bc96bd2d35ff173
 app/config/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
-app/config/settings.sample.php b428568d86d89390da3f0e0137a14802
+app/config/settings.sample.php 15ed7c39ba4b70e0157292265f938860
 app/core/command-palette.js.php e4e3fd01a173bfdcbd02c96ea679375a
 app/core/extension-autoconfig.js.php 55768fb83ec46e63557dcb0bb247d22d
 app/core/item-classification.js.php dde3300540213102eefcd528af22f9aa
@@ -13223,7 +13223,7 @@ public/sources/users.queries.php 542e21f0d353483a5fdd47b5ea1ffb5c
 public/sources/users_purge.functions.php 0923d1096424f928de1437866bd3efa8
 public/sources/utilities.queries.php f0a7cc58f4637386ed597b851f83a55e
 public/sources/utils.queries.php 8dff1c43473e071c9e440298d16db6d4
-scripts/release_check.sh 9abdad196af9bc6c5be7699b6ea890b2
+scripts/release_check.sh f8e48e7cb93cba3ee030f970af5c6156
 secrets/.gitkeep d41d8cd98f00b204e9800998ecf8427e
 storage/backups/.gitkeep d41d8cd98f00b204e9800998ecf8427e
 storage/config/.gitkeep d41d8cd98f00b204e9800998ecf8427e

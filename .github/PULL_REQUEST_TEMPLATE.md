@@ -23,7 +23,7 @@
 ## Checklist
 
 - [ ] PHPStan level 4 passes (`php app/vendor/bin/phpstan analyse --memory-limit=2G`)
-- [ ] The test suite passes (`php app/vendor/phpunit/phpunit/phpunit`)
+- [ ] The test suite passes (`php _tools/phpunit.phar` — see CONTRIBUTING.md for the one-time setup)
 - [ ] Every new public function has a docblock
 - [ ] Variable names and comments are in English
 - [ ] No `var_dump()` or `console.log()` left in the code
