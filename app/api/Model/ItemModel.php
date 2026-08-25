@@ -598,21 +598,18 @@ class ItemModel
             emitItemSyslog($SETTINGS, $newID, $label, 'at_creation', $username);
 
             return $response;
-        } catch (InvalidArgumentException | UnexpectedValueException $e) {
+        } catch (Throwable $e) {
             if ($transactionStarted === true) {
                 DB::rollback();
                 resetItemRevisionMemo();
             }
 
-            return [
-                'error' => true,
-                'error_header' => 'HTTP/1.1 422 Unprocessable Entity',
-                'error_message' => $e->getMessage(),
-            ];
-        } catch (Throwable $e) {
-            if ($transactionStarted === true) {
-                DB::rollback();
-                resetItemRevisionMemo();
+            if ($e instanceof InvalidArgumentException || $e instanceof UnexpectedValueException) {
+                return [
+                    'error' => true,
+                    'error_header' => 'HTTP/1.1 422 Unprocessable Entity',
+                    'error_message' => $e->getMessage(),
+                ];
             }
 
             error_log(

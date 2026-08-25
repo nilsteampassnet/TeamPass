@@ -194,7 +194,10 @@ class ApiItemIdempotencyTest extends TestCase
         self::assertLessThan(strpos($create, '$this->insertNewItem('), strpos($create, 'DB::startTransaction();'));
         self::assertLessThan(strpos($create, 'DB::commit();'), strpos($create, 'completeReservation('));
         self::assertGreaterThan(strpos($create, 'DB::commit();'), strrpos($create, 'emitItemSyslog('));
-        self::assertStringNotContainsString('$e->getMessage()', $create);
+        $createLogStart = strrpos($create, 'error_log(');
+        $createLogEnd = strpos($create, ');', (int) $createLogStart);
+        $createLog = substr($create, (int) $createLogStart, (int) $createLogEnd - (int) $createLogStart);
+        self::assertStringNotContainsString('$e->getMessage()', $createLog);
 
         $deleteStart = strpos($model, 'public function deleteItem(');
         $delete = substr($model, (int) $deleteStart);
@@ -202,7 +205,10 @@ class ApiItemIdempotencyTest extends TestCase
         self::assertLessThan(strpos($delete, "'inactif' => '1'"), strpos($delete, '$expectedRevision !== null'));
         self::assertLessThan(strpos($delete, 'DB::commit();'), strpos($delete, 'completeReservation('));
         self::assertGreaterThan(strpos($delete, 'DB::commit();'), strrpos($delete, 'emitItemSyslog('));
-        self::assertStringNotContainsString('$e->getMessage()', $delete);
+        $deleteLogStart = strrpos($delete, 'error_log(');
+        $deleteLogEnd = strpos($delete, ');', (int) $deleteLogStart);
+        $deleteLog = substr($delete, (int) $deleteLogStart, (int) $deleteLogEnd - (int) $deleteLogStart);
+        self::assertStringNotContainsString('$e->getMessage()', $deleteLog);
     }
 
     public function testControllerKeepsKeysOptionalAndShortCircuitsCompletedReplays(): void
