@@ -77,26 +77,34 @@ a pre-SEC-8 leftover would be both unreliable and contrary to the remediation sc
 
 ---
 
-## 4. Bugs found while designing (Phase 0 — do these first, they stand alone)
+## 4. Bugs found while designing (Phase 0 — standalone, R1 already shipped)
 
-### R1 — the personal exclusion is flag-only, so it leaks legacy personal sub-folders
+### R1 — the personal exclusion is flag-only, so it leaks legacy personal sub-folders — ✅ FIXED
 
-`SharekeysRepairTrait.php:76` uses `getAllPersonalFolderIds()`, which selects
-`nested_tree WHERE personal_folder = 1` — the folder's **own flag**. A sub-folder created under a
-personal root keeps `personal_folder = 0` when the flag was never written (legacy data,
-`copy_folder`, import) — this is documented on `getPersonalFolderIdsWithDescendants()`
-(`app/sources/main.functions.php:907`), which exists precisely to fix that class of bug and is
-**not** used here. The `items` scope has the same hole (`n.personal_folder = 0`,
-`SharekeysRepairTrait.php:86`), and `items.perso` is not a fallback — the trait's own comment
-(`:73-75`) says it is `0` on items created while the client sent `folder_is_personal = 0`.
+`SharekeysRepairTrait.php` resolved the exclusion list with `getAllPersonalFolderIds()`, which
+selects `nested_tree WHERE personal_folder = 1` — the folder's **own flag**. A sub-folder created
+under a personal root keeps `personal_folder = 0` when the flag was never written (legacy data,
+`copy_folder`, import); this is documented on `getPersonalFolderIdsWithDescendants()`
+(`app/sources/main.functions.php:907`), which exists precisely to fix that class of bug and was
+not used here. The `items` scope had the same hole through its `n.personal_folder = 0` join, and
+`items.perso` is no fallback — the trait's own comment says it is `0` on items created while the
+client sent `folder_is_personal = 0`.
 
-⇒ An item in a legacy personal sub-folder is currently **fanned out to every eligible user** by
-the repair task. Same-shaped hole in `getForeignPersonalFolderIds()`
-(`app/sources/main.functions.php:942`), which also builds on `getAllPersonalFolderIds()`.
+⇒ An item in a legacy personal sub-folder was **fanned out to every eligible user** by the repair
+task. Same-shaped hole in `getForeignPersonalFolderIds()` (`app/sources/main.functions.php:942`),
+which also built on `getAllPersonalFolderIds()`.
 
-**Fix:** switch both personal-exclusion sites to `getPersonalFolderIdsWithDescendants()`.
-Small, standalone, and worth landing before anything else here — it is a live SEC-8-class leak,
-independent of this feature.
+**Fixed on `develop` at `398b63ebc`** (2026-08-25), ahead of this feature: the three sites now
+call `getPersonalFolderIdsWithDescendants()`, the repair task filters its `items` scope on the
+folder list instead of joining `nested_tree` to read the flag, and
+`tests/Unit/PersonalFolderContainmentTest.php` guards all three. A third site was found while
+fixing: `securityPostureAuthorizedFolders()` (`main.functions.php:1187`) passed the flag-only
+list to `securityPostureResolveAuthorizedFolders()`, which subtracts it from the shared grants —
+a foreign personal sub-folder could therefore stay authorized through a role grant.
+
+`getAllPersonalFolderIds()` is now unused outside its own definition. It was kept deliberately:
+it is a correct primitive ("folders whose own flag is set"), and the sentinel test is what stops
+it being wired back into an exclusion path.
 
 ### R2 — Analyze and the repair task do not cover the same objects
 
@@ -270,7 +278,8 @@ Unit (DB-free / sentinel, the house style):
 1. `restoreSharekeysScopeDefs(true)` and `(false)` produce **disjoint** object sets — a sentinel on
    the SQL, so the two can never overlap again (R2).
 2. Neither definition uses `getAllPersonalFolderIds()`; both use
-   `getPersonalFolderIdsWithDescendants()` (R1).
+   `getPersonalFolderIdsWithDescendants()` — extend
+   `tests/Unit/PersonalFolderContainmentTest.php` rather than starting a new guard (R1).
 3. `SharekeysRepairTrait` calls `batchUpsertSharekeys()` **only** from the shared path — a regex
    guard proving the personal path cannot fan out (SEC-8 / I1).
 4. `restore_missing_sharekeys-seed` source contains no personal scope.
@@ -307,7 +316,8 @@ Manual matrix (each in a personal folder, with a second non-admin user to prove 
 
 ## 9. Suggested commit split
 
-1. `Fix: exclude legacy personal sub-folders from sharekey redistribution` (R1)
+1. ~~`Fix: exclude legacy personal sub-folders from sharekey redistribution` (R1)~~ — done,
+   `398b63ebc` on `develop`
 2. `Refactor: one scope definition for the sharekeys repair tool` (R2)
 3. `Add personal objects to the Restore missing sharekeys analysis`
 4. `Repair personal object sharekeys owner-only in the background task`
