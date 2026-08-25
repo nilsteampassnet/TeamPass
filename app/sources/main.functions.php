@@ -5820,6 +5820,26 @@ function doDataEncryption(string $data, ?string $key = null, bool $forceLegacyFo
  */
 function doDataDecryption(string $data, string $key, string $meta = ''): string
 {
+    return doDataDecryptionWithStatus($data, $key, $meta)['string'];
+}
+
+/**
+ * Decrypts a string using AES and reports whether the operation actually succeeded.
+ *
+ * doDataDecryption() returns an empty string in two very different situations: the
+ * decryption failed, and the stored value legitimately decrypts to an empty string.
+ * A caller that acts on that difference must use this variant instead (#5342):
+ * the item card otherwise flags a perfectly readable field as undecryptable, and
+ * update_item otherwise refuses to let the user clear it.
+ *
+ * @param string $data Encrypted data (base64)
+ * @param string $key  Object key to decrypt with (base64)
+ * @param string $meta Base64 v2 metadata (pw_iv / data_iv); empty for legacy data
+ *
+ * @return array{string: string, success: bool} 'string' is base64 encoded, as doDataDecryption()
+ */
+function doDataDecryptionWithStatus(string $data, string $key, string $meta = ''): array
+{
     // Sanitize
     $antiXss = new AntiXSS();
     $data = $antiXss->xss_clean($data);
@@ -5828,7 +5848,7 @@ function doDataDecryption(string $data, string $key, string $meta = ''): string
 
     // Guard: empty key means upstream decryption failed - return empty rather than attempt decrypt
     if (empty($key)) {
-        return '';
+        return ['string' => '', 'success' => false];
     }
 
     try {
@@ -5847,12 +5867,12 @@ function doDataDecryption(string $data, string $key, string $meta = ''): string
             );
         }
 
-        return base64_encode((string) $decrypted);
+        return ['string' => base64_encode((string) $decrypted), 'success' => true];
     } catch (Exception $e) {
         if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
             error_log('TEAMPASS doDataDecryption failed: ' . $e->getMessage());
         }
-        return '';
+        return ['string' => '', 'success' => false];
     }
 }
 
