@@ -70,49 +70,16 @@ trait SharekeysRepairTrait {
             return;
         }
 
-        // Personal objects are excluded: rebuilding their keys for every eligible user would hand
-        // them to the whole instance. Neither flag is a safe filter on its own - items.perso is 0
-        // on items created while the client sent folder_is_personal = 0, and a sub-folder created
-        // under a personal root keeps personal_folder = 0 when the flag was never written (legacy
-        // data, copy_folder, import). Containment in a personal tree is what decides, which is
-        // exactly what getPersonalFolderIdsWithDescendants() resolves.
-        $personalFolders = getPersonalFolderIdsWithDescendants();
-        $personalFolderSql = count($personalFolders) > 0
-            ? ' AND i.id_tree NOT IN (' . implode(',', $personalFolders) . ')'
-            : '';
-        $personalFolderSqlOnItem = count($personalFolders) > 0
-            ? ' AND o.id_tree NOT IN (' . implode(',', $personalFolders) . ')'
-            : '';
-
-        // One pass per object type sharing the same sharekeys schema
-        $scopes = [
-            'items' => [
-                'sharekeysTable' => 'sharekeys_items',
-                'objectsQuery' => 'SELECT o.id AS id FROM ' . prefixTable('items') . ' AS o
-                    WHERE o.perso = 0' . $personalFolderSqlOnItem . '
-                    AND o.id > %i ORDER BY o.id ASC LIMIT %i',
-            ],
-            'fields' => [
-                'sharekeysTable' => 'sharekeys_fields',
-                'objectsQuery' => 'SELECT o.id AS id FROM ' . prefixTable('categories_items') . ' AS o
-                    INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = o.item_id AND i.perso = 0)
-                    WHERE o.encryption_type = "' . TP_ENCRYPTION_NAME . '"' . $personalFolderSql . '
-                    AND o.id > %i ORDER BY o.id ASC LIMIT %i',
-            ],
-            'files' => [
-                'sharekeysTable' => 'sharekeys_files',
-                'objectsQuery' => 'SELECT o.id AS id FROM ' . prefixTable('files') . ' AS o
-                    INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = o.id_item AND i.perso = 0)
-                    WHERE o.status = "' . TP_ENCRYPTION_NAME . '"' . $personalFolderSql . '
-                    AND o.id > %i ORDER BY o.id ASC LIMIT %i',
-            ],
-        ];
-
+        // One pass per object type sharing the same sharekeys schema. The scopes - including the
+        // exclusion of personal objects - come from restoreSharekeysScopeDefs() so that what the
+        // Tools page analyses and what this task repairs can never describe different object sets.
         $summary = [];
-        foreach ($scopes as $scopeName => $scope) {
+        foreach (restoreSharekeysScopeDefs() as $scopeName => $def) {
             $result = $this->restoreScopeMissingSharekeys(
-                $scope['objectsQuery'],
-                $scope['sharekeysTable'],
+                'SELECT o.id AS id FROM ' . $def['from'] . '
+                WHERE ' . $def['where'] . ' AND o.id > %i
+                ORDER BY o.id ASC LIMIT %i',
+                $def['table'],
                 $tpPrivateKey,
                 (string) $userTpInfo['public_key'],
                 $users

@@ -28,34 +28,59 @@ class PersonalFolderContainmentTest extends TestCase
         return $content;
     }
 
-    public function testSharekeysRepairExcludesPersonalObjectsByContainment(): void
+    public function testRestoreSharekeysScopesExcludePersonalObjectsByContainment(): void
+    {
+        $mainFunctions = $this->source('app/sources/main.functions.php');
+
+        self::assertMatchesRegularExpression(
+            '/function restoreSharekeysScopeDefs\(\): array\s*\{\s*\$personalFolders = getPersonalFolderIdsWithDescendants\(\);/s',
+            $mainFunctions,
+            'A flag-based list lets the repair task fan a personal item out to every user (SEC-8).'
+        );
+
+        // The items scope carries the object itself (alias "o"), fields and files join their
+        // parent item (alias "i"): every scope must apply the exclusion, on its own alias.
+        self::assertMatchesRegularExpression(
+            '/function restoreSharekeysScopeDefs\(\).*?\$notPersonal\(\'o\'\).*?\$notPersonal\(\'i\'\).*?\$notPersonal\(\'i\'\)/s',
+            $mainFunctions,
+            'A scope with no exclusion hands its personal objects to every eligible user.'
+        );
+    }
+
+    public function testRestoreSharekeysScopesAreDefinedOnlyOnce(): void
+    {
+        // The Tools analysis is read as a prediction of what the repair task will do, so the two
+        // must describe the same object set. One definition, shared, is what guarantees it.
+        self::assertStringContainsString(
+            'function restoreSharekeysScopeDefs(): array',
+            $this->source('app/sources/main.functions.php')
+        );
+        self::assertStringNotContainsString(
+            'function restoreSharekeysScopeDefs',
+            $this->source('app/sources/tools.queries.php'),
+            'A second copy is how the analysis and the repair drifted apart in the first place.'
+        );
+    }
+
+    public function testSharekeysRepairTaskBuildsOnTheSharedScopes(): void
     {
         $trait = $this->source('app/scripts/traits/SharekeysRepairTrait.php');
 
         self::assertStringContainsString(
-            '$personalFolders = getPersonalFolderIdsWithDescendants();',
-            $trait,
-            'A flag-based list lets the repair task fan a personal item out to every user (SEC-8).'
-        );
-        self::assertStringNotContainsString(
-            'getAllPersonalFolderIds()',
+            'foreach (restoreSharekeysScopeDefs() as $scopeName => $def) {',
             $trait
         );
-    }
-
-    public function testSharekeysRepairFiltersEveryScopeOnTheFolderList(): void
-    {
-        $trait = $this->source('app/scripts/traits/SharekeysRepairTrait.php');
-
-        // The items scope carries the object itself (alias "o"), fields and files join their
-        // parent item (alias "i"): both fragments must exist, or one scope stays unfiltered.
-        self::assertStringContainsString("' AND i.id_tree NOT IN ('", $trait);
-        self::assertStringContainsString("' AND o.id_tree NOT IN ('", $trait);
+        self::assertStringNotContainsString('getAllPersonalFolderIds()', $trait);
         self::assertStringNotContainsString(
             'n.personal_folder = 0',
             $trait,
             'The nested_tree join tested the folder flag, which is the bug being guarded here.'
         );
+
+        // The task must not name the object sources any more: that is the shared definition's job.
+        foreach (["prefixTable('items')", "prefixTable('categories_items')", "prefixTable('files')"] as $source) {
+            self::assertStringNotContainsString($source, $trait);
+        }
     }
 
     public function testForeignPersonalFolderListIsResolvedByContainment(): void
