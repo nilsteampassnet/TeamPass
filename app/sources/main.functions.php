@@ -935,13 +935,18 @@ function getPersonalFolderIdsWithDescendants(): array
  * the same signal as identUserGetPFList(); the items.perso column is not used as it is known to be
  * unreliable on items created before the folder flag was repaired.
  *
+ * The full list is resolved by containment, not by the personal_folder flag: a sub-folder created
+ * under someone else's personal root keeps the flag at 0 when it was never written, and a
+ * flag-based list would leave that sub-folder out of the exclusion - handing the target user a
+ * valid sharekey on another user's personal items.
+ *
  * @param int $userId User whose own personal tree must stay in scope.
  *
  * @return int[] Folder ids belonging to another user's personal tree (empty when there is none).
  */
 function getForeignPersonalFolderIds(int $userId): array
 {
-    $allPersonalFolders = getAllPersonalFolderIds();
+    $allPersonalFolders = getPersonalFolderIdsWithDescendants();
     if (count($allPersonalFolders) === 0) {
         return [];
     }
@@ -1177,7 +1182,9 @@ function securityPostureAuthorizedFolderIds(int $userId): array
         $roleGrantFolders,
         $deniedFolders,
         $ownPersonalFolders,
-        getAllPersonalFolderIds()
+        // Containment, not the flag: a personal sub-folder whose personal_folder was never
+        // written would survive the subtraction and stay authorized through a role grant.
+        getPersonalFolderIdsWithDescendants()
     );
 
     return $cache[$userId];

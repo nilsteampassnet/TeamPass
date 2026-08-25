@@ -71,11 +71,17 @@ trait SharekeysRepairTrait {
         }
 
         // Personal objects are excluded: rebuilding their keys for every eligible user would hand
-        // them to the whole instance. The items.perso flag alone is not a safe filter (it is 0 on
-        // items created while the client sent folder_is_personal = 0), so the folder is checked too.
-        $personalFolders = getAllPersonalFolderIds();
+        // them to the whole instance. Neither flag is a safe filter on its own - items.perso is 0
+        // on items created while the client sent folder_is_personal = 0, and a sub-folder created
+        // under a personal root keeps personal_folder = 0 when the flag was never written (legacy
+        // data, copy_folder, import). Containment in a personal tree is what decides, which is
+        // exactly what getPersonalFolderIdsWithDescendants() resolves.
+        $personalFolders = getPersonalFolderIdsWithDescendants();
         $personalFolderSql = count($personalFolders) > 0
             ? ' AND i.id_tree NOT IN (' . implode(',', $personalFolders) . ')'
+            : '';
+        $personalFolderSqlOnItem = count($personalFolders) > 0
+            ? ' AND o.id_tree NOT IN (' . implode(',', $personalFolders) . ')'
             : '';
 
         // One pass per object type sharing the same sharekeys schema
@@ -83,8 +89,8 @@ trait SharekeysRepairTrait {
             'items' => [
                 'sharekeysTable' => 'sharekeys_items',
                 'objectsQuery' => 'SELECT o.id AS id FROM ' . prefixTable('items') . ' AS o
-                    INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = o.id_tree)
-                    WHERE o.perso = 0 AND n.personal_folder = 0 AND o.id > %i ORDER BY o.id ASC LIMIT %i',
+                    WHERE o.perso = 0' . $personalFolderSqlOnItem . '
+                    AND o.id > %i ORDER BY o.id ASC LIMIT %i',
             ],
             'fields' => [
                 'sharekeysTable' => 'sharekeys_fields',
