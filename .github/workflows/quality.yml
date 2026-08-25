@@ -50,6 +50,25 @@ jobs:
           fi
           echo "OK — committed autoloader is production-only."
 
+  table-prefix-guard:
+    name: Table names use prefixTable()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      # TeamPass lets the administrator pick a table prefix at install time. A query that
+      # writes "teampass_items" literally hits a missing table on every installation using
+      # another prefix, and db_error_handler() throws an uncaught exception that aborts the
+      # whole page — that is issue #5347, where the Tools page lost half of its tools.
+      - name: Verify no hard-coded "teampass_" table name
+        run: php .github/scripts/check_table_prefix.php
+
   tests:
     name: Tests (PHP ${{ matrix.php }})
     runs-on: ubuntu-latest

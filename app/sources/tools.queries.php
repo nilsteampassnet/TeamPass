@@ -135,7 +135,7 @@ case 'perform_fix_pf_items-step1':
     // Get user's private folders
     $userPFRoot = DB::queryFirstRow(
         'SELECT id
-        FROM teampass_nested_tree
+        FROM ' . prefixTable('nested_tree') . '
         WHERE title = %i',
         $userId
     );
@@ -204,8 +204,8 @@ case 'perform_fix_pf_items-step2':
     // Delete all private items with sharekeys
     $pfiSharekeys = DB::queryFirstColumn(
         'select s.increment_id
-        from teampass_sharekeys_items as s
-        INNER JOIN teampass_items AS i ON (i.id = s.object_id)
+        from ' . prefixTable('sharekeys_items') . ' as s
+        INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = s.object_id)
         WHERE s.user_id = %i AND i.perso = 1 AND i.id_tree IN %ls',
         $userId,
         $personalFolders
@@ -213,7 +213,7 @@ case 'perform_fix_pf_items-step2':
     $pfiSharekeysCount = DB::count();
     if ($pfiSharekeysCount > 0) {
         DB::delete(
-            "teampass_sharekeys_items",
+            prefixTable('sharekeys_items'),
             "increment_id IN %ls",
             $pfiSharekeys
         );
@@ -270,7 +270,7 @@ case 'perform_fix_pf_items-step3':
     // Get all key back
     $items = DB::query(
         "SELECT id
-        FROM teampass_items
+        FROM " . prefixTable('items') . "
         WHERE id_tree IN %ls AND encryption_type = %s",
         $personalFolders,
         "teampass_aes"
@@ -278,9 +278,9 @@ case 'perform_fix_pf_items-step3':
     //DB::debugMode(false);
     $nbItems = DB::count();
     foreach ($items as $item) {
-        $defusePwd = DB::queryFirstField("SELECT pw FROM teampass_items_old WHERE id = %i", $item['id']);
+        $defusePwd = DB::queryFirstField("SELECT pw FROM " . prefixTable('items_old') . " WHERE id = %i", $item['id']);
         DB::update(
-            "teampass_items",
+            prefixTable('items'),
             ['pw' => $defusePwd, "encryption_type" => "defuse"],
             "id = %i",
             $item['id']

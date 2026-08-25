@@ -258,7 +258,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     '<div class="form-check mt-2">'+
                         '<input class="form-check-input" type="checkbox" value="" id="restore_items_master_keys_confirm">'+
                         '<label class="form-check-label" for="restore_items_master_keys_confirm">'+
-                            'I confirm the operation and I have a backup of table <code>teampass_sharekeys_items</code>.'+
+                            'I confirm the operation and I have a backup of table <code><?php echo htmlspecialchars(DB_PREFIX, ENT_QUOTES, "UTF-8"); ?>sharekeys_items</code>.'+
                         '</label>'+
                     '</div>'+
                     '<button type="button" class="btn btn-danger mt-2 btn-sm tp-action" id="fix_items_master_keys_confirm_but" data-action="fix_items_master_keys_confirm_but">'+

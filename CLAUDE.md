@@ -23,6 +23,7 @@ so the Composer binaries live under `app/vendor/bin/`, not `vendor/bin/`.
 php app/vendor/bin/phpstan analyse --memory-limit=2G   # PHPStan level 4 (config: phpstan.neon)
 php _tools/phpunit.phar                                # Unit tests
 php app/vendor/bin/composer-license-checker            # License compliance
+php .github/scripts/check_table_prefix.php             # No hard-coded "teampass_" table name
 composer install                                       # PHP dependencies
 php app/scripts/background_tasks___handler.php         # Background tasks
 ```
@@ -117,15 +118,33 @@ Database schema: initial install via `/install/install.php`, upgrades via `/inst
 ## Database Layer: MeekroDB
 
 ```php
-DB::query('SELECT * FROM %l WHERE id=%i', 'teampass_users', $userId);
-DB::queryFirstRow('SELECT * FROM %l WHERE id=%i', 'teampass_items', $itemId);
-DB::insert('teampass_items', ['label' => 'Test', 'password' => $encrypted]);
-DB::update('teampass_users', ['timestamp' => time()], 'id=%i', $userId);
-DB::delete('teampass_log_items', 'id_item=%i', $itemId);
+DB::query('SELECT * FROM ' . prefixTable('users') . ' WHERE id=%i', $userId);
+DB::queryFirstRow('SELECT * FROM ' . prefixTable('items') . ' WHERE id=%i', $itemId);
+DB::insert(prefixTable('items'), ['label' => 'Test', 'password' => $encrypted]);
+DB::update(prefixTable('users'), ['timestamp' => time()], 'id=%i', $userId);
+DB::delete(prefixTable('log_items'), 'id_item=%i', $itemId);
 // %s=string  %i=integer  %l=literal(table/col)  %ls=array for IN
 ```
 
-**Key Tables:** `teampass_users`, `teampass_items`, `teampass_nested_tree`, `teampass_misc`, `teampass_log_items`, `teampass_sharekeys_items`, `teampass_roles_title`
+**Rule: never write a table name literally — always build it with `prefixTable()`.** The
+administrator chooses the table prefix at install time (`DB_PREFIX` in
+`app/config/settings.php`); `teampass_` is only the default. A query holding
+`teampass_items` hits a missing table on every other installation, and `db_error_handler()`
+throws an **uncaught** exception that aborts the whole page — half the Tools page silently
+disappeared this way (issue #5347). The rule covers every position a table name can take:
+`FROM`/`JOIN`, the first argument of `DB::insert|update|delete|replace`, a `SHOW TABLES LIKE`
+pattern, and the admin-facing text that tells an operator which table to back up (feed it
+`DB_PREFIX` through `sprintf()`).
+
+Two things that merely *look* like table names and must be left alone: the `encryption_type`
+column **value** `teampass_aes`, and setting keys such as `teampass_version`.
+
+CI enforces this (`table-prefix-guard` in `.github/workflows/quality.yml`); run it locally
+with `php .github/scripts/check_table_prefix.php`. It reads the reference table list from
+the installer, so a newly added table is covered with no list to maintain.
+
+**Key Tables** (logical names — always pass them through `prefixTable()`): `users`, `items`,
+`nested_tree`, `misc`, `log_items`, `sharekeys_items`, `roles_title`
 
 ## Authentication and Session Management
 

@@ -127,13 +127,13 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                             <div class='row mb-3'>
                                 <div class='col-12'>
                                     <small id='passwordHelpBlock' class='form-text text-muted'>
-                                        <?php echo $lang->get('fix_personal_items_empty_tip'); ?>
+                                        <?php echo sprintf($lang->get('fix_personal_items_empty_tip'), DB_PREFIX, DB_PREFIX); ?>
                                     </small>
                                 </div>
                             </div>
 <?php                            
 // Check if table  exists
-$tableExists = DB::queryFirstField('SHOW TABLES LIKE %s', 'teampass_items_v2');;
+$tableExists = DB::queryFirstField('SHOW TABLES LIKE %s', prefixTable('items_v2'));
 if (is_null($tableExists) === true) {
     echo '
                             <div class="alert alert-warning" role="warning"><i class="fas fa-lightbulb mr-2"></i>'.$lang->get('table_not_exists').'</div>';
@@ -142,7 +142,7 @@ if (is_null($tableExists) === true) {
     $selectOptions = '';
     $users = DB::query('
         SELECT id, login, lastname, name, personal_folder, encrypted_psk 
-        FROM teampass_users 
+        FROM ' . prefixTable('users') . ' 
         WHERE disabled = 0 AND (login NOT LIKE "%_deleted%")
         ORDER BY login');
     foreach ($users as $user) {
@@ -203,28 +203,28 @@ if (is_null($tableExists) === true) {
                         <div class='col-12'>
                             <small id='passwordHelpBlock' class='form-text text-muted'>
                                 <?php echo $lang->get('tools_fix_items_otp_tip'); ?><br>
-                                <strong><?php echo $lang->get('warning'); ?>:</strong> <?php echo $lang->get('tools_fix_items_otp_warning'); ?>
+                                <strong><?php echo $lang->get('warning'); ?>:</strong> <?php echo sprintf($lang->get('tools_fix_items_otp_warning'), DB_PREFIX); ?>
                             </small>
                         </div>
                     </div>
                     <?php                            
 // Check if table  exists
-DB::query('SELECT id from teampass_items WHERE perso = 0;');
+DB::query('SELECT id from ' . prefixTable('items') . ' WHERE perso = 0;');
 $nbItems = DB::count();
 
 // Get list of users
 $selectOptions = '';
 $users = DB::query('
     SELECT id, login, lastname, name, personal_folder 
-    FROM teampass_users 
+    FROM ' . prefixTable('users') . ' 
     WHERE disabled = 0 AND (login NOT LIKE "%_deleted%")
     ORDER BY login');
 foreach ($users as $user) {
     // Get number of items for this user
     DB::query(
         'SELECT i.id 
-        FROM teampass_items AS i
-        INNER JOIN teampass_sharekeys_items AS si ON i.id = si.object_id
+        FROM ' . prefixTable('items') . ' AS i
+        INNER JOIN ' . prefixTable('sharekeys_items') . ' AS si ON i.id = si.object_id
         WHERE i.perso = %i AND si.user_id = %i;',
         0,
         $user['id']

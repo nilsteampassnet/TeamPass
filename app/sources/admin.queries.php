@@ -4374,7 +4374,7 @@ function getPersonalItemsMigrationStats(array $SETTINGS): array
     // Get users pending migration
     $pendingUsers = DB::query(
         "SELECT id, login, email, last_connexion
-        FROM teampass_users
+        FROM " . prefixTable('users') . "
         WHERE personal_items_migrated = 0
         AND disabled = 0 AND deleted_at IS NULL AND id NOT IN %li
         ORDER BY last_connexion DESC",
@@ -4384,7 +4384,7 @@ function getPersonalItemsMigrationStats(array $SETTINGS): array
     // Get users ready
     $doneUsers = DB::query(
         "SELECT id, login, email, last_connexion
-        FROM teampass_users
+        FROM " . prefixTable('users') . "
         WHERE personal_items_migrated = 1
         AND disabled = 0 AND deleted_at IS NULL AND id NOT IN %li
         ORDER BY last_connexion DESC",
