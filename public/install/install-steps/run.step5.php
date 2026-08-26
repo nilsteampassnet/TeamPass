@@ -433,6 +433,7 @@ class DatabaseInstaller
             `hibp_count` int NOT NULL DEFAULT '0',
             `hibp_checked_at` varchar(30) NULL DEFAULT NULL,
             `revision` INT UNSIGNED NOT NULL DEFAULT '0',
+            `revision_changed_at` BIGINT UNSIGNED NULL DEFAULT NULL,
             PRIMARY KEY (`id`),
             KEY `restricted_inactif_idx` (`restricted_to`,`inactif`),
             INDEX items_perso_id_idx (`perso`, `id`),

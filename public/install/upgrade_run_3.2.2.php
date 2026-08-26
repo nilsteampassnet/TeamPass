@@ -372,6 +372,19 @@ if ($res === false) {
     exit();
 }
 
+// Durable timestamp paired with items.revision. Unlike items.updated_at, it changes only
+// when a functional content revision is allocated and survives journal pruning.
+$res = addColumnIfNotExist(
+    $pre . 'items',
+    'revision_changed_at',
+    'BIGINT UNSIGNED NULL DEFAULT NULL'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error adding column revision_changed_at to items table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
 // Item change journal. Its AUTO_INCREMENT primary key is the globally monotonic
 // revision sequence, and its rows are the only tombstone left once an item row is
 // hard deleted or leaves the caller's visible folders.
@@ -393,6 +406,22 @@ $res = mysqli_query(
 );
 if ($res === false) {
     echo '[{"finish":"1", "msg":"", "error":"Error creating items_revisions table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Backfill only when the current item revision still has its exact journal row. Older
+// journal entries may already have been pruned; their timestamp is genuinely unknown.
+$res = mysqli_query(
+    $db_link,
+    'UPDATE `' . $pre . 'items` AS i
+     INNER JOIN `' . $pre . 'items_revisions` AS r
+        ON r.`item_id` = i.`id` AND r.`revision` = i.`revision`
+     SET i.`revision_changed_at` = r.`changed_at`
+     WHERE i.`revision` > 0 AND i.`revision_changed_at` IS NULL'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error backfilling items.revision_changed_at: ' . addslashes(mysqli_error($db_link)) . '"}]';
     mysqli_close($db_link);
     exit();
 }

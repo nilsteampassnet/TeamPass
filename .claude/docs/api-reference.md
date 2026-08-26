@@ -151,9 +151,14 @@ Get item(s) by ID or label.
 
 **Pagination:** label/description searches return `X-Total-Count` (total matches in accessible folders, before per-item sharekey filtering).
 
-**Response:** array of item objects `{ id, revision, label, description, login, email, url, password, path, folder_id, folder_label, has_otp, favicon_url, tags, fields }`.
+**Response:** array of item objects `{ id, revision, revision_changed_at, label, description, login, email, url, password, path, folder_id, folder_label, has_otp, favicon_url, tags, fields }`.
 
 **`revision`** — monotonic item revision, allocated from the `teampass_items_revisions` journal on every content change (item row, custom fields, tags, attachments, OTP, move, delete, restore). `0` = never changed since the column was introduced. Also returned by `item/inFolders`, `item/findByUrl`, `item/create` and `item/update`. See `architecture-item-revisions.md`.
+
+**`revision_changed_at`** — Unix UTC timestamp in seconds paired with `revision`. It changes only
+when a functional content revision is allocated, never on a read or ciphertext-only rewrite.
+`null` means the exact date is not known, notably for revision 0 or when an upgrade could not find
+the current revision in the prunable journal. Returned everywhere `revision` is returned.
 
 **Custom fields:** `fields` is an array of `{ id, title, type, masked, value }` for the item's folder-associated categories. Encrypted values are decrypted via `decryptUserObjectKeyWithMigration()` on `sharekeys_fields` (+ `base64_decode`); empty when no sharekey is available yet. Only present when `item_extra_fields` is enabled. Also returned by `item/inFolders`.
 
@@ -181,7 +186,7 @@ Find items by URL match.
 
 **Params:** `url` (string). The `%` and `_` characters are escaped before the LIKE query.
 
-**Response:** array of `{ id, label, login, url, folder_id, has_otp, favicon_url }`. Empty result → `200` + `[]`.
+**Response:** array of `{ id, revision, revision_changed_at, label, login, url, folder_id, has_otp, favicon_url }`. Empty result → `200` + `[]`.
 
 **Permissions:** `allowed_to_read`.
 
@@ -210,7 +215,7 @@ Delta feed for offline clients (mobile vault). Answers "what must I apply since 
 
 **Params:** `since` (int, **required**, exclusive; `0` on a first sync), `limit` (default 200, max 1000).
 
-**Response:** `{ cursor, has_more, full_sync_required, changed[], removed[] }`. `changed` carries full item payloads (same shape and same code path as `item/get`); `removed` is `{ id, revision, reason }` with `reason` in `deleted` | `purged` | `out_of_scope`.
+**Response:** `{ cursor, has_more, full_sync_required, changed[], removed[] }`. `changed` carries full item payloads (same shape and same code path as `item/get`); `removed` is `{ id, revision, revision_changed_at, reason }` with `reason` in `deleted` | `purged` | `out_of_scope`. The revision/date pair comes from the winning journal row after deduplication.
 
 **Cursor-based, not offset-based** — a change feed has no stable total, so no `X-Total-Count`. Store `cursor`, resend it as `since`, repeat while `has_more`.
 
@@ -244,7 +249,7 @@ Create a new item.
 
 **Custom fields:** `fields` = array of `{ id, value }` (field id + value). Encrypt-before-INSERT for encrypted categories; creator sharekey created synchronously, other users via the `new_item` background task. Only fields tied to the folder are stored; empty values ignored. Requires `item_extra_fields`.
 
-**Response 201:** `{ error: false, message, newId }` + `Location: /api/v1/item/get?id=<newId>` (path-absolute reference). Validation failures → `422`; missing fields → `400`; folder not allowed / read-only → `403`.
+**Response 201:** `{ error: false, message, newId, revision, revision_changed_at }` + `Location: /api/v1/item/get?id=<newId>` (path-absolute reference). Validation failures → `422`; missing fields → `400`; folder not allowed / read-only → `403`.
 
 **Permissions:** `allowed_to_create`. Blocked with 403 if folder is read-only for user.
 
@@ -257,6 +262,12 @@ Update an existing item. **Only PUT is accepted** — POST returns 405.
 **Body:** `id` (required), at least one of: `label`, `password`, `description`, `login`, `email`, `url`, `tags`, `anyone_can_modify`, `icon`, `folder_id`, `totp`, `fields`.
 
 **Optimistic concurrency — `revision` (optional).** The revision the client's edit was based on. When it differs from `items.revision`, the update is rejected with `409` and **nothing is written**; omitting it keeps last-writer-wins, so existing clients are unaffected. It is a **precondition, not an updatable field**: it is absent from the `$updateableFields` list in `ItemController::updateAction()`, so `{id, revision}` alone still answers `400 'At least one supported field to update must be provided.'`, and it never triggers the personal→shared move conflict guard.
+
+**Password history.** When a non-empty `password` is supplied, the server decrypts the current
+value before any mutation and compares it with `hash_equals()`. An unchanged password is a password
+no-op: by itself it causes no ciphertext rewrite, sharekey fan-out, password-history row or revision. A real change stores the
+previous value in `log_items.old_value`, encrypted with the application master key and tagged
+`at_pw`, exactly like the web UI. Failure to recover or prepare the old value aborts before mutation.
 
 **Custom fields:** `fields` = array of `{ id, value }`. Created if absent, updated only when the value changed (current value decrypted for comparison); encrypted fields re-encrypted and sharekeys refreshed synchronously for all eligible users (consistent with the password path). Empty values ignored. Requires `item_extra_fields`.
 
