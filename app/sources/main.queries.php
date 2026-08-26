@@ -104,12 +104,16 @@ if (
     $session->set('system-error_code', ERR_NOT_ALLOWED); //not allowed page
     include TEAMPASS_ROOT . '/public/error.php';
     exit();
-} elseif (($session->has('user-id') && null !== $session->get('user-id')
-        && $session->get('key') !== null)
-    || (isset($post_type) === true
-        && null !== filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES))
+} elseif (
+    $session->has('user-id') && null !== $session->get('user-id')
+    && $session->get('key') !== null
 ) {
-    // continue
+    // Reaching the handlers requires an authenticated session holding a key.
+    // This branch also used to accept any request that simply carried a POST
+    // 'data' field, whatever the session state - the pre-authentication bypass
+    // reported as GHSA-m56v-2qvj-8c2j. The guard above already exits before
+    // this point since 3.1.1, so the alternative was dead code; it is removed
+    // so the bypass cannot come back if that guard is ever refactored.
     mainQuery($SETTINGS);
 } else {
     $session->set('system-error_code', ERR_NOT_ALLOWED); //not allowed page
