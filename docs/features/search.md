@@ -36,14 +36,15 @@ Each section appears only when the corresponding feature is enabled by your admi
 | **Security** | Weak, Breached, Overdue, No expiry, Widely shared — plus Reused and Unreadable. Same vocabulary as the security dashboard; see also [Breach detection](breach-detection.md). |
 | **Attachments** | Has an attachment, attachment name contains…, and filter by extension. |
 | **Dates and rotation** | Created/modified between two dates, flagged for rotation, automatic rotation enabled. |
-| **Content and scope** | Tags, personal vs shared, favourites, recently viewed, and custom field values. |
+| **Content and scope** | Folder (including its subfolders), tags, personal vs shared, favourites, recently viewed, and custom field values. |
 
-Active filters appear as removable **chips** above the results. Click a chip to drop that filter, or **Clear all** to start over. Your filters and current page are remembered when you come back to the page.
+Active filters appear as removable **chips** above the results. Click a chip to drop that filter. **Clear all** and the reset button beside the search bar both restore the empty search and the default “Search in” fields. Your filters and current page are remembered when you come back to the page.
 
 ### Notes on specific filters
 
 - **Reused** and **Unreadable** rely on data produced by a security scan. If you have never run one from the security dashboard, these two filters return nothing. The other security filters are computed live and need no scan.
 - **Attachment name** searches the *file name*, not the file contents — attachment contents are encrypted and cannot be searched.
+- **Folder** restricts item and folder results to the selected folder and all its descendants. Only folders in your authorized scope are proposed.
 - **Custom field values** are only searchable for fields that are **not encrypted**. Encrypted custom fields are excluded by design, and a field restricted to roles you do not hold is never searched: a match would reveal its value.
 
 ---
@@ -77,7 +78,7 @@ Search results are filtered by your permissions:
 - Other users' personal folders and all their descendants are never searched, including legacy descendants whose own personal-folder flag is missing.
 - Items restricted to specific users or roles (see [Items — Restricted items](items.md#restricted-items)) are only returned if you are in the allowed list, or hold one of the allowed roles.
 
-The filter dropdowns (such as the tag list) are built from the same restricted scope, so they never reveal the existence of items you cannot see.
+The filter dropdowns (including the folder and tag lists) are built from the same restricted scope, so they never reveal the existence of folders or items you cannot see.
 
 ---
 

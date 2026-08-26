@@ -97,6 +97,12 @@ class SearchFiltersLogicTest extends TestCase
         $this->assertSame(['folder'], $filters['fields']);
     }
 
+    public function testFolderFacetAcceptsOnePositiveFolderIdOnly(): void
+    {
+        $filters = searchNormalizeFilters(['folder' => ['42', '43', 0, -1]]);
+        $this->assertSame([42], $filters['folder']);
+    }
+
     public function testClassificationKeepsZeroButRejectsOutOfScale(): void
     {
         // 0 means "unclassified" and is a legitimate filter value.
@@ -144,6 +150,7 @@ class SearchFiltersLogicTest extends TestCase
         $this->assertTrue(searchHasActiveFacet(searchNormalizeFilters(['favourites' => '1'])));
         $this->assertTrue(searchHasActiveFacet(searchNormalizeFilters(['classification' => [0]])));
         $this->assertTrue(searchHasActiveFacet(searchNormalizeFilters(['attachment_has' => true])));
+        $this->assertTrue(searchHasActiveFacet(searchNormalizeFilters(['folder' => '42'])));
     }
 
     // -------------------------------------------------------------------

@@ -179,7 +179,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         $(this).val(stamp ? new Date(stamp * 1000).toISOString().slice(0, 10) : '')
       })
 
-      // Deferred: the tag and custom-field lists are not loaded yet.
+      // Deferred: the folder, tag and custom-field lists are not loaded yet.
       pendingSelectRestore = filters
 
       // This runs while DataTables is still being constructed, i.e. before the
@@ -448,6 +448,24 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
       }, immediate === true ? 0 : 300)
     }
 
+    // Restore every search criterion to the initial page defaults. Keeping
+    // this in one function ensures the compact reset button and "Clear all"
+    // always behave identically.
+    const resetSearch = () => {
+      clearTimeout(searchDebounce)
+      pendingSelectRestore = null
+      $('#search-term').val('')
+      $('.search-field-cb').each(function() {
+        $(this).prop('checked', $(this).attr('data-default-checked') === 'true')
+      })
+      $('.search-facet, .search-facet-bool').prop('checked', false)
+      $('.search-facet-text, .search-facet-csv, .search-facet-date, .search-facet-single').val('')
+      $('.search-facet-select').val([])
+      renderFolderResults([], false)
+      runSearch(true)
+      $('#search-term').trigger('focus')
+    }
+
     $('#search-term').on('keyup', () => runSearch())
     $(document).on('change', '.search-field-cb, .search-facet, .search-facet-bool, .search-facet-single, .search-facet-select', () => runSearch(true))
     $(document).on('change', '.search-facet-date', () => runSearch(true))
@@ -470,12 +488,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
       runSearch(true)
     })
 
-    $('#search-clear-all').on('click', () => {
-      $('.search-facet, .search-facet-bool').prop('checked', false)
-      $('.search-facet-text, .search-facet-csv, .search-facet-date, .search-facet-single').val('')
-      $('.search-facet-select').val([])
-      runSearch(true)
-    })
+    $('#search-reset, #search-clear-all').on('click', resetSearch)
 
     // Show/hide the panel and give the results column the freed width back.
     $('#search-toggle-filters').on('click', function() {
@@ -497,6 +510,17 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         key: '<?php echo $session->get('key'); ?>'
       },
       function(options) {
+        if (options.folders) {
+          options.folders.forEach((folder) => {
+            const id = Number.parseInt(folder.id, 10)
+            const title = String(folder.title || '').trim()
+            if (Number.isInteger(id) === false || id <= 0 || title === '') return
+
+            const path = String(folder.path || '').trim()
+            const label = path === '' ? title : path + ' / ' + title
+            $('<option></option>').attr('value', id).text(label).appendTo('#search-folder')
+          })
+        }
         if (options.tags) {
           options.tags.forEach((tag) => {
             $('<option></option>').attr('value', tag).text(tag).appendTo('#search-tags')
@@ -516,11 +540,18 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
           if (Array.isArray(pendingSelectRestore.custom_field_id)) {
             $('#search-custom-field').val(pendingSelectRestore.custom_field_id[0])
           }
+          const restoredFolder = Array.isArray(pendingSelectRestore.folder)
+            ? pendingSelectRestore.folder[0]
+            : pendingSelectRestore.folder
+          if (restoredFolder) {
+            $('#search-folder').val(String(restoredFolder))
+          }
           if (pendingSelectRestore.scope_perso) {
             $('#search-scope-perso').val(pendingSelectRestore.scope_perso)
           }
           const needsReload = Array.isArray(pendingSelectRestore.tags)
             || Array.isArray(pendingSelectRestore.custom_field_id)
+            || !!restoredFolder
             || !!pendingSelectRestore.scope_perso
           pendingSelectRestore = null
           if (needsReload) {

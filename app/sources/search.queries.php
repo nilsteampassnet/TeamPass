@@ -223,11 +223,35 @@ $emptyOutput = [
 // a global list would disclose the existence of items the user cannot see.
 if ($request->request->get('type') === 'filter_options') {
     $options = [
+        'folders' => [],
         'tags' => [],
         'custom_fields' => [],
     ];
 
     if (count($folderScope) > 0) {
+        $folderOptionRows = DB::query(
+            'SELECT folder.id, folder.title,
+                COALESCE(GROUP_CONCAT(ancestor.title ORDER BY ancestor.nleft SEPARATOR \' / \'), \'\') AS folder_path
+            FROM ' . prefixTable('nested_tree') . ' AS folder
+            LEFT JOIN ' . prefixTable('nested_tree') . ' AS ancestor
+                ON ancestor.id > 0
+                AND ancestor.id IN %li_folder_scope
+                AND ancestor.id != folder.id
+                AND ancestor.nleft <= folder.nleft
+                AND ancestor.nright >= folder.nright
+            WHERE folder.id IN %li_folder_scope
+            GROUP BY folder.id, folder.title, folder.nleft
+            ORDER BY folder.nleft ASC, folder.title ASC',
+            ['folder_scope' => $folderScope]
+        );
+        foreach ($folderOptionRows as $folderOptionRow) {
+            $options['folders'][] = [
+                'id' => (int) $folderOptionRow['id'],
+                'title' => (string) $folderOptionRow['title'],
+                'path' => (string) $folderOptionRow['folder_path'],
+            ];
+        }
+
         $tagRows = DB::query(
             'SELECT DISTINCT t.tag
             FROM ' . prefixTable('tags') . ' AS t

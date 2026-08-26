@@ -3123,6 +3123,7 @@ return array(
     // Faceted search
     'search_term_placeholder' => 'Search items and folders…',
     'search_filters' => 'Filters',
+    'search_reset' => 'Reset search',
     'search_clear_all' => 'Clear all',
     'search_search_in' => 'Search in',
     'search_facet_classification' => 'Classification',
@@ -3142,6 +3143,8 @@ return array(
     'search_scope_any' => 'Personal and shared',
     'search_scope_shared' => 'Shared only',
     'search_scope_personal' => 'Personal only',
+    'search_folder_filter' => 'Folder and subfolders',
+    'search_folder_any' => 'All folders',
     'search_custom_field_any' => 'Any custom field',
     'search_custom_field_value' => 'Custom field contains…',
     'search_no_criteria' => 'Type at least 2 characters or pick a filter to start searching.',

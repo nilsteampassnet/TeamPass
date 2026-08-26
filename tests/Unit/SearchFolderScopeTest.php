@@ -194,6 +194,41 @@ class SearchFolderScopeTest extends TestCase
         );
     }
 
+    public function testFolderFilterOptionsUseTheAuthorizedScopeForFoldersAndPaths(): void
+    {
+        $source = file_get_contents(__DIR__ . '/../../app/sources/search.queries.php');
+        $this->assertIsString($source);
+
+        $optionsStart = strpos($source, "if (\$request->request->get('type') === 'filter_options')");
+        $searchStart = strpos($source, '// Search.');
+        $this->assertIsInt($optionsStart);
+        $this->assertIsInt($searchStart);
+        $optionsSource = substr($source, $optionsStart, $searchStart - $optionsStart);
+
+        $this->assertStringContainsString("'folders' => []", $optionsSource);
+        $this->assertStringContainsString('ancestor.id IN %li_folder_scope', $optionsSource);
+        $this->assertStringContainsString('WHERE folder.id IN %li_folder_scope', $optionsSource);
+        $this->assertStringContainsString("['folder_scope' => \$folderScope]", $optionsSource);
+        $this->assertStringContainsString("\$options['folders'][]", $optionsSource);
+    }
+
+    public function testFolderFacetAndResetControlsAreWiredIntoTheSearchPage(): void
+    {
+        $view = file_get_contents(__DIR__ . '/../../app/pages/search.php');
+        $script = file_get_contents(__DIR__ . '/../../app/pages/search.js.php');
+        $this->assertIsString($view);
+        $this->assertIsString($script);
+
+        $this->assertStringContainsString('id="search-folder"', $view);
+        $this->assertStringContainsString('data-facet="folder"', $view);
+        $this->assertStringContainsString('id="search-reset"', $view);
+        $this->assertStringContainsString(".text(label).appendTo('#search-folder')", $script);
+        $this->assertStringNotContainsString(".html(label).appendTo('#search-folder')", $script);
+        $this->assertStringContainsString("$('#search-reset, #search-clear-all').on('click', resetSearch)", $script);
+        $this->assertStringContainsString("$('#search-term').val('')", $script);
+        $this->assertStringContainsString("pendingSelectRestore = null", $script);
+    }
+
     // -------------------------------------------------------------------
     // searchBuildOrderClause()
     // -------------------------------------------------------------------

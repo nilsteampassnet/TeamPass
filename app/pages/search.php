@@ -348,6 +348,11 @@ $featureFavourites = (int) ($SETTINGS['enable_favourites'] ?? 0) === 1;
                             placeholder="<?php echo $lang->get('search_term_placeholder'); ?>"
                             aria-label="<?php echo $lang->get('find'); ?>">
                         <div class="input-group-append">
+                            <button class="btn btn-outline-secondary" type="button" id="search-reset"
+                                title="<?php echo $lang->get('search_reset'); ?>"
+                                aria-label="<?php echo $lang->get('search_reset'); ?>">
+                                <i class="fas fa-undo-alt" aria-hidden="true"></i>
+                            </button>
                             <button class="btn btn-outline-secondary" type="button" id="search-toggle-filters"
                                 aria-expanded="false" aria-controls="search-filters-panel">
                                 <i class="fas fa-sliders-h mr-1"></i><?php echo $lang->get('search_filters'); ?>
@@ -379,7 +384,9 @@ $featureFavourites = (int) ($SETTINGS['enable_favourites'] ?? 0) === 1;
                         <?php foreach (['label' => 'label', 'login' => 'login', 'url' => 'url', 'tags' => 'tags', 'folder' => 'folder', 'description' => 'description'] as $key => $langKey) : ?>
                             <div class="custom-control custom-checkbox">
                                 <input type="checkbox" class="custom-control-input search-field-cb" id="search-field-<?php echo $key; ?>"
-                                    value="<?php echo $key; ?>" <?php echo $key === 'description' ? '' : 'checked'; ?>>
+                                    value="<?php echo $key; ?>"
+                                    data-default-checked="<?php echo $key === 'description' ? 'false' : 'true'; ?>"
+                                    <?php echo $key === 'description' ? '' : 'checked'; ?>>
                                 <label class="custom-control-label" for="search-field-<?php echo $key; ?>"><?php echo $lang->get($langKey); ?></label>
                             </div>
                         <?php endforeach; ?>
@@ -464,7 +471,11 @@ $featureFavourites = (int) ($SETTINGS['enable_favourites'] ?? 0) === 1;
                     <!-- Content & scope -->
                     <div class="search-facet-group mt-3">
                         <h6 class="text-muted text-uppercase small mb-2"><?php echo $lang->get('search_facet_content'); ?></h6>
-                        <select class="form-control form-control-sm search-facet-select" data-facet="tags" id="search-tags" multiple size="4">
+                        <select class="form-control form-control-sm search-facet-single" data-facet="folder" id="search-folder"
+                            aria-label="<?php echo $lang->get('search_folder_filter'); ?>">
+                            <option value=""><?php echo $lang->get('search_folder_any'); ?></option>
+                        </select>
+                        <select class="form-control form-control-sm mt-2 search-facet-select" data-facet="tags" id="search-tags" multiple size="4">
                         </select>
                         <select class="form-control form-control-sm mt-2 search-facet-single" data-facet="scope_perso" id="search-scope-perso">
                             <option value=""><?php echo $lang->get('search_scope_any'); ?></option>
