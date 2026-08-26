@@ -1127,5 +1127,8 @@ $LANG = array(
     'duration_login_attempt' => 'Seconds till auto login:',
     'newly_created_user_role' => 'Newly created user has role',
     'at_user_updated' => 'User #user_login# was updated',
+    'search_reset' => 'إعادة ضبط البحث',
+    'search_folder_filter' => 'المجلد والمجلدات الفرعية',
+    'search_folder_any' => 'جميع المجلدات',
     '' => ''
 );

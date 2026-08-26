@@ -229,6 +229,34 @@ class SearchFolderScopeTest extends TestCase
         $this->assertStringContainsString("pendingSelectRestore = null", $script);
     }
 
+    public function testSearchControlsAreTranslatedInEveryShippedLanguage(): void
+    {
+        $languageDirectory = __DIR__ . '/../../app/includes/language';
+        $english = require $languageDirectory . '/english.php';
+        $keys = ['search_reset', 'search_folder_filter', 'search_folder_any'];
+        $languageFiles = glob($languageDirectory . '/*.php');
+        $this->assertIsArray($languageFiles);
+
+        foreach ($languageFiles as $languageFile) {
+            unset($GLOBALS['LANG']);
+            $loadedCatalog = require $languageFile;
+            $catalog = is_array($loadedCatalog) ? $loadedCatalog : ($GLOBALS['LANG'] ?? null);
+            $this->assertIsArray($catalog, basename($languageFile));
+            foreach ($keys as $key) {
+                $this->assertArrayHasKey($key, $catalog, basename($languageFile));
+                $this->assertNotSame('', trim((string) $catalog[$key]), basename($languageFile) . ': ' . $key);
+                if (basename($languageFile) !== 'english.php') {
+                    $this->assertNotSame(
+                        $english[$key],
+                        $catalog[$key],
+                        basename($languageFile) . ': ' . $key . ' must not fall back to English'
+                    );
+                }
+            }
+        }
+        unset($GLOBALS['LANG']);
+    }
+
     // -------------------------------------------------------------------
     // searchBuildOrderClause()
     // -------------------------------------------------------------------
