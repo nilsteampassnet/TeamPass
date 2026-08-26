@@ -104,6 +104,41 @@ $featureFavourites = (int) ($SETTINGS['enable_favourites'] ?? 0) === 1;
         line-height: 1.35;
     }
 
+    /* ---- Folder results ----------------------------------------------- */
+
+    .search-folder-result {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+    }
+    .search-folder-icon {
+        width: 2.25rem;
+        height: 2.25rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        border-radius: .3rem;
+        color: #856404;
+        background-color: rgba(255, 193, 7, .18);
+    }
+    .dark-mode .search-folder-icon {
+        color: #ffd454;
+        background-color: rgba(255, 193, 7, .14);
+    }
+    .search-folder-content {
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+    .search-folder-title,
+    .search-folder-path {
+        display: block;
+        overflow-wrap: anywhere;
+    }
+    .search-folder-title {
+        font-weight: 600;
+    }
+
     /* ---- Result rows -------------------------------------------------- */
 
     /* The whole row opens the detail modal. */
@@ -341,7 +376,7 @@ $featureFavourites = (int) ($SETTINGS['enable_favourites'] ?? 0) === 1;
                     <!-- Search in -->
                     <div class="search-facet-group">
                         <h6 class="text-muted text-uppercase small mb-2"><?php echo $lang->get('search_search_in'); ?></h6>
-                        <?php foreach (['label' => 'label', 'login' => 'login', 'url' => 'url', 'tags' => 'tags', 'description' => 'description'] as $key => $langKey) : ?>
+                        <?php foreach (['label' => 'label', 'login' => 'login', 'url' => 'url', 'tags' => 'tags', 'folder' => 'folder', 'description' => 'description'] as $key => $langKey) : ?>
                             <div class="custom-control custom-checkbox">
                                 <input type="checkbox" class="custom-control-input search-field-cb" id="search-field-<?php echo $key; ?>"
                                     value="<?php echo $key; ?>" <?php echo $key === 'description' ? '' : 'checked'; ?>>
@@ -472,6 +507,19 @@ $featureFavourites = (int) ($SETTINGS['enable_favourites'] ?? 0) === 1;
                     <div class="alert alert-info" id="search-empty-hint">
                         <i class="fas fa-info-circle mr-2"></i><?php echo $lang->get('search_no_criteria'); ?>
                     </div>
+                    <div class="hidden mb-4" id="search-folder-results" aria-live="polite">
+                        <h4 class="h6 text-muted text-uppercase mb-2">
+                            <i class="fa-solid fa-folder text-warning mr-2" aria-hidden="true"></i><?php echo $lang->get('folders'); ?>
+                            <span class="badge badge-secondary ml-1" id="search-folder-count">0</span>
+                        </h4>
+                        <div class="list-group" id="search-folder-list"></div>
+                        <p class="small text-muted mt-2 mb-0 hidden" id="search-folder-more">
+                            <?php echo $lang->get('search_folder_results_more'); ?>
+                        </p>
+                    </div>
+                    <h4 class="h6 text-muted text-uppercase mb-2">
+                        <i class="fa-solid fa-key text-primary mr-2" aria-hidden="true"></i><?php echo $lang->get('items'); ?>
+                    </h4>
                     <table id="search-results-items" class="table table-bordered table-striped" style="width:100%">
                         <thead>
                             <tr>

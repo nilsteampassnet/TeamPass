@@ -2,7 +2,7 @@
 
 ## Overview
 
-The **Search** page lets you find items across every folder you have access to, combining a text search with a panel of filters (*facets*). Results are displayed in a table and support mass operations.
+The **Search** page lets you find folders and items across every folder you have access to. Item results combine text search with a panel of filters (*facets*) and support mass operations.
 
 ---
 
@@ -16,9 +16,11 @@ A search starts once you have typed **at least 2 characters** or selected **at l
 
 ### Text search
 
-By default the text search covers **Label**, **Login**, **URL** and **Tags**. Use the **Search in** section of the filter panel to add **Description** or to narrow the search to a single field.
+By default the text search covers item **Label**, **Login**, **URL** and **Tags**, plus folder titles. Use the **Search in** section of the filter panel to add **Description** or to narrow the search to specific fields. Clear **Folder** when folder results are not wanted.
 
-Several words are combined with **AND**: searching `backup prod` returns only the items that match *both* words, instead of everything containing either one.
+Several words are combined with **AND**: searching `backup prod` returns only the items and folder titles that match *both* words, instead of everything containing either one.
+
+Folder matches are displayed in their own section with a folder icon and their location in the tree. Click a folder to open it. Item-only facets such as classification, security or attachments do not filter folders; the selected folder subtree and the personal/shared scope do.
 
 > 🔔 Passwords are **never** searched or returned. Encrypted values — passwords, TOTP secrets and encrypted custom fields — cannot be searched at all: the server would have to decrypt every item to compare them.
 
@@ -46,7 +48,11 @@ Active filters appear as removable **chips** above the results. Click a chip to 
 
 ---
 
-## Results table
+## Results
+
+Matching folders are listed first and are visually distinct from items. At most 20 folders are displayed; refine the search terms when more folders match.
+
+Items are displayed in the results table:
 
 | Column | Content |
 |--------|---------|
@@ -57,7 +63,7 @@ Active filters appear as removable **chips** above the results. Click a chip to 
 | **URL** | Link to the associated service |
 | **Folder** | Folder the item belongs to |
 
-Click the eye icon to expand an item's details without leaving the page.
+Click an item row to open its details without leaving the page.
 
 ---
 
@@ -66,8 +72,9 @@ Click the eye icon to expand an item's details without leaving the page.
 Search results are filtered by your permissions:
 
 - Only items in folders you have at least read access to are returned.
+- Only folders in that same authorized scope are returned.
 - Folders explicitly denied to you are excluded, even if a role would otherwise grant them.
-- Other users' personal folders are never searched.
+- Other users' personal folders and all their descendants are never searched, including legacy descendants whose own personal-folder flag is missing.
 - Items restricted to specific users or roles (see [Items — Restricted items](items.md#restricted-items)) are only returned if you are in the allowed list, or hold one of the allowed roles.
 
 The filter dropdowns (such as the tag list) are built from the same restricted scope, so they never reveal the existence of items you cannot see.

@@ -85,6 +85,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     // Current facet selection. Sent as one JSON blob so the server can
     // validate it against its own allow-lists in a single place.
     var searchFilters = {}
+    const searchFilterStateVersion = 2
 
     // Out-of-order responses need no guard here: DataTables discards any
     // response whose "draw" counter is older than the current one.
@@ -187,6 +188,67 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
       searchFilters = collectFilters()
     }
 
+    const folderResultLabel = <?php echo json_encode(
+        $lang->get('folder'),
+        JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+    ); ?>
+
+    // Folder results stay outside the item DataTable: they navigate directly
+    // to their tree node and can never inherit item actions or mass selection.
+    const renderFolderResults = (folders, truncated) => {
+      const section = $('#search-folder-results')
+      const list = $('#search-folder-list').empty()
+
+      if (Array.isArray(folders) === false || folders.length === 0) {
+        $('#search-folder-count').text('0')
+        $('#search-folder-more').addClass('hidden')
+        section.addClass('hidden')
+        return
+      }
+
+      let rendered = 0
+      folders.forEach((folder) => {
+        const id = Number.parseInt(folder.id, 10)
+        const title = String(folder.title || '').trim()
+        if (Number.isInteger(id) === false || id <= 0 || title === '') {
+          return
+        }
+
+        const link = $('<a></a>')
+          .addClass('list-group-item list-group-item-action search-folder-result')
+          .attr('href', 'index.php?page=items&group=' + encodeURIComponent(id))
+        const icon = $('<span></span>')
+          .addClass('search-folder-icon')
+          .attr('aria-hidden', 'true')
+        $('<i></i>').addClass('fa-solid fa-folder-open').appendTo(icon)
+
+        const content = $('<span></span>').addClass('search-folder-content')
+        $('<span></span>').addClass('search-folder-title').text(title).appendTo(content)
+        const path = String(folder.path || '').trim()
+        if (path !== '') {
+          $('<small></small>')
+            .addClass('search-folder-path text-muted')
+            .text(path)
+            .appendTo(content)
+        }
+
+        const badge = $('<span></span>')
+          .addClass('badge badge-warning ml-auto')
+          .text(folderResultLabel)
+        link.append(icon, content, badge).appendTo(list)
+        rendered++
+      })
+
+      if (rendered === 0) {
+        section.addClass('hidden')
+        return
+      }
+
+      $('#search-folder-count').text(String(rendered) + (truncated === true ? '+' : ''))
+      $('#search-folder-more').toggleClass('hidden', truncated !== true)
+      section.removeClass('hidden')
+    }
+
     //Launch the datatables pluggin
     // Mass operation drives the selection column: without it the column would
     // sit empty on every row.
@@ -214,8 +276,18 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         // so the facets survive a reload exactly like the paging does.
         "stateSaveParams": function (settings, data) {
             data.tpFilters = collectFilters()
+            data.tpFiltersVersion = searchFilterStateVersion
         },
         "stateLoadParams": function (settings, data) {
+            // Saved states predate folder search. Add the new default once;
+            // version 2 states preserve an explicit user opt-out.
+            if (data.tpFiltersVersion !== searchFilterStateVersion
+                && data.tpFilters
+                && Array.isArray(data.tpFilters.fields)
+                && data.tpFilters.fields.indexOf('folder') === -1
+            ) {
+                data.tpFilters.fields.push('folder')
+            }
             restoreFilters(data.tpFilters)
             // Column visibility is part of the saved state: a state written
             // before an admin turned mass operation off would bring the empty
@@ -238,6 +310,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             "dataSrc": function ( json ) {
                 // Cells are already HTML-escaped server-side and sent as plain
                 // JSON: no base64 round-trip to decode any more.
+                renderFolderResults(json.folders, json.folders_truncated === true)
                 return json.data
             }
         },

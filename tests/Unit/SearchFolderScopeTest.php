@@ -12,8 +12,10 @@ require_once __DIR__ . '/../../app/sources/search.functions.php';
  * Unit tests for the search authorization primitives.
  *
  * Covers:
- *   - searchResolveFolderScope()  — the folder-scope ACL (regression guard)
- *   - searchBuildOrderClause()    — ORDER BY hardening (GHSA-fqg6-xvv8-w228 form)
+ *   - searchResolveFolderScope()       — the folder-scope ACL (regression guard)
+ *   - searchApplyPersonalFolderScope() — personal/shared folder-result scope
+ *   - searchBuildFolderWhere()         — ACL-bound folder-title predicate
+ *   - searchBuildOrderClause()         — ORDER BY hardening (GHSA-fqg6-xvv8-w228 form)
  */
 class SearchFolderScopeTest extends TestCase
 {
@@ -79,6 +81,117 @@ class SearchFolderScopeTest extends TestCase
     {
         // An empty subtree means "nothing matched", not "no filter".
         $this->assertSame([], searchResolveFolderScope([3, 7], [], []));
+    }
+
+    public function testSearchHandlerAddsContainmentAwareForeignPersonalFoldersToDenials(): void
+    {
+        $source = file_get_contents(__DIR__ . '/../../app/sources/search.queries.php');
+        $this->assertIsString($source);
+        $this->assertStringContainsString('getForeignPersonalFolderIds($userId)', $source);
+        $this->assertMatchesRegularExpression(
+            '/\$forbiddenPersonalFolders\s*=\s*array_merge\(.*?getForeignPersonalFolderIds\(\$userId\).*?\);\s*\$folderScope\s*=\s*searchResolveFolderScope/s',
+            $source
+        );
+    }
+
+    // -------------------------------------------------------------------
+    // searchApplyPersonalFolderScope()
+    // -------------------------------------------------------------------
+
+    public function testPersonalModeKeepsOnlyTheUsersOwnPersonalTree(): void
+    {
+        $this->assertSame(
+            [7, 8],
+            searchApplyPersonalFolderScope([3, 7, 8, 9], [7, 8, 42], 'personal')
+        );
+    }
+
+    public function testSharedModeRemovesTheUsersOwnPersonalTree(): void
+    {
+        $this->assertSame(
+            [3, 9],
+            searchApplyPersonalFolderScope([3, 7, 8, 9], [7, 8, 42], 'shared')
+        );
+    }
+
+    public function testEmptyPersonalModeLeavesTheAuthorizedScopeUntouched(): void
+    {
+        $this->assertSame(
+            [3, 7, 8, 9],
+            searchApplyPersonalFolderScope([3, 7, 8, 9], [7, 8], '')
+        );
+    }
+
+    // -------------------------------------------------------------------
+    // searchBuildFolderWhere()
+    // -------------------------------------------------------------------
+
+    public function testFolderPredicateBindsTheAuthorizedScopeAndEveryTerm(): void
+    {
+        $built = searchBuildFolderWhere(['backup', 'prod'], [3, 7, 9]);
+
+        $this->assertSame(
+            'folder.id IN %li_folder_scope AND folder.title LIKE %ss_folder_term0'
+                . ' AND folder.title LIKE %ss_folder_term1',
+            $built['sql']
+        );
+        $this->assertSame(
+            [
+                'folder_scope' => [3, 7, 9],
+                'folder_term0' => 'backup',
+                'folder_term1' => 'prod',
+            ],
+            $built['params']
+        );
+    }
+
+    public function testFolderPredicateKeepsLikeWildcardsInBoundValues(): void
+    {
+        $built = searchBuildFolderWhere(['100%_prod'], [7]);
+
+        $this->assertSame('100%_prod', $built['params']['folder_term0']);
+        $this->assertStringContainsString('%ss_folder_term0', $built['sql']);
+    }
+
+    public function testFolderPredicateFailsClosedWithoutScopeOrUsableTerms(): void
+    {
+        $this->assertSame(
+            ['sql' => '(1 = 0)', 'params' => []],
+            searchBuildFolderWhere(['prod'], [])
+        );
+        $this->assertSame(
+            ['sql' => '(1 = 0)', 'params' => []],
+            searchBuildFolderWhere(['x'], [7])
+        );
+    }
+
+    public function testFolderResultsStayDistinctFromTheItemTableAndEscapeTheirText(): void
+    {
+        $view = file_get_contents(__DIR__ . '/../../app/pages/search.php');
+        $script = file_get_contents(__DIR__ . '/../../app/pages/search.js.php');
+        $this->assertIsString($view);
+        $this->assertIsString($script);
+
+        $folderSectionPosition = strpos($view, 'id="search-folder-results"');
+        $itemTablePosition = strpos($view, 'id="search-results-items"');
+        $this->assertIsInt($folderSectionPosition);
+        $this->assertIsInt($itemTablePosition);
+        $this->assertLessThan($itemTablePosition, $folderSectionPosition);
+
+        $this->assertStringContainsString('renderFolderResults(json.folders', $script);
+        $this->assertStringContainsString(".text(title)", $script);
+        $this->assertStringNotContainsString(".html(title)", $script);
+        $this->assertStringContainsString('index.php?page=items&group=', $script);
+    }
+
+    public function testFolderPathsCannotRevealAnUnauthorizedAncestorTitle(): void
+    {
+        $source = file_get_contents(__DIR__ . '/../../app/sources/search.queries.php');
+        $this->assertIsString($source);
+        $this->assertMatchesRegularExpression(
+            '/LEFT JOIN .*? AS ancestor\s+ON ancestor\.id > 0\s+AND ancestor\.id IN %li_folder_scope/s',
+            $source
+        );
     }
 
     // -------------------------------------------------------------------

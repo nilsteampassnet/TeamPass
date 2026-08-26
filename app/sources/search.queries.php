@@ -30,9 +30,9 @@ declare(strict_types=1);
  *
  * Faceted search backend for the Search page.
  *
- * Two queries per draw and no query per rendered row: every permission rule
- * is expressed in SQL and applied before the LIMIT, so the row counts are
- * exact and the pagination consistent.
+ * No query is performed per rendered row: every permission rule is expressed
+ * in SQL and applied before the LIMIT, so the item row counts are exact and
+ * the pagination consistent.
  *
  * Requests are POSTed so search terms never land in web server access logs
  * or Referer headers.
@@ -105,6 +105,8 @@ if ($post_key !== $session->get('key')) {
         'recordsTotal' => 0,
         'recordsFiltered' => 0,
         'data' => [],
+        'folders' => [],
+        'folders_truncated' => false,
     ]);
     exit;
 }
@@ -195,9 +197,13 @@ if (count($filters['folder']) > 0) {
     $requestedSubtree = array_keys($tree->getDescendants($filters['folder'][0], true));
 }
 
+$forbiddenPersonalFolders = array_merge(
+    (array) $session->get('user-forbiden_personal_folders'),
+    getForeignPersonalFolderIds($userId)
+);
 $folderScope = searchResolveFolderScope(
     (array) $session->get('user-accessible_folders'),
-    (array) $session->get('user-forbiden_personal_folders'),
+    $forbiddenPersonalFolders,
     $requestedSubtree
 );
 
@@ -207,6 +213,8 @@ $emptyOutput = [
     'recordsTotal' => 0,
     'recordsFiltered' => 0,
     'data' => [],
+    'folders' => [],
+    'folders_truncated' => false,
 ];
 
 // --------------------------------- //
@@ -252,6 +260,52 @@ if (count($folderScope) === 0
 ) {
     echo json_encode($emptyOutput);
     exit;
+}
+
+// Folder matches are a separate result type. Item-only facets do not apply
+// to them; the requested subtree and personal/shared scope do. The query is
+// capped one row above the display limit so the UI can ask for refinement
+// without running a second COUNT query.
+$folderResults = [];
+$folderResultsTruncated = false;
+if (count($filters['terms']) > 0 && in_array('folder', (array) $filters['fields'], true)) {
+    $folderResultScope = $folderScope;
+    if ($filters['scope_perso'] !== '') {
+        $folderResultScope = searchApplyPersonalFolderScope(
+            $folderScope,
+            getOwnPersonalFolderIds($userId),
+            (string) $filters['scope_perso']
+        );
+    }
+
+    $folderBuilt = searchBuildFolderWhere((array) $filters['terms'], $folderResultScope);
+    if (count($folderBuilt['params']) > 0) {
+        $folderRows = DB::query(
+            'SELECT folder.id, folder.title,
+                COALESCE(GROUP_CONCAT(ancestor.title ORDER BY ancestor.nleft SEPARATOR \' / \'), \'\') AS folder_path
+            FROM ' . prefixTable('nested_tree') . ' AS folder
+            LEFT JOIN ' . prefixTable('nested_tree') . ' AS ancestor
+                ON ancestor.id > 0
+                AND ancestor.id IN %li_folder_scope
+                AND ancestor.id != folder.id
+                AND ancestor.nleft <= folder.nleft
+                AND ancestor.nright >= folder.nright
+            WHERE ' . $folderBuilt['sql'] . '
+            GROUP BY folder.id, folder.title, folder.nleft
+            ORDER BY folder.title ASC, folder.id ASC
+            LIMIT 21',
+            $folderBuilt['params']
+        );
+
+        $folderResultsTruncated = count($folderRows) > 20;
+        foreach (array_slice($folderRows, 0, 20) as $folderRow) {
+            $folderResults[] = [
+                'id' => (int) $folderRow['id'],
+                'title' => (string) $folderRow['title'],
+                'path' => (string) $folderRow['folder_path'],
+            ];
+        }
+    }
 }
 
 $visibleFieldIds = [];
@@ -444,4 +498,6 @@ echo json_encode([
     'recordsTotal' => $iTotal,
     'recordsFiltered' => $iTotal,
     'data' => $data,
+    'folders' => $folderResults,
+    'folders_truncated' => $folderResultsTruncated,
 ]);

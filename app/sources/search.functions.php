@@ -99,6 +99,95 @@ function searchResolveFolderScope(
 }
 
 /**
+ * Narrow folder results to the requested personal/shared domain.
+ *
+ * The caller supplies the user's own complete personal tree, resolved by
+ * containment rather than from nested_tree.personal_folder on each row.
+ * Foreign personal folders must already have been removed from $folderScope.
+ *
+ * @param array<int|string> $folderScope       Authorized search scope.
+ * @param array<int|string> $ownPersonalFolders User's personal root and descendants.
+ * @param string            $scopeMode          `personal`, `shared`, or an empty string.
+ *
+ * @return array<int, int> Authorized folder ids matching the requested domain.
+ */
+function searchApplyPersonalFolderScope(
+    array $folderScope,
+    array $ownPersonalFolders,
+    string $scopeMode
+): array {
+    $scope = searchResolveFolderScope($folderScope);
+    if ($scopeMode === '') {
+        return $scope;
+    }
+
+    $personal = array_flip(searchResolveFolderScope($ownPersonalFolders));
+    if ($scopeMode === 'personal') {
+        return array_values(array_filter(
+            $scope,
+            static fn (int $folderId): bool => isset($personal[$folderId]) === true
+        ));
+    }
+    if ($scopeMode === 'shared') {
+        return array_values(array_filter(
+            $scope,
+            static fn (int $folderId): bool => isset($personal[$folderId]) === false
+        ));
+    }
+
+    return $scope;
+}
+
+/**
+ * Build the ACL-bound predicate used to search folder titles.
+ *
+ * Terms are ANDed and remain bound through MeekroDB's %ss placeholder, which
+ * escapes SQL LIKE wildcards before surrounding the value with `%`.
+ *
+ * Expected alias in the caller's query: `folder` (nested_tree).
+ *
+ * @param array<int, mixed>      $terms       Normalized free-text terms.
+ * @param array<int|string>      $folderScope Authorized folder ids.
+ *
+ * @return array{sql: string, params: array<string, mixed>}
+ */
+function searchBuildFolderWhere(array $terms, array $folderScope): array
+{
+    $scope = searchResolveFolderScope($folderScope);
+    $cleanTerms = [];
+    foreach ($terms as $term) {
+        if (is_string($term) === false) {
+            continue;
+        }
+        $term = mb_substr(trim($term), 0, 100);
+        if (mb_strlen($term) < 2 || in_array($term, $cleanTerms, true) === true) {
+            continue;
+        }
+        $cleanTerms[] = $term;
+        if (count($cleanTerms) >= 5) {
+            break;
+        }
+    }
+
+    if (count($scope) === 0 || count($cleanTerms) === 0) {
+        return ['sql' => '(1 = 0)', 'params' => []];
+    }
+
+    $clauses = ['folder.id IN %li_folder_scope'];
+    $params = ['folder_scope' => $scope];
+    foreach ($cleanTerms as $index => $term) {
+        $key = 'folder_term' . $index;
+        $clauses[] = 'folder.title LIKE %ss_' . $key;
+        $params[$key] = $term;
+    }
+
+    return [
+        'sql' => implode(' AND ', $clauses),
+        'params' => $params,
+    ];
+}
+
+/**
  * Build the ORDER BY clause from a server-side column map.
  *
  * No request value is ever concatenated verbatim: the column comes from
@@ -304,10 +393,13 @@ function searchWhitelist(mixed $raw, array $allowed): array
  */
 function searchNormalizeFilters(array $raw): array
 {
-    $fields = searchWhitelist($raw['fields'] ?? null, array_keys(searchTextFieldMap()));
+    $fields = searchWhitelist(
+        $raw['fields'] ?? null,
+        array_merge(array_keys(searchTextFieldMap()), ['folder'])
+    );
     if (count($fields) === 0) {
         // Sensible default: everything cheap, description excluded.
-        $fields = ['label', 'login', 'url', 'tags'];
+        $fields = ['label', 'login', 'url', 'tags', 'folder'];
     }
 
     $toTimestamp = static function (mixed $value): ?int {
@@ -526,7 +618,11 @@ function searchBuildWhere(array $filters, array $ctx): array
             }
         }
         if (count($columns) === 0) {
-            continue;
+            // `folder` is a valid search field, but it has no item-cache
+            // column. A folder-only text search must therefore return no
+            // items, never the whole faceted item scope.
+            $clauses[] = '(1 = 0)';
+            break;
         }
         $clauses[] = '(' . implode(' OR ', $columns) . ')';
         $params['term' . $index] = $term;
