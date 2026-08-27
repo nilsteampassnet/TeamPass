@@ -305,8 +305,10 @@ $extensionHasLicence = $extensionLicenceKey !== '';
                                                 </span>
                                             </li>
                                             <li class="list-group-item d-flex justify-content-between align-items-center">
-                                                <span><i class="fas fa-file-code text-warning"></i> <?php echo $lang->get('health_unknown_files'); ?></span>
-                                                <span class="badge badge-warning" id="health-unknown-files">-</span>
+                                                <a href="index.php?page=utilities.health#health-file-integrity">
+                                                    <i class="fas fa-file-shield text-warning"></i> <?php echo $lang->get('health_file_integrity'); ?>
+                                                </a>
+                                                <span class="badge badge-secondary" id="health-file-integrity">-</span>
                                             </li>
                                             <li class="list-group-item d-flex justify-content-between align-items-center">
                                                 <span><i class="fas fa-plug text-info"></i> <?php echo $lang->get('websocket'); ?></span>
@@ -359,16 +361,6 @@ $extensionHasLicence = $extensionLicenceKey !== '';
                                         <?php                        
                                         }
                                         ?>
-
-
-                                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                                            <span><i class="fa-solid fa-file-shield text-info"></i> <?php echo $lang->get('perform_file_integrity_check'); ?></span>
-                                            <span>
-                                                <button type="button" class="btn btn-primary btn-sm ml-2" id="check-project-files-btn" onclick="performProjectFilesIntegrityCheck()">
-                                                <i class="fas fa-caret-right"></i>
-                                            </button>
-                                            </span>
-                                        </li>
                                         <?php
 
 // Identify TeamPass system users (API/TP/OTV)
