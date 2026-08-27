@@ -246,9 +246,9 @@ genuinely not part of the procedure — leave it alone unless the user asks.
 
 ## 6. Regenerate the integrity checksums — always last
 
-The application's `verifyFileHashes()` / `filesIntegrityCheck()` (`app/sources/admin.queries.php`)
-read **`app/files_reference.txt`**, while the root `files_reference.txt` is the canonical
-generated file. Both must be identical and both are committed.
+The application's shared file-integrity scanner reads **`app/files_reference.txt`**, while the
+root `files_reference.txt` is the canonical generated file. Both must be identical and both are
+committed.
 
 Run this **after every other commit of the release**, otherwise the hashes are stale:
 
@@ -258,8 +258,10 @@ git add files_reference.txt app/files_reference.txt
 git commit -m "Regenerate file integrity checksums for <VERSION>"
 ```
 
-The script regenerates the root file from `git ls-files` (format `<path> <md5>`, ~15 000
-entries, self-excluded) and copies it over `app/files_reference.txt`.
+The script regenerates the root file from `git ls-files` (format `<path> <md5>`) and copies it
+over `app/files_reference.txt`. It invokes the canonical policy in
+`app/sources/file_scope.functions.php`, so repository/development artifacts excluded by the
+runtime scanner and permission audit are also absent from release manifests.
 
 > **The working tree must be clean.** A tracked file missing from disk is skipped, producing a
 > reference file with holes. The classic case: the app's post-install cleanup renames
@@ -270,9 +272,8 @@ entries, self-excluded) and copies it over `app/files_reference.txt`.
 > **Why a script:** the pipeline is multi-line and gets mangled when passed inline to
 > `bash -c` (syntax error on the `done \` continuation). Never inline it.
 
-> **Known benign quirk:** the root file lists `app/files_reference.txt` with its *pre-copy*
-> hash, so the admin integrity screen reports at most two "mismatch" lines for the two
-> reference files themselves. Pre-existing and harmless — do not try to fix it by reordering.
+The generated manifest may list `app/files_reference.txt` with its pre-copy hash. Both reference
+files are self-excluded by the runtime scanner, so this entry cannot create a false mismatch.
 
 ---
 
