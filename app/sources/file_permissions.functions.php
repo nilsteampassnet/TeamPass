@@ -145,11 +145,11 @@ function tpFilePermissionsResolveIdentity(array $platform): array
 
     if (function_exists('posix_geteuid') && function_exists('posix_getpwuid')) {
         $currentUid = @posix_geteuid();
-        $currentInfo = is_int($currentUid) ? @posix_getpwuid($currentUid) : false;
-        if (is_array($currentInfo) && is_string($currentInfo['name'] ?? null)) {
+        $currentInfo = @posix_getpwuid($currentUid);
+        if (is_array($currentInfo)) {
             $currentUser = $currentInfo['name'];
         }
-        if (is_int($currentUid) && $currentUid !== 0 && $currentUser !== '') {
+        if ($currentUid !== 0 && $currentUser !== '') {
             $selectedUser = $currentUser;
             $source = 'current_process';
         }
@@ -161,16 +161,15 @@ function tpFilePermissionsResolveIdentity(array $platform): array
     if (function_exists('posix_getpwnam')) {
         $selectedInfo = @posix_getpwnam($selectedUser);
         if (is_array($selectedInfo)) {
-            $uid = is_int($selectedInfo['uid'] ?? null) ? $selectedInfo['uid'] : null;
-            $primaryGid = is_int($selectedInfo['gid'] ?? null) ? $selectedInfo['gid'] : null;
+            $uid = $selectedInfo['uid'];
+            $primaryGid = $selectedInfo['gid'];
         }
     }
-    if ($uid === null && $source === 'current_process' && is_int($currentUid)) {
+    if ($uid === null && $source === 'current_process') {
         $uid = $currentUid;
     }
     if ($primaryGid === null && $source === 'current_process' && function_exists('posix_getegid')) {
-        $detectedGid = @posix_getegid();
-        $primaryGid = is_int($detectedGid) ? $detectedGid : null;
+        $primaryGid = @posix_getegid();
     }
 
     $gids = $primaryGid === null ? [] : [$primaryGid];
@@ -187,7 +186,7 @@ function tpFilePermissionsResolveIdentity(array $platform): array
     }
     if ($primaryGid !== null && function_exists('posix_getgrgid')) {
         $groupInfo = @posix_getgrgid($primaryGid);
-        if (is_array($groupInfo) && is_string($groupInfo['name'] ?? null) && $groupInfo['name'] !== '') {
+        if (is_array($groupInfo) && $groupInfo['name'] !== '') {
             $groupName = $groupInfo['name'];
         }
     }
@@ -584,7 +583,7 @@ function tpFilePermissionsResolveCodeOwner(string $root, string $webUser): strin
     $stat = @stat($root);
     if (is_array($stat) && function_exists('posix_getpwuid')) {
         $owner = @posix_getpwuid((int) $stat['uid']);
-        $ownerName = is_array($owner) && is_string($owner['name'] ?? null) ? $owner['name'] : '';
+        $ownerName = is_array($owner) ? $owner['name'] : '';
         if (
             $ownerName !== ''
             && $ownerName !== $webUser

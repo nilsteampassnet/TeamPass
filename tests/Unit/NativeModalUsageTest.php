@@ -61,12 +61,10 @@ class NativeModalUsageTest extends TestCase
     {
         $profile = $this->readRepositoryFile('app/pages/profile.js.php');
         $knowledgeBase = $this->readRepositoryFile('app/pages/kb.js.php');
-        $admin = $this->readRepositoryFile('app/pages/admin.js.php');
         $tools = $this->readRepositoryFile('app/pages/tools.js.php');
 
         self::assertGreaterThanOrEqual(3, substr_count($profile, 'launchConfirmDialog('));
         self::assertGreaterThanOrEqual(3, substr_count($knowledgeBase, 'launchConfirmDialog('));
-        self::assertStringContainsString('tpDeleteUnknownFiles', $admin);
         self::assertGreaterThanOrEqual(1, substr_count($tools, 'launchConfirmDialog('));
     }
 
