@@ -323,6 +323,56 @@ find ${TEAMPASS} -not -path "*/vendor/*" ! -type l -perm -o+w -ls
 
 ---
 
+## File integrity verification
+
+**Utilities → System Health → File integrity** starts a read-only background scan and stores its latest report in `storage/logs/file-integrity-report.json`. The admin dashboard reads the same report; it does not maintain a separate counter.
+
+The scan compares protected files with `app/files_reference.txt` and reports separate categories for modified, missing, unknown, legacy-layout and Composer development files. Instance-owned data under `storage/`, `secrets/` and legacy runtime directories (`files/`, `upload/`, `backups/`) is excluded. Repository and development-only artifacts such as `.claude/`, `.github/`, `docs/`, `tests/` and their root tooling files are neutral: they do not affect integrity health, are not audited for runtime permissions and are not included in permission remediation. The release checksum generator consumes this same canonical policy, keeping those paths out of future manifests. This is an explicit path policy, not a blanket hidden-file exclusion; `.htaccess`, `.user.ini`, `.env*`, Composer deployment metadata, Docker assets and application scripts remain protected. Ordinary avatar files are ignored, but executable files or symbolic links planted in the writable public avatar directory are reported as critical. A deliberately removed `public/install/` directory is accepted; when that directory exists, its files are fully checked. The reference manifest itself and generated configuration files are excluded from self-comparison.
+
+The same background run also audits the effective POSIX permissions of **every real file and directory** in the TeamPass tree. It checks the normal-runtime posture rather than the temporary upgrade posture:
+
+- application code and the webroot must be readable but not writable by the PHP/web account;
+- `storage/`, CSRF logs and the other documented runtime paths must remain readable and writable;
+- `secrets/` must be readable without being exposed to other system users;
+- symbolic-link modes are ignored because Linux enforces the target mode and reports links themselves as `0777`.
+
+The web account is taken from the background process. If the CLI scan is run as root, the conventional account for the detected distribution is used instead, avoiding root-access false positives. The hardened repair plan preserves the current code owner when it is already different from the web account and otherwise falls back to `root`; runtime paths are returned to the detected web owner. Permission repair commands are generated only for Debian/Ubuntu and the common RHEL family (RHEL, Rocky Linux, AlmaLinux and CentOS). Other Linux distributions can be scanned, but deliberately receive no guessed remediation. RHEL-family guidance also restores SELinux `httpd_sys_rw_content_t` contexts on runtime paths when `semanage` is available.
+
+The manifest is a **release artifact**. A checkout of the development branch can legitimately report files added or changed since the latest published manifest; production releases should ship with an updated manifest.
+
+The same scanner is available from SSH:
+
+```bash
+TEAMPASS=/var/www/html/teampass
+
+# Run a scan and persist the report (use the same account as background tasks).
+sudo -u www-data php ${TEAMPASS}/app/scripts/file_integrity.php
+
+# Display the latest report without scanning again.
+sudo -u www-data php ${TEAMPASS}/app/scripts/file_integrity.php --status
+sudo -u www-data php ${TEAMPASS}/app/scripts/file_integrity.php --status --json
+
+# Print reviewed cleanup guidance; this command does not move or delete anything.
+sudo -u www-data php ${TEAMPASS}/app/scripts/file_integrity.php --cleanup-plan
+
+# Print sudo-based permission remediation for the detected supported distribution.
+sudo -u www-data php ${TEAMPASS}/app/scripts/file_integrity.php --permissions-plan
+```
+
+The command exits with `0` only for a clean result, `2` when findings or a stale report require review, and `1` when the scan itself cannot run.
+
+There is deliberately no web action that deletes unknown files or changes permissions. In the hardened ownership model, PHP can read `app/` and `public/` but cannot modify them. The Health page therefore provides copyable, `sudo`-based SSH commands for an administrator to review and run separately.
+
+Development dependencies are removed by the bundled offline CLI below, which uses `composer.lock` and the same deterministic logic as install/upgrade:
+
+```bash
+sudo php ${TEAMPASS}/app/scripts/cleanup_dev_dependencies.php
+```
+
+This replaces the former `composer install --no-dev --optimize-autoloader` cleanup suggestion. A production host no longer needs a globally installed Composer executable, network access or temporary write ownership on the application tree just to remove packages already identified in `packages-dev`.
+
+---
+
 ## Troubleshooting
 
 ### Background tasks never run (dashboard shows "Delayed", PHP log shows "cannot create lock file")
