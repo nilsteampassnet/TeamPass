@@ -145,35 +145,7 @@ if (count($folders) === 0) {
     exit;
 }
 
-//Get current user "personal folder" ID
-$row = DB::queryFirstRow(
-    'SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE title = %i',
-    intval($session->get('user-id'))
-);
-//get list of personal folders
-$arrayPf = [];
 $crit = [];
-$listPf = '';
-if (empty($row['id']) === false) {
-    $rows = DB::query(
-        'SELECT id FROM ' . prefixTable('nested_tree') . '
-        WHERE personal_folder = 1 AND NOT parent_id = %i AND NOT title = %i',
-        filter_var($row['id'], FILTER_SANITIZE_NUMBER_INT),
-        filter_var($session->get('user-id'), FILTER_SANITIZE_NUMBER_INT)
-    );
-    foreach ($rows as $record) {
-        if (! in_array($record['id'], $arrayPf)) {
-            //build an array of personal folders ids
-            array_push($arrayPf, $record['id']);
-            //build also a string with those ids
-            if (empty($listPf)) {
-                $listPf = $record['id'];
-            } else {
-                $listPf .= ', ' . $record['id'];
-            }
-        }
-    }
-}
 
 /* BUILD QUERY */
 //Paging
@@ -230,7 +202,6 @@ if (empty($search_criteria) === false) {
         '7' => $search_criteria,
         '8' => $search_criteria,
         '9' => $search_criteria,
-        'pf' => $arrayPf,
     ];
 }
 
@@ -248,16 +219,10 @@ if (count($crit) === 0) {
         '7' => $search_criteria,
         '8' => $search_criteria,
         '9' => $search_criteria,
-        'pf' => $arrayPf,
     ];
 }
 
-// Do NOT show the items in PERSONAL FOLDERS
-if (empty($listPf) === false) {
-    $sWhere = 'WHERE ' . $sWhere . ' AND c.id_tree NOT IN %ls_pf ';
-} else {
-    $sWhere = 'WHERE ' . $sWhere;
-}
+$sWhere = 'WHERE ' . $sWhere;
 
 // Do queries
 DB::query(
