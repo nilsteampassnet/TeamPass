@@ -243,11 +243,11 @@ trait LAPRSshTestTrait
         // Preserve the enrollment-time self-target classification: it is local
         // TeamPass metadata, not information collected from the remote OS.
         $previousOsInfo = json_decode((string) ($endpoint['os_info'] ?? '{}'), true) ?: [];
-        $osInfo = is_array($collected['os_info'] ?? null) ? $collected['os_info'] : [];
+        $osInfo = $collected['os_info'];
         if (isset($previousOsInfo['lapr_self_target']) === true) {
             $osInfo['lapr_self_target'] = $previousOsInfo['lapr_self_target'];
         }
-        $capabilities = is_array($collected['capabilities'] ?? null) ? $collected['capabilities'] : [];
+        $capabilities = $collected['capabilities'];
         $canRotate = (bool) ($capabilities['can_rotate'] ?? false);
         $errorCode = $canRotate ? null : 'ERR_CANNOT_ROTATE';
         $resumed = false;
