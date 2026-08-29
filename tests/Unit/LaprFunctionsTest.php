@@ -352,6 +352,37 @@ class LaprFunctionsTest extends TestCase
         $this->assertSame($expected, laprComputeNextRotation($last, 7, $now));
     }
 
+    public function testOnlyConnectivityFailuresAreRetriedAutomatically(): void
+    {
+        foreach (['ERR_TIMEOUT', 'ERR_REFUSED', 'ERR_HOST_UNREACHABLE', 'ERR_NOT_CONNECTED'] as $code) {
+            $this->assertTrue(laprIsTransientConnectionError($code), $code);
+            $this->assertSame('unreachable', laprEndpointStatusForCheckFailure($code), $code);
+        }
+
+        foreach (['ERR_AUTH_FAILED', 'ERR_HOSTKEY_MISMATCH', 'ERR_CHPASSWD_FAILED', 'ERR_UNKNOWN'] as $code) {
+            $this->assertFalse(laprIsTransientConnectionError($code), $code);
+            $this->assertSame('error', laprEndpointStatusForCheckFailure($code), $code);
+        }
+    }
+
+    public function testEndpointCheckUsesNormalAndTransientRetryIntervals(): void
+    {
+        $now = 1_000_000_000;
+        $settings = [
+            'lapr_endpoint_check_interval_minutes' => '1440',
+            'lapr_retry_delay_minutes' => '60',
+        ];
+
+        $this->assertSame(
+            date('Y-m-d H:i:s', $now + 1440 * 60),
+            laprComputeNextEndpointCheck($settings, $now)
+        );
+        $this->assertSame(
+            date('Y-m-d H:i:s', $now + 60 * 60),
+            laprComputeNextEndpointCheck($settings, $now, 'ERR_TIMEOUT')
+        );
+    }
+
     // =========================================================================
     // laprFormatDateTimeForDisplay
     // =========================================================================

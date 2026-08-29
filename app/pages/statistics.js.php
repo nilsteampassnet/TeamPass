@@ -782,6 +782,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         if (lapr.enabled === false) {
             $('#tp-lapr-content').hide();
             $('#tp-lapr-kpi-endpoints,#tp-lapr-kpi-accounts,#tp-lapr-kpi-rotations,#tp-lapr-kpi-success-rate').text('—');
+            $('#tp-lapr-kpi-endpoint-detail').text('');
             $('#tp-lapr-retention-warning,#tp-lapr-worker-warning').hide();
             $('#tp-lapr-endpoints-body').html("<tr><td colspan='5' class='text-center text-muted'><?php echo addslashes($lang->get('lapr_monitor_module_disabled')); ?></td></tr>");
             ['laprRotations', 'laprStates', 'laprFailures', 'laprPolicies'].forEach(function(chartKey) {
@@ -817,6 +818,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         }
 
         $('#tp-lapr-kpi-endpoints').text((endpoints.active || 0) + '/' + (endpoints.total || 0));
+        $('#tp-lapr-kpi-endpoint-detail').text(
+            "<?php echo addslashes($lang->get('lapr_status_active')); ?>" + ': ' + (endpoints.active || 0) + ' · ' +
+            "<?php echo addslashes($lang->get('lapr_endpoint_status_paused')); ?>" + ': ' + (endpoints.paused || 0) + ' · ' +
+            "<?php echo addslashes($lang->get('lapr_status_unreachable')); ?>" + ': ' + (endpoints.unreachable || 0) + ' · ' +
+            "<?php echo addslashes($lang->get('lapr_status_error')); ?>" + ': ' + (endpoints.error || 0)
+        );
         $('#tp-lapr-kpi-accounts').text((accounts.compliant || 0) + '/' + (accounts.total || 0));
         $('#tp-lapr-kpi-rotations').text(rotations.total !== undefined ? rotations.total : 0);
         $('#tp-lapr-kpi-success-rate').text(rotations.success_rate === null || rotations.success_rate === undefined ? '-' : rotations.success_rate + '%');
@@ -886,12 +893,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         "<?php echo addslashes($lang->get('lapr_monitor_state_retrying')); ?>",
                         "<?php echo addslashes($lang->get('lapr_monitor_state_overdue')); ?>",
                         "<?php echo addslashes($lang->get('lapr_monitor_state_error')); ?>",
-                        "<?php echo addslashes($lang->get('lapr_monitor_state_paused')); ?>"
+                        "<?php echo addslashes($lang->get('lapr_monitor_state_paused')); ?>",
+                        "<?php echo addslashes($lang->get('lapr_monitor_state_endpoint_paused')); ?>"
                     ],
                     datasets: [{
-                        data: [accounts.healthy || 0, accounts.scheduled || 0, accounts.manual_only || 0, accounts.retrying || 0, accounts.overdue || 0, accounts.error || 0, accounts.paused || 0],
-                        backgroundColor: [tpOpsPalette().greenFill, tpOpsPalette().blueFill, tpOpsPalette().grayFill, tpOpsPalette().orangeFill, tpOpsPalette().purpleFill, tpOpsPalette().redFill, tpOpsPalette().grayFill],
-                        borderColor: [tpOpsPalette().green, tpOpsPalette().blue, tpOpsPalette().gray, tpOpsPalette().orange, tpOpsPalette().purple, tpOpsPalette().red, tpOpsPalette().gray],
+                        data: [accounts.healthy || 0, accounts.scheduled || 0, accounts.manual_only || 0, accounts.retrying || 0, accounts.overdue || 0, accounts.error || 0, accounts.paused || 0, accounts.endpoint_paused || 0],
+                        backgroundColor: [tpOpsPalette().greenFill, tpOpsPalette().blueFill, tpOpsPalette().grayFill, tpOpsPalette().orangeFill, tpOpsPalette().purpleFill, tpOpsPalette().redFill, tpOpsPalette().grayFill, tpOpsPalette().orangeFill],
+                        borderColor: [tpOpsPalette().green, tpOpsPalette().blue, tpOpsPalette().gray, tpOpsPalette().orange, tpOpsPalette().purple, tpOpsPalette().red, tpOpsPalette().gray, tpOpsPalette().orange],
                         borderWidth: 1
                     }]
                 },

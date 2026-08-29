@@ -41,8 +41,12 @@ Once enabled, an **LAPR** section appears directly below **Passwords** for non-a
 | Allow TeamPass host self-management | `lapr_allow_self_management` | `0` |
 | SSH connect timeout (seconds) | `lapr_ssh_connect_timeout` | `10` |
 | Rate limit: max attempts / window / block | `lapr_rate_limit_*` | `5 / 60s / 300s` |
+| Send email alerts on rotation failures | `lapr_alert_email_enabled` | `0` |
+| Alert email recipient | `lapr_alert_email_recipient` | *(empty)* |
 | Enable automatic rotations | `lapr_scheduler_enabled` | `0` |
 | Scheduler scan interval (minutes) | `lapr_scheduler_interval_minutes` | `5` |
+| Periodically check enrolled servers | `lapr_endpoint_checks_enabled` | `1` |
+| Server check interval (minutes) | `lapr_endpoint_check_interval_minutes` | `1440` |
 | Max retries before suspension | `lapr_max_retries` | `3` |
 | Retry delay (minutes) | `lapr_retry_delay_minutes` | `60` |
 | Audit log retention (days, 0 = forever) | `lapr_audit_retention_days` | `365` |
@@ -73,6 +77,26 @@ LAPR also detects targets that certainly or probably host the current TeamPass i
 > ⚠️ **Store SSH credential items in a tightly restricted folder.** Anyone who can read that folder obtains the endpoint's SSH credential — often root. This folder is part of your crown jewels.
 
 > ℹ️ The host key fingerprint format is **TeamPass-internal** and will not match `ssh-keygen -lf`. Enroll from a trusted network segment; TOFU then protects against later host-key changes.
+
+### Refreshing an enrolled endpoint
+
+The enrolled-server list has a **refresh/check** button next to Delete. It starts a background SSH check using the stored credential and trusted host key, then:
+
+- updates the displayed OS name and kernel metadata;
+- confirms whether the server is reachable;
+- runs the same no-op `chpasswd` capability probe used during enrollment;
+- restores a recovered endpoint to **active**, or records **unreachable/error**, the check time and a secret-free error code; a deliberately paused endpoint keeps its paused state;
+- displays OS-specific prerequisite and `sudoers` commands when rotation rights are missing.
+
+When periodic checks are enabled, the background handler performs the same refresh every `lapr_endpoint_check_interval_minutes` (24 hours by default). A transiently unreachable server is checked again after `lapr_retry_delay_minutes`, so recovery does not wait for the normal daily interval. Paused endpoints continue to receive non-destructive checks at the normal interval, without accelerated retries, alerts, or automatic reactivation.
+
+### Pausing rotations for one endpoint
+
+The endpoint list can pause **automatic rotations** without changing the state, retry counter, or due date of any attached account. Pending rotations that have not started are cancelled neutrally. A worker that is already connecting re-reads the endpoint state immediately before `changePassword`, so a concurrent pause still blocks the remote mutation. If the remote password was already changed, the TeamPass synchronization always finishes to prevent a password divergence.
+
+The pause reason is selected from a fixed, secret-free list and recorded with the operator in the LAPR audit log. Availability, OS and privilege checks remain available. A manual rotation is still possible as an explicit break-glass action after an additional confirmation; the override is audited separately and never resumes automatic rotations.
+
+**Resume automatic rotations** first queues a background SSH and privilege check while the endpoint remains paused. Only a successful check with valid rotation privileges changes the endpoint back to active. Existing due dates are preserved, so accounts already overdue become eligible at the next scheduler pass.
 
 ---
 
@@ -144,7 +168,7 @@ Generated passwords are always filtered to be **safe for `chpasswd`** — no `:`
 
 ## Rotating
 
-- **Rotate now** on a managed account, or from its TeamPass item detail panel, runs an immediate rotation and shows live progress after the standard TeamPass confirmation dialog.
+- **Rotate now** on a managed account, or from its TeamPass item detail panel, runs an immediate rotation and shows live progress after the standard TeamPass confirmation dialog. On a paused endpoint it remains available as an explicitly confirmed break-glass action and does not resume automatic rotations.
 - A policy with **Rotate on enrollment** queues the first rotation as soon as the managed account is added. The SSH operation still runs asynchronously through the background worker and does not depend on the automatic scheduler switch. Endpoints identified as the TeamPass host remain manual-only and skip this automatic first rotation.
 - The **scheduler** rotates due accounts automatically when enabled.
 - **History** shows a per-account, read-only, paginated timeline of every rotation, retry, suspension and reset.
@@ -172,7 +196,8 @@ When the managed Linux login is also the endpoint's password-authenticated SSH l
 
 - **SSH-first model.** The password is pushed to the server first. If the *item* update then fails, the account is marked **error** with a **MANUAL RESYNC REQUIRED** note — the server holds the new password, so reset it manually and re-sync.
 - **Host-key mismatch blocks rotation.** Because LAPR connects with a reusable, privileged credential, a changed host key (a MITM signal) **aborts** the rotation. Verify the server, then explicitly trust the new key.
-- **Scheduler retries** failed rotations up to `lapr_max_retries`, then **suspends** the account until an authorized LAPR operator uses **Reset & resume**.
+- **Scheduler retries only transient connectivity failures** (`timeout`, connection refused, host unreachable, lost connection), up to `lapr_max_retries`, then **suspends** the account until an authorized LAPR operator uses **Reset & resume**. Authentication, host-key, privilege, configuration and synchronization failures stop immediately in **error** because retrying cannot repair them.
+- The managed-account list shows the error code, retry counter and exact next retry time. If LAPR email alerts are enabled, each failed rotation sends the configured recipient its operational state (action required, retry scheduled or suspended), without secrets.
 
 ---
 
@@ -180,9 +205,9 @@ When the managed Linux login is also the endpoint's password-authenticated SSH l
 
 Administrators can monitor LAPR without opening the item-dependent operational pages:
 
-- **System Health → LAPR** reports scheduler and worker status, rotation compliance, retries, overdue/error/paused accounts, referential-integrity problems, and recent failures. Overdue/error states are critical; paused, retrying and manual-only states are warnings. An account hosted on the TeamPass server is reported as **manual rotation only**, never as overdue: the scheduler deliberately skips it, so its due date is expected to drift into the past. The report is passive and never opens an SSH connection when the page loads.
+- **System Health → LAPR** reports scheduler and worker status, endpoint-check freshness and queues, rotation compliance, retries, overdue/error/paused accounts, referential-integrity problems, and recent failures. A transient endpoint outage with a scheduled retry is reported as **retrying**, not duplicated as an account error. A deliberate endpoint pause is a warning and has its own account state; real integrity problems remain critical. An account hosted on the TeamPass server is reported as **manual rotation only**, never as overdue: the scheduler deliberately skips it, so its due date is expected to drift into the past. The report is passive and never opens an SSH connection when the page loads.
 - The same Health tab reports effective human LAPR operators and separately highlights permissions still assigned to disabled accounts. Administrators are not counted as operators because they configure LAPR through the administration page rather than using its item-dependent operational pages.
-- **Statistics → LAPR** shows rotation volume and success rate for the selected period, success/failure trends, current account states, failure categories, policy adoption, and endpoints with failures.
+- **Statistics → LAPR** shows rotation-attempt volume and attempt success rate for the selected period, success/failure trends, current account states (including endpoint pauses), the active/paused/unreachable/error endpoint split, failure categories, policy adoption, and endpoints with failures. Retries are attempts, so several failures can belong to one expected rotation. Endpoint checks are intentionally not presented as an uptime percentage because their daily/manual sampling is not availability monitoring.
 
 Both LAPR tabs remain visible when the module is disabled to support feature discovery. They show a neutral **module disabled** state and no retained endpoint, account, operator, queue, or historical metrics, so stored relationships are never mistaken for active management.
 

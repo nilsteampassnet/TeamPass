@@ -83,7 +83,7 @@ function laprMonitoringAccessSummary(bool $moduleEnabled, array $row): array
  * @param int                 $nowTs        Reference time
  * @param int                 $graceSeconds Grace period before a due date is late
  *
- * @return string One of healthy|scheduled|manual_only|retrying|overdue|error|paused
+ * @return string One of healthy|scheduled|manual_only|retrying|overdue|error|paused|endpoint_paused
  */
 function laprMonitoringClassifyAccount(array $account, int $nowTs, int $graceSeconds): string
 {
@@ -96,11 +96,15 @@ function laprMonitoringClassifyAccount(array $account, int $nowTs, int $graceSec
     }
 
     if (empty($account['endpoint_id_resolved']) === true
-        || (string) ($account['endpoint_status'] ?? '') !== 'active'
         || empty($account['managed_item_id']) === true
         || (bool) ($account['monitoring_integrity_error'] ?? false) === true
     ) {
         return 'error';
+    }
+
+    $endpointStatus = (string) ($account['endpoint_status'] ?? '');
+    if ($endpointStatus === 'disabled') {
+        return 'endpoint_paused';
     }
 
     $lastStatus = (string) ($account['last_rotation_status'] ?? 'never');
@@ -108,11 +112,21 @@ function laprMonitoringClassifyAccount(array $account, int $nowTs, int $graceSec
     $nextRotationAt = laprMonitoringTimestamp($account['next_rotation_at'] ?? null);
 
     if ($lastStatus === 'failure') {
-        if ($retryAt !== null && $retryAt >= ($nowTs - $graceSeconds)) {
+        if ($retryAt !== null
+            && $retryAt >= ($nowTs - $graceSeconds)
+            && in_array($endpointStatus, ['active', 'unreachable'], true)
+        ) {
             return 'retrying';
         }
 
         return $retryAt !== null ? 'overdue' : 'error';
+    }
+
+    // Endpoint reachability is reported once at endpoint level. Accounts that
+    // have not failed remain classified by their own due date, avoiding one
+    // outage being duplicated as an error on every attached account.
+    if (in_array($endpointStatus, ['active', 'unreachable'], true) === false) {
+        return 'error';
     }
 
     if ($nextRotationAt === null) {
@@ -224,6 +238,7 @@ function laprBuildMonitoringSnapshot(array $settings, int $nowTs): array
                 endpoint.ssh_auth_method, endpoint.ssh_credential_source,
                 endpoint.os_info, endpoint.capabilities,
                 endpoint.ssh_hostkey_verified, endpoint.status,
+                endpoint.last_check_at, endpoint.last_error, endpoint.next_check_at,
                 credential_item.id AS credential_item_id,
                 credential_item.inactif AS credential_item_inactive,
                 credential_item.perso AS credential_item_personal,
@@ -258,6 +273,9 @@ function laprBuildMonitoringSnapshot(array $settings, int $nowTs): array
     $endpointCounts = [
         'total' => count($endpointRows),
         'active' => 0,
+        'paused' => 0,
+        'unreachable' => 0,
+        'error' => 0,
         'problem' => 0,
         'unverified' => 0,
         'incapable' => 0,
@@ -275,6 +293,7 @@ function laprBuildMonitoringSnapshot(array $settings, int $nowTs): array
         'overdue' => 0,
         'error' => 0,
         'paused' => 0,
+        'endpoint_paused' => 0,
         'compliant' => 0,
         'attention' => 0,
         'compliance_pct' => 0,
@@ -293,10 +312,18 @@ function laprBuildMonitoringSnapshot(array $settings, int $nowTs): array
         $endpointStatus = (string) $endpoint['status'];
         if ($endpointStatus === 'active') {
             ++$endpointCounts['active'];
+        } elseif ($endpointStatus === 'disabled') {
+            ++$endpointCounts['paused'];
+            laprMonitoringAddIssue($issues, 'warning', 'endpoint_paused', $endpointLabel, '', $endpointId, null);
+        } elseif ($endpointStatus === 'unreachable') {
+            ++$endpointCounts['unreachable'];
+            ++$endpointCounts['problem'];
+            laprMonitoringAddIssue($issues, 'danger', 'endpoint_unreachable', $endpointLabel, '', $endpointId, null);
         } else {
+            ++$endpointCounts['error'];
             ++$endpointCounts['problem'];
             $invalidEndpointIds[$endpointId] = true;
-            laprMonitoringAddIssue($issues, 'danger', 'endpoint_inactive', $endpointLabel, '', $endpointId, null);
+            laprMonitoringAddIssue($issues, 'danger', 'endpoint_error', $endpointLabel, '', $endpointId, null);
         }
 
         $osInfo = json_decode((string) ($endpoint['os_info'] ?? ''), true) ?: [];
@@ -486,17 +513,28 @@ function laprBuildMonitoringSnapshot(array $settings, int $nowTs): array
 
     $accountCounts['compliant'] = $accountCounts['healthy'] + $accountCounts['scheduled'];
     $accountCounts['attention'] = $accountCounts['retrying'] + $accountCounts['overdue']
-        + $accountCounts['error'] + $accountCounts['paused'] + $accountCounts['manual_only'];
+        + $accountCounts['error'] + $accountCounts['paused'] + $accountCounts['manual_only']
+        + $accountCounts['endpoint_paused'];
     $accountCounts['compliance_pct'] = $accountCounts['total'] > 0
         ? (int) round(($accountCounts['compliant'] / $accountCounts['total']) * 100)
         : 0;
 
     $scheduler = laprMonitoringScheduler($settings, $nowTs, $graceSeconds);
+    $endpointChecks = laprMonitoringEndpointChecks($settings, $nowTs, $graceSeconds);
     if ((int) $scheduler['failed_24h'] > 0) {
         laprMonitoringAddIssue($issues, 'danger', 'worker_failed', '', '', null, null);
     }
     if ((string) $scheduler['status'] === 'danger' && (string) $scheduler['reason'] !== 'worker_failed') {
         laprMonitoringAddIssue($issues, 'danger', 'scheduler_unhealthy', '', '', null, null);
+    }
+    if ((bool) $endpointChecks['enabled'] === true && (int) $endpointChecks['failed_24h'] > 0) {
+        laprMonitoringAddIssue($issues, 'danger', 'endpoint_check_worker_failed', '', '', null, null);
+    } elseif ((bool) $endpointChecks['enabled'] === true && (string) $endpointChecks['reason'] === 'queue_stalled') {
+        laprMonitoringAddIssue($issues, 'danger', 'endpoint_check_queue_stalled', '', '', null, null);
+    } elseif ((bool) $endpointChecks['enabled'] === true
+        && ((int) $endpointChecks['overdue'] > 0 || (int) $endpointChecks['stale'] > 0)
+    ) {
+        laprMonitoringAddIssue($issues, 'warning', 'endpoint_checks_overdue', '', '', null, null);
     }
 
     $integrityCounts = ['critical' => 0, 'warning' => 0];
@@ -571,6 +609,7 @@ function laprBuildMonitoringSnapshot(array $settings, int $nowTs): array
         'accounts' => $accountCounts,
         'operators' => $operators,
         'scheduler' => $scheduler,
+        'endpoint_checks' => $endpointChecks,
         'integrity' => $integrityCounts,
         'action_items' => array_slice($issues, 0, 50),
         'recent_failures' => $recentFailurePayload,
@@ -769,15 +808,22 @@ function laprMonitoringApplyCronStatus(array $snapshot, string $cronStatus): arr
 {
     if ((bool) ($snapshot['available'] ?? false) === false
         || (bool) ($snapshot['enabled'] ?? false) === false
-        || (bool) ($snapshot['scheduler']['enabled'] ?? false) === false
+        || ((bool) ($snapshot['scheduler']['enabled'] ?? false) === false
+            && (bool) ($snapshot['endpoint_checks']['enabled'] ?? false) === false)
         || $cronStatus === 'success'
     ) {
         return $snapshot;
     }
 
     $severity = $cronStatus === 'danger' ? 'danger' : 'warning';
-    $snapshot['scheduler']['status'] = $severity;
-    $snapshot['scheduler']['reason'] = 'cron_unhealthy';
+    if ((bool) ($snapshot['scheduler']['enabled'] ?? false) === true) {
+        $snapshot['scheduler']['status'] = $severity;
+        $snapshot['scheduler']['reason'] = 'cron_unhealthy';
+    }
+    if ((bool) ($snapshot['endpoint_checks']['enabled'] ?? false) === true) {
+        $snapshot['endpoint_checks']['status'] = $severity;
+        $snapshot['endpoint_checks']['reason'] = 'cron_unhealthy';
+    }
     $issue = [
         'severity' => $severity,
         'code' => 'cron_unhealthy',
@@ -801,6 +847,131 @@ function laprMonitoringApplyCronStatus(array $snapshot, string $cronStatus): arr
     }
 
     return $snapshot;
+}
+
+/**
+ * Report periodic enrolled-endpoint checks separately from password rotations.
+ * Enrollment tests have no item_id; enrolled checks always carry the endpoint
+ * id, which keeps their queue and failure metrics unambiguous.
+ *
+ * @param array<string,mixed> $settings     TeamPass settings
+ * @param int                 $nowTs        Reference time
+ * @param int                 $graceSeconds Grace period before work is late
+ *
+ * @return array<string,mixed>
+ */
+function laprMonitoringEndpointChecks(array $settings, int $nowTs, int $graceSeconds): array
+{
+    $moduleEnabled = (int) ($settings['lapr_enabled'] ?? 0) === 1;
+    $enabled = (int) ($settings['lapr_endpoint_checks_enabled'] ?? 1) === 1;
+    $intervalMinutes = max(5, (int) ($settings['lapr_endpoint_check_interval_minutes'] ?? 1440));
+
+    $empty = [
+        'enabled' => false,
+        'status' => 'info',
+        'reason' => $moduleEnabled ? 'checks_disabled' : 'module_disabled',
+        'interval_minutes' => 0,
+        'due' => 0,
+        'overdue' => 0,
+        'stale' => 0,
+        'pending' => 0,
+        'running' => 0,
+        'failed_24h' => 0,
+        'oldest_pending_at' => 0,
+        'oldest_last_check_at' => null,
+        'next_check_at' => null,
+    ];
+    if ($moduleEnabled === false) {
+        return $empty;
+    }
+
+    $now = date('Y-m-d H:i:s', $nowTs);
+    $overdueBefore = date('Y-m-d H:i:s', $nowTs - $graceSeconds);
+    $staleBefore = date('Y-m-d H:i:s', $nowTs - ($intervalMinutes * 60) - $graceSeconds);
+    $endpointState = DB::queryFirstRow(
+        'SELECT
+            SUM(CASE WHEN next_check_at IS NULL OR next_check_at <= %s THEN 1 ELSE 0 END) AS due_count,
+            SUM(CASE WHEN next_check_at IS NOT NULL AND next_check_at < %s THEN 1 ELSE 0 END) AS overdue_count,
+            SUM(CASE WHEN last_check_at IS NULL OR last_check_at < %s THEN 1 ELSE 0 END) AS stale_count,
+            MIN(last_check_at) AS oldest_last_check_at,
+            MIN(next_check_at) AS next_check_at
+         FROM ' . prefixTable('lapr_endpoints') . '
+         WHERE status != %s',
+        $now,
+        $overdueBefore,
+        $staleBefore,
+        'deleted'
+    );
+    $endpointState = is_array($endpointState) ? $endpointState : [];
+
+    $taskFilter = 'process_type = %s AND item_id IS NOT NULL AND item_id > 0';
+    $pending = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('background_tasks') . '
+         WHERE ' . $taskFilter . ' AND is_in_progress = 0
+         AND (finished_at IS NULL OR finished_at = %s OR finished_at = %s)',
+        'lapr_ssh_test',
+        '',
+        '0'
+    );
+    $running = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('background_tasks') . '
+         WHERE ' . $taskFilter . ' AND is_in_progress = 1
+         AND (finished_at IS NULL OR finished_at = %s OR finished_at = %s)',
+        'lapr_ssh_test',
+        '',
+        '0'
+    );
+    $failed24h = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('background_tasks') . '
+         WHERE ' . $taskFilter . ' AND status = %s
+         AND CAST(finished_at AS UNSIGNED) >= %i',
+        'lapr_ssh_test',
+        'failed',
+        $nowTs - 86400
+    );
+    $oldestPending = (int) DB::queryFirstField(
+        'SELECT COALESCE(MIN(CAST(created_at AS UNSIGNED)), 0)
+         FROM ' . prefixTable('background_tasks') . '
+         WHERE ' . $taskFilter . ' AND is_in_progress = 0
+         AND (finished_at IS NULL OR finished_at = %s OR finished_at = %s)',
+        'lapr_ssh_test',
+        '',
+        '0'
+    );
+
+    $due = (int) ($endpointState['due_count'] ?? 0);
+    $overdue = (int) ($endpointState['overdue_count'] ?? 0);
+    $stale = (int) ($endpointState['stale_count'] ?? 0);
+    $status = $enabled ? 'success' : 'info';
+    $reason = $enabled ? 'healthy' : 'checks_disabled';
+    if ($enabled === true && ($overdue > 0 || $stale > 0)) {
+        $status = 'warning';
+        $reason = 'checks_overdue';
+    }
+    if ($enabled === true && $oldestPending > 0 && $oldestPending < ($nowTs - $graceSeconds)) {
+        $status = 'danger';
+        $reason = 'queue_stalled';
+    }
+    if ($enabled === true && $failed24h > 0) {
+        $status = 'danger';
+        $reason = 'worker_failed';
+    }
+
+    return [
+        'enabled' => $enabled,
+        'status' => $status,
+        'reason' => $reason,
+        'interval_minutes' => $intervalMinutes,
+        'due' => $due,
+        'overdue' => $overdue,
+        'stale' => $stale,
+        'pending' => $pending,
+        'running' => $running,
+        'failed_24h' => $failed24h,
+        'oldest_pending_at' => $oldestPending,
+        'oldest_last_check_at' => $endpointState['oldest_last_check_at'] ?? null,
+        'next_check_at' => $endpointState['next_check_at'] ?? null,
+    ];
 }
 
 /**
@@ -993,6 +1164,9 @@ function laprMonitoringEmptySnapshot(bool $enabled, string $reason): array
         'endpoints' => [
             'total' => 0,
             'active' => 0,
+            'paused' => 0,
+            'unreachable' => 0,
+            'error' => 0,
             'problem' => 0,
             'unverified' => 0,
             'incapable' => 0,
@@ -1010,6 +1184,7 @@ function laprMonitoringEmptySnapshot(bool $enabled, string $reason): array
             'overdue' => 0,
             'error' => 0,
             'paused' => 0,
+            'endpoint_paused' => 0,
             'compliant' => 0,
             'attention' => 0,
             'compliance_pct' => 0,
@@ -1031,6 +1206,21 @@ function laprMonitoringEmptySnapshot(bool $enabled, string $reason): array
             'running' => 0,
             'failed_24h' => 0,
             'oldest_pending_at' => 0,
+        ],
+        'endpoint_checks' => [
+            'enabled' => false,
+            'status' => 'info',
+            'reason' => $reason,
+            'interval_minutes' => 0,
+            'due' => 0,
+            'overdue' => 0,
+            'stale' => 0,
+            'pending' => 0,
+            'running' => 0,
+            'failed_24h' => 0,
+            'oldest_pending_at' => 0,
+            'oldest_last_check_at' => null,
+            'next_check_at' => null,
         ],
         'integrity' => ['critical' => 0, 'warning' => 0],
         'action_items' => [],

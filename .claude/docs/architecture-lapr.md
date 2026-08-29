@@ -18,7 +18,7 @@ background-task pipeline, and phpseclib3. No parallel secret store, no new crypt
 | Pages | `app/pages/lapr_endpoints.{php,js.php}`, `lapr_accounts.{php,js.php}`, `lapr_policies.{php,js.php}`, `admin_lapr.{php,js.php}` |
 | Background traits | `app/scripts/traits/LAPRSshTestTrait.php`, `LAPRDiscoverTrait.php`, `LAPRRotationTrait.php` (global namespace, `use`d by `TaskWorker`) |
 | Worker dispatch | `app/scripts/background_tasks___worker.php` — process types `lapr_ssh_test`, `lapr_discover`, `lapr_rotation` |
-| Scheduler | `app/scripts/background_tasks___handler.php` → `handleScheduledLAPRRotations()` + `cleanLAPRMaintenance()` |
+| Scheduler | `app/scripts/background_tasks___handler.php` → `handleScheduledLAPREndpointChecks()`, `handleScheduledLAPRRotations()` + `cleanLAPRMaintenance()` |
 | Admin permission handlers | `app/sources/admin.queries.php` → `lapr_list_users`, `set_user_lapr_permission` |
 | DB migration | `public/install/upgrade_run_3.2.2.php` (+ `upgrade_scripts_manager.php` entry) and `public/install/install-steps/run.step5.php` (+ `install.js` check68–72) |
 | Routing / access | `public/index.php` (sidebar + JS include), `app/config/include.php` (`$mngPages['admin_lapr']`), `PerformChecks::$pagesRights` (BOTH copies) |
@@ -35,7 +35,7 @@ background-task pipeline, and phpseclib3. No parallel secret store, no new crypt
 - `teampass_lapr_audit_log` — `action_type` VARCHAR, indexed `account_id`; **never contains a secret**.
 - `teampass_lapr_rate_limit` — per-IP + per-hostname sliding window.
 - `teampass_users.can_manage_lapr` TINYINT.
-- 15 `lapr_*` settings (`teampass_misc` type `admin`).
+- 18 `lapr_*` settings (`teampass_misc` type `admin`).
 
 ## Permission model
 
@@ -90,15 +90,28 @@ Managed-account deletion remains logical (`status=deleted`) for history retentio
 
 ## Background flow
 
-- **Test / Discover** = standalone `background_tasks` rows the modal polls (`test_status`, `discover_status`).
+- **Test / Re-check / Discover** = standalone `background_tasks` rows the modal polls (`test_status`,
+  `check_status`, `discover_status`). Enrollment tests and enrolled-endpoint re-checks share `lapr_ssh_test`;
+  re-check tasks carry `endpoint_id` in both arguments and indexed `item_id`. The worker refreshes `os_info`,
+  `capabilities`, `last_check_at`, `last_error`, `next_check_at` and endpoint status, while preserving the
+  stored self-target classification and enforcing the trusted host fingerprint.
   The trait writes a secret-free JSON result into `background_tasks.output`; the worker's `completeTask()` still
   runs (the LAPR handlers set status/output themselves; `emitItemEncryptionEvent` early-returns for LAPR types).
   New worker helpers `updateTaskStatus()/updateTaskResult()/updateTaskStep()` (correction C7).
 - **Rotation** = `lapr_rotation` rows with `background_tasks.item_id = accountId` (indexed dedup, correction
   C12 — replaces the fragile `arguments LIKE`). Enqueued by `start_rotation` (manual) or the scheduler.
 - **Scheduler** (`handleScheduledLAPRRotations`, paced by `lapr_scheduler_interval_minutes`): selects due active
-  accounts on active endpoints (`next_rotation_at <= now`, `retry_at` honoured), dedups, enqueues as
+  accounts on active endpoints, plus explicit retries on unreachable endpoints (`next_rotation_at <= now`,
+  `retry_at` honoured), dedups, enqueues as
   `trigger=scheduler` / `author=TP_USER_ID`. Runs under the handler's global process lock.
+- **Endpoint-check scheduler** (`handleScheduledLAPREndpointChecks`): independently selects due active/disabled/
+  error/unreachable endpoints and queues the same background check. Normal checks use
+  `lapr_endpoint_check_interval_minutes`; transient outages use `lapr_retry_delay_minutes` so recovery can
+  unblock a pending rotation promptly. A disabled endpoint means deliberate rotation pause: checks preserve
+  that state and stay on the normal interval without accelerated retries. Deleted endpoints are excluded.
+- `getResourceKey()` serializes re-checks, discovery and rotations per endpoint
+  (`lapr-endpoint:<id>`). This prevents a check from reading an old password while a concurrent rotation
+  changes and synchronizes the SSH credential, and also prevents two accounts on one host rotating in parallel.
 
 ## Rotation semantics (Point 4 — the critical phase)
 
@@ -113,8 +126,15 @@ Confirmed decisions:
 - **R9** mandatory `laprIsPasswordSafeForLinux()` (no `:`/whitespace/backslash/quotes, printable ASCII);
   `laprGeneratePassword()` regenerates until safe.
 - **R5** SSH-credential sync: when `username_cache == ssh_username`, the credential item is rotated too.
-- Scheduler failures: `retry_count`/`retry_at` until `lapr_max_retries`, then **suspend** (`status=paused`) with
-  `rotation_suspended` audit; `account_reset` ("Reset & resume") clears the retry state.
+- **Endpoint pause guard**: `disabled` pauses automatic rotations without rewriting account state or dates.
+  Pending rotation tasks are cancelled, and the worker re-reads endpoint status immediately before
+  `changePassword()`. Manual break-glass rotation requires a server-validated confirmation and preserves the
+  pause. Resume is performed only by a successful `lapr_ssh_test` carrying `resume_on_success=true`.
+- Scheduler failures retry only `ERR_TIMEOUT`, `ERR_REFUSED`, `ERR_HOST_UNREACHABLE` and
+  `ERR_NOT_CONNECTED`: `retry_count`/`retry_at` until `lapr_max_retries`, then **suspend** (`status=paused`)
+  with `rotation_suspended` audit. All other failures become `error` immediately. `account_reset`
+  ("Reset & resume") clears the retry state. Optional customizable email alerts expose only endpoint,
+  account, error, trigger and retry metadata.
 
 ## Rules for new LAPR code
 

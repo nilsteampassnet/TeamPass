@@ -96,6 +96,7 @@ class BackgroundTasksHandler {
             $this->handleScheduledInactiveUsersMgmt();
             $this->handleScheduledLocalPasswordExpiryNotifications();
             $this->handleScheduledSecurityNudgeDigest();
+            $this->handleScheduledLAPREndpointChecks();
             $this->handleScheduledLAPRRotations();
             $this->drainTaskPool();
             $this->performMaintenanceTasks();
@@ -548,20 +549,23 @@ class BackgroundTasksHandler {
             return;
         }
 
-        // Due accounts: active, endpoint active, next_rotation_at reached,
-        // and (retry gating) retry_at not in the future.
+        // Due accounts: active, normally on an active endpoint. A previously
+        // scheduled retry may also run while the endpoint remains unreachable,
+        // so transient failures are counted and eventually suspended.
         $nowStr = date('Y-m-d H:i:s', $now);
         $dueAccounts = DB::query(
             'SELECT a.id, e.hostname, e.os_info
              FROM ' . prefixTable('lapr_accounts') . ' AS a
              INNER JOIN ' . prefixTable('lapr_endpoints') . ' AS e ON e.id = a.endpoint_id
-             WHERE a.status = %s AND e.status = %s
+             WHERE a.status = %s
+             AND (e.status = %s OR (e.status = %s AND a.retry_at IS NOT NULL))
              AND a.next_rotation_at IS NOT NULL AND a.next_rotation_at <= %s
              AND (a.retry_at IS NULL OR a.retry_at <= %s)
              ORDER BY a.next_rotation_at ASC
              LIMIT 100',
             'active',
             'active',
+            'unreachable',
             $nowStr,
             $nowStr
         );
@@ -614,6 +618,86 @@ class BackgroundTasksHandler {
         );
         if (LOG_TASKS === true) {
             $this->logger->log('LAPR scheduler: enqueued ' . $enqueuedCount . ' due account(s)', 'INFO');
+        }
+    }
+
+    /**
+     * Enqueue due enrolled-endpoint health checks. SSH work remains in the
+     * worker; the scheduler only selects and de-duplicates endpoint ids.
+     *
+     * @return void
+     */
+    private function handleScheduledLAPREndpointChecks(): void
+    {
+        if ((int) $this->getSettingValue('lapr_enabled', '0', 'admin') !== 1
+            || (int) $this->getSettingValue('lapr_endpoint_checks_enabled', '1', 'admin') !== 1
+        ) {
+            return;
+        }
+
+        $now = time();
+        $nowStr = date('Y-m-d H:i:s', $now);
+        $dueEndpoints = DB::query(
+            'SELECT id, status FROM ' . prefixTable('lapr_endpoints') . '
+             WHERE status IN %ls
+             AND (next_check_at IS NULL OR next_check_at <= %s)
+             ORDER BY COALESCE(next_check_at, created_at) ASC
+             LIMIT 100',
+            // A pause stops password mutation, not non-destructive monitoring.
+            // The worker preserves 'disabled' and uses the normal interval so
+            // planned downtime never enters the accelerated retry loop.
+            ['active', 'disabled', 'error', 'unreachable'],
+            $nowStr
+        );
+
+        $enqueuedCount = 0;
+        foreach ($dueEndpoints as $endpoint) {
+            $endpointId = (int) $endpoint['id'];
+            $pending = (int) DB::queryFirstField(
+                'SELECT COUNT(*) FROM ' . prefixTable('background_tasks') . '
+                 WHERE process_type = %s AND item_id = %i AND is_in_progress IN (0,1)
+                 AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)',
+                'lapr_ssh_test',
+                $endpointId
+            );
+            if ($pending > 0) {
+                continue;
+            }
+
+            DB::insert(prefixTable('background_tasks'), [
+                'created_at' => (string) $now,
+                'process_type' => 'lapr_ssh_test',
+                'arguments' => json_encode([
+                    'endpoint_id' => $endpointId,
+                    'trigger' => 'scheduler',
+                    'author' => (int) TP_USER_ID,
+                ], JSON_UNESCAPED_SLASHES),
+                'is_in_progress' => 0,
+                'item_id' => $endpointId,
+                'status' => 'new',
+            ]);
+            // Lease the endpoint until the worker writes its real outcome. If
+            // the worker crashes unexpectedly, the due row is retried after the
+            // configured transient delay rather than on every handler tick.
+            DB::update(prefixTable('lapr_endpoints'), [
+                'next_check_at' => laprComputeNextEndpointCheck(
+                    $this->settings,
+                    $now,
+                    'ERR_NOT_CONNECTED'
+                ),
+                'updated_by' => (int) TP_USER_ID,
+            ], 'id = %i AND status NOT IN %ls', $endpointId, ['disabled', 'deleted']);
+            // If the endpoint was paused after the scheduler selected it,
+            // preserve the pause and use the normal non-destructive cadence.
+            DB::update(prefixTable('lapr_endpoints'), [
+                'next_check_at' => laprComputeNextEndpointCheck($this->settings, $now),
+                'updated_by' => (int) TP_USER_ID,
+            ], 'id = %i AND status = %s', $endpointId, 'disabled');
+            ++$enqueuedCount;
+        }
+
+        if (LOG_TASKS === true && $enqueuedCount > 0) {
+            $this->logger->log('LAPR endpoint checks: enqueued ' . $enqueuedCount . ' endpoint(s)', 'INFO');
         }
     }
 
@@ -1374,6 +1458,22 @@ class BackgroundTasksHandler {
             case 'send_email':
                 // Emails never conflict with each other
                 return null;
+
+            case 'lapr_ssh_test':
+            case 'lapr_discover':
+                $endpointId = (int) ($args['endpoint_id'] ?? 0);
+                return $endpointId > 0 ? 'lapr-endpoint:' . $endpointId : null;
+
+            case 'lapr_rotation':
+                $accountId = (int) ($args['account_id'] ?? 0);
+                if ($accountId <= 0) {
+                    return null;
+                }
+                $endpointId = (int) DB::queryFirstField(
+                    'SELECT endpoint_id FROM ' . prefixTable('lapr_accounts') . ' WHERE id = %i',
+                    $accountId
+                );
+                return $endpointId > 0 ? 'lapr-endpoint:' . $endpointId : null;
 
             default:
                 // Unknown type: use task ID as unique key (never conflicts)

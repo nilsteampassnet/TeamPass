@@ -125,6 +125,50 @@ date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
     </div>
 </div>
 
+<!-- Pause automatic rotations modal -->
+<div class="modal fade" id="modal_lapr_endpoint_pause" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title"><i class="fas fa-pause-circle mr-2"></i><?php echo $lang->get('lapr_pause_endpoint'); ?></h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="<?php echo htmlspecialchars($lang->get('close'), ENT_QUOTES, 'UTF-8'); ?>"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning py-2"><?php echo $lang->get('lapr_pause_endpoint_notice'); ?></div>
+                <div class="form-group mb-0">
+                    <label for="lapr-endpoint-pause-reason"><?php echo $lang->get('lapr_pause_reason'); ?></label>
+                    <select class="form-control" id="lapr-endpoint-pause-reason">
+                        <option value="maintenance"><?php echo $lang->get('lapr_pause_reason_maintenance'); ?></option>
+                        <option value="incident"><?php echo $lang->get('lapr_pause_reason_incident'); ?></option>
+                        <option value="access_change"><?php echo $lang->get('lapr_pause_reason_access_change'); ?></option>
+                        <option value="operator_request"><?php echo $lang->get('lapr_pause_reason_operator'); ?></option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal"><?php echo $lang->get('close'); ?></button>
+                <button type="button" class="btn btn-warning" id="lapr-endpoint-pause-confirm"><i class="fas fa-pause mr-1"></i><?php echo $lang->get('lapr_pause_endpoint'); ?></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Enrolled endpoint check result modal -->
+<div class="modal fade" id="modal_lapr_endpoint_check" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title"><i class="fas fa-sync-alt mr-2"></i><?php echo $lang->get('lapr_check_endpoint'); ?></h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="<?php echo htmlspecialchars($lang->get('close'), ENT_QUOTES, 'UTF-8'); ?>"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body" id="lapr-endpoint-check-result"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal"><?php echo $lang->get('close'); ?></button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Enroll endpoint modal -->
 <div class="modal fade" id="modal_lapr_endpoint" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">

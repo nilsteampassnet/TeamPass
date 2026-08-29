@@ -159,7 +159,8 @@ function laprListAccounts(SessionInterface $session, Language $lang, array $sett
 
     $rows = DB::query(
         'SELECT a.id, a.username_cache, a.status, a.last_rotation_at, a.last_rotation_status,
-                a.next_rotation_at, a.policy_id, a.item_id,
+                a.last_rotation_error, a.next_rotation_at, a.retry_count, a.retry_at,
+                a.policy_id, a.item_id,
                 e.label AS ep_label, e.hostname, e.os_info, e.status AS ep_status,
                 p.label AS policy_label, p.frequency_days AS policy_frequency_days,
                 p.is_preset AS policy_is_preset
@@ -180,6 +181,10 @@ function laprListAccounts(SessionInterface $session, Language $lang, array $sett
         );
         $nextRotationAt = laprFormatDateTimeForDisplay(
             $r['next_rotation_at'] === null ? null : (string) $r['next_rotation_at'],
+            $settings
+        );
+        $retryAt = laprFormatDateTimeForDisplay(
+            $r['retry_at'] === null ? null : (string) $r['retry_at'],
             $settings
         );
         $policyLabel = '';
@@ -212,9 +217,15 @@ function laprListAccounts(SessionInterface $session, Language $lang, array $sett
             'last_rotation_at' => $lastRotationAt['display'],
             'last_rotation_at_ts' => $lastRotationAt['timestamp'],
             'last_rotation_status' => $r['last_rotation_status'],
+            'last_rotation_error' => (string) ($r['last_rotation_error'] ?? ''),
             'next_rotation_at' => $nextRotationAt['display'],
             'next_rotation_at_ts' => $nextRotationAt['timestamp'],
+            'retry_count' => (int) ($r['retry_count'] ?? 0),
+            'retry_at' => $retryAt['display'],
+            'retry_at_ts' => $retryAt['timestamp'],
+            'max_retries' => max(0, (int) ($settings['lapr_max_retries'] ?? 3)),
             'is_self_target' => $storedSelfTarget || $runtimeSelfTarget['is_self'],
+            'endpoint_status' => (string) $r['ep_status'],
         ];
     }
 
@@ -815,12 +826,13 @@ function laprStartRotation(array $data, SessionInterface $session, int $userId, 
     }
 
     $account = DB::queryFirstRow(
-        'SELECT a.id, a.status, a.endpoint_id, i.id_tree
+        'SELECT a.id, a.status, a.endpoint_id, i.id_tree, e.status AS endpoint_status
          FROM ' . prefixTable('lapr_accounts') . ' AS a
          INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = a.item_id
-         WHERE a.id = %i AND a.status != %s',
+         INNER JOIN ' . prefixTable('lapr_endpoints') . ' AS e ON e.id = a.endpoint_id
+         WHERE a.id = %i AND a.status IN %ls',
         $accountId,
-        'deleted'
+        ['active', 'error']
     );
     if ($account === null) {
         echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_account_not_found')], 'encode');
@@ -836,6 +848,20 @@ function laprStartRotation(array $data, SessionInterface $session, int $userId, 
     // … and drives the endpoint → require access to its SSH credential too.
     if (laprUserCanUseEndpoint((int) $account['endpoint_id'], $session) === false) {
         echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+        return;
+    }
+
+    $endpointPaused = (string) $account['endpoint_status'] === 'disabled';
+    $pausedEndpointConfirmed = (int) ($data['confirm_endpoint_paused'] ?? 0) === 1;
+    if ($endpointPaused === true && $pausedEndpointConfirmed === false) {
+        echo prepareExchangedData([
+            'error' => true,
+            'message' => $lang->get('lapr_endpoint_paused_confirmation_required'),
+        ], 'encode');
+        return;
+    }
+    if ((string) $account['endpoint_status'] === 'deleted') {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_endpoint_not_found')], 'encode');
         return;
     }
 
@@ -858,7 +884,12 @@ function laprStartRotation(array $data, SessionInterface $session, int $userId, 
     DB::insert(prefixTable('background_tasks'), [
         'created_at' => (string) time(),
         'process_type' => 'lapr_rotation',
-        'arguments' => json_encode(['account_id' => $accountId, 'trigger' => 'manual', 'author' => $userId], JSON_UNESCAPED_SLASHES),
+        'arguments' => json_encode([
+            'account_id' => $accountId,
+            'trigger' => 'manual',
+            'author' => $userId,
+            'allow_paused_endpoint' => $endpointPaused && $pausedEndpointConfirmed,
+        ], JSON_UNESCAPED_SLASHES),
         'is_in_progress' => 0,
         'item_id' => $accountId,
         'status' => 'new',

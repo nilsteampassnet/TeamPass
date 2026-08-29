@@ -169,6 +169,14 @@ if (function_exists('emailsTemplatesSampleValues') === false) {
             '#reused#' => '3',
             '#overdue#' => '1',
             '#total#' => '11',
+            // LAPR rotation failures
+            '#endpoint#' => 'Production Linux server',
+            '#hostname#' => 'linux-01.example.com',
+            '#username#' => 'deploy',
+            '#error_code#' => 'ERR_TIMEOUT',
+            '#trigger#' => 'scheduler',
+            '#state#' => 'Automatic retry scheduled',
+            '#retry_at#' => $datetime,
             // Items
             '#label#' => 'Production database',
             '#link#' => $url . '/index.php?page=items&group=12&id=345',

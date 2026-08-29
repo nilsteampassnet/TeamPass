@@ -30,6 +30,7 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\Lapr\LAPRSshService;
+use TeampassClasses\Language\Language;
 
 require_once __DIR__ . '/../../includes/libraries/teampassclasses/lapr/src/LAPRSshService.php';
 require_once __DIR__ . '/../../sources/lapr.functions.php';
@@ -55,8 +56,10 @@ trait LAPRRotationTrait
         $accountId = (int) ($arguments['account_id'] ?? 0);
         $trigger = (string) ($arguments['trigger'] ?? 'manual');
         $actorId = (int) ($arguments['author'] ?? TP_USER_ID);
+        $allowPausedEndpoint = $trigger === 'manual'
+            && (bool) ($arguments['allow_paused_endpoint'] ?? false);
 
-        $result = $this->laprRotationExecute($accountId, $trigger, $actorId);
+        $result = $this->laprRotationExecute($accountId, $trigger, $actorId, $allowPausedEndpoint);
 
         $this->updateTaskResult($result);
         $this->updateTaskStatus('completed');
@@ -68,16 +71,23 @@ trait LAPRRotationTrait
      * @param int    $accountId Managed account id
      * @param string $trigger   manual | scheduler | enroll
      * @param int    $actorId   Acting user id (TP_USER_ID for the scheduler)
+     * @param bool   $allowPausedEndpoint Explicit manual break-glass confirmation
      *
      * @return array{success: bool, error_code?: string, message?: string}
      */
-    private function laprRotationExecute(int $accountId, string $trigger, int $actorId): array
+    private function laprRotationExecute(
+        int $accountId,
+        string $trigger,
+        int $actorId,
+        bool $allowPausedEndpoint = false
+    ): array
     {
         // Step 1 — load account + endpoint + item
         $account = DB::queryFirstRow(
             'SELECT a.id, a.endpoint_id, a.item_id, a.username_cache, a.policy_id, a.last_rotation_at,
                     e.hostname, e.port, e.ssh_username, e.ssh_auth_method, e.ssh_credential_source,
-                    e.ssh_hostkey_fingerprint, e.ssh_hostkey_verified, e.os_info, e.capabilities,
+                    e.label AS endpoint_label, e.ssh_hostkey_fingerprint, e.ssh_hostkey_verified,
+                    e.os_info, e.capabilities, e.status AS endpoint_status,
                     i.id_tree, i.label
              FROM ' . prefixTable('lapr_accounts') . ' AS a
              INNER JOIN ' . prefixTable('lapr_endpoints') . ' AS e ON e.id = a.endpoint_id
@@ -92,6 +102,27 @@ trait LAPRRotationTrait
 
         if (laprIsModuleEnabledFresh() === false) {
             return ['success' => false, 'error_code' => 'ERR_LAPR_DISABLED', 'message' => 'LAPR_DISABLED'];
+        }
+        if ((string) $account['endpoint_status'] === 'deleted') {
+            return ['success' => false, 'error_code' => 'ERR_ENDPOINT_DELETED', 'message' => 'ENDPOINT_REMOVED'];
+        }
+        if ((string) $account['endpoint_status'] === 'disabled' && $allowPausedEndpoint === false) {
+            return ['success' => false, 'error_code' => 'ERR_ENDPOINT_PAUSED', 'message' => 'ENDPOINT_ROTATIONS_PAUSED'];
+        }
+        if ((string) $account['endpoint_status'] === 'error' && $trigger !== 'manual') {
+            return ['success' => false, 'error_code' => 'ERR_CANNOT_ROTATE', 'message' => 'ENDPOINT_CHECK_REQUIRED'];
+        }
+        if ((string) $account['endpoint_status'] === 'disabled' && $allowPausedEndpoint === true) {
+            laprAuditLog(
+                'rotation_pause_override',
+                (int) $account['endpoint_id'],
+                $actorId,
+                ['trigger' => 'manual'],
+                'success',
+                $accountId,
+                null,
+                'system'
+            );
         }
 
         $username = (string) $account['username_cache'];
@@ -168,6 +199,11 @@ trait LAPRRotationTrait
         // Read the SSH connection credential from its linked item.
         $sshSecret = laprReadItemPasswordAsTpUser((int) $account['ssh_credential_source'], $tpKeys['private_key'], $tpKeys['public_key']);
         if ($sshSecret === '') {
+            $this->laprUpdateEndpointCheckState(
+                (int) $account['endpoint_id'],
+                $actorId,
+                LAPRSshService::ERR_AUTH_FAILED
+            );
             $this->laprFinalizeFailure($account, $actorId, LAPRSshService::ERR_AUTH_FAILED, $trigger);
             return ['success' => false, 'error_code' => LAPRSshService::ERR_AUTH_FAILED];
         }
@@ -184,6 +220,7 @@ trait LAPRRotationTrait
         // before opening any connection. A stored endpoint whose hostname was later
         // moved outside the allowlist must not be reachable by the rotator.
         if (laprIsHostnameAllowed((string) $account['hostname'], $this->settings) === false) {
+            $this->laprUpdateEndpointCheckState((int) $account['endpoint_id'], $actorId, 'ERR_HOSTNAME_NOT_ALLOWED');
             $this->laprFinalizeFailure($account, $actorId, 'ERR_HOSTNAME_NOT_ALLOWED', $trigger);
             return ['success' => false, 'error_code' => 'ERR_HOSTNAME_NOT_ALLOWED'];
         }
@@ -213,6 +250,7 @@ trait LAPRRotationTrait
         if ($connect['success'] !== true) {
             $service->disconnect();
             $code = isset($connect['error_code']) ? (string) $connect['error_code'] : LAPRSshService::ERR_UNKNOWN;
+            $this->laprUpdateEndpointCheckState((int) $account['endpoint_id'], $actorId, $code);
             if ($code === LAPRSshService::ERR_HOSTKEY_MISMATCH) {
                 laprAuditLog('hostkey_mismatch', (int) $account['endpoint_id'], $actorId, [
                     'account_id' => $accountId,
@@ -246,11 +284,28 @@ trait LAPRRotationTrait
             $service->disconnect();
             return ['success' => false, 'error_code' => 'ERR_ACCOUNT_DELETED', 'message' => 'ACCOUNT_REMOVED'];
         }
+        $freshEndpointStatus = DB::queryFirstField(
+            'SELECT status FROM ' . prefixTable('lapr_endpoints') . ' WHERE id = %i',
+            (int) $account['endpoint_id']
+        );
+        if ($freshEndpointStatus === null || (string) $freshEndpointStatus === 'deleted') {
+            $service->disconnect();
+            return ['success' => false, 'error_code' => 'ERR_ENDPOINT_DELETED', 'message' => 'ENDPOINT_REMOVED'];
+        }
+        if ((string) $freshEndpointStatus === 'disabled' && $allowPausedEndpoint === false) {
+            $service->disconnect();
+            return ['success' => false, 'error_code' => 'ERR_ENDPOINT_PAUSED', 'message' => 'ENDPOINT_ROTATIONS_PAUSED'];
+        }
+        if ((string) $freshEndpointStatus === 'error' && $trigger !== 'manual') {
+            $service->disconnect();
+            return ['success' => false, 'error_code' => 'ERR_CANNOT_ROTATE', 'message' => 'ENDPOINT_CHECK_REQUIRED'];
+        }
 
         $change = $service->changePassword($username, $newPassword, $useSudo);
         $service->disconnect();
         if ($change['success'] !== true) {
             $code = isset($change['error_code']) ? (string) $change['error_code'] : LAPRSshService::ERR_CHPASSWD_FAILED;
+            $this->laprUpdateEndpointCheckState((int) $account['endpoint_id'], $actorId, $code);
             $this->laprFinalizeFailure($account, $actorId, $code, $trigger);
             return ['success' => false, 'error_code' => $code];
         }
@@ -272,12 +327,20 @@ trait LAPRRotationTrait
                 'last_rotation_at' => date('Y-m-d H:i:s'),
                 'last_rotation_status' => 'failure',
                 'last_rotation_error' => 'ERR_ITEM_UPDATE_FAILED',
+                'retry_count' => 0,
+                'retry_at' => null,
                 'updated_by' => $actorId,
             ], 'id = %i AND status != %s', $accountId, 'deleted');
             laprAuditLog('rotation', (int) $account['endpoint_id'], $actorId, [
                 'trigger' => $trigger,
                 'manual_resync_required' => true,
             ], 'failure', $accountId, 'ERR_ITEM_UPDATE_FAILED', 'system');
+            $this->laprSendRotationFailureAlert(
+                $account,
+                'ERR_ITEM_UPDATE_FAILED',
+                $trigger,
+                'action_required'
+            );
             return ['success' => false, 'error_code' => 'ERR_ITEM_UPDATE_FAILED', 'message' => 'MANUAL_RESYNC_REQUIRED'];
         }
 
@@ -312,6 +375,8 @@ trait LAPRRotationTrait
                     'last_rotation_at' => date('Y-m-d H:i:s'),
                     'last_rotation_status' => 'failure',
                     'last_rotation_error' => 'ERR_SSH_CREDENTIAL_SYNC_FAILED',
+                    'retry_count' => 0,
+                    'retry_at' => null,
                     'updated_by' => $actorId,
                 ], 'id = %i AND status != %s', $accountId, 'deleted');
                 laprAuditLog('ssh_credential_sync', (int) $account['endpoint_id'], $actorId, [
@@ -323,6 +388,12 @@ trait LAPRRotationTrait
                     'manual_resync_required' => true,
                     'managed_item_updated' => true,
                 ], 'failure', $accountId, 'ERR_SSH_CREDENTIAL_SYNC_FAILED', 'system');
+                $this->laprSendRotationFailureAlert(
+                    $account,
+                    'ERR_SSH_CREDENTIAL_SYNC_FAILED',
+                    $trigger,
+                    'action_required'
+                );
 
                 return [
                     'success' => false,
@@ -349,6 +420,7 @@ trait LAPRRotationTrait
             'retry_at' => null,
             'updated_by' => $actorId,
         ], 'id = %i AND status != %s', $accountId, 'deleted');
+        $this->laprUpdateEndpointCheckState((int) $account['endpoint_id'], $actorId, null);
 
         laprAuditLog('rotation', (int) $account['endpoint_id'], $actorId, [
             'trigger' => $trigger,
@@ -521,14 +593,21 @@ trait LAPRRotationTrait
             'ERR_SHARED_PASSWORD_CREDENTIAL',
             'ERR_DUPLICATE_ENDPOINT_TARGET',
         ], true);
-        if ($trigger !== 'scheduler' || $permanentConfigurationFailure === true) {
+        $retryableFailure = laprIsTransientConnectionError($errorCode);
+        if ($trigger !== 'scheduler'
+            || $permanentConfigurationFailure === true
+            || $retryableFailure === false
+        ) {
             DB::update(prefixTable('lapr_accounts'), [
                 'last_rotation_at' => $now,
                 'last_rotation_status' => 'failure',
                 'last_rotation_error' => $errorCode,
                 'status' => 'error',
+                'retry_count' => 0,
+                'retry_at' => null,
                 'updated_by' => $actorId,
             ], 'id = %i AND status != %s', $accountId, 'deleted');
+            $this->laprSendRotationFailureAlert($account, $errorCode, $trigger, 'action_required');
             return;
         }
 
@@ -558,6 +637,7 @@ trait LAPRRotationTrait
                 'retry_count' => $retryCount,
                 'max_retries' => $maxRetries,
             ], 'warning', $accountId, $errorCode, 'system');
+            $this->laprSendRotationFailureAlert($account, $errorCode, $trigger, 'suspended');
             return;
         }
 
@@ -579,5 +659,110 @@ trait LAPRRotationTrait
             'retry_count' => $retryCount,
             'retry_at' => $retryAt,
         ], 'warning', $accountId, $errorCode, 'system');
+        $this->laprSendRotationFailureAlert($account, $errorCode, $trigger, 'retry_scheduled', $retryAt);
+    }
+
+    /**
+     * Send the optional administrator alert for a rotation failure. Only
+     * operational metadata is substituted; passwords and SSH diagnostics are
+     * deliberately excluded.
+     *
+     * @param array       $account   Account/endpoint row
+     * @param string      $errorCode LAPR error taxonomy code
+     * @param string      $trigger   manual|scheduler|enroll
+     * @param string      $state     action_required|retry_scheduled|suspended
+     * @param string|null $retryAt   Next retry datetime
+     * @return void
+     */
+    private function laprSendRotationFailureAlert(
+        array $account,
+        string $errorCode,
+        string $trigger,
+        string $state,
+        ?string $retryAt = null
+    ): void {
+        if ((int) ($this->settings['lapr_alert_email_enabled'] ?? 0) !== 1) {
+            return;
+        }
+        $recipient = trim((string) ($this->settings['lapr_alert_email_recipient'] ?? ''));
+        if (filter_var($recipient, FILTER_VALIDATE_EMAIL) === false) {
+            return;
+        }
+
+        try {
+            $lang = new Language((string) ($this->settings['default_language'] ?? 'english'));
+            $stateLabels = [
+                'action_required' => $lang->get('lapr_alert_state_action_required'),
+                'retry_scheduled' => $lang->get('lapr_alert_state_retry_scheduled'),
+                'suspended' => $lang->get('lapr_alert_state_suspended'),
+            ];
+            $body = str_replace(
+                ['#endpoint#', '#hostname#', '#username#', '#error_code#', '#trigger#', '#state#', '#retry_at#', '#url#'],
+                [
+                    (string) ($account['endpoint_label'] ?? ''),
+                    (string) ($account['hostname'] ?? ''),
+                    (string) ($account['username_cache'] ?? ''),
+                    $errorCode,
+                    $trigger,
+                    (string) ($stateLabels[$state] ?? $state),
+                    $retryAt ?? '—',
+                    rtrim((string) ($this->settings['cpassman_url'] ?? ''), '/') . '/index.php?page=lapr_accounts',
+                ],
+                $lang->get('lapr_rotation_failure_email_body')
+            );
+            prepareSendingEmail(
+                getEmailTemplateSubject('lapr_rotation_failure', $lang),
+                $body,
+                $recipient,
+                'LAPR'
+            );
+        } catch (Throwable $e) {
+            if (LOG_TASKS === true) {
+                $this->logger->log('LAPR rotation alert could not be sent: ' . $e->getMessage(), 'ERROR');
+            }
+        }
+    }
+
+    /**
+     * Keep endpoint availability in step with real rotation connections. A
+     * successful rotation confirms reachability; a network failure marks the
+     * endpoint unreachable, while host-key/privilege failures require action.
+     *
+     * @param int         $endpointId Endpoint id
+     * @param int         $actorId    Acting user
+     * @param string|null $errorCode  Null on success
+     * @return void
+     */
+    private function laprUpdateEndpointCheckState(int $endpointId, int $actorId, ?string $errorCode): void
+    {
+        $currentStatus = DB::queryFirstField(
+            'SELECT status FROM ' . prefixTable('lapr_endpoints') . ' WHERE id = %i',
+            $endpointId
+        );
+        $paused = (string) $currentStatus === 'disabled';
+        $checkedAt = date('Y-m-d H:i:s');
+        $commonUpdate = [
+            'last_check_at' => $checkedAt,
+            'last_error' => $errorCode,
+            'updated_by' => $actorId,
+        ];
+
+        if ($paused === false && $currentStatus !== null && (string) $currentStatus !== 'deleted') {
+            DB::update(prefixTable('lapr_endpoints'), array_merge($commonUpdate, [
+                'status' => $errorCode === null ? 'active' : laprEndpointStatusForCheckFailure($errorCode),
+                'next_check_at' => laprComputeNextEndpointCheck($this->settings, null, $errorCode),
+            ]), 'id = %i AND status = %s', $endpointId, (string) $currentStatus);
+        }
+
+        // A pause may race the status read or the first update. This second,
+        // status-qualified write refreshes diagnostics without ever re-enabling
+        // the endpoint or putting planned downtime on the retry cadence.
+        DB::update(prefixTable('lapr_endpoints'), array_merge($commonUpdate, [
+            'next_check_at' => laprComputeNextEndpointCheck(
+                $this->settings,
+                null,
+                null
+            ),
+        ]), 'id = %i AND status = %s', $endpointId, 'disabled');
     }
 }

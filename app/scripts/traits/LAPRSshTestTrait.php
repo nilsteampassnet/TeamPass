@@ -57,6 +57,14 @@ trait LAPRSshTestTrait
      */
     private function handleLaprSshTest(array $arguments): void
     {
+        // Existing endpoint checks use the stored, already-enrolled connection
+        // data. Keeping the same process type preserves the background-only SSH
+        // guarantee and the existing module-disable cancellation path.
+        if ((int) ($arguments['endpoint_id'] ?? 0) > 0) {
+            $this->handleLaprEndpointCheck($arguments);
+            return;
+        }
+
         $hostname = (string) ($arguments['endpoint']['hostname'] ?? '');
         $port = (int) ($arguments['endpoint']['port'] ?? 22);
         $sshUsername = (string) ($arguments['endpoint']['ssh_username'] ?? '');
@@ -129,6 +137,257 @@ trait LAPRSshTestTrait
             null,
             'system'
         );
+    }
+
+    /**
+     * Re-check an enrolled endpoint, refresh its operating-system metadata and
+     * verify that the SSH identity can still execute the rotation command.
+     *
+     * @param array $arguments Task arguments
+     * @return void
+     */
+    private function handleLaprEndpointCheck(array $arguments): void
+    {
+        $endpointId = (int) ($arguments['endpoint_id'] ?? 0);
+        $authorId = (int) ($arguments['author'] ?? TP_USER_ID);
+        $trigger = (string) ($arguments['trigger'] ?? 'scheduler');
+        $resumeOnSuccess = (bool) ($arguments['resume_on_success'] ?? false);
+        $endpoint = DB::queryFirstRow(
+            'SELECT id, hostname, port, ssh_username, ssh_auth_method, ssh_credential_source, status,
+                    ssh_hostkey_fingerprint, ssh_hostkey_verified, os_info
+             FROM ' . prefixTable('lapr_endpoints') . '
+             WHERE id = %i AND status != %s',
+            $endpointId,
+            'deleted'
+        );
+        if ($endpoint === null) {
+            $this->updateTaskResult(['success' => false, 'error_code' => 'ERR_ENDPOINT_NOT_FOUND']);
+            $this->updateTaskStatus('completed');
+            return;
+        }
+
+        $hostname = (string) $endpoint['hostname'];
+        $this->updateTaskStep('connecting');
+
+        // The allowlist remains authoritative after enrollment. A later policy
+        // tightening must prevent both checks and rotations from reaching a host.
+        if (laprIsHostnameAllowed($hostname, $this->settings) === false) {
+            $this->laprEndpointCheckFail(
+                $endpoint,
+                $authorId,
+                $trigger,
+                'ERR_HOSTNAME_NOT_ALLOWED',
+                'hostname_not_allowed'
+            );
+            return;
+        }
+
+        try {
+            $tpKeys = laprGetTpUserPrivateKey($this->settings);
+        } catch (Throwable $e) {
+            $this->laprEndpointCheckFail($endpoint, $authorId, $trigger, 'ERR_SERVER_KEY', 'cannot_load_server_key');
+            return;
+        }
+
+        $secret = laprReadItemPasswordAsTpUser(
+            (int) $endpoint['ssh_credential_source'],
+            $tpKeys['private_key'],
+            $tpKeys['public_key']
+        );
+        if ($secret === '') {
+            $this->laprEndpointCheckFail(
+                $endpoint,
+                $authorId,
+                $trigger,
+                LAPRSshService::ERR_AUTH_FAILED,
+                'credential_unreadable'
+            );
+            return;
+        }
+
+        $expectedFingerprint = null;
+        if ((int) $endpoint['ssh_hostkey_verified'] === 1
+            && (string) $endpoint['ssh_hostkey_fingerprint'] !== ''
+        ) {
+            $expectedFingerprint = (string) $endpoint['ssh_hostkey_fingerprint'];
+        }
+
+        $service = new LAPRSshService((int) ($this->settings['lapr_ssh_connect_timeout'] ?? 10));
+        $connect = $service->connect(
+            $hostname,
+            (int) $endpoint['port'],
+            (string) $endpoint['ssh_username'],
+            (string) $endpoint['ssh_auth_method'],
+            $secret,
+            $expectedFingerprint
+        );
+        if ($connect['success'] !== true) {
+            $service->disconnect();
+            $errorCode = isset($connect['error_code'])
+                ? (string) $connect['error_code']
+                : LAPRSshService::ERR_UNKNOWN;
+            $this->laprEndpointCheckFail(
+                $endpoint,
+                $authorId,
+                $trigger,
+                $errorCode,
+                (string) ($connect['error_detail'] ?? '')
+            );
+            return;
+        }
+
+        $this->updateTaskStep('collecting');
+        $collected = $service->testAndCollect();
+        $service->disconnect();
+
+        // Preserve the enrollment-time self-target classification: it is local
+        // TeamPass metadata, not information collected from the remote OS.
+        $previousOsInfo = json_decode((string) ($endpoint['os_info'] ?? '{}'), true) ?: [];
+        $osInfo = is_array($collected['os_info'] ?? null) ? $collected['os_info'] : [];
+        if (isset($previousOsInfo['lapr_self_target']) === true) {
+            $osInfo['lapr_self_target'] = $previousOsInfo['lapr_self_target'];
+        }
+        $capabilities = is_array($collected['capabilities'] ?? null) ? $collected['capabilities'] : [];
+        $canRotate = (bool) ($capabilities['can_rotate'] ?? false);
+        $errorCode = $canRotate ? null : 'ERR_CANNOT_ROTATE';
+        $resumed = false;
+        $now = date('Y-m-d H:i:s');
+        $commonUpdate = [
+            'os_info' => json_encode($osInfo, JSON_UNESCAPED_SLASHES),
+            'capabilities' => json_encode($capabilities, JSON_UNESCAPED_SLASHES),
+            'last_check_at' => $now,
+            'last_error' => $errorCode,
+            'updated_by' => $authorId,
+        ];
+
+        if ($resumeOnSuccess === true) {
+            // Resume is deliberately conditional: only the paused state that
+            // initiated this health check may be changed to active.
+            DB::update(prefixTable('lapr_endpoints'), array_merge($commonUpdate, [
+                'status' => $canRotate ? 'active' : 'disabled',
+                'next_check_at' => laprComputeNextEndpointCheck($this->settings),
+            ]), 'id = %i AND status = %s', $endpointId, 'disabled');
+            $resumed = $canRotate && (int) DB::affectedRows() > 0;
+        } else {
+            // Normal checks may refresh active/error/unreachable endpoints but
+            // must never overwrite a pause that happened after the initial read.
+            DB::update(prefixTable('lapr_endpoints'), array_merge($commonUpdate, [
+                'status' => $canRotate ? 'active' : 'error',
+                'next_check_at' => laprComputeNextEndpointCheck($this->settings, null, $errorCode),
+            ]), 'id = %i AND status NOT IN %ls', $endpointId, ['disabled', 'deleted']);
+            DB::update(prefixTable('lapr_endpoints'), array_merge($commonUpdate, [
+                'next_check_at' => laprComputeNextEndpointCheck($this->settings),
+            ]), 'id = %i AND status = %s', $endpointId, 'disabled');
+        }
+
+        $result = [
+            'success' => $canRotate,
+            'reachable' => true,
+            'error_code' => $errorCode,
+            'os_info' => $osInfo,
+            'capabilities' => $capabilities,
+            'can_rotate' => $canRotate,
+            'resumed' => $resumed,
+        ];
+        $this->updateTaskResult($result);
+        $this->updateTaskStatus('completed');
+
+        laprAuditLog(
+            'endpoint_test',
+            $endpointId,
+            $authorId,
+            [
+                'trigger' => $trigger,
+                'hostname' => $hostname,
+                'os_name' => (string) ($osInfo['os_name'] ?? ''),
+                'can_rotate' => $canRotate,
+            ],
+            $canRotate ? 'success' : 'failure',
+            null,
+            $errorCode,
+            'system'
+        );
+        if ($resumeOnSuccess === true) {
+            laprAuditLog(
+                'endpoint_resume',
+                $endpointId,
+                $authorId,
+                ['trigger' => $trigger, 'can_rotate' => $canRotate],
+                $resumed ? 'success' : 'failure',
+                null,
+                $resumed ? null : ($canRotate ? 'ERR_ENDPOINT_STATE_CHANGED' : 'ERR_CANNOT_ROTATE'),
+                'system'
+            );
+        }
+    }
+
+    /**
+     * Persist and expose a failed enrolled-endpoint check.
+     *
+     * @param array  $endpoint  Enrolled endpoint row
+     * @param int    $authorId  Acting user
+     * @param string $trigger   manual|scheduler
+     * @param string $errorCode LAPR error taxonomy code
+     * @param string $detail    Secret-free diagnostic detail
+     * @return void
+     */
+    private function laprEndpointCheckFail(
+        array $endpoint,
+        int $authorId,
+        string $trigger,
+        string $errorCode,
+        string $detail
+    ): void {
+        $endpointId = (int) $endpoint['id'];
+        $commonUpdate = [
+            'last_check_at' => date('Y-m-d H:i:s'),
+            'last_error' => $errorCode,
+            'updated_by' => $authorId,
+        ];
+        DB::update(prefixTable('lapr_endpoints'), array_merge($commonUpdate, [
+            'status' => laprEndpointStatusForCheckFailure($errorCode),
+            'next_check_at' => laprComputeNextEndpointCheck($this->settings, null, $errorCode),
+        ]), 'id = %i AND status NOT IN %ls', $endpointId, ['disabled', 'deleted']);
+        // A deliberate pause keeps normal monitoring cadence. The conditional
+        // update also covers a pause racing this in-flight SSH check.
+        DB::update(prefixTable('lapr_endpoints'), array_merge($commonUpdate, [
+            'next_check_at' => laprComputeNextEndpointCheck($this->settings),
+        ]), 'id = %i AND status = %s', $endpointId, 'disabled');
+
+        $this->updateTaskResult([
+            'success' => false,
+            'reachable' => false,
+            'error_code' => $errorCode,
+            'error_detail' => substr($detail, 0, 300),
+        ]);
+        $this->updateTaskStatus('completed');
+
+        laprAuditLog(
+            'endpoint_test',
+            $endpointId,
+            $authorId,
+            [
+                'trigger' => $trigger,
+                'hostname' => (string) $endpoint['hostname'],
+                'error_code' => $errorCode,
+            ],
+            'failure',
+            null,
+            $errorCode,
+            'system'
+        );
+        if ($trigger === 'resume') {
+            laprAuditLog(
+                'endpoint_resume',
+                $endpointId,
+                $authorId,
+                ['trigger' => $trigger, 'error_code' => $errorCode],
+                'failure',
+                null,
+                $errorCode,
+                'system'
+            );
+        }
     }
 
     /**
