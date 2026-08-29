@@ -17,6 +17,21 @@ class ItemPasswordHistoryTest extends TestCase
         return str_replace("\r\n", "\n", $source);
     }
 
+    /**
+     * Offset of the first match, so the guards check statement order and not indentation.
+     *
+     * @param string $source  Source to scan
+     * @param string $pattern PCRE pattern, whitespace-tolerant
+     * @return int Byte offset of the match
+     */
+    private function offsetOf(string $source, string $pattern): int
+    {
+        $found = preg_match($pattern, $source, $matches, PREG_OFFSET_CAPTURE);
+        self::assertSame(1, $found, "Pattern not found in ItemModel: $pattern");
+
+        return (int) $matches[0][1];
+    }
+
     public function testRevisionPreconditionRunsBeforePasswordRecovery(): void
     {
         $source = $this->itemModelSource();
@@ -40,7 +55,24 @@ class ItemPasswordHistoryTest extends TestCase
         self::assertStringContainsString('SELECT share_key, increment_id', $helper);
         self::assertStringContainsString('decryptUserObjectKeyWithMigration(', $helper);
         self::assertStringContainsString("'sharekeys_items'", $helper);
-        self::assertStringContainsString("throw new UnexpectedValueException('The current item password cannot be decrypted.')", $helper);
+        self::assertStringContainsString(
+            'throw new UnexpectedValueException(self::PASSWORD_RECOVERY_ERROR)',
+            $helper
+        );
+    }
+
+    public function testPasswordRecoveryIsMemoizedForTheRequest(): void
+    {
+        $source = $this->itemModelSource();
+
+        // The LAPR ownership guard and the password block both ask for the current
+        // value on the same item; only the first one may pay for the RSA decryption.
+        self::assertMatchesRegularExpression('#private \?array \$currentPasswordMemo#', $source);
+        self::assertMatchesRegularExpression(
+            '#\$this->currentPasswordMemo = null;\s*\n\s*try \{#',
+            $source,
+            'updateItem() must clear the memo before it runs'
+        );
     }
 
     public function testOldPasswordIsPreparedBeforeMutationAndLoggedEncryptedAfterSharekeys(): void
@@ -50,22 +82,33 @@ class ItemPasswordHistoryTest extends TestCase
         self::assertNotFalse($passwordUpdate);
         $updatePath = substr($source, (int) $passwordUpdate);
 
-        $prepareHistory = strpos($updatePath, "cryption(\$currentPassword, '', 'encrypt')");
-        $itemWrite = strpos($updatePath, "DB::update(\n                    prefixTable('items')");
-        $sharekeys = strpos($updatePath, "storeUsersShareKey(\n                    'sharekeys_items'");
-        $passwordAudit = strpos($updatePath, "'at_pw'");
+        $prepareHistory = $this->offsetOf($updatePath, '#cryption\(\$currentPassword,\s*\'\',\s*\'encrypt\'\)#');
+        $itemWrite = $this->offsetOf($updatePath, '#DB::update\(\s*prefixTable\(\'items\'\)#');
+        $sharekeys = $this->offsetOf($updatePath, '#storeUsersShareKey\(\s*\'sharekeys_items\'#');
+        $passwordAudit = $this->offsetOf($updatePath, '#\'at_pw\'#');
 
-        self::assertNotFalse($prepareHistory);
-        self::assertNotFalse($itemWrite);
-        self::assertNotFalse($sharekeys);
-        self::assertNotFalse($passwordAudit);
         self::assertLessThan($itemWrite, $prepareHistory);
         self::assertLessThan($passwordAudit, $sharekeys);
         self::assertStringContainsString('$encryptedPreviousPassword', $updatePath);
-        self::assertStringContainsString('if ($passwordChanged === true) {', $updatePath);
+        self::assertMatchesRegularExpression('#if \(\$passwordChanged === true\)#', $updatePath);
         self::assertStringContainsString('(string) $encryptedPreviousPassword', $updatePath);
-        self::assertStringNotContainsString(
-            'if ($passwordChanged === true && $encryptedPreviousPassword !== null)',
+    }
+
+    public function testGenericModificationEntryIsIndependentFromThePasswordEntry(): void
+    {
+        $source = $this->itemModelSource();
+        $passwordUpdate = strpos($source, '// Handle password update');
+        self::assertNotFalse($passwordUpdate);
+        $updatePath = substr($source, (int) $passwordUpdate);
+
+        // Changing the label and the password in one request must leave both traces,
+        // so the generic entry may not be chained to the password one with an elseif.
+        self::assertDoesNotMatchRegularExpression(
+            '#\}\s*elseif \([^)]*\$hasGeneralUpdate#',
+            $updatePath
+        );
+        self::assertMatchesRegularExpression(
+            '#if \(is_array\(\$moveContext\) === false && \$hasNonPasswordUpdate === true\)#',
             $updatePath
         );
     }

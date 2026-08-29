@@ -269,6 +269,15 @@ no-op: by itself it causes no ciphertext rewrite, sharekey fan-out, password-his
 previous value in `log_items.old_value`, encrypted with the application master key and tagged
 `at_pw`, exactly like the web UI. Failure to recover or prepare the old value aborts before mutation.
 
+**Rule: a password update needs a usable sharekey and fails closed without one** — this is a
+behaviour change, clients must handle it. When the caller holds no `sharekeys_items` row for the
+item, or the row cannot be decrypted, the update is rejected with **`422`** and nothing is written;
+previously it silently succeeded and left a hole in the password history. The common transient
+cause is the FUNC-1 background fan-out: after another user creates or updates a public item, only
+that editor holds a sharekey until the background task distributes the rest. **Retry** — the
+message says so — and only treat it as permanent if it survives the encryption-keys repair task.
+Every other field stays updatable in the meantime; only `password` needs the current value.
+
 **Custom fields:** `fields` = array of `{ id, value }`. Created if absent, updated only when the value changed (current value decrypted for comparison); encrypted fields re-encrypted and sharekeys refreshed synchronously for all eligible users (consistent with the password path). Empty values ignored. Requires `item_extra_fields`.
 
 **Move (`folder_id` change).** A `folder_id` equal to the current one is a no-op, not a move. Any real move now emits the same side effects as the web UI — `at_moved` audit log, item cache refresh, source/destination folder counters, and an `item_moved` WebSocket event to both folders — for **every** transition type, not only personal→shared.
@@ -449,7 +458,7 @@ The key is `extension_url` (value = `cpassman_url`) — the doc previously named
 | 404 | Resource not found / unknown route |
 | 405 | HTTP method not supported for this endpoint (`Allow:` header lists supported methods) |
 | 409 | The supplied `revision` no longer matches the item (optimistic concurrency on `item/update`), the resource changed while the request was being processed (concurrent personal→shared item move), or the operation conflicts with a LAPR relationship (managed login/password update, move to a personal folder, delete of a linked item) |
-| 422 | Validation failed (password rules, invalid complexity/access_rights, personal→shared move combined with another update or with unrecoverable keys) |
+| 422 | Validation failed (password rules, invalid complexity/access_rights, personal→shared move combined with another update or with unrecoverable keys, current password not recoverable on a password update — retryable while the sharekey fan-out is still running) |
 | 429 | Rate limit exceeded (`api_rate_limit_per_minute`) — `Retry-After` header gives the wait in seconds |
 | 500 | Internal server error (details logged server-side, not returned to client) |
 | 503 | API disabled in TeamPass settings |

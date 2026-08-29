@@ -698,6 +698,13 @@ Resending the same value is a password no-op: by itself it does not rewrite the 
 redistribute sharekeys, create a password-history entry, or allocate a revision. A real change stores the previous password
 encrypted in the existing `at_pw` history; the client never sends or receives that previous value.
 
+Because the current value must be read first, a password update requires your account to already
+hold the item's encryption key. If it does not, the request is refused with `422` and **nothing is
+written** — no half-applied update. This is usually temporary: right after another user creates or
+changes a shared item, keys are distributed to the other users by a background task. Retry the
+request; every other field remains updatable in the meantime. If it keeps failing, ask an
+administrator to run the encryption keys repair task.
+
 **Response Codes:**
 
 | Code | Description |
@@ -709,7 +716,7 @@ encrypted in the existing `at_pw` history; the client never sends or receives th
 | 404 | Item not found |
 | 405 | HTTP method not supported (only `PUT` is accepted) |
 | 409 | The supplied `revision` no longer matches the item — someone changed it since; resolve the conflict instead of retrying blindly. Also returned when the item was moved or re-encrypted by another request while this move was being prepared, which is a plain retry |
-| 422 | Validation failed: a personal → shared move combined with another field, or one of the item's encryption keys could not be recovered (the item is left untouched) |
+| 422 | Validation failed: a personal → shared move combined with another field, or one of the item's encryption keys could not be recovered — including the current password on a password update (the item is left untouched; retry while keys are still being distributed) |
 | 500 | Server error |
 
 **Example - Update password and description:**

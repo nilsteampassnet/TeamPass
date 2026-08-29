@@ -34,6 +34,24 @@ use voku\helper\AntiXSS;
 
 class ItemModel
 {
+    /**
+     * Message returned when the current item password cannot be recovered.
+     * Both causes are actionable by the client: the sharekey may not have been
+     * distributed yet by the background fan-out, or it may need a repair.
+     */
+    private const PASSWORD_RECOVERY_ERROR = 'The current item password cannot be decrypted. '
+        . 'Retry once its encryption keys have been distributed to your account, '
+        . 'or ask an administrator to run the encryption keys repair task.';
+
+    /**
+     * Per-request memo of the current cleartext password recovered for an update.
+     *
+     * Recovering it costs one RSA-4096 decryption, and the LAPR ownership guard and
+     * the password-history block both need it on the same item within one request.
+     *
+     * @var array{item_id: int, password: string}|null
+     */
+    private ?array $currentPasswordMemo = null;
 
     /**
      * Get the list of items to return
@@ -713,8 +731,11 @@ class ItemModel
                 $userPrivateKey,
                 $currentItem
             );
-        } catch (UnexpectedValueException $e) {
-            error_log('[API] ItemModel password comparison failed for item ' . $itemId);
+        } catch (Exception $e) {
+            // Deliberately broad: this guard must never turn a crypto-layer failure into a
+            // 500. Anything that prevents the comparison is reported as "the value changed",
+            // which is the safe answer for an item LAPR owns.
+            error_log('[API] ItemModel password comparison failed for item ' . $itemId . ': ' . $e->getMessage());
 
             return "\0lapr-undecryptable";
         }
@@ -725,7 +746,8 @@ class ItemModel
      *
      * The migration-aware sharekey path is mandatory. Any missing or unusable key fails
      * before the caller mutates the item, so a successful password update never knowingly
-     * creates a gap in the encrypted password history.
+     * creates a gap in the encrypted password history. The result is memoized for the
+     * request so an item asking for it twice pays for a single RSA decryption.
      *
      * @param int    $itemId         Item id
      * @param int    $userId         Caller id
@@ -741,6 +763,12 @@ class ItemModel
         string $userPrivateKey,
         array $currentItem
     ): string {
+        // One RSA-4096 decryption per request is enough: on a LAPR-managed item the
+        // ownership guard and the password-history block ask for the same value.
+        if ($this->currentPasswordMemo !== null && $this->currentPasswordMemo['item_id'] === $itemId) {
+            return $this->currentPasswordMemo['password'];
+        }
+
         if (empty($currentItem['pw']) === true) {
             return '';
         }
@@ -753,7 +781,7 @@ class ItemModel
             $itemId
         );
         if ($userKey === null) {
-            throw new UnexpectedValueException('The current item password cannot be decrypted.');
+            throw new UnexpectedValueException(self::PASSWORD_RECOVERY_ERROR);
         }
 
         $userPublicKey = (string) DB::queryFirstField(
@@ -761,7 +789,7 @@ class ItemModel
             $userId
         );
         if ($userPublicKey === '') {
-            throw new UnexpectedValueException('The current item password cannot be decrypted.');
+            throw new UnexpectedValueException(self::PASSWORD_RECOVERY_ERROR);
         }
 
         $objectKey = decryptUserObjectKeyWithMigration(
@@ -772,7 +800,7 @@ class ItemModel
             'sharekeys_items'
         );
         if ($objectKey === '') {
-            throw new UnexpectedValueException('The current item password cannot be decrypted.');
+            throw new UnexpectedValueException(self::PASSWORD_RECOVERY_ERROR);
         }
 
         $password = teampassDecryptPasswordValue(
@@ -782,8 +810,10 @@ class ItemModel
             (string) ($currentItem['pw_iv'] ?? '')
         );
         if ($password === '' && (int) ($currentItem['pw_len'] ?? 0) > 0) {
-            throw new UnexpectedValueException('The current item password cannot be decrypted.');
+            throw new UnexpectedValueException(self::PASSWORD_RECOVERY_ERROR);
         }
+
+        $this->currentPasswordMemo = ['item_id' => $itemId, 'password' => $password];
 
         return $password;
     }
@@ -1537,6 +1567,8 @@ class ItemModel
         string $userPrivateKey
     ): array
     {
+        $this->currentPasswordMemo = null;
+
         try {
             include_once API_ROOT_PATH . '/../sources/main.functions.php';
             include_once API_ROOT_PATH . '/../sources/lapr.functions.php';
@@ -1796,8 +1828,13 @@ class ItemModel
                 }
             }
 
-            // Regenerate the favicon only when this request actually changes the URL.
-            if (isset($params['url']) && isset($params['favicon_url']) === false) {
+            // Regenerate the favicon only when this request actually changes the URL. Resolving
+            // one costs a DNS lookup, and a read-modify-write client resends the URL unchanged
+            // on every save.
+            if (isset($params['url'])
+                && isset($params['favicon_url']) === false
+                && (string) ($updateData['url'] ?? '') !== (string) ($currentItem['url'] ?? '')
+            ) {
                 $updateData['favicon_url'] = empty($updateData['url']) === true
                     ? ''
                     : $this->getFaviconUrl((string) $updateData['url']);
@@ -1892,10 +1929,18 @@ class ItemModel
                 );
             }
             
-            $hasGeneralUpdate = empty($updateData) === false
+            // A password change is audited on its own (at_pw). The generic at_modification
+            // entry must therefore describe only what else the request touched, otherwise a
+            // combined update would report the password twice and hide the rest.
+            $hasNonPasswordUpdate = count(array_diff(
+                    array_keys($updateData),
+                    ['pw', 'pw_iv', 'pw_len', 'complexity_level']
+                )) > 0
                 || $hasTotpUpdate === true
                 || isset($params['tags'])
                 || (isset($params['fields']) && is_array($params['fields']));
+
+            $hasGeneralUpdate = empty($updateData) === false || $hasNonPasswordUpdate === true;
 
             // Update the item
             if (empty($updateData) === false || $hasTotpUpdate === true) {
@@ -2024,7 +2069,11 @@ class ItemModel
                     null,
                     (string) $encryptedPreviousPassword
                 );
-            } elseif (is_array($moveContext) === false && $hasGeneralUpdate === true) {
+            }
+
+            // Independent of the password entry above: a request that changed the label and
+            // the password must leave both traces, as the web handler does.
+            if (is_array($moveContext) === false && $hasNonPasswordUpdate === true) {
                 logItems($SETTINGS, $itemId, $label, $userData['id'], 'at_modification', $userData['username']);
             }
 
