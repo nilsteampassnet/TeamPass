@@ -2311,8 +2311,21 @@ function externalAdCreateUser(
         }
     }
     
-    if (empty($userGroups) && !empty($SETTINGS['oauth_selfregistered_user_belongs_to_role'])) {
-        $userGroups = $SETTINGS['oauth_selfregistered_user_belongs_to_role'];
+    // No directory group matched an existing Teampass role: fall back to the role the
+    // administrator configured for self-registered OAuth2 users.
+    //
+    // The test is on the resolved role ids, not on the raw directory groups: a user can
+    // belong to groups that simply have no counterpart in Teampass, and that is exactly
+    // the case the setting exists for.
+    //
+    // LDAP must not enter here: it has no equivalent setting and gets its roles from
+    // ldap_groups_roles under source 'ad', while handleNewUser() always passes an empty
+    // group list — without the guard every LDAP account would inherit the OAuth2 role.
+    if ($authType === 'oauth2'
+        && empty($groupIds)
+        && !empty($SETTINGS['oauth_selfregistered_user_belongs_to_role'])
+    ) {
+        $groupIds[] = (int) $SETTINGS['oauth_selfregistered_user_belongs_to_role'];
     }
     
     // Mail, name and lastname come straight from the directory and are rendered in the
