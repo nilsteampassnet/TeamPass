@@ -192,6 +192,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         $lang->get('folder'),
         JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
     ); ?>
+    const folderPickerPlaceholder = <?php echo json_encode(
+        $lang->get('search_folder_any'),
+        JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+    ); ?>
 
     // Folder results stay outside the item DataTable: they navigate directly
     // to their tree node and can never inherit item actions or mass selection.
@@ -434,7 +438,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
       // is not searched, so say so instead of showing an empty table.
       const hasTerm = (searchFilters.term || '').trim().length > 1
       const hasFacet = Object.keys(searchFilters).some((k) => k !== 'term' && k !== 'fields')
-      $('#search-empty-hint').toggleClass('hidden', hasTerm || hasFacet)
+      const hasCriteria = hasTerm || hasFacet
+      $('#search-empty-hint').toggleClass('hidden', hasCriteria)
+      $('#search-items-heading').toggleClass('hidden', hasCriteria === false)
     }
 
     // Refresh the panel, then reload the table.
@@ -461,6 +467,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
       $('.search-facet, .search-facet-bool').prop('checked', false)
       $('.search-facet-text, .search-facet-csv, .search-facet-date, .search-facet-single').val('')
       $('.search-facet-select').val([])
+      $('#search-folder').val(null).trigger('change.select2')
       renderFolderResults([], false)
       runSearch(true)
       $('#search-term').trigger('focus')
@@ -484,6 +491,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
       $('.search-facet-date[data-facet="' + facet + '"]').val('')
       $('.search-facet-single[data-facet="' + facet + '"]').val('')
       $('.search-facet-select[data-facet="' + facet + '"]').val([])
+      if (facet === 'folder') {
+        $('#search-folder').trigger('change.select2')
+      }
 
       runSearch(true)
     })
@@ -502,24 +512,62 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
       oTable.columns.adjust()
     })
 
-    // Populate the dropdowns that depend on what this user may see. The lists
-    // are scoped server-side to the same folders as the search itself.
+    // Load folders incrementally. A large vault never sends its complete tree
+    // to the browser, and Select2 keeps a saved selection usable by id.
+    $('#search-folder').select2({
+      width: '100%',
+      theme: 'bootstrap4',
+      placeholder: folderPickerPlaceholder,
+      allowClear: true,
+      minimumInputLength: 0,
+      ajax: {
+        delay: 250,
+        transport: function(params, success, failure) {
+          return $.post(
+            'sources/search.queries.php',
+            {
+              type: 'folder_options',
+              key: '<?php echo $session->get('key'); ?>',
+              term: params.data.term || '',
+              page: params.data.page || 1
+            },
+            success,
+            'json'
+          ).fail(failure)
+        },
+        processResults: function(data) {
+          return {
+            results: Array.isArray(data.results) ? data.results : [],
+            pagination: {
+              more: data.pagination && data.pagination.more === true
+            }
+          }
+        }
+      }
+    })
+
+    const restoredFolderForOptions = pendingSelectRestore && Array.isArray(pendingSelectRestore.folder)
+      ? pendingSelectRestore.folder[0]
+      : pendingSelectRestore && pendingSelectRestore.folder
+
+    // Populate the bounded tag/custom-field lists and resolve only the saved
+    // folder option, if any. Every list is scoped server-side.
     $.post(
       'sources/search.queries.php', {
         type: 'filter_options',
-        key: '<?php echo $session->get('key'); ?>'
+        key: '<?php echo $session->get('key'); ?>',
+        selected_folder: restoredFolderForOptions || ''
       },
       function(options) {
-        if (options.folders) {
-          options.folders.forEach((folder) => {
-            const id = Number.parseInt(folder.id, 10)
-            const title = String(folder.title || '').trim()
-            if (Number.isInteger(id) === false || id <= 0 || title === '') return
-
-            const path = String(folder.path || '').trim()
-            const label = path === '' ? title : path + ' / ' + title
-            $('<option></option>').attr('value', id).text(label).appendTo('#search-folder')
-          })
+        if (options.folder) {
+          const id = Number.parseInt(options.folder.id, 10)
+          const text = String(options.folder.text || '').trim()
+          if (Number.isInteger(id) && id > 0 && text !== '') {
+            $('<option></option>')
+              .attr('value', id)
+              .text(text)
+              .appendTo('#search-folder')
+          }
         }
         if (options.tags) {
           options.tags.forEach((tag) => {
@@ -544,7 +592,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             ? pendingSelectRestore.folder[0]
             : pendingSelectRestore.folder
           if (restoredFolder) {
-            $('#search-folder').val(String(restoredFolder))
+            $('#search-folder').val(String(restoredFolder)).trigger('change.select2')
           }
           if (pendingSelectRestore.scope_perso) {
             $('#search-scope-perso').val(pendingSelectRestore.scope_perso)

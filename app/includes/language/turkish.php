@@ -2860,6 +2860,7 @@ return array(
     'search_scope_personal' => 'Personal only',
     'search_folder_filter' => 'Klasör ve alt klasörler',
     'search_folder_any' => 'Tüm klasörler',
+    'search_folder_results_more' => 'Bu aramayla eşleşen başka klasörler de var. Görüntülemek için arama terimlerini daraltın.',
     'search_custom_field_any' => 'Any custom field',
     'search_custom_field_value' => 'Custom field contains…',
     'search_no_criteria' => 'Type at least 2 characters or pick a filter to start searching.',

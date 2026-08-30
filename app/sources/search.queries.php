@@ -38,7 +38,6 @@ declare(strict_types=1);
  * or Referer headers.
  */
 
-use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
@@ -112,6 +111,8 @@ if ($post_key !== $session->get('key')) {
 }
 
 $userId = (int) $session->get('user-id');
+$userLogin = (string) $session->get('user-login');
+$ownPersonalFolderIds = array_map('intval', (array) $session->get('user-personal_folders'));
 $userRoleIds = array_values(array_filter(array_map(
     'intval',
     is_array($session->get('user-roles_array')) === true ? $session->get('user-roles_array') : []
@@ -160,6 +161,83 @@ function searchVisibleCustomFields(string $userRoles): array
     return $visible;
 }
 
+/**
+ * Add decoded, authorization-safe ancestor paths to a bounded folder row set.
+ *
+ * Ancestors are returned as individual rows and assembled in PHP. This avoids
+ * MySQL's group_concat_max_len truncation while keeping both the folders and
+ * every title in their paths bound to the caller's authorized scope.
+ *
+ * @param array<int, array<string, mixed>> $folderRows Folder rows containing id, title and nlevel.
+ * @param array<int|string>                $folderScope Authorized folder ids.
+ * @param int                              $userId      Current user id.
+ * @param string                           $userLogin   Current user login.
+ *
+ * @return array<int, array{id: int, title: string, path: string}>
+ */
+function searchHydrateFolderRows(
+    array $folderRows,
+    array $folderScope,
+    int $userId,
+    string $userLogin
+): array {
+    $scope = searchResolveFolderScope($folderScope);
+    $scopeSet = array_flip($scope);
+    $folderIds = searchResolveFolderScope(array_column($folderRows, 'id'));
+    if (count($scope) === 0 || count($folderIds) === 0) {
+        return [];
+    }
+
+    /** @var array<int, array<int, string>> $pathParts */
+    $pathParts = [];
+    $ancestorRows = DB::query(
+        'SELECT folder.id AS folder_id, ancestor.title, ancestor.nlevel
+        FROM ' . prefixTable('nested_tree') . ' AS folder
+        INNER JOIN ' . prefixTable('nested_tree') . ' AS ancestor
+            ON ancestor.id > 0
+            AND ancestor.id IN %li_folder_scope
+            AND ancestor.id != folder.id
+            AND ancestor.nleft <= folder.nleft
+            AND ancestor.nright >= folder.nright
+        WHERE folder.id IN %li_folder_ids
+            AND folder.id IN %li_folder_scope
+        ORDER BY folder.id ASC, ancestor.nleft ASC',
+        [
+            'folder_scope' => $scope,
+            'folder_ids' => $folderIds,
+        ]
+    );
+    foreach ($ancestorRows as $ancestorRow) {
+        $folderId = (int) $ancestorRow['folder_id'];
+        $pathParts[$folderId][] = searchFolderDisplayTitle(
+            (string) $ancestorRow['title'],
+            (int) $ancestorRow['nlevel'],
+            $userId,
+            $userLogin
+        );
+    }
+
+    $hydrated = [];
+    foreach ($folderRows as $folderRow) {
+        $folderId = (int) ($folderRow['id'] ?? 0);
+        if ($folderId <= 0 || isset($scopeSet[$folderId]) === false) {
+            continue;
+        }
+        $hydrated[] = [
+            'id' => $folderId,
+            'title' => searchFolderDisplayTitle(
+                (string) ($folderRow['title'] ?? ''),
+                (int) ($folderRow['nlevel'] ?? 0),
+                $userId,
+                $userLogin
+            ),
+            'path' => implode(' / ', $pathParts[$folderId] ?? []),
+        ];
+    }
+
+    return $hydrated;
+}
+
 // Resolve the folder scope once: accessible folders, minus foreign personal
 // folders, optionally narrowed to a requested subtree (intersection only).
 $rawFilters = [];
@@ -193,8 +271,18 @@ if ($featureFavourites === false) {
 
 $requestedSubtree = null;
 if (count($filters['folder']) > 0) {
-    $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-    $requestedSubtree = array_keys($tree->getDescendants($filters['folder'][0], true));
+    $requestedSubtree = array_map(
+        'intval',
+        DB::queryFirstColumn(
+            'SELECT descendant.id
+            FROM ' . prefixTable('nested_tree') . ' AS selected
+            INNER JOIN ' . prefixTable('nested_tree') . ' AS descendant
+                ON descendant.nleft >= selected.nleft
+                AND descendant.nright <= selected.nright
+            WHERE selected.id = %i',
+            $filters['folder'][0]
+        )
+    );
 }
 
 $forbiddenPersonalFolders = array_merge(
@@ -218,38 +306,124 @@ $emptyOutput = [
 ];
 
 // --------------------------------- //
-// Filter options feeding the facet panel dropdowns.
-// Everything is bounded by the same folder scope as the search itself:
-// a global list would disclose the existence of items the user cannot see.
+// Paginated folder options feeding the remote Select2 facet. Both the page of
+// folders and every ancestor used in its labels remain ACL-bound.
+if ($request->request->get('type') === 'folder_options') {
+    /** @var array{results: array<int, array{id: int, text: string}>, pagination: array{more: bool}} $output */
+    $output = [
+        'results' => [],
+        'pagination' => ['more' => false],
+    ];
+
+    if (count($folderScope) > 0) {
+        $selectedFolderId = (int) $request->request->filter(
+            'selected_id',
+            0,
+            FILTER_SANITIZE_NUMBER_INT
+        );
+        $where = ['folder.id IN %li_folder_scope'];
+        $params = ['folder_scope' => $folderScope];
+
+        if ($selectedFolderId > 0) {
+            $where[] = 'folder.id = %i_selected_folder_id';
+            $params['selected_folder_id'] = $selectedFolderId;
+            $limitSql = 'LIMIT 1';
+        } else {
+            $term = $request->request->get('term', '');
+            $term = is_string($term) === true ? mb_substr(trim($term), 0, 100) : '';
+            if ($term !== '') {
+                $storageTerm = searchEncodeFolderTerm($term);
+                if ($storageTerm === '') {
+                    $where[] = '(1 = 0)';
+                } else {
+                    $where[] = 'folder.title LIKE %ss_folder_option_term';
+                    $params['folder_option_term'] = $storageTerm;
+                }
+            }
+
+            $page = min(
+                10000,
+                max(1, (int) $request->request->filter('page', 1, FILTER_SANITIZE_NUMBER_INT))
+            );
+            $params['folder_option_limit'] = SEARCH_FOLDER_OPTIONS_PAGE_SIZE + 1;
+            $params['folder_option_offset'] = ($page - 1) * SEARCH_FOLDER_OPTIONS_PAGE_SIZE;
+            $limitSql = 'LIMIT %i_folder_option_limit OFFSET %i_folder_option_offset';
+        }
+
+        $folderOptionRows = DB::query(
+            'SELECT folder.id, folder.title, folder.nlevel
+            FROM ' . prefixTable('nested_tree') . ' AS folder
+            WHERE ' . implode(' AND ', $where) . '
+            ORDER BY folder.nleft ASC, folder.title ASC, folder.id ASC
+            ' . $limitSql,
+            $params
+        );
+
+        if ($selectedFolderId === 0) {
+            $output['pagination']['more'] = count($folderOptionRows) > SEARCH_FOLDER_OPTIONS_PAGE_SIZE;
+            $folderOptionRows = array_slice($folderOptionRows, 0, SEARCH_FOLDER_OPTIONS_PAGE_SIZE);
+        }
+
+        foreach (searchHydrateFolderRows($folderOptionRows, $folderScope, $userId, $userLogin) as $folder) {
+            $output['results'][] = [
+                'id' => $folder['id'],
+                'text' => $folder['path'] === ''
+                    ? $folder['title']
+                    : $folder['path'] . ' / ' . $folder['title'],
+            ];
+        }
+    }
+
+    echo json_encode($output);
+    exit;
+}
+
+// Remaining filter options. Folder choices are deliberately absent here:
+// returning the complete tree made every page load unbounded.
 if ($request->request->get('type') === 'filter_options') {
+    /**
+     * @var array{
+     *     folder: array{id: int, text: string}|null,
+     *     tags: array<int, string>,
+     *     custom_fields: array<int, array{id: int, title: string}>
+     * } $options
+     */
     $options = [
-        'folders' => [],
+        'folder' => null,
         'tags' => [],
         'custom_fields' => [],
     ];
 
     if (count($folderScope) > 0) {
-        $folderOptionRows = DB::query(
-            'SELECT folder.id, folder.title,
-                COALESCE(GROUP_CONCAT(ancestor.title ORDER BY ancestor.nleft SEPARATOR \' / \'), \'\') AS folder_path
-            FROM ' . prefixTable('nested_tree') . ' AS folder
-            LEFT JOIN ' . prefixTable('nested_tree') . ' AS ancestor
-                ON ancestor.id > 0
-                AND ancestor.id IN %li_folder_scope
-                AND ancestor.id != folder.id
-                AND ancestor.nleft <= folder.nleft
-                AND ancestor.nright >= folder.nright
-            WHERE folder.id IN %li_folder_scope
-            GROUP BY folder.id, folder.title, folder.nleft
-            ORDER BY folder.nleft ASC, folder.title ASC',
-            ['folder_scope' => $folderScope]
+        $selectedFolderId = (int) $request->request->filter(
+            'selected_folder',
+            0,
+            FILTER_SANITIZE_NUMBER_INT
         );
-        foreach ($folderOptionRows as $folderOptionRow) {
-            $options['folders'][] = [
-                'id' => (int) $folderOptionRow['id'],
-                'title' => (string) $folderOptionRow['title'],
-                'path' => (string) $folderOptionRow['folder_path'],
-            ];
+        if ($selectedFolderId > 0) {
+            $selectedFolderRows = DB::query(
+                'SELECT folder.id, folder.title, folder.nlevel
+                FROM ' . prefixTable('nested_tree') . ' AS folder
+                WHERE folder.id = %i AND folder.id IN %li_folder_scope
+                LIMIT 1',
+                $selectedFolderId,
+                $folderScope
+            );
+            $selectedFolders = searchHydrateFolderRows(
+                $selectedFolderRows,
+                $folderScope,
+                $userId,
+                $userLogin
+            );
+            if (count($selectedFolders) === 1) {
+                $selectedFolder = $selectedFolders[0];
+                $options['folder'] = [
+                    'id' => $selectedFolder['id'],
+                    'text' => $selectedFolder['path'] === ''
+                        ? $selectedFolder['title']
+                        : $selectedFolder['path'] . ' / ' . $selectedFolder['title'],
+                ];
+            }
         }
 
         $tagRows = DB::query(
@@ -297,38 +471,30 @@ if (count($filters['terms']) > 0 && in_array('folder', (array) $filters['fields'
     if ($filters['scope_perso'] !== '') {
         $folderResultScope = searchApplyPersonalFolderScope(
             $folderScope,
-            getOwnPersonalFolderIds($userId),
+            $ownPersonalFolderIds,
             (string) $filters['scope_perso']
         );
     }
 
     $folderBuilt = searchBuildFolderWhere((array) $filters['terms'], $folderResultScope);
     if (count($folderBuilt['params']) > 0) {
+        $folderBuilt['params']['folder_result_limit'] = SEARCH_FOLDER_RESULTS_LIMIT + 1;
         $folderRows = DB::query(
-            'SELECT folder.id, folder.title,
-                COALESCE(GROUP_CONCAT(ancestor.title ORDER BY ancestor.nleft SEPARATOR \' / \'), \'\') AS folder_path
+            'SELECT folder.id, folder.title, folder.nlevel
             FROM ' . prefixTable('nested_tree') . ' AS folder
-            LEFT JOIN ' . prefixTable('nested_tree') . ' AS ancestor
-                ON ancestor.id > 0
-                AND ancestor.id IN %li_folder_scope
-                AND ancestor.id != folder.id
-                AND ancestor.nleft <= folder.nleft
-                AND ancestor.nright >= folder.nright
             WHERE ' . $folderBuilt['sql'] . '
-            GROUP BY folder.id, folder.title, folder.nleft
             ORDER BY folder.title ASC, folder.id ASC
-            LIMIT 21',
+            LIMIT %i_folder_result_limit',
             $folderBuilt['params']
         );
 
-        $folderResultsTruncated = count($folderRows) > 20;
-        foreach (array_slice($folderRows, 0, 20) as $folderRow) {
-            $folderResults[] = [
-                'id' => (int) $folderRow['id'],
-                'title' => (string) $folderRow['title'],
-                'path' => (string) $folderRow['folder_path'],
-            ];
-        }
+        $folderResultsTruncated = count($folderRows) > SEARCH_FOLDER_RESULTS_LIMIT;
+        $folderResults = searchHydrateFolderRows(
+            array_slice($folderRows, 0, SEARCH_FOLDER_RESULTS_LIMIT),
+            $folderResultScope,
+            $userId,
+            $userLogin
+        );
     }
 }
 
@@ -512,7 +678,7 @@ foreach ($rows as $record) {
         ),
         htmlspecialchars(stripslashes((string) $record['tags']), ENT_QUOTES, 'UTF-8'),
         $url,
-        htmlspecialchars(stripslashes((string) $record['folder']), ENT_QUOTES, 'UTF-8'),
+        htmlspecialchars(searchDecodeFolderTitle((string) $record['folder']), ENT_QUOTES, 'UTF-8'),
         $actions,
     ];
 }

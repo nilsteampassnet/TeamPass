@@ -2860,6 +2860,7 @@ return array(
     'search_scope_personal' => 'Tylko osobiste',
     'search_folder_filter' => 'Katalog i podkatalogi',
     'search_folder_any' => 'Wszystkie katalogi',
+    'search_folder_results_more' => 'Więcej folderów pasuje do tego wyszukiwania. Doprecyzuj wyszukiwane hasła, aby je zobaczyć.',
     'search_custom_field_any' => 'Dowolne pole niestandardowe',
     'search_custom_field_value' => 'Pole niestandardowe zawiera…',
     'search_no_criteria' => 'Wpisz co najmniej 2 znaki lub wybierz filtr, aby rozpocząć wyszukiwanie.',

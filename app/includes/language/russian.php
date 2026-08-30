@@ -2860,6 +2860,7 @@ return array(
     'search_scope_personal' => 'Personal only',
     'search_folder_filter' => 'Папка и подпапки',
     'search_folder_any' => 'Все папки',
+    'search_folder_results_more' => 'Этому поиску соответствует больше папок. Уточните условия поиска, чтобы увидеть их.',
     'search_custom_field_any' => 'Any custom field',
     'search_custom_field_value' => 'Custom field contains…',
     'search_no_criteria' => 'Type at least 2 characters or pick a filter to start searching.',

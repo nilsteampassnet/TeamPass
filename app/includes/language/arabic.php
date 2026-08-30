@@ -1130,5 +1130,6 @@ $LANG = array(
     'search_reset' => 'إعادة ضبط البحث',
     'search_folder_filter' => 'المجلد والمجلدات الفرعية',
     'search_folder_any' => 'جميع المجلدات',
+    'search_folder_results_more' => 'توجد مجلدات أخرى مطابقة لهذا البحث. حسّن كلمات البحث لعرضها.',
     '' => ''
 );

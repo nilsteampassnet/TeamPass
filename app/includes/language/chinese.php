@@ -2860,6 +2860,7 @@ return array(
     'search_scope_personal' => '仅个人条目',
     'search_folder_filter' => '文件夹和子文件夹',
     'search_folder_any' => '所有文件夹',
+    'search_folder_results_more' => '还有更多文件夹符合此搜索。请优化搜索词以查看它们。',
     'search_custom_field_any' => '任意自定义字段',
     'search_custom_field_value' => '自定义字段包含…',
     'search_no_criteria' => '请输入至少 2 个字符或选择一个筛选条件以开始搜索。',

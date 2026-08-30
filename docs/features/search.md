@@ -44,7 +44,7 @@ Active filters appear as removable **chips** above the results. Click a chip to 
 
 - **Reused** and **Unreadable** rely on data produced by a security scan. If you have never run one from the security dashboard, these two filters return nothing. The other security filters are computed live and need no scan.
 - **Attachment name** searches the *file name*, not the file contents — attachment contents are encrypted and cannot be searched.
-- **Folder** restricts item and folder results to the selected folder and all its descendants. Only folders in your authorized scope are proposed.
+- **Folder** restricts item and folder results to the selected folder and all its descendants. Only folders in your authorized scope are proposed; the selector loads them incrementally and can be searched by title.
 - **Custom field values** are only searchable for fields that are **not encrypted**. Encrypted custom fields are excluded by design, and a field restricted to roles you do not hold is never searched: a match would reveal its value.
 
 ---

@@ -381,7 +381,7 @@ $featureFavourites = (int) ($SETTINGS['enable_favourites'] ?? 0) === 1;
                     <!-- Search in -->
                     <div class="search-facet-group">
                         <h6 class="text-muted text-uppercase small mb-2"><?php echo $lang->get('search_search_in'); ?></h6>
-                        <?php foreach (['label' => 'label', 'login' => 'login', 'url' => 'url', 'tags' => 'tags', 'folder' => 'folder', 'description' => 'description'] as $key => $langKey) : ?>
+                        <?php foreach (['label' => 'label', 'login' => 'login', 'url' => 'url', 'tags' => 'tags', 'folder' => 'folders', 'description' => 'description'] as $key => $langKey) : ?>
                             <div class="custom-control custom-checkbox">
                                 <input type="checkbox" class="custom-control-input search-field-cb" id="search-field-<?php echo $key; ?>"
                                     value="<?php echo $key; ?>"
@@ -471,9 +471,9 @@ $featureFavourites = (int) ($SETTINGS['enable_favourites'] ?? 0) === 1;
                     <!-- Content & scope -->
                     <div class="search-facet-group mt-3">
                         <h6 class="text-muted text-uppercase small mb-2"><?php echo $lang->get('search_facet_content'); ?></h6>
-                        <select class="form-control form-control-sm search-facet-single" data-facet="folder" id="search-folder"
+                        <select class="form-control form-control-sm search-facet-single" data-facet="folder" id="search-folder" style="width:100%;"
                             aria-label="<?php echo $lang->get('search_folder_filter'); ?>">
-                            <option value=""><?php echo $lang->get('search_folder_any'); ?></option>
+                            <option value=""></option>
                         </select>
                         <select class="form-control form-control-sm mt-2 search-facet-select" data-facet="tags" id="search-tags" multiple size="4">
                         </select>
@@ -528,7 +528,7 @@ $featureFavourites = (int) ($SETTINGS['enable_favourites'] ?? 0) === 1;
                             <?php echo $lang->get('search_folder_results_more'); ?>
                         </p>
                     </div>
-                    <h4 class="h6 text-muted text-uppercase mb-2">
+                    <h4 class="h6 text-muted text-uppercase mb-2 hidden" id="search-items-heading">
                         <i class="fa-solid fa-key text-primary mr-2" aria-hidden="true"></i><?php echo $lang->get('items'); ?>
                     </h4>
                     <table id="search-results-items" class="table table-bordered table-striped" style="width:100%">

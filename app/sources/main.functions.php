@@ -1112,19 +1112,23 @@ function getOwnPersonalFolderIds(int $userId): array
 {
     loadClasses('DB');
 
-    $ownRootId = DB::queryFirstField(
-        'SELECT id FROM ' . prefixTable('nested_tree') . '
-        WHERE personal_folder = %i AND title = %s',
-        1,
-        (string) $userId
+    return array_map(
+        'intval',
+        DB::queryFirstColumn(
+            'SELECT DISTINCT folder.id, folder.nleft
+            FROM ' . prefixTable('nested_tree') . ' AS folder
+            INNER JOIN ' . prefixTable('nested_tree') . ' AS personal_root
+                ON personal_root.personal_folder = %i
+                AND personal_root.parent_id = %i
+                AND personal_root.title = %s
+                AND folder.nleft >= personal_root.nleft
+                AND folder.nright <= personal_root.nright
+            ORDER BY folder.nleft ASC',
+            1,
+            0,
+            (string) $userId
+        )
     );
-    if (empty($ownRootId) === true) {
-        return [];
-    }
-
-    $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-
-    return array_map('intval', $tree->getDescendants((int) $ownRootId, true, false, true));
 }
 
 /**
