@@ -102,8 +102,18 @@ trait LAPRSshTestTrait
 
         $this->updateTaskStep('collecting');
         $collected = $service->testAndCollect();
+        $transportFailure = $service->getLastTransportFailure();
         $fingerprint = isset($connect['fingerprint']) ? (string) $connect['fingerprint'] : '';
         $service->disconnect();
+        if ($transportFailure !== null) {
+            $this->laprTestFail(
+                $authorId,
+                $hostname,
+                $transportFailure['error_code'],
+                $transportFailure['error_detail']
+            );
+            return;
+        }
 
         // D5: can this endpoint actually rotate? Trust the faithful probe run by
         // testAndCollect() — it executes the real (no-op) chpasswd command over
@@ -238,7 +248,18 @@ trait LAPRSshTestTrait
 
         $this->updateTaskStep('collecting');
         $collected = $service->testAndCollect();
+        $transportFailure = $service->getLastTransportFailure();
         $service->disconnect();
+        if ($transportFailure !== null) {
+            $this->laprEndpointCheckFail(
+                $endpoint,
+                $authorId,
+                $trigger,
+                $transportFailure['error_code'],
+                $transportFailure['error_detail']
+            );
+            return;
+        }
 
         // Preserve the enrollment-time self-target classification: it is local
         // TeamPass metadata, not information collected from the remote OS.

@@ -187,7 +187,7 @@ function laprAdminToggle(string $field, array $SETTINGS, int $default = 0): stri
                         </div>
                         <div class="form-group row">
                             <div class="col-7"><?php echo $lang->get('lapr_endpoint_checks_enabled_setting'); ?></div>
-                            <div class="col-5"><?php echo laprAdminToggle('lapr_endpoint_checks_enabled', $SETTINGS, 1); ?></div>
+                            <div class="col-5"><?php echo laprAdminToggle('lapr_endpoint_checks_enabled', $SETTINGS); ?></div>
                         </div>
                         <div class="form-group row">
                             <div class="col-7"><?php echo $lang->get('lapr_endpoint_check_interval_setting'); ?></div>

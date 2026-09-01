@@ -894,6 +894,12 @@ function laprPauseEndpoint(array $data, SessionInterface $session, int $userId, 
         DB::commit();
     } catch (Throwable $e) {
         DB::rollback();
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log(
+                'TEAMPASS Error - LAPR endpoint pause transaction failed for endpoint '
+                . $endpointId . ': ' . $e->getMessage()
+            );
+        }
         echo prepareExchangedData(['error' => true, 'message' => $lang->get('error')], 'encode');
         return;
     }

@@ -108,10 +108,14 @@ Managed-account deletion remains logical (`status=deleted`) for history retentio
   error/unreachable endpoints and queues the same background check. Normal checks use
   `lapr_endpoint_check_interval_minutes`; transient outages use `lapr_retry_delay_minutes` so recovery can
   unblock a pending rotation promptly. A disabled endpoint means deliberate rotation pause: checks preserve
-  that state and stay on the normal interval without accelerated retries. Deleted endpoints are excluded.
+  that state and stay on the normal interval without accelerated retries. The enqueue lease is capped at the
+  shorter of the normal and retry intervals so a crashed worker cannot delay the configured cadence. Deleted
+  endpoints are excluded. Upgrades seed periodic checks off to avoid unsolicited outbound SSH traffic.
 - `getResourceKey()` serializes re-checks, discovery and rotations per endpoint
   (`lapr-endpoint:<id>`). This prevents a check from reading an old password while a concurrent rotation
   changes and synchronizes the SSH credential, and also prevents two accounts on one host rotating in parallel.
+  New rotation tasks carry their server-computed `endpoint_id`; legacy queued tasks are resolved once per
+  candidate batch, never queried once per task.
 
 ## Rotation semantics (Point 4 — the critical phase)
 
@@ -133,8 +137,11 @@ Confirmed decisions:
 - Scheduler failures retry only `ERR_TIMEOUT`, `ERR_REFUSED`, `ERR_HOST_UNREACHABLE` and
   `ERR_NOT_CONNECTED`: `retry_count`/`retry_at` until `lapr_max_retries`, then **suspend** (`status=paused`)
   with `rotation_suspended` audit. All other failures become `error` immediately. `account_reset`
-  ("Reset & resume") clears the retry state. Optional customizable email alerts expose only endpoint,
-  account, error, trigger and retry metadata.
+  ("Reset & resume") clears the retry state. A post-connect `chpasswd` rejection is account-scoped and never
+  disables the shared endpoint; a classified channel/socket loss remains retryable and marks it unreachable.
+  Rotation observations may update endpoint availability but never `last_check_at` or postpone `next_check_at`,
+  which remain the cadence of full OS/capability checks. Optional customizable email alerts expose only endpoint,
+  account, error, trigger and retry metadata, and are sent on the first retry and final suspension only.
 
 ## Rules for new LAPR code
 

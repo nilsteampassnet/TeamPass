@@ -863,7 +863,7 @@ function laprMonitoringApplyCronStatus(array $snapshot, string $cronStatus): arr
 function laprMonitoringEndpointChecks(array $settings, int $nowTs, int $graceSeconds): array
 {
     $moduleEnabled = (int) ($settings['lapr_enabled'] ?? 0) === 1;
-    $enabled = (int) ($settings['lapr_endpoint_checks_enabled'] ?? 1) === 1;
+    $enabled = (int) ($settings['lapr_endpoint_checks_enabled'] ?? 0) === 1;
     $intervalMinutes = max(5, (int) ($settings['lapr_endpoint_check_interval_minutes'] ?? 1440));
 
     $empty = [

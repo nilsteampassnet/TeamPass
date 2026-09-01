@@ -554,7 +554,7 @@ class BackgroundTasksHandler {
         // so transient failures are counted and eventually suspended.
         $nowStr = date('Y-m-d H:i:s', $now);
         $dueAccounts = DB::query(
-            'SELECT a.id, e.hostname, e.os_info
+            'SELECT a.id, a.endpoint_id, e.hostname, e.os_info
              FROM ' . prefixTable('lapr_accounts') . ' AS a
              INNER JOIN ' . prefixTable('lapr_endpoints') . ' AS e ON e.id = a.endpoint_id
              WHERE a.status = %s
@@ -601,6 +601,7 @@ class BackgroundTasksHandler {
                 'process_type' => 'lapr_rotation',
                 'arguments' => json_encode([
                     'account_id' => $accountId,
+                    'endpoint_id' => (int) $account['endpoint_id'],
                     'trigger' => 'scheduler',
                     'author' => (int) TP_USER_ID,
                 ], JSON_UNESCAPED_SLASHES),
@@ -630,7 +631,7 @@ class BackgroundTasksHandler {
     private function handleScheduledLAPREndpointChecks(): void
     {
         if ((int) $this->getSettingValue('lapr_enabled', '0', 'admin') !== 1
-            || (int) $this->getSettingValue('lapr_endpoint_checks_enabled', '1', 'admin') !== 1
+            || (int) $this->getSettingValue('lapr_endpoint_checks_enabled', '0', 'admin') !== 1
         ) {
             return;
         }
@@ -677,14 +678,10 @@ class BackgroundTasksHandler {
                 'status' => 'new',
             ]);
             // Lease the endpoint until the worker writes its real outcome. If
-            // the worker crashes unexpectedly, the due row is retried after the
-            // configured transient delay rather than on every handler tick.
+            // the worker crashes unexpectedly, retry no later than the shorter
+            // of the normal check interval and the transient retry delay.
             DB::update(prefixTable('lapr_endpoints'), [
-                'next_check_at' => laprComputeNextEndpointCheck(
-                    $this->settings,
-                    $now,
-                    'ERR_NOT_CONNECTED'
-                ),
+                'next_check_at' => laprComputeEndpointCheckLease($this->settings, $now),
                 'updated_by' => (int) TP_USER_ID,
             ], 'id = %i AND status NOT IN %ls', $endpointId, ['disabled', 'deleted']);
             // If the endpoint was paused after the scheduler selected it,
@@ -1172,7 +1169,7 @@ class BackgroundTasksHandler {
 
         // Fetch candidate tasks from DB
         $candidates = DB::query(
-            'SELECT increment_id, process_type, arguments
+            'SELECT increment_id, process_type, arguments, item_id
             FROM ' . prefixTable('background_tasks') . '
             WHERE is_in_progress = 0
             AND (finished_at IS NULL OR finished_at = "")
@@ -1180,6 +1177,48 @@ class BackgroundTasksHandler {
             LIMIT %i',
             $this->batchSize
         );
+
+        // New LAPR tasks carry their server-computed endpoint id. Resolve only
+        // legacy queued tasks in one batch. Keeping this out of the candidate
+        // SELECT avoids joining LAPR tables for installations with no LAPR work
+        // while eliminating one query per rotation candidate.
+        $rotationAccountIds = [];
+        foreach ($candidates as $candidateIndex => $candidate) {
+            if ((string) $candidate['process_type'] !== 'lapr_rotation') {
+                continue;
+            }
+            $candidateArguments = json_decode((string) ($candidate['arguments'] ?? ''), true);
+            $endpointId = is_array($candidateArguments)
+                ? (int) ($candidateArguments['endpoint_id'] ?? 0)
+                : 0;
+            if ($endpointId > 0) {
+                $candidates[$candidateIndex]['lapr_endpoint_id'] = $endpointId;
+            } elseif ((int) ($candidate['item_id'] ?? 0) > 0) {
+                // Backward compatibility for tasks queued before endpoint_id
+                // became part of the task contract.
+                $rotationAccountIds[] = (int) $candidate['item_id'];
+            }
+        }
+        $laprEndpointIds = [];
+        if ($rotationAccountIds !== []) {
+            $accountEndpoints = DB::query(
+                'SELECT id, endpoint_id FROM ' . prefixTable('lapr_accounts') . ' WHERE id IN %li',
+                array_values(array_unique($rotationAccountIds))
+            );
+            foreach ($accountEndpoints as $accountEndpoint) {
+                $laprEndpointIds[(int) $accountEndpoint['id']] = (int) $accountEndpoint['endpoint_id'];
+            }
+            foreach ($candidates as &$candidate) {
+                $accountId = (int) ($candidate['item_id'] ?? 0);
+                if ((string) $candidate['process_type'] === 'lapr_rotation'
+                    && (int) ($candidate['lapr_endpoint_id'] ?? 0) <= 0
+                    && $accountId > 0
+                ) {
+                    $candidate['lapr_endpoint_id'] = (int) ($laprEndpointIds[$accountId] ?? 0);
+                }
+            }
+            unset($candidate);
+        }
 
         foreach ($candidates as $task) {
             if ($availableSlots <= 0) break;
@@ -1465,14 +1504,7 @@ class BackgroundTasksHandler {
                 return $endpointId > 0 ? 'lapr-endpoint:' . $endpointId : null;
 
             case 'lapr_rotation':
-                $accountId = (int) ($args['account_id'] ?? 0);
-                if ($accountId <= 0) {
-                    return null;
-                }
-                $endpointId = (int) DB::queryFirstField(
-                    'SELECT endpoint_id FROM ' . prefixTable('lapr_accounts') . ' WHERE id = %i',
-                    $accountId
-                );
+                $endpointId = (int) ($task['lapr_endpoint_id'] ?? 0);
                 return $endpointId > 0 ? 'lapr-endpoint:' . $endpointId : null;
 
             default:

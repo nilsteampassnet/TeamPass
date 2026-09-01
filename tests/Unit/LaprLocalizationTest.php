@@ -17,6 +17,67 @@ use PHPUnit\Framework\TestCase;
 
 class LaprLocalizationTest extends TestCase
 {
+    private const LAPR_PR_LANGUAGE_KEYS = [
+        'lapr_account_paused_rotation_blocked',
+        'lapr_endpoint_checks_enabled_setting',
+        'lapr_endpoint_check_interval_setting',
+        'lapr_check_endpoint',
+        'lapr_endpoint_check_success',
+        'lapr_endpoint_check_reachable_no_rights',
+        'lapr_endpoint_check_already_running',
+        'lapr_pause_endpoint',
+        'lapr_pause_endpoint_notice',
+        'lapr_pause_reason',
+        'lapr_pause_reason_maintenance',
+        'lapr_pause_reason_incident',
+        'lapr_pause_reason_access_change',
+        'lapr_pause_reason_operator',
+        'lapr_resume_endpoint',
+        'lapr_resume_endpoint_confirm',
+        'lapr_resume_endpoint_success',
+        'lapr_resume_endpoint_failed',
+        'lapr_resume_due_accounts',
+        'lapr_endpoint_status_paused',
+        'lapr_endpoint_paused',
+        'lapr_endpoint_already_paused',
+        'lapr_endpoint_not_paused',
+        'lapr_endpoint_paused_confirmation_required',
+        'lapr_endpoint_paused_rotation_warning',
+        'lapr_rotation_cancelled_endpoint_paused',
+        'lapr_item_endpoint_paused',
+        'lapr_rotation_failure_email_subject',
+        'lapr_rotation_failure_email_body',
+        'lapr_alert_state_action_required',
+        'lapr_alert_state_retry_scheduled',
+        'lapr_alert_state_suspended',
+        'lapr_retry_scheduled_detail',
+        'lapr_last_error',
+        'email_tpl_lapr_rotation_failure',
+        'email_tpl_lapr_rotation_failure_desc',
+        'lapr_monitor_state_endpoint_paused',
+        'lapr_monitor_endpoint_checks',
+        'lapr_monitor_endpoint_check_interval',
+        'lapr_monitor_endpoint_checks_due',
+        'lapr_monitor_endpoint_checks_overdue',
+        'lapr_monitor_endpoint_checks_stale',
+        'lapr_monitor_endpoint_checks_pending',
+        'lapr_monitor_endpoint_checks_running',
+        'lapr_monitor_endpoint_checks_failed_24h',
+        'lapr_monitor_endpoint_checks_oldest',
+        'lapr_monitor_endpoint_checks_next',
+        'lapr_monitor_endpoint_checks_disabled',
+        'lapr_monitor_endpoint_checks_overdue_status',
+        'lapr_monitor_issue_endpoint_paused',
+        'lapr_monitor_issue_endpoint_unreachable',
+        'lapr_monitor_issue_endpoint_error',
+        'lapr_monitor_issue_endpoint_check_worker_failed',
+        'lapr_monitor_issue_endpoint_check_queue_stalled',
+        'lapr_monitor_issue_endpoint_checks_overdue',
+        'ops_lapr_rotations',
+        'ops_lapr_success_rate',
+        'ops_lapr_rotation_trend',
+    ];
+
     public function testAllLaprUiKeysExistInEnglishAndFrench(): void
     {
         $root = __DIR__ . '/../..';
@@ -52,6 +113,50 @@ class LaprLocalizationTest extends TestCase
             self::assertArrayHasKey($key, $english, 'english: ' . $key);
             self::assertArrayHasKey($key, $french, 'french: ' . $key);
             self::assertNotSame('', trim((string) $french[$key]), 'french: ' . $key);
+        }
+    }
+
+    public function testLaprPrStringsExistInEveryLanguageCatalog(): void
+    {
+        $languageFiles = glob(__DIR__ . '/../../app/includes/language/*.php');
+        self::assertIsArray($languageFiles);
+        self::assertNotEmpty($languageFiles);
+        $english = include __DIR__ . '/../../app/includes/language/english.php';
+        self::assertIsArray($english);
+
+        foreach ($languageFiles as $languageFile) {
+            unset($GLOBALS['LANG']);
+            $catalog = include $languageFile;
+            if (is_array($catalog) === false) {
+                $catalog = $GLOBALS['LANG'] ?? null;
+            }
+            self::assertIsArray($catalog, basename($languageFile));
+            foreach (self::LAPR_PR_LANGUAGE_KEYS as $key) {
+                $context = basename($languageFile) . ': ' . $key;
+                self::assertArrayHasKey($key, $catalog, $context);
+                self::assertNotSame('', trim((string) $catalog[$key]), $context);
+                if (basename($languageFile) !== 'english.php') {
+                    self::assertNotSame(
+                        (string) $english[$key],
+                        (string) $catalog[$key],
+                        $context . ' must not use the English fallback'
+                    );
+                }
+
+                preg_match_all('/#[a-z_]+#|\{[a-z_]+\}/', (string) $english[$key], $englishTokens);
+                preg_match_all('/#[a-z_]+#|\{[a-z_]+\}/', (string) $catalog[$key], $catalogTokens);
+                sort($englishTokens[0]);
+                sort($catalogTokens[0]);
+                self::assertSame($englishTokens[0], $catalogTokens[0], $context . ' placeholders');
+
+                foreach (['<br>', '<strong>', '</strong>', '<code>', '</code>', '<a href="#url#">', '</a>'] as $tag) {
+                    self::assertSame(
+                        substr_count((string) $english[$key], $tag),
+                        substr_count((string) $catalog[$key], $tag),
+                        $context . ' HTML: ' . $tag
+                    );
+                }
+            }
         }
     }
 

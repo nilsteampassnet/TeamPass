@@ -45,7 +45,7 @@ Once enabled, an **LAPR** section appears directly below **Passwords** for non-a
 | Alert email recipient | `lapr_alert_email_recipient` | *(empty)* |
 | Enable automatic rotations | `lapr_scheduler_enabled` | `0` |
 | Scheduler scan interval (minutes) | `lapr_scheduler_interval_minutes` | `5` |
-| Periodically check enrolled servers | `lapr_endpoint_checks_enabled` | `1` |
+| Periodically check enrolled servers | `lapr_endpoint_checks_enabled` | `1` on new installs; `0` when introduced by an upgrade |
 | Server check interval (minutes) | `lapr_endpoint_check_interval_minutes` | `1440` |
 | Max retries before suspension | `lapr_max_retries` | `3` |
 | Retry delay (minutes) | `lapr_retry_delay_minutes` | `60` |
@@ -90,6 +90,10 @@ The enrolled-server list has a **refresh/check** button next to Delete. It start
 
 When periodic checks are enabled, the background handler performs the same refresh every `lapr_endpoint_check_interval_minutes` (24 hours by default). A transiently unreachable server is checked again after `lapr_retry_delay_minutes`, so recovery does not wait for the normal daily interval. Paused endpoints continue to receive non-destructive checks at the normal interval, without accelerated retries, alerts, or automatic reactivation.
 
+Periodic checks are seeded as enabled on a new installation, where no endpoint exists yet. When this feature is introduced by an upgrade, it is seeded as disabled so an existing installation never starts new outbound SSH traffic without an administrator explicitly opting in.
+
+A password rotation may update endpoint availability, but it does not replace this full check: it never refreshes `last_check_at` or postpones `next_check_at`, because it does not recollect the OS and capability metadata. A network failure observed during rotation may only bring the next full check forward.
+
 ### Pausing rotations for one endpoint
 
 The endpoint list can pause **automatic rotations** without changing the state, retry counter, or due date of any attached account. Pending rotations that have not started are cancelled neutrally. A worker that is already connecting re-reads the endpoint state immediately before `changePassword`, so a concurrent pause still blocks the remote mutation. If the remote password was already changed, the TeamPass synchronization always finishes to prevent a password divergence.
@@ -119,6 +123,8 @@ The same endpoint can therefore own several managed accounts, provided that ever
 A password credential item may also be the managed-account item only when it represents the same endpoint and the same SSH login. Private-key credential items can never become managed passwords: rotating one would overwrite the private key and make future SSH connections impossible. The same relationship checks run again immediately before every rotation to protect legacy data created before these guards existed.
 
 When a legacy duplicate endpoint or unsafe credential relationship reaches the worker, the rotation is refused before SSH, audited as a configuration failure, and the managed account is placed in an error state instead of being retried indefinitely.
+
+Errors returned by `chpasswd` after SSH connected are scoped to the managed account. A locked account, stale username or PAM rejection therefore cannot disable every other managed account on the same endpoint. Only a classified transport loss changes the endpoint to `unreachable` and enters the automatic retry flow. Unknown SSH errors remain terminal until they can be classified safely; common timeout, DNS, connection-closed/reset and socket I/O failures are classified explicitly.
 
 > ⚠️ **Upgrading from an earlier 3.2.2 pre-release.** These relationship rules are also applied to data created before they existed. A setup that used to work — one password credential item shared by several endpoints, or an item managed as a Linux password while also serving as a private-key credential — now fails its next rotation with `ERR_SHARED_PASSWORD_CREDENTIAL`, `ERR_CREDENTIAL_RELATION_CONFLICT` or `ERR_KEY_CREDENTIAL_MANAGED`. The failure is deliberate and final rather than retried: split the credential items, then use **Reset & resume** on the affected accounts. **System Health → LAPR** lists every such relationship before the first rotation is attempted.
 
@@ -197,7 +203,7 @@ When the managed Linux login is also the endpoint's password-authenticated SSH l
 - **SSH-first model.** The password is pushed to the server first. If the *item* update then fails, the account is marked **error** with a **MANUAL RESYNC REQUIRED** note — the server holds the new password, so reset it manually and re-sync.
 - **Host-key mismatch blocks rotation.** Because LAPR connects with a reusable, privileged credential, a changed host key (a MITM signal) **aborts** the rotation. Verify the server, then explicitly trust the new key.
 - **Scheduler retries only transient connectivity failures** (`timeout`, connection refused, host unreachable, lost connection), up to `lapr_max_retries`, then **suspends** the account until an authorized LAPR operator uses **Reset & resume**. Authentication, host-key, privilege, configuration and synchronization failures stop immediately in **error** because retrying cannot repair them.
-- The managed-account list shows the error code, retry counter and exact next retry time. If LAPR email alerts are enabled, each failed rotation sends the configured recipient its operational state (action required, retry scheduled or suspended), without secrets.
+- The managed-account list shows the error code, retry counter and exact next retry time. If LAPR email alerts are enabled, terminal/manual failures are reported immediately. A transient scheduler outage sends one notification with the first scheduled retry, stays quiet during intermediate retries, then sends one final notification only if the account is suspended. Messages contain operational state only, without secrets.
 
 ---
 

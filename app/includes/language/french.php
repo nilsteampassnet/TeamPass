@@ -3174,6 +3174,7 @@ return array(
     'lapr_policy_not_found' => 'Politique introuvable',
     'lapr_invalid_account' => 'Compte invalide',
     'lapr_account_not_found' => 'Compte introuvable',
+    'lapr_account_paused_rotation_blocked' => 'Les rotations automatiques sont suspendues pour ce compte. Utilisez Réinitialiser et reprendre avant de lancer une nouvelle rotation.',
     'lapr_invalid_endpoint' => 'Serveur invalide',
     'lapr_endpoint_not_found' => 'Serveur introuvable',
     'lapr_endpoint_already_enrolled' => 'Cet hôte et ce port SSH sont déjà enrôlés comme serveur LAPR.',

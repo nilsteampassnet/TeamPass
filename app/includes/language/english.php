@@ -2756,6 +2756,7 @@ return array(
     'lapr_policy_not_found' => 'Policy not found',
     'lapr_invalid_account' => 'Invalid account',
     'lapr_account_not_found' => 'Account not found',
+    'lapr_account_paused_rotation_blocked' => 'Automatic rotations are suspended for this account. Use Reset & resume before starting a new rotation.',
     'lapr_invalid_endpoint' => 'Invalid endpoint',
     'lapr_endpoint_not_found' => 'Endpoint not found',
     'lapr_endpoint_already_enrolled' => 'This host and SSH port are already enrolled as a LAPR endpoint.',

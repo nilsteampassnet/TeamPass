@@ -312,7 +312,8 @@ $laprSettings = array(
     array('lapr_scheduler_enabled', '0'),
     array('lapr_scheduler_interval_minutes', '5'),
     array('lapr_scheduler_next_run_at', '0'),
-    array('lapr_endpoint_checks_enabled', '1'),
+    // Upgrades must not start new outbound SSH traffic without administrator opt-in.
+    array('lapr_endpoint_checks_enabled', '0'),
     array('lapr_endpoint_check_interval_minutes', '1440'),
     array('lapr_max_retries', '3'),
     array('lapr_retry_delay_minutes', '60'),

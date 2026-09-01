@@ -756,6 +756,27 @@ function laprComputeNextEndpointCheck(array $settings, ?int $now = null, ?string
 }
 
 /**
+ * Compute the temporary lease written when an endpoint check is enqueued.
+ *
+ * The lease prevents a crashed worker from causing a new task on every handler
+ * tick. It must never be longer than the administrator's normal check cadence,
+ * even when the rotation retry delay is configured to a larger value.
+ *
+ * @param array<string, mixed> $settings TeamPass settings
+ * @param int|null             $now      Unix timestamp reference
+ *
+ * @return string 'Y-m-d H:i:s'
+ */
+function laprComputeEndpointCheckLease(array $settings, ?int $now = null): string
+{
+    $now = $now ?? time();
+    $normalMinutes = max(5, (int) ($settings['lapr_endpoint_check_interval_minutes'] ?? 1440));
+    $retryMinutes = max(5, (int) ($settings['lapr_retry_delay_minutes'] ?? 60));
+
+    return date('Y-m-d H:i:s', $now + min($normalMinutes, $retryMinutes) * 60);
+}
+
+/**
  * Prepare a stored LAPR datetime for regional display and chronological sort.
  *
  * LAPR stores SQL DATETIME values in the TeamPass-configured timezone. The

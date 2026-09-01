@@ -572,6 +572,7 @@ function laprAddAccount(
                     'process_type' => 'lapr_rotation',
                     'arguments' => json_encode([
                         'account_id' => $accountId,
+                        'endpoint_id' => $endpointId,
                         'trigger' => 'enroll',
                         'author' => $userId,
                     ], JSON_UNESCAPED_SLASHES),
@@ -830,9 +831,9 @@ function laprStartRotation(array $data, SessionInterface $session, int $userId, 
          FROM ' . prefixTable('lapr_accounts') . ' AS a
          INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = a.item_id
          INNER JOIN ' . prefixTable('lapr_endpoints') . ' AS e ON e.id = a.endpoint_id
-         WHERE a.id = %i AND a.status IN %ls',
+         WHERE a.id = %i AND a.status != %s',
         $accountId,
-        ['active', 'error']
+        'deleted'
     );
     if ($account === null) {
         echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_account_not_found')], 'encode');
@@ -848,6 +849,14 @@ function laprStartRotation(array $data, SessionInterface $session, int $userId, 
     // … and drives the endpoint → require access to its SSH credential too.
     if (laprUserCanUseEndpoint((int) $account['endpoint_id'], $session) === false) {
         echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+        return;
+    }
+
+    if ((string) $account['status'] === 'paused') {
+        echo prepareExchangedData([
+            'error' => true,
+            'message' => $lang->get('lapr_account_paused_rotation_blocked'),
+        ], 'encode');
         return;
     }
 
@@ -886,6 +895,7 @@ function laprStartRotation(array $data, SessionInterface $session, int $userId, 
         'process_type' => 'lapr_rotation',
         'arguments' => json_encode([
             'account_id' => $accountId,
+            'endpoint_id' => (int) $account['endpoint_id'],
             'trigger' => 'manual',
             'author' => $userId,
             'allow_paused_endpoint' => $endpointPaused,

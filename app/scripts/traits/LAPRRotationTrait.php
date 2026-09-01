@@ -46,7 +46,7 @@ trait LAPRRotationTrait
     /**
      * Entry point for the 'lapr_rotation' process type.
      *
-     * Task arguments: { account_id, trigger: manual|scheduler|enroll, author }
+     * Task arguments: { account_id, endpoint_id, trigger: manual|scheduler|enroll, author }
      *
      * @param array $arguments Task arguments
      * @return void
@@ -199,7 +199,7 @@ trait LAPRRotationTrait
         // Read the SSH connection credential from its linked item.
         $sshSecret = laprReadItemPasswordAsTpUser((int) $account['ssh_credential_source'], $tpKeys['private_key'], $tpKeys['public_key']);
         if ($sshSecret === '') {
-            $this->laprUpdateEndpointCheckState(
+            $this->laprUpdateEndpointRotationState(
                 (int) $account['endpoint_id'],
                 $actorId,
                 LAPRSshService::ERR_AUTH_FAILED
@@ -220,7 +220,7 @@ trait LAPRRotationTrait
         // before opening any connection. A stored endpoint whose hostname was later
         // moved outside the allowlist must not be reachable by the rotator.
         if (laprIsHostnameAllowed((string) $account['hostname'], $this->settings) === false) {
-            $this->laprUpdateEndpointCheckState((int) $account['endpoint_id'], $actorId, 'ERR_HOSTNAME_NOT_ALLOWED');
+            $this->laprUpdateEndpointRotationState((int) $account['endpoint_id'], $actorId, 'ERR_HOSTNAME_NOT_ALLOWED');
             $this->laprFinalizeFailure($account, $actorId, 'ERR_HOSTNAME_NOT_ALLOWED', $trigger);
             return ['success' => false, 'error_code' => 'ERR_HOSTNAME_NOT_ALLOWED'];
         }
@@ -250,7 +250,7 @@ trait LAPRRotationTrait
         if ($connect['success'] !== true) {
             $service->disconnect();
             $code = isset($connect['error_code']) ? (string) $connect['error_code'] : LAPRSshService::ERR_UNKNOWN;
-            $this->laprUpdateEndpointCheckState((int) $account['endpoint_id'], $actorId, $code);
+            $this->laprUpdateEndpointRotationState((int) $account['endpoint_id'], $actorId, $code);
             if ($code === LAPRSshService::ERR_HOSTKEY_MISMATCH) {
                 laprAuditLog('hostkey_mismatch', (int) $account['endpoint_id'], $actorId, [
                     'account_id' => $accountId,
@@ -305,7 +305,13 @@ trait LAPRRotationTrait
         $service->disconnect();
         if ($change['success'] !== true) {
             $code = isset($change['error_code']) ? (string) $change['error_code'] : LAPRSshService::ERR_CHPASSWD_FAILED;
-            $this->laprUpdateEndpointCheckState((int) $account['endpoint_id'], $actorId, $code);
+            // A chpasswd rejection is scoped to this Linux account (PAM,
+            // locked account, stale username, etc.) and must not disable every
+            // other account on the endpoint. Only a transport loss observed
+            // while opening/running the remote command changes endpoint state.
+            if (laprIsTransientConnectionError($code) === true) {
+                $this->laprUpdateEndpointRotationState((int) $account['endpoint_id'], $actorId, $code);
+            }
             $this->laprFinalizeFailure($account, $actorId, $code, $trigger);
             return ['success' => false, 'error_code' => $code];
         }
@@ -420,7 +426,7 @@ trait LAPRRotationTrait
             'retry_at' => null,
             'updated_by' => $actorId,
         ], 'id = %i AND status != %s', $accountId, 'deleted');
-        $this->laprUpdateEndpointCheckState((int) $account['endpoint_id'], $actorId, null);
+        $this->laprUpdateEndpointRotationState((int) $account['endpoint_id'], $actorId, null);
 
         laprAuditLog('rotation', (int) $account['endpoint_id'], $actorId, [
             'trigger' => $trigger,
@@ -659,7 +665,12 @@ trait LAPRRotationTrait
             'retry_count' => $retryCount,
             'retry_at' => $retryAt,
         ], 'warning', $accountId, $errorCode, 'system');
-        $this->laprSendRotationFailureAlert($account, $errorCode, $trigger, 'retry_scheduled', $retryAt);
+        // Notify immediately on the first outage, then stay quiet while the
+        // configured retries run. A second notification is sent only if the
+        // account ultimately reaches the suspended state above.
+        if ($retryCount === 1) {
+            $this->laprSendRotationFailureAlert($account, $errorCode, $trigger, 'retry_scheduled', $retryAt);
+        }
     }
 
     /**
@@ -726,43 +737,56 @@ trait LAPRRotationTrait
     /**
      * Keep endpoint availability in step with real rotation connections. A
      * successful rotation confirms reachability; a network failure marks the
-     * endpoint unreachable, while host-key/privilege failures require action.
+     * endpoint unreachable, while host-key/credential failures require action.
+     *
+     * A rotation is not a full endpoint health check: it does not recollect OS
+     * or capability metadata. It therefore never refreshes last_check_at and
+     * never postpones next_check_at. A transient observation may only advance
+     * the next full check so recovery can be detected sooner.
      *
      * @param int         $endpointId Endpoint id
      * @param int         $actorId    Acting user
      * @param string|null $errorCode  Null on success
      * @return void
      */
-    private function laprUpdateEndpointCheckState(int $endpointId, int $actorId, ?string $errorCode): void
+    private function laprUpdateEndpointRotationState(int $endpointId, int $actorId, ?string $errorCode): void
     {
-        $currentStatus = DB::queryFirstField(
-            'SELECT status FROM ' . prefixTable('lapr_endpoints') . ' WHERE id = %i',
+        $endpoint = DB::queryFirstRow(
+            'SELECT status, next_check_at FROM ' . prefixTable('lapr_endpoints') . ' WHERE id = %i',
             $endpointId
         );
-        $paused = (string) $currentStatus === 'disabled';
-        $checkedAt = date('Y-m-d H:i:s');
-        $commonUpdate = [
-            'last_check_at' => $checkedAt,
+        if ($endpoint === null || (string) $endpoint['status'] === 'deleted') {
+            return;
+        }
+
+        $currentStatus = (string) $endpoint['status'];
+        $paused = $currentStatus === 'disabled';
+        $update = [
             'last_error' => $errorCode,
             'updated_by' => $actorId,
         ];
 
-        if ($paused === false && $currentStatus !== null && (string) $currentStatus !== 'deleted') {
-            DB::update(prefixTable('lapr_endpoints'), array_merge($commonUpdate, [
-                'status' => $errorCode === null ? 'active' : laprEndpointStatusForCheckFailure($errorCode),
-                'next_check_at' => laprComputeNextEndpointCheck($this->settings, null, $errorCode),
-            ]), 'id = %i AND status = %s', $endpointId, (string) $currentStatus);
+        if ($paused === false) {
+            $update['status'] = $errorCode === null ? 'active' : laprEndpointStatusForCheckFailure($errorCode);
         }
 
-        // A pause may race the status read or the first update. This second,
-        // status-qualified write refreshes diagnostics without ever re-enabling
-        // the endpoint or putting planned downtime on the retry cadence.
-        DB::update(prefixTable('lapr_endpoints'), array_merge($commonUpdate, [
-            'next_check_at' => laprComputeNextEndpointCheck(
-                $this->settings,
-                null,
-                null
-            ),
-        ]), 'id = %i AND status = %s', $endpointId, 'disabled');
+        if (laprIsTransientConnectionError((string) $errorCode) === true) {
+            $retryCheckAt = laprComputeNextEndpointCheck($this->settings, null, $errorCode);
+            $currentNextCheckAt = (string) ($endpoint['next_check_at'] ?? '');
+            $currentNextCheckTs = $currentNextCheckAt !== '' ? strtotime($currentNextCheckAt) : false;
+            $retryCheckTs = strtotime($retryCheckAt);
+            if ($currentNextCheckTs === false || ($retryCheckTs !== false && $retryCheckTs < $currentNextCheckTs)) {
+                $update['next_check_at'] = $retryCheckAt;
+            }
+        }
+
+        // Status qualification makes a concurrent pause authoritative. The
+        // second update keeps diagnostics current without ever re-enabling a
+        // paused endpoint or changing its normal health-check cadence.
+        if ($paused === false) {
+            DB::update(prefixTable('lapr_endpoints'), $update, 'id = %i AND status = %s', $endpointId, $currentStatus);
+        }
+        unset($update['status'], $update['next_check_at']);
+        DB::update(prefixTable('lapr_endpoints'), $update, 'id = %i AND status = %s', $endpointId, 'disabled');
     }
 }
