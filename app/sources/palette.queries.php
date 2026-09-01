@@ -44,6 +44,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 // Load functions
 require_once 'main.functions.php';
 require_once __DIR__ . '/palette.functions.php';
+require_once __DIR__ . '/search.functions.php';
 
 // init
 loadClasses('DB');
@@ -143,26 +144,12 @@ switch ($post_type) {
         if (count($accessibleFolders) > 0) {
             $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
-            // Belt-and-braces: exclude foreign personal folders (same rule as the
-            // search page, on top of the accessible-folders scope). The user's own
-            // personal tree (root titled with the user id + its children) stays in.
-            $otherPersonalFolders = [];
-            $pfRoot = DB::queryFirstRow(
-                'SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE title = %i',
-                (int) $session->get('user-id')
+            // Use the same ACL primitive as both search pages. In particular,
+            // own personal folders remain searchable at every nesting depth.
+            $searchableFolders = searchResolveFolderScope(
+                $accessibleFolders,
+                (array) ($session->get('user-forbiden_personal_folders') ?? [])
             );
-            if (empty($pfRoot['id']) === false) {
-                $pfRows = DB::query(
-                    'SELECT id FROM ' . prefixTable('nested_tree') . '
-                    WHERE personal_folder = 1 AND NOT parent_id = %i AND NOT title = %i',
-                    (int) $pfRoot['id'],
-                    (int) $session->get('user-id')
-                );
-                foreach ($pfRows as $pfRow) {
-                    $otherPersonalFolders[] = (int) $pfRow['id'];
-                }
-            }
-            $searchableFolders = array_values(array_diff($accessibleFolders, $otherPersonalFolders));
 
             if (count($searchableFolders) > 0) {
                 // Items — from the search cache (labels/logins/urls/tags, no secret).

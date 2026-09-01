@@ -42,8 +42,8 @@ declare(strict_types=1);
  * Resolve the folder scope a search may read from.
  *
  * This is the single authorization primitive of the search feature. It is
- * shared by find.queries.php (legacy quick search) and search.queries.php
- * so the two can never diverge.
+ * shared by find.queries.php (legacy quick search), search.queries.php, and
+ * palette.queries.php so the three entry points cannot diverge.
  *
  * Two rules, both mandatory:
  *  - a caller-supplied subtree only ever *narrows* the scope. It is

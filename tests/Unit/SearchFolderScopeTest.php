@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 
-// Real production logic (DB-free) shared by find.queries.php and
-// search.queries.php.
+// Real production logic (DB-free) shared by find.queries.php,
+// search.queries.php, and palette.queries.php.
 require_once __DIR__ . '/../../app/sources/search.functions.php';
 
 /**
@@ -45,6 +45,45 @@ class SearchFolderScopeTest extends TestCase
     public function testForeignPersonalFoldersAreSubtracted(): void
     {
         $this->assertSame([3, 9], searchResolveFolderScope([3, 7, 9], [7]));
+    }
+
+    public function testOwnDeeplyNestedPersonalFoldersRemainSearchable(): void
+    {
+        // 10 -> 11 -> 12 models a personal root, child, and grandchild.
+        // Only the foreign personal tree (20 -> 21) must be removed.
+        $this->assertSame(
+            [10, 11, 12],
+            searchResolveFolderScope([10, 11, 12, 20, 21], [20, 21])
+        );
+    }
+
+    public function testLimitedSearchCanTargetADeepOwnPersonalFolder(): void
+    {
+        $this->assertSame(
+            [12],
+            searchResolveFolderScope([10, 11, 12], [], [12])
+        );
+    }
+
+    public function testAllItemSearchHandlersUseTheSharedFolderScope(): void
+    {
+        foreach (['find.queries.php', 'search.queries.php', 'palette.queries.php'] as $handler) {
+            $source = file_get_contents(__DIR__ . '/../../app/sources/' . $handler);
+
+            $this->assertIsString($source);
+            $this->assertStringContainsString('searchResolveFolderScope(', $source, $handler);
+        }
+    }
+
+    public function testLegacyPersonalFolderDepthHeuristicIsNotUsed(): void
+    {
+        foreach (['find.queries.php', 'palette.queries.php'] as $handler) {
+            $source = file_get_contents(__DIR__ . '/../../app/sources/' . $handler);
+
+            $this->assertIsString($source);
+            $this->assertStringNotContainsString('NOT parent_id = %i AND NOT title = %i', $source, $handler);
+            $this->assertStringNotContainsString('c.id_tree NOT IN %ls_pf', $source, $handler);
+        }
     }
 
     public function testDenialBeatsAnExplicitlyRequestedSubtree(): void
