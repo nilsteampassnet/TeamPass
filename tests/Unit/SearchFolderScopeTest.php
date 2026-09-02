@@ -354,6 +354,31 @@ class SearchFolderScopeTest extends TestCase
         $this->assertStringContainsString('searchHydrateFolderRows(', $optionsSource);
     }
 
+    public function testRestoredFolderQueryUsesOnlyNamedMeekroArguments(): void
+    {
+        $source = file_get_contents(__DIR__ . '/../../app/sources/search.queries.php');
+        $this->assertIsString($source);
+
+        $where = 'WHERE folder.id = %i_selected_folder_id AND folder.id IN %li_folder_scope';
+        $this->assertStringContainsString($where, $source);
+        $this->assertStringNotContainsString(
+            'WHERE folder.id = %i AND folder.id IN %li_folder_scope',
+            $source
+        );
+
+        $meekro = new MeekroDB();
+        $this->assertSame(
+            'WHERE folder.id = 7 AND folder.id IN (7,8)',
+            $meekro->parse(
+                $where,
+                [
+                    'selected_folder_id' => 7,
+                    'folder_scope' => [7, 8],
+                ]
+            )
+        );
+    }
+
     public function testFolderFacetAndResetControlsAreWiredIntoTheSearchPage(): void
     {
         $view = file_get_contents(__DIR__ . '/../../app/pages/search.php');

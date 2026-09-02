@@ -404,10 +404,12 @@ if ($request->request->get('type') === 'filter_options') {
             $selectedFolderRows = DB::query(
                 'SELECT folder.id, folder.title, folder.nlevel
                 FROM ' . prefixTable('nested_tree') . ' AS folder
-                WHERE folder.id = %i AND folder.id IN %li_folder_scope
+                WHERE folder.id = %i_selected_folder_id AND folder.id IN %li_folder_scope
                 LIMIT 1',
-                $selectedFolderId,
-                $folderScope
+                [
+                    'selected_folder_id' => $selectedFolderId,
+                    'folder_scope' => $folderScope,
+                ]
             );
             $selectedFolders = searchHydrateFolderRows(
                 $selectedFolderRows,
