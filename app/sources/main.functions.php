@@ -58,6 +58,7 @@ require_once __DIR__ . '/log_display_logic.php';
 require_once __DIR__ . '/item_revisions_logic.php';
 require_once __DIR__ . '/password_strength.functions.php';
 require_once __DIR__ . '/roles_scope.functions.php';
+require_once __DIR__ . '/file_integrity.functions.php';
 // Owner resolution rules for personal objects, shared with the remediation tooling and its tests.
 require_once __DIR__ . '/../scripts/personal_sharekeys_logic.php';
 
@@ -282,14 +283,31 @@ function teampassGetSystemHealthOverview(array $SETTINGS, Language $lang): array
         $cronTooltip = $lang->get('health_cron_delayed_help');
     }
 
-    $unknownFilesData = DB::queryFirstField(
-        'SELECT valeur FROM ' . prefixTable('misc') . '
-        WHERE type = %s AND intitule = %s',
-        'admin',
-        'unknown_files'
+    $fileIntegrity = tpFileIntegrityLoadSummary(TEAMPASS_ROOT);
+    $fileIntegrityTask = DB::queryFirstRow(
+        'SELECT status, is_in_progress, finished_at, error_message
+        FROM ' . prefixTable('background_tasks') . '
+        WHERE process_type = %s
+        ORDER BY increment_id DESC
+        LIMIT 1',
+        'file_integrity_scan'
     );
-    $unknownFiles = is_string($unknownFilesData) ? json_decode($unknownFilesData, true) : null;
-    $unknownFilesCount = is_array($unknownFiles) ? count($unknownFiles) : 0;
+    if (is_array($fileIntegrityTask)) {
+        $fileIntegrityTaskActive = in_array((int) ($fileIntegrityTask['is_in_progress'] ?? -1), [0, 1], true)
+            && empty($fileIntegrityTask['finished_at']);
+        if ($fileIntegrityTaskActive) {
+            $fileIntegrity['running'] = true;
+            $fileIntegrity['status'] = 'running';
+        } elseif (
+            (string) ($fileIntegrityTask['status'] ?? '') === 'failed'
+            && (int) ($fileIntegrityTask['finished_at'] ?? 0) >= (int) ($fileIntegrity['completed_at'] ?? 0)
+        ) {
+            $fileIntegrity['status'] = 'error';
+            $fileIntegrity['last_error'] = (string) ($fileIntegrityTask['error_message'] ?? '');
+            $fileIntegrity['failed_at'] = (int) ($fileIntegrityTask['finished_at'] ?? 0);
+        }
+    }
+    $unknownFilesCount = (int) ($fileIntegrity['counts']['unknown'] ?? 0);
 
     $websocketEnabled = (string) ($SETTINGS['websocket_enabled'] ?? '0') === '1';
     $websocketHost = (string) ($SETTINGS['websocket_host'] ?? '127.0.0.1');
@@ -324,6 +342,7 @@ function teampassGetSystemHealthOverview(array $SETTINGS, Language $lang): array
             'tooltip' => $cronTooltip,
         ),
         'unknown_files' => array('count' => $unknownFilesCount),
+        'file_integrity' => $fileIntegrity,
         'websocket' => array(
             'status' => $websocketStatus,
             'text' => $websocketText,

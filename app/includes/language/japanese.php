@@ -1002,8 +1002,6 @@ return array(
     'path_not_a_file' => 'パスがファイルではありません',
     'file_not_writable' => 'ファイルが書き込み不可です',
     'failed_to_delete' => '削除に失敗しました',
-    'delete_unknown_files' => '不明なファイルを削除しますか?',
-    'unknown_files_should_be_deleted' => 'It is recommended to delete those files to prevent against mix of versions.',
     'remaining_lock_time' => 'Remaining lock time',
     'seconds' => 'seconds',
     'users_fetch_error' => 'Something went wrong fetching users',

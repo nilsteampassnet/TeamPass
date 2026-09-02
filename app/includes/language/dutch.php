@@ -1002,8 +1002,6 @@ return array(
     'path_not_a_file' => 'Pad is geen bestand',
     'file_not_writable' => 'Bestand is niet schrijfbaar',
     'failed_to_delete' => 'Verwijderen mislukt',
-    'delete_unknown_files' => 'Onbekende bestanden verwijderen?',
-    'unknown_files_should_be_deleted' => 'Het wordt aanbevolen deze bestanden te verwijderen om vermenging van versies te voorkomen',
     'remaining_lock_time' => 'Remaining lock time',
     'seconds' => 'seconds',
     'users_fetch_error' => 'Er ging iets mis bij het ophalen van gebruikers',

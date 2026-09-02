@@ -1002,8 +1002,6 @@ return array(
     'path_not_a_file' => 'Caminho não é um arquivo',
     'file_not_writable' => 'Arquivo não é gravável',
     'failed_to_delete' => 'Falha ao excluir',
-    'delete_unknown_files' => 'Excluir arquivos desconhecidos?',
-    'unknown_files_should_be_deleted' => 'É recomendado excluir esses arquivos para prevenir mistura de versões.',
     'remaining_lock_time' => 'Tempo de bloqueio restante',
     'seconds' => 'segundos',
     'users_fetch_error' => 'Algo deu errado ao buscar usuários',

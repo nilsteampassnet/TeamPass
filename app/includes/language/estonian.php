@@ -1002,8 +1002,6 @@ return array(
     'path_not_a_file' => 'Path is not a file',
     'file_not_writable' => 'File is not writable',
     'failed_to_delete' => 'Failed to delete',
-    'delete_unknown_files' => 'Delete unknown files?',
-    'unknown_files_should_be_deleted' => 'It is recommended to delete those files to prevent against mix of versions.',
     'remaining_lock_time' => 'Remaining lock time',
     'seconds' => 'seconds',
     'users_fetch_error' => 'Something went wrong fetching users',

@@ -1002,8 +1002,6 @@ return array(
     'path_not_a_file' => 'Pfad ist keine Datei',
     'file_not_writable' => 'Datei ist nicht beschreibbar',
     'failed_to_delete' => 'Löschen fehlgeschlagen',
-    'delete_unknown_files' => 'Unbekannte Dateien löschen?',
-    'unknown_files_should_be_deleted' => 'Es wird empfohlen, diese Dateien zu löschen, um Versionskonflikte zu vermeiden.',
     'remaining_lock_time' => 'Remaining lock time',
     'seconds' => 'seconds',
     'users_fetch_error' => 'Beim Abrufen der Benutzer ist ein Fehler aufgetreten',

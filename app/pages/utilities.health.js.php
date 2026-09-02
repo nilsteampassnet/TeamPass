@@ -81,6 +81,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
 var tpHealthReportCache = null;
 var tpHealthKey = "<?php echo $session->get('key'); ?>";
+var tpFileIntegrityOffset = 0;
+var tpFileIntegrityLimit = 100;
+var tpFileIntegrityPollTimer = null;
 
 
 var TP_HEALTH_L10N = {
@@ -93,6 +96,50 @@ var TP_HEALTH_L10N = {
     generic_error: "<?php echo addslashes($lang->get('error')); ?>",
     no_data: "<?php echo addslashes($lang->get('health_no_data')); ?>",
     not_available: "<?php echo addslashes($lang->get('health_not_available')); ?>",
+    seconds: "<?php echo addslashes($lang->get('seconds')); ?>",
+    file_integrity_never_run: "<?php echo addslashes($lang->get('health_file_integrity_never_run')); ?>",
+    file_integrity_no_result: "<?php echo addslashes($lang->get('health_file_integrity_no_result')); ?>",
+    file_integrity_running: "<?php echo addslashes($lang->get('health_file_integrity_running')); ?>",
+    file_integrity_stale: "<?php echo addslashes($lang->get('health_file_integrity_stale')); ?>",
+    file_integrity_scan_started: "<?php echo addslashes($lang->get('health_file_integrity_scan_started')); ?>",
+    file_integrity_scan_failed: "<?php echo addslashes($lang->get('health_file_integrity_scan_failed')); ?>",
+    file_integrity_modified: "<?php echo addslashes($lang->get('health_file_integrity_modified')); ?>",
+    file_integrity_missing: "<?php echo addslashes($lang->get('health_file_integrity_missing')); ?>",
+    file_integrity_unknown: "<?php echo addslashes($lang->get('health_file_integrity_unknown')); ?>",
+    file_integrity_legacy: "<?php echo addslashes($lang->get('health_file_integrity_legacy')); ?>",
+    file_integrity_development: "<?php echo addslashes($lang->get('health_file_integrity_development')); ?>",
+    file_integrity_warnings: "<?php echo addslashes($lang->get('health_file_integrity_warnings')); ?>",
+    file_integrity_critical: "<?php echo addslashes($lang->get('health_file_integrity_critical')); ?>",
+    file_integrity_no_issues: "<?php echo addslashes($lang->get('health_file_integrity_no_issues')); ?>",
+    file_integrity_no_cleanup_commands: "<?php echo addslashes($lang->get('health_file_integrity_no_cleanup_commands')); ?>",
+    file_integrity_page: "<?php echo addslashes($lang->get('health_file_integrity_page')); ?>",
+    file_integrity_expected_hash: "<?php echo addslashes($lang->get('health_file_integrity_expected_hash')); ?>",
+    file_integrity_actual_hash: "<?php echo addslashes($lang->get('health_file_integrity_actual_hash')); ?>",
+    file_integrity_reference_missing: "<?php echo addslashes($lang->get('health_file_integrity_reference_missing')); ?>",
+    file_integrity_reference_unreadable: "<?php echo addslashes($lang->get('health_file_integrity_reference_unreadable')); ?>",
+    file_integrity_report_invalid: "<?php echo addslashes($lang->get('health_file_integrity_report_invalid')); ?>",
+    file_permissions: "<?php echo addslashes($lang->get('health_file_permissions')); ?>",
+    file_permissions_unsupported: "<?php echo addslashes($lang->get('health_file_permissions_unsupported')); ?>",
+    file_permissions_remediation_unsupported: "<?php echo addslashes($lang->get('health_file_permissions_remediation_unsupported')); ?>",
+    file_permissions_no_commands: "<?php echo addslashes($lang->get('health_file_permissions_no_commands')); ?>",
+    file_permissions_actual_mode: "<?php echo addslashes($lang->get('health_file_permissions_actual_mode')); ?>",
+    file_permissions_expected: "<?php echo addslashes($lang->get('health_file_permissions_expected')); ?>",
+    file_permissions_affected: "<?php echo addslashes($lang->get('health_file_permissions_affected')); ?>",
+    file_permissions_samples: "<?php echo addslashes($lang->get('health_file_permissions_samples')); ?>",
+    file_permissions_reason_protected_writable: "<?php echo addslashes($lang->get('health_file_permissions_reason_protected_writable')); ?>",
+    file_permissions_reason_runtime_not_readable: "<?php echo addslashes($lang->get('health_file_permissions_reason_runtime_not_readable')); ?>",
+    file_permissions_reason_runtime_not_writable: "<?php echo addslashes($lang->get('health_file_permissions_reason_runtime_not_writable')); ?>",
+    file_permissions_reason_world_writable: "<?php echo addslashes($lang->get('health_file_permissions_reason_world_writable')); ?>",
+    file_permissions_reason_runtime_world_accessible: "<?php echo addslashes($lang->get('health_file_permissions_reason_runtime_world_accessible')); ?>",
+    file_permissions_reason_secret_not_readable: "<?php echo addslashes($lang->get('health_file_permissions_reason_secret_not_readable')); ?>",
+    file_permissions_reason_secret_world_accessible: "<?php echo addslashes($lang->get('health_file_permissions_reason_secret_world_accessible')); ?>",
+    file_permissions_reason_secret_group_writable: "<?php echo addslashes($lang->get('health_file_permissions_reason_secret_group_writable')); ?>",
+    file_permissions_reason_secret_writable: "<?php echo addslashes($lang->get('health_file_permissions_reason_secret_writable')); ?>",
+    file_permissions_reason_instance_data_world_accessible: "<?php echo addslashes($lang->get('health_file_permissions_reason_instance_data_world_accessible')); ?>",
+    file_permissions_reason_protected_not_readable: "<?php echo addslashes($lang->get('health_file_permissions_reason_protected_not_readable')); ?>",
+    file_permissions_reason_group_writable: "<?php echo addslashes($lang->get('health_file_permissions_reason_group_writable')); ?>",
+    file_permissions_reason_required_path_missing: "<?php echo addslashes($lang->get('health_file_permissions_reason_required_path_missing')); ?>",
+    file_permissions_reason_inspection_failed: "<?php echo addslashes($lang->get('health_file_permissions_reason_inspection_failed')); ?>",
     personal: "<?php echo addslashes($lang->get('health_items_personal')); ?>",
     shared: "<?php echo addslashes($lang->get('health_items_shared')); ?>",
     ok: "<?php echo addslashes($lang->get('health_check_ok')); ?>",
@@ -258,6 +305,10 @@ var TP_HEALTH_L10N = {
 };
 
 $(document).ready(function() {
+    if (window.location.hash === '#health-file-integrity') {
+        $('#tab-health-file-integrity').tab('show');
+    }
+
     $('#health-refresh-btn').on('click', function() {
         tpLoadHealthReport();
     });
@@ -272,6 +323,33 @@ $(document).ready(function() {
 
     $('#health-corrupted-items-show-btn').on('click', function() {
         tpShowCorruptedItemsList();
+    });
+
+    $('#health-file-integrity-scan-btn').on('click', function() {
+        tpStartFileIntegrityScan();
+    });
+
+    $('#health-file-integrity-category').on('change', function() {
+        tpFileIntegrityOffset = 0;
+        tpLoadFileIntegrityIssues();
+    });
+
+    $('#health-file-integrity-prev').on('click', function() {
+        tpFileIntegrityOffset = Math.max(0, tpFileIntegrityOffset - tpFileIntegrityLimit);
+        tpLoadFileIntegrityIssues();
+    });
+
+    $('#health-file-integrity-next').on('click', function() {
+        tpFileIntegrityOffset += tpFileIntegrityLimit;
+        tpLoadFileIntegrityIssues();
+    });
+
+    $('#health-file-integrity-cleanup-copy-btn').on('click', function() {
+        tpCopyHealthCommandBlock('health-file-integrity-cleanup-command');
+    });
+
+    $('#health-file-permissions-copy-btn').on('click', function() {
+        tpCopyHealthCommandBlock('health-file-permissions-command');
     });
 
     $('#health-runtime-logs-check-btn').on('click', function() {
@@ -347,6 +425,7 @@ function tpRenderHealthReport(report) {
 
     tpRenderOverview(report);
     tpRenderSystem(report);
+    tpRenderFileIntegrity(report);
     tpRenderDatabase(report);
     tpRenderCrypto(report);
     tpRenderBackups(report);
@@ -391,9 +470,9 @@ function tpRenderOverview(report) {
     var cron = report.overview && report.overview.cron ? report.overview.cron : null;
     $('#health-cron-status').html(tpStatusToBadge(cron ? cron.status : 'info'));
 
-    // Unknown files
-    var unknown = report.overview && report.overview.unknown_files ? report.overview.unknown_files.count : 0;
-    $('#health-unknown-files-count').text(Number(unknown || 0));
+    // File integrity
+    var fileIntegrity = report.overview && report.overview.file_integrity ? report.overview.file_integrity : {};
+    $('#health-file-integrity-overview-status').html(tpFileIntegrityStatusBadge(fileIntegrity));
 
     // Migration progress
     var mig = report.overview && report.overview.migration ? report.overview.migration : null;
@@ -751,6 +830,388 @@ function tpLaprFormatTimestamp(value) {
     }
     var date = new Date(dateValue);
     return isNaN(date.getTime()) ? String(value) : date.toLocaleString(navigator.language || undefined);
+}
+
+function tpFileIntegrityStatusBadge(summary) {
+    var status = String((summary && summary.status) || 'not_run').toLowerCase();
+    if (summary && summary.running) {
+        status = 'running';
+    }
+    if (status === 'success') {
+        return '<span class="badge badge-success">' + tpEscapeHtml(TP_HEALTH_L10N.status_ok) + '</span>';
+    }
+    if (status === 'warning') {
+        return '<span class="badge badge-warning">' + tpEscapeHtml(TP_HEALTH_L10N.status_warning) + '</span>';
+    }
+    if (status === 'stale') {
+        return '<span class="badge badge-warning">' + tpEscapeHtml(TP_HEALTH_L10N.file_integrity_stale) + '</span>';
+    }
+    if (status === 'danger' || status === 'error') {
+        return '<span class="badge badge-danger">' + tpEscapeHtml(TP_HEALTH_L10N.status_error) + '</span>';
+    }
+    if (status === 'running') {
+        return '<span class="badge badge-info">' + tpEscapeHtml(TP_HEALTH_L10N.file_integrity_running) + '</span>';
+    }
+    return '<span class="badge badge-secondary">' + tpEscapeHtml(TP_HEALTH_L10N.file_integrity_never_run) + '</span>';
+}
+
+function tpRenderFileIntegrity(report) {
+    var summary = report.overview && report.overview.file_integrity
+        ? report.overview.file_integrity
+        : {};
+    var counts = summary.counts || {};
+    var hasResult = Boolean(summary.has_result);
+    var running = Boolean(summary.running);
+
+    $('#health-file-integrity-status').html(tpFileIntegrityStatusBadge(summary));
+    $('#health-file-integrity-overview-status').html(tpFileIntegrityStatusBadge(summary));
+    var overviewStatus = running ? 'running' : String(summary.status || 'not_run');
+    var overviewClass = 'bg-secondary';
+    if (overviewStatus === 'success') overviewClass = 'bg-success';
+    if (overviewStatus === 'warning' || overviewStatus === 'stale') overviewClass = 'bg-warning';
+    if (overviewStatus === 'danger' || overviewStatus === 'error') overviewClass = 'bg-danger';
+    if (overviewStatus === 'running') overviewClass = 'bg-info';
+    $('#health-file-integrity-overview-box')
+        .removeClass('bg-secondary bg-success bg-warning bg-danger bg-info')
+        .addClass(overviewClass);
+    $('#health-file-integrity-running').toggle(running);
+    var lastError = '';
+    if (summary.reference_missing) {
+        lastError = TP_HEALTH_L10N.file_integrity_reference_missing;
+    } else if (summary.reference_unreadable) {
+        lastError = TP_HEALTH_L10N.file_integrity_reference_unreadable;
+    } else if (summary.report_invalid) {
+        lastError = TP_HEALTH_L10N.file_integrity_report_invalid;
+    } else {
+        lastError = String(summary.last_error || '');
+    }
+    $('#health-file-integrity-error')
+        .toggle(!running && String(summary.status || '') === 'error' && lastError !== '')
+        .text(lastError !== '' ? TP_HEALTH_L10N.file_integrity_scan_failed + ' ' + lastError : '');
+    $('#health-file-integrity-scan-btn').prop('disabled', running);
+    $('#health-file-integrity-results').toggle(hasResult);
+    $('#health-file-integrity-checked').text(Number(counts.checked || 0));
+    $('#health-file-integrity-modified').text(Number(counts.modified || 0));
+    $('#health-file-integrity-missing').text(Number(counts.missing || 0));
+    $('#health-file-integrity-unknown').text(Number(counts.unknown || 0));
+    $('#health-file-integrity-legacy').text(Number(counts.legacy || 0));
+    $('#health-file-integrity-development').text(Number(counts.development || 0));
+    $('#health-file-integrity-warnings').text(Number(counts.warnings || 0));
+
+    var permissions = summary.permissions || {};
+    var permissionCounts = permissions.counts || {};
+    var platform = permissions.platform || {};
+    var identity = permissions.identity || {};
+    var distribution = String(platform.distribution_name || platform.distribution_id || platform.os_family || '-');
+    if (platform.distribution_version) {
+        distribution += ' ' + String(platform.distribution_version);
+    }
+    $('#health-file-permissions-checked').text(
+        permissions.scan_supported ? Number(permissionCounts.checked || 0) : '-'
+    );
+    $('#health-file-permissions-issues').text(
+        permissions.scan_supported ? Number(permissionCounts.issues || 0) : '-'
+    );
+    $('#health-file-permissions-distribution').text(distribution);
+    $('#health-file-permissions-web-user').text(
+        identity.web_user
+            ? String(identity.web_user) + (identity.web_group ? ':' + String(identity.web_group) : '')
+            : '-'
+    );
+    var permissionNotice = '';
+    if (permissions.has_result === false) {
+        permissionNotice = TP_HEALTH_L10N.file_integrity_never_run;
+    } else if (permissions.scan_supported === false) {
+        permissionNotice = TP_HEALTH_L10N.file_permissions_unsupported;
+    } else if (permissions.remediation_supported === false) {
+        permissionNotice = TP_HEALTH_L10N.file_permissions_remediation_unsupported;
+    }
+    $('#health-file-permissions-notice').toggle(permissionNotice !== '').text(permissionNotice);
+
+    $('#health-file-integrity-last-scan').text(
+        hasResult && Number(summary.completed_at || 0) > 0
+            ? tpLaprFormatTimestamp(summary.completed_at)
+            : TP_HEALTH_L10N.file_integrity_never_run
+    );
+    $('#health-file-integrity-duration').text(
+        hasResult
+            ? (Number(summary.duration_ms || 0) / 1000).toFixed(2) + ' ' + TP_HEALTH_L10N.seconds
+            : '-'
+    );
+
+    if (hasResult) {
+        tpLoadFileIntegrityIssues();
+    }
+    if (running) {
+        tpScheduleFileIntegrityPoll();
+    } else if (tpFileIntegrityPollTimer !== null) {
+        clearTimeout(tpFileIntegrityPollTimer);
+        tpFileIntegrityPollTimer = null;
+    }
+}
+
+function tpStartFileIntegrityScan() {
+    var $button = $('#health-file-integrity-scan-btn');
+    $button.prop('disabled', true);
+    $('#health-file-integrity-running').show();
+
+    $.post(
+        'sources/utilities.queries.php',
+        {
+            type: 'health_start_file_integrity_scan',
+            data: prepareExchangedData(JSON.stringify({}), 'encode', tpHealthKey),
+            key: tpHealthKey
+        },
+        function(data) {
+            try {
+                data = prepareExchangedData(data, 'decode', tpHealthKey);
+            } catch (e) {
+                $button.prop('disabled', false);
+                $('#health-file-integrity-running').hide();
+                toastr.error(TP_HEALTH_L10N.file_integrity_scan_failed);
+                return;
+            }
+            if (!data || data.error) {
+                $button.prop('disabled', false);
+                $('#health-file-integrity-running').hide();
+                toastr.error((data && data.message) || TP_HEALTH_L10N.file_integrity_scan_failed);
+                return;
+            }
+            tpApplyFileIntegritySummary(data.summary || {});
+            toastr.info(TP_HEALTH_L10N.file_integrity_scan_started);
+            tpScheduleFileIntegrityPoll();
+        }
+    ).fail(function() {
+        $button.prop('disabled', false);
+        $('#health-file-integrity-running').hide();
+        toastr.error(TP_HEALTH_L10N.file_integrity_scan_failed);
+    });
+}
+
+function tpApplyFileIntegritySummary(summary) {
+    var report = tpHealthReportCache || {overview: {}};
+    if (!report.overview) {
+        report.overview = {};
+    }
+    report.overview.file_integrity = summary || {};
+    tpHealthReportCache = report;
+    tpRenderFileIntegrity(report);
+}
+
+function tpScheduleFileIntegrityPoll() {
+    if (tpFileIntegrityPollTimer !== null) {
+        clearTimeout(tpFileIntegrityPollTimer);
+    }
+    tpFileIntegrityPollTimer = setTimeout(tpPollFileIntegrityStatus, 2000);
+}
+
+function tpPollFileIntegrityStatus() {
+    tpFileIntegrityPollTimer = null;
+    $.post(
+        'sources/utilities.queries.php',
+        {
+            type: 'health_get_file_integrity_status',
+            data: prepareExchangedData(JSON.stringify({}), 'encode', tpHealthKey),
+            key: tpHealthKey
+        },
+        function(data) {
+            try {
+                data = prepareExchangedData(data, 'decode', tpHealthKey);
+            } catch (e) {
+                $('#health-file-integrity-scan-btn').prop('disabled', false);
+                $('#health-file-integrity-running').hide();
+                toastr.error(TP_HEALTH_L10N.file_integrity_scan_failed);
+                return;
+            }
+            if (!data || data.error) {
+                $('#health-file-integrity-scan-btn').prop('disabled', false);
+                $('#health-file-integrity-running').hide();
+                toastr.error((data && data.message) || TP_HEALTH_L10N.file_integrity_scan_failed);
+                return;
+            }
+
+            tpApplyFileIntegritySummary(data.summary || {});
+            if (data.summary && data.summary.running) {
+                tpScheduleFileIntegrityPoll();
+                return;
+            }
+            if (String(data.task_status || '') === 'failed') {
+                toastr.error(data.task_error || TP_HEALTH_L10N.file_integrity_scan_failed);
+                return;
+            }
+            tpLoadHealthReport();
+        }
+    ).fail(function() {
+        $('#health-file-integrity-scan-btn').prop('disabled', false);
+        $('#health-file-integrity-running').hide();
+        toastr.error(TP_HEALTH_L10N.file_integrity_scan_failed);
+    });
+}
+
+function tpFileIntegrityCategoryLabel(category) {
+    var labels = {
+        modified: TP_HEALTH_L10N.file_integrity_modified,
+        missing: TP_HEALTH_L10N.file_integrity_missing,
+        unknown: TP_HEALTH_L10N.file_integrity_unknown,
+        legacy: TP_HEALTH_L10N.file_integrity_legacy,
+        development: TP_HEALTH_L10N.file_integrity_development,
+        warnings: TP_HEALTH_L10N.file_integrity_warnings,
+        permissions: TP_HEALTH_L10N.file_permissions
+    };
+    return labels[category] || category;
+}
+
+function tpFileIntegrityCategoryBadge(category) {
+    var badge = 'secondary';
+    if (category === 'modified' || category === 'missing') badge = 'danger';
+    if (category === 'unknown' || category === 'legacy' || category === 'warnings') badge = 'warning';
+    if (category === 'permissions') badge = 'info';
+    return '<span class="badge badge-' + badge + '">' + tpEscapeHtml(tpFileIntegrityCategoryLabel(category)) + '</span>';
+}
+
+function tpFileIntegrityIssueDetails(category, item) {
+    if (category === 'modified') {
+        return tpEscapeHtml(TP_HEALTH_L10N.file_integrity_expected_hash) + ': <code>'
+            + tpEscapeHtml(item.expected || '-') + '</code><br>'
+            + tpEscapeHtml(TP_HEALTH_L10N.file_integrity_actual_hash) + ': <code>'
+            + tpEscapeHtml(item.actual || '-') + '</code>';
+    }
+    if (category === 'warnings') {
+        return tpEscapeHtml(item.message || '-');
+    }
+    if (category === 'unknown' && item.critical) {
+        return '<span class="badge badge-danger">' + tpEscapeHtml(TP_HEALTH_L10N.file_integrity_critical) + '</span>';
+    }
+    if (category === 'permissions') {
+        var reasons = {
+            protected_writable: TP_HEALTH_L10N.file_permissions_reason_protected_writable,
+            runtime_not_readable: TP_HEALTH_L10N.file_permissions_reason_runtime_not_readable,
+            runtime_not_writable: TP_HEALTH_L10N.file_permissions_reason_runtime_not_writable,
+            world_writable: TP_HEALTH_L10N.file_permissions_reason_world_writable,
+            runtime_world_accessible: TP_HEALTH_L10N.file_permissions_reason_runtime_world_accessible,
+            secret_not_readable: TP_HEALTH_L10N.file_permissions_reason_secret_not_readable,
+            secret_world_accessible: TP_HEALTH_L10N.file_permissions_reason_secret_world_accessible,
+            secret_group_writable: TP_HEALTH_L10N.file_permissions_reason_secret_group_writable,
+            secret_writable: TP_HEALTH_L10N.file_permissions_reason_secret_writable,
+            instance_data_world_accessible: TP_HEALTH_L10N.file_permissions_reason_instance_data_world_accessible,
+            protected_not_readable: TP_HEALTH_L10N.file_permissions_reason_protected_not_readable,
+            group_writable: TP_HEALTH_L10N.file_permissions_reason_group_writable,
+            required_path_missing: TP_HEALTH_L10N.file_permissions_reason_required_path_missing,
+            inspection_failed: TP_HEALTH_L10N.file_permissions_reason_inspection_failed
+        };
+        var severityClass = String(item.severity || '') === 'error' ? 'danger' : 'warning';
+        var details = '<span class="badge badge-' + severityClass + '">'
+            + tpEscapeHtml(String(item.severity || TP_HEALTH_L10N.status_warning)) + '</span> '
+            + tpEscapeHtml(reasons[item.reason] || item.reason || '-');
+        details += '<br>' + tpEscapeHtml(TP_HEALTH_L10N.file_permissions_actual_mode) + ': <code>'
+            + tpEscapeHtml(item.actual_mode || '-') + '</code>';
+        details += '<br>' + tpEscapeHtml(TP_HEALTH_L10N.file_permissions_expected) + ': <code>'
+            + tpEscapeHtml(item.expected || '-') + '</code>';
+        details += '<br>' + tpEscapeHtml(TP_HEALTH_L10N.file_permissions_affected) + ': '
+            + Number(item.affected_count || 1);
+        var samples = Array.isArray(item.samples) ? item.samples : [];
+        if (Number(item.affected_count || 1) > 1 && samples.length > 0) {
+            details += '<br>' + tpEscapeHtml(TP_HEALTH_L10N.file_permissions_samples) + ':<br>';
+            details += samples.map(function(sample) {
+                return '<code>' + tpEscapeHtml(sample.path || '-') + '</code> ('
+                    + tpEscapeHtml(sample.actual_mode || '-') + ')';
+            }).join('<br>');
+        }
+        return details;
+    }
+    return '-';
+}
+
+function tpHealthFormatMessage(template, values) {
+    var formatted = String(template || '');
+    values.forEach(function(value) {
+        formatted = formatted.replace('%s', String(value));
+    });
+    return formatted;
+}
+
+function tpLoadFileIntegrityIssues() {
+    var category = String($('#health-file-integrity-category').val() || 'all');
+    $.post(
+        'sources/utilities.queries.php',
+        {
+            type: 'health_get_file_integrity_issues',
+            data: prepareExchangedData(JSON.stringify({
+                category: category,
+                offset: tpFileIntegrityOffset,
+                limit: tpFileIntegrityLimit
+            }), 'encode', tpHealthKey),
+            key: tpHealthKey
+        },
+        function(data) {
+            try {
+                data = prepareExchangedData(data, 'decode', tpHealthKey);
+            } catch (e) {
+                $('#health-file-integrity-list').html(
+                    '<tr><td colspan="3" class="text-muted">'
+                    + tpEscapeHtml(TP_HEALTH_L10N.generic_error) + '</td></tr>'
+                );
+                return;
+            }
+            if (!data || data.error || !data.page) {
+                $('#health-file-integrity-list').html(
+                    '<tr><td colspan="3" class="text-muted">'
+                    + tpEscapeHtml((data && data.message) || TP_HEALTH_L10N.file_integrity_no_result)
+                    + '</td></tr>'
+                );
+                return;
+            }
+
+            var page = data.page;
+            var rows = '';
+            (page.items || []).forEach(function(item) {
+                var itemCategory = String(item.category || page.category || category);
+                rows += '<tr><td>' + tpFileIntegrityCategoryBadge(itemCategory) + '</td>'
+                    + '<td><code>' + tpEscapeHtml(item.path || '-') + '</code></td>'
+                    + '<td>' + tpFileIntegrityIssueDetails(itemCategory, item) + '</td></tr>';
+            });
+            if (!rows) {
+                rows = '<tr><td colspan="3" class="text-muted">'
+                    + tpEscapeHtml(TP_HEALTH_L10N.file_integrity_no_issues) + '</td></tr>';
+            }
+            $('#health-file-integrity-list').html(rows);
+            var cleanupPlan = Array.isArray(data.cleanup_plan) ? data.cleanup_plan.join('\n') : '';
+            $('#health-file-integrity-cleanup-command').text(
+                cleanupPlan || TP_HEALTH_L10N.file_integrity_no_cleanup_commands
+            );
+            $('#health-file-integrity-cleanup-copy-btn').prop('disabled', cleanupPlan === '');
+            var permissionsPlan = Array.isArray(data.permissions_plan) ? data.permissions_plan.join('\n') : '';
+            $('#health-file-permissions-command').text(
+                permissionsPlan || TP_HEALTH_L10N.file_permissions_no_commands
+            );
+            $('#health-file-permissions-copy-btn').prop('disabled', permissionsPlan === '');
+
+            var total = Number(page.total || 0);
+            var offset = Number(page.offset || 0);
+            var shown = (page.items || []).length;
+            var first = total > 0 ? offset + 1 : 0;
+            var last = offset + shown;
+            $('#health-file-integrity-page-info').text(
+                tpHealthFormatMessage(TP_HEALTH_L10N.file_integrity_page, [first, last, total])
+            );
+            $('#health-file-integrity-prev').prop('disabled', offset <= 0);
+            $('#health-file-integrity-next').prop('disabled', offset + Number(page.limit || tpFileIntegrityLimit) >= total);
+        }
+    ).fail(function() {
+        $('#health-file-integrity-list').html(
+            '<tr><td colspan="3" class="text-muted">'
+            + tpEscapeHtml(TP_HEALTH_L10N.generic_error) + '</td></tr>'
+        );
+    });
+}
+
+function tpCopyHealthCommandBlock(elementId) {
+    var text = $('#' + elementId).text() || '';
+    tpCopyToClipboard(
+        text,
+        function() { toastr.success(TP_HEALTH_L10N.copied); },
+        function() { toastr.error(TP_HEALTH_L10N.clipboard_error || TP_HEALTH_L10N.generic_error); }
+    );
 }
 
 function tpRenderSystem(report) {

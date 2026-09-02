@@ -727,10 +727,28 @@ function loadSystemHealth() {
                 } else {
                     cronInfo.removeAttr('title').hide()
                 }
-                updateHealthBadge('health-unknown-files',
-                    data.unknown_files.count > 0 ? 'warning' : 'success',
-                    data.unknown_files.count
-                )
+                const fileIntegrity = data.file_integrity || {}
+                const fileIntegrityCounts = fileIntegrity.counts || {}
+                let fileIntegrityStatus = fileIntegrity.status || 'secondary'
+                let fileIntegrityText = Number(fileIntegrityCounts.total_issues || 0)
+                if (fileIntegrity.running) {
+                    fileIntegrityStatus = 'info'
+                    fileIntegrityText = '<?php echo addslashes($lang->get('health_file_integrity_running')); ?>'
+                } else if (fileIntegrityStatus === 'danger') {
+                    fileIntegrityStatus = 'danger'
+                } else if (fileIntegrityStatus === 'error') {
+                    fileIntegrityStatus = 'danger'
+                    fileIntegrityText = '<?php echo addslashes($lang->get('error')); ?>'
+                } else if (fileIntegrityStatus === 'stale') {
+                    fileIntegrityStatus = 'warning'
+                    fileIntegrityText = '<?php echo addslashes($lang->get('health_file_integrity_stale')); ?>'
+                } else if (!fileIntegrity.has_result) {
+                    fileIntegrityStatus = 'secondary'
+                    fileIntegrityText = '<?php echo addslashes($lang->get('health_file_integrity_never_run')); ?>'
+                } else if (fileIntegrityStatus !== 'warning' && fileIntegrityStatus !== 'success') {
+                    fileIntegrityStatus = 'secondary'
+                }
+                updateHealthBadge('health-file-integrity', fileIntegrityStatus, fileIntegrityText)
                 // WebSocket status
                 if (data.websocket) {
                     updateWebSocketUI(data.websocket)
@@ -1334,238 +1352,6 @@ function performSimulateUserKeyChangeDuration() {
             }
 
             requestRunning = false;
-        }
-    );
-}
-
-/**
- * Perform project files integrity check
- */
-function performProjectFilesIntegrityCheck(refreshingData = false)
-{
-    if (requestRunning === true) {
-        return false;
-    }
-
-    requestRunning = true;
-    $('#check-project-files-btn').html('<i class="fa-solid fa-spinner fa-spin"></i>');
-
-    // Remove the file from the list
-    if (refreshingData === false) {
-        $('#files-integrity-result').remove();
-        $('#files-integrity-result-container').addClass('hidden');
-    }
-
-    $.post(
-        "sources/admin.queries.php", {
-            type: "filesIntegrityCheck",
-            key: "<?php echo $session->get('key'); ?>"
-        },
-        function(data) {
-            // Handle server answer
-            try {
-                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
-            } catch (e) {
-                // error
-                toastr.remove();
-                toastr.error(
-                    '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
-                    '', {
-                        closeButton: true,
-                        positionClass: 'toast-bottom-right'
-                    }
-                );
-                return false;
-            }
-            
-            // Build warnings block (directories that could not be scanned)
-            let warningsHtml = '';
-            if (data.warnings && data.warnings.length > 0) {
-                warningsHtml = '<div class="alert alert-warning py-2 mb-2" role="alert">' +
-                    '<i class="fa-solid fa-triangle-exclamation mr-2"></i>' +
-                    '<strong>Warning:</strong> The following directories could not be scanned (permission denied):<ul class="mb-0 mt-1">';
-                data.warnings.forEach(function(w) {
-                    warningsHtml += '<li><code>' + $('<div>').text(w).html() + '</code></li>';
-                });
-                warningsHtml += '</ul></div>';
-            }
-
-            let html = '';
-            const integrityModalTitle = '<i class="fas fa-eye fa-lg warning mr-2"></i>'
-                + htmlEncode(<?php echo json_encode($lang->get('files_integrity_check'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>);
-            const cautionModalTitle = '<i class="fa-solid fa-triangle-exclamation fa-lg warning mr-2"></i>'
-                + htmlEncode(<?php echo json_encode($lang->get('caution'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>);
-            const deleteUnknownFilesMessage = <?php echo json_encode($lang->get('delete_unknown_files'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
-            const deleteLabel = <?php echo json_encode($lang->get('delete'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
-            const cancelLabel = <?php echo json_encode($lang->get('cancel'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
-            const closeLabel = <?php echo json_encode($lang->get('close'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
-            if (data.error === false) {
-                html = warningsHtml + '<i class="fa-solid fa-circle-check text-success mr-2"></i>Project files integrity check is successfull';
-            } else {
-                // Create a list
-                let ul = '<div class="border rounded p-2" style="max-height: 400px; overflow-y: auto;"><ul id="files-integrity-result" class="">';
-                let files = JSON.parse(data.files);
-                let numberOfFiles = Object.keys(files).length;
-                $.each(files, function(i, value) {
-                    ul += '<li value="'+i+'">' + value + '</li>';
-                });
-
-                // Prepare the HTML
-                html = warningsHtml + '<b>' + numberOfFiles + '</b> <?php echo $lang->get('files_are_not_expected_ones'); ?>.' +
-                    '<div class="alert alert-light" role="alert" id="files-integrity-result-container">' +
-                    '<div class="alert alert-warning" role="alert"><?php echo $lang->get('unknown_files_should_be_deleted'); ?>' +
-                    '<div class="btn-group ml-2" role="group">'+
-                        '<button type="button" class="btn btn-primary btn-sm infotip" id="refresh_unknown_files" title="<?php echo $lang->get('refresh'); ?>"><i class="fa-solid fa-arrows-rotate"></i></button>' +
-                        '<button type="button" class="btn btn-danger btn-sm infotip" id="delete_unknown_files" title="<?php echo $lang->get('delete'); ?>"><i class="fa-solid fa-trash"></i></button>' +
-                    '</div></div>' +
-                    ul + '</ul></div></div>';                        
-
-                // Create the button to show/hide the list
-                $(document)
-                    .off('click.tpFilesIntegrity', '#refresh_unknown_files')
-                    .on('click.tpFilesIntegrity', '#refresh_unknown_files', function(event) {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        // Show loader
-                        $('#files-integrity-result').html('<i class="fa-solid fa-spinner fa-spin"></i>');
-                        // Launch the integrity check
-                        performProjectFilesIntegrityCheck(true);
-                    })
-                    .off('click.tpFilesIntegrity', '#delete_unknown_files')
-                    .on('click.tpFilesIntegrity', '#delete_unknown_files', function(event) {
-                        event.preventDefault();
-                        event.stopPropagation();
-
-                        const restoreIntegrityResults = function() {
-                            $('#warningModalButtonAction').off('click.tpDeleteUnknownFiles');
-                            $('#warningModalButtonClose').off('click.tpDeleteUnknownFiles');
-                            showModalDialogBox(
-                                '#warningModal',
-                                integrityModalTitle,
-                                html,
-                                '',
-                                closeLabel,
-                                true
-                            );
-                        };
-
-                        showModalDialogBox(
-                            '#warningModal',
-                            cautionModalTitle,
-                            '<div>' + htmlEncode(deleteUnknownFilesMessage) + '</div>',
-                            deleteLabel,
-                            cancelLabel,
-                            false,
-                            true,
-                            false // no cross: leaving the confirmation must go through
-                                  // Delete or Cancel, otherwise the report is lost
-                        );
-
-                        $('#warningModalButtonAction')
-                            .off('click')
-                            .one('click.tpDeleteUnknownFiles', function(confirmEvent) {
-                                confirmEvent.preventDefault();
-                                confirmEvent.stopPropagation();
-                                restoreIntegrityResults();
-                                $('#files-integrity-result').html('<i class="fa-solid fa-spinner fa-spin"></i>');
-                                performDeleteFilesIntegrityCheck();
-                            });
-
-                        $('#warningModalButtonClose')
-                            .off('click.tpDeleteUnknownFiles')
-                            .one('click.tpDeleteUnknownFiles', function(cancelEvent) {
-                                cancelEvent.preventDefault();
-                                cancelEvent.stopImmediatePropagation();
-                                restoreIntegrityResults();
-                                return false;
-                            });
-
-                        $('#warningModal')
-                            .off('hidden.bs.modal.tpDeleteUnknownFiles')
-                            .one('hidden.bs.modal.tpDeleteUnknownFiles', function() {
-                                $('#warningModalButtonAction').off('click.tpDeleteUnknownFiles');
-                                $('#warningModalButtonClose').off('click.tpDeleteUnknownFiles');
-                            });
-
-                        return false;
-                    });
-            }
-            // Display the result
-            //$('#project-files-check-status').html(html);
-
-            // Prepare modal
-            showModalDialogBox(
-                '#warningModal',
-                integrityModalTitle,
-                html,
-                '',
-                closeLabel,
-                true
-            );
-
-            $('#check-project-files-btn').html('<i class="fas fa-caret-right"></i>');
-
-            requestRunning = false;
-        }
-    );
-}
-
-/**
- * Perform delete unknown files
- */
-function performDeleteFilesIntegrityCheck()
-{
-    $.post(
-        "sources/admin.queries.php", {
-            type: "deleteFilesIntegrityCheck",
-            key: "<?php echo $session->get('key'); ?>"
-        },
-        function(data) {
-            // Handle server answer
-            try {
-                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
-            } catch (e) {
-                // error
-                toastr.remove();
-                toastr.error(
-                    '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
-                    '', {
-                        closeButton: true,
-                        positionClass: 'toast-bottom-right'
-                    }
-                );
-                return false;
-            }
-
-            if (data.deletionResults === '') {
-                // No files to delete
-                $('#files-integrity-result').html('<i class="fa-solid fa-circle-check text-success mr-2"></i><?php echo $session->get('done'); ?>');
-                return false;
-            }
-
-            // Display the result as a list
-            // Initialize the HTML output
-            let output = '<ul style="margin-left:-60px;">';
-            let showSuccessful = true;
-            
-            // Process each file result
-            $.each(data.deletionResults, function(file, result) {
-                // Skip successful operations if not showing them
-                if (!showSuccessful && result.success) {
-                    return true; // continue to next iteration
-                }
-                
-                //const className = result.success ? 'success' : 'error';
-                const icon = result.success ? '<i class="fa-solid fa-check text-success mr-1"></i>' : '<i class="fa-solid fa-xmark text-danger mr-1"></i>';
-                const message = result.success ? '<?php echo $lang->get('server_returned_data');?>' : 'Error: ' + result.error;
-                
-                output += '<li>' + icon + '<b>' + file + '</b><br/>' + message + '</li>';
-            });
-            
-            output += '</ul>';
-
-            $('#files-integrity-result').html(output);
-
         }
     );
 }

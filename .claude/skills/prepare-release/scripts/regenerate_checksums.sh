@@ -3,9 +3,10 @@
 # regenerate_checksums.sh — Regenerate the TeamPass file-integrity reference files.
 #
 # Produces the root `files_reference.txt` from the git index (format: "<path> <md5>",
-# one entry per tracked file, the file itself excluded), then copies it over
+# one entry per tracked runtime/deployment file, repository artifacts and the file
+# itself excluded), then copies it over
 # `app/files_reference.txt` — the copy the application actually reads
-# (`verifyFileHashes()` / `filesIntegrityCheck()` in app/sources/admin.queries.php).
+# (`tpFileIntegrityScan()` in app/sources/file_integrity.functions.php).
 #
 # Run it LAST, after every other commit of the release, otherwise the hashes are stale.
 #
@@ -28,6 +29,12 @@ cd "$ROOT" || exit 1
 
 OUT="files_reference.txt"
 APP_OUT="app/files_reference.txt"
+PHP_BIN="${PHP_BIN:-php}"
+
+if ! command -v "$PHP_BIN" >/dev/null 2>&1; then
+    echo "ERROR: PHP CLI is required to apply the shared integrity path policy." >&2
+    exit 1
+fi
 
 # A tracked file that is missing from the working tree is skipped silently by the loop
 # below, which would produce a reference file with holes (e.g. `public/install/` renamed to
@@ -45,7 +52,14 @@ TMP="$(mktemp)"
 trap 'rm -f "$TMP"' EXIT
 
 git ls-files --cached -z \
-| grep -zv '^files_reference\.txt$' \
+| "$PHP_BIN" -r '
+require "app/sources/file_scope.functions.php";
+while (($path = stream_get_line(STDIN, 1048576, "\0")) !== false) {
+    if ($path !== "files_reference.txt" && tpFileScopeIsRepositoryArtifact($path) === false) {
+        fwrite(STDOUT, $path . "\0");
+    }
+}
+' \
 | while IFS= read -r -d $'\0' f; do
     { [ -f "$f" ] && md5sum "$f"; } || true
 done \

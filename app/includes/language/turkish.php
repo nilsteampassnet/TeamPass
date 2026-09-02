@@ -1002,8 +1002,6 @@ return array(
     'path_not_a_file' => 'Yol bir dosya değil',
     'file_not_writable' => 'Dosya yazılabilir değil',
     'failed_to_delete' => 'Silinemedi',
-    'delete_unknown_files' => 'Bilinmeyen dosyalar silinsin mi?',
-    'unknown_files_should_be_deleted' => 'Sürüm karışımını önlemek için bu dosyaların silinmesi önerilir.',
     'remaining_lock_time' => 'Remaining lock time',
     'seconds' => 'seconds',
     'users_fetch_error' => 'Kullanıcılar getirilirken bir şeyler ters gitti',

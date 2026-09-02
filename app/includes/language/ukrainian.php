@@ -1002,8 +1002,6 @@ return array(
     'path_not_a_file' => 'Шлях не є файлом',
     'file_not_writable' => 'Файл недоступний для запису',
     'failed_to_delete' => 'Не вдалося видалити',
-    'delete_unknown_files' => 'Видалити невідомі файли?',
-    'unknown_files_should_be_deleted' => 'Рекомендується видалити ці файли, щоб запобігти змішуванню версій.',
     'remaining_lock_time' => 'Час блокування, що залишився',
     'seconds' => 'секунд',
     'users_fetch_error' => 'Щось пішло не так при отриманні користувачів',

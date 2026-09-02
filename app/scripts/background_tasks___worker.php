@@ -163,6 +163,9 @@ class TaskWorker {
                 case 'kb_publication_notifications':
                     $this->handleKbPublicationNotifications($this->taskData);
                     break;
+                case 'file_integrity_scan':
+                    $this->handleFileIntegrityScan();
+                    break;
                 default:
                     throw new Exception("Type of subtask unknown: {$this->processType}");
             }
@@ -183,6 +186,31 @@ class TaskWorker {
 
         } catch (Exception $e) {
             $this->handleTaskFailure($e);
+        }
+    }
+
+    /**
+     * Run and persist the read-only application file integrity scan.
+     */
+    private function handleFileIntegrityScan(): void
+    {
+        $this->updateTaskStep('scanning');
+        try {
+            $report = tpFileIntegrityScan(
+                TEAMPASS_ROOT,
+                TEAMPASS_APP . '/files_reference.txt'
+            );
+            tpFileIntegritySaveReport(TEAMPASS_ROOT, $report);
+            $this->updateTaskResult([
+                'success' => true,
+                'summary' => tpFileIntegritySummary($report),
+            ]);
+        } catch (Exception $exception) {
+            $this->updateTaskResult([
+                'success' => false,
+                'message' => $exception->getMessage(),
+            ]);
+            throw $exception;
         }
     }
 
