@@ -272,6 +272,154 @@ class LaprSafetyWiringTest extends TestCase
         self::assertStringContainsString('ConfigManager::invalidateCache();', $handler);
     }
 
+    public function testEnrolledEndpointsCanBeCheckedManuallyAndByTheScheduler(): void
+    {
+        $endpoints = $this->source('app/sources/lapr_endpoints.queries.php');
+        $endpointPage = $this->source('app/pages/lapr_endpoints.js.php');
+        $handler = $this->source('app/scripts/background_tasks___handler.php');
+        $worker = $this->source('app/scripts/traits/LAPRSshTestTrait.php');
+        $install = $this->source('public/install/install-steps/run.step5.php');
+        $upgrade = $this->source('public/install/upgrade_run_3.2.2.php');
+
+        self::assertStringContainsString("case 'start_check':", $endpoints);
+        self::assertStringContainsString("case 'check_status':", $endpoints);
+        self::assertStringContainsString('laprUserCanUseEndpoint($endpointId, $session)', $endpoints);
+        self::assertStringContainsString("'item_id' => \$endpointId", $endpoints);
+        self::assertStringContainsString('lapr-check-ep', $endpointPage);
+        self::assertStringContainsString('private function handleScheduledLAPREndpointChecks(): void', $handler);
+        self::assertStringContainsString("getSettingValue('lapr_endpoint_checks_enabled', '0', 'admin')", $handler);
+        self::assertStringContainsString("'trigger' => 'scheduler'", $handler);
+        self::assertStringContainsString('laprComputeEndpointCheckLease($this->settings, $now)', $handler);
+        self::assertStringContainsString("return \$endpointId > 0 ? 'lapr-endpoint:' . \$endpointId : null;", $handler);
+        self::assertStringContainsString('$expectedFingerprint', $worker);
+        self::assertStringContainsString('$service->testAndCollect()', $worker);
+        self::assertStringContainsString("'os_info' => json_encode(\$osInfo", $worker);
+        self::assertStringContainsString("array('admin', 'lapr_endpoint_checks_enabled', '1')", $install);
+        self::assertStringContainsString("array('lapr_endpoint_checks_enabled', '0')", $upgrade);
+        self::assertStringContainsString('lapr_endpoint_check_interval_minutes', $install);
+        self::assertStringContainsString('lapr_endpoint_check_interval_minutes', $upgrade);
+    }
+
+    public function testEndpointPauseIsRaceSafeAndResumeRequiresAHealthCheck(): void
+    {
+        $endpoints = $this->source('app/sources/lapr_endpoints.queries.php');
+        $accounts = $this->source('app/sources/lapr_accounts.queries.php');
+        $endpointPage = $this->source('app/pages/lapr_endpoints.js.php');
+        $accountPage = $this->source('app/pages/lapr_accounts.js.php');
+        $itemsPage = $this->source('app/pages/items.js.php');
+        $handler = $this->source('app/scripts/background_tasks___handler.php');
+        $rotation = $this->source('app/scripts/traits/LAPRRotationTrait.php');
+        $sshCheck = $this->source('app/scripts/traits/LAPRSshTestTrait.php');
+
+        self::assertStringContainsString("case 'pause_endpoint':", $endpoints);
+        self::assertStringContainsString("case 'resume_endpoint':", $endpoints);
+        self::assertStringContainsString('function laprCancelPendingEndpointRotations(', $endpoints);
+        self::assertStringContainsString("'status' => 'cancelled'", $endpoints);
+        self::assertStringContainsString("'ERR_ENDPOINT_PAUSED'", $endpoints);
+        self::assertStringContainsString("'resume_on_success' => \$resume", $endpoints);
+        self::assertStringContainsString('lapr-pause-ep', $endpointPage);
+        self::assertStringContainsString('lapr-resume-ep', $endpointPage);
+
+        self::assertStringContainsString('confirm_endpoint_paused', $accounts);
+        self::assertStringContainsString("'allow_paused_endpoint' =>", $accounts);
+        self::assertStringContainsString('data-endpoint-paused', $accountPage);
+        self::assertStringContainsString('data-endpoint-paused', $itemsPage);
+
+        self::assertStringContainsString("['active', 'disabled', 'error', 'unreachable']", $handler);
+        self::assertStringContainsString('e.status AS endpoint_status', $rotation);
+        self::assertStringContainsString('$freshEndpointStatus = DB::queryFirstField(', $rotation);
+        self::assertStringContainsString("'ERR_ENDPOINT_PAUSED'", $rotation);
+        self::assertStringContainsString("'ERR_CANNOT_ROTATE', 'message' => 'ENDPOINT_CHECK_REQUIRED'", $rotation);
+        self::assertStringContainsString("'rotation_pause_override'", $rotation);
+        self::assertStringContainsString("\$paused = \$currentStatus === 'disabled'", $rotation);
+        self::assertLessThan(
+            strpos($rotation, '$service->changePassword('),
+            strpos($rotation, '$freshEndpointStatus = DB::queryFirstField(')
+        );
+        self::assertStringContainsString("'endpoint_resume'", $sshCheck);
+        self::assertStringContainsString("status NOT IN %ls", $sshCheck);
+        self::assertStringContainsString("'disabled', 'deleted'", $sshCheck);
+        self::assertStringContainsString("]), 'id = %i AND status = %s', \$endpointId, 'disabled');", $sshCheck);
+        self::assertStringContainsString('laprComputeNextEndpointCheck($this->settings)', $sshCheck);
+    }
+
+    public function testHealthSeparatesPausedEndpointsRetriesAndEndpointChecks(): void
+    {
+        $monitoring = $this->source('app/sources/lapr.monitoring.functions.php');
+        $health = $this->source('app/pages/utilities.health.js.php');
+        $statistics = $this->source('app/pages/statistics.js.php');
+
+        self::assertStringContainsString("return 'endpoint_paused';", $monitoring);
+        self::assertStringContainsString("['active', 'unreachable']", $monitoring);
+        self::assertStringContainsString('function laprMonitoringEndpointChecks(', $monitoring);
+        self::assertStringContainsString('item_id IS NOT NULL AND item_id > 0', $monitoring);
+        self::assertStringContainsString("'endpoint_checks' => \$endpointChecks", $monitoring);
+        self::assertStringContainsString('lapr_state_endpoint_paused', $health);
+        self::assertStringContainsString('lapr_endpoint_checks_failed_24h', $health);
+        self::assertStringContainsString('accounts.endpoint_paused || 0', $statistics);
+        self::assertStringContainsString('endpoints.unreachable || 0', $statistics);
+    }
+
+    public function testRotationRetriesOnlyTransientConnectivityFailuresAndAlertsOperators(): void
+    {
+        $rotation = $this->source('app/scripts/traits/LAPRRotationTrait.php');
+        $ssh = $this->source('app/includes/libraries/teampassclasses/lapr/src/LAPRSshService.php');
+        $catalog = $this->source('app/config/emails_templates.php');
+
+        self::assertStringContainsString('$retryableFailure = laprIsTransientConnectionError($errorCode);', $rotation);
+        self::assertStringContainsString('$retryableFailure === false', $rotation);
+        self::assertStringContainsString('if (laprIsTransientConnectionError($code) === true)', $rotation);
+        self::assertStringContainsString('if ($retryCount === 1)', $rotation);
+        self::assertStringContainsString("\$this->settings['lapr_alert_email_enabled']", $rotation);
+        self::assertStringContainsString("getEmailTemplateSubject('lapr_rotation_failure'", $rotation);
+        self::assertStringContainsString("'lapr_rotation_failure' => [", $catalog);
+        self::assertStringContainsString('if (isset($result[\'error_code\']))', $ssh);
+        self::assertStringContainsString('self::ERR_NOT_CONNECTED', $ssh);
+        self::assertStringContainsString(
+            '$service->getLastTransportFailure()',
+            $this->source('app/scripts/traits/LAPRSshTestTrait.php')
+        );
+        self::assertStringContainsString(
+            '$service->getLastTransportFailure()',
+            $this->source('app/scripts/traits/LAPRDiscoverTrait.php')
+        );
+    }
+
+    public function testRotationObservationsDoNotMasqueradeAsEndpointHealthChecks(): void
+    {
+        $rotation = $this->source('app/scripts/traits/LAPRRotationTrait.php');
+        $methodStart = strpos($rotation, 'private function laprUpdateEndpointRotationState(');
+        self::assertIsInt($methodStart);
+        $method = substr($rotation, $methodStart);
+
+        self::assertStringNotContainsString("'last_check_at' =>", $method);
+        self::assertStringContainsString("'last_error' => \$errorCode", $method);
+        self::assertStringContainsString('$retryCheckTs < $currentNextCheckTs', $method);
+    }
+
+    public function testRotationResourcesAreResolvedInOneBatchAndPausedAccountsAreExplicit(): void
+    {
+        $handler = $this->source('app/scripts/background_tasks___handler.php');
+        $accounts = $this->source('app/sources/lapr_accounts.queries.php');
+        $endpoints = $this->source('app/sources/lapr_endpoints.queries.php');
+        $resourceStart = strpos($handler, 'private function getResourceKey(');
+        $resourceEnd = strpos($handler, 'private function performMaintenanceTasks(', (int) $resourceStart);
+        self::assertIsInt($resourceStart);
+        self::assertIsInt($resourceEnd);
+        $resourceMethod = substr($handler, $resourceStart, $resourceEnd - $resourceStart);
+
+        self::assertStringContainsString('$rotationAccountIds', $handler);
+        self::assertStringContainsString("'endpoint_id' => (int) \$account['endpoint_id']", $handler);
+        self::assertStringContainsString("'endpoint_id' => \$endpointId", $accounts);
+        self::assertStringContainsString("'endpoint_id' => (int) \$account['endpoint_id']", $accounts);
+        self::assertStringContainsString("WHERE id IN %li", $handler);
+        self::assertStringNotContainsString('DB::queryFirstField(', $resourceMethod);
+        self::assertStringContainsString("\$account['status'] === 'paused'", $accounts);
+        self::assertStringContainsString("lapr_account_paused_rotation_blocked", $accounts);
+        self::assertStringContainsString("defined('LOG_TO_SERVER')", $endpoints);
+        self::assertStringContainsString('LAPR endpoint pause transaction failed', $endpoints);
+    }
+
     public function testItemHistoryIdentifiesAutomaticLaprRotations(): void
     {
         $items = $this->source('app/sources/items.queries.php');

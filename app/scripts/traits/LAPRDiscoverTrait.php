@@ -134,7 +134,16 @@ trait LAPRDiscoverTrait
 
         $this->updateTaskStep('scanning');
         $accounts = $service->listLocalAccounts();
+        $transportFailure = $service->getLastTransportFailure();
         $service->disconnect();
+        if ($transportFailure !== null) {
+            $this->updateTaskResult([
+                'success' => false,
+                'error_code' => $transportFailure['error_code'],
+            ]);
+            $this->updateTaskStatus('completed');
+            return;
+        }
 
         // Keep root and regular users (UID >= 1000) with a real login shell.
         // The shared helper also applies the POSIX username validation used

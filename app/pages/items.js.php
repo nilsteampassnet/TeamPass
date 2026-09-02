@@ -145,12 +145,15 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         'credentialNotice' => $lang->get('lapr_item_credential_notice'),
         'schedulerDisabled' => $lang->get('lapr_item_scheduler_disabled'),
         'endpointUnavailable' => $lang->get('lapr_item_endpoint_unavailable'),
+        'endpointPaused' => $lang->get('lapr_item_endpoint_paused'),
         'endpoint' => $lang->get('lapr_endpoint'),
         'policy' => $lang->get('lapr_policy'),
         'nextRotation' => $lang->get('lapr_next_rotation'),
         'rotateTitle' => $lang->get('lapr_rotate_now'),
         'rotateConfirm' => $lang->get('lapr_rotate_confirm'),
         'selfRotationWarning' => $lang->get('lapr_self_management_rotation_warning'),
+        'pausedEndpointRotationWarning' => $lang->get('lapr_endpoint_paused_rotation_warning'),
+        'rotationCancelledEndpointPaused' => $lang->get('lapr_rotation_cancelled_endpoint_paused'),
         'rotationInProgress' => $lang->get('lapr_rotation_in_progress'),
         'rotationSuccess' => $lang->get('lapr_rotation_success'),
         'rotationFailed' => $lang->get('lapr_rotation_failed'),
@@ -306,20 +309,29 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             if (account.policy_label) context.push(TP_LAPR_ITEM_LANG.policy + ': ' + account.policy_label);
             if (account.next_rotation_at) context.push(TP_LAPR_ITEM_LANG.nextRotation + ': ' + account.next_rotation_at);
             if (lapr.scheduler_enabled !== true) context.push(TP_LAPR_ITEM_LANG.schedulerDisabled);
-            if (lapr.can_manage === true && account.endpoint_status !== 'active') context.push(TP_LAPR_ITEM_LANG.endpointUnavailable);
+            if (lapr.can_manage === true && account.endpoint_status === 'disabled') {
+                context.push(TP_LAPR_ITEM_LANG.endpointPaused);
+            } else if (lapr.can_manage === true && account.endpoint_status !== 'active') {
+                context.push(TP_LAPR_ITEM_LANG.endpointUnavailable);
+            }
             if (context.length) $details.append($('<div>', { class: 'small mt-1' }).text(context.join(' · ')));
             if (account.is_self_target === true) {
                 $details.append($('<div>', { class: 'small text-danger font-weight-bold mt-1' }).text(TP_LAPR_ITEM_LANG.selfRotationWarning));
             }
 
-            if (lapr.can_manage === true && account.status === 'active' && account.endpoint_status === 'active') {
+            if (lapr.can_manage === true
+                && account.status === 'active'
+                && ['active', 'disabled'].includes(account.endpoint_status)
+            ) {
+                const endpointPaused = account.endpoint_status === 'disabled';
                 $details.append(
                     $('<button>', {
                         type: 'button',
-                        class: 'btn btn-sm btn-success mt-2',
+                        class: 'btn btn-sm ' + (endpointPaused ? 'btn-outline-warning' : 'btn-success') + ' mt-2',
                         id: 'card-item-lapr-rotate',
                         'data-account-id': account.id,
-                        'data-self-target': account.is_self_target === true ? '1' : '0'
+                        'data-self-target': account.is_self_target === true ? '1' : '0',
+                        'data-endpoint-paused': endpointPaused ? '1' : '0'
                     }).append($('<i>', { class: 'fa-solid fa-rotate mr-1' })).append(document.createTextNode(TP_LAPR_ITEM_LANG.rotateTitle))
                 );
             }
@@ -370,22 +382,27 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         });
     }
 
-    function laprRotateManagedItem(accountId, isSelfTarget) {
-        const confirmation = isSelfTarget
-            ? htmlEncode(TP_LAPR_ITEM_LANG.selfRotationWarning) + '<br><br>' + htmlEncode(TP_LAPR_ITEM_LANG.rotateConfirm)
-            : TP_LAPR_ITEM_LANG.rotateConfirm;
+    function laprRotateManagedItem(accountId, isSelfTarget, endpointPaused) {
+        const warnings = [];
+        if (isSelfTarget) warnings.push(TP_LAPR_ITEM_LANG.selfRotationWarning);
+        if (endpointPaused) warnings.push(TP_LAPR_ITEM_LANG.pausedEndpointRotationWarning);
+        warnings.push(TP_LAPR_ITEM_LANG.rotateConfirm);
+        const confirmation = warnings.map(htmlEncode).join('<br><br>');
         launchConfirmDialog(
             TP_LAPR_ITEM_LANG.rotateTitle,
             DOMPurify.sanitize(confirmation),
-            function () { laprStartManagedItemRotation(accountId); },
+            function () { laprStartManagedItemRotation(accountId, endpointPaused); },
             TP_LAPR_ITEM_LANG.rotateTitle
         );
     }
 
-    function laprStartManagedItemRotation(accountId) {
+    function laprStartManagedItemRotation(accountId, endpointPaused) {
         $('#card-item-lapr-rotate').prop('disabled', true);
         toastr.info('<i class="fas fa-circle-notch fa-spin mr-1"></i>' + TP_LAPR_ITEM_LANG.rotationInProgress);
-        laprItemPost('start_rotation', { id: accountId }, function (data) {
+        laprItemPost('start_rotation', {
+            id: accountId,
+            confirm_endpoint_paused: endpointPaused ? 1 : 0
+        }, function (data) {
             if (data.error === true) {
                 toastr.clear();
                 toastr.error(data.message || TP_LAPR_ITEM_LANG.error);
@@ -428,6 +445,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 toastr.error(TP_LAPR_ITEM_LANG.manualResync);
             } else if (data.error_code === 'ERR_HOSTKEY_MISMATCH') {
                 toastr.error(TP_LAPR_ITEM_LANG.hostkeyMismatch);
+            } else if (data.error_code === 'ERR_ENDPOINT_PAUSED') {
+                toastr.warning(TP_LAPR_ITEM_LANG.rotationCancelledEndpointPaused);
             } else {
                 toastr.error(TP_LAPR_ITEM_LANG.rotationFailed + ' (' + DOMPurify.sanitize(data.error_code || '') + ')');
             }
@@ -438,7 +457,11 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     $(document).on('click', '#card-item-lapr-rotate', function () {
         const accountId = parseInt($(this).attr('data-account-id'), 10) || 0;
         if (accountId > 0) {
-            laprRotateManagedItem(accountId, String($(this).attr('data-self-target')) === '1');
+            laprRotateManagedItem(
+                accountId,
+                String($(this).attr('data-self-target')) === '1',
+                String($(this).attr('data-endpoint-paused')) === '1'
+            );
         }
     });
 

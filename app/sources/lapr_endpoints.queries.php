@@ -114,11 +114,23 @@ switch ($post_type) {
     case 'test_status':
         laprTestStatus($dataReceived, $userId, $lang);
         break;
+    case 'start_check':
+        laprStartEndpointCheck($dataReceived, $session, $SETTINGS, $userId, $lang);
+        break;
+    case 'resume_endpoint':
+        laprStartEndpointCheck($dataReceived, $session, $SETTINGS, $userId, $lang, true);
+        break;
+    case 'check_status':
+        laprEndpointCheckStatus($dataReceived, $session, $userId, $lang);
+        break;
     case 'add_endpoint':
         laprAddEndpoint($dataReceived, $session, $userId, $SETTINGS, $lang);
         break;
     case 'delete_endpoint':
         laprDeleteEndpoint($dataReceived, $session, $userId, $lang);
+        break;
+    case 'pause_endpoint':
+        laprPauseEndpoint($dataReceived, $session, $userId, $lang);
         break;
     case 'restore_endpoint':
         laprRestoreEndpoint($dataReceived, $session, $userId, $lang);
@@ -180,6 +192,7 @@ function laprListEndpoints(SessionInterface $session, Language $lang, array $set
             'os_name' => $os['os_name'] ?? '',
             'has_sudo' => (bool) ($caps['has_sudo'] ?? false),
             'is_root' => (bool) ($os['is_root'] ?? false),
+            'last_error' => (string) ($r['last_error'] ?? ''),
         ];
     }
 
@@ -398,6 +411,10 @@ function laprTestStatus(array $data, int $userId, Language $lang): void
     // save time (a valid snapshot from an allowed host cannot be replayed to store a
     // different, non-allowlisted hostname).
     $taskArgs = json_decode((string) ($task['arguments'] ?? '{}'), true) ?: [];
+    if ((int) ($taskArgs['endpoint_id'] ?? 0) > 0) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_task_not_found')], 'encode');
+        return;
+    }
     $testedEndpoint = is_array($taskArgs['endpoint'] ?? null) ? $taskArgs['endpoint'] : [];
     $selfTarget = is_array($taskArgs['self_target'] ?? null)
         ? $taskArgs['self_target']
@@ -453,6 +470,166 @@ function laprTestStatus(array $data, int $userId, Language $lang): void
         'self_target' => $selfTarget,
         'snapshot' => $signed['payload'],
         'snapshot_sig' => $signed['sig'],
+    ], 'encode');
+}
+
+/**
+ * Queue a background availability, OS and rotation-capability check for an
+ * already enrolled endpoint.
+ *
+ * @param array                  $data     Decoded client payload
+ * @param SessionInterface       $session  Current session
+ * @param array<string, mixed>   $SETTINGS TeamPass settings
+ * @param int                    $userId   Acting user id
+ * @param Language               $lang     Language helper
+ * @param bool                   $resume   Reactivate the endpoint only after a successful check
+ * @return void
+ */
+function laprStartEndpointCheck(
+    array $data,
+    SessionInterface $session,
+    array $SETTINGS,
+    int $userId,
+    Language $lang,
+    bool $resume = false
+): void {
+    $endpointId = (int) ($data['id'] ?? 0);
+    if ($endpointId <= 0 || laprUserCanUseEndpoint($endpointId, $session) === false) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+        return;
+    }
+
+    $endpoint = DB::queryFirstRow(
+        'SELECT id, hostname, status FROM ' . prefixTable('lapr_endpoints') . '
+         WHERE id = %i AND status != %s',
+        $endpointId,
+        'deleted'
+    );
+    if ($endpoint === null) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_endpoint_not_found')], 'encode');
+        return;
+    }
+    if ($resume === true && (string) $endpoint['status'] !== 'disabled') {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_endpoint_not_paused')], 'encode');
+        return;
+    }
+    if (laprIsHostnameAllowed((string) $endpoint['hostname'], $SETTINGS) === false) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_hostname_not_allowed')], 'encode');
+        return;
+    }
+
+    $rateLimit = laprCheckRateLimit(getClientIpServer(), (string) $endpoint['hostname'], $SETTINGS);
+    if ($rateLimit['allowed'] === false) {
+        echo prepareExchangedData([
+            'error' => true,
+            'message' => $lang->get('lapr_rate_limited'),
+            'retry_after' => $rateLimit['retry_after'],
+        ], 'encode');
+        return;
+    }
+
+    $pending = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('background_tasks') . '
+         WHERE process_type = %s AND item_id = %i AND is_in_progress IN (0,1)
+         AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)',
+        'lapr_ssh_test',
+        $endpointId
+    );
+    if ($pending > 0) {
+        echo prepareExchangedData([
+            'error' => true,
+            'message' => $lang->get('lapr_endpoint_check_already_running'),
+        ], 'encode');
+        return;
+    }
+
+    DB::insert(prefixTable('background_tasks'), [
+        'created_at' => (string) time(),
+        'process_type' => 'lapr_ssh_test',
+        'arguments' => json_encode([
+            'endpoint_id' => $endpointId,
+            'trigger' => $resume ? 'resume' : 'manual',
+            'author' => $userId,
+            'resume_on_success' => $resume,
+        ], JSON_UNESCAPED_SLASHES),
+        'is_in_progress' => 0,
+        'item_id' => $endpointId,
+        'status' => 'new',
+    ]);
+    $taskId = (int) DB::insertId();
+    triggerBackgroundHandler();
+
+    echo prepareExchangedData(['error' => false, 'task_id' => $taskId], 'encode');
+}
+
+/**
+ * Poll a manual enrolled-endpoint check. The task is bound to its author and
+ * the endpoint ACL is re-evaluated on every poll.
+ *
+ * @param array            $data    Decoded client payload
+ * @param SessionInterface $session Current session
+ * @param int              $userId  Acting user id
+ * @param Language         $lang    Language helper
+ * @return void
+ */
+function laprEndpointCheckStatus(array $data, SessionInterface $session, int $userId, Language $lang): void
+{
+    $taskId = (int) ($data['task_id'] ?? 0);
+    $task = $taskId > 0 ? DB::queryFirstRow(
+        'SELECT increment_id, status, output, arguments, is_in_progress
+         FROM ' . prefixTable('background_tasks') . '
+         WHERE increment_id = %i AND process_type = %s',
+        $taskId,
+        'lapr_ssh_test'
+    ) : null;
+    $taskArgs = $task === null
+        ? []
+        : (json_decode((string) ($task['arguments'] ?? '{}'), true) ?: []);
+    $endpointId = (int) ($taskArgs['endpoint_id'] ?? 0);
+
+    if ($task === null
+        || $endpointId <= 0
+        || laprTaskBelongsToUser($task['arguments'] ?? null, $userId) === false
+        || laprUserCanUseEndpoint($endpointId, $session) === false
+    ) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_task_not_found')], 'encode');
+        return;
+    }
+
+    $finished = (int) $task['is_in_progress'] === -1
+        || in_array((string) $task['status'], ['completed', 'failed', 'cancelled'], true);
+    $output = json_decode((string) ($task['output'] ?? '{}'), true) ?: [];
+    if ($finished === false) {
+        echo prepareExchangedData([
+            'error' => false,
+            'finished' => false,
+            'step' => $output['step'] ?? 'connecting',
+        ], 'encode');
+        return;
+    }
+
+    echo prepareExchangedData([
+        'error' => false,
+        'finished' => true,
+        'endpoint_id' => $endpointId,
+        'success' => (bool) ($output['success'] ?? false),
+        'reachable' => (bool) ($output['reachable'] ?? false),
+        'error_code' => (string) ($output['error_code'] ?? ''),
+        'os_info' => is_array($output['os_info'] ?? null) ? $output['os_info'] : [],
+        'capabilities' => is_array($output['capabilities'] ?? null) ? $output['capabilities'] : [],
+        'can_rotate' => (bool) ($output['can_rotate'] ?? false),
+        'resumed' => (bool) ($output['resumed'] ?? false),
+        'resume_requested' => (bool) ($taskArgs['resume_on_success'] ?? false),
+        'due_accounts' => (bool) ($output['resumed'] ?? false) === true
+            ? (int) DB::queryFirstField(
+                'SELECT COUNT(*) FROM ' . prefixTable('lapr_accounts') . '
+                 WHERE endpoint_id = %i AND status = %s
+                 AND next_rotation_at IS NOT NULL AND next_rotation_at <= %s',
+                $endpointId,
+                'active',
+                date('Y-m-d H:i:s')
+            )
+            : 0,
     ], 'encode');
 }
 
@@ -577,6 +754,8 @@ function laprAddEndpoint(array $data, SessionInterface $session, int $userId, ar
         'ssh_hostkey_verified' => $skipHostkey === 1 ? 0 : 1,
         'status' => 'active',
         'last_check_at' => date('Y-m-d H:i:s'),
+        'last_error' => null,
+        'next_check_at' => laprComputeNextEndpointCheck($SETTINGS),
         'created_by' => $userId,
         'created_at' => date('Y-m-d H:i:s'),
     ]);
@@ -635,6 +814,8 @@ function laprDeleteEndpoint(array $data, SessionInterface $session, int $userId,
         'updated_by' => $userId,
     ], 'id = %i', $endpointId);
 
+    laprCancelPendingEndpointRotations($endpointId, 'ERR_ENDPOINT_DELETED', 'ENDPOINT_REMOVED');
+
     // Pause managed accounts on this endpoint (no cascade — soft-delete/pause, C6)
     DB::update(prefixTable('lapr_accounts'), [
         'status' => 'paused',
@@ -644,6 +825,129 @@ function laprDeleteEndpoint(array $data, SessionInterface $session, int $userId,
     laprAuditLog('endpoint_delete', $endpointId, $userId, [], 'success');
 
     echo prepareExchangedData(['error' => false, 'message' => $lang->get('lapr_endpoint_deleted')], 'encode');
+}
+
+/**
+ * Pause automatic rotations for one endpoint without altering account state,
+ * retry counters, or due dates. Pending rotations are closed neutrally; a
+ * running worker performs the same endpoint-state check before SSH mutation.
+ *
+ * @param array            $data    Decoded client payload
+ * @param SessionInterface $session Current session
+ * @param int              $userId  Acting user id
+ * @param Language         $lang    Language helper
+ * @return void
+ */
+function laprPauseEndpoint(array $data, SessionInterface $session, int $userId, Language $lang): void
+{
+    $endpointId = (int) ($data['id'] ?? 0);
+    $reason = (string) ($data['reason'] ?? 'operator_request');
+    $allowedReasons = ['maintenance', 'incident', 'access_change', 'operator_request'];
+    if (in_array($reason, $allowedReasons, true) === false) {
+        $reason = 'operator_request';
+    }
+
+    if ($endpointId <= 0 || laprUserCanUseEndpoint($endpointId, $session) === false) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+        return;
+    }
+
+    $endpoint = DB::queryFirstRow(
+        'SELECT id, status FROM ' . prefixTable('lapr_endpoints') . '
+         WHERE id = %i AND status != %s',
+        $endpointId,
+        'deleted'
+    );
+    if ($endpoint === null) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_endpoint_not_found')], 'encode');
+        return;
+    }
+    if ((string) $endpoint['status'] === 'disabled') {
+        echo prepareExchangedData(['error' => false, 'message' => $lang->get('lapr_endpoint_already_paused')], 'encode');
+        return;
+    }
+
+    DB::startTransaction();
+    try {
+        DB::update(prefixTable('lapr_endpoints'), [
+            'status' => 'disabled',
+            'updated_by' => $userId,
+        ], 'id = %i AND status NOT IN %ls', $endpointId, ['disabled', 'deleted']);
+        if ((int) DB::affectedRows() === 0) {
+            DB::rollback();
+            echo prepareExchangedData([
+                'error' => false,
+                'message' => $lang->get('lapr_endpoint_already_paused'),
+            ], 'encode');
+            return;
+        }
+
+        $cancelledTasks = laprCancelPendingEndpointRotations(
+            $endpointId,
+            'ERR_ENDPOINT_PAUSED',
+            'ENDPOINT_ROTATIONS_PAUSED'
+        );
+        laprAuditLog('endpoint_pause', $endpointId, $userId, [
+            'reason' => $reason,
+            'cancelled_tasks' => $cancelledTasks,
+        ], 'success');
+        DB::commit();
+    } catch (Throwable $e) {
+        DB::rollback();
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log(
+                'TEAMPASS Error - LAPR endpoint pause transaction failed for endpoint '
+                . $endpointId . ': ' . $e->getMessage()
+            );
+        }
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('error')], 'encode');
+        return;
+    }
+
+    echo prepareExchangedData(['error' => false, 'message' => $lang->get('lapr_endpoint_paused')], 'encode');
+}
+
+/**
+ * Cancel rotations that have not started for every managed account attached to
+ * an endpoint. Administrative cancellation is deliberately not a worker error.
+ *
+ * @param int    $endpointId Endpoint id
+ * @param string $errorCode  Secret-free cancellation code
+ * @param string $message    Stable cancellation message
+ * @return int Number of cancelled tasks
+ */
+function laprCancelPendingEndpointRotations(int $endpointId, string $errorCode, string $message): int
+{
+    $accountIds = array_map('intval', (array) DB::queryFirstColumn(
+        'SELECT id FROM ' . prefixTable('lapr_accounts') . '
+         WHERE endpoint_id = %i AND status != %s',
+        $endpointId,
+        'deleted'
+    ));
+    if ($accountIds === []) {
+        return 0;
+    }
+
+    $timestamp = time();
+    DB::update(prefixTable('background_tasks'), [
+        'is_in_progress' => -1,
+        'finished_at' => $timestamp,
+        'updated_at' => $timestamp,
+        'status' => 'cancelled',
+        'output' => json_encode([
+            'success' => false,
+            'error_code' => $errorCode,
+            'message' => $message,
+        ], JSON_UNESCAPED_SLASHES),
+    ], 'process_type = %s AND item_id IN %li AND is_in_progress = 0
+        AND (finished_at IS NULL OR finished_at = %s OR finished_at = %s)',
+        'lapr_rotation',
+        $accountIds,
+        '',
+        '0'
+    );
+
+    return (int) DB::affectedRows();
 }
 
 /**

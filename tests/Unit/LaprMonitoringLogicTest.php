@@ -82,6 +82,7 @@ class LaprMonitoringLogicTest extends TestCase
             "+ \$accountCounts['error'] + \$accountCounts['paused'] + \$accountCounts['manual_only']",
             (string) $source
         );
+        self::assertStringContainsString("+ \$accountCounts['endpoint_paused']", (string) $source);
         self::assertStringContainsString(
             "in_array(\$state, ['retrying', 'paused', 'manual_only'], true)",
             (string) $source
@@ -136,7 +137,17 @@ class LaprMonitoringLogicTest extends TestCase
 
         $account = $this->healthyAccount($now);
         $account['endpoint_status'] = 'disabled';
-        self::assertSame('error', laprMonitoringClassifyAccount($account, $now, 600));
+        self::assertSame('endpoint_paused', laprMonitoringClassifyAccount($account, $now, 600));
+
+        $account = $this->healthyAccount($now);
+        $account['endpoint_status'] = 'unreachable';
+        $account['last_rotation_status'] = 'failure';
+        $account['retry_at'] = date('Y-m-d H:i:s', $now + 3600);
+        self::assertSame('retrying', laprMonitoringClassifyAccount($account, $now, 600));
+
+        $account = $this->healthyAccount($now);
+        $account['endpoint_status'] = 'unreachable';
+        self::assertSame('healthy', laprMonitoringClassifyAccount($account, $now, 600));
 
         $account = $this->healthyAccount($now);
         $account['monitoring_integrity_error'] = true;
@@ -202,6 +213,22 @@ class LaprMonitoringLogicTest extends TestCase
         self::assertSame('warning', $result['overall']['status']);
     }
 
+    public function testCronFailureAlsoCoversEndpointChecksWhenRotationSchedulerIsDisabled(): void
+    {
+        $snapshot = laprMonitoringEmptySnapshot(true, 'healthy');
+        $snapshot['available'] = true;
+        $snapshot['enabled'] = true;
+        $snapshot['scheduler']['enabled'] = false;
+        $snapshot['endpoint_checks']['enabled'] = true;
+        $snapshot['endpoint_checks']['status'] = 'success';
+
+        $result = laprMonitoringApplyCronStatus($snapshot, 'warning');
+
+        self::assertSame('warning', $result['endpoint_checks']['status']);
+        self::assertSame('cron_unhealthy', $result['endpoint_checks']['reason']);
+        self::assertSame('cron_unhealthy', $result['action_items'][0]['code']);
+    }
+
     public function testDisabledSchedulerIsNotPromotedToAHealthFailure(): void
     {
         $snapshot = laprMonitoringDisabledSnapshot();
@@ -212,6 +239,8 @@ class LaprMonitoringLogicTest extends TestCase
         self::assertSame('module_disabled', $snapshot['overall']['reason']);
         self::assertSame(0, $snapshot['endpoints']['total']);
         self::assertSame(0, $snapshot['accounts']['total']);
+        self::assertSame(0, $snapshot['accounts']['endpoint_paused']);
+        self::assertFalse($snapshot['endpoint_checks']['enabled']);
         self::assertSame([], $snapshot['action_items']);
         self::assertSame([], $snapshot['recent_failures']);
     }

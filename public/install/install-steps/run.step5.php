@@ -542,6 +542,8 @@ class DatabaseInstaller
             array('admin', 'lapr_scheduler_enabled', '0'),
             array('admin', 'lapr_scheduler_interval_minutes', '5'),
             array('admin', 'lapr_scheduler_next_run_at', '0'),
+            array('admin', 'lapr_endpoint_checks_enabled', '1'),
+            array('admin', 'lapr_endpoint_check_interval_minutes', '1440'),
             array('admin', 'lapr_max_retries', '3'),
             array('admin', 'lapr_retry_delay_minutes', '60'),
             array('admin', 'lapr_audit_retention_days', '365'),
@@ -1996,7 +1998,7 @@ class DatabaseInstaller
         DB::query(
             "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "lapr_audit_log` (
             `id` INT(12) NOT NULL AUTO_INCREMENT,
-            `action_type` VARCHAR(50) NOT NULL COMMENT 'endpoint_add|endpoint_test|endpoint_edit|endpoint_delete|rotation|account_add|account_reset|hostkey_mismatch|ssh_credential_sync|rotation_retry_scheduled|rotation_suspended',
+            `action_type` VARCHAR(50) NOT NULL COMMENT 'endpoint_add|endpoint_test|endpoint_edit|endpoint_delete|endpoint_pause|endpoint_resume|rotation|rotation_pause_override|account_add|account_reset|hostkey_mismatch|ssh_credential_sync|rotation_retry_scheduled|rotation_suspended',
             `endpoint_id` INT(12) NULL,
             `account_id` INT(12) NULL,
             `user_id` INT(12) NOT NULL,

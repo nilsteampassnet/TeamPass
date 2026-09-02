@@ -705,6 +705,78 @@ function laprComputeNextRotation(?string $lastRotationAt, int $frequencyDays, ?i
 }
 
 /**
+ * Whether a LAPR failure is a transient network condition worth retrying.
+ * Authentication, host-key, privilege and data-consistency failures require
+ * an operator action and must not be retried automatically.
+ *
+ * @param string $errorCode LAPR error taxonomy code
+ *
+ * @return bool
+ */
+function laprIsTransientConnectionError(string $errorCode): bool
+{
+    return in_array($errorCode, [
+        'ERR_TIMEOUT',
+        'ERR_REFUSED',
+        'ERR_HOST_UNREACHABLE',
+        'ERR_NOT_CONNECTED',
+    ], true);
+}
+
+/**
+ * Translate an endpoint check failure into its persisted availability state.
+ *
+ * @param string $errorCode LAPR error taxonomy code
+ *
+ * @return string 'unreachable' for network outages, 'error' otherwise
+ */
+function laprEndpointStatusForCheckFailure(string $errorCode): string
+{
+    return laprIsTransientConnectionError($errorCode) ? 'unreachable' : 'error';
+}
+
+/**
+ * Compute when an enrolled endpoint must next be checked. The five-minute
+ * floor prevents a bad setting from creating a tight SSH retry loop.
+ *
+ * @param array<string, mixed> $settings TeamPass settings
+ * @param int|null             $now      Unix timestamp reference
+ * @param string|null          $errorCode Last check error, when any
+ *
+ * @return string 'Y-m-d H:i:s'
+ */
+function laprComputeNextEndpointCheck(array $settings, ?int $now = null, ?string $errorCode = null): string
+{
+    $now = $now ?? time();
+    $intervalMinutes = laprIsTransientConnectionError((string) $errorCode)
+        ? max(5, (int) ($settings['lapr_retry_delay_minutes'] ?? 60))
+        : max(5, (int) ($settings['lapr_endpoint_check_interval_minutes'] ?? 1440));
+
+    return date('Y-m-d H:i:s', $now + $intervalMinutes * 60);
+}
+
+/**
+ * Compute the temporary lease written when an endpoint check is enqueued.
+ *
+ * The lease prevents a crashed worker from causing a new task on every handler
+ * tick. It must never be longer than the administrator's normal check cadence,
+ * even when the rotation retry delay is configured to a larger value.
+ *
+ * @param array<string, mixed> $settings TeamPass settings
+ * @param int|null             $now      Unix timestamp reference
+ *
+ * @return string 'Y-m-d H:i:s'
+ */
+function laprComputeEndpointCheckLease(array $settings, ?int $now = null): string
+{
+    $now = $now ?? time();
+    $normalMinutes = max(5, (int) ($settings['lapr_endpoint_check_interval_minutes'] ?? 1440));
+    $retryMinutes = max(5, (int) ($settings['lapr_retry_delay_minutes'] ?? 60));
+
+    return date('Y-m-d H:i:s', $now + min($normalMinutes, $retryMinutes) * 60);
+}
+
+/**
  * Prepare a stored LAPR datetime for regional display and chronological sort.
  *
  * LAPR stores SQL DATETIME values in the TeamPass-configured timezone. The

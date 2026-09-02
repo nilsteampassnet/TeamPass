@@ -76,12 +76,13 @@ date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
  *
  * @param string $field    Setting key (teampass_misc intitule)
  * @param array  $SETTINGS Settings array
+ * @param int    $default  Value used before the setting is seeded
  *
  * @return string
  */
-function laprAdminToggle(string $field, array $SETTINGS): string
+function laprAdminToggle(string $field, array $SETTINGS, int $default = 0): string
 {
-    $on = isset($SETTINGS[$field]) === true && (int) $SETTINGS[$field] === 1;
+    $on = (int) ($SETTINGS[$field] ?? $default) === 1;
     return "<div class='toggle toggle-modern' id='" . $field . "' data-toggle-on='" . ($on ? 'true' : 'false') . "'></div>"
         . "<input type='hidden' id='" . $field . "_input' value='" . ($on ? '1' : '0') . "' />";
 }
@@ -183,6 +184,14 @@ function laprAdminToggle(string $field, array $SETTINGS): string
                         <div class="form-group row">
                             <div class="col-7"><?php echo $lang->get('lapr_scheduler_interval_setting'); ?></div>
                             <div class="col-5"><input type="number" min="1" class="form-control form-control-sm" id="lapr_scheduler_interval_minutes" value="<?php echo (int) ($SETTINGS['lapr_scheduler_interval_minutes'] ?? 5); ?>"></div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-7"><?php echo $lang->get('lapr_endpoint_checks_enabled_setting'); ?></div>
+                            <div class="col-5"><?php echo laprAdminToggle('lapr_endpoint_checks_enabled', $SETTINGS); ?></div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-7"><?php echo $lang->get('lapr_endpoint_check_interval_setting'); ?></div>
+                            <div class="col-5"><input type="number" min="5" class="form-control form-control-sm" id="lapr_endpoint_check_interval_minutes" value="<?php echo (int) ($SETTINGS['lapr_endpoint_check_interval_minutes'] ?? 1440); ?>"></div>
                         </div>
                         <div class="form-group row">
                             <div class="col-7"><?php echo $lang->get('lapr_max_retries_setting'); ?></div>
