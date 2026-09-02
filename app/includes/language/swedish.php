@@ -2834,7 +2834,7 @@ return array(
     'security_dashboard_sort_folder' => 'Folder',
     'security_dashboard_last_change' => 'Password changed',
     'security_dashboard_last_change_unknown' => 'Unknown',
-    'search_term_placeholder' => 'Search items…',
+    'search_term_placeholder' => 'Search items and folders…',
     'search_filters' => 'Filters',
     'search_reset' => 'Återställ sökning',
     'search_clear_all' => 'Clear all',
