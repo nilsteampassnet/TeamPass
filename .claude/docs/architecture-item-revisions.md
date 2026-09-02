@@ -1,6 +1,6 @@
 # Item Revisions & Offline Synchronization
 
-> Last updated: 2026-08-19 — branch `feat/item-revision-id`, target release 3.2.2
+> Last updated: 2026-08-24 — target release 3.2.2
 > Design study: `workReadmeFiles/item-revision-id-study.md`
 
 Gives every item a **monotonic revision ID** so an offline client (the mobile vault) can tell
@@ -22,7 +22,8 @@ too coarse. That workaround can now be replaced by a revision check.
 ## Data model
 
 ```sql
-teampass_items.revision  INT UNSIGNED NOT NULL DEFAULT 0   -- latest journal revision
+teampass_items.revision             INT UNSIGNED NOT NULL DEFAULT 0
+teampass_items.revision_changed_at  BIGINT UNSIGNED NULL  -- timestamp paired with revision
 
 teampass_items_revisions:
   revision           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY  -- THE global sequence
@@ -38,9 +39,10 @@ teampass_items_revisions:
 (`revA != revB`) and "what changed since X?" (`revision > cursor`). A per-item counter cannot do
 the second.
 
-**No backfill.** `revision = 0` means "never changed since tracking was installed", which is
-consistent for every client — they only ever compare an item against *their own* cached copy. Same
-precedent as the `hibp_*` columns, where the default *is* the migration.
+**Revision 0 is not backfilled.** It means "never changed since tracking was installed" and its
+`revision_changed_at` is `NULL`. During upgrade, a positive revision timestamp is backfilled only
+when the exact `(item_id, revision)` row is still present in the journal. If pruning already removed
+that row, the date remains `NULL` rather than being guessed from the unreliable `items.updated_at`.
 
 **The journal is not a history.** It records *that* a change happened and in which folder, never
 *what* the value was. Item history stays `teampass_log_items` (+ `old_value` for passwords).
@@ -68,10 +70,12 @@ would make every offline client re-download an item nobody touched.
 (`main.queries.php:3375`) and the custom-field re-encryption (`fields.queries.php`, `edit_field` /
 `dataIsEncryptedInDB`) change the stored bytes but not the plaintext the client caches.
 
-**Per-request memo.** `update_item` calls `logItems()` once per changed attribute (~15× per save);
+`bumpItemRevision()` computes one `changedAt = time()` value and stores it in both the journal row
+and `items.revision_changed_at` alongside `items.revision`. **Per-request memo.** `update_item` calls
+`logItems()` once per changed attribute (~15× per save);
 the memo collapses them into one revision. A later call in the same request **rewrites the stored
 row in place** when it knows more — a deletion, or the source folder of a move
-(`itemRevisionShouldUpgradeEntry()`). `resetItemRevisionMemo()` is called per subtask by
+(`itemRevisionShouldUpgradeEntry()`) — it never changes the timestamp. `resetItemRevisionMemo()` is called per subtask by
 `background_tasks___worker.php`, which is long-lived.
 
 **Rule: a new item write path that does not go through `logItems()` must bump explicitly.** The
@@ -87,9 +91,14 @@ five that exist today:
 
 ## API surface
 
-- `revision` returned by `item/get`, `item/inFolders`, `item/findByUrl`, `item/create`, `item/update`
+- `revision` and `revision_changed_at` returned by `item/get`, `item/inFolders`,
+  `item/findByUrl`, `item/create`, `item/update`
 - `GET /api/v1/item/changes?since=&limit=` — the delta feed (see `api-reference.md`)
 - `PUT /api/v1/item/update` accepts an optional `revision` precondition → `409` on mismatch
+
+`revision_changed_at` is a Unix UTC timestamp in seconds, or `NULL` when no reliable date exists.
+The delta feed takes the pair from the winning journal row after deduplication; tombstones cannot
+read from `items` because a purged item no longer has a row.
 
 ## The sync window setting
 

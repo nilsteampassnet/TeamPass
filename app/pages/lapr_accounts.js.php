@@ -56,6 +56,8 @@ $laprAccountTranslations = [
     'rotationFailed' => $lang->get('lapr_rotation_failed'),
     'rotationTimeout' => $lang->get('lapr_rotation_status_timeout'),
     'selfRotationWarning' => $lang->get('lapr_self_management_rotation_warning'),
+    'pausedEndpointRotationWarning' => $lang->get('lapr_endpoint_paused_rotation_warning'),
+    'rotationCancelledEndpointPaused' => $lang->get('lapr_rotation_cancelled_endpoint_paused'),
     'manualResync' => $lang->get('lapr_manual_resync_required'),
     'credentialResync' => $lang->get('lapr_ssh_credential_resync_required'),
     'hostkeyMismatch' => $lang->get('lapr_hostkey_mismatch_blocked'),
@@ -88,6 +90,8 @@ $laprAccountTranslations = [
     'statusPaused' => $lang->get('lapr_status_paused'),
     'statusError' => $lang->get('lapr_status_error'),
     'statusDeleted' => $lang->get('lapr_status_deleted'),
+    'retryScheduled' => $lang->get('lapr_retry_scheduled_detail'),
+    'lastError' => $lang->get('lapr_last_error'),
     'discoveredUser' => $lang->get('lapr_discovered_user'),
     'discoveredUid' => $lang->get('lapr_discovered_uid'),
     'discoveredShell' => $lang->get('lapr_discovered_shell'),
@@ -230,11 +234,11 @@ function laprLoadAccounts() {
         DOMPurify.sanitize(a.endpoint),
         DOMPurify.sanitize(a.policy || '—'),
         {
-          display: (a.last_rotation_at ? DOMPurify.sanitize(a.last_rotation_at) : '—') + ' ' + laprRotationBadge(a.last_rotation_status),
+          display: (a.last_rotation_at ? DOMPurify.sanitize(a.last_rotation_at) : '—') + ' ' + laprRotationBadge(a.last_rotation_status) + laprLastRotationError(a),
           timestamp: Number(a.last_rotation_at_ts || 0)
         },
         {
-          display: DOMPurify.sanitize(a.next_rotation_at || '—'),
+          display: DOMPurify.sanitize(a.next_rotation_at || '—') + laprRetryDetails(a),
           timestamp: Number(a.next_rotation_at_ts || 0)
         },
         laprAccStatusBadge(a.status),
@@ -269,6 +273,21 @@ function laprRotationBadge(status) {
   return ''
 }
 
+function laprLastRotationError(account) {
+  if (!account.last_rotation_error) { return '' }
+  return '<div class="small text-danger mt-1">' + DOMPurify.sanitize(laprAccLang.lastError) + ': <code>' +
+    DOMPurify.sanitize(account.last_rotation_error) + '</code></div>'
+}
+
+function laprRetryDetails(account) {
+  if (!account.retry_at || Number(account.retry_count || 0) <= 0) { return '' }
+  const text = laprAccLang.retryScheduled
+    .replace('#current#', String(account.retry_count))
+    .replace('#max#', String(account.max_retries))
+    .replace('#date#', String(account.retry_at))
+  return '<div class="small text-warning mt-1"><i class="fas fa-redo mr-1"></i>' + DOMPurify.sanitize(text) + '</div>'
+}
+
 function laprAccStatusBadge(status) {
   const map = { active: 'success', paused: 'secondary', error: 'danger', deleted: 'dark' }
   return '<span class="badge badge-' + (map[status] || 'secondary') + '">' +
@@ -278,7 +297,8 @@ function laprAccStatusBadge(status) {
 function laprAccountActions(a) {
   const canRotate = a.status === 'active' || a.status === 'error'
   const canReset = a.status === 'paused' || a.status === 'error'
-  return (canRotate ? '<button class="btn btn-xs btn-success lapr-rotate-acc" data-id="' + a.id + '" data-self-target="' + (a.is_self_target ? '1' : '0') + '" title="' + laprAccLang.rotateTitle + '"><i class="fas fa-rotate"></i></button> ' : '') +
+  const endpointPaused = a.endpoint_status === 'disabled'
+  return (canRotate ? '<button class="btn btn-xs ' + (endpointPaused ? 'btn-outline-warning' : 'btn-success') + ' lapr-rotate-acc" data-id="' + a.id + '" data-self-target="' + (a.is_self_target ? '1' : '0') + '" data-endpoint-paused="' + (endpointPaused ? '1' : '0') + '" title="' + laprAccLang.rotateTitle + '"><i class="fas fa-rotate"></i></button> ' : '') +
     (canReset ? '<button class="btn btn-xs btn-warning lapr-reset-acc" data-id="' + a.id + '" title="' + laprAccLang.resetTitle + '"><i class="fas fa-rotate-left"></i></button> ' : '') +
     '<button class="btn btn-xs btn-info lapr-history-acc" data-id="' + a.id + '" title="' + laprAccLang.historyTitle + '"><i class="fas fa-clock-rotate-left"></i></button> ' +
     '<button class="btn btn-xs btn-secondary lapr-editpolicy" data-id="' + a.id + '" data-policy="' + a.policy_id + '"><i class="fas fa-scroll"></i></button> ' +
@@ -296,21 +316,28 @@ function laprResetAccount(id) {
   })
 }
 
-function laprRotateAccount(id, isSelfTarget) {
-  const confirmation = isSelfTarget
-    ? DOMPurify.sanitize(laprAccLang.selfRotationWarning) + '<br><br>' + DOMPurify.sanitize(laprAccLang.rotateConfirm)
-    : laprAccLang.rotateConfirm
+function laprRotateAccount(id, isSelfTarget, endpointPaused) {
+  const warnings = []
+  if (isSelfTarget) { warnings.push(laprAccLang.selfRotationWarning) }
+  if (endpointPaused) { warnings.push(laprAccLang.pausedEndpointRotationWarning) }
+  warnings.push(laprAccLang.rotateConfirm)
+  const confirmation = warnings.map(function (warning) {
+    return DOMPurify.sanitize(warning)
+  }).join('<br><br>')
   launchConfirmDialog(
     laprAccLang.rotateTitle,
-    DOMPurify.sanitize(confirmation),
-    function () { laprStartAccountRotation(id) },
+    confirmation,
+    function () { laprStartAccountRotation(id, endpointPaused) },
     laprAccLang.rotateTitle
   )
 }
 
-function laprStartAccountRotation(id) {
+function laprStartAccountRotation(id, endpointPaused) {
   toastr.info('<i class="fas fa-circle-notch fa-spin mr-1"></i>' + laprAccLang.rotationInProgress)
-  laprAccPost('start_rotation', { id: id }, function (data) {
+  laprAccPost('start_rotation', {
+    id: id,
+    confirm_endpoint_paused: endpointPaused ? 1 : 0
+  }, function (data) {
     if (data.error === true) {
       toastr.clear()
       toastr.error(data.message || laprAccLang.errorGeneric)
@@ -348,6 +375,8 @@ function laprPollRotation(taskId, attempt) {
       toastr.error(laprAccLang.credentialResync)
     } else if (data.error_code === 'ERR_HOSTKEY_MISMATCH') {
       toastr.error(laprAccLang.hostkeyMismatch)
+    } else if (data.error_code === 'ERR_ENDPOINT_PAUSED') {
+      toastr.warning(laprAccLang.rotationCancelledEndpointPaused)
     } else {
       toastr.error(laprAccLang.rotationFailed + ' (' + DOMPurify.sanitize(data.error_code || '') + ')')
     }
@@ -670,7 +699,11 @@ $(document).ready(function () {
     laprDeleteAccount($(this).data('id'))
   })
   $('#lapr-accounts-table').on('click', '.lapr-rotate-acc', function () {
-    laprRotateAccount($(this).data('id'), String($(this).attr('data-self-target')) === '1')
+    laprRotateAccount(
+      $(this).data('id'),
+      String($(this).attr('data-self-target')) === '1',
+      String($(this).attr('data-endpoint-paused')) === '1'
+    )
   })
   $('#lapr-accounts-table').on('click', '.lapr-reset-acc', function () {
     laprResetAccount($(this).data('id'))

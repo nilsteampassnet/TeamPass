@@ -73,6 +73,17 @@ $laprEndpointTranslations = [
     'statusUnreachable' => $lang->get('lapr_status_unreachable'),
     'statusDeleted' => $lang->get('lapr_status_deleted'),
     'selfManagementAckRequired' => $lang->get('lapr_self_management_ack_required'),
+    'checkEndpoint' => $lang->get('lapr_check_endpoint'),
+    'checkSuccess' => $lang->get('lapr_endpoint_check_success'),
+    'checkReachableNoRights' => $lang->get('lapr_endpoint_check_reachable_no_rights'),
+    'lastError' => $lang->get('lapr_last_error'),
+    'pauseEndpoint' => $lang->get('lapr_pause_endpoint'),
+    'resumeEndpoint' => $lang->get('lapr_resume_endpoint'),
+    'resumeConfirm' => $lang->get('lapr_resume_endpoint_confirm'),
+    'resumeSuccess' => $lang->get('lapr_resume_endpoint_success'),
+    'resumeFailed' => $lang->get('lapr_resume_endpoint_failed'),
+    'resumeDueAccounts' => $lang->get('lapr_resume_due_accounts'),
+    'statusPaused' => $lang->get('lapr_endpoint_status_paused'),
 ];
 ?>
 <script>
@@ -84,6 +95,9 @@ let laprEndpointsTable = null
 let laprTestPollTimer = null
 let laprVerifiedSnapshot = null
 let laprRemediationCommands = ''
+let laprEndpointRows = {}
+let laprEndpointCheckTimer = null
+let laprPauseEndpointId = 0
 
 const laprLang = <?php echo json_encode($laprEndpointTranslations, $laprEndpointJsJsonFlags); ?>;
 const laprEndpointDataTablesLang = <?php echo json_encode($laprEndpointDataTablesLang, $laprEndpointJsJsonFlags); ?>;
@@ -92,8 +106,8 @@ function laprHtml(value) {
   return $('<div>').text(value === null || value === undefined ? '' : String(value)).html()
 }
 
-function laprSafeSshUsername() {
-  const username = ($('#lapr-ep-username').val() || '').toString().trim()
+function laprSafeSshUsername(value) {
+  const username = (value || $('#lapr-ep-username').val() || '').toString().trim()
   return /^[a-z_][a-z0-9_.-]{0,63}\$?$/i.test(username) ? username : '<ssh-user>'
 }
 
@@ -123,10 +137,10 @@ function laprRenderRemediation(commands, osName, connectionFailed) {
   return html
 }
 
-function laprBuildConnectionRemediation(errorCode) {
-  const form = laprCollectEndpointForm()
+function laprBuildConnectionRemediation(errorCode, endpoint) {
+  const form = endpoint || laprCollectEndpointForm()
   const hostname = /^[a-z0-9_.:-]+$/i.test(form.hostname) ? form.hostname : '<hostname>'
-  const username = laprSafeSshUsername()
+  const username = laprSafeSshUsername(form.ssh_username)
   const commands = [
     '# ' + laprLang.remediationFromTeamPass,
     'getent hosts ' + hostname,
@@ -144,9 +158,9 @@ function laprBuildConnectionRemediation(errorCode) {
   return laprRenderRemediation(commands, '', true)
 }
 
-function laprBuildCapabilityRemediation(data) {
+function laprBuildCapabilityRemediation(data, endpoint) {
   const osInfo = data.os_info || {}
-  const username = laprSafeSshUsername()
+  const username = laprSafeSshUsername(endpoint ? endpoint.ssh_username : '')
   const family = ['debian', 'rhel', 'suse', 'arch', 'alpine'].indexOf(osInfo.os_family) !== -1
     ? osInfo.os_family
     : 'generic'
@@ -207,6 +221,10 @@ function laprLoadEndpoints() {
       toastr.error(data.message || laprLang.errorGeneric)
       return
     }
+    laprEndpointRows = {}
+    ;(data.data || []).forEach(function (ep) {
+      laprEndpointRows[ep.id] = ep
+    })
     const rows = (data.data || []).map(function (ep) {
       return [
         DOMPurify.sanitize(ep.label),
@@ -215,6 +233,8 @@ function laprLoadEndpoints() {
         DOMPurify.sanitize(ep.os_name || '') + (ep.is_root ? ' <span class="badge badge-secondary">root</span>' : (ep.has_sudo ? ' <span class="badge badge-secondary">sudo</span>' : '')),
         laprStatusBadge(ep.status) + (ep.hostkey_verified === 0
           ? ' <span class="badge badge-warning">' + DOMPurify.sanitize(laprLang.hostkeyUnchecked) + '</span>'
+          : '') + (ep.last_error
+          ? '<div class="small ' + (ep.status === 'disabled' ? 'text-muted' : 'text-danger') + ' mt-1">' + laprHtml(laprLang.lastError) + ': <code>' + laprHtml(ep.last_error) + '</code></div>'
           : ''),
         {
           display: DOMPurify.sanitize(ep.last_check_at || '—'),
@@ -247,7 +267,7 @@ function laprStatusBadge(status) {
   const map = { active: 'success', disabled: 'secondary', error: 'danger', unreachable: 'warning', deleted: 'dark' }
   const labels = {
     active: laprLang.statusActive,
-    disabled: laprLang.statusDisabled,
+    disabled: laprLang.statusPaused,
     error: laprLang.statusError,
     unreachable: laprLang.statusUnreachable,
     deleted: laprLang.statusDeleted
@@ -257,7 +277,116 @@ function laprStatusBadge(status) {
 }
 
 function laprEndpointActions(ep) {
-  return '<button class="btn btn-xs btn-danger lapr-delete-ep" data-id="' + ep.id + '"><i class="fas fa-trash"></i></button>'
+  const pauseAction = ep.status === 'disabled'
+    ? '<button class="btn btn-xs btn-success lapr-resume-ep" data-id="' + ep.id + '" title="' + laprHtml(laprLang.resumeEndpoint) + '"><i class="fas fa-play"></i></button>'
+    : '<button class="btn btn-xs btn-warning lapr-pause-ep" data-id="' + ep.id + '" title="' + laprHtml(laprLang.pauseEndpoint) + '"><i class="fas fa-pause"></i></button>'
+  return '<div class="btn-group btn-group-sm" role="group">' +
+    '<button class="btn btn-xs btn-info lapr-check-ep" data-id="' + ep.id + '" title="' + laprHtml(laprLang.checkEndpoint) + '"><i class="fas fa-sync-alt"></i></button>' +
+    pauseAction +
+    '<button class="btn btn-xs btn-danger lapr-delete-ep" data-id="' + ep.id + '" title="' + laprHtml(laprLang.deleteLabel) + '"><i class="fas fa-trash"></i></button>' +
+    '</div>'
+}
+
+function laprStartEndpointCheck(id, resume) {
+  const endpoint = laprEndpointRows[id]
+  if (!endpoint) { return }
+
+  if (laprEndpointCheckTimer) { clearTimeout(laprEndpointCheckTimer) }
+  $('.lapr-check-ep[data-id="' + id + '"],.lapr-resume-ep[data-id="' + id + '"]').prop('disabled', true)
+  $('#lapr-endpoint-check-result').html('<div class="text-info"><i class="fas fa-circle-notch fa-spin mr-1"></i>' + laprHtml(laprLang.testInProgress) + '</div>')
+  $('#modal_lapr_endpoint_check').modal('show')
+
+  laprPost(resume ? 'resume_endpoint' : 'start_check', { id: id }, function (data) {
+    if (data.error === true) {
+      $('.lapr-check-ep[data-id="' + id + '"],.lapr-resume-ep[data-id="' + id + '"]').prop('disabled', false)
+      $('#lapr-endpoint-check-result').html('<div class="text-danger">' + laprHtml(data.message || laprLang.testFailed) + '</div>')
+      return
+    }
+    laprPollEndpointCheck(data.task_id, id)
+  })
+}
+
+function laprPollEndpointCheck(taskId, endpointId) {
+  laprPost('check_status', { task_id: taskId }, function (data) {
+    if (data.error === true) {
+      $('.lapr-check-ep[data-id="' + endpointId + '"],.lapr-resume-ep[data-id="' + endpointId + '"]').prop('disabled', false)
+      $('#lapr-endpoint-check-result').html('<div class="text-danger">' + laprHtml(data.message || laprLang.testFailed) + '</div>')
+      return
+    }
+    if (data.finished !== true) {
+      laprEndpointCheckTimer = setTimeout(function () {
+        laprPollEndpointCheck(taskId, endpointId)
+      }, 1500)
+      return
+    }
+
+    $('.lapr-check-ep[data-id="' + endpointId + '"],.lapr-resume-ep[data-id="' + endpointId + '"]').prop('disabled', false)
+    const endpoint = laprEndpointRows[endpointId] || {}
+    let html = ''
+    if (data.success === true) {
+      const successMessage = data.resumed === true ? laprLang.resumeSuccess : laprLang.checkSuccess
+      html = '<div class="alert alert-success mb-0"><i class="fas fa-check mr-1"></i>' + laprHtml(successMessage) + '</div>'
+      if (data.os_info && data.os_info.os_name) {
+        html += '<div class="small mt-2"><strong>' + laprHtml(laprLang.detectedOs) + ':</strong> ' + laprHtml(data.os_info.os_name) + '</div>'
+      }
+      if (data.resumed === true && Number(data.due_accounts || 0) > 0) {
+        html += '<div class="alert alert-info py-2 mt-2 mb-0">' + laprHtml(
+          laprLang.resumeDueAccounts.replace('#count#', String(data.due_accounts))
+        ) + '</div>'
+      }
+    } else if (data.reachable === true) {
+      html = '<div class="alert alert-danger"><i class="fas fa-user-shield mr-1"></i>' + laprHtml(laprLang.checkReachableNoRights) + '</div>'
+      if (data.resume_requested === true) {
+        html += '<div class="alert alert-warning py-2">' + laprHtml(laprLang.resumeFailed) + '</div>'
+      }
+      html += laprBuildCapabilityRemediation(data, endpoint)
+    } else {
+      html = '<div class="alert alert-danger"><i class="fas fa-times mr-1"></i>' + laprHtml(laprLang.testFailed) +
+        (data.error_code ? ' (' + laprHtml(data.error_code) + ')' : '') + '</div>'
+      if (data.resume_requested === true) {
+        html += '<div class="alert alert-warning py-2">' + laprHtml(laprLang.resumeFailed) + '</div>'
+      }
+      html += laprBuildConnectionRemediation(data.error_code || '', endpoint)
+    }
+    $('#lapr-endpoint-check-result').html(html)
+    laprLoadEndpoints()
+  })
+}
+
+function laprOpenPauseEndpoint(id) {
+  if (!laprEndpointRows[id]) { return }
+  laprPauseEndpointId = Number(id)
+  $('#lapr-endpoint-pause-reason').val('maintenance')
+  $('#modal_lapr_endpoint_pause').modal('show')
+}
+
+function laprConfirmPauseEndpoint() {
+  if (laprPauseEndpointId <= 0) { return }
+  const id = laprPauseEndpointId
+  $('#lapr-endpoint-pause-confirm').prop('disabled', true)
+  laprPost('pause_endpoint', {
+    id: id,
+    reason: $('#lapr-endpoint-pause-reason').val()
+  }, function (data) {
+    $('#lapr-endpoint-pause-confirm').prop('disabled', false)
+    if (data.error === true) {
+      toastr.error(data.message || laprLang.errorGeneric)
+      return
+    }
+    $('#modal_lapr_endpoint_pause').modal('hide')
+    toastr.success(data.message)
+    laprLoadEndpoints()
+  })
+}
+
+function laprResumeEndpoint(id) {
+  launchConfirmDialog(
+    laprLang.resumeEndpoint,
+    DOMPurify.sanitize(laprLang.resumeConfirm),
+    function () { laprStartEndpointCheck(id, true) },
+    laprLang.resumeEndpoint,
+    laprLang.closeLabel
+  )
 }
 
 function laprOpenEndpointModal() {
@@ -489,6 +618,20 @@ $(document).ready(function () {
   })
   $('#lapr-endpoints-table').on('click', '.lapr-delete-ep', function () {
     laprDeleteEndpoint($(this).data('id'))
+  })
+  $('#lapr-endpoints-table').on('click', '.lapr-check-ep', function () {
+    laprStartEndpointCheck($(this).data('id'), false)
+  })
+  $('#lapr-endpoints-table').on('click', '.lapr-pause-ep', function () {
+    laprOpenPauseEndpoint($(this).data('id'))
+  })
+  $('#lapr-endpoints-table').on('click', '.lapr-resume-ep', function () {
+    laprResumeEndpoint($(this).data('id'))
+  })
+  $('#lapr-endpoint-pause-confirm').on('click', laprConfirmPauseEndpoint)
+  $('#modal_lapr_endpoint_pause').on('hidden.bs.modal', function () {
+    laprPauseEndpointId = 0
+    $('#lapr-endpoint-pause-confirm').prop('disabled', false)
   })
 })
 </script>

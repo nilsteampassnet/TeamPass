@@ -181,6 +181,59 @@ The account creation background task (key generation) may not have completed bef
 
 ---
 
+## OAuth2 synchronization fails with "Insufficient privileges to complete the operation"
+
+### Symptom
+
+On the `Users` page, the **OAuth2 synchronization** button shows a red notification reading
+*"Insufficient privileges to complete the operation."* and no directory account is listed.
+Signing in through Entra can work perfectly at the same time.
+
+### Cause
+
+The message comes from Microsoft Graph (error code `Authorization_RequestDenied`), not from
+TeamPass, which only relays it.
+
+The synchronization screen queries Graph **as the application itself** (client credentials grant).
+The token it obtains therefore carries **only the permissions of type `Application`**; the
+`Delegated` permissions used at login are ignored on this call. Listing the users of a directory
+requires `User.Read.All` (or `Directory.Read.All`) of type `Application`, and `Group.Read.All` of
+type `Application` is what then reads the groups of each user.
+
+The usual cause is an app registration where `User.Read.All` is present but was added as
+`Delegated`. The Azure portal lists it as granted and consented, so the configuration looks
+complete while the permission the synchronization needs is in fact missing.
+
+### Fix
+
+1. In the Azure portal, open your app registration → **API permissions** → **Add a permission** →
+   **Microsoft Graph** → **Application permissions**.
+2. Add **`User.Read.All`**, and check that **`Group.Read.All`** is also present with type
+   `Application`.
+3. Click **Grant admin consent** for your directory, then run the synchronization again.
+
+The full permission list is in
+[Authentication → Oauth2 with Microsoft Entra](../features/authentication.md).
+
+### If the message appears at login instead
+
+The same Graph error can be raised by the login flow, which reads the groups of the user who is
+signing in (`GET /me/memberOf`). Both cases are easy to tell apart:
+
+| Where | What is displayed |
+|---|---|
+| `Users` page, synchronization | A red notification with the bare Graph message |
+| Login page | A line of text starting with *"Erreur lors de la récupération des informations utilisateur"* (this message is not translated yet) |
+
+At login, the `Delegated` permissions of the list linked above are sufficient for a regular member
+of the tenant. The common cause of a refusal is a **guest (B2B) account** in a tenant whose guest access is restricted
+to the guest's own directory object — such an account cannot read its own group memberships.
+Testing with a member account of the tenant confirms it. The container log also names the failing
+path: `TEAMPASS OAuth2 - user sync failed:` for the synchronization, `Unexpected error:` for the
+login.
+
+---
+
 ## MFA QR code does not appear / 2FA reset is refused
 
 ### Symptom
