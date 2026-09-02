@@ -535,7 +535,14 @@ function tpFilePermissionsScan(
         $directory = new RecursiveDirectoryIterator($rootReal, FilesystemIterator::SKIP_DOTS);
         $filter = new RecursiveCallbackFilterIterator(
             $directory,
-            static function (SplFileInfo $current) use ($rootReal, $shallowRuntimeLookup): bool {
+            static function (
+                mixed $current,
+                mixed $key,
+                RecursiveIterator $iterator
+            ) use ($rootReal, $shallowRuntimeLookup): bool {
+                if ($current instanceof SplFileInfo === false) {
+                    return false;
+                }
                 $relative = str_replace('\\', '/', substr($current->getPathname(), strlen($rootReal) + 1));
                 return tpFileScopeIsRepositoryArtifact($relative) === false
                     && isset($shallowRuntimeLookup[$relative]) === false;

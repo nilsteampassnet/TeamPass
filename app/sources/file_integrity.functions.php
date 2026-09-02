@@ -314,7 +314,7 @@ function tpFileIntegrityIsExecutablePath(string $path): bool
     ) {
         return true;
     }
-    $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+    $extension = strtolower((string) pathinfo($path, PATHINFO_EXTENSION));
     return in_array($extension, ['php', 'phtml', 'phar', 'inc', 'cgi', 'pl', 'py', 'sh'], true);
 }
 
@@ -364,7 +364,14 @@ function tpFileIntegrityCollectTree(string $absoluteRoot, string $relativeRoot, 
         $directory = new RecursiveDirectoryIterator($absoluteRoot, FilesystemIterator::SKIP_DOTS);
         $filter = new RecursiveCallbackFilterIterator(
             $directory,
-            static function (SplFileInfo $current) use ($absoluteRoot, $relativeRoot, &$warnings): bool {
+            static function (
+                mixed $current,
+                mixed $key,
+                RecursiveIterator $iterator
+            ) use ($absoluteRoot, $relativeRoot, &$warnings): bool {
+                if ($current instanceof SplFileInfo === false) {
+                    return false;
+                }
                 $suffix = str_replace('\\', '/', substr($current->getPathname(), strlen($absoluteRoot)));
                 $path = trim($relativeRoot . '/' . ltrim($suffix, '/'), '/');
                 if (tpFileIntegrityIsExcluded($path)) {
@@ -506,8 +513,10 @@ function tpFileIntegrityIsRunning(string $root): bool
         return false;
     }
     $available = @flock($handle, LOCK_EX | LOCK_NB);
-    if ($available) {
-        @flock($handle, LOCK_UN);
+    if ($available && @flock($handle, LOCK_UN) === false) {
+        // Closing the stream is the fallback lock release mechanism.
+        fclose($handle);
+        return false;
     }
     fclose($handle);
 
@@ -749,16 +758,31 @@ function tpFileIntegrityWriteJsonFile(string $path, array $payload): void
     if (file_put_contents($temporaryPath, $encoded, LOCK_EX) === false) {
         throw new RuntimeException('The temporary file integrity report could not be written.');
     }
-    @chmod($temporaryPath, 0640);
+    if (@chmod($temporaryPath, 0640) === false) {
+        $cleanupFailed = is_file($temporaryPath) && @unlink($temporaryPath) === false;
+        throw new RuntimeException(
+            $cleanupFailed
+                ? 'The temporary file integrity report could not be secured or removed.'
+                : 'The temporary file integrity report could not be secured.'
+        );
+    }
 
     if (@rename($temporaryPath, $path) === false) {
         if (file_put_contents($path, $encoded, LOCK_EX) === false) {
-            @unlink($temporaryPath);
-            throw new RuntimeException('The file integrity report could not be written.');
+            $cleanupFailed = is_file($temporaryPath) && @unlink($temporaryPath) === false;
+            throw new RuntimeException(
+                $cleanupFailed
+                    ? 'The file integrity report could not be written and its temporary file could not be removed.'
+                    : 'The file integrity report could not be written.'
+            );
         }
-        @unlink($temporaryPath);
+        if (is_file($temporaryPath) && @unlink($temporaryPath) === false) {
+            throw new RuntimeException('The temporary file integrity report could not be removed.');
+        }
     }
-    @chmod($path, 0640);
+    if (@chmod($path, 0640) === false) {
+        throw new RuntimeException('The file integrity report permissions could not be secured.');
+    }
 }
 
 /**
@@ -850,11 +874,13 @@ function tpFileIntegrityLoadSummary(string $root): array
     }
 
     $decoded = is_string($contents) ? json_decode($contents, true) : null;
-    if (
-        is_array($decoded) === false
-        || (int) ($decoded['schema_version'] ?? 0) !== 1
-        || isset($decoded['issues'])
-    ) {
+    if (is_array($decoded) === false) {
+        $default['status'] = 'error';
+        $default['scan_status'] = 'error';
+        $default['report_invalid'] = true;
+        return tpFileIntegrityApplyRuntimeState($root, $default);
+    }
+    if ((int) ($decoded['schema_version'] ?? 0) !== 1 || array_key_exists('issues', $decoded)) {
         $default['status'] = 'error';
         $default['scan_status'] = 'error';
         $default['report_invalid'] = true;
@@ -888,7 +914,19 @@ function tpFileIntegrityLoadReport(string $root, ?string $expectedScanId = null)
     }
 
     $decoded = is_string($contents) ? json_decode($contents, true) : null;
-    if (is_array($decoded) === false || (int) ($decoded['schema_version'] ?? 0) !== 1) {
+    if (is_array($decoded) === false) {
+        $default['status'] = 'error';
+        $default['report_invalid'] = true;
+        $default['issues']['warnings'][] = [
+            'path' => $path,
+            'message' => is_readable($path)
+                ? 'The saved file integrity report is invalid.'
+                : 'The saved file integrity report is not readable.',
+        ];
+        $default['counts']['warnings'] = 1;
+        return tpFileIntegrityApplyRuntimeState($root, $default);
+    }
+    if ((int) ($decoded['schema_version'] ?? 0) !== 1) {
         $default['status'] = 'error';
         $default['report_invalid'] = true;
         $default['issues']['warnings'][] = [
