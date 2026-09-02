@@ -1509,6 +1509,9 @@ switch ($post_type) {
         if ($post_field === 'tasks_max_drain_time') {
             $post_value = (string) min(3600, max(10, (int) $post_value));
         }
+        if ($post_field === 'lapr_endpoint_check_interval_minutes') {
+            $post_value = (string) min(525600, max(5, (int) $post_value));
+        }
 
         require_once 'main.functions.php';
 

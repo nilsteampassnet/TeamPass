@@ -194,10 +194,10 @@ class ItemRevisionsLogicTest extends TestCase
     public function testScanKeepsOnlyTheLastEntryPerItem(): void
     {
         $rows = [
-            ['revision' => 10, 'item_id' => 7, 'action' => 'updated'],
-            ['revision' => 11, 'item_id' => 9, 'action' => 'created'],
-            ['revision' => 12, 'item_id' => 7, 'action' => 'moved'],
-            ['revision' => 13, 'item_id' => 7, 'action' => 'deleted'],
+            ['revision' => 10, 'item_id' => 7, 'action' => 'updated', 'changed_at' => 1000],
+            ['revision' => 11, 'item_id' => 9, 'action' => 'created', 'changed_at' => 1100],
+            ['revision' => 12, 'item_id' => 7, 'action' => 'moved', 'changed_at' => 1200],
+            ['revision' => 13, 'item_id' => 7, 'action' => 'deleted', 'changed_at' => 1300],
         ];
 
         $winners = itemRevisionDedupeScan($rows);
@@ -205,7 +205,42 @@ class ItemRevisionsLogicTest extends TestCase
         self::assertCount(2, $winners);
         self::assertSame(13, (int) $winners[7]['revision']);
         self::assertSame('deleted', $winners[7]['action']);
+        self::assertSame(1300, (int) $winners[7]['changed_at']);
         self::assertSame(11, (int) $winners[9]['revision']);
+        self::assertSame(1100, (int) $winners[9]['changed_at']);
+    }
+
+    public function testRevisionMetadataKeepsRevisionAndTimestampPaired(): void
+    {
+        self::assertSame(
+            ['revision' => 42, 'revision_changed_at' => 1_787_563_378],
+            itemRevisionMetadataFromRow([
+                'revision' => '42',
+                'revision_changed_at' => '1787563378',
+            ])
+        );
+    }
+
+    public function testUnknownRevisionTimestampIsNeverInvented(): void
+    {
+        self::assertSame(
+            ['revision' => 0, 'revision_changed_at' => null],
+            itemRevisionMetadataFromRow(null)
+        );
+        self::assertSame(
+            ['revision' => 0, 'revision_changed_at' => null],
+            itemRevisionMetadataFromRow([
+                'revision' => 0,
+                'revision_changed_at' => 1_787_563_378,
+            ])
+        );
+        self::assertSame(
+            ['revision' => 42, 'revision_changed_at' => null],
+            itemRevisionMetadataFromRow([
+                'revision' => 42,
+                'revision_changed_at' => null,
+            ])
+        );
     }
 
     public function testScanIgnoresRowsWithoutAnItem(): void

@@ -352,6 +352,57 @@ class LaprFunctionsTest extends TestCase
         $this->assertSame($expected, laprComputeNextRotation($last, 7, $now));
     }
 
+    public function testOnlyConnectivityFailuresAreRetriedAutomatically(): void
+    {
+        foreach (['ERR_TIMEOUT', 'ERR_REFUSED', 'ERR_HOST_UNREACHABLE', 'ERR_NOT_CONNECTED'] as $code) {
+            $this->assertTrue(laprIsTransientConnectionError($code), $code);
+            $this->assertSame('unreachable', laprEndpointStatusForCheckFailure($code), $code);
+        }
+
+        foreach (['ERR_AUTH_FAILED', 'ERR_HOSTKEY_MISMATCH', 'ERR_CHPASSWD_FAILED', 'ERR_UNKNOWN'] as $code) {
+            $this->assertFalse(laprIsTransientConnectionError($code), $code);
+            $this->assertSame('error', laprEndpointStatusForCheckFailure($code), $code);
+        }
+    }
+
+    public function testEndpointCheckUsesNormalAndTransientRetryIntervals(): void
+    {
+        $now = 1_000_000_000;
+        $settings = [
+            'lapr_endpoint_check_interval_minutes' => '1440',
+            'lapr_retry_delay_minutes' => '60',
+        ];
+
+        $this->assertSame(
+            date('Y-m-d H:i:s', $now + 1440 * 60),
+            laprComputeNextEndpointCheck($settings, $now)
+        );
+        $this->assertSame(
+            date('Y-m-d H:i:s', $now + 60 * 60),
+            laprComputeNextEndpointCheck($settings, $now, 'ERR_TIMEOUT')
+        );
+    }
+
+    public function testEndpointCheckLeaseNeverExceedsTheNormalCadence(): void
+    {
+        $now = 1_000_000_000;
+
+        $this->assertSame(
+            date('Y-m-d H:i:s', $now + 5 * 60),
+            laprComputeEndpointCheckLease([
+                'lapr_endpoint_check_interval_minutes' => '5',
+                'lapr_retry_delay_minutes' => '60',
+            ], $now)
+        );
+        $this->assertSame(
+            date('Y-m-d H:i:s', $now + 15 * 60),
+            laprComputeEndpointCheckLease([
+                'lapr_endpoint_check_interval_minutes' => '1440',
+                'lapr_retry_delay_minutes' => '15',
+            ], $now)
+        );
+    }
+
     // =========================================================================
     // laprFormatDateTimeForDisplay
     // =========================================================================
@@ -522,5 +573,65 @@ class LaprFunctionsTest extends TestCase
         $fpA = LAPRSshService::computeFingerprint('ssh-rsa AAAAB3KeyA');
         $fpB = LAPRSshService::computeFingerprint('ssh-rsa AAAAB3KeyB');
         $this->assertNotSame($fpA, $fpB);
+    }
+
+    /**
+     * @dataProvider sshTransportErrorMessages
+     */
+    public function testSshTransportErrorsAreClassifiedWithoutMakingUnknownErrorsRetryable(
+        string $message,
+        string $expectedCode
+    ): void {
+        $service = new LAPRSshService();
+        $method = new ReflectionMethod($service, 'classifyConnectError');
+        $result = $method->invoke($service, $message);
+
+        $this->assertIsArray($result);
+        $this->assertSame($expectedCode, $result['error_code']);
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function sshTransportErrorMessages(): array
+    {
+        return [
+            'timeout' => ['Operation timed out', LAPRSshService::ERR_TIMEOUT],
+            'refused' => ['Connection refused', LAPRSshService::ERR_REFUSED],
+            'dns' => ['php_network_getaddresses: getaddrinfo failed', LAPRSshService::ERR_HOST_UNREACHABLE],
+            'closed' => ['Connection closed by server', LAPRSshService::ERR_NOT_CONNECTED],
+            'reset' => ['Connection reset by peer', LAPRSshService::ERR_NOT_CONNECTED],
+            'broken pipe' => ['Broken pipe while writing channel data', LAPRSshService::ERR_NOT_CONNECTED],
+            'socket read' => ['Error reading from socket', LAPRSshService::ERR_NOT_CONNECTED],
+            'unknown remains terminal' => ['Unexpected cryptographic state', LAPRSshService::ERR_UNKNOWN],
+        ];
+    }
+
+    public function testRemoteCommandWithoutSessionIsAConnectionFailure(): void
+    {
+        $service = new LAPRSshService();
+        $result = $service->exec('true');
+
+        $this->assertSame(-1, $result['exit_code']);
+        $this->assertSame('', $result['output']);
+        $this->assertSame(LAPRSshService::ERR_NOT_CONNECTED, $result['error_code']);
+        $this->assertSame(
+            LAPRSshService::ERR_NOT_CONNECTED,
+            $service->getLastTransportFailure()['error_code'] ?? null
+        );
+    }
+
+    public function testClosedSessionDuringPasswordChangeIsNotReportedAsChpasswdRejection(): void
+    {
+        $service = new LAPRSshService();
+        $sshProperty = new ReflectionProperty($service, 'ssh');
+        // phpseclib is deliberately left unauthenticated: exec() returns false,
+        // exactly as it does when an authenticated channel disappears.
+        $sshProperty->setValue($service, new \phpseclib3\Net\SSH2('127.0.0.1'));
+
+        $result = $service->changePassword('valid_user', 'SafePassword123!');
+
+        $this->assertFalse($result['success']);
+        $this->assertSame(LAPRSshService::ERR_NOT_CONNECTED, $result['error_code']);
     }
 }

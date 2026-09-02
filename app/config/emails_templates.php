@@ -284,6 +284,21 @@ return [
         'trigger' => 'app/scripts/traits/SecurityNudgeTrait.php:126',
     ],
 
+    'lapr_rotation_failure' => [
+        'group' => 'security',
+        'subject_key' => 'lapr_rotation_failure_email_subject',
+        'subject_prefix' => '',
+        'body_key' => 'lapr_rotation_failure_email_body',
+        'tokens' => [
+            '#endpoint#', '#hostname#', '#username#', '#error_code#',
+            '#trigger#', '#state#', '#retry_at#', '#url#',
+        ],
+        'required_tokens' => ['#endpoint#', '#error_code#'],
+        'label' => 'email_tpl_lapr_rotation_failure',
+        'description' => 'email_tpl_lapr_rotation_failure_desc',
+        'trigger' => 'app/scripts/traits/LAPRRotationTrait.php',
+    ],
+
     // ---------------------------------------------------------------- items
 
     'item_created' => [

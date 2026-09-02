@@ -207,7 +207,7 @@ $res = mysqli_query(
     $db_link,
     'CREATE TABLE IF NOT EXISTS `' . $pre . 'lapr_audit_log` (
         `id` INT(12) NOT NULL AUTO_INCREMENT,
-        `action_type` VARCHAR(50) NOT NULL COMMENT \'endpoint_add|endpoint_test|endpoint_edit|endpoint_delete|rotation|account_add|account_reset|hostkey_mismatch|ssh_credential_sync|rotation_retry_scheduled|rotation_suspended\',
+        `action_type` VARCHAR(50) NOT NULL COMMENT \'endpoint_add|endpoint_test|endpoint_edit|endpoint_delete|endpoint_pause|endpoint_resume|rotation|rotation_pause_override|account_add|account_reset|hostkey_mismatch|ssh_credential_sync|rotation_retry_scheduled|rotation_suspended\',
         `endpoint_id` INT(12) NULL,
         `account_id` INT(12) NULL,
         `user_id` INT(12) NOT NULL,
@@ -312,6 +312,9 @@ $laprSettings = array(
     array('lapr_scheduler_enabled', '0'),
     array('lapr_scheduler_interval_minutes', '5'),
     array('lapr_scheduler_next_run_at', '0'),
+    // Upgrades must not start new outbound SSH traffic without administrator opt-in.
+    array('lapr_endpoint_checks_enabled', '0'),
+    array('lapr_endpoint_check_interval_minutes', '1440'),
     array('lapr_max_retries', '3'),
     array('lapr_retry_delay_minutes', '60'),
     array('lapr_audit_retention_days', '365'),
@@ -372,6 +375,19 @@ if ($res === false) {
     exit();
 }
 
+// Durable timestamp paired with items.revision. Unlike items.updated_at, it changes only
+// when a functional content revision is allocated and survives journal pruning.
+$res = addColumnIfNotExist(
+    $pre . 'items',
+    'revision_changed_at',
+    'BIGINT UNSIGNED NULL DEFAULT NULL'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error adding column revision_changed_at to items table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
 // Item change journal. Its AUTO_INCREMENT primary key is the globally monotonic
 // revision sequence, and its rows are the only tombstone left once an item row is
 // hard deleted or leaves the caller's visible folders.
@@ -393,6 +409,22 @@ $res = mysqli_query(
 );
 if ($res === false) {
     echo '[{"finish":"1", "msg":"", "error":"Error creating items_revisions table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Backfill only when the current item revision still has its exact journal row. Older
+// journal entries may already have been pruned; their timestamp is genuinely unknown.
+$res = mysqli_query(
+    $db_link,
+    'UPDATE `' . $pre . 'items` AS i
+     INNER JOIN `' . $pre . 'items_revisions` AS r
+        ON r.`item_id` = i.`id` AND r.`revision` = i.`revision`
+     SET i.`revision_changed_at` = r.`changed_at`
+     WHERE i.`revision` > 0 AND i.`revision_changed_at` IS NULL'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error backfilling items.revision_changed_at: ' . addslashes(mysqli_error($db_link)) . '"}]';
     mysqli_close($db_link);
     exit();
 }

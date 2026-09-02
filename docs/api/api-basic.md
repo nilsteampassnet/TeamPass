@@ -265,6 +265,7 @@ curl -X GET "https://your-teampass.com/api/index.php/item/inFolders?folders=[1,2
 {
   "id": 2053,
   "revision": 4127,
+  "revision_changed_at": 1787563378,
   "label": "new object for #3500 v3",
   "description": "<p>bla bla</p>",
   "pwd": "SK^dsf123s_6A}]V$t^]",
@@ -287,6 +288,7 @@ curl -X GET "https://your-teampass.com/api/index.php/item/inFolders?folders=[1,2
 | ----- | ---- | ----------- |
 | `id` | integer | Unique item ID |
 | `revision` | integer | Monotonic revision, bumped on every content change of the item or its custom fields, tags, attachments and OTP. Compare it against a cached copy to detect staleness; the larger value is the newer one. `0` means the item has not changed since revision tracking was installed. |
+| `revision_changed_at` | integer or null | Unix UTC timestamp in seconds paired with `revision`. It changes on functional content revisions, never on reads or ciphertext-only rewrites. `null` means the exact date is unknown. |
 | `label` | string | Item label |
 | `description` | string | Description (may contain HTML) |
 | `pwd` | string | Password (decrypted according to rights) |
@@ -447,6 +449,8 @@ curl -X GET "https://your-teampass.com/api/index.php/item/get?description=%25ser
 [
   {
     "id": 123,
+    "revision": 4127,
+    "revision_changed_at": 1787563378,
     "label": "Example Login",
     "login": "user@example.com",
     "url": "https://example.com",
@@ -461,6 +465,8 @@ curl -X GET "https://your-teampass.com/api/index.php/item/get?description=%25ser
 | Field | Type | Description |
 | ----- | ---- | ----------- |
 | `id` | integer | Item ID |
+| `revision` | integer | Monotonic content revision |
+| `revision_changed_at` | integer or null | Unix UTC timestamp in seconds paired with `revision`; `null` when unknown |
 | `label` | string | Label |
 | `login` | string | Login identifier |
 | `url` | string | URL |
@@ -591,7 +597,9 @@ curl -X GET "https://your-teampass.com/api/index.php/item/getOtp?id=123" \
 {
   "error": false,
   "message": "Item created successfully",
-  "newId": "658"
+  "newId": 658,
+  "revision": 4127,
+  "revision_changed_at": 1787563378
 }
 ```
 
@@ -679,9 +687,23 @@ curl -X POST "https://your-teampass.com/api/index.php/item/create" \
 {
   "error": false,
   "message": "Item updated successfully",
-  "item_id": "123"
+  "item_id": 123,
+  "revision": 4128,
+  "revision_changed_at": 1787563378
 }
 ```
+
+When `password` is present, TeamPass compares it with the current cleartext value server-side.
+Resending the same value is a password no-op: by itself it does not rewrite the ciphertext,
+redistribute sharekeys, create a password-history entry, or allocate a revision. A real change stores the previous password
+encrypted in the existing `at_pw` history; the client never sends or receives that previous value.
+
+Because the current value must be read first, a password update requires your account to already
+hold the item's encryption key. If it does not, the request is refused with `422` and **nothing is
+written** — no half-applied update. This is usually temporary: right after another user creates or
+changes a shared item, keys are distributed to the other users by a background task. Retry the
+request; every other field remains updatable in the meantime. If it keeps failing, ask an
+administrator to run the encryption keys repair task.
 
 **Response Codes:**
 
@@ -694,7 +716,7 @@ curl -X POST "https://your-teampass.com/api/index.php/item/create" \
 | 404 | Item not found |
 | 405 | HTTP method not supported (only `PUT` is accepted) |
 | 409 | The supplied `revision` no longer matches the item — someone changed it since; resolve the conflict instead of retrying blindly. Also returned when the item was moved or re-encrypted by another request while this move was being prepared, which is a plain retry |
-| 422 | Validation failed: a personal → shared move combined with another field, or one of the item's encryption keys could not be recovered (the item is left untouched) |
+| 422 | Validation failed: a personal → shared move combined with another field, or one of the item's encryption keys could not be recovered — including the current password on a password update (the item is left untouched; retry while keys are still being distributed) |
 | 500 | Server error |
 
 **Example - Update password and description:**
@@ -840,10 +862,10 @@ curl -X GET "https://your-teampass.com/api/index.php/item/allTags" \
   "has_more": false,
   "full_sync_required": false,
   "changed": [
-    { "id": 77, "revision": 12340, "label": "Prod database", "pwd": "…", "fields": [] }
+    { "id": 77, "revision": 12340, "revision_changed_at": 1787563378, "label": "Prod database", "pwd": "…", "fields": [] }
   ],
   "removed": [
-    { "id": 91, "revision": 12331, "reason": "deleted" }
+    { "id": 91, "revision": 12331, "revision_changed_at": 1787563100, "reason": "deleted" }
   ]
 }
 ```
@@ -856,7 +878,10 @@ curl -X GET "https://your-teampass.com/api/index.php/item/allTags" \
 | `has_more` | boolean | More changes are waiting — call again with the returned cursor |
 | `full_sync_required` | boolean | The cursor cannot be served: rebuild the cache and adopt the returned cursor |
 | `changed` | array | Items to upsert, same shape as `item/get` |
-| `removed` | array | Items to drop, with `id`, `revision` and `reason` |
+| `removed` | array | Items to drop, with `id`, `revision`, `revision_changed_at` and `reason` |
+
+The `revision` and `revision_changed_at` values always come from the same winning change. For a
+tombstone, the timestamp comes from the journal because a permanently deleted item has no row left.
 
 `reason` is one of `deleted` (soft deleted), `purged` (permanently removed) or `out_of_scope` (the item still exists but the caller can no longer read it, typically after a move into a folder they have no access to).
 

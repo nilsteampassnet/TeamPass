@@ -180,12 +180,15 @@ This App will have an `Application (client) ID` and a `Directory (tenant) ID`. A
 You will have to define a new `Redirect URIs` with the value provided from Teampass OAuth configuration page.
 And it is requested to use option `Accounts in this organizational directory only (Default Directory only - Single tenant)` as `Supported account types`.
 
-Now define `API permissions` with next permissions:
+Now define the `API permissions`.
+
+**Required to sign in.** These are the permissions TeamPass uses on behalf of the user who is
+logging in. They must match the `Scopes` field of the TeamPass OAuth configuration page, since
+those scopes are requested at every authentication:
 
 * `Microsoft Graph`:
   * `email` with Type `Delegated`
   * `Group.Read.All` with Type `Delegated`
-  * `Group.Read.All` with Type `Application`
   * `offline_access` with Type `Delegated`
   * `openid` with Type `Delegated`
   * `profile` with Type `Delegated`
@@ -193,7 +196,23 @@ Now define `API permissions` with next permissions:
 * `Teampass`:
   * `Read.All` with Type `Delegated`
 
+**Additionally required for the `OAuth2 synchronization` screen** of the `Users` page. That screen
+lists the accounts of your directory and reads the groups each one belongs to. It queries Microsoft
+Graph **as the application itself** (client credentials grant), so it only ever sees permissions of
+type `Application`:
+
+* `Microsoft Graph`:
+  * `User.Read.All` with Type `Application`
+  * `Group.Read.All` with Type `Application`
+
 Don't forget to `Grant admin consent for Default Directory`.
+
+> ⚠️ **`Delegated` and `Application` are two different permissions, not two labels for the same
+> one.** A permission granted only as `Delegated` is invisible to the synchronization screen, and
+> one granted only as `Application` is invisible at login. `User.Read.All` is the usual victim: an
+> app registration that has it as `Delegated` only looks perfectly configured in the Azure portal,
+> but the synchronization fails with *"Insufficient privileges to complete the operation"*. See
+> [Troubleshooting](../misc/troubleshooting.md).
 
 Finaly define the users allowaed to access this new Application
 
@@ -204,6 +223,12 @@ Navigate to `OAuth` page from the administration, and provide the expected infor
 It is suggested to perform a test with a fake user.
 
 ![OAuth2 settings example](../_media/tp3_auth_oauth2_1.png)
+
+**Pay attention to the `Allowed groups for self-registration` field.** Left empty, it disables the
+automatic creation of accounts: an Entra user who does not already exist in TeamPass is then
+refused with the generic message *"Login credentials do not correspond"*, which does not hint at
+the cause. On a fresh installation no Entra account exists yet in TeamPass, so **every** first
+login fails until either the field is filled in or the accounts are created beforehand.
 
 ### Allowing OAuth2 users to access the API
 

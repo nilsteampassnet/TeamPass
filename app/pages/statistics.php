@@ -695,6 +695,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                     <div class='inner'>
                                         <h3 id='tp-lapr-kpi-endpoints'>-</h3>
                                         <p><?php echo $lang->get('lapr_monitor_endpoints'); ?></p>
+                                        <div class='small' id='tp-lapr-kpi-endpoint-detail'></div>
                                     </div>
                                     <div class='icon'><i class='fas fa-server'></i></div>
                                 </div>

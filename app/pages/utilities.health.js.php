@@ -231,11 +231,24 @@ var TP_HEALTH_L10N = {
     lapr_state_overdue: "<?php echo addslashes($lang->get('lapr_monitor_state_overdue')); ?>",
     lapr_state_error: "<?php echo addslashes($lang->get('lapr_monitor_state_error')); ?>",
     lapr_state_paused: "<?php echo addslashes($lang->get('lapr_monitor_state_paused')); ?>",
+    lapr_state_endpoint_paused: "<?php echo addslashes($lang->get('lapr_monitor_state_endpoint_paused')); ?>",
     lapr_scheduler_next: "<?php echo addslashes($lang->get('lapr_monitor_scheduler_next')); ?>",
     lapr_scheduler_interval: "<?php echo addslashes($lang->get('lapr_monitor_scheduler_interval')); ?>",
     lapr_scheduler_pending: "<?php echo addslashes($lang->get('lapr_monitor_scheduler_pending')); ?>",
     lapr_scheduler_running: "<?php echo addslashes($lang->get('lapr_monitor_scheduler_running')); ?>",
     lapr_scheduler_failed_24h: "<?php echo addslashes($lang->get('lapr_monitor_scheduler_failed_24h')); ?>",
+    lapr_endpoint_checks: "<?php echo addslashes($lang->get('lapr_monitor_endpoint_checks')); ?>",
+    lapr_endpoint_check_interval: "<?php echo addslashes($lang->get('lapr_monitor_endpoint_check_interval')); ?>",
+    lapr_endpoint_checks_due: "<?php echo addslashes($lang->get('lapr_monitor_endpoint_checks_due')); ?>",
+    lapr_endpoint_checks_overdue: "<?php echo addslashes($lang->get('lapr_monitor_endpoint_checks_overdue')); ?>",
+    lapr_endpoint_checks_stale: "<?php echo addslashes($lang->get('lapr_monitor_endpoint_checks_stale')); ?>",
+    lapr_endpoint_checks_pending: "<?php echo addslashes($lang->get('lapr_monitor_endpoint_checks_pending')); ?>",
+    lapr_endpoint_checks_running: "<?php echo addslashes($lang->get('lapr_monitor_endpoint_checks_running')); ?>",
+    lapr_endpoint_checks_failed_24h: "<?php echo addslashes($lang->get('lapr_monitor_endpoint_checks_failed_24h')); ?>",
+    lapr_endpoint_checks_oldest: "<?php echo addslashes($lang->get('lapr_monitor_endpoint_checks_oldest')); ?>",
+    lapr_endpoint_checks_next: "<?php echo addslashes($lang->get('lapr_monitor_endpoint_checks_next')); ?>",
+    lapr_endpoint_checks_disabled: "<?php echo addslashes($lang->get('lapr_monitor_endpoint_checks_disabled')); ?>",
+    lapr_endpoint_checks_overdue_status: "<?php echo addslashes($lang->get('lapr_monitor_endpoint_checks_overdue_status')); ?>",
     lapr_scheduler_initializing: "<?php echo addslashes($lang->get('lapr_monitor_scheduler_initializing')); ?>",
     lapr_scheduler_disabled_notice: "<?php echo addslashes($lang->get('lapr_monitor_scheduler_disabled_notice')); ?>",
     lapr_scheduler_overdue: "<?php echo addslashes($lang->get('lapr_monitor_scheduler_overdue')); ?>",
@@ -245,6 +258,9 @@ var TP_HEALTH_L10N = {
     lapr_status: "<?php echo addslashes($lang->get('lapr_status')); ?>",
     minutes: "<?php echo addslashes($lang->get('minutes')); ?>",
     lapr_issue_endpoint_inactive: "<?php echo addslashes($lang->get('lapr_monitor_issue_endpoint_inactive')); ?>",
+    lapr_issue_endpoint_paused: "<?php echo addslashes($lang->get('lapr_monitor_issue_endpoint_paused')); ?>",
+    lapr_issue_endpoint_unreachable: "<?php echo addslashes($lang->get('lapr_monitor_issue_endpoint_unreachable')); ?>",
+    lapr_issue_endpoint_error: "<?php echo addslashes($lang->get('lapr_monitor_issue_endpoint_error')); ?>",
     lapr_issue_hostkey_unverified: "<?php echo addslashes($lang->get('lapr_monitor_issue_hostkey_unverified')); ?>",
     lapr_issue_capability_missing: "<?php echo addslashes($lang->get('lapr_monitor_issue_capability_missing')); ?>",
     lapr_issue_duplicate_endpoint: "<?php echo addslashes($lang->get('lapr_monitor_issue_duplicate_endpoint')); ?>",
@@ -268,6 +284,9 @@ var TP_HEALTH_L10N = {
     lapr_issue_worker_failed: "<?php echo addslashes($lang->get('lapr_monitor_issue_worker_failed')); ?>",
     lapr_issue_scheduler_unhealthy: "<?php echo addslashes($lang->get('lapr_monitor_issue_scheduler_unhealthy')); ?>",
     lapr_issue_cron_unhealthy: "<?php echo addslashes($lang->get('lapr_monitor_issue_cron_unhealthy')); ?>",
+    lapr_issue_endpoint_check_worker_failed: "<?php echo addslashes($lang->get('lapr_monitor_issue_endpoint_check_worker_failed')); ?>",
+    lapr_issue_endpoint_check_queue_stalled: "<?php echo addslashes($lang->get('lapr_monitor_issue_endpoint_check_queue_stalled')); ?>",
+    lapr_issue_endpoint_checks_overdue: "<?php echo addslashes($lang->get('lapr_monitor_issue_endpoint_checks_overdue')); ?>",
     lapr_failure_connectivity: "<?php echo addslashes($lang->get('lapr_monitor_failure_connectivity')); ?>",
     lapr_failure_authentication: "<?php echo addslashes($lang->get('lapr_monitor_failure_authentication')); ?>",
     lapr_failure_hostkey: "<?php echo addslashes($lang->get('lapr_monitor_failure_hostkey')); ?>",
@@ -539,6 +558,7 @@ function tpRenderLapr(report) {
     var accounts = lapr.accounts || {};
     var operators = lapr.operators || {};
     var scheduler = lapr.scheduler || {};
+    var endpointChecks = lapr.endpoint_checks || {};
     var reasonText = tpLaprReasonText(overall.reason || '');
 
     if (lapr.enabled === false) {
@@ -570,7 +590,10 @@ function tpRenderLapr(report) {
     $('#health-lapr-endpoints').text(Number(endpoints.active || 0) + '/' + Number(endpoints.total || 0));
     $('#health-lapr-accounts').text(Number(accounts.compliant || 0) + '/' + Number(accounts.total || 0));
     $('#health-lapr-operators').text(Number(operators.active || 0));
-    $('#health-lapr-scheduler').html(tpStatusToBadge(scheduler.status || 'info'));
+    $('#health-lapr-scheduler').html(tpStatusToBadge(tpLaprWorstStatus(
+        scheduler.status || 'info',
+        endpointChecks.status || 'info'
+    )));
 
     var disabledGrants = Number(operators.disabled_grants || 0);
     $('#health-lapr-disabled-grants')
@@ -605,10 +628,11 @@ function tpRenderLapr(report) {
         retrying: TP_HEALTH_L10N.lapr_state_retrying,
         overdue: TP_HEALTH_L10N.lapr_state_overdue,
         error: TP_HEALTH_L10N.lapr_state_error,
-        paused: TP_HEALTH_L10N.lapr_state_paused
+        paused: TP_HEALTH_L10N.lapr_state_paused,
+        endpoint_paused: TP_HEALTH_L10N.lapr_state_endpoint_paused
     };
     var stateRows = '';
-    $.each(['healthy', 'scheduled', 'manual_only', 'retrying', 'overdue', 'error', 'paused'], function(_, state) {
+    $.each(['healthy', 'scheduled', 'manual_only', 'retrying', 'overdue', 'error', 'paused', 'endpoint_paused'], function(_, state) {
         stateRows += '<tr><th>' + tpEscapeHtml(stateLabels[state]) + '</th>' +
             '<td class="text-right">' + Number(accounts[state] || 0) + '</td></tr>';
     });
@@ -625,6 +649,21 @@ function tpRenderLapr(report) {
     schedulerRows += tpLaprDetailRow(TP_HEALTH_L10N.lapr_scheduler_pending, Number(scheduler.pending || 0));
     schedulerRows += tpLaprDetailRow(TP_HEALTH_L10N.lapr_scheduler_running, Number(scheduler.running || 0));
     schedulerRows += tpLaprDetailRow(TP_HEALTH_L10N.lapr_scheduler_failed_24h, Number(scheduler.failed_24h || 0));
+    schedulerRows += '<tr class="table-active"><th colspan="2">' + tpEscapeHtml(TP_HEALTH_L10N.lapr_endpoint_checks) + '</th></tr>';
+    schedulerRows += tpLaprDetailRow(TP_HEALTH_L10N.lapr_status, tpLaprEndpointChecksReasonText(endpointChecks.reason || ''));
+    schedulerRows += tpLaprDetailRow(TP_HEALTH_L10N.enabled, endpointChecks.enabled ? TP_HEALTH_L10N.enabled : TP_HEALTH_L10N.disabled);
+    schedulerRows += tpLaprDetailRow(
+        TP_HEALTH_L10N.lapr_endpoint_check_interval,
+        Number(endpointChecks.interval_minutes || 0) + ' ' + TP_HEALTH_L10N.minutes
+    );
+    schedulerRows += tpLaprDetailRow(TP_HEALTH_L10N.lapr_endpoint_checks_due, Number(endpointChecks.due || 0));
+    schedulerRows += tpLaprDetailRow(TP_HEALTH_L10N.lapr_endpoint_checks_overdue, Number(endpointChecks.overdue || 0));
+    schedulerRows += tpLaprDetailRow(TP_HEALTH_L10N.lapr_endpoint_checks_stale, Number(endpointChecks.stale || 0));
+    schedulerRows += tpLaprDetailRow(TP_HEALTH_L10N.lapr_endpoint_checks_pending, Number(endpointChecks.pending || 0));
+    schedulerRows += tpLaprDetailRow(TP_HEALTH_L10N.lapr_endpoint_checks_running, Number(endpointChecks.running || 0));
+    schedulerRows += tpLaprDetailRow(TP_HEALTH_L10N.lapr_endpoint_checks_failed_24h, Number(endpointChecks.failed_24h || 0));
+    schedulerRows += tpLaprDetailRow(TP_HEALTH_L10N.lapr_endpoint_checks_oldest, tpLaprFormatTimestamp(endpointChecks.oldest_last_check_at));
+    schedulerRows += tpLaprDetailRow(TP_HEALTH_L10N.lapr_endpoint_checks_next, tpLaprFormatTimestamp(endpointChecks.next_check_at));
     $('#health-lapr-scheduler-details').html(schedulerRows);
 
     var actionRows = '';
@@ -669,6 +708,11 @@ function tpLaprDetailRow(label, value) {
     return '<tr><th>' + tpEscapeHtml(label) + '</th><td class="text-right">' + tpEscapeHtml(value) + '</td></tr>';
 }
 
+function tpLaprWorstStatus(first, second) {
+    var rank = { info: 0, success: 1, warning: 2, danger: 3 };
+    return (rank[second] || 0) > (rank[first] || 0) ? second : first;
+}
+
 function tpLaprReasonText(reason) {
     var reasons = {
         module_disabled: TP_HEALTH_L10N.lapr_module_disabled,
@@ -703,9 +747,25 @@ function tpLaprSchedulerReasonText(reason) {
     return reasons[reason] || TP_HEALTH_L10N.lapr_no_data;
 }
 
+function tpLaprEndpointChecksReasonText(reason) {
+    var reasons = {
+        healthy: TP_HEALTH_L10N.lapr_healthy,
+        module_disabled: TP_HEALTH_L10N.lapr_module_disabled,
+        checks_disabled: TP_HEALTH_L10N.lapr_endpoint_checks_disabled,
+        checks_overdue: TP_HEALTH_L10N.lapr_endpoint_checks_overdue_status,
+        queue_stalled: TP_HEALTH_L10N.lapr_queue_stalled,
+        worker_failed: TP_HEALTH_L10N.lapr_worker_failed,
+        cron_unhealthy: TP_HEALTH_L10N.lapr_cron_unhealthy
+    };
+    return reasons[reason] || TP_HEALTH_L10N.lapr_no_data;
+}
+
 function tpLaprIssueText(code) {
     var issues = {
         endpoint_inactive: TP_HEALTH_L10N.lapr_issue_endpoint_inactive,
+        endpoint_paused: TP_HEALTH_L10N.lapr_issue_endpoint_paused,
+        endpoint_unreachable: TP_HEALTH_L10N.lapr_issue_endpoint_unreachable,
+        endpoint_error: TP_HEALTH_L10N.lapr_issue_endpoint_error,
         hostkey_unverified: TP_HEALTH_L10N.lapr_issue_hostkey_unverified,
         capability_missing: TP_HEALTH_L10N.lapr_issue_capability_missing,
         duplicate_endpoint: TP_HEALTH_L10N.lapr_issue_duplicate_endpoint,
@@ -728,7 +788,10 @@ function tpLaprIssueText(code) {
         account_manual_only: TP_HEALTH_L10N.lapr_issue_account_manual_only,
         worker_failed: TP_HEALTH_L10N.lapr_issue_worker_failed,
         scheduler_unhealthy: TP_HEALTH_L10N.lapr_issue_scheduler_unhealthy,
-        cron_unhealthy: TP_HEALTH_L10N.lapr_issue_cron_unhealthy
+        cron_unhealthy: TP_HEALTH_L10N.lapr_issue_cron_unhealthy,
+        endpoint_check_worker_failed: TP_HEALTH_L10N.lapr_issue_endpoint_check_worker_failed,
+        endpoint_check_queue_stalled: TP_HEALTH_L10N.lapr_issue_endpoint_check_queue_stalled,
+        endpoint_checks_overdue: TP_HEALTH_L10N.lapr_issue_endpoint_checks_overdue
     };
     return issues[code] || code;
 }
