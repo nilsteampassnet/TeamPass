@@ -12,9 +12,16 @@ on:
   pull_request:
     branches:
       - master
-  release:
-    types: [published]
   workflow_dispatch:
+
+# A release pushes master and the tag in one go, and publishing the GitHub
+# Release used to fire a third build of the very same commit. The `release`
+# trigger is gone (the tag push already covers it) and the two remaining runs
+# are serialized, so they no longer race to overwrite the shared sha-<short>
+# tag with two different digests of identical content.
+concurrency:
+  group: docker-publish-${{ github.sha }}
+  cancel-in-progress: false
 
 env:
   REGISTRY_DOCKERHUB: docker.io
@@ -38,6 +45,27 @@ jobs:
       # ----------------------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      # ----------------------------------------
+      # Resolve the application version from the source
+      # ----------------------------------------
+      # github.ref_name is the branch name on a branch build, so the image
+      # published as :latest used to carry TEAMPASS_VERSION=master and
+      # org.opencontainers.image.version=master. app/config/include.php is the
+      # single source of truth the entrypoint itself reads, so use it here too
+      # and every image reports the version it actually contains.
+      - name: Resolve TeamPass version
+        id: tpversion
+        run: |
+          set -euo pipefail
+          major=$(sed -n "s/.*define('TP_VERSION',[[:space:]]*'\([^']*\)').*/\1/p" app/config/include.php)
+          minor=$(sed -n "s/.*define('TP_VERSION_MINOR',[[:space:]]*'\([^']*\)').*/\1/p" app/config/include.php)
+          if [ -z "$major" ] || [ -z "$minor" ]; then
+            echo "Could not read TP_VERSION / TP_VERSION_MINOR from app/config/include.php" >&2
+            exit 1
+          fi
+          echo "version=${major}.${minor}" >> "$GITHUB_OUTPUT"
+          echo "Resolved TeamPass version: ${major}.${minor}"
 
       # ----------------------------------------
       # Set up build environment
@@ -102,6 +130,7 @@ jobs:
             org.opencontainers.image.documentation=https://documentation.teampass.net
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.licenses=GPL-3.0
+            org.opencontainers.image.version=${{ steps.tpversion.outputs.version }}
 
       # ----------------------------------------
       # Build and push Docker image
@@ -119,7 +148,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
-            TEAMPASS_VERSION=${{ github.ref_name }}
+            TEAMPASS_VERSION=${{ steps.tpversion.outputs.version }}
             BUILD_DATE=${{ steps.meta.outputs.created }}
             VCS_REF=${{ github.sha }}
 
@@ -164,7 +193,7 @@ jobs:
       # Create release notes
       # ----------------------------------------
       - name: Create release summary
-        if: github.event_name == 'release'
+        if: startsWith(github.ref, 'refs/tags/')
         run: |
           echo "## Docker Image Published 🐳" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
