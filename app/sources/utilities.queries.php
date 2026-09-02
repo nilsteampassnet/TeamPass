@@ -1627,10 +1627,12 @@ logItems(
                     FROM ' . prefixTable('background_tasks') . '
                     WHERE process_type = %s
                     AND is_in_progress IN (0, 1)
-                    AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)
+                    AND (finished_at IS NULL OR finished_at = %s OR finished_at = %s)
                     ORDER BY increment_id DESC
                     LIMIT 1',
-                    'file_integrity_scan'
+                    'file_integrity_scan',
+                    '',
+                    '0'
                 );
 
                 if (is_array($fileIntegrityTask) === false) {
@@ -1653,7 +1655,7 @@ logItems(
                 fclose($fileIntegrityEnqueueHandle);
             }
 
-            $fileIntegritySummary = tpFileIntegritySummary(tpFileIntegrityLoadReport(TEAMPASS_ROOT));
+            $fileIntegritySummary = tpFileIntegrityLoadSummary(TEAMPASS_ROOT);
             $fileIntegritySummary['running'] = true;
             $fileIntegritySummary['status'] = 'running';
             echo prepareExchangedData(
@@ -1689,7 +1691,7 @@ logItems(
                 LIMIT 1',
                 'file_integrity_scan'
             );
-            $fileIntegritySummary = tpFileIntegritySummary(tpFileIntegrityLoadReport(TEAMPASS_ROOT));
+            $fileIntegritySummary = tpFileIntegrityLoadSummary(TEAMPASS_ROOT);
             $fileIntegrityTaskStatus = '';
             $fileIntegrityTaskError = '';
             if (is_array($fileIntegrityLatestTask)) {
@@ -1746,10 +1748,21 @@ logItems(
             $fileIntegrityLimit = is_array($fileIntegrityRequest)
                 ? (int) ($fileIntegrityRequest['limit'] ?? 100)
                 : 100;
-            $fileIntegrityReport = tpFileIntegrityLoadReport(TEAMPASS_ROOT);
-            if ((bool) ($fileIntegrityReport['has_result'] ?? false) === false) {
+            $fileIntegritySummary = tpFileIntegrityLoadSummary(TEAMPASS_ROOT);
+            if ((bool) ($fileIntegritySummary['has_result'] ?? false) === false) {
                 echo prepareExchangedData(
                     array('error' => true, 'message' => $lang->get('health_file_integrity_no_result')),
+                    'encode'
+                );
+                break;
+            }
+            $fileIntegrityReport = tpFileIntegrityLoadReport(
+                TEAMPASS_ROOT,
+                (string) ($fileIntegritySummary['scan_id'] ?? '')
+            );
+            if ((bool) ($fileIntegrityReport['has_result'] ?? false) === false) {
+                echo prepareExchangedData(
+                    array('error' => true, 'message' => $lang->get('health_file_integrity_report_invalid')),
                     'encode'
                 );
                 break;

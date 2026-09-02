@@ -325,16 +325,20 @@ find ${TEAMPASS} -not -path "*/vendor/*" ! -type l -perm -o+w -ls
 
 ## File integrity verification
 
-**Utilities → System Health → File integrity** starts a read-only background scan and stores its latest report in `storage/logs/file-integrity-report.json`. The admin dashboard reads the same report; it does not maintain a separate counter.
+**Utilities → System Health → File integrity** starts a read-only background scan. Detailed findings are stored in `storage/logs/file-integrity-report.json`, while the Dashboard and Health polling read the bounded `storage/logs/file-integrity-summary.json`. Both files carry the same scan identifier, and detailed findings are rejected if the identifiers do not match.
 
 The scan compares protected files with `app/files_reference.txt` and reports separate categories for modified, missing, unknown, legacy-layout and Composer development files. Instance-owned data under `storage/`, `secrets/` and legacy runtime directories (`files/`, `upload/`, `backups/`) is excluded. Repository and development-only artifacts such as `.claude/`, `.github/`, `docs/`, `tests/` and their root tooling files are neutral: they do not affect integrity health, are not audited for runtime permissions and are not included in permission remediation. The release checksum generator consumes this same canonical policy, keeping those paths out of future manifests. This is an explicit path policy, not a blanket hidden-file exclusion; `.htaccess`, `.user.ini`, `.env*`, Composer deployment metadata, Docker assets and application scripts remain protected. Ordinary avatar files are ignored, but executable files or symbolic links planted in the writable public avatar directory are reported as critical. A deliberately removed `public/install/` directory is accepted; when that directory exists, its files are fully checked. The reference manifest itself and generated configuration files are excluded from self-comparison.
 
-The same background run also audits the effective POSIX permissions of **every real file and directory** in the TeamPass tree. It checks the normal-runtime posture rather than the temporary upgrade posture:
+The same background run also audits the effective POSIX permissions of TeamPass code and the runtime directory nodes. It checks the normal-runtime posture rather than the temporary upgrade posture:
 
 - application code and the webroot must be readable but not writable by the PHP/web account;
 - `storage/`, CSRF logs and the other documented runtime paths must remain readable and writable;
 - `secrets/` must be readable without being exposed to other system users;
 - symbolic-link modes are ignored because Linux enforces the target mode and reports links themselves as `0777`.
+
+To keep the Health scan predictable on installations with many attachments or backups, it does not recursively descend into `storage/files/`, `storage/upload/`, `storage/backups/`, `public/assets/avatars/`, or their legacy root equivalents. Those directory nodes are still checked. Use the CLI `--deep-permissions` option when an exhaustive audit of their contents is required.
+
+Repeated permission findings are grouped by reason and protected scope in the detailed report. Counters remain exact, while each group retains at most five representative paths so the JSON report stays bounded.
 
 The web account is taken from the background process. If the CLI scan is run as root, the conventional account for the detected distribution is used instead, avoiding root-access false positives. The hardened repair plan preserves the current code owner when it is already different from the web account and otherwise falls back to `root`; runtime paths are returned to the detected web owner. Permission repair commands are generated only for Debian/Ubuntu and the common RHEL family (RHEL, Rocky Linux, AlmaLinux and CentOS). Other Linux distributions can be scanned, but deliberately receive no guessed remediation. RHEL-family guidance also restores SELinux `httpd_sys_rw_content_t` contexts on runtime paths when `semanage` is available.
 
@@ -347,6 +351,9 @@ TEAMPASS=/var/www/html/teampass
 
 # Run a scan and persist the report (use the same account as background tasks).
 sudo -u www-data php ${TEAMPASS}/app/scripts/file_integrity.php
+
+# Include every attachment, backup and avatar in the permission audit.
+sudo -u www-data php ${TEAMPASS}/app/scripts/file_integrity.php --deep-permissions
 
 # Display the latest report without scanning again.
 sudo -u www-data php ${TEAMPASS}/app/scripts/file_integrity.php --status

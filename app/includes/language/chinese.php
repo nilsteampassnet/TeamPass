@@ -1002,8 +1002,6 @@ return array(
     'path_not_a_file' => '路径不是文件',
     'file_not_writable' => '文件不可写',
     'failed_to_delete' => '删除失败',
-    'delete_unknown_files' => '删除未知文件？',
-    'unknown_files_should_be_deleted' => '建议删除这些文件，以防止版本混淆。',
     'remaining_lock_time' => '剩余锁定时间',
     'seconds' => '秒',
     'users_fetch_error' => '获取用户时出错',

@@ -1002,8 +1002,6 @@ return array(
     'path_not_a_file' => 'Calea nu este un fișier',
     'file_not_writable' => 'Fișierul nu este inscriptibil',
     'failed_to_delete' => 'Eșec la ștergere',
-    'delete_unknown_files' => 'Ștergeți fișiere necunoscute?',
-    'unknown_files_should_be_deleted' => 'Este recomandat să ștergeți acele fișiere pentru a preveni împotriva mixului de versiuni.',
     'remaining_lock_time' => 'Remaining lock time',
     'seconds' => 'seconds',
     'users_fetch_error' => 'Ceva a mers prost la preluarea utilizatorilor',

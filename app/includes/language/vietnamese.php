@@ -1002,8 +1002,6 @@ return array(
     'path_not_a_file' => 'Đường dẫn không phải là tệp',
     'file_not_writable' => 'Tệp không thể ghi',
     'failed_to_delete' => 'Xóa thất bại',
-    'delete_unknown_files' => 'Xóa tệp không xác định?',
-    'unknown_files_should_be_deleted' => 'Nên xóa các tệp này để tránh trộn lẫn phiên bản.',
     'remaining_lock_time' => 'Remaining lock time',
     'seconds' => 'seconds',
     'users_fetch_error' => 'Có lỗi khi lấy danh sách người dùng',

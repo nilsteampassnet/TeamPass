@@ -1002,8 +1002,6 @@ return array(
     'path_not_a_file' => 'Путь не является файлом',
     'file_not_writable' => 'Файл недоступен для записи',
     'failed_to_delete' => 'Не удалось удалить',
-    'delete_unknown_files' => 'Удалить неизвестные файлы?',
-    'unknown_files_should_be_deleted' => 'Рекомендуется удалить эти файлы во избежание смешивания версий.',
     'remaining_lock_time' => 'Remaining lock time',
     'seconds' => 'seconds',
     'users_fetch_error' => 'Ошибка при загрузке пользователей',

@@ -1002,8 +1002,6 @@ return array(
     'path_not_a_file' => 'Ruta no és un fitxer',
     'file_not_writable' => 'Fitxer no es pot escriure',
     'failed_to_delete' => 'No s’ha pogut eliminar',
-    'delete_unknown_files' => 'Eliminar fitxers desconeguts?',
-    'unknown_files_should_be_deleted' => 'Es recomana eliminar aquests fitxers',
     'remaining_lock_time' => 'Remaining lock time',
     'seconds' => 'seconds',
     'users_fetch_error' => 'Error obtenint usuaris',

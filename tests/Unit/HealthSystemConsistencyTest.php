@@ -101,7 +101,11 @@ class HealthSystemConsistencyTest extends TestCase
 
     public function testFileIntegrityUsesHealthAsItsOnlyWebInterface(): void
     {
-        $this->assertStringContainsString('tpFileIntegrityLoadReport(TEAMPASS_ROOT)', $this->mainSource);
+        $this->assertStringContainsString('tpFileIntegrityLoadSummary(TEAMPASS_ROOT)', $this->mainSource);
+        $this->assertStringNotContainsString(
+            'tpFileIntegritySummary(tpFileIntegrityLoadReport(TEAMPASS_ROOT))',
+            $this->mainSource . $this->utilitiesSource
+        );
         $this->assertStringContainsString("'file_integrity' => \$fileIntegrity", $this->mainSource);
         $this->assertStringContainsString("'file_integrity' => \$fileIntegrity", $this->utilitiesSource);
         $this->assertStringContainsString('id="tab-health-file-integrity"', $this->healthPage);
@@ -113,6 +117,10 @@ class HealthSystemConsistencyTest extends TestCase
         $this->assertStringContainsString('value="permissions"', $this->healthPage);
         $this->assertStringContainsString("'permissions_plan' => tpFilePermissionsRemediationCommands", $this->utilitiesSource);
         $this->assertStringContainsString('id="health-file-integrity"', $this->adminPage);
+        $this->assertStringContainsString(
+            'finished_at IS NULL OR finished_at = %s OR finished_at = %s',
+            $this->switchCaseBlock($this->utilitiesSource, 'health_start_file_integrity_scan')
+        );
 
         foreach (array(
             'filesIntegrityCheck',

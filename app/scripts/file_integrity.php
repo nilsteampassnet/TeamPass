@@ -23,24 +23,39 @@ if ($root === false) {
 
 require_once $root . '/app/sources/file_integrity.functions.php';
 
-$options = getopt('', ['status', 'json', 'cleanup-plan', 'permissions-plan', 'no-save', 'help']);
+$options = getopt('', ['status', 'json', 'cleanup-plan', 'permissions-plan', 'deep-permissions', 'no-save', 'help']);
 if (isset($options['help'])) {
     echo "Usage:\n";
     echo "  php app/scripts/file_integrity.php [--json] [--no-save]\n";
     echo "  php app/scripts/file_integrity.php --status [--json]\n";
     echo "  php app/scripts/file_integrity.php --cleanup-plan\n";
     echo "  php app/scripts/file_integrity.php --permissions-plan\n";
+    echo "  php app/scripts/file_integrity.php --deep-permissions [--json] [--no-save]\n";
     exit(0);
 }
 
 try {
     if (isset($options['status']) || isset($options['cleanup-plan']) || isset($options['permissions-plan'])) {
-        $report = tpFileIntegrityLoadReport($root);
-        if ((bool) ($report['has_result'] ?? false) === false) {
+        $summary = tpFileIntegrityLoadSummary($root);
+        if ((bool) ($summary['has_result'] ?? false) === false) {
             throw new RuntimeException('No file integrity report is available. Run a scan first.');
         }
+        if (isset($options['cleanup-plan']) || isset($options['permissions-plan'])) {
+            $report = tpFileIntegrityLoadReport($root, (string) ($summary['scan_id'] ?? ''));
+            if ((bool) ($report['has_result'] ?? false) === false) {
+                throw new RuntimeException('The detailed report does not match the current summary. Run a scan first.');
+            }
+        } else {
+            $report = $summary;
+        }
     } else {
-        $report = tpFileIntegrityScan($root, $root . '/app/files_reference.txt');
+        $report = tpFileIntegrityScan(
+            $root,
+            $root . '/app/files_reference.txt',
+            true,
+            true,
+            isset($options['deep-permissions'])
+        );
         if (isset($options['no-save']) === false) {
             tpFileIntegritySaveReport($root, $report);
         }

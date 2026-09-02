@@ -124,6 +124,8 @@ var TP_HEALTH_L10N = {
     file_permissions_no_commands: "<?php echo addslashes($lang->get('health_file_permissions_no_commands')); ?>",
     file_permissions_actual_mode: "<?php echo addslashes($lang->get('health_file_permissions_actual_mode')); ?>",
     file_permissions_expected: "<?php echo addslashes($lang->get('health_file_permissions_expected')); ?>",
+    file_permissions_affected: "<?php echo addslashes($lang->get('health_file_permissions_affected')); ?>",
+    file_permissions_samples: "<?php echo addslashes($lang->get('health_file_permissions_samples')); ?>",
     file_permissions_reason_protected_writable: "<?php echo addslashes($lang->get('health_file_permissions_reason_protected_writable')); ?>",
     file_permissions_reason_runtime_not_readable: "<?php echo addslashes($lang->get('health_file_permissions_reason_runtime_not_readable')); ?>",
     file_permissions_reason_runtime_not_writable: "<?php echo addslashes($lang->get('health_file_permissions_reason_runtime_not_writable')); ?>",
@@ -1105,6 +1107,16 @@ function tpFileIntegrityIssueDetails(category, item) {
             + tpEscapeHtml(item.actual_mode || '-') + '</code>';
         details += '<br>' + tpEscapeHtml(TP_HEALTH_L10N.file_permissions_expected) + ': <code>'
             + tpEscapeHtml(item.expected || '-') + '</code>';
+        details += '<br>' + tpEscapeHtml(TP_HEALTH_L10N.file_permissions_affected) + ': '
+            + Number(item.affected_count || 1);
+        var samples = Array.isArray(item.samples) ? item.samples : [];
+        if (Number(item.affected_count || 1) > 1 && samples.length > 0) {
+            details += '<br>' + tpEscapeHtml(TP_HEALTH_L10N.file_permissions_samples) + ':<br>';
+            details += samples.map(function(sample) {
+                return '<code>' + tpEscapeHtml(sample.path || '-') + '</code> ('
+                    + tpEscapeHtml(sample.actual_mode || '-') + ')';
+            }).join('<br>');
+        }
         return details;
     }
     return '-';

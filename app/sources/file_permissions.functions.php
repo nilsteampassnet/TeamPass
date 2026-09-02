@@ -50,6 +50,11 @@ function tpFilePermissionsDefaultReport(): array
             'insecure_modes' => 0,
             'missing_required' => 0,
         ],
+        'scope' => [
+            'mode' => 'standard',
+            'skipped_descendants' => [],
+            'sample_limit' => 5,
+        ],
         'issues' => [],
     ];
 }
@@ -250,6 +255,51 @@ function tpFilePermissionsClassifyPath(string $relativePath): string
 }
 
 /**
+ * Return runtime data roots whose descendants are expensive and noisy to scan.
+ *
+ * The directory nodes themselves remain checked in the standard Health scan.
+ * Operators can request an exhaustive traversal from the CLI.
+ *
+ * @return array<int,string>
+ */
+function tpFilePermissionsShallowRuntimeRoots(): array
+{
+    return [
+        'storage/files',
+        'storage/upload',
+        'storage/backups',
+        'public/assets/avatars',
+        'files',
+        'upload',
+        'backups',
+    ];
+}
+
+/**
+ * Return a stable, bounded scope used to aggregate permission findings.
+ */
+function tpFilePermissionsIssueScope(string $relativePath): string
+{
+    foreach (tpFilePermissionsRuntimeRules() as $rule) {
+        if (tpFilePermissionsPathIsWithin($relativePath, $rule['path'])) {
+            return $rule['path'];
+        }
+    }
+    foreach (['secrets', 'files', 'upload', 'backups'] as $root) {
+        if (tpFilePermissionsPathIsWithin($relativePath, $root)) {
+            return $root;
+        }
+    }
+    foreach (['app', 'public', 'docker', 'scripts'] as $root) {
+        if (tpFilePermissionsPathIsWithin($relativePath, $root)) {
+            return $root;
+        }
+    }
+
+    return '.';
+}
+
+/**
  * Test an effective POSIX permission for the selected web identity.
  *
  * @param array<string,mixed> $identity
@@ -300,13 +350,38 @@ function tpFilePermissionsAddIssue(
     string $actualMode,
     string $expected
 ): void {
-    $report['issues'][] = [
-        'path' => $path,
-        'reason' => $reason,
-        'severity' => $severity,
-        'actual_mode' => $actualMode,
-        'expected' => $expected,
-    ];
+    $scope = tpFilePermissionsIssueScope($path);
+    $issueKey = implode("\0", [$scope, $reason, $severity, $expected]);
+    if (isset($report['issues'][$issueKey]) === false) {
+        $report['issues'][$issueKey] = [
+            'path' => $path,
+            'scope' => $scope,
+            'reason' => $reason,
+            'severity' => $severity,
+            'actual_mode' => $actualMode,
+            'expected' => $expected,
+            'affected_count' => 0,
+            'samples' => [],
+        ];
+    }
+
+    $issueGroup = &$report['issues'][$issueKey];
+    $issueGroup['affected_count']++;
+    if ($issueGroup['affected_count'] > 1) {
+        $issueGroup['path'] = $scope;
+        if ($issueGroup['actual_mode'] !== $actualMode) {
+            $issueGroup['actual_mode'] = 'multiple';
+        }
+    }
+    $sampleLimit = max(1, (int) ($report['scope']['sample_limit'] ?? 5));
+    if (count($issueGroup['samples']) < $sampleLimit) {
+        $issueGroup['samples'][] = [
+            'path' => $path,
+            'actual_mode' => $actualMode,
+        ];
+    }
+    unset($issueGroup);
+
     $report['counts']['issues']++;
     $report['counts'][$severity === 'error' ? 'errors' : 'warnings']++;
     if ($reason === 'protected_writable') {
@@ -324,21 +399,24 @@ function tpFilePermissionsAddIssue(
 }
 
 /**
- * Inspect every runtime-relevant TeamPass file and directory against the
- * permission policy. Repository and development-only artifacts are neutral.
+ * Inspect TeamPass paths against the permission policy. The standard Health
+ * scan checks high-volume runtime directory nodes without descending into
+ * their contents; an explicit CLI option enables exhaustive traversal.
  *
  * Symbolic-link modes are deliberately ignored: POSIX reports them as 0777 and
  * enforces permissions on their targets, which are scanned separately.
  *
  * @param array<string,mixed>|null $platformOverride Test-only platform metadata
  * @param array<string,mixed>|null $identityOverride Test-only web identity
+ * @param bool                     $deepRuntimeScan   Include high-volume runtime contents
  *
  * @return array<string,mixed>
  */
 function tpFilePermissionsScan(
     string $root,
     ?array $platformOverride = null,
-    ?array $identityOverride = null
+    ?array $identityOverride = null,
+    bool $deepRuntimeScan = false
 ): array {
     $report = tpFilePermissionsDefaultReport();
     $rootReal = realpath($root);
@@ -352,6 +430,8 @@ function tpFilePermissionsScan(
     $report['identity'] = $identity;
     $report['scan_supported'] = (bool) ($platform['scan_supported'] ?? false);
     $report['remediation_supported'] = (bool) ($platform['remediation_supported'] ?? false);
+    $report['scope']['mode'] = $deepRuntimeScan ? 'deep' : 'standard';
+    $report['scope']['skipped_descendants'] = $deepRuntimeScan ? [] : tpFilePermissionsShallowRuntimeRoots();
     if ($report['scan_supported'] === false) {
         $report['status'] = 'unsupported';
         return $report;
@@ -443,13 +523,22 @@ function tpFilePermissionsScan(
     };
 
     $inspect($rootReal, '.');
+    $shallowRuntimeRoots = $deepRuntimeScan ? [] : tpFilePermissionsShallowRuntimeRoots();
+    $shallowRuntimeLookup = array_fill_keys($shallowRuntimeRoots, true);
+    foreach ($shallowRuntimeRoots as $relativeRoot) {
+        $absoluteRoot = $rootReal . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativeRoot);
+        if (file_exists($absoluteRoot) || is_link($absoluteRoot)) {
+            $inspect($absoluteRoot, $relativeRoot);
+        }
+    }
     try {
         $directory = new RecursiveDirectoryIterator($rootReal, FilesystemIterator::SKIP_DOTS);
         $filter = new RecursiveCallbackFilterIterator(
             $directory,
-            static function (SplFileInfo $current) use ($rootReal): bool {
+            static function (SplFileInfo $current) use ($rootReal, $shallowRuntimeLookup): bool {
                 $relative = str_replace('\\', '/', substr($current->getPathname(), strlen($rootReal) + 1));
-                return tpFileScopeIsRepositoryArtifact($relative) === false;
+                return tpFileScopeIsRepositoryArtifact($relative) === false
+                    && isset($shallowRuntimeLookup[$relative]) === false;
             }
         );
         $iterator = new RecursiveIteratorIterator(
@@ -468,6 +557,7 @@ function tpFilePermissionsScan(
         tpFilePermissionsAddIssue($report, '.', 'inspection_failed', 'error', '-', 'inspectable');
     }
 
+    $report['issues'] = array_values($report['issues']);
     usort(
         $report['issues'],
         static function (array $left, array $right): int {
@@ -503,6 +593,7 @@ function tpFilePermissionsSummary(array $report): array
         'platform' => is_array($report['platform'] ?? null) ? $report['platform'] : $default['platform'],
         'identity' => is_array($report['identity'] ?? null) ? $report['identity'] : $default['identity'],
         'counts' => is_array($report['counts'] ?? null) ? $report['counts'] : $default['counts'],
+        'scope' => is_array($report['scope'] ?? null) ? $report['scope'] : $default['scope'],
     ];
 }
 
@@ -654,7 +745,7 @@ function tpFilePermissionsRemediationCommands(string $root, array $permissionRep
     if ($protectedArguments !== '') {
         $commands[] = 'sudo chown -R ' . escapeshellarg($codeOwner . ':' . $webGroup) . ' -- ' . $protectedArguments;
         $commands[] = 'sudo find ' . $protectedArguments . ' -xdev -type d -exec chmod 0750 {} +';
-        $commands[] = 'sudo find ' . $protectedArguments . ' -xdev -type f -exec chmod 0640 {} +';
+        $commands[] = 'sudo find ' . $protectedArguments . ' -xdev -type f -exec chmod u=rwX,g=rX,o= {} +';
     }
     if ($runtimeArguments !== '') {
         $commands[] = 'sudo chown -R ' . escapeshellarg($webUser . ':' . $webGroup) . ' -- ' . $runtimeArguments;

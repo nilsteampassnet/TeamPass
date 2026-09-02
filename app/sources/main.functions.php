@@ -283,7 +283,7 @@ function teampassGetSystemHealthOverview(array $SETTINGS, Language $lang): array
         $cronTooltip = $lang->get('health_cron_delayed_help');
     }
 
-    $fileIntegrity = tpFileIntegritySummary(tpFileIntegrityLoadReport(TEAMPASS_ROOT));
+    $fileIntegrity = tpFileIntegrityLoadSummary(TEAMPASS_ROOT);
     $fileIntegrityTask = DB::queryFirstRow(
         'SELECT status, is_in_progress, finished_at, error_message
         FROM ' . prefixTable('background_tasks') . '

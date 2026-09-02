@@ -142,6 +142,7 @@ class FilePermissionsLogicTest extends TestCase
         self::assertStringContainsString('sudo ', $joined);
         self::assertStringContainsString('www-data', $joined);
         self::assertStringContainsString('chmod 0750', $joined);
+        self::assertStringContainsString('-type f -exec chmod u=rwX,g=rX,o=', $joined);
         self::assertStringNotContainsString('semanage', $joined);
 
         $report['identity']['web_user'] = 'apache';
@@ -179,5 +180,56 @@ class FilePermissionsLogicTest extends TestCase
         self::assertContains('.env', $relativePaths);
         self::assertContains('app', $relativePaths);
         self::assertContains('public', $relativePaths);
+    }
+
+    public function testPermissionFindingsAreAggregatedWithBoundedSamples(): void
+    {
+        $report = tpFilePermissionsDefaultReport();
+        for ($index = 0; $index < 100; $index++) {
+            tpFilePermissionsAddIssue(
+                $report,
+                'app/generated/file-' . strval($index) . '.php',
+                'protected_writable',
+                'warning',
+                '0664',
+                'read-only-for-web'
+            );
+        }
+
+        self::assertSame(100, $report['counts']['issues']);
+        self::assertSame(100, $report['counts']['protected_writable']);
+        self::assertCount(1, $report['issues']);
+        $group = array_values($report['issues'])[0];
+        self::assertSame('app', $group['path']);
+        self::assertSame(100, $group['affected_count']);
+        self::assertCount(5, $group['samples']);
+    }
+
+    public function testStandardScanSkipsHighVolumeRuntimeContentsButDeepScanIncludesThem(): void
+    {
+        self::assertTrue(mkdir($this->root . '/storage/upload', 0770, true));
+        for ($index = 0; $index < 25; $index++) {
+            self::assertNotFalse(file_put_contents(
+                $this->root . '/storage/upload/attachment-' . strval($index) . '.bin',
+                'encrypted'
+            ));
+        }
+        $platform = tpFilePermissionsDetectPlatform("ID=ubuntu\nID_LIKE=debian\n", 'Linux');
+        $identity = [
+            'web_user' => 'test-web',
+            'web_group' => 'test-web',
+            'source' => 'test',
+            'uid' => null,
+            'gids' => [],
+        ];
+
+        $standard = tpFilePermissionsScan($this->root, $platform, $identity);
+        $deep = tpFilePermissionsScan($this->root, $platform, $identity, true);
+
+        self::assertSame('standard', $standard['scope']['mode']);
+        self::assertContains('storage/upload', $standard['scope']['skipped_descendants']);
+        self::assertSame('deep', $deep['scope']['mode']);
+        self::assertSame([], $deep['scope']['skipped_descendants']);
+        self::assertSame(25, $deep['counts']['checked'] - $standard['counts']['checked']);
     }
 }

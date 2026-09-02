@@ -284,16 +284,53 @@ class FileIntegrityLogicTest extends TestCase
 
         tpFileIntegritySaveReport($this->root, $report);
         $loaded = tpFileIntegrityLoadReport($this->root);
+        $summary = tpFileIntegrityLoadSummary($this->root);
         $page = tpFileIntegrityIssuePage($loaded, 'all', -10, 500);
 
         self::assertSame('scan-test', $loaded['scan_id']);
+        self::assertSame('scan-test', $summary['scan_id']);
+        self::assertArrayNotHasKey('issues', $summary);
         self::assertTrue($loaded['stale']);
+        self::assertTrue($summary['stale']);
         self::assertSame('stale', $loaded['status']);
         self::assertSame(0, $page['offset']);
         self::assertSame(200, $page['limit']);
         self::assertSame(2, $page['total']);
         self::assertSame('modified', $page['items'][0]['category']);
         self::assertSame('warnings', $page['items'][1]['category']);
+    }
+
+    public function testDashboardSummaryStaysSmallAndRejectsMismatchedDetails(): void
+    {
+        $this->write('app/known.php', 'known');
+        $this->manifest(array('app/known.php' => md5('known')));
+        $report = tpFileIntegrityDefaultReport();
+        $report['has_result'] = true;
+        $report['scan_id'] = 'large-scan';
+        $report['status'] = 'warning';
+        $report['reference_hash'] = hash_file('sha256', $this->root . '/app/files_reference.txt');
+        $report['counts']['unknown'] = 5000;
+        $report['counts']['total_issues'] = 5000;
+        for ($index = 0; $index < 5000; $index++) {
+            $report['issues']['unknown'][] = array(
+                'path' => 'public/unknown/unknown-' . strval($index) . '.txt',
+                'critical' => false,
+                'link' => false,
+            );
+        }
+
+        tpFileIntegritySaveReport($this->root, $report);
+
+        $summaryPath = tpFileIntegritySummaryPath($this->root);
+        $detailPath = tpFileIntegrityReportPath($this->root);
+        self::assertLessThan(10000, filesize($summaryPath));
+        self::assertGreaterThan(filesize($summaryPath) * 20, filesize($detailPath));
+        self::assertSame('large-scan', tpFileIntegrityLoadSummary($this->root)['scan_id']);
+
+        $mismatched = tpFileIntegrityLoadReport($this->root, 'another-scan');
+        self::assertFalse($mismatched['has_result']);
+        self::assertTrue($mismatched['report_invalid']);
+        self::assertSame('error', $mismatched['status']);
     }
 
     public function testCleanupPlanNeverTargetsRuntimeAndProtectsMixedLegacyDirectories(): void

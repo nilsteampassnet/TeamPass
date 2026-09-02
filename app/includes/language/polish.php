@@ -1002,8 +1002,6 @@ return array(
     'path_not_a_file' => 'Ścieżka nie jest plikiem',
     'file_not_writable' => 'Plik nie jest zapisywalny',
     'failed_to_delete' => 'Niepowodzenie podczas usuwania',
-    'delete_unknown_files' => 'Usunąć nieznany plik?',
-    'unknown_files_should_be_deleted' => 'Zaleca się usunięcie tych plików, aby zapobiec mieszaniu wersji.',
     'remaining_lock_time' => 'Pozostaly czas blokady',
     'seconds' => 'sekundy',
     'users_fetch_error' => 'Coś poszło nie tak podczas pobierania użytkowników.',

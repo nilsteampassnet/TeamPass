@@ -1002,8 +1002,6 @@ return array(
     'path_not_a_file' => 'Il percorso non è un file',
     'file_not_writable' => 'Il file non è scrivibile',
     'failed_to_delete' => 'Eliminazione fallita',
-    'delete_unknown_files' => 'Eliminare file sconosciuti?',
-    'unknown_files_should_be_deleted' => 'Si consiglia di eliminare questi file per evitare mescolanze di versioni.',
     'remaining_lock_time' => 'Remaining lock time',
     'seconds' => 'seconds',
     'users_fetch_error' => 'Qualcosa è andato storto durante il recupero degli utenti',

@@ -1002,8 +1002,6 @@ return array(
     'path_not_a_file' => 'Η διαδρομή δεν είναι αρχείο',
     'file_not_writable' => 'Το αρχείο δεν είναι εγγράψιμο',
     'failed_to_delete' => 'Αποτυχία διαγραφής',
-    'delete_unknown_files' => 'Διαγραφή άγνωστων αρχείων;',
-    'unknown_files_should_be_deleted' => 'Συνιστάται η διαγραφή αυτών των αρχείων',
     'remaining_lock_time' => 'Remaining lock time',
     'seconds' => 'seconds',
     'users_fetch_error' => 'Κάτι πήγε στραβά κατά την ανάκτηση χρηστών',

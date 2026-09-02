@@ -1002,8 +1002,6 @@ return array(
     'path_not_a_file' => 'La ruta no es un archivo',
     'file_not_writable' => 'El archivo no se puede escribir',
     'failed_to_delete' => 'Error al eliminar',
-    'delete_unknown_files' => '¿Eliminar archivos desconocidos?',
-    'unknown_files_should_be_deleted' => 'Se recomienda eliminar esos archivos para prevenir la mezcla de versiones.',
     'remaining_lock_time' => 'Tiempo de bloqueo restante',
     'seconds' => 'segundos',
     'users_fetch_error' => 'Algo salió mal al obtener los usuarios',

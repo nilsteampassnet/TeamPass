@@ -1002,8 +1002,6 @@ return array(
     'path_not_a_file' => 'Пътят не е файл',
     'file_not_writable' => 'Не може да се записва',
     'failed_to_delete' => 'Неуспешно изтриване',
-    'delete_unknown_files' => 'Изтрий неизвестни файлове?',
-    'unknown_files_should_be_deleted' => 'Препоръчително е да изтриете файловете.',
     'remaining_lock_time' => 'Remaining lock time',
     'seconds' => 'seconds',
     'users_fetch_error' => 'Грешка при извличане на потребители',

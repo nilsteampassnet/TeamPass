@@ -523,7 +523,8 @@ function tpFileIntegrityScan(
     string $root,
     string $referenceFile,
     bool $useLock = true,
-    bool $scanPermissions = true
+    bool $scanPermissions = true,
+    bool $deepPermissionScan = false
 ): array
 {
     $rootReal = realpath($root);
@@ -664,7 +665,7 @@ function tpFileIntegrityScan(
         }
 
         if ($scanPermissions) {
-            $permissionReport = tpFilePermissionsScan($rootReal);
+            $permissionReport = tpFilePermissionsScan($rootReal, null, null, $deepPermissionScan);
             $report['issues']['permissions'] = is_array($permissionReport['issues'] ?? null)
                 ? $permissionReport['issues']
                 : [];
@@ -719,17 +720,27 @@ function tpFileIntegrityScan(
 }
 
 /**
- * Persist a report under storage/logs using an atomic replace when supported.
+ * Return the lightweight summary file used by Dashboard and Health polling.
  */
-function tpFileIntegritySaveReport(string $root, array $report): void
+function tpFileIntegritySummaryPath(string $root): string
 {
-    $path = tpFileIntegrityReportPath($root);
+    return rtrim($root, '/\\') . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR
+        . 'logs' . DIRECTORY_SEPARATOR . 'file-integrity-summary.json';
+}
+
+/**
+ * Persist one JSON payload using an atomic replace when supported.
+ *
+ * @param array<string,mixed> $payload
+ */
+function tpFileIntegrityWriteJsonFile(string $path, array $payload): void
+{
     $directory = dirname($path);
     if (is_dir($directory) === false || is_writable($directory) === false) {
         throw new RuntimeException('The file integrity report directory is not writable.');
     }
 
-    $encoded = json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
+    $encoded = json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
     if ($encoded === false) {
         throw new RuntimeException('The file integrity report could not be encoded.');
     }
@@ -751,25 +762,119 @@ function tpFileIntegritySaveReport(string $root, array $report): void
 }
 
 /**
+ * Persist the detailed report first and publish its small matching summary last.
+ *
+ * Publishing in this order ensures that readers never associate a new summary
+ * with an older detailed report. Consumers of details also validate scan_id.
+ *
+ * @param array<string,mixed> $report
+ */
+function tpFileIntegritySaveReport(string $root, array $report): void
+{
+    if ((string) ($report['scan_id'] ?? '') === '') {
+        throw new RuntimeException('The file integrity report has no scan identifier.');
+    }
+
+    tpFileIntegrityWriteJsonFile(tpFileIntegrityReportPath($root), $report);
+    tpFileIntegrityWriteJsonFile(tpFileIntegritySummaryPath($root), tpFileIntegritySummary($report));
+}
+
+/**
+ * Apply current manifest and running-state checks to a persisted payload.
+ *
+ * @param array<string,mixed> $payload
+ *
+ * @return array<string,mixed>
+ */
+function tpFileIntegrityApplyRuntimeState(string $root, array $payload): array
+{
+    $currentReferencePath = rtrim($root, '/\\') . DIRECTORY_SEPARATOR . 'app'
+        . DIRECTORY_SEPARATOR . 'files_reference.txt';
+    $payload['running'] = false;
+    $payload['stale'] = false;
+    $payload['reference_missing'] = false;
+    $payload['reference_unreadable'] = false;
+    $payload['status'] = (string) ($payload['scan_status'] ?? $payload['status'] ?? 'not_run');
+
+    if ((bool) ($payload['report_invalid'] ?? false)) {
+        $payload['status'] = 'error';
+    } elseif (is_file($currentReferencePath) === false) {
+        $payload['reference_missing'] = true;
+        $payload['stale'] = (bool) ($payload['has_result'] ?? false);
+        $payload['status'] = 'error';
+    } elseif (is_readable($currentReferencePath) === false) {
+        $payload['reference_unreadable'] = true;
+        $payload['stale'] = (bool) ($payload['has_result'] ?? false);
+        $payload['status'] = 'error';
+    } elseif ((bool) ($payload['has_result'] ?? false)) {
+        $currentReferenceHash = @hash_file('sha256', $currentReferencePath);
+        if ($currentReferenceHash === false) {
+            $payload['reference_unreadable'] = true;
+            $payload['stale'] = true;
+            $payload['status'] = 'error';
+        } elseif (hash_equals((string) ($payload['reference_hash'] ?? ''), $currentReferenceHash) === false) {
+            $payload['stale'] = true;
+            $payload['status'] = 'stale';
+        }
+    }
+
+    $payload['running'] = tpFileIntegrityIsRunning($root);
+    if ($payload['running']) {
+        $payload['status'] = 'running';
+    }
+
+    return $payload;
+}
+
+/**
+ * Load only the lightweight summary used by overview and polling endpoints.
+ *
+ * @return array<string,mixed>
+ */
+function tpFileIntegrityLoadSummary(string $root): array
+{
+    $default = tpFileIntegritySummary(tpFileIntegrityDefaultReport());
+    $path = tpFileIntegritySummaryPath($root);
+    if (is_file($path) === false) {
+        return tpFileIntegrityApplyRuntimeState($root, $default);
+    }
+
+    $contents = false;
+    $handle = @fopen($path, 'rb');
+    if (is_resource($handle)) {
+        if (@flock($handle, LOCK_SH)) {
+            $contents = stream_get_contents($handle);
+            flock($handle, LOCK_UN);
+        }
+        fclose($handle);
+    }
+
+    $decoded = is_string($contents) ? json_decode($contents, true) : null;
+    if (
+        is_array($decoded) === false
+        || (int) ($decoded['schema_version'] ?? 0) !== 1
+        || isset($decoded['issues'])
+    ) {
+        $default['status'] = 'error';
+        $default['scan_status'] = 'error';
+        $default['report_invalid'] = true;
+        return tpFileIntegrityApplyRuntimeState($root, $default);
+    }
+
+    return tpFileIntegrityApplyRuntimeState($root, array_replace_recursive($default, $decoded));
+}
+
+/**
  * Load the latest persisted report, returning a stable not-run state on absence.
  *
  * @return array<string,mixed>
  */
-function tpFileIntegrityLoadReport(string $root): array
+function tpFileIntegrityLoadReport(string $root, ?string $expectedScanId = null): array
 {
     $default = tpFileIntegrityDefaultReport();
     $path = tpFileIntegrityReportPath($root);
-    $currentReferencePath = rtrim($root, '/\\') . DIRECTORY_SEPARATOR . 'app'
-        . DIRECTORY_SEPARATOR . 'files_reference.txt';
     if (is_file($path) === false) {
-        $default['running'] = tpFileIntegrityIsRunning($root);
-        $default['reference_missing'] = is_file($currentReferencePath) === false;
-        $default['reference_unreadable'] = $default['reference_missing'] === false
-            && is_readable($currentReferencePath) === false;
-        $default['status'] = $default['running']
-            ? 'running'
-            : (($default['reference_missing'] || $default['reference_unreadable']) ? 'error' : 'not_run');
-        return $default;
+        return tpFileIntegrityApplyRuntimeState($root, $default);
     }
 
     $contents = false;
@@ -793,34 +898,25 @@ function tpFileIntegrityLoadReport(string $root): array
                 : 'The saved file integrity report is not readable.',
         ];
         $default['counts']['warnings'] = 1;
-        return $default;
+        return tpFileIntegrityApplyRuntimeState($root, $default);
     }
 
     $report = array_replace_recursive($default, $decoded);
-    if (is_file($currentReferencePath) === false) {
-        $report['reference_missing'] = true;
-        $report['stale'] = (bool) ($report['has_result'] ?? false);
-        $report['status'] = 'error';
-    } elseif (is_readable($currentReferencePath) === false) {
-        $report['reference_unreadable'] = true;
-        $report['stale'] = (bool) ($report['has_result'] ?? false);
-        $report['status'] = 'error';
-    } elseif ((bool) ($report['has_result'] ?? false)) {
-        $currentReferenceHash = @hash_file('sha256', $currentReferencePath);
-        if ($currentReferenceHash === false) {
-            $report['reference_unreadable'] = true;
-            $report['stale'] = true;
-            $report['status'] = 'error';
-        } elseif (hash_equals((string) ($report['reference_hash'] ?? ''), $currentReferenceHash) === false) {
-            $report['stale'] = true;
-            $report['status'] = 'stale';
-        }
+    if (
+        $expectedScanId !== null
+        && ($expectedScanId === '' || hash_equals($expectedScanId, (string) ($report['scan_id'] ?? '')) === false)
+    ) {
+        $default['status'] = 'error';
+        $default['report_invalid'] = true;
+        $default['issues']['warnings'][] = [
+            'path' => $path,
+            'message' => 'The detailed report does not match the current summary.',
+        ];
+        $default['counts']['warnings'] = 1;
+        return tpFileIntegrityApplyRuntimeState($root, $default);
     }
-    $report['running'] = tpFileIntegrityIsRunning($root);
-    if ($report['running']) {
-        $report['status'] = 'running';
-    }
-    return $report;
+
+    return tpFileIntegrityApplyRuntimeState($root, $report);
 }
 
 /**
@@ -832,6 +928,7 @@ function tpFileIntegritySummary(array $report): array
 {
     $counts = is_array($report['counts'] ?? null) ? $report['counts'] : tpFileIntegrityDefaultReport()['counts'];
     return [
+        'schema_version' => 1,
         'has_result' => (bool) ($report['has_result'] ?? false),
         'running' => (bool) ($report['running'] ?? false),
         'stale' => (bool) ($report['stale'] ?? false),
@@ -839,6 +936,7 @@ function tpFileIntegritySummary(array $report): array
         'reference_unreadable' => (bool) ($report['reference_unreadable'] ?? false),
         'report_invalid' => (bool) ($report['report_invalid'] ?? false),
         'status' => (string) ($report['status'] ?? 'not_run'),
+        'scan_status' => (string) ($report['scan_status'] ?? $report['status'] ?? 'not_run'),
         'scan_id' => (string) ($report['scan_id'] ?? ''),
         'completed_at' => (int) ($report['completed_at'] ?? 0),
         'duration_ms' => (int) ($report['duration_ms'] ?? 0),
@@ -931,8 +1029,8 @@ function tpFileIntegrityCleanupPlan(string $root, array $report): array
             $commands[] = '# Run a new integrity scan before preparing cleanup commands.';
             return $commands;
         }
-        foreach (array_keys($reference['files']) as $referencePath) {
-            $referenceRoots[explode('/', $referencePath, 2)[0]] = true;
+        foreach (array_keys($reference['files']) as $referenceEntryPath) {
+            $referenceRoots[explode('/', $referenceEntryPath, 2)[0]] = true;
         }
     } catch (RuntimeException $exception) {
         $commands[] = '# Reference manifest unavailable: no whole-directory move is proposed.';
