@@ -455,6 +455,7 @@ app/scripts/traits/PhpseclibV3MigrationTrait.php a53a411cb0a916331a1448312eb4829
 app/scripts/traits/SecurityNudgeTrait.php 7714ae7b5e895c507c8a1302c64f2d9e
 app/scripts/traits/SharekeysRepairTrait.php 3c2d3f3cacd428aa41628c0027008c16
 app/scripts/traits/UserHandlerTrait.php 8321114fec603c67a6030d94c21437f4
+app/scripts/write-db-version.php 12d16b387c4066875ff5b9badd8ca257
 app/sources/.rnd 6627d0aac5e5c898db3a5ec8dc7e97c2
 app/sources/admin.queries.php 8f8b78db1ad4001ad244bfac89824d81
 app/sources/backup.functions.php ddcf91f00e69960d054848b96294f338
