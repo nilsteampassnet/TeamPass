@@ -3176,8 +3176,9 @@ return array(
     'security_dashboard_scan_done_skipped' => 'Scan complete. #count# password(s) could not be assessed and were skipped.',
     'security_dashboard_scan_failed' => 'The scan could not be completed. Please try again or check the server logs.',
     // Faceted search
-    'search_term_placeholder' => 'Search items…',
+    'search_term_placeholder' => 'Search items and folders…',
     'search_filters' => 'Filters',
+    'search_reset' => 'Reset search',
     'search_clear_all' => 'Clear all',
     'search_search_in' => 'Search in',
     'search_facet_classification' => 'Classification',
@@ -3197,9 +3198,12 @@ return array(
     'search_scope_any' => 'Personal and shared',
     'search_scope_shared' => 'Shared only',
     'search_scope_personal' => 'Personal only',
+    'search_folder_filter' => 'Folder and subfolders',
+    'search_folder_any' => 'All folders',
     'search_custom_field_any' => 'Any custom field',
     'search_custom_field_value' => 'Custom field contains…',
     'search_no_criteria' => 'Type at least 2 characters or pick a filter to start searching.',
+    'search_folder_results_more' => 'More folders match this search. Refine your terms to see them.',
     'search_scan_required' => 'Reused and unreadable require a security scan to have been run.',
     // Favourites page
     'favorites_search_placeholder' => 'Filter by name, login, folder, tag…',

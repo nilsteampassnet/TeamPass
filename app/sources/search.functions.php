@@ -38,6 +38,12 @@ declare(strict_types=1);
  * The ACL-bound queries live in search.queries.php.
  */
 
+// Fetch one extra row to tell the UI that more folder matches exist.
+const SEARCH_FOLDER_RESULTS_LIMIT = 20;
+
+// Folder filter options are loaded incrementally by Select2.
+const SEARCH_FOLDER_OPTIONS_PAGE_SIZE = 50;
+
 /**
  * Resolve the folder scope a search may read from.
  *
@@ -96,6 +102,156 @@ function searchResolveFolderScope(
     }
 
     return array_values($scope);
+}
+
+/**
+ * Narrow folder results to the requested personal/shared domain.
+ *
+ * The caller supplies the user's own complete personal tree, resolved by
+ * containment rather than from nested_tree.personal_folder on each row.
+ * Foreign personal folders must already have been removed from $folderScope.
+ *
+ * @param array<int|string> $folderScope       Authorized search scope.
+ * @param array<int|string> $ownPersonalFolders User's personal root and descendants.
+ * @param string            $scopeMode          `personal`, `shared`, or an empty string.
+ *
+ * @return array<int, int> Authorized folder ids matching the requested domain.
+ */
+function searchApplyPersonalFolderScope(
+    array $folderScope,
+    array $ownPersonalFolders,
+    string $scopeMode
+): array {
+    $scope = searchResolveFolderScope($folderScope);
+    if ($scopeMode === '') {
+        return $scope;
+    }
+
+    $personal = array_flip(searchResolveFolderScope($ownPersonalFolders));
+    if ($scopeMode === 'personal') {
+        return array_values(array_filter(
+            $scope,
+            static fn (int $folderId): bool => isset($personal[$folderId]) === true
+        ));
+    }
+    if ($scopeMode === 'shared') {
+        return array_values(array_filter(
+            $scope,
+            static fn (int $folderId): bool => isset($personal[$folderId]) === false
+        ));
+    }
+
+    return $scope;
+}
+
+/**
+ * Encode a folder search term exactly like folder titles are encoded on write.
+ *
+ * Folder titles pass through Elegant Sanitizer's `escape` filter before being
+ * stored. Item search terms must remain untouched, so this normalization is
+ * deliberately limited to folder predicates.
+ *
+ * @param string $term Plain-text term entered by the user.
+ *
+ * @return string Storage-compatible term for a bound LIKE predicate.
+ */
+function searchEncodeFolderTerm(string $term): string
+{
+    return htmlspecialchars(strip_tags($term));
+}
+
+/**
+ * Decode a stored folder title for a text-safe client renderer.
+ *
+ * The browser must still render the returned value with `.text()`, never
+ * `.html()`, because this function intentionally restores literal characters.
+ *
+ * @param string $storedTitle HTML-encoded title read from nested_tree.
+ *
+ * @return string Plain-text folder title.
+ */
+function searchDecodeFolderTitle(string $storedTitle): string
+{
+    return stripslashes(htmlspecialchars_decode($storedTitle, ENT_QUOTES));
+}
+
+/**
+ * Resolve the user-facing title of a folder or ancestor.
+ *
+ * A personal root stores its owner's numeric user id as its title. Mirror the
+ * main tree and show the current user's login for that root instead.
+ *
+ * @param string $storedTitle Stored nested_tree title.
+ * @param int    $level       Nested-tree level of the folder.
+ * @param int    $userId      Current user id.
+ * @param string $userLogin   Current user login.
+ *
+ * @return string Plain-text display title.
+ */
+function searchFolderDisplayTitle(
+    string $storedTitle,
+    int $level,
+    int $userId,
+    string $userLogin
+): string {
+    if ($level === 1 && (int) $storedTitle === $userId) {
+        return searchDecodeFolderTitle($userLogin);
+    }
+
+    return searchDecodeFolderTitle($storedTitle);
+}
+
+/**
+ * Build the ACL-bound predicate used to search folder titles.
+ *
+ * Terms are ANDed and remain bound through MeekroDB's %ss placeholder, which
+ * escapes SQL LIKE wildcards before surrounding the value with `%`.
+ *
+ * Expected alias in the caller's query: `folder` (nested_tree).
+ *
+ * @param array<int, mixed>      $terms       Normalized free-text terms.
+ * @param array<int|string>      $folderScope Authorized folder ids.
+ *
+ * @return array{sql: string, params: array<string, mixed>}
+ */
+function searchBuildFolderWhere(array $terms, array $folderScope): array
+{
+    $scope = searchResolveFolderScope($folderScope);
+    $storageTerms = [];
+    foreach ($terms as $term) {
+        if (is_string($term) === false) {
+            continue;
+        }
+        $term = mb_substr(trim($term), 0, 100);
+        if (mb_strlen($term) < 2) {
+            continue;
+        }
+        $storageTerm = searchEncodeFolderTerm($term);
+        if ($storageTerm === '' || in_array($storageTerm, $storageTerms, true) === true) {
+            continue;
+        }
+        $storageTerms[] = $storageTerm;
+        if (count($storageTerms) >= 5) {
+            break;
+        }
+    }
+
+    if (count($scope) === 0 || count($storageTerms) === 0) {
+        return ['sql' => '(1 = 0)', 'params' => []];
+    }
+
+    $clauses = ['folder.id IN %li_folder_scope'];
+    $params = ['folder_scope' => $scope];
+    foreach ($storageTerms as $index => $storageTerm) {
+        $key = 'folder_term' . $index;
+        $clauses[] = 'folder.title LIKE %ss_' . $key;
+        $params[$key] = $storageTerm;
+    }
+
+    return [
+        'sql' => implode(' AND ', $clauses),
+        'params' => $params,
+    ];
 }
 
 /**
@@ -304,10 +460,13 @@ function searchWhitelist(mixed $raw, array $allowed): array
  */
 function searchNormalizeFilters(array $raw): array
 {
-    $fields = searchWhitelist($raw['fields'] ?? null, array_keys(searchTextFieldMap()));
+    $fields = searchWhitelist(
+        $raw['fields'] ?? null,
+        array_merge(array_keys(searchTextFieldMap()), ['folder'])
+    );
     if (count($fields) === 0) {
         // Sensible default: everything cheap, description excluded.
-        $fields = ['label', 'login', 'url', 'tags'];
+        $fields = ['label', 'login', 'url', 'tags', 'folder'];
     }
 
     $toTimestamp = static function (mixed $value): ?int {
@@ -526,7 +685,11 @@ function searchBuildWhere(array $filters, array $ctx): array
             }
         }
         if (count($columns) === 0) {
-            continue;
+            // `folder` is a valid search field, but it has no item-cache
+            // column. A folder-only text search must therefore return no
+            // items, never the whole faceted item scope.
+            $clauses[] = '(1 = 0)';
+            break;
         }
         $clauses[] = '(' . implode(' OR ', $columns) . ')';
         $params['term' . $index] = $term;
