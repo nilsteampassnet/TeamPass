@@ -531,37 +531,39 @@ function tpFilePermissionsScan(
             $inspect($absoluteRoot, $relativeRoot);
         }
     }
-    try {
-        $directory = new RecursiveDirectoryIterator($rootReal, FilesystemIterator::SKIP_DOTS);
-        $filter = new RecursiveCallbackFilterIterator(
-            $directory,
-            static function (
-                mixed $current,
-                mixed $key,
-                RecursiveIterator $iterator
-            ) use ($rootReal, $shallowRuntimeLookup): bool {
-                if ($current instanceof SplFileInfo === false) {
-                    return false;
+    $pendingDirectories = [['absolute' => $rootReal, 'relative' => '']];
+    while ($pendingDirectories !== []) {
+        $currentDirectory = array_pop($pendingDirectories);
+
+        try {
+            $directory = new DirectoryIterator((string) $currentDirectory['absolute']);
+            foreach ($directory as $entry) {
+                if ($entry->isDot()) {
+                    continue;
                 }
-                $relative = str_replace('\\', '/', substr($current->getPathname(), strlen($rootReal) + 1));
-                return tpFileScopeIsRepositoryArtifact($relative) === false
-                    && isset($shallowRuntimeLookup[$relative]) === false;
+
+                $relative = trim((string) $currentDirectory['relative'] . '/' . $entry->getFilename(), '/');
+                if (tpFileScopeIsRepositoryArtifact($relative) || isset($shallowRuntimeLookup[$relative])) {
+                    continue;
+                }
+
+                $absolute = $entry->getPathname();
+                $inspect($absolute, $relative);
+                if ($entry->isLink() === false && $entry->isDir()) {
+                    $pendingDirectories[] = ['absolute' => $absolute, 'relative' => $relative];
+                }
             }
-        );
-        $iterator = new RecursiveIteratorIterator(
-            $filter,
-            RecursiveIteratorIterator::SELF_FIRST,
-            RecursiveIteratorIterator::CATCH_GET_CHILD
-        );
-        foreach ($iterator as $entry) {
-            if ($entry instanceof SplFileInfo === false) {
-                continue;
-            }
-            $relative = str_replace('\\', '/', substr($entry->getPathname(), strlen($rootReal) + 1));
-            $inspect($entry->getPathname(), $relative);
+        } catch (UnexpectedValueException) {
+            $relative = (string) $currentDirectory['relative'];
+            tpFilePermissionsAddIssue(
+                $report,
+                $relative === '' ? '.' : $relative,
+                'inspection_failed',
+                'error',
+                '-',
+                'inspectable'
+            );
         }
-    } catch (UnexpectedValueException $exception) {
-        tpFilePermissionsAddIssue($report, '.', 'inspection_failed', 'error', '-', 'inspectable');
     }
 
     $report['issues'] = array_values($report['issues']);

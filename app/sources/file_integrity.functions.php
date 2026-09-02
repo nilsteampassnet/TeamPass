@@ -360,59 +360,55 @@ function tpFileIntegrityCollectTree(string $absoluteRoot, string $relativeRoot, 
     }
 
     $entries = [];
-    try {
-        $directory = new RecursiveDirectoryIterator($absoluteRoot, FilesystemIterator::SKIP_DOTS);
-        $filter = new RecursiveCallbackFilterIterator(
-            $directory,
-            static function (
-                mixed $current,
-                mixed $key,
-                RecursiveIterator $iterator
-            ) use ($absoluteRoot, $relativeRoot, &$warnings): bool {
-                if ($current instanceof SplFileInfo === false) {
-                    return false;
-                }
-                $suffix = str_replace('\\', '/', substr($current->getPathname(), strlen($absoluteRoot)));
-                $path = trim($relativeRoot . '/' . ltrim($suffix, '/'), '/');
-                if (tpFileIntegrityIsExcluded($path)) {
-                    return false;
-                }
-                if ($current->isLink()) {
-                    return true;
-                }
-                if ($current->isDir() && $current->isReadable() === false) {
-                    $warnings[] = ['path' => $path, 'message' => 'Directory is not readable.'];
-                    return false;
-                }
-                return true;
-            }
-        );
-        $iterator = new RecursiveIteratorIterator(
-            $filter,
-            RecursiveIteratorIterator::SELF_FIRST,
-            RecursiveIteratorIterator::CATCH_GET_CHILD
-        );
+    $pendingDirectories = [[
+        'absolute' => $absoluteRoot,
+        'relative' => trim($relativeRoot, '/'),
+    ]];
+    while ($pendingDirectories !== []) {
+        $currentDirectory = array_pop($pendingDirectories);
 
-        foreach ($iterator as $entry) {
-            if ($entry instanceof SplFileInfo === false) {
-                continue;
+        try {
+            $directory = new DirectoryIterator((string) $currentDirectory['absolute']);
+            foreach ($directory as $entry) {
+                if ($entry->isDot()) {
+                    continue;
+                }
+
+                $path = trim((string) $currentDirectory['relative'] . '/' . $entry->getFilename(), '/');
+                if (tpFileIntegrityIsExcluded($path)) {
+                    continue;
+                }
+                if ($entry->isLink() === false && $entry->isDir()) {
+                    if ($entry->isReadable() === false) {
+                        $warnings[] = ['path' => $path, 'message' => 'Directory is not readable.'];
+                    } else {
+                        $pendingDirectories[] = [
+                            'absolute' => $entry->getPathname(),
+                            'relative' => $path,
+                        ];
+                    }
+                    continue;
+                }
+                if ($entry->isLink() === false && $entry->isFile() === false) {
+                    continue;
+                }
+
+                $normalizedPath = tpFileIntegrityNormalizePath($path);
+                if ($normalizedPath === null) {
+                    continue;
+                }
+                $entries[] = [
+                    'path' => $normalizedPath,
+                    'absolute' => $entry->getPathname(),
+                    'link' => $entry->isLink(),
+                ];
             }
-            if ($entry->isLink() === false && $entry->isFile() === false) {
-                continue;
-            }
-            $suffix = str_replace('\\', '/', substr($entry->getPathname(), strlen($absoluteRoot)));
-            $path = tpFileIntegrityNormalizePath(trim($relativeRoot . '/' . ltrim($suffix, '/'), '/'));
-            if ($path === null || tpFileIntegrityIsExcluded($path)) {
-                continue;
-            }
-            $entries[] = [
-                'path' => $path,
-                'absolute' => $entry->getPathname(),
-                'link' => $entry->isLink(),
+        } catch (UnexpectedValueException $exception) {
+            $warnings[] = [
+                'path' => (string) $currentDirectory['relative'],
+                'message' => $exception->getMessage(),
             ];
         }
-    } catch (UnexpectedValueException $exception) {
-        $warnings[] = ['path' => $relativeRoot, 'message' => $exception->getMessage()];
     }
 
     return $entries;
@@ -887,7 +883,7 @@ function tpFileIntegrityLoadSummary(string $root): array
         return tpFileIntegrityApplyRuntimeState($root, $default);
     }
 
-    return tpFileIntegrityApplyRuntimeState($root, array_replace_recursive($default, $decoded));
+    return tpFileIntegrityApplyRuntimeState($root, array_replace_recursive($default, (array) $decoded));
 }
 
 /**
@@ -939,7 +935,7 @@ function tpFileIntegrityLoadReport(string $root, ?string $expectedScanId = null)
         return tpFileIntegrityApplyRuntimeState($root, $default);
     }
 
-    $report = array_replace_recursive($default, $decoded);
+    $report = array_replace_recursive($default, (array) $decoded);
     if (
         $expectedScanId !== null
         && ($expectedScanId === '' || hash_equals($expectedScanId, (string) ($report['scan_id'] ?? '')) === false)
