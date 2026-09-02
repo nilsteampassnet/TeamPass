@@ -45,6 +45,7 @@ use TeampassClasses\EmailService\EmailSettings;
 
 // Load functions
 require_once 'main.functions.php';
+require_once __DIR__ . '/main_queries_logic.php';
 
 loadClasses('DB');
 $session = SessionManager::getSession();
@@ -526,9 +527,26 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
             );
 
         case 'save_user_location'://action_user
+            if (
+                isSaveUserLocationRequestValid(
+                    $dataReceived,
+                    $post_key,
+                    (string) $session->get('key')
+                ) === false
+            ) {
+                http_response_code(400);
+
+                return prepareExchangedData(
+                    array(
+                        'error' => true,
+                    ),
+                    'encode'
+                );
+            }
+
             return userSaveIp(
                 (int) $session->get('user-id'),
-                (string) filter_var($dataReceived['action'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                'perform',
             );
 
         /*
