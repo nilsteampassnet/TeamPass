@@ -152,18 +152,48 @@ switch ($post_type) {
             );
 
             if (count($searchableFolders) > 0) {
+                // Item-level ACL. The folder scope alone is not an authorization
+                // decision: an item can be restricted to named users or to roles
+                // inside a folder the caller can otherwise see. Both other search
+                // entry points enforce it — search.queries.php through this very
+                // predicate, find.queries.php by dropping the row after the fact —
+                // and the palette must not be the way around them.
+                $userRoleIds = array_values(array_filter(array_map(
+                    'intval',
+                    is_array($session->get('user-roles_array')) === true ? $session->get('user-roles_array') : []
+                )));
+                $restrictionSql = searchItemRestrictionSql(
+                    (int) $session->get('user-id'),
+                    $userRoleIds,
+                    'c',
+                    prefixTable('restriction_to_roles')
+                );
+
                 // Items — from the search cache (labels/logins/urls/tags, no secret).
+                // Filtering happens in SQL, so it runs before the LIMIT: a page of
+                // 30 rows can no longer be consumed by items the user may not open.
+                // Two further guards mirror the other entry points:
+                //  - deleted_at, because the cache is pruned on delete but drifts
+                //    (search.queries.php carries the same defence in depth);
+                //  - perso/author, which catches a personal item sitting in a folder
+                //    whose personal_folder flag was never written, the case the
+                //    folder scope cannot see (same test as find.queries.php).
                 $itemRecords = DB::query(
                     'SELECT c.id, c.label, c.login, c.id_tree
                     FROM ' . prefixTable('cache') . ' AS c
+                    INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = c.id)
                     WHERE c.id_tree IN %li
                     AND (c.label LIKE %s OR c.login LIKE %s OR c.url LIKE %s OR c.tags LIKE %s)
+                    AND i.deleted_at IS NULL
+                    AND ' . $restrictionSql . '
+                    AND (c.perso = 0 OR CAST(c.author AS UNSIGNED) = %i)
                     LIMIT 30',
                     $searchableFolders,
                     $likeTerm,
                     $likeTerm,
                     $likeTerm,
-                    $likeTerm
+                    $likeTerm,
+                    (int) $session->get('user-id')
                 );
 
                 foreach ($itemRecords as $record) {
