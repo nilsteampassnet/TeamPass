@@ -32,24 +32,42 @@ declare(strict_types=1);
  */
 
 /**
+ * Normalize the payload decoded by mainQuery() to the array every handler expects.
+ *
+ * prepareExchangedData(..., 'decode') returns an empty string when no data was posted
+ * and when the decryption failed, and json_decode() returns null or a scalar for a
+ * payload that is not a JSON object. Reading an offset on any of those values is a
+ * fatal TypeError in PHP 8 ("Cannot access offset of type string on string"), which
+ * terminates the request instead of rejecting it cleanly. Normalizing once, before the
+ * dispatch, keeps every handler on the array contract they all already assume.
+ *
+ * @param mixed $dataReceived Raw result of prepareExchangedData(..., 'decode')
+ *
+ * @return array<array-key, mixed> The decoded payload, or an empty array when unusable
+ */
+function mainQueryNormalizeReceivedData(mixed $dataReceived): array
+{
+    return is_array($dataReceived) === true ? $dataReceived : [];
+}
+
+/**
  * Validate a request that records the current user's IP address.
  *
- * @param array<string, mixed>|null|string $dataReceived Decoded request payload
- * @param string                          $postKey      Key sent by the client
- * @param string                          $sessionKey   Current server-side session key
+ * The payload is expected to be already normalized by mainQueryNormalizeReceivedData(),
+ * so an unusable payload reaches this function as an empty array and is rejected here.
+ *
+ * @param array<array-key, mixed> $dataReceived Decoded request payload
+ * @param string                  $postKey      Key sent by the client
+ * @param string                  $sessionKey   Current server-side session key
  *
  * @return bool True only for a complete request from the current session
  */
 function isSaveUserLocationRequestValid(
-    array|null|string $dataReceived,
+    array $dataReceived,
     string $postKey,
     string $sessionKey
 ): bool {
-    if (
-        $sessionKey === ''
-        || hash_equals($sessionKey, $postKey) === false
-        || is_array($dataReceived) === false
-    ) {
+    if ($sessionKey === '' || hash_equals($sessionKey, $postKey) === false) {
         return false;
     }
 

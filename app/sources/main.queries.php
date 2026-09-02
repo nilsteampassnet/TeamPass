@@ -175,7 +175,13 @@ function mainQuery(array $SETTINGS)
         $inputData['data'],
         'decode'
     ) : '';
-    
+
+    // Every handler below reads $dataReceived as an array. A missing payload, a failed
+    // decryption or a JSON value that is not an object must never reach them: accessing
+    // an offset on a string is a fatal TypeError in PHP 8. Normalize once, here, so that
+    // no handler has to guard each of its own accesses.
+    $dataReceived = mainQueryNormalizeReceivedData($dataReceived);
+
     switch ($inputData['type_category']) {
         case 'action_password':
             echo passwordHandler($inputData['type'], $dataReceived, $SETTINGS);
@@ -209,11 +215,11 @@ function mainQuery(array $SETTINGS)
  * Handler for all password tasks
  *
  * @param string $post_type
- * @param array|null|string $dataReceived
+ * @param array<array-key, mixed> $dataReceived
  * @param array $SETTINGS
  * @return string
  */
-function passwordHandler(string $post_type, array|null|string $dataReceived, array $SETTINGS): string
+function passwordHandler(string $post_type, array $dataReceived, array $SETTINGS): string
 {
     $session = SessionManager::getSession();
     $lang = new Language($session->get('user-language') ?? 'english');
@@ -332,12 +338,12 @@ function passwordHandler(string $post_type, array|null|string $dataReceived, arr
  * Handler for all user tasks
  *
  * @param string $post_type
- * @param array|null|string $dataReceived
+ * @param array<array-key, mixed> $dataReceived
  * @param array $SETTINGS
  * @param string $post_key
  * @return string
  */
-function userHandler(string $post_type, array|null|string $dataReceived, array $SETTINGS, string $post_key): string
+function userHandler(string $post_type, array $dataReceived, array $SETTINGS, string $post_key): string
 {
     $session = SessionManager::getSession();
 
@@ -475,7 +481,7 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
             if ($session->has('user-id')) {
                 return refreshUserItemsSeenList(
                     $SETTINGS,
-                    is_array($dataReceived) === true ? (string) ($dataReceived['scope'] ?? 'recent') : 'recent'
+                    (string) ($dataReceived['scope'] ?? 'recent')
                 );
 
             } else {
@@ -545,8 +551,7 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
             }
 
             return userSaveIp(
-                (int) $session->get('user-id'),
-                'perform',
+                (int) $session->get('user-id')
             );
 
         /*
@@ -566,11 +571,11 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
  * Handler for all mail tasks
  *
  * @param string $post_type
- * @param array|null|string $dataReceived
+ * @param array<array-key, mixed> $dataReceived
  * @param array $SETTINGS
  * @return string
  */
-function mailHandler(string $post_type, /*php8 array|null|string */$dataReceived, array $SETTINGS): string
+function mailHandler(string $post_type, array $dataReceived, array $SETTINGS): string
 {
     $session = SessionManager::getSession();
 
@@ -707,11 +712,11 @@ function mailHandler(string $post_type, /*php8 array|null|string */$dataReceived
  * Handler for all key related tasks
  *
  * @param string $post_type
- * @param array|null|string $dataReceived
+ * @param array<array-key, mixed> $dataReceived
  * @param array $SETTINGS
  * @return string
  */
-function keyHandler(string $post_type, $dataReceived, array $SETTINGS): string
+function keyHandler(string $post_type, array $dataReceived, array $SETTINGS): string
 {
     $session = SessionManager::getSession();
     $lang = new Language($session->get('user-language') ?? 'english');
@@ -916,11 +921,11 @@ function keyHandler(string $post_type, $dataReceived, array $SETTINGS): string
  * Handler for all system tasks
  *
  * @param string $post_type
- * @param array|null|string $dataReceived
+ * @param array<array-key, mixed> $dataReceived
  * @param array $SETTINGS
  * @return string
  */
-function systemHandler(string $post_type, array|null|string $dataReceived, array $SETTINGS): string
+function systemHandler(string $post_type, array $dataReceived, array $SETTINGS): string
 {
     $session = SessionManager::getSession();
     switch ($post_type) {
@@ -1000,7 +1005,7 @@ function systemHandler(string $post_type, array|null|string $dataReceived, array
          * Get online users status for footer indicator / drawer
          */
         case 'get_online_users_status'://action_system
-            $includeUsers = is_array($dataReceived) === true && isset($dataReceived['include_users']) === true
+            $includeUsers = isset($dataReceived['include_users']) === true
                 ? (int) filter_var($dataReceived['include_users'], FILTER_SANITIZE_NUMBER_INT)
                 : 0;
 
@@ -1132,8 +1137,15 @@ function systemHandler(string $post_type, array|null|string $dataReceived, array
     }
 }
 
-
-function utilsHandler(string $post_type, array|null|string $dataReceived, array $SETTINGS): string
+/**
+ * Handler for all utility tasks
+ *
+ * @param string $post_type
+ * @param array<array-key, mixed> $dataReceived
+ * @param array $SETTINGS
+ * @return string
+ */
+function utilsHandler(string $post_type, array $dataReceived, array $SETTINGS): string
 {
     switch ($post_type) {
         /*
@@ -1211,23 +1223,22 @@ function userGetSessionTime(int $userid, int $maximum_session_expiration_time): 
 /**
  * Save the user's IP
  *
+ * The caller is responsible for validating the request: this function always writes.
+ *
  * @param integer $userID
- * @param string $action
  * @return string
  */
-function userSaveIp(int $userID, string $action): string
+function userSaveIp(int $userID): string
 {
-    if ($action === 'perform') {
-        DB::update(
-            prefixTable('users'),
-            array(
-                'user_ip' => getClientIpServer(),
-                'user_ip_lastdate' => time(),
-            ),
-            'id = %i',
-            $userID
-        );
-    }
+    DB::update(
+        prefixTable('users'),
+        array(
+            'user_ip' => getClientIpServer(),
+            'user_ip_lastdate' => time(),
+        ),
+        'id = %i',
+        $userID
+    );
 
     return prepareExchangedData(
         array(
