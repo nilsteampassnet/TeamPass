@@ -165,7 +165,7 @@ switch ($post_type) {
                 $restrictionSql = searchItemRestrictionSql(
                     (int) $session->get('user-id'),
                     $userRoleIds,
-                    'c',
+                    'i',
                     prefixTable('restriction_to_roles')
                 );
 

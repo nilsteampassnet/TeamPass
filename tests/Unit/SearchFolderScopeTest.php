@@ -123,6 +123,20 @@ class SearchFolderScopeTest extends TestCase
         $this->assertStringContainsString('c.perso = 0 OR CAST(c.author AS UNSIGNED)', $source);
     }
 
+    public function testPaletteBuildsItemRestrictionFromTheCanonicalItemsRow(): void
+    {
+        // Empty item restrictions are normalized to "0" in the search cache,
+        // while the items table retains the canonical empty value expected by
+        // searchItemRestrictionSql(). The palette already joins it as alias i.
+        $source = file_get_contents(__DIR__ . '/../../app/sources/palette.queries.php');
+
+        $this->assertIsString($source);
+        $this->assertMatchesRegularExpression(
+            '/searchItemRestrictionSql\(\s*\(int\) \$session->get\(\'user-id\'\),\s*\$userRoleIds,\s*\'i\',/s',
+            $source
+        );
+    }
+
     public function testLegacyPersonalFolderDepthHeuristicIsNotUsed(): void
     {
         foreach (['find.queries.php', 'palette.queries.php'] as $handler) {
