@@ -44,7 +44,9 @@ var CSRFP = {
 	 * @return {String} auth key from cookie.
 	 */
 	_getAuthKey: function () {
-		var regex = new RegExp(`(?:^|;\s*)${CSRFP.CSRFP_TOKEN}=([^;]+)(;|$)`);
+		// `\\s` and not `\s`: inside a template literal `\s` collapses to a plain `s`,
+		// so the separator became `;s*` and no cookie but the first one could be read.
+		var regex = new RegExp(`(?:^|;\\s*)${CSRFP.CSRFP_TOKEN}=([^;]+)(;|$)`);
 		var regexResult = regex.exec(document.cookie);
 		if (regexResult === null) {
 			return null;
@@ -144,8 +146,11 @@ var CSRFP = {
 
 		// Convert the rules received from php library to regex objects.
 		for (var i = 0; i < CSRFP.checkForUrls.length; i++) {
+			// Escape the backslashes first, otherwise a rule carrying one leaks into the
+			// generated pattern as an escape sequence of its own.
 			this.checkForUrls[i]
-				= this.checkForUrls[i].replace(/\*/g, '(.*)')
+				= this.checkForUrls[i].replace(/\\/g, '\\\\')
+					.replace(/\*/g, '(.*)')
 					.replace(/\//g, "\\/");
 			this.checkForUrls[i] = new RegExp(CSRFP.checkForUrls[i]);
 		}

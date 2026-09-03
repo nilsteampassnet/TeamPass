@@ -61,7 +61,7 @@ app/includes/fonts/source-sans-pro-v14-latin/source-sans-pro-v14-latin-regular.w
 app/includes/fonts/source-sans-pro-v14-latin/source-sans-pro-v14-latin-regular.woff2 899c8f78ce650d4009d42443897aa723
 app/includes/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
 app/includes/js/CreateRandomString.js a1ab3aaea638ec477f1c9ed9abb6b05b
-app/includes/js/functions.js 09763d20af814fb8842c98474313a181
+app/includes/js/functions.js 8f892451ddb89ae600425511d97859b3
 app/includes/js/secure-clipboard-cleaner.js bda1f05b8ee591503334dbc53e6601e5
 app/includes/js/teampass-websocket-init.js d688c4b78e4bbe0b8c3ee2775bc0ab38
 app/includes/js/teampass-websocket.js 95d87f2357e9e5b71c452fbecc5c41f8
@@ -5969,7 +5969,7 @@ public/assets/images/teampass-logo2-login.png 83e33461e1fdcc1b200f547e3723538d
 public/assets/images/teampass-pwa.png 6974640cf785e5c323e5a3f3e20c4548
 public/assets/images/yubico.png 13c2bd79082e0590fc947ccf8e532905
 public/assets/js/CreateRandomString.js a1ab3aaea638ec477f1c9ed9abb6b05b
-public/assets/js/functions.js 09763d20af814fb8842c98474313a181
+public/assets/js/functions.js 8f892451ddb89ae600425511d97859b3
 public/assets/js/secure-clipboard-cleaner.js bda1f05b8ee591503334dbc53e6601e5
 public/assets/js/teampass-websocket-init.js d688c4b78e4bbe0b8c3ee2775bc0ab38
 public/assets/js/teampass-websocket.js 95d87f2357e9e5b71c452fbecc5c41f8
@@ -6024,7 +6024,7 @@ public/assets/lib/cryptojs/sha384.js 6ae085f20325eb927ff673ef20568137
 public/assets/lib/cryptojs/sha512.js 0e5e8946947671eefe910c58f1272c48
 public/assets/lib/cryptojs/tripledes.js fcd80fd597ef5e6a0fe34cdf484a8825
 public/assets/lib/cryptojs/x64-core.js 677577ca38d04508f116ebc977dcb11b
-public/assets/lib/csrfp/csrfprotector.js 0b2b62ddd683bd7d85d08a81d5bf48ef
+public/assets/lib/csrfp/csrfprotector.js a35434dce6678bb2422f6f38fc1963d7
 public/error.php d04da81fe6bb2a5ec831e652efe9c248
 public/favicon.ico 650d9dc1389a07abccdc471dd0913734
 public/includes/.htaccess 495f5f9213788d16c8549d829d67c7f1
