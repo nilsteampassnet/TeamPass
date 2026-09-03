@@ -31,7 +31,7 @@ In order to be imported, the CSV requires to be build following a specific forma
 * The header must contain 5 or 6 columns (with or without folder),
 * The separator character is a comma `,`,
 * The encalupsation character is a double quotes `"`,
-* Expected columns are: `Label` , `Login` , `Password` , `URL` , `Comments` , `Folder` (is optionnal).
+* Expected columns are: `Label` , `Login` , `Password` , `URL` , `Comments` , `Folder` (is optional).
 
 #### Example with folder
 
