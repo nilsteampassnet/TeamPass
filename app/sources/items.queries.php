@@ -1161,6 +1161,7 @@ switch ($inputData['type']) {
         $itemFilesForTasks = [];
         $itemFieldsForTasks = [];
         $tasksToBePerformed = [];
+        $preservedFieldIds = [];
         $encrypted_password = '';
         $encrypted_password_key = '';
         $encrypted_password_iv = '';
@@ -1727,26 +1728,89 @@ switch ($inputData['type']) {
                             $encryptionTaskIsRequested = true;
                         }
                     } else {
-                        // Field value is empty - delete field entry and its sharekeys
+                        // Field value is empty - delete field entry and its sharekeys.
+                        //
+                        // Before destroying anything, make sure the empty value really is a
+                        // user intent. When the stored value is encrypted and the caller has
+                        // no usable sharekey, the item card renders the field blank with no
+                        // feedback, the edit form is populated from that blank value and posts
+                        // it back here (#5342). Deleting would then wipe the only remaining
+                        // copy of a ciphertext that a sharekey repair could still recover.
                         $existingField = DB::queryFirstRow(
-                            'SELECT id FROM ' . prefixTable('categories_items') . '
+                            'SELECT id, data, data_iv, encryption_type
+                            FROM ' . prefixTable('categories_items') . '
                             WHERE item_id = %i AND field_id = %i',
                             $inputData['itemId'],
                             $field['id']
                         );
                         if (DB::count() > 0) {
-                            // Delete associated sharekeys first
-                            DB::delete(
-                                prefixTable('sharekeys_fields'),
-                                'object_id = %i',
-                                $existingField['id']
-                            );
-                            // Then delete the field entry
-                            DB::delete(
-                                prefixTable('categories_items'),
-                                'id = %i',
-                                $existingField['id']
-                            );
+                            $fieldIsUnreadable = false;
+
+                            // An encrypted row with no stored data holds nothing to protect,
+                            // so it stays deletable.
+                            if (
+                                $existingField['encryption_type'] !== 'not_set'
+                                && empty($existingField['data']) === false
+                            ) {
+                                $userKey = DB::queryFirstRow(
+                                    'SELECT share_key, increment_id
+                                    FROM ' . prefixTable('sharekeys_fields') . '
+                                    WHERE user_id = %i AND object_id = %i',
+                                    $session->get('user-id'),
+                                    $existingField['id']
+                                );
+
+                                if (DB::count() === 0) {
+                                    // No sharekey at all: the value was never displayed to this user
+                                    $fieldIsUnreadable = true;
+                                } else {
+                                    // A sharekey exists but may be unusable (broken v1->v3 migration)
+                                    $fieldObjectKey = decryptUserObjectKeyWithMigration(
+                                        $userKey['share_key'],
+                                        $session->get('user-private_key'),
+                                        $session->get('user-public_key'),
+                                        intval($userKey['increment_id']),
+                                        'sharekeys_fields'
+                                    );
+                                    // Only a real decryption failure protects the row. A value
+                                    // that decrypts to an empty string is readable, so clearing
+                                    // it stays a legitimate user intent (#5342).
+                                    $fieldIsUnreadable = empty($fieldObjectKey) === true
+                                        || doDataDecryptionWithStatus(
+                                            $existingField['data'],
+                                            $fieldObjectKey,
+                                            (string) ($existingField['data_iv'] ?? '')
+                                        )['success'] === false;
+                                }
+                            }
+
+                            if ($fieldIsUnreadable === true) {
+                                // Keep the row untouched and report it so the user is told
+                                // the field was preserved instead of silently cleared.
+                                array_push($preservedFieldIds, (int) $field['id']);
+
+                                if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                                    error_log(
+                                        'TEAMPASS update_item: custom field ' . (int) $field['id']
+                                        . ' of item ' . (int) $inputData['itemId']
+                                        . ' was submitted empty but cannot be decrypted by user '
+                                        . (int) $session->get('user-id') . ' - kept to avoid data loss'
+                                    );
+                                }
+                            } else {
+                                // Delete associated sharekeys first
+                                DB::delete(
+                                    prefixTable('sharekeys_fields'),
+                                    'object_id = %i',
+                                    $existingField['id']
+                                );
+                                // Then delete the field entry
+                                DB::delete(
+                                    prefixTable('categories_items'),
+                                    'id = %i',
+                                    $existingField['id']
+                                );
+                            }
                         }
                     }
                 }
@@ -2424,6 +2488,9 @@ switch ($inputData['type']) {
                 'error' => false,
                 'message' => '',
                 'encryption_task_created' => ($encryptionTaskIsRequested === true && intval($dataItem['perso']) !== 1),
+                // Custom fields submitted empty but kept because their stored value
+                // could not be decrypted by this user (#5342)
+                'preserved_fields' => $preservedFieldIds,
             );
         } else {
             echo (string) prepareExchangedData(
@@ -3542,12 +3609,15 @@ switch ($inputData['type']) {
                                 intval($userKey['increment_id']),
                                 'sharekeys_fields'
                             );
-                            $decryptedValue = doDataDecryption(
+                            // A value that decrypts to an empty string is a normal empty
+                            // field, not a failure: reporting it as one puts the "cannot be
+                            // decrypted" warning on a perfectly readable item (#5342).
+                            $decryptedField = doDataDecryptionWithStatus(
                                 $row['data'],
                                 $fieldObjectKey,
                                 (string) ($row['data_iv'] ?? '')
                             );
-                            if ($decryptedValue === '') {
+                            if ($decryptedField['success'] === false) {
                                 $fieldText = [
                                     'string' => '',
                                     'encrypted' => true,
@@ -3556,22 +3626,24 @@ switch ($inputData['type']) {
                                 $decryptionErrors[] = intval($row['field_id']);
                             } else {
                                 $fieldText = [
-                                    'string' => $decryptedValue,
+                                    'string' => $decryptedField['string'],
                                     'encrypted' => true,
                                     'error' => '',
                                 ];
 
                                 // Lazily upgrade a legacy-encrypted field to AES v2 on read
                                 // (no-op unless v2 writes are enabled and the row is still legacy).
-                                doDataReEncryption(
-                                    'categories_items',
-                                    'data',
-                                    'data_iv',
-                                    (int) $row['id'],
-                                    (string) $row['data'],
-                                    (string) ($row['data_iv'] ?? ''),
-                                    $fieldObjectKey
-                                );
+                                if ($decryptedField['string'] !== '') {
+                                    doDataReEncryption(
+                                        'categories_items',
+                                        'data',
+                                        'data_iv',
+                                        (int) $row['id'],
+                                        (string) $row['data'],
+                                        (string) ($row['data_iv'] ?? ''),
+                                        $fieldObjectKey
+                                    );
+                                }
                             }
                         }
 
@@ -7670,6 +7742,21 @@ switch ($inputData['type']) {
             $inputData['itemId'],
             '"at_shown","at_password_copied", "at_shown", "at_password_shown", "at_password_shown_edit_form"'
         );
+
+        // The detail string below is markup, and the fragments interpolated into it are
+        // item values an attacker controls (a previous label, login, url, tag, custom
+        // field, folder name or attachment name). Escaping them here keeps the server
+        // from emitting attacker markup at all.
+        //
+        // This is defence in depth, NOT what makes the value safe to render: the client
+        // purifier strips two entity layers from every answer, so any encoding added here
+        // is consumed before the value reaches the DOM. The sink in loadItemHistory()
+        // (app/pages/items.js.php) is what has to encode - see the contract on
+        // purifyData() in app/includes/js/functions.js.
+        $escapeDetail = static function ($value): string {
+            return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+        };
+
         foreach ($rows as $record) {
             $parsedReason = parseItemLogReasonSource(isset($record['raison']) === true ? (string) $record['raison'] : null);
             $record['raison'] = $parsedReason['reason'];
@@ -7728,7 +7815,7 @@ switch ($inputData['type']) {
                     );
                 }
             } elseif ($record['action'] === 'at_manual') {
-                $detail = $reason[0];
+                $detail = $escapeDetail($reason[0]);
                 $action = $lang->get($record['action']);
             } elseif ($reason[0] === 'at_description') {
                 $action = $lang->get('description_has_changed');
@@ -7736,19 +7823,19 @@ switch ($inputData['type']) {
                 $action = $lang->get($reason[0]);
                 if ($reason[0] === 'at_moved') {
                     $tmp = explode(' -> ', $reason[1]);
-                    $detail = $lang->get('from') . ' <span class="font-weight-light">' . $tmp[0] . '</span> ' . $lang->get('to') . ' <span class="font-weight-light">' . $tmp[1] . ' </span>';
+                    $detail = $lang->get('from') . ' <span class="font-weight-light">' . $escapeDetail($tmp[0]) . '</span> ' . $lang->get('to') . ' <span class="font-weight-light">' . $escapeDetail($tmp[1]) . ' </span>';
                 } elseif ($reason[0] === 'at_field') {
                     $tmp = explode(' => ', $reason[1]);
                     if (count($tmp) > 1) {
-                        $detail = '<b>' . trim($tmp[0]) . '</b> | ' . $lang->get('previous_value') .
-                            ': <span class="font-weight-light">' . trim($tmp[1]) . '</span>';
+                        $detail = '<b>' . $escapeDetail(trim($tmp[0])) . '</b> | ' . $lang->get('previous_value') .
+                            ': <span class="font-weight-light">' . $escapeDetail(trim($tmp[1])) . '</span>';
                     } else {
-                        $detail = trim($reason[1]);
+                        $detail = $escapeDetail(trim($reason[1]));
                     }
                 } elseif (in_array($reason[0], array('at_restriction', 'at_email', 'at_login', 'at_label', 'at_url', 'at_tag')) === true) {
                     $tmp = explode(' => ', $reason[1]);
                     $detail = empty(trim($tmp[0])) === true ?
-                        $lang->get('no_previous_value') : $lang->get('previous_value') . ': <span class="font-weight-light">' . $tmp[0] . ' </span>';
+                        $lang->get('no_previous_value') : $lang->get('previous_value') . ': <span class="font-weight-light">' . $escapeDetail($tmp[0]) . ' </span>';
                 } elseif ($reason[0] === 'at_classification_changed') {
                     // Reason is '<previous level> => <new level>'; legacy
                     // entries only carry the new level.
@@ -7769,15 +7856,16 @@ switch ($inputData['type']) {
                 } elseif ($reason[0] === 'at_add_file' || $reason[0] === 'at_del_file') {
                     $tmp = explode(':', $reason[1]);
                     $tmp = explode('.', $tmp[0]);
-                    $detail = isBase64($tmp[0]) === true ?
-                        base64_decode($tmp[0]) . '.' . $tmp[1] : $tmp[0];
+                    $detail = $escapeDetail(
+                        isBase64($tmp[0]) === true ? base64_decode($tmp[0]) . '.' . $tmp[1] : $tmp[0]
+                    );
                 } elseif ($reason[0] === 'at_import') {
                     $detail = '';
                 } elseif (in_array($reason[0], array('csv', 'pdf')) === true) {
                     $detail = $reason[0];
                     $action = $lang->get('exported_to_file');
                 } else {
-                    $detail = $reason[0];
+                    $detail = $escapeDetail($reason[0]);
                 }
             } else {
                 $action = $lang->get($record['action']);

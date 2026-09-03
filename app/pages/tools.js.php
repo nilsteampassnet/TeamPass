@@ -258,7 +258,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     '<div class="form-check mt-2">'+
                         '<input class="form-check-input" type="checkbox" value="" id="restore_items_master_keys_confirm">'+
                         '<label class="form-check-label" for="restore_items_master_keys_confirm">'+
-                            'I confirm the operation and I have a backup of table <code>teampass_sharekeys_items</code>.'+
+                            'I confirm the operation and I have a backup of table <code><?php echo htmlspecialchars(DB_PREFIX, ENT_QUOTES, "UTF-8"); ?>sharekeys_items</code>.'+
                         '</label>'+
                     '</div>'+
                     '<button type="button" class="btn btn-danger mt-2 btn-sm tp-action" id="fix_items_master_keys_confirm_but" data-action="fix_items_master_keys_confirm_but">'+
@@ -715,7 +715,44 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     });
                     html += '</tbody></table>';
 
-                    if (totalMissing === 0 && totalSeedable === 0) {
+                    // Personal objects: a separate table, because the repair is a different one -
+                    // one key for the owner, and nothing an administrator can do without the
+                    // internal reference key.
+                    var totalPersonalToFix = 0,
+                        totalPersonalNeedsOwner = 0,
+                        totalPersonalUnrecoverable = 0;
+                    var personalHtml = '<table class="table table-sm table-bordered"><thead><tr>' +
+                        '<th></th>' +
+                        '<th><?php echo $lang->get('restore_missing_sharekeys_objects'); ?></th>' +
+                        '<th><?php echo $lang->get('restore_missing_sharekeys_owner_missing'); ?></th>' +
+                        '<th><?php echo $lang->get('restore_missing_sharekeys_personal_repairable'); ?></th>' +
+                        '<th><?php echo $lang->get('restore_missing_sharekeys_needs_owner'); ?></th>' +
+                        '<th><?php echo $lang->get('restore_missing_sharekeys_unrecoverable'); ?></th>' +
+                        '</tr></thead><tbody>';
+                    $.each(data.personal_analysis, function(scope, row) {
+                        totalPersonalToFix += row.repairable + row.needs_owner + row.unrecoverable;
+                        totalPersonalNeedsOwner += row.needs_owner;
+                        totalPersonalUnrecoverable += row.unrecoverable;
+                        personalHtml += '<tr><td>' + scope + '</td>' +
+                            '<td>' + row.objects + '</td>' +
+                            '<td>' + row.owner_missing + '</td>' +
+                            '<td>' + row.repairable + '</td>' +
+                            '<td>' + row.needs_owner + '</td>' +
+                            '<td>' + row.unrecoverable + '</td></tr>';
+                    });
+                    personalHtml += '</tbody></table>';
+
+                    if (totalPersonalToFix > 0) {
+                        html += '<h6 class="mt-3"><?php echo $lang->get('restore_missing_sharekeys_personal'); ?></h6>' + personalHtml;
+                        if (totalPersonalNeedsOwner > 0) {
+                            html += '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle mr-2"></i><?php echo $lang->get('restore_missing_sharekeys_needs_owner_tip'); ?></div>';
+                        }
+                        if (totalPersonalUnrecoverable > 0) {
+                            html += '<div class="alert alert-danger"><i class="fas fa-triangle-exclamation mr-2"></i><?php echo $lang->get('restore_missing_sharekeys_personal_unrecoverable_tip'); ?></div>';
+                        }
+                    }
+
+                    if (totalMissing === 0 && totalSeedable === 0 && totalPersonalToFix === 0) {
                         html += '<div class="alert alert-success"><i class="fas fa-check mr-2"></i><?php echo $lang->get('restore_missing_sharekeys_no_missing'); ?></div>';
                     } else {
                         html += '<div class="alert alert-info"><i class="fas fa-info-circle mr-2"></i><?php echo $lang->get('restore_missing_sharekeys_found'); ?></div>';
@@ -724,7 +761,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     if (totalUnrecoverable > 0) {
                         html += '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle mr-2"></i><?php echo $lang->get('restore_missing_sharekeys_unrecoverable_tip'); ?></div>';
                     }
-                    if (totalTpMissing > 0) {
+                    if (totalTpMissing > 0 || totalPersonalNeedsOwner > 0 || totalPersonalUnrecoverable > 0) {
                         html += '<button type="button" class="btn btn-secondary btn-sm tp-action" id="restore_missing_sharekeys_details_but" data-action="restore_missing_sharekeys_details_but">' +
                             '<i class="fas fa-list mr-2"></i><?php echo $lang->get('restore_missing_sharekeys_details'); ?></button>' +
                             '<div id="restore_missing_sharekeys_details"></div>';
@@ -788,6 +825,41 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         });
                     });
                     html += '</tbody></table>';
+
+                    // Personal objects the repair cannot reach: the owner is named because asking
+                    // that person to run the repair from their own profile is the only way back.
+                    var personalRows = '';
+                    $.each(ret.personal_details, function(scope, block) {
+                        if (block.total > block.objects.length) {
+                            truncated = true;
+                        }
+                        $.each(block.objects, function(index, obj) {
+                            var label = restoreSharekeysEscape(obj.label) +
+                                (obj.extra !== '' ? ' <span class="text-muted">(' + restoreSharekeysEscape(obj.extra) + ')</span>' : '');
+                            var owner = obj.owner_login !== '' ?
+                                restoreSharekeysEscape(obj.owner_login) :
+                                '<span class="badge badge-danger"><?php echo $lang->get('restore_missing_sharekeys_owner_unresolved'); ?></span>';
+                            var status = parseInt(obj.owner_can_read, 10) === 1 ?
+                                '<span class="badge badge-warning"><?php echo $lang->get('restore_missing_sharekeys_needs_owner'); ?></span>' :
+                                '<span class="badge badge-danger"><?php echo $lang->get('restore_missing_sharekeys_unrecoverable'); ?></span>';
+                            personalRows += '<tr><td>' + scope + '</td>' +
+                                '<td>' + obj.id + '</td>' +
+                                '<td>' + label + '</td>' +
+                                '<td>' + owner + '</td>' +
+                                '<td>' + status + '</td></tr>';
+                        });
+                    });
+                    if (personalRows !== '') {
+                        html += '<h6 class="mt-3"><?php echo $lang->get('restore_missing_sharekeys_personal'); ?></h6>' +
+                            '<table class="table table-sm table-bordered"><thead><tr>' +
+                            '<th><?php echo $lang->get('type'); ?></th>' +
+                            '<th>ID</th>' +
+                            '<th><?php echo $lang->get('label'); ?></th>' +
+                            '<th><?php echo $lang->get('restore_missing_sharekeys_owner'); ?></th>' +
+                            '<th><?php echo $lang->get('status'); ?></th>' +
+                            '</tr></thead><tbody>' + personalRows + '</tbody></table>';
+                    }
+
                     if (truncated === true) {
                         html += '<div class="alert alert-info"><i class="fas fa-info-circle mr-2"></i><?php echo $lang->get('restore_missing_sharekeys_details_limit'); ?></div>';
                     }
@@ -807,7 +879,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             toastr.remove();
             toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
-            restoreSharekeysSeedScope(['items', 'fields', 'files'], 0);
+            restoreSharekeysSeedScope(['items', 'fields', 'files'], 0, {seeded: 0, failed: 0});
         }
     });
 
@@ -820,11 +892,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     /**
      * Seed the missing TP_USER reference keys, one scope at a time, then
-     * launch the background repair task.
+     * launch the background repair task. The running totals are carried along
+     * so the operator is told how many objects the repair could actually open:
+     * a silent "Done" on a batch where every seed failed reads as a success.
      */
-    function restoreSharekeysSeedScope(scopes, lastId) {
+    function restoreSharekeysSeedScope(scopes, lastId, totals) {
         if (scopes.length === 0) {
-            restoreSharekeysLaunchTask();
+            restoreSharekeysLaunchTask(totals);
             return;
         }
 
@@ -854,10 +928,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     return;
                 }
 
+                totals.seeded += parseInt(ret.seeded, 10) || 0;
+                totals.failed += parseInt(ret.failed, 10) || 0;
+
                 if (ret.finished === true) {
-                    restoreSharekeysSeedScope(scopes.slice(1), 0);
+                    restoreSharekeysSeedScope(scopes.slice(1), 0, totals);
                 } else {
-                    restoreSharekeysSeedScope(scopes, ret.lastId);
+                    restoreSharekeysSeedScope(scopes, ret.lastId, totals);
                 }
             }
         );
@@ -866,7 +943,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     /**
      * Launch the background task that recreates the missing sharekeys.
      */
-    function restoreSharekeysLaunchTask() {
+    function restoreSharekeysLaunchTask(totals) {
         $.post(
             'sources/tools.queries.php', {
                 type: 'restore_missing_sharekeys-launch',
@@ -889,6 +966,16 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                 $('#restore_missing_sharekeys_results').append(
                     '<div class="alert alert-success"><i class="fas fa-check mr-2"></i>' + htmlEncode(ret.message) + '</div>'
+                );
+
+                // json_encode, not a quoted echo: a translation carrying an apostrophe
+                // would otherwise break out of the JS string literal.
+                var seedReport = <?php echo json_encode($lang->get('restore_missing_sharekeys_seed_report'), JSON_UNESCAPED_UNICODE); ?>
+                    .replace('#seeded#', String(totals.seeded))
+                    .replace('#failed#', String(totals.failed));
+                $('#restore_missing_sharekeys_results').append(
+                    '<div class="alert alert-' + (totals.failed > 0 ? 'warning' : 'info') + '">' +
+                    '<i class="fas fa-key mr-2"></i>' + htmlEncode(seedReport) + '</div>'
                 );
                 toastr.success(
                     '<?php echo $lang->get('done'); ?>',

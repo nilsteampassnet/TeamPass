@@ -248,6 +248,42 @@ class CryptoManagerTest extends TestCase
     }
 
     // =========================================================================
+    // Empty plaintext — a successful decryption, not a failure (#5342)
+    // =========================================================================
+
+    public function testAesDecryptOfEmptyPlaintextReturnsEmptyStringWithoutThrowing(): void
+    {
+        // doDataDecryption() collapses "decryption failed" and "the stored value is
+        // an empty string" into the same empty return. The primitive keeps them
+        // apart - a readable empty value returns, a broken one throws - which is
+        // what doDataDecryptionWithStatus() surfaces to its callers.
+        $password  = 'object-key';
+        $encrypted = CryptoManager::aesEncrypt('', $password, 'cbc', 'sha1');
+
+        $this->assertNotSame('', $encrypted, 'An empty plaintext still produces a padded block');
+        $this->assertSame('', CryptoManager::aesDecrypt($encrypted, $password, 'cbc', 'sha1'));
+    }
+
+    public function testAesDecryptOfEmptyPlaintextWithWrongKeyStillThrows(): void
+    {
+        $encrypted = CryptoManager::aesEncrypt('', 'object-key', 'cbc', 'sha1');
+
+        $this->expectException(Exception::class);
+        CryptoManager::aesDecrypt($encrypted, 'another-object-key', 'cbc', 'sha1');
+    }
+
+    public function testAesGcmDecryptOfEmptyPlaintextReturnsEmptyStringWithoutThrowing(): void
+    {
+        $keyMaterial = 'object-key';
+        $encrypted   = CryptoManager::aesGcmEncrypt('', $keyMaterial);
+
+        $this->assertSame(
+            '',
+            CryptoManager::aesGcmDecrypt($encrypted['ciphertext'], $encrypted['meta'], $keyMaterial)
+        );
+    }
+
+    // =========================================================================
     // Cross-version AES: data encrypted with sha1, decrypted with sha256 must fail
     // =========================================================================
 

@@ -993,6 +993,9 @@ logItems(
             $cronStatus = (string) ($systemHealth['cron']['status'] ?? 'danger');
             $cronText = (string) ($systemHealth['cron']['text'] ?? $lang->get('error'));
             $unknownFilesCount = (int) ($systemHealth['unknown_files']['count'] ?? 0);
+            $fileIntegrity = is_array($systemHealth['file_integrity'] ?? null)
+                ? $systemHealth['file_integrity']
+                : tpFileIntegritySummary(tpFileIntegrityDefaultReport());
 
             // ------------------------
             // System info (CPU / RAM / Disk / PHP)
@@ -1464,7 +1467,12 @@ logItems(
 
             $report = array(
                 'generated_at' => $now,
-                'generated_at_human' => date('Y-m-d H:i:s', $now),
+                'generated_at_human' => date(
+                    (string) ($SETTINGS['date_format'] ?? 'Y-m-d')
+                    . ' '
+                    . (string) ($SETTINGS['time_format'] ?? 'H:i:s'),
+                    $now
+                ),
                 'export_filename' => $lang->get('health_export_filename'),
                 'overview' => array(
                     'encryption' => array(
@@ -1482,6 +1490,7 @@ logItems(
                     'unknown_files' => array(
                         'count' => $unknownFilesCount,
                     ),
+                    'file_integrity' => $fileIntegrity,
                     'migration' => array(
                         'overall' => $migrationOverall,
                         'sharekeys_items' => $sharekeysItemsProgress,
@@ -1570,6 +1579,211 @@ logItems(
                 array(
                     'error' => false,
                     'report' => $report,
+                ),
+                'encode'
+            );
+            break;
+
+        // File integrity scan (asynchronous, read-only)
+        case 'health_start_file_integrity_scan':
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array('error' => true, 'message' => $lang->get('key_is_not_correct')),
+                    'encode'
+                );
+                break;
+            } elseif ($checkUserAccess->userAccessPage('utilities.health') === false) {
+                echo prepareExchangedData(
+                    array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                    'encode'
+                );
+                break;
+            } elseif ($session->get('user-read_only') === 1) {
+                echo prepareExchangedData(
+                    array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                    'encode'
+                );
+                break;
+            }
+
+            $fileIntegrityEnqueueHandle = @fopen(tpFileIntegrityEnqueueLockPath(TEAMPASS_ROOT), 'c+');
+            if (
+                $fileIntegrityEnqueueHandle === false
+                || @flock($fileIntegrityEnqueueHandle, LOCK_EX) === false
+            ) {
+                if (is_resource($fileIntegrityEnqueueHandle)) {
+                    fclose($fileIntegrityEnqueueHandle);
+                }
+                echo prepareExchangedData(
+                    array('error' => true, 'message' => $lang->get('health_file_integrity_queue_failed')),
+                    'encode'
+                );
+                break;
+            }
+
+            try {
+                $fileIntegrityTask = DB::queryFirstRow(
+                    'SELECT increment_id, status, is_in_progress
+                    FROM ' . prefixTable('background_tasks') . '
+                    WHERE process_type = %s
+                    AND is_in_progress IN (0, 1)
+                    AND (finished_at IS NULL OR finished_at = %s OR finished_at = %s)
+                    ORDER BY increment_id DESC
+                    LIMIT 1',
+                    'file_integrity_scan',
+                    '',
+                    '0'
+                );
+
+                if (is_array($fileIntegrityTask) === false) {
+                    DB::insert(prefixTable('background_tasks'), [
+                        'created_at' => (string) time(),
+                        'process_type' => 'file_integrity_scan',
+                        'arguments' => json_encode([
+                            'author' => (int) $session->get('user-id'),
+                        ], JSON_UNESCAPED_SLASHES),
+                        'is_in_progress' => 0,
+                        'status' => 'new',
+                    ]);
+                    $fileIntegrityTaskId = (int) DB::insertId();
+                    triggerBackgroundHandler();
+                } else {
+                    $fileIntegrityTaskId = (int) $fileIntegrityTask['increment_id'];
+                }
+            } finally {
+                flock($fileIntegrityEnqueueHandle, LOCK_UN);
+                fclose($fileIntegrityEnqueueHandle);
+            }
+
+            $fileIntegritySummary = tpFileIntegrityLoadSummary(TEAMPASS_ROOT);
+            $fileIntegritySummary['running'] = true;
+            $fileIntegritySummary['status'] = 'running';
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'task_id' => $fileIntegrityTaskId,
+                    'summary' => $fileIntegritySummary,
+                ),
+                'encode'
+            );
+            break;
+
+        case 'health_get_file_integrity_status':
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array('error' => true, 'message' => $lang->get('key_is_not_correct')),
+                    'encode'
+                );
+                break;
+            } elseif ($checkUserAccess->userAccessPage('utilities.health') === false) {
+                echo prepareExchangedData(
+                    array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                    'encode'
+                );
+                break;
+            }
+
+            $fileIntegrityLatestTask = DB::queryFirstRow(
+                'SELECT increment_id, status, is_in_progress, output, error_message, finished_at
+                FROM ' . prefixTable('background_tasks') . '
+                WHERE process_type = %s
+                ORDER BY increment_id DESC
+                LIMIT 1',
+                'file_integrity_scan'
+            );
+            $fileIntegritySummary = tpFileIntegrityLoadSummary(TEAMPASS_ROOT);
+            $fileIntegrityTaskStatus = '';
+            $fileIntegrityTaskError = '';
+            if (is_array($fileIntegrityLatestTask)) {
+                $fileIntegrityTaskStatus = (string) ($fileIntegrityLatestTask['status'] ?? '');
+                $fileIntegrityTaskError = (string) ($fileIntegrityLatestTask['error_message'] ?? '');
+                $fileIntegrityTaskActive = in_array((int) ($fileIntegrityLatestTask['is_in_progress'] ?? -1), [0, 1], true)
+                    && empty($fileIntegrityLatestTask['finished_at']);
+                if ($fileIntegrityTaskActive) {
+                    $fileIntegritySummary['running'] = true;
+                    $fileIntegritySummary['status'] = 'running';
+                } elseif (
+                    $fileIntegrityTaskStatus === 'failed'
+                    && (int) ($fileIntegrityLatestTask['finished_at'] ?? 0) >= (int) ($fileIntegritySummary['completed_at'] ?? 0)
+                ) {
+                    $fileIntegritySummary['status'] = 'error';
+                    $fileIntegritySummary['last_error'] = $fileIntegrityTaskError;
+                    $fileIntegritySummary['failed_at'] = (int) ($fileIntegrityLatestTask['finished_at'] ?? 0);
+                }
+            }
+
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'summary' => $fileIntegritySummary,
+                    'task_status' => $fileIntegrityTaskStatus,
+                    'task_error' => $fileIntegrityTaskError,
+                ),
+                'encode'
+            );
+            break;
+
+        case 'health_get_file_integrity_issues':
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array('error' => true, 'message' => $lang->get('key_is_not_correct')),
+                    'encode'
+                );
+                break;
+            } elseif ($checkUserAccess->userAccessPage('utilities.health') === false) {
+                echo prepareExchangedData(
+                    array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                    'encode'
+                );
+                break;
+            }
+
+            $fileIntegrityRequest = prepareExchangedData($post_data, 'decode');
+            $fileIntegrityCategory = is_array($fileIntegrityRequest)
+                ? (string) ($fileIntegrityRequest['category'] ?? 'modified')
+                : 'modified';
+            $fileIntegrityOffset = is_array($fileIntegrityRequest)
+                ? (int) ($fileIntegrityRequest['offset'] ?? 0)
+                : 0;
+            $fileIntegrityLimit = is_array($fileIntegrityRequest)
+                ? (int) ($fileIntegrityRequest['limit'] ?? 100)
+                : 100;
+            $fileIntegritySummary = tpFileIntegrityLoadSummary(TEAMPASS_ROOT);
+            if ((bool) ($fileIntegritySummary['has_result'] ?? false) === false) {
+                echo prepareExchangedData(
+                    array('error' => true, 'message' => $lang->get('health_file_integrity_no_result')),
+                    'encode'
+                );
+                break;
+            }
+            $fileIntegrityReport = tpFileIntegrityLoadReport(
+                TEAMPASS_ROOT,
+                (string) ($fileIntegritySummary['scan_id'] ?? '')
+            );
+            if ((bool) ($fileIntegrityReport['has_result'] ?? false) === false) {
+                echo prepareExchangedData(
+                    array('error' => true, 'message' => $lang->get('health_file_integrity_report_invalid')),
+                    'encode'
+                );
+                break;
+            }
+
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'page' => tpFileIntegrityIssuePage(
+                        $fileIntegrityReport,
+                        $fileIntegrityCategory,
+                        $fileIntegrityOffset,
+                        $fileIntegrityLimit
+                    ),
+                    'cleanup_plan' => tpFileIntegrityCleanupCommands(TEAMPASS_ROOT, $fileIntegrityReport),
+                    'permissions_plan' => tpFilePermissionsRemediationCommands(
+                        TEAMPASS_ROOT,
+                        is_array($fileIntegrityReport['permissions'] ?? null)
+                            ? $fileIntegrityReport['permissions']
+                            : []
+                    ),
                 ),
                 'encode'
             );

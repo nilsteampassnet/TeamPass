@@ -135,7 +135,7 @@ case 'perform_fix_pf_items-step1':
     // Get user's private folders
     $userPFRoot = DB::queryFirstRow(
         'SELECT id
-        FROM teampass_nested_tree
+        FROM ' . prefixTable('nested_tree') . '
         WHERE title = %i',
         $userId
     );
@@ -204,8 +204,8 @@ case 'perform_fix_pf_items-step2':
     // Delete all private items with sharekeys
     $pfiSharekeys = DB::queryFirstColumn(
         'select s.increment_id
-        from teampass_sharekeys_items as s
-        INNER JOIN teampass_items AS i ON (i.id = s.object_id)
+        from ' . prefixTable('sharekeys_items') . ' as s
+        INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = s.object_id)
         WHERE s.user_id = %i AND i.perso = 1 AND i.id_tree IN %ls',
         $userId,
         $personalFolders
@@ -213,7 +213,7 @@ case 'perform_fix_pf_items-step2':
     $pfiSharekeysCount = DB::count();
     if ($pfiSharekeysCount > 0) {
         DB::delete(
-            "teampass_sharekeys_items",
+            prefixTable('sharekeys_items'),
             "increment_id IN %ls",
             $pfiSharekeys
         );
@@ -270,7 +270,7 @@ case 'perform_fix_pf_items-step3':
     // Get all key back
     $items = DB::query(
         "SELECT id
-        FROM teampass_items
+        FROM " . prefixTable('items') . "
         WHERE id_tree IN %ls AND encryption_type = %s",
         $personalFolders,
         "teampass_aes"
@@ -278,9 +278,9 @@ case 'perform_fix_pf_items-step3':
     //DB::debugMode(false);
     $nbItems = DB::count();
     foreach ($items as $item) {
-        $defusePwd = DB::queryFirstField("SELECT pw FROM teampass_items_old WHERE id = %i", $item['id']);
+        $defusePwd = DB::queryFirstField("SELECT pw FROM " . prefixTable('items_old') . " WHERE id = %i", $item['id']);
         DB::update(
-            "teampass_items",
+            prefixTable('items'),
             ['pw' => $defusePwd, "encryption_type" => "defuse"],
             "id = %i",
             $item['id']
@@ -934,11 +934,55 @@ case 'perform_fix_pf_items-step3':
             ];
         }
 
+        // Personal objects are a different problem, so they get their own table. Only the owner and
+        // the internal account may hold a key (SEC-8), which splits them into three very different
+        // situations: the repair can rebuild the owner's key from the internal one, only the owner
+        // can rebuild the internal one from theirs, and when both are gone nobody can do either.
+        $nonOwnerIds = array_merge($specialUserIds, [TP_USER_ID]);
+        $personalAnalysis = [];
+        foreach (restoreSharekeysScopeDefs(true) as $scopeName => $def) {
+            $personalObjects = (int) DB::queryFirstField(
+                'SELECT COUNT(*) FROM ' . $def['from'] . ' WHERE ' . $def['where']
+            );
+            // No user other than the internal accounts holds a usable key: the owner cannot read it.
+            $ownerMissing = (int) DB::queryFirstField(
+                'SELECT COUNT(*) FROM ' . $def['from'] . '
+                LEFT JOIN ' . prefixTable($def['table']) . ' AS sk ON (sk.object_id = o.id AND sk.user_id NOT IN %li AND sk.share_key != "" AND sk.encryption_version = 3)
+                WHERE ' . $def['where'] . ' AND sk.increment_id IS NULL',
+                $nonOwnerIds
+            );
+            // No internal reference key: nothing server side can open the object.
+            $tpMissing = (int) DB::queryFirstField(
+                'SELECT COUNT(*) FROM ' . $def['from'] . '
+                LEFT JOIN ' . prefixTable($def['table']) . ' AS sktp ON (sktp.object_id = o.id AND sktp.user_id = ' . TP_USER_ID . ' AND sktp.share_key != "")
+                WHERE ' . $def['where'] . ' AND sktp.increment_id IS NULL'
+            );
+            // Neither: no key left at all.
+            $noKeyAtAll = (int) DB::queryFirstField(
+                'SELECT COUNT(*) FROM ' . $def['from'] . '
+                LEFT JOIN ' . prefixTable($def['table']) . ' AS sk ON (sk.object_id = o.id AND sk.user_id NOT IN %li AND sk.share_key != "" AND sk.encryption_version = 3)
+                LEFT JOIN ' . prefixTable($def['table']) . ' AS sktp ON (sktp.object_id = o.id AND sktp.user_id = ' . TP_USER_ID . ' AND sktp.share_key != "")
+                WHERE ' . $def['where'] . ' AND sk.increment_id IS NULL AND sktp.increment_id IS NULL',
+                $nonOwnerIds
+            );
+
+            $personalAnalysis[$scopeName] = [
+                'objects' => $personalObjects,
+                'owner_missing' => $ownerMissing,
+                // Owner key gone, reference key still there: this repair rebuilds it.
+                'repairable' => max(0, $ownerMissing - $noKeyAtAll),
+                // Reference key gone, owner can still read: only the owner can rebuild it.
+                'needs_owner' => max(0, $tpMissing - $noKeyAtAll),
+                'unrecoverable' => $noKeyAtAll,
+            ];
+        }
+
         echo prepareExchangedData(
             array(
                 'error' => false,
                 'eligible_users' => $eligibleUsersCount,
                 'analysis' => $analysis,
+                'personal_analysis' => $personalAnalysis,
             ),
             'encode'
         );
@@ -1043,11 +1087,64 @@ case 'perform_fix_pf_items-step3':
             ];
         }
 
+        // Personal objects with no internal reference key - the ones this repair cannot touch. Naming
+        // the owner is the whole point of the list: when the owner can still read the object they
+        // rebuild the reference key themselves from their profile, and when they cannot, nothing
+        // automatic is left. The two need different words, so the row says which case it is.
+        $nonOwnerIds = array_merge($specialUserIds, [TP_USER_ID]);
+        $personalDetails = [];
+        foreach (restoreSharekeysScopeDefs(true) as $scopeName => $def) {
+            $ownerJoins = ' LEFT JOIN ' . prefixTable('nested_tree') . ' AS pfolder ON pfolder.id = ' . $def['itemAlias'] . '.id_tree
+                LEFT JOIN ' . prefixTable('nested_tree') . ' AS proot ON (proot.personal_folder = 1 AND proot.parent_id = 0
+                    AND pfolder.nleft >= proot.nleft AND pfolder.nright <= proot.nright)
+                LEFT JOIN ' . prefixTable('users') . ' AS ow ON ow.id = proot.title';
+            $missingBoth = ' LEFT JOIN ' . prefixTable($def['table']) . ' AS sk ON (sk.object_id = o.id AND sk.user_id NOT IN %li AND sk.share_key != "" AND sk.encryption_version = 3)
+                LEFT JOIN ' . prefixTable($def['table']) . ' AS sktp ON (sktp.object_id = o.id AND sktp.user_id = ' . TP_USER_ID . ' AND sktp.share_key != "")';
+
+            $total = (int) DB::queryFirstField(
+                'SELECT COUNT(*) FROM ' . $def['from'] . $missingBoth . '
+                WHERE ' . $def['where'] . ' AND sktp.increment_id IS NULL',
+                $nonOwnerIds
+            );
+
+            $rows = [];
+            if ($total > 0) {
+                $rows = DB::query(
+                    'SELECT o.id AS object_id, ' . $detailDefs[$scopeName]['label'] . ', ' . $detailDefs[$scopeName]['extra'] . ',
+                        IFNULL(ow.login, "") AS owner_login,
+                        IF(sk.increment_id IS NULL, 0, 1) AS owner_can_read
+                    FROM ' . $def['from'] . $detailDefs[$scopeName]['extraJoin'] . $ownerJoins . $missingBoth . '
+                    WHERE ' . $def['where'] . ' AND sktp.increment_id IS NULL
+                    ORDER BY o.id ASC
+                    LIMIT %i',
+                    $nonOwnerIds,
+                    $detailsLimit
+                );
+            }
+
+            $personalDetails[$scopeName] = [
+                'total' => $total,
+                'objects' => array_map(
+                    static function (array $row): array {
+                        return [
+                            'id' => (int) $row['object_id'],
+                            'label' => (string) $row['label'],
+                            'extra' => (string) $row['extra'],
+                            'owner_login' => (string) $row['owner_login'],
+                            'owner_can_read' => (int) $row['owner_can_read'],
+                        ];
+                    },
+                    $rows
+                ),
+            ];
+        }
+
         echo prepareExchangedData(
             array(
                 'error' => false,
                 'limit' => $detailsLimit,
                 'details' => $details,
+                'personal_details' => $personalDetails,
             ),
             'encode'
         );
@@ -1243,32 +1340,4 @@ case 'perform_fix_pf_items-step3':
         );
         break;
 
-}
-
-/**
- * Definition of the object scopes handled by the "Restore missing sharekeys"
- * tool. Each scope maps an object source (aliased "o", personal items excluded)
- * to its sharekeys table.
- *
- * @return array<string, array{table: string, from: string, where: string}>
- */
-function restoreSharekeysScopeDefs(): array
-{
-    return [
-        'items' => [
-            'table' => 'sharekeys_items',
-            'from' => prefixTable('items') . ' AS o',
-            'where' => 'o.perso = 0',
-        ],
-        'fields' => [
-            'table' => 'sharekeys_fields',
-            'from' => prefixTable('categories_items') . ' AS o INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = o.item_id AND i.perso = 0)',
-            'where' => 'o.encryption_type = "' . TP_ENCRYPTION_NAME . '"',
-        ],
-        'files' => [
-            'table' => 'sharekeys_files',
-            'from' => prefixTable('files') . ' AS o INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = o.id_item AND i.perso = 0)',
-            'where' => 'o.status = "' . TP_ENCRYPTION_NAME . '"',
-        ],
-    ];
 }

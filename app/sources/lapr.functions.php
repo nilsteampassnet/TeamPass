@@ -705,6 +705,78 @@ function laprComputeNextRotation(?string $lastRotationAt, int $frequencyDays, ?i
 }
 
 /**
+ * Whether a LAPR failure is a transient network condition worth retrying.
+ * Authentication, host-key, privilege and data-consistency failures require
+ * an operator action and must not be retried automatically.
+ *
+ * @param string $errorCode LAPR error taxonomy code
+ *
+ * @return bool
+ */
+function laprIsTransientConnectionError(string $errorCode): bool
+{
+    return in_array($errorCode, [
+        'ERR_TIMEOUT',
+        'ERR_REFUSED',
+        'ERR_HOST_UNREACHABLE',
+        'ERR_NOT_CONNECTED',
+    ], true);
+}
+
+/**
+ * Translate an endpoint check failure into its persisted availability state.
+ *
+ * @param string $errorCode LAPR error taxonomy code
+ *
+ * @return string 'unreachable' for network outages, 'error' otherwise
+ */
+function laprEndpointStatusForCheckFailure(string $errorCode): string
+{
+    return laprIsTransientConnectionError($errorCode) ? 'unreachable' : 'error';
+}
+
+/**
+ * Compute when an enrolled endpoint must next be checked. The five-minute
+ * floor prevents a bad setting from creating a tight SSH retry loop.
+ *
+ * @param array<string, mixed> $settings TeamPass settings
+ * @param int|null             $now      Unix timestamp reference
+ * @param string|null          $errorCode Last check error, when any
+ *
+ * @return string 'Y-m-d H:i:s'
+ */
+function laprComputeNextEndpointCheck(array $settings, ?int $now = null, ?string $errorCode = null): string
+{
+    $now = $now ?? time();
+    $intervalMinutes = laprIsTransientConnectionError((string) $errorCode)
+        ? max(5, (int) ($settings['lapr_retry_delay_minutes'] ?? 60))
+        : max(5, (int) ($settings['lapr_endpoint_check_interval_minutes'] ?? 1440));
+
+    return date('Y-m-d H:i:s', $now + $intervalMinutes * 60);
+}
+
+/**
+ * Compute the temporary lease written when an endpoint check is enqueued.
+ *
+ * The lease prevents a crashed worker from causing a new task on every handler
+ * tick. It must never be longer than the administrator's normal check cadence,
+ * even when the rotation retry delay is configured to a larger value.
+ *
+ * @param array<string, mixed> $settings TeamPass settings
+ * @param int|null             $now      Unix timestamp reference
+ *
+ * @return string 'Y-m-d H:i:s'
+ */
+function laprComputeEndpointCheckLease(array $settings, ?int $now = null): string
+{
+    $now = $now ?? time();
+    $normalMinutes = max(5, (int) ($settings['lapr_endpoint_check_interval_minutes'] ?? 1440));
+    $retryMinutes = max(5, (int) ($settings['lapr_retry_delay_minutes'] ?? 60));
+
+    return date('Y-m-d H:i:s', $now + min($normalMinutes, $retryMinutes) * 60);
+}
+
+/**
  * Prepare a stored LAPR datetime for regional display and chronological sort.
  *
  * LAPR stores SQL DATETIME values in the TeamPass-configured timezone. The
@@ -892,6 +964,111 @@ function laprUserCanReadFolder(int $folderId, SessionInterface $session): bool
     $accessible = $session->get('user-accessible_folders') ?? [];
 
     return in_array($folderId, array_map('intval', (array) $accessible), true);
+}
+
+/**
+ * Endpoint ids whose SSH credential item sits in a folder the user can read.
+ *
+ * Endpoint enrollment requires read access to the credential item's folder
+ * (laprStartTest / laprAddEndpoint), but nothing re-established that link
+ * afterwards: every operation driven by an endpoint reads its SSH credential
+ * as TP_USER, which bypasses per-user folder ACLs by design. Scoping the
+ * endpoint itself is what keeps that server-side key chain from becoming a
+ * way to reach hosts the caller was never authorized to touch.
+ *
+ * Fails closed: an endpoint whose credential item is gone, personal or
+ * inaccessible is not returned. Such an endpoint cannot rotate anyway.
+ *
+ * @param SessionInterface $session Current session
+ *
+ * @return array<int, int> Endpoint ids
+ */
+function laprGetUserAccessibleEndpointIds(SessionInterface $session): array
+{
+    if ((int) $session->get('user-admin') === 1) {
+        return [];
+    }
+
+    $accessible = array_values(array_unique(array_map(
+        'intval',
+        (array) ($session->get('user-accessible_folders') ?? [])
+    )));
+    if ($accessible === []) {
+        return [];
+    }
+
+    $rows = DB::query(
+        'SELECT e.id
+         FROM ' . prefixTable('lapr_endpoints') . ' AS e
+         INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = e.ssh_credential_source
+         WHERE e.status != %s
+           AND i.perso = 0
+           AND i.inactif = 0
+           AND i.deleted_at IS NULL
+           AND i.id_tree IN %li',
+        'deleted',
+        $accessible
+    );
+
+    return array_map(static fn (array $row): int => (int) $row['id'], $rows);
+}
+
+/**
+ * Whether a LAPR background task was started by the given user.
+ *
+ * Task ids are a sequential AUTO_INCREMENT, so polling handlers must bind the
+ * result to the operator who queued the task. Scheduler-driven rotations carry
+ * TP_USER_ID as author and are never pollable by a human.
+ *
+ * @param mixed $arguments JSON arguments column of background_tasks
+ * @param int   $userId    Acting user id
+ *
+ * @return bool
+ */
+function laprTaskBelongsToUser($arguments, int $userId): bool
+{
+    if ($userId <= 0) {
+        return false;
+    }
+
+    $decoded = json_decode((string) ($arguments ?? ''), true);
+    if (is_array($decoded) === false || isset($decoded['author']) === false) {
+        return false;
+    }
+
+    return (int) $decoded['author'] === $userId;
+}
+
+/**
+ * Whether the user may drive operations on an endpoint (rotate, discover,
+ * attach an account, reset). Mirrors the read check applied to the credential
+ * item at enrollment time.
+ *
+ * @param int              $endpointId Endpoint id
+ * @param SessionInterface $session    Current session
+ *
+ * @return bool
+ */
+function laprUserCanUseEndpoint(int $endpointId, SessionInterface $session): bool
+{
+    if ($endpointId <= 0 || (int) $session->get('user-admin') === 1) {
+        return false;
+    }
+
+    $credentialFolderId = DB::queryFirstField(
+        'SELECT i.id_tree
+         FROM ' . prefixTable('lapr_endpoints') . ' AS e
+         INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = e.ssh_credential_source
+         WHERE e.id = %i AND e.status != %s AND i.perso = 0
+           AND i.inactif = 0 AND i.deleted_at IS NULL',
+        $endpointId,
+        'deleted'
+    );
+    if ($credentialFolderId === null) {
+        return false;
+    }
+
+    return laprUserCanReadFolder((int) $credentialFolderId, $session);
 }
 
 /**

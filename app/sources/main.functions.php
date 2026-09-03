@@ -58,6 +58,9 @@ require_once __DIR__ . '/log_display_logic.php';
 require_once __DIR__ . '/item_revisions_logic.php';
 require_once __DIR__ . '/password_strength.functions.php';
 require_once __DIR__ . '/roles_scope.functions.php';
+require_once __DIR__ . '/file_integrity.functions.php';
+// Owner resolution rules for personal objects, shared with the remediation tooling and its tests.
+require_once __DIR__ . '/../scripts/personal_sharekeys_logic.php';
 
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
@@ -280,14 +283,31 @@ function teampassGetSystemHealthOverview(array $SETTINGS, Language $lang): array
         $cronTooltip = $lang->get('health_cron_delayed_help');
     }
 
-    $unknownFilesData = DB::queryFirstField(
-        'SELECT valeur FROM ' . prefixTable('misc') . '
-        WHERE type = %s AND intitule = %s',
-        'admin',
-        'unknown_files'
+    $fileIntegrity = tpFileIntegrityLoadSummary(TEAMPASS_ROOT);
+    $fileIntegrityTask = DB::queryFirstRow(
+        'SELECT status, is_in_progress, finished_at, error_message
+        FROM ' . prefixTable('background_tasks') . '
+        WHERE process_type = %s
+        ORDER BY increment_id DESC
+        LIMIT 1',
+        'file_integrity_scan'
     );
-    $unknownFiles = is_string($unknownFilesData) ? json_decode($unknownFilesData, true) : null;
-    $unknownFilesCount = is_array($unknownFiles) ? count($unknownFiles) : 0;
+    if (is_array($fileIntegrityTask)) {
+        $fileIntegrityTaskActive = in_array((int) ($fileIntegrityTask['is_in_progress'] ?? -1), [0, 1], true)
+            && empty($fileIntegrityTask['finished_at']);
+        if ($fileIntegrityTaskActive) {
+            $fileIntegrity['running'] = true;
+            $fileIntegrity['status'] = 'running';
+        } elseif (
+            (string) ($fileIntegrityTask['status'] ?? '') === 'failed'
+            && (int) ($fileIntegrityTask['finished_at'] ?? 0) >= (int) ($fileIntegrity['completed_at'] ?? 0)
+        ) {
+            $fileIntegrity['status'] = 'error';
+            $fileIntegrity['last_error'] = (string) ($fileIntegrityTask['error_message'] ?? '');
+            $fileIntegrity['failed_at'] = (int) ($fileIntegrityTask['finished_at'] ?? 0);
+        }
+    }
+    $unknownFilesCount = (int) ($fileIntegrity['counts']['unknown'] ?? 0);
 
     $websocketEnabled = (string) ($SETTINGS['websocket_enabled'] ?? '0') === '1';
     $websocketHost = (string) ($SETTINGS['websocket_host'] ?? '127.0.0.1');
@@ -322,6 +342,7 @@ function teampassGetSystemHealthOverview(array $SETTINGS, Language $lang): array
             'tooltip' => $cronTooltip,
         ),
         'unknown_files' => array('count' => $unknownFilesCount),
+        'file_integrity' => $fileIntegrity,
         'websocket' => array(
             'status' => $websocketStatus,
             'text' => $websocketText,
@@ -923,6 +944,143 @@ function getPersonalFolderIdsWithDescendants(): array
 }
 
 /**
+ * Definition of the object scopes handled by the "Restore missing sharekeys" tool.
+ *
+ * Each scope maps an object source (always aliased "o", its parent item aliased "i" when a join is
+ * needed) to its sharekeys table, plus the WHERE clause selecting the objects to work on. Callers
+ * build their own SELECT on top: the Tools page counts, the background task paginates.
+ *
+ * It lives here rather than next to one of its callers because both must agree: the analysis is
+ * read by an administrator as a prediction of what the repair will do, so a scope the analysis
+ * counts and the task skips shows up as a number that never reaches zero.
+ *
+ * Shared and personal objects need opposite treatments - a shared object key goes to every eligible
+ * user, a personal one to its owner alone (SEC-8 invariant I1) - so they are two scopes, selected
+ * by one predicate and its negation. That is deliberate: it makes them a partition, and an object
+ * can never fall outside both and become invisible to the tool.
+ *
+ * The predicate is containment first: a sub-folder created under a personal root keeps
+ * personal_folder = 0 when the flag was never written (legacy data, copy_folder, import). items.perso
+ * is kept as a second, independent signal because it is 0 on items created while the client sent
+ * folder_is_personal = 0, and 1 on the rare item flagged personal outside any personal tree - which
+ * the personal pass then reports as "owner unresolved" instead of silently redistributing.
+ *
+ * @param bool $personal false = shared objects only (default), true = personal objects only.
+ *
+ * 'objectWhere' is the object-type condition alone, without the scope test - what a caller needs
+ * when it scopes the objects itself, as the personal self-repair does on one user's own tree.
+ *
+ * @return array<string, array{table: string, from: string, where: string, itemAlias: string, objectWhere: string}>
+ */
+function restoreSharekeysScopeDefs(bool $personal = false): array
+{
+    $personalFolders = getPersonalFolderIdsWithDescendants();
+
+    $scopeTest = static function (string $alias) use ($personal, $personalFolders): string {
+        // COALESCE, because an item whose folder was deleted carries id_tree = NULL: without it
+        // the IN() yields NULL, the predicate and its negation are both NULL, and the object
+        // silently belongs to neither scope. Folder id 0 is the tree root, never a personal folder.
+        $isPersonal = $alias . '.perso = 1';
+        if (count($personalFolders) > 0) {
+            $isPersonal = '(' . $isPersonal . ' OR COALESCE(' . $alias . '.id_tree, 0) IN (' . implode(',', $personalFolders) . '))';
+        }
+
+        return $personal === true ? '(' . $isPersonal . ')' : 'NOT (' . $isPersonal . ')';
+    };
+
+    $objectWhere = [
+        'items' => '',
+        'fields' => 'o.encryption_type = "' . TP_ENCRYPTION_NAME . '"',
+        'files' => 'o.status = "' . TP_ENCRYPTION_NAME . '"',
+    ];
+    $where = static function (string $scope, string $alias) use ($objectWhere, $scopeTest): string {
+        return $objectWhere[$scope] === ''
+            ? $scopeTest($alias)
+            : $objectWhere[$scope] . ' AND ' . $scopeTest($alias);
+    };
+
+    return [
+        'items' => [
+            'table' => 'sharekeys_items',
+            'from' => prefixTable('items') . ' AS o',
+            'itemAlias' => 'o',
+            'objectWhere' => $objectWhere['items'],
+            'where' => $where('items', 'o'),
+        ],
+        'fields' => [
+            'table' => 'sharekeys_fields',
+            'from' => prefixTable('categories_items') . ' AS o INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = o.item_id)',
+            'itemAlias' => 'i',
+            'objectWhere' => $objectWhere['fields'],
+            'where' => $where('fields', 'i'),
+        ],
+        'files' => [
+            'table' => 'sharekeys_files',
+            'from' => prefixTable('files') . ' AS o INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = o.id_item)',
+            'itemAlias' => 'i',
+            'objectWhere' => $objectWhere['files'],
+            'where' => $where('files', 'i'),
+        ],
+    ];
+}
+
+/**
+ * Map every folder of every personal tree to the user who owns it.
+ *
+ * The owner is the numeric title of the personal root above the folder - the same signal as
+ * identUserGetPFList() and resolvePersonalFolderOwner(). It is resolved here for the whole tree in
+ * a single query because the callers walk thousands of objects, and climbing the hierarchy per
+ * object costs one query per level.
+ *
+ * Only the ABSOLUTE root counts (parent_id = 0), as in resolvePersonalFolderOwner(), which climbs
+ * until it runs out of parents. Sub-folders of a personal tree carry personal_folder = 1 as well, so
+ * matching every flagged ancestor would report several owners for the same folder and lose it as
+ * ambiguous.
+ *
+ * The decision itself stays in personalRootOwnerId(): a root that is not flagged personal, or whose
+ * title is not a plain user id, or is a system account, yields no owner. A folder still contained in
+ * more than one personal root is ambiguous and deliberately left out of the map - callers must read
+ * an absent owner as "do not touch", never as "guess".
+ *
+ * @return array<int, int> Folder id => owner user id.
+ */
+function personalFolderOwnersMap(): array
+{
+    loadClasses('DB');
+
+    $rows = DB::query(
+        'SELECT folder.id AS folder_id, personal_root.title AS owner_title
+        FROM ' . prefixTable('nested_tree') . ' AS folder
+        INNER JOIN ' . prefixTable('nested_tree') . ' AS personal_root
+            ON personal_root.personal_folder = %i
+            AND personal_root.parent_id = %i
+            AND folder.nleft >= personal_root.nleft
+            AND folder.nright <= personal_root.nright',
+        1,
+        0
+    );
+
+    $systemUserIds = [(int) TP_USER_ID, (int) API_USER_ID, (int) OTV_USER_ID, (int) SSH_USER_ID];
+    $owners = [];
+    $ambiguous = [];
+
+    foreach ($rows as $row) {
+        $folderId = (int) $row['folder_id'];
+        $ownerId = personalRootOwnerId(
+            ['personal_folder' => 1, 'title' => (string) $row['owner_title']],
+            $systemUserIds
+        );
+        if ($ownerId === null || (isset($owners[$folderId]) === true && $owners[$folderId] !== $ownerId)) {
+            $ambiguous[$folderId] = true;
+            continue;
+        }
+        $owners[$folderId] = $ownerId;
+    }
+
+    return array_diff_key($owners, $ambiguous);
+}
+
+/**
  * List the personal folders that do NOT belong to the given user.
  *
  * Since the SEC-8 fix, TP_USER holds a recovery sharekey on every personal object. Any process
@@ -935,13 +1093,18 @@ function getPersonalFolderIdsWithDescendants(): array
  * the same signal as identUserGetPFList(); the items.perso column is not used as it is known to be
  * unreliable on items created before the folder flag was repaired.
  *
+ * The full list is resolved by containment, not by the personal_folder flag: a sub-folder created
+ * under someone else's personal root keeps the flag at 0 when it was never written, and a
+ * flag-based list would leave that sub-folder out of the exclusion - handing the target user a
+ * valid sharekey on another user's personal items.
+ *
  * @param int $userId User whose own personal tree must stay in scope.
  *
  * @return int[] Folder ids belonging to another user's personal tree (empty when there is none).
  */
 function getForeignPersonalFolderIds(int $userId): array
 {
-    $allPersonalFolders = getAllPersonalFolderIds();
+    $allPersonalFolders = getPersonalFolderIdsWithDescendants();
     if (count($allPersonalFolders) === 0) {
         return [];
     }
@@ -968,19 +1131,23 @@ function getOwnPersonalFolderIds(int $userId): array
 {
     loadClasses('DB');
 
-    $ownRootId = DB::queryFirstField(
-        'SELECT id FROM ' . prefixTable('nested_tree') . '
-        WHERE personal_folder = %i AND title = %s',
-        1,
-        (string) $userId
+    return array_map(
+        'intval',
+        DB::queryFirstColumn(
+            'SELECT DISTINCT folder.id, folder.nleft
+            FROM ' . prefixTable('nested_tree') . ' AS folder
+            INNER JOIN ' . prefixTable('nested_tree') . ' AS personal_root
+                ON personal_root.personal_folder = %i
+                AND personal_root.parent_id = %i
+                AND personal_root.title = %s
+                AND folder.nleft >= personal_root.nleft
+                AND folder.nright <= personal_root.nright
+            ORDER BY folder.nleft ASC',
+            1,
+            0,
+            (string) $userId
+        )
     );
-    if (empty($ownRootId) === true) {
-        return [];
-    }
-
-    $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-
-    return array_map('intval', $tree->getDescendants((int) $ownRootId, true, false, true));
 }
 
 /**
@@ -1177,7 +1344,9 @@ function securityPostureAuthorizedFolderIds(int $userId): array
         $roleGrantFolders,
         $deniedFolders,
         $ownPersonalFolders,
-        getAllPersonalFolderIds()
+        // Containment, not the flag: a personal sub-folder whose personal_folder was never
+        // written would survive the subtraction and stay authorized through a role grant.
+        getPersonalFolderIdsWithDescendants()
     );
 
     return $cache[$userId];
@@ -3136,6 +3305,8 @@ function bumpItemRevision(
             $folderId = getItemFolderIdFromDb($itemId);
         }
 
+        $changedAt = time();
+
         DB::insert(
             prefixTable('items_revisions'),
             [
@@ -3144,7 +3315,7 @@ function bumpItemRevision(
                 'previous_folder_id' => $previousFolderId === null ? 0 : (int) $previousFolderId,
                 'action' => $action,
                 'changed_by' => $userId,
-                'changed_at' => time(),
+                'changed_at' => $changedAt,
             ]
         );
         $revision = (int) DB::insertId();
@@ -3153,7 +3324,10 @@ function bumpItemRevision(
         // journal. A purge leaves no row to update, which is expected.
         DB::update(
             prefixTable('items'),
-            ['revision' => $revision],
+            [
+                'revision' => $revision,
+                'revision_changed_at' => $changedAt,
+            ],
             'id = %i',
             $itemId
         );
@@ -3211,21 +3385,35 @@ function pruneItemRevisionsJournal(int $windowDays): int
  */
 function getItemRevision(int $itemId): int
 {
+    return getItemRevisionMetadata($itemId)['revision'];
+}
+
+/**
+ * Read the current revision and its functional change timestamp.
+ *
+ * @param int $itemId Item id
+ *
+ * @return array{revision: int, revision_changed_at: int|null}
+ */
+function getItemRevisionMetadata(int $itemId): array
+{
     if ($itemId <= 0) {
-        return 0;
+        return itemRevisionMetadataFromRow(null);
     }
 
     try {
         loadClasses('DB');
 
         $row = DB::queryFirstRow(
-            'SELECT revision FROM ' . prefixTable('items') . ' WHERE id = %i',
+            'SELECT revision, revision_changed_at
+            FROM ' . prefixTable('items') . '
+            WHERE id = %i',
             $itemId
         );
 
-        return $row === null ? 0 : (int) $row['revision'];
+        return itemRevisionMetadataFromRow($row);
     } catch (\Throwable $e) {
-        return 0;
+        return itemRevisionMetadataFromRow(null);
     }
 }
 
@@ -5820,6 +6008,26 @@ function doDataEncryption(string $data, ?string $key = null, bool $forceLegacyFo
  */
 function doDataDecryption(string $data, string $key, string $meta = ''): string
 {
+    return doDataDecryptionWithStatus($data, $key, $meta)['string'];
+}
+
+/**
+ * Decrypts a string using AES and reports whether the operation actually succeeded.
+ *
+ * doDataDecryption() returns an empty string in two very different situations: the
+ * decryption failed, and the stored value legitimately decrypts to an empty string.
+ * A caller that acts on that difference must use this variant instead (#5342):
+ * the item card otherwise flags a perfectly readable field as undecryptable, and
+ * update_item otherwise refuses to let the user clear it.
+ *
+ * @param string $data Encrypted data (base64)
+ * @param string $key  Object key to decrypt with (base64)
+ * @param string $meta Base64 v2 metadata (pw_iv / data_iv); empty for legacy data
+ *
+ * @return array{string: string, success: bool} 'string' is base64 encoded, as doDataDecryption()
+ */
+function doDataDecryptionWithStatus(string $data, string $key, string $meta = ''): array
+{
     // Sanitize
     $antiXss = new AntiXSS();
     $data = $antiXss->xss_clean($data);
@@ -5828,7 +6036,7 @@ function doDataDecryption(string $data, string $key, string $meta = ''): string
 
     // Guard: empty key means upstream decryption failed - return empty rather than attempt decrypt
     if (empty($key)) {
-        return '';
+        return ['string' => '', 'success' => false];
     }
 
     try {
@@ -5847,12 +6055,12 @@ function doDataDecryption(string $data, string $key, string $meta = ''): string
             );
         }
 
-        return base64_encode((string) $decrypted);
+        return ['string' => base64_encode((string) $decrypted), 'success' => true];
     } catch (Exception $e) {
         if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
             error_log('TEAMPASS doDataDecryption failed: ' . $e->getMessage());
         }
-        return '';
+        return ['string' => '', 'success' => false];
     }
 }
 

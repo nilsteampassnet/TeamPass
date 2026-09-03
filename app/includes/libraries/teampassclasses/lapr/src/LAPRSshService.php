@@ -65,6 +65,9 @@ class LAPRSshService
     private ?SSH2 $ssh = null;
     private int $timeout;
 
+    /** @var array{error_code: string, error_detail: string}|null */
+    private ?array $lastTransportFailure = null;
+
     /**
      * @param int $timeout SSH connect timeout in seconds (setting lapr_ssh_connect_timeout)
      */
@@ -76,20 +79,63 @@ class LAPRSshService
     /**
      * Open the SSH connection and authenticate.
      *
-     * @param string $host       Hostname or IP
-     * @param int    $port       SSH port
-     * @param string $username   SSH username
-     * @param string $authMethod 'password' or 'key'
-     * @param string $secret     Password, or private key PEM (optionally "key\n:::\npassphrase")
+     * When $expectedFingerprint is provided, the host key is verified BEFORE
+     * any credential is transmitted: phpseclib performs the key exchange
+     * lazily inside getServerPublicHostKey(), so the server identity is known
+     * without authenticating. Verifying after login() would hand the SSH
+     * password of a privileged account to a man-in-the-middle (risk R2).
+     *
+     * @param string      $host                Hostname or IP
+     * @param int         $port                SSH port
+     * @param string      $username            SSH username
+     * @param string      $authMethod          'password' or 'key'
+     * @param string      $secret              Password, or private key PEM (optionally "key\n:::\npassphrase")
+     * @param string|null $expectedFingerprint TOFU fingerprint to enforce, null to skip (first contact)
      *
      * @return array{success: bool, error_code?: string, error_detail?: string, fingerprint?: string}
      */
-    public function connect(string $host, int $port, string $username, string $authMethod, string $secret): array
-    {
+    public function connect(
+        string $host,
+        int $port,
+        string $username,
+        string $authMethod,
+        string $secret,
+        ?string $expectedFingerprint = null
+    ): array {
+        $this->lastTransportFailure = null;
         try {
             $ssh = new SSH2($host, $port, $this->timeout);
         } catch (Throwable $e) {
-            return ['success' => false, 'error_code' => self::ERR_UNKNOWN, 'error_detail' => $e->getMessage()];
+            return ['success' => false] + $this->classifyConnectError($e->getMessage());
+        }
+
+        // D4 — host key check happens here, before login(), so a mismatch never
+        // costs us the credential. Key exchange runs on this first call.
+        try {
+            $hostKey = $ssh->getServerPublicHostKey();
+        } catch (Throwable $e) {
+            return ['success' => false] + $this->classifyConnectError($e->getMessage());
+        }
+        if (is_string($hostKey) === false || $hostKey === '') {
+            $ssh->disconnect();
+            return [
+                'success' => false,
+                'error_code' => self::ERR_HOSTKEY_MISMATCH,
+                'error_detail' => 'Server host key could not be validated',
+            ];
+        }
+        $presentedFingerprint = self::computeFingerprint($hostKey);
+
+        if ($expectedFingerprint !== null
+            && $expectedFingerprint !== ''
+            && hash_equals($expectedFingerprint, $presentedFingerprint) === false
+        ) {
+            $ssh->disconnect();
+            return [
+                'success' => false,
+                'error_code' => self::ERR_HOSTKEY_MISMATCH,
+                'error_detail' => 'Host key does not match the trusted fingerprint',
+            ];
         }
 
         try {
@@ -120,7 +166,7 @@ class LAPRSshService
 
         return [
             'success' => true,
-            'fingerprint' => $this->getFingerprint() ?? '',
+            'fingerprint' => $presentedFingerprint,
         ];
     }
 
@@ -165,21 +211,85 @@ class LAPRSshService
      *
      * @param string $command Command executed through the remote user's shell
      *
-     * @return array{exit_code: int, output: string}
+     * @return array{exit_code: int, output: string, error_code?: string, error_detail?: string}
      */
     public function exec(string $command): array
     {
         if ($this->ssh === null) {
-            return ['exit_code' => -1, 'output' => self::ERR_NOT_CONNECTED];
+            return $this->remoteCommandFailure(self::ERR_NOT_CONNECTED, 'SSH session is not connected');
         }
 
-        $output = $this->ssh->exec($command);
-        $exitStatus = $this->ssh->getExitStatus();
+        try {
+            $output = $this->ssh->exec($command);
+            $exitStatus = $this->ssh->getExitStatus();
+        } catch (Throwable $e) {
+            $classified = $this->classifyConnectError($e->getMessage());
+
+            return $this->remoteCommandFailure($classified['error_code'], $classified['error_detail']);
+        }
+
+        // phpseclib returns false when the authenticated session disappears
+        // while opening or reading the exec channel. This is a transport
+        // failure, not a chpasswd rejection by the target account.
+        if ($output === false) {
+            $detail = trim((string) $this->ssh->getLastError());
+            if ($this->ssh->isTimeout()) {
+                $code = self::ERR_TIMEOUT;
+            } elseif ($detail !== '') {
+                $classified = $this->classifyConnectError($detail);
+                $code = $classified['error_code'] === self::ERR_UNKNOWN
+                    ? self::ERR_NOT_CONNECTED
+                    : $classified['error_code'];
+            } else {
+                $code = self::ERR_NOT_CONNECTED;
+            }
+
+            return $this->remoteCommandFailure(
+                $code,
+                $detail !== '' ? $detail : 'SSH session closed during remote command'
+            );
+        }
 
         return [
             'exit_code' => is_int($exitStatus) ? $exitStatus : -1,
             'output' => is_string($output) ? $output : '',
         ];
+    }
+
+    /**
+     * Return the first transport failure observed by a multi-command operation.
+     * Callers use this to reject partial OS/discovery results after a channel
+     * disappears between authentication and the last remote command.
+     *
+     * @return array{error_code: string, error_detail: string}|null
+     */
+    public function getLastTransportFailure(): ?array
+    {
+        return $this->lastTransportFailure;
+    }
+
+    /**
+     * Build a normalized failed-command result and retain the first failure.
+     *
+     * @param string $errorCode   LAPR transport error code
+     * @param string $errorDetail Secret-free low-level diagnostic
+     *
+     * @return array{exit_code: int, output: string, error_code: string, error_detail: string}
+     */
+    private function remoteCommandFailure(string $errorCode, string $errorDetail): array
+    {
+        $failure = [
+            'error_code' => $errorCode,
+            'error_detail' => substr($errorDetail, 0, 300),
+        ];
+        if ($this->lastTransportFailure === null) {
+            $this->lastTransportFailure = $failure;
+        }
+
+        return [
+            'exit_code' => -1,
+            'output' => '',
+        ] + $failure;
     }
 
     /**
@@ -297,6 +407,13 @@ class LAPRSshService
         );
 
         $result = $this->exec($command);
+        if (isset($result['error_code'])) {
+            return [
+                'success' => false,
+                'error_code' => (string) $result['error_code'],
+                'error_detail' => (string) ($result['error_detail'] ?? ''),
+            ];
+        }
         if ($result['exit_code'] !== 0) {
             // Never propagate raw output verbatim upstream in audit details (R4):
             // truncate and strip anything that could echo the command line.
@@ -370,9 +487,24 @@ class LAPRSshService
         } elseif (strpos($lower, 'no route') !== false
             || strpos($lower, 'unreachable') !== false
             || strpos($lower, 'getaddrinfo') !== false
+            || strpos($lower, 'php_network_getaddresses') !== false
+            || strpos($lower, 'name or service not known') !== false
+            || strpos($lower, 'nodename nor servname') !== false
             || strpos($lower, 'unable to connect') !== false
         ) {
             $code = self::ERR_HOST_UNREACHABLE;
+        } elseif (strpos($lower, 'connection closed') !== false
+            || strpos($lower, 'connection reset') !== false
+            || strpos($lower, 'reset by peer') !== false
+            || strpos($lower, 'connection aborted') !== false
+            || strpos($lower, 'broken pipe') !== false
+            || strpos($lower, 'error reading from socket') !== false
+            || strpos($lower, 'error writing to socket') !== false
+            || strpos($lower, 'socket is not connected') !== false
+            || strpos($lower, 'not connected') !== false
+            || strpos($lower, 'disconnected') !== false
+        ) {
+            $code = self::ERR_NOT_CONNECTED;
         } else {
             $code = self::ERR_UNKNOWN;
         }

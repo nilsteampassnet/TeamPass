@@ -23,6 +23,8 @@ class HealthSystemConsistencyTest extends TestCase
     private string $healthLogsFunctionsSource;
     private string $laprMonitoringSource;
     private string $adminSource;
+    private string $adminPage;
+    private string $adminJavascript;
     private string $healthPage;
     private string $healthJavascript;
     private string $optionsPage;
@@ -41,6 +43,8 @@ class HealthSystemConsistencyTest extends TestCase
         $this->healthLogsFunctionsSource = $this->read($root . '/app/sources/health.logs.functions.php');
         $this->laprMonitoringSource = $this->read($root . '/app/sources/lapr.monitoring.functions.php');
         $this->adminSource = $this->read($root . '/app/sources/admin.queries.php');
+        $this->adminPage = $this->read($root . '/app/pages/admin.php');
+        $this->adminJavascript = $this->read($root . '/app/pages/admin.js.php');
         $this->healthPage = $this->read($root . '/app/pages/utilities.health.php');
         $this->healthJavascript = $this->read($root . '/app/pages/utilities.health.js.php');
         $this->optionsPage = $this->read($root . '/app/pages/options.php');
@@ -61,6 +65,9 @@ class HealthSystemConsistencyTest extends TestCase
             'health_scan_corrupted_items',
             'health_get_corrupted_items_list',
             'health_check_runtime_logs',
+            'health_start_file_integrity_scan',
+            'health_get_file_integrity_status',
+            'health_get_file_integrity_issues',
         ) as $caseName) {
             $caseBlock = $this->switchCaseBlock($this->utilitiesSource, $caseName);
             $this->assertStringContainsString(
@@ -90,6 +97,47 @@ class HealthSystemConsistencyTest extends TestCase
             "\$SETTINGS['TEAMPASS_SECRETS'] . DIRECTORY_SEPARATOR . \$SETTINGS['securefile']",
             $adminHealthBlock
         );
+    }
+
+    public function testFileIntegrityUsesHealthAsItsOnlyWebInterface(): void
+    {
+        $this->assertStringContainsString('tpFileIntegrityLoadSummary(TEAMPASS_ROOT)', $this->mainSource);
+        $this->assertStringNotContainsString(
+            'tpFileIntegritySummary(tpFileIntegrityLoadReport(TEAMPASS_ROOT))',
+            $this->mainSource . $this->utilitiesSource
+        );
+        $this->assertStringContainsString("'file_integrity' => \$fileIntegrity", $this->mainSource);
+        $this->assertStringContainsString("'file_integrity' => \$fileIntegrity", $this->utilitiesSource);
+        $this->assertStringContainsString('id="tab-health-file-integrity"', $this->healthPage);
+        $this->assertStringContainsString('id="health-file-integrity-scan-btn"', $this->healthPage);
+        $this->assertStringContainsString('tpStartFileIntegrityScan()', $this->healthJavascript);
+        $this->assertStringContainsString('health_get_file_integrity_issues', $this->healthJavascript);
+        $this->assertStringContainsString('id="health-file-integrity-cleanup-copy-btn"', $this->healthPage);
+        $this->assertStringContainsString('id="health-file-permissions-copy-btn"', $this->healthPage);
+        $this->assertStringContainsString('value="permissions"', $this->healthPage);
+        $this->assertStringContainsString("'permissions_plan' => tpFilePermissionsRemediationCommands", $this->utilitiesSource);
+        $this->assertStringContainsString('id="health-file-integrity"', $this->adminPage);
+        $this->assertStringContainsString(
+            'finished_at IS NULL OR finished_at = %s OR finished_at = %s',
+            $this->switchCaseBlock($this->utilitiesSource, 'health_start_file_integrity_scan')
+        );
+
+        foreach (array(
+            'filesIntegrityCheck',
+            'deleteFilesIntegrityCheck',
+            'ignoreFile',
+            'performDeleteFilesIntegrityCheck',
+            'delete_unknown_files',
+        ) as $legacyAction) {
+            $this->assertStringNotContainsString($legacyAction, $this->adminSource . $this->adminJavascript);
+        }
+    }
+
+    public function testHealthReportTimestampUsesTeamPassRegionalFormats(): void
+    {
+        $this->assertStringContainsString("\$SETTINGS['date_format'] ?? 'Y-m-d'", $this->utilitiesSource);
+        $this->assertStringContainsString("\$SETTINGS['time_format'] ?? 'H:i:s'", $this->utilitiesSource);
+        $this->assertStringNotContainsString("'generated_at_human' => date('Y-m-d H:i:s'", $this->utilitiesSource);
     }
 
     public function testHealthReportIncludesAnAdminSafeLaprDiagnostic(): void

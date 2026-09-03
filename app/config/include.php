@@ -27,8 +27,8 @@
  */
 
 define('TP_VERSION', '3.2.2');
-define("UPGRADE_MIN_DATE", "1787496758");
-define('TP_VERSION_MINOR', '0');
+define("UPGRADE_MIN_DATE", "1788415686");
+define('TP_VERSION_MINOR', '1');
 define('TP_TOOL_NAME', 'Teampass');
 define('TP_ONE_DAY_SECONDS', 86400);
 define('TP_ONE_WEEK_SECONDS', 604800);
@@ -42,7 +42,6 @@ define('TP_OFFICE_FILE_EXT', array('xls', 'xlsx', 'docx', 'doc', 'csv', 'ppt', '
 define('TP_ADMIN_FULL_RIGHT', false);
 define('TP_ADMIN_NO_INFO', false);
 define('TP_COPYRIGHT', '2009-'.date('Y'));
-define('TP_ALLOWED_TAGS', '<b><i><sup><sub><em><strong><u><br><br /><a><strike><ul><blockquote><blockquote><img><li><h1><h2><h3><h4><h5><ol><small><font>');
 define('TP_FILE_PREFIX', 'EncryptedFile_');
 define('NUMBER_ITEMS_IN_BATCH', 1000);
 define('WIP', (bool) getenv('TEAMPASS_DEBUG'));

@@ -863,6 +863,61 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         );
     }
 
+    /**
+     * Personal items encryption keys - self repair.
+     *
+     * Walks the caller's own personal objects and recreates the internal reference key from the
+     * key they still hold. Batched by the client because the private key lives in the session
+     * only: a background task has no way to unwrap it.
+     */
+    var personalSharekeysKey = '<?php echo $session->get('key'); ?>';
+
+    function personalSharekeysRepairScope(scopes, lastId, totals) {
+        if (scopes.length === 0) {
+            var message = <?php echo json_encode($lang->get('personal_sharekeys_selfrepair_report'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>
+                .replace('#seeded#', totals.seeded)
+                .replace('#failed#', totals.failed);
+            if (totals.seeded === 0 && totals.failed === 0) {
+                message = <?php echo json_encode($lang->get('personal_sharekeys_selfrepair_none'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+            }
+            $('#personal-sharekeys-result').html('<span class="' + (totals.failed > 0 ? 'text-warning' : 'text-success') + '">' +
+                $('<span>').text(message).html() + '</span>');
+            $('#personal-sharekeys-repair').prop('disabled', false);
+            return;
+        }
+
+        $.post(
+            'sources/users.queries.php', {
+                type: 'seed_personal_sharekeys',
+                data: prepareExchangedData(JSON.stringify({ scope: scopes[0], lastId: lastId }), 'encode', personalSharekeysKey),
+                key: personalSharekeysKey
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', personalSharekeysKey);
+                if (data.error === true) {
+                    $('#personal-sharekeys-result').html('<span class="text-danger">' + $('<span>').text(data.message).html() + '</span>');
+                    $('#personal-sharekeys-repair').prop('disabled', false);
+                    return;
+                }
+
+                totals.seeded += parseInt(data.seeded, 10) || 0;
+                totals.failed += parseInt(data.failed, 10) || 0;
+
+                if (data.finished === true) {
+                    personalSharekeysRepairScope(scopes.slice(1), 0, totals);
+                } else {
+                    personalSharekeysRepairScope(scopes, parseInt(data.lastId, 10) || 0, totals);
+                }
+            }
+        );
+    }
+
+    $(document).on('click', '#personal-sharekeys-repair', function() {
+        $(this).prop('disabled', true);
+        $('#personal-sharekeys-result').html('<i class="fas fa-circle-notch fa-spin"></i>');
+        personalSharekeysRepairScope(['items', 'fields', 'files'], 0, {seeded: 0, failed: 0});
+    });
+
     if ($('#api-sessions-block').length > 0) {
         loadApiSessions();
     }

@@ -40,6 +40,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
+require_once __DIR__.'/../sources/otv_render_logic.php';
 loadClasses('DB');
 $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
@@ -330,10 +331,12 @@ if (empty($request->query->get('code')) === false
                 // Item password (already decrypted above)
                 $password_decrypted = $payload_decrypted;
                 // get data
-                $label = htmlspecialchars(strip_tags($dataItem['label']), ENT_QUOTES, 'UTF-8');
-                $url = htmlspecialchars(strval($dataItem['url'] ?? ''), ENT_QUOTES, 'UTF-8');
-                $description = preg_replace('/(?<!\\r)\\n+(?!\\r)/', '', strip_tags(strval($dataItem['description'] ?? ''), TP_ALLOWED_TAGS));
-                $login = htmlspecialchars(strval($dataItem['login'] ?? ''), ENT_QUOTES, 'UTF-8');
+                // Stored values are entity-encoded by the item write paths; decode them
+                // before rendering, exactly like the item card and the exports do.
+                $label = otvRenderPlainField(strval($dataItem['label'] ?? ''));
+                $url = otvRenderPlainField(strval($dataItem['url'] ?? ''));
+                $description = otvSanitizeDescription(strval($dataItem['description'] ?? ''));
+                $login = otvRenderPlainField(strval($dataItem['login'] ?? ''));
                 // display data
                 $html = '<div class="text-center">
                     <h3>One-Time item view page</h3>

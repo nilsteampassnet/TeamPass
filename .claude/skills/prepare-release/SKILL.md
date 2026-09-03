@@ -1,6 +1,6 @@
 ---
 name: prepare-release
-description: Prepare, cut and publish a TeamPass release following the 3.2.1.x model — scope the commit range, decide the version number, run the release gate, bump the version constants, refresh the Docker image (version arg and base image), regenerate the integrity checksums, finish git flow manually, and draft the GitHub release notes. Use when asked to prepare a release, cut a version, bump TP_VERSION_MINOR, or publish release notes.
+description: Prepare, cut and publish a TeamPass release following the 3.2.1.x model — scope the commit range, decide the version number, run the release gate, bump the version constants, refresh the Docker image (version arg and base image), regenerate the integrity checksums, finish git flow manually, draft the GitHub release notes, and update the teampass.net changelog. Use when asked to prepare a release, cut a version, bump TP_VERSION_MINOR, or publish release notes.
 ---
 
 # Prepare a TeamPass release
@@ -111,11 +111,12 @@ runs green in the normal dev state. Exit code is non-zero on any failure; warnin
 **Failures block the release. Warnings are triaged, not ignored** — each one is either fixed
 or explicitly justified to the user.
 
-Binaries (Composer vendor dir is `app/vendor`, and `app/vendor/bin/phpunit` is not executable):
+Binaries (Composer vendor dir is `app/vendor`; PHPUnit runs from the standalone phar, which is
+the only entry point that works against the committed production autoloader):
 
 ```bash
 php app/vendor/bin/phpstan analyse --no-progress --memory-limit=1G
-php app/vendor/phpunit/phpunit/phpunit --no-coverage
+php _tools/phpunit.phar --no-coverage
 ```
 
 Manual checks the gate does not cover — run them when the range touches the matching area:
@@ -245,9 +246,9 @@ genuinely not part of the procedure — leave it alone unless the user asks.
 
 ## 6. Regenerate the integrity checksums — always last
 
-The application's `verifyFileHashes()` / `filesIntegrityCheck()` (`app/sources/admin.queries.php`)
-read **`app/files_reference.txt`**, while the root `files_reference.txt` is the canonical
-generated file. Both must be identical and both are committed.
+The application's shared file-integrity scanner reads **`app/files_reference.txt`**, while the
+root `files_reference.txt` is the canonical generated file. Both must be identical and both are
+committed.
 
 Run this **after every other commit of the release**, otherwise the hashes are stale:
 
@@ -257,8 +258,10 @@ git add files_reference.txt app/files_reference.txt
 git commit -m "Regenerate file integrity checksums for <VERSION>"
 ```
 
-The script regenerates the root file from `git ls-files` (format `<path> <md5>`, ~15 000
-entries, self-excluded) and copies it over `app/files_reference.txt`.
+The script regenerates the root file from `git ls-files` (format `<path> <md5>`) and copies it
+over `app/files_reference.txt`. It invokes the canonical policy in
+`app/sources/file_scope.functions.php`, so repository/development artifacts excluded by the
+runtime scanner and permission audit are also absent from release manifests.
 
 > **The working tree must be clean.** A tracked file missing from disk is skipped, producing a
 > reference file with holes. The classic case: the app's post-install cleanup renames
@@ -269,9 +272,8 @@ entries, self-excluded) and copies it over `app/files_reference.txt`.
 > **Why a script:** the pipeline is multi-line and gets mangled when passed inline to
 > `bash -c` (syntax error on the `done \` continuation). Never inline it.
 
-> **Known benign quirk:** the root file lists `app/files_reference.txt` with its *pre-copy*
-> hash, so the admin integrity screen reports at most two "mismatch" lines for the two
-> reference files themselves. Pre-existing and harmless — do not try to fix it by reordering.
+The generated manifest may list `app/files_reference.txt` with its pre-copy hash. Both reference
+files are self-excluded by the runtime scanner, so this entry cannot create a false mismatch.
 
 ---
 
@@ -304,10 +306,15 @@ the stale one. Run this after the merge instead:
 ```bash
 rm -rf app/vendor/phpstan app/vendor/phpunit app/vendor/symfony/cache
 composer install
-php app/vendor/phpunit/phpunit/phpunit          # expect: OK (1344 tests, 38419 assertions)
+git checkout -- app/vendor/composer/            # restores the production autoloader
+php _tools/phpunit.phar                         # expect: OK (~1500 tests, all green)
 php app/vendor/bin/phpstan analyse --memory-limit=2G
-git checkout -- app/vendor/composer/            # LAST — see below, it disarms the toolchain
 ```
+
+The tests no longer have to run *between* the install and the restore: `_tools/phpunit.phar`
+carries its own dependencies and never reads `app/vendor/composer/`. PHPStan is the same story —
+`app/vendor/bin/phpstan` loads `phpstan.phar`. Only `composer-license-checker` still needs the
+dev autoloader, so run it before the restore if the release calls for it.
 
 The `rm -rf` is **not** optional, and it is the part nobody guesses. Those three packages keep
 untracked *generated* files that git has no reason to delete — `phpstan/phpstan/turbo-ext/`
@@ -319,19 +326,21 @@ with `Could not scan for classes inside ".../symfony/cache/Traits/ValueWrapper.p
 not appear to be a file nor a folder`, leaving the autoloader ungenerated. Deleting a directory
 that happens to be already gone costs nothing; missing one breaks the whole install.
 
-**The order of those last three lines is not free, and it changed in 3.2.1.7.** The committed
-`app/vendor/composer/` is now the **production** autoloader (`composer install --no-dev`), because
-the archive is built from the index and must not require dev files it does not carry — see check 10
-of the release gate. `composer install` rewrites those seven tracked files into their *dev* form,
-which is what makes PHPUnit and PHPStan runnable at all; `git checkout -- app/vendor/composer/`
-puts the production form back. So run the toolchain **between** the two, never after: with the
-production autoloader on disk, `php app/vendor/phpunit/phpunit/phpunit` dies with
-`Class "PHPUnit\TextUI\Application" not found` even though the package sits right there.
+**Why the restore matters.** The committed `app/vendor/composer/` is the **production**
+autoloader (`composer install --no-dev`), because the archive is built from the index and must not
+require dev files it does not carry — see check 10 of the release gate. `composer install` rewrites
+those seven tracked files into their *dev* form, and `git checkout -- app/vendor/composer/` puts
+the production form back. That restore is mandatory before committing anything or regenerating the
+checksums — committing the dev autoloader is exactly the bug 3.2.1.7 had to fix, it fatals every
+installation, and the `Committed autoloader is production-only` CI job now rejects it.
 
-That `git checkout` is still mandatory before committing anything or regenerating the checksums —
-committing the dev autoloader is exactly the bug 3.2.1.7 had to fix, and it fatals every
-installation. The same rule holds outside a release: to run the suite locally, `composer install`
-first, and restore `app/vendor/composer/` before you commit.
+Historically the toolchain had to run *between* the install and the restore, because
+`php app/vendor/phpunit/phpunit/phpunit` dies with `Class "PHPUnit\TextUI\Application" not found`
+against the production autoloader. That constraint is gone: run the tests from
+`_tools/phpunit.phar` (untracked, gitignored via `/_tools/*`, excluded from the admin integrity
+check) and the restore can happen first. Reinstall the phar with the snippet in
+`.github/CONTRIBUTING.md` if it is missing, keeping its version aligned with
+`.github/workflows/quality.yml`.
 
 ```bash
 git checkout master
@@ -432,6 +441,85 @@ gh release create <VERSION> \
 
 ---
 
+## 10. Update the teampass.net changelog
+
+The website carries a condensed changelog at <https://teampass.net/whats-new.html>. It is a
+**separate Jekyll repository**, not part of this one:
+
+| | |
+|---|---|
+| Windows | `C:\Personnel\Développements\siteweb` |
+| WSL | `/mnt/c/Personnel/Développements/siteweb` |
+
+**Edit `_data/releases.yml`, never `whats-new.html`.** The page only iterates
+`site.data.releases.versions`; a new release is a data entry, and the HTML never changes.
+
+Entries are **newest first**, so the new one goes immediately above the previous version. The
+shape is fixed:
+
+```yaml
+  - version: 3.2.2.0
+    date: 2026-08-23
+    summary: One sentence naming the headline change.
+    changes:
+      - group: Security        # Security | New | Improved | Upgrade notes
+        items:
+          - One short phrase per line, no trailing period
+          - "Advisory identifiers go in parentheses at the end (GHSA-xxxx-xxxx-xxxx)"
+```
+
+Writing rules — this is a **condensation**, not a copy of the GitHub notes:
+
+- One short phrase per item. The GitHub release is where the paragraph lives; the site says what
+  changed and stops. Aim for the density of the existing 3.2.1.x entries.
+- Group order follows what dominates the release. `Upgrade notes` last, and only when an
+  administrator has something to do or expect.
+- The site's own editorial rule applies (see its `CLAUDE.md`): **every claim must be checkable
+  against the published release notes**. Work from `gh release view <VERSION> --json body`, not
+  from the commit range or from memory.
+- **No backticks.** `{{ change }}` is not markdownified, so a backtick renders as a literal
+  backtick on the page. Same for any other markdown syntax.
+- The site spells the product **Teampass**, not TeamPass.
+
+YAML quoting, the two ways this breaks:
+
+- An item containing `: ` must be quoted.
+- Inside a double-quoted item, an inner double quote must be escaped `\"`. Writing a bare `"`
+  silently terminates the string and the build fails much later with an unhelpful parser error.
+
+**Ruby and Jekyll are not installed in WSL** — do not try `jekyll build` from there. Validate the
+data file instead, which is what actually catches the mistakes above:
+
+```bash
+cd "/mnt/c/Personnel/Développements/siteweb"
+python3 -c "
+import yaml
+d = yaml.safe_load(open('_data/releases.yml'))
+print('versions:', len(d['versions']))
+for v in d['versions'][:2]:
+    print(v['version'], v['date'])
+    for g in v['changes']:
+        for i in g['items']:
+            print('   -', i)
+"
+```
+
+**The `highlights` block is not part of a routine release.** It feeds the home page cards and the
+top of `/whats-new.html` ("Four changes worth upgrading for") — four entries, in a `tp-grid--4`.
+Leave it alone for a patch. Only a genuinely headline feature justifies touching it, and then it
+is a **swap**, not an addition, plus a matching edit to the page's `lead` front matter, which
+describes the line as a whole. Raise it with the user rather than deciding alone.
+
+Commit in that repository separately (it has its own history and often carries unrelated work in
+progress — check `git status` before staging, and stage only `_data/releases.yml`):
+
+```bash
+git add _data/releases.yml
+git commit -m "Add <VERSION> to the changelog"
+```
+
+---
+
 ## Traps, in one place
 
 | Trap | Consequence |
@@ -449,6 +537,8 @@ gh release create <VERSION> \
 | A path untracked on `develop` that `master` still tracks | `git checkout master` adopts the on-disk copy, the merge then **deletes it from disk** — pre-check with `--diff-filter=D`, restore with `git archive \| tar -x` (§7) |
 | Multi-line checksum pipeline inlined into `bash -c` | Syntax error on `done \` — always use the script |
 | Chained `&&` git commands | Mangled by the rtk hook — one command per line |
+| Editing `whats-new.html` to add a release | The page iterates `_data/releases.yml`; the entry belongs there and the HTML never changes (§10) |
+| Backticks or markdown in a `releases.yml` item | `{{ change }}` is not markdownified — they render literally on the published page (§10) |
 | Bumping `include.php` without `Dockerfile` | Locally built images carry the previous version (check 1 now fails) |
 | Treating the base image as code-only | It ages on its own: an end-of-life Alpine makes every Trivy CVE unfixable until `FROM` moves (§3) |
 | Changing `FROM` without running `docker-publish` | No Docker locally ⇒ a broken build is only discovered after the release is published |

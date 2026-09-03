@@ -6,7 +6,7 @@
  * the phpseclib v1 to v3 migration process.
  *
  * Usage:
- *   php scripts/repair_phpseclib_migration.php [--diagnose|--repair|--reset-user=ID]
+ *   php app/scripts/repair_phpseclib_migration.php [--diagnose|--repair|--reset-user=ID]
  *
  * Options:
  *   --diagnose     Show detailed diagnostics without making changes
@@ -27,9 +27,9 @@ if (php_sapi_name() !== 'cli') {
 }
 
 // Load TeamPass configuration
-$rootPath = dirname(__DIR__);
-require_once $rootPath . '/app/config/settings.php';
-require_once $rootPath . '/app/config/include.php';
+$rootPath = dirname(__DIR__); // application root: <install>/app
+require_once $rootPath . '/config/settings.php';
+require_once $rootPath . '/config/include.php';
 require_once $rootPath . '/sources/main.functions.php';
 
 // Initialize database
@@ -43,7 +43,7 @@ if (isset($options['help']) || empty($options)) {
 TeamPass phpseclib v3 Migration Repair Tool
 ============================================
 
-Usage: php scripts/repair_phpseclib_migration.php [OPTIONS]
+Usage: php app/scripts/repair_phpseclib_migration.php [OPTIONS]
 
 Options:
   --diagnose        Show detailed diagnostics without making changes
@@ -52,9 +52,9 @@ Options:
   --help            Show this help message
 
 Examples:
-  php scripts/repair_phpseclib_migration.php --diagnose
-  php scripts/repair_phpseclib_migration.php --repair
-  php scripts/repair_phpseclib_migration.php --reset-user=5
+  php app/scripts/repair_phpseclib_migration.php --diagnose
+  php app/scripts/repair_phpseclib_migration.php --repair
+  php app/scripts/repair_phpseclib_migration.php --reset-user=5
 
 HELP;
     exit(0);

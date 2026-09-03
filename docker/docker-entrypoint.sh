@@ -250,10 +250,116 @@ read_db_version() {
     fi
 }
 
+# Convert a dotted version (X, X.Y or X.Y.Z) into a comparable integer so the
+# upgrade chain can be ordered without relying on lexicographic sorting (which
+# would place 3.10.0 before 3.2.0). Missing or malformed components count as 0.
+version_to_number() {
+    _rest="$1."
+    _maj=${_rest%%.*}; _rest=${_rest#*.}
+    _min=${_rest%%.*}; _rest=${_rest#*.}
+    _pat=${_rest%%.*}
+
+    _maj=$(printf '%s' "$_maj" | tr -cd '0-9')
+    _min=$(printf '%s' "$_min" | tr -cd '0-9')
+    _pat=$(printf '%s' "$_pat" | tr -cd '0-9')
+
+    echo $(( ${_maj:-0} * 1000000 + ${_min:-0} * 1000 + ${_pat:-0} ))
+}
+
+# Oldest database version this headless chain is allowed to start from.
+#
+# upgrade_run_3.0.0.php is NOT self-contained: install/upgrade_scripts_manager.php
+# drives it together with five sibling scripts (_passwords, _logs, _fields,
+# _suggestions, _files) that re-encrypt per-user data, and it does not include
+# them itself. Running it alone would leave a half-migrated 2.x database behind.
+# Below this floor the container defers to the web wizard, which is the only
+# thing able to run that sequence.
+UPGRADE_CHAIN_FLOOR="3.1.5"
+
+# List the migration steps shipped by the image, ordered by version.
+# Only plain upgrade_run_X.Y.Z.php files at or above the floor are chain steps:
+# upgrade_run_3.1.php is a legacy entry point and upgrade_run_3.0.0_users.php
+# and friends are helpers invoked by the wizard, not standalone versions.
+#
+# The interleaved upgrade_operations.php data-sanitation steps of the wizard
+# manifest are deliberately not part of this chain: they read their parameters
+# from POST and cannot run from the CLI. They stay wizard-only, exactly as
+# before this change.
+upgrade_chain() {
+    _floor_number=$(version_to_number "$UPGRADE_CHAIN_FLOOR")
+
+    for _script in /var/www/html/public/install/upgrade_run_*.php; do
+        [ -f "$_script" ] || continue
+
+        _base=${_script##*/}
+        _ver=${_base#upgrade_run_}
+        _ver=${_ver%.php}
+
+        case "$_ver" in
+            *_*) continue ;;
+            *.*.*) ;;
+            *) continue ;;
+        esac
+
+        _ver_number=$(version_to_number "$_ver")
+        [ "$_ver_number" -lt "$_floor_number" ] && continue
+
+        echo "$_ver_number $_ver"
+    done | sort -n | cut -d' ' -f2
+}
+
+# Run a single migration step and report whether it succeeded.
+#
+# The upgrade scripts signal a failure in their JSON output but always call
+# exit() with no argument, which is exit code 0. Relying on the exit status
+# alone would therefore treat a failed migration as successful and let the
+# recorded version advance past a schema change that never applied.
+run_upgrade_step() {
+    _step_version="$1"
+    _step_script="/var/www/html/public/install/upgrade_run_${_step_version}.php"
+
+    # Capture the output through an "if", never a bare assignment: under "set -e"
+    # a plain `out=$(php ...)` aborts the whole entrypoint when the script exits
+    # non-zero, which is exactly the container crash of issue #5299.
+    if _step_output=$(php "$_step_script" 2>&1); then
+        _step_rc=0
+    else
+        _step_rc=$?
+    fi
+
+    _step_error=$(printf '%s' "$_step_output" | sed -n 's/.*"error"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+
+    if [ "$_step_rc" -ne 0 ] || [ -n "$_step_error" ]; then
+        echo -e "${YELLOW}⚠️  Database upgrade to ${_step_version} failed: ${_step_error:-exit code ${_step_rc}}${NC}"
+        # Echo the raw output only on failure: it is what support needs, and it
+        # would be pure noise on the (normal) success path.
+        [ -n "$_step_output" ] && echo "      $_step_output"
+        return 1
+    fi
+
+    # Record the version reached. The standalone upgrade scripts never write
+    # teampass_version themselves (only the web wizard does), so without this
+    # the migration would be replayed on every boot and the install directory
+    # would stay reachable forever.
+    if ! php /var/www/html/app/scripts/write-db-version.php "$_step_version"; then
+        echo -e "${YELLOW}⚠️  Schema upgraded to ${_step_version} but the version could not be recorded${NC}"
+        return 1
+    fi
+
+    echo -e "${GREEN}✅ Database upgrade to ${_step_version} completed${NC}"
+    return 0
+}
+
 # Function to run pending database migrations when the container image is
 # newer than the version recorded in teampass_misc.  The upgrade scripts are
 # idempotent (CREATE TABLE IF NOT EXISTS / ALTER ... IF NOT EXISTS), so it is
 # safe to re-run them on an already up-to-date database.
+#
+# Every intermediate step is applied, not only the one matching the image
+# version: a 3.2.0 database moved to a 3.2.2 image needs upgrade_run_3.2.1.php
+# too, which creates tables that upgrade_run_3.2.2.php only alters. Skipping it
+# left the schema silently incomplete, because the ALTER statements are guarded
+# by a SHOW INDEX / SHOW COLUMNS probe that simply finds nothing.
 auto_upgrade() {
     # Read the version stored in the database (current or legacy key). The
     # helper reads the DB credentials from settings.php, so no environment
@@ -268,31 +374,57 @@ auto_upgrade() {
     # TP_VERSION is already extracted at the top of this script into TEAMPASS_VERSION
     IMAGE_VERSION="${TP_VERSION:-${TEAMPASS_VERSION}}"
 
-    if [ "$DB_VERSION" = "$IMAGE_VERSION" ]; then
+    _db_number=$(version_to_number "$DB_VERSION")
+    _image_number=$(version_to_number "$IMAGE_VERSION")
+    _floor_number=$(version_to_number "$UPGRADE_CHAIN_FLOOR")
+
+    # A database older than the floor needs the per-user re-encryption sequence
+    # that only the web wizard can drive. Leave it untouched and keep the
+    # install directory so /install/upgrade.php stays reachable.
+    if [ "$_db_number" -lt "$_floor_number" ]; then
+        echo -e "${YELLOW}⚠️  Database version ${DB_VERSION} is older than ${UPGRADE_CHAIN_FLOOR};${NC}"
+        echo -e "${YELLOW}   finish the upgrade through /install/upgrade.php (web wizard).${NC}"
+        return 0
+    fi
+
+    # Compare numerically, never as strings: an image older than the database
+    # (a deliberate rollback) must not be treated as a pending upgrade.
+    if [ "$_db_number" -ge "$_image_number" ]; then
         echo -e "${GREEN}✅ Database is up to date (${DB_VERSION})${NC}"
         return 0
     fi
 
     echo -e "${BLUE}🔄 Upgrading database from ${DB_VERSION} to ${IMAGE_VERSION}...${NC}"
 
-    UPGRADE_SCRIPT="/var/www/html/public/install/upgrade_run_${IMAGE_VERSION}.php"
-    if [ ! -f "$UPGRADE_SCRIPT" ]; then
-        echo -e "${YELLOW}⚠️  No upgrade script found for ${IMAGE_VERSION}, skipping${NC}"
+    _steps_applied=0
+    for _candidate in $(upgrade_chain); do
+        _candidate_number=$(version_to_number "$_candidate")
+
+        # Already applied, or newer than the code shipped in this image.
+        if [ "$_candidate_number" -le "$_db_number" ] || [ "$_candidate_number" -gt "$_image_number" ]; then
+            continue
+        fi
+
+        echo -e "${BLUE}   ↳ Applying ${_candidate}...${NC}"
+
+        # Stop at the first failure: the next step may depend on this one, and
+        # the recorded version stays where it is so the run can be resumed. The
+        # install directory is kept below so the web wizard remains reachable
+        # (issue #5299 — a failing upgrade must not crash the container).
+        if ! run_upgrade_step "$_candidate"; then
+            echo -e "${YELLOW}⚠️  Upgrade stopped at ${_candidate} — finish it through /install/upgrade.php${NC}"
+            return 0
+        fi
+
+        _steps_applied=$((_steps_applied + 1))
+    done
+
+    if [ "$_steps_applied" -eq 0 ]; then
+        echo -e "${YELLOW}⚠️  No upgrade script found between ${DB_VERSION} and ${IMAGE_VERSION}, skipping${NC}"
         return 0
     fi
 
-    # The upgrade script bootstraps through loadClasses('DB'), which reads the
-    # connection parameters (and decrypts the DB password) from settings.php,
-    # so no --db-* arguments / environment variables are needed here.
-    # Run the upgrade guarded by "if": this neutralises "set -e" for this command
-    # so a failing upgrade script no longer aborts the entrypoint and crashes the
-    # container (issue #5299). The install directory is kept below so the upgrade
-    # can still be finished through the web wizard (/install/upgrade.php).
-    if php "$UPGRADE_SCRIPT"; then
-        echo -e "${GREEN}✅ Database upgrade to ${IMAGE_VERSION} completed${NC}"
-    else
-        echo -e "${YELLOW}⚠️  Database upgrade script returned an error — check logs${NC}"
-    fi
+    echo -e "${GREEN}✅ Database upgraded to ${IMAGE_VERSION} (${_steps_applied} step(s) applied)${NC}"
 }
 
 # Function to show manual installation instructions

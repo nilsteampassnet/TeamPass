@@ -130,6 +130,11 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" id="tab-health-file-integrity" data-toggle="pill" href="#health-file-integrity" role="tab" aria-controls="health-file-integrity" aria-selected="false">
+                            <i class="fas fa-file-shield mr-1"></i><?php echo $lang->get('health_file_integrity'); ?>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" id="tab-health-database" data-toggle="pill" href="#health-database" role="tab" aria-controls="health-database" aria-selected="false">
                             <i class="fas fa-database mr-1"></i><?php echo $lang->get('health_database'); ?>
                         </a>
@@ -197,10 +202,10 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 </div>
                             </div>
                             <div class="col-lg-3 col-6">
-                                <div class="small-box bg-danger">
+                                <div class="small-box bg-secondary" id="health-file-integrity-overview-box">
                                     <div class="inner">
-                                        <h3 id="health-unknown-files-count">0</h3>
-                                        <p><?php echo $lang->get('health_unknown_files'); ?></p>
+                                        <h3 id="health-file-integrity-overview-status">-</h3>
+                                        <p><?php echo $lang->get('health_file_integrity'); ?></p>
                                     </div>
                                     <div class="icon">
                                         <i class="fas fa-exclamation-triangle"></i>
@@ -431,6 +436,235 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 <div class="mt-3">
                                     <h5><i class="fas fa-check-circle mr-2"></i><?php echo $lang->get('health_checks'); ?></h5>
                                     <div id="health-system-checks"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FILE INTEGRITY -->
+                    <div class="tab-pane fade" id="health-file-integrity" role="tabpanel" aria-labelledby="tab-health-file-integrity">
+                        <div class="card card-outline card-primary">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-file-shield mr-2"></i><?php echo $lang->get('health_file_integrity'); ?>
+                                </h3>
+                                <div class="card-tools">
+                                    <button type="button" class="btn btn-primary btn-sm" id="health-file-integrity-scan-btn">
+                                        <i class="fas fa-search mr-1"></i><?php echo $lang->get('health_file_integrity_scan'); ?>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted"><?php echo $lang->get('health_file_integrity_intro'); ?></p>
+                                <div class="alert alert-info" id="health-file-integrity-running" style="display:none;">
+                                    <i class="fas fa-spinner fa-spin mr-2"></i><?php echo $lang->get('health_file_integrity_running'); ?>
+                                </div>
+                                <div class="alert alert-danger" id="health-file-integrity-error" style="display:none;"></div>
+
+                                <div class="row mb-3">
+                                    <div class="col-md-4 col-12">
+                                        <strong><?php echo $lang->get('health_status'); ?>:</strong>
+                                        <span id="health-file-integrity-status" class="ml-1">-</span>
+                                    </div>
+                                    <div class="col-md-4 col-12">
+                                        <strong><?php echo $lang->get('health_file_integrity_last_scan'); ?>:</strong>
+                                        <span id="health-file-integrity-last-scan" class="ml-1">-</span>
+                                    </div>
+                                    <div class="col-md-4 col-12">
+                                        <strong><?php echo $lang->get('health_file_integrity_duration'); ?>:</strong>
+                                        <span id="health-file-integrity-duration" class="ml-1">-</span>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-lg-3 col-md-6 col-12">
+                                        <div class="info-box">
+                                            <span class="info-box-icon bg-info"><i class="fas fa-check"></i></span>
+                                            <div class="info-box-content">
+                                                <span class="info-box-text"><?php echo $lang->get('health_file_integrity_checked'); ?></span>
+                                                <span class="info-box-number" id="health-file-integrity-checked">0</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-3 col-md-6 col-12">
+                                        <div class="info-box">
+                                            <span class="info-box-icon bg-danger"><i class="fas fa-pen"></i></span>
+                                            <div class="info-box-content">
+                                                <span class="info-box-text"><?php echo $lang->get('health_file_integrity_modified'); ?></span>
+                                                <span class="info-box-number" id="health-file-integrity-modified">0</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-3 col-md-6 col-12">
+                                        <div class="info-box">
+                                            <span class="info-box-icon bg-danger"><i class="fas fa-file-circle-xmark"></i></span>
+                                            <div class="info-box-content">
+                                                <span class="info-box-text"><?php echo $lang->get('health_file_integrity_missing'); ?></span>
+                                                <span class="info-box-number" id="health-file-integrity-missing">0</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-3 col-md-6 col-12">
+                                        <div class="info-box">
+                                            <span class="info-box-icon bg-warning"><i class="fas fa-question"></i></span>
+                                            <div class="info-box-content">
+                                                <span class="info-box-text"><?php echo $lang->get('health_file_integrity_unknown'); ?></span>
+                                                <span class="info-box-number" id="health-file-integrity-unknown">0</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-lg-4 col-md-6 col-12">
+                                        <div class="info-box">
+                                            <span class="info-box-icon bg-warning"><i class="fas fa-box-archive"></i></span>
+                                            <div class="info-box-content">
+                                                <span class="info-box-text"><?php echo $lang->get('health_file_integrity_legacy'); ?></span>
+                                                <span class="info-box-number" id="health-file-integrity-legacy">0</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-4 col-md-6 col-12">
+                                        <div class="info-box">
+                                            <span class="info-box-icon bg-secondary"><i class="fas fa-code"></i></span>
+                                            <div class="info-box-content">
+                                                <span class="info-box-text"><?php echo $lang->get('health_file_integrity_development'); ?></span>
+                                                <span class="info-box-number" id="health-file-integrity-development">0</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-4 col-md-6 col-12">
+                                        <div class="info-box">
+                                            <span class="info-box-icon bg-warning"><i class="fas fa-triangle-exclamation"></i></span>
+                                            <div class="info-box-content">
+                                                <span class="info-box-text"><?php echo $lang->get('health_file_integrity_warnings'); ?></span>
+                                                <span class="info-box-number" id="health-file-integrity-warnings">0</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="card card-outline card-info mt-2">
+                                    <div class="card-header">
+                                        <h3 class="card-title">
+                                            <i class="fas fa-user-shield mr-2"></i><?php echo $lang->get('health_file_permissions'); ?>
+                                        </h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="text-muted"><?php echo $lang->get('health_file_permissions_intro'); ?></p>
+                                        <div class="alert alert-info" id="health-file-permissions-notice" style="display:none;"></div>
+                                        <div class="row">
+                                            <div class="col-lg-3 col-md-6 col-12">
+                                                <div class="info-box">
+                                                    <span class="info-box-icon bg-info"><i class="fas fa-list-check"></i></span>
+                                                    <div class="info-box-content">
+                                                        <span class="info-box-text"><?php echo $lang->get('health_file_permissions_checked'); ?></span>
+                                                        <span class="info-box-number" id="health-file-permissions-checked">0</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-3 col-md-6 col-12">
+                                                <div class="info-box">
+                                                    <span class="info-box-icon bg-warning"><i class="fas fa-shield-halved"></i></span>
+                                                    <div class="info-box-content">
+                                                        <span class="info-box-text"><?php echo $lang->get('health_file_permissions_issues'); ?></span>
+                                                        <span class="info-box-number" id="health-file-permissions-issues">0</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-3 col-md-6 col-12">
+                                                <div class="info-box">
+                                                    <span class="info-box-icon bg-secondary"><i class="fab fa-linux"></i></span>
+                                                    <div class="info-box-content">
+                                                        <span class="info-box-text"><?php echo $lang->get('health_file_permissions_distribution'); ?></span>
+                                                        <span class="info-box-number text-sm" id="health-file-permissions-distribution">-</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-3 col-md-6 col-12">
+                                                <div class="info-box">
+                                                    <span class="info-box-icon bg-secondary"><i class="fas fa-user-gear"></i></span>
+                                                    <div class="info-box-content">
+                                                        <span class="info-box-text"><?php echo $lang->get('health_file_permissions_web_user'); ?></span>
+                                                        <span class="info-box-number text-sm" id="health-file-permissions-web-user">-</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="health-file-integrity-results" style="display:none;">
+                                    <div class="form-group row align-items-center">
+                                        <label for="health-file-integrity-category" class="col-sm-auto col-form-label">
+                                            <?php echo $lang->get('health_file_integrity_category'); ?>
+                                        </label>
+                                        <div class="col-sm-4">
+                                            <select class="form-control form-control-sm" id="health-file-integrity-category">
+                                                <option value="all"><?php echo $lang->get('health_file_integrity_all_issues'); ?></option>
+                                                <option value="modified"><?php echo $lang->get('health_file_integrity_modified'); ?></option>
+                                                <option value="missing"><?php echo $lang->get('health_file_integrity_missing'); ?></option>
+                                                <option value="unknown"><?php echo $lang->get('health_file_integrity_unknown'); ?></option>
+                                                <option value="legacy"><?php echo $lang->get('health_file_integrity_legacy'); ?></option>
+                                                <option value="development"><?php echo $lang->get('health_file_integrity_development'); ?></option>
+                                                <option value="warnings"><?php echo $lang->get('health_file_integrity_warnings'); ?></option>
+                                                <option value="permissions"><?php echo $lang->get('health_file_permissions'); ?></option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-striped">
+                                            <thead>
+                                            <tr>
+                                                <th><?php echo $lang->get('health_file_integrity_category'); ?></th>
+                                                <th><?php echo $lang->get('health_file_integrity_path'); ?></th>
+                                                <th><?php echo $lang->get('health_file_integrity_details'); ?></th>
+                                            </tr>
+                                            </thead>
+                                            <tbody id="health-file-integrity-list"></tbody>
+                                        </table>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center mb-4">
+                                        <button type="button" class="btn btn-default btn-sm" id="health-file-integrity-prev">
+                                            <i class="fas fa-chevron-left mr-1"></i><?php echo $lang->get('health_file_integrity_previous'); ?>
+                                        </button>
+                                        <span class="small text-muted" id="health-file-integrity-page-info"></span>
+                                        <button type="button" class="btn btn-default btn-sm" id="health-file-integrity-next">
+                                            <?php echo $lang->get('health_file_integrity_next'); ?><i class="fas fa-chevron-right ml-1"></i>
+                                        </button>
+                                    </div>
+
+                                    <div class="card card-outline card-secondary">
+                                        <div class="card-header">
+                                            <h3 class="card-title"><i class="fas fa-terminal mr-2"></i><?php echo $lang->get('health_file_integrity_cleanup'); ?></h3>
+                                            <div class="card-tools">
+                                                <button type="button" class="btn btn-outline-secondary btn-sm" id="health-file-integrity-cleanup-copy-btn" disabled>
+                                                    <i class="far fa-copy mr-1"></i><?php echo $lang->get('health_copy_ssh_commands'); ?>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <p class="text-muted"><?php echo $lang->get('health_file_integrity_cleanup_help'); ?></p>
+                                            <pre class="mb-0"><code id="health-file-integrity-cleanup-command"></code></pre>
+                                        </div>
+                                    </div>
+
+                                    <div class="card card-outline card-info">
+                                        <div class="card-header">
+                                            <h3 class="card-title"><i class="fas fa-terminal mr-2"></i><?php echo $lang->get('health_file_permissions_remediation'); ?></h3>
+                                            <div class="card-tools">
+                                                <button type="button" class="btn btn-outline-info btn-sm" id="health-file-permissions-copy-btn" disabled>
+                                                    <i class="far fa-copy mr-1"></i><?php echo $lang->get('health_copy_ssh_commands'); ?>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <p class="text-muted"><?php echo $lang->get('health_file_permissions_remediation_help'); ?></p>
+                                            <pre class="mb-0"><code id="health-file-permissions-command"></code></pre>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

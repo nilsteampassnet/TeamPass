@@ -95,10 +95,10 @@ $userId = (int) $session->get('user-id');
 
 switch ($post_type) {
     case 'list_accounts':
-        laprListAccounts($lang, $SETTINGS);
+        laprListAccounts($session, $lang, $SETTINGS);
         break;
     case 'list_endpoints_options':
-        laprListEndpointsOptions();
+        laprListEndpointsOptions($session);
         break;
     case 'list_manageable_items':
         laprListManageableItems($session, $dataReceived);
@@ -113,22 +113,22 @@ switch ($post_type) {
         laprAddAccount($dataReceived, $session, $userId, $lang, $SETTINGS);
         break;
     case 'delete_account':
-        laprDeleteAccount($dataReceived, $userId, $lang);
+        laprDeleteAccount($dataReceived, $session, $userId, $lang);
         break;
     case 'update_account_policy':
-        laprUpdateAccountPolicy($dataReceived, $userId, $lang);
+        laprUpdateAccountPolicy($dataReceived, $session, $userId, $lang);
         break;
     case 'start_discover':
-        laprStartDiscover($dataReceived, $userId, $lang);
+        laprStartDiscover($dataReceived, $session, $userId, $lang);
         break;
     case 'discover_status':
-        laprDiscoverStatus($dataReceived, $lang);
+        laprDiscoverStatus($dataReceived, $userId, $lang);
         break;
     case 'start_rotation':
         laprStartRotation($dataReceived, $session, $userId, $lang);
         break;
     case 'rotation_status':
-        laprRotationStatus($dataReceived, $lang);
+        laprRotationStatus($dataReceived, $userId, $lang);
         break;
     case 'reset_account':
         laprResetAccount($dataReceived, $session, $userId, $lang);
@@ -143,24 +143,34 @@ switch ($post_type) {
 /**
  * List managed accounts with endpoint + item context for the DataTable.
  *
+ * @param SessionInterface     $session  Current session
  * @param Language             $lang     Language helper
  * @param array<string, mixed> $settings TeamPass regional settings
  * @return void
  */
-function laprListAccounts(Language $lang, array $settings): void
+function laprListAccounts(SessionInterface $session, Language $lang, array $settings): void
 {
+    // Never disclose an endpoint whose SSH credential the caller cannot read.
+    $endpointIds = laprGetUserAccessibleEndpointIds($session);
+    if ($endpointIds === []) {
+        echo prepareExchangedData(['error' => false, 'data' => []], 'encode');
+        return;
+    }
+
     $rows = DB::query(
         'SELECT a.id, a.username_cache, a.status, a.last_rotation_at, a.last_rotation_status,
-                a.next_rotation_at, a.policy_id, a.item_id,
+                a.last_rotation_error, a.next_rotation_at, a.retry_count, a.retry_at,
+                a.policy_id, a.item_id,
                 e.label AS ep_label, e.hostname, e.os_info, e.status AS ep_status,
                 p.label AS policy_label, p.frequency_days AS policy_frequency_days,
                 p.is_preset AS policy_is_preset
          FROM ' . prefixTable('lapr_accounts') . ' AS a
          INNER JOIN ' . prefixTable('lapr_endpoints') . ' AS e ON e.id = a.endpoint_id
          LEFT JOIN ' . prefixTable('lapr_policies') . ' AS p ON p.id = a.policy_id
-         WHERE a.status != %s
+         WHERE a.status != %s AND a.endpoint_id IN %li
          ORDER BY e.label ASC, a.username_cache ASC',
-        'deleted'
+        'deleted',
+        $endpointIds
     );
 
     $data = [];
@@ -171,6 +181,10 @@ function laprListAccounts(Language $lang, array $settings): void
         );
         $nextRotationAt = laprFormatDateTimeForDisplay(
             $r['next_rotation_at'] === null ? null : (string) $r['next_rotation_at'],
+            $settings
+        );
+        $retryAt = laprFormatDateTimeForDisplay(
+            $r['retry_at'] === null ? null : (string) $r['retry_at'],
             $settings
         );
         $policyLabel = '';
@@ -203,9 +217,15 @@ function laprListAccounts(Language $lang, array $settings): void
             'last_rotation_at' => $lastRotationAt['display'],
             'last_rotation_at_ts' => $lastRotationAt['timestamp'],
             'last_rotation_status' => $r['last_rotation_status'],
+            'last_rotation_error' => (string) ($r['last_rotation_error'] ?? ''),
             'next_rotation_at' => $nextRotationAt['display'],
             'next_rotation_at_ts' => $nextRotationAt['timestamp'],
+            'retry_count' => (int) ($r['retry_count'] ?? 0),
+            'retry_at' => $retryAt['display'],
+            'retry_at_ts' => $retryAt['timestamp'],
+            'max_retries' => max(0, (int) ($settings['lapr_max_retries'] ?? 3)),
             'is_self_target' => $storedSelfTarget || $runtimeSelfTarget['is_self'],
+            'endpoint_status' => (string) $r['ep_status'],
         ];
     }
 
@@ -215,14 +235,22 @@ function laprListAccounts(Language $lang, array $settings): void
 /**
  * List active endpoints as {id,label} for the add-account form.
  *
+ * @param SessionInterface $session Current session
  * @return void
  */
-function laprListEndpointsOptions(): void
+function laprListEndpointsOptions(SessionInterface $session): void
 {
+    $endpointIds = laprGetUserAccessibleEndpointIds($session);
+    if ($endpointIds === []) {
+        echo prepareExchangedData(['error' => false, 'data' => []], 'encode');
+        return;
+    }
+
     $rows = DB::query(
         'SELECT id, label, hostname FROM ' . prefixTable('lapr_endpoints') . '
-         WHERE status = %s ORDER BY label ASC',
-        'active'
+         WHERE status = %s AND id IN %li ORDER BY label ASC',
+        'active',
+        $endpointIds
     );
     $data = [];
     foreach ($rows as $r) {
@@ -398,6 +426,14 @@ function laprAddAccount(
         return;
     }
 
+    // Rotation reads the endpoint's SSH credential as TP_USER, which bypasses
+    // folder ACLs. Require the same read access to that credential that
+    // enrolling the endpoint required, or any operator could drive any host.
+    if (laprUserCanUseEndpoint($endpointId, $session) === false) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+        return;
+    }
+
     $item = DB::queryFirstRow(
         'SELECT id, login, id_tree, perso FROM ' . prefixTable('items') . '
          WHERE id = %i AND inactif = 0 AND deleted_at IS NULL',
@@ -536,6 +572,7 @@ function laprAddAccount(
                     'process_type' => 'lapr_rotation',
                     'arguments' => json_encode([
                         'account_id' => $accountId,
+                        'endpoint_id' => $endpointId,
                         'trigger' => 'enroll',
                         'author' => $userId,
                     ], JSON_UNESCAPED_SLASHES),
@@ -585,12 +622,13 @@ function laprAddAccount(
 /**
  * Soft-delete a managed account.
  *
- * @param array    $data   Decoded client payload
- * @param int      $userId Acting user id
- * @param Language $lang   Language helper
+ * @param array            $data    Decoded client payload
+ * @param SessionInterface $session Current session
+ * @param int              $userId  Acting user id
+ * @param Language         $lang    Language helper
  * @return void
  */
-function laprDeleteAccount(array $data, int $userId, Language $lang): void
+function laprDeleteAccount(array $data, SessionInterface $session, int $userId, Language $lang): void
 {
     $accountId = (int) ($data['id'] ?? 0);
     if ($accountId <= 0) {
@@ -599,12 +637,23 @@ function laprDeleteAccount(array $data, int $userId, Language $lang): void
     }
 
     $account = DB::queryFirstRow(
-        'SELECT id, endpoint_id FROM ' . prefixTable('lapr_accounts') . ' WHERE id = %i AND status != %s',
+        'SELECT a.id, a.endpoint_id, i.id_tree
+         FROM ' . prefixTable('lapr_accounts') . ' AS a
+         INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = a.item_id
+         WHERE a.id = %i AND a.status != %s',
         $accountId,
         'deleted'
     );
     if ($account === null) {
         echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_account_not_found')], 'encode');
+        return;
+    }
+
+    // Same folder scope as every other mutating account handler.
+    if (laprUserCanWriteFolder((int) $account['id_tree'], $session) === false
+        || laprUserCanUseEndpoint((int) $account['endpoint_id'], $session) === false
+    ) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
         return;
     }
 
@@ -645,12 +694,13 @@ function laprDeleteAccount(array $data, int $userId, Language $lang): void
  * Change the policy of a managed account and recompute next_rotation_at
  * (spec Option A: last_rotation_at + new frequency, clamped to now).
  *
- * @param array    $data   Decoded client payload
- * @param int      $userId Acting user id
- * @param Language $lang   Language helper
+ * @param array            $data    Decoded client payload
+ * @param SessionInterface $session Current session
+ * @param int              $userId  Acting user id
+ * @param Language         $lang    Language helper
  * @return void
  */
-function laprUpdateAccountPolicy(array $data, int $userId, Language $lang): void
+function laprUpdateAccountPolicy(array $data, SessionInterface $session, int $userId, Language $lang): void
 {
     $accountId = (int) ($data['id'] ?? 0);
     $policyId = (int) ($data['policy_id'] ?? 0);
@@ -660,13 +710,25 @@ function laprUpdateAccountPolicy(array $data, int $userId, Language $lang): void
     }
 
     $account = DB::queryFirstRow(
-        'SELECT id, last_rotation_at, endpoint_id FROM ' . prefixTable('lapr_accounts') . '
-         WHERE id = %i AND status != %s',
+        'SELECT a.id, a.last_rotation_at, a.endpoint_id, i.id_tree
+         FROM ' . prefixTable('lapr_accounts') . ' AS a
+         INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = a.item_id
+         WHERE a.id = %i AND a.status != %s',
         $accountId,
         'deleted'
     );
     if ($account === null) {
         echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_account_not_found')], 'encode');
+        return;
+    }
+
+    // The policy dictates the strength of the password pushed to a privileged
+    // Linux account, and laprComputeNextRotation() clamps a past due date to
+    // now: without this check any operator could weaken any managed account.
+    if (laprUserCanWriteFolder((int) $account['id_tree'], $session) === false
+        || laprUserCanUseEndpoint((int) $account['endpoint_id'], $session) === false
+    ) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
         return;
     }
 
@@ -702,12 +764,13 @@ function laprUpdateAccountPolicy(array $data, int $userId, Language $lang): void
 /**
  * Start a background local-account discovery scan on an endpoint.
  *
- * @param array    $data   Decoded client payload
- * @param int      $userId Acting user id
- * @param Language $lang   Language helper
+ * @param array            $data    Decoded client payload
+ * @param SessionInterface $session Current session
+ * @param int              $userId  Acting user id
+ * @param Language         $lang    Language helper
  * @return void
  */
-function laprStartDiscover(array $data, int $userId, Language $lang): void
+function laprStartDiscover(array $data, SessionInterface $session, int $userId, Language $lang): void
 {
     $endpointId = (int) ($data['endpoint_id'] ?? 0);
     if ($endpointId <= 0) {
@@ -722,6 +785,12 @@ function laprStartDiscover(array $data, int $userId, Language $lang): void
     );
     if ((int) $endpoint === 0) {
         echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_endpoint_not_found')], 'encode');
+        return;
+    }
+
+    // Discovery connects with the endpoint's SSH credential, read as TP_USER.
+    if (laprUserCanUseEndpoint($endpointId, $session) === false) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
         return;
     }
 
@@ -758,9 +827,10 @@ function laprStartRotation(array $data, SessionInterface $session, int $userId, 
     }
 
     $account = DB::queryFirstRow(
-        'SELECT a.id, a.status, i.id_tree
+        'SELECT a.id, a.status, a.endpoint_id, i.id_tree, e.status AS endpoint_status
          FROM ' . prefixTable('lapr_accounts') . ' AS a
          INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = a.item_id
+         INNER JOIN ' . prefixTable('lapr_endpoints') . ' AS e ON e.id = a.endpoint_id
          WHERE a.id = %i AND a.status != %s',
         $accountId,
         'deleted'
@@ -773,6 +843,34 @@ function laprStartRotation(array $data, SessionInterface $session, int $userId, 
     // Rotation writes the item → require write access to its folder.
     if (laprUserCanWriteFolder((int) $account['id_tree'], $session) === false) {
         echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+        return;
+    }
+
+    // … and drives the endpoint → require access to its SSH credential too.
+    if (laprUserCanUseEndpoint((int) $account['endpoint_id'], $session) === false) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+        return;
+    }
+
+    if ((string) $account['status'] === 'paused') {
+        echo prepareExchangedData([
+            'error' => true,
+            'message' => $lang->get('lapr_account_paused_rotation_blocked'),
+        ], 'encode');
+        return;
+    }
+
+    $endpointPaused = (string) $account['endpoint_status'] === 'disabled';
+    $pausedEndpointConfirmed = (int) ($data['confirm_endpoint_paused'] ?? 0) === 1;
+    if ($endpointPaused === true && $pausedEndpointConfirmed === false) {
+        echo prepareExchangedData([
+            'error' => true,
+            'message' => $lang->get('lapr_endpoint_paused_confirmation_required'),
+        ], 'encode');
+        return;
+    }
+    if ((string) $account['endpoint_status'] === 'deleted') {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_endpoint_not_found')], 'encode');
         return;
     }
 
@@ -795,7 +893,13 @@ function laprStartRotation(array $data, SessionInterface $session, int $userId, 
     DB::insert(prefixTable('background_tasks'), [
         'created_at' => (string) time(),
         'process_type' => 'lapr_rotation',
-        'arguments' => json_encode(['account_id' => $accountId, 'trigger' => 'manual', 'author' => $userId], JSON_UNESCAPED_SLASHES),
+        'arguments' => json_encode([
+            'account_id' => $accountId,
+            'endpoint_id' => (int) $account['endpoint_id'],
+            'trigger' => 'manual',
+            'author' => $userId,
+            'allow_paused_endpoint' => $endpointPaused,
+        ], JSON_UNESCAPED_SLASHES),
         'is_in_progress' => 0,
         'item_id' => $accountId,
         'status' => 'new',
@@ -838,7 +942,9 @@ function laprResetAccount(array $data, SessionInterface $session, int $userId, L
         return;
     }
 
-    if (laprUserCanWriteFolder((int) $account['id_tree'], $session) === false) {
+    if (laprUserCanWriteFolder((int) $account['id_tree'], $session) === false
+        || laprUserCanUseEndpoint((int) $account['endpoint_id'], $session) === false
+    ) {
         echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
         return;
     }
@@ -871,11 +977,12 @@ function laprResetAccount(array $data, SessionInterface $session, int $userId, L
 /**
  * Poll a rotation task and return the outcome on completion.
  *
- * @param array    $data Decoded client payload
- * @param Language $lang Language helper
+ * @param array    $data   Decoded client payload
+ * @param int      $userId Acting user id
+ * @param Language $lang   Language helper
  * @return void
  */
-function laprRotationStatus(array $data, Language $lang): void
+function laprRotationStatus(array $data, int $userId, Language $lang): void
 {
     $taskId = (int) ($data['task_id'] ?? 0);
     if ($taskId <= 0) {
@@ -884,12 +991,14 @@ function laprRotationStatus(array $data, Language $lang): void
     }
 
     $task = DB::queryFirstRow(
-        'SELECT status, output, is_in_progress FROM ' . prefixTable('background_tasks') . '
+        'SELECT status, output, arguments, is_in_progress FROM ' . prefixTable('background_tasks') . '
          WHERE increment_id = %i AND process_type = %s',
         $taskId,
         'lapr_rotation'
     );
-    if ($task === null) {
+    // Task ids are sequential: without the author binding, polling by id would
+    // read the outcome of rotations driven by other operators.
+    if ($task === null || laprTaskBelongsToUser($task['arguments'] ?? null, $userId) === false) {
         echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_task_not_found')], 'encode');
         return;
     }
@@ -1008,11 +1117,12 @@ function laprListAccountHistory(array $data, SessionInterface $session, Language
 /**
  * Poll a discovery task and return the discovered accounts on completion.
  *
- * @param array    $data Decoded client payload
- * @param Language $lang Language helper
+ * @param array    $data   Decoded client payload
+ * @param int      $userId Acting user id
+ * @param Language $lang   Language helper
  * @return void
  */
-function laprDiscoverStatus(array $data, Language $lang): void
+function laprDiscoverStatus(array $data, int $userId, Language $lang): void
 {
     $taskId = (int) ($data['task_id'] ?? 0);
     if ($taskId <= 0) {
@@ -1021,12 +1131,14 @@ function laprDiscoverStatus(array $data, Language $lang): void
     }
 
     $task = DB::queryFirstRow(
-        'SELECT status, output, is_in_progress FROM ' . prefixTable('background_tasks') . '
+        'SELECT status, output, arguments, is_in_progress FROM ' . prefixTable('background_tasks') . '
          WHERE increment_id = %i AND process_type = %s',
         $taskId,
         'lapr_discover'
     );
-    if ($task === null) {
+    // The result is the list of local accounts of a remote host: bind it to the
+    // operator who started the scan, or sequential task ids would expose it.
+    if ($task === null || laprTaskBelongsToUser($task['arguments'] ?? null, $userId) === false) {
         echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_task_not_found')], 'encode');
         return;
     }

@@ -241,6 +241,35 @@ function itemRevisionDedupeScan(array $rows): array
 }
 
 /**
+ * Normalize the revision metadata read from an item row.
+ *
+ * Revision 0 predates revision tracking and therefore never has a reliable timestamp.
+ *
+ * @param array<string, mixed>|null $row Item row containing revision metadata
+ *
+ * @return array{revision: int, revision_changed_at: int|null}
+ */
+function itemRevisionMetadataFromRow(?array $row): array
+{
+    if ($row === null) {
+        return [
+            'revision' => 0,
+            'revision_changed_at' => null,
+        ];
+    }
+
+    $revision = (int) ($row['revision'] ?? 0);
+    $changedAt = $row['revision_changed_at'] ?? null;
+
+    return [
+        'revision' => $revision,
+        'revision_changed_at' => $revision > 0 && $changedAt !== null
+            ? (int) $changedAt
+            : null,
+    ];
+}
+
+/**
  * Decide what a client must do with an item that changed.
  *
  * @param int                 $itemId          Item id

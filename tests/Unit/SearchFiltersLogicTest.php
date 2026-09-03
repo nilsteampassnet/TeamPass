@@ -82,13 +82,25 @@ class SearchFiltersLogicTest extends TestCase
     public function testUnknownFieldsFallBackToTheCheapDefaults(): void
     {
         $filters = searchNormalizeFilters(['fields' => ['pw', 'secret']]);
-        $this->assertSame(['label', 'login', 'url', 'tags'], $filters['fields']);
+        $this->assertSame(['label', 'login', 'url', 'tags', 'folder'], $filters['fields']);
     }
 
     public function testDescriptionIsOptInOnly(): void
     {
         $filters = searchNormalizeFilters(['fields' => ['label', 'description']]);
         $this->assertSame(['label', 'description'], $filters['fields']);
+    }
+
+    public function testFolderIsAnAllowedSearchField(): void
+    {
+        $filters = searchNormalizeFilters(['fields' => ['folder']]);
+        $this->assertSame(['folder'], $filters['fields']);
+    }
+
+    public function testFolderFacetAcceptsOnePositiveFolderIdOnly(): void
+    {
+        $filters = searchNormalizeFilters(['folder' => ['42', '43', 0, -1]]);
+        $this->assertSame([42], $filters['folder']);
     }
 
     public function testClassificationKeepsZeroButRejectsOutOfScale(): void
@@ -138,6 +150,7 @@ class SearchFiltersLogicTest extends TestCase
         $this->assertTrue(searchHasActiveFacet(searchNormalizeFilters(['favourites' => '1'])));
         $this->assertTrue(searchHasActiveFacet(searchNormalizeFilters(['classification' => [0]])));
         $this->assertTrue(searchHasActiveFacet(searchNormalizeFilters(['attachment_has' => true])));
+        $this->assertTrue(searchHasActiveFacet(searchNormalizeFilters(['folder' => '42'])));
     }
 
     // -------------------------------------------------------------------
@@ -206,6 +219,17 @@ class SearchFiltersLogicTest extends TestCase
         $this->assertStringContainsString('(c.label LIKE %ss_term1 OR c.login LIKE %ss_term1)', $built['sql']);
         $this->assertSame('backup', $built['params']['term0']);
         $this->assertSame('prod', $built['params']['term1']);
+    }
+
+    public function testFolderOnlyTextSearchReturnsNoItemsInsteadOfTheWholeScope(): void
+    {
+        $built = searchBuildWhere(
+            searchNormalizeFilters(['term' => 'backup', 'fields' => ['folder']]),
+            $this->context()
+        );
+
+        $this->assertStringContainsString('(1 = 0)', $built['sql']);
+        $this->assertArrayNotHasKey('term0', $built['params']);
     }
 
     public function testNoArrayPlaceholderIsEmittedForEmptyArrays(): void
