@@ -6,8 +6,8 @@ Teampass can be deployed using Docker and Docker Compose. This is the recommende
 
 > The complete Docker documentation is maintained in the repository root:
 >
-> - **[DOCKER.md](https://github.com/nilsteampassnet/TeamPass/blob/master/DOCKER.md)** — Full setup guide: quick start, SSL, environment variables, backup, troubleshooting, advanced usage.
-> - **[DOCKER-MIGRATION.md](https://github.com/nilsteampassnet/TeamPass/blob/master/DOCKER-MIGRATION.md)** — Upgrade procedures between Docker image versions.
+> - **[DOCKER.md](https://github.com/nilsteampassnet/TeamPass/blob/master/docs/DOCKER.md)** — Full setup guide: quick start, SSL, environment variables, backup, troubleshooting, advanced usage.
+> - **[DOCKER-MIGRATION.md](https://github.com/nilsteampassnet/TeamPass/blob/master/docs/DOCKER-MIGRATION.md)** — Upgrade procedures between Docker image versions.
 
 ---
 
@@ -61,7 +61,7 @@ See `.env.example` in the repository for the full list.
 
 ## Upgrading
 
-Refer to **[DOCKER-MIGRATION.md](https://github.com/nilsteampassnet/TeamPass/blob/master/DOCKER-MIGRATION.md)** for step-by-step upgrade instructions, including database migration steps and breaking changes between versions.
+Refer to **[DOCKER-MIGRATION.md](https://github.com/nilsteampassnet/TeamPass/blob/master/docs/DOCKER-MIGRATION.md)** for step-by-step upgrade instructions, including database migration steps and breaking changes between versions.
 
 The general process is:
 

@@ -492,6 +492,17 @@ if ($dedupeIndex !== false && mysqli_num_rows($dedupeIndex) === 0) {
     }
 }
 
+// Drop the temporary installation table left behind by the installer.
+//
+// `_install` is created unprefixed by install-steps/run.step3|4 and holds the
+// administrator password IN CLEAR TEXT plus the SECUREFILE name. It is only ever
+// read by install steps 5 and 6, never by the application or by any upgrade path,
+// so removing it here is safe and long overdue: run.step6 tried to drop
+// "<prefix>_install", a name that never existed, and the fallback cleanup in
+// app/sources/core.php only runs while public/install still exists - which is never
+// true in Docker, where the entrypoint deletes that directory at boot.
+mysqli_query($db_link, 'DROP TABLE IF EXISTS `_install`');
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,
