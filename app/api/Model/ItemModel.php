@@ -2264,7 +2264,6 @@ class ItemModel
 
             if (DB::count() === 0) {
                 DB::rollback();
-                $transactionStarted = false;
                 return [
                     'error' => true,
                     'error_message' => 'Item not found',

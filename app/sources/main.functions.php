@@ -3455,7 +3455,6 @@ function pruneApiIdempotencyRecords(): int
         $removed = (int) DB::affectedRows();
 
         DB::commit();
-        $transactionStarted = false;
 
         return $removed;
     } catch (Throwable $exception) {

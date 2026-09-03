@@ -48,7 +48,7 @@ class ApiIdempotencyModel
         }
 
         $masterSecret = @file_get_contents(TEAMPASS_SECRETS . '/' . SECUREFILE);
-        if (is_string($masterSecret) === false || $masterSecret === '') {
+        if ($masterSecret === false || $masterSecret === '') {
             throw new RuntimeException('The server idempotency secret is unavailable.');
         }
 
