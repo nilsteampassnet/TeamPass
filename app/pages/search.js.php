@@ -192,6 +192,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         $lang->get('folder'),
         JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
     ); ?>
+
+    // Keep this blank line: PHP swallows the newline that directly follows "?>",
+    // so without it both declarations are emitted on the same output line and the
+    // whole script block dies with "Unexpected token 'const'".
     const folderPickerPlaceholder = <?php echo json_encode(
         $lang->get('search_folder_any'),
         JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
