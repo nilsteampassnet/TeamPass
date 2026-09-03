@@ -125,16 +125,28 @@ class SearchFolderScopeTest extends TestCase
 
     public function testPaletteBuildsItemRestrictionFromTheCanonicalItemsRow(): void
     {
-        // Empty item restrictions are normalized to "0" in the search cache,
-        // while the items table retains the canonical empty value expected by
-        // searchItemRestrictionSql(). The palette already joins it as alias i.
+        // Empty item restrictions are normalized to '0' in the search cache,
+        // while the items table retains the canonical empty value the predicate
+        // tests for (SearchFiltersLogicTest covers that side). Built on the
+        // cache alias, the predicate hid every unrestricted item instead of
+        // hiding the restricted ones.
+        //
+        // Only the alias argument is asserted, so the surrounding expressions
+        // stay free to be refactored.
         $source = file_get_contents(__DIR__ . '/../../app/sources/palette.queries.php');
-
         $this->assertIsString($source);
-        $this->assertMatchesRegularExpression(
-            '/searchItemRestrictionSql\(\s*\(int\) \$session->get\(\'user-id\'\),\s*\$userRoleIds,\s*\'i\',/s',
-            $source
+
+        // The alias is only usable because the items row is joined.
+        $this->assertStringContainsString('AS i ON (i.id = c.id)', $source);
+
+        $this->assertSame(
+            1,
+            preg_match('/searchItemRestrictionSql\((?<args>[^;]*)\);/s', $source, $matches),
+            'palette.queries.php must build the item-level restriction predicate.'
         );
+
+        $this->assertStringContainsString("'i'", $matches['args']);
+        $this->assertStringNotContainsString("'c'", $matches['args']);
     }
 
     public function testLegacyPersonalFolderDepthHeuristicIsNotUsed(): void
