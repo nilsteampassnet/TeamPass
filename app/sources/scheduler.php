@@ -31,6 +31,14 @@
 use GO\Scheduler;
 use TeampassClasses\ConfigManager\ConfigManager;
 
+// CLI-only entry point: cron invokes this file directly (see docs/manage/tasks.md).
+// Served over HTTP it would let an unauthenticated request dispatch the privileged
+// background jobs, so refuse anything that is not a command-line invocation.
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
+
 // Load config
 require_once __DIR__.'/../config/include.php';
 require_once __DIR__.'/../config/settings.php';
