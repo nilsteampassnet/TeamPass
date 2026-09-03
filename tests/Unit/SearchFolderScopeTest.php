@@ -123,6 +123,32 @@ class SearchFolderScopeTest extends TestCase
         $this->assertStringContainsString('c.perso = 0 OR CAST(c.author AS UNSIGNED)', $source);
     }
 
+    public function testPaletteBuildsItemRestrictionFromTheCanonicalItemsRow(): void
+    {
+        // Empty item restrictions are normalized to '0' in the search cache,
+        // while the items table retains the canonical empty value the predicate
+        // tests for (SearchFiltersLogicTest covers that side). Built on the
+        // cache alias, the predicate hid every unrestricted item instead of
+        // hiding the restricted ones.
+        //
+        // Only the alias argument is asserted, so the surrounding expressions
+        // stay free to be refactored.
+        $source = file_get_contents(__DIR__ . '/../../app/sources/palette.queries.php');
+        $this->assertIsString($source);
+
+        // The alias is only usable because the items row is joined.
+        $this->assertStringContainsString('AS i ON (i.id = c.id)', $source);
+
+        $this->assertSame(
+            1,
+            preg_match('/searchItemRestrictionSql\((?<args>[^;]*)\);/s', $source, $matches),
+            'palette.queries.php must build the item-level restriction predicate.'
+        );
+
+        $this->assertStringContainsString("'i'", $matches['args']);
+        $this->assertStringNotContainsString("'c'", $matches['args']);
+    }
+
     public function testLegacyPersonalFolderDepthHeuristicIsNotUsed(): void
     {
         foreach (['find.queries.php', 'palette.queries.php'] as $handler) {

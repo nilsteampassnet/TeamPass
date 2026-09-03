@@ -183,6 +183,57 @@ class SearchFiltersLogicTest extends TestCase
         $this->assertSame('(1 = 0)', searchItemRestrictionSql(7, [], 'i', 'bad table'));
     }
 
+    public function testUnrestrictedBranchAcceptsOnlyTheCanonicalEmptyValue(): void
+    {
+        // Regression guard for the command palette (PR #5359).
+        //
+        // The "no restriction at all" branch is an equality against the empty
+        // string, so it accepts exactly what items.restricted_to stores for an
+        // unrestricted item and nothing else. updateCacheTable() normalizes an
+        // empty restriction to '0' before writing the search cache, which is
+        // why this predicate must always be built on the items alias: fed the
+        // cache alias, every unrestricted item fails all three branches and
+        // disappears from the results.
+        $sql = searchItemRestrictionSql(7, [], 'i', 'teampass_restriction_to_roles');
+
+        $this->assertSame(
+            1,
+            preg_match("/COALESCE\(i\.restricted_to, ''\) = '(?<accepted>[^']*)'/", $sql, $matches),
+            'The predicate must keep an explicit "no restriction" branch.'
+        );
+
+        // What items.restricted_to holds for an unrestricted item.
+        $this->assertSame('', $matches['accepted']);
+        // What teampass_cache.restricted_to holds for that very same item.
+        $this->assertNotSame('0', $matches['accepted']);
+    }
+
+    public function testNamedUserBranchDoesNotMatchTheCacheNormalizedValue(): void
+    {
+        // Same regression, second branch: '0' must not be read as "restricted
+        // to user 0" and match by accident. The needle is taken from the
+        // generated SQL and evaluated the way MySQL evaluates
+        // CONCAT(';', restricted_to, ';') LIKE '%;<user>;%'.
+        $sql = searchItemRestrictionSql(7, [], 'i', 'teampass_restriction_to_roles');
+
+        $this->assertSame(
+            1,
+            preg_match("/LIKE '%(?<needle>;[0-9]+;)%'/", $sql, $matches),
+            'The predicate must keep an explicit "named user" branch.'
+        );
+
+        $wrap = static fn (string $storedValue): string => ';' . $storedValue . ';';
+
+        // items.restricted_to for an unrestricted item: no match, the branch above answers.
+        $this->assertFalse(str_contains($wrap(''), $matches['needle']));
+        // cache.restricted_to for the same item: must not match either.
+        $this->assertFalse(str_contains($wrap('0'), $matches['needle']));
+        // A real restriction naming the caller: match.
+        $this->assertTrue(str_contains($wrap('7;9'), $matches['needle']));
+        // A real restriction naming somebody else: no match.
+        $this->assertFalse(str_contains($wrap('9;70'), $matches['needle']));
+    }
+
     // -------------------------------------------------------------------
     // searchBuildWhere()
     // -------------------------------------------------------------------
