@@ -2281,7 +2281,6 @@ class ItemModel
                 (int) $userData['id']
             ) === false) {
                 DB::rollback();
-                $transactionStarted = false;
                 return [
                     'error' => true,
                     'error_message' => 'Access denied: you are not allowed to delete this item',
@@ -2291,7 +2290,6 @@ class ItemModel
 
             if ($expectedRevision !== null && $expectedRevision !== (int) ($currentItem['revision'] ?? 0)) {
                 DB::rollback();
-                $transactionStarted = false;
                 return [
                     'error' => true,
                     'error_message' => 'The item was modified since revision ' . $expectedRevision . '.',
@@ -2305,7 +2303,6 @@ class ItemModel
                 || (bool) ($laprRelation['is_credential'] ?? false) === true
             ) {
                 DB::rollback();
-                $transactionStarted = false;
                 return [
                     'error' => true,
                     'error_message' => 'This item is linked to LAPR. Remove the managed account or linked endpoint first.',
