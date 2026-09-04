@@ -1841,6 +1841,10 @@ const displayedProgressPercent = displayedTotalUsers > 0
  */
 const ADMIN_NOTICES_DISMISSED_KEY = 'tp_admin_notices_dismissed_<?php echo (int) $session->get('user-id'); ?>'
 const ADMIN_NOTICES_LABEL = <?php echo json_encode($lang->get('admin_pending_actions')); ?>
+
+// Keep this blank line: PHP swallows the newline that directly follows "?>",
+// so without it both declarations are emitted on the same output line and the
+// whole script block dies with "Unexpected token 'const'".
 const ADMIN_NOTICES_NONE_LABEL = <?php echo json_encode($lang->get('admin_pending_actions_none')); ?>
 
 /**

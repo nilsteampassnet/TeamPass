@@ -45,9 +45,13 @@ class PhpCloseTagNewlineSentinelTest extends TestCase
     /**
      * Placeholder standing for whatever a PHP block prints.
      *
-     * It only has to be a token that cannot occur in the sources being scanned.
+     * It has to be a token that cannot occur in the sources being scanned, and it
+     * must start and end with a non-word character. A marker ending on "_" glues
+     * itself to a declaration sitting at column 0 ("__MARKER__const x"), and the
+     * word boundary the rule below relies on then no longer exists: 3.2.2.2 shipped
+     * that exact shape in the admin dashboard while this sentinel stayed green.
      */
-    private const OUTPUT_MARKER = '__TP_PHP_OUTPUT__';
+    private const OUTPUT_MARKER = '<__TP_PHP_OUTPUT__>';
 
     /**
      * Statement keywords that can never legally follow a value on the same line.
@@ -93,6 +97,21 @@ class PhpCloseTagNewlineSentinelTest extends TestCase
     }
 
     /**
+     * Rule matching a declaration emitted behind the output of a PHP block.
+     *
+     * The word boundary is what keeps "iconst" from being read as a declaration,
+     * and it only holds because the marker ends on a non-word character.
+     *
+     * @return string PCRE pattern applied to one output line
+     */
+    private function declarationPattern(): string
+    {
+        return '/' . self::OUTPUT_MARKER . '.*?\b(?:'
+            . implode('|', self::DECLARATION_KEYWORDS)
+            . ')\s+[A-Za-z_$]/';
+    }
+
+    /**
      * List every repository file matched by the scanned globs.
      *
      * @return list<string> Paths relative to the repository root
@@ -121,9 +140,7 @@ class PhpCloseTagNewlineSentinelTest extends TestCase
     public function testNoDeclarationIsGluedBehindAPhpBlockOutput(): void
     {
         $root = dirname(__DIR__, 2) . '/';
-        $pattern = '/' . self::OUTPUT_MARKER . '.*?\b(?:'
-            . implode('|', self::DECLARATION_KEYWORDS)
-            . ')\s+[A-Za-z_$]/';
+        $pattern = $this->declarationPattern();
 
         $violations = [];
         foreach ($this->scannedFiles() as $relative) {
@@ -186,9 +203,7 @@ class PhpCloseTagNewlineSentinelTest extends TestCase
      */
     public function testTheRuleFlagsTheShapeThatShipped(): void
     {
-        $pattern = '/' . self::OUTPUT_MARKER . '.*?\b(?:'
-            . implode('|', self::DECLARATION_KEYWORDS)
-            . ')\s+[A-Za-z_$]/';
+        $pattern = $this->declarationPattern();
 
         $skeleton = $this->buildOutputSkeleton(
             "    const folderResultLabel = <?php echo json_encode('a'); ?>\n"
@@ -203,6 +218,32 @@ class PhpCloseTagNewlineSentinelTest extends TestCase
         }
 
         self::assertTrue($flagged, 'The sentinel must flag the 3.2.2.1 folder-search regression');
+    }
+
+    /**
+     * The rule must fire when the glued declaration carries no indentation.
+     *
+     * This is the 3.2.2.2 admin-dashboard regression. It differs from the folder
+     * search only by the missing indentation, which was enough to make the marker
+     * and the keyword form a single word and silence the rule.
+     *
+     * @return void
+     */
+    public function testTheRuleFlagsADeclarationGluedAtColumnZero(): void
+    {
+        $skeleton = $this->buildOutputSkeleton(
+            "const ADMIN_NOTICES_LABEL = <?php echo json_encode('a'); ?>\n"
+            . "const ADMIN_NOTICES_NONE_LABEL = <?php echo json_encode('b'); ?>\n"
+        );
+
+        $flagged = false;
+        foreach (explode("\n", $skeleton) as $line) {
+            if (preg_match($this->declarationPattern(), $line) === 1) {
+                $flagged = true;
+            }
+        }
+
+        self::assertTrue($flagged, 'The sentinel must flag the 3.2.2.2 admin-dashboard regression');
     }
 
     /**
