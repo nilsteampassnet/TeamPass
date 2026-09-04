@@ -1941,6 +1941,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             //
         } else if ($(this).data('action') === 'close-ldap-new-role') {
             $('#ldap-new-role').addClass('hidden');
+            $('#ldap-users-search-wrapper').removeClass('hidden')
             $('#ldap-users-table').removeClass('hidden');
 
             //
@@ -1953,6 +1954,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // --- END
             //
         } else if ($(this).data('action') === 'ldap-add-role') {
+            $('#ldap-users-search-wrapper').addClass('hidden')
             $('#ldap-users-table').addClass('hidden');
             $('#ldap-new-role').removeClass('hidden');
 
@@ -2014,6 +2016,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             );
                         } else {
                             $('#ldap-new-role-selection').val('');
+                            $('#ldap-users-search-wrapper').removeClass('hidden')
                             $('#ldap-users-table').removeClass('hidden');
                             $('#row-ldap-body').html('');
                             $('#ldap-new-role').addClass('hidden');

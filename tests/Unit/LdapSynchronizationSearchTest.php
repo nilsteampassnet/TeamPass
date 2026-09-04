@@ -21,6 +21,8 @@ class LdapSynchronizationSearchTest extends TestCase
     {
         $view = self::source('app/pages/users.php');
 
+        self::assertStringContainsString('id="ldap-users-toolbar"', $view);
+        self::assertStringContainsString('style="width: 260px; max-width: 100%;" id="ldap-users-search-wrapper"', $view);
         self::assertStringContainsString('id="ldap-users-search"', $view);
         self::assertMatchesRegularExpression(
             '/<input(?=[^\r\n]*id="ldap-users-search")(?=[^\r\n]*aria-label=)[^\r\n]*>/s',
@@ -31,6 +33,28 @@ class LdapSynchronizationSearchTest extends TestCase
             $view
         );
         self::assertStringContainsString('id="ldap-users-search-no-results" role="status"', $view);
+    }
+
+    public function testToolbarOrdersSearchBeforeRefreshAndRoleActions(): void
+    {
+        $view = self::source('app/pages/users.php');
+        $toolbarStart = strpos($view, 'id="ldap-users-toolbar"');
+        $tableStart = strpos($view, 'id="ldap-users-table"', (int) $toolbarStart);
+
+        self::assertIsInt($toolbarStart);
+        self::assertIsInt($tableStart);
+
+        $toolbar = substr($view, $toolbarStart, $tableStart - $toolbarStart);
+        $searchPosition = strpos($toolbar, 'id="ldap-users-search"');
+        $refreshPosition = strpos($toolbar, 'data-action="ldap-existing-users"');
+        $rolePosition = strpos($toolbar, 'data-action="ldap-add-role"');
+
+        self::assertIsInt($searchPosition);
+        self::assertIsInt($refreshPosition);
+        self::assertIsInt($rolePosition);
+        self::assertLessThan($refreshPosition, $searchPosition);
+        self::assertLessThan($rolePosition, $refreshPosition);
+        self::assertStringContainsString('$lang->get(\'refresh\')', $toolbar);
     }
 
     public function testSearchFiltersIdentityFieldsAndCanBeCleared(): void
