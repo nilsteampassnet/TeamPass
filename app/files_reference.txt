@@ -42,7 +42,6 @@ app/core/phpseclibv3_migration_modal.php b3f610eef789a66003c2c041e6065fba
 app/core/security-nudges.js.php 010a22b0210c84e5b13b573950d4f33b
 app/core/security-score.js.php a870e58db28201774072ec863b6dee32
 app/core/teampass_ascii.txt 149244579e1173bb6375c0be7a0e0dba
-app/files_reference.txt 1a7c47cde367921b77fd551726dd747f
 app/includes/.externals/readme.md 1760332d87a309a25ec66aaa3789bf93
 app/includes/.externals/settings.php 373b0e7b1bcff5a162119a71d715fc0d
 app/includes/.externals/tp.config.php b375fcebf5281f3c33e4669220e83a9f
@@ -572,8 +571,6 @@ app/vendor/carbonphp/carbon-doctrine-types/src/Carbon/Doctrine/CarbonTypeConvert
 app/vendor/carbonphp/carbon-doctrine-types/src/Carbon/Doctrine/DateTimeDefaultPrecision.php 98a61c9e6463b62082b3b04c3d93c583
 app/vendor/carbonphp/carbon-doctrine-types/src/Carbon/Doctrine/DateTimeImmutableType.php 746106eb5dc4d4f10e2519e24101b94e
 app/vendor/carbonphp/carbon-doctrine-types/src/Carbon/Doctrine/DateTimeType.php c7acb9af19bb8c843bde30bdc380dca2
-app/vendor/cboden/ratchet/.github/workflows/ci.yml 8b1ca66460d826f9f1ac40058ba97b84
-app/vendor/cboden/ratchet/.gitignore 294c5a8392e52a422acecb1681a07bf9
 app/vendor/cboden/ratchet/CHANGELOG.md 9bb5811541b9fe44c39a1183add8f729
 app/vendor/cboden/ratchet/LICENSE e206e0270a90eca49d4a13e1a5af6e6e
 app/vendor/cboden/ratchet/Makefile afcf317f5e49df4d6c256c4e47284369
@@ -664,7 +661,6 @@ app/vendor/composer/ca-bundle/README.md 158204f9739fb656c0161e58913d724f
 app/vendor/composer/ca-bundle/composer.json e9c80b47eef5de161da806edbf8fcc50
 app/vendor/composer/ca-bundle/res/cacert.pem f29e5da4a7ba1ac595e4b894c9243897
 app/vendor/composer/ca-bundle/src/CaBundle.php 7d0db0928be81a7b22a61c3cfcd9bedf
-app/vendor/composer/class-map-generator/.php-cs-fixer.php 4a7b3ee9c89d2ce37fb44185f449942d
 app/vendor/composer/class-map-generator/LICENSE fdca396ad4f35b6ec0c3e51e8370bd6b
 app/vendor/composer/class-map-generator/README.md 741c40ab09070c7efcc353fab59fb6e8
 app/vendor/composer/class-map-generator/composer.json 996e02b86b22de9d0a51d2e6f82de95a
@@ -1083,15 +1079,6 @@ app/vendor/defuse/php-encryption/src/Key.php 15daf20839420224b40bf2147083e49a
 app/vendor/defuse/php-encryption/src/KeyOrPassword.php f6d066727586eaadee7743c1b567dfd3
 app/vendor/defuse/php-encryption/src/KeyProtectedByPassword.php 092ab263e401a0845d5ebab17e1c1cd9
 app/vendor/defuse/php-encryption/src/RuntimeTests.php 345c300ca8cee49d6ccf6d21494393dd
-app/vendor/directorytree/ldaprecord/.gitattributes bd1a99f1442570bf98bfc46edb76188e
-app/vendor/directorytree/ldaprecord/.github/FUNDING.yml cdf2df31571188d97725989efe2afda5
-app/vendor/directorytree/ldaprecord/.github/ISSUE_TEMPLATE/bug_report.md 0972e87c9cb7cc1e8e1f8e4b851cc653
-app/vendor/directorytree/ldaprecord/.github/ISSUE_TEMPLATE/feature_request.md 0e671d359066a5d37968fb4699af6f17
-app/vendor/directorytree/ldaprecord/.github/ISSUE_TEMPLATE/support---help-request.md 07fd5e405298e412ae393504468fabed
-app/vendor/directorytree/ldaprecord/.github/workflows/run-cs-fix.yml d31936275b2e7e35b0f3c69e82ca7e89
-app/vendor/directorytree/ldaprecord/.github/workflows/run-integration-tests.yml 78a8f101833d733101ccc32917afab02
-app/vendor/directorytree/ldaprecord/.github/workflows/run-tests.yml d9c6bcd8020b63ab2669e528e130f281
-app/vendor/directorytree/ldaprecord/.gitignore 2ce629840430e6467bf878ada5c7c18c
 app/vendor/directorytree/ldaprecord/composer.json 052db6605d5b87cf72d931fb063956a1
 app/vendor/directorytree/ldaprecord/docker-compose.yml 87064e2e0178d36928c5e714b24acd7d
 app/vendor/directorytree/ldaprecord/license.md 21580783bd9022b929f3098dd4c5e10c
@@ -1254,8 +1241,6 @@ app/vendor/directorytree/ldaprecord/src/Testing/DirectoryFake.php a403149eabe5c3
 app/vendor/directorytree/ldaprecord/src/Testing/LdapExpectation.php 21ed622215605b9ae8bcd21ecd9c9e88
 app/vendor/directorytree/ldaprecord/src/Testing/LdapExpectationException.php b8624d2ce0194ee1d6f5218dee904e73
 app/vendor/directorytree/ldaprecord/src/Testing/LdapFake.php 51ee8b4e2e8c944451db402beedb6011
-app/vendor/dittertp/gibberish-aes-php/.github/workflows/main.yml c720ee5dc6a5e3587c37e04b085a1f6d
-app/vendor/dittertp/gibberish-aes-php/.gitignore 94b48bbb9d959b35d393081709db12af
 app/vendor/dittertp/gibberish-aes-php/LICENSE.txt 74ca224a5609ffba3b59b4f95dbb51ea
 app/vendor/dittertp/gibberish-aes-php/README.md 16c719d77553163c9f71b76764f6c606
 app/vendor/dittertp/gibberish-aes-php/bootstrap.php bb0d0f7ade10b5c43c8e29ee6f8e7d08
@@ -1337,9 +1322,6 @@ app/vendor/dragonmantank/cron-expression/src/Cron/FieldInterface.php b5aa6c1fa2b
 app/vendor/dragonmantank/cron-expression/src/Cron/HoursField.php 6cd9dbce91f2c58e5b3eb0c1b5a546cd
 app/vendor/dragonmantank/cron-expression/src/Cron/MinutesField.php 07bfd3772bf936ca7221404b66d38b66
 app/vendor/dragonmantank/cron-expression/src/Cron/MonthField.php 415117ee489ff880191c2d4e1d0bc60e
-app/vendor/duosecurity/duo_universal_php/.duo_linting.xml 4d6fe01375c17a166572cf01d4630a4a
-app/vendor/duosecurity/duo_universal_php/.github/workflows/php_ci.yml 1662dd412c2aec294de5f7fc0787b7f8
-app/vendor/duosecurity/duo_universal_php/.gitignore ad0dbe94c9fd50c4353783d92843b3ad
 app/vendor/duosecurity/duo_universal_php/LICENSE fe65e792faf0003fc160ded1508b2dbf
 app/vendor/duosecurity/duo_universal_php/README.md 27b3cb60838340f26b2e99fd3c225b94
 app/vendor/duosecurity/duo_universal_php/SECURITY.md 9bba998452205c641db1c9d9b41e240a
@@ -1448,7 +1430,6 @@ app/vendor/egulias/email-validator/src/Warning/QuotedPart.php e6a84e2bab00f6afdc
 app/vendor/egulias/email-validator/src/Warning/QuotedString.php df4ffcd389542f1365712eb9e3f32967
 app/vendor/egulias/email-validator/src/Warning/TLD.php bc758a53bceb80789b420f0cadfb2004
 app/vendor/egulias/email-validator/src/Warning/Warning.php d756d7ebc1666f7a8b609a2fdb4fe3c1
-app/vendor/elegantweb/sanitizer/.gitattributes 849344a13123edec04fbdb03f34c377d
 app/vendor/elegantweb/sanitizer/LICENSE.txt 86867ecdcea1aaf7381e0a1e7f51ea63
 app/vendor/elegantweb/sanitizer/README.md 6b6eae5ac9e4071ba36abcf705d3de77
 app/vendor/elegantweb/sanitizer/composer.json 0ceb230bc79e4f3f62a56033449af531
@@ -1471,7 +1452,6 @@ app/vendor/elegantweb/sanitizer/src/Laravel/Factory.php 5cc00195f4fc160083632618
 app/vendor/elegantweb/sanitizer/src/Laravel/SanitizerServiceProvider.php 9e86417911073b93740f610de7e129a1
 app/vendor/elegantweb/sanitizer/src/Laravel/SanitizesInput.php 0a251c985767da8f8442bb880799e8de
 app/vendor/elegantweb/sanitizer/src/Sanitizer.php e2377b49aff6adcf469352a2c1065136
-app/vendor/evenement/evenement/.gitattributes a8b54ca1c683150207c26c8870be1fef
 app/vendor/evenement/evenement/LICENSE d80f695b57baf75c3debfcfd1ac556ee
 app/vendor/evenement/evenement/README.md 720a28a8a2c29137c9e4abee315c34fe
 app/vendor/evenement/evenement/composer.json 1228e0f7b204192c37e7729b899072cb
@@ -1878,8 +1858,6 @@ app/vendor/firebase/php-jwt/src/JWT.php 0f1a8cafe07210a5708c339fdfb87aa3
 app/vendor/firebase/php-jwt/src/JWTExceptionWithPayloadInterface.php bae62be3c6c1a2d0e9d025f66a7edfed
 app/vendor/firebase/php-jwt/src/Key.php 0ba0134b4021d3e5d8faa64208ee1bba
 app/vendor/firebase/php-jwt/src/SignatureInvalidException.php 564cc0fdae693e059c144db882205dee
-app/vendor/goodby/csv/.gitignore 9f7f384915d8acb55434c9e808148fd2
-app/vendor/goodby/csv/.travis.yml 999d4885764797814d1aaf01e3f7ab52
 app/vendor/goodby/csv/LICENSE 9583d27c8aa1fc328fa6a8e747c88940
 app/vendor/goodby/csv/README.md 19cef56e7f1ce66dbff09aee6b9d12f2
 app/vendor/goodby/csv/composer.json d46d1e8f431e6f3a3bfe19c47d37f189
@@ -2049,8 +2027,6 @@ app/vendor/guzzlehttp/psr7/src/UriComparator.php 86151c62382aff91feabba73f26ce6f
 app/vendor/guzzlehttp/psr7/src/UriNormalizer.php 2693d6c6f25b611d203b4231b616727a
 app/vendor/guzzlehttp/psr7/src/UriResolver.php 8f0ddc3a2ec7b303d6ae88584af3b644
 app/vendor/guzzlehttp/psr7/src/Utils.php fbecc1afe07487ebfc48bfd2b073395c
-app/vendor/hackzilla/password-generator/.gitignore b97ff33c44d247feb45384bcb5c09c98
-app/vendor/hackzilla/password-generator/.travis.yml 570ed708f6501c3f8f94f112abdadf74
 app/vendor/hackzilla/password-generator/Exception/CharactersNotFoundException.php ac774a0a81bfca00badd5a3cec394dea
 app/vendor/hackzilla/password-generator/Exception/FileNotFoundException.php 762f94438dd26b79ec6a1bca47329f67
 app/vendor/hackzilla/password-generator/Exception/ImpossibleMinMaxLimitsException.php 27cd98331dc932ca55231072397f88ff
@@ -2724,7 +2700,6 @@ app/vendor/neitanod/forceutf8/test/Test.class.php 92e99549fcbad77e453088bd71ecfe
 app/vendor/neitanod/forceutf8/test/data/russian.txt 9905df8b40a39b98d7b4f15409df755e
 app/vendor/neitanod/forceutf8/test/data/test1.txt ec70233a385bf9b142abaf7e97ad4db3
 app/vendor/neitanod/forceutf8/test/data/test1Latin.txt de94d0f5a8b7c2cfcebcd62bb7bd2484
-app/vendor/nesbot/carbon/.phpstorm.meta.php 442d26c52f86425338eb3df8c354af89
 app/vendor/nesbot/carbon/LICENSE eb00004b73e7708520f412c4dddbf3e3
 app/vendor/nesbot/carbon/bin/carbon 2dab1ae681258966870c5d296913ea7b
 app/vendor/nesbot/carbon/bin/carbon.bat 473efd8a15c8962a092a0a637dd5426c
@@ -3641,12 +3616,6 @@ app/vendor/nesbot/carbon/src/Carbon/Traits/Week.php a6220f967e23690a4e5a72067102
 app/vendor/nesbot/carbon/src/Carbon/Translator.php 4cd06f3cfd71d53ad3ad3edb6c4a9bba
 app/vendor/nesbot/carbon/src/Carbon/TranslatorImmutable.php 938a484e39c533835fcffdad46d9c34a
 app/vendor/nesbot/carbon/src/Carbon/TranslatorStrongTypeInterface.php 899fee3e10c841a3508663f499a7ae46
-app/vendor/owasp/csrf-protector-php/.coveralls.yml cb085f760cae2422b78464f3cfc9bcfa
-app/vendor/owasp/csrf-protector-php/.github/ISSUE_TEMPLATE/bug_report.md 7e633cc3573aad82282eb489731f02d1
-app/vendor/owasp/csrf-protector-php/.github/ISSUE_TEMPLATE/custom.md 73b81d391445186c7a22c42708ff1832
-app/vendor/owasp/csrf-protector-php/.github/ISSUE_TEMPLATE/feature_request.md 174545e1d9daff8020525fdd1e020411
-app/vendor/owasp/csrf-protector-php/.gitignore 387aeb10b83e4994ffce10ef66cd3c02
-app/vendor/owasp/csrf-protector-php/.travis.yml 48b14e73206c16180432182a1dd30dcb
 app/vendor/owasp/csrf-protector-php/CODE_OF_CONDUCT.md 82e2bfb91ed8ebe3f0c73e7cf0a95c20
 app/vendor/owasp/csrf-protector-php/CONTRIBUTING.md c50c95244488d56f234ca44fb8ccc729
 app/vendor/owasp/csrf-protector-php/composer.json e9681d227ce260af684db3ce4e1f0030
@@ -3729,9 +3698,6 @@ app/vendor/paragonie/random_compat/lib/random.php 4b54cbf6ccb77afb7ade42183affc5
 app/vendor/paragonie/random_compat/other/build_phar.php 938323773ab0732a3d3ce0a6f3df8493
 app/vendor/paragonie/random_compat/psalm-autoload.php 854df6f8851cae85add168c7a682a24a
 app/vendor/paragonie/random_compat/psalm.xml 473b1cfcc838b577dc9c9e08680e6704
-app/vendor/peppeocchi/php-cron-scheduler/.coveralls.yml 2e50944a337a903c5f09b73a043e582b
-app/vendor/peppeocchi/php-cron-scheduler/.gitignore ee2a9c224b132f6a65207c8457c57e9f
-app/vendor/peppeocchi/php-cron-scheduler/.travis.yml 988f0d32dbefd5796fcc04210fe85ea9
 app/vendor/peppeocchi/php-cron-scheduler/CODE_OF_CONDUCT.md 83d4f83683acbef5c6e4e9f2eb536d74
 app/vendor/peppeocchi/php-cron-scheduler/LICENSE 87216d99e3dd220494a120e02d1711d2
 app/vendor/peppeocchi/php-cron-scheduler/README.md 6ea7b5104f94648a83076f657623b03f
@@ -3749,7 +3715,6 @@ app/vendor/peppeocchi/php-cron-scheduler/tests/GO/MailerTest.php d3a26c8cecee24e
 app/vendor/peppeocchi/php-cron-scheduler/tests/GO/SchedulerTest.php d512617f742b5f0b02780c6e8145b4a8
 app/vendor/peppeocchi/php-cron-scheduler/tests/async_job.php 615e1cf5ab00f1925fd93fb47d0b5153
 app/vendor/peppeocchi/php-cron-scheduler/tests/test_job.php e4a6936ee29985125749b7999a335d80
-app/vendor/peppeocchi/php-cron-scheduler/tests/tmp/.gitignore 4954fe3f439337e5535185debf8fb3dd
 app/vendor/phpmailer/phpmailer/COMMITMENT 7ad922bcc16462a101862b1b0b15182f
 app/vendor/phpmailer/phpmailer/LICENSE 23c2a5e0106b99d75238986559bb5fc6
 app/vendor/phpmailer/phpmailer/README.md 42f60800c00ea7a2f223ea9279d361d6
@@ -4179,15 +4144,12 @@ app/vendor/psr/clock/LICENSE 3158bb09d112563c27a1e90264088c16
 app/vendor/psr/clock/README.md 742862a05a657d101ccfac4d86b2e1f1
 app/vendor/psr/clock/composer.json 44b83e50282a2f0d4364161e637ac253
 app/vendor/psr/clock/src/ClockInterface.php 9e49c8fc6ecb501929a794db095a81a7
-app/vendor/psr/container/.gitignore 8810dc17687583fae6eb427bf1e877ff
 app/vendor/psr/container/LICENSE 7320ae3aa92f4b6525f59c24ab170cf6
 app/vendor/psr/container/README.md a5ea5b4c0d40c6efe15a38e01b2dfc35
 app/vendor/psr/container/composer.json 01133ca51434e36cf043b688591d83f9
 app/vendor/psr/container/src/ContainerExceptionInterface.php 3a46c5e6a407e9fe5d88c95965b945b3
 app/vendor/psr/container/src/ContainerInterface.php 3298038d8dc6c424bc406714db2a2290
 app/vendor/psr/container/src/NotFoundExceptionInterface.php 625acbd6fc8bbdc39c34e3a99047894a
-app/vendor/psr/event-dispatcher/.editorconfig 7ef4906f1b978b144193607af89f6ab0
-app/vendor/psr/event-dispatcher/.gitignore 1940d66493702c670473d8838c8db01a
 app/vendor/psr/event-dispatcher/LICENSE 881e228f5e6e60e07b9475850cdc2884
 app/vendor/psr/event-dispatcher/README.md 0d9345edb431b2eacfbb6770eb944ca0
 app/vendor/psr/event-dispatcher/composer.json 7277c92f929957045e9f7cc9f74c3378
@@ -4235,7 +4197,6 @@ app/vendor/psr/log/src/LoggerAwareTrait.php e39f7d94e9462753eb828b02d2d1bd40
 app/vendor/psr/log/src/LoggerInterface.php 13a64e22409efaa955ca3c443621b9f2
 app/vendor/psr/log/src/LoggerTrait.php 786caa179a09b6acd4fdc731dfa31b1e
 app/vendor/psr/log/src/NullLogger.php 2e6c21feb2d479317b5edb5a345bb4ad
-app/vendor/psr/simple-cache/.editorconfig 6662770634fa727487e5c8de3e9bd030
 app/vendor/psr/simple-cache/LICENSE.md 1572fba2e6eaf8918be6c0580ada64c7
 app/vendor/psr/simple-cache/README.md 11dcb7d1548531f7301007b9531ae5e2
 app/vendor/psr/simple-cache/composer.json eb61ccaa0fa07617f45fe741585b2e77
@@ -4246,8 +4207,6 @@ app/vendor/ralouphie/getallheaders/LICENSE f7786f46efa7706a39adcd5b5e1ec2c3
 app/vendor/ralouphie/getallheaders/README.md 94653dfef8ea30f7a1e0b51684e5b565
 app/vendor/ralouphie/getallheaders/composer.json 83262caccfdbc4fe204642750540335c
 app/vendor/ralouphie/getallheaders/src/getallheaders.php fe517816cb82a5e67e62c8d0241fce3a
-app/vendor/ratchet/rfc6455/.github/workflows/ci.yml a061aa2e2d18c27ae7fa0f08b3190ca3
-app/vendor/ratchet/rfc6455/.gitignore 55cbc1f8c1592f59f9d3c83dc5fb3e1c
 app/vendor/ratchet/rfc6455/LICENSE e206e0270a90eca49d4a13e1a5af6e6e
 app/vendor/ratchet/rfc6455/README.md 85a60a7e1a44e2df314be13f25240e9f
 app/vendor/ratchet/rfc6455/composer.json a2ba6ad77e7fa5e2de9fb2db58676e6f
@@ -4385,12 +4344,6 @@ app/vendor/react/stream/src/ThroughStream.php f336b291016db77a5facea58047651aa
 app/vendor/react/stream/src/Util.php dca32b5f661b212f21dd49800befb800
 app/vendor/react/stream/src/WritableResourceStream.php c37f5799668ad9b6b0cf5697201d07e1
 app/vendor/react/stream/src/WritableStreamInterface.php 47d41d2cc134c6e7465dd9324188f022
-app/vendor/robthree/twofactorauth/.github/FUNDING.yml d1a9701601fb403ef9e22cf39be6453f
-app/vendor/robthree/twofactorauth/.github/workflows/test-bacon.yml a43d1d1516e175e05e84570781972af2
-app/vendor/robthree/twofactorauth/.github/workflows/test-endroid.yml fd21a7e3739b99de18385220b0620d95
-app/vendor/robthree/twofactorauth/.github/workflows/test.yml 6bb9c951f143b5e891b1ea974c95069b
-app/vendor/robthree/twofactorauth/.gitignore aab2277c343516ef4c18261cc77c132e
-app/vendor/robthree/twofactorauth/.php-cs-fixer.dist.php 0b174be5e75cc615925f91fef67ffad7
 app/vendor/robthree/twofactorauth/CHANGELOG.md 26cd673534d2b986f11f06abb34e73c6
 app/vendor/robthree/twofactorauth/LICENSE 5c01a12420fe6c45cb5ae6efdeedb89c
 app/vendor/robthree/twofactorauth/README.md 61215158a790f2b6d54d48486d16f2bb
@@ -4464,9 +4417,6 @@ app/vendor/seld/jsonlint/src/Seld/JsonLint/Lexer.php eda438f386661ee0b49b987b32c
 app/vendor/seld/jsonlint/src/Seld/JsonLint/ParsingException.php d66575fa9f78ec6acb270ce0dad7c489
 app/vendor/seld/jsonlint/src/Seld/JsonLint/Undefined.php 978d1432cb2c546f639c2f301787cc4f
 app/vendor/seld/jsonlint/src/Seld/JsonLint/Utf8Validator.php 56a2579db4caf9c1b94acea143cade81
-app/vendor/seld/phar-utils/.github/dependabot.yml 1642ceb47751ad0602a96c233a75eeb5
-app/vendor/seld/phar-utils/.github/workflows/zizmor.yml 62d921d844c08651ff04e483e4607f26
-app/vendor/seld/phar-utils/.gitignore 6b57ce2ea4479f44f08d8421f24ba3c0
 app/vendor/seld/phar-utils/LICENSE 6469d7b375aea29fa4e0dac550335d39
 app/vendor/seld/phar-utils/README.md ab4a41a3207e12833d3173c02d4380b5
 app/vendor/seld/phar-utils/SECURITY.md 2b4d267e71d737d98b985446945a6ea9
@@ -4477,7 +4427,6 @@ app/vendor/seld/phar-utils/src/Timestamps.php d96d0cdd821ece9204a4b7636efc8ff9
 app/vendor/seld/signal-handler/LICENSE 6469d7b375aea29fa4e0dac550335d39
 app/vendor/seld/signal-handler/composer.json db7988ae1b04c7c9adaf351cdd508540
 app/vendor/seld/signal-handler/src/SignalHandler.php 36ff6dd730c80d6dbff5fbc15049da25
-app/vendor/sergeytsalkov/meekrodb/.gitignore 234ebb01308230aea765e290c206d8ed
 app/vendor/sergeytsalkov/meekrodb/LICENSE e6a600fd5e1d9cbde2d983680233ad02
 app/vendor/sergeytsalkov/meekrodb/README.md cef3d35f7d181a5378b6d39166ccccc7
 app/vendor/sergeytsalkov/meekrodb/composer.json 816c4503866ea74b0a46a6c5a020c21e
@@ -5640,7 +5589,6 @@ app/vendor/thenetworg/oauth2-azure/tests/Helper/AzureHelper.php 613fe7a521112a9c
 app/vendor/thenetworg/oauth2-azure/tests/Provider/AzureResourceOwnerTest.php cc4a8bc3c9467ac2699d5f4c01dc8d58
 app/vendor/thenetworg/oauth2-azure/tests/Provider/AzureTest.php aefb927cde565febdd7234a56dd8ecc7
 app/vendor/thenetworg/oauth2-azure/tests/Token/AccessTokenTest.php 787c87590cc8cfbccb797e25da821e5b
-app/vendor/tiben/crontab-manager/.gitignore 1940d66493702c670473d8838c8db01a
 app/vendor/tiben/crontab-manager/CHANGELOG.md 81fa4bb39f027e741ef3ccb1a8ff1ddc
 app/vendor/tiben/crontab-manager/LICENCE 70c1424df9383bc147623fb2d460c91e
 app/vendor/tiben/crontab-manager/README.md 2a71b76a7f7cfa7647cb364bcead9b3d
@@ -5666,7 +5614,6 @@ app/vendor/voku/anti-xss/infection.json5.dist 7dc1a2c6ca08e69fdd400b41faecadd6
 app/vendor/voku/anti-xss/phpunit9.xml 41bd2f5ac4bbb8baeb0c4cc7f66f8080
 app/vendor/voku/anti-xss/src/voku/helper/AntiXSS.php 0f8c8fd3727dde1b2846e07fd45e7583
 app/vendor/voku/anti-xss/src/voku/helper/data/entities_fallback.php 3384f908b962c4422a881a255e3dd5fc
-app/vendor/voku/portable-ascii/.deepsource.toml d24de34198d0ced1769c877fad7a708e
 app/vendor/voku/portable-ascii/CHANGELOG.md fde0579c909fcc518449e45328fcd2fd
 app/vendor/voku/portable-ascii/LICENSE.txt 5b18f4441388fecd6c3162aaddda861f
 app/vendor/voku/portable-ascii/README.md 36611c78aad653ab70b0701572a13119
@@ -12792,8 +12739,6 @@ public/plugins/slimScroll/jquery.slimscroll.js 6ee5ab5d89857be6eaf08b63eb3246b0
 public/plugins/slimScroll/jquery.slimscroll.min.js f1dbc7920f93bd2b1dcfede95b473e4e
 public/plugins/sparkline/jquery.sparkline.js c7638b825bc7deb1cf58c990825d35b2
 public/plugins/sparkline/jquery.sparkline.min.js 56be28a1645466dc675d2a204fca015c
-public/plugins/store.js/.circleci/config.yml 2bb22ba2cd4fb99703cb251c0dfede12
-public/plugins/store.js/.gitignore 902fc7c2770fa4fe9285781dd718b48f
 public/plugins/store.js/dist/store.everything.js 20779fd7663d5c78533186960962531c
 public/plugins/store.js/dist/store.everything.min.js 01f12e864582662fdab265a4760cba89
 public/plugins/store.js/dist/store.legacy.js 6aa02d68b4e5f3d82fe69e99870c0ba1

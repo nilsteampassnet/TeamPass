@@ -166,6 +166,48 @@ class FileIntegrityLogicTest extends TestCase
         }
     }
 
+    public function testTopLevelHiddenDirectoriesAreRepositoryArtifacts(): void
+    {
+        // Enumerated today.
+        self::assertTrue(tpFileScopeIsRepositoryArtifact('.claude/skills/prepare-release/SKILL.md'));
+        self::assertTrue(tpFileScopeIsRepositoryArtifact('.github/workflows/quality.yml'));
+        self::assertTrue(tpFileScopeIsRepositoryArtifact('.vscode/settings.json'));
+
+        // Not enumerated: the structural rule must cover the next tool directory
+        // without anyone remembering to update the list before a release.
+        self::assertTrue(tpFileScopeIsRepositoryArtifact('.cursor/rules/teampass.md'));
+        self::assertTrue(tpFileScopeIsRepositoryArtifact('.idea/workspace.xml'));
+        self::assertTrue(tpFileScopeIsRepositoryArtifact('.husky/pre-commit'));
+
+        // A top-level hidden *file* is runtime material and stays audited.
+        self::assertFalse(tpFileScopeIsRepositoryArtifact('.htaccess'));
+        self::assertFalse(tpFileScopeIsRepositoryArtifact('.env.local'));
+    }
+
+    public function testVendoredRepositoryMetadataIsARepositoryArtifact(): void
+    {
+        self::assertTrue(tpFileScopeIsRepositoryArtifact('app/vendor/cboden/ratchet/.github/workflows/ci.yml'));
+        self::assertTrue(tpFileScopeIsRepositoryArtifact('app/vendor/psr/container/.gitignore'));
+        self::assertTrue(tpFileScopeIsRepositoryArtifact('app/vendor/goodby/csv/.travis.yml'));
+        self::assertTrue(tpFileScopeIsRepositoryArtifact('app/vendor/nesbot/carbon/.phpstorm.meta.php'));
+        self::assertTrue(tpFileScopeIsRepositoryArtifact('app/vendor/psr/simple-cache/.editorconfig'));
+        self::assertTrue(tpFileScopeIsRepositoryArtifact('public/plugins/store.js/.circleci/config.yml'));
+
+        // Deployed hidden files inside the same trees must not be swept along.
+        self::assertFalse(tpFileScopeIsRepositoryArtifact('app/vendor/tecnickcom/tcpdf/tools/.htaccess'));
+        self::assertFalse(tpFileScopeIsRepositoryArtifact('app/websocket/logs/.gitkeep'));
+        self::assertFalse(tpFileScopeIsRepositoryArtifact('storage/logs/.gitkeep'));
+        self::assertFalse(tpFileScopeIsRepositoryArtifact('docker/docker-compose/.env'));
+        self::assertFalse(tpFileScopeIsRepositoryArtifact('docker/docker-compose/.env.example'));
+
+        // app/includes/.externals is runtime configuration, not tooling metadata.
+        self::assertFalse(tpFileScopeIsRepositoryArtifact('app/includes/.externals/settings.php'));
+        self::assertFalse(tpFileScopeIsRepositoryArtifact('app/includes/.externals/tp.config.php'));
+
+        // Vendored test suites are shipped code and stay protected.
+        self::assertFalse(tpFileScopeIsRepositoryArtifact('app/vendor/peppeocchi/php-cron-scheduler/tests/Foo.php'));
+    }
+
     public function testReleaseGeneratorUsesTheSharedRepositoryArtifactPolicy(): void
     {
         $generator = file_get_contents(
@@ -178,6 +220,50 @@ class FileIntegrityLogicTest extends TestCase
             $generator
         );
         self::assertStringContainsString('tpFileScopeIsRepositoryArtifact($path)', $generator);
+
+        // The manifest is what ships: the generator must re-check its own output
+        // instead of trusting the filter, and refuse to run without the policy.
+        self::assertStringContainsString('repository artifacts reached the manifest', $generator);
+        self::assertStringContainsString('the path policy cannot be applied', $generator);
+    }
+
+    public function testTheTwoCommittedManifestsAreIdentical(): void
+    {
+        // The application reads app/files_reference.txt while the root copy is the
+        // generated one. A hand-patched hash in a single copy makes the shipped
+        // manifest disagree with the release artifact.
+        self::assertSame(
+            hash_file('sha256', __DIR__ . '/../../files_reference.txt'),
+            hash_file('sha256', __DIR__ . '/../../app/files_reference.txt'),
+            'files_reference.txt and app/files_reference.txt have drifted apart'
+        );
+    }
+
+    public function testCommittedManifestsCarryNoRepositoryArtifact(): void
+    {
+        foreach (array('files_reference.txt', 'app/files_reference.txt') as $manifest) {
+            $path = __DIR__ . '/../../' . $manifest;
+            $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            self::assertIsArray($lines, $manifest . ' is unreadable');
+
+            $offenders = array();
+            foreach ($lines as $line) {
+                $separator = strrpos($line, ' ');
+                if ($separator === false) {
+                    continue;
+                }
+                $entry = substr($line, 0, $separator);
+                if (tpFileScopeIsRepositoryArtifact($entry)) {
+                    $offenders[] = $entry;
+                }
+            }
+
+            self::assertSame(
+                array(),
+                $offenders,
+                $manifest . ' ships repository artifacts: ' . implode(', ', array_slice($offenders, 0, 10))
+            );
+        }
     }
 
     public function testWritableAvatarDirectoryIgnoresImagesButFlagsExecutableFiles(): void

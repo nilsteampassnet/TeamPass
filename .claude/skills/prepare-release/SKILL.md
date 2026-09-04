@@ -261,7 +261,15 @@ git commit -m "Regenerate file integrity checksums for <VERSION>"
 The script regenerates the root file from `git ls-files` (format `<path> <md5>`) and copies it
 over `app/files_reference.txt`. It invokes the canonical policy in
 `app/sources/file_scope.functions.php`, so repository/development artifacts excluded by the
-runtime scanner and permission audit are also absent from release manifests.
+runtime scanner and permission audit are also absent from release manifests. It prints how many
+tracked files it dropped, refuses to run if the policy file is missing, and re-checks its own
+output before writing — a manifest carrying a repository artifact aborts the run.
+
+**Never hand-patch a hash in one copy only.** `app/files_reference.txt` is a byte copy of the
+root file; editing one alone makes the shipped manifest disagree with the release artifact
+(it happened between 3.2.2.1 and 3.2.2.2 on three JS entries). Re-run the script instead —
+`tests/Unit/FileIntegrityLogicTest.php` fails when the two copies drift apart or when either
+lists a repository artifact.
 
 > **The working tree must be clean.** A tracked file missing from disk is skipped, producing a
 > reference file with holes. The classic case: the app's post-install cleanup renames
@@ -272,8 +280,8 @@ runtime scanner and permission audit are also absent from release manifests.
 > **Why a script:** the pipeline is multi-line and gets mangled when passed inline to
 > `bash -c` (syntax error on the `done \` continuation). Never inline it.
 
-The generated manifest may list `app/files_reference.txt` with its pre-copy hash. Both reference
-files are self-excluded by the runtime scanner, so this entry cannot create a false mismatch.
+Both reference files are self-excluded, by the generator and by the runtime scanner alike, so
+neither appears in the manifest.
 
 ---
 
