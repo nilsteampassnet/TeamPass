@@ -151,7 +151,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         )
     }
 
-    $(document).on('input keyup search', '#ldap-users-search', filterLdapUsersTable)
+    $(document).on('input keyup', '#ldap-users-search', filterLdapUsersTable)
 
     $(document).on('click', '#ldap-users-search-clear', () => {
         $('#ldap-users-search').val('').trigger('input').focus()

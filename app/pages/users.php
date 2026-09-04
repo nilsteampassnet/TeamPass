@@ -330,7 +330,7 @@ $emailNotConfigured = $canAccessInactiveAndDeletedUsers === true
                                     <i class="fas fa-search" aria-hidden="true"></i>
                                 </div>
                             </div>
-                            <input type="search" class="form-control" placeholder="<?php echo $lang->get('find'); ?>" aria-label="<?php echo $lang->get('find'); ?>" id="ldap-users-search">
+                            <input type="text" role="searchbox" class="form-control" placeholder="<?php echo $lang->get('find'); ?>" aria-label="<?php echo $lang->get('find'); ?>" id="ldap-users-search">
                             <div class="input-group-append">
                                 <button type="button" class="btn btn-default" title="<?php echo $lang->get('reset'); ?>" aria-label="<?php echo $lang->get('reset'); ?>" id="ldap-users-search-clear" disabled>
                                     <i class="fas fa-times" aria-hidden="true"></i>

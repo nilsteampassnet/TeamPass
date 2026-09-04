@@ -25,7 +25,7 @@ class LdapSynchronizationSearchTest extends TestCase
         self::assertStringContainsString('style="width: 260px; max-width: 100%;" id="ldap-users-search-wrapper"', $view);
         self::assertStringContainsString('id="ldap-users-search"', $view);
         self::assertMatchesRegularExpression(
-            '/<input(?=[^\r\n]*id="ldap-users-search")(?=[^\r\n]*aria-label=)[^\r\n]*>/s',
+            '/<input(?=[^\r\n]*type="text")(?=[^\r\n]*role="searchbox")(?=[^\r\n]*id="ldap-users-search")(?=[^\r\n]*aria-label=)[^\r\n]*>/s',
             $view
         );
         self::assertMatchesRegularExpression(
@@ -62,7 +62,7 @@ class LdapSynchronizationSearchTest extends TestCase
         $script = self::source('app/pages/users.js.php');
 
         self::assertStringContainsString('function filterLdapUsersTable()', $script);
-        self::assertStringContainsString("$(document).on('input keyup search', '#ldap-users-search', filterLdapUsersTable)", $script);
+        self::assertStringContainsString("$(document).on('input keyup', '#ldap-users-search', filterLdapUsersTable)", $script);
         self::assertStringContainsString("$('#ldap-users-search').val('').trigger('input').focus()", $script);
         self::assertStringContainsString('entry.displayname', $script);
         self::assertStringContainsString('entry.givenname', $script);
