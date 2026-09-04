@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../../sources/api_idempotency_logic.php';
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -29,15 +31,22 @@ class ApiIdempotencyModel
     public const OPERATION_ITEM_DELETE = 'item.delete';
     public const MAX_KEY_LENGTH = 128;
     public const PROCESSING_LEASE_SECONDS = 300;
-    public const REPLAY_WINDOW_SECONDS = 7776000; // 90 days, aligned with the default offline sync window.
 
     private string $hmacSecret;
+    private int $replayWindowDays;
 
     /**
      * @param string|null $hmacSecret Test-only secret override; production derives it from SECUREFILE
+     * @param int|string|null $replayWindowDays Test override; production reads offline_sync_window_days
      */
-    public function __construct(?string $hmacSecret = null)
+    public function __construct(?string $hmacSecret = null, int|string|null $replayWindowDays = null)
     {
+        if ($replayWindowDays === null && $hmacSecret === null) {
+            $configManager = new \TeampassClasses\ConfigManager\ConfigManager();
+            $replayWindowDays = $configManager->getSetting('offline_sync_window_days');
+        }
+        $this->replayWindowDays = offlineSyncResolveWindowDays($replayWindowDays);
+
         if ($hmacSecret !== null) {
             $this->hmacSecret = $hmacSecret;
             return;
@@ -85,42 +94,13 @@ class ApiIdempotencyModel
      */
     public function fingerprint(array $intent): string
     {
-        $canonical = $this->canonicalize($intent);
+        $canonical = apiIdempotencyCanonicalize($intent);
         $encoded = json_encode(
             $canonical,
             JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION | JSON_THROW_ON_ERROR
         );
 
         return hash_hmac('sha256', $encoded, $this->hmacSecret);
-    }
-
-    /**
-     * Classify an existing record before attempting a replay or stale takeover.
-     *
-     * @param array<string, mixed> $record Existing database row
-     * @param string $requestFingerprint HMAC of the current request intent
-     * @param int $now Current Unix timestamp
-     * @return array{state: string, retry_after?: int}
-     */
-    public function evaluateRecord(array $record, string $requestFingerprint, int $now): array
-    {
-        if (hash_equals((string) ($record['request_fingerprint'] ?? ''), $requestFingerprint) === false) {
-            return ['state' => 'conflict'];
-        }
-
-        if ((string) ($record['status'] ?? '') === 'completed') {
-            return ['state' => 'replay'];
-        }
-
-        $lockedUntil = (int) ($record['locked_until'] ?? 0);
-        if ($lockedUntil >= $now) {
-            return [
-                'state' => 'processing',
-                'retry_after' => max(1, $lockedUntil - $now),
-            ];
-        }
-
-        return ['state' => 'stale'];
     }
 
     /**
@@ -163,16 +143,15 @@ class ApiIdempotencyModel
                         'created_at' => $now,
                         'updated_at' => $now,
                         'locked_until' => $now + self::PROCESSING_LEASE_SECONDS,
-                        'expires_at' => $now + self::REPLAY_WINDOW_SECONDS,
+                        'expires_at' => apiIdempotencyReplayExpiry($now, $this->replayWindowDays),
                     ]
                 );
 
-                return [
-                    'state' => 'acquired',
-                    'id' => (int) DB::insertId(),
-                    'owner_token' => $ownerToken,
-                    'request_fingerprint' => $requestFingerprint,
-                ];
+                return apiIdempotencyAcquiredDecision(
+                    (int) DB::insertId(),
+                    $ownerToken,
+                    $requestFingerprint
+                );
             } catch (Throwable $exception) {
                 $record = $this->findRecord($userId, $operation, $keyHash);
                 if ($record === null) {
@@ -180,16 +159,8 @@ class ApiIdempotencyModel
                 }
             }
 
-            $decision = $this->evaluateRecord($record, $requestFingerprint, $now);
-            if ($decision['state'] === 'conflict') {
-                return $decision;
-            }
-
-            if ($decision['state'] === 'replay') {
-                return $this->buildReplayDecision($record);
-            }
-
-            if ($decision['state'] === 'processing') {
+            $decision = apiIdempotencyExistingRecordDecision($record, $requestFingerprint, $now);
+            if ($decision['state'] !== 'stale') {
                 return $decision;
             }
 
@@ -208,7 +179,7 @@ class ApiIdempotencyModel
                     'owner_token_hash' => $ownerTokenHash,
                     'updated_at' => $now,
                     'locked_until' => $now + self::PROCESSING_LEASE_SECONDS,
-                    'expires_at' => $now + self::REPLAY_WINDOW_SECONDS,
+                    'expires_at' => apiIdempotencyReplayExpiry($now, $this->replayWindowDays),
                 ],
                 'id = %i AND status = %s AND locked_until < %i AND request_fingerprint = %s',
                 (int) $record['id'],
@@ -217,13 +188,14 @@ class ApiIdempotencyModel
                 $requestFingerprint
             );
 
-            if (DB::affectedRows() === 1) {
-                return [
-                    'state' => 'acquired',
-                    'id' => (int) $record['id'],
-                    'owner_token' => $ownerToken,
-                    'request_fingerprint' => $requestFingerprint,
-                ];
+            $takeover = apiIdempotencyLeaseTakeoverDecision(
+                (int) DB::affectedRows(),
+                (int) $record['id'],
+                $ownerToken,
+                $requestFingerprint
+            );
+            if ($takeover !== null) {
+                return $takeover;
             }
         }
 
@@ -285,7 +257,7 @@ class ApiIdempotencyModel
                 'response_body' => $responseBody,
                 'updated_at' => $now,
                 'locked_until' => 0,
-                'expires_at' => $now + self::REPLAY_WINDOW_SECONDS,
+                'expires_at' => apiIdempotencyReplayExpiry($now, $this->replayWindowDays),
             ],
             'id = %i AND status = %s AND owner_token_hash = %s',
             (int) ($reservation['id'] ?? 0),
@@ -316,30 +288,6 @@ class ApiIdempotencyModel
     }
 
     /**
-     * Canonicalize associative arrays recursively while preserving list order.
-     *
-     * @param mixed $value Value to canonicalize
-     * @return mixed Canonicalized value
-     */
-    private function canonicalize($value)
-    {
-        if (is_array($value) === false) {
-            return $value;
-        }
-
-        if (array_is_list($value)) {
-            return array_map(fn ($entry) => $this->canonicalize($entry), $value);
-        }
-
-        ksort($value, SORT_STRING);
-        foreach ($value as $key => $entry) {
-            $value[$key] = $this->canonicalize($entry);
-        }
-
-        return $value;
-    }
-
-    /**
      * Find one idempotency record by its scoped identity.
      *
      * @return array<string, mixed>|null
@@ -357,27 +305,6 @@ class ApiIdempotencyModel
         );
 
         return is_array($record) ? $record : null;
-    }
-
-    /**
-     * Convert a completed database row to a replay decision.
-     *
-     * @param array<string, mixed> $record Completed row
-     * @return array<string, mixed>
-     */
-    private function buildReplayDecision(array $record): array
-    {
-        $response = json_decode((string) ($record['response_body'] ?? ''), true);
-        if (is_array($response) === false) {
-            throw new RuntimeException('The stored idempotency response is invalid.');
-        }
-
-        return [
-            'state' => 'replay',
-            'resource_id' => (int) ($record['resource_id'] ?? 0),
-            'http_status' => (int) ($record['http_status'] ?? 200),
-            'response' => $response,
-        ];
     }
 
     /**
@@ -420,7 +347,7 @@ class ApiIdempotencyModel
                 'response_body' => $responseBody,
                 'updated_at' => $now,
                 'locked_until' => 0,
-                'expires_at' => $now + self::REPLAY_WINDOW_SECONDS,
+                'expires_at' => apiIdempotencyReplayExpiry($now, $this->replayWindowDays),
             ],
             'id = %i AND status = %s AND locked_until < %i AND request_fingerprint = %s',
             (int) $record['id'],
@@ -433,11 +360,10 @@ class ApiIdempotencyModel
             return null;
         }
 
-        return [
-            'state' => 'replay',
+        return apiIdempotencyReplayDecision([
             'resource_id' => (int) $item['id'],
             'http_status' => 201,
-            'response' => $response,
-        ];
+            'response_body' => $responseBody,
+        ]);
     }
 }

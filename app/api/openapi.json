@@ -628,7 +628,7 @@
             "post": {
                 "operationId": "itemCreate",
                 "summary": "Create a new item",
-                "description": "All listed fields must be present, even if empty. Idempotency-Key is optional; within its 90-day replay window the same user, key and canonical creation intent return the original 201 response without repeating side effects.",
+                "description": "All listed fields must be present, even if empty. Idempotency-Key is optional; within the configured offline synchronization window (90 days by default, 0 for no limit) the same user, key and canonical creation intent return the original 201 response without repeating side effects.",
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/IdempotencyKey"
@@ -775,7 +775,7 @@
             "delete": {
                 "operationId": "itemDelete",
                 "summary": "Soft-delete an item",
-                "description": "The optional revision is an optimistic-concurrency precondition. Idempotency-Key makes a successful deletion replayable for 90 days without allocating another revision or repeating side effects.",
+                "description": "The optional revision is an optimistic-concurrency precondition. Idempotency-Key makes a successful deletion replayable for the configured offline synchronization window (90 days by default, 0 for no limit) without allocating another revision or repeating side effects.",
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/IdempotencyKey"
@@ -793,7 +793,8 @@
                         "name": "revision",
                         "in": "query",
                         "required": false,
-                        "description": "Current item revision expected by the caller. A mismatch returns 409 before any mutation.",
+                        "allowEmptyValue": true,
+                        "description": "Current item revision expected by the caller. A mismatch returns 409 before any mutation; an empty value is treated as omitted.",
                         "schema": {
                             "type": "integer",
                             "minimum": 0,

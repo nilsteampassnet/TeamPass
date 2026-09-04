@@ -65,8 +65,7 @@ writes then share one transaction with idempotency completion:
 - item row and the durable create link;
 - item/sharekey/custom-field/tag/TOTP writes;
 - audit and revision writes;
-- cache, health and background-task rows;
-- the queued WebSocket event;
+- item cache and the queued WebSocket event;
 - replay status and response.
 
 Delete similarly locks the item row, evaluates the optional revision and LAPR guard, applies the
@@ -83,10 +82,11 @@ This ordering covers the important failure windows:
   replay state.
 
 The queued WebSocket event is a database row and therefore follows the transaction. Actual
-delivery occurs later and is naturally outside it. External UDP syslog emission is deliberately
-deferred until after commit; a replay never emits it again. There is therefore a narrow at-most-once
-window where a process crash immediately after commit can omit that external datagram. The durable
-TeamPass audit row remains in the SQL transaction.
+delivery occurs later and is naturally outside it. The security-posture cache refresh, creation of
+the share-key fan-out task and external UDP syslog emission are deliberately deferred until after
+commit; a replay never repeats them. In particular, launching the detached background handler only
+after commit ensures that its separate database connection can see the item and its task rows. The
+durable TeamPass audit row remains in the SQL transaction.
 
 TeamPass's audit/revision helpers remain best-effort for historical callers. These two
 transactional API paths enable their strict mode and additionally verify that a new revision/date
@@ -101,14 +101,17 @@ while the item remains addressable and the record remains in its replay window.
 
 ## Cleanup
 
-Completed records are kept for 90 days, matching the default offline synchronization window. The
-existing orphan-maintenance task clears expired `items.api_idempotency_id` links and deletes the
-corresponding records. A processing record is removed only when both its replay window and lease
-have expired, so maintenance never deletes an active request.
+Each record uses the configured offline synchronization window (`offline_sync_window_days`, 90 days
+by default). Setting the window to `0` gives both offline synchronization and idempotency replays no
+time limit; these rows carry `expires_at = 0` and cleanup excludes them. The existing
+orphan-maintenance task first locks expired reservations, then clears their
+`items.api_idempotency_id` links and deletes the corresponding records. A processing record is
+removed only when both its replay window and lease have expired, so maintenance never deletes an
+active request.
 
 After cleanup, reusing an old key is a new operation. Clients must therefore keep retryable
-offline intents within the documented 90-day window, just as they must perform a full sync after
-falling outside the revision window.
+offline intents within the configured window, just as they must perform a full sync after falling
+outside the revision window.
 
 ## Examples
 
@@ -140,4 +143,4 @@ curl -i -X DELETE \
 ```
 
 A stale `revision` returns `409` before the delete or any of its side effects. Omitting `revision`
-keeps the historical last-writer-wins behavior.
+or sending an empty query value keeps the historical last-writer-wins behavior.

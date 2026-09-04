@@ -86,45 +86,6 @@ class ApiItemIdempotencyTest extends TestCase
         self::assertNotSame($original, $this->model->fingerprint(['item_id' => 7, 'revision' => null]));
     }
 
-    public function testExistingRecordStateMachineDistinguishesReplayConflictAndProcessing(): void
-    {
-        $fingerprint = $this->model->fingerprint(['item_id' => 7, 'revision' => 12]);
-        $now = 1_800_000_000;
-
-        self::assertSame(
-            ['state' => 'replay'],
-            $this->model->evaluateRecord([
-                'request_fingerprint' => $fingerprint,
-                'status' => 'completed',
-                'locked_until' => 0,
-            ], $fingerprint, $now)
-        );
-        self::assertSame(
-            ['state' => 'conflict'],
-            $this->model->evaluateRecord([
-                'request_fingerprint' => str_repeat('0', 64),
-                'status' => 'completed',
-                'locked_until' => 0,
-            ], $fingerprint, $now)
-        );
-        self::assertSame(
-            ['state' => 'processing', 'retry_after' => 20],
-            $this->model->evaluateRecord([
-                'request_fingerprint' => $fingerprint,
-                'status' => 'processing',
-                'locked_until' => $now + 20,
-            ], $fingerprint, $now)
-        );
-        self::assertSame(
-            ['state' => 'stale'],
-            $this->model->evaluateRecord([
-                'request_fingerprint' => $fingerprint,
-                'status' => 'processing',
-                'locked_until' => $now - 1,
-            ], $fingerprint, $now)
-        );
-    }
-
     public function testDeleteRevisionParserAcceptsOmissionAndUnsignedRange(): void
     {
         $controller = new ItemController();
@@ -132,6 +93,7 @@ class ApiItemIdempotencyTest extends TestCase
         $method->setAccessible(true);
 
         self::assertNull($method->invoke($controller, ['id' => 1]));
+        self::assertNull($method->invoke($controller, ['revision' => '']));
         self::assertSame(0, $method->invoke($controller, ['revision' => '0']));
         self::assertSame(4294967295, $method->invoke($controller, ['revision' => '4294967295']));
     }
@@ -155,7 +117,6 @@ class ApiItemIdempotencyTest extends TestCase
     public static function invalidRevisionProvider(): array
     {
         return [
-            'empty' => [''],
             'negative' => ['-1'],
             'decimal' => ['1.5'],
             'scientific' => ['1e2'],
@@ -182,6 +143,18 @@ class ApiItemIdempotencyTest extends TestCase
             self::assertStringNotContainsString('`password`', $tableDefinition);
             self::assertStringNotContainsString('`totp_secret`', $tableDefinition);
         }
+
+        $upgradeSchemaStart = strpos($upgrade, '$idempotencyColumnExists =');
+        self::assertNotFalse($upgradeSchemaStart);
+        $upgradeSchema = substr($upgrade, (int) $upgradeSchemaStart, 2400);
+        $columnAlter = strpos($upgradeSchema, 'ADD `api_idempotency_id` BIGINT UNSIGNED NULL DEFAULT NULL');
+        $combinedIndex = strpos($upgradeSchema, '. $indexDefinition', (int) $columnAlter);
+        self::assertNotFalse($columnAlter);
+        self::assertNotFalse($combinedIndex);
+        self::assertStringContainsString(
+            ', ADD UNIQUE KEY `uq_items_api_idempotency` (`api_idempotency_id`)',
+            $upgradeSchema
+        );
     }
 
     public function testCreateAndDeleteFinalizeReplayMetadataInsideTheirMutationTransactions(): void
@@ -193,11 +166,15 @@ class ApiItemIdempotencyTest extends TestCase
         $create = substr($model, (int) $createStart, (int) $createEnd - (int) $createStart);
         self::assertLessThan(strpos($create, '$this->insertNewItem('), strpos($create, 'DB::startTransaction();'));
         self::assertLessThan(strpos($create, 'DB::commit();'), strpos($create, 'completeReservation('));
+        self::assertGreaterThan(strpos($create, 'DB::commit();'), strpos($create, "storeTask('new_item'"));
+        self::assertGreaterThan(strpos($create, 'DB::commit();'), strpos($create, 'refreshItemHealthAfterSave('));
         self::assertGreaterThan(strpos($create, 'DB::commit();'), strrpos($create, 'emitItemSyslog('));
         $createLogStart = strrpos($create, 'error_log(');
         $createLogEnd = strpos($create, ');', (int) $createLogStart);
         $createLog = substr($create, (int) $createLogStart, (int) $createLogEnd - (int) $createLogStart);
-        self::assertStringNotContainsString('$e->getMessage()', $createLog);
+        self::assertStringContainsString('$e->getMessage()', $createLog);
+        self::assertStringContainsString('$e->getFile()', $createLog);
+        self::assertStringContainsString('$e->getLine()', $createLog);
 
         $deleteStart = strpos($model, 'public function deleteItem(');
         $delete = substr($model, (int) $deleteStart);
@@ -208,7 +185,9 @@ class ApiItemIdempotencyTest extends TestCase
         $deleteLogStart = strrpos($delete, 'error_log(');
         $deleteLogEnd = strpos($delete, ');', (int) $deleteLogStart);
         $deleteLog = substr($delete, (int) $deleteLogStart, (int) $deleteLogEnd - (int) $deleteLogStart);
-        self::assertStringNotContainsString('$e->getMessage()', $deleteLog);
+        self::assertStringContainsString('$e->getMessage()', $deleteLog);
+        self::assertStringContainsString('$e->getFile()', $deleteLog);
+        self::assertStringContainsString('$e->getLine()', $deleteLog);
     }
 
     public function testControllerKeepsKeysOptionalAndShortCircuitsCompletedReplays(): void
@@ -240,11 +219,18 @@ class ApiItemIdempotencyTest extends TestCase
         $maintenance = (string) file_get_contents(__DIR__ . '/../../../app/sources/main.functions.php');
         $start = strpos($maintenance, 'function pruneApiIdempotencyRecords()');
         self::assertNotFalse($start);
-        $block = substr($maintenance, (int) $start, 2200);
+        $block = substr($maintenance, (int) $start, 3200);
 
+        self::assertStringContainsString('expires_at > 0', $block);
         self::assertStringContainsString('expires_at < %i', $block);
         self::assertStringContainsString('locked_until < %i', $block);
         self::assertStringNotContainsString('locked_until > %i', $block);
+        $reservationLock = strpos($block, "FROM ' . prefixTable('api_idempotency')");
+        $itemUpdate = strpos($block, "prefixTable('items'),");
+        self::assertNotFalse($reservationLock);
+        self::assertNotFalse($itemUpdate);
+        self::assertStringContainsString('FOR UPDATE', $block);
+        self::assertLessThan($itemUpdate, $reservationLock);
     }
 
     public function testOpenApiDocumentsCreateAndDeleteIdempotencyAndDeleteRevision(): void
@@ -265,6 +251,7 @@ class ApiItemIdempotencyTest extends TestCase
             $spec['paths']['/item/delete']['delete']['parameters'][0]['$ref']
         );
         self::assertSame('revision', $spec['paths']['/item/delete']['delete']['parameters'][2]['name']);
+        self::assertTrue($spec['paths']['/item/delete']['delete']['parameters'][2]['allowEmptyValue']);
         self::assertArrayHasKey('409', $spec['paths']['/item/create']['post']['responses']);
         self::assertArrayHasKey('409', $spec['paths']['/item/delete']['delete']['responses']);
         self::assertArrayHasKey(

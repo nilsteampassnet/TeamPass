@@ -145,7 +145,7 @@ class ItemController extends BaseController
      */
     private function parseOptionalRevision(array $params): ?int
     {
-        if (array_key_exists('revision', $params) === false) {
+        if (array_key_exists('revision', $params) === false || $params['revision'] === '') {
             return null;
         }
 

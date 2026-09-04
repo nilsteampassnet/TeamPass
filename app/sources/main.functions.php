@@ -3415,9 +3415,9 @@ function pruneItemRevisionsJournal(int $windowDays): int
 /**
  * Remove expired API idempotency metadata without touching an active processing lease.
  *
- * The replay window is deliberately finite (90 days). A stale processing row is eligible
- * only after both its lease and replay window expired, so an in-flight request is never removed.
- * Item links are cleared first to avoid leaving technical dangling identifiers.
+ * Each row carries the expiry derived from the configured offline-sync window. A stale processing
+ * row is eligible only after both its lease and replay window expired, so an in-flight request is
+ * never removed. Reservations are locked before item rows to match mutation lock ordering.
  *
  * @return int Number of idempotency records removed
  */
@@ -3431,26 +3431,40 @@ function pruneApiIdempotencyRecords(): int
         DB::startTransaction();
         $transactionStarted = true;
 
-        DB::query(
-            'UPDATE ' . prefixTable('items') . ' AS i
-             INNER JOIN ' . prefixTable('api_idempotency') . ' AS a
-                ON a.id = i.api_idempotency_id
-             SET i.api_idempotency_id = NULL
-             WHERE a.expires_at < %i
-               AND (a.status = %s OR (a.status = %s AND a.locked_until < %i))',
+        $expiredRecords = DB::query(
+            'SELECT id
+             FROM ' . prefixTable('api_idempotency') . '
+             WHERE expires_at > 0
+               AND expires_at < %i
+               AND (status = %s OR (status = %s AND locked_until < %i))
+             ORDER BY id
+             FOR UPDATE',
             $now,
             'completed',
             'processing',
             $now
         );
+        $expiredIds = array_values(array_filter(array_map(
+            static fn (array $record): int => (int) ($record['id'] ?? 0),
+            $expiredRecords
+        )));
+
+        if (count($expiredIds) === 0) {
+            DB::commit();
+            return 0;
+        }
+
+        DB::update(
+            prefixTable('items'),
+            ['api_idempotency_id' => null],
+            'api_idempotency_id IN %li',
+            $expiredIds
+        );
 
         DB::delete(
             prefixTable('api_idempotency'),
-            'expires_at < %i AND (status = %s OR (status = %s AND locked_until < %i))',
-            $now,
-            'completed',
-            'processing',
-            $now
+            'id IN %li',
+            $expiredIds
         );
         $removed = (int) DB::affectedRows();
 

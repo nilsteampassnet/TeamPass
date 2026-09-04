@@ -390,15 +390,41 @@ if ($res === false) {
 
 // Durable link between an idempotent create reservation and the item it produced.
 // NULL keeps every historical and non-idempotent creation unchanged.
-$res = addColumnIfNotExist(
-    $pre . 'items',
-    'api_idempotency_id',
-    'BIGINT UNSIGNED NULL DEFAULT NULL'
-);
-if ($res === false) {
-    echo '[{"finish":"1", "msg":"", "error":"Error adding api_idempotency_id to items table: ' . addslashes(mysqli_error($db_link)) . '"}]';
-    mysqli_close($db_link);
-    exit();
+$idempotencyColumnExists = columnExists($db_link, $pre . 'items', 'api_idempotency_id');
+$idempotencyIndexExists = mysqli_fetch_array(mysqli_query(
+    $db_link,
+    "SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = '" . $pre . "items'
+       AND INDEX_NAME = 'uq_items_api_idempotency'"
+));
+
+// The normal upgrade path adds the column and its unique key in one table rebuild. The
+// separate branches keep a retry safe after an interrupted or partially applied upgrade.
+if ($idempotencyColumnExists === false) {
+    $indexDefinition = empty($idempotencyIndexExists[0])
+        ? ', ADD UNIQUE KEY `uq_items_api_idempotency` (`api_idempotency_id`)'
+        : '';
+    $res = mysqli_query(
+        $db_link,
+        'ALTER TABLE `' . $pre . 'items` ADD `api_idempotency_id` BIGINT UNSIGNED NULL DEFAULT NULL'
+            . $indexDefinition
+    );
+    if ($res === false) {
+        echo '[{"finish":"1", "msg":"", "error":"Error adding items idempotency schema: ' . addslashes(mysqli_error($db_link)) . '"}]';
+        mysqli_close($db_link);
+        exit();
+    }
+} elseif (empty($idempotencyIndexExists[0])) {
+    $res = mysqli_query(
+        $db_link,
+        'ALTER TABLE `' . $pre . 'items` ADD UNIQUE KEY `uq_items_api_idempotency` (`api_idempotency_id`)'
+    );
+    if ($res === false) {
+        echo '[{"finish":"1", "msg":"", "error":"Error adding items idempotency index: ' . addslashes(mysqli_error($db_link)) . '"}]';
+        mysqli_close($db_link);
+        exit();
+    }
 }
 
 // Item change journal. Its AUTO_INCREMENT primary key is the globally monotonic
@@ -456,26 +482,6 @@ if ($res === false) {
     echo '[{"finish":"1", "msg":"", "error":"Error creating api_idempotency table: ' . addslashes(mysqli_error($db_link)) . '"}]';
     mysqli_close($db_link);
     exit();
-}
-
-// Add the nullable one-to-one create link idempotently on upgraded databases.
-$indexExists = mysqli_fetch_array(mysqli_query(
-    $db_link,
-    "SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS
-     WHERE TABLE_SCHEMA = DATABASE()
-       AND TABLE_NAME = '" . $pre . "items'
-       AND INDEX_NAME = 'uq_items_api_idempotency'"
-));
-if (empty($indexExists[0])) {
-    $res = mysqli_query(
-        $db_link,
-        'ALTER TABLE `' . $pre . 'items` ADD UNIQUE KEY `uq_items_api_idempotency` (`api_idempotency_id`)'
-    );
-    if ($res === false) {
-        echo '[{"finish":"1", "msg":"", "error":"Error adding items idempotency index: ' . addslashes(mysqli_error($db_link)) . '"}]';
-        mysqli_close($db_link);
-        exit();
-    }
 }
 
 // Backfill only when the current item revision still has its exact journal row. Older

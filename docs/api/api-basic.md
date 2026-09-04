@@ -556,10 +556,11 @@ curl -X GET "https://your-teampass.com/api/index.php/item/getOtp?id=123" \
 | **Headers** | `Authorization: Bearer <token>`; optional `Idempotency-Key: <opaque-key>` |
 
 `Idempotency-Key` accepts 1–128 visible ASCII characters without spaces. It is scoped to the
-authenticated user and this operation. TeamPass keeps the completed result for 90 days: retrying
-the same functional request returns the original `201`, `Location` and body without creating
-anything again, and adds `Idempotency-Replayed: true`. Reusing the key with a changed payload
-returns `409`. A duplicate request still processing returns `409` and `Retry-After`.
+authenticated user and this operation. TeamPass keeps the completed result for the configured
+offline synchronization window (`offline_sync_window_days`, 90 days by default, `0` for no limit):
+retrying the same functional request returns the original `201`, `Location` and body without
+creating anything again, and adds `Idempotency-Replayed: true`. Reusing the key with a changed
+payload returns `409`. A duplicate request still processing returns `409` and `Retry-After`.
 
 **Request Body (JSON):**
 ```json
@@ -777,9 +778,9 @@ curl -X PUT "https://your-teampass.com/api/index.php/item/update" \
 | Field | Type | Required | Description |
 | ----- | ---- | -------- | ----------- |
 | `id` | integer | ✅ | Item ID to delete |
-| `revision` | integer | ❌ | Current unsigned item revision. A mismatch returns `409` before any mutation. Omitting it retains the historical last-writer-wins behavior. |
+| `revision` | integer | ❌ | Current unsigned item revision. A mismatch returns `409` before any mutation. Omitting it or sending an empty value retains the historical last-writer-wins behavior. |
 
-The optional idempotency key uses the same syntax, user/operation scope and 90-day window as
+The optional idempotency key uses the same syntax, user/operation scope and configured window as
 create. Its fingerprint includes both `id` and the optional `revision`. A replay returns the
 original success body plus `Idempotency-Replayed: true` without a second delete, audit, revision,
 cache update or WebSocket event. It therefore cannot delete an item again after a later restore.

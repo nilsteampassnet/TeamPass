@@ -249,12 +249,13 @@ Create a new item.
 
 **Optional idempotency:** `Idempotency-Key: <opaque-key>` (1–128 visible ASCII characters,
 without spaces). Its identity is scoped to the authenticated user and `item.create`. The first
-accepted request returns the normal `201`; an identical replay within 90 days returns the exact
-stored result and `Idempotency-Replayed: true` without repeating any write or side effect. Reusing
-the key with a different functional payload returns `409`. A concurrent request still holding the
-key's processing lease also returns `409` with `Retry-After`. The fingerprint covers every
-functional create field, including credential, TOTP and custom-field values, but is a
-server-secret HMAC: neither those values, the request body nor the raw key is persisted.
+accepted request returns the normal `201`; an identical replay within the configured offline-sync
+window (`offline_sync_window_days`, 90 days by default, `0` for no limit) returns the exact stored
+result and `Idempotency-Replayed: true` without repeating any write or side effect. Reusing the key
+with a different functional payload returns `409`. A concurrent request still holding the key's
+processing lease also returns `409` with `Retry-After`. The fingerprint covers every functional
+create field, including credential, TOTP and custom-field values, but is a server-secret HMAC:
+neither those values, the request body nor the raw key is persisted.
 
 **Custom fields:** `fields` = array of `{ id, value }` (field id + value). Encrypt-before-INSERT for encrypted categories; creator sharekey created synchronously, other users via the `new_item` background task. Only fields tied to the folder are stored; empty values ignored. Requires `item_extra_fields`.
 
@@ -323,9 +324,10 @@ Soft-delete an item.
 **Params:** `id` (int), optional `revision` (unsigned 32-bit integer). When supplied, `revision`
 is an optimistic-concurrency precondition checked against the locked item row immediately before
 the mutation. A mismatch returns `409` with no delete, audit, revision, cache change or WebSocket
-event. Omitting it preserves the historical last-writer-wins behavior.
+event. Omitting it or sending an empty query value preserves the historical last-writer-wins
+behavior.
 
-**Optional idempotency:** `Idempotency-Key` follows the same syntax and 90-day replay window as
+**Optional idempotency:** `Idempotency-Key` follows the same syntax and configured replay window as
 create, scoped to the authenticated user and `item.delete`. Its fingerprint contains the item id
 and the expected revision (including omission). A replay returns the original successful result
 with `Idempotency-Replayed: true`; it never deletes again, so a later restoration is not undone.

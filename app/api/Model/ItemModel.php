@@ -549,11 +549,10 @@ class ItemModel
             );
 
             // Step 9: Handle post-insert tasks (logging, sharing, tagging, custom fields)
-            $this->handlePostInsertTasks(
+            $fieldsForTasks = $this->handlePostInsertTasks(
                 $newID,
                 $itemInfos,
                 $folderId,
-                $passwordKey,
                 $userId,
                 $username,
                 $tags,
@@ -567,10 +566,6 @@ class ItemModel
 
             // Notify WebSocket subscribers so other users viewing this folder see the new item
             emitItemEvent('created', $newID, $folderId, $label, $username, $userId);
-
-            // Refresh the caller's security posture so a reused/weak password is flagged without
-            // waiting for a manual dashboard scan (no-op when the dashboard is disabled).
-            refreshItemHealthAfterSave((int) $newID, $userId, (string) $plaintextPasswordForHealth, $SETTINGS);
 
             $revisionMetadata = getItemRevisionMetadata((int) $newID);
             if ($revisionMetadata['revision'] <= 0 || $revisionMetadata['revision_changed_at'] === null) {
@@ -593,8 +588,15 @@ class ItemModel
             DB::commit();
             $transactionStarted = false;
 
-            // Syslog is an external UDP side effect. Emit it only after the SQL outcome and
-            // replay result are durable; an idempotent replay never reaches this point.
+            // The detached handler uses another database connection, so enqueue and launch it
+            // only after the item and its idempotency replay result are visible.
+            if ((int) $itemInfos['personal_folder'] === 0) {
+                storeTask('new_item', $userId, 0, $folderId, $newID, $passwordKey, $fieldsForTasks, []);
+            }
+
+            // Cache refreshes and external side effects stay outside the SQL transaction. An
+            // idempotent replay returns before the model and therefore never repeats them.
+            refreshItemHealthAfterSave((int) $newID, $userId, (string) $plaintextPasswordForHealth, $SETTINGS);
             emitItemSyslog($SETTINGS, $newID, $label, 'at_creation', $username);
 
             return $response;
@@ -616,6 +618,8 @@ class ItemModel
                 '[API] ItemModel::addItem failed for user '
                 . (int) ($arrItemParams['id'] ?? 0)
                 . ' [' . get_class($e) . ':' . (int) $e->getCode() . ']'
+                . ' ' . $e->getMessage()
+                . ' in ' . $e->getFile() . ':' . $e->getLine()
             );
 
             return [
@@ -1090,24 +1094,23 @@ class ItemModel
      * Handles tasks that need to be performed after the item is inserted:
      * 1. Stores sharing keys
      * 2. Logs the item creation
-     * 3. Adds a task if the folder is not personal
-     * 4. Adds tags to the item
+     * 3. Adds tags to the item
+     * 4. Stores custom fields and returns their keys for the post-commit fan-out task
      * @param int $newID - The ID of the newly created item
      * @param array $itemInfos - Folder-specific settings
      * @param int $folderId - Folder ID of the item
-     * @param string $passwordKey - The encryption key for the item
      * @param int $userId - ID of the user creating the item
      * @param string $username - Username of the creator
      * @param string $tags - Tags to be associated with the item
      * @param array $data - The original data used to create the item (including the label)
      * @param array $SETTINGS - System settings for logging and task creation
      * @param bool $emitSyslog - Whether logItems() may emit the external syslog datagram
+     * @return array<int, array<string, mixed>> Field keys for the background fan-out task
      */
     private function handlePostInsertTasks(
         int $newID,
         array $itemInfos,
         int $folderId,
-        string $passwordKey,
         int $userId,
         string $username,
         string $tags,
@@ -1115,7 +1118,7 @@ class ItemModel
         array $data,
         array $SETTINGS,
         bool $emitSyslog = true
-    ) : void {
+    ) : array {
         // Create share keys for the creator
         storeUsersShareKey(
             'sharekeys_items',
@@ -1148,13 +1151,10 @@ class ItemModel
         // Add tags to the item
         $this->addTags($newID, $tags);
 
-        // Store custom fields — returns the field object keys for the background task
+        // Store custom fields and return their object keys to the post-commit caller.
         $fieldsForTasks = $this->handleCustomFieldsOnCreate($newID, $folderId, $fields, $userId, $itemInfos, $SETTINGS);
 
-        // Create a task if the folder is not personal (generates pwd/fields sharekeys for the other users)
-        if ((int) $itemInfos['personal_folder'] === 0) {
-            storeTask('new_item', $userId, 0, $folderId, $newID, $passwordKey, $fieldsForTasks, []);
-        }
+        return $fieldsForTasks;
     }
 
 
@@ -2271,6 +2271,8 @@ class ItemModel
                 ];
             }
 
+            // The controller checks authorization before reserving the idempotency key. Repeat
+            // it under the item row lock so a concurrent move cannot invalidate that decision.
             $folderAccessModel = new FolderAccessModel();
             if ($folderAccessModel->canAccessItemInFolder(
                 $userData,
@@ -2389,6 +2391,8 @@ class ItemModel
                 '[API] ItemModel::deleteItem failed for item '
                 . $itemId
                 . ' [' . get_class($e) . ':' . (int) $e->getCode() . ']'
+                . ' ' . $e->getMessage()
+                . ' in ' . $e->getFile() . ':' . $e->getLine()
             );
 
             return [
