@@ -1,4 +1,4 @@
-Dockerfile 9b8d958f54bf649f88fad358f608bf9a
+Dockerfile 5c670224996f08af2c1b8e18b76a5300
 app/api/Controller/Api/AuthController.php c436f7f92546a424a36fd96830370d47
 app/api/Controller/Api/BaseController.php fe66a4a25669a2ff5d41c2f82a0cf69b
 app/api/Controller/Api/FolderController.php 833cea2f85d37445e8583a74475a1a2f
@@ -22,7 +22,7 @@ app/api/index.php 541b9a842023953466c3bff2651802d2
 app/api/openapi.json de12c37a52b33aebf0a98cf9a44e4a93
 app/config/.htaccess 81594a7af3d0a392c24aada056204b79
 app/config/emails_templates.php 3c782c4e26a0edae1896910139613afe
-app/config/include.php 43df5e515226342f819c5ad7b4513201
+app/config/include.php f59d107631b9bb7a4cb85811d2bdfdd5
 app/config/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
 app/config/settings.sample.php 15ed7c39ba4b70e0157292265f938860
 app/core/command-palette.js.php e4e3fd01a173bfdcbd02c96ea679375a
@@ -299,7 +299,7 @@ app/includes/libraries/yubico/Yubico.php 054fba2b44cff4cb7ac32aa61ae89b05
 app/includes/templates/offline-export.tpl.php 38d14aa0c96c37b44fb16f18305e0d83
 app/pages/2fa.js.php 53d770dfb6c90ae7c1636346888f3231
 app/pages/2fa.php 3be5ac1a34b07016b7d59f174c7db4f8
-app/pages/admin.js.php af8617a4ef4e44d57591709b99487fd9
+app/pages/admin.js.php 686e3dbb2689361fd178d17993337da7
 app/pages/admin.php 327d6a19aaf6aebba8ce7dd57cb97a13
 app/pages/admin_lapr.js.php b6f21e208691dc5a9f0418361c7450d5
 app/pages/admin_lapr.php 6f8ac3942d0149440368436fa1dfdb61
