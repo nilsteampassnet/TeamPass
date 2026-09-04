@@ -3575,8 +3575,25 @@ case 'get_teampass_latest_release':
     $cacheIsValid = is_array($cachedResult);
     $cacheTtl = $cacheIsValid === true && ($cachedResult['error'] ?? false) === false ? 43200 : 3600;
 
+    // The verdict is recomputed locally on every emit, never replayed from the cache.
+    // The cache holds what GitHub answered (latest_version, release_url); the running
+    // version can change underneath it. A container upgrade swaps the code while the
+    // database volume - and therefore this cache - survives, so echoing the stored
+    // has_update kept announcing an update to an instance that had just installed it.
+    $refreshVerdict = static function (array $result) use ($currentVersion): array {
+        $cachedLatest = isset($result['latest_version']) === true && is_string($result['latest_version']) === true
+            ? trim($result['latest_version'])
+            : '';
+
+        $result['current_version'] = $currentVersion;
+        $result['has_update'] = $cachedLatest !== ''
+            && version_compare($currentVersion, $cachedLatest, '<');
+
+        return $result;
+    };
+
     if ($cacheIsValid === true && (time() - $cacheAt) < $cacheTtl) {
-        echo prepareExchangedData($cachedResult, 'encode');
+        echo prepareExchangedData($refreshVerdict($cachedResult), 'encode');
         break;
     }
 
@@ -3612,7 +3629,7 @@ case 'get_teampass_latest_release':
     // Skip entirely if cURL is unavailable
     if (function_exists('curl_init') === false) {
         if ($cacheIsValid === true) {
-            echo prepareExchangedData($cachedResult, 'encode');
+            echo prepareExchangedData($refreshVerdict($cachedResult), 'encode');
             break;
         }
 
@@ -3624,7 +3641,7 @@ case 'get_teampass_latest_release':
     // Skip entirely if the server has no outbound internet access (fast DNS pre-flight check)
     if (checkdnsrr('api.github.com', 'A') === false) {
         if ($cacheIsValid === true) {
-            echo prepareExchangedData($cachedResult, 'encode');
+            echo prepareExchangedData($refreshVerdict($cachedResult), 'encode');
             break;
         }
 
@@ -3636,7 +3653,7 @@ case 'get_teampass_latest_release':
     $curlHandle = curl_init('https://api.github.com/repos/nilsteampassnet/TeamPass/releases/latest');
     if ($curlHandle === false) {
         if ($cacheIsValid === true) {
-            echo prepareExchangedData($cachedResult, 'encode');
+            echo prepareExchangedData($refreshVerdict($cachedResult), 'encode');
             break;
         }
 
@@ -3665,7 +3682,7 @@ case 'get_teampass_latest_release':
 
     if ($responseBody === false || $httpCode !== 200) {
         if ($cacheIsValid === true) {
-            echo prepareExchangedData($cachedResult, 'encode');
+            echo prepareExchangedData($refreshVerdict($cachedResult), 'encode');
             break;
         }
 
@@ -3677,7 +3694,7 @@ case 'get_teampass_latest_release':
     $releaseData = json_decode($responseBody, true);
     if (is_array($releaseData) === false) {
         if ($cacheIsValid === true) {
-            echo prepareExchangedData($cachedResult, 'encode');
+            echo prepareExchangedData($refreshVerdict($cachedResult), 'encode');
             break;
         }
 

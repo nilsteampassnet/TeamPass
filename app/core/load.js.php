@@ -181,6 +181,10 @@ if (
 
         const CACHE_KEY = 'tp_version_badge_v1';
         const CACHE_TTL = 4 * 3600 * 1000; // 4 hours in ms
+        // Stamp the entry with the running version: an upgrade must invalidate it at
+        // once, otherwise a tab left open keeps showing the badge for the version it
+        // just installed until the TTL expires.
+        const RUNNING_VERSION = <?php echo json_encode(TP_VERSION . '.' . TP_VERSION_MINOR); ?>;
 
         // Serve from sessionStorage when available and still fresh
         try {
@@ -190,6 +194,7 @@ if (
                 if (
                     cached !== null
                     && typeof cached === 'object'
+                    && cached.version === RUNNING_VERSION
                     && (Date.now() - cached.ts) < CACHE_TTL
                 ) {
                     applyVersionNotifications($badge, cached.data);
@@ -216,7 +221,7 @@ if (
 
                 // Persist in sessionStorage so subsequent page loads skip the AJAX call
                 try {
-                    sessionStorage.setItem(CACHE_KEY, JSON.stringify({data: data, ts: Date.now()}));
+                    sessionStorage.setItem(CACHE_KEY, JSON.stringify({data: data, ts: Date.now(), version: RUNNING_VERSION}));
                 } catch (e) {
                     // Quota exceeded or unavailable — ignore
                 }
