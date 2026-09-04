@@ -1832,9 +1832,107 @@ const displayedProgressPercent = displayedTotalUsers > 0
 // DOCUMENT READY
 // ===================================
 
+/**
+ * Getting-started recommendations the administrator dismissed.
+ *
+ * They are advisory only, so they are kept in the browser rather than in the database:
+ * no new setting, no install or upgrade script to maintain. Pending maintenance
+ * operations are never dismissible and are always rendered by the server.
+ */
+const ADMIN_NOTICES_DISMISSED_KEY = 'tp_admin_notices_dismissed_<?php echo (int) $session->get('user-id'); ?>'
+const ADMIN_NOTICES_LABEL = <?php echo json_encode($lang->get('admin_pending_actions')); ?>
+const ADMIN_NOTICES_NONE_LABEL = <?php echo json_encode($lang->get('admin_pending_actions_none')); ?>
+
+/**
+ * Reads the identifiers of the dismissed recommendations.
+ *
+ * @return {Array} Dismissed identifiers
+ */
+function getDismissedAdminNotices() {
+    try {
+        const stored = JSON.parse(localStorage.getItem(ADMIN_NOTICES_DISMISSED_KEY) || '[]')
+        return Array.isArray(stored) ? stored.map(String) : []
+    } catch (e) {
+        return []
+    }
+}
+
+/**
+ * Stores the identifiers of the dismissed recommendations.
+ *
+ * @param {Array} ids Dismissed identifiers
+ *
+ * @return {void}
+ */
+function setDismissedAdminNotices(ids) {
+    try {
+        localStorage.setItem(ADMIN_NOTICES_DISMISSED_KEY, JSON.stringify(ids))
+    } catch (e) {
+        // Storage unavailable (private browsing, quota): the recommendation simply comes back.
+    }
+}
+
+/**
+ * Refreshes the counters and removes the card once nothing is left to display.
+ *
+ * @return {void}
+ */
+function refreshAdminNoticesState() {
+    const remaining = $('#admin-notices-list .admin-notice-item').length
+    $('#admin-notices-count').text(remaining)
+
+    if (remaining === 0) {
+        $('#admin-notices-column').remove()
+        $('#admin-health-column').removeClass('col-lg-5').addClass('col-lg-12')
+        $('#health-maintenance')
+            .removeClass('badge-danger badge-warning badge-info badge-secondary')
+            .addClass('badge-success')
+            .text(ADMIN_NOTICES_NONE_LABEL)
+        return
+    }
+
+    $('#health-maintenance').text(remaining + ' ' + ADMIN_NOTICES_LABEL)
+}
+
+/**
+ * Applies the dismissed recommendations and wires the dismiss buttons.
+ *
+ * @return {void}
+ */
+function initAdminNotices() {
+    const list = $('#admin-notices-list')
+    if (list.length === 0) {
+        return
+    }
+
+    const dismissed = getDismissedAdminNotices()
+    list.find('.admin-notice-item[data-notice-dismissible="1"]').each(function() {
+        if (dismissed.indexOf(String($(this).data('notice-id'))) !== -1) {
+            $(this).remove()
+        }
+    })
+
+    refreshAdminNoticesState()
+
+    list.on('click', '.admin-notice-dismiss', function() {
+        const item = $(this).closest('.admin-notice-item')
+        const id = String(item.data('notice-id'))
+        const ids = getDismissedAdminNotices()
+        if (ids.indexOf(id) === -1) {
+            ids.push(id)
+            setDismissedAdminNotices(ids)
+        }
+        item.remove()
+        refreshAdminNoticesState()
+    })
+}
+
 $(document).ready(function() {    
     // Initialize refresh manager
     AdminRefreshManager.init()
+
+    // Apply the dismissed recommendations on the notices card
+    initAdminNotices()
     
     // Initialize dashboard (active tab)
     initDashboardTab()

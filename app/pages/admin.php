@@ -84,6 +84,13 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 $extensionLicenceKey = $SETTINGS['browser_extension_key'] ?? '';
 $extensionHasLicence = $extensionLicenceKey !== '';
 
+// Collect the pending maintenance operations and the getting-started recommendations.
+// The card is only rendered when at least one of them is raised: an empty card is what
+// made the dashboard look broken on a fresh installation.
+require_once __DIR__ . '/../sources/admin_notices.functions.php';
+$adminNotices = adminNoticesCollect($SETTINGS, $lang);
+$adminNoticesColumns = adminNoticesLayoutColumns($adminNotices);
+
 ?>
 
 <!-- Content Header (Page header) -->
@@ -268,7 +275,7 @@ $extensionHasLicence = $extensionLicenceKey !== '';
                         <!-- System Health and Teampass Information Row -->
                         <div class="row">
                             <!-- System Health Card -->
-                            <div class="col-lg-5">
+                            <div class="<?php echo $adminNoticesColumns['health']; ?>" id="admin-health-column">
                                 <div class="card card-success">
                                     <div class="card-header">
                                         <h3 class="card-title">
@@ -325,6 +332,16 @@ $extensionHasLicence = $extensionLicenceKey !== '';
                                             <li class="list-group-item small text-muted" id="websocket-details" style="display:none;">
                                                 <div id="websocket-details-content"></div>
                                             </li>
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                <span><i class="fas fa-clipboard-check text-success"></i> <?php echo $lang->get('health_maintenance'); ?></span>
+                                                <span class="badge <?php echo count($adminNotices) === 0 ? 'badge-success' : adminNoticesBadgeClass($adminNotices); ?>" id="health-maintenance">
+                                                    <?php
+                                                    echo count($adminNotices) === 0
+                                                        ? $lang->get('admin_pending_actions_none')
+                                                        : count($adminNotices) . ' ' . $lang->get('admin_pending_actions');
+                                                    ?>
+                                                </span>
+                                            </li>
                                         </ul>
                                     </div>
                                     <div class="overlay" id="loading-health" style="display:none;">
@@ -333,154 +350,27 @@ $extensionHasLicence = $extensionLicenceKey !== '';
                                 </div>
                             </div>
                             
-                            <!-- Teampass Information Card -->
-                            <div class="col-lg-7">
-                                <div class="card card-default">
+                            <!-- Actions required Card -->
+                            <?php if ($adminNoticesColumns['notices'] !== '') { ?>
+                            <div class="<?php echo $adminNoticesColumns['notices']; ?>" id="admin-notices-column">
+                                <div class="card <?php echo adminNoticesCardClass($adminNotices); ?>">
                                     <div class="card-header">
                                         <h3 class="card-title">
-                                            <i class="fa-solid fa-barcode"></i>
-                                            <?php echo $lang->get('teampass_information'); ?>
+                                            <i class="fa-solid fa-list-check"></i>
+                                            <?php echo $lang->get('admin_pending_actions'); ?>
                                         </h3>
+                                        <div class="card-tools">
+                                            <span class="badge badge-light" id="admin-notices-count"><?php echo count($adminNotices); ?></span>
+                                        </div>
                                     </div>
                                     <div class="card-body">
-                                        <ul class="list-group list-group-flush">                                
-                                        <?php   
-                                        if (isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 0) {
-                                            echo '<div class="alert bg-orange disabled" role="alert">
-                                                <h5><i class="fa-solid fa-exclamation-triangle mr-2"></i>Since 3.0.0.23, TASKS manager is enabled by default and is mandatory.</h5>
-                                                <p>Please ensure that cron job is set and enabled.<br />Open Tasks page and check status.</p>
-                                                <p><a href="https://documentation.teampass.net/#/manage/tasks" target="_blank"><i class="fa-solid fa-book mr-2"></i>Check documentation</a>.</p>
-                                            </div>';
-                                        } else {
-                                            ?>
-                                            <div class="">
-                                        <?php
-                                        
-                                        ?>
-                                            </div>
-                                        <?php                        
-                                        }
-                                        ?>
-                                        <?php
-
-// Identify TeamPass system users (API/TP/OTV)
-$systemUsersLogins = ['API', 'TP', 'OTV'];
-
-                                        // Has the transparent recovery migration been done?
-                                        DB::query(
-                                            "SELECT id FROM " . prefixTable('users') . "
-                                            WHERE (user_derivation_seed IS NULL
-                                            OR private_key_backup IS NULL)
-                                            AND disabled = 0
-                                            AND deleted_at IS NULL
-                                            AND login NOT IN %ls",
-                                            $systemUsersLogins
-                                        );
-                                        if (DB::count() !== 0) {
-                                            ?>
-                                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                                            <span><i class="fa-solid fa-chart-bar text-info"></i> <?php echo $lang->get('perform_transparent_recovery_check'); ?></span>
-                                            <span>
-                                                <button type="button" class="btn btn-primary btn-sm ml-2" id="check-transparent-recovery-btn" onclick="performTransparentRecoveryCheck()">
-                                                <i class="fas fa-caret-right"></i>
-                                            </button>
-                                            </span>
-                                        </li>
-                                            <?php
-                                        }
-
-                                        // Has the personal items migration been done for users?
-                                        $stats = DB::query(
-                                            "SELECT 
-                                                COUNT(*) as total_users,
-                                                SUM(CASE WHEN personal_items_migrated = 1 THEN 1 ELSE 0 END) as migrated_users,
-                                                SUM(CASE WHEN personal_items_migrated = 0 THEN 1 ELSE 0 END) as pending_users
-                                            FROM " . prefixTable('users') . "
-                                            WHERE disabled = 0 AND deleted_at IS NULL AND login NOT IN %ls",
-                                            $systemUsersLogins
-                                        );
-                                        $totalUsers = intval($stats[0]['total_users']);
-                                        $progressPercent = $totalUsers > 0
-                                            ? (intval($stats[0]['migrated_users']) / $totalUsers) * 100
-                                            : 0;
-                                        if ($progressPercent !== 100) {
-                                            ?>
-                                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                                            <span><i class="fa-solid fa-chart-bar text-info"></i> <?php echo $lang->get('get_personal_items_migration_status'); ?></span>
-                                            <span>
-                                                <button type="button" class="btn btn-primary btn-sm ml-2" id="personal-items-migration-btn" onclick="performPersonalItemsMigrationCheck()">
-                                                <i class="fas fa-caret-right"></i>
-                                            </button>
-                                            </span>
-                                        </li>
-                                            <?php
-                                        }
-                                        
-                                        // Status on users passwords migration to new encryption Symfony Password
-                                        if (isset($SETTINGS['phpseclibv3_native']) === true && (int) $SETTINGS['phpseclibv3_native'] === 0) {
-                                            $excluded_ids = array(9999991, 9999997, 9999998, 9999999);
-                                            $user_results = DB::query(
-                                                "SELECT login 
-                                                FROM ".prefixTable('users')."
-                                                WHERE phpseclibv3_migration_completed = 0 AND deleted_at IS NULL AND id NOT IN %ls",
-                                                $excluded_ids
-                                            );
-                                            if (DB::count() > 0) {
-                                                $remaining_users = DB::count();
-                                                $logins_array = array_column($user_results, 'login');
-                                                sort($logins_array, SORT_NATURAL | SORT_FLAG_CASE);
-                                                $logins_badges = '';
-                                                foreach ($logins_array as $login) {
-                                                    $logins_badges .= '<span class="badge badge-light border text-dark mr-1 mb-1 p-2">' . htmlspecialchars($login, ENT_QUOTES, 'UTF-8') . '</span>';
-                                                }
-                                                ?>
-                                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                                <span><i class="fa-solid fa-hand text-warning"></i>
-                                                <?php echo $lang->get('sharekeys_encryption_migration_required'); ?>
-                                                <span class="badge badge-warning">
-                                                    <?php echo $remaining_users; ?> <?php echo $lang->get('sharekeys_remaining_users'); ?>
-                                                </span>
-                                                </span>
-                                                <span>
-                                                    <i class="fa-solid fa-info-circle text-primary open-info" 
-                                                    data-target="#info-migration-sharekeys" 
-                                                    data-size="lg" 
-                                                    data-title="<?php echo $lang->get('sharekeys_migration_modal_title'); ?>"></i>
-                                                    <div id="info-migration-sharekeys" class="d-none">
-                                                        <div class="alert alert-warning mb-3" role="alert">
-                                                            <i class="fa-solid fa-triangle-exclamation mr-2"></i>
-                                                            <strong><?php echo sprintf($lang->get('sharekeys_migration_notice_count'), $remaining_users); ?></strong><br>
-                                                            <?php echo $lang->get('sharekeys_migration_notice_text'); ?>
-                                                        </div>
-                                                        <div class="mb-3">
-                                                            <div class="small text-muted text-uppercase font-weight-bold mb-2"><?php echo $lang->get('sharekeys_migration_next_step_title'); ?></div>
-                                                            <ul class="pl-3 mb-0">
-                                                                <li><?php echo $lang->get('sharekeys_migration_next_step_1'); ?></li>
-                                                                <li><?php echo $lang->get('sharekeys_migration_next_step_2'); ?></li>
-                                                            </ul>
-                                                        </div>
-                                                        <div class="small text-muted text-uppercase font-weight-bold mb-2">
-                                                            <?php echo sprintf($lang->get('sharekeys_migration_remaining_users_title'), $remaining_users); ?>
-                                                        </div>
-                                                        <div class="border rounded bg-light p-2" style="max-height:260px; overflow-y:auto;">
-                                                            <?php echo $logins_badges; ?>
-                                                        </div>
-                                                    </div>
-                                                </span>
-                                            </li>
-                                                <?php
-                                            }
-                                        }
-
-                                        // Check if tp.config.php file is still present
-                                        if (file_exists(__DIR__.'/../config/tp.config.php') === true) {
-                                            echo '<div class="mt-3 alert alert-warning" role="alert"><i class="fa-solid fa-circle-exclamation mr-2"></i>File tp.config.php requires to be deleted. Please do it and refresh this page. This warning shall not be visible anymore.</div>';
-                                        }
-                                        ?>
+                                        <ul class="list-group list-group-flush" id="admin-notices-list">
+                                            <?php echo adminNoticesRender($adminNotices, $lang); ?>
                                         </ul>
                                     </div>
                                 </div>
                             </div>
+                            <?php } ?>
                         </div>
                         
                         <!-- Live Activity and System Status Row -->
