@@ -1,4 +1,4 @@
-Dockerfile ce7ff23a1b4226dc3073dcc1e0bf4772
+Dockerfile 9b8d958f54bf649f88fad358f608bf9a
 app/api/Controller/Api/AuthController.php c436f7f92546a424a36fd96830370d47
 app/api/Controller/Api/BaseController.php fe66a4a25669a2ff5d41c2f82a0cf69b
 app/api/Controller/Api/FolderController.php 833cea2f85d37445e8583a74475a1a2f
@@ -22,7 +22,7 @@ app/api/index.php 541b9a842023953466c3bff2651802d2
 app/api/openapi.json de12c37a52b33aebf0a98cf9a44e4a93
 app/config/.htaccess 81594a7af3d0a392c24aada056204b79
 app/config/emails_templates.php 3c782c4e26a0edae1896910139613afe
-app/config/include.php a1be3376400ea014a0e8d825e2a5101d
+app/config/include.php 43df5e515226342f819c5ad7b4513201
 app/config/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
 app/config/settings.sample.php 15ed7c39ba4b70e0157292265f938860
 app/core/command-palette.js.php e4e3fd01a173bfdcbd02c96ea679375a
@@ -91,9 +91,9 @@ app/includes/language/datatables.turkish.txt 72029c69092185073e741d1b0cae543f
 app/includes/language/datatables.ukrainian.txt 8c9f26eee807a87411b5d7c5e8fdf149
 app/includes/language/datatables.vietnamese.txt f9b6e7a07d0f6533f186dac4b3499dd4
 app/includes/language/dutch.php de366701362f170ba622ce2b2a02f151
-app/includes/language/english.php 3dab6555df847dd16adc78a890497f6d
+app/includes/language/english.php a7b05d368288515dabbc9bbc1b64ef5a
 app/includes/language/estonian.php d64f42f83be57a120623c21e4f8e1549
-app/includes/language/french.php fd7f0fcfcb8849168d006f34aeb120a3
+app/includes/language/french.php 61fc7bc1bd72a7dcd0abc6dddf4c1b49
 app/includes/language/german.php 5bee1c48ad46bbdf457475084b249f86
 app/includes/language/greek.php 8bbf9c447c297a3affb09931ae66f426
 app/includes/language/hungarian.php 1587d650af62d68a3e1e4d3adf79658e
@@ -299,8 +299,8 @@ app/includes/libraries/yubico/Yubico.php 054fba2b44cff4cb7ac32aa61ae89b05
 app/includes/templates/offline-export.tpl.php 38d14aa0c96c37b44fb16f18305e0d83
 app/pages/2fa.js.php 53d770dfb6c90ae7c1636346888f3231
 app/pages/2fa.php 3be5ac1a34b07016b7d59f174c7db4f8
-app/pages/admin.js.php 0bb792694c5af6afb65956fe63497180
-app/pages/admin.php 4342fef7ce0caeb9f3bede0bc0db264e
+app/pages/admin.js.php af8617a4ef4e44d57591709b99487fd9
+app/pages/admin.php 327d6a19aaf6aebba8ce7dd57cb97a13
 app/pages/admin_lapr.js.php b6f21e208691dc5a9f0418361c7450d5
 app/pages/admin_lapr.php 6f8ac3942d0149440368436fa1dfdb61
 app/pages/api.js.php 6f7ff61006541dd9768a71a487db0533
@@ -389,6 +389,7 @@ app/scripts/ldap_group_guid_logic.php f061e86eaac63ab061c10581c38e31f5
 app/scripts/migrate_tp_user_to_v3.php 39979a4c1af605eaa3c3119d7ddbd329
 app/scripts/personal_sharekeys_logic.php a33e1382aeda2e14393d4c3ec720a7af
 app/scripts/personal_sharekeys_remediation.php 50ad7bd3185a9cfe0b49e303d9cfa1f2
+app/scripts/read-db-upgrade-timestamp.php 2c0599605cbe862d2e8f65290556313e
 app/scripts/read-db-version.php 8a3ef889ad775d3ca860a8031f69311c
 app/scripts/remediate_personal_sharekeys.php 8ce09548c699f24e153448c7e898d982
 app/scripts/repair_phpseclib_migration.php a5d2910d69ef5e79b37f0f753ca34364
@@ -416,6 +417,8 @@ app/scripts/traits/UserHandlerTrait.php 8321114fec603c67a6030d94c21437f4
 app/scripts/write-db-version.php 12d16b387c4066875ff5b9badd8ca257
 app/sources/.rnd 6627d0aac5e5c898db3a5ec8dc7e97c2
 app/sources/admin.queries.php 199a0359cf97e156581bc068e506f179
+app/sources/admin_notices.functions.php 23c243a42abc38af40089845e2094788
+app/sources/admin_notices_logic.php 3f50ffe2b92db30a94dafe18093aa015
 app/sources/backup.functions.php ddcf91f00e69960d054848b96294f338
 app/sources/backups.queries.php 6c24980de5b3f59edb6d6b388cb9a606
 app/sources/classification.functions.php 841ff71ea04ec94bfcfc1c67f8cd19b5
@@ -430,8 +433,8 @@ app/sources/export.queries.php 844dff677d4210111e43b74d3864b62c
 app/sources/favourites.queries.php adc77989df0b411d068e70a0bbbdba33
 app/sources/fields.queries.php 8db6603e7b912d33736a890ec8d156c0
 app/sources/file_integrity.functions.php a60aef10676e85d574709aa08144431a
-app/sources/file_permissions.functions.php c6ebb751456e4b26fba5a92ea932bf8f
-app/sources/file_scope.functions.php 8aeb670aca0d389abe8537a1dd50cdd7
+app/sources/file_permissions.functions.php 48842672033f8990629b59fcaace371a
+app/sources/file_scope.functions.php 3aab936fd33b26b1421c15afb4ba490f
 app/sources/find.functions.php 34c8506e1ace2c210df7e28cba72d73f
 app/sources/find.queries.php 01cbd3b11093b75c528f237e3c4d3a09
 app/sources/folders.class.php bee5e8c4a56e01baac3a1fb945b39e4f
@@ -466,7 +469,7 @@ app/sources/options_favorites.queries.php df1f9e5c9db97dfa155278d35f1b65a0
 app/sources/otp.functions.php 078029144f84d19b3085f5b03b4456eb
 app/sources/otv_render_logic.php df7ca07a4ec70b6e87197200e32e05e9
 app/sources/palette.functions.php ace37081be854912f8fe0d265c45f7ed
-app/sources/palette.queries.php ab06e5b659d1759b196ee1dbe8def08c
+app/sources/palette.queries.php d235184140950f86f7572d14cbbd001c
 app/sources/password_strength.functions.php 319baee272db14c964b923bb0a58444e
 app/sources/phpseclibv3_migration.queries.php 9da371c5ab6849c541bd95633071e360
 app/sources/reports.functions.php f4979a7855ac9dd41083f86166792c80
@@ -5847,7 +5850,7 @@ docker/docker-compose/.env cd0657fd00afd8fc3aefae8545059550
 docker/docker-compose/.env.example 113391f611f45d8218c0060450bffb8e
 docker/docker-compose/docker-compose.with-proxy.yml 83d375ae0c3327217d8b74977963ef23
 docker/docker-compose/docker-compose.yml b86e4abdaa7dd796781997156e281fcd
-docker/docker-entrypoint.sh eb2edddd8fe137406bb9a33740fc8384
+docker/docker-entrypoint.sh 442156df471ebfbd873e0cfa4d36e4b4
 docker/mariadb/custom.cnf 1a8ddebad57033b7337aff9d59ff8138
 docker/nginx/nginx.conf f84d0d0bd251af0f394bb06564478e52
 docker/nginx/proxy-client-max-body-size.conf 1e52356bd7d5adea5bb39e2c38c9c3c7
@@ -6036,7 +6039,7 @@ public/install/install-steps/run.step2.php cae3b800a26860364083585326424d7b
 public/install/install-steps/run.step3.php f0f42c050915894506e85d07b33565d0
 public/install/install-steps/run.step4.php 3bb624b0b9d8862730de6442f6738345
 public/install/install-steps/run.step5.php 9e0fa17e69a04a938a9b42eeea4636f7
-public/install/install-steps/run.step6.php 2b3ce2d4732d11e4ab57aafc875775c5
+public/install/install-steps/run.step6.php d641a653987c20b10e3316f67c23a7c1
 public/install/install.php 5cc3bdac56191fe428bb762d2cdba8cb
 public/install/js/aes.min.js deaf035d40420d4ce6d4018e0bd63801
 public/install/js/crypt/aes.class.php 5b86d5679c54610bdbcc9d337ab174d1
@@ -6067,7 +6070,7 @@ public/install/upgrade_run_3.1.7.php ac41581a1897366db54ddff4cbfe7e2e
 public/install/upgrade_run_3.1.php 90c382f56968aa071e52388c7862f170
 public/install/upgrade_run_3.2.0.php 21b45155a70040f7dd2f204d52a7062b
 public/install/upgrade_run_3.2.1.php af11e811e3fed6338d6c8f9a05e19fff
-public/install/upgrade_run_3.2.2.php e6d6a794d67468b1fa5c62879b930bab
+public/install/upgrade_run_3.2.2.php b6092cbb1d58f6a5c62f4f7c52c5e602
 public/install/upgrade_scripts_manager.php 5e71a1ee1c9577def8a5a54db59b6cfc
 public/manifest.json d53e64312fe64e8ca08c453521efd84a
 public/plugins/.htaccess 6164dafe7d27d643270f6457bc01dbb4
