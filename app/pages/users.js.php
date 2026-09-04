@@ -123,6 +123,40 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         }
     }
 
+    /**
+     * Filter the LDAP synchronization table using the identity fields already loaded.
+     *
+     * @return void
+     */
+    function filterLdapUsersTable() {
+        const searchValue = ($('#ldap-users-search').val() || '').toString()
+        const criteria = searchValue.trim().toLowerCase()
+        const $rows = $('#row-ldap-body .ldap-user-row')
+        let visibleRows = 0
+
+        $rows.each((index, row) => {
+            const searchableIdentity = ($(row).attr('data-search') || '').toLowerCase()
+            const isVisible = criteria === '' || searchableIdentity.indexOf(criteria) !== -1
+
+            $(row).toggleClass('hidden', isVisible === false)
+            if (isVisible === true) {
+                visibleRows++
+            }
+        })
+
+        $('#ldap-users-search-clear').prop('disabled', searchValue === '')
+        $('#ldap-users-search-no-results').toggleClass(
+            'hidden',
+            criteria === '' || visibleRows > 0 || $rows.length === 0
+        )
+    }
+
+    $(document).on('input keyup search', '#ldap-users-search', filterLdapUsersTable)
+
+    $(document).on('click', '#ldap-users-search-clear', () => {
+        $('#ldap-users-search').val('').trigger('input').focus()
+    })
+
     //Launch the datatables pluggin
     var oTable = $('#table-users').DataTable({
         'paging': true,
@@ -3244,6 +3278,7 @@ function refreshListInactiveUsers(filterValue) {
         $('#row-ldap-body')
             .addClass('overlay')
             .html('');
+        $('#ldap-users-search-no-results').addClass('hidden')
 
         $.post(
             "sources/users.queries.php", {
@@ -3276,6 +3311,14 @@ function refreshListInactiveUsers(filterValue) {
                         userLogin = entry[store.get('teampassSettings').ldap_user_attribute] !== undefined ? entry[store.get('teampassSettings').ldap_user_attribute][0] : '';
                         // CHeck if not empty
                         if (userLogin !== '') {
+                            const searchText = [
+                                userLogin,
+                                entry.displayname !== undefined ? entry.displayname[0] : '',
+                                entry.givenname !== undefined ? entry.givenname[0] : '',
+                                entry.sn !== undefined ? entry.sn[0] : '',
+                                entry.mail !== undefined ? entry.mail[0] : ''
+                            ].join(' ')
+
                             // LDAP/AD account status indicators
                             var ldapStatusIcons = '';
                             if (entry.ldapAccountDisabled !== undefined && parseInt(entry.ldapAccountDisabled) === 1) {
@@ -3291,7 +3334,7 @@ function refreshListInactiveUsers(filterValue) {
                             }
                             // Directory-supplied values: purifyData() drops tags but keeps quotes,
                             // which alone breaks out of the attributes below. Encode each one.
-                            html += '<tr>' +
+                            html += '<tr class="ldap-user-row" data-search="' + htmlEncode(searchText) + '">' +
                                 '<td>' + htmlEncode(userLogin) +
                                 '</td>' +
                                 '<td class="text-center text-nowrap" style="min-width: 85px;">' +
@@ -3343,6 +3386,8 @@ function refreshListInactiveUsers(filterValue) {
                     });
 
                     $('#row-ldap-body').html(html);
+
+                    filterLdapUsersTable()
 
                     $('#row-ldap-body').removeClass('overlay');
 

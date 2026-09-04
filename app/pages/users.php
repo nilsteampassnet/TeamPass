@@ -363,6 +363,23 @@ $emailNotConfigured = $canAccessInactiveAndDeletedUsers === true
                                 </div>
                             </div>
                             <div class="card-body table-responsive p-0" id="ldap-users-table">
+                                <div class="row mx-0 mb-3">
+                                    <div class="col-12 col-lg-6 px-0">
+                                        <div class="input-group input-group-sm">
+                                            <div class="input-group-prepend">
+                                                <div class="input-group-text">
+                                                    <i class="fas fa-search" aria-hidden="true"></i>
+                                                </div>
+                                            </div>
+                                            <input type="search" class="form-control" placeholder="<?php echo $lang->get('find'); ?>" aria-label="<?php echo $lang->get('find'); ?>" id="ldap-users-search">
+                                            <div class="input-group-append">
+                                                <button type="button" class="btn btn-default" title="<?php echo $lang->get('reset'); ?>" aria-label="<?php echo $lang->get('reset'); ?>" id="ldap-users-search-clear" disabled>
+                                                    <i class="fas fa-times" aria-hidden="true"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                                 <table class="table table-hover table-responsive">
                                     <thead>
                                         <tr>
@@ -376,6 +393,9 @@ $emailNotConfigured = $canAccessInactiveAndDeletedUsers === true
                                     <tbody id="row-ldap-body">
                                     </tbody>
                                 </table>
+                                <div class="mt-2 hidden" id="ldap-users-search-no-results" role="status">
+                                    <i class="fas fa-info mr-2 text-warning" aria-hidden="true"></i><?php echo $lang->get('no_item_to_display'); ?>
+                                </div>
                             </div>
                         </div>
                     </div>
