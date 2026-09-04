@@ -3061,8 +3061,11 @@ function logEvents(
  * @param string $encryption_type Encryption on
  * @param string $time Encryption Time
  * @param string $old_value       Old value
+ * @param bool   $emitSyslog      Emit the external syslog datagram immediately
+ * @param bool   $failOnDatabaseError Re-throw audit/revision failures for transactional callers
  * 
  * @return void
+ * @throws Throwable When strict database-error handling is requested
  */
 function logItems(
     array $SETTINGS,
@@ -3074,7 +3077,9 @@ function logItems(
     ?string $raison = null,
     ?string $encryption_type = null,
     ?string $time = null,
-    ?string $old_value = null
+    ?string $old_value = null,
+    bool $emitSyslog = true,
+    bool $failOnDatabaseError = false
 ): void {
     // Load class DB
     loadClasses('DB');
@@ -3140,6 +3145,9 @@ function logItems(
             ]
         );
     } catch (\Throwable $e) {
+        if ($failOnDatabaseError === true) {
+            throw $e;
+        }
         // Logging must never break API or UI flows
         return;
     }
@@ -3158,6 +3166,9 @@ function logItems(
                 'last_item_change'
             );
         } catch (\Throwable $e) {
+            if ($failOnDatabaseError === true) {
+                throw $e;
+            }
             // ignore logging-related DB errors
         }
     }
@@ -3166,11 +3177,14 @@ function logItems(
     // point every content change already goes through, satellites included: custom fields,
     // tags, attachments and OTP all log at_modification with a dedicated reason.
     if (itemRevisionShouldBump($action) === true) {
-        bumpItemRevision(
+        $revision = bumpItemRevision(
             $item_id,
             itemRevisionJournalAction($action, $raison),
             $id_user
         );
+        if ($failOnDatabaseError === true && $revision <= 0) {
+            throw new RuntimeException('Unable to allocate the item revision.');
+        }
     }
 
     // Prepare reason for syslog: remove internal source marker if present
@@ -3180,39 +3194,63 @@ function logItems(
         $raisonForSyslog = $parsedReason['reason'] === '' ? null : $parsedReason['reason'];
     }
 
-    // SYSLOG
-    if (isset($SETTINGS['syslog_enable']) === true && (int) $SETTINGS['syslog_enable'] === 1) {
-        // Extract reason
-        $attribute = is_null($raisonForSyslog) === true ? [''] : explode(' : ', $raisonForSyslog);
-        // Get item info if not known
-        if (empty($item_label) === true) {
-            try {
-                $dataItem = DB::queryFirstRow(
-                    'SELECT id, id_tree, label
-                    FROM ' . prefixTable('items') . '
-                    WHERE id = %i',
-                    $item_id
-                );
-                $item_label = $dataItem['label'];
-            } catch (\Throwable $e) {
-                // ignore logging-related DB errors
-            }
+    if ($emitSyslog === true) {
+        emitItemSyslog($SETTINGS, $item_id, $item_label, $action, $login, $raisonForSyslog);
+    }
+
+    // send notification if enabled
+    //notifyOnChange($item_id, $action, $SETTINGS);
+}
+
+/**
+ * Emit the external syslog representation of an item audit event.
+ *
+ * Kept separate from the database audit so transactional API mutations can commit first. A
+ * failed datagram must never turn an already committed item mutation into an HTTP failure.
+ *
+ * @param array<string, mixed> $SETTINGS TeamPass settings
+ * @param int $itemId Item identifier
+ * @param string $itemLabel Item label, resolved from the database when empty
+ * @param string $action Audit action
+ * @param string|null $login Actor login
+ * @param string|null $reason Audit reason without the API source marker
+ * @return void
+ */
+function emitItemSyslog(
+    array $SETTINGS,
+    int $itemId,
+    string $itemLabel,
+    string $action,
+    ?string $login = null,
+    ?string $reason = null
+): void {
+    if (isset($SETTINGS['syslog_enable']) === false || (int) $SETTINGS['syslog_enable'] !== 1) {
+        return;
+    }
+
+    try {
+        $attribute = $reason === null ? [''] : explode(' : ', $reason);
+        if ($itemLabel === '') {
+            $dataItem = DB::queryFirstRow(
+                'SELECT label FROM ' . prefixTable('items') . ' WHERE id = %i',
+                $itemId
+            );
+            $itemLabel = is_array($dataItem) ? (string) ($dataItem['label'] ?? '') : '';
         }
 
         send_syslog(
             'action=' . str_replace('at_', '', $action) .
                 ' attribute=' . str_replace('at_', '', $attribute[0]) .
-                ' itemno=' . $item_id .
-                ' user=' . (is_null($login) === true ? '' : addslashes((string) $login)) .
-                ' itemname="' . addslashes($item_label) . '"',
+                ' itemno=' . $itemId .
+                ' user=' . ($login === null ? '' : addslashes($login)) .
+                ' itemname="' . addslashes($itemLabel) . '"',
             $SETTINGS['syslog_host'],
             $SETTINGS['syslog_port'],
             'teampass'
         );
+    } catch (\Throwable $exception) {
+        error_log('[API] Unable to emit item syslog event: ' . $exception->getMessage());
     }
-
-    // send notification if enabled
-    //notifyOnChange($item_id, $action, $SETTINGS);
 }
 
 /**
@@ -3370,6 +3408,74 @@ function pruneItemRevisionsJournal(int $windowDays): int
 
         return (int) DB::affectedRows();
     } catch (\Throwable $e) {
+        return 0;
+    }
+}
+
+/**
+ * Remove expired API idempotency metadata without touching an active processing lease.
+ *
+ * Each row carries the expiry derived from the configured offline-sync window. A stale processing
+ * row is eligible only after both its lease and replay window expired, so an in-flight request is
+ * never removed. Reservations are locked before item rows to match mutation lock ordering.
+ *
+ * @return int Number of idempotency records removed
+ */
+function pruneApiIdempotencyRecords(): int
+{
+    $now = time();
+    $transactionStarted = false;
+
+    try {
+        loadClasses('DB');
+        DB::startTransaction();
+        $transactionStarted = true;
+
+        $expiredRecords = DB::query(
+            'SELECT id
+             FROM ' . prefixTable('api_idempotency') . '
+             WHERE expires_at > 0
+               AND expires_at < %i
+               AND (status = %s OR (status = %s AND locked_until < %i))
+             ORDER BY id
+             FOR UPDATE',
+            $now,
+            'completed',
+            'processing',
+            $now
+        );
+        $expiredIds = array_values(array_filter(array_map(
+            static fn (array $record): int => (int) ($record['id'] ?? 0),
+            $expiredRecords
+        )));
+
+        if (count($expiredIds) === 0) {
+            DB::commit();
+            return 0;
+        }
+
+        DB::update(
+            prefixTable('items'),
+            ['api_idempotency_id' => null],
+            'api_idempotency_id IN %li',
+            $expiredIds
+        );
+
+        DB::delete(
+            prefixTable('api_idempotency'),
+            'id IN %li',
+            $expiredIds
+        );
+        $removed = (int) DB::affectedRows();
+
+        DB::commit();
+
+        return $removed;
+    } catch (Throwable $exception) {
+        if ($transactionStarted === true) {
+            DB::rollback();
+        }
+
         return 0;
     }
 }

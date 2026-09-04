@@ -324,7 +324,8 @@ function performStep5() {
         { id: 'check76', action: 'lapr_policies' },
         { id: 'check77', action: 'lapr_audit_log' },
         { id: 'check78', action: 'lapr_rate_limit' },
-        { id: 'check79', action: 'items_revisions' }
+        { id: 'check79', action: 'items_revisions' },
+        { id: 'check80', action: 'api_idempotency' }
     ];
     
     let errorOccurred = false; // Variable to track errors

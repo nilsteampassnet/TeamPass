@@ -388,6 +388,45 @@ if ($res === false) {
     exit();
 }
 
+// Durable link between an idempotent create reservation and the item it produced.
+// NULL keeps every historical and non-idempotent creation unchanged.
+$idempotencyColumnExists = columnExists($db_link, $pre . 'items', 'api_idempotency_id');
+$idempotencyIndexExists = mysqli_fetch_array(mysqli_query(
+    $db_link,
+    "SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = '" . $pre . "items'
+       AND INDEX_NAME = 'uq_items_api_idempotency'"
+));
+
+// The normal upgrade path adds the column and its unique key in one table rebuild. The
+// separate branches keep a retry safe after an interrupted or partially applied upgrade.
+if ($idempotencyColumnExists === false) {
+    $indexDefinition = empty($idempotencyIndexExists[0])
+        ? ', ADD UNIQUE KEY `uq_items_api_idempotency` (`api_idempotency_id`)'
+        : '';
+    $res = mysqli_query(
+        $db_link,
+        'ALTER TABLE `' . $pre . 'items` ADD `api_idempotency_id` BIGINT UNSIGNED NULL DEFAULT NULL'
+            . $indexDefinition
+    );
+    if ($res === false) {
+        echo '[{"finish":"1", "msg":"", "error":"Error adding items idempotency schema: ' . addslashes(mysqli_error($db_link)) . '"}]';
+        mysqli_close($db_link);
+        exit();
+    }
+} elseif (empty($idempotencyIndexExists[0])) {
+    $res = mysqli_query(
+        $db_link,
+        'ALTER TABLE `' . $pre . 'items` ADD UNIQUE KEY `uq_items_api_idempotency` (`api_idempotency_id`)'
+    );
+    if ($res === false) {
+        echo '[{"finish":"1", "msg":"", "error":"Error adding items idempotency index: ' . addslashes(mysqli_error($db_link)) . '"}]';
+        mysqli_close($db_link);
+        exit();
+    }
+}
+
 // Item change journal. Its AUTO_INCREMENT primary key is the globally monotonic
 // revision sequence, and its rows are the only tombstone left once an item row is
 // hard deleted or leaves the caller's visible folders.
@@ -409,6 +448,38 @@ $res = mysqli_query(
 );
 if ($res === false) {
     echo '[{"finish":"1", "msg":"", "error":"Error creating items_revisions table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Persistent API idempotency state. Only HMACs and replay-safe response metadata are stored;
+// request bodies, raw keys and credential values never enter this table.
+$res = mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . "api_idempotency` (
+        `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        `user_id` INT UNSIGNED NOT NULL,
+        `operation` VARCHAR(50) NOT NULL,
+        `key_hash` CHAR(64) NOT NULL,
+        `request_fingerprint` CHAR(64) NOT NULL,
+        `status` ENUM('processing', 'completed') NOT NULL DEFAULT 'processing',
+        `owner_token_hash` CHAR(64) NOT NULL,
+        `resource_id` INT UNSIGNED NULL DEFAULT NULL,
+        `http_status` SMALLINT UNSIGNED NULL DEFAULT NULL,
+        `response_body` TEXT NULL DEFAULT NULL,
+        `created_at` BIGINT UNSIGNED NOT NULL,
+        `updated_at` BIGINT UNSIGNED NOT NULL,
+        `locked_until` BIGINT UNSIGNED NOT NULL DEFAULT '0',
+        `expires_at` BIGINT UNSIGNED NOT NULL,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `uq_api_idempotency_identity` (`user_id`, `operation`, `key_hash`),
+        KEY `idx_api_idempotency_cleanup` (`status`, `expires_at`, `locked_until`),
+        KEY `idx_api_idempotency_resource` (`operation`, `resource_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    COMMENT='Replay-safe metadata for idempotent API mutations'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error creating api_idempotency table: ' . addslashes(mysqli_error($db_link)) . '"}]';
     mysqli_close($db_link);
     exit();
 }

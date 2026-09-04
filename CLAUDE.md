@@ -221,6 +221,7 @@ a "retention": pruning it loses nothing, a client outside the window just does a
 ## API
 
 > Full reference: @.claude/docs/api-reference.md
+> Item mutation idempotency architecture: @.claude/docs/architecture-api-idempotency.md
 
 Controllers in `/api/Controller/Api/`. JWT auth via `Authorization: Bearer <token>`. Key endpoints: `/api/authorize`, `/api/item/get`, `/api/item/create`, `/api/item/getOtp`, `/api/folder/listFolders`.
 

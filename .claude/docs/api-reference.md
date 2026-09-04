@@ -247,9 +247,19 @@ Create a new item.
 
 **Body:** `label`, `password`, `folder_id`, optional `description`, `login`, `email`, `url`, `tags`, `totp`, `fields`.
 
+**Optional idempotency:** `Idempotency-Key: <opaque-key>` (1–128 visible ASCII characters,
+without spaces). Its identity is scoped to the authenticated user and `item.create`. The first
+accepted request returns the normal `201`; an identical replay within the configured offline-sync
+window (`offline_sync_window_days`, 90 days by default, `0` for no limit) returns the exact stored
+result and `Idempotency-Replayed: true` without repeating any write or side effect. Reusing the key
+with a different functional payload returns `409`. A concurrent request still holding the key's
+processing lease also returns `409` with `Retry-After`. The fingerprint covers every functional
+create field, including credential, TOTP and custom-field values, but is a server-secret HMAC:
+neither those values, the request body nor the raw key is persisted.
+
 **Custom fields:** `fields` = array of `{ id, value }` (field id + value). Encrypt-before-INSERT for encrypted categories; creator sharekey created synchronously, other users via the `new_item` background task. Only fields tied to the folder are stored; empty values ignored. Requires `item_extra_fields`.
 
-**Response 201:** `{ error: false, message, newId, revision, revision_changed_at }` + `Location: /api/v1/item/get?id=<newId>` (path-absolute reference). Validation failures → `422`; missing fields → `400`; folder not allowed / read-only → `403`.
+**Response 201:** `{ error: false, message, newId, revision, revision_changed_at }` + `Location: /api/v1/item/get?id=<newId>` (path-absolute reference). An idempotent replay preserves both. Validation failures → `422`; missing fields or invalid idempotency key → `400`; folder not allowed / read-only → `403`.
 
 **Permissions:** `allowed_to_create`. Blocked with 403 if folder is read-only for user.
 
@@ -311,7 +321,21 @@ The password guard compares against the **decrypted** current value, so resendin
 
 Soft-delete an item.
 
-**Params:** `id` (int).
+**Params:** `id` (int), optional `revision` (unsigned 32-bit integer). When supplied, `revision`
+is an optimistic-concurrency precondition checked against the locked item row immediately before
+the mutation. A mismatch returns `409` with no delete, audit, revision, cache change or WebSocket
+event. Omitting it or sending an empty query value preserves the historical last-writer-wins
+behavior.
+
+**Optional idempotency:** `Idempotency-Key` follows the same syntax and configured replay window as
+create, scoped to the authenticated user and `item.delete`. Its fingerprint contains the item id
+and the expected revision (including omission). A replay returns the original successful result
+with `Idempotency-Replayed: true`; it never deletes again, so a later restoration is not undone.
+The same key with another item or revision returns `409`; an in-progress request returns `409` and
+`Retry-After`.
+
+**Response 200:** `{ error: false, message, item_id, revision, revision_changed_at }`. The
+revision/date pair is the deletion revision later exposed by `GET /item/changes`.
 
 **LAPR:** `409` while the item is still referenced by a non-deleted managed account or enrolled endpoint — remove the managed account or reconfigure the endpoint first. The relationship has no FK, so deleting the item would orphan it and break rotation or endpoint authentication. Inactive when the LAPR module is disabled.
 
@@ -457,7 +481,7 @@ The key is `extension_url` (value = `cpassman_url`) — the doc previously named
 | 403 | Permission denied (folder read-only, admin required, CRUD rights missing) |
 | 404 | Resource not found / unknown route |
 | 405 | HTTP method not supported for this endpoint (`Allow:` header lists supported methods) |
-| 409 | The supplied `revision` no longer matches the item (optimistic concurrency on `item/update`), the resource changed while the request was being processed (concurrent personal→shared item move), or the operation conflicts with a LAPR relationship (managed login/password update, move to a personal folder, delete of a linked item) |
+| 409 | The supplied `revision` no longer matches the item (`item/update` or `item/delete`), an idempotency key was reused with another request or is still processing, the resource changed while the request was being processed (concurrent personal→shared item move), or the operation conflicts with a LAPR relationship (managed login/password update, move to a personal folder, delete of a linked item) |
 | 422 | Validation failed (password rules, invalid complexity/access_rights, personal→shared move combined with another update or with unrecoverable keys, current password not recoverable on a password update — retryable while the sharekey fan-out is still running) |
 | 429 | Rate limit exceeded (`api_rate_limit_per_minute`) — `Retry-After` header gives the wait in seconds |
 | 500 | Internal server error (details logged server-side, not returned to client) |

@@ -628,7 +628,12 @@
             "post": {
                 "operationId": "itemCreate",
                 "summary": "Create a new item",
-                "description": "All listed fields must be present, even if empty.",
+                "description": "All listed fields must be present, even if empty. Idempotency-Key is optional; within the configured offline synchronization window (90 days by default, 0 for no limit) the same user, key and canonical creation intent return the original 201 response without repeating side effects.",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdempotencyKey"
+                    }
+                ],
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -648,6 +653,9 @@
                                 "schema": {
                                     "type": "string"
                                 }
+                            },
+                            "Idempotency-Replayed": {
+                                "$ref": "#/components/headers/Idempotency-Replayed"
                             }
                         },
                         "content": {
@@ -669,6 +677,9 @@
                     },
                     "405": {
                         "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
                     },
                     "422": {
                         "$ref": "#/components/responses/UnprocessableEntity"
@@ -764,23 +775,67 @@
             "delete": {
                 "operationId": "itemDelete",
                 "summary": "Soft-delete an item",
+                "description": "The optional revision is an optimistic-concurrency precondition. Idempotency-Key makes a successful deletion replayable for the configured offline synchronization window (90 days by default, 0 for no limit) without allocating another revision or repeating side effects.",
                 "parameters": [
+                    {
+                        "$ref": "#/components/parameters/IdempotencyKey"
+                    },
                     {
                         "name": "id",
                         "in": "query",
                         "required": true,
                         "schema": {
-                            "type": "integer"
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "revision",
+                        "in": "query",
+                        "required": false,
+                        "allowEmptyValue": true,
+                        "description": "Current item revision expected by the caller. A mismatch returns 409 before any mutation; an empty value is treated as omitted.",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 4294967295
                         }
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "Item deleted",
+                        "headers": {
+                            "Idempotency-Replayed": {
+                                "$ref": "#/components/headers/Idempotency-Replayed"
+                            }
+                        },
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "object"
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "item_id": {
+                                            "type": "integer"
+                                        },
+                                        "revision": {
+                                            "type": "integer",
+                                            "description": "Deletion revision exposed by item/changes"
+                                        },
+                                        "revision_changed_at": {
+                                            "type": [
+                                                "integer",
+                                                "null"
+                                            ],
+                                            "description": "Unix UTC timestamp paired with the deletion revision"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -796,6 +851,9 @@
                     },
                     "405": {
                         "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
                     },
                     "500": {
                         "$ref": "#/components/responses/InternalError"
@@ -1157,6 +1215,18 @@
                     "type": "integer",
                     "minimum": 0
                 }
+            },
+            "IdempotencyKey": {
+                "name": "Idempotency-Key",
+                "in": "header",
+                "required": false,
+                "description": "Opaque 1-128 character visible-ASCII key, scoped to the authenticated user and API operation. Raw keys are never persisted.",
+                "schema": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[!-~]+$"
+                }
             }
         },
         "headers": {
@@ -1164,6 +1234,15 @@
                 "description": "Total number of matching entries before pagination",
                 "schema": {
                     "type": "integer"
+                }
+            },
+            "Idempotency-Replayed": {
+                "description": "Present with value true when the stored response was replayed without executing the mutation.",
+                "schema": {
+                    "type": "string",
+                    "enum": [
+                        "true"
+                    ]
                 }
             }
         },
