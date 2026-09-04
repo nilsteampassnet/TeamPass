@@ -553,6 +553,7 @@ class ItemModel
                 $newID,
                 $itemInfos,
                 $folderId,
+                $passwordKey,
                 $userId,
                 $username,
                 $tags,
@@ -1099,6 +1100,7 @@ class ItemModel
      * @param int $newID - The ID of the newly created item
      * @param array $itemInfos - Folder-specific settings
      * @param int $folderId - Folder ID of the item
+     * @param string $passwordKey - The encryption key for the item
      * @param int $userId - ID of the user creating the item
      * @param string $username - Username of the creator
      * @param string $tags - Tags to be associated with the item
@@ -1111,6 +1113,7 @@ class ItemModel
         int $newID,
         array $itemInfos,
         int $folderId,
+        string $passwordKey,
         int $userId,
         string $username,
         string $tags,
