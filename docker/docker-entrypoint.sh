@@ -31,6 +31,9 @@ if [ -f "/var/www/html/app/config/include.php" ]; then
     TP_VERSION=$(grep "define('TP_VERSION'" /var/www/html/app/config/include.php | sed -n "s/.*'\([0-9.]*\)'.*/\1/p")
     TP_VERSION_MINOR=$(grep "define('TP_VERSION_MINOR'" /var/www/html/app/config/include.php | sed -n "s/.*'\([0-9]*\)'.*/\1/p")
     TEAMPASS_VERSION="${TP_VERSION}.${TP_VERSION_MINOR}"
+    # Schema floor shipped by this image. TP_VERSION alone cannot express it:
+    # two releases share "3.2.2" while only 3.2.2.1 carries the extra migration.
+    TP_UPGRADE_MIN_DATE=$(grep 'UPGRADE_MIN_DATE' /var/www/html/app/config/include.php | head -n1 | grep -o '[0-9]\{6,\}' | head -n1)
 else
     # Fallback if include.php is not available yet
     TEAMPASS_VERSION="${TEAMPASS_VERSION:-3.1.5.2}"
@@ -250,6 +253,36 @@ read_db_version() {
     fi
 }
 
+# Read the schema level recorded in the database (teampass_misc.upgrade_timestamp).
+#
+# This is the value the application itself tests in upgradeRequired()
+# (app/sources/main.functions.php) against the UPGRADE_MIN_DATE constant, and it
+# is the only signal that separates two releases sharing the same TP_VERSION:
+# teampass_version stores TP_VERSION ("3.2.2") and never TP_VERSION_MINOR.
+# Echoes the timestamp, or nothing when it cannot be read.
+read_db_upgrade_timestamp() {
+    _helper="/var/www/html/app/scripts/read-db-upgrade-timestamp.php"
+    if [ -f "$_helper" ]; then
+        php "$_helper" 2>/dev/null || true
+    fi
+}
+
+# Return true when the application would still demand an upgrade, i.e. when the
+# schema level recorded in the database is below the floor shipped by this image.
+#
+# An unreadable or missing value is deliberately NOT treated as stale: the
+# install directory is already kept whenever the database cannot be read, and
+# assuming "stale" here would replay a migration on every single boot.
+schema_is_stale() {
+    [ -n "$TP_UPGRADE_MIN_DATE" ] || return 1
+
+    _recorded=$(read_db_upgrade_timestamp)
+    _recorded=$(printf '%s' "$_recorded" | tr -cd '0-9')
+    [ -n "$_recorded" ] || return 1
+
+    [ "$_recorded" -lt "$TP_UPGRADE_MIN_DATE" ]
+}
+
 # Convert a dotted version (X, X.Y or X.Y.Z) into a comparable integer so the
 # upgrade chain can be ordered without relying on lexicographic sorting (which
 # would place 3.10.0 before 3.2.0). Missing or malformed components count as 0.
@@ -390,6 +423,38 @@ auto_upgrade() {
     # Compare numerically, never as strings: an image older than the database
     # (a deliberate rollback) must not be treated as a pending upgrade.
     if [ "$_db_number" -ge "$_image_number" ]; then
+        # Equal version numbers do NOT mean an equal schema. A patch release
+        # (TP_VERSION_MINOR) ships its schema changes inside the existing
+        # upgrade_run_<TP_VERSION>.php - 3.2.2.1 added items.revision_changed_at to
+        # upgrade_run_3.2.2.php - and teampass_version stays "3.2.2" either way, so
+        # the comparison above can never see it. The schema floor can.
+        #
+        # Replaying the script is safe: every statement is guarded (CREATE TABLE IF
+        # NOT EXISTS, addColumnIfNotExist, SHOW INDEX / SHOW COLUMNS probes), and it
+        # is what refreshes misc.upgrade_timestamp - the value the application tests
+        # before it enables the login button.
+        if schema_is_stale; then
+            _current_script="/var/www/html/public/install/upgrade_run_${IMAGE_VERSION}.php"
+
+            if [ ! -f "$_current_script" ]; then
+                # Typically a container whose writable layer already had the install
+                # directory removed by an earlier boot. The files cannot come back on
+                # a restart, so recreating the container from the image is the fix.
+                echo -e "${YELLOW}⚠️  Database schema is older than this image expects, but the ${IMAGE_VERSION} migration is not available.${NC}"
+                echo -e "${YELLOW}   Recreate the container from the image (docker compose up -d --force-recreate),${NC}"
+                echo -e "${YELLOW}   or finish the upgrade through /install/upgrade.php (web wizard).${NC}"
+                return 0
+            fi
+
+            echo -e "${BLUE}🔄 Schema level below ${TP_UPGRADE_MIN_DATE}; replaying the ${IMAGE_VERSION} migration...${NC}"
+
+            if ! run_upgrade_step "$IMAGE_VERSION"; then
+                echo -e "${YELLOW}⚠️  Replay failed - finish it through /install/upgrade.php${NC}"
+            fi
+
+            return 0
+        fi
+
         echo -e "${GREEN}✅ Database is up to date (${DB_VERSION})${NC}"
         return 0
     fi
@@ -499,6 +564,12 @@ main() {
                 echo -e "${YELLOW}⚠️  Could not read DB version; keeping install directory so /install/upgrade.php stays reachable${NC}"
             elif [ "$CURRENT_DB_VERSION" != "${TP_VERSION:-${TEAMPASS_VERSION}}" ]; then
                 echo -e "${YELLOW}⏳ Upgrade pending (DB ${CURRENT_DB_VERSION} → ${TP_VERSION:-${TEAMPASS_VERSION}}); keeping install directory for /install/upgrade.php${NC}"
+            elif schema_is_stale; then
+                # The versions match but the schema floor does not: this is exactly the
+                # case the version test is blind to. Deleting the install directory here
+                # would strand the instance - the application disables the login button
+                # on the same signal, and the wizard is the only way out.
+                echo -e "${YELLOW}⏳ Database schema older than this image expects; keeping install directory for /install/upgrade.php${NC}"
             else
                 echo -e "${BLUE}🗑️  Removing install directory...${NC}"
                 rm -rf /var/www/html/public/install

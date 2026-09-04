@@ -48,17 +48,31 @@ if [ "${MISSING:-0}" -gt 0 ] && [ "${1:-}" != "--force" ]; then
     exit 1
 fi
 
+POLICY="app/sources/file_scope.functions.php"
+if [ ! -f "$POLICY" ]; then
+    echo "ERROR: $POLICY is missing — the path policy cannot be applied." >&2
+    echo "       Refusing to generate a manifest that would ship repository artifacts." >&2
+    exit 1
+fi
+
 TMP="$(mktemp)"
-trap 'rm -f "$TMP"' EXIT
+SKIPPED="$(mktemp)"
+trap 'rm -f "$TMP" "$SKIPPED"' EXIT
+export TP_SKIPPED_LIST="$SKIPPED"
 
 git ls-files --cached -z \
 | "$PHP_BIN" -r '
 require "app/sources/file_scope.functions.php";
+$selfReferential = ["files_reference.txt", "app/files_reference.txt"];
+$skipped = fopen(getenv("TP_SKIPPED_LIST"), "w");
 while (($path = stream_get_line(STDIN, 1048576, "\0")) !== false) {
-    if ($path !== "files_reference.txt" && tpFileScopeIsRepositoryArtifact($path) === false) {
-        fwrite(STDOUT, $path . "\0");
+    if (in_array($path, $selfReferential, true) || tpFileScopeIsRepositoryArtifact($path)) {
+        fwrite($skipped, $path . "\n");
+        continue;
     }
+    fwrite(STDOUT, $path . "\0");
 }
+fclose($skipped);
 ' \
 | while IFS= read -r -d $'\0' f; do
     { [ -f "$f" ] && md5sum "$f"; } || true
@@ -70,9 +84,31 @@ if [ ! -s "$TMP" ]; then
     exit 1
 fi
 
+# Belt and braces: the manifest is what ships, so re-check the result rather than
+# trusting the filter that produced it.
+LEAKED="$("$PHP_BIN" -r '
+require "app/sources/file_scope.functions.php";
+$bad = [];
+foreach (file($argv[1], FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+    $path = substr($line, 0, (int) strrpos($line, " "));
+    if (tpFileScopeIsRepositoryArtifact($path)) {
+        $bad[] = $path;
+    }
+}
+echo implode("\n", $bad);
+' "$TMP")"
+
+if [ -n "$LEAKED" ]; then
+    echo "ERROR: repository artifacts reached the manifest — aborting." >&2
+    printf '%s\n' "$LEAKED" | head -20 | sed 's/^/         /' >&2
+    exit 1
+fi
+
 mv "$TMP" "$OUT"
 cp "$OUT" "$APP_OUT"
 
 printf 'Wrote %s entries to %s and copied it to %s\n' \
     "$(wc -l < "$OUT" | tr -d ' ')" "$OUT" "$APP_OUT"
+printf 'Excluded %s tracked file(s) as repository/development artifacts.\n' \
+    "$(wc -l < "$SKIPPED" | tr -d ' ')"
 printf 'Now commit both files: git add %s %s\n' "$OUT" "$APP_OUT"

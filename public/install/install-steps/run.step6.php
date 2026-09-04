@@ -628,9 +628,13 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
     function cleanInstall(): array
     {
         try {
-            // Delete table _install
+            // Delete table _install.
+            // The table is created unprefixed (`_install` in run.step3/4), so the
+            // prefix must NOT be prepended here: "teampass__install" matches nothing
+            // and the DROP silently did nothing, leaving the administrator password
+            // and the SECUREFILE name readable in the database forever.
             DB::query(
-                "DROP TABLE IF EXISTS " . $this->inputData['tablePrefix'] . "_install;"
+                "DROP TABLE IF EXISTS `_install`;"
             );
 
             // Save the installation status

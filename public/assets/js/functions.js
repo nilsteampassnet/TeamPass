@@ -184,18 +184,32 @@ $(document).ready(function() {
 **/
 function unsanitizeString(string) {
     if(string !== "" && string !== null) {
-        string = string.replace(/\\/g,"").replace(/&#92;/g, "\\").replace(/&quot;/g, '"');
+        string = string.replace(/\\/g,"")
+            .replace(/&lt;/g, "<")
+            .replace(/&gt;/g, ">")
+            .replace(/&quot;/g, '"')
+            .replace(/&#92;/g, "\\");
     }
     return string;
 }
 
 /**
-*   Clean up a string and delete any scripting tags
+*   Escape the characters that could break out of the HTML attribute or of the value
+*   this string is about to be interpolated into.
+*
+*   It used to strip <script> blocks with a regular expression on top of that escaping.
+*   That filter was worthless - it missed `</script >`, nested `<scr<script>ipt>` and every
+*   other tag able to run JavaScript (`<img onerror=...>`) - while leaving `<` and `>`
+*   untouched. Escaping the angle brackets instead removes the bypass entirely, and the
+*   browser decodes the entities back when it parses the attribute, so the value the sink
+*   finally sees is unchanged.
 **/
 function sanitizeString(string) {
     if(string !== "" && string !== null && string !== undefined) {
-        string = string.replace(/\\/g,"&#92;").replace(/"/g,"&quot;");
-        string = string.replace(new RegExp("\\s*<script[^>]*>[\\s\\S]*?</script>\\s*","ig"), "");
+        string = string.replace(/\\/g,"&#92;")
+            .replace(/"/g,"&quot;")
+            .replace(/</g,"&lt;")
+            .replace(/>/g,"&gt;");
     }
     return string;
 }
@@ -685,27 +699,34 @@ if (typeof String.prototype.utf8Decode == 'undefined') {
  *
  * @returns {string} String with the known entities turned back into characters
  */
+const storageEntities = {
+    '&lt;': '<',
+    '&#x3C;': '<',
+    '&#x3c;': '<',
+    '&#60;': '<',
+    '&gt;': '>',
+    '&#x3E;': '>',
+    '&#x3e;': '>',
+    '&#62;': '>',
+    '&amp;': '&',
+    '&#38;': '&',
+    '&#038;': '&',
+    '&#x26;': '&',
+    '&quot;': '"',
+    '&#34;': '"',
+    '&#034;': '"',
+    '&#x22;': '"',
+    '&#39;': "'",
+    '&#039;': "'"
+};
+const storageEntitiesRegex = new RegExp(Object.keys(storageEntities).join('|'), 'g');
+
 function decodeStorageEntities(text)
 {
-    return String(text)
-    .replaceAll('&lt;', '<')
-    .replaceAll('&#x3C;', '<')
-    .replaceAll('&#x3c;', '<')
-    .replaceAll('&#60;', '<')
-    .replaceAll('&gt;', '>')
-    .replaceAll('&#x3E;', '>')
-    .replaceAll('&#x3e;', '>')
-    .replaceAll('&#62;', '>')
-    .replaceAll('&amp;', '&')
-    .replaceAll('&#38;', '&')
-    .replaceAll('&#038;', '&')
-    .replaceAll('&#x26;', '&')
-    .replaceAll('&quot;', '"')
-    .replaceAll('&#34;', '"')
-    .replaceAll('&#034;', '"')
-    .replaceAll('&#x22;', '"')
-    .replaceAll('&#39;', "'")
-    .replaceAll('&#039;', "'");
+    // ONE pass: a character produced by a substitution is never fed back into the scan.
+    // Chained replacements decoded '&amp;quot;' twice and handed back a live '"' instead of
+    // the '&quot;' the value really held - the double-unescaping the callers must not see.
+    return String(text).replace(storageEntitiesRegex, entity => storageEntities[entity]);
 }
 
 /**

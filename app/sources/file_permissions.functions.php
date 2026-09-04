@@ -621,6 +621,10 @@ function tpFilePermissionsProtectedTopLevelPaths(string $root): array
                 $entry->isDot()
                 || in_array($entry->getFilename(), $excluded, true)
                 || tpFileScopeIsRepositoryArtifact($entry->getFilename())
+                // Same structural rule as the shared policy, applied here where
+                // the entry type is known: a top-level hidden directory is
+                // tooling metadata, a top-level hidden file is not.
+                || ($entry->isDir() && str_starts_with($entry->getFilename(), '.'))
                 || $entry->isLink()
             ) {
                 continue;
