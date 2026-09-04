@@ -244,7 +244,15 @@ function adminNoticesCollectChecklist(array $SETTINGS, Language $lang): array
     $notices = [];
 
     // No scheduled backup means no recovery path after an incident.
-    if ((int) ($SETTINGS['bck_scheduled_enabled'] ?? 0) !== 1) {
+    // Backup settings use their own misc namespace and are not loaded by ConfigManager.
+    $scheduledBackupEnabled = DB::queryFirstField(
+        'SELECT valeur FROM ' . prefixTable('misc') . '
+        WHERE type = %s AND intitule = %s
+        LIMIT 1',
+        'settings',
+        'bck_scheduled_enabled'
+    );
+    if ((int) $scheduledBackupEnabled !== 1) {
         $notices[] = adminNoticeBuild([
             'id' => 'checklist_backup',
             'severity' => 'info',
