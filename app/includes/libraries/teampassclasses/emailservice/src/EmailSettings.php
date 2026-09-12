@@ -30,6 +30,23 @@ namespace TeampassClasses\EmailService;
 
 class EmailSettings
 {
+    /**
+     * Default SMTP timeout in seconds.
+     *
+     * PHPMailer defaults to 300s, which is far too long: an unreachable relay
+     * (dropped packets, wrong port/security combination) keeps the PHP worker
+     * blocked in the socket until a reverse proxy in front of TeamPass gives up
+     * and answers a 504 to the browser. Socket wait time is not counted by
+     * max_execution_time, so nothing else bounds it.
+     */
+    public const DEFAULT_TIMEOUT = 30;
+
+    /**
+     * Shorter timeout for the interactive "test email configuration" button,
+     * which must report a failure instead of hanging the request.
+     */
+    public const TEST_TIMEOUT = 10;
+
     public $smtpServer;
     public $smtpAuth;
     public $authUsername;
@@ -40,6 +57,7 @@ class EmailSettings
     public $fromName;
     public $debugLevel;
     public $dir;
+    public $timeout;
 
     // Constructeur pour initialiser les paramètres
     public function __construct(array $SETTINGS)
@@ -54,5 +72,6 @@ class EmailSettings
         $this->fromName = $SETTINGS['email_from_name'] ?? 'No Reply';
         $this->debugLevel = $SETTINGS['email_debug_level'] ?? 0;
         $this->dir = defined('TEAMPASS_APP') ? TEAMPASS_APP : __DIR__;
+        $this->timeout = self::DEFAULT_TIMEOUT;
     }
 }

@@ -1717,7 +1717,10 @@ function sendEmailsNotSent(
                 DB::update(
                     prefixTable('emails'),
                     array(
-                        'status' => $ret['error'] === 'error_mail_not_send' ? 'not_sent' : 'sent',
+                        // sendMail() reports a failure as a boolean 'error', never as
+                        // the string this used to compare against, so every email was
+                        // flagged as sent even when the relay refused it.
+                        'status' => empty($ret['error']) === false ? 'not_sent' : 'sent',
                     ),
                     'timestamp = %s',
                     $record['timestamp']

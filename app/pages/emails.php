@@ -247,6 +247,12 @@ $localPasswordRecoveryEnabled = isset($SETTINGS['enable_local_password_recovery'
                             <?php echo $lang->get('admin_email_test_configuration_tip'); ?>
                         </small>
 
+                        <div id='email-test-debug-block' class='mt-3' hidden>
+                            <label class='mb-1'><?php echo $lang->get('email_debug_output'); ?></label>
+                            <pre id='email-test-debug' class='bg-light border rounded p-2 mb-0'
+                                 style='max-height:20rem; overflow:auto; white-space:pre-wrap; word-break:break-all;'></pre>
+                        </div>
+
                     </div>
                 </div>
             </div>
