@@ -37,6 +37,20 @@ class EmailService
     protected $mailer;
     protected $antiXSS;
 
+    /**
+     * Message returned by the mail server on the last failed send, '' otherwise.
+     *
+     * @var string
+     */
+    protected $lastError = '';
+
+    /**
+     * SMTP conversation captured on the last send when a debug level is set.
+     *
+     * @var array<int, string>
+     */
+    protected $debugOutput = [];
+
     public function __construct()
     {
         // Initialise PHPMailer et AntiXSS
@@ -44,17 +58,57 @@ class EmailService
         $this->antiXSS = new AntiXSS();
     }
 
+    /**
+     * Returns the mail server message of the last failed send.
+     *
+     * Callers that only need to know whether the send worked can rely on the
+     * return value of sendMail(); this accessor gives the raw reason without
+     * having to decode it.
+     *
+     * @return string Empty string when the last send succeeded.
+     */
+    public function getLastError(): string
+    {
+        return $this->lastError;
+    }
+
+    /**
+     * Returns the SMTP conversation captured during the last send.
+     *
+     * Only filled when the administrator set a debug level other than "None";
+     * empty otherwise. PHPMailer would print that trace straight to the output
+     * buffer, which corrupts an AJAX answer, so it is captured instead.
+     *
+     * @return string Empty string when no debug level is active.
+     */
+    public function getDebugOutput(): string
+    {
+        return implode("\n", $this->debugOutput);
+    }
+
     // Fonction pour configurer PHPMailer avec les paramètres de l'application
     public function configureMailer(EmailSettings $emailSettings, $silent, $cron)
     {
         $this->mailer->setLanguage('en', $emailSettings->dir . '/vendor/phpmailer/phpmailer/language/');
-        $this->mailer->SMTPDebug = ($cron || $silent) ? 0 : $emailSettings->debugLevel;
+        $this->mailer->SMTPDebug = ($cron || $silent) ? 0 : (int) $emailSettings->debugLevel;
+        // Capture the SMTP conversation rather than letting PHPMailer echo it:
+        // it would land in the middle of the JSON answer and make it unparsable.
+        $this->mailer->Debugoutput = function ($str) {
+            $line = trim((string) $str);
+            if ($line !== '') {
+                $this->debugOutput[] = $line;
+            }
+        };
         $this->mailer->isSMTP();
         $this->mailer->Host = $emailSettings->smtpServer;
         $this->mailer->SMTPAuth = $emailSettings->smtpAuth;
         $this->mailer->Username = $emailSettings->authUsername;
         $this->mailer->Password = $emailSettings->authPassword;
         $this->mailer->Port = $emailSettings->port;
+        // Bound the connection and every read, otherwise an unreachable relay
+        // keeps the worker blocked for PHPMailer's 300s default and the browser
+        // only ever sees the reverse proxy's gateway timeout.
+        $this->mailer->Timeout = (int) ($emailSettings->timeout ?? EmailSettings::DEFAULT_TIMEOUT);
         $this->mailer->SMTPSecure = $emailSettings->security !== 'none' ? $emailSettings->security : '';
         $this->mailer->SMTPAutoTLS = $emailSettings->security !== 'none';
         $this->mailer->CharSet = 'utf-8';
@@ -103,6 +157,9 @@ class EmailService
         $silent = true,
         $cron = false
     ) {
+        $this->lastError = '';
+        $this->debugOutput = [];
+
         try {
             // Configurer le mailer
             $this->configureMailer($emailSettings, $silent, $cron);
@@ -128,9 +185,21 @@ class EmailService
 
         } catch (Exception $e) {
             error_log('Error sending email: ' . $e->getMessage());
-            return ($silent || $emailSettings->debugLevel === 0) ? '' : json_encode([
+
+            // The reason is always returned: every caller already decodes it and
+            // checks 'error', but it used to be silenced by default, so a refused
+            // authentication or an unreachable relay was reported as a success.
+            $this->lastError = str_replace(
+                ["\n", "\t", "\r"],
+                '',
+                $this->mailer->ErrorInfo !== '' ? $this->mailer->ErrorInfo : $e->getMessage()
+            );
+
+            return (string) json_encode([
                 'error' => true,
-                'errorInfo' => str_replace(["\n", "\t", "\r"], '', $this->mailer->ErrorInfo),
+                'errorInfo' => $this->lastError,
+                // Kept for the callers that read 'message'.
+                'message' => $this->lastError,
             ]);
         }
     }

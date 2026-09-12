@@ -191,18 +191,28 @@ switch ($post_type) {
 
             //send email
             $emailSettings = new EmailSettings($SETTINGS);
+            // This is an interactive check: fail fast instead of letting an
+            // unreachable relay hold the request until a proxy answers a 504.
+            $emailSettings->timeout = EmailSettings::TEST_TIMEOUT;
             $emailService = new EmailService();
+            // $silent = false so the debug level chosen by the administrator is
+            // honoured; the trace is captured by EmailService, never echoed.
             $emailService->sendMail(
                 $lang->get('admin_email_test_subject'),
                 $lang->get('admin_email_test_body'),
                 $session->get('user-email'),
-                $emailSettings
+                $emailSettings,
+                '',
+                false
             );
-            
+            $sendError = $emailService->getLastError();
+
             echo prepareExchangedData(
                 array(
-                    'error' => false,
-                    'message' => '',
+                    'error' => $sendError !== '',
+                    'message' => $sendError,
+                    'email' => (string) $session->get('user-email'),
+                    'debug' => $emailService->getDebugOutput(),
                 ),
                 'encode'
             );

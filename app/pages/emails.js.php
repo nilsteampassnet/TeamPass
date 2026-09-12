@@ -88,6 +88,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         if (action === 'send-test-email') {
+            showEmailTestDebug('');
+
             $.post(
                 'sources/admin.queries.php', {
                     type: 'admin_email_test_configuration',
@@ -96,35 +98,81 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 function(data) {
                     //decrypt data
                     data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
-                    console.log(data);
+                    // decodeQueryReturn() has already warned the user
+                    if (data === false) {
+                        return;
+                    }
+
+                    // Only filled when a debug level other than "None" is selected
+                    showEmailTestDebug(data.debug);
+
                     if (data.error === true) {
-                        // ERROR
+                        // ERROR - show what the mail server actually answered
                         toastr.remove();
-                        toastr.warning(
-                            '<?php echo $lang->get('none_selected_text'); ?>',
+                        toastr.error(
+                            '<?php echo addslashes($lang->get('admin_email_test_failed')); ?>'
+                                .replace('#error#', sanitizeString(data.message || '')),
                             '', {
-                                timeOut: 5000,
-                                progressBar: true
+                                timeOut: 0,
+                                extendedTimeOut: 0,
+                                closeButton: true,
+                                progressBar: false
                             }
                         );
                     } else {
                         // Inform user
                         toastr.remove();
                         toastr.success(
-                            '<?php echo $lang->get('done'); ?>',
+                            '<?php echo addslashes($lang->get('admin_email_result_ok')); ?>'
+                                .replace('#email#', sanitizeString(data.email || '')),
                             '', {
-                                timeOut: 1000
+                                timeOut: 5000,
+                                progressBar: true
                             }
                         );
                     }
                 }
-            );
+            ).fail(function() {
+                // No usable answer at all: timeout, gateway error, dropped request.
+                // Without this the spinner below would stay on screen for ever.
+                toastr.remove();
+                toastr.error(
+                    '<?php echo addslashes($lang->get('error_server_no_answer')); ?>',
+                    '', {
+                        timeOut: 0,
+                        extendedTimeOut: 0,
+                        closeButton: true,
+                        progressBar: false
+                    }
+                );
+            });
         } else if (action === 'send-waiting-emails') {
             $('#unsent-emails')
                 .append('<span id="unsent-emails-progress" class="ml-3"></span>');
             sendEmailsBacklog();
         }
     });
+
+
+    /**
+     * Displays the SMTP conversation returned by the test, when the
+     * administrator selected a debug level other than "None".
+     *
+     * @param {string} output Raw trace, empty to hide the block
+     */
+    function showEmailTestDebug(output) {
+        const block = $('#email-test-debug-block');
+
+        if (output === undefined || output === null || output === '') {
+            $('#email-test-debug').text('');
+            block.prop('hidden', true);
+            return;
+        }
+
+        // .text() so the server trace can never inject markup
+        $('#email-test-debug').text(output);
+        block.prop('hidden', false);
+    }
 
 
     function sendEmailsBacklog(counter = "") {
@@ -139,15 +187,24 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             function(data) {
                 //decrypt data
                 data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
+                // decodeQueryReturn() has already warned the user
+                if (data === false) {
+                    $('#unsent-emails-progress').html('');
+                    return;
+                }
 
                 if (data.error === true) {
-                    // ERROR
+                    // ERROR - show what the mail server actually answered
+                    $('#unsent-emails-progress').html('');
                     toastr.remove();
-                    toastr.warning(
-                        '<?php echo $lang->get('none_selected_text'); ?>',
+                    toastr.error(
+                        '<?php echo addslashes($lang->get('admin_email_test_failed')); ?>'
+                            .replace('#error#', sanitizeString(data.message || '')),
                         '', {
-                            timeOut: 5000,
-                            progressBar: true
+                            timeOut: 0,
+                            extendedTimeOut: 0,
+                            closeButton: true,
+                            progressBar: false
                         }
                     );
                 } else {
@@ -168,7 +225,20 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     }
                 }
             }
-        );
+        ).fail(function() {
+            // Same guard as the test button: never leave the spinner running.
+            $('#unsent-emails-progress').html('');
+            toastr.remove();
+            toastr.error(
+                '<?php echo addslashes($lang->get('error_server_no_answer')); ?>',
+                '', {
+                    timeOut: 0,
+                    extendedTimeOut: 0,
+                    closeButton: true,
+                    progressBar: false
+                }
+            );
+        });
     }
 
     //]]>

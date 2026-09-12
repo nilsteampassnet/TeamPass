@@ -564,6 +564,9 @@ switch ($post_type) {
         }
 
         $emailSettings = new EmailSettings($SETTINGS);
+        // Interactive check, same reasoning as the email configuration test:
+        // fail fast instead of holding the request until a proxy answers a 504.
+        $emailSettings->timeout = EmailSettings::TEST_TIMEOUT;
         $emailService = new EmailService();
         $result = json_decode(
             (string) $emailService->sendMail(
