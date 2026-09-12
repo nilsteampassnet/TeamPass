@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 
+require_once __DIR__ . '/../../app/vendor/sergeytsalkov/meekrodb/db.class.php';
+require_once __DIR__ . '/../../app/sources/logs_filter_logic.php';
+
 /**
  * Static regression guards for the administrator authentication lockout workflow.
  */
@@ -104,48 +107,55 @@ class AuthenticationLockoutManagementTest extends TestCase
 
     public function testFailedAuthenticationLogIncludesApiEventsAndChannel(): void
     {
-        $dataTable = $this->source('app/sources/logs.datatables.php');
-        $page = $this->source('app/pages/utilities.logs.php');
-
-        foreach (
+        // The label list moved into the filter module, where the channel facet and the displayed
+        // channel both read it, so the two can no longer classify a row differently.
+        self::assertSame(
             [
                 'api_invalid_credentials',
                 'api_invalid_apikey',
                 'api_invalid_token',
                 'api_token_decrypt_failed',
-            ] as $label
-        ) {
-            self::assertStringContainsString("'{$label}'", $dataTable);
-        }
+            ],
+            logsApiFailureLabels()
+        );
 
-        self::assertStringContainsString("'tp_src=api'", $dataTable);
-        self::assertStringContainsString("authentication_channel_api", $dataTable);
-        self::assertStringContainsString("authentication_channel_web_unknown", $dataTable);
-        self::assertStringContainsString("\$lang->get('authentication_channel')", $page);
+        foreach (logsApiFailureLabels() as $label) {
+            self::assertTrue(logsSystemRowIsApi('failed_auth', $label, ''));
+        }
+        self::assertStringContainsString(
+            'tp_src=api',
+            logsSystemApiPredicate('')[0] . implode('|', array_filter(
+                logsSystemApiPredicate('')[1],
+                static fn (mixed $value): bool => is_string($value)
+            ))
+        );
+
+        // The channel is a column of the merged view and is labelled by the client.
+        $javascript = $this->source('app/pages/utilities.logs.js.php');
+        self::assertStringContainsString("\$lang->get('authentication_channel')", $javascript);
+        self::assertStringContainsString("\$lang->get('logs_channel_web')", $javascript);
+        self::assertStringContainsString("\$lang->get('logs_channel_api')", $javascript);
     }
 
     public function testAuthenticationChannelIsDerivedFromTheLabelNotTheForgeableMarker(): void
     {
-        $dataTable = $this->source('app/sources/logs.datatables.php');
-        $branchStart = strpos($dataTable, "\$params['action'] === 'failed_auth'");
-        self::assertIsInt($branchStart);
-        $branch = substr($dataTable, $branchStart);
-
         // On the web path field_1 is the submitted login, so an attacker can type the marker.
-        // The channel must therefore be decided by the label first.
-        self::assertStringContainsString('$isApiFailure = in_array(', $branch);
-        self::assertStringContainsString('$failedLoginLabel,', $branch);
-        self::assertLessThan(
-            strpos($branch, "strpos(\$failedLoginField, 'tp_src=api')"),
-            strpos($branch, '$isApiFailure = in_array(')
-        );
+        // The channel is therefore decided by the label first, and the marker only rescues the
+        // one label both channels share.
+        self::assertFalse(logsSystemRowIsApi('failed_auth', 'bad_credentials', 'tp_src=api'));
+        self::assertFalse(logsSystemRowIsApi('failed_auth', 'bad_credentials', 'attacker | tp_src=api'));
+        self::assertTrue(logsSystemRowIsApi('failed_auth', 'api_invalid_credentials', 'jdoe'));
+        self::assertTrue(logsSystemRowIsApi('failed_auth', 'bruteforce_account_locked', 'jdoe | tp_src=api'));
+        self::assertFalse(logsSystemRowIsApi('failed_auth', 'bruteforce_account_locked', 'jdoe'));
 
-        // The marker fallback stays available only for the label shared by both channels.
-        self::assertStringContainsString("\$failedLoginLabel === 'bruteforce_account_locked'", $branch);
+        // Outside failed authentications the marker is the only writer of that field.
+        self::assertTrue(logsSystemRowIsApi('user_connection', 'connection', 'api'));
+        self::assertTrue(logsSystemRowIsApi('user_connection', 'connection', 'x | tp_src=api'));
+        self::assertFalse(logsSystemRowIsApi('user_connection', 'connection', ''));
 
         // A row that is not a confirmed API failure keeps field_1 verbatim.
-        self::assertStringContainsString('$isApiFailure === true', $branch);
-        self::assertStringContainsString(': $failedLoginField;', $branch);
+        self::assertSame('attacker | tp_src=api', logsStripApiMarker('attacker | tp_src=api', false));
+        self::assertSame('jdoe', logsStripApiMarker('jdoe | tp_src=api', true));
     }
 
     public function testUnlockAcceptsAStoredIpTargetThatIsNotAValidAddress(): void

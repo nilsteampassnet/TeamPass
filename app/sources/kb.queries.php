@@ -38,6 +38,7 @@ use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
 
 require_once 'main.functions.php';
+require_once __DIR__ . '/logs_filter_logic.php';
 
 loadClasses('DB');
 DB::$encoding = 'utf8mb4';
@@ -2238,9 +2239,20 @@ switch ($type) {
         $draw = (int) $request->request->get('draw', 0);
         $start = max(0, (int) $request->request->get('start', 0));
         $length = max(10, (int) $request->request->get('length', 10));
-        $searchValue = trim((string) (($request->request->all()['search']['value'] ?? '') ?: ''));
 
-        $rows = kbLoadLogRows();
+        // The monitoring page drives this source through the same canonical payload as the two
+        // SQL log families, so the facets mean the same thing here and the purge below can be
+        // given the very same filters.
+        $rawFilters = json_decode((string) $request->request->get('filters', ''), true);
+        $logFilters = logsNormalizeFilters(is_array($rawFilters) === true ? $rawFilters : []);
+        $searchValue = $logFilters['term'] !== ''
+            ? $logFilters['term']
+            : trim((string) (($request->request->all()['search']['value'] ?? '') ?: ''));
+
+        $rows = array_values(array_filter(
+            kbLoadLogRows(),
+            static fn (array $row): bool => kbLogRowMatchesFilters($row, $logFilters)
+        ));
         $recordsTotal = count($rows);
 
         $userIds = array_values(array_unique(array_filter(array_column($rows, 'user_id'), static fn (int $id): bool => $id > 0)));
@@ -2267,14 +2279,17 @@ switch ($type) {
 
         $recordsFiltered = count($filteredRows);
         $pagedRows = array_slice($filteredRows, $start, $length);
+        // Object rows, keyed like logsVisibleColumns('kb', []): the monitoring table builds its
+        // columns from that contract, so a positional array would bind the wrong cells.
         $dataRows = [];
         foreach ($pagedRows as $row) {
             $dataRows[] = [
-                date(($SETTINGS['date_format'] ?? 'Y-m-d') . ' ' . ($SETTINGS['time_format'] ?? 'H:i:s'), (int) ($row['date'] ?? time())),
-                normalizeLogDisplayValue($row['label'] ?? ''),
-                normalizeLogDisplayValue($row['user_display'] ?? ''),
-                normalizeLogDisplayValue($row['action_display'] ?? ''),
-                normalizeLogDisplayValue($row['reason_display'] ?? ''),
+                'date' => date(($SETTINGS['date_format'] ?? 'Y-m-d') . ' ' . ($SETTINGS['time_format'] ?? 'H:i:s'), (int) ($row['date'] ?? time())),
+                'label' => normalizeLogDisplayValue($row['label'] ?? ''),
+                'user' => normalizeLogDisplayValue($row['user_display'] ?? ''),
+                // Already translated here: the knowledge base stores its own action vocabulary.
+                'action' => normalizeLogDisplayValue($row['action_display'] ?? ''),
+                'details' => normalizeLogDisplayValue($row['reason_display'] ?? ''),
             ];
         }
 
@@ -2302,41 +2317,33 @@ switch ($type) {
             break;
         }
 
-        $dateStart = trim((string) ($payload['dateStart'] ?? ''));
-        $dateEnd = trim((string) ($payload['dateEnd'] ?? ''));
-        $filterUser = (int) ($payload['filter_user'] ?? -1);
-        $filterAction = trim((string) ($payload['filter_action'] ?? 'all'));
+        $logFilters = logsNormalizeFilters(
+            is_array($payload['filters'] ?? null) === true ? $payload['filters'] : []
+        );
 
-        $rows = kbLoadLogRows();
-        foreach ($rows as $row) {
-            $rowDate = (int) ($row['date'] ?? 0);
-            $keep = true;
-
-            if ($dateStart !== '') {
-                $startTimestamp = strtotime($dateStart . ' 00:00:00');
-                if ($startTimestamp !== false && $rowDate < $startTimestamp) {
-                    $keep = false;
-                }
-            }
-            if ($keep && $dateEnd !== '') {
-                $endTimestamp = strtotime($dateEnd . ' 23:59:59');
-                if ($endTimestamp !== false && $rowDate > $endTimestamp) {
-                    $keep = false;
-                }
-            }
-            if ($keep && $filterUser !== -1 && (int) ($row['user_id'] ?? 0) !== $filterUser) {
-                $keep = false;
-            }
-            if ($keep && $filterAction !== '' && $filterAction !== 'all' && (string) ($row['action'] ?? '') !== $filterAction) {
-                $keep = false;
-            }
-
-            if ($keep) {
-                DB::delete(prefixTable('misc'), 'increment_id = %i', (int) $row['increment_id']);
-            }
+        // A purge is always bounded in time, like the two SQL sources. Without this the handler
+        // deleted every row matching the user and action when both dates were left empty.
+        if ($logFilters['date_from'] === null || $logFilters['date_to'] === null
+            || $logFilters['date_to'] <= $logFilters['date_from']
+            || logsPurgeBlockingFacets($logFilters) !== []
+        ) {
+            echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+            break;
         }
 
-        echo (string) prepareExchangedData(['error' => false, 'message' => $lang->get('done')], 'encode');
+        $deleted = 0;
+        foreach (kbLoadLogRows() as $row) {
+            if (kbLogRowMatchesFilters($row, $logFilters) === false) {
+                continue;
+            }
+            DB::delete(prefixTable('misc'), 'increment_id = %i', (int) $row['increment_id']);
+            $deleted += DB::affectedRows();
+        }
+
+        echo (string) prepareExchangedData(
+            ['error' => false, 'message' => $lang->get('done'), 'nb_deleted' => $deleted],
+            'encode'
+        );
         break;
 
     default:
