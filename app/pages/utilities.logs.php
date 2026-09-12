@@ -88,8 +88,47 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 $isAdmin = $session->has('user-admin') && (int) $session->get('user-admin') === 1;
 $kbEnabled = isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_kb'] === 1 && $isAdmin === true;
 
+// The facet panel is rendered once and its groups are shown or hidden by the selected source.
+// Same pattern as the search page's feature gates, driven by the source instead of a setting.
+require_once __DIR__ . '/../sources/logs_filter_logic.php';
+
+// Facet options are listed in the reader's alphabetical order, not in the order the codes happen
+// to be declared in: fourteen actions are too many to scan otherwise.
+$logTypeLabels = [];
+foreach (logsAllowedSystemTypes() as $type) {
+    $typeLangKey = 'logs_type_' . $type;
+    $logTypeLabels[$type] = (string) $lang->get($typeLangKey);
+}
+$logActionLabels = [];
+foreach (logsAllowedItemActions() as $logAction) {
+    $logActionLabels[$logAction] = (string) $lang->get($logAction);
+}
+$logSortedTypes = logsSortByLabel(array_keys($logTypeLabels), $logTypeLabels);
+$logSortedActions = logsSortByLabel(logsAllowedItemActions(), $logActionLabels);
+
 
 ?>
+
+<style>
+    /* The facet panel is deliberately narrow: keep every control inside it. */
+    #logs-filters-panel .form-control {
+        min-width: 0;
+    }
+    #logs-filters-panel .custom-control-label {
+        font-size: .875rem;
+        line-height: 1.35;
+    }
+    /* A facet, or a single option, that does not apply to the selected source is removed from
+       the flow, not just dimmed: a disabled control the administrator can still read reads as a
+       bug. */
+    #logs-filters-panel .logs-facet-group.hidden,
+    #logs-filters-panel .logs-facet-option.hidden {
+        display: none;
+    }
+    #table-logs tbody td {
+        vertical-align: middle;
+    }
+</style>
 
 <!-- Content Header (Page header) -->
 <div class="content-header">
@@ -103,240 +142,224 @@ $kbEnabled = isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_k
 </div>
 <!-- /.content-header -->
 
-
 <!-- Main content -->
 <div class="content">
     <div class="container-fluid">
-        <div class="row">
-            <div class="col-lg-12">
-                <div class="card">
-                    <div class="card-body">
-                        <ul class="nav nav-tabs">
-                            <li class="nav-item">
-                                <a class="nav-link active" data-toggle="tab" href="#connections" aria-controls="connections" aria-selected="true"><?php echo $lang->get('connections'); ?></a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" data-toggle="tab" href="#failed" role="tab" aria-controls="failed" aria-selected="false"><?php echo $lang->get('failed_logins'); ?></a>
-                            </li>
-                            <?php if ($isAdmin === true) { ?>
-                            <li class="nav-item">
-                                <a class="nav-link" id="authentication-lockouts-tab" data-toggle="tab" href="#authentication-lockouts" role="tab" aria-controls="authentication-lockouts" aria-selected="false"><?php echo $lang->get('authentication_lockouts'); ?></a>
-                            </li>
-                            <?php } ?>
-                            <li class="nav-item">
-                                <a class="nav-link" data-toggle="tab" href="#errors" role="tab" aria-controls="errors" aria-selected="false"><?php echo $lang->get('errors'); ?></a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" data-toggle="tab" href="#copy" role="tab" aria-controls="copy" aria-selected="false"><?php echo $lang->get('at_copy'); ?></a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" data-toggle="tab" href="#admin" role="tab" aria-controls="admin" aria-selected="false"><?php echo $lang->get('admin'); ?></a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" data-toggle="tab" href="#items" role="tab" aria-controls="items" aria-selected="false"><?php echo $lang->get('items'); ?></a>
-                            </li>
-                            <?php if ($kbEnabled === true) { ?>
-                            <li class="nav-item">
-                                <a class="nav-link" data-toggle="tab" href="#kb" role="tab" aria-controls="kb" aria-selected="false"><?php echo $lang->get('kb_logs'); ?></a>
-                            </li>
-                            <?php } ?>
-                        </ul>
 
+        <ul class="nav nav-tabs mb-2" id="logs-main-tabs">
+            <li class="nav-item">
+                <a class="nav-link active" data-toggle="tab" href="#journals" role="tab"
+                    aria-controls="journals" aria-selected="true"><?php echo $lang->get('logs_journals'); ?></a>
+            </li>
+            <?php if ($isAdmin === true) { ?>
+            <li class="nav-item">
+                <a class="nav-link" id="authentication-lockouts-tab" data-toggle="tab" href="#authentication-lockouts"
+                    role="tab" aria-controls="authentication-lockouts" aria-selected="false"><?php echo $lang->get('authentication_lockouts'); ?></a>
+            </li>
+            <?php } ?>
+        </ul>
 
-                        <div class="tab-content mt-1" id="myTabContent">
-                            <div class="tab-pane fade show active" id="connections" role="tabpanel" aria-labelledby="connections-tab">
-                                <table class="table table-striped nowrap table-responsive-sm" id="table-connections" style="width:100%;">
-                                    <thead>
-                                        <tr>
-                                            <th><?php echo $lang->get('date'); ?></th>
-                                            <th><?php echo $lang->get('action'); ?></th>
-                                            <th>Source</th>
-                                            <th><?php echo $lang->get('user'); ?></th>
-                                        </tr>
-                                    </thead>
-                                </table>
-                            </div>
-                            <div class="tab-pane fade" id="errors" role="tabpanel" aria-labelledby="errors-tab">
-                                <table class="table table-striped nowrap table-responsive-sm" id="table-errors" style="width:100%;">
-                                    <thead>
-                                        <tr>
-                                            <th><?php echo $lang->get('date'); ?></th>
-                                            <th><?php echo $lang->get('label'); ?></th>
-                                            <th><?php echo $lang->get('user'); ?></th>
-                                        </tr>
-                                    </thead>
-                                </table>
-                            </div>
-                            <div class="tab-pane fade" id="copy" role="tabpanel" aria-labelledby="copy-tab">
-                                <table class="table table-striped nowrap table-responsive-sm" id="table-copy" style="width:100%;">
-                                    <thead>
-                                        <tr>
-                                            <th><?php echo $lang->get('date'); ?></th>
-                                            <th><?php echo $lang->get('label'); ?></th>
-                                            <th><?php echo $lang->get('user'); ?></th>
-                                        </tr>
-                                    </thead>
-                                </table>
-                            </div>
-                            <div class="tab-pane fade" id="admin" role="tabpanel" aria-labelledby="admin-tab">
-                                <table class="table table-striped nowrap table-responsive-sm" id="table-admin" style="width:100%;">
-                                    <thead>
-                                        <tr>
-                                            <th><?php echo $lang->get('date'); ?></th>
-                                            <th><?php echo $lang->get('author'); ?></th>
-                                            <th><?php echo $lang->get('action'); ?></th>
-                                            <th><?php echo $lang->get('who'); ?></th>
-                                        </tr>
-                                    </thead>
-                                </table>
-                            </div>
-                            <div class="tab-pane fade" id="items" role="tabpanel" aria-labelledby="items-tab">
-                                <table class="table table-striped nowrap table-responsive-sm" id="table-items" style="width:100%;">
-                                    <thead>
-                                        <tr>
-                                            <th><?php echo $lang->get('date'); ?></th>
-                                            <th><?php echo $lang->get('id'); ?></th>
-                                            <th><?php echo $lang->get('label'); ?></th>
-                                            <th><?php echo $lang->get('folder'); ?></th>
-                                            <th><?php echo $lang->get('user'); ?></th>
-                                            <th><?php echo $lang->get('action'); ?></th>
-                                            <th>API</th>
-                                            <th><?php echo $lang->get('at_personnel'); ?></th>
-                                        </tr>
-                                    </thead>
-                                </table>
-                            </div>
-                            <?php if ($kbEnabled === true) { ?>
-                            <div class="tab-pane fade" id="kb" role="tabpanel" aria-labelledby="kb-tab">
-                                <table class="table table-striped nowrap table-responsive-sm" id="table-kb-logs" style="width:100%;">
-                                    <thead>
-                                        <tr>
-                                            <th><?php echo $lang->get('date'); ?></th>
-                                            <th><?php echo $lang->get('label'); ?></th>
-                                            <th><?php echo $lang->get('user'); ?></th>
-                                            <th><?php echo $lang->get('action'); ?></th>
-                                            <th><?php echo $lang->get('details'); ?></th>
-                                        </tr>
-                                    </thead>
-                                </table>
-                            </div>
-                            <?php } ?>
-                            <div class="tab-pane fade" id="failed" role="tabpanel" aria-labelledby="failed-tab">
-                                <table class="table table-striped nowrap table-responsive-sm" id="table-failed">
-                                    <thead>
-                                        <tr>
-                                            <th><?php echo $lang->get('date'); ?></th>
-                                            <th><?php echo $lang->get('label'); ?></th>
-                                            <th><?php echo $lang->get('user'); ?></th>
-                                            <th><?php echo $lang->get('ip'); ?></th>
-                                            <th><?php echo $lang->get('authentication_channel'); ?></th>
-                                            <th><?php echo $lang->get('action'); ?></th>
-                                        </tr>
-                                    </thead>
-                                </table>
-                            </div>
-                            <?php if ($isAdmin === true) { ?>
-                            <div class="tab-pane fade" id="authentication-lockouts" role="tabpanel" aria-labelledby="authentication-lockouts-tab">
-                                <div class="alert alert-warning">
-                                    <i class="fa-solid fa-triangle-exclamation mr-2"></i>
-                                    <?php echo $lang->get('authentication_lockouts_tip'); ?>
+        <div class="tab-content" id="logs-main-tab-content">
+            <div class="tab-pane fade show active" id="journals" role="tabpanel" aria-labelledby="journals-tab">
+
+                <!-- SEARCH BAR -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card card-outline card-primary">
+                            <div class="card-body pb-2">
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                    </div>
+                                    <input type="text" class="form-control" id="logs-term"
+                                        placeholder="<?php echo $lang->get('logs_search_placeholder'); ?>"
+                                        aria-label="<?php echo $lang->get('find'); ?>">
+                                    <div class="input-group-append">
+                                        <button class="btn btn-outline-secondary" type="button" id="logs-reset"
+                                            title="<?php echo $lang->get('search_reset'); ?>"
+                                            aria-label="<?php echo $lang->get('search_reset'); ?>">
+                                            <i class="fas fa-undo-alt" aria-hidden="true"></i>
+                                        </button>
+                                        <button class="btn btn-outline-secondary" type="button" id="logs-toggle-filters"
+                                            aria-expanded="false" aria-controls="logs-filters-panel">
+                                            <i class="fas fa-sliders-h mr-1"></i><?php echo $lang->get('search_filters'); ?>
+                                            <span class="badge badge-primary ml-1 hidden" id="logs-filters-count">0</span>
+                                        </button>
+                                    </div>
                                 </div>
-                                <table class="table table-striped nowrap table-responsive-sm" id="table-authentication-lockouts" style="width:100%;">
-                                    <thead>
-                                        <tr>
-                                            <th><?php echo $lang->get('authentication_lockout_scope'); ?></th>
-                                            <th><?php echo $lang->get('authentication_lockout_target'); ?></th>
-                                            <th><?php echo $lang->get('user'); ?></th>
-                                            <th><?php echo $lang->get('authentication_lockout_failures'); ?></th>
-                                            <th><?php echo $lang->get('authentication_lockout_first_failure'); ?></th>
-                                            <th><?php echo $lang->get('authentication_lockout_last_failure'); ?></th>
-                                            <th><?php echo $lang->get('authentication_lockout_until'); ?></th>
-                                            <th><?php echo $lang->get('action'); ?></th>
-                                        </tr>
-                                    </thead>
-                                </table>
+                                <!-- ACTIVE FILTER CHIPS -->
+                                <div class="mt-2 hidden" id="logs-chips-row">
+                                    <span id="logs-chips"></span>
+                                    <button type="button" class="btn btn-link btn-sm text-danger" id="logs-clear-all">
+                                        <?php echo $lang->get('search_clear_all'); ?>
+                                    </button>
+                                </div>
                             </div>
-                            <?php } ?>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <!-- FILTER PANEL -->
+                    <div class="col-md-3 col-xl-2 hidden" id="logs-filters-panel">
+                        <div class="card">
+                            <div class="card-body p-2">
+
+                                <!-- Source: a radio, never a checkbox. The column set depends on it,
+                                     so two sources at once would have no table to render into. -->
+                                <div class="logs-facet-group">
+                                    <h6 class="text-muted text-uppercase small mb-2"><?php echo $lang->get('logs_source'); ?></h6>
+                                    <?php foreach (['system' => $lang->get('logs_source_system'), 'items' => $lang->get('logs_source_items')] + ($kbEnabled === true ? ['kb' => $lang->get('logs_source_kb')] : []) as $value => $label) : ?>
+                                        <div class="custom-control custom-radio">
+                                            <input type="radio" name="logs-source" class="custom-control-input logs-source"
+                                                id="logs-source-<?php echo $value; ?>" value="<?php echo $value; ?>"
+                                                <?php echo $value === 'system' ? 'checked' : ''; ?>>
+                                            <label class="custom-control-label" for="logs-source-<?php echo $value; ?>"><?php echo $label; ?></label>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+
+                                <!-- Type: what used to be four tabs -->
+                                <div class="logs-facet-group mt-3" data-source="system">
+                                    <h6 class="text-muted text-uppercase small mb-2"><?php echo $lang->get('logs_facet_type'); ?></h6>
+                                    <?php foreach ($logSortedTypes as $value) : ?>
+                                        <div class="custom-control custom-checkbox">
+                                            <input type="checkbox" class="custom-control-input logs-facet" data-facet="types"
+                                                id="logs-type-<?php echo $value; ?>" value="<?php echo $value; ?>">
+                                            <label class="custom-control-label" for="logs-type-<?php echo $value; ?>"><?php echo $logTypeLabels[$value]; ?></label>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+
+                                <!-- Action: one list for both action-bearing sources. Two lists would
+                                     repeat the five actions the knowledge base shares with the items,
+                                     under the same heading; each option declares the sources it
+                                     belongs to instead. The former Copy tab is one value here. -->
+                                <div class="logs-facet-group mt-3" data-source="items kb">
+                                    <h6 class="text-muted text-uppercase small mb-2"><?php echo $lang->get('logs_facet_action'); ?></h6>
+                                    <?php foreach ($logSortedActions as $action) : ?>
+                                        <?php $actionSources = 'items' . (in_array($action, logsAllowedKbActions(), true) === true ? ' kb' : ''); ?>
+                                        <div class="custom-control custom-checkbox logs-facet-option" data-source="<?php echo $actionSources; ?>">
+                                            <input type="checkbox" class="custom-control-input logs-facet" data-facet="actions"
+                                                id="logs-action-<?php echo $action; ?>" value="<?php echo $action; ?>">
+                                            <label class="custom-control-label" for="logs-action-<?php echo $action; ?>"><?php echo $logActionLabels[$action]; ?></label>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+
+                                <!-- Dates -->
+                                <div class="logs-facet-group mt-3">
+                                    <h6 class="text-muted text-uppercase small mb-2"><?php echo $lang->get('date_range'); ?></h6>
+                                    <label class="small mb-0" for="logs-date-from"><?php echo $lang->get('from'); ?></label>
+                                    <input type="date" class="form-control form-control-sm logs-facet-date" data-facet="date_from" id="logs-date-from">
+                                    <label class="small mb-0 mt-1" for="logs-date-to"><?php echo $lang->get('to'); ?></label>
+                                    <input type="date" class="form-control form-control-sm logs-facet-date" data-facet="date_to" id="logs-date-to">
+                                </div>
+
+                                <!-- User: loaded on demand. Rendering every account inline made the
+                                     page weigh proportionally to the number of users. -->
+                                <div class="logs-facet-group mt-3">
+                                    <h6 class="text-muted text-uppercase small mb-2"><?php echo $lang->get('user'); ?></h6>
+                                    <select class="form-control form-control-sm logs-facet-single" data-facet="user_id" id="logs-user" style="width:100%;"
+                                        aria-label="<?php echo $lang->get('user'); ?>">
+                                        <option value=""></option>
+                                    </select>
+                                </div>
+
+                                <!-- Folder and personal scope: item logs only -->
+                                <div class="logs-facet-group mt-3" data-source="items">
+                                    <h6 class="text-muted text-uppercase small mb-2"><?php echo $lang->get('folder'); ?></h6>
+                                    <select class="form-control form-control-sm logs-facet-single" data-facet="folder_id" id="logs-folder" style="width:100%;"
+                                        aria-label="<?php echo $lang->get('folder'); ?>">
+                                        <option value=""></option>
+                                    </select>
+                                    <select class="form-control form-control-sm mt-2 logs-facet-single" data-facet="scope" id="logs-scope">
+                                        <option value=""><?php echo $lang->get('logs_scope_any'); ?></option>
+                                        <option value="shared"><?php echo $lang->get('logs_scope_shared'); ?></option>
+                                        <option value="personal"><?php echo $lang->get('logs_scope_personal'); ?></option>
+                                    </select>
+                                </div>
+
+                                <!-- Channel -->
+                                <div class="logs-facet-group mt-3" data-source="system items">
+                                    <h6 class="text-muted text-uppercase small mb-2"><?php echo $lang->get('logs_facet_channel'); ?></h6>
+                                    <select class="form-control form-control-sm logs-facet-single" data-facet="channel" id="logs-channel">
+                                        <option value=""><?php echo $lang->get('all'); ?></option>
+                                        <option value="web"><?php echo $lang->get('logs_channel_web'); ?></option>
+                                        <option value="api"><?php echo $lang->get('logs_channel_api'); ?></option>
+                                    </select>
+                                </div>
+
+                            </div>
                         </div>
                     </div>
 
-                    <div id="logs-purge-footer" class="card-footer<?php
-                                            echo $isAdmin === true ? '' : ' hidden';
-                                            ?>">
-                        <h5><i class="fas fa-broom mr-2"></i><?php echo $lang->get('logs_purge_title'); ?></h5>
-                        <p class="text-muted" id="logs-purge-help"><?php echo $lang->get('logs_purge_help'); ?></p>
-                        <div class="form-group">
-                            <label for="purge-date-range"><?php echo $lang->get('date_range'); ?></label>
-                            <div class="input-group">
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text">
-                                        <i class="fas fa-calendar"></i>
-                                    </span>
-                                </div>
-                                <input type="text" class="form-control float-right" id="purge-date-range" aria-describedby="logs-purge-help" readonly>
-                                <span class="input-group-append">
-                                    <button type="button" class="btn btn-info btn-flat" id="clear-purge-date"><i class="fas fa-broom"></i></button>
-                                </span>
+                    <!-- RESULTS -->
+                    <div class="col-12" id="logs-results-column">
+                        <div class="card">
+                            <div class="card-body">
+                                <table class="table table-striped nowrap table-responsive-sm" id="table-logs" style="width:100%;">
+                                    <thead>
+                                        <tr></tr>
+                                    </thead>
+                                </table>
                             </div>
-                        </div>
 
-                        <h6><i class="fas fa-filter mr-2"></i><?php echo $lang->get('logs_purge_criteria'); ?></h6>
-                        <div class="row">
-                            <div class="col-sm-6">
-                                <!-- select -->
-                                <div class="form-group">
-                                    <label for="purge-filter-user"><i class="fas fa-user mr-2"></i><?php echo $lang->get('user'); ?>:</label>
-                                    <select class="form-control" id="purge-filter-user">
-                                        <option value="-1"><?php echo $lang->get('all'); ?></option>
-                                    <?php
-                                    $rows = DB::query(
-                                        'SELECT id, login, name, lastname FROM ' . prefixTable('users') . '
-                                        WHERE id > 0 AND id NOT IN %li ORDER BY login',
-                                        [(int) OTV_USER_ID, (int) TP_USER_ID, (int) SSH_USER_ID, (int) API_USER_ID]
-                                    );
-                                    foreach ($rows as $record) {
-                                        $displayName = trim(normalizeLogDisplayValue($record['name']) . ' ' . normalizeLogDisplayValue($record['lastname']));
-                                        echo '<option value="' . (int) $record['id'] . '">'
-                                            . ($displayName === '' ? '' : $displayName . ' ')
-                                            . '[' . normalizeLogDisplayValue($record['login']) . ']</option>';
-                                    }
-                                    ?>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-sm-6">
-                                <div class="form-group hidden" id="selector-purge-action">
-                                    <label for="purge-filter-action"><i class="fas fa-cog mr-2"></i><?php echo $lang->get('action'); ?>:</label>
-                                    <select class="form-control" id="purge-filter-action">
-                                        <option value="all"><?php echo $lang->get('all'); ?></option>
-                                        <option value="at_creation"><?php echo $lang->get('at_creation'); ?></option>
-                                        <option value="at_modification"><?php echo $lang->get('at_modification'); ?></option>
-                                        <option value="at_shown"><?php echo $lang->get('at_shown'); ?></option>
-                                        <option value="at_export"><?php echo $lang->get('at_export'); ?></option>
-                                        <option value="at_restored"><?php echo $lang->get('at_restored'); ?></option>
-                                        <option value="at_delete"><?php echo $lang->get('at_delete'); ?></option>
-                                        <option value="at_copy"><?php echo $lang->get('at_copy'); ?></option>
-                                        <option value="at_moved"><?php echo $lang->get('at_moved'); ?></option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
+                            <?php if ($isAdmin === true) { ?>
+                            <div id="logs-purge-footer" class="card-footer">
+                                <h5><i class="fas fa-broom mr-2"></i><?php echo $lang->get('logs_purge_title'); ?></h5>
+                                <p class="text-muted mb-2" id="logs-purge-help"><?php echo $lang->get('logs_purge_help_filtered'); ?></p>
 
-                        <div class="form-group mt-2 group-confirm-purge hidden">
-                            <input type="checkbox" class="form-check-input form-item-control" id="checkbox-purge-confirm">
-                            <label class="form-check-label ml-2" for="checkbox-purge-confirm">
-                                <?php echo $lang->get('logs_purge_confirm'); ?>
-                            </label>
-                        </div>
-                        <div class="form-group mt-2 group-confirm-purge hidden">
-                            <button class="btn btn-danger" id="button-perform-purge"><?php echo $lang->get('logs_purge_submit'); ?></button>
+                                <!-- What the purge will delete, stated from the active filters, so the
+                                     scope announced is the scope applied. -->
+                                <div class="alert alert-secondary mb-2" id="logs-purge-scope"></div>
+                                <div class="alert alert-warning hidden mb-2" id="logs-purge-blocked"></div>
+
+                                <div class="form-group mt-2 group-confirm-purge hidden">
+                                    <input type="checkbox" class="form-check-input form-item-control" id="checkbox-purge-confirm">
+                                    <label class="form-check-label ml-2" for="checkbox-purge-confirm">
+                                        <?php echo $lang->get('logs_purge_confirm_filtered'); ?>
+                                    </label>
+                                </div>
+                                <div class="form-group mt-2 group-confirm-purge hidden">
+                                    <button class="btn btn-danger" id="button-perform-purge"><?php echo $lang->get('logs_purge_submit'); ?></button>
+                                </div>
+                            </div>
+                            <?php } ?>
                         </div>
                     </div>
                 </div>
             </div>
-            <!-- /.col-md-6 -->
+
+            <?php if ($isAdmin === true) { ?>
+            <!-- Not a journal: live state with unlock actions, so it stays out of the facet system. -->
+            <div class="tab-pane fade" id="authentication-lockouts" role="tabpanel" aria-labelledby="authentication-lockouts-tab">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="alert alert-warning">
+                            <i class="fa-solid fa-triangle-exclamation mr-2"></i>
+                            <?php echo $lang->get('authentication_lockouts_tip'); ?>
+                        </div>
+                        <table class="table table-striped nowrap table-responsive-sm" id="table-authentication-lockouts" style="width:100%;">
+                            <thead>
+                                <tr>
+                                    <th><?php echo $lang->get('authentication_lockout_scope'); ?></th>
+                                    <th><?php echo $lang->get('authentication_lockout_target'); ?></th>
+                                    <th><?php echo $lang->get('user'); ?></th>
+                                    <th><?php echo $lang->get('authentication_lockout_failures'); ?></th>
+                                    <th><?php echo $lang->get('authentication_lockout_first_failure'); ?></th>
+                                    <th><?php echo $lang->get('authentication_lockout_last_failure'); ?></th>
+                                    <th><?php echo $lang->get('authentication_lockout_until'); ?></th>
+                                    <th><?php echo $lang->get('action'); ?></th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <?php } ?>
         </div>
-        <!-- /.row -->
+
     </div><!-- /.container-fluid -->
 </div>
 <!-- /.content -->
