@@ -48,7 +48,7 @@ LABEL maintainer="TeamPass <nils@teampass.net>" \
 # used to be labelled "master"). The default only serves local builds, so it must stay
 # equal to TP_VERSION.TP_VERSION_MINOR; the release procedure bumps it in the same
 # commit as the version constants.
-ARG TEAMPASS_VERSION=3.2.2.3
+ARG TEAMPASS_VERSION=3.2.2.4
 ENV TEAMPASS_VERSION=${TEAMPASS_VERSION}
 
 # Apply the Alpine security updates published since the base image was built.
