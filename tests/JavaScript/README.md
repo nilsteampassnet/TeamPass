@@ -20,6 +20,10 @@ responses, creation estimates, expired and unknown dates, safe label rendering,
 individual policies with folder expiration disabled, item form reset/toggle behavior,
 copy inheritance and cancellation/failure of move previews.
 
+The same suite checks safe renewal badge rendering and clearing the previous badge
+when another item opens. `renewal-page.test.cjs` executes the page initialization,
+date filtering and clear action with controlled DataTables and datepicker adapters.
+
 In a configured browser, also check the folder banner (including empty folders),
 creation, editing, copying, drag-and-drop moves and bulk moves from Search. Moving
 an old password into a shorter-period folder must show its existing age and warn

@@ -40,4 +40,19 @@ class RenewalLogicTest extends TestCase
         self::assertNull(renewalDueAt(0, 1000));
         self::assertSame(2593000, renewalDueAt(30, 1000));
     }
+
+    public function testBadgeStatesAtExpirationAndDueSoonBoundaries(): void
+    {
+        $now = 1789290000;
+        $settings = ['date_format' => 'd/m/Y'];
+        foreach ([
+            [0, $now, 'none'], [30, null, 'unknown'], [30, 0, 'unknown'],
+            [30, $now - 1, 'expired'], [30, $now, 'expired'], [30, $now + 1, 'soon'],
+            [30, $now + 14 * 86400, 'soon'], [30, $now + 14 * 86400 + 1, 'scheduled'],
+        ] as [$days, $due, $expected]) {
+            $status = renewalStatus($days, $due, $settings, $now);
+            self::assertSame($expected, $status['state']);
+            self::assertSame(in_array($expected, ['none', 'unknown'], true) ? '' : date('d/m/Y', $due), $status['due_date']);
+        }
+    }
 }

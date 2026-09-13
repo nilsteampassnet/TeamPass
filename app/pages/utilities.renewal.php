@@ -324,7 +324,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 <div class="input-group-prepend">
                                     <span class="input-group-text"><i class="fas fa-calendar-day"></i></span>
                                 </div>
-                                <input type="text" class="form-control" id="renewal-date" autocomplete="off">
+                                <input type="text" class="form-control" id="renewal-date" autocomplete="off" placeholder="<?php echo $lang->get('renewal_all_deadlines'); ?>">
                                 <div class="input-group-append">
                                     <button type="button" class="btn btn-outline-secondary" id="clear-renewal-date" aria-label="<?php echo $lang->get('clear_date'); ?>">
                                         <i class="fas fa-times"></i>

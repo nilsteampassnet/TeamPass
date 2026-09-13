@@ -94,7 +94,8 @@ function harness(enabled = true) {
     period: 'Every #days# days', none: 'No renewal', explanation: 'No deletion',
     effective: 'Effective #days# days', source_item: 'Individual policy', source_folder: 'Folder policy', source_none: 'No item deadline',
     due: 'Due #date#', estimate: 'Estimate', existing: 'Password age preserved', expired: 'Already expired',
-    unknown: 'Unknown date', unavailable: 'Unavailable', loading: 'Loading', move_confirm: 'Move?'
+    unknown: 'Unknown date', unavailable: 'Unavailable', loading: 'Loading', move_confirm: 'Move?',
+    badge_scheduled: 'Expiration', badge_soon: 'Expiring soon', badge_expired: 'Expired', badge_unknown: 'Renewal enabled'
   } })
   return { preview, pending, prompts, errors, field: $, answer(value) { answer = value } }
 }
@@ -102,6 +103,46 @@ function harness(enabled = true) {
 function response(days = 90, items = [], creation = false) {
   return { error: false, enabled: true, days, items: items.map(item => ({ days, source: days ? 'folder' : 'none', ...item })), creation }
 }
+
+test('Renewal badges distinguish all active states and keep lists focused on urgent deadlines', () => {
+  const ui = harness()
+  const policy = { days: 30, due_date: '2026-10-01' }
+  for (const [state, colour] of [['scheduled', 'info'], ['soon', 'warning'], ['expired', 'danger'], ['unknown', 'secondary']]) {
+    const badge = ui.preview.badgeHtml({ ...policy, state })
+    assert.ok(badge.includes('badge-' + colour))
+    assert.ok(badge.includes('2026-10-01'))
+    assert.ok(badge.includes('Effective 30 days'))
+    assert.equal(ui.preview.badgeHtml({ ...policy, state }, true) !== '', state === 'soon' || state === 'expired')
+  }
+  assert.equal(ui.preview.badgeHtml(null), '')
+  assert.equal(ui.preview.badgeHtml({ ...policy, state: 'none' }), '')
+  assert.equal(ui.preview.badgeHtml({ ...policy, state: '__proto__' }), '')
+  const unknown = ui.preview.badgeHtml({ days: 30, due_date: '', state: 'unknown' })
+  assert.ok(unknown.includes('Renewal enabled'))
+  assert.ok(unknown.includes('Unknown date'))
+  const hostile = ui.preview.badgeHtml({ days: '\"><img src=x>', due_date: '<script>alert(1)</script>', state: 'soon' })
+  assert.equal(hostile.includes('<img'), false)
+  assert.equal(hostile.includes('<script>'), false)
+})
+
+test('Opening another item clears the previous renewal badge while its details load', () => {
+  const template = readFileSync(join(__dirname, '../../app/pages/items.js.php'), 'utf8')
+  const start = template.indexOf('function resetItemDetailSkeleton(')
+  const end = template.indexOf('function resetEditFormSkeleton(', start)
+  assert.ok(start >= 0 && end > start)
+  const ui = harness()
+  const field = ui.field('#card-item-renewal-badge')
+  field.removeClass('hidden').text('Old deadline')
+  const $ = selector => selector === '#card-item-renewal-badge' ? field : {
+    html() { return this }, addClass() { return this }, removeClass() { return this },
+    removeAttr() { return this }, remove() { return this }, empty() { return this }
+  }
+  const context = { $ }
+  vm.runInNewContext(template.slice(start, end), context)
+  context.resetItemDetailSkeleton()
+  assert.equal(field.value, '')
+  assert.equal(field.classes.has('hidden'), true)
+})
 
 test('Folder policies include empty folders and explicit zero; individual policies work with folder expiration off', async () => {
   const ui = harness()

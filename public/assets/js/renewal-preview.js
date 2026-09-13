@@ -3,6 +3,21 @@ function createRenewalPreview(config) {
   const messages = config.messages
   const requests = new Map()
 
+  /** Render a safe badge from the server's effective policy, using the same state on cards and lists. */
+  function badgeHtml(renewal, onlyUrgent = false) {
+    const colours = { scheduled: 'info', soon: 'warning', expired: 'danger', unknown: 'secondary' }
+    if (!renewal || !Object.prototype.hasOwnProperty.call(colours, renewal.state)
+        || (onlyUrgent && renewal.state !== 'soon' && renewal.state !== 'expired')) return ''
+    const escape = value => String(value).replace(/[&<>"']/g, character => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[character])
+    const dateText = renewal.due_date ? messages.due.replace('#date#', renewal.due_date) : messages.unknown
+    const title = messages.effective.replace('#days#', renewal.days) + ' ' + dateText
+    const label = messages['badge_' + renewal.state] + (!onlyUrgent && renewal.due_date ? ' — ' + renewal.due_date : '')
+    return '<span class="badge badge-' + colours[renewal.state] + ' ml-2 flex-shrink-0 tp-item-renewal-badge" title="' + escape(title) + '">'
+      + '<i class="fa-regular fa-calendar mr-1" aria-hidden="true"></i>' + escape(label) + '</span>'
+  }
+
   function lines(data) {
     const result = [data.days ? messages.period.replace('#days#', data.days) : messages.none]
     data.items.forEach(item => {
@@ -67,5 +82,5 @@ function createRenewalPreview(config) {
     })
   }
 
-  return { update, clear, confirmMove }
+  return { update, clear, confirmMove, badgeHtml }
 }

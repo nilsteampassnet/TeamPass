@@ -3405,6 +3405,7 @@ require __DIR__ . '/renewal.preview.js.php';
         $('#items-details-container .edition-lock-detail-badge').remove();
         $('#card-item-corrupted-warning').addClass('hidden').html('');
         $('#card-item-lapr-badges, #card-item-lapr-info').addClass('hidden').empty();
+        $('#card-item-renewal-badge').addClass('hidden').empty();
         $('#card-item-misc').html(
             '<span class="skeleton-line skeleton-sm d-inline-block mr-3" style="width:22px;"></span>' +
             '<span class="skeleton-line skeleton-sm d-inline-block mr-3" style="width:22px;"></span>' +
@@ -6019,7 +6020,7 @@ require __DIR__ . '/renewal.preview.js.php';
                     // Show user a grippy bar to move item
                     (value.canMove === 1  ? '<i class="fa-solid fa-ellipsis-v mr-1 dragndrop"></i>' : '') + //&& value.is_result_of_search === 0
                     // Show user a ban icon if expired
-                    (value.expired === 1 ? '<i class="fa-regular fa-calendar-times mr-1 text-warning infotip" title="<?php echo $lang->get('not_allowed_to_see_pw_is_expired'); ?>"></i>' : '') +
+                    (value.expired === 1 && !value.renewal ? '<i class="fa-regular fa-calendar-times mr-1 text-warning infotip" title="<?php echo $lang->get('not_allowed_to_see_pw_is_expired'); ?>"></i>' : '') +
                     // Show user that Item is not accessible
                     (value.rights === 10 ? '<i class="fa-regular fa-eye-slash fa-xs mr-1 text-primary infotip" title="<?php echo $lang->get('item_with_restricted_access'); ?>"></i>' : '') +
                     // Show user that password is badly encrypted
@@ -6032,7 +6033,9 @@ require __DIR__ . '/renewal.preview.js.php';
                     corruption_marker +
                     // Show item fa_icon if set
                     (value.fa_icon !== '' ? '<i class="'+htmlEncode(value.fa_icon)+' mr-1 user-fa-icon"></i>' : '') +
-                    '<span class="list-item-row-description d-inline-block' + (value.rights === 10 ? ' font-weight-light' : '') + '"><i class="item-favorite-star fa-solid' + ((store.get('teampassApplication').highlightFavorites === 1 && value.is_favourited === 1) ? ' fa-star mr-1' : '') + '"></i>' + htmlEncode(value.label) + '</span>' + (value.rights === 10 ? '' : description) +
+                    '<span class="list-item-row-description d-inline-block' + (value.rights === 10 ? ' font-weight-light' : '') + '"><i class="item-favorite-star fa-solid' + ((store.get('teampassApplication').highlightFavorites === 1 && value.is_favourited === 1) ? ' fa-star mr-1' : '') + '"></i>' + htmlEncode(value.label) + '</span>' +
+                    tpRenewal.badgeHtml(value.renewal, true) +
+                    (value.rights === 10 ? '' : description) +
                     '<span class="list-item-row-description-extend"></span>' +
                     '</span>' +
                     '<span class="list-item-actions hidden">' +
@@ -6786,6 +6789,8 @@ require __DIR__ . '/renewal.preview.js.php';
 
                     // Use the server's current deadline, including direct links and changed policies.
                     itemExpired = Number(data.expired_item) || 0;
+                    const renewalBadge = tpRenewal.badgeHtml(data.renewal);
+                    $('#card-item-renewal-badge').html(renewalBadge).toggleClass('hidden', renewalBadge === '');
                     $('#card-item-expired').toggleClass('hidden', itemExpired !== 1);
                     // SHould we show?
                     if (parseInt(data.show_detail_option) === 1 || itemExpired === 1) {

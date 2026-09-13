@@ -135,7 +135,7 @@ function newRequest(): string
     $code = substr($checks, strpos($checks, 'class PerformChecks'));
     $functions = source('app/sources/main.functions.php');
     foreach (['getPersonalFolderIdsWithDescendants', 'getOwnPersonalFolderIds', 'securityPostureUserRoleIds',
-        'securityPostureAuthorizedFolderIds', 'securityPostureItemAccessSql', 'renewalItemDueAt'] as $name) {
+        'securityPostureAuthorizedFolderIds', 'securityPostureItemAccessSql', 'renewalItemDueAt', 'renewalItemStatus'] as $name) {
         $code .= "\n" . declaration($functions, $name);
     }
     $code .= "\n" . declaration(source('app/sources/renewal_preview.php'), 'renewalPreview');

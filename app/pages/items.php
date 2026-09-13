@@ -1257,6 +1257,7 @@ if ((int) $session_user_admin === 1) {
                                 <i class="fa-solid fa-lock mr-1"></i><small><?php echo $lang->get('read_only'); ?></small>
                             </span>
                             <span id="card-item-lapr-badges" class="ml-2 hidden"></span>
+                            <span id="card-item-renewal-badge" class="hidden"></span>
                             <div class="card-tools">
                                 <button type="button" class="btn btn-secondary btn-sm but-back-to-list mt-2">
                                     <i class="fa-solid fa-times"></i>

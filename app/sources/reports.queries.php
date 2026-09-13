@@ -444,7 +444,7 @@ switch ($post_type) {
         }
 
         $nowTs = time();
-        $dueSoonDays = 14;
+        $dueSoonDays = RENEWAL_DUE_SOON_DAYS;
         $lastRelevantSql = renewalBaseDateSql();
 
         // Shared items with an active item/folder policy whose due date falls inside the

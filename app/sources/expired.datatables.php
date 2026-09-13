@@ -94,7 +94,8 @@ $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 $aColumns = ['i.label', 'expiration_date', 'n.title'];
 $aSortTypes = ['ASC', 'DESC'];
 //init SQL variables
-$sOrder = $sLimit = '';
+$sOrder = ' ORDER BY expiration_date ASC, i.id ASC';
+$sLimit = '';
 
 $draw = (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT);
 $emptyOutput = [
@@ -117,13 +118,12 @@ if (empty($visibleFolders) === true) {
 }
 $accessScopeSql = securityPostureItemAccessSql($userId);
 
-// Is a date sent?
+// No cutoff means all known deadlines, including overdue and future items.
+$targetExpirationTimestamp = null;
 $dateCriteria = $request->query->get('dateCriteria');
 if ($dateCriteria !== null && !empty($dateCriteria)) {
     $dateCriteria = (int) round((int) filter_var($dateCriteria, FILTER_SANITIZE_NUMBER_INT) / 1000, 0);
     $targetExpirationTimestamp = $dateCriteria + TP_ONE_DAY_SECONDS - 1;
-} else {
-    $targetExpirationTimestamp = time();
 }
 
 $lastRelevantDateSql = renewalBaseDateSql();
@@ -143,8 +143,7 @@ $fromWhereSql = '
     AND i.deleted_at IS NULL
     AND ' . $accessScopeSql . '
     AND ' . $effectivePeriodSql . ' > %i
-    AND ' . $lastRelevantDateSql . ' > %i
-    AND ' . $expirationDateSql . ' <= %i';
+    AND ' . $lastRelevantDateSql . ' > %i';
 $queryParams = [
     'at_creation',
     'at_modification',
@@ -152,8 +151,11 @@ $queryParams = [
     0,
     0,
     0,
-    (int) $targetExpirationTimestamp,
 ];
+if ($targetExpirationTimestamp !== null) {
+    $fromWhereSql .= ' AND ' . $expirationDateSql . ' <= %i';
+    $queryParams[] = $targetExpirationTimestamp;
+}
 $baseFromWhereSql = $fromWhereSql;
 $baseQueryParams = $queryParams;
 
@@ -184,7 +186,7 @@ if ($request->query->has('order')) {
         $columnIndex = filter_var($order[0]['column'], FILTER_SANITIZE_NUMBER_INT);
 
         if (array_key_exists($columnIndex, $aColumns)) {
-            $sOrder = ' ORDER BY ' . $aColumns[$columnIndex] . ' ' . strtoupper((string) $order[0]['dir']);
+            $sOrder = ' ORDER BY ' . $aColumns[$columnIndex] . ' ' . strtoupper((string) $order[0]['dir']) . ', i.id ASC';
         }
     }
 }

@@ -11,6 +11,9 @@ foreach (['period', 'none', 'explanation', 'due', 'estimate', 'existing', 'expir
     $renewalMessages[$key] = $lang->get('renewal_notice_' . $key);
 }
 $renewalMessages['loading'] = $lang->get('please_wait');
+foreach (['scheduled', 'soon', 'expired', 'unknown'] as $key) {
+    $renewalMessages['badge_' . $key] = $lang->get('renewal_badge_' . $key);
+}
 ?>
 <script src="assets/js/renewal-preview.js?v=<?php echo filemtime(TEAMPASS_ROOT . '/public/assets/js/renewal-preview.js'); ?>"></script>
 <script>

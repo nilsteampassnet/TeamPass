@@ -2077,6 +2077,12 @@ function securityNudgeComputeCounts(int $userId): array
 /** Read the effective deadline after the caller has authorized access to this item. */
 function renewalItemDueAt(int $itemId, array $settings): ?int
 {
+    return renewalItemStatus($itemId, $settings)['due_at'];
+}
+
+/** Read display metadata after the caller has authorized access to this item. */
+function renewalItemStatus(int $itemId, array $settings): array
+{
     $periodSql = renewalPeriodSql((int) ($settings['activate_expiration'] ?? 0) === 1);
     $row = DB::queryFirstRow(
         'SELECT ' . $periodSql . ' AS days, ' . renewalBaseDateSql() . ' AS base_date
@@ -2090,7 +2096,8 @@ function renewalItemDueAt(int $itemId, array $settings): ?int
         WHERE i.id = %i AND i.inactif = 0 AND i.deleted_at IS NULL',
         $itemId, 'at_creation', 'at_modification', 'at_pw%', $itemId
     );
-    return $row === null ? null : renewalDueAt((int) $row['days'], (int) $row['base_date']);
+    $days = (int) ($row['days'] ?? 0);
+    return renewalStatus($days, renewalDueAt($days, (int) ($row['base_date'] ?? 0)), $settings);
 }
 
 /**

@@ -3397,8 +3397,8 @@ switch ($inputData['type']) {
                 $arrData['links_to_kbs'] = $tmp;
             }
             // Prepare DIalogBox data
-            $effectiveRenewalDue = renewalItemDueAt((int) $dataItem['id'], $SETTINGS);
-            $post_expired_item = $effectiveRenewalDue !== null && $effectiveRenewalDue <= time() ? 1 : 0;
+            $arrData['renewal'] = renewalItemStatus((int) $dataItem['id'], $SETTINGS);
+            $post_expired_item = $arrData['renewal']['state'] === 'expired' ? 1 : 0;
             $arrData['expired_item'] = $post_expired_item;
             if ((int) $post_expired_item === 0) {
                 $arrData['show_detail_option'] = 0;
@@ -5263,6 +5263,8 @@ switch ($inputData['type']) {
 
                     // Now finalize the data to send back
                     $html_json[$record['id']]['rights'] = $right;
+                    $html_json[$record['id']]['renewal'] = in_array($right, [20, 30, 40, 50, 60, 70], true)
+                        ? renewalStatus($renewalDays, $renewalDue, $SETTINGS) : null;
                     $html_json[$record['id']]['perso'] = 'fa-tag mi-red';
                     $html_json[$record['id']]['sk'] = $itemIsPersonal === true ? 1 : 0;
                     $html_json[$record['id']]['display'] = $right > 0 ? 1 : 0;

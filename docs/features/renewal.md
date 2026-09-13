@@ -20,6 +20,8 @@ The deadline is calculated from the last password change, or creation if the pas
 
 Expired items are visually flagged in the main item list (coloured indicator next to the item label).
 
+The item detail header shows an expiration badge with the effective deadline, including when it comes from the folder. It is blue for later deadlines, orange when due within 14 days and red when expired. The item list highlights upcoming deadlines within 14 days and expired items with matching badges. A policy with an unknown password age is labelled as active on the detail card, without inventing an expiration date.
+
 Opening a folder displays its active renewal rule above the item list, including when the folder is empty. Individual items may have deadlines even when that folder has no active rule.
 
 The item creation/edit form also displays the selected folder's policy and the applicable deadline. For new or copied items, the date is an estimate based on creation today; saving starts the actual period. For existing items, the preview uses the last password change (or creation date), and changing the destination folder refreshes it. Changing the password recalculates the deadline when saved.
@@ -33,8 +35,8 @@ Drag-and-drop moves show the destination policy and deadline before confirmation
 ## Using the Renewal page
 
 1. Navigate to **Renewal** in the user sidebar, next to **Favourites**.
-2. Use the **date picker** to select a target date.
-3. The table updates to show accessible items that will have expired **by that date**. With no date selected, it shows items that are already expired.
+2. All accessible items with a known expiration date appear by default, ordered by deadline with already expired items first.
+3. Use the **date picker** to limit the results to deadlines **up to that date**. Clearing the date restores all deadlines. Items without an active renewal policy or without a known expiration date are excluded.
 
 The results table includes:
 

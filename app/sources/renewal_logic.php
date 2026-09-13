@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+const RENEWAL_DUE_SOON_DAYS = 14;
+
 /** Validate an optional item policy; zero disables only the individual policy. */
 function renewalValidatePeriod(mixed $value): int
 {
@@ -42,4 +44,23 @@ function renewalBaseDateSql(string $history = 'l.last_relevant_date', string $cr
 function renewalDueAt(int $days, int $baseDate): ?int
 {
     return $days > 0 && $baseDate > 0 ? $baseDate + $days * 86400 : null;
+}
+
+/** Describe the effective policy for display, without treating an unknown date as expired. */
+function renewalStatus(int $days, ?int $dueAt, array $settings, ?int $now = null): array
+{
+    $now ??= time();
+    $days = max(0, $days);
+    $dueAt = $days > 0 && $dueAt !== null && $dueAt > 0 ? $dueAt : null;
+    $state = 'none';
+    if ($days > 0) {
+        $state = $dueAt === null ? 'unknown' : ($dueAt <= $now ? 'expired'
+            : ($dueAt <= $now + RENEWAL_DUE_SOON_DAYS * 86400 ? 'soon' : 'scheduled'));
+    }
+    return [
+        'days' => $days,
+        'due_at' => $dueAt,
+        'due_date' => $dueAt === null ? '' : date($settings['date_format'] ?? 'Y-m-d', $dueAt),
+        'state' => $state,
+    ];
 }

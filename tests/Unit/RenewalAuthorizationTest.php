@@ -89,8 +89,10 @@ class RenewalAuthorizationTest extends TestCase
                         self::assertSame($due, $preview['items'][0]['due_at']);
                         $readDeadline = newRequest() . '\\renewalItemDueAt';
                         self::assertSame($due, $readDeadline($itemId, ConfigManager::$settings));
+                        $readStatus = newRequest() . '\\renewalItemStatus';
+                        self::assertSame(renewalStatus($expected, $due, ConfigManager::$settings), $readStatus($itemId, ConfigManager::$settings));
                         $table = runTable(newRequest(), ['search' => ['value' => $term]]);
-                        self::assertSame($due !== null && $due <= time() ? 1 : 0, $table['recordsFiltered']);
+                        self::assertSame($due !== null ? 1 : 0, $table['recordsFiltered']);
                     }
                 }
             }
@@ -162,7 +164,7 @@ class RenewalAuthorizationTest extends TestCase
         self::assertSame(1000 + 90 * 86400, $items[5]['due_at'], 'Source folder period is irrelevant to the destination preview.');
         self::assertTrue($items[1]['expired']);
         self::assertSame(21, (int) DB::queryFirstField('SELECT id_tree FROM renewal_items WHERE id = 5'), 'Preview never moves an item.');
-        $table = runTable(newRequest());
+        $table = runTable(newRequest(), ['search' => ['value' => 'Open']]);
         self::assertStringContainsString($items[1]['due_date'], $table['data'][0][1]);
     }
 
@@ -351,6 +353,29 @@ class RenewalAuthorizationTest extends TestCase
         $later = runTable(newRequest(), ['dateCriteria' => 259200000]);
         self::assertSame(1, $later['recordsTotal']);
         self::assertSame(date('Y-m-d H:i:s', 259200), $later['data'][0][1]);
+    }
+
+    public function testDefaultIncludesFutureDeadlinesAndClearingCutoffRestoresThem(): void
+    {
+        ConfigManager::$settings['activate_expiration'] = 0;
+        $now = time();
+        DB::query('UPDATE renewal_items SET renewal_period = 30, created_at = %s', (string) $now);
+        DB::query('UPDATE renewal_items SET created_at = %s WHERE id = 1', (string) ($now - 60 * 86400));
+        DB::query('UPDATE renewal_items SET created_at = %s WHERE id = 4', (string) ($now - 20 * 86400));
+        DB::query('UPDATE renewal_items SET renewal_period = 90 WHERE id = 5');
+        $all = runTable(newRequest());
+        self::assertSame(3, $all['recordsTotal']);
+        self::assertStringContainsString('id=1', $all['data'][0][0]);
+        self::assertStringContainsString('id=4', $all['data'][1][0]);
+        self::assertStringContainsString('id=5', $all['data'][2][0]);
+        self::assertStringNotContainsString('Foreign personal', json_encode($all));
+        self::assertStringNotContainsString('User restriction', json_encode($all));
+        $limited = runTable(newRequest(), ['dateCriteria' => strtotime('+14 days midnight') * 1000]);
+        self::assertSame(2, $limited['recordsTotal']);
+        self::assertSame($all['data'], runTable(newRequest(), ['dateCriteria' => ''])['data']);
+        DB::query('UPDATE renewal_items SET created_at = %s WHERE id = 4', '0');
+        DB::query('UPDATE renewal_items SET renewal_period = 0 WHERE id = 5');
+        self::assertSame(1, runTable(newRequest())['recordsTotal']);
     }
 
     /** All served entry points must use the same permission check and class copies. */
