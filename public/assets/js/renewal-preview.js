@@ -4,14 +4,17 @@ function createRenewalPreview(config) {
   const requests = new Map()
 
   function lines(data) {
-    if (!data.enabled) return []
-    if (!data.days) return [messages.none]
-    const result = [messages.period.replace('#days#', data.days), messages.explanation]
+    const result = [data.days ? messages.period.replace('#days#', data.days) : messages.none]
     data.items.forEach(item => {
-      const date = item.due_date ? messages.due.replace('#date#', item.due_date) : messages.unknown
-      result.push((data.items.length > 1 ? item.label + ' — ' : '') + date + (item.expired ? ' ' + messages.expired : ''))
+      const prefix = data.items.length > 1 ? item.label + ' — ' : ''
+      result.push(prefix + (item.days ? messages.effective.replace('#days#', item.days) + ' ' : '') + messages['source_' + item.source])
+      if (item.days) {
+        const date = item.due_date ? messages.due.replace('#date#', item.due_date) : messages.unknown
+        result.push(prefix + date + (item.expired ? ' ' + messages.expired : ''))
+      }
     })
-    if (data.items.length) result.push(data.creation ? messages.estimate : messages.existing)
+    if (data.days || data.items.some(item => item.days)) result.push(messages.explanation)
+    if (data.items.some(item => item.days)) result.push(data.creation ? messages.estimate : messages.existing)
     return result
   }
 
@@ -23,11 +26,13 @@ function createRenewalPreview(config) {
     text.forEach(line => $('<div>').text(line).appendTo(target))
   }
 
-  function fetchPreview(folderId, itemIds = [], creation = false) {
-    return $.post('sources/items.queries.php', {
+  function fetchPreview(folderId, itemIds = [], creation = false, itemPeriod = null, copy = false) {
+    const request = {
       type: 'get_renewal_preview', folder_id: folderId, item_ids: itemIds,
-      context: creation ? 'create' : '', key: config.key
-    }).then(data => {
+      context: copy ? 'copy' : (creation ? 'create' : ''), key: config.key
+    }
+    if (itemPeriod !== null) request.renewal_period = itemPeriod
+    return $.post('sources/items.queries.php', request).then(data => {
       data = decodeQueryReturn(data, config.key, 'items.queries.php', 'get_renewal_preview')
       if (data.error !== false) return $.Deferred().reject().promise()
       return data
@@ -39,13 +44,13 @@ function createRenewalPreview(config) {
     $(selector).empty().addClass('hidden')
   }
 
-  function update(selector, folderId, itemIds = [], creation = false) {
+  function update(selector, folderId, itemIds = [], creation = false, itemPeriod = null, copy = false) {
     clear(selector)
     const requestId = requests.get(selector)
-    if (!config.enabled || !Number(folderId)) return $.Deferred().resolve().promise()
+    if (!Number(folderId)) return $.Deferred().resolve().promise()
     const target = $(selector)
     target.removeClass('hidden alert-warning').addClass('alert alert-info').text(messages.loading)
-    return fetchPreview(folderId, itemIds, creation).then(data => {
+    return fetchPreview(folderId, itemIds, creation, itemPeriod, copy).then(data => {
       if (requestId === requests.get(selector)) render(target, data)
       return data
     }, () => {
@@ -54,9 +59,8 @@ function createRenewalPreview(config) {
   }
 
   function confirmMove(folderId, itemIds) {
-    if (!config.enabled) return $.Deferred().resolve(true).promise()
     return fetchPreview(folderId, itemIds).then(data => {
-      return !data.days || window.confirm(lines(data).join('\n') + '\n\n' + messages.move_confirm)
+      return !data.items.some(item => item.days) || window.confirm(lines(data).join('\n') + '\n\n' + messages.move_confirm)
     }, () => {
       toastr.error(messages.unavailable)
       return false

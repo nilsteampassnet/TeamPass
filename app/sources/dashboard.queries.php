@@ -121,12 +121,13 @@ if ($oversharedThreshold <= 0) {
     $oversharedThreshold = 10;
 }
 // Reusable SQL fragments — all metadata-only (no decryption, no plaintext).
-$lastRelevantSql = 'COALESCE(NULLIF(l.last_relevant_date, 0), NULLIF(CAST(i.created_at AS UNSIGNED), 0), 0)';
+$lastRelevantSql = renewalBaseDateSql();
+$effectivePeriodSql = renewalPeriodSql((int) ($SETTINGS['activate_expiration'] ?? 0) === 1);
 $passwordHealthSql = securityPasswordHealthSql();
 $flagWeakSql = $passwordHealthSql['weak'];
 $flagUnassessedSql = $passwordHealthSql['unassessed'];
-$flagNoExpirySql = '(CASE WHEN n.renewal_period <= 0 THEN 1 ELSE 0 END)';
-$flagOverdueSql = '(CASE WHEN n.renewal_period > 0 AND ' . $lastRelevantSql . ' > 0 AND (' . $lastRelevantSql . ' + n.renewal_period * ' . TP_ONE_DAY_SECONDS . ') <= ' . (int) $nowTs . ' THEN 1 ELSE 0 END)';
+$flagNoExpirySql = '(CASE WHEN ' . $effectivePeriodSql . ' <= 0 THEN 1 ELSE 0 END)';
+$flagOverdueSql = '(CASE WHEN ' . $effectivePeriodSql . ' > 0 AND ' . $lastRelevantSql . ' > 0 AND (' . $lastRelevantSql . ' + ' . $effectivePeriodSql . ' * ' . TP_ONE_DAY_SECONDS . ') <= ' . (int) $nowTs . ' THEN 1 ELSE 0 END)';
 $flagOversharedSql = '(CASE WHEN COALESCE(sc.share_count, 0) > ' . (int) $oversharedThreshold . ' THEN 1 ELSE 0 END)';
 $flagBreachedSql = '(CASE WHEN i.hibp_status = 2 THEN 1 ELSE 0 END)';
 
@@ -396,7 +397,7 @@ switch ($post_type) {
 
         $rows = DB::query(
             'SELECT i.id, i.pw, i.pw_iv, i.pw_len, i.complexity_level, i.created_at, i.hibp_status,
-                n.renewal_period,
+                ' . $effectivePeriodSql . ' AS renewal_period,
                 ' . $lastRelevantSql . ' AS last_relevant_date,
                 COALESCE(sc.share_count, 0) AS share_count,
                 sk.share_key, sk.increment_id AS sk_increment_id

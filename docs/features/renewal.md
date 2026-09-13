@@ -6,17 +6,21 @@ The **Renewal** page helps you identify items whose passwords are approaching or
 
 It is available to non-administrator accounts, including users, managers, HR managers and read-only users. Results only include items you can access, respecting current folder permissions, personal folders and item-level user or role restrictions. Administrators configure expiration and can use the existing compliance reports for supervision.
 
-> 🔔 Password expiration must be enabled by your administrator (**Settings → Security → Activate item expiration feature**). The expiration period per folder is set in the folder configuration.
+Individual item renewal is available independently of the administrator's folder-expiration setting. The **Renewal** menu remains available to non-administrator accounts when folder expiration is disabled.
 
 ---
 
 ## How expiration works
 
-Each folder can have a **password renewal period** (in days) defined by its administrator. When an item's password has not been changed for longer than that period, it is considered expired.
+An item can have an optional **password renewal period** of its own. On the item's main tab, enable **Set a renewal period for this item**, enter a whole number of days (1–36500), and save. This is available for personal and shared items to users who can edit the item. Policy changes are recorded in the item history.
+
+Folders can also have a period configured by an administrator or an authorized folder manager. Folder periods apply only when **Settings → Security → Activate item expiration feature** is enabled. When both policies are active, the **shortest period wins**: an individual choice cannot extend the folder's deadline. Disabling the individual option removes only that rule; any active folder rule remains.
+
+The deadline is calculated from the last password change, or creation if the password has never changed. Changing a renewal setting or moving an item does not reset its password age. Existing items start with no individual rule after the database upgrade.
 
 Expired items are visually flagged in the main item list (coloured indicator next to the item label).
 
-When expiration is enabled, opening a folder displays its renewal period above the item list, including when the folder is empty. A folder with a zero-day period explicitly displays that it has no renewal deadline.
+Opening a folder displays its active renewal rule above the item list, including when the folder is empty. Individual items may have deadlines even when that folder has no active rule.
 
 The item creation/edit form also displays the selected folder's policy and the applicable deadline. For new or copied items, the date is an estimate based on creation today; saving starts the actual period. For existing items, the preview uses the last password change (or creation date), and changing the destination folder refreshes it. Changing the password recalculates the deadline when saved.
 
@@ -28,7 +32,7 @@ Drag-and-drop moves show the destination policy and deadline before confirmation
 
 ## Using the Renewal page
 
-1. Navigate to **Renewal** in the user sidebar, next to **Favourites**. The entry is shown when password expiration is enabled.
+1. Navigate to **Renewal** in the user sidebar, next to **Favourites**.
 2. Use the **date picker** to select a target date.
 3. The table updates to show accessible items that will have expired **by that date**. With no date selected, it shows items that are already expired.
 
@@ -40,7 +44,7 @@ The results table includes:
 | **Expiration date** | The date on which the item's password expires |
 | **Folder** | Folder containing the item |
 
-Click an item's name to open its normal item page. Opening it does not grant additional permissions; read-only users can consult the item but cannot change its password.
+Click an item's name to open its normal item page. Opening it does not grant additional permissions. Read-only users cannot change the policy or password, and expired items can restrict consultation until an editor renews them.
 
 > 💡 Use the date picker to look ahead: setting the date to a month from now lets you plan renewals in advance rather than reacting to expired items.
 
@@ -58,8 +62,10 @@ The expiration timer resets from the date of the password change.
 
 ---
 
-## Folder-level renewal reminders
+## Governance and upgrades
 
-In addition to the Renewal page, administrators can configure **renewal reminders** at the folder level. When enabled, users with access to the folder receive an email notification a configurable number of days before items in that folder expire.
+For shared items, the posture summary and overdue rotation reports use effective deadlines, including individual policies when folder expiration is off. The folder coverage report distinguishes overdue folder SLAs from effective overdue items and shows individual-policy and covered-item counts. Personal folders and their descendants are excluded from these reports.
 
-Renewal reminder settings are configured per folder in the **Folders** administration page. See [Folders](folders.md) for details.
+This change adds `items.renewal_period`, defaulting to zero, through the normal database upgrade. Run the upgrade wizard before using the new code; Docker runs the same migration on schema-floor replay. Replaying the migration preserves existing individual policies.
+
+The API exposes `renewal_period` on item reads and accepts it on creation/update. Omit it on update to preserve the current value; send `0` to disable the individual policy. Copies retain the individual period and start a new password age. Moves retain both the period and the existing password age.

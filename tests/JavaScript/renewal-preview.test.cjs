@@ -6,6 +6,58 @@ const { test } = require('node:test')
 
 const source = readFileSync(join(__dirname, '../../public/assets/js/renewal-preview.js'), 'utf8')
 
+test('Item policy controls reset between items and preview unsaved enabled and disabled values', () => {
+  const template = readFileSync(join(__dirname, '../../app/pages/items.js.php'), 'utf8')
+  const start = template.indexOf('function setItemRenewalPeriod(')
+  const end = template.indexOf('function refreshItemFolderTopRules(', start)
+  assert.ok(start >= 0 && end > start)
+  const fields = new Map()
+  const calls = []
+  let handler
+  let timer
+  let itemId = 0
+  const $ = selector => {
+    if (!fields.has(selector)) fields.set(selector, {
+      value: '', properties: {},
+      val(value) { if (arguments.length === 0) return this.value; this.value = value; return this },
+      prop(name, value) { if (arguments.length === 1) return this.properties[name]; this.properties[name] = value; return this },
+      on(events, callback) { handler = callback; return this }
+    })
+    return fields.get(selector)
+  }
+  const context = {
+    $, store: { get: () => ({ id: itemId }) }, userDidAChange: false,
+    tpRenewal: { update: (...args) => calls.push(args) },
+    clearTimeout: () => { timer = null }, setTimeout: callback => { timer = callback }
+  }
+  vm.runInNewContext(template.slice(start, end), context)
+  const enabled = $('#form-item-renewal-enabled')
+  const period = $('#form-item-renewal-period')
+  $('#form-item-folder').val(11)
+  context.setItemRenewalPeriod(30)
+  assert.equal(enabled.prop('checked'), true)
+  assert.equal(period.val(), 30)
+  assert.equal(period.prop('disabled'), false)
+  context.setItemRenewalPeriod(0)
+  assert.equal(enabled.prop('checked'), false)
+  assert.equal(period.val(), 90)
+  assert.equal(period.prop('disabled'), true)
+  enabled.prop('checked', true)
+  period.val('45')
+  handler()
+  assert.equal(period.prop('required'), true)
+  assert.equal(context.userDidAChange, true)
+  timer()
+  assert.deepEqual(JSON.parse(JSON.stringify(calls.pop())), ['#form-item-renewal-notice', 11, [], true, '45'])
+  itemId = 21
+  enabled.prop('checked', false)
+  handler()
+  timer()
+  assert.equal(period.prop('required'), false)
+  assert.equal(period.prop('disabled'), true)
+  assert.deepEqual(JSON.parse(JSON.stringify(calls.pop())), ['#form-item-renewal-notice', 11, [21], false, 0])
+})
+
 function harness(enabled = true) {
   const elements = new Map()
   const pending = []
@@ -40,6 +92,7 @@ function harness(enabled = true) {
   vm.runInNewContext(source, context)
   const preview = context.createRenewalPreview({ enabled, key: 'session-key', messages: {
     period: 'Every #days# days', none: 'No renewal', explanation: 'No deletion',
+    effective: 'Effective #days# days', source_item: 'Individual policy', source_folder: 'Folder policy', source_none: 'No item deadline',
     due: 'Due #date#', estimate: 'Estimate', existing: 'Password age preserved', expired: 'Already expired',
     unknown: 'Unknown date', unavailable: 'Unavailable', loading: 'Loading', move_confirm: 'Move?'
   } })
@@ -47,10 +100,10 @@ function harness(enabled = true) {
 }
 
 function response(days = 90, items = [], creation = false) {
-  return { error: false, enabled: true, days, items, creation }
+  return { error: false, enabled: true, days, items: items.map(item => ({ days, source: days ? 'folder' : 'none', ...item })), creation }
 }
 
-test('Folder policies include empty folders and explicit zero; expiration off stays hidden without a request', async () => {
+test('Folder policies include empty folders and explicit zero; individual policies work with folder expiration off', async () => {
   const ui = harness()
   const first = ui.preview.update('#folder', 11)
   ui.pending[0].resolve(response())
@@ -61,9 +114,10 @@ test('Folder policies include empty folders and explicit zero; expiration off st
   await second
   assert.equal(ui.field('#folder').children[0].value, 'No renewal')
   const disabled = harness(false)
-  await disabled.preview.update('#folder', 11)
-  assert.equal(disabled.pending.length, 0)
-  assert.ok(disabled.field('#folder').classes.has('hidden'))
+  const individual = disabled.preview.update('#form', 11, [1])
+  disabled.pending[0].resolve(response(0, [{ days: 30, source: 'item', due_date: '2026-12-01', expired: false }]))
+  await individual
+  assert.ok(disabled.field('#form').children.some(line => line.value.includes('Effective 30 days')))
 })
 
 test('Rapid folder changes ignore both stale successful responses and stale errors', async () => {
@@ -105,7 +159,7 @@ test('Creation estimates and existing expired dates are distinguished; labels re
   await move
   assert.ok(ui.field('#form').classes.has('alert-warning'))
   assert.equal(ui.field('#form').children[2].value, '<img src=x onerror=alert(1)> — Due 2020-01-01 Already expired')
-  assert.equal(ui.field('#form').children[3].value, 'Missing history — Unknown date')
+  assert.ok(ui.field('#form').children.some(line => line.value === 'Missing history — Unknown date'))
   assert.equal(ui.field('#form').children.at(-1).value, 'Password age preserved')
 })
 
@@ -133,6 +187,22 @@ test('Moving to a folder without a renewal period adds no confirmation', async (
   assert.equal(await moved, true)
   assert.equal(ui.prompts.length, 0)
   const disabled = harness(false)
-  assert.equal(await disabled.preview.confirmMove(11, [1]), true)
-  assert.equal(disabled.pending.length, 0)
+  const individual = disabled.preview.confirmMove(11, [1])
+  disabled.pending[0].resolve(response(0, [{ days: 30, source: 'item', expired: false, due_date: '2026-12-01' }]))
+  assert.equal(await individual, true)
+  assert.equal(disabled.prompts.length, 1)
+})
+
+test('Unsaved policy changes and copy previews send the intended values independently of folder settings', async () => {
+  const ui = harness(false)
+  const draft = ui.preview.update('#form', 11, [1], false, 30)
+  assert.equal(ui.pending[0].data.renewal_period, 30)
+  ui.pending[0].resolve(response(0, [{ days: 30, source: 'item', due_date: '2026-12-01' }]))
+  await draft
+  const copy = ui.preview.update('#copy', 11, [1], false, null, true)
+  assert.equal(ui.pending[1].data.context, 'copy')
+  assert.equal(Object.hasOwn(ui.pending[1].data, 'renewal_period'), false)
+  ui.pending[1].resolve(response(0, [{ days: 30, source: 'item', due_date: '2026-12-01' }], true))
+  await copy
+  assert.equal(ui.field('#copy').children.at(-1).value, 'Estimate')
 })

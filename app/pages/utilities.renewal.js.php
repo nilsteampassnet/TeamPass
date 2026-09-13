@@ -73,7 +73,6 @@ $checkUserAccess = new PerformChecks(
 echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false
     || $checkUserAccess->userAccessPage('utilities.renewal') === false
-    || (int) ($SETTINGS['activate_expiration'] ?? 0) !== 1
 ) {
     // Not allowed page
     $session->set('system-error_code', ERR_NOT_ALLOWED);

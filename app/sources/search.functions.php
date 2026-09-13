@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+require_once __DIR__ . '/renewal_logic.php';
 
 /**
  * Teampass - a collaborative passwords manager.
@@ -715,13 +716,13 @@ function searchBuildWhere(array $filters, array $ctx): array
                 $clauses[] = 'i.hibp_status = 2';
                 break;
             case 'overdue':
-                // cache.timestamp already holds the last at_pw date, so the
-                // expiry is computed without joining log_items.
-                $clauses[] = '(c.renewal_period > 0 AND (CAST(c.timestamp AS UNSIGNED)'
-                    . ' + c.renewal_period * ' . (int) ($ctx['day_seconds'] ?? 86400) . ') < ' . $now . ')';
+                $periodSql = (string) ($ctx['renewal_period_sql'] ?? renewalPeriodSql(false, 'i.renewal_period', 'c.renewal_period'));
+                $baseSql = renewalBaseDateSql('c.timestamp');
+                $clauses[] = '(' . $periodSql . ' > 0 AND ' . $baseSql . ' > 0 AND (' . $baseSql
+                    . ' + ' . $periodSql . ' * ' . (int) ($ctx['day_seconds'] ?? 86400) . ') <= ' . $now . ')';
                 break;
             case 'no_expiry':
-                $clauses[] = 'c.renewal_period <= 0';
+                $clauses[] = (string) ($ctx['renewal_period_sql'] ?? renewalPeriodSql(false, 'i.renewal_period', 'c.renewal_period')) . ' <= 0';
                 break;
             case 'overshared':
                 $clauses[] = '(SELECT COUNT(*) FROM ' . (string) ($tables['sharekeys_items'] ?? '')

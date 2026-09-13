@@ -229,6 +229,12 @@ switch ($inputData['type']) {
         );
 
         if (is_array($dataReceived) === true && count($dataReceived) > 0) {
+            try {
+                $post_renewal_period = renewalValidatePeriod($dataReceived['renewal_period'] ?? 0);
+            } catch (InvalidArgumentException $exception) {
+                echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('renewal_period_invalid')], 'encode');
+                break;
+            }
             // Prepare variables
             $post_anyone_can_modify = filter_var($dataReceived['anyone_can_modify'], FILTER_SANITIZE_NUMBER_INT);
             $post_description = $antiXss->xss_clean(strval($dataReceived['description']));
@@ -489,6 +495,7 @@ switch ($inputData['type']) {
                                 1 : 0,
                             'anyone_can_modify' => ($post_anyone_can_modify === 'on') ? 1 : 0,
                             'complexity_level' => $post_complexity_level,
+                            'renewal_period' => $post_renewal_period,
                             'encryption_type' => 'teampass_aes',
                             'fa_icon' => $post_fa_icon,
                             'item_key' => uniqidReal(50),
@@ -1178,6 +1185,14 @@ switch ($inputData['type']) {
             $inputData['itemId']
         );
         $originalFolderId = (int) ($dataItem['id_tree'] ?? $inputData['folderId']);
+        try {
+            $post_renewal_period = array_key_exists('renewal_period', $dataReceived)
+                ? renewalValidatePeriod($dataReceived['renewal_period'])
+                : (int) ($dataItem['renewal_period'] ?? 0);
+        } catch (InvalidArgumentException $exception) {
+            echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('renewal_period_invalid')], 'encode');
+            break;
+        }
         $targetFolderId = (int) $inputData['folderId'];
         $editionLockForSave = getItemEditionLockSaveStatus((int) $inputData['itemId'], (int) $session->get('user-id'));
 
@@ -1499,6 +1514,7 @@ switch ($inputData['type']) {
                     'restricted_to' => empty($post_restricted_to) === true ? '' : implode(';', $post_restricted_to),
                     'anyone_can_modify' => (int) $post_anyone_can_modify,
                     'complexity_level' => (int) $post_complexity_level,
+                    'renewal_period' => $post_renewal_period,
                     'encryption_type' => TP_ENCRYPTION_NAME,
                     'perso' => in_array($inputData['folderId'], $session->get('user-personal_folders')) === true ? 1 : 0,
                     'fa_icon' => $post_fa_icon,
@@ -2329,6 +2345,12 @@ switch ($inputData['type']) {
                     $session->get('user-login'),
                     'at_description'
                 );
+            }
+            if ($post_renewal_period !== (int) ($dataItem['renewal_period'] ?? 0)) {
+                $arrayOfChanges[] = $lang->get('item_renewal_period');
+                logItems($SETTINGS, (int) $inputData['itemId'], $inputData['label'],
+                    (int) $session->get('user-id'), 'at_modification', $session->get('user-login'),
+                    'at_renewal_period : ' . (int) ($dataItem['renewal_period'] ?? 0) . ' => ' . $post_renewal_period);
             }
             // FOLDER
             if (intval($data['id_tree']) !== (int) $inputData['folderId']) {
@@ -3375,15 +3397,19 @@ switch ($inputData['type']) {
                 $arrData['links_to_kbs'] = $tmp;
             }
             // Prepare DIalogBox data
+            $effectiveRenewalDue = renewalItemDueAt((int) $dataItem['id'], $SETTINGS);
+            $post_expired_item = $effectiveRenewalDue !== null && $effectiveRenewalDue <= time() ? 1 : 0;
+            $arrData['expired_item'] = $post_expired_item;
             if ((int) $post_expired_item === 0) {
                 $arrData['show_detail_option'] = 0;
-            } elseif ($user_is_allowed_to_modify === true && (int) $post_expired_item === 1) {
+            } elseif ($user_is_allowed_to_modify === true) {
                 $arrData['show_detail_option'] = 1;
             } else {
                 $arrData['show_detail_option'] = 2;
             }
 
             $arrData['label'] = $dataItem['label'] === '' ? '' : $dataItem['label'];
+            $arrData['renewal_period'] = (int) ($dataItem['renewal_period'] ?? 0);
             $pwLength = strlen($passwordForMetrics);
             $arrData['pw_length'] = $pwLength;
             // Same classification as the list and Security Posture, but the card is the only health
@@ -4926,7 +4952,7 @@ switch ($inputData['type']) {
                     'SELECT i.id AS id, i.item_key AS item_key, i.restricted_to, i.perso,
                     i.label, i.description, i.login,
                     i.anyone_can_modify, i.id_tree AS tree_id, i.fa_icon,
-                    n.renewal_period, i.url AS link, i.email
+                    n.renewal_period, i.renewal_period AS item_renewal_period, i.created_at, i.url AS link, i.email
                     FROM ' . prefixTable('items') . ' AS i
                     INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (i.id_tree = n.id)
                     WHERE %l
@@ -4941,7 +4967,7 @@ switch ($inputData['type']) {
                     'SELECT i.id AS id, i.item_key AS item_key, i.restricted_to, i.perso,
                     i.label, i.description, i.login,
                     i.anyone_can_modify, i.id_tree AS tree_id, i.fa_icon,
-                    n.renewal_period, i.url AS link, i.email
+                    n.renewal_period, i.renewal_period AS item_renewal_period, i.created_at, i.url AS link, i.email
                     FROM ' . prefixTable('items') . ' AS i
                     INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (i.id_tree = n.id)
                     WHERE %l
@@ -5049,14 +5075,15 @@ switch ($inputData['type']) {
                     }
 
                     // Get Expiration date (batch pre-fetched)
-                    $record['date'] = $batchExpirationDates[$record['id']] ?? null;
+                    $record['date'] = (int) ($batchExpirationDates[$record['id']] ?? 0) ?: (int) ($record['created_at'] ?? 0);
+                    $renewalDays = renewalEffectiveDays((int) $record['item_renewal_period'], (int) $record['renewal_period'],
+                        (int) ($SETTINGS['activate_expiration'] ?? 0) === 1);
+                    $renewalDue = renewalDueAt($renewalDays, (int) $record['date']);
 
                     // Check if item is expired
                     $expired_item = 0;
                     if (
-                        (int) $SETTINGS['activate_expiration'] === 1
-                        && intval($record['renewal_period']) > 0
-                        && (intval($record['date']) + (intval($record['renewal_period']) * TP_ONE_DAY_SECONDS)) < time()
+                        $renewalDue !== null && $renewalDue <= time()
                     ) {
                         $expired_item = 1;
                     }
@@ -5457,12 +5484,21 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(['error' => true], 'encode');
             break;
         }
+        try {
+            $previewItemPeriod = $request->request->has('renewal_period')
+                ? renewalValidatePeriod($request->request->get('renewal_period')) : null;
+        } catch (InvalidArgumentException $exception) {
+            echo (string) prepareExchangedData(['error' => true], 'encode');
+            break;
+        }
         echo (string) prepareExchangedData(renewalPreview(
             (int) $session->get('user-id'),
             (int) $inputData['folderId'],
             $request->request->all('item_ids'),
             $inputData['context'] === 'create',
-            $SETTINGS
+            $SETTINGS,
+            $previewItemPeriod,
+            $inputData['context'] === 'copy'
         ), 'encode');
         break;
 
@@ -7805,7 +7841,7 @@ switch ($inputData['type']) {
                     } else {
                         $detail = $escapeDetail(trim($reason[1]));
                     }
-                } elseif (in_array($reason[0], array('at_restriction', 'at_email', 'at_login', 'at_label', 'at_url', 'at_tag')) === true) {
+                } elseif (in_array($reason[0], array('at_restriction', 'at_email', 'at_login', 'at_label', 'at_url', 'at_tag', 'at_renewal_period')) === true) {
                     $tmp = explode(' => ', $reason[1]);
                     $detail = empty(trim($tmp[0])) === true ?
                         $lang->get('no_previous_value') : $lang->get('previous_value') . ': <span class="font-weight-light">' . $escapeDetail($tmp[0]) . ' </span>';

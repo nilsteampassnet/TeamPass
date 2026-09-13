@@ -292,6 +292,16 @@ if ((int) $session_user_admin === 1) {
                                         </div>
                                     </div>
                                 </div>
+                                <div class="form-group mt-3" id="form-item-renewal-settings">
+                                    <div class="custom-control custom-checkbox">
+                                        <input type="checkbox" class="custom-control-input form-item-control" id="form-item-renewal-enabled">
+                                        <label class="custom-control-label" for="form-item-renewal-enabled"><?php echo $lang->get('item_renewal_enable'); ?></label>
+                                    </div>
+                                    <label class="mt-2" for="form-item-renewal-period"><?php echo $lang->get('item_renewal_period'); ?></label>
+                                    <input type="number" class="form-control form-item-control" id="form-item-renewal-period" min="1" max="36500" step="1" value="90" disabled>
+                                    <small class="form-text text-muted"><?php echo $lang->get('item_renewal_help'); ?></small>
+                                </div>
+
                                 <!-- EMAIL -->
                                 <div class="input-group mb-3 mt-3">
                                     <div class="input-group-prepend">

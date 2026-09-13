@@ -633,7 +633,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                     </li>';
     }
     // Renewal follows the user's item access, including read-only accounts.
-    if ((int) $session_user_admin === 0 && (int) ($SETTINGS['activate_expiration'] ?? 0) === 1) {
+    if ((int) $session_user_admin === 0) {
         echo '
                     <li class="nav-item">
                         <a href="#" data-name="utilities.renewal" class="nav-link', $get['page'] === 'utilities.renewal' ? ' active' : '', '">

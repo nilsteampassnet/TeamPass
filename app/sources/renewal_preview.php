@@ -6,7 +6,7 @@ declare(strict_types=1);
  * Preview a folder's renewal policy using current read permissions and password history.
  * Reads metadata only; moving an item never resets its password age.
  */
-function renewalPreview(int $userId, int $folderId, array $itemIds, bool $creation, array $settings): array
+function renewalPreview(int $userId, int $folderId, array $itemIds, bool $creation, array $settings, ?int $itemPeriod = null, bool $copy = false): array
 {
     $denied = ['error' => true];
     $user = DB::queryFirstRow('SELECT admin FROM ' . prefixTable('users') . ' WHERE id = %i AND deleted_at IS NULL', $userId);
@@ -23,13 +23,13 @@ function renewalPreview(int $userId, int $folderId, array $itemIds, bool $creati
     $enabled = (int) ($settings['activate_expiration'] ?? 0) === 1;
     $days = $enabled ? max(0, (int) $folder['renewal_period']) : 0;
     $now = time();
-    $result = ['error' => false, 'enabled' => $enabled, 'days' => $days, 'creation' => $creation, 'items' => []];
+    $result = ['error' => false, 'enabled' => true, 'folder_enabled' => $enabled, 'days' => $days, 'creation' => $creation || $copy, 'items' => []];
 
     if ($creation) {
         if ($itemIds !== []) {
             return $denied;
         }
-        $rows = [['id' => 0, 'label' => '', 'last_relevant_date' => $now]];
+        $rows = [['id' => 0, 'label' => '', 'renewal_period' => 0, 'last_relevant_date' => $now]];
     } elseif ($itemIds !== []) {
         // Reject malformed or inaccessible selections as a whole, without leaking item metadata.
         $ids = [];
@@ -42,8 +42,8 @@ function renewalPreview(int $userId, int $folderId, array $itemIds, bool $creati
         }
         $ids = array_values(array_unique($ids));
         $rows = DB::query(
-            'SELECT i.id, i.label,
-                COALESCE(NULLIF(l.last_relevant_date, 0), NULLIF(CAST(i.created_at AS UNSIGNED), 0), 0) AS last_relevant_date
+            'SELECT i.id, i.label, i.renewal_period,
+                ' . renewalBaseDateSql() . ' AS last_relevant_date
             FROM ' . prefixTable('items') . ' AS i
             LEFT JOIN (
                 SELECT id_item, MAX(CAST(date AS UNSIGNED)) AS last_relevant_date
@@ -63,14 +63,20 @@ function renewalPreview(int $userId, int $folderId, array $itemIds, bool $creati
     }
 
     foreach ($rows as $row) {
-        $baseDate = (int) $row['last_relevant_date'];
-        $due = $days > 0 && $baseDate > 0 ? $baseDate + $days * TP_ONE_DAY_SECONDS : null;
+        $baseDate = $copy ? $now : (int) $row['last_relevant_date'];
+        $individualDays = $itemPeriod ?? (int) $row['renewal_period'];
+        $effectiveDays = renewalEffectiveDays($individualDays, $days, $enabled);
+        $due = renewalDueAt($effectiveDays, $baseDate);
+        $source = $effectiveDays === 0 ? 'none' : ($days === 0 || ($individualDays > 0 && $individualDays < $days) ? 'item' : 'folder');
         $result['items'][] = [
             'id' => (int) $row['id'],
             'label' => (string) $row['label'],
+            'days' => $effectiveDays,
+            'item_days' => $individualDays,
+            'source' => $source,
             'due_at' => $due,
             'due_date' => $due === null ? '' : date($settings['date_format'] ?? 'Y-m-d', $due),
-            'expired' => $due !== null && $due < $now,
+            'expired' => $due !== null && $due <= $now,
         ];
     }
     return $result;

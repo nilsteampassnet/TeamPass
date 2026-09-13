@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace TeamPass\Tests\Renewal;
 
 require_once __DIR__ . '/../../app/sources/security_posture_logic.php';
+require_once __DIR__ . '/../../app/sources/renewal_logic.php';
+require_once __DIR__ . '/../../app/sources/rotation.functions.php';
+require_once __DIR__ . '/../../app/sources/reports.functions.php';
 require_once __DIR__ . '/../../app/vendor/sergeytsalkov/meekrodb/db.class.php';
 
 /** SQLite transport for the real renewal SQL; no authorization decision is mocked. */
@@ -132,7 +135,7 @@ function newRequest(): string
     $code = substr($checks, strpos($checks, 'class PerformChecks'));
     $functions = source('app/sources/main.functions.php');
     foreach (['getPersonalFolderIdsWithDescendants', 'getOwnPersonalFolderIds', 'securityPostureUserRoleIds',
-        'securityPostureAuthorizedFolderIds', 'securityPostureItemAccessSql'] as $name) {
+        'securityPostureAuthorizedFolderIds', 'securityPostureItemAccessSql', 'renewalItemDueAt'] as $name) {
         $code .= "\n" . declaration($functions, $name);
     }
     $code .= "\n" . declaration(source('app/sources/renewal_preview.php'), 'renewalPreview');
@@ -157,6 +160,33 @@ function runTable(string $namespace, array $query = [], array $sessionValues = [
     ob_start();
     try {
         eval($imports . '(static function () use ($session, $request, $SETTINGS) {' . $body . '})();');
+        return json_decode(ob_get_contents(), true, 512, JSON_THROW_ON_ERROR);
+    } finally {
+        ob_end_clean();
+    }
+}
+
+/** Replace encryption transport only, keeping report queries and row shaping real. */
+function prepareExchangedData(array $data, string $mode): string { return json_encode($data, JSON_THROW_ON_ERROR); }
+
+/** Execute the actual rotation report cases against the renewal SQL fixture. */
+function runRotationReport(string $namespace, string $type): array
+{
+    $SETTINGS = ConfigManager::$settings + ['rotation_tracking_enabled' => 1];
+    $lang = new class {
+        /** Return stable labels for assertions independent of the user's locale. */
+        public function get(string $key): string { return $key; }
+    };
+    $source = source('app/sources/reports.queries.php');
+    $start = strpos($source, '$folderRenewalEnabled =');
+    $setup = substr($source, $start, strpos($source, '// Do checks', $start) - $start);
+    $body = substr($source, strpos($source, "case 'report_rotation_overdue':"));
+    $imports = 'namespace ' . $namespace . '; use ' . __NAMESPACE__ . '\\DB;'
+        . ' use function ' . __NAMESPACE__ . '\\prefixTable;'
+        . ' use function ' . __NAMESPACE__ . '\\prepareExchangedData;';
+    ob_start();
+    try {
+        eval($imports . '(static function () use ($SETTINGS, $lang, $type) {' . $setup . 'switch ($type) {' . $body . '})();');
         return json_decode(ob_get_contents(), true, 512, JSON_THROW_ON_ERROR);
     } finally {
         ob_end_clean();

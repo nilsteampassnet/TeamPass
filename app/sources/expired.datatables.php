@@ -108,11 +108,6 @@ $emptyOutput = [
     'aaData' => [],
 ];
 
-if ((int) ($SETTINGS['activate_expiration'] ?? 0) !== 1) {
-    echo json_encode($emptyOutput);
-    exit;
-}
-
 // Read current grants and item restrictions from the database, not a stale session scope.
 $userId = (int) $session->get('user-id');
 $visibleFolders = securityPostureAuthorizedFolderIds($userId);
@@ -131,8 +126,9 @@ if ($dateCriteria !== null && !empty($dateCriteria)) {
     $targetExpirationTimestamp = time();
 }
 
-$lastRelevantDateSql = 'COALESCE(NULLIF(l.last_relevant_date, 0), NULLIF(CAST(i.created_at AS UNSIGNED), 0), 0)';
-$expirationDateSql = '(' . $lastRelevantDateSql . ' + (n.renewal_period * ' . TP_ONE_DAY_SECONDS . '))';
+$lastRelevantDateSql = renewalBaseDateSql();
+$effectivePeriodSql = renewalPeriodSql((int) ($SETTINGS['activate_expiration'] ?? 0) === 1);
+$expirationDateSql = '(' . $lastRelevantDateSql . ' + (' . $effectivePeriodSql . ' * ' . TP_ONE_DAY_SECONDS . '))';
 $fromWhereSql = '
     FROM ' . prefixTable('items') . ' AS i
     INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)
@@ -146,7 +142,7 @@ $fromWhereSql = '
     WHERE i.inactif = %i
     AND i.deleted_at IS NULL
     AND ' . $accessScopeSql . '
-    AND n.renewal_period > %i
+    AND ' . $effectivePeriodSql . ' > %i
     AND ' . $lastRelevantDateSql . ' > %i
     AND ' . $expirationDateSql . ' <= %i';
 $queryParams = [

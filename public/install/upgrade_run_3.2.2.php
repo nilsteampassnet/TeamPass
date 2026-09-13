@@ -593,6 +593,14 @@ foreach ($licenceTrialDefaults as $key => $value) {
 // true in Docker, where the entrypoint deletes that directory at boot.
 mysqli_query($db_link, 'DROP TABLE IF EXISTS `_install`');
 
+// Individual item renewal policies (also replayed by Docker on patch upgrades).
+require_once __DIR__ . '/upgrade_run_3.2.2.5.php';
+if (upgradeItemRenewalPolicy() === false) {
+    echo json_encode([['finish' => '1', 'error' => 'Error adding the item renewal period: ' . mysqli_error($db_link)]]);
+    mysqli_close($db_link);
+    exit();
+}
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,

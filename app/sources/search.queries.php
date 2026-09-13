@@ -508,6 +508,7 @@ if ($featureCustomFields === true && $filters['custom_field_value'] !== '') {
 }
 
 $healthSql = securityPasswordHealthSql('i');
+$effectivePeriodSql = renewalPeriodSql((int) ($SETTINGS['activate_expiration'] ?? 0) === 1);
 $built = searchBuildWhere(
     $filters,
     [
@@ -519,6 +520,7 @@ $built = searchBuildWhere(
         'overshared_threshold' => (int) ($SETTINGS['security_dashboard_overshared_threshold'] ?? 10),
         'visible_field_ids' => $visibleFieldIds,
         'weak_sql' => $healthSql['weak'],
+        'renewal_period_sql' => $effectivePeriodSql,
         'tables' => [
             'restriction_to_roles' => prefixTable('restriction_to_roles'),
             'files' => prefixTable('files'),
@@ -543,6 +545,7 @@ if ($featureClassification === true) {
 
 $fromClause = ' FROM ' . prefixTable('cache') . ' AS c'
     . ' INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = c.id)'
+    . ' INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)'
     . $classificationJoin
     . ' WHERE ' . $built['sql'];
 
@@ -566,7 +569,8 @@ $length = ($length <= 0 || $length > 100) ? 100 : $length;
 
 $rows = DB::query(
     'SELECT c.id, c.label, c.login, c.description, c.tags, c.url, c.folder,
-        c.id_tree, c.perso, c.author, c.restricted_to, c.renewal_period, c.timestamp'
+        c.id_tree, c.perso, c.author, c.restricted_to, ' . $effectivePeriodSql . ' AS renewal_period,
+        ' . renewalBaseDateSql('c.timestamp') . ' AS timestamp'
     . $classificationSelect
     . $fromClause
     . ' GROUP BY c.id'
@@ -603,7 +607,6 @@ if ($massOperationEnabled === true && count($rows) > 0 && count($userRoleIds) > 
     }
 }
 
-$expirationActive = (int) ($SETTINGS['activate_expiration'] ?? 0) === 1;
 $classificationLabels = [1 => 'public', 2 => 'internal', 3 => 'confidential', 4 => 'restricted'];
 $classificationColours = [1 => 'success', 2 => 'info', 3 => 'warning', 4 => 'danger'];
 
@@ -613,10 +616,8 @@ foreach ($rows as $record) {
     $folderId = (int) $record['id_tree'];
 
     $expired = 0;
-    if ($expirationActive === true
-        && (int) $record['renewal_period'] > 0
-        && ((int) $record['timestamp'] + ((int) $record['renewal_period'] * TP_ONE_DAY_SECONDS)) < time()
-    ) {
+    $renewalDue = renewalDueAt((int) $record['renewal_period'], (int) $record['timestamp']);
+    if ($renewalDue !== null && $renewalDue <= time()) {
         $expired = 1;
     }
 

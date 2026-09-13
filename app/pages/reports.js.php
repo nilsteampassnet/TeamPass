@@ -117,7 +117,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         'rotation_overdue': [
             ['label', '<?php echo $lang->get('label'); ?>'],
             ['folder', '<?php echo $lang->get('folder'); ?>'],
-            ['sla_days', '<?php echo $lang->get('rotation_sla_days'); ?>'],
+            ['sla_days', '<?php echo $lang->get('renewal_effective_days'); ?>'],
+            ['folder_sla_days', '<?php echo $lang->get('rotation_sla_days'); ?>'],
+            ['item_sla_days', '<?php echo $lang->get('item_renewal_period'); ?>'],
             ['last_change', '<?php echo $lang->get('leaver_risk_last_pw_change'); ?>'],
             ['due_at', '<?php echo $lang->get('rotation_due_at'); ?>'],
             ['days_overdue', '<?php echo $lang->get('rotation_days_overdue'); ?>'],
@@ -127,7 +129,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             ['folder', '<?php echo $lang->get('folder'); ?>'],
             ['sla_days', '<?php echo $lang->get('rotation_sla_days'); ?>'],
             ['items', '<?php echo $lang->get('items'); ?>'],
-            ['overdue', '<?php echo $lang->get('rotation_overdue'); ?>'],
+            ['overdue', '<?php echo $lang->get('renewal_folder_overdue'); ?>'],
+            ['individual_policies', '<?php echo $lang->get('renewal_individual_policies'); ?>'],
+            ['covered_items', '<?php echo $lang->get('renewal_covered_items'); ?>'],
+            ['effective_overdue', '<?php echo $lang->get('renewal_effective_overdue'); ?>'],
         ],
     }
 

@@ -235,10 +235,13 @@ DB::query(
 );
 $iTotal = DB::count();
 $rows = DB::query(
-    "SELECT c.*, ci.data, i.item_key
+    "SELECT c.*, ci.data, i.item_key, "
+    . renewalPeriodSql((int) ($SETTINGS['activate_expiration'] ?? 0) === 1) . " AS renewal_period, "
+    . renewalBaseDateSql('c.timestamp') . " AS timestamp
     FROM " . prefixTable('cache') . " AS c
     LEFT JOIN " . prefixTable('categories_items') . " AS ci ON (ci.item_id = c.id)
     INNER JOIN " . prefixTable('items') . " AS i ON (i.id = c.id)
+    INNER JOIN " . prefixTable('nested_tree') . " AS n ON (n.id = i.id_tree)
     {$sWhere}
     {$sOrder}
     {$sLimit}",
@@ -311,17 +314,8 @@ if (null === $request->query->get('type')) {
         }
 
         // Expiration
-        if ($SETTINGS['activate_expiration'] === '1') {
-            if ($record['renewal_period'] > 0
-                && ($record['timestamp'] + ($record['renewal_period'] * TP_ONE_DAY_SECONDS)) < time()
-            ) {
-                $expired = 1;
-            } else {
-                $expired = 0;
-            }
-        } else {
-            $expired = 0;
-        }
+        $renewalDue = renewalDueAt((int) $record['renewal_period'], (int) $record['timestamp']);
+        $expired = $renewalDue !== null && $renewalDue <= time() ? 1 : 0;
 
         // Manage the restricted_to variable
         if (filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== null) {
@@ -473,20 +467,9 @@ if (null === $request->query->get('type')) {
         }
 
         $arr_data[$record['id']]['is_result_of_search'] = 1;
-        if ((int) $SETTINGS['activate_expiration'] === 1) {
-            if ($record['renewal_period'] > 0
-                && ($record['timestamp'] + ($record['renewal_period'] * TP_ONE_DAY_SECONDS)) < time()
-            ) {
-                $arr_data[$record['id']]['expired'] = 1;
-                $arr_data[$record['id']]['expirationFlag'] = 'red';
-            } else {
-                $arr_data[$record['id']]['expired'] = 0;
-                $arr_data[$record['id']]['expirationFlag'] = 'green';
-            }
-        } else {
-            $arr_data[$record['id']]['expired'] = 0;
-            $arr_data[$record['id']]['expirationFlag'] = '';
-        }
+        $renewalDue = renewalDueAt((int) $record['renewal_period'], (int) $record['timestamp']);
+        $arr_data[$record['id']]['expired'] = $renewalDue !== null && $renewalDue <= time() ? 1 : 0;
+        $arr_data[$record['id']]['expirationFlag'] = $renewalDue === null ? '' : ($arr_data[$record['id']]['expired'] === 1 ? 'red' : 'green');
 
         // Manage the restricted_to variable
         if (filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== null) {

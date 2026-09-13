@@ -17,7 +17,8 @@ folder row and its edit sidebar display the values actually saved by the server.
 `renewal-preview.test.cjs` runs the shipped shared notice renderer and request handling
 with controlled DOM and HTTP adapters. It covers folder changes with out-of-order
 responses, creation estimates, expired and unknown dates, safe label rendering,
-disabled expiration and cancellation/failure of move previews.
+individual policies with folder expiration disabled, item form reset/toggle behavior,
+copy inheritance and cancellation/failure of move previews.
 
 In a configured browser, also check the folder banner (including empty folders),
 creation, editing, copying, drag-and-drop moves and bulk moves from Search. Moving

@@ -45,7 +45,8 @@ class RenewalAuthorizationTest extends TestCase
                 (30, '8', 0, 11, 14, 1, 1, 1),
                 (31, 'Foreign personal child', 30, 12, 13, 2, 0, 1);
             CREATE TABLE renewal_items (id INTEGER PRIMARY KEY, label TEXT, id_tree INTEGER,
-                created_at TEXT DEFAULT '1000', restricted_to TEXT DEFAULT '', inactif INTEGER DEFAULT 0, deleted_at TEXT);
+                created_at TEXT DEFAULT '1000', restricted_to TEXT DEFAULT '', inactif INTEGER DEFAULT 0, deleted_at TEXT,
+                renewal_period INTEGER DEFAULT 0, perso INTEGER DEFAULT 0);
             INSERT INTO renewal_items (id, label, id_tree, restricted_to) VALUES
                 (1, 'Open <item>', 11, ''),
                 (2, 'User restriction', 11, '8'),
@@ -67,6 +68,82 @@ class RenewalAuthorizationTest extends TestCase
     {
         $preview = newRequest() . '\\renewalPreview';
         return $preview(7, $folderId, $itemIds, $creation, ConfigManager::$settings);
+    }
+
+    /** All policy combinations work for both shared and personal items, including folder expiration off. */
+    public function testIndividualPolicyMatrixAcrossPreviewItemAndRenewalTable(): void
+    {
+        $base = time() - 40 * 86400;
+        foreach ([[11, 1, 'Open'], [21, 5, 'Own personal item']] as [$folderId, $itemId, $term]) {
+            foreach ([0, 1] as $folderEnabled) {
+                foreach ([0, 90] as $folderDays) {
+                    foreach ([0, 30, 180] as $itemDays) {
+                        ConfigManager::$settings['activate_expiration'] = $folderEnabled;
+                        DB::query('UPDATE renewal_nested_tree SET renewal_period = %i WHERE id = %i', $folderDays, $folderId);
+                        DB::query('UPDATE renewal_items SET renewal_period = %i, created_at = %s WHERE id = %i', $itemDays, (string) $base, $itemId);
+                        $expected = $folderEnabled && $folderDays > 0
+                            ? ($itemDays > 0 ? min($itemDays, $folderDays) : $folderDays) : $itemDays;
+                        $due = $expected > 0 ? $base + $expected * 86400 : null;
+                        $preview = $this->preview($folderId, [$itemId]);
+                        self::assertSame($expected, $preview['items'][0]['days']);
+                        self::assertSame($due, $preview['items'][0]['due_at']);
+                        $readDeadline = newRequest() . '\\renewalItemDueAt';
+                        self::assertSame($due, $readDeadline($itemId, ConfigManager::$settings));
+                        $table = runTable(newRequest(), ['search' => ['value' => $term]]);
+                        self::assertSame($due !== null && $due <= time() ? 1 : 0, $table['recordsFiltered']);
+                    }
+                }
+            }
+        }
+    }
+
+    /** Pending edits preview the new setting without persisting it; copying starts a new age. */
+    public function testDraftPolicyAndCopyPreviewNeverMutateTheSource(): void
+    {
+        ConfigManager::$settings['activate_expiration'] = 0;
+        DB::query('UPDATE renewal_items SET renewal_period = 30 WHERE id IN (1, 5, 6)');
+        $preview = newRequest() . '\\renewalPreview';
+        $draft = $preview(7, 11, [1], false, ConfigManager::$settings, 90);
+        self::assertSame(90, $draft['items'][0]['days']);
+        self::assertSame(30, (int) DB::queryFirstField('SELECT renewal_period FROM renewal_items WHERE id = 1'));
+        $disabled = $preview(7, 11, [1], false, ConfigManager::$settings, 0);
+        self::assertNull($disabled['items'][0]['due_at']);
+        $copy = $preview(7, 11, [1], false, ConfigManager::$settings, null, true);
+        self::assertSame(30, $copy['items'][0]['days']);
+        self::assertGreaterThanOrEqual(time() + 29 * 86400, $copy['items'][0]['due_at']);
+        self::assertFalse($copy['items'][0]['expired']);
+        $table = runTable(newRequest());
+        self::assertSame(2, $table['recordsTotal']);
+        self::assertStringContainsString('Own personal item', json_encode($table));
+        self::assertStringNotContainsString('Foreign personal item', json_encode($table));
+    }
+
+    /** Governance counts individual deadlines but never includes personal trees or their legacy descendants. */
+    public function testGovernanceSeparatesFolderSlaAndEffectiveDeadlines(): void
+    {
+        DB::query('UPDATE renewal_items SET renewal_period = 1 WHERE id IN (1, 5, 6)');
+        DB::query('UPDATE renewal_nested_tree SET renewal_period = 90');
+        DB::query('UPDATE renewal_items SET created_at = %s', (string) (time() - 30 * 86400));
+        foreach ([0, 1] as $enabled) {
+            ConfigManager::$settings['activate_expiration'] = $enabled;
+            $overdue = runRotationReport(newRequest(), 'report_rotation_overdue');
+            self::assertCount(1, $overdue['rows']);
+            self::assertSame(1, $overdue['rows'][0]['item_id']);
+            self::assertSame(1, $overdue['rows'][0]['sla_days']);
+            self::assertSame($enabled ? 90 : 0, $overdue['rows'][0]['folder_sla_days']);
+            self::assertStringNotContainsString('personal', json_encode($overdue));
+            $coverage = runRotationReport(newRequest(), 'report_rotation_sla');
+            $folders = array_column($coverage['rows'], null, 'folder_id');
+            self::assertSame([10, 11, 12], array_values(array_intersect([10, 11, 12], array_keys($folders))));
+            self::assertCount(3, $folders);
+            self::assertSame(0, $folders[11]['overdue']);
+            self::assertSame(1, $folders[11]['effective_overdue']);
+            self::assertSame(1, $folders[11]['individual_policies']);
+            self::assertSame($enabled ? 3 : 0, $coverage['folders_with_sla']);
+        }
+        DB::query('DELETE FROM renewal_items WHERE id_tree = 10');
+        $empty = array_column(runRotationReport(newRequest(), 'report_rotation_sla')['rows'], null, 'folder_id');
+        self::assertSame(0, $empty[10]['covered_items']);
     }
 
     /** Preview and renewal table agree on password history, creation fallback and moved items. */
@@ -94,7 +171,7 @@ class RenewalAuthorizationTest extends TestCase
     {
         ConfigManager::$settings['activate_expiration'] = 0;
         $disabled = $this->preview(11, [1]);
-        self::assertFalse($disabled['enabled']);
+        self::assertFalse($disabled['folder_enabled']);
         self::assertSame(0, $disabled['days']);
         self::assertNull($disabled['items'][0]['due_at']);
         ConfigManager::$settings['activate_expiration'] = 1;
@@ -287,14 +364,14 @@ class RenewalAuthorizationTest extends TestCase
             $code = source($file);
             self::assertStringContainsString("userAccessPage('utilities.renewal') === false", $code);
             self::assertStringContainsString('checkSession() === false', $code);
-            self::assertStringContainsString("\$SETTINGS['activate_expiration']", $code);
+            self::assertStringNotContainsString("(int) (\$SETTINGS['activate_expiration'] ?? 0) !== 1", $code);
         }
         self::assertStringContainsString('/app/sources/expired.datatables.php', source('public/sources/expired.datatables.php'));
         $index = source('public/index.php');
         self::assertSame(1, substr_count($index, 'data-name="utilities.renewal"'));
         $menu = substr($index, strpos($index, '// Renewal follows'), strpos($index, '// KB menu') - strpos($index, '// Renewal follows'));
         self::assertStringContainsString('(int) $session_user_admin === 0', $menu);
-        self::assertStringContainsString("\$SETTINGS['activate_expiration']", $menu);
+        self::assertStringNotContainsString("\$SETTINGS['activate_expiration']", $menu);
     }
 
     /** Render the production menu condition for each role and expiration setting. */
@@ -319,7 +396,7 @@ class RenewalAuthorizationTest extends TestCase
                 } finally {
                     ob_end_clean();
                 }
-                if ($session_user_admin === 0 && $enabled === 1) {
+                if ($session_user_admin === 0) {
                     self::assertStringContainsString('data-name="utilities.renewal" class="nav-link active"', $html);
                     self::assertStringContainsString('Renouvellement', $html);
                 } else {

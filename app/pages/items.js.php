@@ -1452,6 +1452,7 @@ require __DIR__ . '/renewal.preview.js.php';
                 $('.item-details-card').find('.form-control').val('');
                 $('.clear-me-html').html('');
                 $('.form-item-control').val('');
+                setItemRenewalPeriod(0);
                 // Show edition form
                 $('.form-item').removeClass('hidden');
                 // Force update of simplepassmeter
@@ -2197,6 +2198,31 @@ require __DIR__ . '/renewal.preview.js.php';
 
     let itemFolderRulesRefreshRequestId = 0;
 
+    /** Initialize the optional policy without firing a save or resetting password age. */
+    function setItemRenewalPeriod(days) {
+        $('#form-item-renewal-enabled').prop('checked', Number(days) > 0);
+        $('#form-item-renewal-period').val(Number(days) > 0 ? days : 90)
+            .prop('disabled', Number(days) <= 0).prop('required', Number(days) > 0);
+    }
+
+    /** Preview unsaved item policy choices against the selected folder. */
+    function refreshItemRenewalNotice(folderId) {
+        const itemId = Number(store.get('teampassItem').id) || 0;
+        const period = $('#form-item-renewal-enabled').prop('checked') ? $('#form-item-renewal-period').val() : 0;
+        tpRenewal.update('#form-item-renewal-notice', folderId, itemId ? [itemId] : [], itemId === 0, period);
+    }
+
+    let renewalPreviewTimer;
+    $('#form-item-renewal-enabled, #form-item-renewal-period').on('change input', function() {
+        const enabled = $('#form-item-renewal-enabled').prop('checked');
+        $('#form-item-renewal-period').prop('disabled', !enabled).prop('required', enabled);
+        userDidAChange = true;
+        clearTimeout(renewalPreviewTimer);
+        renewalPreviewTimer = setTimeout(function() {
+            refreshItemRenewalNotice($('#form-item-folder').val());
+        }, 200);
+    });
+
     /**
      * Refresh the top rules of item form from backend for the selected folder.
      * When opening an existing item for edition, the backend can resolve the
@@ -2241,9 +2267,7 @@ require __DIR__ . '/renewal.preview.js.php';
             }
 
             if (data.error === false) {
-                const renewalItemId = Number(store.get('teampassItem').id) || 0;
-                tpRenewal.update('#form-item-renewal-notice', data.folderId || folderId,
-                    renewalItemId ? [renewalItemId] : [], renewalItemId === 0);
+                refreshItemRenewalNotice(data.folderId || folderId);
                 $('#card-item-visibility').html(data.visibility || '<?php echo $lang->get('none'); ?>');
                 $('#card-item-minimum-complexity').html(data.complexity === undefined ? '' : data.complexity);
 
@@ -2279,7 +2303,7 @@ require __DIR__ . '/renewal.preview.js.php';
     });
 
     $('#form-item-copy-destination').on('change', function() {
-        tpRenewal.update('#copy-item-renewal-notice', $(this).val(), [], true);
+        tpRenewal.update('#copy-item-renewal-notice', $(this).val(), [Number(store.get('teampassItem').id)], false, null, true);
     });
 
     /**
@@ -4440,6 +4464,7 @@ require __DIR__ . '/renewal.preview.js.php';
                 //prepare data
                 var data = {
                     'anyone_can_modify': $('#form-item-anyoneCanModify').is(':checked') ? 1 : 0,
+                    'renewal_period': $('#form-item-renewal-enabled').prop('checked') ? $('#form-item-renewal-period').val() : 0,
                     'complexity_level': parseInt($('#form-item-password-complex').val()),
                     'description': $('#form-item-description').summernote('code') === '<p><br></p>' ? '' : $('#form-item-description').summernote('code'),
                     'diffusion_list': diffusion,
@@ -6759,6 +6784,9 @@ require __DIR__ . '/renewal.preview.js.php';
                     // Scroll to top
                     $(window).scrollTop(0);
 
+                    // Use the server's current deadline, including direct links and changed policies.
+                    itemExpired = Number(data.expired_item) || 0;
+                    $('#card-item-expired').toggleClass('hidden', itemExpired !== 1);
                     // SHould we show?
                     if (parseInt(data.show_detail_option) === 1 || itemExpired === 1) {
                         // SHow expiration alert
@@ -7014,6 +7042,8 @@ require __DIR__ . '/renewal.preview.js.php';
                     $('#form-item-restrictedToUsers').val(JSON.stringify(data.id_restricted_to));
                     $('#form-item-restrictedToRoles').val(JSON.stringify(data.id_restricted_to_roles));
                     $('#form-item-folder').val(data.folder);
+                    setItemRenewalPeriod(data.renewal_period || 0);
+                    refreshItemRenewalNotice(data.folder);
                     $('#form-item-tags').val(htmlDecode(data.tags.join(' ')));
                     $('#form-item-icon').val(data.fa_icon);
                     $('#form-item-icon-show').html(itemIcon);
@@ -8640,9 +8670,7 @@ require __DIR__ . '/renewal.preview.js.php';
                             // remain empty after we cleared the stale values before opening edit.
                             $('#card-item-visibility').html(data.visibility || '<?php echo $lang->get('none'); ?>');
                             $('#card-item-minimum-complexity').html(data.complexity === undefined ? '' : data.complexity);
-                            const renewalItemId = Number(store.get('teampassItem').id) || 0;
-                            tpRenewal.update('#form-item-renewal-notice', data.folderId || val,
-                                renewalItemId ? [renewalItemId] : [], edit === 0);
+                            refreshItemRenewalNotice(data.folderId || val);
 
                             // Prepare Select2
                             $('.select2').select2({

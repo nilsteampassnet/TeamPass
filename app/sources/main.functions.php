@@ -52,6 +52,7 @@ use TeampassClasses\EmailService\EmailSettings;
 use TeampassClasses\CryptoManager\CryptoManager;
 
 require_once __DIR__ . '/otp.functions.php';
+require_once __DIR__ . '/renewal_logic.php';
 require_once __DIR__ . '/item_restriction_logic.php';
 require_once __DIR__ . '/security_posture_logic.php';
 require_once __DIR__ . '/operational_statistics_logic.php';
@@ -1982,15 +1983,17 @@ function prepareSendingEmail(
  */
 function securityNudgeComputeCounts(int $userId): array
 {
+    $SETTINGS = (new ConfigManager())->getAllSettings();
     $nowTs = time();
     $accessScopeSql = securityPostureItemAccessSql($userId);
     $passwordHealthSql = securityPasswordHealthSql();
 
     // Metadata-only flag expressions (identical semantics to the dashboard).
-    $lastRelevantSql = 'COALESCE(NULLIF(l.last_relevant_date, 0), NULLIF(CAST(i.created_at AS UNSIGNED), 0), 0)';
+    $lastRelevantSql = renewalBaseDateSql();
+    $effectivePeriodSql = renewalPeriodSql((int) ($SETTINGS['activate_expiration'] ?? 0) === 1);
     $flagWeakSql = $passwordHealthSql['weak'];
     $flagUnassessedSql = $passwordHealthSql['unassessed'];
-    $flagOverdueSql = '(CASE WHEN n.renewal_period > 0 AND ' . $lastRelevantSql . ' > 0 AND (' . $lastRelevantSql . ' + n.renewal_period * ' . TP_ONE_DAY_SECONDS . ') <= ' . (int) $nowTs . ' THEN 1 ELSE 0 END)';
+    $flagOverdueSql = '(CASE WHEN ' . $effectivePeriodSql . ' > 0 AND ' . $lastRelevantSql . ' > 0 AND (' . $lastRelevantSql . ' + ' . $effectivePeriodSql . ' * ' . TP_ONE_DAY_SECONDS . ') <= ' . (int) $nowTs . ' THEN 1 ELSE 0 END)';
     $flagBreachedSql = '(CASE WHEN i.hibp_status = 2 THEN 1 ELSE 0 END)';
 
     $logJoinSql = '
@@ -2069,6 +2072,25 @@ function securityNudgeComputeCounts(int $userId): array
         'last_scan' => $lastScan,
         'worst_item' => $worstItem,
     ];
+}
+
+/** Read the effective deadline after the caller has authorized access to this item. */
+function renewalItemDueAt(int $itemId, array $settings): ?int
+{
+    $periodSql = renewalPeriodSql((int) ($settings['activate_expiration'] ?? 0) === 1);
+    $row = DB::queryFirstRow(
+        'SELECT ' . $periodSql . ' AS days, ' . renewalBaseDateSql() . ' AS base_date
+        FROM ' . prefixTable('items') . ' AS i
+        INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON n.id = i.id_tree
+        LEFT JOIN (
+            SELECT MAX(CAST(date AS UNSIGNED)) AS last_relevant_date
+            FROM ' . prefixTable('log_items') . '
+            WHERE id_item = %i AND (action = %s OR (action = %s AND raison LIKE %s))
+        ) AS l ON 1 = 1
+        WHERE i.id = %i AND i.inactif = 0 AND i.deleted_at IS NULL',
+        $itemId, 'at_creation', 'at_modification', 'at_pw%', $itemId
+    );
+    return $row === null ? null : renewalDueAt((int) $row['days'], (int) $row['base_date']);
 }
 
 /**
@@ -2184,7 +2206,8 @@ function refreshItemHealthAfterSave(int $itemId, int $userId, string $plaintextP
 
     // Recompute the metadata flags for this single item (no decryption). Same fragments as
     // the dashboard scan, scoped to one item.
-    $lastRelevantSql = 'COALESCE(NULLIF(l.last_relevant_date, 0), NULLIF(CAST(i.created_at AS UNSIGNED), 0), 0)';
+    $lastRelevantSql = renewalBaseDateSql();
+    $effectivePeriodSql = renewalPeriodSql((int) ($SETTINGS['activate_expiration'] ?? 0) === 1);
     $logJoinSql = '
         LEFT JOIN (
             SELECT id_item, MAX(CAST(date AS UNSIGNED)) AS last_relevant_date
@@ -2201,7 +2224,7 @@ function refreshItemHealthAfterSave(int $itemId, int $userId, string $plaintextP
 
     $row = DB::queryFirstRow(
         'SELECT i.complexity_level,
-            n.renewal_period,
+            ' . $effectivePeriodSql . ' AS renewal_period,
             COALESCE(sc.share_count, 0) AS share_count,
             ' . $lastRelevantSql . ' AS last_relevant_date
         FROM ' . prefixTable('items') . ' AS i
