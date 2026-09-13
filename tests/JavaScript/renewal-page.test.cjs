@@ -7,8 +7,10 @@ const { test } = require('node:test')
 test('Renewal opens on all deadlines, orders by date and restores the default after clearing the picker', () => {
   const template = readFileSync(join(__dirname, '../../app/pages/utilities.renewal.js.php'), 'utf8')
     .replace(/<\?php[\s\S]*?\?>/g, '')
-  const script = template.match(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/i)
-  assert.ok(script)
+  // Assert this repository-owned fixture's exact wrapper before executing its body.
+  const scriptLines = template.trim().split(/\r?\n/)
+  assert.equal(scriptLines.shift(), "<script type='text/javascript'>")
+  assert.equal(scriptLines.pop(), '</script>')
   const handlers = new Map()
   const requests = []
   let selectedDate = null
@@ -35,7 +37,7 @@ test('Renewal opens on all deadlines, orders by date and restores the default af
       return { ajax: { reload } }
     }
   })
-  vm.runInNewContext(script[1], { $, Date, toastr: { remove() {}, info() {} } })
+  vm.runInNewContext(scriptLines.join('\n'), { $, Date, toastr: { remove() {}, info() {} } })
   assert.equal(options.stateSave, false)
   assert.deepEqual(JSON.parse(JSON.stringify(options.order)), [[1, 'asc']])
   assert.equal(Object.hasOwn(requests[0], 'dateCriteria'), false)
