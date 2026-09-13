@@ -2289,8 +2289,9 @@ function tpBackupExternalizedS3Request(array $config, string $method, string $ke
             if ($sinkHandle === false) {
                 return ['status' => 0, 'body' => '', 'error' => 'sink_unavailable', 'headers' => []];
             }
-            curl_setopt($ch, CURLOPT_FILE, $sinkHandle);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
+            // Set the file last: RETURNTRANSFER=false resets PHP's write handler to stdout.
+            curl_setopt($ch, CURLOPT_FILE, $sinkHandle);
         }
 
         $bodyResponse = curl_exec($ch);
