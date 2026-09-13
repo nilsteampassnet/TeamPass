@@ -1940,6 +1940,14 @@ class TaskWorker {
             }
         }
 
+        // The item may have been moved into a personal folder while this fan-out was queued:
+        // the keys just distributed to every user must not outlive that move (SEC-8).
+        try {
+            restrictItemSharekeysToOwnerIfPersonal((int) ($arguments['item_id'] ?? 0));
+        } catch (Exception $e) {
+            $this->logger->log('processSubTasks : personal item key restriction failed for item ' . (int) ($arguments['item_id'] ?? 0) . ' : ' . $e->getMessage(), 'ERROR');
+        }
+
         // A failed subtask must mark the whole task as failed (visible in the Tasks page)
         // instead of being silently absorbed by a 'completed' status.
         if (count($failedSubtasks) > 0) {

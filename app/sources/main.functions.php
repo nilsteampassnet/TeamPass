@@ -9806,36 +9806,9 @@ function EnsurePersonalItemHasOnlyKeysForOwner(int $userId, int $itemId): bool
         return false;
     }
 
-    // Delete all sharekeys for this item except for the owner and TeamPass system users
-    $excludedUsers = [$userId, TP_USER_ID, API_USER_ID, OTV_USER_ID, SSH_USER_ID];
     try {
         DB::startTransaction();
-
-        DB::delete(
-            prefixTable('sharekeys_items'),
-            'object_id = %i AND user_id NOT IN %ls',
-            $itemId,
-            $excludedUsers
-        );
-        DB::query(
-            'DELETE FROM ' . prefixTable('sharekeys_files') . '
-            WHERE object_id IN (SELECT id FROM ' . prefixTable('files') . ' WHERE id_item = %i) AND user_id NOT IN %ls',
-            $itemId,
-            $excludedUsers
-        );
-        DB::query(
-            'DELETE FROM ' . prefixTable('sharekeys_fields') . '
-            WHERE object_id IN (SELECT id FROM ' . prefixTable('categories_items') . ' WHERE item_id = %i) AND user_id NOT IN %ls',
-            $itemId,
-            $excludedUsers
-        );
-        DB::query(
-            'DELETE FROM ' . prefixTable('sharekeys_logs') . '
-            WHERE object_id IN (SELECT increment_id FROM ' . prefixTable('log_items') . ' WHERE id_item = %i) AND user_id NOT IN %ls',
-            $itemId,
-            $excludedUsers
-        );
-
+        deleteForeignItemSharekeys($itemId, $userId);
         DB::commit();
     } catch (Exception $e) {
         DB::rollback();
@@ -9843,6 +9816,139 @@ function EnsurePersonalItemHasOnlyKeysForOwner(int $userId, int $itemId): bool
     }
 
     return true;
+}
+
+/**
+ * Delete every sharekey of an item and of its objects that does not belong to its owner.
+ *
+ * The keys of the TeamPass system accounts are kept, TP_USER_ID's above all: it is the
+ * server-side recovery key every personal object must keep (SEC-8). Runs no transaction of its
+ * own, so a caller can make it atomic with the change that makes the item personal.
+ *
+ * @param int $itemId  Item that is, or is becoming, personal
+ * @param int $ownerId Owner of the personal folder holding the item
+ *
+ * @return void
+ */
+function deleteForeignItemSharekeys(int $itemId, int $ownerId): void
+{
+    $excludedUsers = [$ownerId, TP_USER_ID, API_USER_ID, OTV_USER_ID, SSH_USER_ID];
+
+    DB::delete(
+        prefixTable('sharekeys_items'),
+        'object_id = %i AND user_id NOT IN %ls',
+        $itemId,
+        $excludedUsers
+    );
+    DB::query(
+        'DELETE FROM ' . prefixTable('sharekeys_files') . '
+        WHERE object_id IN (SELECT id FROM ' . prefixTable('files') . ' WHERE id_item = %i) AND user_id NOT IN %ls',
+        $itemId,
+        $excludedUsers
+    );
+    DB::query(
+        'DELETE FROM ' . prefixTable('sharekeys_fields') . '
+        WHERE object_id IN (SELECT id FROM ' . prefixTable('categories_items') . ' WHERE item_id = %i) AND user_id NOT IN %ls',
+        $itemId,
+        $excludedUsers
+    );
+    DB::query(
+        'DELETE FROM ' . prefixTable('sharekeys_logs') . '
+        WHERE object_id IN (SELECT increment_id FROM ' . prefixTable('log_items') . ' WHERE id_item = %i) AND user_id NOT IN %ls',
+        $itemId,
+        $excludedUsers
+    );
+}
+
+/**
+ * Narrow an item's keys to its owner when the item now sits in a personal folder.
+ *
+ * The background fan-out of a new or updated shared item distributes keys to every user. When
+ * the item is moved into a personal folder before that task runs, the fan-out lands after the
+ * move's own purge and hands the keys back to everyone. The fan-out calls this once it has
+ * written, so whichever of the two finishes last, the item ends up with its owner's keys only.
+ *
+ * The owner is the personal root the folder sits in (its title is the owner id). An item flagged
+ * personal outside any personal tree is left alone: an owner that cannot be resolved is never
+ * guessed, the same rule as the repair tool.
+ *
+ * @param int $itemId Item whose keys were just distributed
+ *
+ * @return bool True when the item is personal and its foreign keys were removed
+ */
+function restrictItemSharekeysToOwnerIfPersonal(int $itemId): bool
+{
+    if ($itemId <= 0) {
+        return false;
+    }
+
+    $personalRoot = DB::queryFirstRow(
+        'SELECT root.title AS owner_id
+        FROM ' . prefixTable('items') . ' AS item
+        INNER JOIN ' . prefixTable('nested_tree') . ' AS folder ON (folder.id = item.id_tree)
+        INNER JOIN ' . prefixTable('nested_tree') . ' AS root
+            ON root.personal_folder = 1 AND root.parent_id = 0
+            AND folder.nleft >= root.nleft AND folder.nright <= root.nright
+        WHERE item.id = %i
+        LIMIT 1',
+        $itemId
+    );
+    if ($personalRoot === null || ctype_digit((string) $personalRoot['owner_id']) === false) {
+        return false;
+    }
+
+    deleteForeignItemSharekeys($itemId, (int) $personalRoot['owner_id']);
+
+    return true;
+}
+
+/**
+ * Tell whether a user holds a sharekey on an item and on each of its encrypted objects.
+ *
+ * Checked before narrowing an item's keys to one user: if that user lacked one of them, the
+ * object would be left with the TP_USER recovery key alone and become unreadable to its owner.
+ * A missing key is usually transient — the background task has not distributed it yet.
+ *
+ * @param int $itemId Item
+ * @param int $userId User who is to keep the keys
+ *
+ * @return bool
+ */
+function userHoldsEveryItemSharekey(int $itemId, int $userId): bool
+{
+    $itemKey = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('sharekeys_items') . '
+        WHERE object_id = %i AND user_id = %i AND share_key != ""',
+        $itemId,
+        $userId
+    );
+    if ((int) $itemKey === 0) {
+        return false;
+    }
+
+    $missingFieldKeys = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('categories_items') . ' AS field
+        LEFT JOIN ' . prefixTable('sharekeys_fields') . ' AS sharekey
+            ON sharekey.object_id = field.id AND sharekey.user_id = %i AND sharekey.share_key != ""
+        WHERE field.item_id = %i AND field.encryption_type != "not_set" AND sharekey.increment_id IS NULL',
+        $userId,
+        $itemId
+    );
+    if ((int) $missingFieldKeys > 0) {
+        return false;
+    }
+
+    $missingFileKeys = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('files') . ' AS attachment
+        LEFT JOIN ' . prefixTable('sharekeys_files') . ' AS sharekey
+            ON sharekey.object_id = attachment.id AND sharekey.user_id = %i AND sharekey.share_key != ""
+        WHERE attachment.id_item = %i AND attachment.status = %s AND sharekey.increment_id IS NULL',
+        $userId,
+        $itemId,
+        TP_ENCRYPTION_NAME
+    );
+
+    return (int) $missingFileKeys === 0;
 }
 
 /**
