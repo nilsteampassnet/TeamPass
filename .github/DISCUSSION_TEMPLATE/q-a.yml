@@ -1,0 +1,38 @@
+labels: ["support"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A question about installation, configuration or usage? You are in the right place.
+        ⚠️ A reproducible bug (error message, broken behavior) must be reported in **Issues**, not here.
+  - type: input
+    id: version
+    attributes:
+      label: TeamPass version
+      placeholder: "e.g. 3.2.0.9"
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      options:
+        - Docker
+        - LAMP / manual installation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+      description: Describe what you are trying to do.
+    validations:
+      required: true
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Before posting
+      options:
+        - label: This is not a reproducible bug (otherwise → Issues)
+          required: true

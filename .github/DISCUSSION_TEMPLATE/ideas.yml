@@ -1,0 +1,28 @@
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Suggest a new feature or an improvement.
+        ⚠️ A reproducible bug must be reported in **Issues**, not here.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this idea solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: How do you imagine it working?
+    validations:
+      required: false
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Before posting
+      options:
+        - label: I checked that a similar idea does not already exist
+          required: true
+        - label: This is not a reproducible bug (otherwise → Issues)
+          required: true
