@@ -338,10 +338,14 @@ class WebauthnModel
                 (int) $sharekey['increment_id'],
                 'sharekeys_webauthn'
             );
+            // doDataDecryption() hands the plaintext back base64-encoded, '' on failure.
             $credentialPem = $objectKey === ''
                 ? ''
-                : doDataDecryption((string) $credential['private_key'], $objectKey, (string) ($credential['private_key_meta'] ?? ''));
-            if ($credentialPem === '') {
+                : (string) base64_decode(
+                    doDataDecryption((string) $credential['private_key'], $objectKey, (string) ($credential['private_key_meta'] ?? '')),
+                    true
+                );
+            if (str_starts_with($credentialPem, '-----BEGIN PRIVATE KEY-----') === false) {
                 return $this->error(422, self::KEY_RECOVERY_ERROR);
             }
 
