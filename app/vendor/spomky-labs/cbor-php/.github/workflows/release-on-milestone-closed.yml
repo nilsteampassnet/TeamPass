@@ -1,0 +1,105 @@
+name: "Automatic Releases"
+
+# The five commands must stay steps of a single job: "release" runs
+# `git checkout <release branch>`, which is what makes that branch available
+# locally, and the following commands require it. Splitting them into separate
+# jobs gives each one a fresh checkout of the default branch, so every release
+# made from an older branch fails with "not a valid object name".
+#
+# The checkout must be unshallow for the same reason: "switch-default-branch-
+# to-next-minor" resolves the newest release branch locally, and the default
+# shallow clone only contains the ref that triggered the workflow.
+#
+# Every step uses the vendored ./.github/actions/automatic-releases, which is
+# laminas/automatic-releases 1.26.2 with its Docker image referenced by digest
+# instead of the floating `:1` tag — GHCR publishes no versioned manifest to
+# pin instead. See that file for the refresh procedure.
+#
+# TODO(#154): ORGANIZATION_ADMIN_TOKEN is an org-wide classic PAT with admin
+# rights over every Spomky-Labs repository. It should be replaced by a
+# fine-grained PAT scoped to this repository alone, with Contents, Pull
+# requests and Issues set to write. Only the two steps below actually need it
+# (they push branches and change the default branch); the remaining three run
+# on the workflow's own GITHUB_TOKEN.
+
+on:
+  milestone:
+    types:
+      - "closed"
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: "Release"
+    runs-on: ubuntu-latest
+
+    permissions:
+      # `bump-changelog` pushes a commit to the originating release branch.
+      contents: write
+      # `create-milestones` opens the milestones for the next versions.
+      issues: write
+      # `create-merge-up-pull-request` opens the merge-up PR.
+      pull-requests: write
+
+    steps:
+      - name: "Checkout"
+        uses: "actions/checkout@v7.0.1"
+        with:
+          fetch-depth: 0
+
+      - name: "Release"
+        uses: "./.github/actions/automatic-releases"
+        with:
+          command-name: "laminas:automatic-releases:release"
+        env:
+          "SHELL_VERBOSITY": "3"
+          "GITHUB_TOKEN": ${{ secrets.ORGANIZATION_ADMIN_TOKEN }}
+          "SIGNING_SECRET_KEY": ${{ secrets.SIGNING_SECRET_KEY }}
+          "GIT_AUTHOR_NAME": ${{ secrets.GIT_AUTHOR_NAME }}
+          "GIT_AUTHOR_EMAIL": ${{ secrets.GIT_AUTHOR_EMAIL }}
+
+      - name: "Create Merge-Up Pull Request"
+        uses: "./.github/actions/automatic-releases"
+        with:
+          command-name: "laminas:automatic-releases:create-merge-up-pull-request"
+        env:
+          "SHELL_VERBOSITY": "3"
+          "GITHUB_TOKEN": ${{ secrets.GITHUB_TOKEN }}
+          "SIGNING_SECRET_KEY": ${{ secrets.SIGNING_SECRET_KEY }}
+          "GIT_AUTHOR_NAME": ${{ secrets.GIT_AUTHOR_NAME }}
+          "GIT_AUTHOR_EMAIL": ${{ secrets.GIT_AUTHOR_EMAIL }}
+
+      - name: "Create and/or Switch to new Release Branch"
+        uses: "./.github/actions/automatic-releases"
+        with:
+          command-name: "laminas:automatic-releases:switch-default-branch-to-next-minor"
+        env:
+          "SHELL_VERBOSITY": "3"
+          "GITHUB_TOKEN": ${{ secrets.ORGANIZATION_ADMIN_TOKEN }}
+          "SIGNING_SECRET_KEY": ${{ secrets.SIGNING_SECRET_KEY }}
+          "GIT_AUTHOR_NAME": ${{ secrets.GIT_AUTHOR_NAME }}
+          "GIT_AUTHOR_EMAIL": ${{ secrets.GIT_AUTHOR_EMAIL }}
+
+      - name: "Bump Changelog Version On Originating Release Branch"
+        uses: "./.github/actions/automatic-releases"
+        with:
+          command-name: "laminas:automatic-releases:bump-changelog"
+        env:
+          "SHELL_VERBOSITY": "3"
+          "GITHUB_TOKEN": ${{ secrets.GITHUB_TOKEN }}
+          "SIGNING_SECRET_KEY": ${{ secrets.SIGNING_SECRET_KEY }}
+          "GIT_AUTHOR_NAME": ${{ secrets.GIT_AUTHOR_NAME }}
+          "GIT_AUTHOR_EMAIL": ${{ secrets.GIT_AUTHOR_EMAIL }}
+
+      - name: "Create new milestones"
+        uses: "./.github/actions/automatic-releases"
+        with:
+          command-name: "laminas:automatic-releases:create-milestones"
+        env:
+          "SHELL_VERBOSITY": "3"
+          "GITHUB_TOKEN": ${{ secrets.GITHUB_TOKEN }}
+          "SIGNING_SECRET_KEY": ${{ secrets.SIGNING_SECRET_KEY }}
+          "GIT_AUTHOR_NAME": ${{ secrets.GIT_AUTHOR_NAME }}
+          "GIT_AUTHOR_EMAIL": ${{ secrets.GIT_AUTHOR_EMAIL }}

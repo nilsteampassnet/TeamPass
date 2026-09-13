@@ -68,7 +68,7 @@ PHPStan on a fresh clone). It leaves the same trap behind, so the old recovery s
 them — and only to them:
 
 ```bash
-rm -rf app/vendor/phpstan app/vendor/phpunit app/vendor/symfony/cache
+rm -rf app/vendor/phpstan/phpstan app/vendor/phpunit app/vendor/symfony/cache
 composer install
 git checkout -- app/vendor/composer/            # restore the production autoloader
 ```

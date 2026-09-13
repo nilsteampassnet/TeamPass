@@ -42,10 +42,11 @@ jobs:
           fi
           if python3 -c "
           import json, sys
-          names = [p['name'] for p in json.load(open('app/vendor/composer/installed.json'))['packages']]
-          sys.exit(0 if any(n.startswith(('phpunit/', 'phpstan/')) for n in names) else 1)
+          names = {p['name'] for p in json.load(open('app/vendor/composer/installed.json'))['packages']}
+          dev = {p['name'] for p in json.load(open('composer.lock')).get('packages-dev', [])}
+          sys.exit(0 if names & dev else 1)
           "; then
-            echo "::error file=app/vendor/composer/installed.json::Dev packages (phpunit/phpstan) are listed in the committed autoloader. Restore it with 'git checkout -- app/vendor/composer/'."
+            echo "::error file=app/vendor/composer/installed.json::Dev packages (composer.lock packages-dev) are listed in the committed autoloader. Restore it with 'git checkout -- app/vendor/composer/'."
             exit 1
           fi
           echo "OK — committed autoloader is production-only."
@@ -93,7 +94,7 @@ jobs:
       # `composer install` rewrites app/vendor/composer/ into the dev form the tools need.
       - name: Repair the dev toolchain
         run: |
-          rm -rf app/vendor/phpstan app/vendor/phpunit app/vendor/symfony/cache
+          rm -rf app/vendor/phpstan/phpstan app/vendor/phpunit app/vendor/symfony/cache
           composer install --no-interaction --no-progress --prefer-dist
 
       - name: Run the test suite
@@ -129,7 +130,7 @@ jobs:
 
       - name: Repair the dev toolchain
         run: |
-          rm -rf app/vendor/phpstan app/vendor/phpunit app/vendor/symfony/cache
+          rm -rf app/vendor/phpstan/phpstan app/vendor/phpunit app/vendor/symfony/cache
           composer install --no-interaction --no-progress --prefer-dist
 
       # phpstan.neon bootstraps app/config/settings.php, which is never committed

@@ -85,7 +85,7 @@ untracked, so any checkout or merge deletes them while leaving generated residue
 their directories still exist, Composer believes they are installed and skips them.
 
 ```bash
-rm -rf app/vendor/phpstan app/vendor/phpunit app/vendor/symfony/cache
+rm -rf app/vendor/phpstan/phpstan app/vendor/phpunit app/vendor/symfony/cache
 composer install
 git checkout -- app/vendor/composer/                    # restores the production autoloader
 ```

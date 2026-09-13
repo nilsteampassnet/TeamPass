@@ -218,7 +218,8 @@
         "phpseclib/phpseclib": "^3.0",
         "cboden/ratchet": "^0.4.4",
         "react/event-loop": "^1.6",
-        "ezyang/htmlpurifier": "^4.17"
+        "ezyang/htmlpurifier": "^4.17",
+        "web-auth/webauthn-lib": "^5.3"
     },
     "require-dev": {
         "dominikb/composer-license-checker": "^2.6",
