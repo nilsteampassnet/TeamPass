@@ -306,7 +306,7 @@ Every other field stays updatable in the meantime; only `password` needs the cur
 | A source encryption key is missing or unusable | `422` — the item stays personal, nothing is destroyed |
 | The item was moved or re-encrypted concurrently | `409` — retry |
 
-Unknown extra keys in the payload are **not** a conflict: the guard keys off the fields that would actually be written, exactly like the rest of `updateItem()`. Other transitions (shared→shared, shared→personal, personal→personal) keep their previous behaviour and are unaffected by the 422/409 rules.
+Unknown extra keys in the payload are **not** a conflict: the guard keys off the fields that would actually be written, exactly like the rest of `updateItem()`. **Shared → personal** narrows the keys to the new owner: every sharekey of the item, its custom fields, its attachments and its log entries that does not belong to the caller or to a TeamPass system account (TP_USER above all, the recovery key) is deleted in the same transaction as the folder change — the invariant the web move and SEC-8 already enforce. When the caller does not hold a key on the item or on one of its encrypted objects (typically while the background fan-out is still running), the move answers `422` and nothing is written: narrowing anyway would leave that object with the recovery key alone. Shared→shared and personal→personal keep their previous behaviour.
 
 **LAPR-owned items** (Linux Account Password Rotation, see `architecture-lapr.md`). Two independent guards, both returning `409` and both **inactive when the LAPR module is disabled**:
 

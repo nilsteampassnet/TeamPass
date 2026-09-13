@@ -1788,6 +1788,8 @@ class ItemModel
                 || array_key_exists('totp_period', $params);
             // Set when the request actually relocates the item, whatever the transition type.
             $moveContext = null;
+            // Set on a shared-to-personal move: the other users' keys must go with it.
+            $restrictSharekeysToOwner = false;
 
             // Handle folder_id change
             if (isset($params['folder_id'])) {
@@ -1902,6 +1904,25 @@ class ItemModel
                     $currentItem['id_tree'] = $newFolderId;
                     $currentItem['perso'] = 0;
                 } else {
+                    // Shared to personal: only the owner (and the recovery accounts) may keep a key,
+                    // exactly as the web move does (SEC-8 invariant). Refuse before writing anything
+                    // when the caller lacks one of the keys, otherwise the owner would lose the object.
+                    if (
+                        $isActualMove === true
+                        && (int) $sourceItemInfos['personal_folder'] === 0
+                        && (int) $targetItemInfos['personal_folder'] === 1
+                    ) {
+                        if (userHoldsEveryItemSharekey($itemId, (int) $userData['id']) === false) {
+                            return [
+                                'error' => true,
+                                'error_message' => 'The item cannot be moved to a personal folder because your encryption keys for it are not all available yet. '
+                                    . 'Retry once they have been distributed to your account, or ask an administrator to run the encryption keys repair task.',
+                                'error_header' => 'HTTP/1.1 422 Unprocessable Entity',
+                            ];
+                        }
+                        $restrictSharekeysToOwner = true;
+                    }
+
                     $updateData['id_tree'] = $newFolderId;
                     $updateData['perso'] = (int) $targetItemInfos['personal_folder'];
 
@@ -2065,12 +2086,28 @@ class ItemModel
             if (empty($updateData) === false || $hasTotpUpdate === true) {
                 $updateData['updated_at'] = time();
 
-                DB::update(
-                    prefixTable('items'),
-                    $updateData,
-                    'id = %i',
-                    $itemId
-                );
+                // The folder change and the key purge are one step: an item must never become
+                // personal while other users still hold its keys.
+                if ($restrictSharekeysToOwner === true) {
+                    DB::startTransaction();
+                }
+                try {
+                    DB::update(
+                        prefixTable('items'),
+                        $updateData,
+                        'id = %i',
+                        $itemId
+                    );
+                    if ($restrictSharekeysToOwner === true) {
+                        deleteForeignItemSharekeys($itemId, (int) $userData['id']);
+                        DB::commit();
+                    }
+                } catch (Throwable $e) {
+                    if ($restrictSharekeysToOwner === true) {
+                        DB::rollback();
+                    }
+                    throw $e;
+                }
 
                 // Handle TOTP update. Profile-only updates reuse the encrypted
                 // secret already attached to the item.

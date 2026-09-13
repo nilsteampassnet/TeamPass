@@ -697,7 +697,7 @@
             "put": {
                 "operationId": "itemUpdate",
                 "summary": "Update an existing item",
-                "description": "Requires 'id' plus at least one updatable field (label, password, description, login, email, url, tags, anyone_can_modify, icon, folder_id, totp, fields). Moving an item out of a personal folder into a shared one redistributes its encryption keys synchronously, so it must be requested on its own: combining it with any other updatable field returns 422. It returns 422 as well when a source encryption key cannot be recovered (the item stays personal), and 409 when the item was modified concurrently.",
+                "description": "Requires 'id' plus at least one updatable field (label, password, description, login, email, url, tags, anyone_can_modify, icon, folder_id, totp, fields). Moving an item out of a personal folder into a shared one redistributes its encryption keys synchronously, so it must be requested on its own: combining it with any other updatable field returns 422. It returns 422 as well when a source encryption key cannot be recovered (the item stays personal), and 409 when the item was modified concurrently. Moving a shared item into the caller's personal folder deletes the other users' encryption keys in the same step; it returns 422 when the caller does not hold every key of the item yet.",
                 "requestBody": {
                     "required": true,
                     "content": {
