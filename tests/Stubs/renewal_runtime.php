@@ -135,6 +135,7 @@ function newRequest(): string
         'securityPostureAuthorizedFolderIds', 'securityPostureItemAccessSql'] as $name) {
         $code .= "\n" . declaration($functions, $name);
     }
+    $code .= "\n" . declaration(source('app/sources/renewal_preview.php'), 'renewalPreview');
     eval($imports . $code);
     return $namespace;
 }

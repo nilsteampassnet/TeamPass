@@ -62,6 +62,90 @@ class RenewalAuthorizationTest extends TestCase
             SQL);
     }
 
+    /** Run the shipped preview with the same SQL and grant fixture as the renewal table. */
+    private function preview(int $folderId = 11, array $itemIds = [], bool $creation = false): array
+    {
+        $preview = newRequest() . '\\renewalPreview';
+        return $preview(7, $folderId, $itemIds, $creation, ConfigManager::$settings);
+    }
+
+    /** Preview and renewal table agree on password history, creation fallback and moved items. */
+    public function testPreviewUsesPasswordAgeInDestinationWithoutResettingIt(): void
+    {
+        DB::query('UPDATE renewal_nested_tree SET renewal_period = 90 WHERE id = 11');
+        DB::query('INSERT INTO renewal_log_items VALUES (1, %s, %s, %s)', '2000', 'at_creation', '');
+        DB::query('INSERT INTO renewal_log_items VALUES (1, %s, %s, %s)', '3000', 'at_modification', 'at_pw');
+        DB::query('INSERT INTO renewal_log_items VALUES (1, %s, %s, %s)', '9000', 'at_modification', 'at_moved');
+        $result = $this->preview(11, [1, 4, 5]);
+        self::assertFalse($result['error']);
+        self::assertSame(90, $result['days']);
+        $items = array_column($result['items'], null, 'id');
+        self::assertSame(3000 + 90 * 86400, $items[1]['due_at']);
+        self::assertSame(1000 + 90 * 86400, $items[4]['due_at']);
+        self::assertSame(1000 + 90 * 86400, $items[5]['due_at'], 'Source folder period is irrelevant to the destination preview.');
+        self::assertTrue($items[1]['expired']);
+        self::assertSame(21, (int) DB::queryFirstField('SELECT id_tree FROM renewal_items WHERE id = 5'), 'Preview never moves an item.');
+        $table = runTable(newRequest());
+        self::assertStringContainsString($items[1]['due_date'], $table['data'][0][1]);
+    }
+
+    /** Expiration off and a zero period never claim an expiry date. */
+    public function testPreviewHandlesDisabledExpirationAndNoRenewalPeriod(): void
+    {
+        ConfigManager::$settings['activate_expiration'] = 0;
+        $disabled = $this->preview(11, [1]);
+        self::assertFalse($disabled['enabled']);
+        self::assertSame(0, $disabled['days']);
+        self::assertNull($disabled['items'][0]['due_at']);
+        ConfigManager::$settings['activate_expiration'] = 1;
+        DB::query('UPDATE renewal_nested_tree SET renewal_period = 0 WHERE id = 11');
+        $none = $this->preview(11, [1]);
+        self::assertTrue($none['enabled']);
+        self::assertSame(0, $none['days']);
+        self::assertNull($none['items'][0]['due_at']);
+    }
+
+    /** Empty folders show their policy and creation previews begin at the current time. */
+    public function testCreationPreviewEstimatesFromNowAndHandlesMissingHistory(): void
+    {
+        self::assertSame([], $this->preview()['items']);
+        $before = time();
+        $created = $this->preview(11, [], true);
+        self::assertTrue($created['creation']);
+        self::assertGreaterThanOrEqual($before + 86400, $created['items'][0]['due_at']);
+        self::assertLessThanOrEqual(time() + 86400, $created['items'][0]['due_at']);
+        self::assertFalse($created['items'][0]['expired']);
+        DB::query("UPDATE renewal_items SET created_at = '0' WHERE id = 1");
+        $unknown = $this->preview(11, [1]);
+        self::assertNull($unknown['items'][0]['due_at']);
+        self::assertFalse($unknown['items'][0]['expired']);
+    }
+
+    /** All denial cases return no folder policy, label or password-history metadata. */
+    public function testPreviewRejectsInaccessibleFoldersAndMixedItemSelections(): void
+    {
+        foreach ([10, 12, 30, 31, 999] as $folderId) {
+            self::assertSame(['error' => true], $this->preview($folderId));
+        }
+        foreach ([[1, 2], [3], [6], [7], [8], [999], ['1 OR 1=1'], [0], [[]]] as $items) {
+            self::assertSame(['error' => true], $this->preview(11, $items));
+        }
+        self::assertSame(['error' => true], $this->preview(11, [1], true));
+        self::assertFalse($this->preview(21, [5])['error']);
+        DB::query('UPDATE renewal_users SET admin = 1 WHERE id = 7');
+        self::assertSame(['error' => true], $this->preview());
+    }
+
+    /** Revoked grants and deleted items cannot survive in a subsequent preview. */
+    public function testPreviewRefreshesPermissionsAndExcludesDeletedItems(): void
+    {
+        self::assertFalse($this->preview(11, [1])['error']);
+        DB::query('UPDATE renewal_items SET deleted_at = %s WHERE id = 1', '100');
+        self::assertSame(['error' => true], $this->preview(11, [1]));
+        DB::query('DELETE FROM renewal_users_groups WHERE group_id = 11');
+        self::assertSame(['error' => true], $this->preview());
+    }
+
     /** Cover normal accounts and privileged combinations that must not bypass the admin exclusion. */
     public static function privilegeCases(): iterable
     {

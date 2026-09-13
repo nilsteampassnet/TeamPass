@@ -155,6 +155,8 @@ if ((int) $session_user_admin === 1) {
                 </div>
             </div>
 
+            <div id="form-item-renewal-notice" class="alert alert-info hidden" role="status" aria-live="polite"></div>
+
             <div class="card">
                 <div class="card-header d-flex">
                     <ul class="nav nav-pills" id="form-item-nav-pills">
@@ -630,6 +632,7 @@ if ((int) $session_user_admin === 1) {
                     <div class="form-group">
                         <label><?php echo $lang->get('select_destination_folder'); ?></label>
                         <select class="form-control form-item-control select2" style="width:100%;" id="form-item-copy-destination"></select>
+                        <div id="copy-item-renewal-notice" class="alert alert-info hidden mt-2" role="status" aria-live="polite"></div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -1180,6 +1183,7 @@ if ((int) $session_user_admin === 1) {
                 </div>
                 <!-- /.card-header -->
                 <div id="tp-folder-progress-wrap"><div id="tp-folder-progress-bar"></div></div>
+                <div id="folder-renewal-notice" class="alert alert-info hidden m-2" role="status" aria-live="polite"></div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-sm table-hover table-striped hidden" id="table_teampass_subfolders_list" style="width:100%;">

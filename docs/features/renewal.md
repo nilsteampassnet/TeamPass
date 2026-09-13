@@ -16,6 +16,14 @@ Each folder can have a **password renewal period** (in days) defined by its admi
 
 Expired items are visually flagged in the main item list (coloured indicator next to the item label).
 
+When expiration is enabled, opening a folder displays its renewal period above the item list, including when the folder is empty. A folder with a zero-day period explicitly displays that it has no renewal deadline.
+
+The item creation/edit form also displays the selected folder's policy and the applicable deadline. For new or copied items, the date is an estimate based on creation today; saving starts the actual period. For existing items, the preview uses the last password change (or creation date), and changing the destination folder refreshes it. Changing the password recalculates the deadline when saved.
+
+Drag-and-drop moves show the destination policy and deadline before confirmation when a renewal period applies. Bulk moves from Search display the same preview for each selected item. A move does not reset password age: a warning identifies items that would already be expired in the destination folder.
+
+**Renewal expiration does not delete items.** Consultation can be restricted until someone with edit permission renews the password. Automatic deletion by date or number of consultations is a separate feature.
+
 ---
 
 ## Using the Renewal page

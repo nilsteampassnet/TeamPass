@@ -83,6 +83,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 require_once __DIR__ . '/../includes/libraries/bip39/loader.php';
 $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
+require __DIR__ . '/renewal.preview.js.php';
 ?>
 
 
@@ -2203,15 +2204,15 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
      */
     function refreshItemFolderTopRules(folderId, context) {
         context = context || '';
+        tpRenewal.clear('#form-item-renewal-notice');
+        itemFolderRulesRefreshRequestId += 1;
+        const currentRequestId = itemFolderRulesRefreshRequestId;
 
         if (folderId === null || folderId === '' || typeof folderId === 'undefined') {
             $('#card-item-visibility').html('<i class="fa-solid fa-ellipsis mr-2 fa-fade"></i>');
             $('#card-item-minimum-complexity').html('<i class="fa-solid fa-ellipsis mr-2 fa-fade"></i>');
             return $.Deferred().resolve({ error: true }).promise();
         }
-
-        itemFolderRulesRefreshRequestId += 1;
-        const currentRequestId = itemFolderRulesRefreshRequestId;
 
         $('#card-item-visibility').html('<i class="fa-solid fa-ellipsis mr-2 fa-fade"></i>');
         $('#card-item-minimum-complexity').html('<i class="fa-solid fa-ellipsis mr-2 fa-fade"></i>');
@@ -2240,6 +2241,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             }
 
             if (data.error === false) {
+                const renewalItemId = Number(store.get('teampassItem').id) || 0;
+                tpRenewal.update('#form-item-renewal-notice', data.folderId || folderId,
+                    renewalItemId ? [renewalItemId] : [], renewalItemId === 0);
                 $('#card-item-visibility').html(data.visibility || '<?php echo $lang->get('none'); ?>');
                 $('#card-item-minimum-complexity').html(data.complexity === undefined ? '' : data.complexity);
 
@@ -2272,6 +2276,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
      */
     $('#form-item-folder').change(function() {
         refreshItemFolderTopRules($(this).val());
+    });
+
+    $('#form-item-copy-destination').on('change', function() {
+        tpRenewal.update('#copy-item-renewal-notice', $(this).val(), [], true);
     });
 
     /**
@@ -4923,6 +4931,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
      */
     function searchItems(criteria) {
         if (criteria !== '') {
+            tpRenewal.clear('#folder-renewal-notice');
             // stop items loading (if on-going)
             store.update(
                 'teampassApplication',
@@ -5516,6 +5525,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             } else {
                 displaySubfolders(cachedFoldersList, groupeIdInt);
             }
+        }
+
+        if (Number(start) === 0) {
+            tpRenewal.update('#folder-renewal-notice', groupe_id);
         }
 
         // Hide any info
@@ -8494,6 +8507,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
      */
     function getPrivilegesOnItem(val, edit, context) {
         context = context || ""; // make context optional
+        tpRenewal.clear('#form-item-renewal-notice');
 
         // make sure to use correct selected folder
         if (val === false) {
@@ -8626,6 +8640,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             // remain empty after we cleared the stale values before opening edit.
                             $('#card-item-visibility').html(data.visibility || '<?php echo $lang->get('none'); ?>');
                             $('#card-item-minimum-complexity').html(data.complexity === undefined ? '' : data.complexity);
+                            const renewalItemId = Number(store.get('teampassItem').id) || 0;
+                            tpRenewal.update('#form-item-renewal-notice', data.folderId || val,
+                                renewalItemId ? [renewalItemId] : [], edit === 0);
 
                             // Prepare Select2
                             $('.select2').select2({
@@ -9319,7 +9336,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         $('.folder').droppable({
             hoverClass: 'bg-warning',
             tolerance: 'pointer',
-            drop: function(event, ui) {
+            drop: async function(event, ui) {
                 // Check if same folder
                 if (parseInt($(this).attr('id').substring(4)) === parseInt(ui.draggable.data('item-tree-id'))) {
                     toastr.remove();
@@ -9361,6 +9378,14 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     return false;
                 }
 
+                const destinationFolderId = $(this).attr('id').substring(4);
+                if (ui.draggable.data('renewal-move-pending')) return;
+                ui.draggable.data('renewal-move-pending', true);
+                if (!await tpRenewal.confirmMove(destinationFolderId, [ui.draggable.data('item-id')])) {
+                    ui.draggable.removeData('renewal-move-pending');
+                    return;
+                }
+
                 // Warn user that it starts
                 toastr.info(
                     '<i class="fa-solid fa-circle-notch fa-spin fa-2x"></i><?php echo $lang->get('please_wait'); ?>'
@@ -9372,7 +9397,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 //move item
                 var data = {
                     'item_id': ui.draggable.data('item-id'),
-                    'folder_id': $(this).attr('id').substring(4)
+                    'folder_id': destinationFolderId
                 }
                 $.post(
                     'sources/items.queries.php', {
@@ -9421,6 +9446,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         }
                     );
                     ui.draggable.removeClass('hidden');
+                }).always(function() {
+                    ui.draggable.removeData('renewal-move-pending');
                 });
             }
         });

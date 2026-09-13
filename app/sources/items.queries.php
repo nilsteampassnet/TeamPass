@@ -5449,8 +5449,24 @@ switch ($inputData['type']) {
 
     /*
      * CASE
-     * Get complexity level of a group
+     * Preview renewal without modifying an item or its password history
      */
+    case 'get_renewal_preview':
+        require_once __DIR__ . '/renewal_preview.php';
+        if ($inputData['key'] !== $session->get('key')) {
+            echo (string) prepareExchangedData(['error' => true], 'encode');
+            break;
+        }
+        echo (string) prepareExchangedData(renewalPreview(
+            (int) $session->get('user-id'),
+            (int) $inputData['folderId'],
+            $request->request->all('item_ids'),
+            $inputData['context'] === 'create',
+            $SETTINGS
+        ), 'encode');
+        break;
+
+    // Get complexity level of a group.
     case 'get_complixity_level':
         // get some info about ITEM
         if (null !== $inputData['itemId'] && empty($inputData['itemId']) === false) {
