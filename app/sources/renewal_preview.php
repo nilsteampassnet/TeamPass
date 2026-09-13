@@ -62,10 +62,13 @@ function renewalPreview(int $userId, int $folderId, array $itemIds, bool $creati
         $rows = [];
     }
 
+    $relations = $creation || $copy ? [] : laprGetItemRelations(array_column($rows, 'id'), $settings);
     foreach ($rows as $row) {
         $baseDate = $copy ? $now : (int) $row['last_relevant_date'];
         $individualDays = $itemPeriod ?? (int) $row['renewal_period'];
-        $effectiveDays = renewalEffectiveDays($individualDays, $days, $enabled);
+        $relation = $relations[(int) $row['id']] ?? [];
+        $excluded = !empty($relation['is_managed']) || !empty($relation['is_credential']);
+        $effectiveDays = $excluded ? 0 : renewalEffectiveDays($individualDays, $days, $enabled);
         $due = renewalDueAt($effectiveDays, $baseDate);
         $source = $effectiveDays === 0 ? 'none' : ($days === 0 || ($individualDays > 0 && $individualDays < $days) ? 'item' : 'folder');
         $result['items'][] = [
@@ -73,7 +76,7 @@ function renewalPreview(int $userId, int $folderId, array $itemIds, bool $creati
             'label' => (string) $row['label'],
             'days' => $effectiveDays,
             'item_days' => $individualDays,
-            'source' => $source,
+            'source' => $excluded ? 'lapr' : $source,
             'due_at' => $due,
             'due_date' => $due === null ? '' : date($settings['date_format'] ?? 'Y-m-d', $due),
             'expired' => $due !== null && $due <= $now,

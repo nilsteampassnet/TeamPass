@@ -1990,7 +1990,7 @@ function securityNudgeComputeCounts(int $userId): array
 
     // Metadata-only flag expressions (identical semantics to the dashboard).
     $lastRelevantSql = renewalBaseDateSql();
-    $effectivePeriodSql = renewalPeriodSql((int) ($SETTINGS['activate_expiration'] ?? 0) === 1);
+    $effectivePeriodSql = renewalApplicablePeriodSql($SETTINGS);
     $flagWeakSql = $passwordHealthSql['weak'];
     $flagUnassessedSql = $passwordHealthSql['unassessed'];
     $flagOverdueSql = '(CASE WHEN ' . $effectivePeriodSql . ' > 0 AND ' . $lastRelevantSql . ' > 0 AND (' . $lastRelevantSql . ' + ' . $effectivePeriodSql . ' * ' . TP_ONE_DAY_SECONDS . ') <= ' . (int) $nowTs . ' THEN 1 ELSE 0 END)';
@@ -2074,6 +2074,31 @@ function securityNudgeComputeCounts(int $userId): array
     ];
 }
 
+/**
+ * SQL counterpart of laprGetItemRelations for metadata queries that must filter before paging.
+ * Both managed accounts and endpoint credentials are excluded while LAPR is enabled.
+ * The alias is a trusted source-code reference, never request input.
+ */
+function renewalEligibleItemSql(array $settings, string $alias = 'i'): string
+{
+    if ((int) ($settings['lapr_enabled'] ?? 0) !== 1) {
+        return '1 = 1';
+    }
+    return '(NOT EXISTS (SELECT 1 FROM ' . prefixTable('lapr_accounts') . ' AS renewal_la'
+        . ' WHERE renewal_la.item_id = ' . $alias . ".id AND renewal_la.status != 'deleted')"
+        . ' AND NOT EXISTS (SELECT 1 FROM ' . prefixTable('lapr_endpoints') . ' AS renewal_le'
+        . ' WHERE renewal_le.ssh_credential_source = ' . $alias . ".id AND renewal_le.status != 'deleted'))";
+}
+
+/** Effective period for ordinary renewal; LAPR-linked items have no ordinary deadline. */
+function renewalApplicablePeriodSql(array $settings, string $item = 'i.renewal_period', string $folder = 'n.renewal_period'): string
+{
+    $period = renewalPeriodSql((int) ($settings['activate_expiration'] ?? 0) === 1, $item, $folder);
+    return (int) ($settings['lapr_enabled'] ?? 0) === 1
+        ? '(CASE WHEN ' . renewalEligibleItemSql($settings) . ' THEN ' . $period . ' ELSE 0 END)'
+        : $period;
+}
+
 /** Read the effective deadline after the caller has authorized access to this item. */
 function renewalItemDueAt(int $itemId, array $settings): ?int
 {
@@ -2083,7 +2108,7 @@ function renewalItemDueAt(int $itemId, array $settings): ?int
 /** Read display metadata after the caller has authorized access to this item. */
 function renewalItemStatus(int $itemId, array $settings): array
 {
-    $periodSql = renewalPeriodSql((int) ($settings['activate_expiration'] ?? 0) === 1);
+    $periodSql = renewalApplicablePeriodSql($settings);
     $row = DB::queryFirstRow(
         'SELECT ' . $periodSql . ' AS days, ' . renewalBaseDateSql() . ' AS base_date
         FROM ' . prefixTable('items') . ' AS i
@@ -2214,7 +2239,7 @@ function refreshItemHealthAfterSave(int $itemId, int $userId, string $plaintextP
     // Recompute the metadata flags for this single item (no decryption). Same fragments as
     // the dashboard scan, scoped to one item.
     $lastRelevantSql = renewalBaseDateSql();
-    $effectivePeriodSql = renewalPeriodSql((int) ($SETTINGS['activate_expiration'] ?? 0) === 1);
+    $effectivePeriodSql = renewalApplicablePeriodSql($SETTINGS);
     $logJoinSql = '
         LEFT JOIN (
             SELECT id_item, MAX(CAST(date AS UNSIGNED)) AS last_relevant_date
@@ -2232,6 +2257,7 @@ function refreshItemHealthAfterSave(int $itemId, int $userId, string $plaintextP
     $row = DB::queryFirstRow(
         'SELECT i.complexity_level,
             ' . $effectivePeriodSql . ' AS renewal_period,
+            ' . renewalEligibleItemSql($SETTINGS) . ' AS renewal_eligible,
             COALESCE(sc.share_count, 0) AS share_count,
             ' . $lastRelevantSql . ' AS last_relevant_date
         FROM ' . prefixTable('items') . ' AS i
@@ -2256,7 +2282,7 @@ function refreshItemHealthAfterSave(int $itemId, int $userId, string $plaintextP
     );
     $flagWeak = $passwordHealthStatus === 'weak' ? 1 : 0;
     $renewal = (int) $row['renewal_period'];
-    $flagNoExpiry = ($renewal <= 0) ? 1 : 0;
+    $flagNoExpiry = ((int) $row['renewal_eligible'] === 1 && $renewal <= 0) ? 1 : 0;
     $base = (int) $row['last_relevant_date'];
     $flagOverdue = ($renewal > 0 && $base > 0 && ($base + $renewal * TP_ONE_DAY_SECONDS) <= $nowTs) ? 1 : 0;
     $flagOvershared = ((int) $row['share_count'] > $oversharedThreshold) ? 1 : 0;

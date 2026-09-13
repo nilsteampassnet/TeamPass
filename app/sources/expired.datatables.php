@@ -127,7 +127,7 @@ if ($dateCriteria !== null && !empty($dateCriteria)) {
 }
 
 $lastRelevantDateSql = renewalBaseDateSql();
-$effectivePeriodSql = renewalPeriodSql((int) ($SETTINGS['activate_expiration'] ?? 0) === 1);
+$effectivePeriodSql = renewalApplicablePeriodSql($SETTINGS);
 $expirationDateSql = '(' . $lastRelevantDateSql . ' + (' . $effectivePeriodSql . ' * ' . TP_ONE_DAY_SECONDS . '))';
 $fromWhereSql = '
     FROM ' . prefixTable('items') . ' AS i

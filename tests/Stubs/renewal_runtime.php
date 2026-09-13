@@ -26,6 +26,10 @@ class DB
             }
         };
         $result = self::$connection->query($parser->parse($sql, ...$args));
+        if ($result->numColumns() === 0) {
+            $result->finalize();
+            return [];
+        }
         $rows = [];
         while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
             $rows[] = $row;
@@ -135,8 +139,11 @@ function newRequest(): string
     $code = substr($checks, strpos($checks, 'class PerformChecks'));
     $functions = source('app/sources/main.functions.php');
     foreach (['getPersonalFolderIdsWithDescendants', 'getOwnPersonalFolderIds', 'securityPostureUserRoleIds',
-        'securityPostureAuthorizedFolderIds', 'securityPostureItemAccessSql', 'renewalItemDueAt', 'renewalItemStatus'] as $name) {
+        'securityPostureAuthorizedFolderIds', 'securityPostureItemAccessSql', 'renewalItemDueAt', 'renewalItemStatus', 'renewalEligibleItemSql', 'renewalApplicablePeriodSql'] as $name) {
         $code .= "\n" . declaration($functions, $name);
+    }
+    foreach (['laprNormalizeHostname', 'laprClassifySelfTarget', 'laprGetItemRelations'] as $name) {
+        $code .= "\n" . declaration(source('app/sources/lapr.functions.php'), $name);
     }
     $code .= "\n" . declaration(source('app/sources/renewal_preview.php'), 'renewalPreview');
     eval($imports . $code);

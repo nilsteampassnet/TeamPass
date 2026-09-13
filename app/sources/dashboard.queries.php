@@ -122,11 +122,11 @@ if ($oversharedThreshold <= 0) {
 }
 // Reusable SQL fragments — all metadata-only (no decryption, no plaintext).
 $lastRelevantSql = renewalBaseDateSql();
-$effectivePeriodSql = renewalPeriodSql((int) ($SETTINGS['activate_expiration'] ?? 0) === 1);
+$effectivePeriodSql = renewalApplicablePeriodSql($SETTINGS);
 $passwordHealthSql = securityPasswordHealthSql();
 $flagWeakSql = $passwordHealthSql['weak'];
 $flagUnassessedSql = $passwordHealthSql['unassessed'];
-$flagNoExpirySql = '(CASE WHEN ' . $effectivePeriodSql . ' <= 0 THEN 1 ELSE 0 END)';
+$flagNoExpirySql = '(CASE WHEN ' . renewalEligibleItemSql($SETTINGS) . ' AND ' . $effectivePeriodSql . ' <= 0 THEN 1 ELSE 0 END)';
 $flagOverdueSql = '(CASE WHEN ' . $effectivePeriodSql . ' > 0 AND ' . $lastRelevantSql . ' > 0 AND (' . $lastRelevantSql . ' + ' . $effectivePeriodSql . ' * ' . TP_ONE_DAY_SECONDS . ') <= ' . (int) $nowTs . ' THEN 1 ELSE 0 END)';
 $flagOversharedSql = '(CASE WHEN COALESCE(sc.share_count, 0) > ' . (int) $oversharedThreshold . ' THEN 1 ELSE 0 END)';
 $flagBreachedSql = '(CASE WHEN i.hibp_status = 2 THEN 1 ELSE 0 END)';
@@ -398,6 +398,7 @@ switch ($post_type) {
         $rows = DB::query(
             'SELECT i.id, i.pw, i.pw_iv, i.pw_len, i.complexity_level, i.created_at, i.hibp_status,
                 ' . $effectivePeriodSql . ' AS renewal_period,
+                ' . renewalEligibleItemSql($SETTINGS) . ' AS renewal_eligible,
                 ' . $lastRelevantSql . ' AS last_relevant_date,
                 COALESCE(sc.share_count, 0) AS share_count,
                 sk.share_key, sk.increment_id AS sk_increment_id
@@ -422,7 +423,7 @@ switch ($post_type) {
 
             // Metadata flags not related to password strength.
             $renewal = (int) $r['renewal_period'];
-            $flagNoExpiry = ($renewal <= 0) ? 1 : 0;
+            $flagNoExpiry = ((int) $r['renewal_eligible'] === 1 && $renewal <= 0) ? 1 : 0;
             $base = (int) $r['last_relevant_date'];
             $flagOverdue = ($renewal > 0 && $base > 0 && ($base + $renewal * TP_ONE_DAY_SECONDS) <= $nowTs) ? 1 : 0;
             $flagOvershared = ((int) $r['share_count'] > $oversharedThreshold) ? 1 : 0;

@@ -18,6 +18,10 @@ Folders can also have a period configured by an administrator or an authorized f
 
 The deadline is calculated from the last password change, or creation if the password has never changed. Changing a renewal setting or moving an item does not reset its password age. Existing items start with no individual rule after the database upgrade.
 
+While LAPR is enabled, **all items linked to LAPR are excluded from ordinary renewal**: both managed account passwords and items used as endpoint connection credentials. This also applies to paused/error accounts and disabled/error endpoints, even when the rotation scheduler is stopped. Their renewal controls are hidden and a notice explains the exclusion. The web form and API reject changes to their ordinary renewal period, while allowing unrelated edits and unchanged values.
+
+Existing individual periods are retained but inactive for these items. Deleting the last LAPR relationship, or disabling the LAPR module, restores the ordinary item/folder policy using the existing password age. Copying an item does not copy its LAPR relationships: the new item inherits the ordinary renewal period and starts a new password age.
+
 Expired items are visually flagged in the main item list (coloured indicator next to the item label).
 
 The item detail header shows an expiration badge with the effective deadline, including when it comes from the folder. It is blue for later deadlines, orange when due within 14 days and red when expired. In the item list, renewal icons appear beside the security markers, to the left of the item name: an orange hourglass for deadlines within 14 days, or a red crossed calendar for expired items. Their tooltips show the status, deadline and effective period. A policy with an unknown password age is labelled as active on the detail card, without inventing an expiration date.
@@ -67,6 +71,8 @@ The expiration timer resets from the date of the password change.
 ## Governance and upgrades
 
 For shared items, the posture summary and overdue rotation reports use effective deadlines, including individual policies when folder expiration is off. The folder coverage report distinguishes overdue folder SLAs from effective overdue items and shows individual-policy and covered-item counts. Personal folders and their descendants are excluded from these reports.
+
+LAPR-linked items are excluded from ordinary overdue, missing-expiration and renewal-coverage counts. Other posture checks (such as weak, reused or breached passwords) and existing rotation evidence remain applicable. The renewal coverage report's item totals include only items eligible for ordinary renewal.
 
 This change adds `items.renewal_period`, defaulting to zero, through the normal database upgrade. Run the upgrade wizard before using the new code; Docker runs the same migration on schema-floor replay. Replaying the migration preserves existing individual policies.
 

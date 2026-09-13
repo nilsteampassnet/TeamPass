@@ -508,7 +508,7 @@ if ($featureCustomFields === true && $filters['custom_field_value'] !== '') {
 }
 
 $healthSql = securityPasswordHealthSql('i');
-$effectivePeriodSql = renewalPeriodSql((int) ($SETTINGS['activate_expiration'] ?? 0) === 1);
+$effectivePeriodSql = renewalApplicablePeriodSql($SETTINGS);
 $built = searchBuildWhere(
     $filters,
     [
@@ -521,6 +521,7 @@ $built = searchBuildWhere(
         'visible_field_ids' => $visibleFieldIds,
         'weak_sql' => $healthSql['weak'],
         'renewal_period_sql' => $effectivePeriodSql,
+        'renewal_eligible_sql' => renewalEligibleItemSql($SETTINGS),
         'tables' => [
             'restriction_to_roles' => prefixTable('restriction_to_roles'),
             'files' => prefixTable('files'),

@@ -1928,6 +1928,15 @@ class ItemModel
             // (GHSA-r298-6mxv-j9hc).
             if (array_key_exists('renewal_period', $params)) {
                 $updateData['renewal_period'] = renewalValidatePeriod($params['renewal_period']);
+                if (($laprIsManaged || $laprIsCredential)
+                    && $updateData['renewal_period'] !== (int) ($currentItem['renewal_period'] ?? 0)
+                ) {
+                    return [
+                        'error' => true,
+                        'error_message' => 'Ordinary password renewal does not apply to items linked to LAPR.',
+                        'error_header' => 'HTTP/1.1 409 Conflict',
+                    ];
+                }
             }
             $fieldsDefinitions = [
                 'label'             => ['db_key' => 'label', 'type' => 'encoded'],

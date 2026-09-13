@@ -21,6 +21,7 @@ test('Item policy controls reset between items and preview unsaved enabled and d
       value: '', properties: {},
       val(value) { if (arguments.length === 0) return this.value; this.value = value; return this },
       prop(name, value) { if (arguments.length === 1) return this.properties[name]; this.properties[name] = value; return this },
+      data(name, value) { if (arguments.length === 1) return this.properties[name]; this.properties[name] = value; return this },
       on(events, callback) { handler = callback; return this }
     })
     return fields.get(selector)
@@ -56,6 +57,16 @@ test('Item policy controls reset between items and preview unsaved enabled and d
   assert.equal(period.prop('required'), false)
   assert.equal(period.prop('disabled'), true)
   assert.deepEqual(JSON.parse(JSON.stringify(calls.pop())), ['#form-item-renewal-notice', 11, [21], false, 0])
+  $('#form-item-renewal-settings').data('lapr-excluded', true)
+  context.setItemRenewalPeriod(30)
+  assert.equal(enabled.prop('disabled'), true)
+  assert.equal(period.prop('disabled'), true)
+  assert.equal(period.prop('required'), false)
+  assert.equal(period.val(), 30, 'The dormant policy is preserved when editing unrelated fields')
+  $('#form-item-renewal-settings').data('lapr-excluded', false)
+  context.setItemRenewalPeriod(30)
+  assert.equal(enabled.prop('disabled'), false)
+  assert.equal(period.prop('disabled'), false)
 })
 
 function harness(enabled = true) {
@@ -92,7 +103,7 @@ function harness(enabled = true) {
   vm.runInNewContext(source, context)
   const preview = context.createRenewalPreview({ enabled, key: 'session-key', messages: {
     period: 'Every #days# days', none: 'No renewal', explanation: 'No deletion',
-    effective: 'Effective #days# days', source_item: 'Individual policy', source_folder: 'Folder policy', source_none: 'No item deadline',
+    effective: 'Effective #days# days', source_item: 'Individual policy', source_folder: 'Folder policy', source_none: 'No item deadline', source_lapr: 'Linked to LAPR: ordinary expiration does not apply',
     due: 'Due #date#', estimate: 'Estimate', existing: 'Password age preserved', expired: 'Already expired',
     unknown: 'Unknown date', unavailable: 'Unavailable', loading: 'Loading', move_confirm: 'Move?',
     badge_scheduled: 'Expiration', badge_soon: 'Expiring soon', badge_expired: 'Expired', badge_unknown: 'Renewal enabled'
@@ -103,6 +114,19 @@ function harness(enabled = true) {
 function response(days = 90, items = [], creation = false) {
   return { error: false, enabled: true, days, items: items.map(item => ({ days, source: days ? 'folder' : 'none', ...item })), creation }
 }
+
+test('LAPR-only previews explain the exclusion without suggesting a folder deadline', async () => {
+  const ui = harness()
+  const request = ui.preview.update('#notice', 11, [1])
+  ui.pending[0].resolve(response(90, [{ id: 1, days: 0, source: 'lapr', due_date: '', expired: false }]))
+  await request
+  assert.deepEqual(ui.field('#notice').children.map(child => child.value), ['Linked to LAPR: ordinary expiration does not apply'])
+  const move = ui.preview.confirmMove(11, [1])
+  ui.pending[1].resolve(response(90, [{ id: 1, days: 0, source: 'lapr' }]))
+  assert.equal(await move, true)
+  assert.equal(ui.prompts.length, 0)
+  assert.equal(ui.preview.badgeHtml({ state: 'none', days: 0, due_date: '' }), '')
+})
 
 test('Renewal badges distinguish all active states and keep lists focused on urgent deadlines', () => {
   const ui = harness()

@@ -722,7 +722,8 @@ function searchBuildWhere(array $filters, array $ctx): array
                     . ' + ' . $periodSql . ' * ' . (int) ($ctx['day_seconds'] ?? 86400) . ') <= ' . $now . ')';
                 break;
             case 'no_expiry':
-                $clauses[] = (string) ($ctx['renewal_period_sql'] ?? renewalPeriodSql(false, 'i.renewal_period', 'c.renewal_period')) . ' <= 0';
+                $clauses[] = '(' . (string) ($ctx['renewal_eligible_sql'] ?? '1 = 1') . ' AND '
+                    . (string) ($ctx['renewal_period_sql'] ?? renewalPeriodSql(false, 'i.renewal_period', 'c.renewal_period')) . ' <= 0)';
                 break;
             case 'overshared':
                 $clauses[] = '(SELECT COUNT(*) FROM ' . (string) ($tables['sharekeys_items'] ?? '')

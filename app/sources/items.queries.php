@@ -1347,6 +1347,14 @@ switch ($inputData['type']) {
             $laprRelations = laprGetItemRelations([(int) $inputData['itemId']], $SETTINGS);
             $laprRelation = $laprRelations[(int) $inputData['itemId']] ?? [];
             $laprProtectsItem = (bool) ($laprRelation['is_managed'] ?? false);
+            if (($laprProtectsItem || !empty($laprRelation['is_credential']))
+                && $post_renewal_period !== (int) ($dataItem['renewal_period'] ?? 0)
+            ) {
+                echo (string) prepareExchangedData(
+                    ['error' => true, 'message' => $lang->get('renewal_notice_source_lapr')], 'encode'
+                );
+                break;
+            }
             if ($laprProtectsItem === true
                 && ($post_password !== $pw || $post_login !== (string) ($data['login'] ?? ''))
             ) {
@@ -5078,6 +5086,10 @@ switch ($inputData['type']) {
                     $record['date'] = (int) ($batchExpirationDates[$record['id']] ?? 0) ?: (int) ($record['created_at'] ?? 0);
                     $renewalDays = renewalEffectiveDays((int) $record['item_renewal_period'], (int) $record['renewal_period'],
                         (int) ($SETTINGS['activate_expiration'] ?? 0) === 1);
+                    $renewalRelation = $batchLaprRelations[(int) $record['id']] ?? [];
+                    if (!empty($renewalRelation['is_managed']) || !empty($renewalRelation['is_credential'])) {
+                        $renewalDays = 0;
+                    }
                     $renewalDue = renewalDueAt($renewalDays, (int) $record['date']);
 
                     // Check if item is expired

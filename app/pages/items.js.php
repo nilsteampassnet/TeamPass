@@ -296,6 +296,11 @@ require __DIR__ . '/renewal.preview.js.php';
         $details.addClass('hidden').removeClass('alert-info alert-warning alert-danger');
         $notice.addClass('hidden').removeClass('alert-info alert-warning alert-danger');
         laprSetManagedFieldsLocked(isManaged);
+        $('#form-item-renewal-settings').toggleClass('hidden', isManaged || isCredential)
+            .data('lapr-excluded', isManaged || isCredential);
+        $('#form-item-renewal-enabled').prop('disabled', isManaged || isCredential);
+        const renewalEnabled = !isManaged && !isCredential && $('#form-item-renewal-enabled').prop('checked');
+        $('#form-item-renewal-period').prop('disabled', !renewalEnabled).prop('required', renewalEnabled);
         $('.tp-action[data-item-action="delete"]').closest('.nav-item').toggleClass('hidden', isManaged || isCredential);
         $('.tp-action[data-item-action="server"]').closest('.nav-item').toggleClass('hidden', isManaged);
 
@@ -2200,9 +2205,10 @@ require __DIR__ . '/renewal.preview.js.php';
 
     /** Initialize the optional policy without firing a save or resetting password age. */
     function setItemRenewalPeriod(days) {
-        $('#form-item-renewal-enabled').prop('checked', Number(days) > 0);
+        const eligible = $('#form-item-renewal-settings').data('lapr-excluded') !== true;
+        $('#form-item-renewal-enabled').prop('checked', Number(days) > 0).prop('disabled', !eligible);
         $('#form-item-renewal-period').val(Number(days) > 0 ? days : 90)
-            .prop('disabled', Number(days) <= 0).prop('required', Number(days) > 0);
+            .prop('disabled', !eligible || Number(days) <= 0).prop('required', eligible && Number(days) > 0);
     }
 
     /** Preview unsaved item policy choices against the selected folder. */

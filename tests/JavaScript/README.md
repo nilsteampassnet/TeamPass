@@ -18,7 +18,8 @@ folder row and its edit sidebar display the values actually saved by the server.
 with controlled DOM and HTTP adapters. It covers folder changes with out-of-order
 responses, creation estimates, expired and unknown dates, safe label rendering,
 individual policies with folder expiration disabled, item form reset/toggle behavior,
-copy inheritance and cancellation/failure of move previews.
+copy inheritance and cancellation/failure of move previews. LAPR-linked items show
+an exclusion notice and keep their dormant period without enabling its controls.
 
 The same suite checks safe renewal badge rendering and clearing the previous badge
 when another item opens. `renewal-page.test.cjs` executes the page initialization,

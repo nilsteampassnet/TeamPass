@@ -25,7 +25,8 @@ function createRenewalPreview(config) {
   }
 
   function lines(data) {
-    const result = [data.days ? messages.period.replace('#days#', data.days) : messages.none]
+    const allExcluded = data.items.length > 0 && data.items.every(item => item.source === 'lapr')
+    const result = allExcluded ? [] : [data.days ? messages.period.replace('#days#', data.days) : messages.none]
     data.items.forEach(item => {
       const prefix = data.items.length > 1 ? item.label + ' — ' : ''
       result.push(prefix + (item.days ? messages.effective.replace('#days#', item.days) + ' ' : '') + messages['source_' + item.source])
@@ -34,7 +35,7 @@ function createRenewalPreview(config) {
         result.push(prefix + date + (item.expired ? ' ' + messages.expired : ''))
       }
     })
-    if (data.days || data.items.some(item => item.days)) result.push(messages.explanation)
+    if (!allExcluded && (data.days || data.items.some(item => item.days))) result.push(messages.explanation)
     if (data.items.some(item => item.days)) result.push(data.creation ? messages.estimate : messages.existing)
     return result
   }

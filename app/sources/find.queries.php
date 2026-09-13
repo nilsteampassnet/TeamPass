@@ -236,7 +236,7 @@ DB::query(
 $iTotal = DB::count();
 $rows = DB::query(
     "SELECT c.*, ci.data, i.item_key, "
-    . renewalPeriodSql((int) ($SETTINGS['activate_expiration'] ?? 0) === 1) . " AS renewal_period, "
+    . renewalApplicablePeriodSql($SETTINGS) . " AS renewal_period, "
     . renewalBaseDateSql('c.timestamp') . " AS timestamp
     FROM " . prefixTable('cache') . " AS c
     LEFT JOIN " . prefixTable('categories_items') . " AS ci ON (ci.item_id = c.id)

@@ -60,6 +60,11 @@ class RenewalAuthorizationTest extends TestCase
             INSERT INTO renewal_users_groups VALUES (7, 11), (7, 12), (7, 31);
             INSERT INTO renewal_users_groups_forbidden VALUES (7, 12);
             CREATE TABLE renewal_log_items (id_item INTEGER, date TEXT, action TEXT, raison TEXT);
+            CREATE TABLE renewal_lapr_accounts (id INTEGER PRIMARY KEY, item_id INTEGER, status TEXT,
+                username_cache TEXT, next_rotation_at TEXT, last_rotation_status TEXT, endpoint_id INTEGER, policy_id INTEGER);
+            CREATE TABLE renewal_lapr_endpoints (id INTEGER PRIMARY KEY, ssh_credential_source INTEGER, status TEXT,
+                label TEXT, hostname TEXT, os_info TEXT, ssh_username TEXT);
+            CREATE TABLE renewal_lapr_policies (id INTEGER PRIMARY KEY, label TEXT, frequency_days INTEGER, is_preset INTEGER);
             SQL);
     }
 
@@ -97,6 +102,93 @@ class RenewalAuthorizationTest extends TestCase
                 }
             }
         }
+    }
+
+    /** Both LAPR roles are excluded, even paused/error links, without depending on the scheduler or policy. */
+    public function testLaprRelationsAgreeAcrossPreviewDeadlinesAndGovernance(): void
+    {
+        DB::query('UPDATE renewal_items SET renewal_period = 1');
+        DB::query('INSERT INTO renewal_lapr_accounts (id, item_id, status, endpoint_id) VALUES (1, 1, %s, 1)', 'active');
+        DB::query('INSERT INTO renewal_lapr_endpoints (id, ssh_credential_source, status, label, hostname) VALUES (1, 4, %s, %s, %s)', 'active', 'Host', 'example.invalid');
+        foreach (['active', 'paused', 'error', 'deleted'] as $accountStatus) {
+            foreach (['active', 'disabled', 'error', 'deleted'] as $endpointStatus) {
+                DB::query('UPDATE renewal_lapr_accounts SET status = %s', $accountStatus);
+                DB::query('UPDATE renewal_lapr_endpoints SET status = %s', $endpointStatus);
+                foreach ([0, 1] as $enabled) {
+                    ConfigManager::$settings['lapr_enabled'] = $enabled;
+                    $namespace = newRequest();
+                    $status = $namespace . '\\renewalItemStatus';
+                    $relations = ($namespace . '\\laprGetItemRelations')([1, 4], ConfigManager::$settings);
+                    $eligibleSql = ($namespace . '\\renewalEligibleItemSql')(ConfigManager::$settings);
+                    $eligible = array_column(DB::query('SELECT i.id, ' . $eligibleSql . ' AS eligible FROM renewal_items i'), 'eligible', 'id');
+                    $table = runTable($namespace);
+                    $overdue = array_column(runRotationReport($namespace, 'report_rotation_overdue')['rows'], 'item_id');
+                    $coverage = array_column(runRotationReport($namespace, 'report_rotation_sla')['rows'], null, 'folder_id');
+                    $excludedCount = 0;
+                    foreach ([1 => $accountStatus, 4 => $endpointStatus] as $id => $linkStatus) {
+                        $excluded = $enabled === 1 && $linkStatus !== 'deleted';
+                        $excludedCount += $excluded ? 1 : 0;
+                        self::assertSame(!$excluded, (bool) $eligible[$id]);
+                        self::assertSame($excluded, !empty($relations[$id]['is_managed']) || !empty($relations[$id]['is_credential']));
+                        self::assertSame($excluded ? 'none' : 'expired', $status($id, ConfigManager::$settings)['state']);
+                        $preview = $this->preview(11, [$id])['items'][0];
+                        self::assertSame($excluded ? 'lapr' : 'folder', $preview['source']);
+                        self::assertSame($excluded, $preview['due_at'] === null);
+                        self::assertSame(!$excluded, in_array($id, $overdue, true));
+                    }
+                    self::assertSame(3 - $excludedCount, $table['recordsTotal']);
+                    foreach (['items', 'overdue', 'individual_policies', 'covered_items', 'effective_overdue'] as $key) {
+                        self::assertSame(4 - $excludedCount, $coverage[11][$key], $key);
+                    }
+                }
+            }
+        }
+    }
+
+    /** A copied item has no LAPR relationship; its inherited ordinary policy starts a new age. */
+    public function testCopyingALaprItemAndRemovingItsLastLinkRestoresOrdinaryRenewal(): void
+    {
+        ConfigManager::$settings['lapr_enabled'] = 1;
+        DB::query('UPDATE renewal_items SET renewal_period = 30 WHERE id = 1');
+        DB::query('INSERT INTO renewal_lapr_endpoints (id, ssh_credential_source, status) VALUES (1, 1, %s), (2, 1, %s)', 'deleted', 'disabled');
+        self::assertSame('lapr', $this->preview(11, [1])['items'][0]['source']);
+        $preview = newRequest() . '\\renewalPreview';
+        $copy = $preview(7, 11, [1], false, ConfigManager::$settings, null, true)['items'][0];
+        self::assertSame('folder', $copy['source']);
+        self::assertSame(1, $copy['days']);
+        self::assertFalse($copy['expired']);
+        DB::query('UPDATE renewal_lapr_endpoints SET status = %s', 'deleted');
+        self::assertSame('folder', $this->preview(11, [1])['items'][0]['source']);
+        self::assertSame(30, DB::queryFirstField('SELECT renewal_period FROM renewal_items WHERE id = 1'));
+    }
+
+    /** LAPR credentials without a dormant policy must not be reported as missing expiration. */
+    public function testPostureAndSearchDoNotReclassifyLaprAsMissingExpiration(): void
+    {
+        ConfigManager::$settings['lapr_enabled'] = 1;
+        DB::query('UPDATE renewal_items SET renewal_period = 0');
+        DB::query('UPDATE renewal_nested_tree SET renewal_period = 0');
+        DB::query('INSERT INTO renewal_lapr_endpoints (id, ssh_credential_source, status) VALUES (1, 1, %s)', 'active');
+        $namespace = newRequest();
+        $effectivePeriodSql = ($namespace . '\\renewalApplicablePeriodSql')(ConfigManager::$settings);
+        $SETTINGS = ConfigManager::$settings;
+        $dashboard = source('app/sources/dashboard.queries.php');
+        preg_match('/^\$flagNoExpirySql = .*;$/m', $dashboard, $assignment);
+        $flag = eval('namespace ' . $namespace . '; ' . $assignment[0] . ' return $flagNoExpirySql;');
+        $rows = array_column(DB::query('SELECT i.id, ' . $flag . ' AS no_expiry FROM renewal_items i INNER JOIN renewal_nested_tree n ON n.id = i.id_tree'), 'no_expiry', 'id');
+        self::assertSame(0, $rows[1]);
+        self::assertSame(1, $rows[4]);
+
+        require_once __DIR__ . '/../../app/sources/search.functions.php';
+        $filters = searchNormalizeFilters(['health' => ['no_expiry']]);
+        $where = searchBuildWhere($filters, [
+            'user_id' => 7, 'role_ids' => [], 'folder_scope' => [11],
+            'renewal_period_sql' => $effectivePeriodSql,
+            'renewal_eligible_sql' => ($namespace . '\\renewalEligibleItemSql')($SETTINGS),
+            'tables' => ['restriction_to_roles' => 'renewal_restriction_to_roles'],
+        ]);
+        $found = DB::query('SELECT i.id FROM renewal_items i INNER JOIN renewal_nested_tree n ON n.id = i.id_tree INNER JOIN renewal_items c ON c.id = i.id WHERE ' . $where['sql'], $where['params']);
+        self::assertSame([4], array_column($found, 'id'));
     }
 
     /** Pending edits preview the new setting without persisting it; copying starts a new age. */

@@ -7,7 +7,7 @@ if (!defined('TEAMPASS_APP') || !isset($lang, $session, $SETTINGS)) {
     exit;
 }
 $renewalMessages = [];
-foreach (['period', 'none', 'explanation', 'due', 'estimate', 'existing', 'expired', 'unknown', 'unavailable', 'move_confirm', 'effective', 'source_item', 'source_folder', 'source_none'] as $key) {
+foreach (['period', 'none', 'explanation', 'due', 'estimate', 'existing', 'expired', 'unknown', 'unavailable', 'move_confirm', 'effective', 'source_item', 'source_folder', 'source_none', 'source_lapr'] as $key) {
     $renewalMessages[$key] = $lang->get('renewal_notice_' . $key);
 }
 $renewalMessages['loading'] = $lang->get('please_wait');

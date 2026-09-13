@@ -161,7 +161,7 @@ if (null !== $post_type) {
                         i.label, i.description, i.login, i.url, i.id_tree, i.perso,
                         i.fa_icon, i.restricted_to, i.viewed_no,
                         c.folder AS folder_path,
-                        ' . renewalPeriodSql((int) ($SETTINGS['activate_expiration'] ?? 0) === 1, 'i.renewal_period', 'nt.renewal_period') . ' AS renewal_period,
+                        ' . renewalApplicablePeriodSql($SETTINGS, 'i.renewal_period', 'nt.renewal_period') . ' AS renewal_period,
                         ' . renewalBaseDateSql('c.timestamp') . ' AS item_timestamp,
                         nt.title AS folder_title,
                         tg.tags AS tags,
