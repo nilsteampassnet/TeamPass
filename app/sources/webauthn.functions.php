@@ -486,3 +486,303 @@ function webauthnIsValidUserHandle(string $userHandle): bool
 
     return $length >= 1 && $length <= TP_WEBAUTHN_USER_HANDLE_MAX_BYTES;
 }
+
+/**
+ * Build the DER SubjectPublicKeyInfo of an ES256 public key.
+ *
+ * Browsers expose it through AuthenticatorAttestationResponse.getPublicKey(), and many relying
+ * parties read the key from there rather than from the attestation object.
+ *
+ * @param string $x 32-byte X coordinate
+ * @param string $y 32-byte Y coordinate
+ *
+ * @return string DER bytes
+ *
+ * @throws InvalidArgumentException When a coordinate is not 32 bytes long
+ */
+function webauthnBuildSpkiPublicKey(string $x, string $y): string
+{
+    if (strlen($x) !== 32 || strlen($y) !== 32) {
+        throw new InvalidArgumentException('P-256 coordinates must be 32 bytes long.');
+    }
+
+    // SEQUENCE { SEQUENCE { id-ecPublicKey, prime256v1 }, BIT STRING { 04 ‖ X ‖ Y } }
+    return (string) hex2bin('3059301306072a8648ce3d020106082a8648ce3d030107034200') . "\x04" . $x . $y;
+}
+
+/** Largest client data JSON accepted from the extension, in bytes. */
+const TP_WEBAUTHN_CLIENT_DATA_MAX_BYTES = 8192;
+
+/** Largest list of excluded credential ids accepted on creation. */
+const TP_WEBAUTHN_EXCLUDED_IDS_MAX = 100;
+
+/**
+ * Validate the body of POST /webauthn/create.
+ *
+ * Exception codes carry the HTTP status: 400 for a missing or malformed field, 422 for a
+ * well-formed request TeamPass cannot honour (unsupported algorithm, origin that does not
+ * belong to the relying party).
+ *
+ * @param array<string, mixed> $input Decoded request body
+ *
+ * @return array{
+ *     item_id: int, rp_id: string, rp_name: string, user_handle: string, user_name: string,
+ *     user_display_name: string, algorithm: int, client_data_json: string, user_verified: bool,
+ *     excluded_credential_ids: array<int, string>
+ * } Binary fields (user_handle, client_data_json) are decoded; excluded ids are re-encoded
+ *   as canonical unpadded base64url, the form stored in the database.
+ *
+ * @throws InvalidArgumentException
+ */
+function webauthnNormalizeCreateRequest(array $input): array
+{
+    $itemId = webauthnReadPositiveInt($input, 'item_id');
+    $rpId = webauthnReadRpId($input);
+    $userHandle = webauthnReadBase64Url($input, 'user_handle', true);
+    if (webauthnIsValidUserHandle($userHandle) === false) {
+        throw new InvalidArgumentException('user_handle must be 1 to 64 bytes long.', 422);
+    }
+
+    $algorithms = [];
+    $params = $input['pub_key_cred_params'] ?? [];
+    if (is_array($params) === false) {
+        throw new InvalidArgumentException('pub_key_cred_params must be an array.', 400);
+    }
+    foreach ($params as $param) {
+        // Accept the bare COSE identifier or the PublicKeyCredentialParameters object.
+        if (is_array($param) === true) {
+            if (($param['type'] ?? 'public-key') !== 'public-key' || is_int($param['alg'] ?? null) === false) {
+                continue;
+            }
+            $param = $param['alg'];
+        }
+        if (is_int($param) === true) {
+            $algorithms[] = $param;
+        }
+    }
+    // An empty list is the WebAuthn default; a list whose entries were all unusable is not.
+    $algorithm = $params === [] ? webauthnSelectAlgorithm([]) : ($algorithms === [] ? null : webauthnSelectAlgorithm($algorithms));
+    if ($algorithm === null) {
+        throw new InvalidArgumentException('The relying party does not accept ES256, the only algorithm TeamPass supports.', 422);
+    }
+
+    $clientDataJson = webauthnReadClientData($input, 'webauthn.create', $rpId);
+
+    $excluded = $input['excluded_credential_ids'] ?? [];
+    if (is_array($excluded) === false || count($excluded) > TP_WEBAUTHN_EXCLUDED_IDS_MAX) {
+        throw new InvalidArgumentException('excluded_credential_ids must be an array of at most 100 ids.', 400);
+    }
+    $excludedIds = [];
+    foreach ($excluded as $excludedId) {
+        if (is_string($excludedId) === false || $excludedId === '') {
+            throw new InvalidArgumentException('excluded_credential_ids must hold base64url strings.', 400);
+        }
+        $excludedIds[] = webauthnBase64UrlEncode(webauthnBase64UrlDecode($excludedId));
+    }
+
+    return [
+        'item_id' => $itemId,
+        'rp_id' => $rpId,
+        'rp_name' => webauthnReadLabel($input, 'rp_name'),
+        'user_handle' => $userHandle,
+        'user_name' => webauthnReadLabel($input, 'user_name'),
+        'user_display_name' => webauthnReadLabel($input, 'user_display_name'),
+        'algorithm' => $algorithm,
+        'client_data_json' => $clientDataJson,
+        'user_verified' => webauthnReadBool($input, 'user_verified'),
+        'excluded_credential_ids' => array_values(array_unique($excludedIds)),
+    ];
+}
+
+/**
+ * Validate the body of POST /webauthn/assert.
+ *
+ * @param array<string, mixed> $input Decoded request body
+ *
+ * @return array{credential_id: string, rp_id: string, client_data_json: string, user_verified: bool}
+ *         `credential_id` is canonical unpadded base64url, `client_data_json` decoded bytes.
+ *
+ * @throws InvalidArgumentException Codes as in webauthnNormalizeCreateRequest()
+ */
+function webauthnNormalizeAssertRequest(array $input): array
+{
+    $credentialId = webauthnReadBase64Url($input, 'credential_id', true);
+    if (strlen($credentialId) < 16 || strlen($credentialId) > 1023) {
+        throw new InvalidArgumentException('Invalid credential_id length.', 400);
+    }
+    $rpId = webauthnReadRpId($input);
+
+    return [
+        'credential_id' => webauthnBase64UrlEncode($credentialId),
+        'rp_id' => $rpId,
+        'client_data_json' => webauthnReadClientData($input, 'webauthn.get', $rpId),
+        'user_verified' => webauthnReadBool($input, 'user_verified'),
+    ];
+}
+
+/**
+ * Read a mandatory positive integer.
+ *
+ * @param array<string, mixed> $input Request body
+ * @param string               $name  Field name
+ *
+ * @return int
+ *
+ * @throws InvalidArgumentException
+ */
+function webauthnReadPositiveInt(array $input, string $name): int
+{
+    $value = $input[$name] ?? null;
+    if (is_string($value) === true && preg_match('/^[1-9][0-9]{0,9}$/', $value) === 1) {
+        $value = (int) $value;
+    }
+    if (is_int($value) === false || $value <= 0) {
+        throw new InvalidArgumentException($name . ' is mandatory and must be a positive integer.', 400);
+    }
+
+    return $value;
+}
+
+/**
+ * Read and normalize the mandatory rp_id field.
+ *
+ * @param array<string, mixed> $input Request body
+ *
+ * @return string
+ *
+ * @throws InvalidArgumentException
+ */
+function webauthnReadRpId(array $input): string
+{
+    if (is_string($input['rp_id'] ?? null) === false || $input['rp_id'] === '') {
+        throw new InvalidArgumentException('rp_id is mandatory.', 400);
+    }
+
+    $rpId = webauthnNormalizeRpId($input['rp_id']);
+    if ($rpId === null) {
+        throw new InvalidArgumentException('rp_id is not a valid relying party id.', 422);
+    }
+
+    return $rpId;
+}
+
+/**
+ * Read a base64url field and return its bytes.
+ *
+ * @param array<string, mixed> $input    Request body
+ * @param string               $name     Field name
+ * @param bool                 $required Whether an absent field is an error
+ *
+ * @return string Raw bytes, '' when optional and absent
+ *
+ * @throws InvalidArgumentException
+ */
+function webauthnReadBase64Url(array $input, string $name, bool $required): string
+{
+    $value = $input[$name] ?? null;
+    if ($value === null || $value === '') {
+        if ($required === true) {
+            throw new InvalidArgumentException($name . ' is mandatory.', 400);
+        }
+
+        return '';
+    }
+    if (is_string($value) === false) {
+        throw new InvalidArgumentException($name . ' must be a base64url string.', 400);
+    }
+
+    try {
+        return webauthnBase64UrlDecode($value);
+    } catch (InvalidArgumentException $e) {
+        throw new InvalidArgumentException($name . ' must be a base64url string.', 400, $e);
+    }
+}
+
+/**
+ * Read the client data, check its type and that its origin belongs to the relying party.
+ *
+ * This check makes the request consistent, it does not authenticate the extension: an
+ * extension that lies can write any origin. The guarantee that the origin is the tab's real
+ * one is the extension's, which must take it from the browser and never from the page.
+ *
+ * @param array<string, mixed> $input        Request body
+ * @param string               $expectedType 'webauthn.create' or 'webauthn.get'
+ * @param string               $rpId         Normalized relying party id
+ *
+ * @return string Client data JSON bytes, exactly as the relying party will hash them
+ *
+ * @throws InvalidArgumentException
+ */
+function webauthnReadClientData(array $input, string $expectedType, string $rpId): string
+{
+    $clientDataJson = webauthnReadBase64Url($input, 'client_data_json', true);
+    if (strlen($clientDataJson) > TP_WEBAUTHN_CLIENT_DATA_MAX_BYTES) {
+        throw new InvalidArgumentException('client_data_json is too large.', 400);
+    }
+
+    try {
+        $clientData = webauthnParseClientDataJson($clientDataJson, $expectedType);
+    } catch (InvalidArgumentException $e) {
+        throw new InvalidArgumentException($e->getMessage(), 400, $e);
+    }
+
+    if ($clientData['crossOrigin'] === true) {
+        throw new InvalidArgumentException('Cross-origin WebAuthn requests are not supported.', 422);
+    }
+    if (webauthnOriginMatchesRpId($clientData['origin'], $rpId) === false) {
+        throw new InvalidArgumentException('The client data origin does not belong to the relying party.', 422);
+    }
+
+    return $clientDataJson;
+}
+
+/**
+ * Read an optional display label (relying party name, account name). These strings come from
+ * the relying party's page: they are stored as received and must be escaped on output.
+ *
+ * @param array<string, mixed> $input Request body
+ * @param string               $name  Field name
+ *
+ * @return string
+ *
+ * @throws InvalidArgumentException
+ */
+function webauthnReadLabel(array $input, string $name): string
+{
+    $value = $input[$name] ?? '';
+    if (is_string($value) === false) {
+        throw new InvalidArgumentException($name . ' must be a string.', 400);
+    }
+    $value = trim($value);
+    if (mb_check_encoding($value, 'UTF-8') === false || mb_strlen($value) > 255) {
+        throw new InvalidArgumentException($name . ' must be valid UTF-8 of at most 255 characters.', 422);
+    }
+
+    return $value;
+}
+
+/**
+ * Read an optional boolean, accepting the JSON boolean and its 0/1 form-data spelling.
+ *
+ * @param array<string, mixed> $input Request body
+ * @param string               $name  Field name
+ *
+ * @return bool False when absent
+ *
+ * @throws InvalidArgumentException
+ */
+function webauthnReadBool(array $input, string $name): bool
+{
+    $value = $input[$name] ?? false;
+    if (is_bool($value) === true) {
+        return $value;
+    }
+    if ($value === 1 || $value === '1' || $value === 'true') {
+        return true;
+    }
+    if ($value === 0 || $value === '0' || $value === 'false' || $value === '') {
+        return false;
+    }
+
+    throw new InvalidArgumentException($name . ' must be a boolean.', 400);
+}

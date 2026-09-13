@@ -32,6 +32,7 @@ class OpenApiContractTest extends TestCase
         'folder' => 'FolderController.php',
         'user' => 'UserController.php',
         'misc' => 'MiscController.php',
+        'webauthn' => 'WebauthnController.php',
     ];
 
     private static ?array $spec = null;
@@ -183,7 +184,7 @@ class OpenApiContractTest extends TestCase
     {
         $spec = $this->getSpec();
 
-        foreach (['/item/create', '/folder/create'] as $path) {
+        foreach (['/item/create', '/folder/create', '/webauthn/create'] as $path) {
             $responses = $spec['paths'][$path]['post']['responses'] ?? [];
             self::assertArrayHasKey('201', $responses, "$path must document a 201 Created response (REST-6)");
             self::assertArrayNotHasKey('200', $responses, "$path must not document 200 anymore (REST-6)");

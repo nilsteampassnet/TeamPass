@@ -353,6 +353,13 @@ if (isset($uri[0]) && ($uri[0] === 'authorize' || $uri[0] === 'authorizeToken'))
             $userData['data']
         );
 
+    // action related to WEBAUTHN (vault passkeys)
+    } elseif ($controller === 'webauthn') {
+        webauthnAction(
+            array_slice($uri, 1),
+            $userData['data']
+        );
+
     // action related to MISC
     } elseif ($controller === 'misc') {
         require API_ROOT_PATH . "/Controller/Api/MiscController.php";

@@ -383,12 +383,11 @@ final class WebauthnAuthenticatorTest extends TestCase
     }
 
     /**
-     * Rebuild an uncompressed P-256 public key in PEM from its coordinates.
+     * Wrap the SubjectPublicKeyInfo the API returns into PEM, as a relying party would.
      */
     private function publicKeyPem(string $x, string $y): string
     {
-        // SubjectPublicKeyInfo header for id-ecPublicKey / prime256v1, then 04 ‖ X ‖ Y.
-        $der = (string) hex2bin('3059301306072a8648ce3d020106082a8648ce3d030107034200') . "\x04" . $x . $y;
+        $der = webauthnBuildSpkiPublicKey($x, $y);
 
         return "-----BEGIN PUBLIC KEY-----\n" . chunk_split(base64_encode($der), 64, "\n") . "-----END PUBLIC KEY-----\n";
     }

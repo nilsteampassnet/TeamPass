@@ -1165,6 +1165,251 @@
                 }
             }
         },
+        "/webauthn/create": {
+            "post": {
+                "operationId": "webauthnCreate",
+                "summary": "Create a passkey on an item",
+                "description": "TeamPass acts as the authenticator: it generates an ES256 key pair, stores the private key encrypted like an item password and returns what the extension needs to build the PublicKeyCredential. Needs the update right and edit access to the item's folder. Returns 503 while passkey support is disabled.",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/WebauthnCreateBody"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Passkey created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WebauthnCreatedCredential"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/UnprocessableEntity"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/ApiDisabled"
+                    }
+                }
+            }
+        },
+        "/webauthn/list": {
+            "get": {
+                "operationId": "webauthnList",
+                "summary": "List usable passkeys",
+                "description": "Passkeys on items the caller can read, whose keys have reached the caller. At least one filter is mandatory.",
+                "parameters": [
+                    {
+                        "name": "rp_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "item_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Passkeys, possibly empty",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/WebauthnCredential"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/UnprocessableEntity"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/ApiDisabled"
+                    }
+                }
+            }
+        },
+        "/webauthn/assert": {
+            "post": {
+                "operationId": "webauthnAssert",
+                "summary": "Sign an assertion with a passkey",
+                "description": "The private key is decrypted and used on the server only. Each call increments the signature counter and is written to the item history. 422 when the caller's keys cannot decrypt the passkey yet (retry once the background task has distributed them).",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/WebauthnAssertBody"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Assertion",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WebauthnAssertion"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/UnprocessableEntity"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/ApiDisabled"
+                    }
+                }
+            }
+        },
+        "/webauthn/delete": {
+            "delete": {
+                "operationId": "webauthnDelete",
+                "summary": "Delete a passkey",
+                "description": "Deletes the passkey and its encryption keys. Needs the update right and edit access to the item's folder. The account on the site keeps the public key: remove it there too.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Passkey deleted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "boolean"
+                                        },
+                                        "id": {
+                                            "type": "integer"
+                                        },
+                                        "item_id": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/ApiDisabled"
+                    }
+                }
+            }
+        },
         "/openapi.json": {
             "get": {
                 "operationId": "getOpenApiSpec",
@@ -2018,6 +2263,268 @@
                     },
                     "auth_type": {
                         "type": "string"
+                    }
+                }
+            },
+            "WebauthnCreateBody": {
+                "type": "object",
+                "required": [
+                    "item_id",
+                    "rp_id",
+                    "user_handle",
+                    "client_data_json"
+                ],
+                "properties": {
+                    "item_id": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "description": "Existing item the passkey is attached to. It inherits the item's folder rights, restriction and recycle bin."
+                    },
+                    "rp_id": {
+                        "type": "string",
+                        "description": "Relying party id requested by the site (a domain, e.g. github.com). Must be the host of the client data origin or one of its parent domains."
+                    },
+                    "rp_name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "user_handle": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9_-]+$",
+                        "description": "Relying party user id (1 to 64 bytes), base64url."
+                    },
+                    "user_name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "user_display_name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "pub_key_cred_params": {
+                        "type": "array",
+                        "description": "Algorithms accepted by the relying party, as COSE identifiers or PublicKeyCredentialParameters objects. ES256 (-7) must be among them; an empty list means the WebAuthn default.",
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "type": {
+                                            "type": "string"
+                                        },
+                                        "alg": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "client_data_json": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9_-]+$",
+                        "description": "Client data JSON built by the extension (type webauthn.create), base64url. Its origin must be the tab's real origin, taken from the browser, never from the page."
+                    },
+                    "user_verified": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Whether the extension verified the user (sets the UV flag)."
+                    },
+                    "excluded_credential_ids": {
+                        "type": "array",
+                        "maxItems": 100,
+                        "items": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9_-]+$",
+                            "description": "Credential id, base64url."
+                        },
+                        "description": "excludeCredentials of the relying party. A match answers 409."
+                    }
+                }
+            },
+            "WebauthnCreatedCredential": {
+                "type": "object",
+                "required": [
+                    "id",
+                    "item_id",
+                    "rp_id",
+                    "credential_id",
+                    "user_handle",
+                    "attestation_object",
+                    "authenticator_data",
+                    "public_key",
+                    "public_key_algorithm",
+                    "transports"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "description": "TeamPass identifier of the passkey"
+                    },
+                    "item_id": {
+                        "type": "integer"
+                    },
+                    "rp_id": {
+                        "type": "string"
+                    },
+                    "credential_id": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9_-]+$",
+                        "description": "Server-generated credential id, also the rawId of the PublicKeyCredential."
+                    },
+                    "user_handle": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9_-]+$",
+                        "description": "Relying party user id"
+                    },
+                    "attestation_object": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9_-]+$",
+                        "description": "CBOR attestation object, format none."
+                    },
+                    "authenticator_data": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9_-]+$",
+                        "description": "Authenticator data, for AuthenticatorAttestationResponse.getAuthenticatorData()."
+                    },
+                    "public_key": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9_-]+$",
+                        "description": "DER SubjectPublicKeyInfo, for AuthenticatorAttestationResponse.getPublicKey()."
+                    },
+                    "public_key_algorithm": {
+                        "type": "integer",
+                        "enum": [
+                            -7
+                        ]
+                    },
+                    "transports": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "WebauthnCredential": {
+                "type": "object",
+                "description": "Passkey metadata. Key material is never returned.",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "credential_id": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9_-]+$",
+                        "description": "Credential id"
+                    },
+                    "rp_id": {
+                        "type": "string"
+                    },
+                    "rp_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "user_handle": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9_-]+$",
+                        "description": "Relying party user id"
+                    },
+                    "user_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "user_display_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "item_id": {
+                        "type": "integer"
+                    },
+                    "item_label": {
+                        "type": "string"
+                    },
+                    "folder_id": {
+                        "type": "integer"
+                    },
+                    "created_at": {
+                        "type": "integer",
+                        "description": "Unix UTC timestamp"
+                    },
+                    "last_used_at": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "description": "Unix UTC timestamp"
+                    }
+                }
+            },
+            "WebauthnAssertBody": {
+                "type": "object",
+                "required": [
+                    "credential_id",
+                    "rp_id",
+                    "client_data_json"
+                ],
+                "properties": {
+                    "credential_id": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9_-]+$",
+                        "description": "Credential id"
+                    },
+                    "rp_id": {
+                        "type": "string",
+                        "description": "Relying party id requested by the site. Must equal the passkey's."
+                    },
+                    "client_data_json": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9_-]+$",
+                        "description": "Client data JSON built by the extension (type webauthn.get), base64url. Signed as is."
+                    },
+                    "user_verified": {
+                        "type": "boolean",
+                        "default": false
+                    }
+                }
+            },
+            "WebauthnAssertion": {
+                "type": "object",
+                "required": [
+                    "credential_id",
+                    "authenticator_data",
+                    "signature",
+                    "user_handle"
+                ],
+                "properties": {
+                    "credential_id": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9_-]+$",
+                        "description": "Credential id"
+                    },
+                    "authenticator_data": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9_-]+$",
+                        "description": "Authenticator data"
+                    },
+                    "signature": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9_-]+$",
+                        "description": "DER ECDSA signature of authenticatorData ‖ SHA-256(clientDataJSON)"
+                    },
+                    "user_handle": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9_-]+$",
+                        "description": "Relying party user id"
                     }
                 }
             }
