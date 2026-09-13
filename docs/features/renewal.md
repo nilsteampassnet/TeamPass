@@ -20,7 +20,7 @@ The deadline is calculated from the last password change, or creation if the pas
 
 Expired items are visually flagged in the main item list (coloured indicator next to the item label).
 
-The item detail header shows an expiration badge with the effective deadline, including when it comes from the folder. It is blue for later deadlines, orange when due within 14 days and red when expired. The item list highlights upcoming deadlines within 14 days and expired items with matching badges. A policy with an unknown password age is labelled as active on the detail card, without inventing an expiration date.
+The item detail header shows an expiration badge with the effective deadline, including when it comes from the folder. It is blue for later deadlines, orange when due within 14 days and red when expired. In the item list, renewal icons appear beside the security markers, to the left of the item name: an orange hourglass for deadlines within 14 days, or a red crossed calendar for expired items. Their tooltips show the status, deadline and effective period. A policy with an unknown password age is labelled as active on the detail card, without inventing an expiration date.
 
 Opening a folder displays its active renewal rule above the item list, including when the folder is empty. Individual items may have deadlines even when that folder has no active rule.
 

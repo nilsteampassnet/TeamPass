@@ -112,7 +112,15 @@ test('Renewal badges distinguish all active states and keep lists focused on urg
     assert.ok(badge.includes('badge-' + colour))
     assert.ok(badge.includes('2026-10-01'))
     assert.ok(badge.includes('Effective 30 days'))
-    assert.equal(ui.preview.badgeHtml({ ...policy, state }, true) !== '', state === 'soon' || state === 'expired')
+    const marker = ui.preview.badgeHtml({ ...policy, state }, true)
+    assert.equal(marker !== '', state === 'soon' || state === 'expired')
+    if (marker) {
+      assert.ok(marker.startsWith('<i class="fa-solid '))
+      assert.ok(marker.includes(state === 'soon' ? 'fa-hourglass-half' : 'fa-calendar-xmark'))
+      assert.ok(marker.includes('mr-1 infotip tp-item-renewal-marker text-' + colour))
+      assert.ok(marker.includes('title="' + (state === 'soon' ? 'Expiring soon' : 'Expired') + ' — Due 2026-10-01 Effective 30 days"'))
+      assert.equal(marker.includes('<span'), false)
+    }
   }
   assert.equal(ui.preview.badgeHtml(null), '')
   assert.equal(ui.preview.badgeHtml({ ...policy, state: 'none' }), '')
@@ -120,9 +128,11 @@ test('Renewal badges distinguish all active states and keep lists focused on urg
   const unknown = ui.preview.badgeHtml({ days: 30, due_date: '', state: 'unknown' })
   assert.ok(unknown.includes('Renewal enabled'))
   assert.ok(unknown.includes('Unknown date'))
-  const hostile = ui.preview.badgeHtml({ days: '\"><img src=x>', due_date: '<script>alert(1)</script>', state: 'soon' })
-  assert.equal(hostile.includes('<img'), false)
-  assert.equal(hostile.includes('<script>'), false)
+  for (const listMarker of [false, true]) {
+    const hostile = ui.preview.badgeHtml({ days: '\"><img src=x>', due_date: '<script>alert(1)</script>', state: 'soon' }, listMarker)
+    assert.equal(hostile.includes('<img'), false)
+    assert.equal(hostile.includes('<script>'), false)
+  }
 })
 
 test('Opening another item clears the previous renewal badge while its details load', () => {

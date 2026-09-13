@@ -6025,7 +6025,8 @@ require __DIR__ . '/renewal.preview.js.php';
                     (value.rights === 10 ? '<i class="fa-regular fa-eye-slash fa-xs mr-1 text-primary infotip" title="<?php echo $lang->get('item_with_restricted_access'); ?>"></i>' : '') +
                     // Show user that password is badly encrypted
                     (value.pw_status === 'encryption_error' ? '<i class="fa-solid fa-exclamation-triangle fa-xs text-danger infotip mr-1" title="<?php echo $lang->get('pw_encryption_error'); ?>"></i>' : '') +
-                    // Show LAPR roles next to the password health marker
+                    // Group renewal and LAPR icons beside the password health marker.
+                    tpRenewal.badgeHtml(value.renewal, true) +
                     laprItemListMarkersHtml(value.lapr) +
                     // Prepare item info
                     '</span>' +
@@ -6034,7 +6035,6 @@ require __DIR__ . '/renewal.preview.js.php';
                     // Show item fa_icon if set
                     (value.fa_icon !== '' ? '<i class="'+htmlEncode(value.fa_icon)+' mr-1 user-fa-icon"></i>' : '') +
                     '<span class="list-item-row-description d-inline-block' + (value.rights === 10 ? ' font-weight-light' : '') + '"><i class="item-favorite-star fa-solid' + ((store.get('teampassApplication').highlightFavorites === 1 && value.is_favourited === 1) ? ' fa-star mr-1' : '') + '"></i>' + htmlEncode(value.label) + '</span>' +
-                    tpRenewal.badgeHtml(value.renewal, true) +
                     (value.rights === 10 ? '' : description) +
                     '<span class="list-item-row-description-extend"></span>' +
                     '</span>' +
@@ -6177,10 +6177,10 @@ require __DIR__ . '/renewal.preview.js.php';
                 const $healthMarker = $('<i>')
                     .addClass('fa-solid fa-shield-halved mr-1 infotip tp-item-health-marker ' + cls)
                     .attr('title', badgeTitlePrefix + ' — ' + labels.join(', '))
-                const $firstLaprMarker = $container.find('.tp-item-lapr-marker').first()
+                const $firstStatusMarker = $container.find('.tp-item-renewal-marker, .tp-item-lapr-marker').first()
 
-                if ($firstLaprMarker.length > 0) {
-                    $healthMarker.insertBefore($firstLaprMarker)
+                if ($firstStatusMarker.length > 0) {
+                    $healthMarker.insertBefore($firstStatusMarker)
                 } else {
                     $container.append($healthMarker)
                 }

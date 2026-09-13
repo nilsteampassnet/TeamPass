@@ -3,17 +3,23 @@ function createRenewalPreview(config) {
   const messages = config.messages
   const requests = new Map()
 
-  /** Render a safe badge from the server's effective policy, using the same state on cards and lists. */
-  function badgeHtml(renewal, onlyUrgent = false) {
+  /** Use a dated badge on cards and a compact status icon beside the list's security markers. */
+  function badgeHtml(renewal, listMarker = false) {
     const colours = { scheduled: 'info', soon: 'warning', expired: 'danger', unknown: 'secondary' }
     if (!renewal || !Object.prototype.hasOwnProperty.call(colours, renewal.state)
-        || (onlyUrgent && renewal.state !== 'soon' && renewal.state !== 'expired')) return ''
+        || (listMarker && renewal.state !== 'soon' && renewal.state !== 'expired')) return ''
     const escape = value => String(value).replace(/[&<>"']/g, character => ({
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     })[character])
     const dateText = renewal.due_date ? messages.due.replace('#date#', renewal.due_date) : messages.unknown
     const title = messages.effective.replace('#days#', renewal.days) + ' ' + dateText
-    const label = messages['badge_' + renewal.state] + (!onlyUrgent && renewal.due_date ? ' — ' + renewal.due_date : '')
+    if (listMarker) {
+      const icon = renewal.state === 'expired' ? 'fa-calendar-xmark' : 'fa-hourglass-half'
+      const tooltip = escape(messages['badge_' + renewal.state] + ' — ' + dateText + ' ' + messages.effective.replace('#days#', renewal.days))
+      return '<i class="fa-solid ' + icon + ' mr-1 infotip tp-item-renewal-marker text-' + colours[renewal.state]
+        + '" role="img" aria-label="' + tooltip + '" title="' + tooltip + '"></i>'
+    }
+    const label = messages['badge_' + renewal.state] + (renewal.due_date ? ' — ' + renewal.due_date : '')
     return '<span class="badge badge-' + colours[renewal.state] + ' ml-2 flex-shrink-0 tp-item-renewal-badge" title="' + escape(title) + '">'
       + '<i class="fa-regular fa-calendar mr-1" aria-hidden="true"></i>' + escape(label) + '</span>'
   }
