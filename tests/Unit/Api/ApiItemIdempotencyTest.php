@@ -86,6 +86,26 @@ class ApiItemIdempotencyTest extends TestCase
         self::assertNotSame($original, $this->model->fingerprint(['item_id' => 7, 'revision' => null]));
     }
 
+    public function testCreateFingerprintCoversOptionalRenewalWithoutChangingLegacyIntent(): void
+    {
+        $params = [
+            'folder_id' => 7, 'label' => 'Database', 'login' => '', 'password' => 'secret',
+            'email' => '', 'url' => '', 'description' => '', 'tags' => '', 'totp' => '',
+            'totp_algorithm' => 'sha1', 'totp_digits' => 6, 'totp_period' => 30,
+            'fields' => [], 'icon' => '', 'anyone_can_modify' => 0,
+        ];
+        $controller = new ItemController();
+        $method = new ReflectionMethod($controller, 'createIdempotencyIntent');
+        $legacy = $method->invoke($controller, $params);
+        self::assertSame($params, $legacy);
+        $withPolicy = $method->invoke($controller, $params + ['renewal_period' => 30]);
+        $withoutPolicy = $method->invoke($controller, $params + ['renewal_period' => 0]);
+        self::assertSame(30, $withPolicy['renewal_period']);
+        self::assertSame(0, $withoutPolicy['renewal_period']);
+        self::assertNotSame($this->model->fingerprint($withPolicy), $this->model->fingerprint($legacy));
+        self::assertNotSame($this->model->fingerprint($withPolicy), $this->model->fingerprint($withoutPolicy));
+    }
+
     public function testDeleteRevisionParserAcceptsOmissionAndUnsignedRange(): void
     {
         $controller = new ItemController();

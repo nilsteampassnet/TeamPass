@@ -125,7 +125,8 @@ function productionSource(string $path): string
 }
 
 foreach (['app/sources/folders.class.php', 'app/api/Model/ItemModel.php', 'app/api/Model/FolderModel.php'] as $path) {
-    evaluateSource(preg_replace('/^<\?php\s*(?:declare\(strict_types=1\);)?/', '', productionSource($path)));
+    $classSource = str_replace('__DIR__', var_export(dirname(__DIR__ . '/../../' . $path), true), productionSource($path));
+    evaluateSource(preg_replace('/^<\?php\s*(?:declare\(strict_types=1\);)?/', '', $classSource));
 }
 
 // Keep the legacy KeePass creation path and the password score conversion real too.

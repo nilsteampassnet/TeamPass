@@ -592,6 +592,7 @@ payload returns `409`. A duplicate request still processing returns `409` and `R
 | `url` | string | ❌ | Associated URL |
 | `tags` | string | ❌ | Tags separated by spaces or commas. Each tag is lowercased and capped at 30 characters. |
 | `anyone_can_modify` | integer | ❌ | Anyone can modify (0/1, default: 0) |
+| `renewal_period` | integer | ❌ | Individual password renewal period in days (1–36500); 0 disables it (default). Works for personal and shared items even when folder expiration is disabled. The shortest active item/folder period applies. |
 | `icon` | string | ❌ | FontAwesome icon code |
 | `totp` | string | ❌ | Base32 TOTP secret or `otpauth://totp` provisioning URI. Spaces and hyphens are separators and are stripped, so the secret can be sent exactly as the service displays it |
 | `totp_algorithm` | string | ❌ | Algorithm for a bare secret: `sha1` (default), `sha256`, or `sha512`; ignored when supplied by a URI |
@@ -685,6 +686,7 @@ secret or custom-field values.
 | `url` | string | ❌ | New URL |
 | `tags` | string | ❌ | New tags, separated by spaces or commas (replaces existing tags). Each tag is lowercased and capped at 30 characters. |
 | `anyone_can_modify` | integer | ❌ | Anyone can modify (0/1) |
+| `renewal_period` | integer | ❌ | Individual password renewal period in days (1–36500); 0 disables only the individual policy. Omission preserves it. Changing the period does not reset password age. While LAPR is enabled, changes are rejected with HTTP 409 for managed account items and endpoint credential items; omitting or resending the current value is allowed. |
 | `icon` | string | ❌ | New FontAwesome icon code |
 | `folder_id` | integer | ❌ | Move to new folder |
 | `totp` | string | ❌ | Base32 TOTP secret, `otpauth://totp` URI, or an empty string to remove TOTP. Spaces and hyphens are stripped from the secret. Omit the field to change only the profile: the stored secret is reused |

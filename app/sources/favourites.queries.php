@@ -160,7 +160,9 @@ if (null !== $post_type) {
                     'SELECT f.item_id AS id, UNIX_TIMESTAMP(f.created_at) AS added_at,
                         i.label, i.description, i.login, i.url, i.id_tree, i.perso,
                         i.fa_icon, i.restricted_to, i.viewed_no,
-                        c.folder AS folder_path, c.renewal_period, c.timestamp AS item_timestamp,
+                        c.folder AS folder_path,
+                        ' . renewalApplicablePeriodSql($SETTINGS, 'i.renewal_period', 'nt.renewal_period') . ' AS renewal_period,
+                        ' . renewalBaseDateSql('c.timestamp') . ' AS item_timestamp,
                         nt.title AS folder_title,
                         tg.tags AS tags,
                         UNIX_TIMESTAMP(uli.accessed_at) AS last_used
@@ -186,7 +188,6 @@ if (null !== $post_type) {
                 );
             }
 
-            $expirationActive = (int) ($SETTINGS['activate_expiration'] ?? 0) === 1;
             $userLogin = (string) $session->get('user-login');
             $items = [];
 
@@ -200,13 +201,8 @@ if (null !== $post_type) {
                     $folderPath = ($folderTitle === (string) $userId) ? $userLogin : $folderTitle;
                 }
 
-                $expired = false;
-                if ($expirationActive === true
-                    && (int) $record['renewal_period'] > 0
-                    && ((int) $record['item_timestamp'] + ((int) $record['renewal_period'] * TP_ONE_DAY_SECONDS)) < time()
-                ) {
-                    $expired = true;
-                }
+                $renewalDue = renewalDueAt((int) $record['renewal_period'], (int) $record['item_timestamp']);
+                $expired = $renewalDue !== null && $renewalDue <= time();
 
                 $url = (string) ($record['url'] ?? '');
                 if ($url === '0') {

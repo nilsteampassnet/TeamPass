@@ -59,10 +59,23 @@ class LogsFilteringTest extends TestCase
         return $ids;
     }
 
-    private function purge(string $type, int $userId, string $action = 'all', ?string $login = null): void
+    /** Build the current canonical payload with a small, timezone-independent fixture window. */
+    private function purgeScope(array $selection, ?string $login = null): array
     {
-        $scope = buildLogsPurgeFilter($type, 100, 200, $userId, $action, $login);
+        $filters = logsNormalizeFilters($selection);
+        $filters['date_from'] = 100;
+        $filters['date_to'] = 200;
+        $scope = buildLogsPurgeFilter($filters, $login, [
+            'items' => 'items', 'users' => 'users', 'nested_tree' => 'nested_tree',
+        ]);
         self::assertNotNull($scope);
+        return $scope;
+    }
+
+    /** Execute the production predicate against disposable rows. */
+    private function purge(array $selection, ?string $login = null): void
+    {
+        $scope = $this->purgeScope($selection, $login);
         $this->query('DELETE FROM %l WHERE %l', $scope['table'], $scope['where']);
     }
 
@@ -114,25 +127,32 @@ class LogsFilteringTest extends TestCase
             [4, 99, $type, '42'], [5, 199, $type, '42'], [6, 200, $type, '42'], [7, 150, $type, '42.1.2.3']] as $row) {
             $this->query('INSERT INTO log_system (id, date, type, qui) VALUES (%i, %i, %s, %s)', ...$row);
         }
-        $scope = buildLogsPurgeFilter($tab, 100, 200, 42, 'all');
+        $selection = ['source' => 'system', 'types' => [$tab], 'user_id' => 42];
+        $scope = $this->purgeScope($selection);
         self::assertStringContainsString("qui = '42'", $this->parser->parse('%l', $scope['where']));
-        $this->purge($tab, 42);
+        $this->purge($selection);
         self::assertSame([2, 3, 4, 6, 7], $this->remainingIds('log_system'));
-        $this->purge($tab, -1);
+        $selection['user_id'] = -1;
+        $this->purge($selection);
         self::assertSame([3, 4, 6], $this->remainingIds('log_system'));
     }
 
     public function testItemAndCopyPurgeCombineUserActionAndDates(): void
     {
-        $this->database->exec("INSERT INTO log_items (id, date, id_user, action) VALUES
-            (1, 150, 42, 'at_copy'), (2, 150, 43, 'at_copy'), (3, 150, 42, 'at_shown'),
-            (4, 99, 42, 'at_copy'), (5, 200, 42, 'at_copy')");
-        $this->purge('copy', 42);
-        self::assertSame([2, 3, 4, 5], $this->remainingIds('log_items'));
-        $this->purge('items', -1, 'at_shown');
-        self::assertSame([2, 4, 5], $this->remainingIds('log_items'));
-        $this->purge('items', 43);
-        self::assertSame([4, 5], $this->remainingIds('log_items'));
+        $this->database->exec("INSERT INTO users VALUES (42, 'alice', '', ''), (43, 'bob', '', '')");
+        $this->database->exec("INSERT INTO nested_tree VALUES (1, 'General', 0)");
+        $this->database->exec("INSERT INTO items VALUES (10, 'VPN', 1), (20, 'Missing folder', 99)");
+        $this->database->exec("INSERT INTO log_items (id, date, id_user, id_item, action) VALUES
+            (1, 150, 42, 10, 'at_copy'), (2, 150, 43, 10, 'at_copy'), (3, 150, 42, 10, 'at_shown'),
+            (4, 99, 42, 10, 'at_copy'), (5, 200, 42, 10, 'at_copy'),
+            (6, 150, 42, 99, 'at_copy'), (7, 150, 99, 10, 'at_shown'), (8, 150, 43, 20, 'at_copy')");
+        $this->purge(['source' => 'items', 'user_id' => 42, 'actions' => ['at_copy']]);
+        self::assertSame([2, 3, 4, 5, 6, 7, 8], $this->remainingIds('log_items'));
+        $this->purge(['source' => 'items', 'user_id' => -1, 'actions' => ['at_shown']]);
+        self::assertSame([2, 4, 5, 6, 7, 8], $this->remainingIds('log_items'));
+        $this->purge(['source' => 'items', 'user_id' => 43]);
+        // Rows with a missing item, author or folder are outside the displayed scope and survive.
+        self::assertSame([4, 5, 6, 7, 8], $this->remainingIds('log_items'));
     }
 
     public function testFailedLoginPurgeUsesCurrentLoginAndRecognizedApiMarkerInsteadOfIp(): void
@@ -145,9 +165,9 @@ class LogsFilteringTest extends TestCase
             $this->query("INSERT INTO log_system (id, date, type, field_1, label, qui) VALUES (%i, 150, 'failed_auth', %s, %s, '192.0.2.1')", ...$row);
         }
         $this->database->exec("INSERT INTO log_system VALUES (7, 200, 'failed_auth', 'password_is_not_correct', '192.0.2.1', 'alice')");
-        $this->purge('failed', 42, 'all', 'alice');
+        $this->purge(['source' => 'system', 'types' => ['failed'], 'user_id' => 42], 'alice');
         self::assertSame([2, 4, 5, 7, 10], $this->remainingIds('log_system'));
-        $this->purge('failed', -1);
+        $this->purge(['source' => 'system', 'types' => ['failed'], 'user_id' => -1]);
         self::assertSame([7], $this->remainingIds('log_system'));
     }
 
@@ -156,7 +176,7 @@ class LogsFilteringTest extends TestCase
         $login = "a'_% OR 1=1 --";
         $this->query("INSERT INTO log_system VALUES (1, 150, 'failed_auth', 'password_is_not_correct', '192.0.2.1', %s)", $login);
         $this->database->exec("INSERT INTO log_system VALUES (2, 150, 'failed_auth', 'password_is_not_correct', '192.0.2.1', 'alice')");
-        $this->purge('failed', 42, 'all', $login);
+        $this->purge(['source' => 'system', 'types' => ['failed'], 'user_id' => 42], $login);
         self::assertSame([2], $this->remainingIds('log_system'));
     }
 

@@ -155,6 +155,8 @@ if ((int) $session_user_admin === 1) {
                 </div>
             </div>
 
+            <div id="form-item-renewal-notice" class="alert alert-info hidden" role="status" aria-live="polite"></div>
+
             <div class="card">
                 <div class="card-header d-flex">
                     <ul class="nav nav-pills" id="form-item-nav-pills">
@@ -290,6 +292,16 @@ if ((int) $session_user_admin === 1) {
                                         </div>
                                     </div>
                                 </div>
+                                <div class="form-group mt-3" id="form-item-renewal-settings">
+                                    <div class="custom-control custom-checkbox">
+                                        <input type="checkbox" class="custom-control-input form-item-control" id="form-item-renewal-enabled">
+                                        <label class="custom-control-label" for="form-item-renewal-enabled"><?php echo $lang->get('item_renewal_enable'); ?></label>
+                                    </div>
+                                    <label class="mt-2" for="form-item-renewal-period"><?php echo $lang->get('item_renewal_period'); ?></label>
+                                    <input type="number" class="form-control form-item-control" id="form-item-renewal-period" min="1" max="36500" step="1" value="90" disabled>
+                                    <small class="form-text text-muted"><?php echo $lang->get('item_renewal_help'); ?></small>
+                                </div>
+
                                 <!-- EMAIL -->
                                 <div class="input-group mb-3 mt-3">
                                     <div class="input-group-prepend">
@@ -630,6 +642,7 @@ if ((int) $session_user_admin === 1) {
                     <div class="form-group">
                         <label><?php echo $lang->get('select_destination_folder'); ?></label>
                         <select class="form-control form-item-control select2" style="width:100%;" id="form-item-copy-destination"></select>
+                        <div id="copy-item-renewal-notice" class="alert alert-info hidden mt-2" role="status" aria-live="polite"></div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -1180,6 +1193,7 @@ if ((int) $session_user_admin === 1) {
                 </div>
                 <!-- /.card-header -->
                 <div id="tp-folder-progress-wrap"><div id="tp-folder-progress-bar"></div></div>
+                <div id="folder-renewal-notice" class="alert alert-info hidden m-2" role="status" aria-live="polite"></div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-sm table-hover table-striped hidden" id="table_teampass_subfolders_list" style="width:100%;">
@@ -1243,6 +1257,7 @@ if ((int) $session_user_admin === 1) {
                                 <i class="fa-solid fa-lock mr-1"></i><small><?php echo $lang->get('read_only'); ?></small>
                             </span>
                             <span id="card-item-lapr-badges" class="ml-2 hidden"></span>
+                            <span id="card-item-renewal-badge" class="hidden"></span>
                             <div class="card-tools">
                                 <button type="button" class="btn btn-secondary btn-sm but-back-to-list mt-2">
                                     <i class="fa-solid fa-times"></i>

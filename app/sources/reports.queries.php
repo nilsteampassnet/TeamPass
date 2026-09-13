@@ -55,6 +55,10 @@ $lang = new Language($session->get('user-language') ?? 'english');
 // Load config
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
+$folderRenewalEnabled = (int) ($SETTINGS['activate_expiration'] ?? 0) === 1;
+$effectivePeriodSql = renewalApplicablePeriodSql($SETTINGS);
+$renewalPersonalFolders = getPersonalFolderIdsWithDescendants();
+$renewalSharedFoldersSql = $renewalPersonalFolders === [] ? '' : ' AND n.id NOT IN (' . implode(',', array_map('intval', $renewalPersonalFolders)) . ')';
 
 // Do checks
 $checkUserAccess = new PerformChecks(
@@ -236,7 +240,7 @@ switch ($post_type) {
         // Live metadata flags over all active items in non-personal folders.
         // Integer thresholds/timestamps are cast and embedded as literals (same
         // pattern as dashboard.queries.php); only string actions are bound.
-        $lastRelevantSql = 'COALESCE(NULLIF(l.last_relevant_date, 0), NULLIF(CAST(i.created_at AS UNSIGNED), 0), 0)';
+        $lastRelevantSql = renewalBaseDateSql();
         $live = DB::queryFirstRow(
             'SELECT
                 COUNT(*) AS total,
@@ -244,9 +248,9 @@ switch ($post_type) {
                 SUM(' . $passwordHealthSql['unassessed'] . ') AS unassessed,
                 SUM(CASE WHEN i.hibp_status = 2 THEN 1 ELSE 0 END) AS breached,
                 SUM(CASE WHEN COALESCE(sc.share_count, 0) > ' . $oversharedThreshold . ' THEN 1 ELSE 0 END) AS overshared,
-                SUM(CASE WHEN n.renewal_period <= 0 THEN 1 ELSE 0 END) AS no_expiry,
-                SUM(CASE WHEN n.renewal_period > 0 AND ' . $lastRelevantSql . ' > 0
-                    AND (' . $lastRelevantSql . ' + n.renewal_period * ' . (int) TP_ONE_DAY_SECONDS . ') <= ' . $nowTs . ' THEN 1 ELSE 0 END) AS overdue
+                SUM(CASE WHEN ' . renewalEligibleItemSql($SETTINGS) . ' AND ' . $effectivePeriodSql . ' <= 0 THEN 1 ELSE 0 END) AS no_expiry,
+                SUM(CASE WHEN ' . $effectivePeriodSql . ' > 0 AND ' . $lastRelevantSql . ' > 0
+                    AND (' . $lastRelevantSql . ' + ' . $effectivePeriodSql . ' * ' . (int) TP_ONE_DAY_SECONDS . ') <= ' . $nowTs . ' THEN 1 ELSE 0 END) AS overdue
             FROM ' . prefixTable('items') . ' AS i
             INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)
             LEFT JOIN (
@@ -260,7 +264,7 @@ switch ($post_type) {
                 FROM ' . prefixTable('sharekeys_items') . '
                 GROUP BY object_id
             ) AS sc ON (sc.object_id = i.id)
-            WHERE i.inactif = 0 AND i.deleted_at IS NULL AND n.personal_folder = 0',
+            WHERE i.inactif = 0 AND i.deleted_at IS NULL AND i.perso = 0 AND n.personal_folder = 0' . $renewalSharedFoldersSql,
             'at_creation',
             'at_modification',
             'at_pw%'
@@ -425,10 +429,10 @@ switch ($post_type) {
         break;
 
     /*
-     * OVERDUE ROTATIONS — items past (or nearing) their folder rotation SLA (F5)
+     * OVERDUE ROTATIONS — items past (or nearing) their effective renewal deadline (F5)
      *
-     * The SLA is the per-folder renewal_period (days). Metadata only — item
-     * label + dates, consistent with the rotation evidence report.
+     * Use the shortest active item/folder period, excluding LAPR-linked items.
+     * Metadata only — item label + dates, consistent with the rotation evidence report.
      */
     case 'report_rotation_overdue':
         if ((int) ($SETTINGS['rotation_tracking_enabled'] ?? 0) !== 1) {
@@ -440,15 +444,15 @@ switch ($post_type) {
         }
 
         $nowTs = time();
-        $dueSoonDays = 14;
-        $lastRelevantSql = 'COALESCE(NULLIF(l.last_relevant_date, 0), NULLIF(CAST(i.created_at AS UNSIGNED), 0), 0)';
+        $dueSoonDays = RENEWAL_DUE_SOON_DAYS;
+        $lastRelevantSql = renewalBaseDateSql();
 
-        // Items in SLA-covered shared folders whose due date falls inside the
+        // Shared items with an active item/folder policy whose due date falls inside the
         // window (already overdue or due within the look-ahead). Items without
         // a usable change date are excluded (same rule as the F1 overdue flag).
         $records = DB::query(
             'SELECT i.id AS item_id, i.label, n.id AS folder_id, n.title AS folder_title,
-                n.renewal_period AS sla_days,
+                ' . $effectivePeriodSql . ' AS sla_days, ' . ($folderRenewalEnabled ? 'n.renewal_period' : '0') . ' AS folder_sla_days, i.renewal_period AS item_sla_days,
                 ' . $lastRelevantSql . ' AS last_change
             FROM ' . prefixTable('items') . ' AS i
             INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)
@@ -458,10 +462,10 @@ switch ($post_type) {
                 WHERE action = %s OR (action = %s AND raison LIKE %s)
                 GROUP BY id_item
             ) AS l ON (l.id_item = i.id)
-            WHERE i.inactif = 0 AND i.deleted_at IS NULL AND n.personal_folder = 0
-            AND n.renewal_period > 0
+            WHERE i.inactif = 0 AND i.deleted_at IS NULL AND i.perso = 0 AND n.personal_folder = 0' . $renewalSharedFoldersSql . '
+            AND ' . $effectivePeriodSql . ' > 0
             AND ' . $lastRelevantSql . ' > 0
-            AND (' . $lastRelevantSql . ' + n.renewal_period * ' . (int) TP_ONE_DAY_SECONDS . ') <= ' . ($nowTs + $dueSoonDays * (int) TP_ONE_DAY_SECONDS),
+            AND (' . $lastRelevantSql . ' + ' . $effectivePeriodSql . ' * ' . (int) TP_ONE_DAY_SECONDS . ') <= ' . ($nowTs + $dueSoonDays * (int) TP_ONE_DAY_SECONDS),
             'at_creation',
             'at_modification',
             'at_pw%'
@@ -479,9 +483,9 @@ switch ($post_type) {
                 'error' => false,
                 'rows' => $rows,
                 'csv' => reportsBuildCsv(
-                    ['Item', 'Folder', 'SLA (days)', 'Last change', 'Due', 'Days overdue', 'Status'],
+                    ['Item', 'Folder', 'Effective period (days)', 'Folder period (days)', 'Item period (days)', 'Last change', 'Due', 'Days overdue', 'Status'],
                     $rows,
-                    ['label', 'folder', 'sla_days', 'last_change', 'due_at', 'days_overdue', 'status']
+                    ['label', 'folder', 'sla_days', 'folder_sla_days', 'item_sla_days', 'last_change', 'due_at', 'days_overdue', 'status']
                 ),
             ],
             'encode'
@@ -501,24 +505,28 @@ switch ($post_type) {
         }
 
         $nowTs = time();
-        $lastRelevantSql = 'COALESCE(NULLIF(l.last_relevant_date, 0), NULLIF(CAST(i.created_at AS UNSIGNED), 0), 0)';
+        $lastRelevantSql = renewalBaseDateSql();
 
-        // One row per shared folder: SLA, live item count, overdue count.
+        // One row per shared folder: SLA and counts of ordinary-renewal items (excluding LAPR).
         $folderRecords = DB::query(
-            'SELECT n.id AS folder_id, n.title AS folder_title, n.renewal_period AS sla_days,
+            'SELECT n.id AS folder_id, n.title AS folder_title, ' . ($folderRenewalEnabled ? 'n.renewal_period' : '0') . ' AS sla_days,
+                SUM(CASE WHEN i.renewal_period > 0 THEN 1 ELSE 0 END) AS individual_policies,
+                SUM(CASE WHEN i.id IS NOT NULL AND ' . $effectivePeriodSql . ' > 0 THEN 1 ELSE 0 END) AS covered_items,
                 COUNT(i.id) AS items,
-                SUM(CASE WHEN n.renewal_period > 0 AND ' . $lastRelevantSql . ' > 0
+                SUM(CASE WHEN ' . $effectivePeriodSql . ' > 0 AND ' . $lastRelevantSql . ' > 0
+                    AND (' . $lastRelevantSql . ' + ' . $effectivePeriodSql . ' * ' . (int) TP_ONE_DAY_SECONDS . ') <= ' . $nowTs . ' THEN 1 ELSE 0 END) AS effective_overdue,
+                SUM(CASE WHEN ' . ($folderRenewalEnabled ? 'n.renewal_period' : '0') . ' > 0 AND ' . $lastRelevantSql . ' > 0
                     AND (' . $lastRelevantSql . ' + n.renewal_period * ' . (int) TP_ONE_DAY_SECONDS . ') <= ' . $nowTs . ' THEN 1 ELSE 0 END) AS overdue
             FROM ' . prefixTable('nested_tree') . ' AS n
             LEFT JOIN ' . prefixTable('items') . ' AS i
-                ON (i.id_tree = n.id AND i.inactif = 0 AND i.deleted_at IS NULL)
+                ON (i.id_tree = n.id AND i.inactif = 0 AND i.deleted_at IS NULL AND i.perso = 0 AND ' . renewalEligibleItemSql($SETTINGS) . ')
             LEFT JOIN (
                 SELECT id_item, MAX(CAST(date AS UNSIGNED)) AS last_relevant_date
                 FROM ' . prefixTable('log_items') . '
                 WHERE action = %s OR (action = %s AND raison LIKE %s)
                 GROUP BY id_item
             ) AS l ON (l.id_item = i.id)
-            WHERE n.personal_folder = 0
+            WHERE n.personal_folder = 0' . $renewalSharedFoldersSql . '
             GROUP BY n.id, n.title, n.renewal_period',
             'at_creation',
             'at_modification',
@@ -535,9 +543,9 @@ switch ($post_type) {
                 'folders_with_sla' => $coverage['summary']['folders_with_sla'],
                 'coverage_percent' => $coverage['summary']['coverage_percent'],
                 'csv' => reportsBuildCsv(
-                    ['Folder id', 'Folder', 'SLA (days)', 'Items', 'Overdue'],
+                    ['Folder id', 'Folder', 'Folder SLA (days)', 'Items', 'Folder SLA overdue', 'Individual policies', 'Covered items', 'Effective overdue'],
                     $coverage['rows'],
-                    ['folder_id', 'folder', 'sla_days', 'items', 'overdue']
+                    ['folder_id', 'folder', 'sla_days', 'items', 'overdue', 'individual_policies', 'covered_items', 'effective_overdue']
                 ),
             ],
             'encode'

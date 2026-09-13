@@ -71,7 +71,9 @@ $checkUserAccess = new PerformChecks(
 );
 // Handle the case
 echo $checkUserAccess->caseHandler();
-if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('utilities.renewal') === false) {
+if ($checkUserAccess->checkSession() === false
+    || $checkUserAccess->userAccessPage('utilities.renewal') === false
+) {
     // Not allowed page
     $session->set('system-error_code', ERR_NOT_ALLOWED);
     include TEAMPASS_ROOT . '/public/error.php';
@@ -91,6 +93,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     // Prepare tooltips
     $('.infotip').tooltip();
 
+    // Configure the picker before DataTables makes its first request.
+    $('#renewal-date').datepicker({
+        format: '<?php echo str_replace(['Y', 'M'], ['yyyy', 'mm'], $SETTINGS['date_format']); ?>',
+        todayHighlight: true,
+        todayBtn: true,
+        language: '<?php echo $session->get('user-language_code'); ?>'
+    });
+
     oTable = $('#table-renewal').DataTable({
         'retrieve': true,
         'orderCellsTop': true,
@@ -102,13 +112,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             "<'renewal-table-shell table-responsive'tr>" +
             "<'row renewal-table-footer align-items-center'<'col-md-6'i><'col-md-6'p>>",
         'order': [
-            [0, 'asc']
+            [1, 'asc']
         ],
         'info': true,
         'processing': true,
         'serverSide': true,
         'responsive': true,
-        'stateSave': true,
+        // Reopen on all deadlines in chronological order, without stale saved filters.
+        'stateSave': false,
         'autoWidth': false,
         'ajax': {
             url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/expired.datatables.php',
@@ -146,16 +157,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     });
 
 
-    // Prepare datePicker
-    $('#renewal-date').datepicker({
-            format: '<?php echo str_replace(['Y', 'M'], ['yyyy', 'mm'], $SETTINGS['date_format']); ?>',
-            todayHighlight: true,
-            todayBtn: true,
-            language: '<?php echo $session->get('user-language_code'); ?>'
-        })
-        .on('changeDate', function(e) {
-            oTable.ajax.reload();
-        });
+    $('#renewal-date').on('changeDate', function() {
+        oTable.ajax.reload();
+    });
 
 
     $('#clear-renewal-date').on('click', function() {
