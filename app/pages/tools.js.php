@@ -879,7 +879,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             toastr.remove();
             toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
-            restoreSharekeysSeedScope(['items', 'fields', 'files'], 0, {seeded: 0, failed: 0});
+            restoreSharekeysSeedScope(['items', 'fields', 'files', 'webauthn'], 0, {seeded: 0, failed: 0});
         }
     });
 

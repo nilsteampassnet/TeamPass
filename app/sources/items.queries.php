@@ -6145,6 +6145,15 @@ switch ($inputData['type']) {
                 );
             }
 
+            // Remove all passkey sharekeys but the owner's and the recovery one
+            DB::query(
+                'DELETE FROM ' . prefixTable('sharekeys_webauthn') . '
+                WHERE object_id IN (SELECT id FROM ' . prefixTable('webauthn_credentials') . ' WHERE item_id = %i)
+                AND user_id NOT IN %ls',
+                $inputData['itemId'],
+                [$session->get('user-id'), TP_USER_ID]
+            );
+
             // update pw
             DB::update(
                 prefixTable('items'),
@@ -6448,6 +6457,15 @@ switch ($inputData['type']) {
                             $session->get('user-id')
                         );
                     }
+
+                    // Remove all passkey sharekeys but the owner's and the recovery one
+                    DB::query(
+                        'DELETE FROM ' . prefixTable('sharekeys_webauthn') . '
+                        WHERE object_id IN (SELECT id FROM ' . prefixTable('webauthn_credentials') . ' WHERE item_id = %i)
+                        AND user_id NOT IN %ls',
+                        $item_id,
+                        [$session->get('user-id'), TP_USER_ID, API_USER_ID, OTV_USER_ID, SSH_USER_ID]
+                    );
 
                     // update pw
                     DB::update(

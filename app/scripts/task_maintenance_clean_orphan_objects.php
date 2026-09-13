@@ -113,6 +113,19 @@ function cleanOrphanObjectsAndScanIntegrity(): array
         WHERE c.id IS NULL OR i.id IS NULL'
     );
 
+    // Delete all passkeys whose item no longer exists, then the keys left without a passkey
+    DB::query(
+        'DELETE w.* FROM ' . prefixTable('webauthn_credentials') . ' w
+        LEFT JOIN ' . prefixTable('items') . ' i ON w.item_id = i.id
+        WHERE i.id IS NULL'
+    );
+    DB::query(
+        'DELETE k.* FROM ' . prefixTable('sharekeys_webauthn') . ' k
+        LEFT JOIN ' . prefixTable('webauthn_credentials') . ' w ON k.object_id = w.id
+        LEFT JOIN ' . prefixTable('users') . ' u ON k.user_id = u.id
+        WHERE w.id IS NULL OR u.id IS NULL'
+    );
+
     // Delete all item logs for which no user exist
     DB::query(
         'DELETE l.* FROM ' . prefixTable('log_items') . ' l

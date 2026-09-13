@@ -4101,6 +4101,17 @@ function setUserOnlyPersonalItemsEncryption(string $userPreviousPwd, string $use
             $userId
         );
 
+        // Remove all sharekeys for personal passkeys
+        DB::query(
+            'UPDATE ' . prefixTable('sharekeys_webauthn') . ' AS skw
+            INNER JOIN ' . prefixTable('webauthn_credentials') . ' AS w ON skw.object_id = w.id
+            INNER JOIN ' . prefixTable('items') . ' AS i ON w.item_id = i.id
+            SET skw.share_key = ""
+            WHERE i.perso = 1
+            AND skw.user_id = %i',
+            $userId
+        );
+
         // Set user as ready for usage
         DB::update(
             prefixTable('users'),

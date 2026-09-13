@@ -132,6 +132,9 @@ trait UserHandlerTrait {
                 case 'step60':
                     $this->generateNewUserStep60($taskData, $arguments);
                     break;
+                case 'step70':
+                    $this->generateNewUserStep70($taskData, $arguments);
+                    break;
                 case 'step99':
                     $this->generateNewUserStep99($arguments);
                 break;
@@ -609,6 +612,91 @@ trait UserHandlerTrait {
 
         if ($skippedObjects > 0) {
             $this->logger->log('generateNewUserStep60: ' . $skippedObjects . ' file(s) skipped for user #' . $arguments['new_user_id'] . ' - owner #' . $arguments['owner_id'] . ' has no sharekey', 'WARNING');
+        }
+    }
+
+
+    /**
+     * Generate new user keys - step 70 (passkeys)
+     * @param array $taskData Task data
+     * @param array $arguments Arguments for the task
+     * @return void
+     */
+    private function generateNewUserStep70(array $taskData, array $arguments): void {
+        $ownerInfo = isset($arguments['owner_id']) && isset($arguments['creator_pwd'])
+            ? $this->getOwnerInfos($arguments['owner_id'], $arguments['creator_pwd'])
+            : null;
+        $userInfo = $this->getOwnerInfos(
+            $arguments['new_user_id'],
+            $arguments['new_user_pwd'],
+            ($arguments['only_personal_items'] ?? 0) === 1 ? 1 : 0,
+            $arguments['new_user_private_key'] ?? ''
+        );
+
+        // Passkeys of the OTHER users' personal items must stay out of scope (see step 20).
+        $foreignPersonalFolders = getForeignPersonalFolderIds((int) $arguments['new_user_id']);
+
+        DB::startTransaction();
+
+        $rows = DB::query(
+            'SELECT w.id AS id, i.perso AS perso, i.id_tree AS id_tree
+            FROM ' . prefixTable('webauthn_credentials') . ' AS w
+            INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = w.item_id
+            ORDER BY w.id ASC
+            LIMIT %i, %i',
+            $taskData['index'],
+            $taskData['nb']
+        );
+        $skippedObjects = 0;
+        foreach ($rows as $record) {
+            if (in_array((int) $record['id_tree'], $foreignPersonalFolders, true) === true) {
+                continue;
+            }
+
+            // Shared passkey: read through the owner. Personal passkey: through the user himself.
+            $isPersonal = intval($record['perso']) === 1;
+            $source = $isPersonal === true ? $userInfo : $ownerInfo;
+            if ($source === null) {
+                // Personal-items-only run: no owner, shared passkeys are out of scope.
+                continue;
+            }
+            $currentUserKey = DB::queryFirstRow(
+                'SELECT share_key, increment_id
+                FROM ' . prefixTable('sharekeys_webauthn') . '
+                WHERE object_id = %i AND user_id = %i',
+                $record['id'],
+                $isPersonal === true ? intval($arguments['new_user_id']) : intval($arguments['owner_id'])
+            );
+            if ($currentUserKey === null) {
+                if ($isPersonal === false) {
+                    $skippedObjects++;
+                }
+                continue;
+            }
+
+            $objectKey = decryptUserObjectKeyWithMigration(
+                (string) $currentUserKey['share_key'],
+                (string) $source['private_key'],
+                (string) $source['public_key'],
+                (int) $currentUserKey['increment_id'],
+                'sharekeys_webauthn'
+            );
+            if (empty($objectKey) === true) {
+                continue;
+            }
+
+            insertOrUpdateSharekey(
+                prefixTable('sharekeys_webauthn'),
+                intval($record['id']),
+                intval($arguments['new_user_id']),
+                encryptUserObjectKey($objectKey, $userInfo['public_key'])
+            );
+        }
+
+        DB::commit();
+
+        if ($skippedObjects > 0) {
+            $this->logger->log('generateNewUserStep70: ' . $skippedObjects . ' passkey(s) skipped for user #' . $arguments['new_user_id'] . ' - owner #' . $arguments['owner_id'] . ' has no sharekey', 'WARNING');
         }
     }
 

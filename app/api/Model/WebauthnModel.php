@@ -252,7 +252,7 @@ class WebauthnModel
             WHERE i.deleted_at IS NULL
             AND EXISTS (
                 SELECT 1 FROM ' . prefixTable('sharekeys_webauthn') . ' AS s
-                WHERE s.object_id = w.id AND s.user_id = %i
+                WHERE s.object_id = w.id AND s.user_id = %i AND s.share_key != \'\'
             )' . $filters . $visibility . '
             ORDER BY w.last_used_at IS NULL, w.last_used_at DESC, w.id DESC',
             ...$params
@@ -327,7 +327,8 @@ class WebauthnModel
                 $credentialRowId,
                 $userId
             );
-            if ($sharekey === null) {
+            // A blank key was reset after its owner lost the previous password.
+            if ($sharekey === null || (string) $sharekey['share_key'] === '') {
                 return $this->error(422, self::KEY_RECOVERY_ERROR);
             }
 

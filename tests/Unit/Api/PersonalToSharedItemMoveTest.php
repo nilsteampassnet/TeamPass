@@ -61,8 +61,9 @@ class PersonalToSharedItemMoveTest extends TestCase
         self::assertStringContainsString("'sharekeys_items'", $move);
         self::assertStringContainsString("'sharekeys_fields'", $move);
         self::assertStringContainsString("'sharekeys_files'", $move);
+        self::assertStringContainsString("'sharekeys_webauthn'", $move);
         self::assertStringContainsString('decryptUserObjectKeyWithMigration(', $move);
-        self::assertSame(3, substr_count($move, 'storeUsersShareKey('));
+        self::assertSame(4, substr_count($move, 'storeUsersShareKey('));
         self::assertStringNotContainsString("'sharekeys_logs'", $move);
         self::assertStringNotContainsString("DB::delete(prefixTable('categories_items')", $move);
     }

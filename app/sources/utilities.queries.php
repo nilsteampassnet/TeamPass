@@ -1001,6 +1001,7 @@ logItems(
                 'sharekeys_fields',
                 'sharekeys_logs',
                 'sharekeys_suggestions',
+                'sharekeys_webauthn',
             );
 
             $sharekeysStats = array();
@@ -2348,6 +2349,14 @@ function tpHardDeleteItem(int $itemId): void
     }
     DB::delete(prefixTable('files'), 'id_item = %i', $itemId);
 
+    // Delete passkeys and their sharekeys
+    DB::query(
+        'DELETE FROM ' . prefixTable('sharekeys_webauthn') . '
+        WHERE object_id IN (SELECT id FROM ' . prefixTable('webauthn_credentials') . ' WHERE item_id = %i)',
+        $itemId
+    );
+    DB::delete(prefixTable('webauthn_credentials'), 'item_id = %i', $itemId);
+
     // Finally delete the item itself
     DB::delete(prefixTable('items'), 'id = %i', $itemId);
 }
@@ -2997,6 +3006,9 @@ function tpGetSharekeysOrphans(string $shortTableName): array
             break;
         case 'sharekeys_fields':
             $targetTable = 'categories_items';
+            break;
+        case 'sharekeys_webauthn':
+            $targetTable = 'webauthn_credentials';
             break;
     }
 

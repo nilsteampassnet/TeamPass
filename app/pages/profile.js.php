@@ -915,7 +915,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     $(document).on('click', '#personal-sharekeys-repair', function() {
         $(this).prop('disabled', true);
         $('#personal-sharekeys-result').html('<i class="fas fa-circle-notch fa-spin"></i>');
-        personalSharekeysRepairScope(['items', 'fields', 'files'], 0, {seeded: 0, failed: 0});
+        personalSharekeysRepairScope(['items', 'fields', 'files', 'webauthn'], 0, {seeded: 0, failed: 0});
     });
 
     if ($('#api-sessions-block').length > 0) {
