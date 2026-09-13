@@ -4,6 +4,8 @@
 
 The **Renewal** page helps you identify items whose passwords are approaching or have passed their expiration date, so you can plan and execute password rotations in a timely manner.
 
+It is available to non-administrator accounts, including users, managers, HR managers and read-only users. Results only include items you can access, respecting current folder permissions, personal folders and item-level user or role restrictions. Administrators configure expiration and can use the existing compliance reports for supervision.
+
 > 🔔 Password expiration must be enabled by your administrator (**Settings → Security → Activate item expiration feature**). The expiration period per folder is set in the folder configuration.
 
 ---
@@ -18,9 +20,9 @@ Expired items are visually flagged in the main item list (coloured indicator nex
 
 ## Using the Renewal page
 
-1. Navigate to **Renewal** in the utilities menu.
+1. Navigate to **Renewal** in the user sidebar, next to **Favourites**. The entry is shown when password expiration is enabled.
 2. Use the **date picker** to select a target date.
-3. The table updates to show all items that will have expired **by that date**.
+3. The table updates to show accessible items that will have expired **by that date**. With no date selected, it shows items that are already expired.
 
 The results table includes:
 
@@ -30,7 +32,7 @@ The results table includes:
 | **Expiration date** | The date on which the item's password expires |
 | **Folder** | Folder containing the item |
 
-You can select items using the checkboxes and then act on them (navigate to the item to update the password).
+Click an item's name to open its normal item page. Opening it does not grant additional permissions; read-only users can consult the item but cannot change its password.
 
 > 💡 Use the date picker to look ahead: setting the date to a month from now lets you plan renewals in advance rather than reacting to expired items.
 
@@ -40,10 +42,9 @@ You can select items using the checkboxes and then act on them (navigate to the 
 
 The Renewal page itself does not allow editing items directly. To renew a password:
 
-1. Note the item and folder from the results table.
-2. Navigate to that folder in the main item list.
-3. Edit the item and change the password.
-4. Save.
+1. Click the item name in the results table.
+2. If you have edit permission, edit the item and change the password.
+3. Save.
 
 The expiration timer resets from the date of the password change.
 

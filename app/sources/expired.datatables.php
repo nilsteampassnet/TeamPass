@@ -29,12 +29,10 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-use voku\helper\AntiXSS;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
-use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
 
@@ -84,7 +82,7 @@ if (
 date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
 
 // Set header properties
-header('Content-type: text/html; charset=utf-8');
+header('Content-type: application/json; charset=utf-8');
 header('Cache-Control: no-cache, no-store, must-revalidate');
 error_reporting(E_ERROR);
 set_time_limit(0);
@@ -115,28 +113,14 @@ if ((int) ($SETTINGS['activate_expiration'] ?? 0) !== 1) {
     exit;
 }
 
-$visibleFolders = $session->get('user-accessible_folders');
-if (is_array($visibleFolders) === false || empty($visibleFolders) === true) {
-    echo json_encode($emptyOutput);
-    exit;
-}
-
-$visibleFolders = array_values(
-    array_unique(
-        array_map(
-            'intval',
-            array_diff(
-                $visibleFolders,
-                is_array($session->get('user-forbiden_personal_folders')) === true ? $session->get('user-forbiden_personal_folders') : []
-            )
-        )
-    )
-);
-
+// Read current grants and item restrictions from the database, not a stale session scope.
+$userId = (int) $session->get('user-id');
+$visibleFolders = securityPostureAuthorizedFolderIds($userId);
 if (empty($visibleFolders) === true) {
     echo json_encode($emptyOutput);
     exit;
 }
+$accessScopeSql = securityPostureItemAccessSql($userId);
 
 // Is a date sent?
 $dateCriteria = $request->query->get('dateCriteria');
@@ -161,7 +145,7 @@ $fromWhereSql = '
     ) AS l ON (l.id_item = i.id)
     WHERE i.inactif = %i
     AND i.deleted_at IS NULL
-    AND i.id_tree IN %ls
+    AND ' . $accessScopeSql . '
     AND n.renewal_period > %i
     AND ' . $lastRelevantDateSql . ' > %i
     AND ' . $expirationDateSql . ' <= %i';
@@ -170,7 +154,6 @@ $queryParams = [
     'at_modification',
     'at_pw%',
     0,
-    $visibleFolders,
     0,
     0,
     (int) $targetExpirationTimestamp,
@@ -215,7 +198,7 @@ $filteredCountSql = 'SELECT COUNT(*) FROM (SELECT i.id ' . $fromWhereSql . ') AS
 $iTotal = (int) DB::queryFirstField($totalCountSql, ...$baseQueryParams);
 $iFilteredTotal = (int) DB::queryFirstField($filteredCountSql, ...$queryParams);
 $rows = DB::query(
-    'SELECT i.label, i.id_tree, ' . $expirationDateSql . ' AS expiration_date ' .
+    'SELECT i.id, i.label, i.id_tree, ' . $expirationDateSql . ' AS expiration_date ' .
     $fromWhereSql .
     $sOrder .
     $sLimit,
@@ -227,11 +210,16 @@ foreach ($rows as $record) {
     $path = [];
     $treeDesc = $tree->getPath($record['id_tree'], true);
     foreach ($treeDesc as $t) {
-        $path[] = htmlspecialchars((string) $t->title, ENT_QUOTES, 'UTF-8');
+        // A visible child does not grant access to its ancestors' names.
+        if (in_array((int) $t->id, $visibleFolders, true)) {
+            $path[] = htmlspecialchars((string) $t->title, ENT_QUOTES, 'UTF-8');
+        }
     }
 
+    $itemUrl = 'index.php?page=items&group=' . (int) $record['id_tree'] . '&id=' . (int) $record['id'];
     $data[] = [
-        htmlspecialchars((string) $record['label'], ENT_QUOTES, 'UTF-8'),
+        '<a href="' . htmlspecialchars($itemUrl, ENT_QUOTES, 'UTF-8') . '">'
+            . htmlspecialchars((string) $record['label'], ENT_QUOTES, 'UTF-8') . '</a>',
         date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['expiration_date']),
         implode('<i class="fas fa-angle-right ml-1 mr-1"></i>', $path),
     ];
