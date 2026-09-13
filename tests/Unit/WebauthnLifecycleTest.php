@@ -65,7 +65,7 @@ final class WebauthnLifecycleTest extends TestCase
         foreach (['/app/sources/export.queries.php', '/app/sources/folders.queries.php', '/app/includes/templates/offline-export.tpl.php'] as $file) {
             $this->assertStringNotContainsString('webauthn', (string) file_get_contents(__DIR__ . '/../..' . $file), $file);
         }
-        $this->assertStringNotContainsString('webauthn', $this->section('/app/sources/items.queries.php', "case 'copy_item':", "case 'delete_item':"));
+        $this->assertStringNotContainsString('webauthn', $this->section('/app/sources/items.queries.php', "case 'copy_item':", "case 'show_details_item':"));
     }
 
     private function section(string $file, string $startMarker, string $endMarker): string

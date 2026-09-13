@@ -256,6 +256,52 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     /**
      * Build icon-only LAPR markers for the item list status area.
      */
+    /**
+     * Render the passkeys attached to the displayed item. Every label comes from a third-party
+     * site, so everything goes through htmlEncode().
+     */
+    function renderItemWebauthn(credentials) {
+        const $list = $('#card-item-webauthn-list').empty();
+        const list = Array.isArray(credentials) ? credentials : [];
+
+        $('#card-item-webauthn-badge').text(list.length);
+        $('#item-card-webauthn, #form-item-copy-webauthn-note').toggleClass('hidden', list.length === 0);
+        if (list.length === 0) {
+            return;
+        }
+
+        const canModify = store.get('teampassItem') !== undefined && store.get('teampassItem').user_can_modify === 1;
+        let html = '';
+        $.each(list, function(i, credential) {
+            const site = credential.rp_name !== '' && credential.rp_name !== credential.rp_id
+                ? htmlEncode(credential.rp_name) + ' <span class="text-muted">(' + htmlEncode(credential.rp_id) + ')</span>'
+                : htmlEncode(credential.rp_id);
+            const account = credential.user_display_name !== '' && credential.user_display_name !== credential.user_name
+                ? htmlEncode(credential.user_name) + ' <span class="text-muted">— ' + htmlEncode(credential.user_display_name) + '</span>'
+                : htmlEncode(credential.user_name);
+            const lastUsed = credential.last_used_at === ''
+                ? <?php echo json_encode($lang->get('webauthn_never_used'), JSON_UNESCAPED_UNICODE); ?>
+                : htmlEncode(credential.last_used_at) + (credential.last_used_by !== '' ? ' — ' + htmlEncode(credential.last_used_by) : '');
+
+            html += '<li class="list-group-item">' +
+                (canModify === true
+                    ? '<button type="button" class="btn btn-outline-danger btn-sm float-right delete-webauthn-credential infotip" ' +
+                        'data-credential-id="' + parseInt(credential.id, 10) + '" data-site="' + htmlEncode(credential.rp_id) + '" ' +
+                        'title="' + htmlEncode(<?php echo json_encode($lang->get('webauthn_delete'), JSON_UNESCAPED_UNICODE); ?>) + '">' +
+                        '<i class="fa-solid fa-trash"></i></button>'
+                    : '') +
+                '<div class="font-weight-bold"><i class="fa-solid fa-globe mr-2 text-info"></i>' + site + '</div>' +
+                (account !== '' ? '<div><span class="text-muted mr-1">' + <?php echo json_encode($lang->get('webauthn_account'), JSON_UNESCAPED_UNICODE); ?> + ':</span>' + account + '</div>' : '') +
+                '<div class="small">' +
+                '<span class="text-muted mr-1">' + <?php echo json_encode($lang->get('webauthn_created'), JSON_UNESCAPED_UNICODE); ?> + ':</span>' +
+                htmlEncode(credential.created_at) + (credential.created_by !== '' ? ' — ' + htmlEncode(credential.created_by) : '') +
+                '<span class="text-muted ml-3 mr-1">' + <?php echo json_encode($lang->get('webauthn_last_used'), JSON_UNESCAPED_UNICODE); ?> + ':</span>' + lastUsed +
+                '</div>' +
+                '</li>';
+        });
+        $list.html(html);
+    }
+
     function laprItemListMarkersHtml(lapr) {
         if (!lapr) return '';
 
@@ -3282,6 +3328,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 $('.to_be_deleted').remove();
                 $('#card-item-attachments, #card-item-history').html('');
                 $('#card-item-attachments-badge').html('<?php echo $lang->get('none'); ?>');
+                renderItemWebauthn([]);
                 $('#form-item-otp').iCheck('uncheck');
                 $('#form-item-otpAlgorithm').val('sha1')
                 $('#form-item-otpDigits').val('6')
@@ -5988,6 +6035,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     (value.pw_status === 'encryption_error' ? '<i class="fa-solid fa-exclamation-triangle fa-xs text-danger infotip mr-1" title="<?php echo $lang->get('pw_encryption_error'); ?>"></i>' : '') +
                     // Show LAPR roles next to the password health marker
                     laprItemListMarkersHtml(value.lapr) +
+                    // Show that the item holds a passkey
+                    (value.webauthn_count > 0 && value.rights !== 10 ? '<i class="fa-solid fa-fingerprint mr-1 infotip text-info" title="' + htmlEncode(<?php echo json_encode($lang->get('webauthn_list_marker'), JSON_UNESCAPED_UNICODE); ?>) + '"></i>' : '') +
                     // Prepare item info
                     '</span>' +
                     '<span class="list-item-clicktoshow d-inline-flex align-items-center' + (value.rights === 10 ? '' : ' pointer') + '" data-item-id="' + value.item_id + '" data-item-key="' + value.item_key + '">' +
@@ -7610,6 +7659,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 // Hide loading state
                 $('#card-item-attachments').nextAll().addClass('hidden');
 
+                // Passkeys
+                renderItemWebauthn(data !== false ? data.webauthn : []);
+
                 // Show restrictions with Badges
                 var html_restrictions = '';
                 $.each(store.get('teampassItem').id_restricted_to, function(i, value) {
@@ -7991,6 +8043,63 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 }
             );
         }
+    });
+
+    // When click on the passkey delete button
+    $(document).on('click', '.delete-webauthn-credential', function() {
+        const credentialId = parseInt($(this).data('credential-id'), 10);
+        if (isNaN(credentialId) === true) {
+            return;
+        }
+
+        showModalDialogBox(
+            '#warningModal',
+            '<i class="fa-solid fa-fingerprint mr-2"></i>' + <?php echo json_encode($lang->get('webauthn_delete'), JSON_UNESCAPED_UNICODE); ?>,
+            <?php echo json_encode($lang->get('webauthn_delete_confirm'), JSON_UNESCAPED_UNICODE); ?>.replace('#site#', htmlEncode(String($(this).data('site')))),
+            '<?php echo $lang->get('delete'); ?>',
+            '<?php echo $lang->get('cancel'); ?>',
+            false,
+            true
+        );
+
+        // Direct, namespaced and single-shot: the delegated #warningModalButtonAction handlers
+        // other dialogs leave behind must not run for this confirmation.
+        $('#warningModal').one('hidden.bs.modal', function() {
+            $('#warningModalButtonAction').off('click.webauthn');
+        });
+        $('#warningModalButtonAction').off('click.webauthn').on('click.webauthn', function(event) {
+            event.stopPropagation();
+            $(this).off('click.webauthn');
+            $('#warningModal').modal('hide');
+
+            $.post(
+                'sources/items.queries.php', {
+                    type: 'delete_webauthn_credential',
+                    data: prepareExchangedData(JSON.stringify({credential_id: credentialId}), 'encode', '<?php echo $session->get('key'); ?>'),
+                    key: '<?php echo $session->get('key'); ?>'
+                },
+                function(data) {
+                    data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'delete_webauthn_credential');
+                    toastr.remove();
+                    if (data.error === true) {
+                        toastr.error(data.message, '', {timeOut: 5000, progressBar: true});
+                        return;
+                    }
+
+                    const remaining = $('#card-item-webauthn-list .delete-webauthn-credential').filter(function() {
+                        return parseInt($(this).data('credential-id'), 10) !== credentialId;
+                    }).length;
+                    $('#card-item-webauthn-list .delete-webauthn-credential[data-credential-id="' + credentialId + '"]').closest('li').remove();
+                    $('#card-item-webauthn-badge').text(remaining);
+                    $('#item-card-webauthn, #form-item-copy-webauthn-note').toggleClass('hidden', remaining === 0);
+
+                    // Refresh the history card, which now records the deletion
+                    loadItemHistory(store.get('teampassItem').id);
+
+                    toastr.info('<?php echo $lang->get('done'); ?>', '', {timeOut: 1000});
+                }
+            );
+        });
     });
 
     // Handle quick add button for History and Attachments

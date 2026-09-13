@@ -631,6 +631,9 @@ if ((int) $session_user_admin === 1) {
                         <label><?php echo $lang->get('select_destination_folder'); ?></label>
                         <select class="form-control form-item-control select2" style="width:100%;" id="form-item-copy-destination"></select>
                     </div>
+                    <div class="alert alert-info mb-0 hidden" id="form-item-copy-webauthn-note">
+                        <i class="fa-solid fa-fingerprint mr-2"></i><?php echo $lang->get('webauthn_copy_not_copied'); ?>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-primary" id="form-item-copy-perform"><?php echo $lang->get('perform'); ?></button>
@@ -1471,6 +1474,26 @@ if ((int) $session_user_admin === 1) {
                         <div class="overlay">
                             <i class="fa-solid fa-refresh fa-spin"></i>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row item-details-card">
+                <!-- Visibility driven by the passkey list only: .item-details-card is toggled globally -->
+                <div class="col-12 hidden" id="item-card-webauthn">
+                    <div class="card card-default collapsed">
+                        <div class="card-header bg-gray-dark">
+                            <h3 class="card-title pointer" data-toggle="collapse" data-target="#card-item-webauthn">
+                                <i class="fa-solid fa-fingerprint mr-2"></i><?php echo $lang->get('webauthn_passkeys'); ?>
+                                <span class="badge badge-secondary ml-2" id="card-item-webauthn-badge"></span>
+                            </h3>
+                        </div>
+                        <!-- /.card-header -->
+                        <div class="card-body collapse" id="card-item-webauthn">
+                            <p class="text-muted small mb-2"><?php echo $lang->get('webauthn_card_info'); ?></p>
+                            <ul class="list-group list-group-unbordered" id="card-item-webauthn-list"></ul>
+                        </div>
+                        <!-- /.card-body -->
                     </div>
                 </div>
             </div>

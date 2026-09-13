@@ -3518,5 +3518,15 @@ return array(
     'logs_purge_entries' => 'journaux supprimés',
     'at_access' => 'Demande d’accès',
     'at_password_shown_edit_form' => 'Mot de passe affiché dans le formulaire d’édition',
+    'webauthn_passkeys' => 'Clés d’accès',
+    'webauthn_account' => 'Compte',
+    'webauthn_created' => 'Créée',
+    'webauthn_last_used' => 'Dernière utilisation',
+    'webauthn_never_used' => 'Jamais utilisée',
+    'webauthn_card_info' => 'Les clés d’accès sont créées et utilisées avec l’extension de navigateur. Toute personne pouvant ouvrir cet élément peut se connecter avec elles, et chaque utilisation est inscrite dans son historique.',
+    'webauthn_delete' => 'Supprimer la clé d’accès',
+    'webauthn_delete_confirm' => 'TeamPass ne pourra plus se connecter à <b>#site#</b> avec cette clé d’accès, et le site la conservera enregistrée. Vérifiez que le compte dispose d’un autre moyen de connexion, puis supprimez aussi la clé d’accès sur le site.',
+    'webauthn_list_marker' => 'Contient une clé d’accès',
+    'webauthn_copy_not_copied' => 'Cet élément contient des clés d’accès. Elles ne sont pas copiées : une clé d’accès n’appartient qu’à un seul élément.',
 
 );
