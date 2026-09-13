@@ -7,7 +7,7 @@ const { test } = require('node:test')
 test('Renewal opens on all deadlines, orders by date and restores the default after clearing the picker', () => {
   const template = readFileSync(join(__dirname, '../../app/pages/utilities.renewal.js.php'), 'utf8')
     .replace(/<\?php[\s\S]*?\?>/g, '')
-  const script = template.match(/<script[^>]*>([\s\S]*)<\/script>/)
+  const script = template.match(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/i)
   assert.ok(script)
   const handlers = new Map()
   const requests = []
