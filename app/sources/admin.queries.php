@@ -2975,6 +2975,8 @@ case 'save_sending_statistics':
                         'user_id' => $user['id'],
                         'value' => encryptUserObjectKey(base64_encode(base64_encode(uniqidReal(39))), $user['public_key']),
                         'timestamp' => time(),
+                        // API access is never granted implicitly: an administrator enables it per user
+                        'enabled' => 0,
                     )
                 );
 

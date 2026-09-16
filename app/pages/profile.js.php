@@ -685,11 +685,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         });
     });
 
-    <?php if (isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1
-        && isset($SETTINGS['oauth2_api_enabled']) === true && (int) $SETTINGS['oauth2_api_enabled'] === 1
-        && $session->get('user-auth_type') === 'oauth2') : ?>
+    <?php if (isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1) : ?>
     /**
-     * Browser extension tokens (Personal Access Tokens) for OAuth2 users.
+     * Browser extension tokens (Personal Access Tokens).
+     * profile.php decides whether the block, the generate button and the token modal are rendered;
+     * everything below does nothing when they are absent.
      */
     var extensionTokenKey = '<?php echo $session->get('key'); ?>';
 
@@ -792,7 +792,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         );
     });
 
-    document.getElementById('copy-extension-token').addEventListener('click', function() {
+    // Delegated: the token modal is only rendered while tokens can be generated
+    $(document).on('click', '#copy-extension-token', function() {
         const tokenValue = document.getElementById('extension-token-value').value;
         tpClipboardCopy(tokenValue).then(function(copied) {
             if (copied === false) {

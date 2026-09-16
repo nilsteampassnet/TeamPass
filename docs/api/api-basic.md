@@ -121,8 +121,10 @@ This directive defines the limit on the allowed size of an HTTP request-header f
 | Code | Description |
 | ---- | ----------- |
 | 200 | Authentication successful, token generated |
-| 401 | Invalid credentials |
-| 403 | API disabled or invalid API key |
+| 400 | Missing parameters or credentials passed in the query string |
+| 401 | Invalid credentials — the same answer for every cause, see [Troubleshooting a refused authentication](#authorize-troubleshooting) |
+| 401 | Account temporarily locked (bruteforce protection) |
+| 503 | Global API disabled in settings |
 | 500 | Server error |
 
 **Example:**
@@ -184,7 +186,9 @@ OAuth2/SSO users have no usable password (their stored credential is a hash of t
 | 503 | Global API disabled in settings |
 | 500 | Server error |
 
-**Restrictions:** only `auth_type = 'oauth2'` users are accepted; local and LDAP users keep using [`authorize`](#authorize). The same bruteforce protection and `tp_src=api` logging apply.
+**Restrictions:** only `auth_type = 'oauth2'` users are accepted, unless the administrator enables **Allow extension auto-configuration for all users** (Settings → API → Browser Extension, `extension_token_all_auth_types`), in which case local and LDAP users can use tokens too. The same bruteforce protection and `tp_src=api` logging apply.
+
+A token carries the encryption key the user had when it was generated. When the user's encryption keys are regenerated, their tokens are deleted, and any token still predating the new keys is refused: generate a new one.
 
 **Example:**
 ```bash
@@ -195,6 +199,31 @@ curl -X POST "https://your-teampass.com/api/index.php/authorizeToken" \
     "token": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
   }'
 ```
+
+---
+
+### Troubleshooting a refused authentication {#authorize-troubleshooting}
+
+`authorize` and `authorizeToken` answer every refusal with the same `401 Login failed. (Invalid credentials)`. This is deliberate: a more precise answer would let anyone find out which logins exist.
+
+The exact cause is written to the logs, for administrators only. Open **Logs**, filter on the *Failed logins* type and the *API / Extension* channel, and look for the rows of the login concerned:
+
+| Log entry | Cause | What to do |
+| --------- | ----- | ---------- |
+| API login refused: unknown login | No active account has this login | Check the login configured in the client |
+| API login refused: account disabled | The account is disabled in TeamPass | Re-enable the account |
+| API login refused: API access is not enabled for this account | New accounts, including those created from LDAP or OAuth2, have no API access by default | Enable it in **Settings → API → Users**; the user's profile shows the same warning |
+| API login refused: wrong password | Local account, password does not match | Check the password configured in the client |
+| API login refused: wrong password, or directory password changed since the last web sign-in | LDAP account. The API compares with the password TeamPass saw at the user's last **web** sign-in; it never contacts the directory | After a directory password change, the user must sign in once in the browser |
+| API login refused: an OAuth2 account must use an extension token, not a password | OAuth2 accounts have no password they know | Use a token and [`authorizeToken`](#authorize-token) |
+| API login refused: the encryption key awaits re-encryption after a directory password change | The directory password changed and TeamPass could not re-encrypt the user's key on its own | The user signs in to the web interface and completes the prompt asking for the previous password. Pending accounts are listed on the administration dashboard |
+| API login refused: the password does not unlock the encryption key | The user's keys are still being generated, or out of sync | Wait for the key generation task, or regenerate the user's keys |
+| Invalid API key | Password correct, API key different | Copy the key again from the user's profile |
+| API login refused: extension tokens are only allowed for OAuth2 accounts | `authorizeToken` used by a local or LDAP account while the all-users toggle is off | Enable the toggle, or use `authorize` |
+| Invalid API token | Unknown, expired or revoked token, or a token belonging to another login | Generate a new token |
+| API login refused: the extension token predates a regeneration of the encryption keys | The user's keys were regenerated after the token was issued | Generate a new token |
+
+Every refusal also counts toward the bruteforce protection, which is shared with the web sign-in. A client that keeps retrying locks the user's **web** sign-in too: stop it first, then remove the lock from **Logs → Manage active authentication lockouts**.
 
 ---
 
