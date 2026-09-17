@@ -2289,8 +2289,9 @@ function tpBackupExternalizedS3Request(array $config, string $method, string $ke
             if ($sinkHandle === false) {
                 return ['status' => 0, 'body' => '', 'error' => 'sink_unavailable', 'headers' => []];
             }
+            // CURLOPT_FILE alone overrides RETURNTRANSFER. Never set RETURNTRANSFER after it: that
+            // resets PHP's write handler to stdout and streams the backup into the response (#5376).
             curl_setopt($ch, CURLOPT_FILE, $sinkHandle);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
         }
 
         $bodyResponse = curl_exec($ch);
@@ -2330,6 +2331,29 @@ function tpBackupExternalizedS3ReasonFromStatus(int $status, string $fallback): 
     }
 
     return $fallback;
+}
+
+/**
+ * Tell whether an S3 GET streamed to a local file produced a usable backup.
+ *
+ * A 2xx status is not enough: cURL reports a truncated transfer or a failed write only through
+ * its error, and the sink file exists as soon as it is opened, even if nothing reaches it. A
+ * backup is never empty, so an empty file is a failed download, not a backup to decrypt.
+ *
+ * @param array{status: int, body: string, error: string, headers: array<string, string>} $response
+ *
+ * @return bool
+ */
+function tpBackupExternalizedS3DownloadIsComplete(array $response, string $localPath): bool
+{
+    $status = (int) $response['status'];
+    if ($status < 200 || $status >= 300 || (string) $response['error'] !== '') {
+        return false;
+    }
+
+    clearstatcache(true, $localPath);
+
+    return is_file($localPath) === true && (int) @filesize($localPath) > 0;
 }
 
 /**
@@ -3443,7 +3467,7 @@ function tpBackupDownloadExternalizedBackup(string $destinationType, string $tar
         try {
             $downloaded = tpBackupExternalizedS3Request((array) $connection['config'], 'GET', $objectKey, ['sink' => $localTargetPath]);
             $status = (int) $downloaded['status'];
-            if ($status < 200 || $status >= 300 || is_file($localTargetPath) === false) {
+            if (tpBackupExternalizedS3DownloadIsComplete($downloaded, $localTargetPath) === false) {
                 return ['success' => false, 'reason' => tpBackupExternalizedS3ReasonFromStatus($status, 'S3_DOWNLOAD_FAILED'), 'destination_type' => 's3', 'path' => $objectKey, 'filename' => $filename, 'size_bytes' => 0];
             }
 
@@ -3581,7 +3605,7 @@ function tpBackupStageExternalizedBackupForRestore(string $destinationType, stri
             $s3Config = (array) $connection['config'];
             $downloaded = tpBackupExternalizedS3Request($s3Config, 'GET', $objectKey, ['sink' => $localPath]);
             $status = (int) $downloaded['status'];
-            if ($status < 200 || $status >= 300 || is_file($localPath) === false) {
+            if (tpBackupExternalizedS3DownloadIsComplete($downloaded, $localPath) === false) {
                 tpBackupRemoveTemporaryDirectory($cleanupDir);
                 return ['success' => false, 'reason' => tpBackupExternalizedS3ReasonFromStatus($status, 'S3_DOWNLOAD_FAILED'), 'destination_type' => 's3', 'path' => '', 'filename' => $filename, 'cleanup_required' => false, 'cleanup_dir' => '', 'source_path' => $objectKey, 'size_bytes' => 0];
             }

@@ -613,6 +613,21 @@
 	padding-top: 10px;
 }
 
+/* select2.min.css loads after AdminLTE and resets the selected values of a
+ * multiple select to a light gray background, while AdminLTE's white text
+ * remains (1.3:1 contrast). Dark "info" keeps white text readable (5:1). */
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: #117a8b;
+    border-color: #10707f;
+    color: #fff;
+}
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    color: rgba(255, 255, 255, 0.8);
+}
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+    color: #fff;
+}
+
 /* Some issues with background-image on buttons in 
  * dark mode and it's not particularly pretty. */
 .btn {
