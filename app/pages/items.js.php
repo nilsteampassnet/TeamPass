@@ -254,9 +254,6 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     }
 
     /**
-     * Build icon-only LAPR markers for the item list status area.
-     */
-    /**
      * Render the passkeys attached to the displayed item. Every label comes from a third-party
      * site, so everything goes through htmlEncode().
      */
@@ -265,7 +262,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         const list = Array.isArray(credentials) ? credentials : [];
 
         $('#card-item-webauthn-badge').text(list.length);
-        $('#item-card-webauthn, #form-item-copy-webauthn-note').toggleClass('hidden', list.length === 0);
+        $('#item-card-webauthn, #form-item-copy-webauthn-note, #card-item-webauthn-title-badge').toggleClass('hidden', list.length === 0);
         if (list.length === 0) {
             return;
         }
@@ -302,6 +299,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         $list.html(html);
     }
 
+    /**
+     * Build icon-only LAPR markers for the item list status area.
+     */
     function laprItemListMarkersHtml(lapr) {
         if (!lapr) return '';
 
@@ -8091,7 +8091,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     }).length;
                     $('#card-item-webauthn-list .delete-webauthn-credential[data-credential-id="' + credentialId + '"]').closest('li').remove();
                     $('#card-item-webauthn-badge').text(remaining);
-                    $('#item-card-webauthn, #form-item-copy-webauthn-note').toggleClass('hidden', remaining === 0);
+                    $('#item-card-webauthn, #form-item-copy-webauthn-note, #card-item-webauthn-title-badge').toggleClass('hidden', remaining === 0);
 
                     // Refresh the history card, which now records the deletion
                     loadItemHistory(store.get('teampassItem').id);

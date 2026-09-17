@@ -56,13 +56,14 @@ test('site-provided labels are escaped', () => {
   assert.ok(html.includes('[webauthn_never_used]'))
 })
 
-test('the card and the copy note follow the list', () => {
+test('the card, the copy note and the title badge follow the list', () => {
+  const key = '#item-card-webauthn, #form-item-copy-webauthn-note, #card-item-webauthn-title-badge:hidden'
   const shown = render([hostile])
   assert.equal(shown['#card-item-webauthn-badge:text'], 1)
-  assert.equal(shown['#item-card-webauthn, #form-item-copy-webauthn-note:hidden'], false)
+  assert.equal(shown[key], false)
 
   const hidden = render([])
-  assert.equal(hidden['#item-card-webauthn, #form-item-copy-webauthn-note:hidden'], true)
+  assert.equal(hidden[key], true)
 })
 
 test('the delete button needs the right to modify the item', () => {
