@@ -117,7 +117,7 @@ class ItemController extends BaseController
      */
     private function createIdempotencyIntent(array $params): array
     {
-        return [
+        $intent = [
             'folder_id' => (int) $params['folder_id'],
             'label' => (string) $params['label'],
             'login' => (string) $params['login'],
@@ -134,6 +134,11 @@ class ItemController extends BaseController
             'icon' => (string) $params['icon'],
             'anyone_can_modify' => (int) $params['anyone_can_modify'],
         ];
+        // Preserve existing idempotency fingerprints when the optional policy is absent.
+        if (array_key_exists('renewal_period', $params)) {
+            $intent['renewal_period'] = $params['renewal_period'];
+        }
+        return $intent;
     }
 
 
@@ -389,6 +394,15 @@ class ItemController extends BaseController
                             'totp_period' => (int) ($arrQueryStringParams['totp_period'] ?? ITEM_TOTP_DEFAULT_PERIOD),
                             'fields' => $this->normalizeFields($arrQueryStringParams['fields'] ?? []),
                         ];
+
+                        if (array_key_exists('renewal_period', $arrQueryStringParams)) {
+                            try {
+                                $arrItemParams['renewal_period'] = renewalValidatePeriod($arrQueryStringParams['renewal_period']);
+                            } catch (InvalidArgumentException $exception) {
+                                $this->sendProblemFromHeader('HTTP/1.1 422 Unprocessable Entity', $exception->getMessage());
+                                return;
+                            }
+                        }
 
                         if ($idempotencyKey !== null) {
                             try {
@@ -1166,6 +1180,7 @@ class ItemController extends BaseController
                                         'url',
                                         'tags',
                                         'anyone_can_modify',
+                                        'renewal_period',
                                         'icon',
                                         'folder_id',
                                         'totp',

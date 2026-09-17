@@ -24,7 +24,7 @@ class SecurityPostureAuthorizationTest extends TestCase
         $source = file_get_contents($path);
         self::assertIsString($source);
 
-        return $source;
+        return str_replace("\r\n", "\n", $source);
     }
 
     private function mainFunctionsSource(): string

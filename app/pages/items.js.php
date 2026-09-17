@@ -83,6 +83,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 require_once __DIR__ . '/../includes/libraries/bip39/loader.php';
 $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
+require __DIR__ . '/renewal.preview.js.php';
 ?>
 
 
@@ -295,6 +296,11 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         $details.addClass('hidden').removeClass('alert-info alert-warning alert-danger');
         $notice.addClass('hidden').removeClass('alert-info alert-warning alert-danger');
         laprSetManagedFieldsLocked(isManaged);
+        $('#form-item-renewal-settings').toggleClass('hidden', isManaged || isCredential)
+            .data('lapr-excluded', isManaged || isCredential);
+        $('#form-item-renewal-enabled').prop('disabled', isManaged || isCredential);
+        const renewalEnabled = !isManaged && !isCredential && $('#form-item-renewal-enabled').prop('checked');
+        $('#form-item-renewal-period').prop('disabled', !renewalEnabled).prop('required', renewalEnabled);
         $('.tp-action[data-item-action="delete"]').closest('.nav-item').toggleClass('hidden', isManaged || isCredential);
         $('.tp-action[data-item-action="server"]').closest('.nav-item').toggleClass('hidden', isManaged);
 
@@ -1451,6 +1457,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 $('.item-details-card').find('.form-control').val('');
                 $('.clear-me-html').html('');
                 $('.form-item-control').val('');
+                setItemRenewalPeriod(0);
                 // Show edition form
                 $('.form-item').removeClass('hidden');
                 // Force update of simplepassmeter
@@ -2196,6 +2203,32 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
     let itemFolderRulesRefreshRequestId = 0;
 
+    /** Initialize the optional policy without firing a save or resetting password age. */
+    function setItemRenewalPeriod(days) {
+        const eligible = $('#form-item-renewal-settings').data('lapr-excluded') !== true;
+        $('#form-item-renewal-enabled').prop('checked', Number(days) > 0).prop('disabled', !eligible);
+        $('#form-item-renewal-period').val(Number(days) > 0 ? days : 90)
+            .prop('disabled', !eligible || Number(days) <= 0).prop('required', eligible && Number(days) > 0);
+    }
+
+    /** Preview unsaved item policy choices against the selected folder. */
+    function refreshItemRenewalNotice(folderId) {
+        const itemId = Number(store.get('teampassItem').id) || 0;
+        const period = $('#form-item-renewal-enabled').prop('checked') ? $('#form-item-renewal-period').val() : 0;
+        tpRenewal.update('#form-item-renewal-notice', folderId, itemId ? [itemId] : [], itemId === 0, period);
+    }
+
+    let renewalPreviewTimer;
+    $('#form-item-renewal-enabled, #form-item-renewal-period').on('change input', function() {
+        const enabled = $('#form-item-renewal-enabled').prop('checked');
+        $('#form-item-renewal-period').prop('disabled', !enabled).prop('required', enabled);
+        userDidAChange = true;
+        clearTimeout(renewalPreviewTimer);
+        renewalPreviewTimer = setTimeout(function() {
+            refreshItemRenewalNotice($('#form-item-folder').val());
+        }, 200);
+    });
+
     /**
      * Refresh the top rules of item form from backend for the selected folder.
      * When opening an existing item for edition, the backend can resolve the
@@ -2203,15 +2236,15 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
      */
     function refreshItemFolderTopRules(folderId, context) {
         context = context || '';
+        tpRenewal.clear('#form-item-renewal-notice');
+        itemFolderRulesRefreshRequestId += 1;
+        const currentRequestId = itemFolderRulesRefreshRequestId;
 
         if (folderId === null || folderId === '' || typeof folderId === 'undefined') {
             $('#card-item-visibility').html('<i class="fa-solid fa-ellipsis mr-2 fa-fade"></i>');
             $('#card-item-minimum-complexity').html('<i class="fa-solid fa-ellipsis mr-2 fa-fade"></i>');
             return $.Deferred().resolve({ error: true }).promise();
         }
-
-        itemFolderRulesRefreshRequestId += 1;
-        const currentRequestId = itemFolderRulesRefreshRequestId;
 
         $('#card-item-visibility').html('<i class="fa-solid fa-ellipsis mr-2 fa-fade"></i>');
         $('#card-item-minimum-complexity').html('<i class="fa-solid fa-ellipsis mr-2 fa-fade"></i>');
@@ -2240,6 +2273,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             }
 
             if (data.error === false) {
+                refreshItemRenewalNotice(data.folderId || folderId);
                 $('#card-item-visibility').html(data.visibility || '<?php echo $lang->get('none'); ?>');
                 $('#card-item-minimum-complexity').html(data.complexity === undefined ? '' : data.complexity);
 
@@ -2272,6 +2306,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
      */
     $('#form-item-folder').change(function() {
         refreshItemFolderTopRules($(this).val());
+    });
+
+    $('#form-item-copy-destination').on('change', function() {
+        tpRenewal.update('#copy-item-renewal-notice', $(this).val(), [Number(store.get('teampassItem').id)], false, null, true);
     });
 
     /**
@@ -3373,6 +3411,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         $('#items-details-container .edition-lock-detail-badge').remove();
         $('#card-item-corrupted-warning').addClass('hidden').html('');
         $('#card-item-lapr-badges, #card-item-lapr-info').addClass('hidden').empty();
+        $('#card-item-renewal-badge').addClass('hidden').empty();
         $('#card-item-misc').html(
             '<span class="skeleton-line skeleton-sm d-inline-block mr-3" style="width:22px;"></span>' +
             '<span class="skeleton-line skeleton-sm d-inline-block mr-3" style="width:22px;"></span>' +
@@ -4432,6 +4471,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 //prepare data
                 var data = {
                     'anyone_can_modify': $('#form-item-anyoneCanModify').is(':checked') ? 1 : 0,
+                    'renewal_period': $('#form-item-renewal-enabled').prop('checked') ? $('#form-item-renewal-period').val() : 0,
                     'complexity_level': parseInt($('#form-item-password-complex').val()),
                     'description': $('#form-item-description').summernote('code') === '<p><br></p>' ? '' : $('#form-item-description').summernote('code'),
                     'diffusion_list': diffusion,
@@ -4923,6 +4963,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
      */
     function searchItems(criteria) {
         if (criteria !== '') {
+            tpRenewal.clear('#folder-renewal-notice');
             // stop items loading (if on-going)
             store.update(
                 'teampassApplication',
@@ -5518,6 +5559,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             }
         }
 
+        const showFolderRenewal = Number(start) === 0 ? tpRenewal.beginFolder('#folder-renewal-notice') : null;
+
         // Hide any info
         $('#info_teampass_items_list').addClass('hidden');
 
@@ -5593,6 +5636,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     key: '<?php echo $session->get('key'); ?>',
                 },
                 function(retData) {
+                    // Ignore responses for a folder that the user has already left.
+                    if (Number(store.get('teampassApplication').selectedFolder) !== Number(groupe_id)) return;
                     //get data
                     data = decodeQueryReturn(retData, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'do_items_list_in_folder');
 
@@ -5625,6 +5670,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     const call_to_be_continued = !!data.list_to_be_continued;
                     const isNotAuthorized = data.error === 'not_authorized';
                     const hasUniqueLoadData = typeof data.uniqueLoadData === 'string' && data.uniqueLoadData !== '';
+                    if (Number(start) === 0 && !isNotAuthorized && hasUniqueLoadData) {
+                        showFolderRenewal($.parseJSON(data.uniqueLoadData).folder_renewal_days);
+                    }
 
                     // Hide New button if restricted folder or folder is not accessible
                     $('#btn-new-item').toggleClass('hidden', data.access_level === 10 || isNotAuthorized === true);
@@ -5981,12 +6029,13 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     // Show user a grippy bar to move item
                     (value.canMove === 1  ? '<i class="fa-solid fa-ellipsis-v mr-1 dragndrop"></i>' : '') + //&& value.is_result_of_search === 0
                     // Show user a ban icon if expired
-                    (value.expired === 1 ? '<i class="fa-regular fa-calendar-times mr-1 text-warning infotip" title="<?php echo $lang->get('not_allowed_to_see_pw_is_expired'); ?>"></i>' : '') +
+                    (value.expired === 1 && !value.renewal ? '<i class="fa-regular fa-calendar-times mr-1 text-warning infotip" title="<?php echo $lang->get('not_allowed_to_see_pw_is_expired'); ?>"></i>' : '') +
                     // Show user that Item is not accessible
                     (value.rights === 10 ? '<i class="fa-regular fa-eye-slash fa-xs mr-1 text-primary infotip" title="<?php echo $lang->get('item_with_restricted_access'); ?>"></i>' : '') +
                     // Show user that password is badly encrypted
                     (value.pw_status === 'encryption_error' ? '<i class="fa-solid fa-exclamation-triangle fa-xs text-danger infotip mr-1" title="<?php echo $lang->get('pw_encryption_error'); ?>"></i>' : '') +
-                    // Show LAPR roles next to the password health marker
+                    // Group renewal and LAPR icons beside the password health marker.
+                    tpRenewal.badgeHtml(value.renewal, true) +
                     laprItemListMarkersHtml(value.lapr) +
                     // Prepare item info
                     '</span>' +
@@ -5994,7 +6043,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     corruption_marker +
                     // Show item fa_icon if set
                     (value.fa_icon !== '' ? '<i class="'+htmlEncode(value.fa_icon)+' mr-1 user-fa-icon"></i>' : '') +
-                    '<span class="list-item-row-description d-inline-block' + (value.rights === 10 ? ' font-weight-light' : '') + '"><i class="item-favorite-star fa-solid' + ((store.get('teampassApplication').highlightFavorites === 1 && value.is_favourited === 1) ? ' fa-star mr-1' : '') + '"></i>' + htmlEncode(value.label) + '</span>' + (value.rights === 10 ? '' : description) +
+                    '<span class="list-item-row-description d-inline-block' + (value.rights === 10 ? ' font-weight-light' : '') + '"><i class="item-favorite-star fa-solid' + ((store.get('teampassApplication').highlightFavorites === 1 && value.is_favourited === 1) ? ' fa-star mr-1' : '') + '"></i>' + htmlEncode(value.label) + '</span>' +
+                    (value.rights === 10 ? '' : description) +
                     '<span class="list-item-row-description-extend"></span>' +
                     '</span>' +
                     '<span class="list-item-actions hidden">' +
@@ -6136,10 +6186,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 const $healthMarker = $('<i>')
                     .addClass('fa-solid fa-shield-halved mr-1 infotip tp-item-health-marker ' + cls)
                     .attr('title', badgeTitlePrefix + ' — ' + labels.join(', '))
-                const $firstLaprMarker = $container.find('.tp-item-lapr-marker').first()
+                const $firstStatusMarker = $container.find('.tp-item-renewal-marker, .tp-item-lapr-marker').first()
 
-                if ($firstLaprMarker.length > 0) {
-                    $healthMarker.insertBefore($firstLaprMarker)
+                if ($firstStatusMarker.length > 0) {
+                    $healthMarker.insertBefore($firstStatusMarker)
                 } else {
                     $container.append($healthMarker)
                 }
@@ -6746,24 +6796,11 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     // Scroll to top
                     $(window).scrollTop(0);
 
-                    // SHould we show?
-                    if (parseInt(data.show_detail_option) === 1 || itemExpired === 1) {
-                        // SHow expiration alert
-                        $('#card-item-expired').removeClass('hidden');
-                    } else if (parseInt(data.show_detail_option) === 2) {
-                        // Don't show anything
-                        toastr.remove();
-                        toastr.error(
-                            '<?php echo $lang->get('not_allowed_to_see_pw'); ?>',
-                            '<?php echo $lang->get('warning'); ?>', {
-                                timeOut: 5000,
-                                progressBar: true
-                            }
-                        );
-
-                        return false;
-                    }
-
+                    // Use the server's current deadline, including direct links and changed policies.
+                    itemExpired = Number(data.expired_item) || 0;
+                    const renewalBadge = tpRenewal.badgeHtml(data.renewal);
+                    $('#card-item-renewal-badge').html(renewalBadge).toggleClass('hidden', renewalBadge === '');
+                    $('#card-item-expired').toggleClass('hidden', itemExpired !== 1);
                     // Show header info.
                     // For edition, clear the values first and let the backend reload the
                     // effective folder rules to avoid displaying stale values coming from
@@ -7001,6 +7038,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     $('#form-item-restrictedToUsers').val(JSON.stringify(data.id_restricted_to));
                     $('#form-item-restrictedToRoles').val(JSON.stringify(data.id_restricted_to_roles));
                     $('#form-item-folder').val(data.folder);
+                    setItemRenewalPeriod(data.renewal_period || 0);
+                    refreshItemRenewalNotice(data.folder);
                     $('#form-item-tags').val(htmlDecode(data.tags.join(' ')));
                     $('#form-item-icon').val(data.fa_icon);
                     $('#form-item-icon-show').html(itemIcon);
@@ -7444,19 +7483,13 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         $('#form-item-anyoneCanModify').iCheck('uncheck');
                     }
 
-                    if (parseInt(data.show_details) === 1 && parseInt(data.show_detail_option) !== 2) {
+                    if (parseInt(data.show_details) === 1) {
                         // continue loading data — pass pre-fetched promises to avoid scope issues
                         showDetailsStep2(itemId, actionType, _editPrivilegesPromise, _editPasswordPromise);
                         // OPT-A: load history in parallel with showDetailsStep2 (only needs itemId)
                         if (actionType === 'show') {
                             loadItemHistory(store.get('teampassItem').id);
                         }
-                    } else if (parseInt(data.show_details) === 1 && parseInt(data.show_detail_option) === 2) {
-                        $('#item_details_nok').addClass('hidden');
-                        $('#item_details_ok').addClass('hidden');
-                        $('#item_details_expired_full').show();
-                        $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item, #menu_button_add_fav, #menu_button_del_fav, #menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link').attr('disabled', 'disabled');
-                        $('#div_loading').addClass('hidden');
                     } else {
                         //Dont show details
                         $('#item_details_nok').removeClass('hidden');
@@ -7469,7 +7502,6 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         // Protect
                         $('#item_details_ok').addClass('hidden');
                         $('#item_details_expired').addClass('hidden');
-                        $('#item_details_expired_full').addClass('hidden');
                         $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item, #menu_button_add_fav, #menu_button_del_fav, #menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link').attr('disabled', 'disabled');
                         $('#div_loading').addClass('hidden');
                     }
@@ -8494,6 +8526,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
      */
     function getPrivilegesOnItem(val, edit, context) {
         context = context || ""; // make context optional
+        tpRenewal.clear('#form-item-renewal-notice');
 
         // make sure to use correct selected folder
         if (val === false) {
@@ -8626,6 +8659,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             // remain empty after we cleared the stale values before opening edit.
                             $('#card-item-visibility').html(data.visibility || '<?php echo $lang->get('none'); ?>');
                             $('#card-item-minimum-complexity').html(data.complexity === undefined ? '' : data.complexity);
+                            refreshItemRenewalNotice(data.folderId || val);
 
                             // Prepare Select2
                             $('.select2').select2({
@@ -9319,7 +9353,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         $('.folder').droppable({
             hoverClass: 'bg-warning',
             tolerance: 'pointer',
-            drop: function(event, ui) {
+            drop: async function(event, ui) {
                 // Check if same folder
                 if (parseInt($(this).attr('id').substring(4)) === parseInt(ui.draggable.data('item-tree-id'))) {
                     toastr.remove();
@@ -9361,6 +9395,14 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     return false;
                 }
 
+                const destinationFolderId = $(this).attr('id').substring(4);
+                if (ui.draggable.data('renewal-move-pending')) return;
+                ui.draggable.data('renewal-move-pending', true);
+                if (!await tpRenewal.confirmMove(destinationFolderId, [ui.draggable.data('item-id')])) {
+                    ui.draggable.removeData('renewal-move-pending');
+                    return;
+                }
+
                 // Warn user that it starts
                 toastr.info(
                     '<i class="fa-solid fa-circle-notch fa-spin fa-2x"></i><?php echo $lang->get('please_wait'); ?>'
@@ -9372,7 +9414,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 //move item
                 var data = {
                     'item_id': ui.draggable.data('item-id'),
-                    'folder_id': $(this).attr('id').substring(4)
+                    'folder_id': destinationFolderId
                 }
                 $.post(
                     'sources/items.queries.php', {
@@ -9421,6 +9463,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         }
                     );
                     ui.draggable.removeClass('hidden');
+                }).always(function() {
+                    ui.draggable.removeData('renewal-move-pending');
                 });
             }
         });
