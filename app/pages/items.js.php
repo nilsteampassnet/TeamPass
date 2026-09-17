@@ -5636,8 +5636,6 @@ require __DIR__ . '/renewal.preview.js.php';
                     key: '<?php echo $session->get('key'); ?>',
                 },
                 function(retData) {
-                    // Ignore responses for a folder that the user has already left.
-                    if (Number(store.get('teampassApplication').selectedFolder) !== Number(groupe_id)) return;
                     //get data
                     data = decodeQueryReturn(retData, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'do_items_list_in_folder');
 
