@@ -246,7 +246,7 @@ return array(
     'renewal_all_deadlines' => 'Tất cả thời hạn',
     'renewal_notice_period' => 'Mật khẩu trong thư mục này phải được đổi mới sau mỗi #days# ngày.',
     'renewal_notice_none' => 'Thư mục này không đặt thời hạn đổi mới mật khẩu.',
-    'renewal_notice_explanation' => 'Hết hạn không xóa mục. Quyền xem có thể bị hạn chế cho đến khi người dùng được cấp quyền đổi mới mật khẩu.',
+    'renewal_notice_explanation' => 'Hết hạn cho biết mật khẩu cần được đổi mới. Việc hết hạn không xóa mục hoặc ngăn người dùng có quyền xem mục đó.',
     'renewal_notice_due' => 'Hạn đổi mới: #date#.',
     'renewal_notice_estimate' => 'Ngày ước tính nếu tạo hôm nay; thời hạn bắt đầu khi lưu mục.',
     'renewal_notice_existing' => 'Tính từ lần đổi mật khẩu gần nhất hoặc lúc tạo mục. Di chuyển giữ nguyên tuổi mật khẩu; đổi mật khẩu sẽ tính lại thời hạn khi lưu.',

@@ -246,7 +246,7 @@ return array(
     'renewal_all_deadlines' => 'Tots els venciments',
     'renewal_notice_period' => 'En aquesta carpeta cal renovar la contrasenya cada #days# dies.',
     'renewal_notice_none' => 'Aquesta carpeta no estableix cap venciment per renovar la contrasenya.',
-    'renewal_notice_explanation' => 'La caducitat no elimina l’element. La consulta es pot restringir fins que un usuari autoritzat renovi la contrasenya.',
+    'renewal_notice_explanation' => 'La caducitat indica que cal renovar la contrasenya. No elimina l’element ni impedeix que els usuaris autoritzats el consultin.',
     'renewal_notice_due' => 'Cal renovar abans del #date#.',
     'renewal_notice_estimate' => 'Data estimada per a una creació avui; el termini comença en desar l’element.',
     'renewal_notice_existing' => 'Es calcula des del darrer canvi de contrasenya o la creació. Moure l’element conserva l’antiguitat de la contrasenya; canviar-la recalcula el venciment en desar.',

@@ -246,7 +246,7 @@ return array(
     'renewal_all_deadlines' => 'Todos os vencimentos',
     'renewal_notice_period' => 'Nesta pasta, a senha deve ser renovada a cada #days# dias.',
     'renewal_notice_none' => 'Esta pasta não define um prazo para renovar a senha.',
-    'renewal_notice_explanation' => 'A expiração não exclui o item. A consulta pode ser restrita até que um usuário autorizado renove a senha.',
+    'renewal_notice_explanation' => 'A expiração indica que a senha deve ser renovada. Ela não exclui o item nem impede sua consulta por usuários autorizados.',
     'renewal_notice_due' => 'Renovar até #date#.',
     'renewal_notice_estimate' => 'Data estimada para uma criação hoje; o prazo começa ao salvar o item.',
     'renewal_notice_existing' => 'Calculado desde a última alteração da senha ou a criação. Mover o item mantém a idade da senha; alterá-la recalcula o vencimento ao salvar.',

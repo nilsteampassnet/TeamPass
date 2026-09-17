@@ -1011,7 +1011,7 @@ return array(
     'renewal_delay' => 'Renewal delay',
     'renewal_notice_period' => 'Password renewal required every #days# days in this folder.',
     'renewal_notice_none' => 'No password renewal deadline in this folder.',
-    'renewal_notice_explanation' => 'Expiration does not delete the item. Consultation may be restricted until an authorized user renews the password.',
+    'renewal_notice_explanation' => 'Expiration indicates that the password should be renewed. It does not delete the item or block reading by authorized users.',
     'renewal_notice_due' => 'Renewal due: #date#.',
     'renewal_notice_estimate' => 'Estimated date for creation today; the deadline starts when the item is saved.',
     'renewal_notice_existing' => 'Based on the last password change or creation. Moving the item keeps its password age; changing its password recalculates the deadline when saved.',

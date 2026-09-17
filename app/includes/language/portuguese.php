@@ -246,7 +246,7 @@ return array(
     'renewal_all_deadlines' => 'Todos os prazos',
     'renewal_notice_period' => 'Nesta pasta, a palavra-passe deve ser renovada a cada #days# dias.',
     'renewal_notice_none' => 'Esta pasta não define um prazo para renovar a palavra-passe.',
-    'renewal_notice_explanation' => 'A expiração não elimina o elemento. A consulta pode ser restringida até que um utilizador autorizado renove a palavra-passe.',
+    'renewal_notice_explanation' => 'A expiração indica que a palavra-passe deve ser renovada. Não elimina o item nem impede a sua consulta por utilizadores autorizados.',
     'renewal_notice_due' => 'Renovar até #date#.',
     'renewal_notice_estimate' => 'Data estimada para uma criação hoje; o prazo começa ao guardar o elemento.',
     'renewal_notice_existing' => 'Calculado desde a última alteração da palavra-passe ou a criação. Mover o elemento mantém a idade da palavra-passe; alterá-la recalcula o prazo ao guardar.',

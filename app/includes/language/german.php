@@ -246,7 +246,7 @@ return array(
     'renewal_all_deadlines' => 'Alle Fristen',
     'renewal_notice_period' => 'In diesem Ordner muss das Passwort alle #days# Tage erneuert werden.',
     'renewal_notice_none' => 'In diesem Ordner gilt keine Frist zur Passworterneuerung.',
-    'renewal_notice_explanation' => 'Ein abgelaufenes Passwort führt nicht zur Löschung des Eintrags. Der Zugriff kann eingeschränkt sein, bis ein berechtigter Benutzer das Passwort erneuert.',
+    'renewal_notice_explanation' => 'Der Ablauf zeigt an, dass das Passwort erneuert werden sollte. Der Eintrag wird weder gelöscht noch wird berechtigten Benutzern das Lesen verwehrt.',
     'renewal_notice_due' => 'Erneuerung fällig am #date#.',
     'renewal_notice_estimate' => 'Geschätztes Datum bei heutiger Erstellung; die Frist beginnt beim Speichern des Eintrags.',
     'renewal_notice_existing' => 'Grundlage ist die letzte Passwortänderung oder die Erstellung. Beim Verschieben bleibt das Passwortalter erhalten; eine Passwortänderung berechnet die Frist beim Speichern neu.',

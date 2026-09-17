@@ -83,7 +83,22 @@ function harness(enabled = true) {
       addClass(names) { names.split(' ').forEach(name => this.classes.add(name)); return this },
       removeClass(names) { names.split(' ').forEach(name => this.classes.delete(name)); return this },
       toggleClass(name, on) { if (on) this.classes.add(name); else this.classes.delete(name); return this },
-      appendTo(target) { target.children.push(this); return this }
+      appendTo(target) { target.children.push(this); return this },
+      events: new Map(),
+      one(name, handler) { this.events.set(name, handler); return this },
+      off(name) { this.events.delete(name); return this },
+      trigger(name) { const handler = this.events.get(name); this.events.delete(name); if (handler) handler(); return this },
+      modal(action) {
+        if (action === 'hide') this.trigger('hidden.bs.modal')
+        else {
+          prompts.push($('#renewal-move-details').children.map(child => child.value).join('\n'))
+          if (answer !== null) queueMicrotask(() => {
+            if (answer) $('#renewal-move-confirm').trigger('click.renewalMove')
+            else this.modal('hide')
+          })
+        }
+        return this
+      }
     }
   }
   const $ = selector => {
@@ -98,7 +113,7 @@ function harness(enabled = true) {
   }
   const context = {
     $, decodeQueryReturn: data => data, toastr: { error: text => errors.push(text) },
-    window: { confirm(text) { prompts.push(text); return answer } }
+    window: { confirm() { throw new Error('Native confirmation must not be used') } }
   }
   vm.runInNewContext(source, context)
   const preview = context.createRenewalPreview({ enabled, key: 'session-key', messages: {
@@ -178,21 +193,88 @@ test('Opening another item clears the previous renewal badge while its details l
   assert.equal(field.classes.has('hidden'), true)
 })
 
-test('Folder policies include empty folders and explicit zero; individual policies work with folder expiration off', async () => {
+test('Folder notices reuse list metadata without requests, hide inactive policies, and ignore stale loads', () => {
   const ui = harness()
-  const first = ui.preview.update('#folder', 11)
-  ui.pending[0].resolve(response())
-  await first
+  const first = ui.preview.beginFolder('#folder')
+  first(90)
   assert.equal(ui.field('#folder').children[0].value, 'Every 90 days')
-  const second = ui.preview.update('#folder', 12)
-  ui.pending[1].resolve(response(0))
-  await second
-  assert.equal(ui.field('#folder').children[0].value, 'No renewal')
+  const second = ui.preview.beginFolder('#folder')
+  second(0)
+  first(90)
+  assert.ok(ui.field('#folder').classes.has('hidden'))
+  assert.equal(ui.field('#folder').children.length, 0)
+  const third = ui.preview.beginFolder('#folder')
+  ui.preview.clear('#folder')
+  third(30)
+  assert.ok(ui.field('#folder').classes.has('hidden'))
+  assert.equal(ui.pending.length, 0)
+})
+
+test('Individual policy previews still work when folder expiration is off', async () => {
   const disabled = harness(false)
   const individual = disabled.preview.update('#form', 11, [1])
   disabled.pending[0].resolve(response(0, [{ days: 30, source: 'item', due_date: '2026-12-01', expired: false }]))
   await individual
   assert.ok(disabled.field('#form').children.some(line => line.value.includes('Effective 30 days')))
+})
+
+test('Move modal waits for acceptance or dismissal and prevents overlapping confirmations', async () => {
+  for (const accept of [true, false]) {
+    const ui = harness()
+    ui.answer(null)
+    let settled = false
+    const move = ui.preview.confirmMove(11, [1, 2]).then(value => { settled = true; return value })
+    ui.pending[0].resolve(response(90, [
+      { label: '<img src=x onerror=alert(1)>', due_date: '2020-01-01', expired: true },
+      { label: 'Other item', due_date: '2026-12-01', expired: false }
+    ]))
+    await new Promise(resolve => setImmediate(resolve))
+    assert.equal(settled, false)
+    assert.match(ui.prompts[0], /<img src=x onerror=alert\(1\)>/)
+    assert.match(ui.prompts[0], /Other item/)
+    assert.equal(await ui.preview.confirmMove(12, [3]), false)
+    assert.equal(ui.pending.length, 1)
+    if (accept) ui.field('#renewal-move-confirm').trigger('click.renewalMove')
+    else ui.field('#renewal-move-modal').modal('hide') // cancel, Escape, backdrop or close button
+    assert.equal(await move, accept)
+    assert.equal(ui.field('#renewal-move-confirm').events.size, 0)
+    assert.equal(ui.field('#renewal-move-modal').events.size, 0)
+    // Closing a cancelled modal must not leave a stale approval handler.
+    ui.field('#renewal-move-confirm').trigger('click.renewalMove')
+    const next = ui.preview.confirmMove(12, [3])
+    ui.pending[1].resolve(response(0))
+    assert.equal(await next, true)
+  }
+})
+
+test('Expired cards continue loading authorized details and preserve the denial branch', () => {
+  const template = readFileSync(join(__dirname, '../../app/pages/items.js.php'), 'utf8')
+  const start = template.indexOf('                    if (parseInt(data.show_details) === 1) {')
+  const end = template.indexOf('                    // Prepare bottom buttons', start)
+  assert.ok(start >= 0 && end > start)
+  assert.equal(template.includes('item_details_expired_full'), false)
+  const block = template.slice(start, end).replace(/<\?php[\s\S]*?\?>/g, 'translated')
+  for (const showDetails of [0, 1]) {
+    let loaded = 0
+    let history = 0
+    const fields = new Map()
+    const $ = selector => {
+      if (!fields.has(selector)) fields.set(selector, {
+        hidden: false, addClass() { this.hidden = true; return this },
+        removeClass() { this.hidden = false; return this }, html() { return this },
+        append() { return this }, remove() { return this }, attr() { return this }
+      })
+      return fields.get(selector)
+    }
+    vm.runInNewContext(block, {
+      $, data: { show_details: showDetails, expired_item: 1, show_detail_option: 0 },
+      itemId: 1, actionType: 'show', _editPrivilegesPromise: null, _editPasswordPromise: null,
+      store: { get: () => ({ id: 1 }) }, showDetailsStep2: () => { loaded++ }, loadItemHistory: () => { history++ }
+    })
+    assert.equal(loaded, showDetails)
+    assert.equal(history, showDetails)
+    if (!showDetails) assert.equal($('#item_details_ok').hidden, true)
+  }
 })
 
 test('Rapid folder changes ignore both stale successful responses and stale errors', async () => {

@@ -104,6 +104,78 @@ class RenewalAuthorizationTest extends TestCase
         }
     }
 
+    /** A caller's item alias must be used for both the policy and LAPR relationships. */
+    public function testNonDefaultItemAliasPreservesLaprExclusions(): void
+    {
+        $settings = ConfigManager::$settings + ['lapr_enabled' => 1];
+        DB::query('INSERT INTO renewal_lapr_accounts (id, item_id, status) VALUES (1, 1, %s)', 'active');
+        DB::query('INSERT INTO renewal_lapr_endpoints (id, ssh_credential_source, status) VALUES (1, 4, %s)', 'disabled');
+        $period = (newRequest() . '\\renewalApplicablePeriodSql')($settings, 'credential.renewal_period', 'folder.renewal_period', 'credential');
+        $rows = DB::query('SELECT credential.id, ' . $period . ' AS days FROM renewal_items credential INNER JOIN renewal_nested_tree folder ON folder.id = credential.id_tree');
+        $days = array_column($rows, 'days', 'id');
+        self::assertSame(0, $days[1]);
+        self::assertSame(0, $days[4]);
+        self::assertSame(1, $days[2]);
+    }
+
+    /** The list already has the folder node, including when it contains no items. */
+    public function testFolderListMetadataUsesTheActivePolicyWithoutAnotherQuery(): void
+    {
+        $source = source('app/sources/items.queries.php');
+        $start = strpos($source, "            \$uniqueLoadData['folder_renewal_days'] =");
+        $end = strpos($source, '            // store last folder', $start);
+        self::assertNotFalse($start);
+        self::assertNotFalse($end);
+        $body = substr($source, $start, $end - $start);
+        self::assertStringNotContainsString('DB::', $body);
+        $metadata = eval('return static function ($arbo, $SETTINGS) {'
+            . '$inputData = ["id" => 11]; $uniqueLoadData = []; ' . $body . 'return $uniqueLoadData; };');
+        foreach ([0, 1] as $enabled) {
+            foreach ([0, 30] as $period) {
+                $arbo = [10 => (object) ['renewal_period' => 90], 11 => (object) ['renewal_period' => $period]];
+                self::assertSame($enabled ? $period : 0, $metadata($arbo, ['activate_expiration' => $enabled])['folder_renewal_days']);
+            }
+        }
+        self::assertSame(0, $metadata([], ['activate_expiration' => 1])['folder_renewal_days']);
+    }
+
+    /** Empty exclusions must not generate NOT IN (), and descendants must be removed when present. */
+    public function testReportPersonalFolderScopeHandlesEmptyAndPopulatedLists(): void
+    {
+        self::assertNotContains(6, array_column(runRotationReport(newRequest(), 'report_rotation_overdue')['rows'], 'item_id'));
+        DB::query('UPDATE renewal_nested_tree SET personal_folder = 0');
+        self::assertContains(6, array_column(runRotationReport(newRequest(), 'report_rotation_overdue')['rows'], 'item_id'));
+        self::assertCount(7, runRotationReport(newRequest(), 'report_rotation_sla')['rows']);
+        $source = source('app/sources/reports.queries.php');
+        $switch = strpos($source, 'switch ($post_type)');
+        self::assertNotFalse($switch);
+        self::assertStringNotContainsString('getPersonalFolderIdsWithDescendants()', substr($source, 0, $switch));
+    }
+
+    /** The real detail response keeps expiration metadata without revoking read-only access. */
+    public function testExpiredDetailsRemainAdvisoryForReadersAndEditors(): void
+    {
+        $source = source('app/sources/items.queries.php');
+        $start = strpos($source, "            \$arrData['renewal'] = renewalItemStatus(");
+        $end = strpos($source, "            \$arrData['label'] =", $start);
+        self::assertNotFalse($start);
+        self::assertNotFalse($end);
+        $body = substr($source, $start, $end - $start);
+        $namespace = newRequest();
+        $read = eval('namespace ' . $namespace . '; return static function ($user_is_allowed_to_modify, $SETTINGS) {'
+            . '$dataItem = ["id" => 1]; $arrData = []; ' . $body . 'return $arrData; };');
+        foreach ([0, 1] as $folderEnabled) {
+            ConfigManager::$settings['activate_expiration'] = $folderEnabled;
+            DB::query('UPDATE renewal_items SET renewal_period = %i WHERE id = 1', $folderEnabled ? 0 : 1);
+            foreach ([false, true] as $canEdit) {
+                $data = $read($canEdit, ConfigManager::$settings);
+                self::assertSame('expired', $data['renewal']['state']);
+                self::assertSame(1, $data['expired_item']);
+                self::assertSame(0, $data['show_detail_option']);
+            }
+        }
+    }
+
     /** Both LAPR roles are excluded, even paused/error links, without depending on the scheduler or policy. */
     public function testLaprRelationsAgreeAcrossPreviewDeadlinesAndGovernance(): void
     {

@@ -236,8 +236,8 @@ DB::query(
 $iTotal = DB::count();
 $rows = DB::query(
     "SELECT c.*, ci.data, i.item_key, "
-    . renewalApplicablePeriodSql($SETTINGS) . " AS renewal_period, "
-    . renewalBaseDateSql('c.timestamp') . " AS timestamp
+    . renewalApplicablePeriodSql($SETTINGS) . " AS effective_renewal_period, "
+    . renewalBaseDateSql('c.timestamp') . " AS renewal_base_date
     FROM " . prefixTable('cache') . " AS c
     LEFT JOIN " . prefixTable('categories_items') . " AS ci ON (ci.item_id = c.id)
     INNER JOIN " . prefixTable('items') . " AS i ON (i.id = c.id)
@@ -314,7 +314,7 @@ if (null === $request->query->get('type')) {
         }
 
         // Expiration
-        $renewalDue = renewalDueAt((int) $record['renewal_period'], (int) $record['timestamp']);
+        $renewalDue = renewalDueAt((int) $record['effective_renewal_period'], (int) $record['renewal_base_date']);
         $expired = $renewalDue !== null && $renewalDue <= time() ? 1 : 0;
 
         // Manage the restricted_to variable
@@ -467,7 +467,7 @@ if (null === $request->query->get('type')) {
         }
 
         $arr_data[$record['id']]['is_result_of_search'] = 1;
-        $renewalDue = renewalDueAt((int) $record['renewal_period'], (int) $record['timestamp']);
+        $renewalDue = renewalDueAt((int) $record['effective_renewal_period'], (int) $record['renewal_base_date']);
         $arr_data[$record['id']]['expired'] = $renewalDue !== null && $renewalDue <= time() ? 1 : 0;
         $arr_data[$record['id']]['expirationFlag'] = $renewalDue === null ? '' : ($arr_data[$record['id']]['expired'] === 1 ? 'red' : 'green');
 

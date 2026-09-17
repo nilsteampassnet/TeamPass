@@ -32,7 +32,7 @@ The item creation/edit form also displays the selected folder's policy and the a
 
 Drag-and-drop moves show the destination policy and deadline before confirmation when a renewal period applies. Bulk moves from Search display the same preview for each selected item. A move does not reset password age: a warning identifies items that would already be expired in the destination folder.
 
-**Renewal expiration does not delete items.** Consultation can be restricted until someone with edit permission renews the password. Automatic deletion by date or number of consultations is a separate feature.
+**Renewal expiration is advisory: it does not delete items or block reading.** Authorized users, including read-only users, can still open the item and read its password; badges indicate that the password should be renewed. Automatic deletion by date or number of consultations is a separate feature.
 
 ---
 
@@ -50,7 +50,7 @@ The results table includes:
 | **Expiration date** | The date on which the item's password expires |
 | **Folder** | Folder containing the item |
 
-Click an item's name to open its normal item page. Opening it does not grant additional permissions. Read-only users cannot change the policy or password, and expired items can restrict consultation until an editor renews them.
+Click an item's name to open its normal item page. Opening it does not grant additional permissions. Read-only users can read expired items but cannot change the policy or password.
 
 > 💡 Use the date picker to look ahead: setting the date to a month from now lets you plan renewals in advance rather than reacting to expired items.
 

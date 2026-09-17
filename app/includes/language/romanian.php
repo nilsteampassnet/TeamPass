@@ -246,7 +246,7 @@ return array(
     'renewal_all_deadlines' => 'Toate termenele',
     'renewal_notice_period' => 'În acest dosar, parola trebuie reînnoită la fiecare #days# zile.',
     'renewal_notice_none' => 'Acest dosar nu stabilește un termen pentru reînnoirea parolei.',
-    'renewal_notice_explanation' => 'Expirarea nu șterge elementul. Consultarea poate fi restricționată până când un utilizator autorizat reînnoiește parola.',
+    'renewal_notice_explanation' => 'Expirarea indică faptul că parola trebuie reînnoită. Nu șterge elementul și nu blochează consultarea acestuia de către utilizatorii autorizați.',
     'renewal_notice_due' => 'Termen de reînnoire: #date#.',
     'renewal_notice_estimate' => 'Dată estimată pentru crearea astăzi; perioada începe la salvarea elementului.',
     'renewal_notice_existing' => 'Se calculează de la ultima schimbare a parolei sau de la creare. Mutarea păstrează vechimea parolei; schimbarea parolei recalculează termenul la salvare.',

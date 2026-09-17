@@ -2,6 +2,7 @@
 function createRenewalPreview(config) {
   const messages = config.messages
   const requests = new Map()
+  let movePending = false
 
   /** Use a dated badge on cards and a compact status icon beside the list's security markers. */
   function badgeHtml(renewal, listMarker = false) {
@@ -66,6 +67,16 @@ function createRenewalPreview(config) {
     $(selector).empty().addClass('hidden')
   }
 
+  /** Render the policy delivered by the item list, ignoring obsolete folder loads. */
+  function beginFolder(selector) {
+    clear(selector)
+    const requestId = requests.get(selector)
+    return days => {
+      if (requestId !== requests.get(selector) || !(Number(days) > 0)) return
+      render($(selector), { days: Number(days), items: [] })
+    }
+  }
+
   function update(selector, folderId, itemIds = [], creation = false, itemPeriod = null, copy = false) {
     clear(selector)
     const requestId = requests.get(selector)
@@ -80,14 +91,38 @@ function createRenewalPreview(config) {
     })
   }
 
-  function confirmMove(folderId, itemIds) {
-    return fetchPreview(folderId, itemIds).then(data => {
-      return !data.items.some(item => item.days) || window.confirm(lines(data).join('\n') + '\n\n' + messages.move_confirm)
-    }, () => {
-      toastr.error(messages.unavailable)
-      return false
+  /** Wait for the application's modal to close before the caller performs the move. */
+  function confirmInModal(data) {
+    return new Promise(resolve => {
+      const modal = $('#renewal-move-modal')
+      const confirm = $('#renewal-move-confirm')
+      let accepted = false
+      render($('#renewal-move-details'), data)
+      confirm.one('click.renewalMove', () => {
+        accepted = true
+        modal.modal('hide')
+      })
+      modal.one('hidden.bs.modal', () => {
+        confirm.off('click.renewalMove')
+        resolve(accepted)
+      })
+      modal.modal('show')
     })
   }
 
-  return { update, clear, confirmMove, badgeHtml }
+  async function confirmMove(folderId, itemIds) {
+    if (movePending) return false
+    movePending = true
+    try {
+      const data = await fetchPreview(folderId, itemIds)
+      return !data.items.some(item => item.days) || await confirmInModal(data)
+    } catch (error) {
+      toastr.error(messages.unavailable)
+      return false
+    } finally {
+      movePending = false
+    }
+  }
+
+  return { update, clear, beginFolder, confirmMove, badgeHtml }
 }

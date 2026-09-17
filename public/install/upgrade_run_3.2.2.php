@@ -594,9 +594,17 @@ foreach ($licenceTrialDefaults as $key => $value) {
 mysqli_query($db_link, 'DROP TABLE IF EXISTS `_install`');
 
 // Individual item renewal policies (also replayed by Docker on patch upgrades).
-require_once __DIR__ . '/upgrade_run_3.2.2.5.php';
-if (upgradeItemRenewalPolicy() === false) {
+if (addColumnIfNotExist(prefixTable('items'), 'renewal_period', 'INT UNSIGNED NOT NULL DEFAULT 0') === false) {
     echo json_encode([['finish' => '1', 'error' => 'Error adding the item renewal period: ' . mysqli_error($db_link)]]);
+    mysqli_close($db_link);
+    exit();
+}
+
+// Index endpoint credential lookups, including on existing 3.2.2 installations.
+if (checkIndexExist(prefixTable('lapr_endpoints'), 'idx_ssh_credential_source',
+    'ADD INDEX `idx_ssh_credential_source` (`ssh_credential_source`)') === false
+) {
+    echo json_encode([['finish' => '1', 'error' => 'Error indexing LAPR credentials: ' . mysqli_error($db_link)]]);
     mysqli_close($db_link);
     exit();
 }

@@ -15,6 +15,21 @@ foreach (['scheduled', 'soon', 'expired', 'unknown'] as $key) {
     $renewalMessages['badge_' . $key] = $lang->get('renewal_badge_' . $key);
 }
 ?>
+<div class="modal fade" id="renewal-move-modal" tabindex="-1" role="dialog" aria-labelledby="renewal-move-title" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="renewal-move-title"><?php echo htmlspecialchars($renewalMessages['move_confirm'], ENT_QUOTES, 'UTF-8'); ?></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="<?php echo htmlspecialchars($lang->get('close'), ENT_QUOTES, 'UTF-8'); ?>"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body"><div id="renewal-move-details"></div></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal"><?php echo htmlspecialchars($lang->get('cancel'), ENT_QUOTES, 'UTF-8'); ?></button>
+                <button type="button" class="btn btn-primary" id="renewal-move-confirm"><?php echo htmlspecialchars($lang->get('perform'), ENT_QUOTES, 'UTF-8'); ?></button>
+            </div>
+        </div>
+    </div>
+</div>
 <script src="assets/js/renewal-preview.js?v=<?php echo filemtime(TEAMPASS_ROOT . '/public/assets/js/renewal-preview.js'); ?>"></script>
 <script>
     window.tpRenewal = createRenewalPreview(<?php echo json_encode([

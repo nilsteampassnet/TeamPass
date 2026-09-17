@@ -246,7 +246,7 @@ return array(
     'renewal_all_deadlines' => 'Alle frister',
     'renewal_notice_period' => 'I denne mappen må passordet fornyes hver #days#. dag.',
     'renewal_notice_none' => 'Denne mappen har ingen frist for passordfornyelse.',
-    'renewal_notice_explanation' => 'Utløp sletter ikke elementet. Innsyn kan begrenses til en autorisert bruker fornyer passordet.',
+    'renewal_notice_explanation' => 'Utløp angir at passordet bør fornyes. Elementet slettes ikke, og autoriserte brukere kan fortsatt lese det.',
     'renewal_notice_due' => 'Fornyes innen #date#.',
     'renewal_notice_estimate' => 'Anslått dato ved opprettelse i dag; perioden starter når elementet lagres.',
     'renewal_notice_existing' => 'Beregnes fra siste passordendring eller opprettelse. Flytting beholder passordets alder; en passordendring beregner fristen på nytt ved lagring.',

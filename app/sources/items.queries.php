@@ -3052,7 +3052,6 @@ switch ($inputData['type']) {
         // Init post variables
         $inputData['id'] = filter_var(($dataReceived['id']), FILTER_SANITIZE_NUMBER_INT);
         $inputData['folderId'] = filter_var(($dataReceived['folder_id']), FILTER_SANITIZE_NUMBER_INT);
-        $post_expired_item = filter_var(($dataReceived['expired_item']), FILTER_SANITIZE_NUMBER_INT);
         $post_restricted = filter_var(($dataReceived['restricted']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $post_folder_access_level = isset($dataReceived['folder_access_level']) === true ?
             filter_var(($dataReceived['folder_access_level']), FILTER_SANITIZE_FULL_SPECIAL_CHARS)
@@ -3406,15 +3405,9 @@ switch ($inputData['type']) {
             }
             // Prepare DIalogBox data
             $arrData['renewal'] = renewalItemStatus((int) $dataItem['id'], $SETTINGS);
-            $post_expired_item = $arrData['renewal']['state'] === 'expired' ? 1 : 0;
-            $arrData['expired_item'] = $post_expired_item;
-            if ((int) $post_expired_item === 0) {
-                $arrData['show_detail_option'] = 0;
-            } elseif ($user_is_allowed_to_modify === true) {
-                $arrData['show_detail_option'] = 1;
-            } else {
-                $arrData['show_detail_option'] = 2;
-            }
+            $arrData['expired_item'] = $arrData['renewal']['state'] === 'expired' ? 1 : 0;
+            // Renewal is advisory; reading remains governed by the ordinary item permissions.
+            $arrData['show_detail_option'] = 0;
 
             $arrData['label'] = $dataItem['label'] === '' ? '' : $dataItem['label'];
             $arrData['renewal_period'] = (int) ($dataItem['renewal_period'] ?? 0);
@@ -4748,6 +4741,11 @@ switch ($inputData['type']) {
         // to do only on 1st iteration
         if ((int) $start === 0) {
             $uniqueLoadData['path'] = $arr_arbo;
+            $uniqueLoadData['folder_renewal_days'] = renewalEffectiveDays(
+                0,
+                (int) ($arbo[(int) $inputData['id']]->renewal_period ?? 0),
+                (int) ($SETTINGS['activate_expiration'] ?? 0) === 1
+            );
 
             // store last folder accessed in cookie
             $arr_cookie_options = array (

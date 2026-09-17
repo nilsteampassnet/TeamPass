@@ -246,7 +246,7 @@ return array(
     'renewal_all_deadlines' => 'Wszystkie terminy',
     'renewal_notice_period' => 'W tym folderze hasło należy odnawiać co #days# dni.',
     'renewal_notice_none' => 'W tym folderze nie obowiązuje termin odnowienia hasła.',
-    'renewal_notice_explanation' => 'Wygaśnięcie nie usuwa wpisu. Dostęp może być ograniczony, dopóki uprawniony użytkownik nie odnowi hasła.',
+    'renewal_notice_explanation' => 'Wygaśnięcie oznacza, że hasło należy odnowić. Nie usuwa elementu ani nie blokuje jego odczytu uprawnionym użytkownikom.',
     'renewal_notice_due' => 'Termin odnowienia: #date#.',
     'renewal_notice_estimate' => 'Szacowana data przy utworzeniu dzisiaj; okres rozpoczyna się po zapisaniu wpisu.',
     'renewal_notice_existing' => 'Obliczane od ostatniej zmiany hasła lub utworzenia wpisu. Przeniesienie zachowuje wiek hasła; zmiana hasła przelicza termin przy zapisie.',

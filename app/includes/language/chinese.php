@@ -246,7 +246,7 @@ return array(
     'renewal_all_deadlines' => '所有到期日期',
     'renewal_notice_period' => '此文件夹中的密码必须每 #days# 天更新一次。',
     'renewal_notice_none' => '此文件夹未设置密码更新期限。',
-    'renewal_notice_explanation' => '过期不会删除项目。在获授权的用户更新密码之前，查看权限可能会受到限制。',
+    'renewal_notice_explanation' => '到期表示应更新密码。到期不会删除条目，也不会阻止有权限的用户查看条目。',
     'renewal_notice_due' => '更新截止日期：#date#。',
     'renewal_notice_estimate' => '按今天创建估算的日期；期限从保存项目时开始计算。',
     'renewal_notice_existing' => '从上次密码修改或创建时间起算。移动项目会保留密码的使用时长；修改密码后，将在保存时重新计算到期日期。',

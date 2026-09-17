@@ -246,7 +246,7 @@ return array(
     'renewal_all_deadlines' => 'Kõik tähtajad',
     'renewal_notice_period' => 'Selles kaustas tuleb parooli uuendada iga #days# päeva järel.',
     'renewal_notice_none' => 'Selles kaustas ei kehti parooli uuendamise tähtaega.',
-    'renewal_notice_explanation' => 'Aegumine ei kustuta kirjet. Vaatamist võidakse piirata, kuni volitatud kasutaja parooli uuendab.',
+    'renewal_notice_explanation' => 'Aegumine näitab, et parool tuleb uuendada. See ei kustuta kirjet ega takista volitatud kasutajatel selle vaatamist.',
     'renewal_notice_due' => 'Uuendamise tähtaeg: #date#.',
     'renewal_notice_estimate' => 'Hinnanguline kuupäev tänase loomise korral; periood algab kirje salvestamisel.',
     'renewal_notice_existing' => 'Arvutatakse viimasest paroolimuudatusest või loomisest. Teisaldamine säilitab parooli vanuse; parooli muutmisel arvutatakse tähtaeg salvestamisel uuesti.',

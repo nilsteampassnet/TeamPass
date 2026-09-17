@@ -246,7 +246,7 @@ return array(
     'renewal_all_deadlines' => 'Alla förfallodatum',
     'renewal_notice_period' => 'I den här mappen måste lösenordet förnyas var #days#:e dag.',
     'renewal_notice_none' => 'Den här mappen har ingen tidsgräns för lösenordsförnyelse.',
-    'renewal_notice_explanation' => 'En passerad tidsgräns raderar inte posten. Åtkomsten kan begränsas tills en behörig användare förnyar lösenordet.',
+    'renewal_notice_explanation' => 'Utgången giltighetstid anger att lösenordet bör förnyas. Objektet tas inte bort och behöriga användare kan fortfarande läsa det.',
     'renewal_notice_due' => 'Förnya senast #date#.',
     'renewal_notice_estimate' => 'Beräknat datum vid skapande idag; perioden börjar när posten sparas.',
     'renewal_notice_existing' => 'Baseras på senaste lösenordsändringen eller skapandet. Flyttning behåller lösenordets ålder; en lösenordsändring räknar om förfallodatumet när posten sparas.',

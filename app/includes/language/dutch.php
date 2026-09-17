@@ -246,7 +246,7 @@ return array(
     'renewal_all_deadlines' => 'Alle vervaldatums',
     'renewal_notice_period' => 'In deze map moet het wachtwoord elke #days# dagen worden vernieuwd.',
     'renewal_notice_none' => 'In deze map geldt geen vervaldatum voor wachtwoordvernieuwing.',
-    'renewal_notice_explanation' => 'Verlopen verwijdert het item niet. De toegang kan beperkt zijn totdat een bevoegde gebruiker het wachtwoord vernieuwt.',
+    'renewal_notice_explanation' => 'Het verlopen geeft aan dat het wachtwoord moet worden vernieuwd. Het item wordt niet verwijderd en bevoegde gebruikers kunnen het blijven bekijken.',
     'renewal_notice_due' => 'Vernieuwen uiterlijk op #date#.',
     'renewal_notice_estimate' => 'Geschatte datum bij aanmaak vandaag; de termijn begint wanneer het item wordt opgeslagen.',
     'renewal_notice_existing' => 'Gebaseerd op de laatste wachtwoordwijziging of aanmaak. Verplaatsen behoudt de ouderdom van het wachtwoord; een wachtwoordwijziging berekent de vervaldatum opnieuw bij het opslaan.',

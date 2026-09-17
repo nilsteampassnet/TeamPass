@@ -246,7 +246,7 @@ return array(
     'renewal_all_deadlines' => 'Todos los vencimientos',
     'renewal_notice_period' => 'En esta carpeta se debe renovar la contraseña cada #days# días.',
     'renewal_notice_none' => 'Esta carpeta no establece un vencimiento para renovar la contraseña.',
-    'renewal_notice_explanation' => 'La caducidad no elimina el elemento. La consulta puede restringirse hasta que un usuario autorizado renueve la contraseña.',
+    'renewal_notice_explanation' => 'La caducidad indica que se debe renovar la contraseña. No elimina el elemento ni impide que los usuarios autorizados lo consulten.',
     'renewal_notice_due' => 'Renovar antes del #date#.',
     'renewal_notice_estimate' => 'Fecha estimada para una creación hoy; el plazo comienza al guardar el elemento.',
     'renewal_notice_existing' => 'Se calcula desde el último cambio de contraseña o la creación. Mover el elemento conserva la antigüedad de la contraseña; cambiarla recalcula el vencimiento al guardar.',

@@ -246,7 +246,7 @@ return array(
     'renewal_delay' => 'Délais avant renouvellement',
     'renewal_notice_period' => 'Renouvellement du mot de passe requis tous les #days# jours dans ce dossier.',
     'renewal_notice_none' => 'Aucune échéance de renouvellement du mot de passe dans ce dossier.',
-    'renewal_notice_explanation' => 'L’expiration ne supprime pas l’élément. Sa consultation peut être restreinte jusqu’au renouvellement du mot de passe par un utilisateur autorisé.',
+    'renewal_notice_explanation' => 'L’expiration indique que le mot de passe doit être renouvelé. Elle ne supprime pas l’élément et ne bloque pas sa consultation par les utilisateurs autorisés.',
     'renewal_notice_due' => 'À renouveler avant le #date#.',
     'renewal_notice_estimate' => 'Date indicative pour une création aujourd’hui ; le délai commence à l’enregistrement de l’élément.',
     'renewal_notice_existing' => 'Calculé depuis le dernier changement du mot de passe ou la création. Un déplacement conserve cet âge ; un changement du mot de passe recalcule l’échéance à l’enregistrement.',

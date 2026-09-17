@@ -185,15 +185,13 @@ function runRotationReport(string $namespace, string $type): array
         public function get(string $key): string { return $key; }
     };
     $source = source('app/sources/reports.queries.php');
-    $start = strpos($source, '$folderRenewalEnabled =');
-    $setup = substr($source, $start, strpos($source, '// Do checks', $start) - $start);
     $body = substr($source, strpos($source, "case 'report_rotation_overdue':"));
     $imports = 'namespace ' . $namespace . '; use ' . __NAMESPACE__ . '\\DB;'
         . ' use function ' . __NAMESPACE__ . '\\prefixTable;'
         . ' use function ' . __NAMESPACE__ . '\\prepareExchangedData;';
     ob_start();
     try {
-        eval($imports . '(static function () use ($SETTINGS, $lang, $type) {' . $setup . 'switch ($type) {' . $body . '})();');
+        eval($imports . '(static function () use ($SETTINGS, $lang, $type) {' . 'switch ($type) {' . $body . '})();');
         return json_decode(ob_get_contents(), true, 512, JSON_THROW_ON_ERROR);
     } finally {
         ob_end_clean();

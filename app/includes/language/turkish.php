@@ -246,7 +246,7 @@ return array(
     'renewal_all_deadlines' => 'Tüm son tarihler',
     'renewal_notice_period' => 'Bu klasörde parolanın #days# günde bir yenilenmesi gerekir.',
     'renewal_notice_none' => 'Bu klasörde parola yenileme için bir son tarih yoktur.',
-    'renewal_notice_explanation' => 'Sürenin dolması öğeyi silmez. Yetkili bir kullanıcı parolayı yenileyene kadar görüntüleme kısıtlanabilir.',
+    'renewal_notice_explanation' => 'Sürenin dolması, parolanın yenilenmesi gerektiğini belirtir. Öğeyi silmez veya yetkili kullanıcıların görüntülemesini engellemez.',
     'renewal_notice_due' => 'Yenileme için son tarih: #date#.',
     'renewal_notice_estimate' => 'Bugün oluşturulması durumunda tahmini tarih; süre, öğe kaydedildiğinde başlar.',
     'renewal_notice_existing' => 'Son parola değişikliğinden veya oluşturulma tarihinden hesaplanır. Taşıma parolanın yaşını korur; parola değişikliği, kaydetme sırasında son tarihi yeniden hesaplar.',

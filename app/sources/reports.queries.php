@@ -55,10 +55,6 @@ $lang = new Language($session->get('user-language') ?? 'english');
 // Load config
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
-$folderRenewalEnabled = (int) ($SETTINGS['activate_expiration'] ?? 0) === 1;
-$effectivePeriodSql = renewalApplicablePeriodSql($SETTINGS);
-$renewalPersonalFolders = getPersonalFolderIdsWithDescendants();
-$renewalSharedFoldersSql = $renewalPersonalFolders === [] ? '' : ' AND n.id NOT IN (' . implode(',', array_map('intval', $renewalPersonalFolders)) . ')';
 
 // Do checks
 $checkUserAccess = new PerformChecks(
@@ -230,6 +226,11 @@ switch ($post_type) {
      * so they are read from the item_health snapshot and dated accordingly.
      */
     case 'report_posture_summary':
+        $effectivePeriodSql = renewalApplicablePeriodSql($SETTINGS);
+        $renewalPersonalFolders = getPersonalFolderIdsWithDescendants();
+        $renewalSharedFoldersSql = $renewalPersonalFolders === [] ? '' : ' AND n.id NOT IN %li';
+        $renewalSharedFolderArgs = $renewalPersonalFolders === [] ? [] : [$renewalPersonalFolders];
+
         $nowTs = time();
         $passwordHealthSql = securityPasswordHealthSql();
         $oversharedThreshold = (int) ($SETTINGS['security_dashboard_overshared_threshold'] ?? 10);
@@ -267,7 +268,8 @@ switch ($post_type) {
             WHERE i.inactif = 0 AND i.deleted_at IS NULL AND i.perso = 0 AND n.personal_folder = 0' . $renewalSharedFoldersSql,
             'at_creation',
             'at_modification',
-            'at_pw%'
+            'at_pw%',
+            ...$renewalSharedFolderArgs
         );
 
         // Scan-bound flags (need a decryption context) come from the snapshot.
@@ -443,6 +445,12 @@ switch ($post_type) {
             break;
         }
 
+        $folderRenewalEnabled = (int) ($SETTINGS['activate_expiration'] ?? 0) === 1;
+        $effectivePeriodSql = renewalApplicablePeriodSql($SETTINGS);
+        $renewalPersonalFolders = getPersonalFolderIdsWithDescendants();
+        $renewalSharedFoldersSql = $renewalPersonalFolders === [] ? '' : ' AND n.id NOT IN %li';
+        $renewalSharedFolderArgs = $renewalPersonalFolders === [] ? [] : [$renewalPersonalFolders];
+
         $nowTs = time();
         $dueSoonDays = RENEWAL_DUE_SOON_DAYS;
         $lastRelevantSql = renewalBaseDateSql();
@@ -468,7 +476,8 @@ switch ($post_type) {
             AND (' . $lastRelevantSql . ' + ' . $effectivePeriodSql . ' * ' . (int) TP_ONE_DAY_SECONDS . ') <= ' . ($nowTs + $dueSoonDays * (int) TP_ONE_DAY_SECONDS),
             'at_creation',
             'at_modification',
-            'at_pw%'
+            'at_pw%',
+            ...$renewalSharedFolderArgs
         );
 
         $rows = rotationBuildOverdueRows($records, $nowTs, $dueSoonDays);
@@ -504,6 +513,12 @@ switch ($post_type) {
             break;
         }
 
+        $folderRenewalEnabled = (int) ($SETTINGS['activate_expiration'] ?? 0) === 1;
+        $effectivePeriodSql = renewalApplicablePeriodSql($SETTINGS);
+        $renewalPersonalFolders = getPersonalFolderIdsWithDescendants();
+        $renewalSharedFoldersSql = $renewalPersonalFolders === [] ? '' : ' AND n.id NOT IN %li';
+        $renewalSharedFolderArgs = $renewalPersonalFolders === [] ? [] : [$renewalPersonalFolders];
+
         $nowTs = time();
         $lastRelevantSql = renewalBaseDateSql();
 
@@ -530,7 +545,8 @@ switch ($post_type) {
             GROUP BY n.id, n.title, n.renewal_period',
             'at_creation',
             'at_modification',
-            'at_pw%'
+            'at_pw%',
+            ...$renewalSharedFolderArgs
         );
 
         $coverage = rotationSlaCoverage($folderRecords);

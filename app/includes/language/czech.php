@@ -246,7 +246,7 @@ return array(
     'renewal_all_deadlines' => 'Všechny termíny',
     'renewal_notice_period' => 'V této složce je nutné obnovovat heslo každých #days# dní.',
     'renewal_notice_none' => 'V této složce není stanoven termín obnovy hesla.',
-    'renewal_notice_explanation' => 'Vypršení platnosti položku nesmaže. Zobrazení může být omezeno, dokud oprávněný uživatel heslo neobnoví.',
+    'renewal_notice_explanation' => 'Vypršení platnosti znamená, že je třeba obnovit heslo. Položka se nesmaže a oprávnění uživatelé ji mohou nadále zobrazovat.',
     'renewal_notice_due' => 'Termín obnovy: #date#.',
     'renewal_notice_estimate' => 'Odhadované datum při vytvoření dnes; lhůta začíná uložením položky.',
     'renewal_notice_existing' => 'Počítá se od poslední změny hesla nebo vytvoření. Přesunutí zachová stáří hesla; změna hesla při uložení přepočítá termín.',

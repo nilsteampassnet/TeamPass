@@ -246,7 +246,7 @@ return array(
     'renewal_all_deadlines' => 'すべての期限',
     'renewal_notice_period' => 'このフォルダーでは #days# 日ごとにパスワードを更新する必要があります。',
     'renewal_notice_none' => 'このフォルダーにはパスワード更新の期限が設定されていません。',
-    'renewal_notice_explanation' => '期限切れになってもアイテムは削除されません。権限のあるユーザーがパスワードを更新するまで、閲覧が制限される場合があります。',
+    'renewal_notice_explanation' => '有効期限切れは、パスワードを更新する必要があることを示します。アイテムが削除されたり、権限のあるユーザーが閲覧できなくなったりすることはありません。',
     'renewal_notice_due' => '更新期限：#date#。',
     'renewal_notice_estimate' => '今日作成する場合の推定日です。期間はアイテムの保存時から始まります。',
     'renewal_notice_existing' => '最後のパスワード変更日または作成日を基に計算します。移動してもパスワードの経過日数は変わりません。パスワードを変更すると保存時に期限を再計算します。',

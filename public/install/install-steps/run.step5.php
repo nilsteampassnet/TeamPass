@@ -1912,6 +1912,7 @@ class DatabaseInstaller
             `updated_at` DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (`id`),
             INDEX `idx_hostname` (`hostname`),
+            INDEX `idx_ssh_credential_source` (`ssh_credential_source`),
             INDEX `idx_status` (`status`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );

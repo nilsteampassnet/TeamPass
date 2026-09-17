@@ -2091,11 +2091,11 @@ function renewalEligibleItemSql(array $settings, string $alias = 'i'): string
 }
 
 /** Effective period for ordinary renewal; LAPR-linked items have no ordinary deadline. */
-function renewalApplicablePeriodSql(array $settings, string $item = 'i.renewal_period', string $folder = 'n.renewal_period'): string
+function renewalApplicablePeriodSql(array $settings, string $item = 'i.renewal_period', string $folder = 'n.renewal_period', string $itemAlias = 'i'): string
 {
     $period = renewalPeriodSql((int) ($settings['activate_expiration'] ?? 0) === 1, $item, $folder);
     return (int) ($settings['lapr_enabled'] ?? 0) === 1
-        ? '(CASE WHEN ' . renewalEligibleItemSql($settings) . ' THEN ' . $period . ' ELSE 0 END)'
+        ? '(CASE WHEN ' . renewalEligibleItemSql($settings, $itemAlias) . ' THEN ' . $period . ' ELSE 0 END)'
         : $period;
 }
 

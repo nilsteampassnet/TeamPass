@@ -1,7 +1,6 @@
 <?php
 
 declare(strict_types=1);
-require_once __DIR__ . '/renewal_logic.php';
 
 /**
  * Teampass - a collaborative passwords manager.
@@ -38,6 +37,8 @@ require_once __DIR__ . '/renewal_logic.php';
  *
  * The ACL-bound queries live in search.queries.php.
  */
+
+require_once __DIR__ . '/renewal_logic.php';
 
 // Fetch one extra row to tell the UI that more folder matches exist.
 const SEARCH_FOLDER_RESULTS_LIMIT = 20;

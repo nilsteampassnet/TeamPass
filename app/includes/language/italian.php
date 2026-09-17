@@ -246,7 +246,7 @@ return array(
     'renewal_all_deadlines' => 'Tutte le scadenze',
     'renewal_notice_period' => 'In questa cartella la password deve essere rinnovata ogni #days# giorni.',
     'renewal_notice_none' => 'In questa cartella non è prevista una scadenza per il rinnovo della password.',
-    'renewal_notice_explanation' => 'La scadenza non elimina l’elemento. La consultazione può essere limitata finché un utente autorizzato non rinnova la password.',
+    'renewal_notice_explanation' => 'La scadenza indica che la password deve essere rinnovata. Non elimina l’elemento né ne impedisce la consultazione agli utenti autorizzati.',
     'renewal_notice_due' => 'Rinnovo entro il #date#.',
     'renewal_notice_estimate' => 'Data stimata per una creazione odierna; il periodo inizia al salvataggio dell’elemento.',
     'renewal_notice_existing' => 'Calcolato dall’ultima modifica della password o dalla creazione. Lo spostamento conserva l’età della password; una modifica della password ricalcola la scadenza al salvataggio.',

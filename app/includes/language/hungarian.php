@@ -246,7 +246,7 @@ return array(
     'renewal_all_deadlines' => 'Összes határidő',
     'renewal_notice_period' => 'Ebben a mappában a jelszót #days# naponta meg kell újítani.',
     'renewal_notice_none' => 'Ebben a mappában nincs jelszómegújítási határidő.',
-    'renewal_notice_explanation' => 'A lejárat nem törli az elemet. A megtekintés korlátozható, amíg egy jogosult felhasználó meg nem újítja a jelszót.',
+    'renewal_notice_explanation' => 'A lejárat azt jelzi, hogy a jelszót meg kell újítani. Nem törli az elemet, és nem akadályozza a jogosult felhasználókat annak megtekintésében.',
     'renewal_notice_due' => 'Megújítási határidő: #date#.',
     'renewal_notice_estimate' => 'Mai létrehozásra becsült dátum; az időszak az elem mentésekor kezdődik.',
     'renewal_notice_existing' => 'Az utolsó jelszómódosítástól vagy a létrehozástól számítva. Az áthelyezés megőrzi a jelszó korát; a jelszó módosításakor a mentés újraszámítja a határidőt.',

@@ -5559,9 +5559,7 @@ require __DIR__ . '/renewal.preview.js.php';
             }
         }
 
-        if (Number(start) === 0) {
-            tpRenewal.update('#folder-renewal-notice', groupe_id);
-        }
+        const showFolderRenewal = Number(start) === 0 ? tpRenewal.beginFolder('#folder-renewal-notice') : null;
 
         // Hide any info
         $('#info_teampass_items_list').addClass('hidden');
@@ -5638,6 +5636,8 @@ require __DIR__ . '/renewal.preview.js.php';
                     key: '<?php echo $session->get('key'); ?>',
                 },
                 function(retData) {
+                    // Ignore responses for a folder that the user has already left.
+                    if (Number(store.get('teampassApplication').selectedFolder) !== Number(groupe_id)) return;
                     //get data
                     data = decodeQueryReturn(retData, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'do_items_list_in_folder');
 
@@ -5670,6 +5670,9 @@ require __DIR__ . '/renewal.preview.js.php';
                     const call_to_be_continued = !!data.list_to_be_continued;
                     const isNotAuthorized = data.error === 'not_authorized';
                     const hasUniqueLoadData = typeof data.uniqueLoadData === 'string' && data.uniqueLoadData !== '';
+                    if (Number(start) === 0 && !isNotAuthorized && hasUniqueLoadData) {
+                        showFolderRenewal($.parseJSON(data.uniqueLoadData).folder_renewal_days);
+                    }
 
                     // Hide New button if restricted folder or folder is not accessible
                     $('#btn-new-item').toggleClass('hidden', data.access_level === 10 || isNotAuthorized === true);
@@ -6798,24 +6801,6 @@ require __DIR__ . '/renewal.preview.js.php';
                     const renewalBadge = tpRenewal.badgeHtml(data.renewal);
                     $('#card-item-renewal-badge').html(renewalBadge).toggleClass('hidden', renewalBadge === '');
                     $('#card-item-expired').toggleClass('hidden', itemExpired !== 1);
-                    // SHould we show?
-                    if (parseInt(data.show_detail_option) === 1 || itemExpired === 1) {
-                        // SHow expiration alert
-                        $('#card-item-expired').removeClass('hidden');
-                    } else if (parseInt(data.show_detail_option) === 2) {
-                        // Don't show anything
-                        toastr.remove();
-                        toastr.error(
-                            '<?php echo $lang->get('not_allowed_to_see_pw'); ?>',
-                            '<?php echo $lang->get('warning'); ?>', {
-                                timeOut: 5000,
-                                progressBar: true
-                            }
-                        );
-
-                        return false;
-                    }
-
                     // Show header info.
                     // For edition, clear the values first and let the backend reload the
                     // effective folder rules to avoid displaying stale values coming from
@@ -7498,19 +7483,13 @@ require __DIR__ . '/renewal.preview.js.php';
                         $('#form-item-anyoneCanModify').iCheck('uncheck');
                     }
 
-                    if (parseInt(data.show_details) === 1 && parseInt(data.show_detail_option) !== 2) {
+                    if (parseInt(data.show_details) === 1) {
                         // continue loading data — pass pre-fetched promises to avoid scope issues
                         showDetailsStep2(itemId, actionType, _editPrivilegesPromise, _editPasswordPromise);
                         // OPT-A: load history in parallel with showDetailsStep2 (only needs itemId)
                         if (actionType === 'show') {
                             loadItemHistory(store.get('teampassItem').id);
                         }
-                    } else if (parseInt(data.show_details) === 1 && parseInt(data.show_detail_option) === 2) {
-                        $('#item_details_nok').addClass('hidden');
-                        $('#item_details_ok').addClass('hidden');
-                        $('#item_details_expired_full').show();
-                        $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item, #menu_button_add_fav, #menu_button_del_fav, #menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link').attr('disabled', 'disabled');
-                        $('#div_loading').addClass('hidden');
                     } else {
                         //Dont show details
                         $('#item_details_nok').removeClass('hidden');
@@ -7523,7 +7502,6 @@ require __DIR__ . '/renewal.preview.js.php';
                         // Protect
                         $('#item_details_ok').addClass('hidden');
                         $('#item_details_expired').addClass('hidden');
-                        $('#item_details_expired_full').addClass('hidden');
                         $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item, #menu_button_add_fav, #menu_button_del_fav, #menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link').attr('disabled', 'disabled');
                         $('#div_loading').addClass('hidden');
                     }
