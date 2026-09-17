@@ -147,7 +147,8 @@ if (function_exists('securityPostureResolveAuthorizedFolders') === false) {
      *
      * @param int|string|null $complexityLevel         Stored zxcvbn-derived complexity level.
      * @param int|null        $passwordLength          Stored (or live) password length.
-     * @param bool            $hasStoredPassword       Whether the item holds password ciphertext.
+     * @param bool            $hasStoredPassword       Whether the item holds password ciphertext. False for
+     *                                                 a passkey item's encrypted empty password.
      * @param int             $weakComplexityThreshold Complexity below which a password is weak.
      * @param int             $minPasswordLength       Length below which a password is weak.
      *

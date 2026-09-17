@@ -1305,9 +1305,12 @@ function securityPasswordHealthSql(string $itemAlias = 'i'): array
         ];
     }
 
-    // Mirrors securityPasswordHealthClassify() state by state, in the same order.
-    $emptySql = '(COALESCE(' . $itemAlias . '.pw, \'\') = \'\''
-        . ' AND (' . $itemAlias . '.pw_len IS NULL OR CAST(' . $itemAlias . '.pw_len AS SIGNED) = 0))';
+    // Mirrors securityPasswordHealthClassify() state by state, in the same order. An item holding
+    // a passkey stores its empty password encrypted: without a length it is empty, not unassessed.
+    $emptySql = '((' . $itemAlias . '.pw_len IS NULL OR CAST(' . $itemAlias . '.pw_len AS SIGNED) = 0)'
+        . ' AND (COALESCE(' . $itemAlias . '.pw, \'\') = \'\''
+        . ' OR EXISTS (SELECT 1 FROM ' . prefixTable('webauthn_credentials') . ' AS health_passkey'
+        . ' WHERE health_passkey.item_id = ' . $itemAlias . '.id)))';
 
     $assessedSql = '(NOT ' . $emptySql
         . ' AND ' . $itemAlias . '.complexity_level IS NOT NULL'

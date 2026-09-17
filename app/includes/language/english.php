@@ -3539,5 +3539,6 @@ return array(
     'webauthn_delete' => 'Delete the passkey',
     'webauthn_delete_confirm' => 'TeamPass will no longer be able to sign in to <b>#site#</b> with this passkey, and the site will keep it registered. Make sure the account has another way to sign in, then remove the passkey from the site as well.',
     'webauthn_list_marker' => 'Holds a passkey',
+    'webauthn_password_replaced' => 'Passkey — see below',
     'webauthn_copy_not_copied' => 'This item holds passkeys. They are not copied: a passkey belongs to a single item.',
     );

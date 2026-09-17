@@ -3433,10 +3433,19 @@ switch ($inputData['type']) {
                 $assessedPasswordLength = $pwLength;
             }
 
+            // A passkey item stores an empty password, encrypted: the card says so instead of
+            // reporting a missing password, and the posture counts it as empty, like its SQL.
+            $arrData['pw_replaced_by_passkey'] = $pwLength === 0
+                && (int) ($dataItem['pw_len'] ?? 0) === 0
+                && (int) DB::queryFirstField(
+                    'SELECT COUNT(*) FROM ' . prefixTable('webauthn_credentials') . ' WHERE item_id = %i',
+                    (int) $inputData['id']
+                ) > 0;
+
             $passwordHealthStatus = securityPasswordHealthStatus(
                 $complexityLevel,
                 $assessedPasswordLength,
-                (string) $dataItem['pw'] !== ''
+                (string) $dataItem['pw'] !== '' && $arrData['pw_replaced_by_passkey'] === false
             );
             if ($passwordHealthStatus === 'empty') {
                 $arrData['pw_health'] = null;

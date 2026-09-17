@@ -3527,6 +3527,7 @@ return array(
     'webauthn_delete' => 'Supprimer la clé d’accès',
     'webauthn_delete_confirm' => 'TeamPass ne pourra plus se connecter à <b>#site#</b> avec cette clé d’accès, et le site la conservera enregistrée. Vérifiez que le compte dispose d’un autre moyen de connexion, puis supprimez aussi la clé d’accès sur le site.',
     'webauthn_list_marker' => 'Contient une clé d’accès',
+    'webauthn_password_replaced' => 'Clé d’accès — voir plus bas',
     'webauthn_copy_not_copied' => 'Cet élément contient des clés d’accès. Elles ne sont pas copiées : une clé d’accès n’appartient qu’à un seul élément.',
 
 );

@@ -7359,6 +7359,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     }
                     $('#pwd_empty_igloo').remove();
 
+                    // A passkey item has no password to reveal: its line points to the passkeys instead
+                    $('#card-item-pwd-toggle-button').toggleClass('hidden', data.pw_replaced_by_passkey === true);
+
                     // Prepare clipboard - COPY PASSWORD
                     if (data.pw_length > 0 && store.get('teampassItem').readyToUse === true) {
                         // Delete existing clipboard
@@ -7433,8 +7436,17 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         if (data.pw_decrypt_info === 'error_no_sharekey_yet') {
                             $('#card-item-label').after('<i class="fa-solid fa-bell fa-shake fa-lg infotip ml-4 text-warning delete-after-usage" title="<?php echo $lang->get('sharekey_not_ready'); ?>"></i>');
                         }
-                        $('#card-item-pwd-show-button').before('<i class="fa-solid fa-igloo infotip ml-2" id="pwd_empty_igloo" style="float:right" title="<?php echo $lang->get('password_is_empty'); ?>"></i>');
-                        $('#card-item-pwd').after('<i class="fa-solid fa-ban text-teal ml-3 delete-after-usage"></i>');
+                        if (data.pw_replaced_by_passkey === true) {
+                            $('#card-item-pwd').after(
+                                '<a href="#" class="float-right text-info tp-item-pwd-passkey delete-after-usage">' +
+                                '<i class="fa-solid fa-fingerprint mr-1"></i>' +
+                                htmlEncode(<?php echo json_encode($lang->get('webauthn_password_replaced'), JSON_UNESCAPED_UNICODE); ?>) +
+                                '</a>'
+                            );
+                        } else {
+                            $('#card-item-pwd-show-button').before('<i class="fa-solid fa-igloo infotip ml-2" id="pwd_empty_igloo" style="float:right" title="<?php echo $lang->get('password_is_empty'); ?>"></i>');
+                            $('#card-item-pwd').after('<i class="fa-solid fa-ban text-teal ml-3 delete-after-usage"></i>');
+                        }
                     }
 
                     // Prepare clipboard - COPY EMAIL
@@ -8045,6 +8057,13 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         }
     });
 
+    // Password line of a passkey item: open the passkeys card it points to
+    $(document).on('click', '.tp-item-pwd-passkey', function(event) {
+        event.preventDefault();
+        $('#card-item-webauthn').collapse('show');
+        document.getElementById('item-card-webauthn').scrollIntoView({behavior: 'smooth', block: 'center'});
+    });
+
     // When click on the passkey delete button
     $(document).on('click', '.delete-webauthn-credential', function() {
         const credentialId = parseInt($(this).data('credential-id'), 10);
@@ -8092,6 +8111,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     $('#card-item-webauthn-list .delete-webauthn-credential[data-credential-id="' + credentialId + '"]').closest('li').remove();
                     $('#card-item-webauthn-badge').text(remaining);
                     $('#item-card-webauthn, #form-item-copy-webauthn-note, #card-item-webauthn-title-badge').toggleClass('hidden', remaining === 0);
+                    if (remaining === 0) {
+                        $('.tp-item-pwd-passkey').remove();
+                    }
 
                     // Refresh the history card, which now records the deletion
                     loadItemHistory(store.get('teampassItem').id);
