@@ -583,8 +583,9 @@ class ItemModel
 
             updateCacheTable('add_value', $newID, $userId);
 
-            // Notify WebSocket subscribers so other users viewing this folder see the new item
-            emitItemEvent('created', $newID, $folderId, $label, $username, $userId);
+            // Notify WebSocket subscribers viewing this folder. The author is not excluded: an API
+            // client is never the author's web session, which would otherwise not see the item.
+            emitItemEvent('created', $newID, $folderId, $label, $username, null);
 
             $revisionMetadata = getItemRevisionMetadata((int) $newID);
             if ($revisionMetadata['revision'] <= 0 || $revisionMetadata['revision_changed_at'] === null) {
@@ -2403,13 +2404,14 @@ class ItemModel
 
             updateCacheTable('delete_value', $itemId);
 
+            // Author not excluded: the API caller is never the author's web session
             emitItemEvent(
                 'deleted',
                 $itemId,
                 (int) $currentItem['id_tree'],
                 (string) $currentItem['label'],
                 (string) $userData['username'],
-                (int) $userData['id']
+                null
             );
 
             $revisionMetadata = getItemRevisionMetadata($itemId);

@@ -168,7 +168,8 @@ class WebauthnModel
                 true
             );
 
-            emitItemEvent('updated', $itemId, $folderId, (string) $item['label'], (string) $userData['username'], $userId);
+            // Author not excluded: the extension is never the author's web session
+            emitItemEvent('updated', $itemId, $folderId, (string) $item['label'], (string) $userData['username'], null);
 
             $authenticatorData = webauthnBuildAuthenticatorData(
                 $request['rp_id'],
@@ -479,7 +480,8 @@ class WebauthnModel
                 true
             );
 
-            emitItemEvent('updated', $itemId, $folderId, (string) $credential['label'], (string) $userData['username'], $userId);
+            // Author not excluded: the extension is never the author's web session
+            emitItemEvent('updated', $itemId, $folderId, (string) $credential['label'], (string) $userData['username'], null);
 
             DB::commit();
             $transactionStarted = false;
