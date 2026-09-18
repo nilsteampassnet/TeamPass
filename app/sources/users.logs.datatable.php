@@ -204,9 +204,10 @@ $rows = DB::query(
     ' UNION '.
     'SELECT s.date AS date, s.label AS label, s.field_1 AS field1
     FROM '.prefixTable('log_system').' AS s
-    WHERE s.qui = %i',
+    WHERE s.qui = %s',
     $targetUserId,
-    $targetUserId
+    // qui also stores IP addresses: compared as an integer, '10.0.0.5' would match user 10
+    (string) $targetUserId
 );
 $iTotal = DB::count();
 $rows = DB::query(
@@ -219,11 +220,11 @@ $rows = DB::query(
     ' UNION
     SELECT s.date AS date, s.label AS label, s.field_1 AS field1, s.id as id
     FROM '.prefixTable('log_system').' AS s
-    WHERE s.qui = %i'.
+    WHERE s.qui = %s'.
     (string) $sOrder.
     (string) $sLimit,
     $targetUserId,
-    $targetUserId
+    (string) $targetUserId
 );
 $sOutput = '{';
 $sOutput .= '"sEcho": '.$inputData['draw'].', ';

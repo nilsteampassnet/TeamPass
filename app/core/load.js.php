@@ -558,6 +558,11 @@ if (
                                 // LDAP password updated
                                 var info_message = '<?php echo $lang->get('ldap_user_has_changed_his_password');?>';
                             }
+                            <?php if (isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1) : ?>
+                            // Closing this form leaves the API and the browser extension refusing the user
+                            info_message += '<br><i class="icon fa-solid fa-plug-circle-xmark mr-2"></i>'
+                                + <?php echo json_encode($lang->get('recrypt_private_key_api_notice'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+                            <?php endif; ?>
 
                             // Display info tip
                             $('#dialog-ldap-user-change-password-info')

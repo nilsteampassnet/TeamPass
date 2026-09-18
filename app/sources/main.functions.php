@@ -59,6 +59,7 @@ require_once __DIR__ . '/operational_statistics_logic.php';
 require_once __DIR__ . '/log_display_logic.php';
 require_once __DIR__ . '/item_revisions_logic.php';
 require_once __DIR__ . '/folder_cache_logic.php';
+require_once __DIR__ . '/api_auth_logic.php';
 require_once __DIR__ . '/password_strength.functions.php';
 require_once __DIR__ . '/roles_scope.functions.php';
 require_once __DIR__ . '/file_integrity.functions.php';
@@ -8750,6 +8751,12 @@ function handleUserKeys(
         $userKeys = generateUserKeys($passwordClear, null);
     }
 
+    // Captured before the update: extension tokens are tied to the key pair they were issued with
+    $previousPublicKey = (string) DB::queryFirstField(
+        'SELECT public_key FROM ' . prefixTable('users') . ' WHERE id = %i',
+        $userId
+    );
+
     // Save in DB (must happen BEFORE insertPrivateKeyWithCurrentFlag to avoid desync)
     $updateData = array(
         'pw' => $hashedPassword,
@@ -8779,6 +8786,23 @@ function handleUserKeys(
         $userKeys['private_key'],
     );
 
+    // A Personal Access Token wraps the private key it was issued with. Once the key pair
+    // changes it can only unwrap an obsolete key, so the extension would sign in and then
+    // decrypt nothing: remove those tokens instead of leaving them to fail silently.
+    if ($previousPublicKey !== (string) $userKeys['public_key']) {
+        DB::delete(prefixTable('api_tokens'), 'user_id = %i', $userId);
+        if (DB::affectedRows() > 0) {
+            logEvents(
+                (new ConfigManager())->getAllSettings(),
+                'user_mngt',
+                'at_extension_token_revoked',
+                (string) $session->get('user-id'),
+                (string) $session->get('user-login'),
+                // User management rows name their target user by id
+                (string) $userId
+            );
+        }
+    }
 
     // Regenerate API key with new public key
     $newApiKey = encryptUserObjectKey(base64_encode(base64_encode(uniqidReal(39))), $userKeys['public_key']);
@@ -8804,6 +8828,8 @@ function handleUserKeys(
                 'user_id' => $userId,
                 'value' => $newApiKey,
                 'timestamp' => time(),
+                // API access is never granted implicitly: an administrator enables it per user
+                'enabled' => 0,
             )
         );
     }

@@ -2386,6 +2386,7 @@ function externalAdCreateUser(
             'timestamp' => time(),
             'allowed_to_read' => 1,
             'allowed_folders' => '',
+            // API access is never granted implicitly: an administrator enables it per user
             'enabled' => 0,
         )
     );

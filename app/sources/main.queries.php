@@ -3807,6 +3807,18 @@ function changeUserLDAPAuthenticationPassword(
         // Make the decrypted private key available in the session immediately
         $session->set('user-private_key', $privateKey);
 
+        // The API key and the special flag were read at sign-in, when the key could not be
+        // decrypted: refresh them, otherwise the profile shows an empty API key (inviting the
+        // user to regenerate it) and a pending re-encryption warning until the next sign-in.
+        $session->set('user-special', 'none');
+        $apiKeyValue = DB::queryFirstField(
+            'SELECT value FROM ' . prefixTable('api') . ' WHERE user_id = %i',
+            $post_user_id
+        );
+        if (empty($apiKeyValue) === false) {
+            $session->set('user-api_key', base64_decode(decryptUserObjectKey((string) $apiKeyValue, $privateKey)));
+        }
+
         return prepareExchangedData(
             ['error' => false, 'message' => $lang->get('done')],
             'encode'
