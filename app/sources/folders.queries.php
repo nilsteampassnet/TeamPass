@@ -38,6 +38,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 
 // Load functions
 require_once 'main.functions.php';
+require_once __DIR__ . '/item_access_logic.php';
 
 // init
 loadClasses('DB');
@@ -1232,6 +1233,20 @@ if (null !== $post_type) {
             $post_copy_subdirectories = filter_var($dataReceived['copy_subdirectories'], FILTER_SANITIZE_NUMBER_INT);
             $post_copy_items = filter_var($dataReceived['copy_items'], FILTER_SANITIZE_NUMBER_INT);
 
+            // Resolve the folder scope from the database, as getCurrentAccessRights() does: the
+            // items are decrypted server-side, so a login-time scope would still let the caller
+            // copy a folder whose access has been revoked since.
+            if (refreshUserFolderPermissionScope($SETTINGS) === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
             // Test if source folder is Read-only — user cannot move a folder they can only read
             if (in_array((int) $post_source_folder_id, $session->get('user-read_only_folders')) === true) {
                 echo prepareExchangedData(
@@ -1312,13 +1327,6 @@ if (null !== $post_type) {
                 break;
             }
 
-            // Get all allowed folders
-            $array_all_visible_folders = array_merge(
-                $session->get('user-accessible_folders'),
-                $session->get('user-read_only_folders'),
-                $session->get('user-personal_visible_folders')
-            );
-
             // get list of all folders
             $nodeDescendants = $tree->getDescendants($post_source_folder_id, true, false, false);
             $parentId = '';
@@ -1327,8 +1335,16 @@ if (null !== $post_type) {
             foreach ($nodeDescendants as $node) {
                 // step1 - copy folder
 
-                // Can user access this subfolder?
-                if (in_array($node->id, $array_all_visible_folders) === false) {
+                // Can user access this subfolder? Same scope as getCurrentAccessRights(): the
+                // read-only list is not cleaned of the folders explicitly forbidden to the user,
+                // so it must never grant access on its own (GHSA-q47m-rvr6-jqw7).
+                if (itemAccessFolderIsInScope(
+                    (int) $node->id,
+                    (array) $session->get('user-accessible_folders'),
+                    (array) $session->get('user-personal_folders'),
+                    (array) $session->get('user-no_access_folders'),
+                    (array) $session->get('user-forbiden_personal_folders')
+                ) === false) {
                     continue;
                 }
 
@@ -1544,6 +1560,10 @@ if (null !== $post_type) {
                                         'label' => substr($record['label'], 0, 500),
                                         'description' => empty($record['description']) === true ? '' : $record['description'],
                                         'id_tree' => $newFolderId,
+                                        // Like copy_item: a copy into a personal folder is a
+                                        // personal item (the user purge and the personal key
+                                        // flows select on perso).
+                                        'perso' => (int) $nodeInfo->personal_folder,
                                         'pw' => $cryptedStuff['encrypted'],
                                         'pw_iv' => $cryptedStuff['meta'],
                                         'url' => empty($record['url']) === true ? '' : substr($record['url'], 0, 500),

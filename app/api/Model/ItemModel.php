@@ -1846,6 +1846,19 @@ class ItemModel
                     ];
                 }
 
+                // The destination needs the edit right too, as in move_item: the not-read-only
+                // check above lets NE and NDNE through, and a move can carry content changes.
+                if (
+                    $isActualMove === true
+                    && $folderAccessModel->canEditInFolder($newFolderId, (int) $userData['id']) === false
+                ) {
+                    return [
+                        'error' => true,
+                        'error_message' => 'Access denied: you are not allowed to edit items in the target folder',
+                        'error_header' => 'HTTP/1.1 403 Forbidden',
+                    ];
+                }
+
                 if (
                     $isActualMove === true
                     && (int) $sourceItemInfos['personal_folder'] === 1

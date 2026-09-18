@@ -20,6 +20,7 @@
    - [Get OTP code](#get-otp)
    - [Create an item](#create-item)
    - [Update an item](#update-item)
+     - [Moving an item](#update-item-move)
    - [Delete an item](#delete-item)
    - [List Tags](#list-tags)
    - [Synchronize a cache](#item-changes)
@@ -717,7 +718,7 @@ secret or custom-field values.
 | `anyone_can_modify` | integer | ❌ | Anyone can modify (0/1) |
 | `renewal_period` | integer | ❌ | Individual password renewal period in days (1–36500); 0 disables only the individual policy. Omission preserves it. Changing the period does not reset password age. While LAPR is enabled, changes are rejected with HTTP 409 for managed account items and endpoint credential items; omitting or resending the current value is allowed. |
 | `icon` | string | ❌ | New FontAwesome icon code |
-| `folder_id` | integer | ❌ | Move to new folder |
+| `folder_id` | integer | ❌ | Move to new folder. Needs the delete right on the current folder and the edit right on the new one — see [Moving an item](#update-item-move) |
 | `totp` | string | ❌ | Base32 TOTP secret, `otpauth://totp` URI, or an empty string to remove TOTP. Spaces and hyphens are stripped from the secret. Omit the field to change only the profile: the stored secret is reused |
 | `totp_algorithm` | string | ❌ | TOTP algorithm: `sha1`, `sha256`, or `sha512` |
 | `totp_digits` | integer | ❌ | TOTP code length: 6 or 8 |
@@ -725,6 +726,17 @@ secret or custom-field values.
 | `fields` | array | ❌ | Custom fields to set: array of `{ "id": <field_id>, "value": "<text>" }`. A field is created if absent and updated when its value changes; empty values are ignored. Requires the *item extra fields* feature. |
 
 > ⚠️ **Important**: At least one field to update must be provided in addition to the ID.
+
+#### Moving an item {#update-item-move}
+
+Sending a `folder_id` different from the item's current folder moves the item. The rights are the same as in the web interface:
+
+| Folder | Right needed | Refused on |
+| ------ | ------------ | ---------- |
+| Current folder of the item | **Delete** (the item leaves the folder) | `ND`, `NDNE`, `R` |
+| Target folder | **Edit** | `NE`, `NDNE`, `R` |
+
+Both are checked before anything is written: a refused move answers `403` and leaves the item untouched, including the other fields of the request. Read `can_delete` on the current folder and `can_edit` on the target folder in [`folder/writableFolders`](#writable-folders) to know in advance whether a move is allowed.
 
 > ⚠️ **Moving an item out of a personal folder into a shared one must be a request of its own.** That move re-encrypts the item's keys for every user who will now have access, and it is committed immediately. Combining it with any other updatable field (`label`, `password`, `description`, `login`, `email`, `url`, `tags`, `anyone_can_modify`, `icon`, `fields`, `totp*`) is rejected with `422` — send `{ "id": ..., "folder_id": ... }` alone, then send the rest in a second request. All other moves (shared → shared, shared → personal, personal → personal) can still be combined freely with other fields.
 
@@ -758,7 +770,7 @@ administrator to run the encryption keys repair task.
 | 200 | Item updated successfully |
 | 400 | Missing ID or no fields to update |
 | 401 | Invalid session or user keys not found |
-| 403 | Update permission denied or access denied — including a folder granted as `R`, `NE` or `NDNE` (check `can_edit` on [`folder/writableFolders`](#writable-folders)). A move (`folder_id`) also needs the delete right on the item's current folder, as in the web interface: it is refused on a folder granted as `ND` (check `can_delete`) |
+| 403 | Update permission denied or access denied — including a folder granted as `R`, `NE` or `NDNE` (check `can_edit` on [`folder/writableFolders`](#writable-folders)). A move (`folder_id`) is also refused without the delete right on the item's current folder (`ND`, `NDNE` — check `can_delete`) or without the edit right on the target folder (`R`, `NE`, `NDNE` — check `can_edit`) — see [Moving an item](#update-item-move) |
 | 404 | Item not found |
 | 405 | HTTP method not supported (only `PUT` is accepted) |
 | 409 | The supplied `revision` no longer matches the item — someone changed it since; resolve the conflict instead of retrying blindly. Also returned when the item was moved or re-encrypted by another request while this move was being prepared, which is a plain retry |

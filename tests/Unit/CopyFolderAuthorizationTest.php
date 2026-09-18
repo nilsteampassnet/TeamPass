@@ -12,7 +12,8 @@ use PHPUnit\Framework\TestCase;
  * user could graft folders and items into another user's personal tree, or into a
  * folder they cannot see. The items are also decrypted with the TP_USER key and the
  * copies carry no restriction, so an item the caller is restricted from must never
- * be copied.
+ * be copied, and every copied folder must belong to the caller's current item access
+ * scope (the read-only list still holds the folders forbidden to the user).
  */
 class CopyFolderAuthorizationTest extends TestCase
 {
@@ -55,6 +56,56 @@ class CopyFolderAuthorizationTest extends TestCase
             $personalFlag,
             $accessCheck,
             'The personal flag of the target satisfies the creation gate: the target must be authorized first.'
+        );
+    }
+
+    public function testScopeIsRefreshedBeforeAnyFolderIsChecked(): void
+    {
+        $block = $this->copyFolderBlock();
+        $refresh = strpos($block, 'if (refreshUserFolderPermissionScope($SETTINGS) === false) {');
+        $firstCheck = strpos($block, "\$session->get('user-read_only_folders')");
+        self::assertNotFalse($refresh, 'copy_folder must resolve the folder scope from the database.');
+        self::assertNotFalse($firstCheck);
+        self::assertLessThan(
+            $firstCheck,
+            $refresh,
+            'The scope must be refreshed before the source and target folders are checked.'
+        );
+    }
+
+    public function testCopiedFoldersFollowTheItemAccessScope(): void
+    {
+        $content = file_get_contents(__DIR__ . '/../../app/sources/folders.queries.php');
+        self::assertIsString($content);
+        self::assertStringContainsString(
+            "require_once __DIR__ . '/item_access_logic.php';",
+            $content,
+            'folders.queries.php must load itemAccessFolderIsInScope().'
+        );
+
+        $block = $this->copyFolderBlock();
+        self::assertMatchesRegularExpression(
+            '/if \(itemAccessFolderIsInScope\(\s*\(int\) \$node->id,\s*'
+            . '\(array\) \$session->get\(\'user-accessible_folders\'\),\s*'
+            . '\(array\) \$session->get\(\'user-personal_folders\'\),\s*'
+            . '\(array\) \$session->get\(\'user-no_access_folders\'\),\s*'
+            . '\(array\) \$session->get\(\'user-forbiden_personal_folders\'\)\s*\) === false\) \{\s*continue;/',
+            $block,
+            'Each copied folder must be in the caller\'s item access scope, forbidden folders excluded.'
+        );
+        self::assertStringNotContainsString(
+            '$array_all_visible_folders',
+            $block,
+            'The read-only list keeps forbidden folders: it must not grant access to a copied folder.'
+        );
+    }
+
+    public function testCopiedItemsCarryThePersonalFlag(): void
+    {
+        self::assertStringContainsString(
+            "'perso' => (int) \$nodeInfo->personal_folder,",
+            $this->copyFolderBlock(),
+            'An item copied into a personal folder must be stored as a personal item.'
         );
     }
 

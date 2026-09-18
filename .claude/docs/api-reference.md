@@ -300,6 +300,8 @@ Every other field stays updatable in the meantime; only `password` needs the cur
 
 **Move (`folder_id` change).** A `folder_id` equal to the current one is a no-op, not a move. Any real move now emits the same side effects as the web UI — `at_moved` audit log, item cache refresh, source/destination folder counters, and an `item_moved` WebSocket event to both folders — for **every** transition type, not only personal→shared.
 
+**Move rights — same rule as the web `move_item`** (GHSA-q47m-rvr6-jqw7): a real move needs **delete** on the source folder (`canDeleteInFolder()` — `ND`/`NDNE` refused) and **edit** on the target folder (`canEditInFolder()` — `NE`/`NDNE`/`R` refused), both answered `403` before anything is written. Taking an item out of a folder is a removal from it, and a move can carry content fields in the same request (every transition but personal→shared), so "not read-only" is not enough on either side. Before 3.2.2.5 the source only needed edit and the target only needed "not read-only".
+
 **Personal → shared** is special: the item's object keys must be recovered and redistributed to every eligible user, which `movePersonalItemToSharedFolderSynchronously()` (`sources/main.functions.php`) does in its own transaction. Consequences for clients:
 
 | Condition | Status |
@@ -323,7 +325,7 @@ The password guard compares against the **decrypted** current value, so resendin
 
 **Item-level restriction:** a caller outside the item's `restricted_to` / `restriction_to_roles` subset gets `403` and **nothing is written**, mirroring the web `update_item` handler, which refuses in the same case. This matters beyond confidentiality: a password written by an excluded user is then redistributed to every folder member by the sharekey fan-out.
 
-**Permissions:** `allowed_to_update`. Source folder must allow edit (`canEditInFolder()` — refuses `R`, `NE`, `NDNE`). If `folder_id` changes (move), the **source folder** must also allow delete (`canDeleteInFolder()` — refuses `ND` and `NDNE`, like the web `move_item`; GHSA-q47m-rvr6-jqw7) and the **target folder** must not be read-only for the user.
+**Permissions:** `allowed_to_update`. Source folder must allow edit (`canEditInFolder()` — refuses `R`, `NE`, `NDNE`). If `folder_id` changes (move), the **source folder** must also allow delete (`canDeleteInFolder()` — refuses `ND`, `NDNE`) and the **target folder** must allow edit (`canEditInFolder()` — refuses `R`, `NE`, `NDNE`), like the web `move_item` (GHSA-q47m-rvr6-jqw7).
 
 ---
 
@@ -490,7 +492,7 @@ The key is `extension_url` (value = `cpassman_url`) — the doc previously named
 | 201 | Resource created (`item/create` adds a `Location` header) |
 | 400 | Missing or invalid parameters |
 | 401 | `"Missing Authorization header"` — no bearer token received (check webserver vhost passes Authorization on GET). `"Invalid or expired token"` — token present but rejected (bad signature, expired, malformed). Match on HTTP 401 status rather than the body string. |
-| 403 | Permission denied (folder read-only, admin required, CRUD rights missing, caller outside the item's `restricted_to` / `restriction_to_roles` subset) |
+| 403 | Permission denied (folder read-only, admin required, CRUD rights missing, item move without delete on the source or edit on the target folder, caller outside the item's `restricted_to` / `restriction_to_roles` subset) |
 | 404 | Resource not found / unknown route |
 | 405 | HTTP method not supported for this endpoint (`Allow:` header lists supported methods) |
 | 409 | The supplied `revision` no longer matches the item (`item/update` or `item/delete`), an idempotency key was reused with another request or is still processing, the resource changed while the request was being processed (concurrent personal→shared item move), or the operation conflicts with a LAPR relationship (managed login/password update, move to a personal folder, delete of a linked item) |
@@ -525,8 +527,8 @@ On HTTPS: `Strict-Transport-Security: max-age=31536000; includeSubDomains`.
 3. **Sharekey decryption** uses `decryptUserObjectKeyWithMigration()` — transparently upgrades phpseclib v1 (SHA-1) sharekeys to v3 (SHA-256) on access.
 4. **Bruteforce** thresholds: `nb_bad_authentication` (default 10), `nb_bad_authentication_by_ip` (default 30), `bruteforce_lock_duration` (default 10 min). Configure in TeamPass admin settings.
 5. **Folder rights parity with the web** (see `docs/features/rights.md`): `FolderAccessModel::getFolderAccessLevelForUser()` is the single API resolver. It folds every role type on the folder through `evaluateFolderAccesLevel()` — the same function the web uses in `getRoleBasedAccess()` — so the **least permissive wins** (`R` > `NDNE` > `NE` = `ND` > `W`). A direct per-user grant (`users_groups`) always yields `W` and overrides a role restriction, exactly like `identUser()`. Roles of **both** sources count (manual + AD/LDAP): filtering on `source = "manual"` used to hide folders *and* make a role-granted `R` folder look unrestricted.
-   - `isFolderReadOnlyForUser()` ⟺ resolved type is `R`. It gates operations that only need *create* semantics: item create, folder create/update/delete, and the target folder of a move.
-   - `canEditInFolder()` / `canDeleteInFolder()` gate `PUT /item/update` and `DELETE /item/delete` — `ND`/`NE`/`NDNE` are writable but restricted, which the read-only boolean alone cannot express.
+   - `isFolderReadOnlyForUser()` ⟺ resolved type is `R`. It gates operations that only need *create* semantics: item create and folder create/update/delete.
+   - `canEditInFolder()` / `canDeleteInFolder()` gate `PUT /item/update` and `DELETE /item/delete` — `ND`/`NE`/`NDNE` are writable but restricted, which the read-only boolean alone cannot express. An item move uses both: delete on the source, edit on the target, exactly like the web `move_item` / `mass_move_items` / `update_item`.
    - **`AuthModel::buildUserFoldersList()` is a visibility list only**, never a rights list. It mirrors `identifyUserRights()`: an administrator gets every shared folder (`identAdmin()`) and is exempt from the deny list; for everyone else `users_groups_forbidden` (`groupes_interdits`) is subtracted **last** — a denial beats every grant. The cache-rebuild query in `api/index.php` must select `admin`, `groupes_interdits` and `roles_from_ad_groups` so it resolves identically to the `/authorize` path.
 6. **Logging**: successful logins logged as `user_connection` with `tp_src=api`. Failed auth logged as `failed_auth` with `tp_src=api`. Visible in Admin > Logs.
 7. **Input sanitization**: body and query-string params are trimmed only — no HTML encoding — so passwords containing `<>&"'` are stored correctly. SQL injection is prevented by MeekroDB placeholders throughout.
