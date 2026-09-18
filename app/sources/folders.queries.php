@@ -99,10 +99,9 @@ $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 // Prepare post variables
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-// Read the JSON payload raw: FILTER_SANITIZE_FULL_SPECIAL_CHARS behaves like htmlentities()
-// and, without client/server encryption, turned "é" into a stored "&eacute;". Each field is
-// sanitized after decoding, exactly as when the payload arrives encrypted.
-$post_data = (string) $request->request->get('data', '');
+// Read raw, like an encrypted payload: each field is sanitized after decoding.
+// FILTER_SANITIZE_FULL_SPECIAL_CHARS acts as htmlentities() and stored "é" as "&eacute;".
+$post_data = filter_input(INPUT_POST, 'data', FILTER_UNSAFE_RAW);
 
 // Ensure Complexity levels are translated
 if (defined('TP_PW_COMPLEXITY') === false) {
