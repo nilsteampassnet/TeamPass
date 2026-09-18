@@ -99,7 +99,10 @@ $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 // Prepare post variables
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
+// Read the JSON payload raw: FILTER_SANITIZE_FULL_SPECIAL_CHARS behaves like htmlentities()
+// and, without client/server encryption, turned "é" into a stored "&eacute;". Each field is
+// sanitized after decoding, exactly as when the payload arrives encrypted.
+$post_data = (string) $request->request->get('data', '');
 
 // Ensure Complexity levels are translated
 if (defined('TP_PW_COMPLEXITY') === false) {
@@ -1222,7 +1225,11 @@ if (null !== $post_type) {
             // Init post variables
             $post_source_folder_id = filter_var($dataReceived['source_folder_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_target_folder_id = filter_var($dataReceived['target_folder_id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_folder_label = filter_var($dataReceived['folder_label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            // Same sanitization as add_folder: FILTER_SANITIZE_FULL_SPECIAL_CHARS would store accents as entities
+            $post_folder_label = (string) dataSanitizer(
+                ['label' => $dataReceived['folder_label'] ?? ''],
+                ['label' => 'trim|escape']
+            )['label'];
             $post_copy_subdirectories = filter_var($dataReceived['copy_subdirectories'], FILTER_SANITIZE_NUMBER_INT);
             $post_copy_items = filter_var($dataReceived['copy_items'], FILTER_SANITIZE_NUMBER_INT);
 
