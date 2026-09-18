@@ -163,6 +163,19 @@ class SecurityHardeningTest extends TestCase
         );
     }
 
+    public function testItemModelRequiresDeleteRightOnMoveSource(): void
+    {
+        $source = $this->readSource('/app/api/Model/ItemModel.php');
+
+        // A move takes the item out of its folder: ND (no delete) must not allow it,
+        // exactly like the web move_item (GHSA-q47m-rvr6-jqw7).
+        self::assertMatchesRegularExpression(
+            '/\$isActualMove === true\s*&& \$folderAccessModel->canDeleteInFolder\(\$sourceFolderId, \(int\) \$userData\[\'id\'\]\) === false/',
+            $source,
+            'ItemModel::updateItem must check canDeleteInFolder on the source folder when the item is moved'
+        );
+    }
+
     // -------------------------------------------------------------------------
     // M-1: Correct HTTP codes in bootstrap
     // -------------------------------------------------------------------------

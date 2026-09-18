@@ -1257,6 +1257,29 @@ if (null !== $post_type) {
                 break;
             }
 
+            // Authorization: the target must be a folder the caller can access (0 = root is gated
+            // by the "user allowed" check below). A folder the caller cannot see is not in
+            // read_only_folders either, and the personal flag below is read from any folder row:
+            // without this check any user could graft folders and items into another user's
+            // personal tree or into a restricted folder (GHSA-q47m-rvr6-jqw7).
+            if (
+                (int) $post_target_folder_id !== 0
+                && in_array(
+                    (int) $post_target_folder_id,
+                    array_map('intval', (array) $session->get('user-accessible_folders')),
+                    true
+                ) === false
+            ) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
             // Check if target parent folder is personal
             $dataParent = DB::queryFirstRow(
                 'SELECT personal_folder
@@ -1448,10 +1471,20 @@ if (null !== $post_type) {
                     $userTpPwd = $decryptedData['string'] ?? '';
                     $userTpPrivateKey = decryptPrivateKey($userTpPwd, $userTpInfo['private_key']);
 
+                    // Skip the items the caller is restricted from (restricted_to /
+                    // restriction_to_roles): they are decrypted with the TP_USER key and the copy
+                    // carries no restriction, so copying them would hand the caller a readable
+                    // copy of a password the item card refuses to show (GHSA-q47m-rvr6-jqw7).
                     $rows = DB::query(
-                        'SELECT *
-                        FROM ' . prefixTable('items') . '
-                        WHERE id_tree = %i',
+                        'SELECT i.*
+                        FROM ' . prefixTable('items') . ' AS i
+                        WHERE i.id_tree = %i
+                        AND ' . itemRestrictionSqlPredicate(
+                            (int) $session->get('user-id'),
+                            securityPostureUserRoleIds((int) $session->get('user-id')),
+                            'i',
+                            prefixTable('restriction_to_roles')
+                        ),
                         $nodeInfo->id
                     );
                     foreach ($rows as $record) {

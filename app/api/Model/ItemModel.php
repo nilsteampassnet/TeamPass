@@ -1831,6 +1831,21 @@ class ItemModel
                 // A folder_id equal to the current one is a no-op, not a move.
                 $isActualMove = $newFolderId !== $sourceFolderId;
 
+                // A move takes the item out of its folder: like the web move_item, it needs the
+                // delete right there. The edit right checked by the controller lets ND through,
+                // and a move to the caller's personal folder also strips every other user's keys
+                // (GHSA-q47m-rvr6-jqw7).
+                if (
+                    $isActualMove === true
+                    && $folderAccessModel->canDeleteInFolder($sourceFolderId, (int) $userData['id']) === false
+                ) {
+                    return [
+                        'error' => true,
+                        'error_message' => 'Access denied: you are not allowed to move items out of this folder',
+                        'error_header' => 'HTTP/1.1 403 Forbidden',
+                    ];
+                }
+
                 if (
                     $isActualMove === true
                     && (int) $sourceItemInfos['personal_folder'] === 1

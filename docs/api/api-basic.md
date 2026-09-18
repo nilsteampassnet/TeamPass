@@ -758,7 +758,7 @@ administrator to run the encryption keys repair task.
 | 200 | Item updated successfully |
 | 400 | Missing ID or no fields to update |
 | 401 | Invalid session or user keys not found |
-| 403 | Update permission denied or access denied — including a folder granted as `R`, `NE` or `NDNE` (check `can_edit` on [`folder/writableFolders`](#writable-folders)) |
+| 403 | Update permission denied or access denied — including a folder granted as `R`, `NE` or `NDNE` (check `can_edit` on [`folder/writableFolders`](#writable-folders)). A move (`folder_id`) also needs the delete right on the item's current folder, as in the web interface: it is refused on a folder granted as `ND` (check `can_delete`) |
 | 404 | Item not found |
 | 405 | HTTP method not supported (only `PUT` is accepted) |
 | 409 | The supplied `revision` no longer matches the item — someone changed it since; resolve the conflict instead of retrying blindly. Also returned when the item was moved or re-encrypted by another request while this move was being prepared, which is a plain retry |

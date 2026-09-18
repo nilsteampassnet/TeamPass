@@ -323,7 +323,7 @@ The password guard compares against the **decrypted** current value, so resendin
 
 **Item-level restriction:** a caller outside the item's `restricted_to` / `restriction_to_roles` subset gets `403` and **nothing is written**, mirroring the web `update_item` handler, which refuses in the same case. This matters beyond confidentiality: a password written by an excluded user is then redistributed to every folder member by the sharekey fan-out.
 
-**Permissions:** `allowed_to_update`. Source folder must not be read-only. If `folder_id` changes (move), **target folder** must also not be read-only for the user.
+**Permissions:** `allowed_to_update`. Source folder must allow edit (`canEditInFolder()` — refuses `R`, `NE`, `NDNE`). If `folder_id` changes (move), the **source folder** must also allow delete (`canDeleteInFolder()` — refuses `ND` and `NDNE`, like the web `move_item`; GHSA-q47m-rvr6-jqw7) and the **target folder** must not be read-only for the user.
 
 ---
 
