@@ -3295,6 +3295,8 @@ function refreshListInactiveUsers(filterValue) {
 
                 if (data.error === true) {
                     // ERROR
+                    $('.close-toastr-progress').closest('.toast').remove()
+                    $('#row-ldap-body').removeClass('overlay')
                     toastr.error(
                         data.message,
                         '<?php echo $lang->get('caution'); ?>', {
@@ -3425,7 +3427,18 @@ function refreshListInactiveUsers(filterValue) {
                     $('.close-toastr-progress').closest('.toast').remove();
                 }
             }
-        );
+        ).fail(function() {
+            // Server-side failure (HTTP 500, timeout): without this the progress toast stays forever
+            $('.close-toastr-progress').closest('.toast').remove()
+            $('#row-ldap-body').removeClass('overlay')
+            toastr.error(
+                '<?php echo $lang->get('server_answer_error'); ?>',
+                '<?php echo $lang->get('caution'); ?>', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            )
+        });
     }
 
     function refreshListUsersOAuth2() {

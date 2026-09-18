@@ -3048,11 +3048,13 @@ if (null !== $post_type) {
             // Connect to LDAP
             try {
                 $connection->connect();
-            
-            } catch (\LdapRecord\Auth\BindException $e) {
+
+            } catch (\LdapRecord\LdapRecordException $e) {
+                // Not only BindException: connect() also throws its parent class, which used to
+                // escape as an HTTP 500 and leave the page waiting forever.
                 $error = $e->getDetailedError();
-                if ($error && defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
-                    error_log('TEAMPASS Error - LDAP - '.$error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage());
+                if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                    error_log('TEAMPASS Error - LDAP - '.($error ? $error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage() : $e->getMessage()));
                 }
                 // deepcode ignore ServerLeak: No important data is sent and it is encrypted before sending
                 echo prepareExchangedData(
@@ -3132,10 +3134,12 @@ if (null !== $post_type) {
                     ->in((empty($SETTINGS['ldap_dn_additional_user_dn']) === false ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'])
                     ->whereHas($SETTINGS['ldap_user_attribute'])
                     ->paginate(100);
-            } catch (\LdapRecord\Auth\BindException $e) {
+            } catch (\LdapRecord\LdapRecordException $e) {
+                // Any search error, e.g. a wrong additional user DN or object filter: settings
+                // the login never reads, so they can be wrong while authentication works.
                 $error = $e->getDetailedError();
-                if ($error && defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
-                    error_log('TEAMPASS Error - LDAP - '.$error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage());
+                if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                    error_log('TEAMPASS Error - LDAP - '.($error ? $error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage() : $e->getMessage()));
                 }
                 // deepcode ignore ServerLeak: No important data is sent and it is encrypted before sending
                 echo prepareExchangedData(
