@@ -1196,27 +1196,15 @@ switch ($inputData['type']) {
         $targetFolderId = (int) $inputData['folderId'];
         $editionLockForSave = getItemEditionLockSaveStatus((int) $inputData['itemId'], (int) $session->get('user-id'));
 
-        // Always check what rights user has on requested folder
+        // Rights are evaluated on the folder the item actually lives in, never on the
+        // client-supplied destination alone (GHSA-vxv5-cr34-5q7g). Same rules as
+        // move_item: edit on the source, delete on the source to move the item out
+        // of it, and edit on the destination.
         $checkRights = getCurrentAccessRights(
             $session->get('user-id'),
             $inputData['itemId'],
-            $inputData['folderId'],
+            $originalFolderId,
         );
-
-        // If source and destination folder are different -> move item
-        if (intval($dataItem['id_tree']) !== $inputData['folderId']) {
-            // Check that user can delete on old folder
-            if ($checkRights['error'] || !$checkRights['delete']) {
-                echo (string) prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('error_no_delete_right'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-        }
 
         if ($checkRights['error'] || !$checkRights['edit']) {
             echo (string) prepareExchangedData(
@@ -1227,6 +1215,38 @@ switch ($inputData['type']) {
                 'encode'
             );
             break;
+        }
+
+        // If source and destination folder are different -> move item
+        if ($originalFolderId !== $targetFolderId) {
+            // Check that user can delete on old folder
+            if (!$checkRights['delete']) {
+                echo (string) prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_no_delete_right'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Check that user can write on requested folder
+            $destinationRights = getCurrentAccessRights(
+                $session->get('user-id'),
+                $inputData['itemId'],
+                $targetFolderId,
+            );
+            if ($destinationRights['error'] || !$destinationRights['edit']) {
+                echo (string) prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_no_edit_right'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
         }
         if ($editionLockForSave['allowed'] !== true) {
             echo (string) prepareExchangedData(
