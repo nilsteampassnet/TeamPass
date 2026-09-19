@@ -216,7 +216,7 @@
             "get": {
                 "operationId": "itemGet",
                 "summary": "Get item(s) by id, label or description",
-                "description": "Exactly one of 'id', 'label' or 'description' is required. 'label' and 'description' lookups are searches: they accept 'like', 'limit' and 'offset' and return X-Total-Count.",
+                "description": "Exactly one of 'id', 'label' or 'description' is required. 'label' and 'description' lookups are searches: they accept 'like', 'limit' and 'offset' and return X-Total-Count. renewal_period contains the stored individual renewal setting, not the effective folder/item deadline.",
                 "parameters": [
                     {
                         "name": "id",
@@ -628,7 +628,7 @@
             "post": {
                 "operationId": "itemCreate",
                 "summary": "Create a new item",
-                "description": "All listed fields must be present, even if empty. Idempotency-Key is optional; within the configured offline synchronization window (90 days by default, 0 for no limit) the same user, key and canonical creation intent return the original 201 response without repeating side effects.",
+                "description": "All required fields must be present, even if empty. renewal_period is optional and defaults to 0. Idempotency-Key is optional; within the configured offline synchronization window (90 days by default, 0 for no limit) the same user, key and canonical creation intent return the original 201 response without repeating side effects.",
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/IdempotencyKey"
@@ -697,7 +697,7 @@
             "put": {
                 "operationId": "itemUpdate",
                 "summary": "Update an existing item",
-                "description": "Requires 'id' plus at least one updatable field (label, password, description, login, email, url, tags, anyone_can_modify, icon, folder_id, totp, fields). Moving an item out of a personal folder into a shared one redistributes its encryption keys synchronously, so it must be requested on its own: combining it with any other updatable field returns 422. It returns 422 as well when a source encryption key cannot be recovered (the item stays personal), and 409 when the item was modified concurrently.",
+                "description": "Requires 'id' plus at least one updatable field (label, password, description, login, email, url, tags, anyone_can_modify, icon, folder_id, totp, fields, renewal_period). Moving an item out of a personal folder into a shared one redistributes its encryption keys synchronously, so it must be requested on its own: combining it with any other updatable field returns 422. It returns 422 as well when a source encryption key cannot be recovered (the item stays personal), and 409 when the item was modified concurrently. Moving a shared item into the caller's personal folder deletes the other users' encryption keys in the same step; it returns 422 when the caller does not hold every key of the item yet. A move requires the delete right on the item's current folder and the edit right on the target folder, like the web interface: it returns 403 on a current folder granted as ND or NDNE, or a target folder granted as NE, NDNE or R. Omitting renewal_period preserves it; 0 disables the individual policy without resetting password age. A change to renewal_period returns 409 for an item linked to LAPR while the module is enabled (managed account or endpoint connection credential); an unchanged value is accepted.",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -757,7 +757,8 @@
                         "$ref": "#/components/responses/MethodNotAllowed"
                     },
                     "409": {
-                        "$ref": "#/components/responses/Conflict"
+                        "$ref": "#/components/responses/Conflict",
+                        "description": "Concurrent modification, or an attempt to change the ordinary renewal period of an LAPR-linked item while LAPR is enabled."
                     },
                     "422": {
                         "$ref": "#/components/responses/UnprocessableEntity"
@@ -1381,6 +1382,12 @@
                         "items": {
                             "$ref": "#/components/schemas/CustomField"
                         }
+                    },
+                    "renewal_period": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 36500,
+                        "description": "Stored individual password renewal period in days; 0 disables only the individual policy. Available for personal and shared items, independently of folder expiration. The shortest active item/folder period applies. This value is not the calculated effective period. Expiration is advisory and does not block authorized reading. Ordinary renewal is inactive for all LAPR-linked items while the LAPR module is enabled."
                     }
                 }
             },
@@ -1525,6 +1532,13 @@
                                 }
                             }
                         }
+                    },
+                    "renewal_period": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 36500,
+                        "default": 0,
+                        "description": "Stored individual password renewal period in days; 0 disables only the individual policy. Available for personal and shared items, independently of folder expiration. The shortest active item/folder period applies. This value is not the calculated effective period. Expiration is advisory and does not block authorized reading. Ordinary renewal is inactive for all LAPR-linked items while the LAPR module is enabled."
                     }
                 }
             },
@@ -1608,6 +1622,12 @@
                                 }
                             }
                         }
+                    },
+                    "renewal_period": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 36500,
+                        "description": "Stored individual password renewal period in days; 0 disables only the individual policy. Available for personal and shared items, independently of folder expiration. The shortest active item/folder period applies. This value is not the calculated effective period. Expiration is advisory and does not block authorized reading. Omission preserves the stored value. Changing the period does not reset password age. While LAPR is enabled, changing this value for a managed account or an endpoint connection credential returns HTTP 409; omitting it or resending the current value is allowed."
                     }
                 }
             },

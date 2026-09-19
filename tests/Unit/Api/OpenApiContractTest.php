@@ -76,6 +76,29 @@ class OpenApiContractTest extends TestCase
         self::assertArrayHasKey('securitySchemes', $spec['components'] ?? []);
     }
 
+    /** The optional policy has the same range and omission semantics as the API model. */
+    public function testItemRenewalContract(): void
+    {
+        $spec = $this->getSpec();
+        foreach (['Item', 'ItemCreateBody', 'ItemUpdateBody'] as $name) {
+            $schema = $spec['components']['schemas'][$name];
+            $policy = $schema['properties']['renewal_period'];
+            self::assertSame('integer', $policy['type']);
+            self::assertSame(0, $policy['minimum']);
+            self::assertSame(36500, $policy['maximum']);
+            self::assertNotContains('renewal_period', $schema['required'] ?? []);
+            self::assertStringContainsString('shortest active', $policy['description']);
+            self::assertStringContainsString('does not block authorized reading', $policy['description']);
+        }
+        self::assertSame(0, $spec['components']['schemas']['ItemCreateBody']['properties']['renewal_period']['default']);
+        $update = $spec['components']['schemas']['ItemUpdateBody']['properties']['renewal_period'];
+        self::assertArrayNotHasKey('default', $update, 'Omitted updates must preserve the current value.');
+        self::assertStringContainsString('Omission preserves', $update['description']);
+        self::assertStringContainsString('does not reset password age', $update['description']);
+        self::assertStringContainsString('endpoint connection credential', $update['description']);
+        self::assertStringContainsString('LAPR', $spec['paths']['/item/update']['put']['responses']['409']['description']);
+    }
+
     public function testEveryDocumentedPathMapsToAControllerAction(): void
     {
         $spec = $this->getSpec();

@@ -52,12 +52,14 @@ use TeampassClasses\EmailService\EmailSettings;
 use TeampassClasses\CryptoManager\CryptoManager;
 
 require_once __DIR__ . '/otp.functions.php';
+require_once __DIR__ . '/renewal_logic.php';
 require_once __DIR__ . '/item_restriction_logic.php';
 require_once __DIR__ . '/security_posture_logic.php';
 require_once __DIR__ . '/operational_statistics_logic.php';
 require_once __DIR__ . '/log_display_logic.php';
 require_once __DIR__ . '/item_revisions_logic.php';
 require_once __DIR__ . '/folder_cache_logic.php';
+require_once __DIR__ . '/api_auth_logic.php';
 require_once __DIR__ . '/password_strength.functions.php';
 require_once __DIR__ . '/roles_scope.functions.php';
 require_once __DIR__ . '/file_integrity.functions.php';
@@ -1982,15 +1984,17 @@ function prepareSendingEmail(
  */
 function securityNudgeComputeCounts(int $userId): array
 {
+    $SETTINGS = (new ConfigManager())->getAllSettings();
     $nowTs = time();
     $accessScopeSql = securityPostureItemAccessSql($userId);
     $passwordHealthSql = securityPasswordHealthSql();
 
     // Metadata-only flag expressions (identical semantics to the dashboard).
-    $lastRelevantSql = 'COALESCE(NULLIF(l.last_relevant_date, 0), NULLIF(CAST(i.created_at AS UNSIGNED), 0), 0)';
+    $lastRelevantSql = renewalBaseDateSql();
+    $effectivePeriodSql = renewalApplicablePeriodSql($SETTINGS);
     $flagWeakSql = $passwordHealthSql['weak'];
     $flagUnassessedSql = $passwordHealthSql['unassessed'];
-    $flagOverdueSql = '(CASE WHEN n.renewal_period > 0 AND ' . $lastRelevantSql . ' > 0 AND (' . $lastRelevantSql . ' + n.renewal_period * ' . TP_ONE_DAY_SECONDS . ') <= ' . (int) $nowTs . ' THEN 1 ELSE 0 END)';
+    $flagOverdueSql = '(CASE WHEN ' . $effectivePeriodSql . ' > 0 AND ' . $lastRelevantSql . ' > 0 AND (' . $lastRelevantSql . ' + ' . $effectivePeriodSql . ' * ' . TP_ONE_DAY_SECONDS . ') <= ' . (int) $nowTs . ' THEN 1 ELSE 0 END)';
     $flagBreachedSql = '(CASE WHEN i.hibp_status = 2 THEN 1 ELSE 0 END)';
 
     $logJoinSql = '
@@ -2069,6 +2073,57 @@ function securityNudgeComputeCounts(int $userId): array
         'last_scan' => $lastScan,
         'worst_item' => $worstItem,
     ];
+}
+
+/**
+ * SQL counterpart of laprGetItemRelations for metadata queries that must filter before paging.
+ * Both managed accounts and endpoint credentials are excluded while LAPR is enabled.
+ * The alias is a trusted source-code reference, never request input.
+ */
+function renewalEligibleItemSql(array $settings, string $alias = 'i'): string
+{
+    if ((int) ($settings['lapr_enabled'] ?? 0) !== 1) {
+        return '1 = 1';
+    }
+    return '(NOT EXISTS (SELECT 1 FROM ' . prefixTable('lapr_accounts') . ' AS renewal_la'
+        . ' WHERE renewal_la.item_id = ' . $alias . ".id AND renewal_la.status != 'deleted')"
+        . ' AND NOT EXISTS (SELECT 1 FROM ' . prefixTable('lapr_endpoints') . ' AS renewal_le'
+        . ' WHERE renewal_le.ssh_credential_source = ' . $alias . ".id AND renewal_le.status != 'deleted'))";
+}
+
+/** Effective period for ordinary renewal; LAPR-linked items have no ordinary deadline. */
+function renewalApplicablePeriodSql(array $settings, string $item = 'i.renewal_period', string $folder = 'n.renewal_period', string $itemAlias = 'i'): string
+{
+    $period = renewalPeriodSql((int) ($settings['activate_expiration'] ?? 0) === 1, $item, $folder);
+    return (int) ($settings['lapr_enabled'] ?? 0) === 1
+        ? '(CASE WHEN ' . renewalEligibleItemSql($settings, $itemAlias) . ' THEN ' . $period . ' ELSE 0 END)'
+        : $period;
+}
+
+/** Read the effective deadline after the caller has authorized access to this item. */
+function renewalItemDueAt(int $itemId, array $settings): ?int
+{
+    return renewalItemStatus($itemId, $settings)['due_at'];
+}
+
+/** Read display metadata after the caller has authorized access to this item. */
+function renewalItemStatus(int $itemId, array $settings): array
+{
+    $periodSql = renewalApplicablePeriodSql($settings);
+    $row = DB::queryFirstRow(
+        'SELECT ' . $periodSql . ' AS days, ' . renewalBaseDateSql() . ' AS base_date
+        FROM ' . prefixTable('items') . ' AS i
+        INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON n.id = i.id_tree
+        LEFT JOIN (
+            SELECT MAX(CAST(date AS UNSIGNED)) AS last_relevant_date
+            FROM ' . prefixTable('log_items') . '
+            WHERE id_item = %i AND (action = %s OR (action = %s AND raison LIKE %s))
+        ) AS l ON 1 = 1
+        WHERE i.id = %i AND i.inactif = 0 AND i.deleted_at IS NULL',
+        $itemId, 'at_creation', 'at_modification', 'at_pw%', $itemId
+    );
+    $days = (int) ($row['days'] ?? 0);
+    return renewalStatus($days, renewalDueAt($days, (int) ($row['base_date'] ?? 0)), $settings);
 }
 
 /**
@@ -2184,7 +2239,8 @@ function refreshItemHealthAfterSave(int $itemId, int $userId, string $plaintextP
 
     // Recompute the metadata flags for this single item (no decryption). Same fragments as
     // the dashboard scan, scoped to one item.
-    $lastRelevantSql = 'COALESCE(NULLIF(l.last_relevant_date, 0), NULLIF(CAST(i.created_at AS UNSIGNED), 0), 0)';
+    $lastRelevantSql = renewalBaseDateSql();
+    $effectivePeriodSql = renewalApplicablePeriodSql($SETTINGS);
     $logJoinSql = '
         LEFT JOIN (
             SELECT id_item, MAX(CAST(date AS UNSIGNED)) AS last_relevant_date
@@ -2201,7 +2257,8 @@ function refreshItemHealthAfterSave(int $itemId, int $userId, string $plaintextP
 
     $row = DB::queryFirstRow(
         'SELECT i.complexity_level,
-            n.renewal_period,
+            ' . $effectivePeriodSql . ' AS renewal_period,
+            ' . renewalEligibleItemSql($SETTINGS) . ' AS renewal_eligible,
             COALESCE(sc.share_count, 0) AS share_count,
             ' . $lastRelevantSql . ' AS last_relevant_date
         FROM ' . prefixTable('items') . ' AS i
@@ -2226,7 +2283,7 @@ function refreshItemHealthAfterSave(int $itemId, int $userId, string $plaintextP
     );
     $flagWeak = $passwordHealthStatus === 'weak' ? 1 : 0;
     $renewal = (int) $row['renewal_period'];
-    $flagNoExpiry = ($renewal <= 0) ? 1 : 0;
+    $flagNoExpiry = ((int) $row['renewal_eligible'] === 1 && $renewal <= 0) ? 1 : 0;
     $base = (int) $row['last_relevant_date'];
     $flagOverdue = ($renewal > 0 && $base > 0 && ($base + $renewal * TP_ONE_DAY_SECONDS) <= $nowTs) ? 1 : 0;
     $flagOvershared = ((int) $row['share_count'] > $oversharedThreshold) ? 1 : 0;
@@ -8694,6 +8751,12 @@ function handleUserKeys(
         $userKeys = generateUserKeys($passwordClear, null);
     }
 
+    // Captured before the update: extension tokens are tied to the key pair they were issued with
+    $previousPublicKey = (string) DB::queryFirstField(
+        'SELECT public_key FROM ' . prefixTable('users') . ' WHERE id = %i',
+        $userId
+    );
+
     // Save in DB (must happen BEFORE insertPrivateKeyWithCurrentFlag to avoid desync)
     $updateData = array(
         'pw' => $hashedPassword,
@@ -8723,6 +8786,23 @@ function handleUserKeys(
         $userKeys['private_key'],
     );
 
+    // A Personal Access Token wraps the private key it was issued with. Once the key pair
+    // changes it can only unwrap an obsolete key, so the extension would sign in and then
+    // decrypt nothing: remove those tokens instead of leaving them to fail silently.
+    if ($previousPublicKey !== (string) $userKeys['public_key']) {
+        DB::delete(prefixTable('api_tokens'), 'user_id = %i', $userId);
+        if (DB::affectedRows() > 0) {
+            logEvents(
+                (new ConfigManager())->getAllSettings(),
+                'user_mngt',
+                'at_extension_token_revoked',
+                (string) $session->get('user-id'),
+                (string) $session->get('user-login'),
+                // User management rows name their target user by id
+                (string) $userId
+            );
+        }
+    }
 
     // Regenerate API key with new public key
     $newApiKey = encryptUserObjectKey(base64_encode(base64_encode(uniqidReal(39))), $userKeys['public_key']);
@@ -8748,6 +8828,8 @@ function handleUserKeys(
                 'user_id' => $userId,
                 'value' => $newApiKey,
                 'timestamp' => time(),
+                // API access is never granted implicitly: an administrator enables it per user
+                'enabled' => 0,
             )
         );
     }
@@ -9806,36 +9888,9 @@ function EnsurePersonalItemHasOnlyKeysForOwner(int $userId, int $itemId): bool
         return false;
     }
 
-    // Delete all sharekeys for this item except for the owner and TeamPass system users
-    $excludedUsers = [$userId, TP_USER_ID, API_USER_ID, OTV_USER_ID, SSH_USER_ID];
     try {
         DB::startTransaction();
-
-        DB::delete(
-            prefixTable('sharekeys_items'),
-            'object_id = %i AND user_id NOT IN %ls',
-            $itemId,
-            $excludedUsers
-        );
-        DB::query(
-            'DELETE FROM ' . prefixTable('sharekeys_files') . '
-            WHERE object_id IN (SELECT id FROM ' . prefixTable('files') . ' WHERE id_item = %i) AND user_id NOT IN %ls',
-            $itemId,
-            $excludedUsers
-        );
-        DB::query(
-            'DELETE FROM ' . prefixTable('sharekeys_fields') . '
-            WHERE object_id IN (SELECT id FROM ' . prefixTable('categories_items') . ' WHERE item_id = %i) AND user_id NOT IN %ls',
-            $itemId,
-            $excludedUsers
-        );
-        DB::query(
-            'DELETE FROM ' . prefixTable('sharekeys_logs') . '
-            WHERE object_id IN (SELECT increment_id FROM ' . prefixTable('log_items') . ' WHERE id_item = %i) AND user_id NOT IN %ls',
-            $itemId,
-            $excludedUsers
-        );
-
+        deleteForeignItemSharekeys($itemId, $userId);
         DB::commit();
     } catch (Exception $e) {
         DB::rollback();
@@ -9843,6 +9898,139 @@ function EnsurePersonalItemHasOnlyKeysForOwner(int $userId, int $itemId): bool
     }
 
     return true;
+}
+
+/**
+ * Delete every sharekey of an item and of its objects that does not belong to its owner.
+ *
+ * The keys of the TeamPass system accounts are kept, TP_USER_ID's above all: it is the
+ * server-side recovery key every personal object must keep (SEC-8). Runs no transaction of its
+ * own, so a caller can make it atomic with the change that makes the item personal.
+ *
+ * @param int $itemId  Item that is, or is becoming, personal
+ * @param int $ownerId Owner of the personal folder holding the item
+ *
+ * @return void
+ */
+function deleteForeignItemSharekeys(int $itemId, int $ownerId): void
+{
+    $excludedUsers = [$ownerId, TP_USER_ID, API_USER_ID, OTV_USER_ID, SSH_USER_ID];
+
+    DB::delete(
+        prefixTable('sharekeys_items'),
+        'object_id = %i AND user_id NOT IN %ls',
+        $itemId,
+        $excludedUsers
+    );
+    DB::query(
+        'DELETE FROM ' . prefixTable('sharekeys_files') . '
+        WHERE object_id IN (SELECT id FROM ' . prefixTable('files') . ' WHERE id_item = %i) AND user_id NOT IN %ls',
+        $itemId,
+        $excludedUsers
+    );
+    DB::query(
+        'DELETE FROM ' . prefixTable('sharekeys_fields') . '
+        WHERE object_id IN (SELECT id FROM ' . prefixTable('categories_items') . ' WHERE item_id = %i) AND user_id NOT IN %ls',
+        $itemId,
+        $excludedUsers
+    );
+    DB::query(
+        'DELETE FROM ' . prefixTable('sharekeys_logs') . '
+        WHERE object_id IN (SELECT increment_id FROM ' . prefixTable('log_items') . ' WHERE id_item = %i) AND user_id NOT IN %ls',
+        $itemId,
+        $excludedUsers
+    );
+}
+
+/**
+ * Narrow an item's keys to its owner when the item now sits in a personal folder.
+ *
+ * The background fan-out of a new or updated shared item distributes keys to every user. When
+ * the item is moved into a personal folder before that task runs, the fan-out lands after the
+ * move's own purge and hands the keys back to everyone. The fan-out calls this once it has
+ * written, so whichever of the two finishes last, the item ends up with its owner's keys only.
+ *
+ * The owner is the personal root the folder sits in (its title is the owner id). An item flagged
+ * personal outside any personal tree is left alone: an owner that cannot be resolved is never
+ * guessed, the same rule as the repair tool.
+ *
+ * @param int $itemId Item whose keys were just distributed
+ *
+ * @return bool True when the item is personal and its foreign keys were removed
+ */
+function restrictItemSharekeysToOwnerIfPersonal(int $itemId): bool
+{
+    if ($itemId <= 0) {
+        return false;
+    }
+
+    $personalRoot = DB::queryFirstRow(
+        'SELECT root.title AS owner_id
+        FROM ' . prefixTable('items') . ' AS item
+        INNER JOIN ' . prefixTable('nested_tree') . ' AS folder ON (folder.id = item.id_tree)
+        INNER JOIN ' . prefixTable('nested_tree') . ' AS root
+            ON root.personal_folder = 1 AND root.parent_id = 0
+            AND folder.nleft >= root.nleft AND folder.nright <= root.nright
+        WHERE item.id = %i
+        LIMIT 1',
+        $itemId
+    );
+    if ($personalRoot === null || ctype_digit((string) $personalRoot['owner_id']) === false) {
+        return false;
+    }
+
+    deleteForeignItemSharekeys($itemId, (int) $personalRoot['owner_id']);
+
+    return true;
+}
+
+/**
+ * Tell whether a user holds a sharekey on an item and on each of its encrypted objects.
+ *
+ * Checked before narrowing an item's keys to one user: if that user lacked one of them, the
+ * object would be left with the TP_USER recovery key alone and become unreadable to its owner.
+ * A missing key is usually transient — the background task has not distributed it yet.
+ *
+ * @param int $itemId Item
+ * @param int $userId User who is to keep the keys
+ *
+ * @return bool
+ */
+function userHoldsEveryItemSharekey(int $itemId, int $userId): bool
+{
+    $itemKey = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('sharekeys_items') . '
+        WHERE object_id = %i AND user_id = %i AND share_key != ""',
+        $itemId,
+        $userId
+    );
+    if ((int) $itemKey === 0) {
+        return false;
+    }
+
+    $missingFieldKeys = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('categories_items') . ' AS field
+        LEFT JOIN ' . prefixTable('sharekeys_fields') . ' AS sharekey
+            ON sharekey.object_id = field.id AND sharekey.user_id = %i AND sharekey.share_key != ""
+        WHERE field.item_id = %i AND field.encryption_type != "not_set" AND sharekey.increment_id IS NULL',
+        $userId,
+        $itemId
+    );
+    if ((int) $missingFieldKeys > 0) {
+        return false;
+    }
+
+    $missingFileKeys = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('files') . ' AS attachment
+        LEFT JOIN ' . prefixTable('sharekeys_files') . ' AS sharekey
+            ON sharekey.object_id = attachment.id AND sharekey.user_id = %i AND sharekey.share_key != ""
+        WHERE attachment.id_item = %i AND attachment.status = %s AND sharekey.increment_id IS NULL',
+        $userId,
+        $itemId,
+        TP_ENCRYPTION_NAME
+    );
+
+    return (int) $missingFileKeys === 0;
 }
 
 /**

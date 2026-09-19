@@ -136,6 +136,36 @@ function adminNoticesCollectMaintenance(array $SETTINGS, Language $lang): array
         ]);
     }
 
+    // Accounts whose directory password changed without TeamPass being able to re-encrypt
+    // their private key: nothing decrypts for them, and the API and the browser extension
+    // refuse them, until they sign in and complete the prompt.
+    $pendingRecryptLogins = DB::queryFirstColumn(
+        'SELECT login FROM ' . prefixTable('users') . '
+        WHERE special = %s
+        AND deleted_at IS NULL
+        AND login NOT IN %ls
+        ORDER BY login ASC',
+        'recrypt-private-key',
+        ADMIN_NOTICES_SYSTEM_LOGINS
+    );
+    if (count($pendingRecryptLogins) > 0) {
+        $pendingRecryptBadges = '';
+        foreach ($pendingRecryptLogins as $login) {
+            $pendingRecryptBadges .= '<span class="badge badge-light border text-dark mr-1 mb-1">'
+                . htmlspecialchars((string) $login, ENT_QUOTES, 'UTF-8') . '</span>';
+        }
+        $notices[] = adminNoticeBuild([
+            'id' => 'recrypt_private_key_pending',
+            'severity' => 'warning',
+            'icon' => 'fa-solid fa-user-lock',
+            'title' => $lang->get('admin_notice_recrypt_private_key_pending'),
+            'badge' => '<span class="badge badge-warning ml-1">' . count($pendingRecryptLogins) . '</span>',
+            'description' => $lang->get('admin_notice_recrypt_private_key_pending_desc')
+                . '<div class="mt-1">' . $pendingRecryptBadges . '</div>',
+            'action' => adminNoticeActionLink('index.php?page=users', $lang->get('open')),
+        ]);
+    }
+
     // Has the personal items migration been done for users?
     $stats = DB::query(
         'SELECT

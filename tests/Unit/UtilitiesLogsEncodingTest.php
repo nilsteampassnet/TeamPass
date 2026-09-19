@@ -129,16 +129,14 @@ class UtilitiesLogsEncodingTest extends TestCase
         $dataTable = $this->source('app/sources/logs.datatables.php');
         $knowledgeBase = $this->source('app/sources/kb.queries.php');
 
+        // The four log_system views and the item view are served by one merged branch now; the
+        // option lists it also serves feed the facet pickers and are normalized the same way.
         foreach (
             [
-                ['connections', 'access'],
-                ['access', 'copy'],
-                ['copy', 'admin'],
-                ['admin', 'items'],
-                ['items', 'authentication_lockouts'],
-                ['authentication_lockouts', 'failed_auth'],
-                ['failed_auth', 'errors'],
-                ['errors', 'items_in_edition'],
+                ['logs', 'user_options'],
+                ['user_options', 'folder_options'],
+                ['folder_options', 'authentication_lockouts'],
+                ['authentication_lockouts', 'items_in_edition'],
             ] as [$action, $nextAction]
         ) {
             self::assertStringContainsString(
@@ -198,9 +196,15 @@ class UtilitiesLogsEncodingTest extends TestCase
     {
         $javascript = $this->source('app/pages/utilities.logs.js.php');
 
-        self::assertGreaterThanOrEqual(
-            7,
-            substr_count($javascript, "return $('<div/>').text(decodeHtmlEntities(data)).html();")
+        // One renderer for every text column, instead of the same two lines repeated per table.
+        self::assertStringContainsString(
+            "return escapeLogValue(decodeHtmlEntities(value));",
+            $javascript
+        );
+        // Any column without a dedicated renderer falls back to it, so none is left raw.
+        self::assertStringContainsString(
+            'return logCellRenderers[key] ? logCellRenderers[key](row) : renderLogText(data)',
+            $javascript
         );
         self::assertStringNotContainsString('return decodeHtmlEntities(data);', $javascript);
     }
@@ -212,16 +216,16 @@ class UtilitiesLogsEncodingTest extends TestCase
     {
         $javascript = $this->source('app/pages/utilities.logs.js.php');
 
-        self::assertStringContainsString('function escapeAuthenticationLockoutAttribute(value) {', $javascript);
+        self::assertStringContainsString('function escapeLogAttribute(value) {', $javascript);
         self::assertStringContainsString('.replace(/"/g, \'&quot;\')', $javascript);
         self::assertStringContainsString('.replace(/\'/g, \'&#39;\')', $javascript);
 
         // Every title="..." built by the lockout tab goes through the attribute escaper.
-        preg_match_all('/title="\'\s*\+\s*(escapeAuthenticationLockout\w+)\(/', $javascript, $matches);
+        preg_match_all('/title="\'\s*\+\s*(escapeLog\w+)\(/', $javascript, $matches);
 
         self::assertNotEmpty($matches[1]);
         foreach ($matches[1] as $helper) {
-            self::assertSame('escapeAuthenticationLockoutAttribute', $helper);
+            self::assertSame('escapeLogAttribute', $helper);
         }
     }
 
@@ -229,7 +233,7 @@ class UtilitiesLogsEncodingTest extends TestCase
     {
         $dataTable = $this->source('app/sources/logs.datatables.php');
         $branchStart = strpos($dataTable, "\$params['action'] === 'authentication_lockouts'");
-        $nextBranch = strpos($dataTable, '/* FAILED AUTHENTICATION */', (int) $branchStart);
+        $nextBranch = strpos($dataTable, "\$params['action'] === 'items_in_edition'", (int) $branchStart);
 
         self::assertIsInt($branchStart);
         self::assertIsInt($nextBranch);
@@ -249,12 +253,12 @@ class UtilitiesLogsEncodingTest extends TestCase
 
         self::assertMatchesRegularExpression(
             "/'data': 'value',\s*'render': function\(data, type\) \{\s*"
-            . "return type === 'display' \? escapeAuthenticationLockoutValue\(data\) : data;/",
+            . "return type === 'display' \? escapeLogValue\(data\) : data;/",
             $javascript,
             'The raw lockout identifier must not go through the decoding renderer.'
         );
         self::assertStringContainsString(
-            'renderAuthenticationLockoutDisplayValue(data)',
+            'renderLogText(data)',
             $javascript,
             'The server-normalized user_display column keeps the decode-then-escape renderer.'
         );

@@ -195,16 +195,17 @@ class PerformChecks
         $pagesRights = array(
             'user' => array(
                 'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'profile', 'import', 'export', 'offline', 'dashboard',
+                'utilities.renewal',
             ),
             'manager' => array(
                 'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'roles', 'utilities', 'users', 'profile',
                 'import', 'export', 'offline', 'process',
-                'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs', 'tasks', 'reviews',
+                'utilities.deletion', 'utilities.database', 'utilities.logs', 'tasks', 'reviews',
             ),
             'human_resources' => array(
                 'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'roles', 'utilities', 'users', 'profile',
                 'import', 'export', 'offline', 'process',
-                'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs', 'tasks', 'reviews',
+                'utilities.deletion', 'utilities.database', 'utilities.logs', 'tasks', 'reviews',
             ),
             'admin' => array(
                 'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'manage_roles', 'manage_folders',
@@ -212,7 +213,7 @@ class PerformChecks
                 'manage_views', 'manage_users', 'manage_settings', 'manage_main',
                 'admin', 'profile', 'mfa', 'api', 'backups', 'emails', 'emails_templates', 'ldap', 'special',
                 'statistics', 'reports', 'reviews', 'fields', 'options', 'views', 'roles', 'folders', 'users', 'utilities',
-                'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs', 'utilities.health', 'tasks', 'uploads', 'oauth', 'tools',
+                'utilities.deletion', 'utilities.database', 'utilities.logs', 'utilities.health', 'tasks', 'uploads', 'oauth', 'tools',
                 'admin_lapr'
             ),
         );
@@ -243,6 +244,12 @@ class PerformChecks
 
         // check if user has been deleted
         if ($data['deleted_at'] !== null) {
+            return false;
+        }
+
+        // Renewal lists readable items; administrative folder visibility is not item access.
+        // Deny it before the common user-page fallback, which also applies to administrators.
+        if ((int) $data['admin'] === 1 && in_array('utilities.renewal', $pageVisited, true)) {
             return false;
         }
 

@@ -462,15 +462,22 @@ The website carries a condensed changelog at <https://teampass.net/whats-new.htm
 **Edit `_data/releases.yml`, never `whats-new.html`.** The page only iterates
 `site.data.releases.versions`; a new release is a data entry, and the HTML never changes.
 
-Entries are **newest first**, so the new one goes immediately above the previous version. The
-shape is fixed:
+Entries are **newest first**, so the new one goes immediately above the previous version.
+
+**Only the current line is kept.** `versions` lists the 3.2.2.x releases and nothing older — the
+3.2.1.x and 3.2.0.x entries were dropped when 3.2.2.4 was added. A release that opens a new line
+therefore replaces the whole list rather than extending it — and it is the one moment the page's
+`lead` front matter and the `highlights` block, which both describe the line as a whole, have to be
+revisited with the user. Within a line, nothing is ever removed: a patch only prepends.
+
+The shape is fixed:
 
 ```yaml
   - version: 3.2.2.0
     date: 2026-08-23
     summary: One sentence naming the headline change.
     changes:
-      - group: Security        # Security | New | Improved | Upgrade notes
+      - group: Security        # Security | New | Improved | Fixed | Upgrade notes
         items:
           - One short phrase per line, no trailing period
           - "Advisory identifiers go in parentheses at the end (GHSA-xxxx-xxxx-xxxx)"
@@ -479,9 +486,14 @@ shape is fixed:
 Writing rules — this is a **condensation**, not a copy of the GitHub notes:
 
 - One short phrase per item. The GitHub release is where the paragraph lives; the site says what
-  changed and stops. Aim for the density of the existing 3.2.1.x entries.
+  changed and stops. Aim for the density of the existing 3.2.2.x entries.
 - Group order follows what dominates the release. `Upgrade notes` last, and only when an
   administrator has something to do or expect.
+- **`Fixed` is a real group, not a fallback.** Up to 3.2.1.7 bug fixes were folded into `Improved`
+  or dropped; that reads wrong for a release the notes themselves call a hotfix, so 3.2.2.2 and
+  later list them under `Fixed`. The heading is rendered as free text (`{{ group.group }}`), so a
+  themed one-off is allowed too — `Encryption` exists once — but stay inside the set above unless a
+  single subject genuinely dominates.
 - The site's own editorial rule applies (see its `CLAUDE.md`): **every claim must be checkable
   against the published release notes**. Work from `gh release view <VERSION> --json body`, not
   from the commit range or from memory.

@@ -85,6 +85,8 @@ Credentials must be in the body — query string is rejected (400).
 
 **Anti-bruteforce:** Failed attempts are recorded in `teampass_auth_failures` using the same thresholds as the web interface (`nb_bad_authentication`, `nb_bad_authentication_by_ip`, `bruteforce_lock_duration`). Events are logged in `teampass_log_system` with `tp_src=api`.
 
+**Refusal causes (log only):** every refusal answers the same `401 Invalid credentials`; the cause goes to `log_system.label` through the single exit `AuthModel::refuseApiAuth()`. Labels and their precedence live in the DB-free `app/sources/api_auth_logic.php` (`apiAuthFailureLabels()`, also the list the logs page uses to classify API rows — a label missing there shows as Web): `api_user_unknown`, `api_user_disabled`, `api_access_not_enabled`, `api_token_auth_type_not_allowed`, `api_invalid_password`, `api_invalid_password_ldap` (the API compares with the hash saved at the last **web** sign-in, never the directory), `api_invalid_password_oauth2`, `api_private_key_needs_recrypt` (`users.special = recrypt-private-key`), `api_private_key_unavailable`, `api_invalid_apikey`, `api_invalid_token`, `api_token_decrypt_failed`, `api_token_key_outdated`. **Rule: never make the HTTP answer depend on the cause, and count the failure for every cause** — skipping it when the password is correct turns the lockout into a password oracle. The account-state checks run before the password is verified, so `api_access_not_enabled` says nothing about the password.
+
 ### `POST /api/authorizeToken`
 
 Generates a JWT for an **OAuth2 (SSO) user** using a **Personal Access Token (PAT)** instead of a password + API key. Does **not** require an existing JWT.
@@ -298,6 +300,8 @@ Every other field stays updatable in the meantime; only `password` needs the cur
 
 **Move (`folder_id` change).** A `folder_id` equal to the current one is a no-op, not a move. Any real move now emits the same side effects as the web UI — `at_moved` audit log, item cache refresh, source/destination folder counters, and an `item_moved` WebSocket event to both folders — for **every** transition type, not only personal→shared.
 
+**Move rights — same rule as the web `move_item`** (GHSA-q47m-rvr6-jqw7): a real move needs **delete** on the source folder (`canDeleteInFolder()` — `ND`/`NDNE` refused) and **edit** on the target folder (`canEditInFolder()` — `NE`/`NDNE`/`R` refused), both answered `403` before anything is written. Taking an item out of a folder is a removal from it, and a move can carry content fields in the same request (every transition but personal→shared), so "not read-only" is not enough on either side. Before 3.2.2.5 the source only needed edit and the target only needed "not read-only".
+
 **Personal → shared** is special: the item's object keys must be recovered and redistributed to every eligible user, which `movePersonalItemToSharedFolderSynchronously()` (`sources/main.functions.php`) does in its own transaction. Consequences for clients:
 
 | Condition | Status |
@@ -306,7 +310,7 @@ Every other field stays updatable in the meantime; only `password` needs the cur
 | A source encryption key is missing or unusable | `422` — the item stays personal, nothing is destroyed |
 | The item was moved or re-encrypted concurrently | `409` — retry |
 
-Unknown extra keys in the payload are **not** a conflict: the guard keys off the fields that would actually be written, exactly like the rest of `updateItem()`. Other transitions (shared→shared, shared→personal, personal→personal) keep their previous behaviour and are unaffected by the 422/409 rules.
+Unknown extra keys in the payload are **not** a conflict: the guard keys off the fields that would actually be written, exactly like the rest of `updateItem()`. **Shared → personal** narrows the keys to the new owner: every sharekey of the item, its custom fields, its attachments and its log entries that does not belong to the caller or to a TeamPass system account (TP_USER above all, the recovery key) is deleted in the same transaction as the folder change — the invariant the web move and SEC-8 already enforce. When the caller does not hold a key on the item or on one of its encrypted objects (typically while the background fan-out is still running), the move answers `422` and nothing is written: narrowing anyway would leave that object with the recovery key alone. Shared→shared and personal→personal keep their previous behaviour.
 
 **LAPR-owned items** (Linux Account Password Rotation, see `architecture-lapr.md`). Two independent guards, both returning `409` and both **inactive when the LAPR module is disabled**:
 
@@ -321,7 +325,7 @@ The password guard compares against the **decrypted** current value, so resendin
 
 **Item-level restriction:** a caller outside the item's `restricted_to` / `restriction_to_roles` subset gets `403` and **nothing is written**, mirroring the web `update_item` handler, which refuses in the same case. This matters beyond confidentiality: a password written by an excluded user is then redistributed to every folder member by the sharekey fan-out.
 
-**Permissions:** `allowed_to_update`. Source folder must not be read-only. If `folder_id` changes (move), **target folder** must also not be read-only for the user.
+**Permissions:** `allowed_to_update`. Source folder must allow edit (`canEditInFolder()` — refuses `R`, `NE`, `NDNE`). If `folder_id` changes (move), the **source folder** must also allow delete (`canDeleteInFolder()` — refuses `ND`, `NDNE`) and the **target folder** must allow edit (`canEditInFolder()` — refuses `R`, `NE`, `NDNE`), like the web `move_item` (GHSA-q47m-rvr6-jqw7).
 
 ---
 
@@ -488,7 +492,7 @@ The key is `extension_url` (value = `cpassman_url`) — the doc previously named
 | 201 | Resource created (`item/create` adds a `Location` header) |
 | 400 | Missing or invalid parameters |
 | 401 | `"Missing Authorization header"` — no bearer token received (check webserver vhost passes Authorization on GET). `"Invalid or expired token"` — token present but rejected (bad signature, expired, malformed). Match on HTTP 401 status rather than the body string. |
-| 403 | Permission denied (folder read-only, admin required, CRUD rights missing, caller outside the item's `restricted_to` / `restriction_to_roles` subset) |
+| 403 | Permission denied (folder read-only, admin required, CRUD rights missing, item move without delete on the source or edit on the target folder, caller outside the item's `restricted_to` / `restriction_to_roles` subset) |
 | 404 | Resource not found / unknown route |
 | 405 | HTTP method not supported for this endpoint (`Allow:` header lists supported methods) |
 | 409 | The supplied `revision` no longer matches the item (`item/update` or `item/delete`), an idempotency key was reused with another request or is still processing, the resource changed while the request was being processed (concurrent personal→shared item move), or the operation conflicts with a LAPR relationship (managed login/password update, move to a personal folder, delete of a linked item) |
@@ -523,12 +527,12 @@ On HTTPS: `Strict-Transport-Security: max-age=31536000; includeSubDomains`.
 3. **Sharekey decryption** uses `decryptUserObjectKeyWithMigration()` — transparently upgrades phpseclib v1 (SHA-1) sharekeys to v3 (SHA-256) on access.
 4. **Bruteforce** thresholds: `nb_bad_authentication` (default 10), `nb_bad_authentication_by_ip` (default 30), `bruteforce_lock_duration` (default 10 min). Configure in TeamPass admin settings.
 5. **Folder rights parity with the web** (see `docs/features/rights.md`): `FolderAccessModel::getFolderAccessLevelForUser()` is the single API resolver. It folds every role type on the folder through `evaluateFolderAccesLevel()` — the same function the web uses in `getRoleBasedAccess()` — so the **least permissive wins** (`R` > `NDNE` > `NE` = `ND` > `W`). A direct per-user grant (`users_groups`) always yields `W` and overrides a role restriction, exactly like `identUser()`. Roles of **both** sources count (manual + AD/LDAP): filtering on `source = "manual"` used to hide folders *and* make a role-granted `R` folder look unrestricted.
-   - `isFolderReadOnlyForUser()` ⟺ resolved type is `R`. It gates operations that only need *create* semantics: item create, folder create/update/delete, and the target folder of a move.
-   - `canEditInFolder()` / `canDeleteInFolder()` gate `PUT /item/update` and `DELETE /item/delete` — `ND`/`NE`/`NDNE` are writable but restricted, which the read-only boolean alone cannot express.
+   - `isFolderReadOnlyForUser()` ⟺ resolved type is `R`. It gates operations that only need *create* semantics: item create and folder create/update/delete.
+   - `canEditInFolder()` / `canDeleteInFolder()` gate `PUT /item/update` and `DELETE /item/delete` — `ND`/`NE`/`NDNE` are writable but restricted, which the read-only boolean alone cannot express. An item move uses both: delete on the source, edit on the target, exactly like the web `move_item` / `mass_move_items` / `update_item`.
    - **`AuthModel::buildUserFoldersList()` is a visibility list only**, never a rights list. It mirrors `identifyUserRights()`: an administrator gets every shared folder (`identAdmin()`) and is exempt from the deny list; for everyone else `users_groups_forbidden` (`groupes_interdits`) is subtracted **last** — a denial beats every grant. The cache-rebuild query in `api/index.php` must select `admin`, `groupes_interdits` and `roles_from_ad_groups` so it resolves identically to the `/authorize` path.
 6. **Logging**: successful logins logged as `user_connection` with `tp_src=api`. Failed auth logged as `failed_auth` with `tp_src=api`. Visible in Admin > Logs.
 7. **Input sanitization**: body and query-string params are trimmed only — no HTML encoding — so passwords containing `<>&"'` are stored correctly. SQL injection is prevented by MeekroDB placeholders throughout.
-8. **Personal Access Tokens (OAuth2)**: `teampass_api_tokens` stores only `sha256(token)` + the private key wrapped under `HKDF-SHA256(token, salt)` (AES-256-GCM). The raw token is never persisted, so a DB dump alone cannot decrypt. The token is 256-bit (bypassing the weak 64-bit `hashUserId(oid)` derivation), revocable per device, optionally time-limited (`expires_at`), and gated by `oauth2_api_enabled`. Generation requires the cleartext private key to be present in the web session — the security gate on issuance. Audit: `extension_token_generated` / `extension_token_revoked` (`user_mngt`), failed token auth as `failed_auth` (`tp_src=api`).
+8. **Personal Access Tokens (OAuth2)**: `teampass_api_tokens` stores only `sha256(token)` + the private key wrapped under `HKDF-SHA256(token, salt)` (AES-256-GCM). The raw token is never persisted, so a DB dump alone cannot decrypt. The token is 256-bit (bypassing the weak 64-bit `hashUserId(oid)` derivation), revocable per device, optionally time-limited (`expires_at`), and gated by `oauth2_api_enabled` (or `extension_token_all_auth_types` for every auth type). A token is tied to the key pair it wrapped: `handleUserKeys()` deletes the user's tokens when the key pair changes, and `getUserAuthByToken()` refuses any token whose private key no longer matches `users.public_key` (`api_token_key_outdated`). User purges delete `api_tokens` and `api_sessions`. Generation requires the cleartext private key to be present in the web session — the security gate on issuance. Audit: `extension_token_generated` / `extension_token_revoked` (`user_mngt`), failed token auth as `failed_auth` (`tp_src=api`).
 
 ---
 

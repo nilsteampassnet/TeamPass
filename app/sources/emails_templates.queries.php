@@ -100,7 +100,10 @@ error_reporting(E_ERROR);
 // Read POST variables
 $post_type = (string) $request->request->filter('type', '', FILTER_SANITIZE_SPECIAL_CHARS);
 $post_key = (string) $request->request->filter('key', '', FILTER_SANITIZE_SPECIAL_CHARS);
-$post_data = (string) $request->request->filter('data', '', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+// Read raw, like an encrypted payload: each field is sanitized after decoding.
+// FILTER_SANITIZE_FULL_SPECIAL_CHARS does not re-encode existing entities, so a literal "&lt;"
+// came back as "<" once the payload was decoded, unlike an encrypted one.
+$post_data = (string) $request->request->filter('data', '', FILTER_UNSAFE_RAW);
 
 // Check KEY on every action
 if ($post_key !== $session->get('key')) {
@@ -564,6 +567,9 @@ switch ($post_type) {
         }
 
         $emailSettings = new EmailSettings($SETTINGS);
+        // Interactive check, same reasoning as the email configuration test:
+        // fail fast instead of holding the request until a proxy answers a 504.
+        $emailSettings->timeout = EmailSettings::TEST_TIMEOUT;
         $emailService = new EmailService();
         $result = json_decode(
             (string) $emailService->sendMail(

@@ -108,7 +108,7 @@ Moving transfers an item to another folder.
 3. Select the destination folder.
 4. Confirm.
 
-> 🔔 You need write permission on both the source folder (to remove the item) and the destination folder (to create it).
+> 🔔 You need the **Delete** right on the source folder (the item leaves it) and the **Edit** right on the destination folder. A folder granted as `ND` does not let you move items out; a folder granted as `NE` or `NDNE` does not let you move items in. See [Rights management](rights.md#permission-types).
 
 ---
 

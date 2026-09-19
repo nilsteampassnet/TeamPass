@@ -224,447 +224,321 @@ if (isset($params['search']['value'])) {
 }
 
 // Ordering
-$order = strtoupper($params['order'][0]['dir'] ?? null);
+// Default to a string, never null: the facet option lists below are not DataTables sources and
+// send no order parameter, and strtoupper(null) emits a deprecation that lands in front of the
+// JSON body — which is why the pickers reported "the results could not be loaded".
+$order = strtoupper((string) ($params['order'][0]['dir'] ?? ''));
 $orderDirection = in_array($order, $aSortTypes, true) ? $order : 'DESC';
     
 // Start building the query and output depending on the action
-if (isset($params['action']) && $params['action'] === 'connections') {
-    //Columns name
-    $aColumns = ['l.date', 'l.label', 'l.field_1', 'u.login', 'u.name', 'u.lastname', 'l.qui'];
+if (isset($params['action']) && $params['action'] === 'logs') {
+    // One canonical payload drives the read query here and the purge in utilities.queries.php.
+    // That is what guarantees a purge deletes exactly the rows the table displayed.
+    $rawFilters = json_decode((string) $request->query->get('filters', ''), true);
+    $filters = logsNormalizeFilters(is_array($rawFilters) === true ? $rawFilters : []);
+    $filters['term'] = $searchValue !== '' ? mb_substr(trim($searchValue), 0, 100) : $filters['term'];
 
-    // Ordering
-    $orderColumn = $aColumns[0];
-    if (isset($aColumns[$params['order'][0]['column']]) === true) {
-        $orderColumn = $aColumns[$params['order'][0]['column']];
+    // Knowledge base logs are misc rows served by kb.queries.php, which owns their admin gate.
+    // Falling through to the system branch here would answer system rows under the knowledge base
+    // column set, which is exactly what DataTables reports as an unknown parameter.
+    if ($filters['source'] === 'kb') {
+        http_response_code(400);
+        echo (string) json_encode(
+            [
+                'draw' => (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => $lang->get('error_not_allowed_to'),
+            ],
+            JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+        );
+        exit;
     }
-    
-    // Filtering
-    $sWhere = new WhereClause('AND');
-    if ($searchValue !== '') {        
-        $subclause = $sWhere->addClause('OR');
-        foreach ($aColumns as $column) {
-            $subclause->add($column.' LIKE %ss', $searchValue);
-        }
-    }
-    $sWhere->add('l.type = %s', 'user_connection');
 
-    // Get the total number of records
-    $iTotal = DB::queryFirstField(
-        'SELECT COUNT(*)
-        FROM '.prefixTable('log_system').' as l
-        LEFT JOIN '.prefixTable('users').' as u ON (l.qui=u.id) 
-        WHERE %l ORDER BY %l %l',
-        $sWhere,
-        $orderColumn,
-        $orderDirection
-    );
+    $visibleColumns = logsVisibleColumns($filters['source'], $filters['types']);
+    $sortableColumns = $filters['source'] === 'items'
+        ? [
+            'date' => 'l.date', 'id' => 'i.id', 'label' => 'i.label', 'folder' => 't.title',
+            'user' => 'u.login', 'action' => 'l.action', 'api' => 'l.raison', 'personal' => 't.personal_folder',
+        ]
+        : [
+            'date' => 'l.date', 'type' => 'l.type', 'label' => 'l.label', 'user' => 'u.login',
+            'source' => 'l.field_1', 'ip' => 'l.qui', 'channel' => 'l.label',
+            'target' => 'l.field_1', 'actions' => 'l.date',
+        ];
 
-    // Prepare the SQL query
-    $sql = 'SELECT l.date as date, l.label as label, l.field_1 as field_1, l.qui as who, 
-    u.login as login, u.name AS name, u.lastname AS lastname
-    FROM '.prefixTable('log_system').' as l
-    LEFT JOIN '.prefixTable('users').' as u ON (l.qui=u.id)
-    WHERE %l ORDER BY %l %l LIMIT %i, %i';
-    $params = [$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
+    // The ordering index addresses the columns the client was told to display, so it is resolved
+    // against that same list rather than against a second one that could drift from it.
+    $orderedKey = $visibleColumns[(int) ($params['order'][0]['column'] ?? 0)] ?? 'date';
+    $orderColumn = $sortableColumns[$orderedKey] ?? 'l.date';
 
-    // Get the records
-    $rows = DB::query($sql, ...$params);
-    $iFilteredTotal = DB::count();
-    
-    // Output
-    $sOutput = '{';
-    $sOutput .= '"sEcho": '. $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
-    $sOutput .= '"iTotalRecords": '.$iTotal.', ';
-    $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
-    $sOutput .= '"aaData": ';
-    if ($iFilteredTotal > 0) {
-        $sOutput .= '[';
-    }
-    foreach ($rows as $record) {
-        $sOutput .= '[';
-        //col1
-        $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
-        //col2
-        $sOutput .= tpDatatableJsonCell(normalizeLogDisplayValue(str_replace([chr(10), chr(13)], [' ', ' '], stripslashes((string) $record['label'])))).', ';
-        //col3 (Source)
-        $field1 = isset($record['field_1']) ? trim((string) $record['field_1']) : '';
-        $isApi = ($field1 === 'api') || (strpos($field1, 'tp_src=api') !== false);
-        $sourceLabel = $isApi ? 'API/Extension' : 'Web';
-        $sOutput .= '"'.htmlspecialchars($sourceLabel, ENT_QUOTES).'", ';
-        //col4
-        if (!empty($record['login'])) {
+    $data = [];
+
+    if ($filters['source'] === 'items') {
+        $sWhere = buildItemLogFilter($filters, $lang);
+
+        // The joins are mandatory, not decorative: the predicate reaches i.id_tree and
+        // t.personal_folder, and an item hard-deleted since drops out of the view.
+        $from = prefixTable('log_items') . ' AS l
+            INNER JOIN ' . prefixTable('items') . ' AS i ON (l.id_item = i.id)
+            INNER JOIN ' . prefixTable('users') . ' AS u ON (l.id_user = u.id)
+            INNER JOIN ' . prefixTable('nested_tree') . ' AS t ON (i.id_tree = t.id)';
+
+        $iTotal = (int) DB::queryFirstField(
+            'SELECT COUNT(*) FROM ' . $from . ' WHERE %l',
+            $sWhere
+        );
+
+        $rows = DB::query(
+            'SELECT l.date AS date, l.action AS action, l.raison AS raison,
+                i.id AS id, i.label AS label, t.title AS folder, t.personal_folder AS personal_folder,
+                u.login AS login, u.name AS name, u.lastname AS lastname
+            FROM ' . $from . ' WHERE %l ORDER BY %l %l LIMIT %i, %i',
+            $sWhere,
+            $orderColumn,
+            $orderDirection,
+            $sLimitStart,
+            $sLimitLength
+        );
+
+        foreach ($rows as $record) {
             $fullname = trim(
                 normalizeLogDisplayValue($record['name'] ?? '') . ' ' .
                 normalizeLogDisplayValue($record['lastname'] ?? '')
             );
-            $sOutput .= tpDatatableJsonCell(($fullname !== '' ? $fullname . ' ' : '') . '[' . normalizeLogDisplayValue($record['login']) . ']');
-        } else {
-            $sOutput .= tpDatatableJsonCell('IP: ' . normalizeLogDisplayValue($record['who'] ?? ''));
+            $data[] = [
+                'date' => date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['date']),
+                'id' => (int) $record['id'],
+                'label' => normalizeLogDisplayValue(trim((string) $record['label'])),
+                'folder' => normalizeLogDisplayValue(trim((string) $record['folder'])),
+                'user' => ($fullname !== '' ? $fullname . ' ' : '')
+                    . '[' . normalizeLogDisplayValue(trim((string) $record['login'])) . ']',
+                // The action code travels as-is: the client owns its translation, so no markup
+                // and no already-escaped sentence transits through the JSON payload.
+                'action' => (string) $record['action'],
+                'api' => strpos((string) ($record['raison'] ?? ''), 'tp_src=api') !== false,
+                'personal' => (int) ($record['personal_folder'] ?? 0) === 1,
+            ];
         }
-        //Finish the line
-        $sOutput .= '],';
-    }
-
-    if (count($rows) > 0) {
-        $sOutput = substr_replace($sOutput, '', -1);
-        $sOutput .= '] }';
     } else {
-        $sOutput .= '[] }';
-    }
+        $sWhere = buildSystemLogFilter($filters);
 
-    /* ERRORS LOG */
-} elseif (isset($params['action']) && $params['action'] === 'access') {
-    //Columns name
-    $aColumns = ['l.date', 'i.label', 'u.login'];
+        // LEFT JOIN, never INNER: on a failed authentication qui holds an IP address, and any row
+        // whose author has since been deleted must still be readable.
+        $from = prefixTable('log_system') . ' AS l
+            LEFT JOIN ' . prefixTable('users') . ' AS u ON (l.qui = u.id)';
 
-    // Ordering
-    $orderColumn = $aColumns[0];
-    if (isset($aColumns[$params['order'][0]['column']]) === true) {
-        $orderColumn = $aColumns[$params['order'][0]['column']];
-    }
+        $iTotal = (int) DB::queryFirstField(
+            'SELECT COUNT(*) FROM ' . $from . ' WHERE %l',
+            $sWhere
+        );
 
-    // Filtering
-    $sWhere = new WhereClause('AND');
-    if ($searchValue !== '') {        
-        $subclause = $sWhere->addClause('OR');
-        foreach ($aColumns as $column) {
-            $subclause->add($column.' LIKE %ss', $searchValue);
+        $rows = DB::query(
+            'SELECT l.date AS date, l.type AS type, l.label AS label, l.field_1 AS field_1,
+                l.qui AS who, u.login AS login, u.name AS name, u.lastname AS lastname
+            FROM ' . $from . ' WHERE %l ORDER BY %l %l LIMIT %i, %i',
+            $sWhere,
+            $orderColumn,
+            $orderDirection,
+            $sLimitStart,
+            $sLimitLength
+        );
+        $rows = is_array($rows) === true ? $rows : [];
+
+        // Administration rows name their target by user id in field_1. Resolving it row by row
+        // was one query per line; the whole page is resolved in a single one instead.
+        $targetIds = [];
+        foreach ($rows as $record) {
+            if (logsSystemTypeKey((string) $record['type']) !== 'admin'
+                || (string) $record['label'] === 'authentication_lockout_removed'
+            ) {
+                continue;
+            }
+            // filter_var, not a cast: '1758988164-D5Hc....sql' is a backup file name, not user
+            // 1758988164. The display path below applies the same rule.
+            $targetId = filter_var($record['field_1'] ?? null, FILTER_VALIDATE_INT);
+            if ($targetId !== false && $targetId > 0 && in_array($targetId, $targetIds, true) === false) {
+                $targetIds[] = $targetId;
+            }
+        }
+        $targets = [];
+        if ($targetIds !== []) {
+            foreach (DB::query(
+                'SELECT id, login, name, lastname FROM ' . prefixTable('users') . ' WHERE id IN %li',
+                $targetIds
+            ) as $target) {
+                $targets[(int) $target['id']] = $target;
+            }
+        }
+
+        $isAdminSession = (int) ($session->get('user-admin') ?? 0) === 1;
+
+        foreach ($rows as $record) {
+            $type = (string) $record['type'];
+            $typeKey = logsSystemTypeKey($type);
+            $label = (string) ($record['label'] ?? '');
+            $field1 = stripslashes((string) ($record['field_1'] ?? ''));
+            $isApi = logsSystemRowIsApi($type, $label, $field1);
+
+            $fullname = trim(
+                normalizeLogDisplayValue($record['name'] ?? '') . ' ' .
+                normalizeLogDisplayValue($record['lastname'] ?? '')
+            );
+            $user = empty($record['login']) === false
+                ? ($fullname !== '' ? $fullname . ' ' : '') . '[' . normalizeLogDisplayValue((string) $record['login']) . ']'
+                : '';
+
+            if ($typeKey === 'failed') {
+                // Failed authentications carry the submitted login, not a user id: there is no
+                // account to join, and the value must be shown exactly as it was submitted.
+                $user = normalizeLogDisplayValue(logsStripApiMarker($field1, $isApi));
+                $display = normalizeLogDisplayValue((string) $lang->get($label));
+            } elseif ($typeKey === 'admin') {
+                $display = normalizeLogDisplayValue(formatAdminLogLabel($label, $lang));
+            } else {
+                $display = normalizeLogDisplayValue(str_replace([chr(10), chr(13)], [' ', ' '], stripslashes($label)));
+                if ($user === '') {
+                    $user = 'IP: ' . normalizeLogDisplayValue((string) ($record['who'] ?? ''));
+                }
+            }
+
+            $target = '';
+            if ($typeKey === 'admin' && $field1 !== '') {
+                // Only user management names its target by id. Administration rows carry free
+                // text there (a backup file name, a recipient address), and resolving those as an
+                // id labelled every one of them "Removed user (...)".
+                $targetId = filter_var($field1, FILTER_VALIDATE_INT);
+                if ($label === 'authentication_lockout_removed' || $targetId === false || $targetId <= 0) {
+                    $target = normalizeLogDisplayValue($field1);
+                } elseif (isset($targets[$targetId]) === true) {
+                    $target = trim(
+                        normalizeLogDisplayValue($targets[$targetId]['name'] ?? '') . ' ' .
+                        normalizeLogDisplayValue($targets[$targetId]['lastname'] ?? '')
+                    );
+                } else {
+                    $target = normalizeLogDisplayValue('Removed user (' . $field1 . ')');
+                }
+            }
+
+            $ip = $typeKey === 'failed' ? normalizeLogDisplayValue(stripslashes((string) ($record['who'] ?? ''))) : '';
+
+            $data[] = [
+                'date' => date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['date']),
+                // Keys, not sentences: the client owns every translation and every badge, so the
+                // payload carries no markup at all.
+                'type' => $typeKey,
+                'label' => $display,
+                'user' => $user,
+                'source' => $isApi === true ? 'api' : 'web',
+                'ip' => $ip,
+                'channel' => $isApi === true ? 'api' : 'web',
+                'target' => $target,
+                // The unlock action needs a routable IPv4 rule and an administrator session.
+                'can_blacklist' => $typeKey === 'failed' && $isAdminSession === true
+                    && teampassNormalizeIpv4Rule((string) ($record['who'] ?? '')) !== null,
+            ];
         }
     }
-    $sWhere->add('l.action = %s', 'at_shown');
 
-    // Get the total number of records
-    $iTotal = DB::queryFirstField(
-        'SELECT COUNT(*)
-        FROM '.prefixTable('log_items').' as l
-        INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
-        INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
-        WHERE %l ORDER BY %l %l',
-        $sWhere,
-        $orderColumn,
-        $orderDirection
+    // json_encode once, on a structure, instead of the hand-built string the other branches use:
+    // that concatenation is what let a stored value escape its cell in the past.
+    echo (string) json_encode(
+        [
+            'draw' => (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT),
+            'recordsTotal' => $iTotal,
+            'recordsFiltered' => $iTotal,
+            'columns' => $visibleColumns,
+            'data' => $data,
+        ],
+        JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE
     );
+    exit;
+/* FACET OPTION LISTS
+   Served here rather than by utilities.queries.php: this file is the one gated on the
+   'utilities.logs' page right, which managers hold and 'utilities' does not imply. */
+} elseif (isset($params['action']) && $params['action'] === 'user_options') {
+    $term = mb_substr(trim((string) $request->query->get('term', '')), 0, 100);
+    $page = max(1, (int) $request->query->get('page', 1));
+    $perPage = 30;
 
-    // Prepare the SQL query
-    $sql = 'SELECT l.date as date, u.login as login, i.label as label
-    FROM '.prefixTable('log_items').' as l
-    INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
-    INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
-    WHERE %l ORDER BY %l %l LIMIT %i, %i';
-    $params = [$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
-
-    // Get the records
-    $rows = DB::query($sql, ...$params);
-    $iFilteredTotal = DB::count();
-
-    // Output
-    $sOutput = '{';
-    $sOutput .= '"sEcho": '. $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
-    $sOutput .= '"iTotalRecords": '.$iTotal.', ';
-    $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
-    $sOutput .= '"aaData": ';
-    if ($iFilteredTotal > 0) {
-        $sOutput .= '[';
-    }
-    foreach ($rows as $record) {
-        $sOutput .= '[';
-        //col1
-        $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
-        //col2
-        $sOutput .= tpDatatableJsonCell(normalizeLogDisplayValue(str_replace([chr(10), chr(13)], [' ', ' '], (string) $record['label']))).', ';
-        //col3
-        $sOutput .= tpDatatableJsonCell(normalizeLogDisplayValue($record['login'] ?? ''));
-        //Finish the line
-        $sOutput .= '],';
-    }
-
-    if (count($rows) > 0) {
-        $sOutput = substr_replace($sOutput, '', -1);
-        $sOutput .= '] }';
-    } else {
-        $sOutput .= '[] }';
-    }
-
-    /* COPY LOG */
-} elseif (isset($params['action']) && $params['action'] === 'copy') {
-    //Columns name
-    $aColumns = ['l.date', 'i.label', 'u.login'];
-
-    // Ordering
-    $orderColumn = $aColumns[0];
-    if (isset($aColumns[$params['order'][0]['column']]) === true) {
-        $orderColumn = $aColumns[$params['order'][0]['column']];
-    }
-    
-    // Filtering
-    $sWhere = new WhereClause('AND');
-    if ($searchValue !== '') {        
-        $subclause = $sWhere->addClause('OR');
-        foreach ($aColumns as $column) {
-            $subclause->add($column.' LIKE %ss', $searchValue);
-        }
-    }
-    $sWhere->add('l.action = %s', 'at_copy');
-
-    // Get the total number of records
-    $iTotal = DB::queryFirstField(
-        'SELECT COUNT(*)
-        FROM '.prefixTable('log_items').' as l
-        INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
-        INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
-        WHERE %l ORDER BY %l %l',
-        $sWhere,
-        $orderColumn,
-        $orderDirection
+    $where = new WhereClause('AND');
+    $where->add('id > 0');
+    $where->add(
+        'id NOT IN %li',
+        [(int) OTV_USER_ID, (int) TP_USER_ID, (int) SSH_USER_ID, (int) API_USER_ID]
     );
-
-    // Prepare the SQL query
-    $sql = 'SELECT l.date as date, u.login as login, u.name AS name, u.lastname AS lastname, i.label as label
-    FROM '.prefixTable('log_items').' as l
-    INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
-    INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
-    WHERE %l ORDER BY %l %l LIMIT %i, %i';
-    $params = [$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
-
-    // Get the records
-    $rows = DB::query($sql, ...$params);
-    $iFilteredTotal = DB::count();
-
-    // Output
-    $sOutput = '{';
-    $sOutput .= '"sEcho": '. (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
-    $sOutput .= '"iTotalRecords": '.$iTotal.', ';
-    $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
-    $sOutput .= '"aaData": ';
-    if ($iFilteredTotal > 0) {
-        $sOutput .= '[';
-    }
-    foreach ($rows as $record) {
-        $sOutput .= '[';
-        //col1
-        $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
-        //col2
-        $sOutput .= tpDatatableJsonCell(normalizeLogDisplayValue(trim((string) $record['label']))).', ';
-        //col3
-        $sOutput .= tpDatatableJsonCell(normalizeLogDisplayValue(trim((string) $record['login'])));
-        //Finish the line
-        $sOutput .= '],';
-    }
-
-    if (count($rows) > 0) {
-        $sOutput = substr_replace($sOutput, '', -1);
-        $sOutput .= '] }';
-    } else {
-        $sOutput .= '[] }';
-    }
-
-    /*
-    * ADMIN LOG
-     */
-} elseif (isset($params['action']) && $params['action'] === 'admin') {
-    //Columns name
-    $aColumns = ['l.date', 'u.login', 'l.label', 'l.field_1'];
-
-    // Ordering
-    $orderColumn = $aColumns[0];
-    if (isset($aColumns[$params['order'][0]['column']]) === true) {
-        $orderColumn = $aColumns[$params['order'][0]['column']];
-    }
-
-    // Filtering
-    $sWhere = new WhereClause('AND');
-    if ($searchValue !== '') {        
-        $subclause = $sWhere->addClause('OR');
-        foreach ($aColumns as $column) {
-            $subclause->add($column.' LIKE %ss', $searchValue);
+    if ($term !== '') {
+        $search = $where->addClause('OR');
+        foreach (['login', 'name', 'lastname'] as $column) {
+            $search->add($column . ' LIKE %ss', $term);
         }
     }
-    $sWhere->add('l.type IN %ls', ['admin_action', 'user_mngt']);
 
-    // Get the total number of records
-    $iTotal = DB::queryFirstField(
-        'SELECT COUNT(*)
-        FROM '.prefixTable('log_system').' as l
-        INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id)
-        WHERE %l ORDER BY %l %l',
-        $sWhere,
-        $orderColumn,
-        $orderDirection
+    // One row beyond the page is fetched to answer "is there more" without a second COUNT.
+    $rows = DB::query(
+        'SELECT id, login, name, lastname FROM ' . prefixTable('users') . '
+        WHERE %l ORDER BY login ASC LIMIT %i, %i',
+        $where,
+        ($page - 1) * $perPage,
+        $perPage + 1
     );
+    $rows = is_array($rows) === true ? $rows : [];
+    $hasMore = count($rows) > $perPage;
 
-    // Prepare the SQL query
-    $sql = 'SELECT l.date as date, u.login as login, u.name AS name, u.lastname AS lastname, l.label as label, l.field_1 as field_1
-    FROM '.prefixTable('log_system').' as l
-    INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id)
-    WHERE %l ORDER BY %l %l LIMIT %i, %i';
-    $params = [$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
-
-    // Get the records
-    $rows = DB::query($sql, ...$params);    
-    $iFilteredTotal = DB::count();
-
-    // Output
-    $sOutput = '{';
-    $sOutput .= '"sEcho": '. (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
-    $sOutput .= '"iTotalRecords": '.$iTotal.', ';
-    $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
-    $sOutput .= '"aaData": [ ';
-    foreach ($rows as $record) {
-        $get_item_in_list = true;
-        $sOutput_item = '[';
-        //col1
-        $sOutput_item .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
-        //col2
-        $sOutput_item .= tpDatatableJsonCell(normalizeLogDisplayValue($record['login'] ?? '')).', ';
-        //col3
-        if ($record['label'] === 'at_user_added') {
-            $cell = $lang->get('user_creation');
-        } elseif ($record['label'] === 'at_user_deleted' || $record['label'] === 'user_deleted') {
-            $cell = $lang->get('user_deletion');
-        } elseif ($record['label'] === 'at_user_updated') {
-            $cell = $lang->get('user_updated');
-        } elseif (strpos($record['label'], 'at_user_email_changed') !== false) {
-            $change = explode(':', $record['label']);
-            $cell = $lang->get('log_user_email_changed').' '.($change[1] ?? '');
-        } elseif ($record['label'] === 'at_user_new_keys') {
-            $cell = $lang->get('new_keys_generated');
-        } elseif ($record['label'] === 'at_user_keys_download') {
-            $cell = $lang->get('user_keys_downloaded');
-        } elseif ($record['label'] === 'at_2fa_google_code_send_by_email') {
-            $cell = $lang->get('mfa_code_send_by_email');
-        } elseif ($record['label'] === 'authentication_lockout_removed') {
-            $cell = $lang->get('authentication_lockout_removed');
-        } elseif ($record['label'] === 'at_licence_trial_requested') {
-            $cell = $lang->get('licence_trial_log_requested');
-        } elseif ($record['label'] === 'at_licence_trial_activated') {
-            $cell = $lang->get('licence_trial_log_activated');
-        } elseif ($record['label'] === 'at_licence_trial_link_sent') {
-            $cell = $lang->get('licence_trial_log_link_sent');
-        } elseif (strpos($record['label'], 'at_email_template_updated:') === 0
-            || strpos($record['label'], 'at_email_template_reset:') === 0
-        ) {
-            // Label carries "<action>:<template id>:<language>"
-            $change = explode(':', $record['label']);
-            $cell = $lang->get($change[0]) . ' ' . ($change[1] ?? '') . ' (' . ($change[2] ?? '') . ')';
-        } else {
-            $cell = (string) $record['label'];
-        }
-        $sOutput_item .= tpDatatableJsonCell(normalizeLogDisplayValue($cell)).' ';
-        //col4
-        if ($record['label'] === 'authentication_lockout_removed') {
-            $sOutput_item .= ', '.tpDatatableJsonCell(normalizeLogDisplayValue($record['field_1'] ?? '')).' ';
-        } elseif (empty($record['field_1']) === false) {
-            // get user name
-            $info = DB::queryFirstRow(
-                'SELECT u.login as login, u.name AS name, u.lastname AS lastname
-                    FROM '.prefixTable('users').' as u
-                    WHERE u.id = %i',
-                    $record['field_1']
-            ) ?? [];
-            $sOutput_item .= ', '.tpDatatableJsonCell(
-                empty($info['name']) === false
-                    ? normalizeLogDisplayValue($info['name']).' '.normalizeLogDisplayValue($info['lastname'] ?? '')
-                    : normalizeLogDisplayValue('Removed user ('.$record['field_1'].')')
-            ).' ';
-        } else {
-            $sOutput_item .= ', "" ';
-        }
-        //Finish the line
-        $sOutput_item .= '], ';
-        $sOutput .= $sOutput_item;
-    }
-    if ($iFilteredTotal > 0) {
-        $sOutput = substr_replace($sOutput, '', -2);
-    }
-    $sOutput .= '] }';
-/* ITEMS */
-} elseif (isset($params['action']) && $params['action'] === 'items') {
-    require_once TEAMPASS_APP . '/sources/main.functions.php';
-    //Columns name
-    $aColumns = ['l.date', 'i.id', 'i.label', 't.title', 'u.login', 'l.action', 'l.raison', 't.personal_folder', 'u.name', 'u.lastname'];
-
-    // Ordering
-    $orderColumn = $aColumns[0];
-    if (isset($aColumns[$params['order'][0]['column']]) === true) {
-        $orderColumn = $aColumns[$params['order'][0]['column']];
+    $results = [];
+    foreach (array_slice($rows, 0, $perPage) as $record) {
+        $displayName = trim(
+            normalizeLogDisplayValue($record['name'] ?? '') . ' ' .
+            normalizeLogDisplayValue($record['lastname'] ?? '')
+        );
+        $results[] = [
+            'id' => (int) $record['id'],
+            'text' => ($displayName === '' ? '' : $displayName . ' ')
+                . '[' . normalizeLogDisplayValue((string) $record['login']) . ']',
+        ];
     }
 
-    // Filtering
-    $sWhere = buildItemLogSearchFilter($params['search']['column'] ?? 'all', $searchValue, $lang);
-
-    // Get the total number of records
-    $iTotal = DB::queryFirstField(
-        'SELECT COUNT(*)
-        FROM '.prefixTable('log_items').' AS l
-        INNER JOIN '.prefixTable('items').' AS i ON (l.id_item=i.id)
-        INNER JOIN '.prefixTable('users').' AS u ON (l.id_user=u.id)
-        INNER JOIN '.prefixTable('nested_tree').' AS t ON (i.id_tree=t.id)
-        WHERE %l ORDER BY %l %l',
-        $sWhere,
-        $orderColumn,
-        $orderDirection
+    echo (string) json_encode(
+        ['results' => $results, 'pagination' => ['more' => $hasMore]],
+        JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE
     );
+    exit;
+} elseif (isset($params['action']) && $params['action'] === 'folder_options') {
+    $term = mb_substr(trim((string) $request->query->get('term', '')), 0, 100);
+    $page = max(1, (int) $request->query->get('page', 1));
+    $perPage = 30;
 
-    // Prepare the SQL query
-    $sql = 'SELECT l.date AS date, u.login AS login, u.name AS name, u.lastname AS lastname, i.label AS label,
-    l.raison AS raison, t.personal_folder AS personal_folder, l.action AS action, t.title AS folder, i.id AS id
-    FROM '.prefixTable('log_items').' AS l
-    INNER JOIN '.prefixTable('items').' AS i ON (l.id_item=i.id)
-    INNER JOIN '.prefixTable('users').' AS u ON (l.id_user=u.id)
-    INNER JOIN '.prefixTable('nested_tree').' AS t ON (i.id_tree=t.id)
-    WHERE %l ORDER BY %l %l LIMIT %i, %i';
-    $params = [$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
-
-    // Get the records
-    $rows = DB::query($sql, ...$params);
-    $iFilteredTotal = DB::count();
-
-    // Output
-    $sOutput = '{';
-    $sOutput .= '"sEcho": '. (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
-    $sOutput .= '"iTotalRecords": '.$iTotal.', ';
-    $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
-    $sOutput .= '"aaData": [ ';
-    foreach ($rows as $record) {
-        $get_item_in_list = true;
-        $sOutput_item = '[';
-        //col1
-        $sOutput_item .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
-        //col3
-        $sOutput_item .= '"'.trim((string) $record['id']).'", ';
-        //col3
-        $sOutput_item .= tpDatatableJsonCell(normalizeLogDisplayValue(trim((string) $record['label']))).', ';
-        //col2
-        $sOutput_item .= tpDatatableJsonCell(normalizeLogDisplayValue(trim((string) $record['folder']))).', ';
-        //col2
-        $sOutput_item .= tpDatatableJsonCell(
-            normalizeLogDisplayValue(trim((string) $record['name'])).' '.
-            normalizeLogDisplayValue(trim((string) $record['lastname'])).' ['.
-            normalizeLogDisplayValue(trim((string) $record['login'])).']'
-        ).', ';
-        //col6
-        $sOutput_item .= '"'.secureOutput($lang->get($record['action'])).'", ';
-        //col7 (API / Extension)
-        if (isset($record['raison']) && strpos((string) $record['raison'], 'tp_src=api') !== false) {
-            $sOutput_item .= '"'.secureOutput($lang->get('yes')).'", ';
-        } else {
-            $sOutput_item .= '"'.secureOutput($lang->get('no')).'", ';
-        }
-        //col8 (Personal folder)
-        if ((int) ($record['personal_folder'] ?? 0) === 1) {
-            $sOutput_item .= '"'.secureOutput($lang->get('yes')).'"';
-        } else {
-            $sOutput_item .= '"'.secureOutput($lang->get('no')).'"';
-        }
-
-        //Finish the line
-        $sOutput_item .= '], ';
-        $sOutput .= $sOutput_item;
+    $where = new WhereClause('AND');
+    if ($term !== '') {
+        $where->add('title LIKE %ss', $term);
     }
-    if ($iFilteredTotal > 0) {
-        $sOutput = substr_replace($sOutput, '', -2);
+
+    $rows = DB::query(
+        'SELECT id, title, nlevel FROM ' . prefixTable('nested_tree') . '
+        WHERE %l ORDER BY nleft ASC LIMIT %i, %i',
+        $where,
+        ($page - 1) * $perPage,
+        $perPage + 1
+    );
+    $rows = is_array($rows) === true ? $rows : [];
+    $hasMore = count($rows) > $perPage;
+
+    $results = [];
+    foreach (array_slice($rows, 0, $perPage) as $record) {
+        $results[] = [
+            'id' => (int) $record['id'],
+            // The indent conveys the tree depth without sending the whole hierarchy.
+            'text' => str_repeat('— ', max(0, (int) $record['nlevel'] - 1))
+                . normalizeLogDisplayValue((string) $record['title']),
+        ];
     }
-    $sOutput .= '] }';
+
+    echo (string) json_encode(
+        ['results' => $results, 'pagination' => ['more' => $hasMore]],
+        JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE
+    );
+    exit;
 /* ACTIVE AUTHENTICATION LOCKOUTS */
 } elseif (isset($params['action']) && $params['action'] === 'authentication_lockouts') {
     if ((int) ($session->get('user-admin') ?? 0) !== 1) {
@@ -793,205 +667,6 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     );
     exit;
 /* FAILED AUTHENTICATION */
-} elseif (isset($params['action']) && $params['action'] === 'failed_auth') {
-    //Columns name
-    $aColumns = ['l.date', 'l.label', 'l.field_1', 'l.qui'];
-
-    // Ordering
-    $orderColumn = $aColumns[0];
-    if (isset($aColumns[$params['order'][0]['column']]) === true) {
-        $orderColumn = $aColumns[$params['order'][0]['column']];
-    }
-
-    // Filtering
-    $sWhere = new WhereClause('AND');
-    if ($searchValue !== '') {
-        $subclause = $sWhere->addClause('OR');
-        foreach ($aColumns as $column) {
-            $subclause->add($column.' LIKE %ss', $searchValue);
-        }
-    }
-    $sWhere->add('l.type = %s', 'failed_auth');
-    $sWhere->add(
-        'l.label IN %ls',
-        [
-            'password_is_not_correct',
-            'user_not_exists',
-            'wrong_mfa_code',
-            'bad_duo_mfa',
-            'bruteforce_account_locked',
-            'api_invalid_credentials',
-            'api_invalid_apikey',
-            'api_invalid_token',
-            'api_token_decrypt_failed',
-        ]
-    );
-
-    // Get the total number of records
-    $iTotal = DB::queryFirstField(
-        'SELECT COUNT(*)
-        FROM '.prefixTable('log_system').' as l
-        WHERE %l ORDER BY %l %l',
-        $sWhere,
-        $orderColumn,
-        $orderDirection
-    );
-
-    // Prepare the SQL query
-    $sql = 'SELECT l.date as auth_date, l.label as label, l.qui as who, l.field_1
-    FROM '.prefixTable('log_system').' as l
-    WHERE %l ORDER BY %l %l LIMIT %i, %i';
-    $params = [$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
-
-    // Get the records
-    $rows = DB::query($sql, ...$params);
-    $iFilteredTotal = DB::count();
-
-    // Output
-    if ($iTotal === '') {
-        $iTotal = 0;
-    }
-    $sOutput = '{';
-    $sOutput .= '"sEcho": '. (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
-    $sOutput .= '"iTotalRecords": '.$iTotal.', ';
-    $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
-    $sOutput .= '"aaData": ';
-    if ($iFilteredTotal > 0) {
-        $sOutput .= '[';
-    }
-    foreach ($rows as $record) {
-        $failedLoginLabel = (string) ($record['label'] ?? '');
-        $failedLoginField = stripslashes((string) ($record['field_1'] ?? ''));
-        // The channel is derived from the label, which only the API writes. The 'tp_src=api'
-        // marker alone cannot be trusted: on the web path field_1 is the submitted login, so
-        // anyone could forge an "API" row by typing that string in the login form.
-        $isApiFailure = in_array(
-            $failedLoginLabel,
-            ['api_invalid_credentials', 'api_invalid_apikey', 'api_invalid_token', 'api_token_decrypt_failed'],
-            true
-        );
-        if ($isApiFailure === false && $failedLoginLabel === 'bruteforce_account_locked') {
-            // Shared by both channels: the marker is the only available discriminator.
-            $isApiFailure = strpos($failedLoginField, 'tp_src=api') !== false;
-        }
-        // Only strip the internal marker from a confirmed API row, so a forged login stays
-        // visible exactly as it was submitted.
-        $failedLoginUser = $isApiFailure === true
-            ? trim(str_replace([' | tp_src=api', 'tp_src=api'], '', $failedLoginField), " |\t\n\r\0\x0B")
-            : $failedLoginField;
-        $failedLoginUser = normalizeLogDisplayValue($failedLoginUser);
-        $failedLoginIp = normalizeLogDisplayValue(stripslashes((string) ($record['who'] ?? '')));
-        $failedLoginChannel = $isApiFailure === true
-            ? $lang->get('authentication_channel_api')
-            : $lang->get('authentication_channel_web_unknown');
-        $blacklistAction = '';
-
-        if ((int) ($session->get('user-admin') ?? 0) === 1 && teampassNormalizeIpv4Rule((string) ($record['who'] ?? '')) !== null) {
-            $blacklistAction = '<button type="button" class="btn btn-sm btn-outline-danger failed-auth-add-blacklist" data-ip="'
-                . $failedLoginIp
-                . '" title="'
-                . htmlspecialchars((string) $lang->get('network_security_add_ip_to_blacklist'), ENT_QUOTES)
-                . '"><i class="fa-solid fa-ban"></i></button>';
-        }
-
-        $sOutput .= '[';
-        // col1
-        $sOutput .= json_encode(date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['auth_date']), JSON_UNESCAPED_UNICODE) . ', ';
-        // col2
-        $sOutput .= json_encode(normalizeLogDisplayValue($lang->get($failedLoginLabel)), JSON_UNESCAPED_UNICODE) . ', ';
-        // col3
-        $sOutput .= json_encode($failedLoginUser, JSON_UNESCAPED_UNICODE) . ', ';
-        // col4
-        $sOutput .= json_encode($failedLoginIp, JSON_UNESCAPED_UNICODE) . ', ';
-        // col5
-        $sOutput .= json_encode($failedLoginChannel, JSON_UNESCAPED_UNICODE) . ', ';
-        // col6
-        $sOutput .= json_encode($blacklistAction, JSON_UNESCAPED_UNICODE);
-        //Finish the line
-        $sOutput .= '],';
-    }
-
-    if (count($rows) > 0) {
-        $sOutput = substr_replace($sOutput, '', -1);
-        $sOutput .= '] }';
-    } else {
-        $sOutput .= '[] }';
-    }
-} elseif (isset($params['action']) && $params['action'] === 'errors') {
-    //Columns name
-    $aColumns = ['l.date', 'l.label', 'l.qui', 'u.login', 'u.name', 'u.lastname'];
-
-    // Ordering
-    $orderColumn = $aColumns[0];
-    if (isset($aColumns[$params['order'][0]['column']]) === true) {
-        $orderColumn = $aColumns[$params['order'][0]['column']];
-    }
-
-    // Filtering
-    $sWhere = new WhereClause('AND');
-    if ($searchValue !== '') {        
-        $subclause = $sWhere->addClause('OR');
-        foreach ($aColumns as $column) {
-            $subclause->add($column.' LIKE %ss', $searchValue);
-        }
-    }
-    $sWhere->add('l.type = %s', 'error');
-
-    // Get the total number of records
-    $iTotal = DB::queryFirstField(
-        'SELECT COUNT(*)
-            FROM '.prefixTable('log_system').' as l
-            INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id) 
-            WHERE %l ORDER BY %l %l',
-            $sWhere,
-            $orderColumn,
-            $orderDirection
-    );
-    $iTotal = DB::count();
-
-    // Prepare the SQL query
-    $sql = 'SELECT l.date as date, l.label as label, l.qui as who,
-    u.login as login, u.name AS name, u.lastname AS lastname
-    FROM '.prefixTable('log_system').' as l
-    INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id) 
-    WHERE %l ORDER BY %l %l LIMIT %i, %i';
-    $params = [$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
-
-    // Get the records
-    $rows = DB::query($sql, ...$params);
-    $iFilteredTotal = DB::count();
-
-    // Output
-    $sOutput = '{';
-    $sOutput .= '"sEcho": '. (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
-    $sOutput .= '"iTotalRecords": '.$iTotal.', ';
-    $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
-    $sOutput .= '"aaData": ';
-    if ($iFilteredTotal > 0) {
-        $sOutput .= '[';
-    }
-    foreach ($rows as $record) {
-        $sOutput .= '[';
-        //col1
-        $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
-        //col2
-        $sOutput .= '"'.addslashes(str_replace([chr(10), chr(13), '`', '<br />@', "'"], ['<br>', '<br>', "'", '', '&#39;'], $record['label'])).'", ';
-        //col3
-        $sOutput .= tpDatatableJsonCell(
-            normalizeLogDisplayValue($record['name'] ?? '').' '.
-            normalizeLogDisplayValue($record['lastname'] ?? '').' ['.
-            normalizeLogDisplayValue($record['login'] ?? '').']'
-        );
-        //Finish the line
-        $sOutput .= '],';
-    }
-
-    if (count($rows) > 0) {
-        $sOutput = substr_replace($sOutput, '', -1);
-        $sOutput .= '] }';
-    } else {
-        $sOutput .= '[] }';
-    }
 } elseif (isset($params['action']) && $params['action'] === 'items_in_edition') {
     //Columns name
     $aColumns = ['e.timestamp', 'u.login', 'i.label', 'u.name', 'u.lastname'];

@@ -98,7 +98,9 @@ $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
+// Read raw, like an encrypted payload: each field is sanitized after decoding.
+// FILTER_SANITIZE_FULL_SPECIAL_CHARS acts as htmlentities() and stored "é" as "&eacute;".
+$post_data = filter_input(INPUT_POST, 'data', FILTER_UNSAFE_RAW);
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
 // Construction de la requ?te en fonction du type de valeur
@@ -673,28 +675,38 @@ logItems(
             if (!is_array($dataReceived)) {
                 $dataReceived = [];
             }
-            $purgeRange = getLogsPurgeDateRange($dataReceived['dateStart'] ?? null, $dataReceived['dateEnd'] ?? null);
-            $purgeUserId = filter_var($dataReceived['filter_user'] ?? null, FILTER_VALIDATE_INT);
-            $purgeType = $dataReceived['dataType'] ?? null;
-            $purgeAction = $dataReceived['filter_action'] ?? null;
+            // The purge consumes the very filters the monitoring table was displaying. Feeding it a
+            // second, independent form is how an administrator ended up deleting something other
+            // than what was on screen.
             $purgeFilter = null;
 
-            if ($purgeRange !== null && $purgeUserId !== false
-                && is_string($purgeType) && is_string($purgeAction)
-                && (int) ($session->get('user-admin') ?? 0) === 1
-            ) {
+            if ((int) ($session->get('user-admin') ?? 0) === 1) {
+                $filters = logsNormalizeFilters(
+                    is_array($dataReceived['filters'] ?? null) === true ? $dataReceived['filters'] : []
+                );
+
                 $purgeLogin = null;
-                if ($purgeType === 'failed' && $purgeUserId > 0) {
+                if ($filters['source'] === 'system'
+                    && $filters['user_id'] !== null
+                    && in_array('failed', $filters['types'], true) === true
+                ) {
                     // Historical logins are not stored on the account: attempts before a rename
                     // remain when their submitted login differs from the current one.
                     $purgeUser = DB::queryFirstRow(
                         'SELECT login FROM ' . prefixTable('users') . ' WHERE id = %i',
-                        $purgeUserId
+                        $filters['user_id']
                     );
                     $purgeLogin = $purgeUser === null ? null : (string) $purgeUser['login'];
                 }
+
                 $purgeFilter = buildLogsPurgeFilter(
-                    $purgeType, $purgeRange[0], $purgeRange[1], $purgeUserId, $purgeAction, $purgeLogin
+                    $filters,
+                    $purgeLogin,
+                    [
+                        'items' => prefixTable('items'),
+                        'users' => prefixTable('users'),
+                        'nested_tree' => prefixTable('nested_tree'),
+                    ]
                 );
             }
 

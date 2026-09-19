@@ -92,7 +92,9 @@ $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
+// Read raw, like an encrypted payload: each field is sanitized after decoding.
+// FILTER_SANITIZE_FULL_SPECIAL_CHARS acts as htmlentities() and stored "é" as "&eacute;".
+$post_data = filter_input(INPUT_POST, 'data', FILTER_UNSAFE_RAW);
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
 $post_status = filter_input(INPUT_POST, 'status', FILTER_SANITIZE_NUMBER_INT);
@@ -191,18 +193,28 @@ switch ($post_type) {
 
             //send email
             $emailSettings = new EmailSettings($SETTINGS);
+            // This is an interactive check: fail fast instead of letting an
+            // unreachable relay hold the request until a proxy answers a 504.
+            $emailSettings->timeout = EmailSettings::TEST_TIMEOUT;
             $emailService = new EmailService();
+            // $silent = false so the debug level chosen by the administrator is
+            // honoured; the trace is captured by EmailService, never echoed.
             $emailService->sendMail(
                 $lang->get('admin_email_test_subject'),
                 $lang->get('admin_email_test_body'),
                 $session->get('user-email'),
-                $emailSettings
+                $emailSettings,
+                '',
+                false
             );
-            
+            $sendError = $emailService->getLastError();
+
             echo prepareExchangedData(
                 array(
-                    'error' => false,
-                    'message' => '',
+                    'error' => $sendError !== '',
+                    'message' => $sendError,
+                    'email' => (string) $session->get('user-email'),
+                    'debug' => $emailService->getDebugOutput(),
                 ),
                 'encode'
             );
@@ -2965,6 +2977,8 @@ case 'save_sending_statistics':
                         'user_id' => $user['id'],
                         'value' => encryptUserObjectKey(base64_encode(base64_encode(uniqidReal(39))), $user['public_key']),
                         'timestamp' => time(),
+                        // API access is never granted implicitly: an administrator enables it per user
+                        'enabled' => 0,
                     )
                 );
 

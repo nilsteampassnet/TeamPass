@@ -66,6 +66,47 @@ if (function_exists('normalizeLogDisplayValue') === false) {
 }
 
 /**
+ * Turn an administration log label into the sentence the monitoring page displays.
+ *
+ * Some labels carry their own payload after a colon ("at_email_template_updated:<id>:<lang>"), so
+ * the mapping cannot be a plain translation lookup. A label with no mapping is returned as it was
+ * stored: an unknown administrative action must stay visible, never be blanked out.
+ */
+function formatAdminLogLabel(string $label, Language $lang): string
+{
+    $direct = [
+        'at_user_added' => 'user_creation',
+        'at_user_deleted' => 'user_deletion',
+        'user_deleted' => 'user_deletion',
+        'at_user_updated' => 'user_updated',
+        'at_user_new_keys' => 'new_keys_generated',
+        'at_user_keys_download' => 'user_keys_downloaded',
+        'at_2fa_google_code_send_by_email' => 'mfa_code_send_by_email',
+        'authentication_lockout_removed' => 'authentication_lockout_removed',
+        'at_licence_trial_requested' => 'licence_trial_log_requested',
+        'at_licence_trial_activated' => 'licence_trial_log_activated',
+        'at_licence_trial_link_sent' => 'licence_trial_log_link_sent',
+    ];
+    if (isset($direct[$label]) === true) {
+        return (string) $lang->get($direct[$label]);
+    }
+
+    if (strpos($label, 'at_user_email_changed') !== false) {
+        $change = explode(':', $label);
+
+        return (string) $lang->get('log_user_email_changed') . ' ' . ($change[1] ?? '');
+    }
+    if (strpos($label, 'at_email_template_updated:') === 0 || strpos($label, 'at_email_template_reset:') === 0) {
+        // Label carries "<action>:<template id>:<language>"
+        $change = explode(':', $label);
+
+        return (string) $lang->get($change[0]) . ' ' . ($change[1] ?? '') . ' (' . ($change[2] ?? '') . ')';
+    }
+
+    return $label;
+}
+
+/**
  * Resolve a knowledge-base log row's display fields without database access.
  * The handler normalizes these fields before sending them to the text renderer.
  *
