@@ -431,7 +431,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     }
                 },
             'columns': columns.map((key) => ({
-                'data': key,
+                // Actions are built from the row, with no backing field for type detection.
+                'data': key === 'actions' ? null : key,
+                'defaultContent': key === 'actions' ? '' : null,
                 'orderable': key !== 'actions',
                 'className': (key === 'api' || key === 'personal' || key === 'actions') ? 'text-center' : '',
                 'render': function(data, type, row) {
