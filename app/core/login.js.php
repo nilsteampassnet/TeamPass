@@ -42,6 +42,9 @@ declare(strict_types=1);
     var debugJavascript = false;
     var mfaStepPending = false;
     var cachedMfaData = null;
+    // Passkey second factor: the options the server sent and the submission to replay with
+    // the assertion, kept until the ceremony succeeds so a click can start it again.
+    var webauthnMfaPending = null;
     var loginInProgress = false;
     var loginNavigationPending = false;
     var loginReadOnlyFields = null;
@@ -307,6 +310,7 @@ declare(strict_types=1);
     function resetMfaStep() {
         mfaStepPending = false;
         cachedMfaData = null;
+        webauthnMfaPending = null;
         $('#2fa_user_selection').val('');
         $('#2fa_methods_selector').addClass('hidden');
         $('.div-2fa-method').addClass('hidden');
@@ -487,6 +491,23 @@ declare(strict_types=1);
             // Clear userOauth2Info
             store.set('userOauth2Info', '');
             launchIdentify(false, '<?php echo isset($nextUrl) === true ? $nextUrl : ''; ?>');
+        });
+
+        // Passkey second factor. Without a pending challenge the button asks the server for
+        // one; with it, the click starts the ceremony itself, as a gesture Safari requires.
+        $('#webauthn-2fa-button').click(function() {
+            if (loginInProgress === true || loginNavigationPending === true) {
+                return;
+            }
+            if (webauthnMfaPending === null) {
+                launchIdentify(false, '<?php echo isset($nextUrl) === true ? $nextUrl : ''; ?>');
+                return;
+            }
+            beginLoginAttempt();
+            $.when(runWebauthnSecondFactor(false)).then(finishLoginAttempt, function() {
+                finishLoginAttempt();
+                showLoginRequestError();
+            });
         });
 
         // Click on log in button with Azure Entra
@@ -1114,6 +1135,8 @@ declare(strict_types=1);
                     mfaMethod = 'duo';
                 } else if (availableMfaMethods.yubico === true) {
                     mfaMethod = 'yubico';
+                } else if (availableMfaMethods.webauthn === true) {
+                    mfaMethod = 'webauthn';
                 }
             }
         }
@@ -1192,6 +1215,10 @@ declare(strict_types=1);
         // decoded payload, making the arguments unreachable from inside it.
         const replayIdentify = function() {
             return identifyUser(redirect, psk, data, randomstring, oauth2Info);
+        };
+        // The passkey second factor answers the challenge with the same submission
+        const replayWithWebauthnAssertion = function(assertion) {
+            return identifyUser(redirect, psk, Object.assign({}, data, { webauthn_assertion: assertion }), randomstring, oauth2Info);
         };
 
         //send query
@@ -1415,6 +1442,14 @@ declare(strict_types=1);
                             timeOut: 1000
                         }
                     );
+                } else if (data.error === false && typeof data.webauthn_options === 'object' && data.webauthn_options !== null) {
+                    // Passkey as a second factor: the server sent its challenge
+                    webauthnMfaPending = {
+                        options: data.webauthn_options,
+                        replay: replayWithWebauthnAssertion
+                    };
+                    $('#div-2fa-webauthn').removeClass('hidden');
+                    return runWebauthnSecondFactor(true);
                 } else if(data.error === false && data.duo_url_ready === true) {
                     loginNavigationPending = true;
                     toastr.remove();
@@ -1472,6 +1507,65 @@ declare(strict_types=1);
                 }
             }
         );
+    }
+
+    /**
+     * Sign the challenge of the passkey second factor, then replay the submission with the
+     * assertion. When the browser refuses a ceremony that no click started (Safari does), the
+     * options are kept and the passkey button starts it again.
+     *
+     * @param {boolean} automatic Whether the ceremony follows a server answer rather than a click.
+     * @returns {object|boolean} Authentication promise, or false when nothing was submitted.
+     */
+    function runWebauthnSecondFactor(automatic) {
+        const pending = webauthnMfaPending;
+        if (pending === null) {
+            return false;
+        }
+        if (typeof window.tpWebauthnLogin === 'undefined' || window.tpWebauthnLogin.supported() !== true) {
+            toastr.remove();
+            toastr.error(
+                <?php echo json_encode($lang->get('webauthn_login_browser_unsupported'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+                <?php echo json_encode($lang->get('caution'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>, {
+                    timeOut: 10000,
+                    progressBar: true,
+                    positionClass: 'toast-bottom-right'
+                }
+            );
+            return false;
+        }
+
+        toastr.remove();
+        toastr.info(
+            <?php echo json_encode($lang->get('webauthn_login_2fa_touch'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+            '', {
+                positionClass: 'toast-top-center'
+            }
+        );
+        return window.tpWebauthnLogin.assert(pending.options, '').then(function(result) {
+            webauthnMfaPending = null;
+            return pending.replay(result.credential);
+        }, function(error) {
+            const kind = window.tpWebauthnLogin.errorKind(error);
+            const messages = {
+                cancelled: automatic === true
+                    ? <?php echo json_encode($lang->get('webauthn_login_2fa_retry'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>
+                    : <?php echo json_encode($lang->get('webauthn_login_cancelled'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+                security: <?php echo json_encode($lang->get('webauthn_login_security_error'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+                failed: <?php echo json_encode($lang->get('webauthn_login_verification_failed'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>
+            };
+            toastr.remove();
+            toastr[kind === 'cancelled' ? 'info' : 'error'](
+                messages[kind] || messages.failed,
+                '', {
+                    timeOut: 10000,
+                    progressBar: true,
+                    positionClass: 'toast-bottom-right'
+                }
+            );
+            $('#webauthn-2fa-button').focus();
+            return false;
+        });
     }
 
     /**
@@ -1624,7 +1718,8 @@ declare(strict_types=1);
         var twoFaMethods = (data.google === true ? 1 : 0) +
             (data.agses === true ? 1 : 0) +
             (data.duo === true ? 1 : 0) +
-            (data.yubico === true ? 1 : 0);
+            (data.yubico === true ? 1 : 0) +
+            (data.webauthn === true ? 1 : 0);
 
         if (twoFaMethods > 1) {
             // Multiple methods - show selector
@@ -1648,6 +1743,18 @@ declare(strict_types=1);
                 group: false,
                 autowidth: true
             });
+
+            // The page renders every method the instance enables, but a passkey is only
+            // offered to an account that has one: hide what this account cannot use.
+            var methodRadios = $('.2fa_selector_select');
+            for (var methodIndex = 0; methodIndex < methodRadios.length; methodIndex++) {
+                var methodButton = $('.radiosforbuttons-2fa_selector_select').eq(methodIndex);
+                if (data[methodRadios.eq(methodIndex).data('mfa')] === true) {
+                    methodButton.removeClass('hidden');
+                } else {
+                    methodButton.addClass('hidden');
+                }
+            }
 
             // Handle click
             $('.radiosforbuttons-2fa_selector_select')
@@ -1684,6 +1791,8 @@ declare(strict_types=1);
                         $('#yubico_key').focus();
                     } else if (twofaMethod === 'agses') {
                         startAgsesAuth();
+                    } else if (twofaMethod === 'webauthn') {
+                        $('#webauthn-2fa-button').focus();
                     }
                 });
         } else if (twoFaMethods === 1) {
@@ -1705,6 +1814,12 @@ declare(strict_types=1);
             } else if (data.agses === true) {
                 $('#2fa_user_selection').val('agses');
                 startAgsesAuth();
+            } else if (data.webauthn === true) {
+                // The passkey button is the action: the login button would do the same
+                $('#2fa_user_selection').val('webauthn');
+                $('#div-login-button').addClass('hidden');
+                $('#div-2fa-webauthn').removeClass('hidden');
+                $('#webauthn-2fa-button').focus();
             }
         }
     }

@@ -203,6 +203,10 @@ $mfaHtmlPart = '
         '
                     <label for="select2fa-yubico">Yubico</label>
                     <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-yubico" data-mfa="yubico" data-button-color="lightblue">' : '').
+                    ((int) ($SETTINGS['webauthn_login_mode'] ?? 0) !== 0 ?
+        '
+                    <label for="select2fa-webauthn">' . $lang->get('webauthn_login_2fa_label') . '</label>
+                    <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-webauthn" data-mfa="webauthn" data-button-color="lightblue">' : '').
     '
                 </div>
             </div>
@@ -214,6 +218,15 @@ if (isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1) {
     echo '
         <div id="div-2fa-duo" class="row mb-3 div-2fa-method hidden">
             <div id="div-2fa-duo-progress" class="text-center hidden"></div>
+        </div>';
+}
+
+// Passkey as a second factor
+if ((int) ($SETTINGS['webauthn_login_mode'] ?? 0) !== 0) {
+    echo '
+        <div id="div-2fa-webauthn" class="mb-3 div-2fa-method hidden">
+            <p class="text-muted small mb-2">' . $lang->get('webauthn_login_2fa_prompt') . '</p>
+            <button type="button" class="btn btn-primary btn-block" id="webauthn-2fa-button"><i class="fa-solid fa-fingerprint mr-2"></i>' . $lang->get('webauthn_login_2fa_button') . '</button>
         </div>';
 }
 

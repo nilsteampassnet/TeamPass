@@ -47,6 +47,7 @@ use TeampassClasses\OAuth2Controller\OAuth2Controller;
 
 // Load functions
 require_once 'main.functions.php';
+require_once __DIR__ . '/webauthn_login.functions.php';
 
 // init
 loadClasses('DB');
@@ -147,6 +148,7 @@ if ($post_type === 'identify_user') {
                 'google' => isKeyExistingAndEqual('google_authentication', 1, $SETTINGS) === true ? true : false,
                 'yubico' => isKeyExistingAndEqual('yubico_authentication', 1, $SETTINGS) === true ? true : false,
                 'duo' => isKeyExistingAndEqual('duo', 1, $SETTINGS) === true ? true : false,
+                'webauthn' => webauthnLoginMode($SETTINGS) !== TP_WEBAUTHN_LOGIN_MODE_DISABLED,
             ],
             'encode'
         ),
@@ -211,8 +213,10 @@ if ($post_type === 'identify_user') {
  * Return the MFA methods that can be used for the current request.
  *
  * @param array<string, mixed> $SETTINGS
+ * @param bool                 $needsMfa   Whether a second factor is required
+ * @param bool                 $hasPasskey Whether the account has a sign-in passkey
  */
-function buildMfaMethodsResponse(array $SETTINGS, bool $needsMfa): array
+function buildMfaMethodsResponse(array $SETTINGS, bool $needsMfa, bool $hasPasskey = false): array
 {
     return [
         'mfa_required' => $needsMfa,
@@ -220,6 +224,9 @@ function buildMfaMethodsResponse(array $SETTINGS, bool $needsMfa): array
         'google' => $needsMfa === true && isKeyExistingAndEqual('google_authentication', 1, $SETTINGS) === true,
         'yubico' => $needsMfa === true && isKeyExistingAndEqual('yubico_authentication', 1, $SETTINGS) === true,
         'duo'    => $needsMfa === true && isKeyExistingAndEqual('duo', 1, $SETTINGS) === true,
+        // Only offered to an account that has a passkey: there is no enrolment at sign-in
+        'webauthn' => $needsMfa === true && $hasPasskey === true
+            && webauthnLoginMode($SETTINGS) !== TP_WEBAUTHN_LOGIN_MODE_DISABLED,
     ];
 }
 
@@ -228,9 +235,15 @@ function buildMfaMethodsResponse(array $SETTINGS, bool $needsMfa): array
  *
  * @param array<string, mixed> $SETTINGS
  * @param array<string, mixed> $userInfo
+ * @param bool                 $hasPasskey Whether the account has a sign-in passkey
  */
-function userNeedsMfa(array $SETTINGS, array $userInfo): bool
+function userNeedsMfa(array $SETTINGS, array $userInfo, bool $hasPasskey = false): bool
 {
+    // A registered passkey is an opt-in second factor, whatever the other methods impose
+    if (webauthnLoginIsSecondFactor($SETTINGS, (int) ($userInfo['mfa_enabled'] ?? 0), $hasPasskey) === true) {
+        return true;
+    }
+
     if (
         isOneVarOfArrayEqualToValue(
             [
@@ -278,7 +291,10 @@ function userNeedsMfa(array $SETTINGS, array $userInfo): bool
  */
 function getMfaMethodsForUserInfo(array $SETTINGS, array $userInfo): array
 {
-    return buildMfaMethodsResponse($SETTINGS, userNeedsMfa($SETTINGS, $userInfo));
+    $hasPasskey = webauthnLoginMode($SETTINGS) !== TP_WEBAUTHN_LOGIN_MODE_DISABLED
+        && webauthnLoginUserHasPasskey((int) ($userInfo['id'] ?? 0));
+
+    return buildMfaMethodsResponse($SETTINGS, userNeedsMfa($SETTINGS, $userInfo, $hasPasskey), $hasPasskey);
 }
 
 /**
@@ -289,7 +305,7 @@ function getMfaMethodsForUserInfo(array $SETTINGS, array $userInfo): array
 function getMfaMethodsForLogin(array $SETTINGS, string $login): array
 {
     $userInfo = DB::queryFirstRow(
-        'SELECT u.admin, u.mfa_enabled,
+        'SELECT u.id, u.admin, u.mfa_enabled,
             GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "manual" THEN ur.role_id END SEPARATOR ";") AS fonction_id,
             GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "ad" THEN ur.role_id END SEPARATOR ";") AS roles_from_ad_groups
         FROM ' . prefixTable('users') . ' AS u
@@ -316,7 +332,8 @@ function countEnabledMfaMethods(array $mfaMethods): int
     return (int) (($mfaMethods['agses'] ?? false) === true)
         + (int) (($mfaMethods['google'] ?? false) === true)
         + (int) (($mfaMethods['yubico'] ?? false) === true)
-        + (int) (($mfaMethods['duo'] ?? false) === true);
+        + (int) (($mfaMethods['duo'] ?? false) === true)
+        + (int) (($mfaMethods['webauthn'] ?? false) === true);
 }
 
 /**
@@ -768,6 +785,22 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                     'ga_bad_code' => $userMfa['mfaData']['ga_bad_code'] ?? false,
                     'mfa_error' => true,
                     'mfa_setup_error' => $userMfa['mfaData']['mfa_setup_error'] ?? false,
+                ],
+                'encode'
+            );
+            return false;
+        } elseif (($userMfa['webauthn_options'] ?? null) !== null) {
+            // Passkey as a second factor: the browser signs this challenge, then the same
+            // submission is replayed with the assertion
+            echo prepareExchangedData(
+                [
+                    'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
+                    'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                    'pwd_attempts' => (int) $sessionPwdAttempts,
+                    'error' => false,
+                    'message' => '',
+                    'mfaStatus' => 'webauthn_challenge',
+                    'webauthn_options' => $userMfa['webauthn_options'],
                 ],
                 'encode'
             );
@@ -3850,6 +3883,34 @@ function identifyDoMFAChecks(
                     'mfaQRCodeInfos' => false,
                 ];
             }
+
+        case 'webauthn':
+            $ret = webauthnLoginSecondFactor(
+                $SETTINGS,
+                (int) $userInfo['id'],
+                $dataReceived['webauthn_assertion'] ?? null,
+                $lang
+            );
+            if ($ret['state'] === 'failed') {
+                if (($ret['setup_error'] ?? false) !== true) {
+                    logEvents($SETTINGS, 'failed_auth', 'webauthn_login_2fa_failed', '', stripslashes($username), stripslashes($username));
+                }
+                return [
+                    'error' => true,
+                    'mfaData' => [
+                        'message' => $ret['message'] ?? $lang->get('webauthn_login_verification_failed'),
+                        'mfa_setup_error' => $ret['setup_error'] ?? false,
+                    ],
+                    'mfaQRCodeInfos' => false,
+                ];
+            }
+
+            return [
+                'error' => false,
+                'mfaData' => [],
+                'mfaQRCodeInfos' => false,
+                'webauthn_options' => $ret['state'] === 'challenge' ? $ret['options'] : null,
+            ];
 
         default:
             logEvents($SETTINGS, 'failed_auth', 'wrong_mfa_code', '', stripslashes($username), stripslashes($username));

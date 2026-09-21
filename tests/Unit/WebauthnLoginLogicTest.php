@@ -58,6 +58,20 @@ final class WebauthnLoginLogicTest extends TestCase
         $this->assertFalse(webauthnLoginCanWrap(['webauthn_login_mode' => '1'], 'local'));
     }
 
+    public function testPasskeySecondFactorIsOptIn(): void
+    {
+        $secondFactor = ['webauthn_login_mode' => '1'];
+
+        $this->assertTrue(webauthnLoginIsSecondFactor($secondFactor, 1, true));
+        $this->assertTrue(webauthnLoginIsSecondFactor(['webauthn_login_mode' => '2'], 1, true));
+        // Turning passkeys on imposes nothing on an account without one
+        $this->assertFalse(webauthnLoginIsSecondFactor($secondFactor, 1, false));
+        // The administrator turned MFA off for this account
+        $this->assertFalse(webauthnLoginIsSecondFactor($secondFactor, 0, true));
+        // Passkeys turned off: a registered passkey is not asked for
+        $this->assertFalse(webauthnLoginIsSecondFactor([], 1, true));
+    }
+
     public function testUserHandleIsStableAndOpaque(): void
     {
         $handle = webauthnLoginUserHandle(42, 'secret');

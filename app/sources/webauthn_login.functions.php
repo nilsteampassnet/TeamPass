@@ -172,7 +172,7 @@ function webauthnLoginRegisterOptions(int $userId, array $SETTINGS, Language $la
         webauthnLoginUserHandle($userId, getServerSecret()),
         (string) $user['login'],
         trim((string) $user['name'] . ' ' . (string) $user['lastname']),
-        webauthnLoginExcludeIds($userId),
+        webauthnLoginCredentialIds($userId),
         $forPasswordless
     );
     $optionsJson = webauthnLoginSerializeOptions($options);
@@ -597,18 +597,118 @@ function webauthnLoginRow(int $userId, int $id): ?array
 }
 
 /**
- * Raw ids of an account's passkeys, so an authenticator does not register a second one.
+ * Raw ids of an account's passkeys: excluded at registration, so an authenticator does not
+ * register a second one, and allowed at sign-in.
  *
  * @param int $userId Owner
  *
  * @return string[]
  */
-function webauthnLoginExcludeIds(int $userId): array
+function webauthnLoginCredentialIds(int $userId): array
 {
     return array_map(
         static fn ($id): string => webauthnBase64UrlDecode((string) $id),
         DB::queryFirstColumn('SELECT credential_id FROM ' . prefixTable('user_webauthn_credentials') . ' WHERE user_id = %i', $userId)
     );
+}
+
+/**
+ * Tell whether an account has at least one sign-in passkey.
+ *
+ * @param int $userId Owner
+ *
+ * @return bool
+ */
+function webauthnLoginUserHasPasskey(int $userId): bool
+{
+    return $userId > 0 && (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('user_webauthn_credentials') . ' WHERE user_id = %i',
+        $userId
+    ) > 0;
+}
+
+/**
+ * The passkey as a second factor, once the password has been verified in the same request.
+ *
+ * Without an assertion, it starts the ceremony: options that allow the account's passkeys only,
+ * kept in session and bound to the account. With one, it verifies it against those options.
+ * User verification is only preferred: the password already proves who is signing in.
+ *
+ * @param array<string, mixed> $SETTINGS  Settings
+ * @param int                  $userId    Account whose password was just verified
+ * @param mixed                $assertion Credential sent by the browser, null to start
+ * @param Language             $lang      Language
+ *
+ * @return array{state: string, options?: array<string, mixed>, message?: string, setup_error?: bool}
+ *               state challenge|verified|failed; setup_error when the failure is not a wrong factor
+ */
+function webauthnLoginSecondFactor(array $SETTINGS, int $userId, $assertion, Language $lang): array
+{
+    if (webauthnLoginMode($SETTINGS) === TP_WEBAUTHN_LOGIN_MODE_DISABLED || webauthnLoginUserHasPasskey($userId) === false) {
+        return ['state' => 'failed', 'message' => $lang->get('webauthn_login_disabled'), 'setup_error' => true];
+    }
+    $origin = webauthnLoginOriginOf((string) ($SETTINGS['cpassman_url'] ?? ''));
+
+    if (is_array($assertion) === false) {
+        $optionsJson = webauthnLoginSerializeOptions(webauthnLoginRequestOptions(
+            webauthnLoginRpId($SETTINGS),
+            webauthnLoginCredentialIds($userId),
+            false
+        ));
+        SessionManager::getSession()->set(TP_WEBAUTHN_LOGIN_PENDING_KEY, [
+            'purpose' => 'second_factor',
+            'options' => $optionsJson,
+            'created_at' => time(),
+            'user_id' => $userId,
+        ]);
+
+        return ['state' => 'challenge', 'options' => (array) json_decode($optionsJson, true)];
+    }
+
+    $pending = webauthnLoginTakePending('second_factor');
+    if ($pending === null || (int) ($pending['user_id'] ?? 0) !== $userId) {
+        return ['state' => 'failed', 'message' => $lang->get('webauthn_login_ceremony_expired'), 'setup_error' => true];
+    }
+
+    // The passkey must be one of this account's: its id is looked up with the owner.
+    $row = DB::queryFirstRow(
+        'SELECT id, credential_id, public_key_cose, sign_count, aaguid, transports, key_wrap_mode,
+            backup_eligible, backup_state
+        FROM ' . prefixTable('user_webauthn_credentials') . '
+        WHERE credential_id = %s AND user_id = %i',
+        webauthnBase64UrlEncode(webauthnLoginReadBytes($assertion['rawId'] ?? '')),
+        $userId
+    );
+    if ($row === null) {
+        return ['state' => 'failed', 'message' => $lang->get('webauthn_login_verification_failed')];
+    }
+
+    try {
+        $record = webauthnLoginVerifyAssertion(
+            webauthnLoginRecordFromRow($row, webauthnLoginUserHandle($userId, getServerSecret())),
+            $assertion,
+            (string) $pending['options'],
+            $origin
+        );
+    } catch (InvalidArgumentException $e) {
+        // A counter that went backwards lands here too: a sign of a cloned authenticator.
+        error_log('TEAMPASS Error - passkey second factor for user ' . $userId . ': ' . $e->getMessage());
+        return ['state' => 'failed', 'message' => $lang->get('webauthn_login_verification_failed')];
+    }
+
+    DB::update(
+        prefixTable('user_webauthn_credentials'),
+        [
+            'sign_count' => $record->counter,
+            'backup_state' => $record->backupStatus === true ? 1 : 0,
+            'last_used_at' => time(),
+        ],
+        'id = %i AND user_id = %i',
+        (int) $row['id'],
+        $userId
+    );
+
+    return ['state' => 'verified'];
 }
 
 /**

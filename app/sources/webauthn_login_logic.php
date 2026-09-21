@@ -226,6 +226,25 @@ function webauthnLoginCanWrap(array $settings, string $authType): bool
 }
 
 /**
+ * Tell whether an account must present a passkey after its password.
+ *
+ * Opt-in: turning passkeys on imposes nothing. An account that registered a passkey is asked
+ * for one at each sign-in, unless the administrator turned MFA off for it (mfa_enabled).
+ *
+ * @param array<string, mixed> $settings   TeamPass settings
+ * @param int                  $mfaEnabled users.mfa_enabled
+ * @param bool                 $hasPasskey Whether the account has a sign-in passkey
+ *
+ * @return bool
+ */
+function webauthnLoginIsSecondFactor(array $settings, int $mfaEnabled, bool $hasPasskey): bool
+{
+    return webauthnLoginMode($settings) !== TP_WEBAUTHN_LOGIN_MODE_DISABLED
+        && $mfaEnabled === 1
+        && $hasPasskey === true;
+}
+
+/**
  * The WebAuthn user handle of an account: stable, so an authenticator keeps one passkey per
  * account, and opaque, so it discloses neither the user id nor the login.
  *

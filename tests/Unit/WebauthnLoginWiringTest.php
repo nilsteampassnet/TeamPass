@@ -102,6 +102,46 @@ final class WebauthnLoginWiringTest extends TestCase
         $this->assertStringContainsString("if (\$post_field === 'webauthn_login_mode') {", $admin);
     }
 
+    public function testSignInAsksAccountsWithAPasskeyForIt(): void
+    {
+        $identify = (string) file_get_contents(__DIR__ . '/../../app/sources/identify.php');
+
+        $this->assertStringContainsString("require_once __DIR__ . '/webauthn_login.functions.php';", $identify);
+
+        // The opt-in rule comes before the short-circuit on the other methods: with passkeys
+        // alone enabled, an account with one must still be asked for it.
+        $needsMfa = $this->between($identify, 'function userNeedsMfa(', 'function getMfaMethodsForUserInfo(');
+        $optIn = strpos($needsMfa, 'webauthnLoginIsSecondFactor(');
+        $shortCircuit = strpos($needsMfa, 'isOneVarOfArrayEqualToValue(');
+        $this->assertIsInt($optIn);
+        $this->assertIsInt($shortCircuit);
+        $this->assertLessThan($shortCircuit, $optIn);
+
+        $this->assertStringContainsString("'webauthn' => \$needsMfa === true && \$hasPasskey === true", $identify);
+        $this->assertStringContainsString("case 'webauthn':", $this->between($identify, 'function identifyDoMFAChecks(', 'function identifyDoAzureChecks('));
+        $this->assertStringContainsString("'webauthn_options' => \$userMfa['webauthn_options']", $identify);
+    }
+
+    public function testMfaMethodCountStubMatchesProduction(): void
+    {
+        $body = function (string $file): string {
+            $source = (string) file_get_contents(__DIR__ . '/../../' . $file);
+            return $this->between($source, 'function countEnabledMfaMethods(', "\n}\n");
+        };
+
+        $this->assertStringContainsString("'webauthn'", $body('app/sources/identify.php'));
+        $this->assertSame($body('app/sources/identify.php'), $body('tests/Stubs/auth_pure_functions.php'));
+    }
+
+    public function testLoginPageOffersThePasskeyOnlyWhileTheFeatureIsOn(): void
+    {
+        $page = (string) file_get_contents(__DIR__ . '/../../app/core/login.php');
+
+        $this->assertMatchesRegularExpression("/webauthn_login_mode'\\] \\?\\? 0\\) !== 0 \\?\\s*'\\s*<label for=\"select2fa-webauthn\">/", $page);
+        $this->assertStringContainsString('data-mfa="webauthn"', $page);
+        $this->assertStringContainsString('id="div-2fa-webauthn" class="mb-3 div-2fa-method hidden"', $page);
+    }
+
     public function testEnrolmentEmailAndLogLabelsExist(): void
     {
         $catalog = require __DIR__ . '/../../app/config/emails_templates.php';
@@ -111,5 +151,15 @@ final class WebauthnLoginWiringTest extends TestCase
         foreach (['at_user_webauthn_added', 'at_user_webauthn_deleted', 'at_user_webauthn_passwordless_enabled', 'at_user_webauthn_passwordless_disabled'] as $label) {
             $this->assertNotSame($label, formatAdminLogLabel($label, $lang), $label);
         }
+    }
+
+    private function between(string $source, string $startMarker, string $endMarker): string
+    {
+        $start = strpos($source, $startMarker);
+        $this->assertIsInt($start, 'Start marker not found: ' . $startMarker);
+        $end = strpos($source, $endMarker, $start);
+        $this->assertIsInt($end, 'End marker not found: ' . $endMarker);
+
+        return substr($source, $start, $end - $start);
     }
 }
