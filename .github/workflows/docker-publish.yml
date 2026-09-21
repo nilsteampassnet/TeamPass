@@ -53,7 +53,7 @@ jobs:
       # Checkout code
       # ----------------------------------------
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # ----------------------------------------
       # Resolve the application version from the source
@@ -261,7 +261,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Login to Docker Hub
         uses: docker/login-action@v4

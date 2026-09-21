@@ -22,7 +22,7 @@ jobs:
     name: Committed autoloader is production-only
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Shipping the *dev* Composer autoloader fatals every installation (the bug 3.2.1.7
       # had to fix). `composer install` rewrites app/vendor/composer/ into its dev form,
@@ -54,7 +54,7 @@ jobs:
     name: Table names use prefixTable()
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -77,7 +77,7 @@ jobs:
       matrix:
         php: ['8.2', '8.3']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up PHP ${{ matrix.php }}
         uses: shivammathur/setup-php@v2
@@ -103,7 +103,7 @@ jobs:
     name: JavaScript tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -117,7 +117,7 @@ jobs:
     name: PHPStan (level 4)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
