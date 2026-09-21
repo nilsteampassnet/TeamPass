@@ -3258,6 +3258,8 @@ case 'get_live_activity':
                 return $lang->get('copied');
             case 'at_restored':
                 return $lang->get('at_restored');
+            case 'at_webauthn_credential_used':
+                return $lang->get('action_webauthn_used');
             default:
                 return $action;
         }

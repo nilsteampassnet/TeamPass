@@ -8017,6 +8017,10 @@ switch ($inputData['type']) {
             } elseif ($record['action'] === 'at_manual') {
                 $detail = $escapeDetail($reason[0]);
                 $action = $lang->get($record['action']);
+            } elseif ($record['action'] === 'at_webauthn_credential_used') {
+                // The reason is the relying party the passkey signed in to
+                $detail = $escapeDetail($reason[0]);
+                $action = $lang->get($record['action']);
             } elseif ($reason[0] === 'at_description') {
                 $action = $lang->get('description_has_changed');
             } elseif (empty($record['raison']) === false && $reason[0] !== 'at_creation') {
@@ -8059,6 +8063,8 @@ switch ($inputData['type']) {
                     $detail = $escapeDetail(
                         isBase64($tmp[0]) === true ? base64_decode($tmp[0]) . '.' . $tmp[1] : $tmp[0]
                     );
+                } elseif ($reason[0] === 'at_webauthn_credential_added' || $reason[0] === 'at_webauthn_credential_deleted') {
+                    $detail = $escapeDetail($reason[1] ?? '');
                 } elseif ($reason[0] === 'at_import') {
                     $detail = '';
                 } elseif (in_array($reason[0], array('csv', 'pdf')) === true) {

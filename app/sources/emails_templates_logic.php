@@ -177,6 +177,9 @@ if (function_exists('emailsTemplatesSampleValues') === false) {
             '#trigger#' => 'scheduler',
             '#state#' => 'Automatic retry scheduled',
             '#retry_at#' => $datetime,
+            // Passkey saved from the browser extension
+            '#rp_name#' => 'Example',
+            '#user_name#' => 'jdoe@example.com',
             // Items
             '#label#' => 'Production database',
             '#link#' => $url . '/index.php?page=items&group=12&id=345',

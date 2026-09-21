@@ -367,6 +367,30 @@ function getDomainFromSettingsUrl(string $url): string
                                     </div>
                                 </div>
 
+                                <div class='row mt-2 mb-2'>
+                                    <div class='col-7'>
+                                        <?php echo $lang->get('webauthn_provider_enabled'); ?>
+                                        <small class='form-text text-muted'>
+                                            <?php echo $lang->get('webauthn_provider_enabled_tip'); ?>
+                                        </small>
+                                    </div>
+                                    <div class='col-5'>
+                                        <div class='toggle toggle-modern' id='webauthn_provider_enabled' data-toggle-on='<?php echo isset($SETTINGS['webauthn_provider_enabled']) === true && (int) $SETTINGS['webauthn_provider_enabled'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='webauthn_provider_enabled_input' value='<?php echo isset($SETTINGS['webauthn_provider_enabled']) === true && (int) $SETTINGS['webauthn_provider_enabled'] === 1 ? '1' : '0'; ?>' />
+                                    </div>
+                                </div>
+
+                                <div class='row mt-2 mb-2'>
+                                    <div class='col-7'>
+                                        <?php echo $lang->get('webauthn_email_on_add'); ?>
+                                        <small class='form-text text-muted'>
+                                            <?php echo $lang->get('webauthn_email_on_add_tip'); ?>
+                                        </small>
+                                    </div>
+                                    <div class='col-5'>
+                                        <div class='toggle toggle-modern' id='webauthn_email_on_add' data-toggle-on='<?php echo isset($SETTINGS['webauthn_email_on_add']) === false || (int) $SETTINGS['webauthn_email_on_add'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='webauthn_email_on_add_input' value='<?php echo isset($SETTINGS['webauthn_email_on_add']) === false || (int) $SETTINGS['webauthn_email_on_add'] === 1 ? '1' : '0'; ?>' />
+                                    </div>
+                                </div>
+
                             </div>
 
                             <div class="tab-pane fade" id="licence" role="tabpanel" aria-labelledby="licence-tab">

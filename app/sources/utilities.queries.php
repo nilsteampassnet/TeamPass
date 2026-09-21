@@ -4219,6 +4219,7 @@ function tpGetTeampassSettingsForHealth(array $SETTINGS): array
         'api',
         'api_cors_origins',
         'api_require_https',
+        'webauthn_provider_enabled',
     );
 
     $out = array();
@@ -4470,6 +4471,15 @@ function tpGetSystemChecks(array $phpIni, array $tpSettings, Language $lang): ar
                 'title' => $lang->get('health_check_api_https_off'),
                 'text' => $lang->get('health_check_api_https_off_message'),
             );
+
+            // Passkeys raise the stakes: an intercepted session signs in to third-party sites
+            if ((int) ($tpSettings['webauthn_provider_enabled'] ?? 0) === 1) {
+                $checks[] = array(
+                    'status' => 'warning',
+                    'title' => $lang->get('health_check_webauthn_http'),
+                    'text' => $lang->get('health_check_webauthn_http_message'),
+                );
+            }
         }
     }
 

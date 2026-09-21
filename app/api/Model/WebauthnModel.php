@@ -33,6 +33,7 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\ConfigManager\ConfigManager;
+use TeampassClasses\Language\Language;
 
 require_once API_ROOT_PATH . '/../sources/webauthn.functions.php';
 
@@ -183,6 +184,7 @@ class WebauthnModel
             $transactionStarted = false;
 
             emitItemSyslog($SETTINGS, $itemId, (string) $item['label'], 'at_modification', (string) $userData['username']);
+            $this->notifyCredentialAdded($SETTINGS, $userId, $request, $itemId, $folderId, (string) $item['label']);
 
             return [
                 'error' => false,
@@ -501,6 +503,80 @@ class WebauthnModel
             $this->logFailure('deleteCredential', $credentialRowId, $e);
 
             return $this->error(500, 'An internal error occurred while deleting the passkey.');
+        }
+    }
+
+    /**
+     * Email the creator of a passkey, so that one saved with a stolen extension session is
+     * noticed. Queued after the commit and never fatal: the site has already registered it.
+     *
+     * @param array<string, mixed> $SETTINGS  Settings
+     * @param int                  $userId    Creator
+     * @param array<string, mixed> $request   Output of webauthnNormalizeCreateRequest()
+     * @param int                  $itemId    Item holding the passkey
+     * @param int                  $folderId  Folder of the item
+     * @param string               $itemLabel Item label as stored
+     *
+     * @return void
+     */
+    private function notifyCredentialAdded(
+        array $SETTINGS,
+        int $userId,
+        array $request,
+        int $itemId,
+        int $folderId,
+        string $itemLabel
+    ): void {
+        if ((int) ($SETTINGS['webauthn_email_on_add'] ?? 1) !== 1
+            || trim((string) ($SETTINGS['email_smtp_server'] ?? '')) === ''
+        ) {
+            return;
+        }
+
+        try {
+            $user = DB::queryFirstRow(
+                'SELECT email, name, lastname, user_language FROM ' . prefixTable('users') . ' WHERE id = %i',
+                $userId
+            );
+            if ($user === null || filter_var((string) $user['email'], FILTER_VALIDATE_EMAIL) === false) {
+                return;
+            }
+
+            // The recipient's language, never the one of the current request.
+            $language = trim((string) ($user['user_language'] ?? ''));
+            if ($language === '' || $language === '0') {
+                $language = (string) ($SETTINGS['default_language'] ?? 'english');
+            }
+            $lang = new Language($language);
+
+            // The relying party names come from the site's page and the label may be stored
+            // entity-encoded: every value is plain text inside an HTML body.
+            $escape = static function (string $value): string {
+                return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+            };
+            $accountName = $request['user_name'] !== '' ? $request['user_name'] : $request['user_display_name'];
+            $baseUrl = trim((string) ($SETTINGS['email_server_url'] ?? '')) !== ''
+                ? (string) $SETTINGS['email_server_url']
+                : (string) ($SETTINGS['cpassman_url'] ?? '');
+
+            sendMailToUser(
+                (string) $user['email'],
+                (string) $lang->get('email_body_webauthn_credential_added'),
+                getEmailTemplateSubject('webauthn_credential_added', $lang),
+                [
+                    '#rp_name#' => $escape($request['rp_name'] !== '' ? $request['rp_name'] : $request['rp_id']),
+                    '#user_name#' => $escape($accountName !== '' ? $accountName : '—'),
+                    '#item_label#' => $escape(html_entity_decode($itemLabel, ENT_QUOTES | ENT_HTML5, 'UTF-8')),
+                    '#link#' => $escape(rtrim($baseUrl, '/') . '/index.php?page=items&group=' . $folderId . '&id=' . $itemId),
+                    '#tp_date#' => date((string) ($SETTINGS['date_format'] ?? 'd/m/Y')),
+                    '#tp_time#' => date((string) ($SETTINGS['time_format'] ?? 'H:i:s')),
+                ],
+                false,
+                '',
+                trim((string) $user['name'] . ' ' . (string) $user['lastname'])
+            );
+        } catch (Throwable $e) {
+            $this->logFailure('notifyCredentialAdded', $itemId, $e);
         }
     }
 
