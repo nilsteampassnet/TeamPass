@@ -92,7 +92,9 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 // Prepare post variables
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
+// Read raw, like an encrypted payload: each field is sanitized after decoding.
+// FILTER_SANITIZE_FULL_SPECIAL_CHARS acts as htmlentities() and stored "é" as "&eacute;".
+$post_data = filter_input(INPUT_POST, 'data', FILTER_UNSAFE_RAW);
 $isprofileupdate = filter_input(INPUT_POST, 'isprofileupdate', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $password_do_not_change = 'do_not_change';
 
@@ -205,9 +207,10 @@ if (null !== $post_type) {
 
     switch ($post_type) {
         /*
-         * BROWSER EXTENSION TOKENS (Personal Access Tokens for OAuth2/SSO users)
+         * BROWSER EXTENSION TOKENS (Personal Access Tokens)
          *
-         * Reserved for OAuth2 users and gated by the admin toggle oauth2_api_enabled.
+         * Issued to OAuth2 users when the admin toggle oauth2_api_enabled is on, or to any
+         * user when extension_token_all_auth_types is on.
          * The cleartext private key (held in session while the user is authenticated in
          * the web UI) is re-wrapped under a key derived from the freshly generated token,
          * so the API can later unwrap it without the user's password. Only the token hash
@@ -216,14 +219,16 @@ if (null !== $post_type) {
         case 'generate_extension_token':
         case 'list_extension_tokens':
         case 'revoke_extension_token':
-            // Feature gate: API enabled, AND either
+            // Issuance gate: API enabled, AND either
             //   - OAuth2-for-API enabled and the current user is OAuth2, OR
             //   - extension tokens allowed for all auth types (local/LDAP/OAuth2).
+            // Listing and revoking only need the API: a token issued before an administrator
+            // turned token access off must stay revocable, since turning it back on revives it.
             $extTokenOauth2 = (int) ($SETTINGS['oauth2_api_enabled'] ?? 0) === 1
                 && $session->get('user-auth_type') === 'oauth2';
             $extTokenAllAuthTypes = (int) ($SETTINGS['extension_token_all_auth_types'] ?? 0) === 1;
             if ((int) ($SETTINGS['api'] ?? 0) !== 1
-                || ($extTokenOauth2 === false && $extTokenAllAuthTypes === false)
+                || ($post_type === 'generate_extension_token' && $extTokenOauth2 === false && $extTokenAllAuthTypes === false)
             ) {
                 echo prepareExchangedData(
                     array(
@@ -984,6 +989,8 @@ if (null !== $post_type) {
                         'user_id' => $new_user_id,
                         'value' => encryptUserObjectKey(base64_encode(base64_encode(uniqidReal(39))), $userKeys['public_key']),
                         'timestamp' => time(),
+                        // API access is never granted implicitly: an administrator enables it per user
+                        'enabled' => 0,
                     )
                 );
 
@@ -2926,7 +2933,9 @@ if (null !== $post_type) {
                             'type' => 'user',
                             'user_id' => $apiKeyOwnerId,
                             'value' => $encrypted_key,
-                            'timestamp' => time()
+                            'timestamp' => time(),
+                            // API access is never granted implicitly: an administrator enables it per user
+                            'enabled' => 0,
                         )
                     );
                 }
@@ -3039,11 +3048,13 @@ if (null !== $post_type) {
             // Connect to LDAP
             try {
                 $connection->connect();
-            
-            } catch (\LdapRecord\Auth\BindException $e) {
+
+            } catch (\LdapRecord\LdapRecordException $e) {
+                // Not only BindException: connect() also throws its parent class, which used to
+                // escape as an HTTP 500 and leave the page waiting forever.
                 $error = $e->getDetailedError();
-                if ($error && defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
-                    error_log('TEAMPASS Error - LDAP - '.$error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage());
+                if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                    error_log('TEAMPASS Error - LDAP - '.($error ? $error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage() : $e->getMessage()));
                 }
                 // deepcode ignore ServerLeak: No important data is sent and it is encrypted before sending
                 echo prepareExchangedData(
@@ -3123,10 +3134,12 @@ if (null !== $post_type) {
                     ->in((empty($SETTINGS['ldap_dn_additional_user_dn']) === false ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'])
                     ->whereHas($SETTINGS['ldap_user_attribute'])
                     ->paginate(100);
-            } catch (\LdapRecord\Auth\BindException $e) {
+            } catch (\LdapRecord\LdapRecordException $e) {
+                // Any search error, e.g. a wrong additional user DN or object filter: settings
+                // the login never reads, so they can be wrong while authentication works.
                 $error = $e->getDetailedError();
-                if ($error && defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
-                    error_log('TEAMPASS Error - LDAP - '.$error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage());
+                if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                    error_log('TEAMPASS Error - LDAP - '.($error ? $error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage() : $e->getMessage()));
                 }
                 // deepcode ignore ServerLeak: No important data is sent and it is encrypted before sending
                 echo prepareExchangedData(
@@ -3543,6 +3556,8 @@ if (null !== $post_type) {
                     'timestamp' => time(),
                     'user_id' => $newUserId,
                     'allowed_folders' => '',
+                    // API access is never granted implicitly: an administrator enables it per user
+                    'enabled' => 0,
                 )
             );
 
@@ -5615,7 +5630,19 @@ function purgeDeletedUserById(int $userId, bool $rebuildTree = true): array
             'user_id = %i',
             $userId
         );
-        
+
+        // Delete extension tokens and API sessions: both hold a wrapped copy of the private key
+        DB::delete(
+            prefixTable('api_tokens'),
+            'user_id = %i',
+            $userId
+        );
+        DB::delete(
+            prefixTable('api_sessions'),
+            'user_id = %i',
+            $userId
+        );
+
         // Delete cache
         DB::delete(
             prefixTable('cache'),

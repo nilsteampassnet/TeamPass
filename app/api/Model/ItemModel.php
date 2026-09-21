@@ -32,6 +32,8 @@ use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\ConfigManager\ConfigManager;
 use voku\helper\AntiXSS;
 
+require_once __DIR__ . '/../../sources/renewal_logic.php';
+
 class ItemModel
 {
     /**
@@ -107,7 +109,7 @@ class ItemModel
         $rows = DB::query(
             "SELECT i.id, i.label, i.description, i.pw, i.pw_iv, i.url, i.id_tree, i.login, i.email,
                 i.viewed_no, i.fa_icon, i.inactif, i.perso, i.favicon_url, i.anyone_can_modify,
-                i.revision, i.revision_changed_at,
+                i.revision, i.revision_changed_at, i.renewal_period,
                 t.title as folder_label,
                 io.secret as otp_secret,
                 io.algorithm as otp_algorithm,
@@ -224,6 +226,7 @@ class ItemModel
                     'favicon_url' => $row['favicon_url'],
                     'tags' => $row['tags'],
                     'anyone_can_modify' => $row['anyone_can_modify'],
+                    'renewal_period' => (int) $row['renewal_period'],
                     'fields' => $itemFields,
                 ]
             );
@@ -711,6 +714,7 @@ class ItemModel
             'email' => (string) ($arrItemParams['email'] ?? ''),
             'tags' => (string) ($arrItemParams['tags'] ?? ''),
             'anyoneCanModify' => (int) ($arrItemParams['anyone_can_modify'] ?? 0),
+            'renewalPeriod' => renewalValidatePeriod($arrItemParams['renewal_period'] ?? 0),
             'url' => (string) ($arrItemParams['url'] ?? ''),
             // Constrain the icon to safe Font Awesome class characters (letters, digits, space, underscore, hyphen)
             'icon' => (string) preg_replace('/[^a-zA-Z0-9 _-]/', '', (string) ($arrItemParams['icon'] ?? '')),
@@ -1068,6 +1072,7 @@ class ItemModel
             'restricted_to' => '',
             'perso' => $itemInfos['personal_folder'],
             'anyone_can_modify' => $data['anyoneCanModify'],
+            'renewal_period' => $data['renewalPeriod'],
             'complexity_level' => $complexityLevel,
             'encryption_type' => 'teampass_aes',
             'fa_icon' => $data['icon'],
@@ -1827,6 +1832,34 @@ class ItemModel
                 // A folder_id equal to the current one is a no-op, not a move.
                 $isActualMove = $newFolderId !== $sourceFolderId;
 
+                // A move takes the item out of its folder: like the web move_item, it needs the
+                // delete right there. The edit right checked by the controller lets ND through,
+                // and a move to the caller's personal folder also strips every other user's keys
+                // (GHSA-q47m-rvr6-jqw7).
+                if (
+                    $isActualMove === true
+                    && $folderAccessModel->canDeleteInFolder($sourceFolderId, (int) $userData['id']) === false
+                ) {
+                    return [
+                        'error' => true,
+                        'error_message' => 'Access denied: you are not allowed to move items out of this folder',
+                        'error_header' => 'HTTP/1.1 403 Forbidden',
+                    ];
+                }
+
+                // The destination needs the edit right too, as in move_item: the not-read-only
+                // check above lets NE and NDNE through, and a move can carry content changes.
+                if (
+                    $isActualMove === true
+                    && $folderAccessModel->canEditInFolder($newFolderId, (int) $userData['id']) === false
+                ) {
+                    return [
+                        'error' => true,
+                        'error_message' => 'Access denied: you are not allowed to edit items in the target folder',
+                        'error_header' => 'HTTP/1.1 403 Forbidden',
+                    ];
+                }
+
                 if (
                     $isActualMove === true
                     && (int) $sourceItemInfos['personal_folder'] === 1
@@ -1840,7 +1873,7 @@ class ItemModel
                         array_keys($params),
                         [
                             'label', 'password', 'description', 'login', 'email', 'url', 'tags',
-                            'anyone_can_modify', 'icon', 'fields',
+                            'anyone_can_modify', 'icon', 'fields', 'renewal_period',
                             'totp', 'totp_algorithm', 'totp_digits', 'totp_period',
                         ]
                     );
@@ -1943,6 +1976,18 @@ class ItemModel
             // Each field is stored the way the web form stores it, so an update cannot
             // reintroduce the markup that validateData() strips on creation
             // (GHSA-r298-6mxv-j9hc).
+            if (array_key_exists('renewal_period', $params)) {
+                $updateData['renewal_period'] = renewalValidatePeriod($params['renewal_period']);
+                if (($laprIsManaged || $laprIsCredential)
+                    && $updateData['renewal_period'] !== (int) ($currentItem['renewal_period'] ?? 0)
+                ) {
+                    return [
+                        'error' => true,
+                        'error_message' => 'Ordinary password renewal does not apply to items linked to LAPR.',
+                        'error_header' => 'HTTP/1.1 409 Conflict',
+                    ];
+                }
+            }
             $fieldsDefinitions = [
                 'label'             => ['db_key' => 'label', 'type' => 'encoded'],
                 'description'       => ['db_key' => 'description', 'type' => 'richtext'],
@@ -2211,6 +2256,11 @@ class ItemModel
                     $moveContext['target_folder_id'],
                     $moveContext['target_folder_title']
                 );
+            }
+
+            if (isset($updateData['renewal_period']) && $updateData['renewal_period'] !== (int) ($currentItem['renewal_period'] ?? 0)) {
+                logItems($SETTINGS, $itemId, (string) $label, (int) $userData['id'], 'at_modification',
+                    (string) $userData['username'], 'at_renewal_period : ' . (int) ($currentItem['renewal_period'] ?? 0) . ' => ' . $updateData['renewal_period']);
             }
 
             if ($passwordChanged === true) {

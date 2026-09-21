@@ -331,7 +331,8 @@ class SearchFiltersLogicTest extends TestCase
             searchNormalizeFilters(['health' => ['overdue']]),
             $this->context()
         );
-        $this->assertStringContainsString('c.renewal_period > 0', $built['sql']);
+        $this->assertStringContainsString('COALESCE(i.renewal_period, 0) > 0', $built['sql']);
+        $this->assertStringContainsString('i.created_at', $built['sql']);
         $this->assertStringContainsString('86400', $built['sql']);
         $this->assertStringNotContainsString('log_items', $built['sql']);
     }

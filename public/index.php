@@ -632,6 +632,17 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                         </a>
                     </li>';
     }
+    // Renewal follows the user's item access, including read-only accounts.
+    if ((int) $session_user_admin === 0) {
+        echo '
+                    <li class="nav-item">
+                        <a href="#" data-name="utilities.renewal" class="nav-link', $get['page'] === 'utilities.renewal' ? ' active' : '', '">
+                            <i class="far fa-calendar-alt nav-icon"></i>
+                            <p>' . $lang->get('renewal') . '</p>
+                        </a>
+                    </li>';
+    }
+
     // KB menu
     if (isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_kb'] === 1 && (int) $session_user_admin === 0) {
         echo '
@@ -712,7 +723,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
     $menuGovernance = in_array($currentPage, ['reviews', 'reports'], true);
     $menuConfiguration = in_array($currentPage, ['options', 'fields', 'emails', 'emails_templates', 'uploads'], true);
     $menuAuthentication = in_array($currentPage, ['2fa', 'ldap', 'oauth', 'api'], true);
-    $menuOperations = in_array($currentPage, ['tasks', 'backups', 'utilities.database', 'import', 'utilities.renewal', 'utilities.deletion', 'admin_lapr'], true);
+    $menuOperations = in_array($currentPage, ['tasks', 'backups', 'utilities.database', 'import', 'utilities.deletion', 'admin_lapr'], true);
     $menuMonitoring = in_array($currentPage, ['statistics', 'utilities.logs', 'utilities.health', 'tools'], true);
 
     // DASHBOARD (admin only)
@@ -866,7 +877,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                     </li>';
     }
 
-    // OPERATIONS - Tasks/Backups/Import (admin) + Database/Renewal/Deletion (admin / manager / HR)
+    // OPERATIONS - Tasks/Backups/Import (admin) + Database/Deletion (admin / manager / HR)
     if ($canManage === true) {
         echo '
                     <li class="nav-item has-treeview', $menuOperations === true ? ' menu-open' : '', '">
@@ -907,12 +918,6 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                             </li>';
         }
         echo '
-                            <li class="nav-item">
-                                <a href="#" data-name="utilities.renewal" class="nav-link', $currentPage === 'utilities.renewal' ? ' active' : '', '">
-                                    <i class="far fa-calendar-alt nav-icon"></i>
-                                    <p>' . $lang->get('renewal') . '</p>
-                                </a>
-                            </li>
                             <li class="nav-item">
                                 <a href="#" data-name="utilities.deletion" class="nav-link', $currentPage === 'utilities.deletion' ? ' active' : '', '">
                                     <i class="fa-solid fa-trash-alt nav-icon"></i>

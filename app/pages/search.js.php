@@ -75,6 +75,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     include TEAMPASS_ROOT . '/public/error.php';
     exit;
 }
+require __DIR__ . '/renewal.preview.js.php';
 $var = [];
 $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-asterisk mr-2"></i><i class="fas fa-asterisk mr-2"></i><i class="fas fa-asterisk mr-2"></i><i class="fas fa-asterisk"></i>';
 
@@ -1112,6 +1113,11 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         '<div><ul>' + sel_items_txt + '</ul></div>' + htmlFolders +
                         '<div class="mt-3 alert alert-info"><i class="fas fa-warning fa-lg mr-2"></i><?php echo $lang->get('confirm_item_move'); ?></div>'
                     );
+                    $('<div id="mass-move-renewal-notice" class="alert alert-info hidden" role="status" aria-live="polite">')
+                        .appendTo('#dialog-mass-operation-html');
+                    $('#mass_move_destination_folder_id').on('change', function() {
+                        tpRenewal.update('#mass-move-renewal-notice', $(this).val(), selectedItems.split(';').filter(Boolean));
+                    }).trigger('change');
 
                 } else if (selectedAction === 'delete') {
                     $('#dialog-mass-operation-html').html(
@@ -1135,7 +1141,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
 
     // Perform action expected by user
-    $('#dialog-mass-operation-button').click(function() {
+    $('#dialog-mass-operation-button').click(async function() {
         if (selectedItems === "") {
             toastr.remove();
             toastr.warning(
@@ -1146,6 +1152,18 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 }
             );
             return false;
+        }
+
+        if (selectedAction === 'move') {
+            const button = $(this);
+            if (button.prop('disabled')) return;
+            button.prop('disabled', true);
+            const destination = $('#mass_move_destination_folder_id').val();
+            const itemsToMove = selectedItems;
+            const confirmed = await tpRenewal.confirmMove(destination, itemsToMove.split(';').filter(Boolean));
+            button.prop('disabled', false);
+            if (!confirmed || selectedAction !== 'move' || $('#dialog-mass-operation').hasClass('hidden')
+                || destination !== $('#mass_move_destination_folder_id').val() || itemsToMove !== selectedItems) return;
         }
 
         // Show to user

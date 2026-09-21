@@ -92,7 +92,9 @@ $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
+// Read raw, like an encrypted payload: each field is sanitized after decoding.
+// FILTER_SANITIZE_FULL_SPECIAL_CHARS acts as htmlentities() and stored "é" as "&eacute;".
+$post_data = filter_input(INPUT_POST, 'data', FILTER_UNSAFE_RAW);
 
 // Check KEY and rights
 if (null === $post_key

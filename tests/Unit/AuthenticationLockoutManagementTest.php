@@ -107,14 +107,25 @@ class AuthenticationLockoutManagementTest extends TestCase
 
     public function testFailedAuthenticationLogIncludesApiEventsAndChannel(): void
     {
-        // The label list moved into the filter module, where the channel facet and the displayed
-        // channel both read it, so the two can no longer classify a row differently.
+        // The label list is owned by the API authentication logic that writes the labels; the
+        // channel facet and the displayed channel both read it through the filter module, so the
+        // two can no longer classify a row differently.
         self::assertSame(
             [
                 'api_invalid_credentials',
+                'api_user_unknown',
+                'api_user_disabled',
+                'api_access_not_enabled',
+                'api_token_auth_type_not_allowed',
+                'api_invalid_password',
+                'api_invalid_password_ldap',
+                'api_invalid_password_oauth2',
+                'api_private_key_needs_recrypt',
+                'api_private_key_unavailable',
                 'api_invalid_apikey',
                 'api_invalid_token',
                 'api_token_decrypt_failed',
+                'api_token_key_outdated',
             ],
             logsApiFailureLabels()
         );

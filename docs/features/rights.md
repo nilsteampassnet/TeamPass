@@ -76,6 +76,8 @@ Each role defines one permission type per folder it covers:
 
 > 💡 "Create item" means the user can add new items inside the folder. "Edit" and "Delete" refer to existing items.
 
+> 💡 **Moving an item** to another folder requires **Delete** on the folder it leaves and **Edit** on the folder it enters. A user with `ND` cannot move items out of a folder, and a user with `NE` or `NDNE` cannot move items into it. The rule is the same for the move action, the bulk move, the item edit form and the API.
+
 ---
 
 ## How roles and permissions combine

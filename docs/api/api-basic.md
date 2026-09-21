@@ -20,6 +20,7 @@
    - [Get OTP code](#get-otp)
    - [Create an item](#create-item)
    - [Update an item](#update-item)
+     - [Moving an item](#update-item-move)
    - [Delete an item](#delete-item)
    - [List Tags](#list-tags)
    - [Synchronize a cache](#item-changes)
@@ -121,8 +122,10 @@ This directive defines the limit on the allowed size of an HTTP request-header f
 | Code | Description |
 | ---- | ----------- |
 | 200 | Authentication successful, token generated |
-| 401 | Invalid credentials |
-| 403 | API disabled or invalid API key |
+| 400 | Missing parameters or credentials passed in the query string |
+| 401 | Invalid credentials — the same answer for every cause, see [Troubleshooting a refused authentication](#authorize-troubleshooting) |
+| 401 | Account temporarily locked (bruteforce protection) |
+| 503 | Global API disabled in settings |
 | 500 | Server error |
 
 **Example:**
@@ -184,7 +187,9 @@ OAuth2/SSO users have no usable password (their stored credential is a hash of t
 | 503 | Global API disabled in settings |
 | 500 | Server error |
 
-**Restrictions:** only `auth_type = 'oauth2'` users are accepted; local and LDAP users keep using [`authorize`](#authorize). The same bruteforce protection and `tp_src=api` logging apply.
+**Restrictions:** only `auth_type = 'oauth2'` users are accepted, unless the administrator enables **Allow extension auto-configuration for all users** (Settings → API → Browser Extension, `extension_token_all_auth_types`), in which case local and LDAP users can use tokens too. The same bruteforce protection and `tp_src=api` logging apply.
+
+A token carries the encryption key the user had when it was generated. When the user's encryption keys are regenerated, their tokens are deleted, and any token still predating the new keys is refused: generate a new one.
 
 **Example:**
 ```bash
@@ -195,6 +200,31 @@ curl -X POST "https://your-teampass.com/api/index.php/authorizeToken" \
     "token": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
   }'
 ```
+
+---
+
+### Troubleshooting a refused authentication {#authorize-troubleshooting}
+
+`authorize` and `authorizeToken` answer every refusal with the same `401 Login failed. (Invalid credentials)`. This is deliberate: a more precise answer would let anyone find out which logins exist.
+
+The exact cause is written to the logs, for administrators only. Open **Logs**, filter on the *Failed logins* type and the *API / Extension* channel, and look for the rows of the login concerned:
+
+| Log entry | Cause | What to do |
+| --------- | ----- | ---------- |
+| API login refused: unknown login | No active account has this login | Check the login configured in the client |
+| API login refused: account disabled | The account is disabled in TeamPass | Re-enable the account |
+| API login refused: API access is not enabled for this account | New accounts, including those created from LDAP or OAuth2, have no API access by default | Enable it in **Settings → API → Users**; the user's profile shows the same warning |
+| API login refused: wrong password | Local account, password does not match | Check the password configured in the client |
+| API login refused: wrong password, or directory password changed since the last web sign-in | LDAP account. The API compares with the password TeamPass saw at the user's last **web** sign-in; it never contacts the directory | After a directory password change, the user must sign in once in the browser |
+| API login refused: an OAuth2 account must use an extension token, not a password | OAuth2 accounts have no password they know | Use a token and [`authorizeToken`](#authorize-token) |
+| API login refused: the encryption key awaits re-encryption after a directory password change | The directory password changed and TeamPass could not re-encrypt the user's key on its own | The user signs in to the web interface and completes the prompt asking for the previous password. Pending accounts are listed on the administration dashboard |
+| API login refused: the password does not unlock the encryption key | The user's keys are still being generated, or out of sync | Wait for the key generation task, or regenerate the user's keys |
+| Invalid API key | Password correct, API key different | Copy the key again from the user's profile |
+| API login refused: extension tokens are only allowed for OAuth2 accounts | `authorizeToken` used by a local or LDAP account while the all-users toggle is off | Enable the toggle, or use `authorize` |
+| Invalid API token | Unknown, expired or revoked token, or a token belonging to another login | Generate a new token |
+| API login refused: the extension token predates a regeneration of the encryption keys | The user's keys were regenerated after the token was issued | Generate a new token |
+
+Every refusal also counts toward the bruteforce protection, which is shared with the web sign-in. A client that keeps retrying locks the user's **web** sign-in too: stop it first, then remove the lock from **Logs → Manage active authentication lockouts**.
 
 ---
 
@@ -592,6 +622,7 @@ payload returns `409`. A duplicate request still processing returns `409` and `R
 | `url` | string | ❌ | Associated URL |
 | `tags` | string | ❌ | Tags separated by spaces or commas. Each tag is lowercased and capped at 30 characters. |
 | `anyone_can_modify` | integer | ❌ | Anyone can modify (0/1, default: 0) |
+| `renewal_period` | integer | ❌ | Individual password renewal period in days (1–36500); 0 disables it (default). Works for personal and shared items even when folder expiration is disabled. The shortest active item/folder period applies. |
 | `icon` | string | ❌ | FontAwesome icon code |
 | `totp` | string | ❌ | Base32 TOTP secret or `otpauth://totp` provisioning URI. Spaces and hyphens are separators and are stripped, so the secret can be sent exactly as the service displays it |
 | `totp_algorithm` | string | ❌ | Algorithm for a bare secret: `sha1` (default), `sha256`, or `sha512`; ignored when supplied by a URI |
@@ -685,8 +716,9 @@ secret or custom-field values.
 | `url` | string | ❌ | New URL |
 | `tags` | string | ❌ | New tags, separated by spaces or commas (replaces existing tags). Each tag is lowercased and capped at 30 characters. |
 | `anyone_can_modify` | integer | ❌ | Anyone can modify (0/1) |
+| `renewal_period` | integer | ❌ | Individual password renewal period in days (1–36500); 0 disables only the individual policy. Omission preserves it. Changing the period does not reset password age. While LAPR is enabled, changes are rejected with HTTP 409 for managed account items and endpoint credential items; omitting or resending the current value is allowed. |
 | `icon` | string | ❌ | New FontAwesome icon code |
-| `folder_id` | integer | ❌ | Move to new folder |
+| `folder_id` | integer | ❌ | Move to new folder. Needs the delete right on the current folder and the edit right on the new one — see [Moving an item](#update-item-move) |
 | `totp` | string | ❌ | Base32 TOTP secret, `otpauth://totp` URI, or an empty string to remove TOTP. Spaces and hyphens are stripped from the secret. Omit the field to change only the profile: the stored secret is reused |
 | `totp_algorithm` | string | ❌ | TOTP algorithm: `sha1`, `sha256`, or `sha512` |
 | `totp_digits` | integer | ❌ | TOTP code length: 6 or 8 |
@@ -694,6 +726,17 @@ secret or custom-field values.
 | `fields` | array | ❌ | Custom fields to set: array of `{ "id": <field_id>, "value": "<text>" }`. A field is created if absent and updated when its value changes; empty values are ignored. Requires the *item extra fields* feature. |
 
 > ⚠️ **Important**: At least one field to update must be provided in addition to the ID.
+
+#### Moving an item {#update-item-move}
+
+Sending a `folder_id` different from the item's current folder moves the item. The rights are the same as in the web interface:
+
+| Folder | Right needed | Refused on |
+| ------ | ------------ | ---------- |
+| Current folder of the item | **Delete** (the item leaves the folder) | `ND`, `NDNE`, `R` |
+| Target folder | **Edit** | `NE`, `NDNE`, `R` |
+
+Both are checked before anything is written: a refused move answers `403` and leaves the item untouched, including the other fields of the request. Read `can_delete` on the current folder and `can_edit` on the target folder in [`folder/writableFolders`](#writable-folders) to know in advance whether a move is allowed.
 
 > ⚠️ **Moving an item out of a personal folder into a shared one must be a request of its own.** That move re-encrypts the item's keys for every user who will now have access, and it is committed immediately. Combining it with any other updatable field (`label`, `password`, `description`, `login`, `email`, `url`, `tags`, `anyone_can_modify`, `icon`, `fields`, `totp*`) is rejected with `422` — send `{ "id": ..., "folder_id": ... }` alone, then send the rest in a second request. All other moves (shared → shared, shared → personal, personal → personal) can still be combined freely with other fields.
 
@@ -727,7 +770,7 @@ administrator to run the encryption keys repair task.
 | 200 | Item updated successfully |
 | 400 | Missing ID or no fields to update |
 | 401 | Invalid session or user keys not found |
-| 403 | Update permission denied or access denied — including a folder granted as `R`, `NE` or `NDNE` (check `can_edit` on [`folder/writableFolders`](#writable-folders)) |
+| 403 | Update permission denied or access denied — including a folder granted as `R`, `NE` or `NDNE` (check `can_edit` on [`folder/writableFolders`](#writable-folders)). A move (`folder_id`) is also refused without the delete right on the item's current folder (`ND`, `NDNE` — check `can_delete`) or without the edit right on the target folder (`R`, `NE`, `NDNE` — check `can_edit`) — see [Moving an item](#update-item-move) |
 | 404 | Item not found |
 | 405 | HTTP method not supported (only `PUT` is accepted) |
 | 409 | The supplied `revision` no longer matches the item — someone changed it since; resolve the conflict instead of retrying blindly. Also returned when the item was moved or re-encrypted by another request while this move was being prepared, which is a plain retry |

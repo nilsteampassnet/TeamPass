@@ -324,7 +324,37 @@ foreach ($session->get('user-roles_array') as $role) {
                                         </a>
                                     </li>
                                     <?php
-                                    if (isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1) {
+                                    $apiFeatureEnabled = isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1;
+                                    // Per-user API access, as /authorize checks it. Read now rather than from the
+                                    // session: an administrator may change it while the user is signed in.
+                                    $userApiAccessEnabled = $apiFeatureEnabled === true
+                                        && (int) DB::queryFirstField(
+                                            'SELECT enabled FROM ' . prefixTable('api') . ' WHERE user_id = %i',
+                                            (int) $session->get('user-id')
+                                        ) === 1;
+                                    // Same gate as generate_extension_token in users.queries.php
+                                    $extensionTokensAllowed = $apiFeatureEnabled === true
+                                        && (
+                                            (isset($SETTINGS['extension_token_all_auth_types']) === true && (int) $SETTINGS['extension_token_all_auth_types'] === 1)
+                                            || (isset($SETTINGS['oauth2_api_enabled']) === true && (int) $SETTINGS['oauth2_api_enabled'] === 1 && $session->get('user-auth_type') === 'oauth2')
+                                        );
+                                    // Tokens issued before an administrator turned token access off stay listable
+                                    // and revocable: they would work again if it were turned back on.
+                                    $extensionTokensOwned = $apiFeatureEnabled === true
+                                        && $extensionTokensAllowed === false
+                                        && (int) DB::queryFirstField(
+                                            'SELECT COUNT(*) FROM ' . prefixTable('api_tokens') . ' WHERE user_id = %i',
+                                            (int) $session->get('user-id')
+                                        ) > 0;
+
+                                    if ($apiFeatureEnabled === true) {
+                                        // Why /authorize would refuse this key, the most blocking reason first
+                                        $apiKeyWarning = '';
+                                        if ($userApiAccessEnabled === false) {
+                                            $apiKeyWarning = $lang->get('user_profile_api_access_disabled');
+                                        } elseif ($session->get('user-special') === 'recrypt-private-key') {
+                                            $apiKeyWarning = $lang->get('user_profile_api_key_needs_recrypt');
+                                        }
                                         echo '
                                     <li class="list-group-item">
                                         <button class="btn btn-sm btn-primary float-right infotip ml-1" id="generate-api-key" title="'.$lang->get('generate_api_token').'"><i class="fa-solid fa-rotate pointer"></i></button>
@@ -332,19 +362,40 @@ foreach ($session->get('user-roles_array') as $role) {
                                         <button class="btn btn-sm btn-primary float-right infotip" id="copy-api-key" title="'.$lang->get('copy_to_clipboard').'"><i class="fa-regular fa-copy pointer"></i></button>
                                         <a class="float-right mr-2" id="profile-user-api-token">',
                                             null !== $session->get('user-api_key') ? $session->get('user-api_key') : '',
-                                        '</a>
+                                        '</a>',
+                                        // clearfix: the notes go below the floated key and buttons
+                                        $apiKeyWarning !== ''
+                                            ? '
+                                        <div class="clearfix"></div>
+                                        <small class="form-text text-warning" id="profile-user-api-access-warning"><i class="fa-solid fa-triangle-exclamation mr-1"></i>' . $apiKeyWarning . '</small>'
+                                            : '',
+                                        // The API only knows the directory password seen at the last web sign-in
+                                        $apiKeyWarning === '' && $session->get('user-auth_type') === 'ldap'
+                                            ? '
+                                        <div class="clearfix"></div>
+                                        <small class="form-text text-muted">' . $lang->get('user_profile_api_key_ldap_tip') . '</small>'
+                                            : '',
+                                        '
                                     </li>';
                                     }
-                                    // Browser extension tokens (Personal Access Tokens) — OAuth2 users only, admin toggle on
-                                    if (isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1
-                                        && isset($SETTINGS['oauth2_api_enabled']) === true && (int) $SETTINGS['oauth2_api_enabled'] === 1
-                                        && $session->get('user-auth_type') === 'oauth2'
-                                    ) {
+                                    // Browser extension tokens (Personal Access Tokens)
+                                    if ($extensionTokensAllowed === true || $extensionTokensOwned === true) {
+                                        if ($extensionTokensAllowed === false) {
+                                            $extensionTokensTip = $lang->get('extension_tokens_tip_revoke_only');
+                                        } elseif (isset($SETTINGS['extension_token_all_auth_types']) === true && (int) $SETTINGS['extension_token_all_auth_types'] === 1) {
+                                            $extensionTokensTip = $lang->get('extension_tokens_tip_all_auth_types');
+                                        } else {
+                                            $extensionTokensTip = $lang->get('extension_tokens_tip');
+                                        }
                                         echo '
-                                    <li class="list-group-item" id="extension-tokens-block">
-                                        <button class="btn btn-sm btn-primary float-right infotip" id="generate-extension-token" title="' . $lang->get('extension_token_generate') . '"><i class="fa-solid fa-plus pointer"></i></button>
+                                    <li class="list-group-item" id="extension-tokens-block">',
+                                        $extensionTokensAllowed === true
+                                            ? '
+                                        <button class="btn btn-sm btn-primary float-right infotip" id="generate-extension-token" title="' . $lang->get('extension_token_generate') . '"><i class="fa-solid fa-plus pointer"></i></button>'
+                                            : '',
+                                        '
                                         <b><i class="fa-solid fa-puzzle-piece fa-fw fa-lg mr-2"></i>' . $lang->get('extension_tokens') . '</b>
-                                        <small class="form-text text-muted">' . $lang->get('extension_tokens_tip') . '</small>
+                                        <small class="form-text text-muted">' . $extensionTokensTip . '</small>
                                         <div class="mt-2" id="extension-tokens-list"></div>
                                     </li>';
                                     }
@@ -376,12 +427,7 @@ foreach ($session->get('user-roles_array') as $role) {
                                     }
                                     // Browser extension auto-configuration — when token-based access is
                                     // available to this user (OAuth2, or all-auth-types toggle on).
-                                    if (isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1
-                                        && (
-                                            (isset($SETTINGS['extension_token_all_auth_types']) === true && (int) $SETTINGS['extension_token_all_auth_types'] === 1)
-                                            || (isset($SETTINGS['oauth2_api_enabled']) === true && (int) $SETTINGS['oauth2_api_enabled'] === 1 && $session->get('user-auth_type') === 'oauth2')
-                                        )
-                                    ) {
+                                    if ($extensionTokensAllowed === true) {
                                         echo '
                                     <li class="list-group-item" id="extension-autoconfig-block">
                                         <b><i class="fa-solid fa-wand-magic-sparkles fa-fw fa-lg mr-2"></i>' . $lang->get('extension_autoconfig_button') . '</b>
@@ -395,10 +441,7 @@ foreach ($session->get('user-roles_array') as $role) {
                                     ?>
                                 </ul>
                                 <?php
-                                if (isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1
-                                    && isset($SETTINGS['oauth2_api_enabled']) === true && (int) $SETTINGS['oauth2_api_enabled'] === 1
-                                    && $session->get('user-auth_type') === 'oauth2'
-                                ) { ?>
+                                if ($extensionTokensAllowed === true) { ?>
                                 <div class="modal fade" id="extension-token-modal" tabindex="-1" role="dialog" aria-hidden="true">
                                     <div class="modal-dialog modal-dialog-centered" role="document">
                                         <div class="modal-content">
@@ -426,10 +469,12 @@ foreach ($session->get('user-roles_array') as $role) {
                                 <div class="mt-4">
                                     <ul class="list-group list-group-flush">
                                         <?php
+                                        // qui also stores IP addresses: compared as an integer, '10.0.0.5'
+                                        // would match user 10, so it is compared as text.
                                         $rows = DB::query(
                                             'SELECT label AS labelAction, date, null
                                                     FROM ' . prefixTable('log_system') . '
-                                                    WHERE qui = %i
+                                                    WHERE qui = %s
                                                     UNION
                                                     SELECT l.action, l.date, i.label AS itemLabel
                                                     FROM ' . prefixTable('log_items') . ' AS l
@@ -437,7 +482,7 @@ foreach ($session->get('user-roles_array') as $role) {
                                                     WHERE l.id_user = %i AND l.action IN ("at_access")
                                                     ORDER BY date DESC
                                                     LIMIT 0, 40',
-                                            $session->get('user-id'),
+                                            (string) $session->get('user-id'),
                                             $session->get('user-id')
                                         );
                                         foreach ($rows as $record) {

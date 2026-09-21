@@ -72,6 +72,25 @@ class LdapExtra
         return $allowedValues[(string) $value] ?? LDAP_OPT_X_TLS_HARD;
     }
 
+    /**
+     * Name of the attribute holding the user Distinguished Name, as an entry key.
+     *
+     * The installer seeds 'ldap_user_dn_attribute' with an empty string, which a null
+     * coalescing default never replaces: the group lookup then found no DN and no AD group
+     * could be mapped to a role. The name is also lowercased because ext-ldap returns
+     * lowercased attribute keys, so 'distinguishedName' would never match either.
+     *
+     * @param array $settings Teampass settings
+     *
+     * @return string The attribute name, 'distinguishedname' when none is configured
+     */
+    public static function getUserDnAttribute(array $settings): string
+    {
+        $attribute = strtolower(trim((string) ($settings['ldap_user_dn_attribute'] ?? '')));
+
+        return $attribute === '' ? 'distinguishedname' : $attribute;
+    }
+
     public function establishLdapConnection()
     {
         $config = [

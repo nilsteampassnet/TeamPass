@@ -87,11 +87,9 @@ class AuthModel
         // Check if user exists
         $userInfo = getUserCompleteData($inputData['login']);
 
-        if ($userInfo === null || (int) $userInfo['api_enabled'] === 0 || (int) $userInfo['disabled'] === 1) {
-            // Uniform message — prevents user enumeration
-            $this->recordFailedAttempt($inputData['login'], $clientIp, $SETTINGS);
-            logEvents($SETTINGS, 'failed_auth', 'api_invalid_credentials', '', $inputData['login'], $inputData['login'] . ' | tp_src=api');
-            return ["error" => "Login failed.", "info" => "Invalid credentials"];
+        $refusalReason = apiAuthAccountRefusalReason($userInfo, false, false);
+        if ($refusalReason !== '') {
+            return $this->refuseApiAuth($refusalReason, $inputData['login'], $clientIp, $SETTINGS);
         }
 
         // Check password
@@ -101,20 +99,32 @@ class AuthModel
             // get user keys
             $privateKeyClear = decryptPrivateKey($inputData['password'], (string) $userInfo['private_key']);
 
+            // The password matches but does not open the private key (typically a directory
+            // password change awaiting re-encryption): the API key cannot even be checked.
+            if ($privateKeyClear === '') {
+                return $this->refuseApiAuth(
+                    apiAuthPrivateKeyUnavailableReason((string) ($userInfo['special'] ?? '')),
+                    $inputData['login'],
+                    $clientIp,
+                    $SETTINGS
+                );
+            }
+
             // check API key — timing-safe comparison to prevent timing attacks
             $expectedApiKey = base64_decode(decryptUserObjectKey($userInfo['api_key'], $privateKeyClear));
             if (hash_equals($expectedApiKey, $inputData['apikey']) === false) {
-                $this->recordFailedAttempt($inputData['login'], $clientIp, $SETTINGS);
-                logEvents($SETTINGS, 'failed_auth', 'api_invalid_apikey', '', $inputData['login'], $inputData['login'] . ' | tp_src=api');
-                return ["error" => "Login failed.", "info" => "Invalid credentials"];
+                return $this->refuseApiAuth('api_invalid_apikey', $inputData['login'], $clientIp, $SETTINGS);
             }
 
                 // Correct credentials — issue the JWT (shared with the token auth path)
                 return $this->issueJwtForUser($userInfo, $privateKeyClear, (string) $inputData['login'], $SETTINGS);
         } else {
-            $this->recordFailedAttempt($inputData['login'], $clientIp, $SETTINGS);
-            logEvents($SETTINGS, 'failed_auth', 'api_invalid_credentials', '', $inputData['login'], $inputData['login'] . ' | tp_src=api');
-            return ["error" => "Login failed.", "info" => "Invalid credentials"];
+            return $this->refuseApiAuth(
+                apiAuthPasswordMismatchReason((string) ($userInfo['auth_type'] ?? '')),
+                $inputData['login'],
+                $clientIp,
+                $SETTINGS
+            );
         }
     }
     //end getUserAuth
@@ -180,14 +190,9 @@ class AuthModel
         // User must exist, be active and have API access enabled. The user must be OAuth2,
         // unless the administrator allows extension tokens for all auth types.
         // Uniform message — prevents user enumeration and auth_type probing.
-        if ($userInfo === null
-            || (int) $userInfo['api_enabled'] === 0
-            || (int) $userInfo['disabled'] === 1
-            || ($tokenAllAuthTypes === false && (string) ($userInfo['auth_type'] ?? '') !== 'oauth2')
-        ) {
-            $this->recordFailedAttempt($inputData['login'], $clientIp, $SETTINGS);
-            logEvents($SETTINGS, 'failed_auth', 'api_invalid_credentials', '', $inputData['login'], $inputData['login'] . ' | tp_src=api');
-            return ["error" => "Login failed.", "info" => "Invalid credentials"];
+        $refusalReason = apiAuthAccountRefusalReason($userInfo, true, $tokenAllAuthTypes);
+        if ($refusalReason !== '') {
+            return $this->refuseApiAuth($refusalReason, $inputData['login'], $clientIp, $SETTINGS);
         }
 
         loadClasses('DB');
@@ -204,9 +209,7 @@ class AuthModel
         );
 
         if ($tokenValid === false) {
-            $this->recordFailedAttempt($inputData['login'], $clientIp, $SETTINGS);
-            logEvents($SETTINGS, 'failed_auth', 'api_invalid_token', '', $inputData['login'], $inputData['login'] . ' | tp_src=api');
-            return ["error" => "Login failed.", "info" => "Invalid credentials"];
+            return $this->refuseApiAuth('api_invalid_token', $inputData['login'], $clientIp, $SETTINGS);
         }
 
         // Derive the wrapping key from the token and unwrap the private key.
@@ -215,9 +218,14 @@ class AuthModel
         $privateKeyClear = decrypt_with_session_key((string) $row['wrapped_private_key'], $wrappingKey);
 
         if ($privateKeyClear === false || $privateKeyClear === '') {
-            $this->recordFailedAttempt($inputData['login'], $clientIp, $SETTINGS);
-            logEvents($SETTINGS, 'failed_auth', 'api_token_decrypt_failed', '', $inputData['login'], $inputData['login'] . ' | tp_src=api');
-            return ["error" => "Login failed.", "info" => "Invalid credentials"];
+            return $this->refuseApiAuth('api_token_decrypt_failed', $inputData['login'], $clientIp, $SETTINGS);
+        }
+
+        // The token carries the private key it was issued with. After the user's keys were
+        // regenerated it unwraps an obsolete key: refuse it rather than issue a JWT that can
+        // decrypt nothing.
+        if ($this->privateKeyMatchesPublicKey($privateKeyClear, (string) ($userInfo['public_key'] ?? '')) === false) {
+            return $this->refuseApiAuth('api_token_key_outdated', $inputData['login'], $clientIp, $SETTINGS);
         }
 
         DB::update(prefixTable('api_tokens'), ['last_used_at' => time()], 'id = %i', (int) $row['id']);
@@ -433,6 +441,54 @@ class AuthModel
         );
 
         return $unlockAt ?: null;
+    }
+
+    /**
+     * Tell whether a cleartext private key belongs to the given public key.
+     *
+     * One RSA round trip on a random probe: encrypted with the public key, it only decrypts
+     * back with the matching private key.
+     *
+     * @param string $privateKeyClear Cleartext private key, as stored in session
+     * @param string $publicKey       User's current public key
+     * @return bool
+     */
+    private function privateKeyMatchesPublicKey(string $privateKeyClear, string $publicKey): bool
+    {
+        if ($publicKey === '') {
+            return false;
+        }
+
+        $probe = base64_encode(random_bytes(32));
+        try {
+            $encryptedProbe = encryptUserObjectKey($probe, $publicKey);
+        } catch (\RuntimeException $e) {
+            return false;
+        }
+
+        return hash_equals($probe, decryptUserObjectKey($encryptedProbe, $privateKeyClear));
+    }
+
+    /**
+     * Refuse an API authentication: count the failure, log its exact cause, answer uniformly.
+     *
+     * The answer never depends on the cause, so a client cannot tell an unknown login from a
+     * wrong password or a closed account. Only the log label, read by administrators, names it.
+     * The failure is counted whatever the cause: skipping it for a correct password would let
+     * the lockout reveal which password is correct.
+     *
+     * @param string              $reason   One of apiAuthFailureLabels()
+     * @param string              $login    Submitted login
+     * @param string              $clientIp Client address
+     * @param array<string,mixed> $SETTINGS Application settings
+     * @return array{error:string,info:string}
+     */
+    private function refuseApiAuth(string $reason, string $login, string $clientIp, array $SETTINGS): array
+    {
+        $this->recordFailedAttempt($login, $clientIp, $SETTINGS);
+        logEvents($SETTINGS, 'failed_auth', $reason, '', $login, $login . ' | tp_src=api');
+
+        return ["error" => "Login failed.", "info" => "Invalid credentials"];
     }
 
     /**

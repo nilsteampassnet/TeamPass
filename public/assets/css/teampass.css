@@ -120,14 +120,16 @@
     flex: 1;
 }
 
-/* Keep password-health shields readable on highlighted favorite rows. */
+/* Keep security and renewal markers readable on highlighted favorite rows. */
 .list-item-row.bg-yellow .tp-item-health-marker.text-warning,
-.list-item-row.bg-yellow .tp-item-health-marker.text-secondary {
+.list-item-row.bg-yellow .tp-item-health-marker.text-secondary,
+.list-item-row.bg-yellow .tp-item-renewal-marker.text-warning {
     color: #343a40 !important;
 }
 
 /* Selected rows use a black cell background, so restore light semantic colours there. */
-.list-item-row.bg-yellow .list-item-description.bg-black .tp-item-health-marker.text-warning {
+.list-item-row.bg-yellow .list-item-description.bg-black .tp-item-health-marker.text-warning,
+.list-item-row.bg-yellow .list-item-description.bg-black .tp-item-renewal-marker.text-warning {
     color: #ffc107 !important;
 }
 

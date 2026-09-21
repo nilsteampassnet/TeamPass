@@ -71,7 +71,9 @@ error_reporting(E_ERROR);
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_login = filter_input(INPUT_POST, 'login', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
+// Read raw, like an encrypted payload: each field is sanitized after decoding.
+// FILTER_SANITIZE_FULL_SPECIAL_CHARS acts as htmlentities() and stored "é" as "&eacute;".
+$post_data = filter_input(INPUT_POST, 'data', FILTER_UNSAFE_RAW);
 
 if ($post_type === 'identify_user') {
     //--------
@@ -1858,7 +1860,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
         $allowedGroupDn = trim($SETTINGS['ldap_allowed_login_group_dn'] ?? '');
         if ($allowedGroupDn !== '') {
             $groupMode = $SETTINGS['ldap_allowed_login_group_mode'] ?? 'group';
-            $dnAttribute = $SETTINGS['ldap_user_dn_attribute'] ?? 'distinguishedname';
+            $dnAttribute = LdapExtra::getUserDnAttribute($SETTINGS);
             $userDnForCheck = $ldapHandler['type'] === 'ActiveDirectory'
                 ? (string) ($userADInfos[$dnAttribute][0] ?? $userADInfos['dn'] ?? '')
                 : (string) ($userADInfos['dn'] ?? '');
@@ -1968,7 +1970,7 @@ function authenticateUser(string $username, string $passwordClear, array $ldapHa
 {
     try {
         $userAttribute = $SETTINGS['ldap_user_attribute'] ?? 'samaccountname';
-        $dnAttribute = $SETTINGS['ldap_user_dn_attribute'] ?? 'distinguishedname';
+        $dnAttribute = LdapExtra::getUserDnAttribute($SETTINGS);
 
         // Define attributes to retrieve from LDAP
         // These are needed for user creation and authentication.
@@ -2088,10 +2090,11 @@ function handleNewUser(string $username, string $passwordClear, array $userADInf
  */
 function getUserADGroups(array $userADInfos, array $ldapHandler, array $SETTINGS, string $username = ''): array
 {
-    $dnAttribute = $SETTINGS['ldap_user_dn_attribute'] ?? 'distinguishedname';
+    $dnAttribute = LdapExtra::getUserDnAttribute($SETTINGS);
 
     if ($ldapHandler['type'] === 'ActiveDirectory') {
-        $userDN = (string) ($userADInfos[$dnAttribute][0] ?? '');
+        // The entry DN is the same value: it covers a DN attribute name that does not exist
+        $userDN = (string) ($userADInfos[$dnAttribute][0] ?? $userADInfos['dn'] ?? '');
     } elseif ($ldapHandler['type'] === 'OpenLDAP') {
         $userDN = (string) ($userADInfos['dn'] ?? '');
     } else {
@@ -2384,6 +2387,7 @@ function externalAdCreateUser(
             'timestamp' => time(),
             'allowed_to_read' => 1,
             'allowed_folders' => '',
+            // API access is never granted implicitly: an administrator enables it per user
             'enabled' => 0,
         )
     );

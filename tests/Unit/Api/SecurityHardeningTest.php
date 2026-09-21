@@ -163,6 +163,32 @@ class SecurityHardeningTest extends TestCase
         );
     }
 
+    public function testItemModelRequiresDeleteRightOnMoveSource(): void
+    {
+        $source = $this->readSource('/app/api/Model/ItemModel.php');
+
+        // A move takes the item out of its folder: ND (no delete) must not allow it,
+        // exactly like the web move_item (GHSA-q47m-rvr6-jqw7).
+        self::assertMatchesRegularExpression(
+            '/\$isActualMove === true\s*&& \$folderAccessModel->canDeleteInFolder\(\$sourceFolderId, \(int\) \$userData\[\'id\'\]\) === false/',
+            $source,
+            'ItemModel::updateItem must check canDeleteInFolder on the source folder when the item is moved'
+        );
+    }
+
+    public function testItemModelRequiresEditRightOnMoveTarget(): void
+    {
+        $source = $this->readSource('/app/api/Model/ItemModel.php');
+
+        // NE and NDNE are not read-only: the target of a move needs the edit right,
+        // exactly like the web move_item.
+        self::assertMatchesRegularExpression(
+            '/\$isActualMove === true\s*&& \$folderAccessModel->canEditInFolder\(\$newFolderId, \(int\) \$userData\[\'id\'\]\) === false/',
+            $source,
+            'ItemModel::updateItem must check canEditInFolder on the target folder when the item is moved'
+        );
+    }
+
     // -------------------------------------------------------------------------
     // M-1: Correct HTTP codes in bootstrap
     // -------------------------------------------------------------------------

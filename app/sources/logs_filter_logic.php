@@ -33,6 +33,8 @@ declare(strict_types=1);
 
 use TeampassClasses\Language\Language;
 
+require_once __DIR__ . '/api_auth_logic.php';
+
 /**
  * Resolve an item-log search column against the columns offered by the page.
  * The User column displays the login and full name, so all three fields are searched.
@@ -226,12 +228,13 @@ function logsAllowedKbActions(): array
  *
  * The 'tp_src=api' marker alone cannot be trusted there: on the web path field_1 holds the
  * submitted login, so anyone could forge an API row by typing that string in the login form.
+ * The list itself is owned by the API authentication logic, which writes those labels.
  *
  * @return array<int, string>
  */
 function logsApiFailureLabels(): array
 {
-    return ['api_invalid_credentials', 'api_invalid_apikey', 'api_invalid_token', 'api_token_decrypt_failed'];
+    return apiAuthFailureLabels();
 }
 
 /**

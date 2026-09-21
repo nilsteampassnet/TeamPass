@@ -72,6 +72,37 @@ class LdapSynchronizationSearchTest extends TestCase
         self::assertStringContainsString('data-search="\' + htmlEncode(searchText) + \'"', $script);
     }
 
+    public function testListingFailureNeverLeavesTheProgressToastOpen(): void
+    {
+        $script = self::source('app/pages/users.js.php');
+        $start = strpos($script, 'function refreshListUsersLDAP()');
+        self::assertIsInt($start);
+        $end = strpos($script, 'function refreshListUsersOAuth2()', $start);
+        self::assertIsInt($end);
+
+        $function = substr($script, $start, $end - $start);
+        self::assertStringContainsString(').fail(function()', $function);
+        self::assertSame(
+            3,
+            substr_count($function, "$('.close-toastr-progress').closest('.toast').remove()"),
+            'The progress toast must be closed on success, on an error answer and on a failed request'
+        );
+
+        $handler = self::source('app/sources/users.queries.php');
+        $start = strpos($handler, "case 'get_list_of_users_in_ldap':");
+        self::assertIsInt($start);
+        $end = strpos($handler, 'case ', $start + 1);
+        self::assertIsInt($end);
+
+        $case = substr($handler, $start, $end - $start);
+        self::assertStringNotContainsString(
+            'catch (\LdapRecord\Auth\BindException',
+            $case,
+            'Only catching BindException lets search errors escape as an HTTP 500'
+        );
+        self::assertSame(2, substr_count($case, 'catch (\LdapRecord\LdapRecordException $e)'));
+    }
+
     public function testFilterIsReappliedAfterAjaxRendering(): void
     {
         $script = self::source('app/pages/users.js.php');

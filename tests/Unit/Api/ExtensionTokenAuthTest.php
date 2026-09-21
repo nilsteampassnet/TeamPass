@@ -145,8 +145,12 @@ class ExtensionTokenAuthTest extends TestCase
 
         // Admin toggle gate.
         self::assertStringContainsString("\$SETTINGS['oauth2_api_enabled']", $src);
-        // OAuth2-only restriction.
-        self::assertStringContainsString("auth_type'] ?? '') !== 'oauth2'", $src);
+        // OAuth2-only restriction, unless extension tokens are allowed for all auth types.
+        self::assertStringContainsString('apiAuthAccountRefusalReason($userInfo, true, $tokenAllAuthTypes)', $src);
+        self::assertStringContainsString(
+            "auth_type'] ?? '') !== 'oauth2'",
+            $this->readSource('/app/sources/api_auth_logic.php')
+        );
         // Strict token format.
         self::assertStringContainsString("/^[a-f0-9]{64}\$/", $src);
         // Lookup by hash, never by the raw token.
@@ -215,5 +219,51 @@ class ExtensionTokenAuthTest extends TestCase
         $src = $this->readSource('/app/pages/oauth.php');
         self::assertStringContainsString("id='oauth2_api_enabled'", $src);
         self::assertStringContainsString('settings_oauth2_api_enabled', $src);
+    }
+
+    /**
+     * The profile must offer exactly what the backend allows: a user who can obtain a token
+     * through auto-configuration must also be able to list and revoke it.
+     */
+    public function testProfileTokenBlocksFollowTheBackendGate(): void
+    {
+        $profile = $this->readSource('/app/pages/profile.php');
+        $javascript = $this->readSource('/app/pages/profile.js.php');
+        $queries = $this->readSource('/app/sources/users.queries.php');
+
+        // One condition, computed once, drives the list, the token modal and auto-configuration
+        self::assertStringContainsString("(int) \$SETTINGS['extension_token_all_auth_types'] === 1", $profile);
+        self::assertSame(3, substr_count($profile, 'if ($extensionTokensAllowed === true'));
+        // Tokens left over after the toggles were turned off stay listable and revocable
+        self::assertStringContainsString('if ($extensionTokensAllowed === true || $extensionTokensOwned === true)', $profile);
+
+        // The script no longer carries an OAuth2-only gate of its own
+        self::assertStringNotContainsString("oauth2_api_enabled", $javascript);
+        self::assertStringContainsString("\$(document).on('click', '#copy-extension-token'", $javascript);
+
+        // Only issuance requires the token toggles; listing and revoking only need the API
+        self::assertStringContainsString(
+            "\$post_type === 'generate_extension_token' && \$extTokenOauth2 === false && \$extTokenAllAuthTypes === false",
+            $queries
+        );
+    }
+
+    /**
+     * A token wraps the private key it was issued with: it must not survive the key pair.
+     */
+    public function testTokensDoNotOutliveTheirKeyPairOrTheirUser(): void
+    {
+        $model = $this->readSource('/app/api/Model/AuthModel.php');
+        self::assertStringContainsString('private function privateKeyMatchesPublicKey(', $model);
+        self::assertStringContainsString("refuseApiAuth('api_token_key_outdated'", $model);
+
+        $mainFunctions = $this->readSource('/app/sources/main.functions.php');
+        self::assertStringContainsString('if ($previousPublicKey !== (string) $userKeys[\'public_key\']) {', $mainFunctions);
+
+        foreach (['/app/sources/users_purge.functions.php', '/app/sources/users.queries.php'] as $purge) {
+            $src = $this->readSource($purge);
+            self::assertMatchesRegularExpression("/DB::delete\\(\\s*prefixTable\\('api_tokens'\\)/", $src, $purge);
+            self::assertMatchesRegularExpression("/DB::delete\\(\\s*prefixTable\\('api_sessions'\\)/", $src, $purge);
+        }
     }
 }

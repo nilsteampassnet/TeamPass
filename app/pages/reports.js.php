@@ -117,7 +117,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         'rotation_overdue': [
             ['label', '<?php echo $lang->get('label'); ?>'],
             ['folder', '<?php echo $lang->get('folder'); ?>'],
-            ['sla_days', '<?php echo $lang->get('rotation_sla_days'); ?>'],
+            ['sla_days', <?php echo json_encode($lang->get('renewal_effective_days'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>],
+            ['folder_sla_days', '<?php echo $lang->get('rotation_sla_days'); ?>'],
+            ['item_sla_days', <?php echo json_encode($lang->get('item_renewal_period'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>],
             ['last_change', '<?php echo $lang->get('leaver_risk_last_pw_change'); ?>'],
             ['due_at', '<?php echo $lang->get('rotation_due_at'); ?>'],
             ['days_overdue', '<?php echo $lang->get('rotation_days_overdue'); ?>'],
@@ -127,7 +129,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             ['folder', '<?php echo $lang->get('folder'); ?>'],
             ['sla_days', '<?php echo $lang->get('rotation_sla_days'); ?>'],
             ['items', '<?php echo $lang->get('items'); ?>'],
-            ['overdue', '<?php echo $lang->get('rotation_overdue'); ?>'],
+            ['overdue', <?php echo json_encode($lang->get('renewal_folder_overdue'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>],
+            ['individual_policies', <?php echo json_encode($lang->get('renewal_individual_policies'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>],
+            ['covered_items', <?php echo json_encode($lang->get('renewal_covered_items'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>],
+            ['effective_overdue', <?php echo json_encode($lang->get('renewal_effective_overdue'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>],
         ],
     }
 
@@ -137,8 +142,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         'posture_summary': '<?php echo $lang->get('compliance_report_posture_summary_tip'); ?>',
         'rotation_evidence': '<?php echo $lang->get('compliance_report_rotation_evidence_tip'); ?>',
         'classification': '<?php echo $lang->get('compliance_report_classification_tip'); ?>',
-        'rotation_overdue': '<?php echo $lang->get('compliance_report_rotation_overdue_tip'); ?>',
-        'rotation_sla': '<?php echo $lang->get('compliance_report_rotation_sla_tip'); ?>',
+        'rotation_overdue': <?php echo json_encode($lang->get('compliance_report_rotation_overdue_tip'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+        'rotation_sla': <?php echo json_encode($lang->get('compliance_report_rotation_sla_tip'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
     }
 
     let tpReportCsv = ''

@@ -114,7 +114,10 @@ $post_cpt = filter_input(INPUT_POST, 'cpt', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_file_link = filter_input(INPUT_POST, 'file_link', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_ids = filter_input(INPUT_POST, 'ids', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+// Read raw, like an encrypted payload: each field is sanitized after decoding.
+// FILTER_SANITIZE_FULL_SPECIAL_CHARS does not re-encode existing entities, so a literal "&lt;"
+// came back as "<" once the payload was decoded, unlike an encrypted one.
+$post_data = filter_input(INPUT_POST, 'data', FILTER_UNSAFE_RAW);
 
 //Manage type of action asked
 if (null !== $post_type) {

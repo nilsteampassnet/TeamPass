@@ -106,6 +106,8 @@ function rotationBuildOverdueRows(array $records, int $nowTs, int $dueSoonDays =
             'folder_id' => (int) ($record['folder_id'] ?? 0),
             'folder' => (string) ($record['folder_title'] ?? ''),
             'sla_days' => $slaDays,
+            'folder_sla_days' => (int) ($record['folder_sla_days'] ?? $slaDays),
+            'item_sla_days' => (int) ($record['item_sla_days'] ?? 0),
             'last_change' => date('Y-m-d', $lastChange),
             'due_at' => date('Y-m-d', $lastChange + $slaDays * 86400),
             'days_overdue' => $sla['days_overdue'],
@@ -155,6 +157,9 @@ function rotationSlaCoverage(array $folderRecords): array
             'sla_days' => $slaDays > 0 ? $slaDays : 0,
             'items' => max(0, (int) ($record['items'] ?? 0)),
             'overdue' => $slaDays > 0 ? max(0, (int) ($record['overdue'] ?? 0)) : 0,
+            'individual_policies' => max(0, (int) ($record['individual_policies'] ?? 0)),
+            'covered_items' => max(0, (int) ($record['covered_items'] ?? 0)),
+            'effective_overdue' => max(0, (int) ($record['effective_overdue'] ?? $record['overdue'] ?? 0)),
         ];
     }
 

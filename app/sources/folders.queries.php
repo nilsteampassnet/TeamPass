@@ -38,6 +38,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 
 // Load functions
 require_once 'main.functions.php';
+require_once __DIR__ . '/item_access_logic.php';
 
 // init
 loadClasses('DB');
@@ -99,7 +100,9 @@ $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 // Prepare post variables
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
+// Read raw, like an encrypted payload: each field is sanitized after decoding.
+// FILTER_SANITIZE_FULL_SPECIAL_CHARS acts as htmlentities() and stored "é" as "&eacute;".
+$post_data = filter_input(INPUT_POST, 'data', FILTER_UNSAFE_RAW);
 
 // Ensure Complexity levels are translated
 if (defined('TP_PW_COMPLEXITY') === false) {
@@ -1222,9 +1225,27 @@ if (null !== $post_type) {
             // Init post variables
             $post_source_folder_id = filter_var($dataReceived['source_folder_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_target_folder_id = filter_var($dataReceived['target_folder_id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_folder_label = filter_var($dataReceived['folder_label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            // Same sanitization as add_folder: FILTER_SANITIZE_FULL_SPECIAL_CHARS would store accents as entities
+            $post_folder_label = (string) dataSanitizer(
+                ['label' => $dataReceived['folder_label'] ?? ''],
+                ['label' => 'trim|escape']
+            )['label'];
             $post_copy_subdirectories = filter_var($dataReceived['copy_subdirectories'], FILTER_SANITIZE_NUMBER_INT);
             $post_copy_items = filter_var($dataReceived['copy_items'], FILTER_SANITIZE_NUMBER_INT);
+
+            // Resolve the folder scope from the database, as getCurrentAccessRights() does: the
+            // items are decrypted server-side, so a login-time scope would still let the caller
+            // copy a folder whose access has been revoked since.
+            if (refreshUserFolderPermissionScope($SETTINGS) === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
 
             // Test if source folder is Read-only — user cannot move a folder they can only read
             if (in_array((int) $post_source_folder_id, $session->get('user-read_only_folders')) === true) {
@@ -1241,6 +1262,29 @@ if (null !== $post_type) {
             // Test if target folder is Read-only
             // If it is then stop
             if (in_array($post_target_folder_id, $session->get('user-read_only_folders')) === true) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Authorization: the target must be a folder the caller can access (0 = root is gated
+            // by the "user allowed" check below). A folder the caller cannot see is not in
+            // read_only_folders either, and the personal flag below is read from any folder row:
+            // without this check any user could graft folders and items into another user's
+            // personal tree or into a restricted folder (GHSA-q47m-rvr6-jqw7).
+            if (
+                (int) $post_target_folder_id !== 0
+                && in_array(
+                    (int) $post_target_folder_id,
+                    array_map('intval', (array) $session->get('user-accessible_folders')),
+                    true
+                ) === false
+            ) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1283,13 +1327,6 @@ if (null !== $post_type) {
                 break;
             }
 
-            // Get all allowed folders
-            $array_all_visible_folders = array_merge(
-                $session->get('user-accessible_folders'),
-                $session->get('user-read_only_folders'),
-                $session->get('user-personal_visible_folders')
-            );
-
             // get list of all folders
             $nodeDescendants = $tree->getDescendants($post_source_folder_id, true, false, false);
             $parentId = '';
@@ -1298,8 +1335,16 @@ if (null !== $post_type) {
             foreach ($nodeDescendants as $node) {
                 // step1 - copy folder
 
-                // Can user access this subfolder?
-                if (in_array($node->id, $array_all_visible_folders) === false) {
+                // Can user access this subfolder? Same scope as getCurrentAccessRights(): the
+                // read-only list is not cleaned of the folders explicitly forbidden to the user,
+                // so it must never grant access on its own (GHSA-q47m-rvr6-jqw7).
+                if (itemAccessFolderIsInScope(
+                    (int) $node->id,
+                    (array) $session->get('user-accessible_folders'),
+                    (array) $session->get('user-personal_folders'),
+                    (array) $session->get('user-no_access_folders'),
+                    (array) $session->get('user-forbiden_personal_folders')
+                ) === false) {
                     continue;
                 }
 
@@ -1442,10 +1487,20 @@ if (null !== $post_type) {
                     $userTpPwd = $decryptedData['string'] ?? '';
                     $userTpPrivateKey = decryptPrivateKey($userTpPwd, $userTpInfo['private_key']);
 
+                    // Skip the items the caller is restricted from (restricted_to /
+                    // restriction_to_roles): they are decrypted with the TP_USER key and the copy
+                    // carries no restriction, so copying them would hand the caller a readable
+                    // copy of a password the item card refuses to show (GHSA-q47m-rvr6-jqw7).
                     $rows = DB::query(
-                        'SELECT *
-                        FROM ' . prefixTable('items') . '
-                        WHERE id_tree = %i',
+                        'SELECT i.*
+                        FROM ' . prefixTable('items') . ' AS i
+                        WHERE i.id_tree = %i
+                        AND ' . itemRestrictionSqlPredicate(
+                            (int) $session->get('user-id'),
+                            securityPostureUserRoleIds((int) $session->get('user-id')),
+                            'i',
+                            prefixTable('restriction_to_roles')
+                        ),
                         $nodeInfo->id
                     );
                     foreach ($rows as $record) {
@@ -1505,6 +1560,10 @@ if (null !== $post_type) {
                                         'label' => substr($record['label'], 0, 500),
                                         'description' => empty($record['description']) === true ? '' : $record['description'],
                                         'id_tree' => $newFolderId,
+                                        // Like copy_item: a copy into a personal folder is a
+                                        // personal item (the user purge and the personal key
+                                        // flows select on perso).
+                                        'perso' => (int) $nodeInfo->personal_folder,
                                         'pw' => $cryptedStuff['encrypted'],
                                         'pw_iv' => $cryptedStuff['meta'],
                                         'url' => empty($record['url']) === true ? '' : substr($record['url'], 0, 500),
