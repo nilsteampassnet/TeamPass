@@ -1436,7 +1436,67 @@ return array(
     'bck_scheduled_email_report_help' => 'Send a report email to administrators after each scheduled backup. If an externalized backup is queued after it, a single consolidated report is sent after both steps.',
     'bck_scheduled_email_report_only_failures' => 'Send report only when backup fails',
     'email_subject_scheduled_backup_report' => 'Scheduled backup report: #tp_status#',
-    'email_body_scheduled_backup_report' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br><b>Status</b>: #tp_status#<br><b>Date</b>: #tp_datetime#<br><b>Message</b>: #tp_message#<br><b>Backup file</b>: #tp_file#<br><b>Size</b>: #tp_size#<br><b>Output directory</b>: #tp_output_dir#<br><b>Retention</b>: #tp_retention_days# day(s)<br><b>Files deleted on last purge</b>: #tp_purge_deleted##tp_externalized_report#<br><br>Regards,',
+    'email_body_scheduled_backup_report' => '<table width="100%" border="0" cellpadding="10" cellspacing="0">
+<tr bgcolor="#203f7d">
+<td colspan="4">
+<font color="#ffffff"><b>TeamPass — varundusaruanne</b></font>
+</td>
+</tr>
+
+<tr bgcolor="#e8edf5">
+<td width="18%"><b>TULEMUS</b></td>
+<td width="32%">
+<font color="#203f7d"><b>#tp_status#</b></font>
+</td>
+<td width="18%"><b>Kuupäev</b></td>
+<td width="32%">#tp_datetime#</td>
+</tr>
+
+<tr>
+<td><b>Suurus</b></td>
+<td>#tp_size#</td>
+<td><b>Säilitamine</b></td>
+<td>#tp_retention_days# päev(a)</td>
+</tr>
+</table>
+
+<br>
+
+<table width="100%" border="0" cellpadding="7" cellspacing="0">
+<tr bgcolor="#d9d9d9">
+<td colspan="2"><b>Lisateave — ajastatud varundamine</b></td>
+</tr>
+
+<tr>
+<td width="22%"><b>Kataloog</b></td>
+<td>#tp_output_dir#</td>
+</tr>
+
+<tr bgcolor="#eeeeee">
+<td><b>Fail</b></td>
+<td>#tp_file#</td>
+</tr>
+
+<tr>
+<td><b>Viimane puhastus</b></td>
+<td>#tp_purge_deleted# fail(i)</td>
+</tr>
+
+<tr bgcolor="#eeeeee">
+<td><b>Diagnostika</b></td>
+<td>#tp_message#</td>
+</tr>
+</table>
+
+#tp_externalized_report#
+
+<br>
+
+<table width="100%" border="0" cellpadding="7" cellspacing="0">
+<tr bgcolor="#eeeeee">
+<td>Teavituse genereeris automaatselt TeamPass.</td>
+</tr>
+</table>',
     'bck_col_teampass_version' => 'TeamPass version',
     'bck_version_unknown' => 'Unknown',
     'bck_restore_incompatible_version_title' => 'Incompatible backup version',
@@ -2070,7 +2130,61 @@ return array(
     'delete_current_avatar_confirm' => 'Remove your current profile image and return to the default avatar?',
     'avatar_deleted' => 'Avatar removed',
     'avatar_delete_failed' => 'Avatar removal failed.',
-    'email_body_scheduled_backup_externalized_report' => '<br><br><b>Externalized backup</b><br><b>Status</b>: #tp_externalized_status#<br><b>Message</b>: #tp_externalized_message#<br><b>Destination</b>: #tp_externalized_destination#<br><b>Target</b>: #tp_externalized_target#<br><b>Backup file</b>: #tp_externalized_file#<br><b>Size</b>: #tp_externalized_size#<br><b>Retention</b>: #tp_externalized_retention_days# day(s), max #tp_externalized_retention_count# file(s)<br><b>Files deleted on last purge</b>: #tp_externalized_purge_deleted#<br><b>Retry</b>: #tp_externalized_retry#',
+    'email_body_scheduled_backup_externalized_report' => '<br>
+
+<table width="100%" border="0" cellpadding="10" cellspacing="0">
+<tr bgcolor="#203f7d">
+<td colspan="4">
+<font color="#ffffff"><b>Varukoopia edastamine välisesse salvestuskohta</b></font>
+</td>
+</tr>
+
+<tr bgcolor="#e8edf5">
+<td width="18%"><b>TULEMUS</b></td>
+<td width="32%">
+<font color="#203f7d"><b>#tp_externalized_status#</b></font>
+</td>
+<td width="18%"><b>Sihtkoht</b></td>
+<td width="32%">#tp_externalized_destination#</td>
+</tr>
+
+<tr>
+<td><b>Suurus</b></td>
+<td>#tp_externalized_size#</td>
+<td><b>Säilitamine</b></td>
+<td>#tp_externalized_retention_days# päev(a) / #tp_externalized_retention_count# fail(i)</td>
+</tr>
+</table>
+
+<br>
+
+<table width="100%" border="0" cellpadding="7" cellspacing="0">
+<tr bgcolor="#d9d9d9">
+<td colspan="4"><b>Lisateave — väline edastamine</b></td>
+</tr>
+
+<tr>
+<td width="18%"><b>Siht</b></td>
+<td width="32%">#tp_externalized_target#</td>
+<td width="18%"><b>Katse</b></td>
+<td width="32%">#tp_externalized_retry#</td>
+</tr>
+
+<tr bgcolor="#eeeeee">
+<td><b>Puhastus</b></td>
+<td colspan="3">#tp_externalized_purge_deleted# fail(i)</td>
+</tr>
+
+<tr>
+<td><b>Fail</b></td>
+<td colspan="3">#tp_externalized_file#</td>
+</tr>
+
+<tr bgcolor="#eeeeee">
+<td><b>Diagnostika</b></td>
+<td colspan="3">#tp_externalized_message#</td>
+</tr>
+</table>',
     'bck_include_documents' => 'Include documents',
     'bck_include_documents_help' => 'Adds item attachments, KB attachments, and avatars to the .tpbackup package.',
     'bck_backup_contains_documents' => 'This backup contains documents',

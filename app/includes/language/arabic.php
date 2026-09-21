@@ -1237,6 +1237,122 @@ $LANG = array(
     'kb_attachment_deleted' => 'تم حذف مرفق من قاعدة المعرفة',
     'kb_comment_added' => 'تمت إضافة تعليق',
     'kb_comment_deleted' => 'تم حذف التعليق',
+    'email_body_scheduled_backup_report' => '<table width="100%" border="0" cellpadding="10" cellspacing="0">
+<tr bgcolor="#203f7d">
+<td colspan="4">
+<font color="#ffffff"><b>تقرير النسخ الاحتياطي من TeamPass</b></font>
+</td>
+</tr>
+
+<tr bgcolor="#e8edf5">
+<td width="18%"><b>النتيجة</b></td>
+<td width="32%">
+<font color="#203f7d"><b>#tp_status#</b></font>
+</td>
+<td width="18%"><b>التاريخ</b></td>
+<td width="32%">#tp_datetime#</td>
+</tr>
+
+<tr>
+<td><b>الحجم</b></td>
+<td>#tp_size#</td>
+<td><b>الاحتفاظ</b></td>
+<td>#tp_retention_days# يوم</td>
+</tr>
+</table>
+
+<br>
+
+<table width="100%" border="0" cellpadding="7" cellspacing="0">
+<tr bgcolor="#d9d9d9">
+<td colspan="2"><b>معلومات إضافية — النسخ الاحتياطي المجدول</b></td>
+</tr>
+
+<tr>
+<td width="22%"><b>المجلد</b></td>
+<td>#tp_output_dir#</td>
+</tr>
+
+<tr bgcolor="#eeeeee">
+<td><b>الملف</b></td>
+<td>#tp_file#</td>
+</tr>
+
+<tr>
+<td><b>آخر تنظيف</b></td>
+<td>#tp_purge_deleted# ملف</td>
+</tr>
+
+<tr bgcolor="#eeeeee">
+<td><b>التشخيص</b></td>
+<td>#tp_message#</td>
+</tr>
+</table>
+
+#tp_externalized_report#
+
+<br>
+
+<table width="100%" border="0" cellpadding="7" cellspacing="0">
+<tr bgcolor="#eeeeee">
+<td>تم إنشاء هذا الإشعار تلقائيًا بواسطة TeamPass.</td>
+</tr>
+</table>',
+    'email_body_scheduled_backup_externalized_report' => '<br>
+
+<table width="100%" border="0" cellpadding="10" cellspacing="0">
+<tr bgcolor="#203f7d">
+<td colspan="4">
+<font color="#ffffff"><b>نقل النسخة الاحتياطية إلى وجهة خارجية</b></font>
+</td>
+</tr>
+
+<tr bgcolor="#e8edf5">
+<td width="18%"><b>النتيجة</b></td>
+<td width="32%">
+<font color="#203f7d"><b>#tp_externalized_status#</b></font>
+</td>
+<td width="18%"><b>الوجهة</b></td>
+<td width="32%">#tp_externalized_destination#</td>
+</tr>
+
+<tr>
+<td><b>الحجم</b></td>
+<td>#tp_externalized_size#</td>
+<td><b>الاحتفاظ</b></td>
+<td>#tp_externalized_retention_days# يوم / #tp_externalized_retention_count# ملف</td>
+</tr>
+</table>
+
+<br>
+
+<table width="100%" border="0" cellpadding="7" cellspacing="0">
+<tr bgcolor="#d9d9d9">
+<td colspan="4"><b>معلومات إضافية — النقل إلى وجهة خارجية</b></td>
+</tr>
+
+<tr>
+<td width="18%"><b>الهدف</b></td>
+<td width="32%">#tp_externalized_target#</td>
+<td width="18%"><b>المحاولة</b></td>
+<td width="32%">#tp_externalized_retry#</td>
+</tr>
+
+<tr bgcolor="#eeeeee">
+<td><b>التنظيف</b></td>
+<td colspan="3">#tp_externalized_purge_deleted# ملف</td>
+</tr>
+
+<tr>
+<td><b>الملف</b></td>
+<td colspan="3">#tp_externalized_file#</td>
+</tr>
+
+<tr bgcolor="#eeeeee">
+<td><b>التشخيص</b></td>
+<td colspan="3">#tp_externalized_message#</td>
+</tr>
+</table>',
     '' => ''
 );
 
