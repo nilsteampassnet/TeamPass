@@ -678,6 +678,26 @@ $emailNotConfigured = $canAccessInactiveAndDeletedUsers === true
         </div>
     </div>
 
+    <!-- SIGN-IN PASSKEYS of a user — modal -->
+    <div class="modal fade" id="modal-webauthn-login" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fa-solid fa-fingerprint mr-2"></i><?php echo $lang->get('webauthn_login_passkeys'); ?> &mdash; <b><span id="webauthn-login-admin-title"></span></b>
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small"><?php echo $lang->get('webauthn_login_admin_intro'); ?></p>
+                    <div id="webauthn-login-admin-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- LEAVER RISK REPORT (F3) — modal -->
     <div class="modal fade" id="modal-leaver-risk" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">

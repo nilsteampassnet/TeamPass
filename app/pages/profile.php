@@ -324,6 +324,44 @@ foreach ($session->get('user-roles_array') as $role) {
                                         </a>
                                     </li>
                                     <?php
+                                    // Passkeys used to sign in to TeamPass. Still listed when the
+                                    // administrator turned the feature off, so they can be deleted.
+                                    $webauthnLoginMode = (int) ($SETTINGS['webauthn_login_mode'] ?? 0);
+                                    if ($webauthnLoginMode === 0) {
+                                        $webauthnLoginShown = (int) DB::queryFirstField(
+                                            'SELECT COUNT(*) FROM ' . prefixTable('user_webauthn_credentials') . ' WHERE user_id = %i',
+                                            (int) $session->get('user-id')
+                                        ) > 0;
+                                        $webauthnLoginTip = $lang->get('webauthn_login_tip_disabled');
+                                    } else {
+                                        $webauthnLoginShown = true;
+                                        if ($webauthnLoginMode === 1) {
+                                            $webauthnLoginTip = $lang->get('webauthn_login_tip_second_factor');
+                                        } elseif ($session->get('user-auth_type') === 'local') {
+                                            $webauthnLoginTip = $lang->get('webauthn_login_tip_passwordless');
+                                        } else {
+                                            $webauthnLoginTip = $lang->get('webauthn_login_tip_directory');
+                                        }
+                                    }
+                                    if ($webauthnLoginShown === true) {
+                                        echo '
+                                    <li class="list-group-item" id="webauthn-login-block" data-mode="' . $webauthnLoginMode . '">
+                                        <b><i class="fa-solid fa-fingerprint fa-fw fa-lg mr-2"></i>' . $lang->get('webauthn_login_passkeys') . '</b>
+                                        <small class="form-text text-muted">' . $webauthnLoginTip . '</small>',
+                                        $webauthnLoginMode !== 0
+                                            ? '
+                                        <div class="input-group input-group-sm mt-2" style="max-width: 32rem;">
+                                            <input type="text" class="form-control" id="webauthn-login-label" maxlength="100" placeholder="' . $lang->get('webauthn_login_label_placeholder') . '">
+                                            <div class="input-group-append">
+                                                <button type="button" class="btn btn-primary" id="webauthn-login-add"><i class="fa-solid fa-plus mr-1"></i>' . $lang->get('webauthn_login_add') . '</button>
+                                            </div>
+                                        </div>'
+                                            : '',
+                                        '
+                                        <div class="mt-2" id="webauthn-login-list"></div>
+                                    </li>';
+                                    }
+
                                     $apiFeatureEnabled = isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1;
                                     // Per-user API access, as /authorize checks it. Read now rather than from the
                                     // session: an administrator may change it while the user is signed in.

@@ -313,6 +313,18 @@ return [
         'trigger' => 'app/api/Model/WebauthnModel.php (createCredential)',
     ],
 
+    'webauthn_login_added' => [
+        'group' => 'security',
+        'subject_key' => 'email_subject_webauthn_login_added',
+        'subject_prefix' => '',
+        'body_key' => 'email_body_webauthn_login_added',
+        'tokens' => ['#passkey_label#', '#tp_date#', '#tp_time#', '#tp_ip#'],
+        'required_tokens' => [],
+        'label' => 'email_tpl_webauthn_login_added',
+        'description' => 'email_tpl_webauthn_login_added_desc',
+        'trigger' => 'app/sources/webauthn_login.functions.php (webauthnLoginNotifyAdded)',
+    ],
+
     // ---------------------------------------------------------------- items
 
     'item_created' => [

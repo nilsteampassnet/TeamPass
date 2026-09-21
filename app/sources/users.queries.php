@@ -118,6 +118,15 @@ if (null !== $post_type) {
         'revoke_api_session',
         'set_onboarding_completed',
         'seed_personal_sharekeys',
+        // Sign-in passkeys: always the caller's own (webauthn_login.functions.php)
+        'webauthn_login_list',
+        'webauthn_login_register_options',
+        'webauthn_login_register_verify',
+        'webauthn_login_rename',
+        'webauthn_login_delete',
+        'webauthn_login_passwordless_options',
+        'webauthn_login_passwordless_verify',
+        'webauthn_login_passwordless_disable',
     ];
 
     // decrypt and retrieve data in JSON format
@@ -496,6 +505,54 @@ if (null !== $post_type) {
                 ),
                 'encode'
             );
+            break;
+
+        /*
+         * SIGN-IN PASSKEYS (passkeys used to sign in to TeamPass itself)
+         *
+         * Profile actions on the caller's own passkeys. Registration wraps the cleartext
+         * private key held by this session when the passkey may sign in without password.
+         */
+        case 'webauthn_login_list':
+        case 'webauthn_login_register_options':
+        case 'webauthn_login_register_verify':
+        case 'webauthn_login_rename':
+        case 'webauthn_login_delete':
+        case 'webauthn_login_passwordless_options':
+        case 'webauthn_login_passwordless_verify':
+        case 'webauthn_login_passwordless_disable':
+            if (!hash_equals((string) $session->get('key'), (string) $post_key)) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+            require_once __DIR__ . '/webauthn_login.functions.php';
+            echo prepareExchangedData(webauthnLoginProfileAction($post_type, $dataReceived, $SETTINGS, $lang), 'encode');
+            break;
+
+        /*
+         * Passkeys of another account, for its administrator or manager: list and revoke.
+         * Not in $all_users_can_access, so the checks above on user_id apply.
+         */
+        case 'webauthn_login_admin_list':
+        case 'webauthn_login_admin_delete':
+            if (!hash_equals((string) $session->get('key'), (string) $post_key)) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+            require_once __DIR__ . '/webauthn_login.functions.php';
+            echo prepareExchangedData(webauthnLoginAdminAction($post_type, $dataReceived, $SETTINGS, $lang), 'encode');
             break;
 
         case 'list_api_sessions':

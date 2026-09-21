@@ -203,6 +203,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="qrcode"><i class="fa-solid fa-qrcode mr-2"></i><?php echo $lang->get('user_ga_code'); ?></li>' +
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="visible-folders"><i class="fa-solid fa-sitemap mr-2"></i><?php echo $lang->get('user_folders_rights'); ?></li>' +
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="disable-user"><i class="fa-solid fa-user-slash text-warning mr-2" disabled></i><?php echo $lang->get('disable_enable'); ?></li>' +
+                        <?php echo (int) ($SETTINGS['webauthn_login_mode'] ?? 0) !== 0 ? "'<li class=\"dropdown-item pointer tp-action\" data-id=\"' + \$(data).data('id') + '\" data-fullname=\"' + \$(data).data('fullname') + '\" data-action=\"webauthn-login\"><i class=\"fa-solid fa-fingerprint mr-2\"></i>" . $lang->get('webauthn_login_passkeys') . "</li>' +" : ''; ?>
                         <?php echo (int) ($SETTINGS['leaver_risk_enabled'] ?? 0) === 1 ? "'<li class=\"dropdown-item pointer tp-action\" data-id=\"' + \$(data).data('id') + '\" data-fullname=\"' + \$(data).data('fullname') + '\" data-action=\"leaver-risk\"><i class=\"fa-solid fa-person-walking-arrow-right text-warning mr-2\"></i>" . $lang->get('leaver_risk') . "</li>' +" : ''; ?>
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="delete-user"><i class="fa-solid fa-user-minus text-danger mr-2" disabled></i><?php echo $lang->get('delete'); ?></li>' +
                         '</ul>' +
@@ -1582,6 +1583,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             //
             // --- END
             //
+        } else if ($(this).data('action') === 'webauthn-login') {
+            // Sign-in passkeys of this account: list and revoke
+            $('#webauthn-login-admin-title').text($(this).data('fullname'))
+            $('#webauthn-login-admin-list').data('user-id', $(this).data('id')).html('')
+            $('#modal-webauthn-login').modal('show')
+            loadUserWebauthnLogin($(this).data('id'))
+
         } else if ($(this).data('action') === 'leaver-risk') {
             // LEAVER RISK REPORT (F3) — shared credentials this account could read
             var leaverUserId = $(this).data('id')
@@ -4276,6 +4284,83 @@ function refreshListInactiveUsers(filterValue) {
             include_children: $('#leaver-risk-include-children').is(':checked') ? 1 : 0,
         }
     }
+
+    /**
+     * Load the sign-in passkeys of a user into the passkeys modal.
+     * @param {number} userId - The inspected user id
+     */
+    function loadUserWebauthnLogin(userId) {
+        $.post(
+            'sources/users.queries.php', {
+                type: 'webauthn_login_admin_list',
+                data: prepareExchangedData(JSON.stringify({ user_id: userId }), 'encode', '<?php echo $session->get('key'); ?>'),
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>')
+                const $list = $('#webauthn-login-admin-list')
+                if (data.error !== false) {
+                    $list.html($('<div class="text-danger">').text(data.message))
+                    return
+                }
+                if (!data.credentials || data.credentials.length === 0) {
+                    $list.html($('<span class="text-muted">').text(<?php echo json_encode($lang->get('webauthn_login_none'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>))
+                    return
+                }
+                const $table = $('<table class="table table-sm table-striped mb-0"><tbody></tbody></table>')
+                data.credentials.forEach((credential) => {
+                    const $row = $('<tr>')
+                    const $label = $('<td>').text(credential.label)
+                    if (credential.passwordless === true) {
+                        $label.append(' ', $('<span class="badge badge-success">').text(<?php echo json_encode($lang->get('webauthn_login_passwordless_badge'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>))
+                    }
+                    const lastUsed = credential.last_used_at ? new Date(credential.last_used_at * 1000).toLocaleString() : <?php echo json_encode($lang->get('webauthn_never_used'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>
+                    $row.append(
+                        $label,
+                        $('<td class="text-muted small">').text(<?php echo json_encode($lang->get('webauthn_created'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?> + ': ' + new Date(credential.created_at * 1000).toLocaleString())
+                            .append('<br>', document.createTextNode(<?php echo json_encode($lang->get('webauthn_last_used'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?> + ': ' + lastUsed)),
+                        $('<td class="text-right text-nowrap">').append(
+                            $('<button type="button" class="btn btn-sm btn-outline-danger webauthn-login-admin-delete">')
+                                .attr('data-id', parseInt(credential.id, 10))
+                                .html('<i class="fa-solid fa-trash mr-1"></i>' + $('<span>').text(<?php echo json_encode($lang->get('webauthn_login_delete'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>).html())
+                        )
+                    )
+                    $table.find('tbody').append($row)
+                })
+                $list.empty().append($table)
+            }
+        )
+    }
+
+    // Two clicks: the first turns the button into a confirmation, the second revokes
+    $(document).on('click', '.webauthn-login-admin-delete', function() {
+        const $button = $(this)
+        if ($button.data('armed') !== true) {
+            $button.data('armed', true)
+                .removeClass('btn-outline-danger').addClass('btn-danger')
+                .text(<?php echo json_encode($lang->get('webauthn_login_admin_delete_confirm'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>)
+            return
+        }
+        const userId = $('#webauthn-login-admin-list').data('user-id')
+        $button.prop('disabled', true)
+        $.post(
+            'sources/users.queries.php', {
+                type: 'webauthn_login_admin_delete',
+                data: prepareExchangedData(JSON.stringify({ user_id: userId, id: parseInt($button.attr('data-id'), 10) }), 'encode', '<?php echo $session->get('key'); ?>'),
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>')
+                toastr.remove()
+                if (data.error !== false) {
+                    toastr.error(data.message, '', { timeOut: 5000, progressBar: true })
+                } else {
+                    toastr.success('<?php echo $lang->get('done'); ?>', '', { timeOut: 1500 })
+                }
+                loadUserWebauthnLogin(userId)
+            }
+        )
+    })
 
     /**
      * Load (or reload) the leaver risk report with the current folder filter.
