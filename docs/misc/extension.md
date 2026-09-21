@@ -142,6 +142,10 @@ Both are off by default. OAuth2/SSO users have no password the API can check, so
 
 The **Licence** tab shows the state of your licence and lets you request a free trial. See [Licence](#licence).
 
+### 6. Passkeys
+
+On the **Browser Extension** tab, **Allow the browser extension to save passkeys** lets the extension keep the passkeys of your users in TeamPass (TeamPass 3.2.3 or later). It is off by default. Read [Passkeys](../features/passkeys.md) before turning it on: a passkey saved in a shared folder can be used by every member of that folder.
+
 ### CORS origins
 
 The extension calls the TeamPass API from the browser, so the API — and any reverse proxy in front of it — must return CORS headers that allow it.
