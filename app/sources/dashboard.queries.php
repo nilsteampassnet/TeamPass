@@ -107,6 +107,11 @@ $post_key = (string) $request->request->filter('key', '', FILTER_SANITIZE_SPECIA
 $post_offset = (int) $request->request->filter('offset', 0, FILTER_SANITIZE_NUMBER_INT);
 $post_limit = (int) $request->request->filter('limit', 50, FILTER_SANITIZE_NUMBER_INT);
 $post_include_hibp = (int) $request->request->filter('include_hibp', 0, FILTER_SANITIZE_NUMBER_INT);
+// The scan may only call Have I Been Pwned when the administrator enabled breach detection:
+// an instance that disabled it may have no outbound access, or refuse any external call.
+if ((int) ($SETTINGS['hibp_enabled'] ?? 0) !== 1) {
+    $post_include_hibp = 0;
+}
 
 $userId = (int) $session->get('user-id');
 $nowTs = time();

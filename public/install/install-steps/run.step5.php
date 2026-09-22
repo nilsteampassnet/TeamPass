@@ -575,7 +575,7 @@ class DatabaseInstaller
             array('admin', 'show_description', '1'),
             array('admin', 'anyone_can_modify', '0'),
             array('admin', 'anyone_can_modify_bydefault', '0'),
-            array('admin', 'nb_bad_authentication', '0'),
+            array('admin', 'nb_bad_authentication', '10'),
             array('admin', 'utf8_enabled', '1'),
             array('admin', 'restricted_to', '0'),
             array('admin', 'restricted_to_roles', '0'),

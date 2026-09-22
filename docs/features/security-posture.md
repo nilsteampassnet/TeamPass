@@ -71,7 +71,7 @@ A check that fails (no network, timeout, API error) is silent: the item is not f
 | **Not compromised** | No badge |
 | **Not checked yet** | No badge — the check starts the next time the item is opened |
 
-The status is stored on the item, so it is shared by every user who can read it. Change a compromised password and save the item: when the [security posture page](#security-posture-page) is enabled, saving clears the stored status and the next opening checks the new password; otherwise the new password is checked once the re-check interval has elapsed.
+The status is stored on the item, so it is shared by every user who can read it. Change a compromised password and save the item: saving clears the stored status, and the next opening checks the new password.
 
 ### Requirements
 
@@ -94,7 +94,7 @@ Click **Scan my passwords**. The scan runs in your own session — a background 
 - decrypts it with your own key;
 - measures its strength when it is not known yet;
 - computes a **reuse fingerprint** to detect passwords used more than once;
-- if **Also check Have I Been Pwned** is ticked, refreshes its breach status (same check as [above](#how-the-check-works));
+- if **Also check Have I Been Pwned** is ticked, refreshes its breach status (same check as [above](#how-the-check-works)). The option is only offered when [breach detection](#enabling-breach-detection) is enabled: the scan never calls Have I Been Pwned otherwise;
 - records the flags for you, then forgets the clear-text password.
 
 When the scan completes, the reuse flags are computed, the page and your score are refreshed and, when the [Notification centre](notification-center.md) is enabled, a *Security scan finished* notification is added to your inbox. A password whose strength cannot be measured is reported at the end of the scan and kept as *Not assessed*.

@@ -38,7 +38,7 @@ return array(
     'show_user_password' => '显示用户密码',
     'open_website' => '打开网站',
     'mfa_for_roles' => '需要为具有以下角色的用户请求MFA',
-    'mfa_for_roles_tip' => '默认情况下，一旦选择了某种MFA，此方法将对所有用户启用。但您也可以指定其生效的角色范围。<br>注意：尚未实现！',
+    'mfa_for_roles_tip' => '默认情况下，一旦选择了某种MFA，此方法将对所有用户启用。但您也可以指定其生效的角色范围。',
     'at_least_one_administrator_is_requested' => '至少需要一名系统管理员',
     'bad_code' => '密码错误',
     'disable_enable' => '禁用/启用',

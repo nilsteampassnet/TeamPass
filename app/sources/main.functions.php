@@ -2197,7 +2197,9 @@ function finalizeUserReuseFlags(int $userId): void
  * scan uses. The item's cached HIBP status is reset so the client-side async check
  * re-evaluates the new password (stale "breached" clears).
  *
- * No-op when the Security Posture Dashboard is disabled.
+ * The HIBP reset runs whatever the Security Posture Dashboard setting: the stored status
+ * belongs to breach detection, and describes a password that no longer exists. Everything
+ * else is skipped when the dashboard is disabled.
  *
  * @param int    $itemId            Item whose posture is refreshed.
  * @param int    $userId            User the posture row belongs to (the editor).
@@ -2208,18 +2210,8 @@ function finalizeUserReuseFlags(int $userId): void
  */
 function refreshItemHealthAfterSave(int $itemId, int $userId, string $plaintextPassword, array $SETTINGS): void
 {
-    // Feature off → item_health is unused, nothing to refresh.
-    if ((int) ($SETTINGS['security_dashboard_enabled'] ?? 0) !== 1) {
-        return;
-    }
     if ($itemId <= 0 || $userId <= 0) {
         return;
-    }
-
-    $nowTs = time();
-    $oversharedThreshold = (int) ($SETTINGS['security_dashboard_overshared_threshold'] ?? 10);
-    if ($oversharedThreshold <= 0) {
-        $oversharedThreshold = 10;
     }
 
     // Reset the item's cached HIBP status so the stale "breached" flag clears and the
@@ -2236,6 +2228,17 @@ function refreshItemHealthAfterSave(int $itemId, int $userId, string $plaintextP
         'id = %i',
         $itemId
     );
+
+    // Dashboard off → item_health is unused, nothing else to refresh.
+    if ((int) ($SETTINGS['security_dashboard_enabled'] ?? 0) !== 1) {
+        return;
+    }
+
+    $nowTs = time();
+    $oversharedThreshold = (int) ($SETTINGS['security_dashboard_overshared_threshold'] ?? 10);
+    if ($oversharedThreshold <= 0) {
+        $oversharedThreshold = 10;
+    }
 
     // Recompute the metadata flags for this single item (no decryption). Same fragments as
     // the dashboard scan, scoped to one item.

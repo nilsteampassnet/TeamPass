@@ -607,7 +607,8 @@ switch ($inputData['type']) {
                 }
 
                 // Refresh the new item's security posture so a reused/weak password is flagged
-                // without waiting for a manual dashboard scan. No-op when the dashboard is disabled.
+                // without waiting for a manual dashboard scan. Only the breach status is reset when
+                // the dashboard is disabled.
                 refreshItemHealthAfterSave(
                     (int) $newID,
                     (int) $session->get('user-id'),
@@ -2525,7 +2526,8 @@ switch ($inputData['type']) {
 
                 // Refresh the item's security posture so the "needs attention" shield reflects
                 // the new password immediately (reused/breached flags are otherwise frozen at
-                // the last manual dashboard scan). No-op when the dashboard is disabled.
+                // the last manual dashboard scan). Only the breach status is reset when the
+                // dashboard is disabled.
                 refreshItemHealthAfterSave(
                     (int) $inputData['itemId'],
                     (int) $session->get('user-id'),

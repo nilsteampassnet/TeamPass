@@ -61,7 +61,7 @@ Access control, encryption, and session security parameters.
 | **Enable HTTP request login** | Allows authentication via HTTP request parameters (use with caution) |
 | **Enable STS/HSTS** | Adds the `Strict-Transport-Security` HTTP header; requires HTTPS |
 | **Password life duration** | Number of days before a user's login password expires (0 = never) |
-| **False login attempts** | Maximum failed logins before the account is locked |
+| **Maximum login attempts before account lockout** | Maximum failed logins before the account is locked. Default: 10; `0` disables the lockout |
 | **Secure image display** | Serves item attachments through Teampass instead of direct URLs |
 | **Password overview delay** | Seconds a revealed password stays visible before being masked again |
 | **Activate item expiration** | Enables password expiration tracking on items (see [Renewal](../features/renewal.md)) |

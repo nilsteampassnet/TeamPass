@@ -34,7 +34,7 @@ These settings came with a secure default for new installations. When an upgrade
 | **Require HTTPS for API requests** (`api_require_https`) | Enabled | Disabled |
 | **API rate limit (requests per minute)** (`api_rate_limit_per_minute`) | 120 | 0 (no limit) |
 
-One default is worth changing on **every** installation: **Maximum login attempts before account lockout** (`nb_bad_authentication`) is `0` on a new installation, which disables the per-account lockout. See [Authentication](#authentication).
+Check one more value on an instance installed with an older version: **Maximum login attempts before account lockout** (`nb_bad_authentication`) used to be `0` on a new installation, which disables the per-account lockout. New installations now start at 10, and the administrator dashboard warns while it is `0`. See [Authentication](#authentication).
 
 ---
 
@@ -59,7 +59,7 @@ One default is worth changing on **every** installation: **Maximum login attempt
 
 ## Authentication
 
-- **Enable multi-factor authentication** (Settings → MFA). Once a method is enabled, every user must provide a code; exceptions can be granted to administrators globally and to individual users. Review the users list regularly: a user exempted from MFA is marked with a red fingerprint. See [Authentication](../features/authentication.md#multi-factor-authentication-mfa).
+- **Enable multi-factor authentication** (Settings → MFA). Once a method is enabled, every user must provide a code, unless **MFA is requested for users in Roles** limits it to the users of some roles; exceptions can also be granted to administrators globally and to individual users. Review the users list regularly: a user exempted from MFA is marked with a red fingerprint. See [Authentication](../features/authentication.md#multi-factor-authentication-mfa).
 - **Set the anti-bruteforce thresholds** — see the table below.
 - **Keep automatic login from HTTP credentials disabled**: **Automatic login using http header credentials** (`enable_http_request_login`) is off by default.
 - **Keep sessions short**: **Default session expiration** and **Maximum session expiration** default to 60 minutes. See [Session management](../misc/session-management.md).
@@ -68,7 +68,7 @@ The anti-bruteforce settings are in **Settings → Options → Security & authen
 
 | Setting | Effect | Default |
 |---------|--------|---------|
-| **Maximum login attempts before account lockout** (`nb_bad_authentication`) | Locks the account after this many failed attempts. `0` disables the per-account lockout | `0` on a new installation — **set a value**, for example 10 |
+| **Maximum login attempts before account lockout** (`nb_bad_authentication`) | Locks the account after this many failed attempts. `0` disables the per-account lockout, and the administrator dashboard then shows a warning | 10 (`0` on instances installed with an older version — **set a value**) |
 | **Maximum failed login attempts per IP before lockout** (`nb_bad_authentication_by_ip`) | Locks the client address after this many failed attempts. `0` disables it | 30 |
 | **Lock duration after threshold is reached** (`bruteforce_lock_duration`) | Minutes the lock lasts | 10 |
 
@@ -162,7 +162,7 @@ Users who see an item but cannot open it are missing a sharekey, which is a diff
 
 ## Monitoring and audit
 
-- **Check the health indicators** on the administrator dashboard: missing PHP extensions, an open API, a stalled background task queue, the file integrity result. See [Performance](performance.md).
+- **Check the health indicators** on the administrator dashboard: missing PHP extensions, an open API, a disabled account lockout, a stalled background task queue, the file integrity result. See [Performance](performance.md).
 - **Keep item views logged**: **Log password item views by users** (`log_accessed`, **Settings → Options → Logging & history**) is enabled by default.
 - **Send the audit events to your syslog or SIEM** (**Settings → Options → Integrations & automation**), so that a copy survives a compromise of the server.
 - **Review access periodically** with [Access reviews](../manage/access-reviews.md), the [Compliance reports](../manage/compliance-reports.md) and, when someone leaves, the [Leaver risk](../features/leaver-risk.md) view.

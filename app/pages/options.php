@@ -462,7 +462,7 @@ $zones = timezone_list();
                                 <?php echo $lang->get('nb_false_login_attempts'); ?>
                             </div>
                             <div class='col-2'>
-                                <input type='number' min='0' step='1' class='form-control form-control-sm' id='nb_bad_authentication' value='<?php echo htmlspecialchars($SETTINGS['nb_bad_authentication'] ?? '0'); ?>'>
+                                <input type='number' min='0' step='1' class='form-control form-control-sm' id='nb_bad_authentication' value='<?php echo htmlspecialchars($SETTINGS['nb_bad_authentication'] ?? '10'); ?>'>
                             </div>
                         </div>
 

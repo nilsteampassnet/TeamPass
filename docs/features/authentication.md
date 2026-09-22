@@ -112,7 +112,7 @@ As an Administrator, select the `Settings \ MFA` option in the left menu.
 
 ### Generalities
 
-🔔 Once an MFA protocol is enabled, the MFA code is mandatory for each user to get authenticated in Teampass. 2 exceptions are possible.
+🔔 Once an MFA protocol is enabled, the MFA code is mandatory for each user to get authenticated in Teampass. 3 exceptions are possible.
 
 👉 Administrator users can have this rule disabled globally using dedicated option.
 
@@ -125,6 +125,8 @@ As an Administrator, select the `Settings \ MFA` option in the left menu.
 If disabled for a user, a red fingerprint symbol is shown in the users list.
 
 ![Settings tasks options](../_media/tp3_auth_mfa_3.png)
+
+👉 The option `MFA is requested for users in Roles` limits MFA to the users holding at least one of the selected roles. Leave it empty to require MFA from every user.
 
 ### Google Authenticator enrollment
 

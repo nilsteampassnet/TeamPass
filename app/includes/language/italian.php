@@ -38,7 +38,7 @@ return array(
     'show_user_password' => 'Mostra password utente',
     'open_website' => 'Apri sito web',
     'mfa_for_roles' => 'MFA è richiesto per gli utenti nei ruoli',
-    'mfa_for_roles_tip' => 'Per impostazione predefinita, una volta selezionato un metodo MFA, è abilitato per tutti gli utenti. Tuttavia, puoi selezionare i ruoli per i quali è previsto.<br>NON ANCORA IMPLEMENTATO',
+    'mfa_for_roles_tip' => 'Per impostazione predefinita, una volta selezionato un metodo MFA, è abilitato per tutti gli utenti. Tuttavia, puoi selezionare i ruoli per i quali è previsto.',
     'at_least_one_administrator_is_requested' => 'È richiesto almeno un amministratore',
     'bad_code' => 'Codice errato',
     'disable_enable' => 'Disabilita / Abilita',

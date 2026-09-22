@@ -38,7 +38,7 @@ return array(
     'show_user_password' => 'Wyświetl hasło użytkownika',
     'open_website' => 'Otwórz stronę WWW',
     'mfa_for_roles' => 'Mechanizm MFA jest wymagany dla roli użytkowników',
-    'mfa_for_roles_tip' => 'Domyślnie, po wybraniu metody MFA, jest ona włączona dla wszystkich użytkowników. Niemniej jednak, możesz wybrać role, dla których jest to oczekiwane.<br>JESZCZE NIE WDROŻONE',
+    'mfa_for_roles_tip' => 'Domyślnie, po wybraniu metody MFA, jest ona włączona dla wszystkich użytkowników. Niemniej jednak, możesz wybrać role, dla których jest to oczekiwane.',
     'at_least_one_administrator_is_requested' => 'Wymagany jest co najmniej jeden administrator',
     'bad_code' => 'Niepoprawny kod',
     'disable_enable' => 'Wyłączenie / Włączenie',
