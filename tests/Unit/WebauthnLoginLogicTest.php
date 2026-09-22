@@ -72,6 +72,37 @@ final class WebauthnLoginLogicTest extends TestCase
         $this->assertFalse(webauthnLoginIsSecondFactor([], 1, true));
     }
 
+    public function testPrfInputIsOneConstantForEveryPasskey(): void
+    {
+        // Constant, so a discoverable sign-in can evaluate the PRF of whichever passkey is picked
+        $this->assertSame(32, strlen(webauthnLoginPrfInput()));
+        $this->assertSame(webauthnLoginPrfInput(), webauthnLoginPrfInput());
+    }
+
+    public function testPasswordlessSignInIsRefusedOutsideItsScope(): void
+    {
+        $on = ['webauthn_login_mode' => '2'];
+        $local = ['auth_type' => 'local', 'special' => 'none', 'key_wrap_mode' => TP_WEBAUTHN_LOGIN_WRAP_PRF];
+
+        $this->assertNull(webauthnLoginPasswordlessRefusal($on, $local));
+        $this->assertNull(webauthnLoginPasswordlessRefusal($on, ['key_wrap_mode' => TP_WEBAUTHN_LOGIN_WRAP_SERVER] + $local));
+        $this->assertSame('webauthn_login_disabled', webauthnLoginPasswordlessRefusal(['webauthn_login_mode' => '1'], $local));
+        $this->assertSame('webauthn_login_passwordless_unavailable', webauthnLoginPasswordlessRefusal($on, ['auth_type' => 'ldap'] + $local));
+        $this->assertSame('webauthn_login_passwordless_unavailable', webauthnLoginPasswordlessRefusal($on, ['auth_type' => 'oauth2'] + $local));
+        foreach (['generate-keys', 'recrypt-private-key', 'otc_is_required_on_next_login', 'user_added_from_ad'] as $special) {
+            $this->assertSame('webauthn_login_passwordless_unavailable', webauthnLoginPasswordlessRefusal($on, ['special' => $special] + $local), $special);
+        }
+        $this->assertSame('webauthn_login_passwordless_not_enabled', webauthnLoginPasswordlessRefusal($on, ['key_wrap_mode' => TP_WEBAUTHN_LOGIN_WRAP_NONE] + $local));
+    }
+
+    public function testImposedMfaBlocksPasswordlessOnlyWhenTheAdministratorSaysSo(): void
+    {
+        $this->assertFalse(webauthnLoginPasswordlessBlockedByMfa([], true));
+        $this->assertFalse(webauthnLoginPasswordlessBlockedByMfa(['webauthn_passwordless_satisfies_mfa' => '1'], true));
+        $this->assertTrue(webauthnLoginPasswordlessBlockedByMfa(['webauthn_passwordless_satisfies_mfa' => '0'], true));
+        $this->assertFalse(webauthnLoginPasswordlessBlockedByMfa(['webauthn_passwordless_satisfies_mfa' => '0'], false));
+    }
+
     public function testUserHandleIsStableAndOpaque(): void
     {
         $handle = webauthnLoginUserHandle(42, 'secret');

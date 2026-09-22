@@ -53,7 +53,7 @@ function createLogin(loginSource = source) {
   for (const id of ['ga_code', 'yubico_key', 'yubico_user_id', 'yubico_user_key',
     '2fa_user_selection', 'duo_code', 'duo_state']) field(id, '', 'input', 'text', ['submit-button'])
   for (const id of ['but_identify_user', 'but_login_with_oauth2', 'forgot-local-password-link',
-    'send-temporary-code', 'webauthn-2fa-button']) field(id, '', 'button')
+    'send-temporary-code', 'webauthn-2fa-button', 'but_login_with_passkey']) field(id, '', 'button')
   for (const method of ['google', 'yubico', 'duo', 'webauthn']) {
     const radio = field(`radio-${method}`, '', 'input', 'radio', ['2fa_selector_select'])
     radio.dataset.mfa = method
@@ -774,4 +774,70 @@ test('a browser without passkey support is told so and submits nothing', async (
   app.busy(false)
   assert.equal(app.requests.length, 2)
   assert.ok(app.notices.some(notice => notice.level === 'error' && notice.args[0] === 'webauthn_login_browser_unsupported'))
+})
+
+test('a passwordless sign-in sends the assertion alone and opens the session', async () => {
+  const app = createLogin()
+  const calls = passkeyBrowser(app, [{ id: 'credential-id' }])
+  app.click('but_login_with_passkey')
+  await flush()
+  app.busy(true)
+  assert.equal(app.requests[0].body.type, 'webauthn_login_options')
+  app.requests[0].resolve({ error: false, options: { challenge: 'passwordless-challenge' }, prf_input: 'prf-input' })
+  await flush()
+  await flush()
+  assert.equal(calls[0].options.challenge, 'passwordless-challenge')
+  assert.equal(calls[0].salt, 'prf-input')
+
+  const verify = app.requests[1]
+  assert.equal(verify.body.type, 'webauthn_login_verify')
+  const payload = verify.body.data.payload
+  assert.deepEqual(payload.credential, { id: 'credential-id' })
+  // Nothing names the account: the server takes it from the passkey
+  assert.equal(payload.login, undefined)
+  assert.equal(payload.pw, undefined)
+  verify.resolve({ error: false, value: payload.randomstring, user_admin: 0, initial_url: '', session_key: 'authenticated-key' })
+  await flush()
+  assert.equal(app.navigation.href, './index.php?page=items')
+})
+
+test('a refused passwordless ceremony is signed by the next click, without a new challenge', async () => {
+  const app = createLogin()
+  const refused = new Error('Not started by a click')
+  refused.name = 'NotAllowedError'
+  const calls = passkeyBrowser(app, [refused, { id: 'credential-id' }])
+  app.click('but_login_with_passkey')
+  await flush()
+  app.requests[0].resolve({ error: false, options: { challenge: 'kept-challenge' }, prf_input: 'prf-input' })
+  await flush()
+  await flush()
+  app.busy(false)
+  assert.equal(app.requests.length, 1)
+  assert.ok(app.notices.some(notice => notice.level === 'info' && notice.args[0] === 'webauthn_login_2fa_retry_passwordless'))
+
+  app.click('but_login_with_passkey')
+  await flush()
+  await flush()
+  assert.equal(calls.length, 2)
+  assert.equal(calls[1].options.challenge, 'kept-challenge')
+  assert.equal(app.requests.length, 2)
+  assert.equal(app.requests[1].body.type, 'webauthn_login_verify')
+  app.requests[1].resolve({ error: true, message: 'Passkey sign-in refused' })
+  await flush()
+  app.busy(false)
+  assert.ok(app.notices.some(notice => notice.level === 'error' && notice.args[0] === 'Passkey sign-in refused'))
+  assert.equal(app.navigation.href, '')
+})
+
+test('a passwordless sign-in the server refuses starts no ceremony', async () => {
+  const app = createLogin()
+  const calls = passkeyBrowser(app, [{ id: 'credential-id' }])
+  app.click('but_login_with_passkey')
+  await flush()
+  app.requests[0].resolve({ error: true, message: 'Signing in with a passkey is disabled.' })
+  await flush()
+  app.busy(false)
+  assert.equal(calls.length, 0)
+  assert.equal(app.requests.length, 1)
+  assert.ok(app.notices.some(notice => notice.level === 'error' && notice.args[0] === 'Signing in with a passkey is disabled.'))
 })

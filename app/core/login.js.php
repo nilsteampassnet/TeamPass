@@ -45,6 +45,9 @@ declare(strict_types=1);
     // Passkey second factor: the options the server sent and the submission to replay with
     // the assertion, kept until the ceremony succeeds so a click can start it again.
     var webauthnMfaPending = null;
+    // Passwordless sign-in: a challenge the browser refused to use without a click, kept so the
+    // next click on the passkey button signs it directly.
+    var passwordlessLoginPending = null;
     var loginInProgress = false;
     var loginNavigationPending = false;
     var loginReadOnlyFields = null;
@@ -508,6 +511,14 @@ declare(strict_types=1);
                 finishLoginAttempt();
                 showLoginRequestError();
             });
+        });
+
+        // Passwordless sign-in with a passkey
+        $('#but_login_with_passkey').click(function() {
+            if (debugJavascript === true) {
+                console.log('User starts a passwordless sign-in with a passkey');
+            }
+            launchPasswordlessLogin();
         });
 
         // Click on log in button with Azure Entra
@@ -1468,37 +1479,7 @@ declare(strict_types=1);
                         500
                     );
                 } else if (data.value === randomstring) {
-                    // Update session
-                    store.update(
-                        'teampassUser', {},
-                        function(teampassUser) {
-                            teampassUser.sessionDuration = 3600;
-                            teampassUser.sessionStartTimestamp = Date.now();
-                            teampassUser.sessionKey = data.session_key;
-                            teampassUser.user_id = data.user_id;
-                            teampassUser.user_has_psk = data.has_psk;
-                            teampassUser.special = data.special;
-                            teampassUser.auth_type = '';
-                            teampassUser.location_stored = 0;
-                            teampassUser.mfaSelector = false;
-                            teampassUser.mfaCode = '';
-                            teampassUser.page_reload = 0;
-                            teampassUser.split_view_mode = data.split_view_mode;
-                            teampassUser.show_subfolders = data.show_subfolders;
-                            teampassUser.validite_pw = data.validite_pw === true ? 1 : 0;
-                            teampassUser.num_days_before_exp = data.num_days_before_exp;
-                        }
-                    );
-
-                    //redirection for admin is specific
-                    loginNavigationPending = true;
-                    if (parseInt(data.user_admin) === 1) {
-                        window.location.href = './index.php?page=admin';
-                    } else if (data.initial_url !== '' && data.initial_url !== null) {
-                        window.location.href = data.initial_url;
-                    } else {
-                        window.location.href = './index.php?page=items';
-                    }
+                    completeSignIn(data);
                 }
 
                 // Clear Yubico
@@ -1507,6 +1488,162 @@ declare(strict_types=1);
                 }
             }
         );
+    }
+
+    /**
+     * Store the new session and leave the login page, after a password or a passkey sign-in.
+     *
+     * @param {object} data Successful answer of identify.php.
+     * @returns {void}
+     */
+    function completeSignIn(data) {
+        // Update session
+        store.update(
+            'teampassUser', {},
+            function(teampassUser) {
+                teampassUser.sessionDuration = 3600;
+                teampassUser.sessionStartTimestamp = Date.now();
+                teampassUser.sessionKey = data.session_key;
+                teampassUser.user_id = data.user_id;
+                teampassUser.user_has_psk = data.has_psk;
+                teampassUser.special = data.special;
+                teampassUser.auth_type = '';
+                teampassUser.location_stored = 0;
+                teampassUser.mfaSelector = false;
+                teampassUser.mfaCode = '';
+                teampassUser.page_reload = 0;
+                teampassUser.split_view_mode = data.split_view_mode;
+                teampassUser.show_subfolders = data.show_subfolders;
+                teampassUser.validite_pw = data.validite_pw === true ? 1 : 0;
+                teampassUser.num_days_before_exp = data.num_days_before_exp;
+            }
+        );
+
+        //redirection for admin is specific
+        loginNavigationPending = true;
+        if (parseInt(data.user_admin) === 1) {
+            window.location.href = './index.php?page=admin';
+        } else if (data.initial_url !== '' && data.initial_url !== null) {
+            window.location.href = data.initial_url;
+        } else {
+            window.location.href = './index.php?page=items';
+        }
+    }
+
+    /**
+     * Sign in with a passkey alone. The server picks nothing: the browser offers the passkeys
+     * saved for this site, and the account is the one the chosen passkey belongs to.
+     *
+     * @returns {object|boolean} Sign-in promise, or false when nothing was started.
+     */
+    function launchPasswordlessLogin() {
+        if (loginInProgress === true || loginNavigationPending === true) {
+            return false;
+        }
+        if (typeof window.tpWebauthnLogin === 'undefined' || window.tpWebauthnLogin.supported() !== true) {
+            toastr.remove();
+            toastr.error(
+                <?php echo json_encode($lang->get('webauthn_login_browser_unsupported'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+                <?php echo json_encode($lang->get('caution'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>, {
+                    timeOut: 10000,
+                    progressBar: true,
+                    positionClass: 'toast-bottom-right'
+                }
+            );
+            return false;
+        }
+
+        beginLoginAttempt();
+        const pending = passwordlessLoginPending;
+        passwordlessLoginPending = null;
+        // A kept challenge is signed straight from this click; otherwise ask for one first
+        const started = pending !== null
+            ? runPasswordlessCeremony(pending)
+            : $.when(sessionKeyCheckRequest).then(function() {
+                return $.post('sources/identify.php', { type: 'webauthn_login_options' });
+            }).then(function(answer) {
+                const start = prepareExchangedData(answer, 'decode', tpSessionKey);
+                if (start.error !== false) {
+                    toastr.remove();
+                    toastr.error(start.message, <?php echo json_encode($lang->get('caution'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>, {
+                        timeOut: 10000,
+                        progressBar: true,
+                        positionClass: 'toast-bottom-right'
+                    });
+                    return false;
+                }
+                return runPasswordlessCeremony({
+                    options: start.options,
+                    prfInput: start.prf_input,
+                    randomstring: CreateRandomString(10)
+                });
+            });
+
+        return $.when(started).then(finishLoginAttempt, function() {
+            finishLoginAttempt();
+            showLoginRequestError();
+        });
+    }
+
+    /**
+     * Sign the passwordless challenge, then send the assertion and the PRF output that opens the
+     * passkey's copy of the private key.
+     *
+     * @param {object} pending Challenge options, PRF input and the nonce of this attempt.
+     * @returns {object} Promise settled once the server answered or the ceremony failed.
+     */
+    function runPasswordlessCeremony(pending) {
+        toastr.remove();
+        toastr.info(<?php echo json_encode($lang->get('webauthn_login_2fa_touch'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>, '', {
+            positionClass: 'toast-top-center'
+        });
+        return window.tpWebauthnLogin.assert(pending.options, pending.prfInput).then(function(result) {
+            return $.post('sources/identify.php', {
+                type: 'webauthn_login_verify',
+                data: prepareExchangedData(JSON.stringify({
+                    credential: result.credential,
+                    prf_output: result.prf_output,
+                    randomstring: pending.randomstring,
+                    duree_session: $('#session_duration').val(),
+                    screenHeight: $('body').innerHeight(),
+                    TimezoneOffset: new Date().getTimezoneOffset() * 60,
+                    client: ''
+                }), 'encode', tpSessionKey)
+            }).then(function(answer) {
+                if (isStaleSessionKeyAnswer(answer) === true) {
+                    showLoginRequestError();
+                    return false;
+                }
+                const data = prepareExchangedData(answer, 'decode', tpSessionKey);
+                if (data.value === pending.randomstring) {
+                    completeSignIn(data);
+                    return true;
+                }
+                toastr.remove();
+                toastr.error(data.message, <?php echo json_encode($lang->get('caution'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>, {
+                    timeOut: 10000,
+                    progressBar: true,
+                    positionClass: 'toast-bottom-right'
+                });
+                return false;
+            });
+        }, function(error) {
+            // Keep the challenge: some browsers only run a ceremony started by a click
+            passwordlessLoginPending = pending;
+            const kind = window.tpWebauthnLogin.errorKind(error);
+            const messages = {
+                cancelled: <?php echo json_encode($lang->get('webauthn_login_2fa_retry_passwordless'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+                security: <?php echo json_encode($lang->get('webauthn_login_security_error'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+                failed: <?php echo json_encode($lang->get('webauthn_login_verification_failed'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>
+            };
+            toastr.remove();
+            toastr[kind === 'cancelled' ? 'info' : 'error'](messages[kind] || messages.failed, '', {
+                timeOut: 10000,
+                progressBar: true,
+                positionClass: 'toast-bottom-right'
+            });
+            return false;
+        });
     }
 
     /**

@@ -3651,5 +3651,14 @@ return array(
     'webauthn_login_2fa_touch' => 'Suivez les instructions de votre navigateur pour utiliser votre clé d’accès.',
     'webauthn_login_2fa_retry' => 'Cliquez sur « Utiliser ma clé d’accès » pour continuer.',
     'webauthn_login_2fa_failed' => 'Clé d’accès non vérifiée',
+    'webauthn_login_passwordless_button' => 'Se connecter avec une clé d’accès',
+    'webauthn_login_2fa_retry_passwordless' => 'Cliquez sur « Se connecter avec une clé d’accès » pour continuer.',
+    'webauthn_login_passwordless_not_enabled' => 'Cette clé d’accès n’est pas configurée pour se connecter sans mot de passe. Connectez-vous avec votre mot de passe, puis activez-la depuis votre profil.',
+    'webauthn_login_passwordless_stale' => 'Cette clé d’accès ne peut plus vous connecter sans mot de passe : vos clés de chiffrement ont changé. Connectez-vous avec votre mot de passe, puis réactivez-la depuis votre profil.',
+    'webauthn_login_prf_missing' => 'Ce navigateur ne peut pas déverrouiller cette clé d’accès pour une connexion sans mot de passe. Connectez-vous avec votre mot de passe.',
+    'webauthn_login_passwordless_mfa_required' => 'Votre compte exige un autre second facteur : connectez-vous avec votre mot de passe.',
+    'webauthn_login_passwordless_failed' => 'Connexion par clé d’accès refusée',
+    'webauthn_passwordless_satisfies_mfa' => 'La connexion sans mot de passe vaut MFA',
+    'webauthn_passwordless_satisfies_mfa_tip' => 'Une clé d’accès qui vérifie son utilisateur (code PIN ou biométrie) constitue déjà deux facteurs. Désactivée, les comptes auxquels Google ou Duo est imposé doivent se connecter avec leur mot de passe.',
 
 );

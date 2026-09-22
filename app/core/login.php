@@ -308,6 +308,8 @@ echo '
         <div class="row mt-5">
             <div class="col-12">
                 <button id="but_identify_user" class="btn btn-primary btn-block">' . $lang->get('log_in') . '</button>
+                ' . ((int) ($SETTINGS['webauthn_login_mode'] ?? 0) === 2 ? '
+                <button type="button" id="but_login_with_passkey" class="btn btn-outline-primary btn-block mt-2"><i class="fa-solid fa-fingerprint mr-2"></i>' . $lang->get('webauthn_login_passwordless_button') . '</button>' : '') . '
                 ' . (isKeyExistingAndEqual('enable_local_password_recovery', 1, $SETTINGS) === true ? '
                 <div id="forgot-local-password-container" class="mt-3 text-center hidden">
                     <button type="button" id="forgot-local-password-link" class="btn btn-link btn-sm p-0">' . $lang->get('forgot_local_password') . '</button>

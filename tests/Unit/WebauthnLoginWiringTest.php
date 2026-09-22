@@ -122,6 +122,56 @@ final class WebauthnLoginWiringTest extends TestCase
         $this->assertStringContainsString("'webauthn_options' => \$userMfa['webauthn_options']", $identify);
     }
 
+    public function testPasswordlessSignInSharesTheEndOfThePasswordSignIn(): void
+    {
+        $identify = (string) file_get_contents(__DIR__ . '/../../app/sources/identify.php');
+
+        foreach (["\$post_type === 'webauthn_login_options'", "\$post_type === 'webauthn_login_verify'"] as $route) {
+            $this->assertStringContainsString($route, $identify);
+        }
+        // One session-opening code for both paths: a fix to it cannot miss one of them
+        $this->assertStringContainsString('return identifyFinishLogin(', $this->between($identify, 'function identifyUser(', 'function identifyUserWithPasskey('));
+        $passkey = $this->between($identify, 'function identifyUserWithPasskey(', 'function identifyFinishLogin(');
+        $this->assertStringContainsString('return identifyFinishLogin(', $passkey);
+        // The account comes from the verified passkey, and the password gates still apply
+        $this->assertStringContainsString("\$username = (string) \$check['login'];", $passkey);
+        $this->assertStringContainsString('identifyDoInitialChecks(', $passkey);
+        $this->assertStringContainsString('webauthnLoginPasswordlessBlockedByMfa(', $passkey);
+
+        $session = $this->between($identify, 'function buildUserSession(', 'function performPostLoginTasks(');
+        $this->assertStringContainsString('if ($privateKeyClear !== null) {', $session);
+        $postLogin = $this->between($identify, 'function performPostLoginTasks(', 'function shouldAdjustPermissionsFromRoleNames(');
+        $this->assertStringContainsString("if (\$passwordClear !== '') {", $postLogin);
+    }
+
+    public function testEveryKeyRegenerationDropsThePasskeyCopies(): void
+    {
+        $sites = [
+            'app/sources/main.functions.php' => ['function handleUserKeys(', 'function '],
+            'app/sources/main.queries.php' => ['function initializeUserPassword(', 'function generateOneTimeCode('],
+            'app/sources/users.queries.php' => ["case \"create_new_user_tasks\":", 'triggerBackgroundHandler();'],
+        ];
+        foreach ($sites as $file => [$start, $end]) {
+            $source = (string) file_get_contents(__DIR__ . '/../../' . $file);
+            $from = strpos($source, $start);
+            $this->assertIsInt($from, $file);
+            $to = strpos($source, $end, $from + strlen($start));
+            $this->assertStringContainsString('invalidateUserPasskeyWraps(', substr($source, $from, ($to ?: strlen($source)) - $from), $file);
+        }
+        $queries = (string) file_get_contents(__DIR__ . '/../../app/sources/main.queries.php');
+        $this->assertStringContainsString('invalidateUserPasskeyWraps(', $this->between($queries, 'function generateOneTimeCode(', "\n}\n"));
+
+        $purge = (string) file_get_contents(__DIR__ . '/../../app/sources/users_purge.functions.php');
+        $this->assertStringContainsString("DB::delete(prefixTable('user_webauthn_credentials'), 'user_id = %i', \$userId);", $purge);
+    }
+
+    public function testLoginPageOffersPasswordlessOnlyInPasswordlessMode(): void
+    {
+        $page = (string) file_get_contents(__DIR__ . '/../../app/core/login.php');
+
+        $this->assertMatchesRegularExpression("/webauthn_login_mode'\\] \\?\\? 0\\) === 2 \\? '\\s*<button type=\"button\" id=\"but_login_with_passkey\"/", $page);
+    }
+
     public function testMfaMethodCountStubMatchesProduction(): void
     {
         $body = function (string $file): string {

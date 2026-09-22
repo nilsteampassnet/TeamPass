@@ -10,7 +10,7 @@
  * Browser side of the passkeys used to sign in to TeamPass: turns the JSON options the server
  * sends into navigator.credentials calls, and the credentials back into JSON.
  *
- * The PRF extension is requested with the salt the server gives. Its output is the only secret
+ * The PRF extension is requested with the input the server gives. Its output is the only secret
  * that leaves the authenticator; it is sent once, over the encrypted exchange, to wrap the
  * private key, and never stored by the browser.
  *
@@ -51,7 +51,7 @@
     transports: Array.isArray(item.transports) ? item.transports : undefined
   }))
 
-  const prfRequest = (salt) => (salt ? { prf: { eval: { first: toBytes(salt) } } } : {})
+  const prfRequest = (input) => (input ? { prf: { eval: { first: toBytes(input) } } } : {})
 
   // The PRF output when the authenticator evaluated it, '' otherwise
   const prfOutput = (credential) => {
@@ -97,22 +97,22 @@
    * Register a passkey.
    *
    * @param {object} options  Creation options from the server
-   * @param {string} prfSalt  base64url PRF input, '' when no passwordless copy is wanted
+   * @param {string} prfInput  base64url PRF input, '' when no passwordless copy is wanted
    * @returns {Promise<{credential: object, prf_state: string, prf_output: string}>}
    */
-  const register = async (options, prfSalt) => {
+  const register = async (options, prfInput) => {
     const publicKey = Object.assign({}, options, {
       challenge: toBytes(options.challenge),
       user: Object.assign({}, options.user, { id: toBytes(options.user.id) }),
       excludeCredentials: descriptors(options.excludeCredentials),
-      extensions: Object.assign({}, options.extensions || {}, prfRequest(prfSalt))
+      extensions: Object.assign({}, options.extensions || {}, prfRequest(prfInput))
     })
     const credential = await navigator.credentials.create({ publicKey })
-    const output = prfSalt ? prfOutput(credential) : ''
+    const output = prfInput ? prfOutput(credential) : ''
     let state = 'unsupported'
     if (output !== '') {
       state = 'results'
-    } else if (prfSalt && prfEnabled(credential)) {
+    } else if (prfInput && prfEnabled(credential)) {
       state = 'enabled'
     }
     return { credential: credentialToJson(credential), prf_state: state, prf_output: output }
@@ -122,17 +122,17 @@
    * Sign with a passkey.
    *
    * @param {object} options  Request options from the server
-   * @param {string} prfSalt  base64url PRF input, '' when not needed
+   * @param {string} prfInput  base64url PRF input, '' when not needed
    * @returns {Promise<{credential: object, prf_output: string}>}
    */
-  const assert = async (options, prfSalt) => {
+  const assert = async (options, prfInput) => {
     const publicKey = Object.assign({}, options, {
       challenge: toBytes(options.challenge),
       allowCredentials: descriptors(options.allowCredentials),
-      extensions: Object.assign({}, options.extensions || {}, prfRequest(prfSalt))
+      extensions: Object.assign({}, options.extensions || {}, prfRequest(prfInput))
     })
     const credential = await navigator.credentials.get({ publicKey })
-    return { credential: credentialToJson(credential), prf_output: prfSalt ? prfOutput(credential) : '' }
+    return { credential: credentialToJson(credential), prf_output: prfInput ? prfOutput(credential) : '' }
   }
 
   /**

@@ -90,6 +90,26 @@ if ($post_type === 'identify_user') {
     // ---
     // ---
     // ---
+} elseif ($post_type === 'webauthn_login_options') {
+    //--------
+    // PASSWORDLESS SIGN-IN WITH A PASSKEY: the challenge
+    //--------
+    echo prepareExchangedData(webauthnLoginPasswordlessLoginOptions($SETTINGS, $lang), 'encode');
+    return false;
+
+    // ---
+    // ---
+    // ---
+} elseif ($post_type === 'webauthn_login_verify') {
+    //--------
+    // PASSWORDLESS SIGN-IN WITH A PASSKEY: the assertion, then the session
+    //--------
+    defineComplexity();
+    identifyUserWithPasskey((string) ($post_data ?? ''), $SETTINGS);
+
+    // ---
+    // ---
+    // ---
 } elseif ($post_type === 'refresh_session_key') {
     //--------
     // RENEW THE PAGE ENCRYPTION KEY
@@ -843,6 +863,165 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     }
     $session->remove('mfa_primary_login_validated');
 
+    return identifyFinishLogin(
+        $SETTINGS,
+        $userInfo,
+        (string) $username,
+        (string) $passwordClear,
+        $dataReceived,
+        (string) $sessionUrl,
+        (int) $sessionPwdAttempts,
+        $userLdap['ldapConnection'],
+        $userLdap['user_initial_creation_through_external_ad'] === true
+            || $userOauth2['retExternalAD']['has_been_created'] === 1
+    );
+}
+
+/**
+ * Sign in with a passkey alone (passwordless mode, local accounts).
+ *
+ * The account is the one the verified passkey belongs to, never one the browser names. The
+ * passkey's copy of the private key replaces the password to unlock it; from there the gates of
+ * a password sign-in apply unchanged (lockout, account state, maintenance mode) and the session
+ * is opened by the same code.
+ *
+ * @param string $sentData Encrypted payload: credential, prf_output, randomstring, duree_session...
+ * @param array  $SETTINGS Teampass settings
+ *
+ * @return bool
+ */
+function identifyUserWithPasskey(string $sentData, array $SETTINGS): bool
+{
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
+    $sessionAdmin = $session->get('user-admin');
+    $sessionPwdAttempts = $session->get('pwd_attempts');
+    $sessionUrl = $session->get('user-initial_url');
+
+    // Same session-expiry marker as identifyUser(): the login page renews its key and retries
+    $dataReceived = $session->get('key') === null
+        ? null
+        : prepareExchangedData($sentData, 'decode', $session->get('key'));
+    if (is_array($dataReceived) === false) {
+        echo 'ERROR SESSION EXPIRED';
+        return false;
+    }
+
+    $check = webauthnLoginPasswordlessLoginVerify(
+        $SETTINGS,
+        $dataReceived['credential'] ?? null,
+        $dataReceived['prf_output'] ?? '',
+        $lang
+    );
+    if ($check['state'] !== 'verified') {
+        // A wrong or unknown passkey counts like a wrong password; a refusal of a verified
+        // passkey (feature off, directory account, copy to re-create) does not.
+        if (($check['counted'] ?? false) === true) {
+            $failedLogin = stripslashes((string) ($check['login'] ?? ''));
+            logEvents($SETTINGS, 'failed_auth', 'webauthn_login_passwordless_failed', '', $failedLogin, $failedLogin);
+            addFailedAuthentication($failedLogin, getClientIpServer(), $SETTINGS);
+        }
+        echo prepareExchangedData(
+            [
+                'error' => true,
+                'message' => (string) ($check['message'] ?? $lang->get('webauthn_login_verification_failed')),
+            ],
+            'encode'
+        );
+        return false;
+    }
+
+    $username = (string) $check['login'];
+    $userInitialData = identifyDoInitialChecks(
+        $SETTINGS,
+        (int) $sessionPwdAttempts,
+        $username,
+        (int) $sessionAdmin,
+        (string) $sessionUrl,
+        ''
+    );
+    if ($userInitialData['error'] === true) {
+        echo prepareExchangedData($userInitialData['array'], 'encode');
+        return false;
+    }
+
+    $userInfo = getUserCompleteData($username);
+    if (is_array($userInfo) === false || (int) ($userInfo['id'] ?? 0) !== (int) $check['user_id']) {
+        echo prepareExchangedData(
+            [
+                'error' => true,
+                'message' => $lang->get('webauthn_login_verification_failed'),
+            ],
+            'encode'
+        );
+        return false;
+    }
+    $userInfo['mfa_auth_requested_roles'] = mfa_auth_requested_roles(
+        (string) ($userInfo['fonction_id'] ?? ''),
+        is_null($SETTINGS['mfa_for_roles'] ?? null) === true ? '' : (string) $SETTINGS['mfa_for_roles']
+    );
+
+    // Another second factor imposed on this account, which the administrator does not consider
+    // satisfied by the passkey: only a password sign-in can go through it.
+    if (webauthnLoginPasswordlessBlockedByMfa($SETTINGS, userNeedsMfa($SETTINGS, $userInfo, false)) === true) {
+        echo prepareExchangedData(
+            [
+                'error' => true,
+                'message' => $lang->get('webauthn_login_passwordless_mfa_required'),
+            ],
+            'encode'
+        );
+        return false;
+    }
+
+    return identifyFinishLogin(
+        $SETTINGS,
+        $userInfo,
+        $username,
+        '',
+        $dataReceived,
+        (string) $sessionUrl,
+        (int) $sessionPwdAttempts,
+        false,
+        false,
+        (string) $check['private_key']
+    );
+}
+
+/**
+ * Open the session of an authenticated user: the part of a sign-in that follows the checks of
+ * the factors, shared by the password path and the passwordless passkey path.
+ *
+ * @param array<string, mixed> $SETTINGS           Settings
+ * @param array<string, mixed> $userInfo           Complete user data
+ * @param string               $username           Login
+ * @param string               $passwordClear      Password, '' for a passwordless sign-in
+ * @param array<string, mixed> $dataReceived       Submitted data (session duration, nonce, screen)
+ * @param string               $sessionUrl         Page requested before signing in
+ * @param int                  $sessionPwdAttempts Attempts counter of the login page
+ * @param mixed                $ldapConnection     Whether the directory accepted the password
+ * @param bool                 $isNewExternalUser  Whether the account was just created from LDAP/OAuth2
+ * @param string|null          $privateKeyClear    Private key a passkey already unlocked, null to
+ *                                                 unlock it with the password
+ *
+ * @return bool
+ */
+function identifyFinishLogin(
+    array $SETTINGS,
+    array $userInfo,
+    string $username,
+    string $passwordClear,
+    array $dataReceived,
+    string $sessionUrl,
+    int $sessionPwdAttempts,
+    $ldapConnection,
+    bool $isNewExternalUser,
+    ?string $privateKeyClear = null
+): bool {
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
+    $return = '';
+
     // Can connect if
     // 1- no LDAP mode + user enabled + pw ok
     // 2- LDAP mode + user enabled + ldap connection ok + user is not admin
@@ -852,7 +1031,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             $SETTINGS,
             (int) $userInfo['disabled'],
             $username,
-            $userLdap['ldapConnection']
+            $ldapConnection
         ) === true
     ) {
         $session->set('pwd_attempts', 0);
@@ -872,7 +1051,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $lifetime = time() + ($session_time * 60);
 
         // Build user session - Extracted to separate function for readability
-        $sessionData = buildUserSession($session, $userInfo, $username, $passwordClear, $SETTINGS, $lifetime);
+        $sessionData = buildUserSession($session, $userInfo, $username, $passwordClear, $SETTINGS, $lifetime, $privateKeyClear);
         if (isset($sessionData['error']) && $sessionData['error'] === true) {
             echo prepareExchangedData(
                 [
@@ -890,9 +1069,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $rolesDbUpdateData = setupUserRolesAndPermissions($session, $userInfo, $SETTINGS);
         
         // Perform post-login tasks - Extracted to separate function for readability
-        $isNewExternalUser = $userLdap['user_initial_creation_through_external_ad'] === true 
-            || $userOauth2['retExternalAD']['has_been_created'] === 1;
-        
         // Merge roles DB update into returnKeys for performPostLoginTasks
         $returnKeys['roles_db_update'] = $rolesDbUpdateData;
         
@@ -1038,6 +1214,7 @@ function buildAuthResponse(
  * @param string $passwordClear
  * @param array $SETTINGS
  * @param int $lifetime
+ * @param string|null $privateKeyClear Private key a passkey already unlocked, null to unlock it with the password
  * @return array Returns encryption keys data
  */
 function buildUserSession(
@@ -1046,7 +1223,8 @@ function buildUserSession(
     string $username,
     string $passwordClear,
     array $SETTINGS,
-    int $lifetime
+    int $lifetime,
+    ?string $privateKeyClear = null
 ): array {
     $session = SessionManager::getSession();
 
@@ -1108,13 +1286,23 @@ function buildUserSession(
     $session->set('user-session_duration', (int) $lifetime);
 
     // User signature keys
-    try {
-        $returnKeys = prepareUserEncryptionKeys($userInfo, $passwordClear, $SETTINGS);
-    } catch (Exception $e) {
-        return [
-            'error' => true,
-            'message' => $e->getMessage(),
+    if ($privateKeyClear !== null) {
+        // Passwordless sign-in: the passkey unlocked the key. Nothing that needs the password
+        // (key re-encryption, migrations) can run; it runs at the next password sign-in.
+        $returnKeys = [
+            'public_key' => $userInfo['public_key'],
+            'private_key_clear' => $privateKeyClear,
+            'update_keys_in_db' => [],
         ];
+    } else {
+        try {
+            $returnKeys = prepareUserEncryptionKeys($userInfo, $passwordClear, $SETTINGS);
+        } catch (Exception $e) {
+            return [
+                'error' => true,
+                'message' => $e->getMessage(),
+            ];
+        }
     }
     $session->set('user-public_key', $returnKeys['public_key']);
     
@@ -1182,15 +1370,19 @@ function performPostLoginTasks(
 ): void {
     $session = SessionManager::getSession();
 
-    // Version 3.1.5 - Migrate personal items password to similar encryption protocol as public ones.
-    checkAndMigratePersonalItems($session->get('user-id'), $session->get('user-private_key'), $passwordClear);
+    // Both migrations need the password: a passwordless sign-in leaves them to the next
+    // password sign-in.
+    if ($passwordClear !== '') {
+        // Version 3.1.5 - Migrate personal items password to similar encryption protocol as public ones.
+        checkAndMigratePersonalItems($session->get('user-id'), $session->get('user-private_key'), $passwordClear);
 
-    // Version 3.1.6 - Trigger forced phpseclib v3 migration if enabled
-    triggerPhpseclibV3MigrationOnLogin(
-        (int) $session->get('user-id'),
-        $session->get('user-private_key'),
-        $passwordClear
-    );
+        // Version 3.1.6 - Trigger forced phpseclib v3 migration if enabled
+        triggerPhpseclibV3MigrationOnLogin(
+            (int) $session->get('user-id'),
+            $session->get('user-private_key'),
+            $passwordClear
+        );
+    }
 
     // Set some settings
     $SETTINGS['update_needed'] = '';

@@ -811,7 +811,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         }
         let result;
         try {
-            result = await window.tpWebauthnLogin.assert(start.options, start.prf_salt);
+            result = await window.tpWebauthnLogin.assert(start.options, start.prf_input);
         } catch (error) {
             // Some browsers only allow one ceremony per click: the button is there for a second one.
             if (afterRegistration === true) {
@@ -852,7 +852,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             }
             let result;
             try {
-                result = await window.tpWebauthnLogin.register(start.options, start.prf_salt);
+                result = await window.tpWebauthnLogin.register(start.options, start.prf_input);
             } catch (error) {
                 webauthnLoginCeremonyError(error);
                 return;

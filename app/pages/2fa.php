@@ -300,6 +300,18 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
                                 <div class="row mb-2">
                                     <div class="col-9">
+                                        <?php echo $lang->get('webauthn_passwordless_satisfies_mfa'); ?>
+                                        <small class='form-text text-muted'>
+                                            <?php echo $lang->get('webauthn_passwordless_satisfies_mfa_tip'); ?>
+                                        </small>
+                                    </div>
+                                    <div class="col-3 d-flex justify-content-end">
+                                        <div class="toggle toggle-modern" id="webauthn_passwordless_satisfies_mfa" data-toggle-on="<?php echo isset($SETTINGS['webauthn_passwordless_satisfies_mfa']) === false || (int) $SETTINGS['webauthn_passwordless_satisfies_mfa'] === 1 ? 'true' : 'false'; ?>"></div><input type="hidden" id="webauthn_passwordless_satisfies_mfa_input" value="<?php echo isset($SETTINGS['webauthn_passwordless_satisfies_mfa']) === false || (int) $SETTINGS['webauthn_passwordless_satisfies_mfa'] === 1 ? '1' : '0'; ?>">
+                                    </div>
+                                </div>
+
+                                <div class="row mb-2">
+                                    <div class="col-9">
                                         <?php echo $lang->get('webauthn_email_on_add'); ?>
                                         <small class='form-text text-muted'>
                                             <?php echo $lang->get('webauthn_login_email_on_add_tip'); ?>

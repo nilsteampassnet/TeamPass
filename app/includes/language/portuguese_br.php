@@ -3648,5 +3648,14 @@ return array(
     'webauthn_login_2fa_touch' => 'Follow the instructions of your browser to use your passkey.',
     'webauthn_login_2fa_retry' => 'Click "Use my passkey" to continue.',
     'webauthn_login_2fa_failed' => 'Passkey not verified',
+    'webauthn_login_passwordless_button' => 'Sign in with a passkey',
+    'webauthn_login_2fa_retry_passwordless' => 'Click "Sign in with a passkey" to continue.',
+    'webauthn_login_passwordless_not_enabled' => 'This passkey is not set up to sign in without a password. Sign in with your password, then enable it from your profile.',
+    'webauthn_login_passwordless_stale' => 'This passkey can no longer sign you in without a password: your encryption keys have changed. Sign in with your password, then enable it again from your profile.',
+    'webauthn_login_prf_missing' => 'This browser cannot unlock this passkey for a passwordless sign-in. Sign in with your password.',
+    'webauthn_login_passwordless_mfa_required' => 'Your account requires another second factor: sign in with your password.',
+    'webauthn_login_passwordless_failed' => 'Passkey sign-in refused',
+    'webauthn_passwordless_satisfies_mfa' => 'Passwordless sign-in counts as MFA',
+    'webauthn_passwordless_satisfies_mfa_tip' => 'A passkey that verifies its user (PIN or biometrics) is already two factors. When this is off, accounts on which Google or Duo is imposed must sign in with their password.',
 
 );

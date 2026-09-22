@@ -245,6 +245,51 @@ function webauthnLoginIsSecondFactor(array $settings, int $mfaEnabled, bool $has
 }
 
 /**
+ * Tell why a passkey cannot sign in without a password, null when it can.
+ *
+ * Only in passwordless mode, only for local accounts (a directory account would bypass its
+ * directory), only with a copy of the private key, and never while the account is in a state
+ * that needs the password: keys to generate or to re-encrypt, one-time code to enter.
+ *
+ * @param array<string, mixed> $settings TeamPass settings
+ * @param array<string, mixed> $account  auth_type, special and key_wrap_mode of the passkey
+ *
+ * @return string|null Language key of the refusal
+ */
+function webauthnLoginPasswordlessRefusal(array $settings, array $account): ?string
+{
+    if (webauthnLoginMode($settings) !== TP_WEBAUTHN_LOGIN_MODE_PASSWORDLESS) {
+        return 'webauthn_login_disabled';
+    }
+    if ((string) ($account['auth_type'] ?? '') !== 'local'
+        || in_array((string) ($account['special'] ?? ''), ['generate-keys', 'recrypt-private-key', 'otc_is_required_on_next_login', 'user_added_from_ad'], true) === true
+    ) {
+        return 'webauthn_login_passwordless_unavailable';
+    }
+    if ((int) ($account['key_wrap_mode'] ?? 0) === TP_WEBAUTHN_LOGIN_WRAP_NONE) {
+        return 'webauthn_login_passwordless_not_enabled';
+    }
+
+    return null;
+}
+
+/**
+ * Tell whether a passwordless sign-in must be refused because the account requires another
+ * second factor. A passkey that verified its user is already two factors (possession and PIN or
+ * biometrics); the administrator decides whether that satisfies an imposed MFA.
+ *
+ * @param array<string, mixed> $settings         TeamPass settings
+ * @param bool                 $otherMfaRequired Whether Google, Duo... would be required
+ *
+ * @return bool
+ */
+function webauthnLoginPasswordlessBlockedByMfa(array $settings, bool $otherMfaRequired): bool
+{
+    return $otherMfaRequired === true
+        && (int) ($settings['webauthn_passwordless_satisfies_mfa'] ?? 1) !== 1;
+}
+
+/**
  * The WebAuthn user handle of an account: stable, so an authenticator keeps one passkey per
  * account, and opaque, so it discloses neither the user id nor the login.
  *
@@ -259,10 +304,25 @@ function webauthnLoginUserHandle(int $userId, string $serverSecret): string
 }
 
 /**
+ * The PRF input every sign-in passkey is evaluated with.
+ *
+ * Constant on purpose: a passwordless sign-in lets the user pick any discoverable passkey, so the
+ * server cannot send a per-passkey input (evalByCredential needs the passkeys listed). The output
+ * stays secret and specific to each passkey — the PRF is keyed by the authenticator — and the
+ * per-passkey random salt goes into the key derivation instead.
+ *
+ * @return string 32 raw bytes
+ */
+function webauthnLoginPrfInput(): string
+{
+    return hash('sha256', 'teampass-webauthn-login-prf-input-v1', true);
+}
+
+/**
  * Derive the wrap key from the PRF output of the authenticator.
  *
  * @param string $prfOutput 32 raw bytes returned by the PRF extension
- * @param string $salt      32 raw bytes, stored with the credential and sent as PRF input
+ * @param string $salt      32 raw bytes, random, stored with the credential
  *
  * @return string 32 raw bytes
  *

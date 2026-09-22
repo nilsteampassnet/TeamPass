@@ -4330,6 +4330,8 @@ if (null !== $post_type) {
 
             // Store private key in dedicated table
             insertPrivateKeyWithCurrentFlag($post_user_id, $userKeys['private_key']);
+            // New key pair: passkey copies of the old private key are obsolete
+            invalidateUserPasskeyWraps((int) $post_user_id);
 
             // Trigger background handler
             triggerBackgroundHandler();

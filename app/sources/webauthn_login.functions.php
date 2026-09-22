@@ -189,7 +189,7 @@ function webauthnLoginRegisterOptions(int $userId, array $SETTINGS, Language $la
     return [
         'error' => false,
         'options' => json_decode($optionsJson, true),
-        'prf_salt' => $salt,
+        'prf_input' => $forPasswordless === true ? webauthnBase64UrlEncode(webauthnLoginPrfInput()) : '',
     ];
 }
 
@@ -372,7 +372,7 @@ function webauthnLoginPasswordlessOptions(int $userId, int $id, array $SETTINGS,
     return [
         'error' => false,
         'options' => json_decode($optionsJson, true),
-        'prf_salt' => $salt,
+        'prf_input' => webauthnBase64UrlEncode(webauthnLoginPrfInput()),
     ];
 }
 
@@ -709,6 +709,152 @@ function webauthnLoginSecondFactor(array $SETTINGS, int $userId, $assertion, Lan
     );
 
     return ['state' => 'verified'];
+}
+
+/**
+ * Start a passwordless sign-in: options for any discoverable passkey, user verification
+ * required, with the PRF input that opens a PRF wrap.
+ *
+ * @param array<string, mixed> $SETTINGS Settings
+ * @param Language             $lang     Language
+ *
+ * @return array<string, mixed>
+ */
+function webauthnLoginPasswordlessLoginOptions(array $SETTINGS, Language $lang): array
+{
+    $rpId = webauthnLoginRpId($SETTINGS);
+    if (webauthnLoginMode($SETTINGS) !== TP_WEBAUTHN_LOGIN_MODE_PASSWORDLESS || $rpId === '') {
+        return webauthnLoginError($lang->get('webauthn_login_disabled'));
+    }
+
+    $optionsJson = webauthnLoginSerializeOptions(webauthnLoginRequestOptions($rpId, [], true));
+    SessionManager::getSession()->set(TP_WEBAUTHN_LOGIN_PENDING_KEY, [
+        'purpose' => 'passwordless_login',
+        'options' => $optionsJson,
+        'created_at' => time(),
+    ]);
+
+    return [
+        'error' => false,
+        'options' => json_decode($optionsJson, true),
+        'prf_input' => webauthnBase64UrlEncode(webauthnLoginPrfInput()),
+    ];
+}
+
+/**
+ * Verify a passwordless sign-in and unlock the private key of the passkey's owner.
+ *
+ * The owner is the account the passkey is registered to, confirmed by the user handle the
+ * authenticator signed: nothing the browser claims about the account is trusted.
+ *
+ * @param array<string, mixed> $SETTINGS   Settings
+ * @param mixed                $credential Credential sent by the browser
+ * @param mixed                $prfOutput  base64url PRF output, when the authenticator gave one
+ * @param Language             $lang       Language
+ *
+ * @return array{state: string, message?: string, counted?: bool, login?: string, user_id?: int, private_key?: string}
+ *               state verified|failed; counted when the failure is a wrong factor
+ */
+function webauthnLoginPasswordlessLoginVerify(array $SETTINGS, $credential, $prfOutput, Language $lang): array
+{
+    $pending = webauthnLoginTakePending('passwordless_login');
+    if ($pending === null) {
+        return ['state' => 'failed', 'message' => $lang->get('webauthn_login_ceremony_expired'), 'counted' => false];
+    }
+    if (is_array($credential) === false || webauthnLoginMode($SETTINGS) !== TP_WEBAUTHN_LOGIN_MODE_PASSWORDLESS) {
+        return ['state' => 'failed', 'message' => $lang->get('webauthn_login_disabled'), 'counted' => false];
+    }
+
+    $row = DB::queryFirstRow(
+        'SELECT c.id, c.user_id, c.credential_id, c.public_key_cose, c.sign_count, c.aaguid, c.transports,
+            c.key_wrap_mode, c.wrapped_private_key, c.wrap_salt, c.backup_eligible, c.backup_state,
+            u.login, u.auth_type, u.special, u.public_key
+        FROM ' . prefixTable('user_webauthn_credentials') . ' AS c
+        INNER JOIN ' . prefixTable('users') . ' AS u ON (u.id = c.user_id)
+        WHERE c.credential_id = %s AND u.deleted_at IS NULL',
+        webauthnBase64UrlEncode(webauthnLoginReadBytes($credential['rawId'] ?? ''))
+    );
+    if ($row === null) {
+        return ['state' => 'failed', 'message' => $lang->get('webauthn_login_verification_failed'), 'counted' => true, 'login' => ''];
+    }
+    $userId = (int) $row['user_id'];
+    $login = (string) $row['login'];
+
+    try {
+        $record = webauthnLoginVerifyAssertion(
+            webauthnLoginRecordFromRow($row, webauthnLoginUserHandle($userId, getServerSecret())),
+            $credential,
+            (string) $pending['options'],
+            webauthnLoginOriginOf((string) ($SETTINGS['cpassman_url'] ?? ''))
+        );
+    } catch (InvalidArgumentException $e) {
+        error_log('TEAMPASS Error - passwordless sign-in for user ' . $userId . ': ' . $e->getMessage());
+        return ['state' => 'failed', 'message' => $lang->get('webauthn_login_verification_failed'), 'counted' => true, 'login' => $login];
+    }
+    DB::update(
+        prefixTable('user_webauthn_credentials'),
+        ['sign_count' => $record->counter, 'backup_state' => $record->backupStatus === true ? 1 : 0],
+        'id = %i',
+        (int) $row['id']
+    );
+
+    $refusal = webauthnLoginPasswordlessRefusal($SETTINGS, $row);
+    if ($refusal !== null) {
+        return ['state' => 'failed', 'message' => $lang->get($refusal), 'counted' => false, 'login' => $login];
+    }
+
+    $salt = (string) hex2bin((string) $row['wrap_salt']);
+    try {
+        $wrapKey = (int) $row['key_wrap_mode'] === TP_WEBAUTHN_LOGIN_WRAP_PRF
+            ? webauthnLoginPrfWrapKey(webauthnLoginReadBytes($prfOutput, TP_WEBAUTHN_LOGIN_SECRET_BYTES), $salt)
+            : webauthnLoginServerWrapKey(getServerSecret(), $salt, $record->publicKeyCredentialId);
+    } catch (InvalidArgumentException $e) {
+        // A PRF passkey answered without its PRF output: this browser cannot evaluate it
+        return ['state' => 'failed', 'message' => $lang->get('webauthn_login_prf_missing'), 'counted' => false, 'login' => $login];
+    }
+    $privateKey = webauthnLoginUnwrapPrivateKey((string) $row['wrapped_private_key'], $wrapKey);
+    if ($privateKey === null) {
+        error_log('TEAMPASS Error - passwordless sign-in for user ' . $userId . ': the private key copy did not open');
+        return ['state' => 'failed', 'message' => $lang->get('webauthn_login_passwordless_stale'), 'counted' => false, 'login' => $login];
+    }
+
+    // A copy made before the keys were regenerated opens on an obsolete key: a session built on it
+    // would decrypt nothing. Drop this copy; the passkey stays a second factor.
+    if (webauthnLoginPrivateKeyMatches($privateKey, (string) $row['public_key']) === false) {
+        DB::update(
+            prefixTable('user_webauthn_credentials'),
+            ['key_wrap_mode' => TP_WEBAUTHN_LOGIN_WRAP_NONE, 'wrapped_private_key' => null, 'wrap_salt' => null],
+            'id = %i',
+            (int) $row['id']
+        );
+        return ['state' => 'failed', 'message' => $lang->get('webauthn_login_passwordless_stale'), 'counted' => false, 'login' => $login];
+    }
+
+    DB::update(prefixTable('user_webauthn_credentials'), ['last_used_at' => time()], 'id = %i', (int) $row['id']);
+
+    return ['state' => 'verified', 'login' => $login, 'user_id' => $userId, 'private_key' => $privateKey];
+}
+
+/**
+ * Tell whether a cleartext private key belongs to a public key: a random probe encrypted with
+ * the public key must come back through the private one.
+ *
+ * @param string $privateKey Cleartext private key
+ * @param string $publicKey  users.public_key
+ *
+ * @return bool
+ */
+function webauthnLoginPrivateKeyMatches(string $privateKey, string $publicKey): bool
+{
+    if ($privateKey === '' || $publicKey === '') {
+        return false;
+    }
+    $probe = base64_encode(random_bytes(32));
+    try {
+        return hash_equals($probe, decryptUserObjectKey(encryptUserObjectKey($probe, $publicKey), $privateKey));
+    } catch (Throwable $e) {
+        return false;
+    }
 }
 
 /**

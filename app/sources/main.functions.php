@@ -8697,6 +8697,30 @@ function upgradeRequired(): bool
 }
 
 /**
+ * Drop the passwordless copies of a user's private key held by their sign-in passkeys.
+ *
+ * Called whenever the key pair is regenerated: a copy then holds an obsolete key, and a
+ * passwordless sign-in would open a session that decrypts nothing. The passkeys themselves stay,
+ * as second factors; the user enables passwordless sign-in again from their profile.
+ *
+ * @param int $userId User whose key pair changed
+ *
+ * @return int Number of passkeys that lost their copy
+ */
+function invalidateUserPasskeyWraps(int $userId): int
+{
+    DB::update(
+        prefixTable('user_webauthn_credentials'),
+        ['key_wrap_mode' => 0, 'wrapped_private_key' => null, 'wrap_salt' => null],
+        'user_id = %i AND key_wrap_mode != %i',
+        $userId,
+        0
+    );
+
+    return DB::affectedRows();
+}
+
+/**
  * Permits to change the user keys on his demand
  *
  * @param integer $userId
@@ -8852,6 +8876,7 @@ function handleUserKeys(
     // changes it can only unwrap an obsolete key, so the extension would sign in and then
     // decrypt nothing: remove those tokens instead of leaving them to fail silently.
     if ($previousPublicKey !== (string) $userKeys['public_key']) {
+        invalidateUserPasskeyWraps($userId);
         DB::delete(prefixTable('api_tokens'), 'user_id = %i', $userId);
         if (DB::affectedRows() > 0) {
             logEvents(
