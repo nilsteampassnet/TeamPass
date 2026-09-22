@@ -202,16 +202,23 @@ Sharing, export, and content features.
 
 ---
 
-## Breach Detection
+## Security posture & breach detection
 
-Check item passwords against the Have I Been Pwned database. Disabled by default.
+Password hygiene features, all disabled by default. They are described in [Security posture](../features/security-posture.md).
 
 | Option | Description |
 |--------|-------------|
-| **Enable HIBP breach detection** (`hibp_enabled`) | Activates password breach checking globally. When enabled, passwords are checked against the HIBP Pwned Passwords API using k-anonymity (see [Breach detection](../features/breach-detection.md)) |
-| **Check interval (days)** (`hibp_check_interval_days`) | Minimum number of days between re-checks for the same item. Default: 7. Set to 0 to check on every item view (not recommended on high-traffic instances) |
+| **Enable HaveIBeenPwned password check** (`hibp_enabled`) | Checks item passwords against the Have I Been Pwned Pwned Passwords API when they are opened, using k-anonymity: only the first 5 characters of the password's SHA-1 hash leave the server |
+| **Re-check interval (days)** (`hibp_check_interval_days`) | Days before a password is checked again when its item is opened. Default: 7 (1 to 365) |
+| **Security posture dashboard** (`security_dashboard_enabled`) | Enables the per-user Security posture page and the security score badge |
+| **Widely-shared threshold (users)** (`security_dashboard_overshared_threshold`) | An item shared with more users than this is flagged as widely shared. Default: 10 |
+| **Minimum password length (characters)** (`security_dashboard_min_password_length`) | A shorter password is reported as weak. Default: 12 |
+| **Proactive health nudges** (`security_nudges_enabled`) | In-app banner and item list marker for breached, weak, reused or overdue passwords (requires the Security posture dashboard) |
+| **Email digest of at-risk passwords** (`security_nudges_email_enabled`) | Periodic counts-only email to each user concerned |
+| **Email digest frequency (days)** (`security_nudges_email_frequency_days`) | Minimum number of days between two digests for a user. Default: 7 |
+| **Stale scan threshold (days)** (`security_nudges_stale_scan_days`) | Beyond this age, the banner invites the user to run a new scan. Default: 14 |
 
-> 🔔 The server must be able to reach `api.pwnedpasswords.com` over HTTPS. Verify outbound access if your server operates behind a strict firewall.
+> 🔔 Breach detection needs outbound HTTPS access to `api.pwnedpasswords.com`. Verify it if your server operates behind a strict firewall.
 
 ---
 

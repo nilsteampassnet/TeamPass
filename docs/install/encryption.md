@@ -24,4 +24,4 @@ When a user has to visualize an encrypted element, his password and private key 
 
 ## Personal items isolation
 
-Items stored in a **personal folder** are encrypted so that only their **owner** (plus the internal `TP_USER_ID` recovery account) holds a share key — no other user can decrypt them, even at the cryptographic layer. See [Security hardening](security-hardening.md) for the related maintenance steps and the one-off remediation script for instances upgraded from older versions.
+Items stored in a **personal folder** are encrypted so that only their **owner** (plus the internal `TP_USER_ID` recovery account) holds a share key — no other user can decrypt them, even at the cryptographic layer. On instances that ran older versions, the upgrade removes the keys those versions gave other users; see [Security hardening](security-hardening.md#personal-items-isolation) to audit the result.

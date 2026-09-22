@@ -25,7 +25,7 @@ Every credential that is **past** — or within **14 days** of — the rotation 
 | Days overdue | How late the rotation is (0 for "due soon" rows) |
 | Status | **Overdue** or **Due soon** (within the 14-day look-ahead) |
 
-Items without any usable change date are excluded rather than reported with a bogus due date — the same rule the [Security Posture Dashboard](../features/breach-detection.md) applies to its *overdue* flag.
+Items without any usable change date are excluded rather than reported with a bogus due date — the same rule the [Security Posture](../features/security-posture.md) applies to its *overdue* flag.
 
 ### Rotation SLA coverage per folder
 

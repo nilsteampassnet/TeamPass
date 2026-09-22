@@ -27,7 +27,7 @@ The 3.2 line brings a major upgrade to the **cryptographic core** of TeamPass. T
 | Before | Now |
 |---|---|
 | The stored-data format had known weaknesses (no integrity check, fixed salt and IV). | **Authenticated AES-256-GCM**: a database leak alone stays unusable, and any tampering with an encrypted value is **detected** instead of silently returning corrupted data. |
-| A "personal" folder actually distributed a decryption key to **every** account at creation time. | **Real isolation**: only the owner (and the recovery account) holds a key. A **remediation script** cleans up existing data. |
+| A "personal" folder actually distributed a decryption key to **every** account at creation time. | **Real isolation**: only the owner (and the recovery account) holds a key. The **upgrade cleans up** existing data automatically. |
 | Key distribution was brittle: one corrupted user key failed the whole batch; a failed background task never retried. | **Fault tolerance**: the failing user is isolated and logged, everyone else still gets their key; failed background tasks **retry automatically**. |
 | Saving a shared password could trigger dozens of heavy crypto operations inside the web request. | **Faster save**: the web request performs a single operation; distribution to other users moves to the background. |
 
@@ -49,11 +49,11 @@ The 3.2 line brings a major upgrade to the **cryptographic core** of TeamPass. T
 
 ## How to roll it out (administrators)
 
-1. **Upgrade** TeamPass. The upgrade script prepares everything (settings + columns). **No `ALTER TABLE`** is required on the sensitive data tables — a lightweight deployment.
-2. **Back up the database** first (standard reflex, mandatory before running the remediation script).
-3. **Enable the new format** when you are ready, via the admin toggle **`aes_v2_write_enabled`** (Settings → Encryption). While it is off, everything stays readable; once on, new secrets are written in the hardened format.
-4. **Let the migration happen on its own.** Each secret is re-encrypted to the hardened format the first time it is read, and on user login. A **progress indicator** is available in the admin area.
-5. **(Optional) Clean up existing personal data**: run the personal-sharekeys remediation script first in **`--dry-run`** (the default), review the report, then run it for real. See [Security hardening](security-hardening.md).
+1. **Back up the database** first (standard reflex before any upgrade).
+2. **Upgrade** TeamPass. The upgrade script prepares everything (settings + columns). **No `ALTER TABLE`** is required on the sensitive data tables — a lightweight deployment.
+3. **Enable the new format**: **Authenticated encryption (AES-256-GCM) for new data** (`aes_v2_write_enabled`, **Settings → Options → Security & authentication**, group *Encryption & key management*). It is enabled by default on new installations, and disabled on instances upgraded from a version older than 3.2.1 until you enable it. While it is off, everything stays readable; once on, new secrets are written in the hardened format.
+4. **Let the migration happen on its own.** Each secret is re-encrypted to the hardened format the first time it is read, and on user login. The **Encryption format migration** panel, below the setting, shows the progress for item passwords, encrypted custom fields and user private keys.
+5. **Nothing to do for existing personal data**: the upgrade wizard removes the decryption keys that older versions gave other users on personal items. A command-line script lets you audit the result — see [Security hardening](security-hardening.md#personal-items-isolation).
 6. **Nothing to ask of your users** — it is transparent. At most, when a *shared* item is edited, colleagues may see a few seconds of delay while the background distribution completes.
 
 **Reversibility:** the new format is enabled/disabled by a toggle, and the previous format stays readable indefinitely. There is no point of no return.

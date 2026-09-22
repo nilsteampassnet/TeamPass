@@ -49,7 +49,7 @@
 **Day to day**
 
 - [Search](features/search.md), [command palette](features/command-palette.md), [favourites](features/favourites.md)
-- [Custom fields](features/custom-fields.md), [password renewal](features/renewal.md), [breach detection](features/breach-detection.md)
+- [Custom fields](features/custom-fields.md), [password renewal](features/renewal.md), [security posture and breach detection](features/security-posture.md)
 - [Import](features/import.md) from Bitwarden, LastPass, 1Password, KeePassXC — and [export](features/export.md) back out
 - [Browser extension](misc/extension.md) and [real-time collaboration](features/collaboration.md)
 
