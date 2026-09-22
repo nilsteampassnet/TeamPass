@@ -284,6 +284,8 @@ A passkey replaces the password on the sites that support it. The extension can 
 
 The feature can be turned off with **Use TeamPass for passkeys** in **Settings → Passkeys**.
 
+> These are the passkeys of the sites you visit. Signing in to TeamPass itself with a passkey is a separate feature, set up by your administrator and used from the TeamPass login page — see [Passkeys](../features/passkeys.md#signing-in-to-teampass-with-a-passkey).
+
 ---
 
 ## Licence

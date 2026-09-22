@@ -2,7 +2,22 @@
 
 ## Overview
 
-> Requires **TeamPass 3.2.3 or later** and a version of the [browser extension](../misc/extension.md#passkeys) that supports passkeys.
+> Requires **TeamPass 3.2.3 or later**.
+
+TeamPass uses passkeys for two independent things, each with its own settings:
+
+| Feature | What it does | Where it is configured |
+|---|---|---|
+| **[Passkeys of other sites](#passkeys-of-other-sites)** | TeamPass keeps the passkeys of third-party sites in its items, and the browser extension signs in with them | Settings → API → Browser Extension |
+| **[Signing in to TeamPass](#signing-in-to-teampass-with-a-passkey)** | A passkey confirms, or replaces, the password of a TeamPass account | Settings → MFA → Passkeys |
+
+Turning one on does not turn the other on, and a passkey of one is never usable by the other.
+
+---
+
+## Passkeys of other sites
+
+> Requires a version of the [browser extension](../misc/extension.md#passkeys) that supports passkeys.
 
 A **passkey** replaces the password on the sites that support it. With this feature, TeamPass keeps the passkeys of third-party sites in its items, like it keeps their passwords: when a site offers to create a passkey, the browser extension saves it in an item, and when the site asks for it later, the extension signs in with it.
 
@@ -10,7 +25,7 @@ The private key of a passkey **never leaves the TeamPass server**. It is generat
 
 ---
 
-## Enabling passkeys
+### Enabling passkeys
 
 Passkeys are disabled by default. In **Settings → API → Browser Extension**:
 
@@ -35,7 +50,7 @@ These rights come on top of the TeamPass rights of the user, never beyond them: 
 
 ---
 
-## Who can use a passkey
+### Who can use a passkey
 
 **Everyone who can open an item can use its passkeys.** This is the point of keeping them in TeamPass: a passkey saved in a shared folder signs in for every member of that folder, exactly like its password.
 
@@ -48,7 +63,7 @@ Folder rights, item restrictions and the recycle bin apply to passkeys as they d
 
 ---
 
-## Audit
+### Audit
 
 Every use of a passkey is attributable, because it is signed by the server on behalf of a named user.
 
@@ -58,7 +73,7 @@ Every use of a passkey is attributable, because it is signed by the server on be
 
 ---
 
-## Managing the passkeys of an item
+### Managing the passkeys of an item
 
 The item card shows a **Passkeys** section listing, for each passkey, the site, the account, the creation date and the last use. The fingerprint icon next to an item title in the list shows that the item holds a passkey.
 
@@ -68,7 +83,7 @@ An item created by the extension to hold a passkey may have no password: its car
 
 ---
 
-## Lifecycle
+### Lifecycle
 
 | Operation on the item | Effect on its passkeys |
 |---|---|
@@ -82,7 +97,7 @@ New users receive the keys of the passkeys they can reach while their encryption
 
 ---
 
-## Security model
+### Security model
 
 - The key pair is **ECDSA P-256** (`ES256`), generated on the server. Its private key is encrypted with its own object key, and that object key is encrypted for each user with their public key — the same scheme as item passwords, see [Encryption](../install/encryption.md).
 - **No endpoint returns the private key.** The API signs on the server and sends back the signature only.
@@ -94,19 +109,144 @@ New users receive the keys of the passkeys they can reach while their encryption
 
 ---
 
-## Limitations
+### Limitations
 
 - Passkeys already stored elsewhere (browser, phone, another password manager) cannot be imported.
 - Only `ES256` passkeys are created. A site that does not accept `ES256` is left to the browser.
 - The extension does not offer passkeys in the browser's autofill suggestions, nor inside frames: those requests go to the browser as usual.
-- Signing in to TeamPass itself with a passkey is a different feature, not covered here.
 
 ---
 
-## Troubleshooting
+### Troubleshooting
 
 | Symptom | Cause and solution |
 |---|---|
 | The browser's own passkey window opens instead of TeamPass | Passkeys are disabled on the server, the extension setting is off, or — when signing in — TeamPass holds no passkey for this site. The extension silently hands the request to the browser in all these cases |
 | *The passkey cannot be decrypted with your keys yet* | The keys of the passkey have not reached the user yet — typically just after the item was created or moved by someone else, while the background task distributes the keys. Retry after a moment; if it persists, run **Monitoring → Tools → Restore missing sharekeys** |
 | A user cannot save a passkey | They need the **Update** API right and the right to edit the item in its folder |
+
+---
+
+## Signing in to TeamPass with a passkey
+
+A passkey — a fingerprint, a face, a PIN or a security key — confirms a TeamPass sign-in instead of a code, and can replace the password entirely. It is registered by the user, on the device they sign in from, and it never leaves that device: TeamPass only stores its public key.
+
+> ⚠️ **HTTPS is required.** Browsers only offer passkeys in a secure context, which means HTTPS or `localhost`. On plain HTTP the buttons below do nothing and the browser reports that passkeys are unavailable.
+
+---
+
+### Enabling sign-in passkeys
+
+In **Settings → MFA → Passkeys**:
+
+| Setting | Description |
+|---|---|
+| **Sign in with a passkey** (`webauthn_login_mode`) | *Disabled* · *As a second factor* · *Passwordless and as a second factor*. Default: disabled |
+| **Require PRF for passwordless sign-in** (`webauthn_login_require_prf`) | Refuses the server-held copy of the encryption key described in [What a passwordless passkey holds](#what-a-passwordless-passkey-holds). Default: off |
+| **Passwordless sign-in counts as MFA** (`webauthn_passwordless_satisfies_mfa`) | Default: on. When off, an account on which Google or Duo is imposed must sign in with its password |
+| **Notify users when a passkey is saved** (`webauthn_email_on_add`) | The same setting as on the Browser Extension tab: it covers both kinds of passkey |
+| **Relying party ID** (`webauthn_rp_id`) | Domain the passkeys are bound to. Empty means the host of the TeamPass URL; a parent domain is also accepted |
+| **Name shown when creating a passkey** (`webauthn_rp_name`) | Shown by the browser and the authenticator. Default: `TeamPass` |
+
+> ⚠️ **Changing the relying party ID makes every registered passkey unusable.** Authenticators bind a passkey to that domain. Users would have to register theirs again.
+
+---
+
+### Nothing is imposed
+
+Enabling another MFA method makes MFA mandatory for every account it applies to. **Passkeys do not work that way**: they are offered, never imposed.
+
+| The account | At the next sign-in |
+|---|---|
+| Has no passkey | Signs in exactly as before |
+| Has a passkey | Must present it after the password |
+| Has a passkey, but **MFA enabled** is unchecked on its user form | Is not asked for it |
+
+Where Google Authenticator or Duo is already required, a passkey is simply offered next to them, and the user picks one. This is why there is no enrolment during sign-in: a user registers a passkey from their profile, whenever they choose to.
+
+> 💡 **A lost authenticator never locks anyone out for good.** An administrator revokes the passkey from the Users page (see [Revoking a user’s passkeys](#revoking-a-users-passkeys)) and the account goes back to its password, plus any other method it had.
+
+---
+
+### Registering a passkey
+
+A user registers their own passkeys in **Profile → Information → Sign-in passkeys**:
+
+1. Give the device a name (optional) and click **Add a passkey**.
+2. The browser asks for the fingerprint, the face, the PIN or the security key.
+3. The passkey appears in the list, with its creation date and its last use.
+
+From the same list a passkey can be **renamed**, **deleted**, and — in passwordless mode — turned on or off for signing in without a password. An account may hold up to **20** passkeys.
+
+> 💡 Whether a passkey follows the user from one device to another depends on where it lives. iCloud Keychain, Google Password Manager and most password managers **sync** it — the list marks those *Synced*. A security key or a Windows Hello passkey stays on its device, so the user registers one per device.
+
+---
+
+### Signing in
+
+**As a second factor.** After the login and the password, TeamPass shows **Use my passkey** (or the passkey button among the other methods). The browser asks for the passkey, and the sign-in completes.
+
+**Without a password.** In passwordless mode, the login page also shows **Sign in with a passkey**. The browser offers the passkeys registered for this TeamPass, and the account is the one the chosen passkey belongs to: nothing has to be typed.
+
+> 💡 Some browsers only run a passkey request started by a click. When that happens the page says so, and a second click on the same button completes the sign-in.
+
+---
+
+### What a passwordless passkey holds
+
+Every item, field and file is encrypted with the user's key, and that key is itself protected by their password. A sign-in that never sees the password would therefore open a session that can decrypt nothing. So a passkey used for passwordless sign-in carries **a second, encrypted copy of the user's encryption key**, opened in one of two ways:
+
+| Copy | Opened by | What a stolen database gives |
+|---|---|---|
+| **Authenticator (PRF)** | A secret only that authenticator can produce, and only after verifying its user | Nothing: the copy cannot be opened without the authenticator |
+| **Server** | A key derived from the instance secret file, outside the database | Nothing on its own — the file is needed too — but the server can open it by itself |
+
+The second copy exists because several authenticators (some Windows Hello configurations) do not support PRF. Turn **Require PRF for passwordless sign-in** on to refuse it: those passkeys then stay second factors, which the user is told when registering.
+
+As a **second factor**, a passkey holds no copy at all: the password still unlocks the key.
+
+---
+
+### Restrictions
+
+| Case | Passwordless sign-in |
+|---|---|
+| Local account | Allowed |
+| Directory (LDAP) or OAuth2 account | **Refused** — signing in without the directory password would bypass a directory that may have disabled the account. These accounts use their passkey as a second factor |
+| Account waiting for its keys, for a re-encryption or for a one-time code | **Refused** until that step is done with the password |
+| Another second factor imposed, with *Passwordless sign-in counts as MFA* off | **Refused**: the password path goes through that factor |
+
+**After the encryption keys of a user are regenerated** — a new encryption code, a password initialized by an administrator, *Generate new keys* — the copies held by their passkeys are obsolete and are deleted. The passkeys still work as second factors, and the user turns passwordless back on from their profile in one click. A copy that escaped that cleanup is refused and deleted at the next sign-in.
+
+---
+
+### Audit of sign-ins
+
+| Where | What is recorded |
+|---|---|
+| **Monitoring → Logs**, administration entries | *Sign-in passkey added*, *Sign-in passkey deleted*, *Passwordless sign-in enabled on a passkey* and *Passwordless sign-in disabled on a passkey*, each naming the account |
+| **Monitoring → Logs**, failed authentications | *Passkey sign-in refused* — a wrong or unknown passkey, counted towards the account lockout like a wrong password |
+| **Email** | The owner is told when a passkey is added to their account, unless the notification setting is off. The text is customizable in [Email templates](../manage/email-templates.md) (*Sign-in passkey added*) |
+| **Profile** | Each passkey shows its creation date and its last use |
+
+---
+
+### Revoking a user’s passkeys
+
+From **Users → action menu → Sign-in passkeys**, an administrator (or a manager of that account) lists the passkeys of a user and revokes any of them. A revocation takes effect at once, even though the passkey remains on the user's device.
+
+---
+
+### Troubleshooting a sign-in
+
+| Symptom | Cause and solution |
+|---|---|
+| No passkey button on the login page or in the profile | The feature is off, or the page is served over plain HTTP. Passkeys need HTTPS (or `localhost`) |
+| *This browser cannot use passkeys here* | Same causes, or a browser too old for WebAuthn |
+| The browser asks, then nothing happens | Some browsers refuse a request that no click started: click the button again |
+| *This passkey is not set up to sign in without a password* | It was registered as a second factor. Sign in with the password, then use **Use for passwordless sign-in** in the profile |
+| *This passkey can no longer sign you in without a password* | The account's encryption keys were regenerated. Sign in with the password and enable passwordless again |
+| *This browser cannot unlock this passkey* | The passkey uses a PRF copy and this browser cannot evaluate it. Use the browser it was registered from, or sign in with the password |
+| *Your account requires another second factor* | *Passwordless sign-in counts as MFA* is off and Google or Duo is imposed on this account: sign in with the password |
+| A user lost their authenticator | Revoke the passkey from the Users page; the account keeps its password and its other methods |
+| Every passkey stopped working at once | The **Relying party ID** was changed. Restore the previous value, or have the users register their passkeys again |
