@@ -40,9 +40,6 @@ use TeampassClasses\PasswordManager\PasswordManager;
 use Duo\DuoUniversal\Client;
 use Duo\DuoUniversal\DuoException;
 use RobThree\Auth\TwoFactorAuth;
-use TeampassClasses\LdapExtra\LdapExtra;
-use TeampassClasses\LdapExtra\OpenLdapExtra;
-use TeampassClasses\LdapExtra\ActiveDirectoryExtra;
 use TeampassClasses\OAuth2Controller\OAuth2Controller;
 
 // Load functions
@@ -1856,41 +1853,13 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
             ];
         }
 
-        // Check if login is restricted to a specific LDAP group
-        $allowedGroupDn = trim($SETTINGS['ldap_allowed_login_group_dn'] ?? '');
-        if ($allowedGroupDn !== '') {
-            $groupMode = $SETTINGS['ldap_allowed_login_group_mode'] ?? 'group';
-            $dnAttribute = LdapExtra::getUserDnAttribute($SETTINGS);
-            $userDnForCheck = $ldapHandler['type'] === 'ActiveDirectory'
-                ? (string) ($userADInfos[$dnAttribute][0] ?? $userADInfos['dn'] ?? '')
-                : (string) ($userADInfos['dn'] ?? '');
-
-            if ($groupMode === 'user') {
-                // User-centric: check the user's own memberOf attribute (AD-native, no extra
-                // query). The DN and the connection let the handler resolve nested membership
-                // when the attribute alone would deny access.
-                $isMember = $ldapHandler['handler']->isUserInAllowedGroupByMemberOf(
-                    $allowedGroupDn,
-                    $userADInfos,
-                    $userDnForCheck,
-                    $ldapHandler['connection']
-                );
-            } else {
-                // Group-centric (default): scope=base read on the group entry — works outside base DN
-                $isMember = $ldapHandler['handler']->isUserInAllowedGroup(
-                    $allowedGroupDn,
-                    $userDnForCheck,
-                    $username,
-                    $ldapHandler['connection']
-                );
-            }
-
-            if (!$isMember) {
-                return [
-                    'error'   => true,
-                    'message' => $lang->get('ldap_not_in_allowed_group'),
-                ];
-            }
+        // Check if login is restricted to a specific LDAP group.
+        // Shared with the LDAP page test (ldap.functions.php) so both answer the same way.
+        if (ldapUserIsInAllowedLoginGroup($userADInfos, $ldapHandler, $SETTINGS, $username) === false) {
+            return [
+                'error'   => true,
+                'message' => $lang->get('ldap_not_in_allowed_group'),
+            ];
         }
 
         // Handle user creation if needed
@@ -1924,115 +1893,6 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
             'message' => "Error: " . $e->getMessage(),
         ];
     }
-}
-
-/**
- * Initialize LDAP connection based on type
- * 
- * @param array $SETTINGS Teampass settings
- * @return array Contains connection and type-specific handler
- * @throws Exception
- */
-function initializeLdapConnection(array $SETTINGS): array
-{
-    $ldapExtra = new LdapExtra($SETTINGS);
-    $ldapConnection = $ldapExtra->establishLdapConnection();
-    
-    switch ($SETTINGS['ldap_type']) {
-        case 'ActiveDirectory':
-            return [
-                'connection' => $ldapConnection,
-                'handler' => new ActiveDirectoryExtra(),
-                'type' => 'ActiveDirectory'
-            ];
-        case 'OpenLDAP':
-            return [
-                'connection' => $ldapConnection,
-                'handler' => new OpenLdapExtra(),
-                'type' => 'OpenLDAP'
-            ];
-        default:
-            throw new Exception("Unsupported LDAP type: " . $SETTINGS['ldap_type']);
-    }
-}
-
-/**
- * Authenticate user against LDAP
- * 
- * @param string $username Username
- * @param string $passwordClear Password
- * @param array $ldapHandler LDAP connection and handler
- * @param array $SETTINGS Teampass settings
- * @param Language $lang Language instance
- * @return array Authentication result
- */
-function authenticateUser(string $username, string $passwordClear, array $ldapHandler, array $SETTINGS, Language $lang): array
-{
-    try {
-        $userAttribute = $SETTINGS['ldap_user_attribute'] ?? 'samaccountname';
-        $dnAttribute = LdapExtra::getUserDnAttribute($SETTINGS);
-
-        // Define attributes to retrieve from LDAP
-        // These are needed for user creation and authentication.
-        // 'memberof' is included so the group-mode=user check can inspect it without a second query.
-        $ldapAttributes = [
-            'dn', 'mail', 'givenname', 'sn', 'cn', 'displayname',
-            'samaccountname', 'userprincipalname', 'uid',
-            'shadowexpire', 'accountexpires', 'useraccountcontrol',
-            'memberof',
-            $userAttribute,
-            $dnAttribute
-        ];
-
-        $userADInfos = $ldapHandler['connection']->query()
-            ->select($ldapAttributes)
-            ->where($userAttribute, '=', $username)
-            ->firstOrFail();
-
-        // Verify user status for ActiveDirectory
-        if ($ldapHandler['type'] === 'ActiveDirectory' && !$ldapHandler['handler']->userIsEnabled((string) $userADInfos['dn'], $ldapHandler['connection'])) {
-            return [
-                'error' => true,
-                'message' => "Error: User is not enabled"
-            ];
-        }
-        // Attempt authentication
-        $authIdentifier = $ldapHandler['type'] === 'ActiveDirectory' 
-            ? $userADInfos['userprincipalname'][0] 
-            : $userADInfos['dn'];
-            
-        if (!$ldapHandler['connection']->auth()->attempt($authIdentifier, $passwordClear)) {
-            return [
-                'error' => true,
-                'message' => "Error: User is not authenticated"
-            ];
-        }
-        
-        return [
-            'error' => false,
-            'user_info' => $userADInfos
-        ];
-        
-    } catch (\LdapRecord\Query\ObjectNotFoundException $e) {
-        return [
-            'error' => true,
-            'message' => $lang->get('error_bad_credentials')
-        ];
-    }
-}
-
-/**
- * Check if user account is expired
- * 
- * @param array $userADInfos User AD information
- * @return bool
- */
-function isAccountExpired(array $userADInfos): bool
-{
-    return (isset($userADInfos['shadowexpire'][0]) && (int) $userADInfos['shadowexpire'][0] === 1)
-        || (isset($userADInfos['accountexpires'][0]) 
-            && (int) $userADInfos['accountexpires'][0] < time() 
-            && (int) $userADInfos['accountexpires'][0] !== 0);
 }
 
 /**
@@ -2076,55 +1936,6 @@ function handleNewUser(string $username, string $passwordClear, array $userADInf
 
     $userInfo['has_been_created'] = 1;
     return $userInfo;
-}
-
-/**
- * Get user groups based on LDAP type
- *
- * @param array $userADInfos User AD information
- * @param array $ldapHandler LDAP connection and handler
- * @param array $SETTINGS Teampass settings
- * @param string $username User login name (used for posixGroup memberuid matching in OpenLDAP)
- * @return array{error: bool, message: string, userGroups: array} User groups, with 'error'
- *         set to true when membership could not be resolved at all
- */
-function getUserADGroups(array $userADInfos, array $ldapHandler, array $SETTINGS, string $username = ''): array
-{
-    $dnAttribute = LdapExtra::getUserDnAttribute($SETTINGS);
-
-    if ($ldapHandler['type'] === 'ActiveDirectory') {
-        // The entry DN is the same value: it covers a DN attribute name that does not exist
-        $userDN = (string) ($userADInfos[$dnAttribute][0] ?? $userADInfos['dn'] ?? '');
-    } elseif ($ldapHandler['type'] === 'OpenLDAP') {
-        $userDN = (string) ($userADInfos['dn'] ?? '');
-    } else {
-        throw new Exception("Unsupported LDAP type: " . $ldapHandler['type']);
-    }
-
-    // Without a DN nothing can be resolved. Reported as an error so the caller keeps the
-    // roles already granted instead of removing them all.
-    if ($userDN === '') {
-        return [
-            'error' => true,
-            'message' => 'No user DN available to resolve LDAP group membership.',
-            'userGroups' => [],
-        ];
-    }
-
-    if ($ldapHandler['type'] === 'ActiveDirectory') {
-        return $ldapHandler['handler']->getUserADGroups(
-            $userDN,
-            $ldapHandler['connection'],
-            $SETTINGS
-        );
-    }
-
-    return $ldapHandler['handler']->getUserADGroups(
-        $userDN,
-        $ldapHandler['connection'],
-        $SETTINGS,
-        $username
-    );
 }
 
 /**

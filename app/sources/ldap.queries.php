@@ -103,6 +103,30 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_UNSAFE_RAW);
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
 switch ($post_type) {
+    // Audit the saved settings and return the findings, translated
+    case 'ldap_check_settings':
+        // Check KEY and rights
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'findings' => ldapTranslateConfigFindings(ldapConfigAudit($SETTINGS), $lang),
+            ),
+            'encode'
+        );
+
+    break;
+
     //CASE for getting informations about the tool
     case 'ldap_test_configuration':
         // Check KEY and rights
@@ -139,137 +163,74 @@ switch ($post_type) {
             break;
         }
 
-        // 1- Connect to LDAP
-        try {
-            switch ($SETTINGS['ldap_type']) {
-                case 'ActiveDirectory':
-                    $ldapExtra = new LdapExtra($SETTINGS);
-                    $ldapConnection = $ldapExtra->establishLdapConnection();
-                    $activeDirectoryExtra = new ActiveDirectoryExtra();
-                    break;
-                case 'OpenLDAP':
-                    // Establish connection for OpenLDAP
-                    $ldapExtra = new LdapExtra($SETTINGS);
-                    $ldapConnection = $ldapExtra->establishLdapConnection();
+        // Walk the real login path (sources/ldap.functions.php). The test used to carry its own
+        // copy of the search and of the bind, so it could report a success on a configuration no
+        // user can log in with.
+        $testResult = ldapRunConfigurationTest(
+            (string) $post_username,
+            (string) $post_password,
+            $SETTINGS,
+            $lang
+        );
 
-                    // Create an instance of OpenLdapExtra and configure it
-                    $openLdapExtra = new OpenLdapExtra();
-                    break;
-                default:
-                    throw new Exception("Unsupported LDAP type: " . $SETTINGS['ldap_type']);
-            }
-        } catch (Exception $e) {
-            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
-                error_log('TEAMPASS Error - ldap - '.$e->getMessage());
-            }
-            // deepcode ignore ServerLeak: No important data is sent and is encrypted before being sent
-            echo  prepareExchangedData(
-                array(
-                'error' => true,
-                'message' => 'An error occurred while opening connection to AD server',
-            ), 'encode');
-            break;
-        }
-
-        try {
-            // 2- Get user info from AD
-            // We want to isolate attribute ldap_user_attribute or mostly samAccountName
-            $userADInfos = $ldapConnection->query()
-                ->where((isset($SETTINGS['ldap_user_attribute']) ===true && empty($SETTINGS['ldap_user_attribute']) === false) ? $SETTINGS['ldap_user_attribute'] : 'samaccountname', '=', $post_username)
-                ->firstOrFail();
-
-            // Is user enabled? Only ActiveDirectory
-            if ($SETTINGS['ldap_type'] === 'ActiveDirectory' && isset($activeDirectoryExtra) === true && $activeDirectoryExtra instanceof ActiveDirectoryExtra) {
-                //require_once 'ldap.activedirectory.php';
-                if ($activeDirectoryExtra->userIsEnabled((string) $userADInfos['dn'], $ldapConnection) === false) {
-                    echo prepareExchangedData(
-                        array(
-                        'error' => true,
-                        'message' => "Error : User is not enabled",
-                        ),
-                        'encode'
-                    );
-                    break;
-                }
-            }
-    
-        } catch (\LdapRecord\Query\ObjectNotFoundException $e) {
-            $error = $e->getDetailedError();
-            if ($error && defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
-                error_log('TEAMPASS Error - LDAP - '.$error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage());
-            } 
-            // deepcode ignore ServerLeak: No important data is sent and is encrypted before being sent
-            echo prepareExchangedData(
-                array(
-                    'error' => true,
-                    'message' => 'An error occurred.',
-                ),
-                'encode'
-            );
-            break;
-        }
-
-        try {
-            // 3- User auth attempt
-            // For AD, we use attribute userPrincipalName
-            // For OpenLDAP and others, we use attribute dn
-            $userAuthAttempt = $ldapConnection->auth()->attempt(
-                $SETTINGS['ldap_type'] === 'ActiveDirectory' ?
-                    $userADInfos['userprincipalname'][0] :  // refering to https://ldaprecord.com/docs/core/v2/authentication#basic-authentication
-                    $userADInfos['dn'],
-                $post_password
-            );
-    
-            // User is not auth then return error
-            if ($userAuthAttempt === false) {
-                echo  prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => "Error: User is not authenticated",
-                    ),
-                    'encode'
-                );
-                break;
-            }
-        } catch (\LdapRecord\Query\ObjectNotFoundException $e) {
-            $error = $e->getDetailedError();
-            if ($error && defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
-                error_log('TEAMPASS Error - LDAP - '.$error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage());
-            }
-            // deepcode ignore ServerLeak: No important data is sent and is encrypted before being sent
-            echo prepareExchangedData(
-                array(
-                    'error' => true,
-                    'message' => 'An error occurred.',
-                ),
-                'encode'
-            );
-        }
-    
-        // 4- Check shadowexpire attribute
-        // if === 1 then user disabled
-        if (
-            (isset($userADInfos['shadowexpire'][0]) === true && (int) $userADInfos['shadowexpire'][0] === 1)
-            ||
-            (isset($userADInfos['accountexpires'][0]) === true && (int) $userADInfos['accountexpires'][0] < time() && (int) $userADInfos['accountexpires'][0] != 0)
-        ) {
-            echo prepareExchangedData(
-                array(
-                    'error' => true,
-                    'message' => $lang->get('error_ad_user_expired'),
-                ),
-                'encode'
-            );
-        }
-
+        // deepcode ignore ServerLeak: No important data is sent and is encrypted before being sent
         echo prepareExchangedData(
             array(
-                'error' => false,
-                'message' => "User is successfully authenticated",
-                'extra' => $SETTINGS['ldap_user_attribute'].'='.$post_username.','.$SETTINGS['ldap_bdn'],
+                'error' => $testResult['error'],
+                'message' => $testResult['message'],
+                'steps' => ldapTranslateTestSteps($testResult['steps'], $lang),
+                'findings' => ldapTranslateConfigFindings($testResult['findings'], $lang),
             ),
             'encode'
         );
 
     break;
+}
+
+/**
+ * Resolve the language keys of the configuration findings.
+ *
+ * The logic module stays free of translation so it can be unit-tested; the label and the
+ * "apply this value" suggestion are assembled here.
+ *
+ * @param array $findings Output of ldapConfigAudit()
+ * @param Language $lang  Language instance
+ *
+ * @return array<int, array{field: string, severity: string, label: string, suggestion: string}>
+ */
+function ldapTranslateConfigFindings(array $findings, Language $lang): array
+{
+    $translated = [];
+    foreach ($findings as $finding) {
+        $translated[] = [
+            'field' => $finding['field'],
+            'severity' => $finding['severity'],
+            'label' => $lang->get($finding['code']),
+            'suggestion' => $finding['suggestion'],
+        ];
+    }
+
+    return $translated;
+}
+
+/**
+ * Resolve the language keys of the test steps.
+ *
+ * @param array $steps   Output of ldapRunConfigurationTest()
+ * @param Language $lang Language instance
+ *
+ * @return array<int, array{label: string, status: string, detail: string}>
+ */
+function ldapTranslateTestSteps(array $steps, Language $lang): array
+{
+    $translated = [];
+    foreach ($steps as $step) {
+        $translated[] = [
+            'label' => $lang->get($step['code']),
+            'status' => $step['status'],
+            'detail' => $step['detail'],
+        ];
+    }
+
+    return $translated;
 }

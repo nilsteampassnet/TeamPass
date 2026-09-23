@@ -60,6 +60,9 @@ require_once __DIR__ . '/log_display_logic.php';
 require_once __DIR__ . '/item_revisions_logic.php';
 require_once __DIR__ . '/folder_cache_logic.php';
 require_once __DIR__ . '/api_auth_logic.php';
+require_once __DIR__ . '/ldap_config_logic.php';
+// Directory access shared by the login and by the LDAP settings page test.
+require_once __DIR__ . '/ldap.functions.php';
 require_once __DIR__ . '/password_strength.functions.php';
 require_once __DIR__ . '/roles_scope.functions.php';
 require_once __DIR__ . '/file_integrity.functions.php';
@@ -7692,7 +7695,7 @@ function ldapCheckUserPassword(string $login, string $password, array $SETTINGS)
         if ($SETTINGS['ldap_type'] === 'ActiveDirectory') {
             $connection->auth()->attempt($login, $password, $stayAuthenticated = true);
         } else {
-            $connection->auth()->attempt($SETTINGS['ldap_user_attribute'].'='.$login.','.(isset($SETTINGS['ldap_dn_additional_user_dn']) && !empty($SETTINGS['ldap_dn_additional_user_dn']) ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'], $password, $stayAuthenticated = true);
+            $connection->auth()->attempt(ldapResolveUserAttribute($SETTINGS).'='.$login.','.(isset($SETTINGS['ldap_dn_additional_user_dn']) && !empty($SETTINGS['ldap_dn_additional_user_dn']) ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'], $password, $stayAuthenticated = true);
         }
     } catch (\LdapRecord\Auth\BindException $e) {
         $error = $e->getDetailedError();

@@ -46,8 +46,8 @@ Depending of the AD type and your users annuary configuration, the next keys nee
 
 * __User Distinguished Name__ - The attribute label for the user Distinguished Name (DN) in the AD.
 * __User name attribute__ - The attribute field to use when loading the username. The default value in case of an `Active Directory` should be defined as `samaccountname`. In case of `OpenLDAP`, it should be `uid`.
-* __Additional User DN__ - This value is used in addition to the base DN when searching and loading users. If no value is supplied, the subtree search will start from the base DN.
-* __User Object Filter__ - The filter to use when searching user objects.
+* __Additional User DN__ - This value is used in addition to the base DN when searching and loading users. If no value is supplied, the subtree search will start from the base DN. **Enter only the part below the base DN**: Teampass appends the base DN itself. With a base DN of `DC=example,DC=com`, the value is `OU=Users`, never `OU=Users,DC=example,DC=com` — the latter makes the search target `OU=Users,DC=example,DC=com,DC=example,DC=com`, which does not exist, and the LDAP user list comes back empty.
+* __User Object Filter__ - The filter to use when searching user objects. It expects an **LDAP filter between parentheses**, not an attribute name. Several filters can be given, separated by a comma, and are combined with a logical AND. *Examples: `(&(objectCategory=person)(objectClass=user))` for Active Directory, `(objectClass=inetOrgPerson)` for OpenLDAP, `(objectCategory=Person),(sAMAccountName=*)` for two filters.*
 * __LDAP group object filter__ - The filter to use when searching group objects.
 * __LDAP GUID attribute__ - Provides the GUID attribute used in your directory. Only used when option (1) is enabled.
 * __Restrict login to LDAP group (DN)__ - Full distinguished name of the LDAP group whose members are allowed to log in. Leave empty for no restriction. See [Login restriction by group membership](#login-restriction-by-group-membership) for details.
@@ -58,6 +58,52 @@ Depending of the AD type and your users annuary configuration, the next keys nee
 * __AD user roles mapped with their AD groups (1)__ - When enabled, Administrator will be able to map existing AD Groups with local Teampass roles. By doing so, any AD user belonging with one of this AD group will automatically be promoted to the mapped Teampass role.
 * __Hide forgot password link on Home page__ - If LDAP authentication is enabled, you should disable forgot password feature but it can be enabled for locally managed users.
 * __AD user to get created automatically__ - Valid AD user will have an account automatically created in Teampass and his AD groups mapped with corresponding Teampass roles.
+
+
+### Check the configuration and test a real login
+
+The LDAP page carries two tools. Both are read-only: no account is created, no role is granted.
+
+#### Configuration check
+
+The **Configuration check** panel audits the saved settings and lists what it finds, with a
+one-click **Apply this value** button whenever the correct value can be derived. It is refreshed
+when the page opens and after every field is saved.
+
+It reports three kinds of finding:
+
+| Kind | Meaning |
+|---|---|
+| Error | The value is invalid. Something is broken right now — an attribute name in the user object filter, a base DN repeated in the additional user DN, SSL and TLS both enabled, an unsupported LDAP type. |
+| Warning | The value is accepted but almost certainly not what was meant — an unconfigured user name attribute, a port that does not match the transport, LDAP mode left off. |
+| Information | The value is correct and explains a behaviour often reported as a bug — automatic user creation disabled, logins restricted to a group. |
+
+> **Note** — *User Object Filter* and *Additional User DN* are **not** read by the login. They scope
+> the administration **Users › LDAP** list and the AD status column. A wrong value there leaves
+> authentication working while the user list comes back empty, so the check is the only place that
+> tells you about it.
+
+#### Test current configuration
+
+The **Test current configuration** action replays the real login, step by step, with the code the
+login page itself runs. It reports every step, on success as well as on failure:
+
+| Step | What it proves |
+|---|---|
+| Configuration | No blocking finding in the configuration check |
+| Connection and service account bind | The host, the port, the transport and the service account credentials |
+| User search in the directory | The user name attribute finds the entry; the resolved entry DN is shown |
+| Directory account enabled | Active Directory only |
+| Password verification | The bind as the user, with the identity it was performed with |
+| Account expiration | `shadowExpire` / `accountExpires` |
+| Login group restriction | *Restrict login to LDAP group (DN)*, when configured |
+| TeamPass account | The account exists and is enabled, or will be created at the first login |
+| Directory groups and role mapping | How many directory groups the user has, and how many map to a Teampass role |
+
+The last two steps are the ones a directory test alone cannot answer, and they are the usual cause
+of *"the directory accepts my password but Teampass refuses my login"*: no Teampass account with
+automatic creation disabled, a disabled account, a deleted homonym, or a login that succeeds and
+grants no folder because no directory group is mapped to a role.
 
 
 ### Login restriction by group membership
