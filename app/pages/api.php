@@ -83,6 +83,8 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 // --------------------------------- //
 
 // Get FQDN and API Key settings
+// The FQDN derived from cpassman_url is only a placeholder: shown as the field value, it looked
+// saved while the setting was missing, and the Licence tab and the extension got an empty FQDN.
 $browserFqdn = getDomainFromSettingsUrl($SETTINGS['cpassman_url'] ?? '');
 // The extension key can only be generated once - regenerating it would break every
 // extension already configured with it.
@@ -333,8 +335,7 @@ function getDomainFromSettingsUrl(string $url): string
                                         </small>
                                     </div>
                                     <div class='col-5'>
-                                    <input type='text' class='form-control form-control-sm' id='browser_extension_fqdn' value='<?php echo isset($SETTINGS['browser_extension_fqdn']) === true ? (string) $SETTINGS['browser_extension_fqdn'] : $browserFqdn; ?>'>
-                                    </div>
+                                    <input type='text' class='form-control form-control-sm' id='browser_extension_fqdn' value='<?php echo isset($SETTINGS['browser_extension_fqdn']) === true ? (string) $SETTINGS['browser_extension_fqdn'] : ''; ?>' placeholder='<?php echo htmlspecialchars($browserFqdn, ENT_QUOTES, 'UTF-8'); ?>'>                                    </div>
                                 </div>
                                 
                                 <div class='row mt-2 mb-2'>
