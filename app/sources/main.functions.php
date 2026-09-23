@@ -11066,20 +11066,62 @@ function triggerBackgroundHandler(): void
     }
 
     // Launch the handler as a fully detached background process.
-    // We use exec() instead of Symfony Process because Process::start() creates
-    // pipes for stdout/stderr. When the parent request ends and pipes are closed,
-    // the child receives SIGPIPE and dies silently on the first write (log, error, etc.).
-    // Redirecting to /dev/null with & ensures true fire-and-forget detachment.
-    //
-    // Guard: exec() may be disabled via disable_functions in php.ini (e.g. Docker).
-    // In that case, skip the launch silently — the trigger file is already written
-    // above, and a cron job running background_tasks___handler.php will pick it up.
-    if (function_exists('exec')) {
-        $cmd = escapeshellarg(getPHPBinary())
-            . ' ' . escapeshellarg(__DIR__ . '/../scripts/background_tasks___handler.php')
-            . ' > /dev/null 2>&1 &';
-        exec($cmd);
+    // If the launch primitive is disabled (disable_functions, e.g. Docker), the
+    // trigger file is already written above and a cron job running
+    // background_tasks___handler.php will pick it up.
+    tpSpawnDetachedPhpScript(__DIR__ . '/../scripts/background_tasks___handler.php');
+}
+
+/**
+ * Start a PHP CLI script as a fire-and-forget background process.
+ *
+ * Linux/macOS: exec() with output sent to /dev/null and a trailing "&". Symfony
+ * Process is not used because Process::start() creates pipes for stdout/stderr:
+ * when the parent request ends and the pipes are closed, the child receives
+ * SIGPIPE and dies silently on the first write (log, error, etc.).
+ *
+ * Windows: the Unix redirection and "&" mean nothing to cmd.exe, and every
+ * console program started from a process without a console opens a visible
+ * window. proc_open() with an argument array bypasses cmd.exe, and
+ * create_no_window gives the child a hidden console that the processes it
+ * starts in turn (the handler's workers) inherit, so nothing flashes on screen.
+ * The process resource is deliberately not closed: proc_close() would wait for
+ * the child, while the resource destructor does not.
+ *
+ * @param string $script Absolute path of the PHP script to run.
+ * @return bool True when the process was started, false when the launch
+ *              primitive is disabled or failed.
+ */
+function tpSpawnDetachedPhpScript(string $script): bool
+{
+    if (PHP_OS_FAMILY === 'Windows') {
+        if (function_exists('proc_open') === false) {
+            return false;
+        }
+        $process = @proc_open(
+            [getPHPBinary(), $script],
+            [
+                0 => ['file', 'NUL', 'r'],
+                1 => ['file', 'NUL', 'w'],
+                2 => ['file', 'NUL', 'w'],
+            ],
+            $pipes,
+            null,
+            null,
+            ['bypass_shell' => true, 'create_no_window' => true]
+        );
+        return is_resource($process);
     }
+
+    if (function_exists('exec') === false) {
+        return false;
+    }
+    exec(
+        escapeshellarg(getPHPBinary()) . ' ' . escapeshellarg($script) . ' > /dev/null 2>&1 &',
+        $output,
+        $returnCode
+    );
+    return $returnCode === 0;
 }
 
 /**
