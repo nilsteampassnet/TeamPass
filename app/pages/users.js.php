@@ -4314,7 +4314,7 @@ function refreshListInactiveUsers(filterValue) {
                     if (credential.passwordless === true) {
                         $label.append(' ', $('<span class="badge badge-success">').text(<?php echo json_encode($lang->get('webauthn_login_passwordless_badge'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>))
                     }
-                    const lastUsed = credential.last_used_at ? new Date(credential.last_used_at * 1000).toLocaleString() : <?php echo json_encode($lang->get('webauthn_never_used'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>
+                    const lastUsed = credential.last_used_at ? new Date(credential.last_used_at * 1000).toLocaleString() : <?php echo json_encode($lang->get('webauthn_never_used'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
                     $row.append(
                         $label,
                         $('<td class="text-muted small">').text(<?php echo json_encode($lang->get('webauthn_created'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?> + ': ' + new Date(credential.created_at * 1000).toLocaleString())
