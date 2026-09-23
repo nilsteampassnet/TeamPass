@@ -809,8 +809,9 @@ function keyHandler(string $post_type, array $dataReceived, array $SETTINGS): st
                 (int) filter_var($filtered_user_id, FILTER_SANITIZE_NUMBER_INT),
                 (int) filter_var($dataReceived['start'], FILTER_SANITIZE_NUMBER_INT),
                 (int) filter_var($dataReceived['length'], FILTER_SANITIZE_NUMBER_INT),
-                (int) filter_var($dataReceived['counterItemsToTreat'], FILTER_SANITIZE_NUMBER_INT),
-                (string) filter_var($dataReceived['userPsk'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                (int) filter_var($dataReceived['lastId'] ?? 0, FILTER_SANITIZE_NUMBER_INT),
+                // A saltkey is a secret: never sanitized, compared as typed
+                is_string($dataReceived['userPsk'] ?? null) === true ? $dataReceived['userPsk'] : '',
                 $SETTINGS
             );
 
@@ -3334,11 +3335,27 @@ function continueReEncryptingUserSharekeysStep60(
     ];
 }
 
+/**
+ * Re-encrypt one batch of the current user's TeamPass 2.x personal items.
+ *
+ * Items are read in id order after $post_last_id, so an item that cannot be decrypted is
+ * attempted once and never blocks the next batches. Such an item keeps its 2.x ciphertext,
+ * and the saltkey is erased only once no personal item is left to re-encrypt.
+ *
+ * @param int    $post_user_id  User whose personal items are re-encrypted
+ * @param int    $post_start    Number of items already read, for the progress display
+ * @param int    $post_length   Maximum number of items per batch
+ * @param int    $post_last_id  Highest item id read by the previous batch, 0 for the first one
+ * @param string $post_user_psk Personal saltkey, as typed by the user
+ * @param array  $SETTINGS      TeamPass settings
+ *
+ * @return string|array
+ */
 function migrateTo3_DoUserPersonalItemsEncryption(
     int $post_user_id,
     int $post_start,
     int $post_length,
-    int $post_counterItemsToTreat,
+    int $post_last_id,
     string $post_user_psk,
     array $SETTINGS
 ) {
@@ -3357,11 +3374,17 @@ function migrateTo3_DoUserPersonalItemsEncryption(
         );
         if (DB::count() > 0) {
             // check if psk is correct.
-            if (empty($userInfo['encrypted_psk']) === false) {//echo $post_user_psk." ;; ".$userInfo['encrypted_psk']." ;; ";
-                $user_key_encoded = defuse_validate_personal_key(
-                    html_entity_decode($post_user_psk), // convert tspecial string back to their original characters due to FILTER_SANITIZE_FULL_SPECIAL_CHARS
-                    $userInfo['encrypted_psk']
-                );
+            if (empty($userInfo['encrypted_psk']) === false) {
+                // TeamPass 2.x protected the key with an encoded form of the saltkey
+                $user_key_encoded = 'Error - The saltkey is not the correct one.';
+                $validatedPsk = '';
+                foreach (legacyPersonalSaltkeyCandidates($post_user_psk) as $pskCandidate) {
+                    $user_key_encoded = defuse_validate_personal_key($pskCandidate, $userInfo['encrypted_psk']);
+                    if (strpos($user_key_encoded, 'Error ') === false) {
+                        $validatedPsk = $pskCandidate;
+                        break;
+                    }
+                }
 
                 if (strpos($user_key_encoded, "Error ") !== false) {
                     return prepareExchangedData(
@@ -3373,65 +3396,89 @@ function migrateTo3_DoUserPersonalItemsEncryption(
                     );
                 }
 
-                // Get number of user's personal items with no AES encryption
-                if ($post_counterItemsToTreat === -1) {
-                    DB::query(
-                        'SELECT id
-                        FROM ' . prefixTable('items') . '
-                        WHERE perso = 1 AND id_tree IN %ls AND encryption_type != %s',
-                        $session->get('user-personal_folders'),
-                        'teampass_aes'
-                    );
-                    $countUserPersonalItems = DB::count();
-                } else {
-                    $countUserPersonalItems = $post_counterItemsToTreat;
-                }
-
-                // Loop on persoanl items
+                // Loop on personal items not re-encrypted yet, after those read by the previous batch
+                $post_length = max(1, $post_length);
                 $rows = DB::query(
                     'SELECT id, pw
                     FROM ' . prefixTable('items') . '
-                    WHERE perso = 1 AND id_tree IN %ls AND encryption_type != %s
-                    LIMIT ' . $post_length,
+                    WHERE perso = 1 AND id_tree IN %ls AND encryption_type != %s AND id > %i
+                    ORDER BY id ASC
+                    LIMIT %i',
                     $session->get('user-personal_folders'),
-                    'teampass_aes'
+                    'teampass_aes',
+                    $post_last_id,
+                    $post_length
                 );
                 foreach ($rows as $record) {
-                    // Decrypt with Defuse
-                    $passwd = cryption(
-                        $record['pw'],
-                        $user_key_encoded,
-                        'decrypt',
-                        $SETTINGS
-                    );
+                    $post_last_id = (int) $record['id'];
+
+                    // Decrypt with Defuse. An item that does not decrypt keeps its ciphertext:
+                    // re-encrypting the empty result would destroy its password.
+                    $passwd = ['string' => '', 'error' => false];
+                    if ((string) $record['pw'] !== '') {
+                        $passwd = cryption(
+                            (string) $record['pw'],
+                            $user_key_encoded,
+                            'decrypt',
+                            $SETTINGS
+                        );
+                    }
+                    if ($passwd['error'] !== false) {
+                        error_log('TEAMPASS Error - personal item ' . $record['id'] . ' does not decrypt with the saltkey of user ' . $post_user_id . ': ' . $passwd['error']);
+                        continue;
+                    }
 
                     // Encrypt with Object Key
                     $cryptedStuff = doDataEncryption(html_entity_decode($passwd['string']));
 
-                    // Store new password in DB
-                    DB::update(
-                        prefixTable('items'),
-                        array(
-                            'pw' => $cryptedStuff['encrypted'],
-                            'pw_iv' => $cryptedStuff['meta'],
-                            'encryption_type' => 'teampass_aes',
-                        ),
-                        'id = %i',
-                        $record['id']
-                    );
-
-                    // Insert in DB the new object key for this item by user                    
-                    insertOrUpdateSharekey(
-                        prefixTable('sharekeys_items'),
-                        (int) $record['id'],
-                        (int) $post_user_id,
-                        encryptUserObjectKey($cryptedStuff['objectKey'], $userInfo['public_key'])
-                    );
-
+                    // Store the new password with its sharekeys (owner + TP_USER, like any
+                    // personal item) at once, or leave the item untouched
+                    try {
+                        DB::startTransaction();
+                        DB::update(
+                            prefixTable('items'),
+                            array(
+                                'pw' => $cryptedStuff['encrypted'],
+                                'pw_iv' => $cryptedStuff['meta'],
+                                'encryption_type' => 'teampass_aes',
+                            ),
+                            'id = %i',
+                            $record['id']
+                        );
+                        // A leftover key holds another object key: it can only mislead the check below
+                        DB::delete(prefixTable('sharekeys_items'), 'object_id = %i', $record['id']);
+                        storeUsersShareKey(
+                            'sharekeys_items',
+                            1,
+                            (int) $record['id'],
+                            $cryptedStuff['objectKey'],
+                            true,
+                            true,
+                            [],
+                            -1,
+                            $post_user_id
+                        );
+                        // storeUsersShareKey() logs and skips a failed recipient
+                        $ownerSharekeys = (int) DB::queryFirstField(
+                            'SELECT COUNT(*)
+                            FROM ' . prefixTable('sharekeys_items') . '
+                            WHERE object_id = %i AND user_id = %i',
+                            $record['id'],
+                            $post_user_id
+                        );
+                        if ($ownerSharekeys === 0) {
+                            throw new RuntimeException('no sharekey could be created for the owner');
+                        }
+                        DB::commit();
+                    } catch (Throwable $e) {
+                        DB::rollback();
+                        error_log('TEAMPASS Error - personal item ' . $record['id'] . ' could not be re-encrypted: ' . $e->getMessage());
+                        continue;
+                    }
 
                     // Does this item has Files?
                     // Loop on files
-                    $rows = DB::query(
+                    $fileRows = DB::query(
                         'SELECT id, file
                         FROM ' . prefixTable('files') . '
                         WHERE status != %s
@@ -3440,13 +3487,13 @@ function migrateTo3_DoUserPersonalItemsEncryption(
                         $record['id']
                     );
                     //aes_encryption
-                    foreach ($rows as $record2) {
+                    foreach ($fileRows as $record2) {
                         // Now decrypt the file
                         prepareFileWithDefuse(
                             'decrypt',
                             $SETTINGS['path_to_upload_folder'] . '/' . $record2['file'],
                             $SETTINGS['path_to_upload_folder'] . '/' . $record2['file'] . '.delete',
-                            $post_user_psk
+                            $validatedPsk
                         );
 
                         // Encrypt the file
@@ -3462,12 +3509,17 @@ function migrateTo3_DoUserPersonalItemsEncryption(
                             $record2['id']
                         );
 
-                        // Save key
-                        insertOrUpdateSharekey(
-                            prefixTable('sharekeys_files'),
+                        // Save key, for the owner and TP_USER like any personal object
+                        storeUsersShareKey(
+                            'sharekeys_files',
+                            1,
                             (int) $record2['id'],
-                            (int) $session->get('user-id'),
-                            encryptUserObjectKey($encryptedFile['objectKey'], $session->get('user-public_key'))
+                            $encryptedFile['objectKey'],
+                            true,
+                            true,
+                            [],
+                            -1,
+                            $post_user_id
                         );
 
                         // Unlink original file
@@ -3475,16 +3527,17 @@ function migrateTo3_DoUserPersonalItemsEncryption(
                     }
                 }
 
-                // SHould we change step?
-                $next_start = (int) $post_start + (int) $post_length;
-                DB::query(
-                    'SELECT id
+                // SHould we change step? Items that did not decrypt are still counted
+                $remainingItems = (int) DB::queryFirstField(
+                    'SELECT COUNT(*)
                     FROM ' . prefixTable('items') . '
                     WHERE perso = 1 AND id_tree IN %ls AND encryption_type != %s',
                     $session->get('user-personal_folders'),
                     'teampass_aes'
                 );
-                if (DB::count() === 0 || ($next_start - $post_length) >= $countUserPersonalItems) {
+                $outcome = personalItemsReencryptionOutcome(count($rows), $post_length, $remainingItems);
+                $message = '';
+                if ($outcome['clear_saltkey'] === true) {
                     // Now update user
                     DB::update(
                         prefixTable('users'),
@@ -3496,18 +3549,21 @@ function migrateTo3_DoUserPersonalItemsEncryption(
                         'id = %i',
                         $post_user_id
                     );
-
+                } elseif ($outcome['finished'] === true) {
+                    $message = str_replace('#nb#', (string) $remainingItems, $lang->get('personal_items_not_reencrypted'));
+                }
+                if ($outcome['finished'] === true) {
                     $next_step = 'finished';
-                    $next_start = 0;
                 }
 
                 // Continu with next step
                 return prepareExchangedData(
                     array(
                         'error' => false,
-                        'message' => '',
+                        'message' => $message,
                         'step' => $next_step,
-                        'start' => $next_start,
+                        'start' => $post_start + count($rows),
+                        'lastId' => $post_last_id,
                         'userId' => $post_user_id
                     ),
                     'encode'

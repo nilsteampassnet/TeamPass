@@ -704,10 +704,11 @@ if (
             // SHow user
             toastr.remove();
             toastr.info('<?php echo $lang->get('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>');
+            $('#button_do_personal_items_reencryption').attr('disabled', 'disabled');
 
-            defusePskRemoval(store.get('teampassUser').user_id, 'psk', 0, -1);
+            defusePskRemoval(store.get('teampassUser').user_id, 'psk', 0, 0, '');
             
-            function defusePskRemoval(userId, step, start, counterItemsToTreat)
+            function defusePskRemoval(userId, step, start, lastId, message)
             {
                 if (step === 'psk') {
                     // Inform user
@@ -719,7 +720,7 @@ if (
                         'start': start,
                         'length': <?php echo NUMBER_ITEMS_IN_BATCH;?>,
                         'user_id': userId,
-                        'counterItemsToTreat': counterItemsToTreat
+                        'lastId': lastId
                     };
                     // Do query
                     $.post(
@@ -745,19 +746,33 @@ if (
 
                                 // Enable buttons
                                 $("#user-current-defuse-psk-progress").html('<?php echo $lang->get('provide_current_psk_and_click_launch'); ?>');
-                                $('#button_do_sharekeys_reencryption, #button_close_sharekeys_reencryption').removeAttr('disabled');
+                                $('#button_do_personal_items_reencryption').removeAttr('disabled');
                                 return false;
                             } else {
                                 // Start looping on all steps of re-encryption
-                                defusePskRemoval(data.userId, data.step, data.start, data.counterItemsToTreat);
+                                defusePskRemoval(data.userId, data.step, data.start, data.lastId, data.message);
                             }
                         }
                     );
                 } else {
                     // Finished
-                    $("#user-current-defuse-psk-progress").html('<i class="fa-solid fa-check text-success mr-3"></i><?php echo $lang->get('done'); ?>');
-
                     toastr.remove();
+                    $('#button_do_personal_items_reencryption').removeAttr('disabled');
+                    if (message !== undefined && message !== '') {
+                        // Some items did not decrypt: they are untouched and the saltkey is kept
+                        $("#user-current-defuse-psk-progress")
+                            .html('<i class="fa-solid fa-triangle-exclamation text-warning mr-3"></i>')
+                            .append($('<span>').text(message));
+                        toastr.warning(
+                            message,
+                            '<?php echo $lang->get('caution'); ?>', {
+                                timeOut: 10000,
+                                progressBar: true
+                            }
+                        );
+                    } else {
+                        $("#user-current-defuse-psk-progress").html('<i class="fa-solid fa-check text-success mr-3"></i><?php echo $lang->get('done'); ?>');
+                    }
                 }
             }
 

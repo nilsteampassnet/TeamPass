@@ -3625,5 +3625,6 @@ return array(
     'ldap_step_groups_mapped' => 'associés à un rôle TeamPass',
     'ldap_step_login_would_succeed' => 'Cette connexion réussirait sur la page de connexion.',
     'ldap_step_bind_no_upn' => 'Ce compte Active Directory n’a pas de userPrincipalName. TeamPass s’authentifie sur cet attribut : le compte ne peut pas se connecter tant qu’il n’est pas renseigné dans l’annuaire.',
+    'personal_items_not_reencrypted' => '#nb# élément(s) personnel(s) n’ont pas pu être déchiffrés avec cette clé de salage et ont été laissés inchangés. Votre clé de salage est conservée pour qu’ils restent récupérables : contactez votre administrateur.',
 
 );
