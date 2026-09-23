@@ -69,8 +69,16 @@ if (!defined('TEAMPASS_STORAGE')) {
     define('TEAMPASS_STORAGE', TEAMPASS_ROOT . '/storage');
 }
 
-// Before we start processing, we should abort no install is present
-if (file_exists(TEAMPASS_APP . '/config/settings.php') === false) {
+// Before we start processing, we should abort no install is present.
+// An unreadable app/config/ must not look like a missing install: the installer
+// would replace the encryption key of an instance that is only misconfigured.
+require_once TEAMPASS_APP . '/sources/config_access_logic.php';
+$configState = teampassConfigState(TEAMPASS_APP . '/config');
+if ($configState === 'unreadable') {
+    teampassSendConfigAccessError(TEAMPASS_APP . '/config');
+    exit;
+}
+if ($configState === 'not_installed') {
     // This should never happen, but in case it does
     // this means if headers are sent, redirect will fallback to JS
     if (headers_sent()) {

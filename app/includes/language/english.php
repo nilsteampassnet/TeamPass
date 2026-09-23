@@ -139,6 +139,7 @@ return array(
     'licence_trial_confirm_warning' => 'A trial is granted once per instance and per product, forever. Check the FQDN before confirming: it cannot be changed afterwards.',
     'licence_trial_identity_unusable' => 'A trial cannot be requested yet',
     'licence_trial_error_fqdn' => 'The FQDN must be a public host name, such as teampass.example.com. Values like "localhost" or an IP address cannot identify a licence. A trial is granted once per FQDN, forever, so correct it in the Browser Extension tab before requesting one.',
+    'licence_trial_error_fqdn_missing' => 'The FQDN of this instance is not set. Set it in the Browser Extension tab before requesting a trial.',
     'licence_trial_error_token' => 'The extension key is missing or malformed. Generate it in the Browser Extension tab first: it becomes the secret of the licence.',
     'licence_trial_error_email' => 'Please provide a valid e-mail address.',
     'licence_trial_pending_title' => 'Waiting for your confirmation',

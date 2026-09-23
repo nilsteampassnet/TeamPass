@@ -3476,6 +3476,7 @@ return array(
     'licence_trial_confirm_warning' => 'Un essai est accordé une fois par instance et par produit, définitivement. Vérifiez le FQDN avant de confirmer : il ne pourra pas être changé ensuite.',
     'licence_trial_identity_unusable' => 'L’essai ne peut pas encore être demandé',
     'licence_trial_error_fqdn' => 'Le FQDN doit être un nom d’hôte public, par exemple teampass.exemple.com. Une valeur comme « localhost » ou une adresse IP ne peut pas identifier une licence. Un essai est accordé une fois par FQDN, définitivement : corrigez-le dans l’onglet Extension pour navigateurs avant de le demander.',
+    'licence_trial_error_fqdn_missing' => 'Le FQDN de cette instance n’est pas encore défini. Définissez-le dans l’onglet Extension pour navigateurs avant de demander l’essai.',
     'licence_trial_error_token' => 'La clé de l’extension est absente ou mal formée. Générez-la d’abord dans l’onglet Extension pour navigateurs : elle devient le secret de la licence.',
     'licence_trial_error_email' => 'Veuillez indiquer une adresse e-mail valide.',
     'licence_trial_pending_title' => 'En attente de votre confirmation',

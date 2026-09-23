@@ -166,6 +166,22 @@ If you cannot resolve the issue, open a ticket on [GitHub Issues](https://github
 
 ---
 
+## "TeamPass cannot read its configuration" after copying new code
+
+### Symptom
+
+After the new code was copied over an existing installation, TeamPass shows *TeamPass cannot read its configuration*. Releases that predate this message redirect the root URL to `install/install.php` instead (only the logo is displayed), and `install/upgrade.php` answers HTTP 500.
+
+### Cause
+
+The web server can no longer enter `app/config/`. The typical trigger is `rsync -a` run as root without `--no-owner --no-group`: every directory shipped in the archive (`app/config/`, `storage/`, `secrets/`, `app/includes/libraries/csrfp/libs/`…) now belongs to `root`, and their `0750` mode shuts the web server out. Files absent from the archive, such as `settings.php`, keep their owner — that is the tell-tale sign.
+
+### Fix
+
+**Do not run the installer**: it would generate a new encryption key and make every existing secret unreadable. Give the directories back to the web server user with the [Quick-setup commands](../install/file-permissions.md#quick-setup-commands), check with `sudo -u www-data test -r app/config/settings.php && echo OK`, then open `install/upgrade.php`. Use `rsync -av --no-perms --no-owner --no-group` for the next upgrades (see [Upgrade](../install/upgrade.md#option-a--release-archive-recommended)).
+
+---
+
 ## OAuth2 / Azure Entra users cannot log in on second attempt
 
 ### Symptom
