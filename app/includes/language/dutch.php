@@ -1436,67 +1436,7 @@ return array(
     'bck_scheduled_email_report_help' => 'Send a report email to administrators after each scheduled backup. If an externalized backup is queued after it, a single consolidated report is sent after both steps.',
     'bck_scheduled_email_report_only_failures' => 'Send report only when backup fails',
     'email_subject_scheduled_backup_report' => 'Scheduled backup report: #tp_status#',
-    'email_body_scheduled_backup_report' => '<table width="100%" border="0" cellpadding="10" cellspacing="0">
-<tr bgcolor="#203f7d">
-<td colspan="4">
-<font color="#ffffff"><b>TeamPass-back-uprapport</b></font>
-</td>
-</tr>
-
-<tr bgcolor="#e8edf5">
-<td width="18%"><b>RESULTAAT</b></td>
-<td width="32%">
-<font color="#203f7d"><b>#tp_status#</b></font>
-</td>
-<td width="18%"><b>Datum</b></td>
-<td width="32%">#tp_datetime#</td>
-</tr>
-
-<tr>
-<td><b>Grootte</b></td>
-<td>#tp_size#</td>
-<td><b>Bewaartermijn</b></td>
-<td>#tp_retention_days# dag(en)</td>
-</tr>
-</table>
-
-<br>
-
-<table width="100%" border="0" cellpadding="7" cellspacing="0">
-<tr bgcolor="#d9d9d9">
-<td colspan="2"><b>Aanvullende informatie — geplande back-up</b></td>
-</tr>
-
-<tr>
-<td width="22%"><b>Map</b></td>
-<td>#tp_output_dir#</td>
-</tr>
-
-<tr bgcolor="#eeeeee">
-<td><b>Bestand</b></td>
-<td>#tp_file#</td>
-</tr>
-
-<tr>
-<td><b>Laatste opschoning</b></td>
-<td>#tp_purge_deleted# bestand(en)</td>
-</tr>
-
-<tr bgcolor="#eeeeee">
-<td><b>Diagnose</b></td>
-<td>#tp_message#</td>
-</tr>
-</table>
-
-#tp_externalized_report#
-
-<br>
-
-<table width="100%" border="0" cellpadding="7" cellspacing="0">
-<tr bgcolor="#eeeeee">
-<td>Deze melding is automatisch gegenereerd door TeamPass.</td>
-</tr>
-</table>',
+    'email_body_scheduled_backup_report' => '<table width="100%" border="0" cellpadding="10" cellspacing="0"><tr bgcolor="#203f7d"><td colspan="4"><font color="#ffffff"><b>Back-uprapport</b></font></td></tr><tr bgcolor="#e8edf5"><td width="18%"><b>RESULTAAT</b></td><td width="32%"><font color="#203f7d"><b>#tp_status#</b></font></td><td width="18%"><b>Datum</b></td><td width="32%">#tp_datetime#</td></tr><tr><td><b>Grootte</b></td><td>#tp_size#</td><td><b>Bewaartermijn</b></td><td>#tp_retention_days# dag(en)</td></tr></table><br><table width="100%" border="0" cellpadding="7" cellspacing="0"><tr bgcolor="#d9d9d9"><td colspan="2"><b>Aanvullende informatie — geplande back-up</b></td></tr><tr><td width="22%"><b>Map</b></td><td>#tp_output_dir#</td></tr><tr bgcolor="#eeeeee"><td><b>Bestand</b></td><td>#tp_file#</td></tr><tr><td><b>Laatste opschoning</b></td><td>#tp_purge_deleted# bestand(en)</td></tr><tr bgcolor="#eeeeee"><td><b>Diagnose</b></td><td>#tp_message#</td></tr></table>#tp_externalized_report#<br><table width="100%" border="0" cellpadding="7" cellspacing="0"><tr bgcolor="#eeeeee"><td>Deze melding is automatisch gegenereerd door TeamPass.</td></tr></table>',
     'bck_col_teampass_version' => 'TeamPass version',
     'bck_version_unknown' => 'Unknown',
     'bck_restore_incompatible_version_title' => 'Incompatible backup version',
@@ -2130,61 +2070,7 @@ return array(
     'delete_current_avatar_confirm' => 'Remove your current profile image and return to the default avatar?',
     'avatar_deleted' => 'Avatar removed',
     'avatar_delete_failed' => 'Avatar removal failed.',
-    'email_body_scheduled_backup_externalized_report' => '<br>
-
-<table width="100%" border="0" cellpadding="10" cellspacing="0">
-<tr bgcolor="#203f7d">
-<td colspan="4">
-<font color="#ffffff"><b>Externe opslag van de back-up</b></font>
-</td>
-</tr>
-
-<tr bgcolor="#e8edf5">
-<td width="18%"><b>RESULTAAT</b></td>
-<td width="32%">
-<font color="#203f7d"><b>#tp_externalized_status#</b></font>
-</td>
-<td width="18%"><b>Bestemming</b></td>
-<td width="32%">#tp_externalized_destination#</td>
-</tr>
-
-<tr>
-<td><b>Grootte</b></td>
-<td>#tp_externalized_size#</td>
-<td><b>Bewaartermijn</b></td>
-<td>#tp_externalized_retention_days# dag(en) / #tp_externalized_retention_count# bestand(en)</td>
-</tr>
-</table>
-
-<br>
-
-<table width="100%" border="0" cellpadding="7" cellspacing="0">
-<tr bgcolor="#d9d9d9">
-<td colspan="4"><b>Aanvullende informatie — externe opslag</b></td>
-</tr>
-
-<tr>
-<td width="18%"><b>Doel</b></td>
-<td width="32%">#tp_externalized_target#</td>
-<td width="18%"><b>Poging</b></td>
-<td width="32%">#tp_externalized_retry#</td>
-</tr>
-
-<tr bgcolor="#eeeeee">
-<td><b>Opschoning</b></td>
-<td colspan="3">#tp_externalized_purge_deleted# bestand(en)</td>
-</tr>
-
-<tr>
-<td><b>Bestand</b></td>
-<td colspan="3">#tp_externalized_file#</td>
-</tr>
-
-<tr bgcolor="#eeeeee">
-<td><b>Diagnose</b></td>
-<td colspan="3">#tp_externalized_message#</td>
-</tr>
-</table>',
+    'email_body_scheduled_backup_externalized_report' => '<br><table width="100%" border="0" cellpadding="10" cellspacing="0"><tr bgcolor="#203f7d"><td colspan="4"><font color="#ffffff"><b>Externe opslag van de back-up</b></font></td></tr><tr bgcolor="#e8edf5"><td width="18%"><b>RESULTAAT</b></td><td width="32%"><font color="#203f7d"><b>#tp_externalized_status#</b></font></td><td width="18%"><b>Bestemming</b></td><td width="32%">#tp_externalized_destination#</td></tr><tr><td><b>Grootte</b></td><td>#tp_externalized_size#</td><td><b>Bewaartermijn</b></td><td>#tp_externalized_retention_days# dag(en) / #tp_externalized_retention_count# bestand(en)</td></tr></table><br><table width="100%" border="0" cellpadding="7" cellspacing="0"><tr bgcolor="#d9d9d9"><td colspan="4"><b>Aanvullende informatie — externe opslag</b></td></tr><tr><td width="18%"><b>Doel</b></td><td width="32%">#tp_externalized_target#</td><td width="18%"><b>Poging</b></td><td width="32%">#tp_externalized_retry#</td></tr><tr bgcolor="#eeeeee"><td><b>Opschoning</b></td><td colspan="3">#tp_externalized_purge_deleted# bestand(en)</td></tr><tr><td><b>Bestand</b></td><td colspan="3">#tp_externalized_file#</td></tr><tr bgcolor="#eeeeee"><td><b>Diagnose</b></td><td colspan="3">#tp_externalized_message#</td></tr></table>',
     'bck_include_documents' => 'Include documents',
     'bck_include_documents_help' => 'Adds item attachments, KB attachments, and avatars to the .tpbackup package.',
     'bck_backup_contains_documents' => 'This backup contains documents',

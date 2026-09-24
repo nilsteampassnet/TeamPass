@@ -1436,67 +1436,7 @@ return array(
     'bck_scheduled_email_report_help' => 'Wyślij e-mail z raportem do administratorów po każdym zaplanowanym tworzeniu kopii zapasowej.',
     'bck_scheduled_email_report_only_failures' => 'Wyślij raport tylko wtedy, gdy kopia zapasowa zawiedzie',
     'email_subject_scheduled_backup_report' => 'Zaplanowany raport backupu: #tp_status#',
-    'email_body_scheduled_backup_report' => '<table width="100%" border="0" cellpadding="10" cellspacing="0">
-<tr bgcolor="#203f7d">
-<td colspan="4">
-<font color="#ffffff"><b>Raport kopii zapasowej TeamPass</b></font>
-</td>
-</tr>
-
-<tr bgcolor="#e8edf5">
-<td width="18%"><b>WYNIK</b></td>
-<td width="32%">
-<font color="#203f7d"><b>#tp_status#</b></font>
-</td>
-<td width="18%"><b>Data</b></td>
-<td width="32%">#tp_datetime#</td>
-</tr>
-
-<tr>
-<td><b>Rozmiar</b></td>
-<td>#tp_size#</td>
-<td><b>Retencja</b></td>
-<td>#tp_retention_days# dzień/dni</td>
-</tr>
-</table>
-
-<br>
-
-<table width="100%" border="0" cellpadding="7" cellspacing="0">
-<tr bgcolor="#d9d9d9">
-<td colspan="2"><b>Informacje dodatkowe — zaplanowana kopia zapasowa</b></td>
-</tr>
-
-<tr>
-<td width="22%"><b>Katalog</b></td>
-<td>#tp_output_dir#</td>
-</tr>
-
-<tr bgcolor="#eeeeee">
-<td><b>Plik</b></td>
-<td>#tp_file#</td>
-</tr>
-
-<tr>
-<td><b>Ostatnie czyszczenie</b></td>
-<td>#tp_purge_deleted# plik(i/ów)</td>
-</tr>
-
-<tr bgcolor="#eeeeee">
-<td><b>Diagnostyka</b></td>
-<td>#tp_message#</td>
-</tr>
-</table>
-
-#tp_externalized_report#
-
-<br>
-
-<table width="100%" border="0" cellpadding="7" cellspacing="0">
-<tr bgcolor="#eeeeee">
-<td>Powiadomienie wygenerowane automatycznie przez TeamPass.</td>
-</tr>
-</table>',
+    'email_body_scheduled_backup_report' => '<table width="100%" border="0" cellpadding="10" cellspacing="0"><tr bgcolor="#203f7d"><td colspan="4"><font color="#ffffff"><b>Raport kopii zapasowej</b></font></td></tr><tr bgcolor="#e8edf5"><td width="18%"><b>WYNIK</b></td><td width="32%"><font color="#203f7d"><b>#tp_status#</b></font></td><td width="18%"><b>Data</b></td><td width="32%">#tp_datetime#</td></tr><tr><td><b>Rozmiar</b></td><td>#tp_size#</td><td><b>Retencja</b></td><td>#tp_retention_days# dzień/dni</td></tr></table><br><table width="100%" border="0" cellpadding="7" cellspacing="0"><tr bgcolor="#d9d9d9"><td colspan="2"><b>Informacje dodatkowe — zaplanowana kopia zapasowa</b></td></tr><tr><td width="22%"><b>Katalog</b></td><td>#tp_output_dir#</td></tr><tr bgcolor="#eeeeee"><td><b>Plik</b></td><td>#tp_file#</td></tr><tr><td><b>Ostatnie czyszczenie</b></td><td>#tp_purge_deleted# plik(i/ów)</td></tr><tr bgcolor="#eeeeee"><td><b>Diagnostyka</b></td><td>#tp_message#</td></tr></table>#tp_externalized_report#<br><table width="100%" border="0" cellpadding="7" cellspacing="0"><tr bgcolor="#eeeeee"><td>Powiadomienie wygenerowane automatycznie przez TeamPass.</td></tr></table>',
     'bck_col_teampass_version' => 'Wersja TeamPass',
     'bck_version_unknown' => 'Nieznany',
     'bck_restore_incompatible_version_title' => 'Niekompatybilna wersja kopii zapasowej',
@@ -2130,61 +2070,7 @@ return array(
     'delete_current_avatar_confirm' => 'Usunąć aktualne zdjęcie profilowe i powrócić do domyślnego awatara?',
     'avatar_deleted' => 'Awatar usunięty',
     'avatar_delete_failed' => 'Niepowodzenie usunięcia awatara',
-    'email_body_scheduled_backup_externalized_report' => '<br>
-
-<table width="100%" border="0" cellpadding="10" cellspacing="0">
-<tr bgcolor="#203f7d">
-<td colspan="4">
-<font color="#ffffff"><b>Przeniesienie kopii zapasowej do lokalizacji zewnętrznej</b></font>
-</td>
-</tr>
-
-<tr bgcolor="#e8edf5">
-<td width="18%"><b>WYNIK</b></td>
-<td width="32%">
-<font color="#203f7d"><b>#tp_externalized_status#</b></font>
-</td>
-<td width="18%"><b>Lokalizacja docelowa</b></td>
-<td width="32%">#tp_externalized_destination#</td>
-</tr>
-
-<tr>
-<td><b>Rozmiar</b></td>
-<td>#tp_externalized_size#</td>
-<td><b>Retencja</b></td>
-<td>#tp_externalized_retention_days# dzień/dni / #tp_externalized_retention_count# plik(i/ów)</td>
-</tr>
-</table>
-
-<br>
-
-<table width="100%" border="0" cellpadding="7" cellspacing="0">
-<tr bgcolor="#d9d9d9">
-<td colspan="4"><b>Informacje dodatkowe — przeniesienie do lokalizacji zewnętrznej</b></td>
-</tr>
-
-<tr>
-<td width="18%"><b>Cel</b></td>
-<td width="32%">#tp_externalized_target#</td>
-<td width="18%"><b>Próba</b></td>
-<td width="32%">#tp_externalized_retry#</td>
-</tr>
-
-<tr bgcolor="#eeeeee">
-<td><b>Czyszczenie</b></td>
-<td colspan="3">#tp_externalized_purge_deleted# plik(i/ów)</td>
-</tr>
-
-<tr>
-<td><b>Plik</b></td>
-<td colspan="3">#tp_externalized_file#</td>
-</tr>
-
-<tr bgcolor="#eeeeee">
-<td><b>Diagnostyka</b></td>
-<td colspan="3">#tp_externalized_message#</td>
-</tr>
-</table>',
+    'email_body_scheduled_backup_externalized_report' => '<br><table width="100%" border="0" cellpadding="10" cellspacing="0"><tr bgcolor="#203f7d"><td colspan="4"><font color="#ffffff"><b>Przeniesienie kopii zapasowej do lokalizacji zewnętrznej</b></font></td></tr><tr bgcolor="#e8edf5"><td width="18%"><b>WYNIK</b></td><td width="32%"><font color="#203f7d"><b>#tp_externalized_status#</b></font></td><td width="18%"><b>Lokalizacja docelowa</b></td><td width="32%">#tp_externalized_destination#</td></tr><tr><td><b>Rozmiar</b></td><td>#tp_externalized_size#</td><td><b>Retencja</b></td><td>#tp_externalized_retention_days# dzień/dni / #tp_externalized_retention_count# plik(i/ów)</td></tr></table><br><table width="100%" border="0" cellpadding="7" cellspacing="0"><tr bgcolor="#d9d9d9"><td colspan="4"><b>Informacje dodatkowe — przeniesienie do lokalizacji zewnętrznej</b></td></tr><tr><td width="18%"><b>Cel</b></td><td width="32%">#tp_externalized_target#</td><td width="18%"><b>Próba</b></td><td width="32%">#tp_externalized_retry#</td></tr><tr bgcolor="#eeeeee"><td><b>Czyszczenie</b></td><td colspan="3">#tp_externalized_purge_deleted# plik(i/ów)</td></tr><tr><td><b>Plik</b></td><td colspan="3">#tp_externalized_file#</td></tr><tr bgcolor="#eeeeee"><td><b>Diagnostyka</b></td><td colspan="3">#tp_externalized_message#</td></tr></table>',
     'bck_include_documents' => 'Dołącz dokumenty',
     'bck_include_documents_help' => 'Dodaje załączniki elementów, załączniki bazy wiedzy oraz awatary do pakietu .tpbackup.',
     'bck_backup_contains_documents' => 'Kopia zapasowa zawiera dokumenty',

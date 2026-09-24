@@ -1439,67 +1439,7 @@ return array(
     'bck_scheduled_email_report_help' => 'Envoyer un email de rapport aux administrateurs après chaque sauvegarde planifiée. Si une sauvegarde externalisée est mise en file ensuite, un seul rapport consolidé est envoyé après les deux étapes.',
     'bck_scheduled_email_report_only_failures' => 'Envoyer le rapport uniquement en cas d’échec',
     'email_subject_scheduled_backup_report' => 'Rapport de sauvegarde planifiée : #tp_status#',
-    'email_body_scheduled_backup_report' => '<table width="100%" border="0" cellpadding="10" cellspacing="0">
-<tr bgcolor="#203f7d">
-<td colspan="4">
-<font color="#ffffff"><b>Rapport de sauvegarde TeamPass</b></font>
-</td>
-</tr>
-
-<tr bgcolor="#e8edf5">
-<td width="18%"><b>RÉSULTAT</b></td>
-<td width="32%">
-<font color="#203f7d"><b>#tp_status#</b></font>
-</td>
-<td width="18%"><b>Date</b></td>
-<td width="32%">#tp_datetime#</td>
-</tr>
-
-<tr>
-<td><b>Taille</b></td>
-<td>#tp_size#</td>
-<td><b>Rétention</b></td>
-<td>#tp_retention_days# jour(s)</td>
-</tr>
-</table>
-
-<br>
-
-<table width="100%" border="0" cellpadding="7" cellspacing="0">
-<tr bgcolor="#d9d9d9">
-<td colspan="2"><b>Informations complémentaires — sauvegarde planifiée</b></td>
-</tr>
-
-<tr>
-<td width="22%"><b>Répertoire</b></td>
-<td>#tp_output_dir#</td>
-</tr>
-
-<tr bgcolor="#eeeeee">
-<td><b>Fichier</b></td>
-<td>#tp_file#</td>
-</tr>
-
-<tr>
-<td><b>Dernière purge</b></td>
-<td>#tp_purge_deleted# fichier(s)</td>
-</tr>
-
-<tr bgcolor="#eeeeee">
-<td><b>Diagnostic</b></td>
-<td>#tp_message#</td>
-</tr>
-</table>
-
-#tp_externalized_report#
-
-<br>
-
-<table width="100%" border="0" cellpadding="7" cellspacing="0">
-<tr bgcolor="#eeeeee">
-<td>Notification générée automatiquement par TeamPass.</td>
-</tr>
-</table>',
+    'email_body_scheduled_backup_report' => '<table width="100%" border="0" cellpadding="10" cellspacing="0"><tr bgcolor="#203f7d"><td colspan="4"><font color="#ffffff"><b>Rapport de sauvegarde</b></font></td></tr><tr bgcolor="#e8edf5"><td width="18%"><b>RÉSULTAT</b></td><td width="32%"><font color="#203f7d"><b>#tp_status#</b></font></td><td width="18%"><b>Date</b></td><td width="32%">#tp_datetime#</td></tr><tr><td><b>Taille</b></td><td>#tp_size#</td><td><b>Rétention</b></td><td>#tp_retention_days# jour(s)</td></tr></table><br><table width="100%" border="0" cellpadding="7" cellspacing="0"><tr bgcolor="#d9d9d9"><td colspan="2"><b>Informations complémentaires — sauvegarde planifiée</b></td></tr><tr><td width="22%"><b>Répertoire</b></td><td>#tp_output_dir#</td></tr><tr bgcolor="#eeeeee"><td><b>Fichier</b></td><td>#tp_file#</td></tr><tr><td><b>Dernière purge</b></td><td>#tp_purge_deleted# fichier(s)</td></tr><tr bgcolor="#eeeeee"><td><b>Diagnostic</b></td><td>#tp_message#</td></tr></table>#tp_externalized_report#<br><table width="100%" border="0" cellpadding="7" cellspacing="0"><tr bgcolor="#eeeeee"><td>Notification générée automatiquement par TeamPass.</td></tr></table>',
     'bck_col_teampass_version' => 'Version TeamPass',
     'bck_version_unknown' => 'Inconnue',
     'bck_restore_incompatible_version_title' => 'Version de backup incompatible',
@@ -2133,61 +2073,7 @@ return array(
     'delete_current_avatar_confirm' => 'Supprimer votre image de profil actuelle et revenir à l’avatar par défaut ?',
     'avatar_deleted' => 'Avatar supprimé',
     'avatar_delete_failed' => 'La suppression de l’avatar a échoué.',
-    'email_body_scheduled_backup_externalized_report' => '<br>
-
-<table width="100%" border="0" cellpadding="10" cellspacing="0">
-<tr bgcolor="#203f7d">
-<td colspan="4">
-<font color="#ffffff"><b>Externalisation de la sauvegarde</b></font>
-</td>
-</tr>
-
-<tr bgcolor="#e8edf5">
-<td width="18%"><b>RÉSULTAT</b></td>
-<td width="32%">
-<font color="#203f7d"><b>#tp_externalized_status#</b></font>
-</td>
-<td width="18%"><b>Destination</b></td>
-<td width="32%">#tp_externalized_destination#</td>
-</tr>
-
-<tr>
-<td><b>Taille</b></td>
-<td>#tp_externalized_size#</td>
-<td><b>Rétention</b></td>
-<td>#tp_externalized_retention_days# jour(s) / #tp_externalized_retention_count# fichier(s)</td>
-</tr>
-</table>
-
-<br>
-
-<table width="100%" border="0" cellpadding="7" cellspacing="0">
-<tr bgcolor="#d9d9d9">
-<td colspan="4"><b>Informations complémentaires — externalisation</b></td>
-</tr>
-
-<tr>
-<td width="18%"><b>Cible</b></td>
-<td width="32%">#tp_externalized_target#</td>
-<td width="18%"><b>Tentative</b></td>
-<td width="32%">#tp_externalized_retry#</td>
-</tr>
-
-<tr bgcolor="#eeeeee">
-<td><b>Purge</b></td>
-<td colspan="3">#tp_externalized_purge_deleted# fichier(s)</td>
-</tr>
-
-<tr>
-<td><b>Fichier</b></td>
-<td colspan="3">#tp_externalized_file#</td>
-</tr>
-
-<tr bgcolor="#eeeeee">
-<td><b>Diagnostic</b></td>
-<td colspan="3">#tp_externalized_message#</td>
-</tr>
-</table>',
+    'email_body_scheduled_backup_externalized_report' => '<br><table width="100%" border="0" cellpadding="10" cellspacing="0"><tr bgcolor="#203f7d"><td colspan="4"><font color="#ffffff"><b>Externalisation de la sauvegarde</b></font></td></tr><tr bgcolor="#e8edf5"><td width="18%"><b>RÉSULTAT</b></td><td width="32%"><font color="#203f7d"><b>#tp_externalized_status#</b></font></td><td width="18%"><b>Destination</b></td><td width="32%">#tp_externalized_destination#</td></tr><tr><td><b>Taille</b></td><td>#tp_externalized_size#</td><td><b>Rétention</b></td><td>#tp_externalized_retention_days# jour(s) / #tp_externalized_retention_count# fichier(s)</td></tr></table><br><table width="100%" border="0" cellpadding="7" cellspacing="0"><tr bgcolor="#d9d9d9"><td colspan="4"><b>Informations complémentaires — externalisation</b></td></tr><tr><td width="18%"><b>Cible</b></td><td width="32%">#tp_externalized_target#</td><td width="18%"><b>Tentative</b></td><td width="32%">#tp_externalized_retry#</td></tr><tr bgcolor="#eeeeee"><td><b>Purge</b></td><td colspan="3">#tp_externalized_purge_deleted# fichier(s)</td></tr><tr><td><b>Fichier</b></td><td colspan="3">#tp_externalized_file#</td></tr><tr bgcolor="#eeeeee"><td><b>Diagnostic</b></td><td colspan="3">#tp_externalized_message#</td></tr></table>',
     'bck_include_documents' => 'Inclure les documents',
     'bck_include_documents_help' => 'Ajoute les pièces jointes d’items, les pièces jointes KB et les avatars au package .tpbackup.',
     'bck_backup_contains_documents' => 'Cette sauvegarde contient les documents',

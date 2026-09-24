@@ -1436,67 +1436,7 @@ return array(
     'bck_scheduled_email_report_help' => 'Send a report email to administrators after each scheduled backup. If an externalized backup is queued after it, a single consolidated report is sent after both steps.',
     'bck_scheduled_email_report_only_failures' => 'Send report only when backup fails',
     'email_subject_scheduled_backup_report' => 'Scheduled backup report: #tp_status#',
-    'email_body_scheduled_backup_report' => '<table width="100%" border="0" cellpadding="10" cellspacing="0">
-<tr bgcolor="#203f7d">
-<td colspan="4">
-<font color="#ffffff"><b>TeamPass biztonsági mentési jelentés</b></font>
-</td>
-</tr>
-
-<tr bgcolor="#e8edf5">
-<td width="18%"><b>EREDMÉNY</b></td>
-<td width="32%">
-<font color="#203f7d"><b>#tp_status#</b></font>
-</td>
-<td width="18%"><b>Dátum</b></td>
-<td width="32%">#tp_datetime#</td>
-</tr>
-
-<tr>
-<td><b>Méret</b></td>
-<td>#tp_size#</td>
-<td><b>Megőrzés</b></td>
-<td>#tp_retention_days# nap</td>
-</tr>
-</table>
-
-<br>
-
-<table width="100%" border="0" cellpadding="7" cellspacing="0">
-<tr bgcolor="#d9d9d9">
-<td colspan="2"><b>További információk — ütemezett biztonsági mentés</b></td>
-</tr>
-
-<tr>
-<td width="22%"><b>Könyvtár</b></td>
-<td>#tp_output_dir#</td>
-</tr>
-
-<tr bgcolor="#eeeeee">
-<td><b>Fájl</b></td>
-<td>#tp_file#</td>
-</tr>
-
-<tr>
-<td><b>Legutóbbi tisztítás</b></td>
-<td>#tp_purge_deleted# fájl</td>
-</tr>
-
-<tr bgcolor="#eeeeee">
-<td><b>Diagnosztika</b></td>
-<td>#tp_message#</td>
-</tr>
-</table>
-
-#tp_externalized_report#
-
-<br>
-
-<table width="100%" border="0" cellpadding="7" cellspacing="0">
-<tr bgcolor="#eeeeee">
-<td>Az értesítést a TeamPass automatikusan hozta létre.</td>
-</tr>
-</table>',
+    'email_body_scheduled_backup_report' => '<table width="100%" border="0" cellpadding="10" cellspacing="0"><tr bgcolor="#203f7d"><td colspan="4"><font color="#ffffff"><b>Biztonsági mentési jelentés</b></font></td></tr><tr bgcolor="#e8edf5"><td width="18%"><b>EREDMÉNY</b></td><td width="32%"><font color="#203f7d"><b>#tp_status#</b></font></td><td width="18%"><b>Dátum</b></td><td width="32%">#tp_datetime#</td></tr><tr><td><b>Méret</b></td><td>#tp_size#</td><td><b>Megőrzés</b></td><td>#tp_retention_days# nap</td></tr></table><br><table width="100%" border="0" cellpadding="7" cellspacing="0"><tr bgcolor="#d9d9d9"><td colspan="2"><b>További információk — ütemezett biztonsági mentés</b></td></tr><tr><td width="22%"><b>Könyvtár</b></td><td>#tp_output_dir#</td></tr><tr bgcolor="#eeeeee"><td><b>Fájl</b></td><td>#tp_file#</td></tr><tr><td><b>Legutóbbi tisztítás</b></td><td>#tp_purge_deleted# fájl</td></tr><tr bgcolor="#eeeeee"><td><b>Diagnosztika</b></td><td>#tp_message#</td></tr></table>#tp_externalized_report#<br><table width="100%" border="0" cellpadding="7" cellspacing="0"><tr bgcolor="#eeeeee"><td>Az értesítést a TeamPass automatikusan hozta létre.</td></tr></table>',
     'bck_col_teampass_version' => 'TeamPass version',
     'bck_version_unknown' => 'Unknown',
     'bck_restore_incompatible_version_title' => 'Incompatible backup version',
@@ -2130,61 +2070,7 @@ return array(
     'delete_current_avatar_confirm' => 'Remove your current profile image and return to the default avatar?',
     'avatar_deleted' => 'Avatar removed',
     'avatar_delete_failed' => 'Avatar removal failed.',
-    'email_body_scheduled_backup_externalized_report' => '<br>
-
-<table width="100%" border="0" cellpadding="10" cellspacing="0">
-<tr bgcolor="#203f7d">
-<td colspan="4">
-<font color="#ffffff"><b>Biztonsági mentés külső tárolása</b></font>
-</td>
-</tr>
-
-<tr bgcolor="#e8edf5">
-<td width="18%"><b>EREDMÉNY</b></td>
-<td width="32%">
-<font color="#203f7d"><b>#tp_externalized_status#</b></font>
-</td>
-<td width="18%"><b>Célhely</b></td>
-<td width="32%">#tp_externalized_destination#</td>
-</tr>
-
-<tr>
-<td><b>Méret</b></td>
-<td>#tp_externalized_size#</td>
-<td><b>Megőrzés</b></td>
-<td>#tp_externalized_retention_days# nap / #tp_externalized_retention_count# fájl</td>
-</tr>
-</table>
-
-<br>
-
-<table width="100%" border="0" cellpadding="7" cellspacing="0">
-<tr bgcolor="#d9d9d9">
-<td colspan="4"><b>További információk — külső tárolás</b></td>
-</tr>
-
-<tr>
-<td width="18%"><b>Cél</b></td>
-<td width="32%">#tp_externalized_target#</td>
-<td width="18%"><b>Próbálkozás</b></td>
-<td width="32%">#tp_externalized_retry#</td>
-</tr>
-
-<tr bgcolor="#eeeeee">
-<td><b>Tisztítás</b></td>
-<td colspan="3">#tp_externalized_purge_deleted# fájl</td>
-</tr>
-
-<tr>
-<td><b>Fájl</b></td>
-<td colspan="3">#tp_externalized_file#</td>
-</tr>
-
-<tr bgcolor="#eeeeee">
-<td><b>Diagnosztika</b></td>
-<td colspan="3">#tp_externalized_message#</td>
-</tr>
-</table>',
+    'email_body_scheduled_backup_externalized_report' => '<br><table width="100%" border="0" cellpadding="10" cellspacing="0"><tr bgcolor="#203f7d"><td colspan="4"><font color="#ffffff"><b>Biztonsági mentés külső tárolása</b></font></td></tr><tr bgcolor="#e8edf5"><td width="18%"><b>EREDMÉNY</b></td><td width="32%"><font color="#203f7d"><b>#tp_externalized_status#</b></font></td><td width="18%"><b>Célhely</b></td><td width="32%">#tp_externalized_destination#</td></tr><tr><td><b>Méret</b></td><td>#tp_externalized_size#</td><td><b>Megőrzés</b></td><td>#tp_externalized_retention_days# nap / #tp_externalized_retention_count# fájl</td></tr></table><br><table width="100%" border="0" cellpadding="7" cellspacing="0"><tr bgcolor="#d9d9d9"><td colspan="4"><b>További információk — külső tárolás</b></td></tr><tr><td width="18%"><b>Cél</b></td><td width="32%">#tp_externalized_target#</td><td width="18%"><b>Próbálkozás</b></td><td width="32%">#tp_externalized_retry#</td></tr><tr bgcolor="#eeeeee"><td><b>Tisztítás</b></td><td colspan="3">#tp_externalized_purge_deleted# fájl</td></tr><tr><td><b>Fájl</b></td><td colspan="3">#tp_externalized_file#</td></tr><tr bgcolor="#eeeeee"><td><b>Diagnosztika</b></td><td colspan="3">#tp_externalized_message#</td></tr></table>',
     'bck_include_documents' => 'Include documents',
     'bck_include_documents_help' => 'Adds item attachments, KB attachments, and avatars to the .tpbackup package.',
     'bck_backup_contains_documents' => 'This backup contains documents',
