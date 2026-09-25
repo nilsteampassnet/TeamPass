@@ -7750,15 +7750,25 @@ function deleteUserObjetsKeys(int $userId, array $SETTINGS = []): false
         $userId
     );
     // Remove all item sharekeys fields except personal items
+    // object_id references categories_items.id, so we join through that table to get item IDs
     DB::query(
         'DELETE FROM ' . prefixTable('sharekeys_fields') . '
-        WHERE user_id = %i AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)',
+        WHERE user_id = %i AND object_id NOT IN (
+            SELECT c.id FROM ' . prefixTable('categories_items') . ' AS c
+            INNER JOIN ' . prefixTable('items') . ' AS i ON c.item_id = i.id
+            WHERE i.perso = 1
+        )',
         $userId
     );
     // Remove all item sharekeys logs except personal items
+    // object_id references log_items.increment_id, so we join through that table to get item IDs
     DB::query(
         'DELETE FROM ' . prefixTable('sharekeys_logs') . '
-        WHERE user_id = %i AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)',
+        WHERE user_id = %i AND object_id NOT IN (
+            SELECT l.increment_id FROM ' . prefixTable('log_items') . ' AS l
+            INNER JOIN ' . prefixTable('items') . ' AS i ON l.id_item = i.id
+            WHERE i.perso = 1
+        )',
         $userId
     );
     // Remove all item sharekeys suggestions except personal items

@@ -898,12 +898,13 @@ function keyHandler(string $post_type, array $dataReceived, array $SETTINGS): st
             );
 
         case 'user_only_personal_items_encryption': //action_key
+            // IMPORTANT: Passwords should NOT be sanitized (fix 3.1.5.10)
             // The target is always the resolved user, never the "userId" sent by the browser:
             // the guard above only inspects "user_id" (GHSA-6rq2-hf9c-cxh2).
-            return setUserOnlyPersonalItemsEncryption(                
-                (string) filter_var($dataReceived['userPreviousPwd'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                (string) filter_var($dataReceived['userCurrentPwd'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                (bool) filter_var($dataReceived['skipPasswordChange'], FILTER_VALIDATE_BOOLEAN),
+            return setUserOnlyPersonalItemsEncryption(
+                (string) ($dataReceived['userPreviousPwd'] ?? ''),
+                (string) ($dataReceived['userCurrentPwd'] ?? ''),
+                (bool) filter_var($dataReceived['skipPasswordChange'] ?? false, FILTER_VALIDATE_BOOLEAN),
                 (int) filter_var($filtered_user_id, FILTER_SANITIZE_NUMBER_INT),
             );
 
@@ -3882,58 +3883,25 @@ function changeUserLDAPAuthenticationPassword(
             'encode'
         );
     } elseif ($userData['special'] === 'encrypt_personal_items') {
-                // We need to find a valid previous private key
-                $validPreviousKey = findValidPreviousPrivateKey(
-                    $post_previous_pwd,
-                    $post_user_id
-                );
+        // We need to find a valid previous private key
+        $validPreviousKey = findValidPreviousPrivateKey(
+            $post_previous_pwd,
+            $post_user_id,
+            (string) $session->get('user-private_key')
+        );
 
-                if ($validPreviousKey['private_key'] !== null) {
-                    // Decrypt all personal items with this key
-                    // Launch the re-encryption process for personal items
-                    // Create process
-                    DB::insert(
-                        prefixTable('background_tasks'),
-                        array(
-                            'created_at' => time(),
-                            'process_type' => 'create_user_keys',
-                            'arguments' => json_encode([
-                                'new_user_id' => (int) $post_user_id,
-                                'new_user_pwd' => cryption($post_previous_pwd, '','encrypt')['string'],
-                                'new_user_private_key' => cryption($validPreviousKey['private_key'], '','encrypt')['string'],
-                                'send_email' => 0,
-                                'otp_provided_new_value' => 0,
-                                'user_self_change' => 1,
-                                'only_personal_items' => 1,
-                            ]),
-                        )
-                    );
-                    $processId = DB::insertId();
+        if ($validPreviousKey !== null) {
+            // Re-key the personal items from this previous key
+            queuePersonalItemsRecoveryTask($post_user_id, $post_current_pwd, $validPreviousKey['private_key']);
 
-                    // Create tasks
-                    createUserTasks($processId, NUMBER_ITEMS_IN_BATCH);
-
-                    // update user's new status
-                    DB::update(
-                        prefixTable('users'),
-                        [
-                            'is_ready_for_usage' => 1,
-                            'otp_provided' => 1,
-                            'ongoing_process_id' => $processId,
-                            'special' => 'none',
-                        ],
-                        'id=%i',
-                        $post_user_id
-                    );
-
-                    return prepareExchangedData(
-                        array(
-                            'error' => false,
-                            'message' => $lang->get('done'),
-                        ),
-                        'encode'
-                    );
-                }
+            return prepareExchangedData(
+                array(
+                    'error' => false,
+                    'message' => $lang->get('done'),
+                ),
+                'encode'
+            );
+        }
         return prepareExchangedData(
             [
                 'error' => true,
@@ -3952,62 +3920,121 @@ function changeUserLDAPAuthenticationPassword(
 
 /**
  * Try to find a valid previous private key by testing all previous keys
- * until one is able to decrypt the share_key of one item
+ * until one is able to decrypt the share_key of one personal item
  * @param string $previousPassword
  * @param int $userId
- * @return array|null
+ * @param string $currentPrivateKey User's current private key, in clear ('' when unknown)
+ * @return array{private_key: string}|null
  */
-function findValidPreviousPrivateKey($previousPassword, $userId) {
-    // Retrieve all user's private keys in descending order (most recent first)
+function findValidPreviousPrivateKey(string $previousPassword, int $userId, string $currentPrivateKey = ''): ?array
+{
+    // Retrieve the user's previous private keys in descending order (most recent first).
+    // The current key pair is left out: when the password did not change it opens with the
+    // same password, and it decrypts every item already re-keyed through TP_USER. It is also
+    // compared in clear below, because an LDAP password change stores the same key pair
+    // again under the new password (changeUserLDAPAuthenticationPassword()).
     $privateKeys = DB::query(
-        "SELECT 
-            id,
-            private_key,
-            created_at
-        FROM " . prefixTable('user_private_keys') . "
-        WHERE user_id = %i
-        ORDER BY created_at DESC, id DESC",
+        'SELECT private_key
+        FROM ' . prefixTable('user_private_keys') . '
+        WHERE user_id = %i AND COALESCE(is_current, 0) = 0
+        ORDER BY created_at DESC, id DESC',
         $userId
     );
-    
     if (empty($privateKeys)) {
         return null;
     }
-    
-    // Loop through all private keys
-    foreach ($privateKeys as $row) {
-        $encryptedPrivateKey = $row['private_key'];
-        
-        // Attempt to decrypt the private key with the previous password
-        $privateKey = decryptPrivateKey($previousPassword, $encryptedPrivateKey);
-        
-        // If decryption succeeded (non-empty key)
-        if ($privateKey !== '') {
-            // Select one personal item share_key to test decryption
-            $currentUserItemKey = DB::queryFirstRow(
-                'SELECT si.share_key, si.increment_id, i.perso
-                FROM ' . prefixTable('sharekeys_items') . ' AS si
-                INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = si.object_id
-                WHERE si.user_id = %i AND i.perso = 1 AND si.share_key != ""
-                ORDER BY RAND()
-                LIMIT 1',
-                $userId
-            );
 
-            if (is_countable($currentUserItemKey) && count($currentUserItemKey) > 0) {
-                // Decrypt itemkey with user key
-                // use old password to decrypt private_key
-                $itemKey = decryptUserObjectKey($currentUserItemKey['share_key'], $privateKey);
-                if (empty(base64_decode($itemKey)) === false) {                
-                    return [
-                        'private_key' => $privateKey
-                    ];
-                }
+    // Sharekeys to test the candidates on: the personal items without a TP_USER recovery
+    // sharekey come first, because the key generation could not re-key them and they are
+    // still on the previous key pair. The others are on the current one and reject every
+    // candidate, hence a few of them rather than a single random pick.
+    $testShareKeys = DB::queryFirstColumn(
+        'SELECT si.share_key
+        FROM ' . prefixTable('sharekeys_items') . ' AS si
+        INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = si.object_id
+        LEFT JOIN ' . prefixTable('sharekeys_items') . ' AS tp
+            ON (tp.object_id = si.object_id AND tp.user_id = %i AND tp.share_key != "")
+        WHERE si.user_id = %i AND i.perso = 1 AND si.share_key != ""
+        ORDER BY (tp.increment_id IS NULL) DESC, si.increment_id DESC
+        LIMIT 5',
+        TP_USER_ID,
+        $userId
+    );
+    if (empty($testShareKeys)) {
+        return null;
+    }
+
+    // Loop through the previous private keys
+    foreach ($privateKeys as $row) {
+        // Attempt to decrypt the private key with the previous password
+        $privateKey = decryptPrivateKey($previousPassword, (string) $row['private_key']);
+        if ($privateKey === ''
+            || ($currentPrivateKey !== '' && hash_equals($currentPrivateKey, $privateKey) === true)
+        ) {
+            continue;
+        }
+
+        foreach ($testShareKeys as $shareKey) {
+            $itemKey = decryptUserObjectKey((string) $shareKey, $privateKey);
+            if (empty(base64_decode($itemKey)) === false) {
+                return [
+                    'private_key' => $privateKey
+                ];
             }
         }
     }
-    
+
     return null;
+}
+
+/**
+ * Queue the recovery of the user's personal items from a previous key pair (#5392).
+ * The background task runs in "only_personal_items" mode: the user's own sharekeys are
+ * opened with the previous private key and encrypted again with the current public key.
+ *
+ * @param int    $userId             User ID
+ * @param string $currentPassword    User's current password
+ * @param string $previousPrivateKey Previous private key, in clear
+ * @return void
+ */
+function queuePersonalItemsRecoveryTask(int $userId, string $currentPassword, string $previousPrivateKey): void
+{
+    DB::insert(
+        prefixTable('background_tasks'),
+        array(
+            'created_at' => time(),
+            'process_type' => 'create_user_keys',
+            'arguments' => json_encode([
+                'new_user_id' => $userId,
+                'new_user_pwd' => cryption($currentPassword, '', 'encrypt')['string'],
+                'new_user_private_key' => cryption($previousPrivateKey, '', 'encrypt')['string'],
+                'send_email' => 0,
+                'otp_provided_new_value' => 0,
+                'user_self_change' => 1,
+                'only_personal_items' => 1,
+            ]),
+        )
+    );
+    $processId = DB::insertId();
+
+    // Create tasks
+    createUserTasks($processId, NUMBER_ITEMS_IN_BATCH);
+
+    // update user's new status
+    DB::update(
+        prefixTable('users'),
+        [
+            'is_ready_for_usage' => 1,
+            'otp_provided' => 1,
+            'ongoing_process_id' => $processId,
+            'special' => 'none',
+        ],
+        'id=%i',
+        $userId
+    );
+
+    // Trigger background handler
+    triggerBackgroundHandler();
 }
 
 /**
@@ -4139,35 +4166,52 @@ function setUserOnlyPersonalItemsEncryption(string $userPreviousPwd, string $use
     $lang = new Language($session->get('user-language') ?? 'english');
 
     // In case where user doesn't know the previous password
-    // Then reset the status and remove sharekeys
+    // Then reset the status and remove sharekeys.
+    // Only the sharekeys still on the previous key pair are removed: those of objects without
+    // a TP_USER recovery sharekey, which the key generation could not re-key. The others were
+    // re-keyed through TP_USER and are readable, removing them would lose them for nothing.
     if ($skipPasswordChange === true) {
-        // Remove all sharekeys for personal items
+        // Remove the sharekeys for personal items
         DB::query(
             'UPDATE ' . prefixTable('sharekeys_items') . ' AS ski
             INNER JOIN ' . prefixTable('items') . ' AS i ON ski.object_id = i.id
+            LEFT JOIN ' . prefixTable('sharekeys_items') . ' AS tp
+                ON (tp.object_id = ski.object_id AND tp.user_id = %i AND tp.share_key != "")
             SET ski.share_key = ""
             WHERE i.perso = 1
-            AND ski.user_id = %i',
+            AND ski.user_id = %i
+            AND tp.increment_id IS NULL',
+            TP_USER_ID,
             $userId
         );
 
-        // Remove all sharekeys for personal files
+        // Remove the sharekeys for personal files (object_id is a files id)
         DB::query(
             'UPDATE ' . prefixTable('sharekeys_files') . ' AS skf
-            INNER JOIN ' . prefixTable('items') . ' AS i ON skf.object_id = i.id
+            INNER JOIN ' . prefixTable('files') . ' AS f ON skf.object_id = f.id
+            INNER JOIN ' . prefixTable('items') . ' AS i ON f.id_item = i.id
+            LEFT JOIN ' . prefixTable('sharekeys_files') . ' AS tp
+                ON (tp.object_id = skf.object_id AND tp.user_id = %i AND tp.share_key != "")
             SET skf.share_key = ""
             WHERE i.perso = 1
-            AND skf.user_id = %i',
+            AND skf.user_id = %i
+            AND tp.increment_id IS NULL',
+            TP_USER_ID,
             $userId
         );
 
-        // Remove all sharekeys for personal fields
+        // Remove the sharekeys for personal fields (object_id is a categories_items id)
         DB::query(
             'UPDATE ' . prefixTable('sharekeys_fields') . ' AS skf
-            INNER JOIN ' . prefixTable('items') . ' AS i ON skf.object_id = i.id
+            INNER JOIN ' . prefixTable('categories_items') . ' AS c ON skf.object_id = c.id
+            INNER JOIN ' . prefixTable('items') . ' AS i ON c.item_id = i.id
+            LEFT JOIN ' . prefixTable('sharekeys_fields') . ' AS tp
+                ON (tp.object_id = skf.object_id AND tp.user_id = %i AND tp.share_key != "")
             SET skf.share_key = ""
             WHERE i.perso = 1
-            AND skf.user_id = %i',
+            AND skf.user_id = %i
+            AND tp.increment_id IS NULL',
+            TP_USER_ID,
             $userId
         );
 
@@ -4195,46 +4239,13 @@ function setUserOnlyPersonalItemsEncryption(string $userPreviousPwd, string $use
     // We need to find a valid previous private key
     $validPreviousKey = findValidPreviousPrivateKey(
         $userPreviousPwd,
-        $userId
+        $userId,
+        (string) $session->get('user-private_key')
     );
-    
-    if ($validPreviousKey['private_key'] !== null && empty($validPreviousKey['private_key']) === false) {
-        // Decrypt all personal items with this key
-        // Launch the re-encryption process for personal items
-        // Create process
-        DB::insert(
-            prefixTable('background_tasks'),
-            array(
-                'created_at' => time(),
-                'process_type' => 'create_user_keys',
-                'arguments' => json_encode([
-                    'new_user_id' => (int) $userId,
-                    'new_user_pwd' => cryption($userCurrentPwd, '','encrypt')['string'],
-                    'new_user_private_key' => cryption($validPreviousKey['private_key'], '','encrypt')['string'],
-                    'send_email' => 0,
-                    'otp_provided_new_value' => 0,
-                    'user_self_change' => 1,
-                    'only_personal_items' => 1,
-                ]),
-            )
-        );
-        $processId = DB::insertId();
 
-        // Create tasks
-        createUserTasks($processId, NUMBER_ITEMS_IN_BATCH);
-
-        // update user's new status
-        DB::update(
-            prefixTable('users'),
-            [
-                'is_ready_for_usage' => 1,
-                'otp_provided' => 1,
-                'ongoing_process_id' => $processId,
-                'special' => 'none',
-            ],
-            'id=%i',
-            $userId
-        );
+    if ($validPreviousKey !== null) {
+        // Re-key the personal items from this previous key
+        queuePersonalItemsRecoveryTask($userId, $userCurrentPwd, $validPreviousKey['private_key']);
 
         return prepareExchangedData(
             array(

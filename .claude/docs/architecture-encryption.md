@@ -167,6 +167,24 @@ decryptUserObjectKeyWithMigration(encryptedKey, privateKey, publicKey, sharekeyI
 
 **Existing-data remediation (SEC-8):** `/scripts/remediate_personal_sharekeys.php` (`--dry-run` by default) strips foreign sharekeys from personal items created before the fix. Owner-only decision logic lives in the DB-free module `/scripts/personal_sharekeys_logic.php` (unit-tested by `tests/Unit/PersonalSharekeysLogicTest.php`). Admin runbook: `docs/install/security-hardening.md`.
 
+**Key generation and personal objects (#5392):** a key generation (`handleUserKeys()` →
+`create_user_keys`, owner = `TP_USER`) re-keys a personal object **only through its TP_USER
+sharekey** — steps 20/30/40/60 of `UserHandlerTrait` all read the owner's sharekey, never the
+user's own one (it is on the replaced key pair). A personal object **without** a TP_USER sharekey
+(typically a 2.x item converted before `56be89835`) is left on the previous key pair: it is
+*stranded*. Everything downstream keys off that definition — `TP_USER has no non-empty sharekey`:
+- step 99 raises `encrypt_personal_items_with_new_password` only when stranded items exist;
+- the recovery dialog (`user_only_personal_items_encryption`, or the LDAP card in state
+  `encrypt_personal_items`) → `findValidPreviousPrivateKey()` (never the current key pair, tested
+  on stranded sharekeys first) → `queuePersonalItemsRecoveryTask()` → a `create_user_keys` task in
+  `only_personal_items` mode: `rekeyPersonalSharekeyFromPreviousKey()` opens the **user's own**
+  sharekey with the previous private key, re-encrypts it with the current public key and backfills
+  the missing TP_USER sharekey. A sharekey the previous key cannot open is **never overwritten**.
+- "I no longer remember my previous password" blanks the stranded sharekeys only.
+
+**Rule: in `sharekeys_files`/`_fields`/`_logs`, `object_id` is a files / categories_items / log_items
+id, never an items id** — join through that table to reach `items.perso`.
+
 **Forced batch migration** (background tasks via `/scripts/traits/PhpseclibV3MigrationTrait.php`):
 - Migrates all v1 sharekeys for a user in batches of 100
 - Triggered when `teampass_users.phpseclibv3_migration_completed = 0`

@@ -201,6 +201,8 @@ trait UserHandlerTrait {
             ((int) ($arguments['only_personal_items'] ?? 0)) === 1 ? 1 : 0,
             $arguments['new_user_private_key'] ?? ''
         );
+        $personalItemsRecovery = $this->isPersonalItemsRecovery($arguments);
+        $tpUserPublicKey = $personalItemsRecovery === true ? $this->getTpUserPublicKey() : '';
 
         // Personal items of the OTHER users must never be re-keyed for this account: the
         // redistribution owner is TP_USER, which holds a recovery sharekey on every personal
@@ -224,6 +226,14 @@ trait UserHandlerTrait {
         foreach ($rows as $record) {
             // Item stored in another user's personal folder
             if (in_array((int) $record['id_tree'], $foreignPersonalFolders, true) === true) {
+                continue;
+            }
+
+            // Personal items recovery: only the user's own personal items, from the previous key
+            if ($personalItemsRecovery === true) {
+                if ((int) $record['perso'] === 1) {
+                    $this->rekeyPersonalSharekeyFromPreviousKey('sharekeys_items', (int) $record['id'], (int) $arguments['new_user_id'], $userInfo, $tpUserPublicKey);
+                }
                 continue;
             }
 
@@ -295,6 +305,9 @@ trait UserHandlerTrait {
             $arguments['new_user_private_key'] ?? ''
         );
 
+        $personalItemsRecovery = $this->isPersonalItemsRecovery($arguments);
+        $tpUserPublicKey = $personalItemsRecovery === true ? $this->getTpUserPublicKey() : '';
+
         // Password history of the OTHER users' personal items must stay out of scope (see step 20).
         $foreignPersonalFolders = getForeignPersonalFolderIds((int) $arguments['new_user_id']);
 
@@ -304,7 +317,7 @@ trait UserHandlerTrait {
         // Loop on logs
         // LEFT JOIN so a log whose item no longer exists keeps being processed as before.
         $rows = DB::query(
-            'SELECT l.increment_id, i.id_tree
+            'SELECT l.increment_id, i.id_tree, i.perso
             FROM ' . prefixTable('log_items') . ' AS l
             LEFT JOIN ' . prefixTable('items') . ' AS i ON (i.id = l.id_item)
             WHERE l.raison LIKE "at_pw :%" AND l.encryption_type = "teampass_aes"
@@ -317,6 +330,14 @@ trait UserHandlerTrait {
             if ($record['id_tree'] !== null
                 && in_array((int) $record['id_tree'], $foreignPersonalFolders, true) === true
             ) {
+                continue;
+            }
+
+            // Personal items recovery: only the log entries of the user's own personal items
+            if ($personalItemsRecovery === true) {
+                if ((int) ($record['perso'] ?? 0) === 1) {
+                    $this->rekeyPersonalSharekeyFromPreviousKey('sharekeys_logs', (int) $record['increment_id'], (int) $arguments['new_user_id'], $userInfo, $tpUserPublicKey);
+                }
                 continue;
             }
 
@@ -377,6 +398,9 @@ trait UserHandlerTrait {
             $arguments['new_user_private_key'] ?? ''
         );
 
+        $personalItemsRecovery = $this->isPersonalItemsRecovery($arguments);
+        $tpUserPublicKey = $personalItemsRecovery === true ? $this->getTpUserPublicKey() : '';
+
         // Custom fields of the OTHER users' personal items must stay out of scope (see step 20).
         $foreignPersonalFolders = getForeignPersonalFolderIds((int) $arguments['new_user_id']);
 
@@ -386,7 +410,7 @@ trait UserHandlerTrait {
         // Loop on fields
         // LEFT JOIN so a field whose item no longer exists keeps being processed as before.
         $rows = DB::query(
-            'SELECT c.id, i.id_tree
+            'SELECT c.id, i.id_tree, i.perso
             FROM ' . prefixTable('categories_items') . ' AS c
             LEFT JOIN ' . prefixTable('items') . ' AS i ON (i.id = c.item_id)
             WHERE c.encryption_type = "teampass_aes"
@@ -401,6 +425,14 @@ trait UserHandlerTrait {
             if ($record['id_tree'] !== null
                 && in_array((int) $record['id_tree'], $foreignPersonalFolders, true) === true
             ) {
+                continue;
+            }
+
+            // Personal items recovery: only the custom fields of the user's own personal items
+            if ($personalItemsRecovery === true) {
+                if ((int) ($record['perso'] ?? 0) === 1) {
+                    $this->rekeyPersonalSharekeyFromPreviousKey('sharekeys_fields', (int) $record['id'], (int) $arguments['new_user_id'], $userInfo, $tpUserPublicKey);
+                }
                 continue;
             }
 
@@ -450,6 +482,11 @@ trait UserHandlerTrait {
      * @return void
      */
     private function generateNewUserStep50(array $taskData, array $arguments): void {
+        // Suggestions are not personal objects: nothing to recover
+        if ($this->isPersonalItemsRecovery($arguments) === true) {
+            return;
+        }
+
         // get user private key
         $ownerInfo = isset($arguments['owner_id']) && isset($arguments['creator_pwd']) 
             ? $this->getOwnerInfos($arguments['owner_id'], $arguments['creator_pwd']) 
@@ -539,6 +576,8 @@ trait UserHandlerTrait {
             ($arguments['only_personal_items'] ?? 0) === 1 ? 1 : 0,
             $arguments['new_user_private_key'] ?? ''
         );
+        $personalItemsRecovery = $this->isPersonalItemsRecovery($arguments);
+        $tpUserPublicKey = $personalItemsRecovery === true ? $this->getTpUserPublicKey() : '';
 
         // Start transaction for better performance
         DB::startTransaction();
@@ -552,6 +591,7 @@ trait UserHandlerTrait {
             FROM ' . prefixTable('files') . ' AS f
             INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = f.id_item
             WHERE f.status = "' . TP_ENCRYPTION_NAME . '"
+            ORDER BY f.id ASC
             LIMIT %i, %i',
             $taskData['index'],
             $taskData['nb']
@@ -563,13 +603,23 @@ trait UserHandlerTrait {
                 continue;
             }
 
-            // Get itemKey from current user
+            // Personal items recovery: only the attachments of the user's own personal items
+            if ($personalItemsRecovery === true) {
+                if (intval($record['perso']) === 1) {
+                    $this->rekeyPersonalSharekeyFromPreviousKey('sharekeys_files', (int) $record['id'], (int) $arguments['new_user_id'], $userInfo, $tpUserPublicKey);
+                }
+                continue;
+            }
+
+            // Get itemKey from the owner (TP_USER), which also holds a recovery sharekey on the
+            // user's personal attachments, exactly like step 20 does for personal items. The
+            // user's own sharekey is still on the replaced key pair and cannot be opened here.
             $currentUserKey = DB::queryFirstRow(
                 'SELECT share_key, increment_id
                 FROM ' . prefixTable('sharekeys_files') . '
                 WHERE object_id = %i AND user_id = %i',
                 $record['id'],
-                intval($record['perso']) === 0 ? intval($arguments['owner_id']) : intval($arguments['new_user_id'])
+                intval($arguments['owner_id'])
             );
 
             // do we have any input? (#3481)
@@ -580,11 +630,10 @@ trait UserHandlerTrait {
                 continue;
             }
 
-            // Decrypt itemkey with user key
+            // Decrypt itemkey with owner key
             $itemKey = decryptUserObjectKey(
                 $currentUserKey['share_key'],
-                //$ownerInfo['private_key']
-                intval($record['perso']) === 0 ? $ownerInfo['private_key'] : $userInfo['private_key']
+                $ownerInfo['private_key']
             );
 
             // Prevent to change key if its key is empty
@@ -768,11 +817,19 @@ trait UserHandlerTrait {
                 && isset($arguments['userHasToEncryptPersonalItemsAfter']) === true
                 && (int) $arguments['userHasToEncryptPersonalItemsAfter'] === 1
             ) {
+                // Only the personal items the generation could not re-key: those without a
+                // TP_USER recovery sharekey are still on the previous key pair. Counting the
+                // re-keyed ones too asked every user with personal items for a previous password.
                 $personalItemsCount = DB::queryFirstField(
                     'SELECT COUNT(*)
-                    FROM ' . prefixTable('items') . '
-                    WHERE perso = 1 AND id IN (SELECT object_id FROM ' . prefixTable('sharekeys_items') . ' WHERE user_id = %i AND share_key != "")',
-                    $arguments['new_user_id']
+                    FROM ' . prefixTable('items') . ' AS i
+                    INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s
+                        ON (s.object_id = i.id AND s.user_id = %i AND s.share_key != "")
+                    LEFT JOIN ' . prefixTable('sharekeys_items') . ' AS tp
+                        ON (tp.object_id = i.id AND tp.user_id = %i AND tp.share_key != "")
+                    WHERE i.perso = 1 AND tp.increment_id IS NULL',
+                    $arguments['new_user_id'],
+                    TP_USER_ID
                 );
                 if (intval($personalItemsCount) > 0) {
                     $specialStatus = 'encrypt_personal_items_with_new_password';
@@ -832,6 +889,92 @@ trait UserHandlerTrait {
                 'login' => $userInfo['login'],
                 'name' => $userInfo['name'],
             ];
+        }
+    }
+
+
+    /**
+     * Is this task the recovery of the user's personal items from a previous key pair?
+     * Queued by queuePersonalItemsRecoveryTask(), with no owner: the source sharekey is the
+     * user's own one, opened with the previous private key carried by the task.
+     * @param array $arguments Arguments for the task
+     * @return bool
+     */
+    private function isPersonalItemsRecovery(array $arguments): bool {
+        return (int) ($arguments['only_personal_items'] ?? 0) === 1;
+    }
+
+
+    /**
+     * Get the TP_USER public key
+     * @return string Empty when TP_USER has no public key
+     */
+    private function getTpUserPublicKey(): string {
+        return (string) DB::queryFirstField(
+            'SELECT public_key FROM ' . prefixTable('users') . ' WHERE id = %i',
+            TP_USER_ID
+        );
+    }
+
+
+    /**
+     * Personal items recovery: re-key one personal object of the user from the previous key
+     * pair to the current one (#5392).
+     *
+     * The user's own sharekey is opened with the previous private key and encrypted again with
+     * the current public key. A sharekey the previous key cannot open is left untouched: it is
+     * already on the current key pair (re-keyed through TP_USER), and overwriting it would
+     * destroy a valid key. The TP_USER recovery sharekey is added when missing, so the next key
+     * generation re-keys the object like any other personal object instead of stranding it again.
+     *
+     * @param string $table           Sharekeys table, without prefix
+     * @param int    $objectId        Object ID in that table
+     * @param int    $userId          Owner of the personal object
+     * @param array  $userInfo        Previous private key and current public key (getOwnerInfos())
+     * @param string $tpUserPublicKey TP_USER public key, '' to skip the backfill
+     * @return void
+     */
+    private function rekeyPersonalSharekeyFromPreviousKey(string $table, int $objectId, int $userId, array $userInfo, string $tpUserPublicKey): void {
+        $shareKey = (string) DB::queryFirstField(
+            'SELECT share_key FROM ' . prefixTable($table) . ' WHERE object_id = %i AND user_id = %i',
+            $objectId,
+            $userId
+        );
+        if ($shareKey === '') {
+            return;
+        }
+
+        $objectKey = decryptUserObjectKey($shareKey, (string) $userInfo['private_key']);
+        if (empty($objectKey) === true) {
+            return;
+        }
+
+        try {
+            insertOrUpdateSharekey(
+                prefixTable($table),
+                $objectId,
+                $userId,
+                encryptUserObjectKey($objectKey, (string) $userInfo['public_key'])
+            );
+
+            if ($tpUserPublicKey === '') {
+                return;
+            }
+            $tpUserHasShareKey = (int) DB::queryFirstField(
+                'SELECT COUNT(*) FROM ' . prefixTable($table) . ' WHERE object_id = %i AND user_id = %i AND share_key != ""',
+                $objectId,
+                TP_USER_ID
+            );
+            if ($tpUserHasShareKey === 0) {
+                insertOrUpdateSharekey(
+                    prefixTable($table),
+                    $objectId,
+                    (int) TP_USER_ID,
+                    encryptUserObjectKey($objectKey, $tpUserPublicKey)
+                );
+            }
+        } catch (RuntimeException $e) {
+            $this->logger->log('Personal items recovery: ' . $table . ' #' . $objectId . ' of user #' . $userId . ' could not be re-keyed - ' . $e->getMessage(), 'ERROR');
         }
     }
 }
