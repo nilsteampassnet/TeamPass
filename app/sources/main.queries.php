@@ -274,11 +274,23 @@ function passwordHandler(string $post_type, array $dataReceived, array $SETTINGS
          * User's authentication password in LDAP has changed
          */
         case 'change_user_ldap_auth_password'://action_password
-            // If user cannot provide their old password, reset personal item keys only
+            // If user cannot provide their old password, give up the personal items still on the
+            // previous key pair, exactly like the personal-items recovery dialog does. Only offered
+            // while personal items wait for that password: in any other state, clearing the flag
+            // would leave an undecryptable private key behind.
             if (isset($dataReceived['no_password_provided']) && $dataReceived['no_password_provided'] === 1) {
-                return resetUserPersonalItemKeys(
+                $userSpecial = DB::queryFirstField(
+                    'SELECT special FROM ' . prefixTable('users') . ' WHERE id = %i',
                     (int) $session->get('user-id')
                 );
+                if ($userSpecial !== 'encrypt_personal_items') {
+                    return prepareExchangedData(
+                        ['error' => true, 'message' => $lang->get('error_no_user')],
+                        'encode'
+                    );
+                }
+
+                return setUserOnlyPersonalItemsEncryption('', '', true, (int) $session->get('user-id'));
             }
 
             // IMPORTANT: Passwords should NOT be sanitized (fix 3.1.5.10)
@@ -4121,53 +4133,6 @@ function generateAnOTP(string $label, bool $with_qrcode = false, string $secretK
             'secret' => $secretKey,
             'qrcode' => '',
             'qr_text' => $qrText,
-        ),
-        'encode'
-    );
-}
-
-/**
- * Reset all personal items keys for a user
- * @param int $userId
- * @return string
- */
-function resetUserPersonalItemKeys(int $userId): string
-{
-    $personalItems = DB::query(
-        'SELECT i.id, i.pw, s.share_key, s.increment_id
-        FROM ' . prefixTable('items') . ' i
-        INNER JOIN ' . prefixTable('sharekeys_items') . ' s ON i.id = s.object_id
-        WHERE i.perso = %i
-        AND s.user_id = %i',
-        1,
-        $userId
-    );
-
-    if (is_countable($personalItems) && count($personalItems) > 0) {
-        // Reset the keys for each personal item
-        foreach ($personalItems as $item) {
-            DB::update(
-                prefixTable('sharekeys_items'),
-                array('share_key' => ''),
-                'increment_id = %i',
-                $item['increment_id']
-            );
-        }
-
-        // Update user special status
-                DB::update(
-                    prefixTable('users'),
-                    array(
-                        'special' => 'none',
-                    ),
-                    'id = %i',
-                    $userId
-                );
-    }
-
-    return prepareExchangedData(
-        array(
-            'error' => false,
         ),
         'encode'
     );

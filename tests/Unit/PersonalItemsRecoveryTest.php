@@ -111,6 +111,26 @@ class PersonalItemsRecoveryTest extends TestCase
         self::assertLessThan($firstWrite, $guard, 'A sharekey on the current key pair would be replaced by an empty one.');
     }
 
+    public function testLdapCardForgottenPasswordOnlyGivesUpStrandedObjects(): void
+    {
+        // The LDAP card used its own reset, which blanked every personal sharekey (the ones
+        // re-keyed through TP_USER included) and left files and fields alone.
+        $source = $this->source('app/sources/main.queries.php');
+        self::assertStringNotContainsString('function resetUserPersonalItemKeys(', $source);
+
+        $start = strpos($source, "case 'change_user_ldap_auth_password':");
+        self::assertNotFalse($start);
+        $end = strpos($source, "case 'test_current_user_password_is_correct':", $start);
+        self::assertNotFalse($end);
+        $case = substr($source, $start, $end - $start);
+
+        $guard = strpos($case, "if (\$userSpecial !== 'encrypt_personal_items') {");
+        $reset = strpos($case, "setUserOnlyPersonalItemsEncryption('', '', true,");
+        self::assertNotFalse($guard, 'The reset is only offered while personal items wait for the previous password.');
+        self::assertNotFalse($reset, 'The reset must be the one of the personal-items recovery dialog.');
+        self::assertLessThan($reset, $guard, 'Clearing the flag in another state would leave an undecryptable private key.');
+    }
+
     public function testPersonalSharekeysAreMatchedOnTheirOwnObjectIds(): void
     {
         // sharekeys_files.object_id is a files id, sharekeys_fields.object_id a categories_items
