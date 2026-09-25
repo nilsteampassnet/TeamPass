@@ -44,11 +44,16 @@ ini_set('session.cookie_secure', 0);
 
 require_once './libs/SecureHandler.php';
 
-// Without read access to app/config/ the require below is fatal and the wizard
-// answers a bare HTTP 500; name the permission problem instead.
+// Without read access to app/config/, or without settings.php (loadClasses()
+// requires it), the wizard dies with a bare HTTP 500; name the problem instead.
 require_once dirname(__DIR__, 2) . '/app/sources/config_access_logic.php';
-if (teampassConfigState(dirname(__DIR__, 2) . '/app/config') === 'unreadable') {
+$configState = teampassConfigState(dirname(__DIR__, 2) . '/app/config');
+if ($configState === 'unreadable') {
     teampassSendConfigAccessError(dirname(__DIR__, 2) . '/app/config');
+    exit;
+}
+if ($configState === 'not_installed') {
+    teampassSendMissingSettingsError(dirname(__DIR__, 2) . '/app/config');
     exit;
 }
 

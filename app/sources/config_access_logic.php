@@ -22,7 +22,8 @@ declare(strict_types=1);
  * Certain components of this file may be under different licenses. For
  * details, see the `licenses` directory or individual file headers.
  * ---
- * DB-free check telling a missing installation from an unreadable configuration.
+ * DB-free decisions about the installation state: a missing installation, an
+ * unreadable configuration, or a database the installer must not touch.
  *
  * Loaded by the front controller, the installer and the upgrade wizard BEFORE
  * app/config/include.php, so it must not depend on anything: no constant, no
@@ -65,19 +66,23 @@ function teampassConfigState(string $configDir): string
 }
 
 /**
- * HTML page explaining an unreadable configuration.
+ * Wrap an error message in a self-contained HTML page.
  *
- * It is served to unauthenticated visitors, so it names repository-relative paths
- * only; the absolute path and the PHP account go to the server log instead.
+ * No asset is loaded: the page is shown when TeamPass cannot load its own files.
+ *
+ * @param string $title Page title, plain text.
+ * @param string $body  HTML body, already escaped by the caller.
  */
-function teampassConfigAccessErrorPage(): string
+function teampassErrorPageShell(string $title, string $body): string
 {
+    $title = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
+
     return '<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TeamPass cannot read its configuration</title>
+<title>' . $title . '</title>
 <style>
 body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#f4f6f9;color:#212529;margin:0;padding:16px}
 main{max-width:760px;margin:40px auto;background:#fff;border-top:4px solid #dc3545;border-radius:4px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.1)}
@@ -89,8 +94,24 @@ code{font-size:.9em}
 </head>
 <body>
 <main>
-<h1>TeamPass cannot read its configuration</h1>
-<p>The PHP process cannot read <code>app/config/settings.php</code> or <code>app/config/include.php</code>.
+<h1>' . $title . '</h1>
+' . $body . '
+</main>
+</body>
+</html>';
+}
+
+/**
+ * HTML page explaining an unreadable configuration.
+ *
+ * It is served to unauthenticated visitors, so it names repository-relative paths
+ * only; the absolute path and the PHP account go to the server log instead.
+ */
+function teampassConfigAccessErrorPage(): string
+{
+    return teampassErrorPageShell(
+        'TeamPass cannot read its configuration',
+        '<p>The PHP process cannot read <code>app/config/settings.php</code> or <code>app/config/include.php</code>.
 When <code>settings.php</code> exists, TeamPass is installed and this is a file permission problem.</p>
 <p class="warn">Do not run the installer. It would generate a new encryption key and make every existing secret unreadable.</p>
 <p>This usually happens after new code was copied over the installation as root (for instance with <code>rsync -a</code>):
@@ -100,13 +121,51 @@ is incomplete: copy the release again.</p>
 <p>From the TeamPass directory, give them back to the account PHP runs as (<code>www-data</code> on Debian and Ubuntu;
 the server error log names it), then reload this page:</p>
 <pre>WEB_USER=www-data
-sudo chown ${WEB_USER}:${WEB_USER} app/config app/config/settings.php secrets \
+sudo chown ${WEB_USER}:${WEB_USER} app/config app/config/settings.php secrets \\
     app/includes/libraries/csrfp/libs app/includes/libraries/csrfp/log public/assets/avatars
 sudo chown -R ${WEB_USER}:${WEB_USER} storage app/websocket/logs</pre>
-<p>See the <a href="https://documentation.teampass.net/#/install/file-permissions" target="_blank" rel="noopener">file permissions documentation</a>.</p>
-</main>
-</body>
-</html>';
+<p>See the <a href="https://documentation.teampass.net/#/install/file-permissions" target="_blank" rel="noopener">file permissions documentation</a>.</p>'
+    );
+}
+
+/**
+ * HTML page shown by the upgrade wizard when settings.php does not exist.
+ *
+ * Without it the wizard cannot even load its classes: loadClasses() requires the
+ * file and the request died with a bare HTTP 500. In Docker the file lives on the
+ * storage/config volume and disappears with the container when that path is not
+ * mounted on a named volume, while the database it describes is still there.
+ */
+function teampassMissingSettingsPage(): string
+{
+    return teampassErrorPageShell(
+        'TeamPass cannot find its configuration',
+        '<p>The upgrade wizard needs <code>app/config/settings.php</code>, which holds the database connection of the
+installed instance, and this file does not exist.</p>
+<p>Upgrading from 3.1.x? Run <code>php migrate_3.2.x.php</code> from the TeamPass directory first: it moves
+<code>settings.php</code> into <code>app/config/</code>. On a server where TeamPass was never installed, run the
+installer (<code>install/install.php</code>) instead.</p>
+<p class="warn">If TeamPass was installed here, do not run the installer. The configuration file was lost, not the data:
+a new installation would generate a new encryption key and make every existing secret unreadable.</p>
+<p>Restore <code>settings.php</code> from a backup, then reload this page. With Docker, it is kept on the
+<code>/var/www/html/storage/config</code> volume and is lost when the container is recreated if that path is not
+mounted on a named volume; the previous copy may still sit in an unused Docker volume. Do not run
+<code>docker compose down -v</code> or <code>docker volume prune</code> before looking for it.</p>
+<p>See <a href="https://documentation.teampass.net/#/install/docker?id=recovering-a-lost-configuration" target="_blank" rel="noopener">Recovering a lost configuration</a>.</p>'
+    );
+}
+
+/**
+ * Send an error page with HTTP 500. The caller must stop right after.
+ */
+function teampassSendErrorPage(string $html): void
+{
+    if (headers_sent() === false) {
+        http_response_code(500);
+        header('Content-Type: text/html; charset=utf-8');
+        header('Cache-Control: no-store');
+    }
+    echo $html;
 }
 
 /**
@@ -129,10 +188,73 @@ function teampassSendConfigAccessError(string $configDir): void
         . '/settings.php or include.php. Check the owner and mode of this directory; do not run the installer.'
     );
 
-    if (headers_sent() === false) {
-        http_response_code(500);
-        header('Content-Type: text/html; charset=utf-8');
-        header('Cache-Control: no-store');
+    teampassSendErrorPage(teampassConfigAccessErrorPage());
+}
+
+/**
+ * Answer the current request with the missing-settings page of the upgrade wizard.
+ *
+ * The caller must stop right after.
+ *
+ * @param string $configDir Absolute path of app/config, written to the server log only.
+ */
+function teampassSendMissingSettingsError(string $configDir): void
+{
+    error_log(
+        'TeamPass: the upgrade wizard cannot run, ' . $configDir . '/settings.php does not exist.'
+        . (is_link($configDir . '/settings.php') === true
+            ? ' It is a symbolic link to ' . (string) readlink($configDir . '/settings.php') . ', whose target is missing.'
+            : '')
+        . ' If TeamPass was installed, restore this file; do not run the installer.'
+    );
+
+    teampassSendErrorPage(teampassMissingSettingsPage());
+}
+
+/**
+ * Decide whether the installer must refuse a database.
+ *
+ * The installer creates its tables with CREATE TABLE IF NOT EXISTS and fills them
+ * with INSERT IGNORE, so it runs over an existing instance without complaint and
+ * leaves a new encryption key behind: every secret of that instance becomes
+ * unreadable. This is the one guard every path to the installer goes through — a
+ * lost Docker volume, an unreadable app/config/, a mistyped URL (issue #5380).
+ *
+ * An interrupted installation must stay retryable, and it cannot be told apart by
+ * the schema: its tables and its teampass_version row exist from step 5 on, and the
+ * temporary _install table was never dropped by the installers older than 3.2.2.2.
+ * What it never has is a sign of use: nobody ever signed in, nothing was stored.
+ *
+ * @param array{signed_in_users: int, items: int}|null $existing What the database holds
+ *        under the chosen prefix, or null when it has no TeamPass schema.
+ */
+function teampassInstallerMustRefuseDatabase(?array $existing): bool
+{
+    if ($existing === null) {
+        return false;
     }
-    echo teampassConfigAccessErrorPage();
+
+    return $existing['signed_in_users'] > 0 || $existing['items'] > 0;
+}
+
+/**
+ * Explanation returned by the installer when it refuses a database.
+ *
+ * @param string $version Version recorded by the existing instance, '' when unknown.
+ * @param string $prefix  Table prefix the administrator entered.
+ */
+function teampassInstallerRefusalMessage(string $version, string $prefix): string
+{
+    $instance = $version === ''
+        ? 'a TeamPass instance'
+        : 'a TeamPass ' . htmlspecialchars($version, ENT_QUOTES, 'UTF-8') . ' instance';
+
+    return 'This database already holds ' . $instance . ' in use (table prefix <code>'
+        . htmlspecialchars($prefix, ENT_QUOTES, 'UTF-8') . '</code>). Installing over it would generate a new '
+        . 'encryption key and make its data unreadable, so the installer stops here.<br><br>'
+        . 'If <code>app/config/settings.php</code> was lost (with Docker, when <code>storage/config</code> is not '
+        . 'on a named volume), restore it and use <code>install/upgrade.php</code> instead: see '
+        . '<a href="https://documentation.teampass.net/#/install/docker?id=recovering-a-lost-configuration" '
+        . 'target="_blank" rel="noopener">Recovering a lost configuration</a>.<br>'
+        . 'To install a new instance, use an empty database or another table prefix.';
 }
