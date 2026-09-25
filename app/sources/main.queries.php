@@ -898,11 +898,13 @@ function keyHandler(string $post_type, array $dataReceived, array $SETTINGS): st
             );
 
         case 'user_only_personal_items_encryption': //action_key
+            // The target is always the resolved user, never the "userId" sent by the browser:
+            // the guard above only inspects "user_id" (GHSA-6rq2-hf9c-cxh2).
             return setUserOnlyPersonalItemsEncryption(                
                 (string) filter_var($dataReceived['userPreviousPwd'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (string) filter_var($dataReceived['userCurrentPwd'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (bool) filter_var($dataReceived['skipPasswordChange'], FILTER_VALIDATE_BOOLEAN),
-                (int) filter_var($dataReceived['userId'], FILTER_SANITIZE_NUMBER_INT),
+                (int) filter_var($filtered_user_id, FILTER_SANITIZE_NUMBER_INT),
             );
 
         /*
