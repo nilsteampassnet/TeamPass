@@ -115,6 +115,27 @@ function legacyPersonalSaltkeyCandidates(string $psk): array
 }
 
 /**
+ * List the forms under which a previous password may have protected a user private key.
+ *
+ * TeamPass 3.0.x encrypted the private key with the password after
+ * FILTER_SANITIZE_FULL_SPECIAL_CHARS, which turns & " ' < > and accented letters into HTML
+ * entities (#5389). A previous password holding one of them therefore only unlocks a 3.0.x key
+ * under that form. The password as typed comes first, and duplicates are removed: a password
+ * without those characters costs a single key derivation.
+ *
+ * @param string $password Previous password as typed by the user
+ *
+ * @return list<string> Distinct non-empty candidates, the password as typed first
+ */
+function legacyPreviousPasswordCandidates(string $password): array
+{
+    return array_values(array_unique(array_filter(
+        [$password, (string) filter_var($password, FILTER_SANITIZE_FULL_SPECIAL_CHARS)],
+        static fn (string $candidate): bool => $candidate !== ''
+    )));
+}
+
+/**
  * Decide how a batch of the 2.x personal items re-encryption ends.
  *
  * The saltkey protects the only copy of the 2.x user key. It is erased only once no personal

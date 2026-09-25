@@ -3815,7 +3815,7 @@ function changeUserLDAPAuthenticationPassword(
         // Decrypt the private key using the user's previous (old) LDAP password.
         // decryptPrivateKey() validates the RSA PEM structure, so an empty result
         // means the password is wrong.
-        $privateKey = decryptPrivateKey($post_previous_pwd, $userData['private_key']);
+        $privateKey = decryptPrivateKeyWithPreviousPassword($post_previous_pwd, (string) $userData['private_key']);
         if (empty($privateKey)) {
             return prepareExchangedData(
                 ['error' => true, 'message' => $lang->get('password_is_not_correct')],
@@ -3919,6 +3919,27 @@ function changeUserLDAPAuthenticationPassword(
 }
 
 /**
+ * Decrypt a private key with a previous password typed by the user, also trying the form
+ * under which TeamPass 3.0.x encrypted it (#5389).
+ *
+ * @param string $previousPassword    Previous password as typed by the user
+ * @param string $encryptedPrivateKey Encrypted private key
+ *
+ * @return string The private key in clear, or '' when no form of the password decrypts it
+ */
+function decryptPrivateKeyWithPreviousPassword(string $previousPassword, string $encryptedPrivateKey): string
+{
+    foreach (legacyPreviousPasswordCandidates($previousPassword) as $candidate) {
+        $privateKey = decryptPrivateKey($candidate, $encryptedPrivateKey);
+        if ($privateKey !== '') {
+            return $privateKey;
+        }
+    }
+
+    return '';
+}
+
+/**
  * Try to find a valid previous private key by testing all previous keys
  * until one is able to decrypt the share_key of one personal item
  * @param string $previousPassword
@@ -3967,7 +3988,7 @@ function findValidPreviousPrivateKey(string $previousPassword, int $userId, stri
     // Loop through the previous private keys
     foreach ($privateKeys as $row) {
         // Attempt to decrypt the private key with the previous password
-        $privateKey = decryptPrivateKey($previousPassword, (string) $row['private_key']);
+        $privateKey = decryptPrivateKeyWithPreviousPassword($previousPassword, (string) $row['private_key']);
         if ($privateKey === ''
             || ($currentPrivateKey !== '' && hash_equals($currentPrivateKey, $privateKey) === true)
         ) {

@@ -215,6 +215,76 @@ class MainQueriesLogicTest extends TestCase
         );
     }
 
+    public function testAPreviousPasswordWithoutAffectedCharactersCostsASingleDerivation(): void
+    {
+        self::assertSame(['Pass!@#$%*123'], legacyPreviousPasswordCandidates('Pass!@#$%*123'));
+    }
+
+    /**
+     * @dataProvider legacyPreviousPasswordProvider
+     *
+     * @param list<string> $expected
+     */
+    public function testListsTheForm30xEncryptedThePrivateKeyWith(string $typed, array $expected): void
+    {
+        self::assertSame($expected, legacyPreviousPasswordCandidates($typed));
+    }
+
+    /**
+     * @return iterable<string, array{string, list<string>}>
+     */
+    public static function legacyPreviousPasswordProvider(): iterable
+    {
+        yield 'ampersand' => ['Adm1n&Pass', ['Adm1n&Pass', 'Adm1n&amp;Pass']];
+        yield 'double quote' => ['say "hi"', ['say "hi"', 'say &quot;hi&quot;']];
+        yield 'single quote' => ["it's", ["it's", 'it&#039;s']];
+        yield 'angle signs' => ['a<b>c', ['a<b>c', 'a&lt;b&gt;c']];
+        yield 'accent' => ['été', ['été', '&eacute;t&eacute;']];
+        // The 3.0.x sanitizer does not encode an entity twice
+        yield 'literal entity' => ['lit&amp;eral', ['lit&amp;eral']];
+    }
+
+    public function testUnlocksAPrivateKeyEncryptedBy30x(): void
+    {
+        $typed = 'Adm1n&Pässé"<x>';
+        $pem = "-----BEGIN PRIVATE KEY-----\nMIIBVQIBADANBgkqhkiG9w0BAQEFAASCAT8wggE7AgEAAkEA\n-----END PRIVATE KEY-----";
+        // 3.0.x format: phpseclib v1 AES-CBC, PBKDF2-SHA1, on the sanitized password
+        $encrypted = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt(
+            $pem,
+            (string) filter_var($typed, FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+            'cbc',
+            'sha1'
+        );
+
+        $unlocked = [];
+        foreach (legacyPreviousPasswordCandidates($typed) as $candidate) {
+            try {
+                $decrypted = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt($encrypted, $candidate, 'cbc', 'sha1');
+            } catch (\Throwable $e) {
+                $decrypted = '';
+            }
+            $unlocked[$candidate] = $decrypted === $pem;
+        }
+
+        self::assertFalse($unlocked[$typed], 'The password as typed must not unlock a 3.0.x key.');
+        self::assertContains(true, $unlocked, 'One candidate must unlock a key encrypted by TeamPass 3.0.x.');
+    }
+
+    public function testThePreviousPasswordDialogsTryThe30xForm(): void
+    {
+        $source = self::mainQueriesSource();
+
+        foreach (['changeUserLDAPAuthenticationPassword', 'findValidPreviousPrivateKey'] as $function) {
+            $start = strpos($source, 'function ' . $function . '(');
+            self::assertIsInt($start, sprintf('%s() must exist.', $function));
+            $end = strpos($source, "\nfunction ", $start + 1);
+            $body = substr($source, $start, $end === false ? null : $end - $start);
+
+            self::assertStringContainsString('decryptPrivateKeyWithPreviousPassword(', $body, $function);
+            self::assertDoesNotMatchRegularExpression('/[^A-Za-z]decryptPrivateKey\(\$/', $body, $function);
+        }
+    }
+
     /**
      * Read main.queries.php once, for the wiring assertions above.
      */
