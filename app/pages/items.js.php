@@ -1922,7 +1922,7 @@ require __DIR__ . '/renewal.preview.js.php';
                 ).fail(function() {
                     $("#items-delete-user-confirm").modal('hide');
                     toastrUpdate(loadingToast, 'error',
-                        '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                        <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
                         { timeOut: 5000 }
                     );
                 });
@@ -2573,7 +2573,7 @@ require __DIR__ . '/renewal.preview.js.php';
                     // ERROR
                     $('#form-item-delete-perform').prop('disabled', false).html('<?php echo $lang->get('perform'); ?>');
                     toastrUpdate(loadingToast, 'error',
-                        (data && data.message) || '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                        (data && data.message) || <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
                         { timeOut: 5000 }
                     );
                     requestRunning = false;
@@ -2582,7 +2582,7 @@ require __DIR__ . '/renewal.preview.js.php';
         ).fail(function() {
             $('#form-item-delete-perform').prop('disabled', false).html('<?php echo $lang->get('perform'); ?>');
             toastrUpdate(loadingToast, 'error',
-                '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
                 { timeOut: 5000 }
             );
             requestRunning = false;
@@ -2722,7 +2722,7 @@ require __DIR__ . '/renewal.preview.js.php';
                     // ERROR
                     $btn.prop('disabled', false).html('<?php echo $lang->get('perform'); ?>');
                     toastrUpdate(loadingToast, 'error',
-                        (data && data.message) || '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                        (data && data.message) || <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
                         { timeOut: 5000 }
                     );
                 }
@@ -2730,7 +2730,7 @@ require __DIR__ . '/renewal.preview.js.php';
         ).fail(function() {
             $btn.prop('disabled', false).html('<?php echo $lang->get('perform'); ?>');
             toastrUpdate(loadingToast, 'error',
-                '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
                 { timeOut: 5000 }
             );
         });
@@ -4546,7 +4546,7 @@ require __DIR__ . '/renewal.preview.js.php';
                             $("#div_dialog_message").dialog("open");
 
                             toastrUpdate(loadingToast, 'error',
-                                '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                                <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
                                 { timeOut: 5000 }
                             );
                             return false;
@@ -4554,7 +4554,7 @@ require __DIR__ . '/renewal.preview.js.php';
                         // prepareExchangedData returns false (without throwing) on unusable response
                         if (data === false) {
                             toastrUpdate(loadingToast, 'error',
-                                '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                                <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
                                 { timeOut: 5000 }
                             );
                             return false;
@@ -4742,7 +4742,7 @@ require __DIR__ . '/renewal.preview.js.php';
                 ).fail(function() {
                     // HTTP-level failure (500, network...): close the spinner and unblock edition
                     toastrUpdate(loadingToast, 'error',
-                        '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                        <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
                         { timeOut: 5000 }
                     );
                     requestRunning = false;
@@ -7536,7 +7536,7 @@ require __DIR__ . '/renewal.preview.js.php';
                 // HTTP-level failure (500, network...): close the spinner and unblock navigation
                 toastr.remove();
                 toastr.error(
-                    '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                    <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
                     '', {
                         timeOut: 5000,
                         progressBar: true
@@ -8320,6 +8320,7 @@ require __DIR__ . '/renewal.preview.js.php';
      * @return void
      */
     function bindSecureSendClipboard(url) {
+        $('#form-item-otv-copy-button').prop('disabled', !url);
         $('#form-item-otv-copy-button').off('click.securesend').on('click.securesend', async function() {
             try {
                 if (!url) {
@@ -8327,7 +8328,7 @@ require __DIR__ . '/renewal.preview.js.php';
                 }
                 await copyToClipboard(url);
                 toastr.info(
-                    '<?php echo $lang->get("copy_to_clipboard"); ?>',
+                    <?php echo json_encode($lang->get('copy_to_clipboard'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
                     '', {
                         timeOut: 2000,
                         positionClass: 'toast-bottom-right',
@@ -8336,7 +8337,7 @@ require __DIR__ . '/renewal.preview.js.php';
                 );
             } catch (error) {
                 toastr.error(
-                    '<?php echo $lang->get("clipboard_error"); ?>',
+                    <?php echo json_encode($lang->get('clipboard_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
                     '', {
                         timeOut: 3000,
                         positionClass: 'toast-bottom-right',
@@ -8355,15 +8356,16 @@ require __DIR__ . '/renewal.preview.js.php';
      */
     function secureSendErrorLabel(code) {
         var map = {
-            'invalid_payload': <?php echo json_encode($lang->get('secure_send_invalid_payload'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+            'passphrase_required': <?php echo json_encode($lang->get('secure_send_passphrase_required_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+            'empty_note': <?php echo json_encode($lang->get('secure_send_empty_note_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+            'notes_not_allowed': <?php echo json_encode($lang->get('error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
             'invalid_public_url': <?php echo json_encode($lang->get('secure_send_invalid_public_url'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
             'cannot_decrypt': <?php echo json_encode($lang->get('secure_send_cannot_decrypt'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
-            'passphrase_required': '<?php echo $lang->get('secure_send_passphrase_required_error'); ?>',
-            'empty_note': '<?php echo $lang->get('secure_send_empty_note_error'); ?>',
-            'notes_not_allowed': '<?php echo $lang->get('error'); ?>',
-            'not_allowed': '<?php echo $lang->get('error'); ?>'
+            'invalid_payload': <?php echo json_encode($lang->get('secure_send_invalid_payload'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+            'server_error': <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+            'not_allowed': <?php echo json_encode($lang->get('error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>
         };
-        return map[code] || '<?php echo $lang->get('error'); ?>';
+        return map[code] || <?php echo json_encode($lang->get('error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
     }
 
     /**
@@ -8381,7 +8383,7 @@ require __DIR__ . '/renewal.preview.js.php';
                 // A real server error must not be displayed as an empty list
                 if (data.error !== undefined && data.error !== "") {
                     toastr.error(
-                        '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                        <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
                         '', {
                             timeOut: 5000,
                             progressBar: true
@@ -8390,7 +8392,7 @@ require __DIR__ . '/renewal.preview.js.php';
                     return;
                 }
                 if (data.sends === undefined || data.sends.length === 0) {
-                    $('#secure-send-list').html('<?php echo $lang->get('secure_send_no_active'); ?>');
+                    $('#secure-send-list').text(<?php echo json_encode($lang->get('secure_send_no_active'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>);
                     return;
                 }
                 var html = '<ul class="list-unstyled mb-0">';
@@ -8399,7 +8401,7 @@ require __DIR__ . '/renewal.preview.js.php';
                     var icon = s.send_type === 'note' ? 'fa-note-sticky' : 'fa-key';
                     html += '<li class="d-flex justify-content-between align-items-center border-bottom py-1">' +
                         '<span><i class="fa-solid ' + icon + ' mr-2"></i>' + htmlEncode(s.label) + lock +
-                        ' <small class="text-muted ml-2">' + s.remaining_views + ' <?php echo $lang->get('secure_send_remaining_views'); ?> &middot; ' + s.expires_label + '</small></span>' +
+                        ' <small class="text-muted ml-2">' + Number(s.remaining_views) + ' ' + htmlEncode(<?php echo json_encode($lang->get('secure_send_remaining_views'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>) + ' &middot; ' + htmlEncode(s.expires_label) + '</small></span>' +
                         '<button type="button" class="btn btn-xs btn-outline-danger secure-send-revoke ml-2" data-id="' + s.id + '"><i class="fa-solid fa-trash"></i></button>' +
                         '</li>';
                 });
@@ -8410,6 +8412,28 @@ require __DIR__ . '/renewal.preview.js.php';
         );
     }
 
+    let secureSendFormVersion = 0;
+    let secureSendGenerating = false;
+    const secureSendBaseUrls = <?php echo json_encode($secureSendUrls, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
+
+    /** Clear the previous URL whenever the form no longer describes that link. */
+    function invalidateSecureSendLink() {
+        secureSendFormVersion += 1;
+        $('#form-item-otv-link').val('').data('otv-id', 0);
+        $('#form-secure-send-passphrase-reminder').addClass('hidden');
+        bindSecureSendClipboard('');
+        const address = secureSendBaseUrls[$('#form-item-otv-subdomain').is(':checked') ? 'public' : 'internal'];
+        $('#secure-send-address-preview').text(address
+            ? <?php echo json_encode($lang->get('secure_send_address_preview'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>.replace('#URL#', address)
+            : secureSendErrorLabel('invalid_public_url'));
+    }
+
+    $(document).on('input change ifChanged', '#modal-item-otv input:not(#form-item-otv-link), #modal-item-otv textarea', invalidateSecureSendLink);
+    $('#modal-item-otv').on('hidden.bs.modal', function() {
+        invalidateSecureSendLink();
+        $('#form-secure-send-passphrase, #form-secure-send-secret, #form-secure-send-note').val('');
+    });
+
     /**
      * Open the Secure Send modal in the given mode.
      *
@@ -8417,8 +8441,6 @@ require __DIR__ . '/renewal.preview.js.php';
      * @return void
      */
     function openSecureSendModal(mode) {
-        $('#form-item-otv-subdomain').iCheck($('#form-item-otv-subdomain').attr('data-public-configured') === '1' ? 'check' : 'uncheck');
-        updateSecureSendAddressPreview();
         $('#form-secure-send-mode').val(mode);
         // Reset the form
         $('#form-item-otv-link').val('').data('otv-id', 0);
@@ -8426,31 +8448,28 @@ require __DIR__ . '/renewal.preview.js.php';
         $('#form-secure-send-passphrase-reminder').addClass('hidden');
         $('#form-item-otv-days').val($('#form-item-otv-days').attr('max'));
         $('#form-item-otv-views').val('1');
-        $('#secure-send-modal-title').text('<?php echo $lang->get('secure_send'); ?>');
+        $('#form-item-otv-subdomain').iCheck($('#form-item-otv-subdomain').attr('data-public-configured') === '1' ? 'check' : 'uncheck');
+        invalidateSecureSendLink();
+        $('#secure-send-modal-title').text(<?php echo json_encode($lang->get('secure_send'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>);
 
         if (mode === 'note') {
             $('#secure-send-note-fields').removeClass('hidden');
+            $('#secure-send-snapshot-hint').addClass('hidden');
             $('#form-secure-send-title, #form-secure-send-secret, #form-secure-send-note, #form-secure-send-login, #form-secure-send-url').val('');
         } else {
             $('#secure-send-note-fields').addClass('hidden');
+            $('#secure-send-snapshot-hint').removeClass('hidden');
         }
 
         loadSecureSendsList();
         $('#modal-item-otv').modal('show');
     }
 
-    /** Display the same normalized base address that the server uses for generation. */
-    function updateSecureSendAddressPreview() {
-        const urls = <?php echo json_encode($secureSendUrls, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
-        const address = urls[$('#form-item-otv-subdomain').is(':checked') ? 'public' : 'internal'];
-        $('#secure-send-address-preview').text(address
-            ? <?php echo json_encode($lang->get('secure_send_address_preview'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>.replace('#URL#', address)
-            : secureSendErrorLabel('invalid_public_url'));
-    }
-    $('#form-item-otv-subdomain').on('change ifChanged', updateSecureSendAddressPreview);
-
     // Generate a Secure Send link
     $(document).on('click', '#form-secure-send-generate', function() {
+        if (secureSendGenerating) {
+            return;
+        }
         var mode = $('#form-secure-send-mode').val();
         var passphrase = $('#form-secure-send-passphrase').val();
 
@@ -8466,7 +8485,7 @@ require __DIR__ . '/renewal.preview.js.php';
             var secret = $('#form-secure-send-secret').val();
             var note = $('#form-secure-send-note').val();
             if (secret.trim() === '' && note.trim() === '') {
-                toastr.error('<?php echo $lang->get('secure_send_empty_note_error'); ?>', '', { timeOut: 3000, progressBar: true });
+                toastr.error(<?php echo json_encode($lang->get('secure_send_empty_note_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>, '', { timeOut: 3000, progressBar: true });
                 return;
             }
             data.payload = {
@@ -8481,7 +8500,10 @@ require __DIR__ . '/renewal.preview.js.php';
         }
 
         var $btn = $(this);
-        $btn.addClass('disabled');
+        invalidateSecureSendLink();
+        const formVersion = secureSendFormVersion;
+        secureSendGenerating = true;
+        $btn.prop('disabled', true);
 
         $.post(
             "sources/items.queries.php", {
@@ -8490,25 +8512,33 @@ require __DIR__ . '/renewal.preview.js.php';
                 key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
-                $btn.removeClass('disabled');
+                loadSecureSendsList();
+                if (formVersion !== secureSendFormVersion) {
+                    return;
+                }
                 if (data.error === "") {
                     $('#form-item-otv-link').val(data.url).data('otv-id', data.otv_id);
                     bindSecureSendClipboard(data.url);
                     if (data.description_truncated === true) {
-                        toastr.warning(<?php echo json_encode($lang->get('secure_send_description_truncated'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>, '', { timeOut: 10000, escapeHtml: true });
+                        toastr.warning(<?php echo json_encode($lang->get('secure_send_description_truncated'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+                            '', { timeOut: 10000, escapeHtml: true });
                     }
                     if (data.has_passphrase === 1) {
                         $('#form-secure-send-passphrase-reminder').removeClass('hidden');
                     } else {
                         $('#form-secure-send-passphrase-reminder').addClass('hidden');
                     }
-                    loadSecureSendsList();
                 } else {
                     toastr.error(secureSendErrorLabel(data.error), '', { timeOut: 3000, progressBar: true });
                 }
             },
             "json"
-        );
+        ).fail(function() {
+            toastr.error(secureSendErrorLabel('server_error'), '', { timeOut: 5000 });
+        }).always(function() {
+            secureSendGenerating = false;
+            $btn.prop('disabled', false);
+        });
     });
 
     // Open the Secure Send modal in note mode from the top-level entry
@@ -8533,15 +8563,23 @@ require __DIR__ . '/renewal.preview.js.php';
                 key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
+                if (data.error !== '') {
+                    toastr.error(secureSendErrorLabel(data.error), '', { timeOut: 5000 });
+                    return;
+                }
+                if (Number($('#form-item-otv-link').data('otv-id')) === Number(data.id)) {
+                    invalidateSecureSendLink();
+                }
                 loadSecureSendsList();
             },
             "json"
-        );
+        ).fail(function() {
+            toastr.error(secureSendErrorLabel('server_error'), '', { timeOut: 5000 });
+        });
     });
 
     // Handle max value for OTV days number
     $('#form-item-otv-days').change(function () {
-        console.log(parseInt($(this).attr('max')));
         if ($(this).val() > parseInt($(this).attr('max'))) {
             $(this).val($(this).attr('max'));
         }
@@ -9481,7 +9519,7 @@ require __DIR__ . '/renewal.preview.js.php';
                 ).fail(function() {
                     toastr.remove();
                     toastr.error(
-                        '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                        <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
                         '', {
                             timeOut: 5000,
                             progressBar: true
