@@ -46,6 +46,41 @@
     visibility: hidden !important;
 }
 
+/* Secure Send keeps the AdminLTE controls and adapts to long labels and small screens. */
+#modal-item-otv .secure-send-panel {
+    padding: 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: .25rem;
+    background-color: #f8f9fa;
+}
+#modal-item-otv .secure-send-result-heading {
+    gap: .75rem;
+}
+#modal-item-otv .secure-send-result-heading .btn,
+#modal-item-otv .secure-send-revoke,
+#modal-item-otv .icheckbox_flat-blue {
+    flex-shrink: 0;
+}
+#modal-item-otv #secure-send-address-preview,
+#modal-item-otv .secure-send-entry-content {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+#modal-item-otv .secure-send-entry {
+    padding: .75rem 0;
+    border-top: 1px solid #dee2e6;
+}
+#modal-item-otv summary {
+    cursor: pointer;
+}
+.dark-mode #modal-item-otv .secure-send-panel {
+    background-color: #343a40;
+}
+.dark-mode #modal-item-otv .secure-send-panel,
+.dark-mode #modal-item-otv .secure-send-entry {
+    border-color: #6c757d;
+}
+
 .pointer {
     cursor: pointer;
 }

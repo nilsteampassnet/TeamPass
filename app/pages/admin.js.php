@@ -351,6 +351,8 @@ function saveFieldValue($field, field, isSelect2) {
                         progressBar: true
                     }
                 );
+            } else {
+                toastr.error(data.message || '<?php echo addslashes($lang->get('error')); ?>', '', { timeOut: 5000, escapeHtml: true });
             }
             requestRunning = false;
         }
