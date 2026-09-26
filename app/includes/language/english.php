@@ -29,6 +29,15 @@
  */
 
 return array(
+    'secure_send_snapshot_hint' => 'A new link shares a copy of the current content. Later edits do not update it. Deleting the item or removing the sender’s access blocks the link. Generate a new link after changing the form; existing links remain active until revoked or expired.',
+    'secure_send_intro' => 'Share content through a temporary link, without requiring a TeamPass account. Access ends when the duration or the number of views is reached.',
+    'secure_send_access_settings' => 'Access settings',
+    'secure_send_passphrase_required_label' => 'Passphrase (required)',
+    'secure_send_sharing_link' => 'Sharing link',
+    'secure_send_generate_link' => 'Generate link',
+    'secure_send_link_placeholder' => 'Generate a link to copy it',
+    'secure_send_snapshot_details' => 'About the shared copy',
+    'secure_send_revoke' => 'Revoke',
     'secure_send_public_url' => 'Public sharing address',
     'secure_send_public_url_tip' => 'Recommended: a full HTTPS base URL, for example https://share.example.com or https://share.example.com/vault. A hostname inherits the main URL port and path. A short prefix such as share is still supported and is prepended to the TeamPass hostname. Configure matching DNS, HTTPS certificate and web server routing; no DNS validation is performed here. Leave empty to use the main TeamPass address.',
     'secure_send_invalid_public_url' => 'Invalid sharing address. Enter a valid HTTPS base URL, hostname or short subdomain prefix, without credentials, query parameters or a fragment.',
