@@ -256,6 +256,10 @@ use up the link. A passphrase, when configured, must be transmitted separately.
 Views and failed attempts are reserved transactionally; five failed decryption
 attempts revoke the link. Responses prohibit caching, referrers and framing.
 
+The recipient page keeps an existing visitor language preference. Without one
+(for example in a private browser window), it uses the instance's default
+language, with English as the fallback when no default is configured.
+
 Item automatic-deletion limits also apply to sharing links. The last permitted
 view is revealed and the item is then made inactive in the same transaction,
 with the usual automatic-deletion audit. An already exhausted budget or elapsed
