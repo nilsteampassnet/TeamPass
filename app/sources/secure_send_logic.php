@@ -2,7 +2,24 @@
 
 declare(strict_types=1);
 
-/** Secure Send confirmation rules. Distributed under the GPL-3.0 license. */
+/** Secure Send recipient and confirmation rules. Distributed under the GPL-3.0 license. */
+
+/**
+ * Choose the recipient language without relying on authenticated-page initialization.
+ *
+ * @param string|null $sessionLanguage Existing visitor preference, if any
+ * @param array $settings Application settings, including the instance default
+ * @return string Catalog name, falling back to English only when both choices are empty
+ */
+function secureSendRecipientLanguage(?string $sessionLanguage, array $settings): string
+{
+    foreach ([$sessionLanguage, $settings['default_language'] ?? null] as $language) {
+        if (is_string($language) && trim($language) !== '') {
+            return trim($language);
+        }
+    }
+    return 'english';
+}
 
 /**
  * Check link state before prompting and again when reserving a view.

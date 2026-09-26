@@ -41,8 +41,8 @@ require_once __DIR__ . '/../sources/secure_send.functions.php';
 
 $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
-$lang = new Language($session->get('user-language') ?? 'english');
 $SETTINGS = (new ConfigManager())->getAllSettings();
+$lang = new Language(secureSendRecipientLanguage($session->get('user-language'), $SETTINGS));
 date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
 
 // The public endpoint has its own POST confirmation; it never enters authenticated routing.
