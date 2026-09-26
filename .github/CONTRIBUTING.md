@@ -145,6 +145,15 @@ exercise your change against:
 Per `.eslintrc`: single quotes, no semicolons, 2-space indent, `const` over `let`, arrow
 functions, ES6.
 
+### Translations
+
+Add new source strings to `app/includes/language/english.php`; French translations
+may accompany a feature. Other catalogs are maintained through the
+[POEditor project](https://poeditor.com/join/project?hash=0vptzClQrM), whose next
+synchronization overwrites direct edits. Keep placeholders such as `#URL#`,
+`#DATE#` and `#VIEWS#` unchanged. Missing translations use the existing English
+fallback until the POEditor update is available.
+
 ### Two rules that are easy to miss
 
 1. **Every new `app/sources/*.queries.php` needs a matching proxy shim in `public/sources/`.**
