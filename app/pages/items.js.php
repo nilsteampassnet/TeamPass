@@ -37,6 +37,7 @@ use TeampassClasses\Language\Language;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
+require_once __DIR__ . '/../sources/secure_send_url.php';
 
 // init
 loadClasses();
@@ -51,6 +52,14 @@ if ($session->get('key') === null) {
 // Load config
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
+$secureSendUrls = [];
+foreach (['internal' => false, 'public' => true] as $name => $public) {
+    try {
+        $secureSendUrls[$name] = secureSendBaseUrl($SETTINGS, $public);
+    } catch (InvalidArgumentException $e) {
+        $secureSendUrls[$name] = '';
+    }
+}
 
 // Do checks
 $checkUserAccess = new PerformChecks(
@@ -8347,6 +8356,7 @@ require __DIR__ . '/renewal.preview.js.php';
     function secureSendErrorLabel(code) {
         var map = {
             'invalid_payload': <?php echo json_encode($lang->get('secure_send_invalid_payload'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+            'invalid_public_url': <?php echo json_encode($lang->get('secure_send_invalid_public_url'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
             'cannot_decrypt': <?php echo json_encode($lang->get('secure_send_cannot_decrypt'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
             'passphrase_required': '<?php echo $lang->get('secure_send_passphrase_required_error'); ?>',
             'empty_note': '<?php echo $lang->get('secure_send_empty_note_error'); ?>',
@@ -8407,6 +8417,8 @@ require __DIR__ . '/renewal.preview.js.php';
      * @return void
      */
     function openSecureSendModal(mode) {
+        $('#form-item-otv-subdomain').iCheck($('#form-item-otv-subdomain').attr('data-public-configured') === '1' ? 'check' : 'uncheck');
+        updateSecureSendAddressPreview();
         $('#form-secure-send-mode').val(mode);
         // Reset the form
         $('#form-item-otv-link').val('').data('otv-id', 0);
@@ -8426,6 +8438,16 @@ require __DIR__ . '/renewal.preview.js.php';
         loadSecureSendsList();
         $('#modal-item-otv').modal('show');
     }
+
+    /** Display the same normalized base address that the server uses for generation. */
+    function updateSecureSendAddressPreview() {
+        const urls = <?php echo json_encode($secureSendUrls, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
+        const address = urls[$('#form-item-otv-subdomain').is(':checked') ? 'public' : 'internal'];
+        $('#secure-send-address-preview').text(address
+            ? <?php echo json_encode($lang->get('secure_send_address_preview'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>.replace('#URL#', address)
+            : secureSendErrorLabel('invalid_public_url'));
+    }
+    $('#form-item-otv-subdomain').on('change ifChanged', updateSecureSendAddressPreview);
 
     // Generate a Secure Send link
     $(document).on('click', '#form-secure-send-generate', function() {

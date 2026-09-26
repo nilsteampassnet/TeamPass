@@ -822,11 +822,11 @@ if ((int) $session_user_admin === 1) {
                         <div class="form-group col-2">
                             <label for="form-item-otv-subdomain" class="infotip" title="<?php
                                 echo isset($SETTINGS['otv_subdomain']) === true && empty($SETTINGS['otv_subdomain']) === false ? '' : $lang->get('feature_disabled_by_administrator'); ?>">
-                                <i class="fa-solid fa-globe mr-2"></i><?php echo $lang->get('shared_globaly'); ?>
+                                <i class="fa-solid fa-globe mr-2"></i><?php echo $lang->get('secure_send_use_public_url'); ?>
                             </label>
                             <div class="input-group mb-3">
                                 <div class="form-check mb-3 icheck-blue">
-                                    <input type="checkbox" class="form-check-input form-item-control flat-blue infotip" id="form-item-otv-subdomain" <?php
+                                    <input type="checkbox" class="form-check-input form-item-control flat-blue infotip" id="form-item-otv-subdomain" data-public-configured="<?php echo trim((string) ($SETTINGS['otv_subdomain'] ?? '')) !== '' ? '1' : '0'; ?>" <?php
                                         echo isset($SETTINGS['otv_subdomain']) === true && empty($SETTINGS['otv_subdomain']) === false ? ' enabled' : ' disabled'; ?> data-change-ongoing="">
                                 </div>
                             </div>
@@ -839,6 +839,7 @@ if ((int) $session_user_admin === 1) {
                         </div>
                     </div>
 
+                    <p id="secure-send-address-preview" class="small text-muted"></p>
                     <div class="form-group">
                         <label for="form-item-otv-link"><i class="fa-solid fa-link mr-2"></i><?php echo $lang->get('otv_link'); ?></label>
                         <div class="input-group mb-3">

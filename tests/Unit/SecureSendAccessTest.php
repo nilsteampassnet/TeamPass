@@ -118,7 +118,7 @@ class SecureSendAccessTest extends TestCase
     {
         $sender = (string) file_get_contents(__DIR__ . '/../../app/sources/items.queries.php');
         $start = strpos($sender, "case 'generate_OTV_url':");
-        $end = strpos($sender, "case 'update_OTV_url':", $start);
+        $end = strpos($sender, "case 'list_secure_sends':", $start);
         $create = substr($sender, $start, $end - $start);
         self::assertLessThan(strpos($create, 'secureSendItemPassword('), strpos($create, 'secureSendReadItem('));
         self::assertLessThan(strpos($create, 'DB::insert('), strpos($create, 'secureSendItemPassword('));

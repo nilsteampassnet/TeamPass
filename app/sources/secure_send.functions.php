@@ -5,6 +5,7 @@ declare(strict_types=1);
 /** Secure Send recipient lifecycle. Distributed under the GPL-3.0 license. */
 require_once __DIR__ . '/secure_send_access.php';
 require_once __DIR__ . '/secure_send_logic.php';
+require_once __DIR__ . '/secure_send_url.php';
 
 /**
  * Find a link by both its random lookup code and its original timestamp.
@@ -67,14 +68,17 @@ function secureSendDecryptPayload(array $link, string $linkSecret, string $passp
  * @param array $parameters Validated link credentials
  * @param string $passphrase Recipient passphrase
  * @param array $settings Application settings
+ * @param string $hostHeader Raw HTTP Host (used only for public links)
  * @return array Result with fields only after a committed successful redemption
  */
-function secureSendRedeem(array $parameters, string $passphrase, array $settings): array
+function secureSendRedeem(array $parameters, string $passphrase, array $settings, string $hostHeader = ''): array
 {
     DB::startTransaction();
     try {
         $link = secureSendFindLink($parameters, true);
-        if ($link === [] || !secureSendIsAvailable($link, $settings, time())) {
+        if ($link === [] || !secureSendIsAvailable($link, $settings, time())
+            || !secureSendHostIsAllowed($settings, $link, $hostHeader)
+        ) {
             DB::rollback();
             return ['error' => 'invalid_link'];
         }
@@ -192,9 +196,10 @@ function secureSendDeactivateItem(array $item, array $settings): void
  * @param string $method HTTP method
  * @param array $settings Application settings
  * @param array $confirmations Bounded, session-owned map of single-use confirmation tokens
+ * @param string $hostHeader Raw HTTP Host (used only for public links)
  * @return array Page state; plaintext fields are only present after a committed redemption
  */
-function secureSendPrepareRecipient(array $input, string $method, array $settings, array &$confirmations): array
+function secureSendPrepareRecipient(array $input, string $method, array $settings, array &$confirmations, string $hostHeader = ''): array
 {
     $parameters = secureSendRequestParameters($input);
     $link = [];
@@ -203,7 +208,9 @@ function secureSendPrepareRecipient(array $input, string $method, array $setting
     $token = '';
     try {
         $link = $parameters === null ? [] : secureSendFindLink($parameters);
-        if ($link === [] || !secureSendIsAvailable($link, $settings, time())) {
+        if ($link === [] || !secureSendIsAvailable($link, $settings, time())
+            || !secureSendHostIsAllowed($settings, $link, $hostHeader)
+        ) {
             $link = [];
             $error = 'secure_send_invalid_link';
         } else {
@@ -219,7 +226,7 @@ function secureSendPrepareRecipient(array $input, string $method, array $setting
                     if (strlen($passphrase) > 1024) {
                         $error = 'secure_send_invalid_link';
                     } else {
-                        $result = secureSendRedeem($parameters, $passphrase, $settings);
+                        $result = secureSendRedeem($parameters, $passphrase, $settings, $hostHeader);
                         $errors = [
                             'invalid_link' => 'secure_send_invalid_link',
                             'wrong_passphrase' => 'secure_send_wrong_passphrase',

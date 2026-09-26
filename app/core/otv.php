@@ -60,7 +60,7 @@ if (!$request->isMethod('GET') && !$request->isMethod('POST')) {
 
 $input = $request->isMethod('POST') ? $request->request->all() : $request->query->all();
 $confirmations = (array) $session->get('otv-confirmations', []);
-$page = secureSendPrepareRecipient($input, $request->getMethod(), $SETTINGS, $confirmations);
+$page = secureSendPrepareRecipient($input, $request->getMethod(), $SETTINGS, $confirmations, (string) $request->headers->get('host', ''));
 $session->set('otv-confirmations', $confirmations);
 $parameters = $page['parameters'];
 $link = $page['link'];
