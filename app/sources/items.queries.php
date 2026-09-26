@@ -47,6 +47,9 @@ require_once 'find.functions.php';
 require_once 'classification.functions.php';
 require_once 'lapr.functions.php';
 require_once __DIR__ . '/item_access_logic.php';
+require_once __DIR__ . '/secure_send_access.php';
+require_once __DIR__ . '/secure_send_snapshot.php';
+require_once __DIR__ . '/secure_send_input.php';
 
 // init
 loadClasses('DB');
@@ -7082,6 +7085,17 @@ switch ($inputData['type']) {
             'decode'
         );
 
+        if (!is_array($dataReceived)) {
+            echo json_encode(['error' => 'invalid_payload']);
+            break;
+        }
+        try {
+            secureSendValidateInput($dataReceived);
+        } catch (InvalidArgumentException $e) {
+            echo json_encode(['error' => 'invalid_payload']);
+            break;
+        }
+
         // Determine the kind of send: an existing item or an ad-hoc note/secret
         $secureSendType = (isset($dataReceived['send_type']) === true && $dataReceived['send_type'] === 'note') ? 'note' : 'item';
         if ($secureSendType === 'note' && (int) ($SETTINGS['secure_send_allow_notes'] ?? 0) !== 1) {
@@ -7096,60 +7110,32 @@ switch ($inputData['type']) {
             break;
         }
 
-        // Clamp expiry (days) and view count to the administrator policy
-        $secureSendMaxDays = (int) ($SETTINGS['otv_expiration_period'] ?? 7);
-        if ($secureSendMaxDays < 1) {
-            $secureSendMaxDays = 7;
-        }
-        $secureSendDays = (int) ($dataReceived['days'] ?? $secureSendMaxDays);
-        if ($secureSendDays < 1) {
-            $secureSendDays = 1;
-        }
-        if ($secureSendDays > $secureSendMaxDays) {
-            $secureSendDays = $secureSendMaxDays;
-        }
-
-        $secureSendMaxViewsCap = (int) ($SETTINGS['secure_send_max_views'] ?? 5);
-        if ($secureSendMaxViewsCap < 1) {
-            $secureSendMaxViewsCap = 1;
-        }
-        $secureSendViews = (int) ($dataReceived['views'] ?? 1);
-        if ($secureSendViews < 1) {
-            $secureSendViews = 1;
-        }
-        if ($secureSendViews > $secureSendMaxViewsCap) {
-            $secureSendViews = $secureSendMaxViewsCap;
-        }
+        $secureSendLimits = secureSendLimits($SETTINGS, $dataReceived, time());
 
         // Build the plaintext payload to share
+        $secureSendDescriptionTruncated = false;
         if ($secureSendType === 'item') {
-            // Item send: re-encrypt the item password; the recipient page reads the
-            // other fields (label, login, url, description) from the item via item_id.
+            // Item sends keep a coherent encrypted copy of all displayed fields.
             $secureSendItemId = (int) ($dataReceived['id'] ?? 0);
-            $itemQ = DB::queryFirstRow(
-                'SELECT s.share_key, s.increment_id, i.pw, i.pw_iv, i.pw_len
-                FROM ' . prefixTable('items') . ' AS i
-                INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (i.id = s.object_id)
-                WHERE s.user_id = %i AND s.object_id = %i',
-                $session->get('user-id'),
-                $secureSendItemId
-            );
-            if (DB::count() === 0 || empty($itemQ['pw']) === true) {
-                // No share key found
-                $secureSendPlaintext = '';
-            } else {
-                $secureSendPlaintext = teampassDecryptPasswordValue(
-                    $itemQ['pw'],
-                    decryptUserObjectKeyWithMigration(
-                        $itemQ['share_key'],
-                        $session->get('user-private_key'),
-                        $session->get('user-public_key'),
-                        intval($itemQ['increment_id']),
-                        'sharekeys_items'
-                    ),
-                    (int) ($itemQ['pw_len'] ?? 0),
-                    (string) ($itemQ['pw_iv'] ?? '')
+            $itemQ = secureSendReadItem($secureSendItemId, (int) $session->get('user-id'));
+            if ($itemQ === []) {
+                echo json_encode(array('error' => 'not_allowed'));
+                break;
+            }
+            try {
+                $secureSendPlaintext = secureSendItemPassword(
+                    $itemQ,
+                    (int) $session->get('user-id'),
+                    (string) $session->get('user-private_key'),
+                    (string) $session->get('user-public_key')
                 );
+                $snapshot = secureSendEncodeSnapshot($itemQ, $secureSendPlaintext);
+                $secureSendPlaintext = $snapshot['plaintext'];
+                $secureSendDescriptionTruncated = $snapshot['description_truncated'];
+                $secureSendType = 'item_v2';
+            } catch (InvalidArgumentException $e) {
+                echo json_encode(array('error' => $e->getMessage() === 'invalid_payload' ? 'invalid_payload' : 'cannot_decrypt'));
+                break;
             }
         } else {
             // Note send: self-contained encrypted JSON, not bound to any item
@@ -7204,10 +7190,14 @@ switch ($inputData['type']) {
             'encrypt',
             $SETTINGS
         );
+        if (!empty($passwd['error']) || strlen($passwd['string']) > 65535) {
+            echo json_encode(array('error' => 'invalid_payload'));
+            break;
+        }
         $timestampReference = time();
 
         // "Shared globaly" (subdomain) only applies to item sends when configured by the admin
-        $secureSendShared = ($secureSendType === 'item'
+        $secureSendShared = ($secureSendType !== 'note'
             && (int) ($dataReceived['shared_globaly'] ?? 0) === 1
             && empty($SETTINGS['otv_subdomain']) === false) ? 1 : 0;
 
@@ -7224,8 +7214,8 @@ switch ($inputData['type']) {
                 'protected_key' => $secureSendProtectedKey,
                 'has_passphrase' => $secureSendPassphrase === '' ? 0 : 1,
                 'failed_attempts' => 0,
-                'time_limit' => $secureSendDays * (int) TP_ONE_DAY_SECONDS + time(),
-                'max_views' => $secureSendViews,
+                'time_limit' => $secureSendLimits['time_limit'],
+                'max_views' => $secureSendLimits['views'],
                 'shared_globaly' => $secureSendShared,
             )
         );
@@ -7259,6 +7249,7 @@ switch ($inputData['type']) {
                 'url' => $url,
                 'otv_id' => $newID,
                 'has_passphrase' => $secureSendPassphrase === '' ? 0 : 1,
+                'description_truncated' => $secureSendDescriptionTruncated,
             )
         );
         break;
@@ -7373,7 +7364,7 @@ switch ($inputData['type']) {
         );
 
         $secureSends = array();
-        foreach ($secureSendRows as $secureSendRow) {
+        foreach (secureSendFilterLinks($secureSendRows, (int) $session->get('user-id')) as $secureSendRow) {
             $isNote = ($secureSendRow['send_type'] ?? 'item') === 'note' || empty($secureSendRow['item_id']) === true;
             $secureSends[] = array(
                 'id' => (int) $secureSendRow['id'],

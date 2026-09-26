@@ -8346,6 +8346,8 @@ require __DIR__ . '/renewal.preview.js.php';
      */
     function secureSendErrorLabel(code) {
         var map = {
+            'invalid_payload': <?php echo json_encode($lang->get('secure_send_invalid_payload'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+            'cannot_decrypt': <?php echo json_encode($lang->get('secure_send_cannot_decrypt'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
             'passphrase_required': '<?php echo $lang->get('secure_send_passphrase_required_error'); ?>',
             'empty_note': '<?php echo $lang->get('secure_send_empty_note_error'); ?>',
             'notes_not_allowed': '<?php echo $lang->get('error'); ?>',
@@ -8470,6 +8472,9 @@ require __DIR__ . '/renewal.preview.js.php';
                 if (data.error === "") {
                     $('#form-item-otv-link').val(data.url).data('otv-id', data.otv_id);
                     bindSecureSendClipboard(data.url);
+                    if (data.description_truncated === true) {
+                        toastr.warning(<?php echo json_encode($lang->get('secure_send_description_truncated'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>, '', { timeOut: 10000, escapeHtml: true });
+                    }
                     if (data.has_passphrase === 1) {
                         $('#form-secure-send-passphrase-reminder').removeClass('hidden');
                     } else {
