@@ -36,6 +36,37 @@ class SecureSendLifecycleTest extends TestCase
         return secureSendPrepareRecipient($parameters + $extra, $method, $this->settings, $tokens);
     }
 
+    public function testPublicHostIsCheckedOnBothConfirmationAndReveal(): void
+    {
+        foreach (['item', 'note'] as $type) {
+            DB::reset();
+            $parameters = $this->create(['send_type' => $type, 'shared_globaly' => 1]);
+            $tokens = [];
+            $bad = secureSendPrepareRecipient($parameters, 'GET', $this->settings, $tokens, 'vault.example.com');
+            self::assertSame('secure_send_invalid_link', $bad['error']);
+            self::assertSame('', $bad['token']);
+            $page = secureSendPrepareRecipient($parameters, 'GET', $this->settings, $tokens, 'share.example.com:443');
+            self::assertNotEmpty($page['token']);
+            $post = $parameters + ['confirmation' => $page['token']];
+            self::assertSame('secure_send_invalid_link', secureSendPrepareRecipient($post, 'POST', $this->settings, $tokens, 'evil.test')['error']);
+            self::assertSame('invalid_link', secureSendRedeem($parameters, '', $this->settings, 'evil.test')['error']);
+            self::assertSame(0, DB::$links[1]['views']);
+            self::assertSame('', secureSendPrepareRecipient($post, 'POST', $this->settings, $tokens, 'share.example.com')['result']['error']);
+        }
+    }
+
+    public function testInternalRevealToleratesRewrittenHostAndUnderscores(): void
+    {
+        $this->settings['cpassman_url'] = 'https://tp_internal/vault';
+        $this->settings['otv_subdomain'] = 'invalid/path';
+        $parameters = $this->create();
+        $tokens = [];
+        $page = secureSendPrepareRecipient($parameters, 'GET', $this->settings, $tokens, 'proxy_backend:8080');
+        self::assertNotEmpty($page['token']);
+        $post = $parameters + ['confirmation' => $page['token']];
+        self::assertSame('', secureSendPrepareRecipient($post, 'POST', $this->settings, $tokens, 'dns-alias')['result']['error']);
+    }
+
     public function testGetAndUnconfirmedPostDoNotRevealOrConsume(): void
     {
         $parameters = $this->create();
