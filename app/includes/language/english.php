@@ -29,6 +29,10 @@
  */
 
 return array(
+    'secure_send_confirmation_expired' => 'This confirmation is no longer valid. Confirm again below to reveal the content.',
+    'secure_send_reveal_hint' => 'Opening this page does not consume a view. Confirm below to reveal the content and use one of the permitted views.',
+    'secure_send_reveal' => 'Reveal the shared content',
+    'secure_send_invalid_link' => 'This sharing link is invalid, expired, revoked or no longer accessible.',
     'secure_send_cannot_decrypt' => 'The item could not be decrypted. No sharing link was created. Reload the item or contact your administrator.',
     'logs_search_all_columns' => 'All columns',
     'logs_search_column' => 'Search in column',

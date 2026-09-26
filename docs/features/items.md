@@ -250,6 +250,18 @@ item links and labels are also hidden from the sender's active-link list.
 If the item cannot be decrypted, creation fails without storing a sharing link.
 Standalone secure notes keep their existing behavior.
 
+Opening a sharing URL now displays a confirmation form. Only a confirmed POST
+reveals the content and consumes a view, so link previews and scanners do not
+use up the link. A passphrase, when configured, must be transmitted separately.
+Views and failed attempts are reserved transactionally; five failed decryption
+attempts revoke the link. Responses prohibit caching, referrers and framing.
+
+Item automatic-deletion limits also apply to sharing links. The last permitted
+view is revealed and the item is then made inactive in the same transaction,
+with the usual automatic-deletion audit. An already exhausted budget or elapsed
+deletion date deactivates the item without revealing it or consuming a link view.
+All links to the inactive item are subsequently denied.
+
 If the administrator has defined an **external subdomain**, the generated link uses that subdomain, making it accessible outside your organization's network even if the main Teampass instance is internal-only.
 
 When one or more valid OTV links exist for an item, a badge showing the count is displayed on the item row.

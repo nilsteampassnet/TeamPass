@@ -15,9 +15,10 @@ declare(strict_types=1);
  *
  * @param int $itemId Shared item
  * @param int $userId Originator, never the unauthenticated recipient
+ * @param bool $lock Lock the item when called inside a redemption transaction
  * @return array Accessible item, or an empty array
  */
-function secureSendReadItem(int $itemId, int $userId): array
+function secureSendReadItem(int $itemId, int $userId, bool $lock = false): array
 {
     if ($itemId <= 0 || $userId <= 0) {
         return [];
@@ -32,7 +33,7 @@ function secureSendReadItem(int $itemId, int $userId): array
     return DB::queryFirstRow(
         'SELECT i.* FROM ' . prefixTable('items') . ' AS i
         WHERE i.id = %i AND i.inactif = 0 AND (i.deleted_at IS NULL OR i.deleted_at = 0)
-        AND ' . securityPostureItemAccessSql($userId, 'i'),
+        AND ' . securityPostureItemAccessSql($userId, 'i') . ($lock ? ' FOR UPDATE' : ''),
         $itemId
     ) ?: [];
 }
