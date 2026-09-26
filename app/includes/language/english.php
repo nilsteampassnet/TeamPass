@@ -29,6 +29,7 @@
  */
 
 return array(
+    'secure_send_cannot_decrypt' => 'The item could not be decrypted. No sharing link was created. Reload the item or contact your administrator.',
     'logs_search_all_columns' => 'All columns',
     'logs_search_column' => 'Search in column',
     'logs_purge_title' => 'Purge logs',
