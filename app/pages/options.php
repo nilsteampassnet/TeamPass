@@ -1861,13 +1861,13 @@ if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_descr
 
                         <div class='row mb-2 option' data-keywords="one time subdomain link">
                             <div class='col-12'>
-                                <?php echo $lang->get('settings_otv_subdomain'); ?>
+                                <?php echo $lang->get('secure_send_public_url'); ?>
                                 <small class='form-text text-muted'>
-                                    <?php echo $lang->get('settings_otv_subdomain_tip'); ?>
+                                    <?php echo $lang->get('secure_send_public_url_tip'); ?>
                                 </small>
                             </div>
                             <div class='col-sm-12'>
-                                <input type='text' class='form-control form-control-sm' id='otv_subdomain' value='<?php echo isset($SETTINGS['otv_subdomain']) === true ? htmlspecialchars($SETTINGS['otv_subdomain']) : ''; ?>'>
+                                <input type='text' class='form-control form-control-sm' id='otv_subdomain' placeholder='https://share.example.com' value='<?php echo isset($SETTINGS['otv_subdomain']) === true ? htmlspecialchars($SETTINGS['otv_subdomain']) : ''; ?>'>
                             </div>
                         </div>
 

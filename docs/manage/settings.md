@@ -191,7 +191,7 @@ Sharing, export, and content features.
 |--------|-------------|
 | **Enable One-Time View** | Users can generate time-limited sharing links for items (see [Items — One Time View](../features/items.md#one-time-view)) |
 | **OTV expiration period** | Default validity duration for One Time View links in days (default: 7) |
-| **OTV subdomain** | External subdomain used in OTV links, for sharing outside the internal network |
+| **Public sharing address** | HTTPS base URL used for external item and note links. The existing `otv_subdomain` setting also accepts a hostname or legacy short prefix; see below. |
 | **Allow printing** | Enables the print / export-to-PDF feature |
 | **Roles allowed to print** | Restricts the print feature to selected roles |
 | **Allow import** | Enables CSV and KeePass2 XML import (see [Import](../features/import.md)) |
@@ -199,6 +199,44 @@ Sharing, export, and content features.
 | **Offline mode key complexity** | Minimum password complexity required to protect an offline export |
 | **Enable knowledge base** | Activates the built-in knowledge base feature. When enabled, the Knowledge Base entry appears in the navigation menu for all users (see [Knowledge Base](../features/knowledge-base.md)) |
 | **Enable suggestions** | Users can submit password change suggestions to administrators |
+
+### Public sharing address
+
+Prefer an explicit HTTPS base URL, for example `https://share.example.com` or
+`https://share.example.com:9443/vault`. This allows the public route to differ from
+the main TeamPass route, including its port and installation path.
+
+For a main address of `https://vault.example.com:8443/team`:
+
+| Setting value | Public base address |
+| --- | --- |
+| `share` (legacy prefix) | `https://share.vault.example.com:8443/team` |
+| `share.example.com` (hostname) | `https://share.example.com:8443/team` |
+| `https://share.example.com` (full URL) | `https://share.example.com` |
+| Empty | No public address; links use the main TeamPass URL |
+
+A legacy prefix replaces a leading `www.` only. Public addresses use HTTPS;
+the internal/main address retains its configured scheme for existing LAN installations.
+Credentials, query parameters, fragments and unsafe paths are rejected when saving
+the public setting. No DNS lookup or reachability probe is performed, so DNS setup
+order cannot cause a silent fallback. Reload an already-open item page after changing
+the setting to refresh its address preview and default checkbox.
+
+Create DNS for the **resolved hostname**, configure a matching TLS certificate and
+route that host/path to TeamPass's `public/` directory. DNS alone does not configure
+the web server. For public links, the proxy must preserve the public `Host` header; arbitrary
+`X-Forwarded-Host` values are not accepted as proof of the destination hostname.
+Changing the configured hostname also changes where existing links may be redeemed;
+regenerate links when changing public routing. Internal links do not require an exact
+Host match, preserving reverse-proxy rewrites, DNS aliases and LAN names containing
+underscores.
+
+The public hostname is not an isolation boundary for the full TeamPass application.
+If the vault should remain private, configure the public virtual host/reverse proxy
+to expose only the OTV entry point (`index.php?otv=1`, GET and POST) and its static
+assets, while retaining the internal route for authenticated use. Do not redirect
+public OTV requests to the private hostname. Never log link query parameters or
+recipient POST bodies, which contain sharing credentials.
 
 ---
 
