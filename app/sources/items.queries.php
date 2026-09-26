@@ -47,6 +47,7 @@ require_once 'find.functions.php';
 require_once 'classification.functions.php';
 require_once 'lapr.functions.php';
 require_once __DIR__ . '/item_access_logic.php';
+require_once __DIR__ . '/secure_send_access.php';
 
 // init
 loadClasses('DB');
@@ -7126,30 +7127,21 @@ switch ($inputData['type']) {
             // Item send: re-encrypt the item password; the recipient page reads the
             // other fields (label, login, url, description) from the item via item_id.
             $secureSendItemId = (int) ($dataReceived['id'] ?? 0);
-            $itemQ = DB::queryFirstRow(
-                'SELECT s.share_key, s.increment_id, i.pw, i.pw_iv, i.pw_len
-                FROM ' . prefixTable('items') . ' AS i
-                INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (i.id = s.object_id)
-                WHERE s.user_id = %i AND s.object_id = %i',
-                $session->get('user-id'),
-                $secureSendItemId
-            );
-            if (DB::count() === 0 || empty($itemQ['pw']) === true) {
-                // No share key found
-                $secureSendPlaintext = '';
-            } else {
-                $secureSendPlaintext = teampassDecryptPasswordValue(
-                    $itemQ['pw'],
-                    decryptUserObjectKeyWithMigration(
-                        $itemQ['share_key'],
-                        $session->get('user-private_key'),
-                        $session->get('user-public_key'),
-                        intval($itemQ['increment_id']),
-                        'sharekeys_items'
-                    ),
-                    (int) ($itemQ['pw_len'] ?? 0),
-                    (string) ($itemQ['pw_iv'] ?? '')
+            $itemQ = secureSendReadItem($secureSendItemId, (int) $session->get('user-id'));
+            if ($itemQ === []) {
+                echo json_encode(array('error' => 'not_allowed'));
+                break;
+            }
+            try {
+                $secureSendPlaintext = secureSendItemPassword(
+                    $itemQ,
+                    (int) $session->get('user-id'),
+                    (string) $session->get('user-private_key'),
+                    (string) $session->get('user-public_key')
                 );
+            } catch (InvalidArgumentException $e) {
+                echo json_encode(array('error' => 'cannot_decrypt'));
+                break;
             }
         } else {
             // Note send: self-contained encrypted JSON, not bound to any item
@@ -7373,7 +7365,7 @@ switch ($inputData['type']) {
         );
 
         $secureSends = array();
-        foreach ($secureSendRows as $secureSendRow) {
+        foreach (secureSendFilterLinks($secureSendRows, (int) $session->get('user-id')) as $secureSendRow) {
             $isNote = ($secureSendRow['send_type'] ?? 'item') === 'note' || empty($secureSendRow['item_id']) === true;
             $secureSends[] = array(
                 'id' => (int) $secureSendRow['id'],
