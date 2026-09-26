@@ -746,123 +746,115 @@ if ((int) $session_user_admin === 1) {
 
 
     <!-- OTV ITEM MODAL -->
-    <div class="modal fade" id="modal-item-otv" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal fade" id="modal-item-otv" tabindex="-1" role="dialog" aria-labelledby="secure-send-modal-title" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" role="document">
             <div class="modal-content">
                 <div class="modal-header bg-primary">
                     <h5 class="modal-title">
-                        <i class="fa-brands fa-slideshare mr-2"></i><span id="secure-send-modal-title"><?php echo $lang->get('one_time_view'); ?></span>
+                        <i class="fa-solid fa-shield-halved mr-2" aria-hidden="true"></i><span id="secure-send-modal-title"><?php echo $lang->get('secure_send'); ?></span>
                     </h5>
-                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="<?php echo htmlspecialchars($lang->get('close'), ENT_QUOTES, 'UTF-8'); ?>">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="form-secure-send-mode" value="item">
 
-                    <div class="callout callout-info">
-                        <h5><i class="icon fa fa-info mr-2"></i><?php echo $lang->get('information'); ?></h5>
-                        <p><?php
-                            echo str_replace(
-                                ['##otv_expiration_period##', '. '],
-                                ['<span class="text-bold text-primary">' . $SETTINGS['otv_expiration_period'] . '</span>', '<br>'],
-                                $lang->get('otv_message')
-                            );
-                        ?></p>
+                    <div class="callout callout-info py-3 mb-4">
+                        <p class="mb-0"><?php echo $lang->get('secure_send_intro'); ?></p>
                     </div>
 
                     <!-- NOTE MODE FIELDS (ad-hoc secret/note) -->
-                    <div id="secure-send-note-fields" class="hidden">
-                        <div class="form-group">
-                            <label for="form-secure-send-title"><?php echo $lang->get('label'); ?></label>
-                            <input type="text" class="form-control clear-me-val" id="form-secure-send-title">
-                        </div>
-                        <div class="form-group">
-                            <label for="form-secure-send-secret"><?php echo $lang->get('password'); ?></label>
-                            <input type="text" class="form-control clear-me-val" id="form-secure-send-secret">
-                        </div>
-                        <div class="form-group">
-                            <label for="form-secure-send-note"><?php echo $lang->get('description'); ?></label>
-                            <textarea class="form-control clear-me-val" id="form-secure-send-note" rows="2"></textarea>
-                        </div>
-                        <div class="row">
-                            <div class="form-group col-6">
+                    <fieldset id="secure-send-note-fields" class="hidden mb-4">
+                        <legend class="h6 border-bottom pb-2 mb-3"><i class="fa-regular fa-note-sticky mr-2" aria-hidden="true"></i><?php echo $lang->get('secure_send_note'); ?></legend>
+                        <div class="form-row">
+                            <div class="form-group col-sm-6">
+                                <label for="form-secure-send-title"><?php echo $lang->get('label'); ?></label>
+                                <input type="text" class="form-control clear-me-val" id="form-secure-send-title">
+                            </div>
+                            <div class="form-group col-sm-6">
+                                <label for="form-secure-send-secret"><?php echo $lang->get('password'); ?></label>
+                                <input type="text" class="form-control clear-me-val" id="form-secure-send-secret" autocomplete="off">
+                            </div>
+                            <div class="form-group col-sm-6">
                                 <label for="form-secure-send-login"><?php echo $lang->get('login'); ?></label>
                                 <input type="text" class="form-control clear-me-val" id="form-secure-send-login">
                             </div>
-                            <div class="form-group col-6">
+                            <div class="form-group col-sm-6">
                                 <label for="form-secure-send-url"><?php echo $lang->get('url'); ?></label>
                                 <input type="text" class="form-control clear-me-val" id="form-secure-send-url">
                             </div>
                         </div>
-                    </div>
-
-                    <!-- PASSPHRASE (optional, or forced by admin) -->
-                    <div class="form-group">
-                        <label for="form-secure-send-passphrase"><i class="fa-solid fa-lock mr-2"></i><?php echo $lang->get('secure_send_passphrase'); ?></label>
-                        <input type="text" class="form-control clear-me-val" id="form-secure-send-passphrase" autocomplete="off" <?php echo (int) ($SETTINGS['secure_send_require_passphrase'] ?? 0) === 1 ? 'required' : ''; ?>>
-                        <small class="form-text text-muted"><?php echo $lang->get('secure_send_passphrase_hint'); ?></small>
-                    </div>
-
-                    <div class="row">
-                        <div class="form-group col-4">
-                            <label for="form-item-otv-days"><i class="fa-regular fa-calendar-days mr-2"></i><?php echo $lang->get('number_of_days'); ?> (<?php echo $lang->get('maximum').': '.$SETTINGS['otv_expiration_period'];?>)</label>
-                            <div class="input-group mb-3">
-                                <input type="number" class="form-control clear-me-val" id="form-item-otv-days" min="1" max="<?php echo $SETTINGS['otv_expiration_period'];?>" value="<?php echo $SETTINGS['otv_expiration_period'];?>">
-                            </div>
+                        <div class="form-group mb-0">
+                            <label for="form-secure-send-note"><?php echo $lang->get('description'); ?></label>
+                            <textarea class="form-control clear-me-val" id="form-secure-send-note" rows="3"></textarea>
                         </div>
+                    </fieldset>
 
-                        <div class="form-group col-4">
-                            <label for="form-item-otv-views"><i class="fa-regular fa-hashtag mr-2"></i><?php echo $lang->get('number_of_times'); ?> (<?php echo $lang->get('maximum').': '.(int) ($SETTINGS['secure_send_max_views'] ?? 5);?>)</label>
-                            <div class="input-group mb-3">
-                                <input type="number" class="form-control clear-me-val" id="form-item-otv-views" value="1" min="1" max="<?php echo (int) ($SETTINGS['secure_send_max_views'] ?? 5);?>">
-                            </div>
-                        </div>
-
-                        <div class="form-group col-2">
-                            <label for="form-item-otv-subdomain" class="infotip" title="<?php
-                                echo isset($SETTINGS['otv_subdomain']) === true && empty($SETTINGS['otv_subdomain']) === false ? '' : $lang->get('feature_disabled_by_administrator'); ?>">
-                                <i class="fa-solid fa-globe mr-2"></i><?php echo $lang->get('secure_send_use_public_url'); ?>
-                            </label>
-                            <div class="input-group mb-3">
-                                <div class="form-check mb-3 icheck-blue">
-                                    <input type="checkbox" class="form-check-input form-item-control flat-blue infotip" id="form-item-otv-subdomain" data-public-configured="<?php echo trim((string) ($SETTINGS['otv_subdomain'] ?? '')) !== '' ? '1' : '0'; ?>" <?php
-                                        echo isset($SETTINGS['otv_subdomain']) === true && empty($SETTINGS['otv_subdomain']) === false ? ' enabled' : ' disabled'; ?> data-change-ongoing="">
+                    <fieldset class="mb-4">
+                        <legend class="h6 border-bottom pb-2 mb-3"><i class="fa-solid fa-sliders mr-2" aria-hidden="true"></i><?php echo $lang->get('secure_send_access_settings'); ?></legend>
+                        <div class="form-row align-items-end">
+                            <div class="form-group col-sm-6">
+                                <label for="form-item-otv-days"><?php echo $lang->get('number_of_days'); ?></label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend"><span class="input-group-text"><i class="fa-regular fa-calendar-days" aria-hidden="true"></i></span></div>
+                                    <input type="number" class="form-control clear-me-val" id="form-item-otv-days" min="1" max="<?php echo (int) $SETTINGS['otv_expiration_period']; ?>" value="<?php echo (int) $SETTINGS['otv_expiration_period']; ?>" aria-describedby="secure-send-days-limit">
                                 </div>
+                                <small id="secure-send-days-limit" class="form-text text-muted"><?php echo $lang->get('maximum') . ' : ' . (int) $SETTINGS['otv_expiration_period']; ?></small>
+                            </div>
+                            <div class="form-group col-sm-6">
+                                <label for="form-item-otv-views"><?php echo $lang->get('number_of_times'); ?></label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend"><span class="input-group-text"><i class="fa-regular fa-eye" aria-hidden="true"></i></span></div>
+                                    <input type="number" class="form-control clear-me-val" id="form-item-otv-views" value="1" min="1" max="<?php echo (int) ($SETTINGS['secure_send_max_views'] ?? 5); ?>" aria-describedby="secure-send-views-limit">
+                                </div>
+                                <small id="secure-send-views-limit" class="form-text text-muted"><?php echo $lang->get('maximum') . ' : ' . (int) ($SETTINGS['secure_send_max_views'] ?? 5); ?></small>
                             </div>
                         </div>
-
-                        <div class="form-group col-2">
-                            <a class="btn btn-app mt-3" id="form-secure-send-generate">
-                                <i class="fa-solid fa-link"></i><br><?php echo $lang->get('generate'); ?>
-                            </a>
+                        <div class="form-group">
+                            <label for="form-secure-send-passphrase"><i class="fa-solid fa-lock mr-2" aria-hidden="true"></i><?php echo $lang->get((int) ($SETTINGS['secure_send_require_passphrase'] ?? 0) === 1 ? 'secure_send_passphrase_required_label' : 'secure_send_passphrase'); ?></label>
+                            <input type="text" class="form-control clear-me-val" id="form-secure-send-passphrase" autocomplete="off" maxlength="1024" aria-describedby="secure-send-passphrase-hint" <?php echo (int) ($SETTINGS['secure_send_require_passphrase'] ?? 0) === 1 ? 'required' : ''; ?>>
+                            <small id="secure-send-passphrase-hint" class="form-text text-muted"><?php echo $lang->get('secure_send_passphrase_hint'); ?></small>
                         </div>
-                    </div>
+                        <div class="secure-send-panel">
+                            <div class="d-flex align-items-center">
+                                <input type="checkbox" class="form-item-control flat-blue" id="form-item-otv-subdomain" aria-describedby="secure-send-address-preview" <?php
+                                    echo trim((string) ($SETTINGS['otv_subdomain'] ?? '')) !== '' ? ' checked' : ' disabled'; ?> data-public-configured="<?php echo trim((string) ($SETTINGS['otv_subdomain'] ?? '')) !== '' ? '1' : '0'; ?>" data-change-ongoing="">
+                                <label for="form-item-otv-subdomain" class="mb-0 ml-2"><?php echo $lang->get('secure_send_use_public_url'); ?></label>
+                            </div>
+                            <p class="text-muted small mt-2 mb-0" id="secure-send-address-preview" aria-live="polite"></p>
+                            <?php if (trim((string) ($SETTINGS['otv_subdomain'] ?? '')) === '') { ?>
+                                <small class="d-block text-muted mt-1"><?php echo $lang->get('feature_disabled_by_administrator'); ?></small>
+                            <?php } ?>
+                        </div>
+                    </fieldset>
 
-                    <p id="secure-send-address-preview" class="small text-muted"></p>
-                    <div class="form-group">
-                        <label for="form-item-otv-link"><i class="fa-solid fa-link mr-2"></i><?php echo $lang->get('otv_link'); ?></label>
-                        <div class="input-group mb-3">
-                            <input type="text" class="form-control clear-me-val" disabled id="form-item-otv-link" data-otv-id="0">
-                            <div class="input-group-prepend">
-                                <button type="button" class="btn btn-warning btn-copy-clipboard" id="form-item-otv-copy-button"><?php echo $lang->get('copy'); ?></button>
+                    <div class="secure-send-panel mb-4">
+                        <div class="secure-send-result-heading d-flex flex-column flex-sm-row align-items-sm-center justify-content-sm-between mb-3">
+                            <label for="form-item-otv-link" class="mb-2 mb-sm-0"><i class="fa-solid fa-link mr-2" aria-hidden="true"></i><?php echo $lang->get('secure_send_sharing_link'); ?></label>
+                            <button type="button" class="btn btn-primary" id="form-secure-send-generate"><i class="fa-solid fa-link mr-2" aria-hidden="true"></i><?php echo $lang->get('secure_send_generate_link'); ?></button>
+                        </div>
+                        <div class="input-group">
+                            <input type="text" class="form-control clear-me-val" readonly id="form-item-otv-link" data-otv-id="0" autocomplete="off" spellcheck="false" placeholder="<?php echo htmlspecialchars($lang->get('secure_send_link_placeholder'), ENT_QUOTES, 'UTF-8'); ?>">
+                            <div class="input-group-append">
+                                <button type="button" class="btn btn-outline-primary btn-copy-clipboard" disabled id="form-item-otv-copy-button"><i class="fa-regular fa-copy mr-2" aria-hidden="true"></i><?php echo $lang->get('copy'); ?></button>
                             </div>
                         </div>
-                        <small id="form-secure-send-passphrase-reminder" class="text-info hidden"><i class="fa-solid fa-circle-info mr-1"></i><?php echo $lang->get('secure_send_passphrase_reminder'); ?></small>
+                        <small id="form-secure-send-passphrase-reminder" class="d-block mt-2 text-info hidden"><i class="fa-solid fa-circle-info mr-1" aria-hidden="true"></i><?php echo $lang->get('secure_send_passphrase_reminder'); ?></small>
+                        <details id="secure-send-snapshot-hint" class="text-muted small mt-3">
+                            <summary><?php echo $lang->get('secure_send_snapshot_details'); ?></summary>
+                            <p class="mt-2 mb-0"><?php echo $lang->get('secure_send_snapshot_hint'); ?></p>
+                        </details>
                     </div>
 
                     <!-- MY SECURE SENDS -->
-                    <div class="card card-outline card-secondary mt-3">
-                        <div class="card-header py-2">
-                            <h6 class="card-title mb-0"><i class="fa-solid fa-paper-plane mr-2"></i><?php echo $lang->get('secure_send_my_sends'); ?></h6>
-                            <div class="card-tools">
-                                <button type="button" class="btn btn-tool" id="secure-send-list-refresh"><i class="fa-solid fa-rotate"></i></button>
-                            </div>
+                    <section aria-labelledby="secure-send-list-title">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 id="secure-send-list-title" class="mb-0"><i class="fa-regular fa-paper-plane mr-2" aria-hidden="true"></i><?php echo $lang->get('secure_send_my_sends'); ?></h6>
+                            <button type="button" class="btn btn-sm btn-default" id="secure-send-list-refresh" title="<?php echo htmlspecialchars($lang->get('refresh'), ENT_QUOTES, 'UTF-8'); ?>"><i class="fa-solid fa-rotate" aria-hidden="true"></i><span class="sr-only"><?php echo $lang->get('refresh'); ?></span></button>
                         </div>
-                        <div class="card-body p-2">
-                            <div id="secure-send-list" class="text-muted small"><?php echo $lang->get('secure_send_no_active'); ?></div>
-                        </div>
-                    </div>
+                        <div id="secure-send-list" class="small" aria-live="polite"><p class="text-muted mb-0 py-3"><?php echo $lang->get('secure_send_no_active'); ?></p></div>
+                    </section>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-default" data-dismiss="modal"><?php echo $lang->get('close'); ?></button>

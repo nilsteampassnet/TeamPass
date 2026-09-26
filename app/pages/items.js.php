@@ -8392,17 +8392,18 @@ require __DIR__ . '/renewal.preview.js.php';
                     return;
                 }
                 if (data.sends === undefined || data.sends.length === 0) {
-                    $('#secure-send-list').text(<?php echo json_encode($lang->get('secure_send_no_active'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>);
+                    $('#secure-send-list').html('<p class="text-muted mb-0 py-3">' + htmlEncode(<?php echo json_encode($lang->get('secure_send_no_active'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>) + '</p>');
                     return;
                 }
                 var html = '<ul class="list-unstyled mb-0">';
                 data.sends.forEach(function(s) {
-                    var lock = s.has_passphrase === 1 ? ' <i class="fa-solid fa-lock text-success"></i>' : '';
+                    var lock = s.has_passphrase === 1 ? ' <i class="fa-solid fa-lock text-success" aria-hidden="true"></i><span class="sr-only">' + htmlEncode(<?php echo json_encode($lang->get('secure_send_protected'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>) + '</span>' : '';
                     var icon = s.send_type === 'note' ? 'fa-note-sticky' : 'fa-key';
-                    html += '<li class="d-flex justify-content-between align-items-center border-bottom py-1">' +
-                        '<span><i class="fa-solid ' + icon + ' mr-2"></i>' + htmlEncode(s.label) + lock +
-                        ' <small class="text-muted ml-2">' + Number(s.remaining_views) + ' ' + htmlEncode(<?php echo json_encode($lang->get('secure_send_remaining_views'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>) + ' &middot; ' + htmlEncode(s.expires_label) + '</small></span>' +
-                        '<button type="button" class="btn btn-xs btn-outline-danger secure-send-revoke ml-2" data-id="' + s.id + '"><i class="fa-solid fa-trash"></i></button>' +
+                    html += '<li class="secure-send-entry d-flex align-items-center">' +
+                        '<i class="fa-solid ' + icon + ' text-muted mr-3" aria-hidden="true"></i>' +
+                        '<div class="secure-send-entry-content flex-grow-1"><span class="d-block font-weight-bold">' + htmlEncode(s.label) + lock + '</span>' +
+                        '<span class="d-block text-muted mt-1">' + Number(s.remaining_views) + ' ' + htmlEncode(<?php echo json_encode($lang->get('secure_send_remaining_views'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>) + ' &middot; ' + htmlEncode(s.expires_label) + '</span></div>' +
+                        '<button type="button" class="btn btn-sm btn-outline-danger secure-send-revoke ml-3" data-id="' + Number(s.id) + '"><i class="fa-solid fa-trash mr-1" aria-hidden="true"></i>' + htmlEncode(<?php echo json_encode($lang->get('secure_send_revoke'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>) + '</button>' +
                         '</li>';
                 });
                 html += '</ul>';
