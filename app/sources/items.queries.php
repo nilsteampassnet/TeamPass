@@ -49,6 +49,7 @@ require_once 'lapr.functions.php';
 require_once __DIR__ . '/item_access_logic.php';
 require_once __DIR__ . '/secure_send_access.php';
 require_once __DIR__ . '/secure_send_snapshot.php';
+require_once __DIR__ . '/secure_send_input.php';
 
 // init
 loadClasses('DB');
@@ -7084,6 +7085,17 @@ switch ($inputData['type']) {
             'decode'
         );
 
+        if (!is_array($dataReceived)) {
+            echo json_encode(['error' => 'invalid_payload']);
+            break;
+        }
+        try {
+            secureSendValidateInput($dataReceived);
+        } catch (InvalidArgumentException $e) {
+            echo json_encode(['error' => 'invalid_payload']);
+            break;
+        }
+
         // Determine the kind of send: an existing item or an ad-hoc note/secret
         $secureSendType = (isset($dataReceived['send_type']) === true && $dataReceived['send_type'] === 'note') ? 'note' : 'item';
         if ($secureSendType === 'note' && (int) ($SETTINGS['secure_send_allow_notes'] ?? 0) !== 1) {
@@ -7098,30 +7110,7 @@ switch ($inputData['type']) {
             break;
         }
 
-        // Clamp expiry (days) and view count to the administrator policy
-        $secureSendMaxDays = (int) ($SETTINGS['otv_expiration_period'] ?? 7);
-        if ($secureSendMaxDays < 1) {
-            $secureSendMaxDays = 7;
-        }
-        $secureSendDays = (int) ($dataReceived['days'] ?? $secureSendMaxDays);
-        if ($secureSendDays < 1) {
-            $secureSendDays = 1;
-        }
-        if ($secureSendDays > $secureSendMaxDays) {
-            $secureSendDays = $secureSendMaxDays;
-        }
-
-        $secureSendMaxViewsCap = (int) ($SETTINGS['secure_send_max_views'] ?? 5);
-        if ($secureSendMaxViewsCap < 1) {
-            $secureSendMaxViewsCap = 1;
-        }
-        $secureSendViews = (int) ($dataReceived['views'] ?? 1);
-        if ($secureSendViews < 1) {
-            $secureSendViews = 1;
-        }
-        if ($secureSendViews > $secureSendMaxViewsCap) {
-            $secureSendViews = $secureSendMaxViewsCap;
-        }
+        $secureSendLimits = secureSendLimits($SETTINGS, $dataReceived, time());
 
         // Build the plaintext payload to share
         $secureSendDescriptionTruncated = false;
@@ -7225,8 +7214,8 @@ switch ($inputData['type']) {
                 'protected_key' => $secureSendProtectedKey,
                 'has_passphrase' => $secureSendPassphrase === '' ? 0 : 1,
                 'failed_attempts' => 0,
-                'time_limit' => $secureSendDays * (int) TP_ONE_DAY_SECONDS + time(),
-                'max_views' => $secureSendViews,
+                'time_limit' => $secureSendLimits['time_limit'],
+                'max_views' => $secureSendLimits['views'],
                 'shared_globaly' => $secureSendShared,
             )
         );

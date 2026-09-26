@@ -276,6 +276,9 @@ The existing sharing table stores hex-encoded ciphertext in a TEXT column
 shortened at a UTF-8 boundary until the encoded payload fits. Sender and
 recipient are warned, and the original item is unchanged. Credentials are never
 truncated; if required fields alone are too large, no link is created.
+Passphrases are limited to 1,024 bytes, matching the recipient form. Malformed
+fields and invalid note text are rejected before a link is created; requested
+validity and view counts remain bounded by the administrator's policy.
 No schema upgrade is needed: new copies use the existing send_type value space
 with item_v2. Legacy item and note links remain readable. Do not roll back the
 application while item_v2 links remain active.
