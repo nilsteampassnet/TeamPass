@@ -91,9 +91,9 @@ if ($configState === 'not_installed') {
 }
 
 // One-Time-View / Secure Send is a public, unauthenticated endpoint. Handle it here
-// — before CSRFGuard and before any authenticated routing — then exit. It performs
-// no session-bound mutation, so it needs no CSRF token (the anonymous recipient has
-// none); because it always exits, a crafted "?otv=" request can never fall through
+// — before CSRFGuard and before any authenticated routing — then exit. It issues
+// its own session-bound, single-use confirmation token before accepting a reveal POST;
+// because it always exits, a crafted "?otv=" request can never fall through
 // to a CSRF-protected handler. CSRFGuard therefore stays unconditionally enabled for
 // every other index.php request, and the page renders its own self-contained layout.
 if (isset($_GET['otv']) === true && $_GET['otv'] !== '') {

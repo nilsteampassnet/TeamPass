@@ -126,7 +126,10 @@ class SecureSendAccessTest extends TestCase
         self::assertStringContainsString("array('error' => 'cannot_decrypt')", $create);
         self::assertStringContainsString('secureSendFilterLinks($secureSendRows,', $sender);
         $recipient = (string) file_get_contents(__DIR__ . '/../../app/core/otv.php');
-        self::assertLessThan(strpos($recipient, '$payload_decrypted = cryption('), strpos($recipient, 'secureSendReadItem('));
-        self::assertStringContainsString("(int) \$data['originator']", $recipient);
+        self::assertStringContainsString('secureSendPrepareRecipient(', $recipient);
+        $lifecycle = (string) file_get_contents(__DIR__ . '/../../app/sources/secure_send.functions.php');
+        $redemption = substr($lifecycle, strpos($lifecycle, 'function secureSendRedeem('));
+        self::assertLessThan(strpos($redemption, 'secureSendDecryptPayload('), strpos($redemption, 'secureSendReadItem('));
+        self::assertStringContainsString("(int) \$link['originator']", $redemption);
     }
 }
