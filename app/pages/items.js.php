@@ -8346,6 +8346,7 @@ require __DIR__ . '/renewal.preview.js.php';
      */
     function secureSendErrorLabel(code) {
         var map = {
+            'cannot_decrypt': <?php echo json_encode($lang->get('secure_send_cannot_decrypt'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
             'passphrase_required': '<?php echo $lang->get('secure_send_passphrase_required_error'); ?>',
             'empty_note': '<?php echo $lang->get('secure_send_empty_note_error'); ?>',
             'notes_not_allowed': '<?php echo $lang->get('error'); ?>',
