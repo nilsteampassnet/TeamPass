@@ -48,6 +48,7 @@ require_once 'classification.functions.php';
 require_once 'lapr.functions.php';
 require_once __DIR__ . '/item_access_logic.php';
 require_once __DIR__ . '/secure_send_access.php';
+require_once __DIR__ . '/secure_send_snapshot.php';
 
 // init
 loadClasses('DB');
@@ -7123,9 +7124,9 @@ switch ($inputData['type']) {
         }
 
         // Build the plaintext payload to share
+        $secureSendDescriptionTruncated = false;
         if ($secureSendType === 'item') {
-            // Item send: re-encrypt the item password; the recipient page reads the
-            // other fields (label, login, url, description) from the item via item_id.
+            // Item sends keep a coherent encrypted copy of all displayed fields.
             $secureSendItemId = (int) ($dataReceived['id'] ?? 0);
             $itemQ = secureSendReadItem($secureSendItemId, (int) $session->get('user-id'));
             if ($itemQ === []) {
@@ -7139,8 +7140,12 @@ switch ($inputData['type']) {
                     (string) $session->get('user-private_key'),
                     (string) $session->get('user-public_key')
                 );
+                $snapshot = secureSendEncodeSnapshot($itemQ, $secureSendPlaintext);
+                $secureSendPlaintext = $snapshot['plaintext'];
+                $secureSendDescriptionTruncated = $snapshot['description_truncated'];
+                $secureSendType = 'item_v2';
             } catch (InvalidArgumentException $e) {
-                echo json_encode(array('error' => 'cannot_decrypt'));
+                echo json_encode(array('error' => $e->getMessage() === 'invalid_payload' ? 'invalid_payload' : 'cannot_decrypt'));
                 break;
             }
         } else {
@@ -7196,10 +7201,14 @@ switch ($inputData['type']) {
             'encrypt',
             $SETTINGS
         );
+        if (!empty($passwd['error']) || strlen($passwd['string']) > 65535) {
+            echo json_encode(array('error' => 'invalid_payload'));
+            break;
+        }
         $timestampReference = time();
 
         // "Shared globaly" (subdomain) only applies to item sends when configured by the admin
-        $secureSendShared = ($secureSendType === 'item'
+        $secureSendShared = ($secureSendType !== 'note'
             && (int) ($dataReceived['shared_globaly'] ?? 0) === 1
             && empty($SETTINGS['otv_subdomain']) === false) ? 1 : 0;
 
@@ -7251,6 +7260,7 @@ switch ($inputData['type']) {
                 'url' => $url,
                 'otv_id' => $newID,
                 'has_passphrase' => $secureSendPassphrase === '' ? 0 : 1,
+                'description_truncated' => $secureSendDescriptionTruncated,
             )
         );
         break;

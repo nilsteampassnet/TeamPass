@@ -17,6 +17,7 @@ class SecureSendLifecycleTest extends TestCase
         require_once __DIR__ . '/../Fixtures/secure_send_memory_db.php';
         require_once __DIR__ . '/../Fixtures/secure_send_dependencies.php';
         require_once __DIR__ . '/../../app/sources/secure_send.functions.php';
+        require_once __DIR__ . '/../../app/sources/secure_send_snapshot.php';
         DB::reset();
         $this->settings = ['otv_is_enabled' => 1, 'cpassman_url' => 'https://vault.example.com',
             'otv_subdomain' => 'https://share.example.com/vault', 'otv_expiration_period' => 7,
@@ -153,6 +154,25 @@ class SecureSendLifecycleTest extends TestCase
             }
             self::assertSame('{"password":"literal"}', secureSendRedeem($parameters, '', $this->settings)['fields']['password']);
         }
+    }
+
+    /** Later edits cannot mix new metadata with the password copied at link creation. */
+    public function testSnapshotsKeepTheCopiedFieldsAndReportTruncation(): void
+    {
+        DB::$item['description'] = str_repeat('Description 中文 ', 5000);
+        $snapshot = secureSendEncodeSnapshot(DB::$item, DB::$password);
+        $parameters = $this->create(['password' => $snapshot['plaintext']]);
+        DB::$links[1]['send_type'] = 'item_v2';
+        DB::$item['label'] = 'Changed label';
+        DB::$item['login'] = 'bob';
+        DB::$password = 'new-password';
+        $result = secureSendRedeem($parameters, '', $this->settings);
+        self::assertSame('', $result['error']);
+        self::assertSame('Original label', $result['fields']['label']);
+        self::assertSame('alice', $result['fields']['login']);
+        self::assertSame('secret-at-creation', $result['fields']['password']);
+        self::assertTrue($result['fields']['description_truncated']);
+        self::assertTrue(mb_check_encoding($result['fields']['description'], 'UTF-8'));
     }
 
     public function testReservationOrAuditFailureRollsBackWithoutReturningPlaintext(): void

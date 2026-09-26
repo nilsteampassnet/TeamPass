@@ -266,6 +266,20 @@ with the usual automatic-deletion audit. An already exhausted budget or elapsed
 deletion date deactivates the item without revealing it or consuming a link view.
 All links to the inactive item are subsequently denied.
 
+New item links share an encrypted copy of the label, login, URL, description and
+password as they were when the link was created. Later edits do not update that
+copy, but deletion or loss of the sender's permissions still blocks access.
+Create a new link to share updated content.
+
+The existing sharing table stores hex-encoded ciphertext in a TEXT column
+(65,535 bytes). If a copy would exceed that limit, only its description is
+shortened at a UTF-8 boundary until the encoded payload fits. Sender and
+recipient are warned, and the original item is unchanged. Credentials are never
+truncated; if required fields alone are too large, no link is created.
+No schema upgrade is needed: new copies use the existing send_type value space
+with item_v2. Legacy item and note links remain readable. Do not roll back the
+application while item_v2 links remain active.
+
 If the administrator has defined an **external subdomain**, the generated link uses that subdomain, making it accessible outside your organization's network even if the main Teampass instance is internal-only.
 
 When one or more valid OTV links exist for an item, a badge showing the count is displayed on the item row.

@@ -108,6 +108,9 @@ $escape = static fn (string $value): string => htmlspecialchars($value, ENT_QUOT
                     : ['label' => otvRenderPlainField($fields['label']), 'password' => $escape($fields['password']), 'login' => otvRenderPlainField($fields['login']), 'url' => otvRenderPlainField($fields['url']), 'description' => otvSanitizeDescription($fields['description'])];
                 ?>
                 <p><?php echo $escape($lang->get('secure_send_recipient_intro')); ?></p>
+                <?php if (($fields['description_truncated'] ?? false) === true) { ?>
+                    <p class="alert alert-warning"><?php echo $escape($lang->get('secure_send_description_truncated')); ?></p>
+                <?php } ?>
                 <div class="table-responsive">
                     <table class="table" style="overflow-wrap: anywhere">
                         <tbody>

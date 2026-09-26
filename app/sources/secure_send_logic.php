@@ -36,7 +36,7 @@ function secureSendIsAvailable(array $link, array $settings, int $now): bool
         && (int) ($link['views'] ?? 0) < (int) ($link['max_views'] ?? 0)
         && (int) ($link['failed_attempts'] ?? 0) < 5
         && ((int) ($link['has_passphrase'] ?? 0) !== 1 || !empty($link['protected_key']))
-        && in_array($link['send_type'] ?? 'item', ['item', 'note'], true)
+        && in_array($link['send_type'] ?? 'item', ['item', 'item_v2', 'note'], true)
         && (($link['send_type'] ?? 'item') !== 'note' || (int) ($settings['secure_send_allow_notes'] ?? 0) === 1)
         && ((int) ($settings['secure_send_require_passphrase'] ?? 0) !== 1 || (int) ($link['has_passphrase'] ?? 0) === 1);
 }

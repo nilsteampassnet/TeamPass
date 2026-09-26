@@ -48,7 +48,7 @@ function secureSendDecryptPayload(array $link, string $linkSecret, string $passp
         return ['password' => $decrypted['string']];
     }
     $payload = json_decode($decrypted['string'], true, 16, JSON_THROW_ON_ERROR);
-    $fields = ['title', 'secret', 'note', 'login', 'url'];
+    $fields = $link['send_type'] === 'note' ? ['title', 'secret', 'note', 'login', 'url'] : ['label', 'password', 'description', 'login', 'url'];
     foreach ($fields as $field) {
         if (!is_array($payload) || !isset($payload[$field]) || !is_string($payload[$field])) {
             throw new InvalidArgumentException('invalid_link');

@@ -29,6 +29,8 @@
  */
 
 return array(
+    'secure_send_invalid_payload' => 'The sharing content is invalid or too large. No link was created.',
+    'secure_send_description_truncated' => 'The description in this shared copy was shortened to fit the storage limit. The original item was not changed.',
     'secure_send_confirmation_expired' => 'This confirmation is no longer valid. Confirm again below to reveal the content.',
     'secure_send_reveal_hint' => 'Opening this page does not consume a view. Confirm below to reveal the content and use one of the permitted views.',
     'secure_send_reveal' => 'Reveal the shared content',

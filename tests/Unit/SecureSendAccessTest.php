@@ -123,7 +123,7 @@ class SecureSendAccessTest extends TestCase
         self::assertLessThan(strpos($create, 'secureSendItemPassword('), strpos($create, 'secureSendReadItem('));
         self::assertLessThan(strpos($create, 'DB::insert('), strpos($create, 'secureSendItemPassword('));
         self::assertStringContainsString("catch (InvalidArgumentException \$e)", $create);
-        self::assertStringContainsString("array('error' => 'cannot_decrypt')", $create);
+        self::assertStringContainsString("'cannot_decrypt'", $create);
         self::assertStringContainsString('secureSendFilterLinks($secureSendRows,', $sender);
         $recipient = (string) file_get_contents(__DIR__ . '/../../app/core/otv.php');
         self::assertStringContainsString('secureSendPrepareRecipient(', $recipient);
