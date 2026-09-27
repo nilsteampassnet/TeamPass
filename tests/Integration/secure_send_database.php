@@ -71,7 +71,7 @@ function concurrentRedemptions(array $parameters, array $settings, int $count, s
 
 $settings = ['otv_is_enabled' => 1, 'secure_send_allow_notes' => 1, 'secure_send_max_views' => 5,
     'otv_expiration_period' => 7, 'cpassman_url' => 'https://vault.example.com', 'otv_subdomain' => 'https://share.example.com'];
-$tables = ['otv', 'users', 'send_audit', 'items', 'automatic_del'];
+$tables = ['otv', 'users', 'send_audit', 'items', 'automatic_del', 'cache', 'nested_tree'];
 try {
     // Same relevant types/defaults as the installer, including the historical string timestamps.
     DB::query('CREATE TABLE ' . prefixTable('otv') . ' (
@@ -87,6 +87,8 @@ try {
         inactif INT DEFAULT 0, deleted_at INT NULL) ENGINE=InnoDB');
     DB::query('CREATE TABLE ' . prefixTable('automatic_del') . ' (
         item_id INT PRIMARY KEY, del_enabled INT, del_type INT, del_value BIGINT) ENGINE=InnoDB');
+    DB::query('CREATE TABLE ' . prefixTable('cache') . ' (id INT PRIMARY KEY) ENGINE=InnoDB');
+    DB::query('CREATE TABLE ' . prefixTable('nested_tree') . ' (id INT PRIMARY KEY, nb_items_in_folder INT) ENGINE=InnoDB');
     DB::insert(prefixTable('users'), ['id' => 42]);
 
     foreach ([1, 5] as $allowedViews) {
@@ -116,6 +118,8 @@ try {
     DB::insert(prefixTable('items'), ['id' => 123, 'id_tree' => 7, 'label' => 'Fixture item',
         'login' => '', 'url' => '', 'description' => '']);
     DB::insert(prefixTable('automatic_del'), ['item_id' => 123, 'del_enabled' => 1, 'del_type' => 1, 'del_value' => 1]);
+    DB::insert(prefixTable('cache'), ['id' => 123]);
+    DB::insert(prefixTable('nested_tree'), ['id' => 7, 'nb_items_in_folder' => 1]);
     $pool = [];
     for ($i = 0; $i < 2; ++$i) {
         $created = secureSendFixtureCreate(['views' => 5]);
@@ -125,7 +129,10 @@ try {
     $results = concurrentRedemptions($pool, $settings, 10);
     check(count(array_filter($results, static fn (array $r): bool => $r['error'] === '')) === 1, 'Item deletion budget was exceeded across links');
     check((int) DB::queryFirstField('SELECT inactif FROM ' . prefixTable('items') . ' WHERE id = 123') === 1, 'Exhausted item was not deactivated');
-    check((int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('automatic_del')) === 0, 'Exhausted budget was not removed');
+    check((int) DB::queryFirstField('SELECT deleted_at FROM ' . prefixTable('items') . ' WHERE id = 123') > 0, 'Deletion timestamp was not set');
+    check((int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('automatic_del') . ' WHERE item_id = 123 AND del_value = 0') === 1, 'Exhausted budget settings were not retained');
+    check((int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('cache')) === 0, 'Deleted item remained in the cache');
+    check((int) DB::queryFirstField('SELECT nb_items_in_folder FROM ' . prefixTable('nested_tree') . ' WHERE id = 7') === 0, 'Folder counter was not decremented exactly once');
     check((int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('send_audit') . ' WHERE action = %s', 'at_delete') === 1, 'Automatic deletion was not audited exactly once');
     foreach ($results as $result) {
         check($result['error'] === '' || !isset($result['fields']), 'A refused item request disclosed plaintext');

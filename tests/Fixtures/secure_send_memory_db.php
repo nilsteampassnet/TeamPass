@@ -9,12 +9,16 @@ class DB
     public static array $audit = [];
     public static array $item = [];
     public static array $automatic = [];
+    public static array $cache = [];
+    public static array $folderCounts = [];
     public static bool $access = true;
     public static bool $activeUser = true;
     public static bool $admin = false;
     public static bool $hasSharekey = true;
     public static bool $rejectReservation = false;
     public static bool $failAudit = false;
+    public static bool $failCache = false;
+    public static bool $failCounter = false;
     public static string $objectKey = 'object-key';
     public static string $password = 'secret-at-creation';
     private static array $snapshot = [];
@@ -26,6 +30,9 @@ class DB
         self::$links = self::$audit = self::$automatic = self::$snapshot = [];
         self::$access = self::$activeUser = self::$hasSharekey = true;
         self::$admin = self::$rejectReservation = self::$failAudit = false;
+        self::$failCache = self::$failCounter = false;
+        self::$cache = [123 => ['id' => 123]];
+        self::$folderCounts = [7 => 1];
         self::$objectKey = 'object-key';
         self::$password = 'secret-at-creation';
         self::$id = 0;
@@ -93,6 +100,13 @@ class DB
 
     public static function delete(string $table, string $where, int $id): void
     {
+        if ($table === prefixTable('cache')) {
+            if (self::$failCache) {
+                throw new RuntimeException('Synthetic cache failure');
+            }
+            unset(self::$cache[$id]);
+            return;
+        }
         if ($table === prefixTable('automatic_del')) {
             self::$automatic = [];
             return;
@@ -116,6 +130,12 @@ class DB
                 --self::$automatic['del_value'];
                 self::$affected = 1;
             }
+        } elseif (str_contains($sql, 'SET nb_items_in_folder =')) {
+            if (self::$failCounter) {
+                throw new RuntimeException('Synthetic folder counter failure');
+            }
+            self::$folderCounts[$args[1]] = max(0, self::$folderCounts[$args[1]] + $args[0]);
+            self::$affected = 1;
         } else {
             throw new RuntimeException('Unexpected test write');
         }
@@ -127,14 +147,14 @@ class DB
         if (self::$snapshot !== []) {
             throw new RuntimeException('Unclosed test transaction');
         }
-        self::$snapshot = [self::$links, self::$audit, self::$automatic, self::$item];
+        self::$snapshot = [self::$links, self::$audit, self::$automatic, self::$item, self::$cache, self::$folderCounts];
     }
 
     public static function commit(): void { self::$snapshot = []; }
     public static function rollback(): void
     {
         if (self::$snapshot !== []) {
-            [self::$links, self::$audit, self::$automatic, self::$item] = self::$snapshot;
+            [self::$links, self::$audit, self::$automatic, self::$item, self::$cache, self::$folderCounts] = self::$snapshot;
             self::$snapshot = [];
         }
     }

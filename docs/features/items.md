@@ -265,6 +265,10 @@ view is revealed and the item is then made inactive in the same transaction,
 with the usual automatic-deletion audit. An already exhausted budget or elapsed
 deletion date deactivates the item without revealing it or consuming a link view.
 All links to the inactive item are subsequently denied.
+As with automatic deletion from the item viewer, TeamPass records the deletion
+date, removes the item from the list cache and updates the folder counters.
+The automatic-deletion settings are retained. These database changes roll back
+with the view reservation if the operation fails.
 
 If the administrator has defined an **external subdomain**, the generated link uses that subdomain, making it accessible outside your organization's network even if the main Teampass instance is internal-only.
 

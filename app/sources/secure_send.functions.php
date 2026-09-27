@@ -180,10 +180,12 @@ function secureSendRedeem(array $parameters, string $passphrase, array $settings
  */
 function secureSendDeactivateItem(array $item, array $settings): void
 {
-    DB::update(prefixTable('items'), ['inactif' => 1], 'id = %i', (int) $item['id']);
-    DB::delete(prefixTable('automatic_del'), 'item_id = %i', (int) $item['id']);
+    DB::update(prefixTable('items'), ['inactif' => 1, 'deleted_at' => time()], 'id = %i', (int) $item['id']);
+    // Keep the automatic-deletion settings, as the authenticated item-view path does.
     logItems($settings, (int) $item['id'], $item['label'], (int) OTV_USER_ID,
         'at_delete', 'otv', 'at_automatically_deleted', null, null, null, true, true);
+    updateCacheTable('delete_value', (int) $item['id']);
+    adjustFolderItemsCounter((int) $item['id_tree'], -1);
     emitItemEvent('deleted', (int) $item['id'], (int) $item['id_tree'], $item['label'], 'otv');
 }
 

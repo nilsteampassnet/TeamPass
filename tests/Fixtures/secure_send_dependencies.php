@@ -70,6 +70,21 @@ function logItems(array $settings, int $itemId, string $label, int $userId, stri
     DB::insert(prefixTable('send_audit'), ['item_id' => $itemId, 'action' => $action]);
 }
 
+/** Mirror the production cache deletion through the transactional database adapter. */
+function updateCacheTable(string $action, ?int $itemId = null, ?int $authorId = null): void
+{
+    if ($action !== 'delete_value' || $itemId === null) {
+        throw new LogicException('Unexpected cache operation');
+    }
+    DB::delete(prefixTable('cache'), 'id = %i', $itemId);
+}
+
+/** Model the folder counter write; ancestor propagation has its own helper tests. */
+function adjustFolderItemsCounter(int $folderId, int $delta): void
+{
+    DB::query('UPDATE ' . prefixTable('nested_tree') . ' SET nb_items_in_folder = GREATEST(0, nb_items_in_folder + %i) WHERE id = %i', $delta, $folderId);
+}
+
 /** WebSocket transport is outside the recipient transaction tests. */
 function emitItemEvent(string $action, int $itemId, int $folderId, string $label, string $login, ?int $excludeUserId = null): bool
 {

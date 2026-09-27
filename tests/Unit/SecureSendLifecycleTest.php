@@ -204,11 +204,16 @@ class SecureSendLifecycleTest extends TestCase
         $first = $this->create();
         $second = $this->create();
         self::assertSame('', secureSendRedeem($first, '', $this->settings)['error']);
-        self::assertSame([], DB::$automatic);
+        self::assertSame(['del_enabled' => 1, 'del_type' => 1, 'del_value' => 0], DB::$automatic);
         self::assertSame(1, DB::$item['inactif']);
+        self::assertGreaterThan(0, DB::$item['deleted_at']);
+        self::assertSame([], DB::$cache);
+        self::assertSame([7 => 0], DB::$folderCounts);
         self::assertSame(['at_shown', 'at_delete'], array_column(DB::$audit, 'action'));
         self::assertSame('invalid_link', secureSendRedeem($second, '', $this->settings)['error']);
         self::assertArrayNotHasKey(2, DB::$links);
+        self::assertSame([7 => 0], DB::$folderCounts);
+        self::assertSame(['at_shown', 'at_delete'], array_column(DB::$audit, 'action'));
     }
 
     /** An elapsed automatic deletion date also deactivates the item without revealing it. */
@@ -216,13 +221,48 @@ class SecureSendLifecycleTest extends TestCase
     {
         $this->settings['enable_delete_after_consultation'] = 1;
         DB::$automatic = ['del_enabled' => 1, 'del_type' => 2, 'del_value' => time() - 1];
+        $automatic = DB::$automatic;
         $parameters = $this->create();
         $result = secureSendRedeem($parameters, '', $this->settings);
         self::assertSame('invalid_link', $result['error']);
         self::assertArrayNotHasKey('fields', $result);
         self::assertSame(0, DB::$links[1]['views']);
         self::assertSame(1, DB::$item['inactif']);
+        self::assertGreaterThan(0, DB::$item['deleted_at']);
+        self::assertSame($automatic, DB::$automatic);
+        self::assertSame([], DB::$cache);
+        self::assertSame([7 => 0], DB::$folderCounts);
         self::assertSame(['at_delete'], array_column(DB::$audit, 'action'));
+    }
+
+    /** Cache or counter failures must roll back the reveal and every deletion side effect. */
+    public function testAutomaticDeletionMaintenanceFailureRollsBack(): void
+    {
+        $this->settings['enable_delete_after_consultation'] = 1;
+        $log = tempnam(sys_get_temp_dir(), 'tp-otv-test-');
+        $previous = ini_set('error_log', $log);
+        try {
+            foreach (['cache', 'counter'] as $failure) {
+                DB::reset();
+                DB::$automatic = ['del_enabled' => 1, 'del_type' => 1, 'del_value' => 1];
+                $parameters = $this->create();
+                DB::$failCache = $failure === 'cache';
+                DB::$failCounter = $failure === 'counter';
+                $result = secureSendRedeem($parameters, '', $this->settings);
+                self::assertSame('server_error', $result['error']);
+                self::assertArrayNotHasKey('fields', $result);
+                self::assertSame(0, DB::$links[1]['views']);
+                self::assertSame(0, DB::$item['inactif']);
+                self::assertNull(DB::$item['deleted_at']);
+                self::assertSame(1, DB::$automatic['del_value']);
+                self::assertSame([123 => ['id' => 123]], DB::$cache);
+                self::assertSame([7 => 1], DB::$folderCounts);
+                self::assertSame([], DB::$audit);
+            }
+        } finally {
+            ini_set('error_log', $previous);
+            unlink($log);
+        }
     }
 
 }
