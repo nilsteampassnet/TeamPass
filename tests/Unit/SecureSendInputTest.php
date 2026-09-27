@@ -2,12 +2,40 @@
 
 declare(strict_types=1);
 
+/**
+ * Teampass - a collaborative passwords manager.
+ * ---
+ * This file is part of the TeamPass project.
+ *
+ * TeamPass is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * TeamPass is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Certain components of this file may be under different licenses. For
+ * details, see the `licenses` directory or individual file headers.
+ * ---
+ * @file      SecureSendInputTest.php
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2026 Teampass.net
+ * @license   GPL-3.0
+ * @see       https://www.teampass.net
+ */
+
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/../../app/sources/secure_send_input.php';
 
 class SecureSendInputTest extends TestCase
 {
+    /** Invalid types and malformed note text cannot reach encryption or storage. */
     public function testRejectMalformedFieldsBeforeTheyCanBecomeSharedContent(): void
     {
         foreach ([
@@ -26,6 +54,7 @@ class SecureSendInputTest extends TestCase
         }
     }
 
+    /** Valid UTF-8 notes and a passphrase at the recipient's byte limit remain accepted. */
     public function testValidNotesAndRecipientLengthBoundaryRemainAccepted(): void
     {
         $input = ['send_type' => 'note', 'passphrase' => str_repeat('é', 512),
@@ -35,6 +64,7 @@ class SecureSendInputTest extends TestCase
         self::assertSame(' secret ', $input['payload']['secret']);
     }
 
+    /** Clamp requested duration and views to policy and the database integer range. */
     public function testRequestedLimitsCannotExceedPolicyOrBecomeNegative(): void
     {
         $settings = ['otv_expiration_period' => 7, 'secure_send_max_views' => 5];
