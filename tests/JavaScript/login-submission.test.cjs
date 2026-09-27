@@ -169,8 +169,7 @@ function createLogin(loginSource = source) {
       ? { payload: JSON.parse(value), key } : value,
     showModalDialogBox: () => notices.push({ level: 'refresh-dialog' }),
     setTimeout: callback => { timers.push(callback); return timers.length },
-    setInterval: callback => { timers.push(callback); return timers.length }, clearInterval() {},
-    startAgsesAuth() {}
+    setInterval: callback => { timers.push(callback); return timers.length }, clearInterval() {}
   })
   // Compile the complete template too, including code outside the exercised sections.
   new vm.Script(loginSource)
@@ -347,12 +346,12 @@ for (const [overrides, url] of [
   })
 }
 
-for (const method of ['google', 'yubico', 'duo']) {
+for (const method of ['google', 'yubico']) {
   test(`${method} challenge unlocks the next factor and guards its submission`, async () => {
     const app = createLogin()
     await askForMfa(app, method)
     assert.equal(app.nodes.get('2fa_user_selection').value, method)
-    if (method !== 'duo') assert.equal(app.focused, method === 'google' ? 'ga_code' : 'yubico_key')
+    assert.equal(app.focused, method === 'google' ? 'ga_code' : 'yubico_key')
     app.nodes.get('ga_code').value = '123456'
     app.nodes.get('yubico_key').value = 'dummy-otp'
     app.enter()
@@ -416,12 +415,30 @@ test('first Google enrollment leaves the code input usable', async () => {
   assert.equal(app.focused, 'ga_code')
 })
 
-test('Duo remains locked during its delayed redirect', async () => {
-  const app = createLogin()
-  await askForMfa(app, 'duo')
+// Issue #5401: Duo needs no input on the login page, so a single click must reach it.
+async function askForSingleDuo(app) {
   app.launch()
   await flush()
-  assert.equal(app.requests[1].body.data.payload.duo_status, 'start_duo_auth')
+  app.requests[0].resolve({ value: '2fa_not_set', error: '2fa_not_set',
+    mfa_methods: { mfa_required: true, duo: true } })
+  await flush()
+}
+
+test('a single Duo method starts Duo within the same locked attempt', async () => {
+  const app = createLogin()
+  await askForSingleDuo(app)
+  assert.equal(app.requests.length, 2)
+  const first = app.requests[0].body.data.payload
+  const start = app.requests[1].body.data.payload
+  assert.equal(start.user_2fa_selection, 'duo')
+  assert.equal(start.duo_status, 'start_duo_auth')
+  assert.equal(start.login, first.login)
+  assert.equal(start.pw, first.pw)
+  app.busy(true)
+  app.enter()
+  app.click()
+  await flush()
+  assert.equal(app.requests.length, 2)
   app.requests[1].resolve({ error: false, duo_url_ready: true, duo_redirect_url: 'https://example.test/duo' })
   await flush()
   app.busy(true)
@@ -429,6 +446,42 @@ test('Duo remains locked during its delayed redirect', async () => {
   assert.equal(app.requests.length, 2)
   app.timers[0]()
   assert.equal(app.navigation.href, 'https://example.test/duo')
+})
+
+test('a failed Duo start releases the form and one click retries it', async () => {
+  const app = createLogin()
+  await askForSingleDuo(app)
+  app.requests[1].resolve({ error: true, mfa_error: true, message: 'Duo unavailable' })
+  await flush()
+  app.busy(false)
+  assert.equal(app.requests.length, 2)
+  app.click()
+  await flush()
+  assert.equal(app.requests.length, 3)
+  assert.equal(app.requests[2].body.data.payload.duo_status, 'start_duo_auth')
+})
+
+test('a Duo start answered by another MFA challenge is not chained again', async () => {
+  const app = createLogin()
+  await askForSingleDuo(app)
+  app.requests[1].resolve({ value: '2fa_not_set', error: '2fa_not_set',
+    mfa_methods: { mfa_required: true, duo: true } })
+  await flush()
+  assert.equal(app.requests.length, 2)
+  app.busy(false)
+})
+
+test('several MFA methods wait for a choice, even after a Duo callback', async () => {
+  const app = createLogin()
+  // The Duo callback page pre-fills the selection with 'duo'.
+  app.nodes.get('2fa_user_selection').value = 'duo'
+  app.launch()
+  await flush()
+  app.requests[0].resolve({ value: '2fa_not_set', error: '2fa_not_set',
+    mfa_methods: { mfa_required: true, google: true, duo: true } })
+  await flush()
+  assert.equal(app.requests.length, 1)
+  app.busy(false)
 })
 
 test('Duo callback can submit empty displayed credentials and recover from failure', async () => {

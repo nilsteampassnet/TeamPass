@@ -57,6 +57,8 @@ Before release, also verify these flows in a configured browser environment:
   inactive and ignore clicks while an attempt is pending.
 - Duo and OAuth2: provider redirects and callbacks complete; failures restore the form.
   Returning with the browser Back button reloads a cached, locked login page.
+  When Duo is the user's only MFA method, a single click on **Log in** reaches the
+  Duo prompt (issue #5401).
 - Expired session: renewal replays the pending credentials once while the form stays
   locked; failed renewal leads to the existing refresh dialog.
 - Returning to an idle tab: a pending session check completes before login is sent.

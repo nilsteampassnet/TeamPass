@@ -1299,8 +1299,9 @@ declare(strict_types=1);
                     if (typeof data.mfa_methods !== 'undefined') {
                         cachedMfaData = data.mfa_methods;
                     }
+                    let continueWithoutInput = false;
                     if (cachedMfaData !== null) {
-                        showMFAMethodForUser(cachedMfaData);
+                        continueWithoutInput = showMFAMethodForUser(cachedMfaData);
                     }
                     if (data.mfa_enrollment_started === true) {
                         const mfaEnrollmentMessage = (
@@ -1316,6 +1317,20 @@ declare(strict_types=1);
                                 positionClass: "toast-bottom-right"
                             }
                         );
+                    }
+
+                    // Duo asks for nothing on this page (issue #5401): continue this
+                    // attempt instead of waiting for a second click on an unchanged form.
+                    // Returning the request keeps the form locked until Duo answers. A
+                    // submission that already started Duo is never chained again.
+                    if (continueWithoutInput === true && sharedData.duo_status !== 'start_duo_auth') {
+                        toastr.info(
+                            '<?php echo $lang->get('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>',
+                            '', {
+                                positionClass: "toast-top-center"
+                            }
+                        );
+                        return buildMfaDataAndIdentify(false, redirect, psk, cachedMfaData);
                     }
                     return false;
                 }
@@ -1618,7 +1633,7 @@ declare(strict_types=1);
      * returned after the primary authentication factor succeeds.
      *
      * @param {object} data - decoded MFA method response
-     * @return void
+     * @return {boolean} true when the only method needs no input on this page (Duo)
      */
     function showMFAMethodForUser(data) {
         var twoFaMethods = (data.google === true ? 1 : 0) +
@@ -1630,13 +1645,8 @@ declare(strict_types=1);
             // Multiple methods - show selector
             $('#2fa_methods_selector').removeClass('hidden');
 
-            var loginButMethods = ['google', 'agses', 'duo'];
-
             // Show methods
             $("#2fa_selector").removeClass("hidden");
-
-            // Hide login button until a method is selected
-            $('#div-login-button').addClass('hidden');
 
             // Unselect any method
             $(".2fa_selector_select").prop('checked', false);
@@ -1670,26 +1680,16 @@ declare(strict_types=1);
                     // Show 2fa method div
                     $('#div-2fa-' + twofaMethod).removeClass('hidden');
 
-                    // Show login button if required
-                    if ($.inArray(twofaMethod, loginButMethods) !== -1) {
-                        $('#div-login-button').removeClass('hidden');
-                    } else {
-                        $('#div-login-button').addClass('hidden');
-                    }
-
                     // Make focus
                     if (twofaMethod === 'google') {
                         $('#ga_code').focus();
                     } else if (twofaMethod === 'yubico') {
                         $('#yubico_key').focus();
-                    } else if (twofaMethod === 'agses') {
-                        startAgsesAuth();
                     }
                 });
         } else if (twoFaMethods === 1) {
             // Single method - show it directly and pre-set the hidden selection input
             $('#2fa_methods_selector').addClass('hidden');
-            $('#div-login-button').removeClass('hidden');
 
             if (data.google === true) {
                 $('#2fa_user_selection').val('google');
@@ -1702,10 +1702,9 @@ declare(strict_types=1);
             } else if (data.duo === true) {
                 $('#2fa_user_selection').val('duo');
                 $('#div-2fa-duo').removeClass('hidden');
-            } else if (data.agses === true) {
-                $('#2fa_user_selection').val('agses');
-                startAgsesAuth();
+                return true;
             }
         }
+        return false;
     }
 </script>
