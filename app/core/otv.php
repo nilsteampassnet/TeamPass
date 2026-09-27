@@ -82,7 +82,7 @@ $escape = static fn (string $value): string => htmlspecialchars($value, ENT_QUOT
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="referrer" content="no-referrer">
     <title><?php echo $escape(TP_TOOL_NAME . ' - ' . $lang->get('secure_send')); ?></title>
-    <link rel="stylesheet" href="./plugins/adminlte/css/adminlte.min.css">
+    <link rel="stylesheet" href="./plugins/adminlte/css/adminlte.min.css?v=<?php echo $escape(TP_VERSION . '.' . TP_VERSION_MINOR); ?>">
 </head>
 <body class="hold-transition login-page">
     <main class="card card-outline card-primary m-3" style="width: min(700px, 95vw)">
