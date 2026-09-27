@@ -26,6 +26,8 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'secure_send_invalid_payload' => 'Le contenu à partager est invalide ou trop volumineux. Aucun lien n’a été créé.',
+    'secure_send_description_truncated' => 'La description de cette copie partagée a été raccourcie pour respecter la limite de stockage. L’élément d’origine n’a pas été modifié.',
     'secure_send_confirmation_expired' => 'Cette confirmation n’est plus valide. Confirmez à nouveau ci-dessous pour afficher le contenu.',
     'secure_send_reveal_hint' => 'L’ouverture de cette page ne consomme aucune consultation. Confirmez ci-dessous pour afficher le contenu et utiliser une des consultations autorisées.',
     'secure_send_reveal' => 'Afficher le contenu partagé',
