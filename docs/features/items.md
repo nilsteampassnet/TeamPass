@@ -248,7 +248,17 @@ the recipient opens it. A disabled/deleted sender, deleted item or revoked
 permission prevents access, even if an old sharekey still exists. Inaccessible
 item links and labels are also hidden from the sender's active-link list.
 If the item cannot be decrypted, creation fails without storing a sharing link.
-Standalone secure notes keep their existing behavior.
+
+Administrator policy changes also apply to links that already exist:
+
+- Enabling **Require a passphrase** (`secure_send_require_passphrase`) makes
+  existing links without a passphrase unavailable; links already protected by
+  a passphrase remain subject to their usual limits.
+- Disabling **Allow secure notes** (`secure_send_allow_notes`) makes existing
+  standalone note links unavailable as well as preventing new ones.
+- A standalone note cannot be revealed once its sender is disabled or deleted.
+  Its link is deleted when a recipient submits the confirmation POST; a GET
+  alone neither deletes the link nor consumes a view.
 
 Opening a sharing URL now displays a confirmation form. Only a confirmed POST
 reveals the content and consumes a view, so link previews and scanners do not
