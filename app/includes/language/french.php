@@ -2355,6 +2355,7 @@ return array(
     'secure_send_passphrase_reminder' => 'Ce lien est protégé par une phrase secrète. Pensez à communiquer la phrase secrète séparément.',
     'secure_send_empty_note_error' => 'Veuillez saisir un secret ou une note à envoyer.',
     'secure_send_passphrase_required_error' => 'Une phrase secrète est requise par votre administrateur.',
+    'secure_send_cannot_decrypt' => 'L’élément n’a pas pu être déchiffré. Aucun lien de partage n’a été créé. Rechargez l’élément ou contactez votre administrateur.',
     'onboarding_replay_menu' => 'Guide de démarrage',
     'onboarding_welcome_title' => 'Bienvenue dans TeamPass',
     'onboarding_welcome_body' => 'Prenons une minute pour configurer l’essentiel. Vous pouvez ignorer ce guide à tout moment et le rouvrir plus tard depuis votre menu utilisateur.',
