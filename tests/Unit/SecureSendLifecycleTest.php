@@ -81,6 +81,26 @@ class SecureSendLifecycleTest extends TestCase
         self::assertSame('invalid_link', secureSendRedeem($parameters, '', $this->settings)['error']);
     }
 
+    /** Nullable database fields must remain renderable after a one-view link is committed. */
+    public function testNullableItemFieldsAreStringsAtRedemption(): void
+    {
+        require_once __DIR__ . '/../../app/sources/otv_render_logic.php';
+        DB::$item['login'] = DB::$item['url'] = DB::$item['description'] = null;
+        $parameters = $this->create();
+        $result = secureSendRedeem($parameters, '', $this->settings);
+        self::assertSame('', $result['error']);
+        foreach (['label', 'login', 'url', 'description', 'password'] as $field) {
+            self::assertIsString($result['fields'][$field], $field);
+        }
+        self::assertSame('', otvRenderPlainField($result['fields']['login']));
+        self::assertSame('', otvRenderPlainField($result['fields']['url']));
+        self::assertSame('', otvSanitizeDescription($result['fields']['description']));
+        self::assertSame(DB::$password, $result['fields']['password']);
+        self::assertSame(1, DB::$links[1]['views']);
+        self::assertCount(1, DB::$audit);
+        self::assertSame('invalid_link', secureSendRedeem($parameters, '', $this->settings)['error']);
+    }
+
     public function testDeletionOrRemovedAccessBetweenGetAndPostBlocksAndRevokes(): void
     {
         foreach (['deleted', 'access', 'disabled-user'] as $case) {

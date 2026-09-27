@@ -128,7 +128,9 @@ function secureSendRedeem(array $parameters, string $passphrase, array $settings
         }
         if (($link['send_type'] ?? 'item') === 'item') {
             // Historical links contain only the password; keep their original rendering contract.
-            $fields += array_intersect_key($item, array_flip(['label', 'login', 'url', 'description']));
+            foreach (['label', 'login', 'url', 'description'] as $field) {
+                $fields[$field] = (string) ($item[$field] ?? '');
+            }
         }
         $reserved = DB::query(
             'UPDATE ' . prefixTable('otv') . ' SET views = views + 1
