@@ -41,6 +41,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 require_once __DIR__.'/../sources/otv_render_logic.php';
+require_once __DIR__.'/../sources/secure_send_access.php';
 loadClasses('DB');
 $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
@@ -142,7 +143,17 @@ if (empty($request->query->get('code')) === false
             DB::delete(prefixTable('otv'), 'id = %i', $data['id']);
 
         } else {
-            // Check if user origine is allowed to see the item
+            // Recheck the originator before decrypting or rendering any item content.
+            $sendType = ($data['send_type'] ?? 'item') === 'note' ? 'note' : 'item';
+            $dataItem = $sendType === 'item'
+                ? secureSendReadItem((int) $data['item_id'], (int) $data['originator'])
+                : [];
+            if ($sendType === 'item' && $dataItem === []) {
+                echo '<div class="alert alert-danger">'
+                    . htmlspecialchars($lang->get('not_allowed_to_see_pw'), ENT_QUOTES, 'UTF-8')
+                    . '</div>';
+                return false;
+            }
             // If shared_globaly enabled, then link must contain the subdomain
             if (empty($SETTINGS['shared_globaly']) === false && intval($data['shared_globaly']) === 1 && str_contains(parse_url($_SERVER['REQUEST_URI'], PHP_URL_HOST), $SETTINGS['shared_globaly']) === false) {
                 echo '
@@ -200,8 +211,6 @@ if (empty($request->query->get('code')) === false
                 'decrypt',
                 $SETTINGS
             );
-
-            $sendType = (isset($data['send_type']) === true && $data['send_type'] === 'note') ? 'note' : 'item';
 
             if ($sendType === 'note') {
                 // Self-contained note/secret send (not bound to an item)
@@ -269,16 +278,7 @@ if (empty($request->query->get('code')) === false
                     $data['id']
                 );
             } else {
-                // Item send: read display fields from the shared item
-                $dataItem = DB::queryFirstRow(
-                    'SELECT *
-                    FROM '.prefixTable('items').' as i
-                    INNER JOIN '.prefixTable('log_items').' as l ON (l.id_item = i.id)
-                    INNER JOIN '.prefixTable('otv').' as otv ON (otv.item_id = i.id)
-                    WHERE i.id = %i AND l.action = %s',
-                    $data['item_id'],
-                    'at_creation'
-                );
+                // Display fields were loaded through the originator's access check above.
                 // is Item still valid regarding number of times being seen
                 // Decrement the number before being deleted
                 $dataDelete = DB::queryFirstRow(
@@ -350,7 +350,7 @@ if (empty($request->query->get('code')) === false
                     <tr><th>URL:</th><td>'.$url.'</td></tr>
                     </table></div>
                     <p class="mt-3 text-info"><i class="fas fa-info mr-2"></i>Copy carefully the data you need.<br>This page is visible until <b>'.
-                    date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], intval($dataItem['time_limit'])).'</b> OR <b>'.(intval($dataItem['max_views']) - (intval($dataItem['views'])+1)).' more time(s)</b>.</div>
+                    date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], intval($data['time_limit'])).'</b> OR <b>'.(intval($data['max_views']) - (intval($data['views'])+1)).' more time(s)</b>.</div>
                     </div>';
                 // log
                 logItems(

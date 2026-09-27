@@ -242,6 +242,14 @@ Once enabled by the administrator, this feature generates a time-limited link fo
 - Expires after a configurable duration (default: 7 days).
 - Is valid for a configurable number of views (default: 1).
 
+An item link requires the sender to retain access to an active item. TeamPass
+checks the sender's current permissions when creating the link and each time
+the recipient opens it. A disabled/deleted sender, deleted item or revoked
+permission prevents access, even if an old sharekey still exists. Inaccessible
+item links and labels are also hidden from the sender's active-link list.
+If the item cannot be decrypted, creation fails without storing a sharing link.
+Standalone secure notes keep their existing behavior.
+
 If the administrator has defined an **external subdomain**, the generated link uses that subdomain, making it accessible outside your organization's network even if the main Teampass instance is internal-only.
 
 When one or more valid OTV links exist for an item, a badge showing the count is displayed on the item row.
