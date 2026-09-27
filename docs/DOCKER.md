@@ -164,9 +164,13 @@ Docker Hub (`teampass/teampass`) provides:
 | `master` | Same as latest |
 | `develop` | Development branch |
 | `sha-xxxxxxx` | Specific commit build |
-| `3.1.5.2`, `3.1.6.x` | Versioned releases (published on GitHub Release only) |
+| `3.2.2.0`, `3.2.2.1`, … | One tag per release, from 3.2.2.0 onward |
 
-For testing, use `latest`. Versioned tags only appear after a GitHub Release is published.
+Use `latest` unless you need to pin a version. There is no tag for releases older than 3.2.2.0,
+and no rolling tag such as `3.2` or `3`: check the
+[tags page](https://hub.docker.com/r/teampass/teampass/tags) before pinning. A versioned tag is
+frozen once published, while `latest` is rebuilt every week to pick up the base image security
+fixes.
 
 ### Volumes
 
