@@ -42,7 +42,13 @@ require_once __DIR__ . '/../sources/secure_send.functions.php';
 $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
 $SETTINGS = (new ConfigManager())->getAllSettings();
-$lang = new Language(secureSendRecipientLanguage($session->get('user-language'), $SETTINGS));
+$recipientLanguage = secureSendRecipientLanguage($session->get('user-language'), $SETTINGS);
+$lang = new Language($recipientLanguage);
+// POEditor codes are language tags; the legacy "code" column also contains flag aliases.
+$languageTag = (string) (DB::queryFirstField(
+    'SELECT code_poeditor FROM ' . prefixTable('languages') . ' WHERE name = %s',
+    basename(strtolower($recipientLanguage))
+) ?: 'en');
 date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
 
 // The public endpoint has its own POST confirmation; it never enters authenticated routing.
@@ -70,7 +76,7 @@ $token = $page['token'];
 $escape = static fn (string $value): string => htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php echo $escape($languageTag); ?>">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">

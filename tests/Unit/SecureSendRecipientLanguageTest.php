@@ -43,6 +43,13 @@ class SecureSendRecipientLanguageTest extends TestCase
         $language = new Language(secureSendRecipientLanguage($sessionLanguage, $settings), $directory);
         self::assertSame('Envoi sécurisé', $language->getShipped('secure_send'));
         self::assertSame('Mot de passe', $language->getShipped('password'));
+        $french = require $directory . 'french.php';
+        $english = require $directory . 'english.php';
+        foreach (['secure_send_confirmation_expired', 'secure_send_reveal_hint', 'secure_send_reveal', 'secure_send_invalid_link'] as $key) {
+            self::assertArrayHasKey($key, $french);
+            self::assertNotSame($english[$key], $french[$key]);
+            self::assertSame($french[$key], $language->getShipped($key));
+        }
 
         $preferred = new Language(secureSendRecipientLanguage('english', $settings), $directory);
         self::assertSame('Secure Send', $preferred->getShipped('secure_send'));
