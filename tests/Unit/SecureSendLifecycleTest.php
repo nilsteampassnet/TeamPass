@@ -157,6 +157,62 @@ class SecureSendLifecycleTest extends TestCase
         self::assertSame('standalone', $result['fields']['secret']);
     }
 
+    /** Authenticated but malformed payloads and broken storage never penalize the recipient. */
+    public function testCorruptStoredDataDoesNotConsumeAttemptsOrViews(): void
+    {
+        $log = tempnam(sys_get_temp_dir(), 'tp-otv-test-');
+        $previous = ini_set('error_log', $log);
+        try {
+            foreach (['json', 'missing-field', 'wrong-type', 'stored-key', 'ciphertext', 'unwrap-environment', 'cipher-environment'] as $case) {
+                DB::reset();
+                $parameters = $this->create(['send_type' => 'note', 'passphrase' => 'correct']);
+                $key = defuse_validate_personal_key(hash('sha256', $parameters['key'] . '|correct'), DB::$links[1]['protected_key']);
+                if (in_array($case, ['json', 'missing-field', 'wrong-type'], true)) {
+                    $payload = match ($case) {
+                        'json' => '{synthetic-corrupt-payload',
+                        'missing-field' => '{"secret":"synthetic-corrupt-payload"}',
+                        default => '{"title":"","secret":"synthetic-corrupt-payload","note":null,"login":"","url":""}',
+                    };
+                    DB::$links[1]['encrypted'] = cryption($payload, $key, 'encrypt')['string'];
+                } elseif ($case === 'stored-key') {
+                    DB::$links[1]['protected_key'] = 'invalid-stored-key';
+                } elseif ($case === 'ciphertext') {
+                    DB::$links[1]['encrypted'] = 'invalid-stored-ciphertext';
+                } elseif ($case === 'unwrap-environment') {
+                    DB::$unwrapError = 'Error - Major issue as the encryption is broken.';
+                } else {
+                    DB::$cipherError = 'environment_error';
+                }
+                DB::$links[1]['failed_attempts'] = 2;
+                // Repeated attempts must neither revoke the link nor disclose any payload.
+                for ($attempt = 0; $attempt < 6; ++$attempt) {
+                    $result = secureSendRedeem($parameters, 'correct', $this->settings);
+                    self::assertSame(['error' => 'server_error'], $result, $case);
+                    self::assertSame(2, DB::$links[1]['failed_attempts'], $case);
+                    self::assertSame(0, DB::$links[1]['views'], $case);
+                    self::assertSame([], DB::$audit, $case);
+                }
+            }
+            self::assertStringNotContainsString('synthetic-corrupt-payload', file_get_contents($log));
+        } finally {
+            ini_set('error_log', $previous);
+            unlink($log);
+        }
+    }
+
+    /** Invalid raw keys in historical URLs are still counted as credential failures. */
+    public function testIncorrectLegacyKeysCountAsAttempts(): void
+    {
+        $parameters = $this->create();
+        DB::$links[1]['protected_key'] = null;
+        foreach (['malformed', \Defuse\Crypto\Key::createNewRandomKey()->saveToAsciiSafeString()] as $offset => $key) {
+            $parameters['key'] = $key;
+            self::assertSame(['error' => 'invalid_link'], secureSendRedeem($parameters, '', $this->settings));
+            self::assertSame($offset + 1, DB::$links[1]['failed_attempts']);
+            self::assertSame(0, DB::$links[1]['views']);
+        }
+    }
+
     public function testLegacyRawPasswordAndWrappedPasswordLinksRemainReadable(): void
     {
         foreach ([false, true] as $wrapped) {

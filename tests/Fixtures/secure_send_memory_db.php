@@ -19,6 +19,8 @@ class DB
     public static bool $failAudit = false;
     public static bool $failCache = false;
     public static bool $failCounter = false;
+    public static string|false $cipherError = false;
+    public static string $unwrapError = '';
     public static string $objectKey = 'object-key';
     public static string $password = 'secret-at-creation';
     private static array $snapshot = [];
@@ -31,6 +33,8 @@ class DB
         self::$access = self::$activeUser = self::$hasSharekey = true;
         self::$admin = self::$rejectReservation = self::$failAudit = false;
         self::$failCache = self::$failCounter = false;
+        self::$cipherError = false;
+        self::$unwrapError = '';
         self::$cache = [123 => ['id' => 123]];
         self::$folderCounts = [7 => 1];
         self::$objectKey = 'object-key';

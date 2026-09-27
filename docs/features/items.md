@@ -253,8 +253,10 @@ Standalone secure notes keep their existing behavior.
 Opening a sharing URL now displays a confirmation form. Only a confirmed POST
 reveals the content and consumes a view, so link previews and scanners do not
 use up the link. A passphrase, when configured, must be transmitted separately.
-Views and failed attempts are reserved transactionally; five failed decryption
-attempts revoke the link. Responses prohibit caching, referrers and framing.
+Views and failed attempts are reserved transactionally; five incorrect key or
+passphrase attempts revoke the link. Invalid stored payloads and encryption
+environment failures return a server error without consuming a view or attempt.
+Responses prohibit caching, referrers and framing.
 
 The recipient page keeps an existing visitor language preference. Without one
 (for example in a private browser window), it uses the instance's default

@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 /** Secure Send recipient lifecycle. Distributed under the GPL-3.0 license. */
+use Defuse\Crypto\Exception\BadFormatException;
+use Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException;
+
 require_once __DIR__ . '/secure_send_access.php';
 require_once __DIR__ . '/secure_send_logic.php';
 
@@ -33,16 +36,33 @@ function secureSendFindLink(array $parameters, bool $lock = false): array
 function secureSendDecryptPayload(array $link, string $linkSecret, string $passphrase, array $settings): array
 {
     $key = $linkSecret;
-    if (!empty($link['protected_key'])) {
+    $hasProtectedKey = !empty($link['protected_key']);
+    if ($hasProtectedKey) {
         $wrapPassword = (int) $link['has_passphrase'] === 1 ? hash('sha256', $linkSecret . '|' . $passphrase) : $linkSecret;
         $key = defuse_validate_personal_key($wrapPassword, $link['protected_key']);
+        // The existing wrapper distinguishes an incorrect secret from a broken environment.
+        if ($key === 'Error - The saltkey is not the correct one.') {
+            throw new WrongKeyOrModifiedCiphertextException('invalid_link');
+        }
         if (str_starts_with($key, 'Error')) {
-            throw new InvalidArgumentException('invalid_link');
+            throw new RuntimeException('key_unwrap_error');
         }
     }
-    $decrypted = cryption($link['encrypted'], $key, 'decrypt', $settings);
+    try {
+        $decrypted = cryption($link['encrypted'], $key, 'decrypt', $settings);
+    } catch (BadFormatException $e) {
+        // Only legacy links take a serialized cipher key directly from the recipient URL.
+        if (!$hasProtectedKey) {
+            throw new WrongKeyOrModifiedCiphertextException('invalid_link');
+        }
+        throw $e;
+    }
+    if (($decrypted['error'] ?? false) === 'wrong_key_or_modified_ciphertext' && !$hasProtectedKey) {
+        throw new WrongKeyOrModifiedCiphertextException('invalid_link');
+    }
     if (!empty($decrypted['error'])) {
-        throw new InvalidArgumentException('invalid_link');
+        // Once the stored key was unlocked, a payload failure is not a bad passphrase.
+        throw new RuntimeException('payload_decryption_error');
     }
     if (($link['send_type'] ?? 'item') === 'item') {
         return ['password' => $decrypted['string']];
@@ -51,7 +71,7 @@ function secureSendDecryptPayload(array $link, string $linkSecret, string $passp
     $fields = ['title', 'secret', 'note', 'login', 'url'];
     foreach ($fields as $field) {
         if (!is_array($payload) || !isset($payload[$field]) || !is_string($payload[$field])) {
-            throw new InvalidArgumentException('invalid_link');
+            throw new UnexpectedValueException('invalid_payload');
         }
     }
     return $payload;
@@ -114,9 +134,7 @@ function secureSendRedeem(array $parameters, string $passphrase, array $settings
         }
         try {
             $fields = secureSendDecryptPayload($link, $parameters['key'], $passphrase, $settings);
-        } catch (\Defuse\Crypto\Exception\EnvironmentIsBrokenException $e) {
-            throw $e;
-        } catch (Throwable $e) {
+        } catch (WrongKeyOrModifiedCiphertextException $e) {
             $attempts = (int) ($link['failed_attempts'] ?? 0) + 1;
             if ($attempts >= 5) {
                 DB::delete(prefixTable('otv'), 'id = %i', $link['id']);

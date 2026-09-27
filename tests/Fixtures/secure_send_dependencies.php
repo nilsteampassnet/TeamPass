@@ -16,6 +16,9 @@ if (!defined('OTV_USER_ID')) {
 /** Match the production wrapper's ciphertext/result contract with the real cipher. */
 function cryption(string $message, string $asciiKey, string $operation, ?array $settings = []): array
 {
+    if (property_exists('DB', 'cipherError') && DB::$cipherError !== false) {
+        return ['string' => '', 'error' => DB::$cipherError];
+    }
     $key = Key::loadFromAsciiSafeString($asciiKey);
     try {
         return ['string' => $operation === 'encrypt' ? Crypto::encrypt($message, $key) : Crypto::decrypt($message, $key), 'error' => false];
@@ -33,10 +36,13 @@ function defuse_generate_personal_key(string $password): string
 /** Unlock a real wrapped key, retaining the production failure contract. */
 function defuse_validate_personal_key(string $password, string $protected): string
 {
+    if (property_exists('DB', 'unwrapError') && DB::$unwrapError !== '') {
+        return DB::$unwrapError;
+    }
     try {
         return KeyProtectedByPassword::loadFromAsciiSafeString($protected)->unlockKey($password)->saveToAsciiSafeString();
     } catch (WrongKeyOrModifiedCiphertextException $e) {
-        return 'Error - Wrong passphrase';
+        return 'Error - The saltkey is not the correct one.';
     }
 }
 
