@@ -43,6 +43,32 @@ class SecureSendSnapshotTest extends TestCase
         }
     }
 
+    /** Cuts inside named or numeric entities back off, while complete entities survive. */
+    public function testTruncationPreservesEntityBoundaries(): void
+    {
+        $item = ['label' => 'Label', 'login' => 'alice', 'url' => '', 'description' => str_repeat('x', 70000)];
+        $baseline = json_decode(secureSendEncodeSnapshot($item, 'secret')['plaintext'], true, 512, JSON_THROW_ON_ERROR);
+        $capacity = strlen($baseline['description']);
+        $key = Key::createNewRandomKey();
+
+        foreach (['&amp;', '&lt;', '&#039;', '&#x1F600;'] as $entity) {
+            for ($cutBytes = 1; $cutBytes <= strlen($entity); $cutBytes++) {
+                $prefix = '中文 😀 ';
+                $prefix .= str_repeat('x', $capacity - strlen($prefix) - $cutBytes);
+                $item['description'] = $prefix . $entity . str_repeat('x', 70000);
+                $result = secureSendEncodeSnapshot($item, 'secret');
+                $ciphertext = Crypto::encrypt($result['plaintext'], $key);
+                $payload = json_decode(Crypto::decrypt($ciphertext, $key), true, 512, JSON_THROW_ON_ERROR);
+
+                self::assertLessThanOrEqual(65535, strlen($ciphertext));
+                self::assertTrue($result['description_truncated']);
+                self::assertSame($prefix . ($cutBytes === strlen($entity) ? $entity : ''), $payload['description']);
+                self::assertSame('secret', $payload['password']);
+                self::assertTrue(mb_check_encoding($payload['description'], 'UTF-8'));
+            }
+        }
+    }
+
     /** Oversized credentials are rejected; they must never be silently shortened. */
     public function testRequiredFieldsCannotBeTruncated(): void
     {

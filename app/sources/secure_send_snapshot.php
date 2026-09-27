@@ -45,7 +45,13 @@ function secureSendEncodeSnapshot(array $item, string $password): array
                 $high = $middle - 1;
             }
         }
-        $payload['description'] = mb_strcut($description, 0, $low, 'UTF-8');
+        $cut = mb_strcut($description, 0, $low, 'UTF-8');
+        // Stored descriptions are entity-encoded; do not leave a partial trailing entity.
+        $amp = strrpos($cut, '&');
+        if ($amp !== false && strlen($cut) - $amp <= 10 && strpos($cut, ';', $amp) === false) {
+            $cut = substr($cut, 0, $amp);
+        }
+        $payload['description'] = $cut;
         return ['plaintext' => $encode($payload), 'description_truncated' => true];
     } catch (JsonException $e) {
         throw new InvalidArgumentException('invalid_payload');
