@@ -1126,6 +1126,7 @@ class DatabaseInstaller
                 `allow_pw_change` TINYINT(1) NOT null DEFAULT '0',
                 `complexity` INT(5) NOT null DEFAULT '0',
                 `creator_id` int(11) NOT null DEFAULT '0',
+                `allow_security_posture_fix` TINYINT(1) NOT NULL DEFAULT '1',
                 PRIMARY KEY (`id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
@@ -1143,7 +1144,8 @@ class DatabaseInstaller
                 'title'          => 'Default',
                 'allow_pw_change'=> 0,
                 'complexity'     => 48,
-                'creator_id'     => 0
+                'creator_id'     => 0,
+                'allow_security_posture_fix' => 1,
             ]);
         }
     }

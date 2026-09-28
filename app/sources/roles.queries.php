@@ -387,6 +387,13 @@ if (null !== $post_type) {
             $post_label = filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_allowEdit = filter_var($dataReceived['allowEdit'], FILTER_SANITIZE_NUMBER_INT);
             $post_action = filter_var($dataReceived['action'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            // Security posture "Fix" shortcuts: only an administrator may change them, so a manager
+            // cannot switch them back on for their own team. -1 = not submitted (value preserved).
+            $post_allowSecurityPostureFix = (int) filter_var($dataReceived['allowSecurityPostureFix'] ?? -1, FILTER_SANITIZE_NUMBER_INT);
+            $securityPostureFixColumn = (int) $session->get('user-admin') === 1
+                && in_array($post_allowSecurityPostureFix, [0, 1], true) === true
+                ? ['allow_security_posture_fix' => $post_allowSecurityPostureFix]
+                : [];
 
             // Init
             $return = array(
@@ -407,10 +414,13 @@ if (null !== $post_type) {
                 if ($counter > 0) {
                     DB::update(
                         prefixTable('roles_title'),
-                        array(
-                            'title' => $post_label,
-                            'complexity' => $post_complexity,
-                            'allow_pw_change' => $post_allowEdit,
+                        array_merge(
+                            array(
+                                'title' => $post_label,
+                                'complexity' => $post_complexity,
+                                'allow_pw_change' => $post_allowEdit,
+                            ),
+                            $securityPostureFixColumn
                         ),
                         'id = %i',
                         $post_folderId
@@ -434,11 +444,14 @@ if (null !== $post_type) {
                     // Adding new role is possible as it doesn't exist
                     DB::insert(
                         prefixTable('roles_title'),
-                        array(
-                            'title' => $post_label,
-                            'complexity' => $post_complexity,
-                            'allow_pw_change' => $post_allowEdit,
-                            'creator_id' => $session->get('user-id'),
+                        array_merge(
+                            array(
+                                'title' => $post_label,
+                                'complexity' => $post_complexity,
+                                'allow_pw_change' => $post_allowEdit,
+                                'creator_id' => $session->get('user-id'),
+                            ),
+                            $securityPostureFixColumn
                         )
                     );
                     $return['new_role_id'] = DB::insertId();
@@ -462,10 +475,13 @@ if (null !== $post_type) {
                     // Editing the folder
                     DB::update(
                         prefixTable('roles_title'),
-                        array(
-                            'title' => $post_label,
-                            'complexity' => $post_complexity,
-                            'allow_pw_change' => $post_allowEdit,
+                        array_merge(
+                            array(
+                                'title' => $post_label,
+                                'complexity' => $post_complexity,
+                                'allow_pw_change' => $post_allowEdit,
+                            ),
+                            $securityPostureFixColumn
                         ),
                         'id = %i',
                         $post_folderId
@@ -489,11 +505,14 @@ if (null !== $post_type) {
                     // Adding new folder is possible as it doesn't exist
                     DB::insert(
                         prefixTable('roles_title'),
-                        array(
-                            'title' => $post_label,
-                            'complexity' => $post_complexity,
-                            'allow_pw_change' => $post_allowEdit,
-                            'creator_id' => $session->get('user-id'),
+                        array_merge(
+                            array(
+                                'title' => $post_label,
+                                'complexity' => $post_complexity,
+                                'allow_pw_change' => $post_allowEdit,
+                                'creator_id' => $session->get('user-id'),
+                            ),
+                            $securityPostureFixColumn
                         )
                     );
                     $role_id = DB::insertId();
@@ -539,7 +558,14 @@ if (null !== $post_type) {
             handleFoldersCategories(
                 []
             );
-            
+
+            // Stored value, not the submitted one: a manager's save leaves it untouched.
+            $savedRoleId = (int) ($return['new_role_id'] ?? $post_folderId);
+            $storedSecurityPostureFix = DB::queryFirstField(
+                'SELECT allow_security_posture_fix FROM ' . prefixTable('roles_title') . ' WHERE id = %i',
+                $savedRoleId
+            );
+
             $return = array_merge(
                 $return,
                 [
@@ -547,6 +573,7 @@ if (null !== $post_type) {
                     'text' => TP_PW_COMPLEXITY[$post_complexity][1],
                     'value' => TP_PW_COMPLEXITY[$post_complexity][0],
                     'allow_pw_change' => $post_allowEdit,
+                    'allow_security_posture_fix' => $storedSecurityPostureFix === null ? 1 : (int) $storedSecurityPostureFix,
                 ]
             );
             

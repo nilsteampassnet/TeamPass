@@ -91,6 +91,82 @@ if (function_exists('securityPostureResolveAuthorizedFolders') === false) {
     }
 
     /**
+     * Resolve the folders in which a user may edit items, from the raw grant sets.
+     *
+     * Mirrors the edit decision of getCurrentAccessRights() (items.queries.php), which update_item
+     * enforces on every save, so a "Fix" shortcut never points at an item whose editor would
+     * refuse the change:
+     *   - administrators and read-only accounts edit nothing (update_item rejects every save of a
+     *     read-only account, personal folders included);
+     *   - only a folder of the read scope counts (securityPostureResolveAuthorizedFolders());
+     *   - the user's own personal tree is editable;
+     *   - a direct grant (users_groups) is editable whatever the roles say, as in identUser();
+     *   - otherwise the role access, resolved least-permissive-wins, must be W or ND. NE, NDNE and
+     *     R forbid editing existing items (getRoleBasedAccess()).
+     *
+     * @param int[]              $authorizedFolders  Read scope from securityPostureResolveAuthorizedFolders().
+     * @param int[]              $directGrantFolders Folder ids granted through users_groups.
+     * @param array<int, string> $roleAccessByFolder Folder id => access type resolved across every role of the user.
+     * @param int[]              $ownPersonalFolders The user's own personal tree (root + descendants).
+     * @param bool               $isAdmin            Whether the user is an administrator.
+     * @param bool               $isReadOnlyAccount  Whether the account is flagged read-only.
+     *
+     * @return int[] Editable folder ids, unique and sorted ascending.
+     */
+    function securityPostureResolveEditableFolders(
+        array $authorizedFolders,
+        array $directGrantFolders,
+        array $roleAccessByFolder,
+        array $ownPersonalFolders,
+        bool $isAdmin,
+        bool $isReadOnlyAccount
+    ): array {
+        if ($isAdmin === true || $isReadOnlyAccount === true) {
+            return [];
+        }
+
+        $ownPersonal = array_map('intval', $ownPersonalFolders);
+        $directGrants = array_map('intval', $directGrantFolders);
+
+        $editable = [];
+        foreach (array_unique(array_map('intval', $authorizedFolders)) as $folderId) {
+            if (in_array($folderId, $ownPersonal, true) === true
+                || in_array($folderId, $directGrants, true) === true
+                || in_array((string) ($roleAccessByFolder[$folderId] ?? ''), ['W', 'ND'], true) === true
+            ) {
+                $editable[] = $folderId;
+            }
+        }
+        sort($editable, SORT_NUMERIC);
+
+        return $editable;
+    }
+
+    /**
+     * Decide whether the roles of a user allow the Security Posture "Fix" shortcuts.
+     *
+     * The shortcuts are allowed as soon as one role allows them. A user without any role keeps the
+     * default (allowed): there is no role to switch them off on.
+     *
+     * @param array $roleFlags roles_title.allow_security_posture_fix of every role the user holds.
+     *
+     * @return bool
+     */
+    function securityPostureFixAllowedByRoles(array $roleFlags): bool
+    {
+        if (count($roleFlags) === 0) {
+            return true;
+        }
+        foreach ($roleFlags as $flag) {
+            if ((int) $flag === 1) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Split a semicolon-separated id list into positive integers.
      *
      * Thin alias over itemRestrictionParseIdList() (item_restriction_logic.php), kept for the

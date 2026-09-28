@@ -128,7 +128,7 @@ The score runs from **0** (worst) to **100** (best). It reflects the share of th
 Next to the score, the page shows:
 
 - **Top 3 things to fix** — the issues weighing most on your score;
-- **Fix the most urgent** — opens the most critical item directly in edit mode;
+- **Fix the most urgent** — opens the most critical item you can edit directly in edit mode (see [Fix shortcuts](#fix-shortcuts));
 - the **change since your previous scan** (for example *+12 since last scan*), hidden when the score did not move.
 
 ### Working through the flagged items
@@ -141,7 +141,23 @@ The **Items needing attention** list shows, for each item, its location, the dat
 - a folder selector listing the folders that hold flagged items;
 - a sort order: *Most critical first*, *Oldest password first*, *Name (A → Z)* or *Folder*.
 
-The wrench icon on each row opens the item in edit mode. Long lists load 100 rows at a time with **Load more**.
+The wrench icon on a row opens the item in edit mode; it is only shown on the items you can edit. Long lists load 100 rows at a time with **Load more**.
+
+### Fix shortcuts
+
+**Fix the most urgent**, the wrench icon on each row and the **Fix the most urgent** button of the [in-app banner](#in-app-banner) are shortcuts to the item editor. They never change anything by themselves: the user still has to set a new password and save it.
+
+They only point to items the user is allowed to edit, with the same rule the item editor applies when saving:
+
+- items of the user's own personal folders;
+- items of a folder granted to the user directly;
+- items of a folder where the user's roles give *Write* or *No delete* access. *No edit*, *No edit and no delete* and *Read only* keep the item listed on the page, without a shortcut.
+
+Administrators and read-only accounts never get a shortcut. When none of the flagged items can be edited, the **Fix the most urgent** buttons are not shown.
+
+**Per role.** An administrator can hide the shortcuts for the members of a role: **Roles → Edit →** uncheck **Show the Security posture Fix shortcuts** (checked by default). A user keeps the shortcuts as soon as one of their roles allows them; a user with no role keeps the default. Hiding the shortcuts does not hide the security posture page and does not change any editing right: the user can still edit the same items from the vault. Managers do not see this option, and saving a role as a manager keeps its current value.
+
+Changing a password in TeamPass does not change it on the system it protects. Hiding the shortcuts is useful for roles whose members can edit shared credentials — service accounts, for example — but are not the ones who rotate them.
 
 ---
 
@@ -153,7 +169,7 @@ To enable them: **Settings → Options → Security & authentication**, group *S
 
 ### In-app banner
 
-Once per session, users with at least one **breached, reused, weak or overdue** password see a banner at the top of the page: *N of your passwords need attention*, with a **Review** link to the security posture page and a **Fix the most urgent** button. **Dismiss** hides it for 24 hours in that browser.
+Once per session, users with at least one **breached, reused, weak or overdue** password see a banner at the top of the page: *N of your passwords need attention*, with a **Review** link to the security posture page and a **Fix the most urgent** button (see [Fix shortcuts](#fix-shortcuts)). **Dismiss** hides it for 24 hours in that browser.
 
 When the user's last scan is older than the **Stale scan threshold** (14 days by default), the banner also invites them to run a new scan.
 

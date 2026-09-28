@@ -243,6 +243,10 @@ switch ($post_type) {
 
         $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
+        // The per-row "Fix" shortcut is only offered where the user may edit the item, and only
+        // when one of the user's roles allows the shortcuts.
+        $fixableFolders = securityPostureFixableFolderIds($userId);
+
         $list = [];
         foreach ($rows as $r) {
             $path = [];
@@ -265,6 +269,7 @@ switch ($post_type) {
                 'flag_breached' => (int) $r['flag_breached'],
                 'flag_reused' => (int) $r['flag_reused'],
                 'flag_orphaned' => (int) $r['flag_orphaned'],
+                'can_fix' => in_array((int) $r['id_tree'], $fixableFolders, true) === true ? 1 : 0,
             ];
         }
 

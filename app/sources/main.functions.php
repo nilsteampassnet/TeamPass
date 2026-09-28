@@ -1436,6 +1436,121 @@ function securityPostureAuthorizedFolderIds(int $userId): array
 }
 
 /**
+ * Resolve the folders in which a user may edit items, for the Security Posture "Fix" shortcuts.
+ *
+ * Reads the grant sets from the database — no session — and delegates the decision to the DB-free
+ * securityPostureResolveEditableFolders() (security_posture_logic.php), which mirrors the edit
+ * check update_item enforces (getCurrentAccessRights()).
+ *
+ * Memoized per user.
+ *
+ * @param int $userId User whose edit scope is resolved.
+ *
+ * @return int[] Editable folder ids, unique and sorted ascending.
+ */
+function securityPostureEditableFolderIds(int $userId): array
+{
+    static $cache = [];
+    if (array_key_exists($userId, $cache) === true) {
+        return $cache[$userId];
+    }
+
+    loadClasses('DB');
+
+    $account = DB::queryFirstRow(
+        'SELECT admin, read_only FROM ' . prefixTable('users') . ' WHERE id = %i',
+        $userId
+    );
+    $authorizedFolders = securityPostureAuthorizedFolderIds($userId);
+    if (is_array($account) === false || count($authorizedFolders) === 0) {
+        $cache[$userId] = [];
+        return $cache[$userId];
+    }
+
+    $directGrantFolders = array_map(
+        'intval',
+        DB::queryFirstColumn(
+            'SELECT group_id FROM ' . prefixTable('users_groups') . ' WHERE user_id = %i',
+            $userId
+        )
+    );
+
+    // Access type per folder, least permissive wins across roles — as getRoleBasedAccess().
+    $roleAccessByFolder = [];
+    $userRoleIds = securityPostureUserRoleIds($userId);
+    if (count($userRoleIds) > 0) {
+        $rows = DB::query(
+            'SELECT folder_id, type FROM ' . prefixTable('roles_values') . '
+            WHERE role_id IN %li AND folder_id IN %li',
+            $userRoleIds,
+            $authorizedFolders
+        );
+        foreach ($rows as $row) {
+            $folderId = (int) $row['folder_id'];
+            $roleAccessByFolder[$folderId] = evaluateFolderAccesLevel(
+                (string) $row['type'],
+                $roleAccessByFolder[$folderId] ?? ''
+            );
+        }
+    }
+
+    // The read scope only holds the user's own personal tree, never another owner's.
+    $ownPersonalFolders = array_values(array_intersect(
+        $authorizedFolders,
+        getPersonalFolderIdsWithDescendants()
+    ));
+
+    $cache[$userId] = securityPostureResolveEditableFolders(
+        $authorizedFolders,
+        $directGrantFolders,
+        $roleAccessByFolder,
+        $ownPersonalFolders,
+        (int) $account['admin'] === 1,
+        (int) $account['read_only'] === 1
+    );
+
+    return $cache[$userId];
+}
+
+/**
+ * Resolve the folders whose items a Security Posture "Fix" shortcut may target for a user.
+ *
+ * Empty when none of the user's roles allows the shortcuts (roles_title.allow_security_posture_fix),
+ * otherwise the folders in which the user may edit items. The shortcuts are only an incentive:
+ * this never changes what the user may edit from the vault itself.
+ *
+ * Memoized per user.
+ *
+ * @param int $userId User whose shortcut scope is resolved.
+ *
+ * @return int[] Folder ids, unique and sorted ascending.
+ */
+function securityPostureFixableFolderIds(int $userId): array
+{
+    static $cache = [];
+    if (array_key_exists($userId, $cache) === true) {
+        return $cache[$userId];
+    }
+
+    loadClasses('DB');
+
+    $roleFlags = [];
+    $userRoleIds = securityPostureUserRoleIds($userId);
+    if (count($userRoleIds) > 0) {
+        $roleFlags = DB::queryFirstColumn(
+            'SELECT allow_security_posture_fix FROM ' . prefixTable('roles_title') . ' WHERE id IN %li',
+            $userRoleIds
+        );
+    }
+
+    $cache[$userId] = securityPostureFixAllowedByRoles($roleFlags) === true
+        ? securityPostureEditableFolderIds($userId)
+        : [];
+
+    return $cache[$userId];
+}
+
+/**
  * Build the SQL predicate limiting Security Posture data to items the user may read.
  *
  * A sharekey proves that the user can cryptographically unwrap an item key, but it is not an
@@ -1980,6 +2095,8 @@ function prepareSendingEmail(
  * in-session deep scan). It therefore runs both in the user's web session and in the CLI
  * background worker (which has no private key). It never decrypts and never returns any
  * plaintext — only counts and the worst flagged item's identifiers for a deep-link.
+ * The counts cover every readable item; the worst item is picked among the items the "Fix"
+ * shortcuts may target (securityPostureFixableFolderIds()), and is null when there is none.
  *
  * @param int $userId User to compute the posture for.
  *
@@ -2038,12 +2155,16 @@ function securityNudgeComputeCounts(int $userId): array
     );
 
     // Worst flagged item (severity: breached > reused > weak > overdue) for the "fix it now" deep-link.
+    // Only among the items the user may edit: a shortcut to an editor that refuses the save is a dead
+    // end. None at all when the user's roles switch the shortcuts off.
     $worstItem = null;
-    if ((int) ($agg['total_flagged'] ?? 0) > 0) {
+    $fixableFolders = securityPostureFixableFolderIds($userId);
+    if ((int) ($agg['total_flagged'] ?? 0) > 0 && count($fixableFolders) > 0) {
         $worst = DB::queryFirstRow(
             'SELECT t.id, t.id_tree
             FROM (' . $innerSql . ') AS t
             WHERE (t.flag_weak + t.flag_overdue + t.flag_breached + t.flag_reused) > 0
+                AND t.id_tree IN (' . implode(',', array_map('intval', $fixableFolders)) . ')
             ORDER BY t.flag_breached DESC, t.flag_reused DESC, t.flag_weak DESC, t.flag_overdue DESC, t.id DESC
             LIMIT 1',
             $userId, 'at_creation', 'at_modification', 'at_pw%', $userId

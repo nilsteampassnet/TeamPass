@@ -609,6 +609,13 @@ if (checkIndexExist(prefixTable('lapr_endpoints'), 'idx_ssh_credential_source',
     exit();
 }
 
+// Per-role switch of the Security posture "Fix" shortcuts (default: shown).
+if (addColumnIfNotExist(prefixTable('roles_title'), 'allow_security_posture_fix', "TINYINT(1) NOT NULL DEFAULT '1'") === false) {
+    echo json_encode([['finish' => '1', 'error' => 'Error adding the role Security posture shortcuts flag: ' . mysqli_error($db_link)]]);
+    mysqli_close($db_link);
+    exit();
+}
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,
