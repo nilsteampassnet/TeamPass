@@ -9287,6 +9287,11 @@ function getAccessResponse(bool $error, bool $access, bool $edit, bool $delete, 
 /**
  * Construct a folder-only access response.
  *
+ * @param bool $access Whether the user can access the folder
+ * @param bool $edit Whether the user can edit items in the folder
+ * @param bool $delete Whether the user can delete items from the folder
+ * @param bool $create Whether the user can create items in the folder
+ *
  * @return array{error: bool, access: bool, edit: bool, delete: bool, create: bool}
  */
 function getFolderAccessResponse(bool $access, bool $edit, bool $delete, bool $create): array

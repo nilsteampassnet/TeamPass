@@ -46,26 +46,26 @@ class ItemAccessLogicTest extends TestCase
         self::assertFalse(itemAccessFolderIsInScope(11, [], [], [], []));
     }
 
-    /** Role delete rights follow the least-permissive rule. */
-    public function testFolderDeleteRightsUseTheLeastPermissiveRole(): void
+    /** Role delete rights use the effective access type resolved by the caller. */
+    public function testFolderDeleteRightsUseTheResolvedAccessType(): void
     {
-        foreach ([['W'], ['NE'], ['W', 'NE']] as $allowedTypes) {
-            self::assertTrue(itemAccessFolderAllowsDelete(true, false, false, false, false, $allowedTypes));
+        foreach (['W', 'NE'] as $allowedType) {
+            self::assertTrue(itemAccessFolderAllowsDelete(true, false, false, false, false, $allowedType));
         }
 
-        foreach ([[], ['R'], ['ND'], ['NDNE'], ['W', 'ND'], ['NE', 'R'], ['unknown']] as $deniedTypes) {
-            self::assertFalse(itemAccessFolderAllowsDelete(true, false, false, false, false, $deniedTypes));
+        foreach (['', 'R', 'ND', 'NDNE', 'unknown'] as $deniedType) {
+            self::assertFalse(itemAccessFolderAllowsDelete(true, false, false, false, false, $deniedType));
         }
     }
 
     /** Scope and read-only restrictions win over direct and personal grants. */
     public function testFolderDeleteRightsRespectScopeAndReadOnlyRestrictions(): void
     {
-        self::assertFalse(itemAccessFolderAllowsDelete(false, false, false, true, false, []));
-        self::assertFalse(itemAccessFolderAllowsDelete(true, true, false, true, false, []));
-        self::assertFalse(itemAccessFolderAllowsDelete(true, false, true, true, true, []));
-        self::assertTrue(itemAccessFolderAllowsDelete(true, false, false, true, false, []));
-        self::assertTrue(itemAccessFolderAllowsDelete(true, false, false, false, true, []));
+        self::assertFalse(itemAccessFolderAllowsDelete(false, false, false, true, false, ''));
+        self::assertFalse(itemAccessFolderAllowsDelete(true, true, false, true, false, ''));
+        self::assertFalse(itemAccessFolderAllowsDelete(true, false, true, true, true, ''));
+        self::assertTrue(itemAccessFolderAllowsDelete(true, false, false, true, false, ''));
+        self::assertTrue(itemAccessFolderAllowsDelete(true, false, false, false, true, ''));
     }
 
     /** Folder rights check the scope before any shortcut can grant access. */

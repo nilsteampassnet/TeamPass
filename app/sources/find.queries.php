@@ -408,7 +408,7 @@ if (null === $request->query->get('type')) {
     // and expose the same effective delete capability as the regular folder list.
     $searchFolderIds = array_values(array_unique(array_map('intval', array_column($rows, 'id_tree'))));
     $searchRoleIds = array_values(array_unique(array_map('intval', (array) $session->get('user-roles_array'))));
-    $searchAccessTypes = [];
+    $searchAccessLevels = [];
     if ($searchFolderIds !== [] && $searchRoleIds !== []) {
         $searchAccessRows = DB::query(
             'SELECT folder_id, type
@@ -418,7 +418,11 @@ if (null === $request->query->get('type')) {
             $searchRoleIds
         );
         foreach ($searchAccessRows as $accessRow) {
-            $searchAccessTypes[(int) $accessRow['folder_id']][] = (string) $accessRow['type'];
+            $folderId = (int) $accessRow['folder_id'];
+            $searchAccessLevels[$folderId] = evaluateFolderAccesLevel(
+                (string) $accessRow['type'],
+                $searchAccessLevels[$folderId] ?? ''
+            );
         }
     }
 
@@ -444,7 +448,7 @@ if (null === $request->query->get('type')) {
                 || ((int) $session->get('user-read_only') === 1 && $isOwnPersonalFolder === false),
             in_array($searchFolderId, $directlyAllowedFolders, true),
             $isOwnPersonalFolder,
-            $searchAccessTypes[$searchFolderId] ?? []
+            $searchAccessLevels[$searchFolderId] ?? ''
         );
     }
 

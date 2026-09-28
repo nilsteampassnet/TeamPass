@@ -52,7 +52,12 @@ class ItemDeleteVisibilityTest extends TestCase
 
         self::assertStringContainsString('$folderRights = getCurrentFolderAccessRights(', $items);
         self::assertStringContainsString("['can_delete'] = \$canDeleteItemsInFolder ? 1 : 0", $items);
+        self::assertStringContainsString(
+            '$searchAccessLevels[$folderId] = evaluateFolderAccesLevel(',
+            $find
+        );
         self::assertStringContainsString('itemAccessFolderAllowsDelete(', $find);
+        self::assertStringContainsString("\$searchAccessLevels[\$searchFolderId] ?? ''", $find);
         self::assertStringContainsString("['can_delete'] = (\$searchFolderDeletePermissions", $find);
     }
 
