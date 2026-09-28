@@ -26,6 +26,10 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'secure_send_confirmation_expired' => 'Cette confirmation n’est plus valide. Confirmez à nouveau ci-dessous pour afficher le contenu.',
+    'secure_send_reveal_hint' => 'L’ouverture de cette page ne consomme aucune consultation. Confirmez ci-dessous pour afficher le contenu et utiliser une des consultations autorisées.',
+    'secure_send_reveal' => 'Afficher le contenu partagé',
+    'secure_send_invalid_link' => 'Ce lien de partage est invalide, expiré, révoqué ou n’est plus accessible.',
     'show_user_temporary_encryption_code' => 'Afficher le code de chiffrement de l’utilisateur',
     'email_body_new_user' => 'Bonjour,<br><br>Ceci est un mail généré par le gestionnaire de mot de passe Teampass.<br><br>Un administrateur vous a créé un compte utilisateur sur Teampass. Lors de votre prochaine connexion, veuillez utiliser les identifiants suivants :<ul><li>Login: #login#</li><li>Mot de passe: #password#</li></ul><br><br>Cordialement',
     'user_password' => 'Mot de passe utilisateur',

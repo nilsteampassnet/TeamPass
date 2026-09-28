@@ -248,7 +248,39 @@ the recipient opens it. A disabled/deleted sender, deleted item or revoked
 permission prevents access, even if an old sharekey still exists. Inaccessible
 item links and labels are also hidden from the sender's active-link list.
 If the item cannot be decrypted, creation fails without storing a sharing link.
-Standalone secure notes keep their existing behavior.
+
+Administrator policy changes also apply to links that already exist:
+
+- Enabling **Require a passphrase** (`secure_send_require_passphrase`) makes
+  existing links without a passphrase unavailable; links already protected by
+  a passphrase remain subject to their usual limits.
+- Disabling **Allow secure notes** (`secure_send_allow_notes`) makes existing
+  standalone note links unavailable as well as preventing new ones.
+- A standalone note cannot be revealed once its sender is disabled or deleted.
+  Its link is deleted when a recipient submits the confirmation POST; a GET
+  alone neither deletes the link nor consumes a view.
+
+Opening a sharing URL now displays a confirmation form. Only a confirmed POST
+reveals the content and consumes a view, so link previews and scanners do not
+use up the link. A passphrase, when configured, must be transmitted separately.
+Views and failed attempts are reserved transactionally; five incorrect key or
+passphrase attempts revoke the link. Invalid stored payloads and encryption
+environment failures return a server error without consuming a view or attempt.
+Responses prohibit caching, referrers and framing.
+
+The recipient page keeps an existing visitor language preference. Without one
+(for example in a private browser window), it uses the instance's default
+language, with English as the fallback when no default is configured.
+
+Item automatic-deletion limits also apply to sharing links. The last permitted
+view is revealed and the item is then made inactive in the same transaction,
+with the usual automatic-deletion audit. An already exhausted budget or elapsed
+deletion date deactivates the item without revealing it or consuming a link view.
+All links to the inactive item are subsequently denied.
+As with automatic deletion from the item viewer, TeamPass records the deletion
+date, removes the item from the list cache and updates the folder counters.
+The automatic-deletion settings are retained. These database changes roll back
+with the view reservation if the operation fails.
 
 If the administrator has defined an **external subdomain**, the generated link uses that subdomain, making it accessible outside your organization's network even if the main Teampass instance is internal-only.
 

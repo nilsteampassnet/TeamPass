@@ -140,3 +140,33 @@ jobs:
 
       - name: Run PHPStan
         run: php app/vendor/bin/phpstan analyse --memory-limit=2G --no-progress --error-format=github
+
+  secure-send-concurrency:
+    name: Concurrent recipient requests (MariaDB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      database:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: test-only-password
+          MARIADB_DATABASE: teampass_test_secure_send
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: openssl, mysqli, mbstring
+          coverage: none
+      - name: Exercise real transactions and concurrent recipients
+        env:
+          TEAMPASS_TEST_DB: teampass_test_secure_send
+          TEAMPASS_TEST_PASSWORD: test-only-password
+        run: php tests/Integration/secure_send_database.php
