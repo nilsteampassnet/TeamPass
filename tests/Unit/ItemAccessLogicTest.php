@@ -46,13 +46,35 @@ class ItemAccessLogicTest extends TestCase
         self::assertFalse(itemAccessFolderIsInScope(11, [], [], [], []));
     }
 
-    /** getCurrentAccessRights() checks the scope before any shortcut can grant access. */
-    public function testAccessRightsCheckTheScopeFirst(): void
+    /** Role delete rights use the effective access type resolved by the caller. */
+    public function testFolderDeleteRightsUseTheResolvedAccessType(): void
+    {
+        foreach (['W', 'NE'] as $allowedType) {
+            self::assertTrue(itemAccessFolderAllowsDelete(true, false, false, false, false, $allowedType));
+        }
+
+        foreach (['', 'R', 'ND', 'NDNE', 'unknown'] as $deniedType) {
+            self::assertFalse(itemAccessFolderAllowsDelete(true, false, false, false, false, $deniedType));
+        }
+    }
+
+    /** Scope and read-only restrictions win over direct and personal grants. */
+    public function testFolderDeleteRightsRespectScopeAndReadOnlyRestrictions(): void
+    {
+        self::assertFalse(itemAccessFolderAllowsDelete(false, false, false, true, false, ''));
+        self::assertFalse(itemAccessFolderAllowsDelete(true, true, false, true, false, ''));
+        self::assertFalse(itemAccessFolderAllowsDelete(true, false, true, true, true, ''));
+        self::assertTrue(itemAccessFolderAllowsDelete(true, false, false, true, false, ''));
+        self::assertTrue(itemAccessFolderAllowsDelete(true, false, false, false, true, ''));
+    }
+
+    /** Folder rights check the scope before any shortcut can grant access. */
+    public function testFolderAccessRightsCheckTheScopeFirst(): void
     {
         $source = str_replace("\r\n", "\n", (string) file_get_contents(__DIR__ . '/../../app/sources/items.queries.php'));
         self::assertStringContainsString("require_once __DIR__ . '/item_access_logic.php';", $source);
 
-        $start = strpos($source, 'function getCurrentAccessRights(');
+        $start = strpos($source, 'function getCurrentFolderAccessRights(');
         self::assertIsInt($start);
         $end = strpos($source, "\n}\n", $start);
         self::assertIsInt($end);
@@ -61,7 +83,6 @@ class ItemAccessLogicTest extends TestCase
         $scope = strpos($body, 'itemAccessFolderIsInScope(');
         self::assertIsInt($scope);
         foreach ([
-            'getItemRestrictedUsersList(',
             "get('user-read_only_folders')",
             "get('user-allowed_folders_by_definition')",
             'getUserVisibleFolders(',
