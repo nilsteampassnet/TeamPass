@@ -48,6 +48,8 @@ require_once 'classification.functions.php';
 require_once 'lapr.functions.php';
 require_once __DIR__ . '/item_access_logic.php';
 require_once __DIR__ . '/secure_send_access.php';
+require_once __DIR__ . '/secure_send_snapshot.php';
+require_once __DIR__ . '/secure_send_input.php';
 
 // init
 loadClasses('DB');
@@ -7083,6 +7085,17 @@ switch ($inputData['type']) {
             'decode'
         );
 
+        if (!is_array($dataReceived)) {
+            echo json_encode(['error' => 'invalid_payload']);
+            break;
+        }
+        try {
+            secureSendValidateInput($dataReceived);
+        } catch (InvalidArgumentException $e) {
+            echo json_encode(['error' => 'invalid_payload']);
+            break;
+        }
+
         // Determine the kind of send: an existing item or an ad-hoc note/secret
         $secureSendType = (isset($dataReceived['send_type']) === true && $dataReceived['send_type'] === 'note') ? 'note' : 'item';
         if ($secureSendType === 'note' && (int) ($SETTINGS['secure_send_allow_notes'] ?? 0) !== 1) {
@@ -7097,35 +7110,12 @@ switch ($inputData['type']) {
             break;
         }
 
-        // Clamp expiry (days) and view count to the administrator policy
-        $secureSendMaxDays = (int) ($SETTINGS['otv_expiration_period'] ?? 7);
-        if ($secureSendMaxDays < 1) {
-            $secureSendMaxDays = 7;
-        }
-        $secureSendDays = (int) ($dataReceived['days'] ?? $secureSendMaxDays);
-        if ($secureSendDays < 1) {
-            $secureSendDays = 1;
-        }
-        if ($secureSendDays > $secureSendMaxDays) {
-            $secureSendDays = $secureSendMaxDays;
-        }
-
-        $secureSendMaxViewsCap = (int) ($SETTINGS['secure_send_max_views'] ?? 5);
-        if ($secureSendMaxViewsCap < 1) {
-            $secureSendMaxViewsCap = 1;
-        }
-        $secureSendViews = (int) ($dataReceived['views'] ?? 1);
-        if ($secureSendViews < 1) {
-            $secureSendViews = 1;
-        }
-        if ($secureSendViews > $secureSendMaxViewsCap) {
-            $secureSendViews = $secureSendMaxViewsCap;
-        }
+        $secureSendLimits = secureSendLimits($SETTINGS, $dataReceived, time());
 
         // Build the plaintext payload to share
+        $secureSendDescriptionTruncated = false;
         if ($secureSendType === 'item') {
-            // Item send: re-encrypt the item password; the recipient page reads the
-            // other fields (label, login, url, description) from the item via item_id.
+            // Item sends keep a coherent encrypted copy of all displayed fields.
             $secureSendItemId = (int) ($dataReceived['id'] ?? 0);
             $itemQ = secureSendReadItem($secureSendItemId, (int) $session->get('user-id'));
             if ($itemQ === []) {
@@ -7139,8 +7129,12 @@ switch ($inputData['type']) {
                     (string) $session->get('user-private_key'),
                     (string) $session->get('user-public_key')
                 );
+                $snapshot = secureSendEncodeSnapshot($itemQ, $secureSendPlaintext);
+                $secureSendPlaintext = $snapshot['plaintext'];
+                $secureSendDescriptionTruncated = $snapshot['description_truncated'];
+                $secureSendType = 'item_v2';
             } catch (InvalidArgumentException $e) {
-                echo json_encode(array('error' => 'cannot_decrypt'));
+                echo json_encode(array('error' => $e->getMessage() === 'invalid_payload' ? 'invalid_payload' : 'cannot_decrypt'));
                 break;
             }
         } else {
@@ -7196,10 +7190,14 @@ switch ($inputData['type']) {
             'encrypt',
             $SETTINGS
         );
+        if (!empty($passwd['error']) || strlen($passwd['string']) > 65535) {
+            echo json_encode(array('error' => 'invalid_payload'));
+            break;
+        }
         $timestampReference = time();
 
         // "Shared globaly" (subdomain) only applies to item sends when configured by the admin
-        $secureSendShared = ($secureSendType === 'item'
+        $secureSendShared = ($secureSendType !== 'note'
             && (int) ($dataReceived['shared_globaly'] ?? 0) === 1
             && empty($SETTINGS['otv_subdomain']) === false) ? 1 : 0;
 
@@ -7216,8 +7214,8 @@ switch ($inputData['type']) {
                 'protected_key' => $secureSendProtectedKey,
                 'has_passphrase' => $secureSendPassphrase === '' ? 0 : 1,
                 'failed_attempts' => 0,
-                'time_limit' => $secureSendDays * (int) TP_ONE_DAY_SECONDS + time(),
-                'max_views' => $secureSendViews,
+                'time_limit' => $secureSendLimits['time_limit'],
+                'max_views' => $secureSendLimits['views'],
                 'shared_globaly' => $secureSendShared,
             )
         );
@@ -7251,89 +7249,8 @@ switch ($inputData['type']) {
                 'url' => $url,
                 'otv_id' => $newID,
                 'has_passphrase' => $secureSendPassphrase === '' ? 0 : 1,
+                'description_truncated' => $secureSendDescriptionTruncated,
             )
-        );
-        break;
-
-    /*
-    * CASE
-    * Check if Item has been changed since loaded
-    */
-    case 'update_OTV_url':
-        // Check KEY
-        if ($inputData['key'] !== $session->get('key')) {
-            echo '[ { "error" : "key_not_conform" } ]';
-            break;
-        }
-
-        // decrypt and retreive data in JSON format
-        $dataReceived = prepareExchangedData(
-            $inputData['data'],
-            'decode'
-        );
-
-        // Verify the current user owns this OTV link and can access the underlying item.
-        $otvRow = DB::queryFirstRow(
-            'SELECT item_id, originator FROM ' . prefixTable('otv') . ' WHERE id = %i',
-            $dataReceived['otv_id']
-        );
-        if (DB::count() === 0
-            || (int) $otvRow['originator'] !== (int) $session->get('user-id')
-            || accessToItemIsGranted((int) $otvRow['item_id'], $SETTINGS) !== true
-        ) {
-            echo '[ { "error" : "not_allowed" } ]';
-            break;
-        }
-
-        // get parameters from original link
-        $url = $dataReceived['original_link'];
-        $parts = parse_url($url);
-        if(isset($parts['query'])){
-            parse_str($parts['query'], $orignal_link_parameters);
-        } else {
-            $orignal_link_parameters = array();
-        }
-
-        // update database
-        DB::update(
-            prefixTable('otv'),
-            array(
-                'time_limit' => (int) $dataReceived['days'] * (int) TP_ONE_DAY_SECONDS + time(),
-                'max_views' => (int) $dataReceived['views'],
-                'shared_globaly' => (int) $dataReceived['shared_globaly'] === 1 ? 1 : 0,
-            ),
-            'id = %i',
-            $dataReceived['otv_id']
-        );
-
-        // Prepare URL content
-        $otv_session = [
-            'otv' => true,
-            'code' => $orignal_link_parameters['code'],
-            'key' => $orignal_link_parameters['key'],
-            'stamp' => $orignal_link_parameters['stamp'],
-        ];
-
-        if ((int) $dataReceived['shared_globaly'] === 1 && isset($SETTINGS['otv_subdomain']) === true && empty($SETTINGS['otv_subdomain']) === false) {
-            // Inject subdomain in URL by convering www. to subdomain.
-            $domain_scheme = parse_url($SETTINGS['cpassman_url'], PHP_URL_SCHEME);
-            $domain_host = parse_url($SETTINGS['cpassman_url'], PHP_URL_HOST);
-            if (str_contains($domain_host, 'www.') === true) {
-                $domain_host = (string) $SETTINGS['otv_subdomain'] . '.' . substr($domain_host, 4);
-            } else {
-                $domain_host = (string) $SETTINGS['otv_subdomain'] . '.' . $domain_host;
-            }
-            $url = $domain_scheme.'://'.$domain_host . '/index.php?'.http_build_query($otv_session);
-        } else {
-            $url = $SETTINGS['cpassman_url'] . '/index.php?'.http_build_query($otv_session);
-        }
-
-        echo (string) prepareExchangedData(
-            array(
-                'error' => false,
-                'new_url' => $url,
-            ),
-            'encode'
         );
         break;
 

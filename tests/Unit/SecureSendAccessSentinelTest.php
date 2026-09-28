@@ -11,17 +11,24 @@ use PHPUnit\Framework\TestCase;
  */
 class SecureSendAccessSentinelTest extends TestCase
 {
+    /** Do not reintroduce the unused route that bypassed creation policy limits. */
+    public function testLegacyLinkUpdateHandlerIsNotExposed(): void
+    {
+        $sender = (string) file_get_contents(__DIR__ . '/../../app/sources/items.queries.php');
+        self::assertStringNotContainsString("case 'update_OTV_url':", $sender);
+    }
+
     /** Keep the authorization gates before decryption, insertion and recipient output. */
     public function testExistingHandlersUseTheAccessBoundary(): void
     {
         $sender = (string) file_get_contents(__DIR__ . '/../../app/sources/items.queries.php');
         $start = strpos($sender, "case 'generate_OTV_url':");
-        $end = strpos($sender, "case 'update_OTV_url':", $start);
+        $end = strpos($sender, "case 'list_secure_sends':", $start);
         $create = substr($sender, $start, $end - $start);
         self::assertLessThan(strpos($create, 'secureSendItemPassword('), strpos($create, 'secureSendReadItem('));
         self::assertLessThan(strpos($create, 'DB::insert('), strpos($create, 'secureSendItemPassword('));
         self::assertStringContainsString("catch (InvalidArgumentException \$e)", $create);
-        self::assertStringContainsString("array('error' => 'cannot_decrypt')", $create);
+        self::assertStringContainsString("'cannot_decrypt'", $create);
         self::assertStringContainsString('secureSendFilterLinks($secureSendRows,', $sender);
         $recipient = (string) file_get_contents(__DIR__ . '/../../app/core/otv.php');
         self::assertStringContainsString('secureSendPrepareRecipient(', $recipient);
