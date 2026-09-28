@@ -36,6 +36,7 @@ class SecureSendLifecycleTest extends TestCase
         return secureSendPrepareRecipient($parameters + $extra, $method, $this->settings, $tokens);
     }
 
+    /** Reject a wrong public host before confirmation, decryption or view consumption. */
     public function testPublicHostIsCheckedOnBothConfirmationAndReveal(): void
     {
         foreach (['item', 'note'] as $type) {
@@ -55,6 +56,7 @@ class SecureSendLifecycleTest extends TestCase
         }
     }
 
+    /** Preserve internal links behind proxies and through LAN aliases. */
     public function testInternalRevealToleratesRewrittenHostAndUnderscores(): void
     {
         $this->settings['cpassman_url'] = 'https://tp_internal/vault';
