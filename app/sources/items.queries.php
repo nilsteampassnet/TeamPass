@@ -319,7 +319,11 @@ switch ($inputData['type']) {
             }
 
             // Is author authorized to create in this folder
-            if (in_array($inputData['folderId'], $session->get('user-accessible_folders')) === false) {
+            $folderRights = getCurrentFolderAccessRights(
+                (int) $session->get('user-id'),
+                (int) $inputData['folderId'],
+            );
+            if ($folderRights['error'] || $folderRights['create'] === false) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
@@ -2642,8 +2646,18 @@ switch ($inputData['type']) {
                 $inputData['itemId']
             );
 
-            // Check if the folder where this item is accessible to the user
-            if (in_array($originalRecord['id_tree'], $session->get('user-accessible_folders')) === false) {
+            // The source item must be readable in the folder where it actually lives.
+            // Keep the ongoing-process check explicit: getCurrentAccessRights() reports
+            // the item as readable while disabling mutations during re-encryption.
+            $sourceRights = getCurrentAccessRights(
+                (int) $session->get('user-id'),
+                (int) $inputData['itemId'],
+                (int) $originalRecord['id_tree'],
+            );
+            if ($sourceRights['error']
+                || $sourceRights['access'] === false
+                || isProcessOnGoing((int) $inputData['itemId'])
+            ) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
@@ -2671,9 +2685,8 @@ switch ($inputData['type']) {
             // SECURITY: the user must be allowed to create items in the destination
             // folder. This rejects read-only folders (create is false only for the
             // read-only access level), mirroring the destination check in move_item.
-            $destinationRights = getCurrentAccessRights(
+            $destinationRights = getCurrentFolderAccessRights(
                 (int) $session->get('user-id'),
-                (int) $inputData['itemId'],
                 (int) $post_dest_id,
             );
             if ($destinationRights['error'] || $destinationRights['create'] === false) {
@@ -8691,22 +8704,23 @@ function fileFormatImage($ext)
 
 
 /**
- * Get rights of user on specific folder/item.
- * 
+ * Get the current user's effective rights on a folder.
+ *
+ * This resolver owns every folder-level decision shared by item operations. Item
+ * restrictions, background processes and edition locks remain item-level decisions.
+ *
  * @param int $userId ID of user.
- * @param int $itemId ID of item.
  * @param int $treeId ID of folder.
- * @param string $action Type of action (e.g., 'edit', 'delete').
- * 
- * @return array with access rights.
+ *
+ * @return array{error: bool, access: bool, edit: bool, delete: bool, create: bool}
  */
-function getCurrentAccessRights(int $userId, int $itemId, int $treeId, string $action = ''): array
+function getCurrentFolderAccessRights(int $userId, int $treeId): array
 {
     $session = SessionManager::getSession();
 
-    // Only a folder of the user's freshly resolved scope can authorize its items. The
-    // cached visible folders also list the blocked ancestors of accessible folders, so
-    // being in that list must never be enough on its own.
+    // Only a folder of the user's freshly resolved scope can authorize item operations.
+    // The cached visible folders also list blocked ancestors, so visibility alone is
+    // never sufficient.
     $configManager = new ConfigManager();
     if ($userId !== (int) $session->get('user-id')
         || refreshUserFolderPermissionScope($configManager->getAllSettings()) === false
@@ -8718,12 +8732,65 @@ function getCurrentAccessRights(int $userId, int $itemId, int $treeId, string $a
             (array) $session->get('user-forbiden_personal_folders')
         ) === false
     ) {
-        return getAccessResponse(false, false, false, false);
+        return getFolderAccessResponse(false, false, false, false);
     }
 
-    // Administrators never access shared item content (show_details_item hides it
-    // too) and own no personal folder, so every folder left here is denied.
+    // Administrators never access shared item content and own no personal folder.
     if ((int) $session->get('user-admin') === 1) {
+        return getFolderAccessResponse(false, false, false, false);
+    }
+
+    // Read-only folders, and read-only accounts outside their own personal folders.
+    if (((int) $session->get('user-read_only') === 1
+            && in_array($treeId, (array) $session->get('user-personal_folders')) === false)
+        || in_array($treeId, (array) $session->get('user-read_only_folders'))
+    ) {
+        return getFolderAccessResponse(true, false, false, false);
+    }
+
+    // A direct folder grant gives full write access.
+    if (in_array($treeId, (array) $session->get('user-allowed_folders_by_definition'))) {
+        return getFolderAccessResponse(true, true, true, true);
+    }
+
+    $visibleFolders = getUserVisibleFolders($userId);
+
+    // The user's own personal folders give full write access.
+    foreach ($visibleFolders as $folder) {
+        if ($folder['id'] == $treeId && (int) $folder['perso'] === 1) {
+            return getFolderAccessResponse(true, true, true, true);
+        }
+    }
+
+    [$edit, $delete, $create] = getRoleBasedAccess($session, $treeId);
+
+    if (!in_array($treeId, array_column($visibleFolders, 'id'))) {
+        return getFolderAccessResponse(false, false, false, false);
+    }
+
+    if (LOG_TO_SERVER === true) {
+        error_log("TEAMPASS - Folder: $treeId - User: $userId - edit: $edit - delete: $delete - create: $create");
+    }
+
+    return getFolderAccessResponse(true, $edit, $delete, $create);
+}
+
+/**
+ * Get rights of user on a specific folder/item.
+ *
+ * @param int $userId ID of user.
+ * @param int $itemId ID of item.
+ * @param int $treeId ID of folder.
+ * @param string $action Type of action (e.g., 'edit', 'delete').
+ *
+ * @return array with access rights.
+ */
+function getCurrentAccessRights(int $userId, int $itemId, int $treeId, string $action = ''): array
+{
+    $session = SessionManager::getSession();
+
+    $folderRights = getCurrentFolderAccessRights($userId, $treeId);
+    if ($folderRights['error'] || $folderRights['access'] === false) {
         return getAccessResponse(false, false, false, false);
     }
 
@@ -8740,57 +8807,20 @@ function getCurrentAccessRights(int $userId, int $itemId, int $treeId, string $a
         return getAccessResponse(false, true, false, false);
     }
 
-    // Read-only folders, and read-only accounts outside their own personal folders
-    // (the item handlers let a read-only account work in its personal folder)
-    if (((int) $session->get('user-read_only') === 1
-            && in_array($treeId, (array) $session->get('user-personal_folders')) === false)
-        || in_array($treeId, (array) $session->get('user-read_only_folders'))
-    ) {
-        return getAccessResponse(false, true, false, false);
-    }
-
-    // Check if the folder is in the user's allowed folders list defined by admin
-    if (in_array($treeId, $session->get('user-allowed_folders_by_definition'))) {
-        // Edition locks are only touched when the user actually enters edit mode.
-        $editionLock = $action === 'edit'
-            ? isItemLocked($itemId, $session, $userId, $action)
-            : ['status' => false];
-        return getAccessResponse(false, true, true, true, $editionLock, true);
-    }
-
-    // Retrieve user's visible folders from the cache_tree table
-    $visibleFolders = getUserVisibleFolders($userId);
-
-    // Check if the folder is personal to the user
-    foreach ($visibleFolders as $folder) {
-        if ($folder['id'] == $treeId && (int) $folder['perso'] === 1) {
-            $editionLock = $action === 'edit'
-                ? isItemLocked($itemId, $session, $userId, $action)
-                : ['status' => false];
-            return getAccessResponse(false, true, true, true, $editionLock, true);
-        }
-    }
-
-    // Determine the user's access rights based on their roles for this folder
-    [$edit, $delete, $create] = getRoleBasedAccess($session, $treeId);
-
-    // Is this folder in the list of visible folders?
-    if (!in_array($treeId, array_column($visibleFolders, 'id'))) {
-        return getAccessResponse(false, false, false, false);
-    }
-
-    // Log access rights information if logging is enabled
-    if (LOG_TO_SERVER === true) {
-        error_log("TEAMPASS - Folder: $treeId - User: $userId - edit: $edit - delete: $delete - create: $create");
-    }
-
     // Only create/check the edition lock when the user actually enters edit mode.
     // If edit=false or the action is read-only, no lock is acquired or refreshed.
-    $editionLock = ($edit && $action === 'edit')
+    $editionLock = ($folderRights['edit'] && $action === 'edit')
         ? isItemLocked($itemId, $session, $userId, $action)
         : ['status' => false];
 
-    return getAccessResponse(false, true, $edit, $delete, $editionLock, $create);
+    return getAccessResponse(
+        false,
+        true,
+        $folderRights['edit'],
+        $folderRights['delete'],
+        $editionLock,
+        $folderRights['create']
+    );
 }
 
 /**
@@ -9239,5 +9269,21 @@ function getAccessResponse(bool $error, bool $access, bool $edit, bool $delete, 
         'create' => $create,
         'edition_locked' => $editionLocked['status'] ?? false,
         'edition_locked_delay' => $editionLocked['delay'] ?? null,
+    ];
+}
+
+/**
+ * Construct a folder-only access response.
+ *
+ * @return array{error: bool, access: bool, edit: bool, delete: bool, create: bool}
+ */
+function getFolderAccessResponse(bool $access, bool $edit, bool $delete, bool $create): array
+{
+    return [
+        'error' => false,
+        'access' => $access,
+        'edit' => $edit,
+        'delete' => $delete,
+        'create' => $create,
     ];
 }

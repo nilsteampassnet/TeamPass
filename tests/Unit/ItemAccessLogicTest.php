@@ -46,13 +46,13 @@ class ItemAccessLogicTest extends TestCase
         self::assertFalse(itemAccessFolderIsInScope(11, [], [], [], []));
     }
 
-    /** getCurrentAccessRights() checks the scope before any shortcut can grant access. */
-    public function testAccessRightsCheckTheScopeFirst(): void
+    /** Folder rights check the scope before any shortcut can grant access. */
+    public function testFolderAccessRightsCheckTheScopeFirst(): void
     {
         $source = str_replace("\r\n", "\n", (string) file_get_contents(__DIR__ . '/../../app/sources/items.queries.php'));
         self::assertStringContainsString("require_once __DIR__ . '/item_access_logic.php';", $source);
 
-        $start = strpos($source, 'function getCurrentAccessRights(');
+        $start = strpos($source, 'function getCurrentFolderAccessRights(');
         self::assertIsInt($start);
         $end = strpos($source, "\n}\n", $start);
         self::assertIsInt($end);
@@ -61,7 +61,6 @@ class ItemAccessLogicTest extends TestCase
         $scope = strpos($body, 'itemAccessFolderIsInScope(');
         self::assertIsInt($scope);
         foreach ([
-            'getItemRestrictedUsersList(',
             "get('user-read_only_folders')",
             "get('user-allowed_folders_by_definition')",
             'getUserVisibleFolders(',
