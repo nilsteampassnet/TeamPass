@@ -3588,7 +3588,7 @@ require __DIR__ . '/renewal.preview.js.php';
             var itemIdToDelete = $(this).data('item-id');
 
             $.when(
-                checkAccess($(this).data('item-key'), $(this).data('item-tree-id'), <?php echo $session->get('user-id'); ?>, 'delete')
+                checkAccess(itemIdToDelete, $(this).data('item-tree-id'), <?php echo $session->get('user-id'); ?>, 'delete')
             ).then(function(retData) {
                 // Is the user allowed?
                 if (retData.access === false || retData.delete === false) {
