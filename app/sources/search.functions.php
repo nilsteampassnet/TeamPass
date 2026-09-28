@@ -163,6 +163,40 @@ function searchEncodeFolderTerm(string $term): string
 }
 
 /**
+ * Decode one HTML entity layer from a database-backed search value.
+ *
+ * Older item and folder values may contain named entities such as
+ * `&eacute;`. htmlspecialchars_decode() only handles the special HTML
+ * characters and leaves those accents untouched, so use the full HTML5
+ * entity set. Callers must still escape the returned plain text for their
+ * output context.
+ *
+ * @param string $storedText Value read from an item or folder column.
+ *
+ * @return string Plain text with one storage entity layer removed.
+ */
+function searchDecodeStoredText(string $storedText): string
+{
+    return html_entity_decode($storedText, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+}
+
+/**
+ * Normalize a stored search value for insertion into an HTML text context.
+ *
+ * @param string $storedText Value read from an item or folder column.
+ *
+ * @return string HTML-escaped text safe to concatenate into server-built markup.
+ */
+function searchEscapeStoredText(string $storedText): string
+{
+    return htmlspecialchars(
+        searchDecodeStoredText($storedText),
+        ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5,
+        'UTF-8'
+    );
+}
+
+/**
  * Decode a stored folder title for a text-safe client renderer.
  *
  * The browser must still render the returned value with `.text()`, never
@@ -174,7 +208,7 @@ function searchEncodeFolderTerm(string $term): string
  */
 function searchDecodeFolderTitle(string $storedTitle): string
 {
-    return stripslashes(htmlspecialchars_decode($storedTitle, ENT_QUOTES));
+    return stripslashes(searchDecodeStoredText($storedTitle));
 }
 
 /**
