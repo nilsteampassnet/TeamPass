@@ -46,6 +46,28 @@ class ItemAccessLogicTest extends TestCase
         self::assertFalse(itemAccessFolderIsInScope(11, [], [], [], []));
     }
 
+    /** Role delete rights follow the least-permissive rule. */
+    public function testFolderDeleteRightsUseTheLeastPermissiveRole(): void
+    {
+        foreach ([['W'], ['NE'], ['W', 'NE']] as $allowedTypes) {
+            self::assertTrue(itemAccessFolderAllowsDelete(true, false, false, false, false, $allowedTypes));
+        }
+
+        foreach ([[], ['R'], ['ND'], ['NDNE'], ['W', 'ND'], ['NE', 'R'], ['unknown']] as $deniedTypes) {
+            self::assertFalse(itemAccessFolderAllowsDelete(true, false, false, false, false, $deniedTypes));
+        }
+    }
+
+    /** Scope and read-only restrictions win over direct and personal grants. */
+    public function testFolderDeleteRightsRespectScopeAndReadOnlyRestrictions(): void
+    {
+        self::assertFalse(itemAccessFolderAllowsDelete(false, false, false, true, false, []));
+        self::assertFalse(itemAccessFolderAllowsDelete(true, true, false, true, false, []));
+        self::assertFalse(itemAccessFolderAllowsDelete(true, false, true, true, true, []));
+        self::assertTrue(itemAccessFolderAllowsDelete(true, false, false, true, false, []));
+        self::assertTrue(itemAccessFolderAllowsDelete(true, false, false, false, true, []));
+    }
+
     /** Folder rights check the scope before any shortcut can grant access. */
     public function testFolderAccessRightsCheckTheScopeFirst(): void
     {

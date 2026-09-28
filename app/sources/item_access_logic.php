@@ -67,3 +67,48 @@ function itemAccessFolderIsInScope(
 
     return $contains($accessible) || $contains($personal);
 }
+
+/**
+ * Tell whether a resolved folder context permits item deletion.
+ *
+ * Direct grants and the user's own personal folders grant deletion. Otherwise,
+ * every applicable role type must permit deletion: W and NE do, while R, ND,
+ * NDNE, missing rights and unknown values do not.
+ *
+ * @param bool  $folderInScope       Whether the folder belongs to the user's resolved scope
+ * @param bool  $isAdministrator     Whether the current user is an administrator
+ * @param bool  $isReadOnlyContext   Whether the account or folder is read-only
+ * @param bool  $hasDirectGrant      Whether the user has a direct folder grant
+ * @param bool  $isOwnPersonalFolder Whether the folder is personal to the user
+ * @param array $accessTypes         Role access types applying to the folder
+ *
+ * @return bool True when item deletion may be offered for this folder
+ */
+function itemAccessFolderAllowsDelete(
+    bool $folderInScope,
+    bool $isAdministrator,
+    bool $isReadOnlyContext,
+    bool $hasDirectGrant,
+    bool $isOwnPersonalFolder,
+    array $accessTypes
+): bool {
+    if ($folderInScope === false || $isAdministrator || $isReadOnlyContext) {
+        return false;
+    }
+
+    if ($hasDirectGrant || $isOwnPersonalFolder) {
+        return true;
+    }
+
+    if ($accessTypes === []) {
+        return false;
+    }
+
+    foreach ($accessTypes as $type) {
+        if (in_array((string) $type, ['W', 'NE'], true) === false) {
+            return false;
+        }
+    }
+
+    return true;
+}

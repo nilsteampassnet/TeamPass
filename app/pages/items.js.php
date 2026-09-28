@@ -301,7 +301,11 @@ require __DIR__ . '/renewal.preview.js.php';
         $('#form-item-renewal-enabled').prop('disabled', isManaged || isCredential);
         const renewalEnabled = !isManaged && !isCredential && $('#form-item-renewal-enabled').prop('checked');
         $('#form-item-renewal-period').prop('disabled', !renewalEnabled).prop('required', renewalEnabled);
-        $('.tp-action[data-item-action="delete"]').closest('.nav-item').toggleClass('hidden', isManaged || isCredential);
+        // Folder permissions own the normal visibility state; LAPR may add another
+        // restriction but must never reveal an action hidden by ACLs.
+        const canDelete = data.can_delete === true || data.can_delete === 1;
+        $('.tp-action[data-item-action="delete"]').closest('.nav-item')
+            .toggleClass('hidden', !canDelete || isManaged || isCredential);
         $('.tp-action[data-item-action="server"]').closest('.nav-item').toggleClass('hidden', isManaged);
 
         if (isManaged) {
@@ -1572,7 +1576,8 @@ require __DIR__ . '/renewal.preview.js.php';
                 resetEditFormSkeleton(false);
                 laprRenderItemIntegration({
                     lapr: store.get('teampassItem').lapr || {},
-                    login: $('#form-item-login').val()
+                    login: $('#form-item-login').val(),
+                    can_delete: store.get('teampassItem').canDelete === true
                 }, 'edit');
 
                 // Fetch password now that we know the user is allowed
@@ -5910,6 +5915,7 @@ require __DIR__ . '/renewal.preview.js.php';
             // ENsure numbers are ints
             value.anyone_can_modify = parseInt(value.anyone_can_modify);
             value.canMove = parseInt(value.canMove);
+            value.can_delete = parseInt(value.can_delete || 0);
             value.expired = parseInt(value.expired);
             value.is_favourited = parseInt(value.is_favourited ?? value.is_favorite ?? 0);
             value.is_result_of_search = parseInt(value.is_result_of_search);
@@ -5982,7 +5988,8 @@ require __DIR__ . '/renewal.preview.js.php';
                 }
 
                 // Trash icon
-                trash_link = value.lapr && (value.lapr.is_managed === true || value.lapr.is_credential === true)
+                trash_link = value.can_delete !== 1
+                    || (value.lapr && (value.lapr.is_managed === true || value.lapr.is_credential === true))
                     ? ''
                     : '<span class="fa-stack fa-clickable warn-user pointer infotip mr-2 list-item-clicktodelete" title="<?php echo $lang->get('delete'); ?>" data-item-id="' + value.item_id + '" data-item-tree-id="' + value.tree_id + '"><i class="fa-solid fa-circle fa-stack-2x"></i><i class="fa-solid fa-trash fa-stack-1x fa-inverse"></i></span>';
 
@@ -6467,7 +6474,8 @@ require __DIR__ . '/renewal.preview.js.php';
         // doesn't bleed through while the new item's data is loading.
         if (actionType === 'show') {
             $('#card-item-readonly-badge').addClass('hidden');
-            $('[data-item-action="edit"], [data-item-action="delete"]').removeClass('hidden');
+            $('[data-item-action="edit"]').removeClass('hidden');
+            $('[data-item-action="delete"]').closest('.nav-item').removeClass('hidden');
         }
 
         // Init
@@ -6574,9 +6582,10 @@ require __DIR__ . '/renewal.preview.js.php';
             // Apply badge and action-button visibility for the 'show' view using the
             // authoritative check_current_access_rights result — no need to wait for
             // the show_details_item response.
+            const canEdit = retData.edit === true
+            const canDelete = retData.delete === true
+
             if (actionType === 'show') {
-                const canEdit   = retData.edit   === true
-                const canDelete = retData.delete  === true
 
                 // Badge visible whenever at least one right is missing.
                 if (!canEdit || !canDelete) {
@@ -6592,9 +6601,9 @@ require __DIR__ . '/renewal.preview.js.php';
                 }
 
                 if (!canDelete) {
-                    $('[data-item-action="delete"]').addClass('hidden');
+                    $('[data-item-action="delete"]').closest('.nav-item').addClass('hidden');
                 } else {
-                    $('[data-item-action="delete"]').removeClass('hidden');
+                    $('[data-item-action="delete"]').closest('.nav-item').removeClass('hidden');
                 }
             }
 
@@ -6862,7 +6871,8 @@ require __DIR__ . '/renewal.preview.js.php';
                             teampassItem.id_restricted_to_roles = data.id_restricted_to_roles,
                             teampassItem.item_rights = itemRights,
                             teampassItem.notificationStatus = data.notification_status === true,
-                            teampassItem.lapr = data.lapr || {}
+                            teampassItem.lapr = data.lapr || {},
+                            teampassItem.canDelete = canDelete
                         }
                     );
 
@@ -6949,6 +6959,7 @@ require __DIR__ . '/renewal.preview.js.php';
                     // so legitimate Font Awesome classes keep working.
                     const itemIcon = (data.fa_icon !== "") ? '<i class="'+htmlEncode(data.fa_icon)+' mr-1"></i>' : '';
                     $('#card-item-label, #form-item-title').html(itemIcon + htmlEncode(data.label));
+                    data.can_delete = canDelete;
                     laprRenderItemIntegration(data, actionType);
 
                     // Populate breadcrumb with folder path when item comes from a search result

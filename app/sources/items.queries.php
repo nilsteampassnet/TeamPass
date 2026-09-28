@@ -4776,6 +4776,17 @@ switch ($inputData['type']) {
             break;
         }
 
+        // The list uses this authoritative folder capability only to decide whether
+        // deletion controls should be rendered. The delete endpoints still repeat the
+        // check immediately before changing the item.
+        $folderRights = getCurrentFolderAccessRights(
+            (int) $session->get('user-id'),
+            (int) $inputData['id']
+        );
+        $canDeleteItemsInFolder = $folderRights['error'] === false
+            && $folderRights['access'] === true
+            && $folderRights['delete'] === true;
+
         // to do only on 1st iteration
         if ((int) $start === 0) {
             $uniqueLoadData['path'] = $arr_arbo;
@@ -5165,6 +5176,7 @@ switch ($inputData['type']) {
                             : null,
                     ];
                     $html_json[$record['id']]['user_restriction_allowed_for_user'] = ((!empty($record['restricted_to']) && $user_is_in_restricted_list === true) || empty($record['restricted_to'])) ? true : false;
+                    $html_json[$record['id']]['can_delete'] = $canDeleteItemsInFolder ? 1 : 0;
 
                     $corruptedState = $batchCorruptedItems[(int) $record['id']] ?? null;
                     $html_json[$record['id']]['is_corrupted'] = $corruptedState !== null ? 1 : 0;
