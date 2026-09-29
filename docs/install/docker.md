@@ -123,7 +123,7 @@ Critical data to back up:
 
 **Symptoms:** on an instance that was installed, the root URL redirects to `install/install.php`, `install/upgrade.php` reports that it cannot find its configuration (older images: HTTP 500), and the container log says `TeamPass is not configured yet`. `docker exec teampass-app ls -la /var/www/html/storage/config/` shows no `settings.php`. Typically, the container was recreated while `storage/config` was not on a named volume.
 
-The database and the master key are usually intact; only `settings.php` is missing.
+The database and the master key are usually intact. `settings.php` is missing, and so are the attachments when `storage/files` was not on a named volume either.
 
 > :warning: **Do not run the installer**: it would generate a new master key and make every existing secret unreadable. **Do not delete any Docker volume** before the end of this procedure: the previous copy of `settings.php` may still sit in an unused one.
 
@@ -139,7 +139,15 @@ Add the five named volumes to your compose file, run `docker compose up -d`, the
 docker exec -i teampass-app tar -C /var/www/html -xf - < teampass-state.tar
 ```
 
-**2. Look for the previous `settings.php`.** This read-only loop lists the Docker volumes that hold one:
+**2. Look for the previous `settings.php`.** Run these commands on the Docker host, where you type `docker ...`, never inside the container. They only read.
+
+On a Linux host, the volumes are plain directories under Docker's data directory (`/var/lib/docker` by default; `docker info -f '{{.DockerRootDir}}'` shows yours). This lists the configuration files they hold:
+
+```bash
+sudo sh -c 'ls -la --time-style=long-iso /var/lib/docker/volumes/*/_data/settings.php /var/lib/docker/volumes/*/_data/csrfp.config.php 2>/dev/null'
+```
+
+With Docker Desktop, the volumes live inside a virtual machine; use this loop instead. Its first run downloads the small `alpine` image, and Docker prints the download progress once:
 
 ```bash
 for v in $(docker volume ls -q); do
@@ -147,13 +155,26 @@ for v in $(docker volume ls -q); do
 done
 ```
 
-If one is found, copy it back (and `csrfp.config.php` too when the same volume holds it), then restart:
+To find the attachments as well, list every volume with its creation date, its number of entries and the container using it. The previous `storage/files` volume is an unused one (no container) created at the same time as the one holding `settings.php`; it contains an `.htaccess` file next to the attachments:
+
+```bash
+for v in $(docker volume ls -q); do
+  printf '%s  %s  %s entries  %s\n' \
+    "$(docker volume inspect -f '{{.CreatedAt}}' "$v" | cut -c1-16)" "$v" \
+    "$(docker run --rm -v "$v":/v:ro alpine sh -c 'ls -A /v | wc -l')" \
+    "$(docker ps -a --filter volume="$v" --format '{{.Names}}')"
+done | sort
+```
+
+If `settings.php` is found, copy it back (and `csrfp.config.php` too when the same volume holds it), copy the attachments back if you found them, then restart:
 
 ```bash
 docker run --rm -v <volume>:/v:ro alpine cat /v/settings.php \
   | docker exec -i teampass-app sh -c 'cat > /var/www/html/storage/config/settings.php'
 docker run --rm -v <volume>:/v:ro alpine cat /v/csrfp.config.php \
   | docker exec -i teampass-app sh -c 'cat > /var/www/html/storage/config/csrfp.config.php'
+docker run --rm -v <attachments-volume>:/v:ro alpine tar -C /v -cf - . \
+  | docker exec -i teampass-app tar -C /var/www/html/storage/files -xf -
 docker compose restart teampass
 ```
 
