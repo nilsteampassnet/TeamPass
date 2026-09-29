@@ -50,6 +50,7 @@ require_once __DIR__ . '/item_access_logic.php';
 require_once __DIR__ . '/secure_send_access.php';
 require_once __DIR__ . '/secure_send_snapshot.php';
 require_once __DIR__ . '/secure_send_input.php';
+require_once __DIR__ . '/secure_send_url.php';
 
 // init
 loadClasses('DB');
@@ -7221,11 +7222,17 @@ switch ($inputData['type']) {
         }
         $timestampReference = time();
 
-        // "Shared globaly" (subdomain) only applies to item sends when configured by the admin
-        $secureSendShared = ($secureSendType !== 'note'
-            && (int) ($dataReceived['shared_globaly'] ?? 0) === 1
-            && empty($SETTINGS['otv_subdomain']) === false) ? 1 : 0;
-
+        // Item copies and standalone notes use the same administrator-controlled address.
+        $secureSendShared = (int) ($dataReceived['shared_globaly']
+            ?? (trim((string) ($SETTINGS['otv_subdomain'] ?? '')) !== '' ? 1 : 0)) === 1 ? 1 : 0;
+        try {
+            $url = secureSendUrl($SETTINGS, $secureSendShared === 1, [
+                'otv' => 1, 'code' => $otv_code, 'key' => $secureSendLinkSecret, 'stamp' => $timestampReference,
+            ]);
+        } catch (InvalidArgumentException $e) {
+            echo json_encode(['error' => 'invalid_public_url']);
+            break;
+        }
         DB::insert(
             prefixTable('otv'),
             array(
@@ -7245,28 +7252,6 @@ switch ($inputData['type']) {
             )
         );
         $newID = DB::insertId();
-
-        // Prepare URL content (the URL carries the link secret, not the Defuse key)
-        $otv_session = array(
-            'otv' => true,
-            'code' => $otv_code,
-            'key' => $secureSendLinkSecret,
-            'stamp' => $timestampReference,
-        );
-
-        if ($secureSendShared === 1) {
-            // Inject the configured subdomain into the host
-            $domain_scheme = parse_url($SETTINGS['cpassman_url'], PHP_URL_SCHEME);
-            $domain_host = parse_url($SETTINGS['cpassman_url'], PHP_URL_HOST);
-            if (str_contains((string) $domain_host, 'www.') === true) {
-                $domain_host = (string) $SETTINGS['otv_subdomain'] . '.' . substr((string) $domain_host, 4);
-            } else {
-                $domain_host = (string) $SETTINGS['otv_subdomain'] . '.' . $domain_host;
-            }
-            $url = $domain_scheme . '://' . $domain_host . '/index.php?' . http_build_query($otv_session);
-        } else {
-            $url = rtrim((string) $SETTINGS['cpassman_url'], '/') . '/index.php?' . http_build_query($otv_session);
-        }
 
         echo json_encode(
             array(
