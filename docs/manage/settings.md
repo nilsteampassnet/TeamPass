@@ -220,7 +220,23 @@ the internal/main address retains its configured scheme for existing LAN install
 Credentials, query parameters, fragments and unsafe paths are rejected when saving
 the public setting. No DNS lookup or reachability probe is performed, so DNS setup
 order cannot cause a silent fallback. Reload an already-open item page after changing
-the setting to refresh its address preview and default checkbox.
+the setting to refresh its address preview.
+
+#### Upgrading from a short prefix
+
+Existing `otv_subdomain` values are resolved differently for newly generated links:
+
+- Public links now always use HTTPS, even when the main TeamPass URL uses HTTP.
+- A short prefix now retains the main URL's port and installation path. Verify that
+  the public virtual host serves that path, or configure an explicit HTTPS base URL
+  matching the public route.
+- A dotted value such as `share.dmz` is now treated as a complete hostname. It is no
+  longer prepended to the main TeamPass hostname.
+
+Existing links remain usable when their hostname is unchanged because redemption
+checks the host, not the URL path. If a dotted legacy value changes the resolved
+hostname, verify or regenerate the affected links. Check the public route after the
+upgrade; an explicit URL such as `https://share.example.com/vault` removes ambiguity.
 
 Create DNS for the **resolved hostname**, configure a matching TLS certificate and
 route that host/path to TeamPass's `public/` directory. DNS alone does not configure
