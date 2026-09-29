@@ -7034,9 +7034,11 @@ require __DIR__ . '/renewal.preview.js.php';
                     }
 
                     // .text(), like the email and url below: the login is data, and it is
-                    // also the clipboard target, which reads the node's text.
-                    $('#card-item-login').text(data.login);
-                    $('#form-item-login, #form-item-suggestion-login, #form-item-server-login').val(data.login);
+                    // also the clipboard target, which reads the node's text. It is stored
+                    // entity-encoded (FULL_SPECIAL_CHARS), so decode it first, like the label.
+                    const itemLogin = htmlDecode(data.login || '');
+                    $('#card-item-login').text(itemLogin);
+                    $('#form-item-login, #form-item-suggestion-login, #form-item-server-login').val(itemLogin);
 
                     $('#card-item-email').text(data.email);
                     $('#form-item-email, #form-item-suggestion-email').val(data.email);
