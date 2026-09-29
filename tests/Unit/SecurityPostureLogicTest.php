@@ -18,6 +18,8 @@ require_once __DIR__ . '/../../app/sources/security_posture_logic.php';
  *   - securityPostureParseIdList()              — the ';'-separated id column format
  *   - securityPostureItemRestrictionAllows()    — per-item user/role restrictions
  *   - securityPasswordHealthClassify()          — the four health states and both thresholds
+ *   - securityPostureResolveEditableFolders()   — the "Fix" shortcut scope (update_item edit rule)
+ *   - securityPostureFixAllowedByRoles()        — the per-role switch of the "Fix" shortcuts
  */
 class SecurityPostureLogicTest extends TestCase
 {
@@ -118,6 +120,105 @@ class SecurityPostureLogicTest extends TestCase
             [4, 8],
             securityPostureResolveAuthorizedFolders(['8', '4'], [], ['9'], [], ['9'])
         );
+    }
+
+    // ------------------------------------------------------ editable folders
+
+    public function testWriteAndNoDeleteRolesAllowEditing(): void
+    {
+        self::assertSame(
+            [10, 11],
+            securityPostureResolveEditableFolders([10, 11], [], [10 => 'W', 11 => 'ND'], [], false, false)
+        );
+    }
+
+    public function testNoEditAndReadOnlyRolesForbidEditing(): void
+    {
+        // NE, NDNE and R keep the item readable but refuse the save (getRoleBasedAccess()).
+        self::assertSame(
+            [],
+            securityPostureResolveEditableFolders([10, 11, 12], [], [10 => 'NE', 11 => 'NDNE', 12 => 'R'], [], false, false)
+        );
+    }
+
+    public function testDirectGrantAllowsEditingWhateverTheRoleSays(): void
+    {
+        // identUser() removes directly granted folders from the read-only list.
+        self::assertSame(
+            [10],
+            securityPostureResolveEditableFolders([10], [10], [10 => 'R'], [], false, false)
+        );
+    }
+
+    public function testOwnPersonalTreeIsEditable(): void
+    {
+        self::assertSame(
+            [50, 51],
+            securityPostureResolveEditableFolders([50, 51], [], [], [50, 51], false, false)
+        );
+    }
+
+    public function testAFolderOutsideTheReadScopeIsNeverEditable(): void
+    {
+        // A grant on a denied folder, or on somebody else's personal tree, never reaches the read
+        // scope, so it cannot make that folder editable either.
+        self::assertSame(
+            [10],
+            securityPostureResolveEditableFolders([10], [10, 20], [10 => 'W', 30 => 'W'], [99], false, false)
+        );
+    }
+
+    public function testAFolderWithoutAnyEditGrantIsNotEditable(): void
+    {
+        self::assertSame(
+            [],
+            securityPostureResolveEditableFolders([10], [], [], [], false, false)
+        );
+    }
+
+    public function testReadOnlyAccountEditsNothing(): void
+    {
+        // update_item rejects every save of a read-only account, personal folders included.
+        self::assertSame(
+            [],
+            securityPostureResolveEditableFolders([10, 50], [10], [10 => 'W'], [50], false, true)
+        );
+    }
+
+    public function testAdministratorEditsNothing(): void
+    {
+        self::assertSame(
+            [],
+            securityPostureResolveEditableFolders([10, 50], [10], [10 => 'W'], [50], true, false)
+        );
+    }
+
+    public function testEditableFoldersAreUniqueAndSorted(): void
+    {
+        self::assertSame(
+            [3, 7],
+            securityPostureResolveEditableFolders(['7', 3, 7], [], [3 => 'W', 7 => 'W'], [], false, false)
+        );
+    }
+
+    // ------------------------------------------------------- fix shortcut switch
+
+    public function testFixShortcutsAreAllowedWhenOneRoleAllowsThem(): void
+    {
+        self::assertTrue(securityPostureFixAllowedByRoles([0, 1]));
+        // MeekroDB returns column values as strings.
+        self::assertTrue(securityPostureFixAllowedByRoles(['0', '1']));
+    }
+
+    public function testFixShortcutsAreHiddenWhenEveryRoleHidesThem(): void
+    {
+        self::assertFalse(securityPostureFixAllowedByRoles([0]));
+        self::assertFalse(securityPostureFixAllowedByRoles(['0', '0']));
+    }
+
+    public function testUserWithoutRoleKeepsTheDefault(): void
+    {
+        self::assertTrue(securityPostureFixAllowedByRoles([]));
     }
 
     // ------------------------------------------------------------- id parsing
