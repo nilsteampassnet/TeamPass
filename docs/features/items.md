@@ -311,12 +311,13 @@ When one or more valid OTV links exist for an item, a badge showing the count is
 2. Click **Secure Send**.
 3. Set validity, total views, public/internal address and an optional passphrase
    (or a required one if enforced by the administrator).
-4. Click **Generate**, then **Copy**. Send any passphrase over a separate channel.
+4. Click **Generate link**, then **Copy**. Send any passphrase over a separate channel.
 
 Changing the form clears the displayed link and disables its copy button.
-Generate again to apply the new settings; this does not alter links already sent.
-Use **My secure sends** to revoke those links. Closing the form also discards
-pending generation responses, so they cannot replace a newer link.
+Generate again to apply the new settings; this does not alter links already shown
+or sent. Use **My secure sends** to revoke those links. If the form changes or
+closes while generation is pending, a link created by the late response is
+revoked on a best-effort basis and the active-link list is refreshed.
 
 ---
 

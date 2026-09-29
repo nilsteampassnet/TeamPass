@@ -8489,6 +8489,26 @@ require __DIR__ . '/renewal.preview.js.php';
         $('#modal-item-otv').modal('show');
     }
 
+    /**
+     * Revoke a link created after its form became stale, then refresh the list.
+     *
+     * @param {number} id
+     * @return void
+     */
+    function revokeStaleSecureSend(id) {
+        $.post(
+            "sources/items.queries.php", {
+                type: "revoke_secure_send",
+                data: prepareExchangedData(JSON.stringify({"id": id}), "encode", "<?php echo $session->get('key'); ?>"),
+                key: "<?php echo $session->get('key'); ?>"
+            },
+            null,
+            "json"
+        ).always(function() {
+            loadSecureSendsList();
+        });
+    }
+
     // Generate a Secure Send link
     $(document).on('click', '#form-secure-send-generate', function() {
         if (secureSendGenerating) {
@@ -8498,6 +8518,10 @@ require __DIR__ . '/renewal.preview.js.php';
         var passphrase = $('#form-secure-send-passphrase').val();
         if ($('#form-secure-send-passphrase').prop('required') === true && passphrase.trim() === '') {
             toastr.error(secureSendErrorLabel('passphrase_required'), '', { timeOut: 3000, progressBar: true });
+            return;
+        }
+        if (new TextEncoder().encode(passphrase).length > 1024) {
+            toastr.error(secureSendErrorLabel('invalid_payload'), '', { timeOut: 3000, progressBar: true });
             return;
         }
 
@@ -8540,13 +8564,21 @@ require __DIR__ . '/renewal.preview.js.php';
                 key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
-                loadSecureSendsList();
+                const responseId = data !== null && typeof data === 'object' && !Array.isArray(data)
+                    ? Number(data.otv_id)
+                    : 0;
                 if (formVersion !== secureSendFormVersion) {
+                    if (Number.isInteger(responseId) && responseId > 0) {
+                        revokeStaleSecureSend(responseId);
+                    } else {
+                        loadSecureSendsList();
+                    }
                     return;
                 }
+                loadSecureSendsList();
                 if (data === null || typeof data !== 'object' || Array.isArray(data) || typeof data.error !== 'string') {
                     toastr.error(secureSendErrorLabel('server_error'), '', { timeOut: 5000 });
-                } else if (data.error === "" && typeof data.url === 'string' && data.url !== '' && Number.isInteger(Number(data.otv_id)) && Number(data.otv_id) > 0) {
+                } else if (data.error === "" && typeof data.url === 'string' && data.url !== '' && Number.isInteger(responseId) && responseId > 0) {
                     $('#form-item-otv-link').val(data.url).data('otv-id', data.otv_id);
                     bindSecureSendClipboard(data.url);
                     if (data.description_truncated === true) {

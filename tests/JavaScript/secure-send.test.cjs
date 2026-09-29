@@ -28,6 +28,7 @@
 const assert = require('node:assert/strict')
 const { readFileSync } = require('node:fs')
 const { join } = require('node:path')
+const { TextEncoder } = require('node:util')
 const vm = require('node:vm')
 const { test } = require('node:test')
 
@@ -48,6 +49,7 @@ function harness() {
   const requests = []
   const copied = []
   const notices = []
+  let listLoads = 0
   const document = {}
   const $ = selector => {
     if (selector?.node) return selector
@@ -69,7 +71,7 @@ function harness() {
     const request = {
       data, success,
       fail(fn) { this.failed = fn; return this }, always(fn) { this.finished = fn; return this },
-      resolve(value) { this.success(value); this.finished?.() },
+      resolve(value) { this.success?.(value); this.finished?.() },
       reject() { this.failed?.(); this.finished?.() }
     }
     requests.push(request)
@@ -77,17 +79,24 @@ function harness() {
   }
   $('#form-item-otv-days').attr('max', '7')
   const context = {
-    $, document, store: { get: () => ({ id: 123 }) }, htmlEncode: value => value,
+    $, document, TextEncoder, store: { get: () => ({ id: 123 }) },
+    htmlEncode: value => String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;'),
     prepareExchangedData: value => value, copyToClipboard: async value => copied.push(value),
     toastr: { error: value => notices.push(value), warning: value => notices.push(value), info() {} }
   }
   vm.runInNewContext(source, context)
   const loadList = context.loadSecureSendsList
-  context.loadSecureSendsList = () => {}
+  context.loadSecureSendsList = () => { listLoads += 1 }
   const click = selector => handlers.get(`${selector}|click`).call($(selector))
   const edit = () => handlers.get('#modal-item-otv input:not(#form-item-otv-link), #modal-item-otv textarea|input change ifChanged')()
   const generate = () => click('#form-secure-send-generate')
-  return { $, context, handlers, requests, copied, notices, click, edit, generate, loadList }
+  return { $, context, handlers, requests, copied, notices, click, edit, generate, loadList,
+    get listLoads() { return listLoads } }
 }
 
 test('Each new item or note form starts on the internal address', () => {
@@ -114,7 +123,7 @@ test('Rapid generation submits once and restores the button after network failur
   assert.equal(h.requests.length, 2)
 })
 
-test('Editing the form discards both the displayed URL and a stale generation response', async () => {
+test('Editing the form clears the displayed URL and revokes a late generated link', async () => {
   const h = harness()
   h.context.openSecureSendModal('item')
   h.generate()
@@ -132,6 +141,13 @@ test('Editing the form discards both the displayed URL and a stale generation re
   h.requests[1].resolve({ error: '', url: 'stale', otv_id: 2, has_passphrase: 1 })
   assert.equal(h.$('#form-item-otv-link').val(), '')
   assert.equal(h.$('#form-item-otv-copy-button').prop('disabled'), true)
+  assert.equal(h.requests.length, 3)
+  assert.equal(h.requests[2].data.type, 'revoke_secure_send')
+  assert.deepEqual(JSON.parse(h.requests[2].data.data), { id: 2 })
+  const listLoadsBeforeRevoke = h.listLoads
+  h.requests[2].reject()
+  assert.equal(h.listLoads, listLoadsBeforeRevoke + 1)
+  assert.deepEqual(h.notices, [])
 })
 
 test('Standalone notes also send the public-address choice', () => {
@@ -146,13 +162,29 @@ test('Standalone notes also send the public-address choice', () => {
   assert.equal(data.shared_globaly, 1)
 })
 
-test('A required empty passphrase is rejected before creating a link', () => {
+test('A required whitespace-only passphrase is rejected before creating a link', () => {
   const h = harness()
   h.context.openSecureSendModal('item')
   h.$('#form-secure-send-passphrase').prop('required', true)
+  h.$('#form-secure-send-passphrase').val('   ')
   h.generate()
   assert.equal(h.requests.length, 0)
   assert.deepEqual(h.notices, ['secure_send_passphrase_required_error'])
+})
+
+test('Passphrase byte limits are checked before submission without changing the value', () => {
+  const h = harness()
+  h.context.openSecureSendModal('item')
+  h.$('#form-secure-send-passphrase').val('é'.repeat(513))
+  h.generate()
+  assert.equal(h.requests.length, 0)
+  assert.deepEqual(h.notices, ['secure_send_invalid_payload'])
+
+  const boundary = 'é'.repeat(512)
+  h.$('#form-secure-send-passphrase').val(boundary)
+  h.generate()
+  assert.equal(h.requests.length, 1)
+  assert.equal(JSON.parse(h.requests[0].data.data).passphrase, boundary)
 })
 
 test('Closing the form makes a late response uncopyable', () => {
@@ -203,6 +235,17 @@ test('An older list response cannot replace a newer Secure Send list', () => {
   h.requests[0].resolve({ error: '', sends: [{ id: 1, send_type: 'item', label: 'Stale', has_passphrase: 0, remaining_views: 1, expires_label: 'earlier' }] })
   assert.match(h.$('#secure-send-list').content, /Current/)
   assert.doesNotMatch(h.$('#secure-send-list').content, /Stale/)
+})
+
+test('My secure sends escapes decoded item labels exactly once', () => {
+  const h = harness()
+  h.loadList()
+  h.requests[0].resolve({ error: '', sends: [{
+    id: 1, send_type: 'item', label: 'R&D O\'Brien', has_passphrase: 0,
+    remaining_views: 1, expires_label: 'later'
+  }] })
+  assert.match(h.$('#secure-send-list').content, /R&amp;D O&#039;Brien/)
+  assert.doesNotMatch(h.$('#secure-send-list').content, /&amp;amp;|&amp;#039;/)
 })
 
 test('Malformed list responses report an error instead of an empty list', () => {

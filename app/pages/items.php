@@ -800,7 +800,7 @@ if ((int) $session_user_admin === 1) {
                                     <div class="input-group-prepend"><span class="input-group-text"><i class="fa-regular fa-calendar-days" aria-hidden="true"></i></span></div>
                                     <input type="number" class="form-control clear-me-val" id="form-item-otv-days" min="1" max="<?php echo (int) $SETTINGS['otv_expiration_period']; ?>" value="<?php echo (int) $SETTINGS['otv_expiration_period']; ?>" aria-describedby="secure-send-days-limit">
                                 </div>
-                                <small id="secure-send-days-limit" class="form-text text-muted"><?php echo $lang->get('maximum') . ' : ' . (int) $SETTINGS['otv_expiration_period']; ?></small>
+                                <small id="secure-send-days-limit" class="form-text text-muted"><?php echo ucfirst($lang->get('maximum')) . ': ' . (int) $SETTINGS['otv_expiration_period']; ?></small>
                             </div>
                             <div class="form-group col-sm-6">
                                 <label for="form-item-otv-views"><?php echo $lang->get('number_of_times'); ?></label>
@@ -808,7 +808,7 @@ if ((int) $session_user_admin === 1) {
                                     <div class="input-group-prepend"><span class="input-group-text"><i class="fa-regular fa-eye" aria-hidden="true"></i></span></div>
                                     <input type="number" class="form-control clear-me-val" id="form-item-otv-views" value="1" min="1" max="<?php echo (int) ($SETTINGS['secure_send_max_views'] ?? 5); ?>" aria-describedby="secure-send-views-limit">
                                 </div>
-                                <small id="secure-send-views-limit" class="form-text text-muted"><?php echo $lang->get('maximum') . ' : ' . (int) ($SETTINGS['secure_send_max_views'] ?? 5); ?></small>
+                                <small id="secure-send-views-limit" class="form-text text-muted"><?php echo ucfirst($lang->get('maximum')) . ': ' . (int) ($SETTINGS['secure_send_max_views'] ?? 5); ?></small>
                             </div>
                         </div>
                         <div class="form-group">
