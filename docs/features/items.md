@@ -299,8 +299,9 @@ No schema upgrade is needed: new copies use the existing send_type value space
 with item_v2. Legacy item and note links remain readable. Do not roll back the
 application while item_v2 links remain active.
 
-If the administrator has defined a **public sharing address**, it is selected by
-default. The preview shows the address that will be used. DNS, TLS and routing
+If the administrator has defined a **public sharing address**, the sender may
+select it explicitly for a link. New forms use the internal address by default,
+and the preview always shows the address that will be used. DNS, TLS and routing
 must also be configured; see [Public sharing address](../manage/settings.md#public-sharing-address).
 
 When one or more valid OTV links exist for an item, a badge showing the count is displayed on the item row.

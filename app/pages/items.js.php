@@ -8381,20 +8381,29 @@ require __DIR__ . '/renewal.preview.js.php';
         return map[code] || <?php echo json_encode($lang->get('error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
     }
 
+    let secureSendFormVersion = 0;
+    let secureSendListVersion = 0;
+    let secureSendGenerating = false;
+    const secureSendBaseUrls = <?php echo json_encode($secureSendUrls, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
+
     /**
      * Load and render the current user's active Secure Send links.
      *
      * @return void
      */
     function loadSecureSendsList() {
+        const listVersion = ++secureSendListVersion;
         $.post(
             "sources/items.queries.php", {
                 type: "list_secure_sends",
                 key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
+                if (listVersion !== secureSendListVersion) {
+                    return;
+                }
                 // A real server error must not be displayed as an empty list
-                if (data.error !== undefined && data.error !== "") {
+                if (data === null || typeof data !== 'object' || Array.isArray(data) || data.error !== "" || !Array.isArray(data.sends)) {
                     toastr.error(
                         <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
                         '', {
@@ -8423,12 +8432,12 @@ require __DIR__ . '/renewal.preview.js.php';
                 $('#secure-send-list').html(html);
             },
             "json"
-        );
+        ).fail(function() {
+            if (listVersion === secureSendListVersion) {
+                toastr.error(secureSendErrorLabel('server_error'), '', { timeOut: 5000 });
+            }
+        });
     }
-
-    let secureSendFormVersion = 0;
-    let secureSendGenerating = false;
-    const secureSendBaseUrls = <?php echo json_encode($secureSendUrls, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
 
     /** Clear the previous URL whenever the form no longer describes that link. */
     function invalidateSecureSendLink() {
@@ -8445,6 +8454,7 @@ require __DIR__ . '/renewal.preview.js.php';
     $(document).on('input change ifChanged', '#modal-item-otv input:not(#form-item-otv-link), #modal-item-otv textarea', invalidateSecureSendLink);
     $('#modal-item-otv').on('hidden.bs.modal', function() {
         invalidateSecureSendLink();
+        secureSendListVersion += 1;
         $('#form-secure-send-passphrase, #form-secure-send-secret, #form-secure-send-note').val('');
     });
 
@@ -8486,6 +8496,10 @@ require __DIR__ . '/renewal.preview.js.php';
         }
         var mode = $('#form-secure-send-mode').val();
         var passphrase = $('#form-secure-send-passphrase').val();
+        if ($('#form-secure-send-passphrase').prop('required') === true && passphrase.trim() === '') {
+            toastr.error(secureSendErrorLabel('passphrase_required'), '', { timeOut: 3000, progressBar: true });
+            return;
+        }
 
         var data = {
             "send_type": mode,
@@ -8530,7 +8544,9 @@ require __DIR__ . '/renewal.preview.js.php';
                 if (formVersion !== secureSendFormVersion) {
                     return;
                 }
-                if (data.error === "") {
+                if (data === null || typeof data !== 'object' || Array.isArray(data) || typeof data.error !== 'string') {
+                    toastr.error(secureSendErrorLabel('server_error'), '', { timeOut: 5000 });
+                } else if (data.error === "" && typeof data.url === 'string' && data.url !== '' && Number.isInteger(Number(data.otv_id)) && Number(data.otv_id) > 0) {
                     $('#form-item-otv-link').val(data.url).data('otv-id', data.otv_id);
                     bindSecureSendClipboard(data.url);
                     if (data.description_truncated === true) {
@@ -8542,13 +8558,17 @@ require __DIR__ . '/renewal.preview.js.php';
                     } else {
                         $('#form-secure-send-passphrase-reminder').addClass('hidden');
                     }
-                } else {
+                } else if (data.error !== "") {
                     toastr.error(secureSendErrorLabel(data.error), '', { timeOut: 3000, progressBar: true });
+                } else {
+                    toastr.error(secureSendErrorLabel('server_error'), '', { timeOut: 5000 });
                 }
             },
             "json"
         ).fail(function() {
-            toastr.error(secureSendErrorLabel('server_error'), '', { timeOut: 5000 });
+            if (formVersion === secureSendFormVersion) {
+                toastr.error(secureSendErrorLabel('server_error'), '', { timeOut: 5000 });
+            }
         }).always(function() {
             secureSendGenerating = false;
             $btn.prop('disabled', false);
@@ -8567,8 +8587,13 @@ require __DIR__ . '/renewal.preview.js.php';
 
     // Revoke a Secure Send link
     $(document).on('click', '.secure-send-revoke', function() {
+        var $button = $(this);
+        if ($button.prop('disabled') === true) {
+            return;
+        }
+        $button.prop('disabled', true);
         var data = {
-            "id": $(this).data('id')
+            "id": $button.data('id')
         };
         $.post(
             "sources/items.queries.php", {
@@ -8577,6 +8602,10 @@ require __DIR__ . '/renewal.preview.js.php';
                 key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
+                if (data === null || typeof data !== 'object' || Array.isArray(data) || typeof data.error !== 'string') {
+                    toastr.error(secureSendErrorLabel('server_error'), '', { timeOut: 5000 });
+                    return;
+                }
                 if (data.error !== '') {
                     toastr.error(secureSendErrorLabel(data.error), '', { timeOut: 5000 });
                     return;
@@ -8589,6 +8618,8 @@ require __DIR__ . '/renewal.preview.js.php';
             "json"
         ).fail(function() {
             toastr.error(secureSendErrorLabel('server_error'), '', { timeOut: 5000 });
+        }).always(function() {
+            $button.prop('disabled', false);
         });
     });
 

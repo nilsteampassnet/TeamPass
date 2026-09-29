@@ -48,7 +48,6 @@ function harness() {
     requests.push(request)
     return request
   }
-  $('#form-item-otv-subdomain').attr('data-public-configured', '1')
   $('#form-item-otv-days').attr('max', '7')
   const context = {
     $, document, store: { get: () => ({ id: 123 }) }, htmlEncode: value => value,
@@ -56,23 +55,21 @@ function harness() {
     toastr: { error: value => notices.push(value), warning: value => notices.push(value), info() {} }
   }
   vm.runInNewContext(source, context)
+  const loadList = context.loadSecureSendsList
   context.loadSecureSendsList = () => {}
   const click = selector => handlers.get(`${selector}|click`).call($(selector))
   const edit = () => handlers.get('#modal-item-otv input:not(#form-item-otv-link), #modal-item-otv textarea|input change ifChanged')()
   const generate = () => click('#form-secure-send-generate')
-  return { $, context, handlers, requests, copied, notices, click, edit, generate }
+  return { $, context, handlers, requests, copied, notices, click, edit, generate, loadList }
 }
 
-test('Public URL is selected and previewed on each new item or note form', () => {
+test('Each new item or note form starts on the internal address', () => {
   const h = harness()
   h.context.openSecureSendModal('item')
-  assert.equal(h.$('#form-item-otv-subdomain').is(':checked'), true)
-  assert.equal(h.$('#secure-send-address-preview').content, 'Address: https://share.example.com/team')
-  h.$('#form-item-otv-subdomain').prop('checked', false)
+  assert.equal(h.$('#form-item-otv-subdomain').is(':checked'), false)
+  assert.equal(h.$('#secure-send-address-preview').content, 'Address: https://vault.example.com')
+  h.$('#form-item-otv-subdomain').prop('checked', true)
   h.context.openSecureSendModal('note')
-  assert.equal(h.$('#form-item-otv-subdomain').is(':checked'), true)
-  h.$('#form-item-otv-subdomain').attr('data-public-configured', '0')
-  h.context.openSecureSendModal('item')
   assert.equal(h.$('#form-item-otv-subdomain').is(':checked'), false)
   assert.equal(h.$('#secure-send-address-preview').content, 'Address: https://vault.example.com')
 })
@@ -113,12 +110,22 @@ test('Editing the form discards both the displayed URL and a stale generation re
 test('Standalone notes also send the public-address choice', () => {
   const h = harness()
   h.context.openSecureSendModal('note')
+  h.$('#form-item-otv-subdomain').prop('checked', true)
   h.$('#form-secure-send-secret').val('synthetic secret')
   h.$('#form-secure-send-note').val('')
   h.generate()
   const data = JSON.parse(h.requests[0].data.data)
   assert.equal(data.send_type, 'note')
   assert.equal(data.shared_globaly, 1)
+})
+
+test('A required empty passphrase is rejected before creating a link', () => {
+  const h = harness()
+  h.context.openSecureSendModal('item')
+  h.$('#form-secure-send-passphrase').prop('required', true)
+  h.generate()
+  assert.equal(h.requests.length, 0)
+  assert.deepEqual(h.notices, ['secure_send_passphrase_required_error'])
 })
 
 test('Closing the form makes a late response uncopyable', () => {
@@ -129,6 +136,65 @@ test('Closing the form makes a late response uncopyable', () => {
   h.requests[0].resolve({ error: '', url: 'late', otv_id: 1, has_passphrase: 0 })
   assert.equal(h.$('#form-item-otv-link').val(), '')
   assert.equal(h.$('#form-item-otv-copy-button').prop('disabled'), true)
+})
+
+test('Editing the form suppresses a stale network error', () => {
+  const h = harness()
+  h.context.openSecureSendModal('item')
+  h.generate()
+  h.edit()
+  h.requests[0].reject()
+  assert.deepEqual(h.notices, [])
+  assert.equal(h.$('#form-secure-send-generate').prop('disabled'), false)
+})
+
+test('Malformed generation responses never enable copying', () => {
+  const h = harness()
+  h.context.openSecureSendModal('item')
+  h.generate()
+  h.requests[0].resolve(null)
+  assert.deepEqual(h.notices, ['server_answer_error'])
+  assert.equal(h.$('#form-item-otv-copy-button').prop('disabled'), true)
+})
+
+test('A successful-looking response still requires a valid link identity', () => {
+  const h = harness()
+  h.context.openSecureSendModal('item')
+  h.generate()
+  h.requests[0].resolve({ error: '', url: 'https://share.example.com/orphan', otv_id: null, has_passphrase: 0 })
+  assert.deepEqual(h.notices, ['server_answer_error'])
+  assert.equal(h.$('#form-item-otv-link').val(), '')
+  assert.equal(h.$('#form-item-otv-copy-button').prop('disabled'), true)
+})
+
+test('An older list response cannot replace a newer Secure Send list', () => {
+  const h = harness()
+  h.loadList()
+  h.loadList()
+  h.requests[1].resolve({ error: '', sends: [{ id: 2, send_type: 'item', label: 'Current', has_passphrase: 0, remaining_views: 1, expires_label: 'later' }] })
+  assert.match(h.$('#secure-send-list').content, /Current/)
+  h.requests[0].resolve({ error: '', sends: [{ id: 1, send_type: 'item', label: 'Stale', has_passphrase: 0, remaining_views: 1, expires_label: 'earlier' }] })
+  assert.match(h.$('#secure-send-list').content, /Current/)
+  assert.doesNotMatch(h.$('#secure-send-list').content, /Stale/)
+})
+
+test('Malformed list responses report an error instead of an empty list', () => {
+  const h = harness()
+  h.loadList()
+  h.requests[0].resolve([{ error: 'key_not_conform' }])
+  assert.deepEqual(h.notices, ['server_answer_error'])
+})
+
+test('A revoke action cannot be submitted twice while pending', () => {
+  const h = harness()
+  const button = h.$('.secure-send-revoke').data('id', 7)
+  const revoke = () => h.handlers.get('.secure-send-revoke|click').call(button)
+  revoke()
+  revoke()
+  assert.equal(h.requests.length, 1)
+  assert.equal(button.prop('disabled'), true)
+  h.requests[0].resolve({ error: '', id: 7 })
+  assert.equal(button.prop('disabled'), false)
 })
 
 test('A truncated snapshot warns the sender without discarding its usable link', () => {
