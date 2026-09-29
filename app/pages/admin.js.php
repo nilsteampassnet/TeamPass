@@ -351,6 +351,8 @@ function saveFieldValue($field, field, isSelect2) {
                         progressBar: true
                     }
                 );
+            } else {
+                toastr.error(data.message || <?php echo json_encode($lang->get('error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>, '', { timeOut: 5000, escapeHtml: true });
             }
             requestRunning = false;
         }
