@@ -658,7 +658,7 @@ foreach ($rows as $record) {
     // The label is a real button: clicking anywhere on the row opens the detail
     // modal, and this is what makes the same thing reachable with the keyboard.
     $label = '<button type="button" class="search-label-btn" id="item_label-' . $itemId . '">'
-        . htmlspecialchars((string) $record['label'], ENT_QUOTES, 'UTF-8') . '</button>';
+        . searchEscapeStoredText((string) $record['label']) . '</button>';
     if ($featureClassification === true && (int) ($record['classification_level'] ?? 0) > 0) {
         $level = (int) $record['classification_level'];
         $label .= ' <span class="badge badge-' . ($classificationColours[$level] ?? 'secondary') . ' ml-1">'
@@ -674,13 +674,13 @@ foreach ($rows as $record) {
     $data[] = [
         $controls,
         $label,
-        htmlspecialchars((string) $record['login'], ENT_QUOTES, 'UTF-8'),
+        searchEscapeStoredText((string) $record['login']),
         htmlspecialchars(
             findBuildDescriptionPreview((string) $record['description'], 50),
             ENT_QUOTES,
             'UTF-8'
         ),
-        htmlspecialchars(stripslashes((string) $record['tags']), ENT_QUOTES, 'UTF-8'),
+        searchEscapeStoredText(stripslashes((string) $record['tags'])),
         $url,
         htmlspecialchars(searchDecodeFolderTitle((string) $record['folder']), ENT_QUOTES, 'UTF-8'),
         $actions,
