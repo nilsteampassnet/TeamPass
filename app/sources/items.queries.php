@@ -7223,8 +7223,8 @@ switch ($inputData['type']) {
         $timestampReference = time();
 
         // Item copies and standalone notes use the same administrator-controlled address.
-        $secureSendShared = (int) ($dataReceived['shared_globaly']
-            ?? (trim((string) ($SETTINGS['otv_subdomain'] ?? '')) !== '' ? 1 : 0)) === 1 ? 1 : 0;
+        // The public address is opt-in: a request that does not ask for it gets the main URL.
+        $secureSendShared = (int) ($dataReceived['shared_globaly'] ?? 0) === 1 ? 1 : 0;
         try {
             $url = secureSendUrl($SETTINGS, $secureSendShared === 1, [
                 'otv' => 1, 'code' => $otv_code, 'key' => $secureSendLinkSecret, 'stamp' => $timestampReference,
