@@ -180,6 +180,8 @@ The web server can no longer enter `app/config/`. The typical trigger is `rsync 
 
 **Do not run the installer**: it would generate a new encryption key and make every existing secret unreadable. Give the directories back to the web server user with the [Quick-setup commands](../install/file-permissions.md#quick-setup-commands), check with `sudo -u www-data test -r app/config/settings.php && echo OK`, then open `install/upgrade.php`. Use `rsync -av --no-perms --no-owner --no-group` for the next upgrades (see [Upgrade](../install/upgrade.md#option-a--release-archive-recommended)).
 
+With Docker, these symptoms usually mean the configuration file no longer exists, not a permission problem: see [Recovering a lost configuration](../install/docker.md#recovering-a-lost-configuration).
+
 ---
 
 ## OAuth2 / Azure Entra users cannot log in on second attempt

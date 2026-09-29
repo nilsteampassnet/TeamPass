@@ -104,8 +104,117 @@ class ConfigAccessLogicTest extends TestCase
 
         self::assertStringContainsString('Do not run the installer', $page);
         self::assertStringContainsString('chown', $page);
+        // The shell continuation must survive the PHP string: one backslash, then a newline.
+        self::assertStringContainsString("secrets \\\n", $page);
         self::assertStringNotContainsString(dirname(__DIR__, 2), $page);
         self::assertStringNotContainsString('/var/www', $page);
+    }
+
+    public function testMissingSettingsPageKeepsTheAdministratorAwayFromTheInstaller(): void
+    {
+        $page = teampassMissingSettingsPage();
+
+        self::assertStringContainsString('<title>TeamPass cannot find its configuration</title>', $page);
+        self::assertStringContainsString('do not run the installer', $page);
+        self::assertStringContainsString('migrate_3.2.x.php', $page);
+        self::assertStringContainsString('docker volume prune', $page);
+        self::assertStringContainsString('#/install/docker?id=recovering-a-lost-configuration', $page);
+        self::assertStringNotContainsString(dirname(__DIR__, 2), $page);
+    }
+
+    public function testInstallerAcceptsADatabaseWithoutTeampassSchema(): void
+    {
+        self::assertFalse(teampassInstallerMustRefuseDatabase(null));
+    }
+
+    /**
+     * An installation that failed at its last step leaves the whole schema behind; the
+     * administrator must be able to start again without dropping tables by hand.
+     */
+    public function testInstallerLetsAnInterruptedInstallationBeRetried(): void
+    {
+        self::assertFalse(teampassInstallerMustRefuseDatabase(['signed_in_users' => 0, 'items' => 0]));
+    }
+
+    public function testInstallerRefusesAnInstanceInUse(): void
+    {
+        self::assertTrue(teampassInstallerMustRefuseDatabase(['signed_in_users' => 1, 'items' => 0]));
+        self::assertTrue(teampassInstallerMustRefuseDatabase(['signed_in_users' => 0, 'items' => 12]));
+    }
+
+    public function testRefusalMessageEscapesWhatTheAdministratorTyped(): void
+    {
+        $message = teampassInstallerRefusalMessage('3.2.1<b>', 'tp_<script>');
+
+        self::assertStringContainsString('a TeamPass 3.2.1&lt;b&gt; instance', $message);
+        self::assertStringContainsString('<code>tp_&lt;script&gt;</code>', $message);
+        self::assertStringNotContainsString('<script>', $message);
+        self::assertStringContainsString('new encryption key', $message);
+        self::assertStringContainsString('another table prefix', $message);
+        self::assertStringContainsString('a TeamPass instance in use', teampassInstallerRefusalMessage('', 'teampass_'));
+    }
+
+    /**
+     * Without settings.php, loadClasses() is fatal: the wizard must answer before it.
+     */
+    public function testUpgradeWizardExplainsAMissingSettingsFileBeforeLoadingClasses(): void
+    {
+        $source = $this->source('public/install/upgrade.php');
+        $explain = strpos($source, 'teampassSendMissingSettingsError(');
+        $load = strpos($source, 'loadClasses();');
+
+        self::assertNotFalse($explain, 'upgrade.php must explain a missing settings.php');
+        self::assertNotFalse($load, 'upgrade.php no longer calls loadClasses(); update this test');
+        self::assertLessThan($load, $explain);
+    }
+
+    /**
+     * The probe must run before step 3 writes anything, and on the database the
+     * administrator chose.
+     */
+    public function testInstallerProbesTheDatabaseBeforeWritingToIt(): void
+    {
+        $source = $this->source('public/install/install-steps/run.step3.php');
+        $useDb = strpos($source, "DB::useDB(\$inputData['dbName']);");
+        $guard = strpos($source, 'teampassInstallerMustRefuseDatabase(');
+        $firstWrite = strpos($source, 'CREATE TABLE IF NOT EXISTS `_install`');
+
+        self::assertNotFalse($useDb);
+        self::assertNotFalse($guard, 'run.step3.php must refuse a database in use');
+        self::assertNotFalse($firstWrite, 'run.step3.php no longer creates _install; update this test');
+        self::assertLessThan($guard, $useDb);
+        self::assertLessThan($firstWrite, $guard);
+    }
+
+    /**
+     * The upgrade wizard page and the installer refusal both send administrators to
+     * this section; a renamed heading would silently break the link.
+     */
+    public function testRecoveryDocumentationLinkedFromTheCodeExists(): void
+    {
+        self::assertMatchesRegularExpression(
+            '/^## Recovering a lost configuration$/m',
+            $this->source('docs/install/docker.md')
+        );
+    }
+
+    /**
+     * Administrators paste the documented recovery script as is: it must parse, and it
+     * must keep its safety checks (one key file, key verified against the database,
+     * existing files never overwritten).
+     */
+    public function testDocumentedRecoveryScriptParsesAndKeepsItsSafetyChecks(): void
+    {
+        $docs = $this->source('docs/install/docker.md');
+        $section = substr($docs, (int) strpos($docs, '## Recovering a lost configuration'));
+        self::assertSame(1, preg_match('/```php\n(.*?)```/s', $section, $match), 'recovery script not found');
+        $script = $match[1];
+
+        token_get_all($script, TOKEN_PARSE);
+        self::assertStringContainsString('count($keyFiles) !== 1', $script);
+        self::assertStringContainsString('Defuse\Crypto\Crypto::decrypt($row[0], $key)', $script);
+        self::assertStringContainsString("if (file_exists(\$config . '/settings.php') === false)", $script);
+        self::assertStringContainsString("if (file_exists(\$config . '/csrfp.config.php') === false)", $script);
     }
 
     /**
