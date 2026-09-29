@@ -299,15 +299,25 @@ No schema upgrade is needed: new copies use the existing send_type value space
 with item_v2. Legacy item and note links remain readable. Do not roll back the
 application while item_v2 links remain active.
 
-If the administrator has defined an **external subdomain**, the generated link uses that subdomain, making it accessible outside your organization's network even if the main Teampass instance is internal-only.
+If the administrator has defined a **public sharing address**, the sender may
+select it explicitly for a link. New forms use the internal address by default,
+and the preview always shows the address that will be used. DNS, TLS and routing
+must also be configured; see [Public sharing address](../manage/settings.md#public-sharing-address).
 
 When one or more valid OTV links exist for an item, a badge showing the count is displayed on the item row.
 
 **To create a One Time View link:**
 1. Open the item action menu.
-2. Click **One Time View**.
-3. Configure expiry date and number of views.
-4. Copy the generated link and share it.
+2. Click **Secure Send**.
+3. Set validity, total views, public/internal address and an optional passphrase
+   (or a required one if enforced by the administrator).
+4. Click **Generate link**, then **Copy**. Send any passphrase over a separate channel.
+
+Changing the form clears the displayed link and disables its copy button.
+Generate again to apply the new settings; this does not alter links already shown
+or sent. Use **My secure sends** to revoke those links. If the form changes or
+closes while generation is pending, a link created by the late response is
+revoked on a best-effort basis and the active-link list is refreshed.
 
 ---
 

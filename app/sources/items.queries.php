@@ -7131,7 +7131,7 @@ switch ($inputData['type']) {
 
         // Optional recipient passphrase (transmitted out-of-band by the sender)
         $secureSendPassphrase = (string) ($dataReceived['passphrase'] ?? '');
-        if ((int) ($SETTINGS['secure_send_require_passphrase'] ?? 0) === 1 && $secureSendPassphrase === '') {
+        if ((int) ($SETTINGS['secure_send_require_passphrase'] ?? 0) === 1 && trim($secureSendPassphrase) === '') {
             echo json_encode(array('error' => 'passphrase_required'));
             break;
         }
@@ -7299,7 +7299,11 @@ switch ($inputData['type']) {
                 'send_type' => $isNote === true ? 'note' : 'item',
                 'label' => $isNote === true
                     ? $lang->get('secure_send_note')
-                    : htmlspecialchars(strip_tags((string) ($secureSendRow['item_label'] ?? '')), ENT_QUOTES, 'UTF-8'),
+                    : html_entity_decode(
+                        (string) ($secureSendRow['item_label'] ?? ''),
+                        ENT_QUOTES | ENT_HTML5,
+                        'UTF-8'
+                    ),
                 'has_passphrase' => (int) ($secureSendRow['has_passphrase'] ?? 0),
                 'remaining_views' => max(0, (int) $secureSendRow['max_views'] - (int) $secureSendRow['views']),
                 'expires_label' => date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $secureSendRow['time_limit']),
