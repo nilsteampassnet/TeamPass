@@ -8430,7 +8430,7 @@ require __DIR__ . '/renewal.preview.js.php';
      * @return void
      */
     function openSecureSendModal(mode) {
-        $('#form-item-otv-subdomain').iCheck($('#form-item-otv-subdomain').attr('data-public-configured') === '1' ? 'check' : 'uncheck');
+        $('#form-item-otv-subdomain').iCheck('uncheck');
         updateSecureSendAddressPreview();
         $('#form-secure-send-mode').val(mode);
         // Reset the form

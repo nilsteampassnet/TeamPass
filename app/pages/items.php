@@ -826,7 +826,7 @@ if ((int) $session_user_admin === 1) {
                             </label>
                             <div class="input-group mb-3">
                                 <div class="form-check mb-3 icheck-blue">
-                                    <input type="checkbox" class="form-check-input form-item-control flat-blue infotip" id="form-item-otv-subdomain" data-public-configured="<?php echo trim((string) ($SETTINGS['otv_subdomain'] ?? '')) !== '' ? '1' : '0'; ?>" <?php
+                                    <input type="checkbox" class="form-check-input form-item-control flat-blue infotip" id="form-item-otv-subdomain" <?php
                                         echo isset($SETTINGS['otv_subdomain']) === true && empty($SETTINGS['otv_subdomain']) === false ? ' enabled' : ' disabled'; ?> data-change-ongoing="">
                                 </div>
                             </div>
