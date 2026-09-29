@@ -110,8 +110,10 @@ echo '
 <body class="hold-transition login-page '.($theme_body ?? '').'">
 <div class="login-box">
     <div class="login-logo"><div style="margin:30px;">',
+    // The setting is stored HTML-encoded by save_option_change: decode before escaping so an
+    // URL holding "&" is not double-encoded. The logo fills the box width, capped in height.
     isset($SETTINGS['custom_logo']) === true && empty($SETTINGS['custom_logo']) === false ?
-        '<img src="' . (string) $SETTINGS['custom_logo'] . '" alt="" style="text-align:center; max-width:100px;" />' :
+        '<img src="' . htmlspecialchars(html_entity_decode((string) $SETTINGS['custom_logo'], ENT_QUOTES | ENT_HTML5, 'UTF-8'), ENT_QUOTES, 'UTF-8') . '" alt="" style="max-width:100%; max-height:150px;" />' :
         '<img src="./assets/images/teampass-logo2-login.png" alt="Teampass Logo">',
         '
         </div>
