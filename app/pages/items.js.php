@@ -3750,17 +3750,43 @@ require __DIR__ . '/renewal.preview.js.php';
             }
         });
 
-    // Click to reaveal password
-    $('#item-button-password-show')
-        .mouseup(function() {
-            $('#form-item-password').attr('type', 'password');
-        })
-        .mousedown(function() {
-            // Allow $('#form-item .form-item-control').on('change') to be fired
-            $('#form-item .form-item-control').blur();
-            // Display cleartext password
-            $('#form-item-password').attr('type', 'text');
-        });
+    /**
+     * Show or mask the password of the edit form.
+     *
+     * @param {boolean} visible
+     */
+    function applyItemFormPasswordVisibility(visible) {
+        $('#form-item-password').attr('type', visible === true ? 'text' : 'password')
+        $('#item-button-password-show')
+            .attr('aria-pressed', visible === true ? 'true' : 'false')
+            .find('i')
+            .toggleClass('fa-eye', visible !== true)
+            .toggleClass('fa-eye-slash', visible === true)
+    }
+
+    // Click to reveal or mask the password. The choice is remembered in this browser;
+    // the field stays masked until the user asks otherwise.
+    $('#item-button-password-show').on('click', function() {
+        // Allow $('#form-item .form-item-control').on('change') to be fired
+        $('#form-item .form-item-control').blur()
+        const visible = $('#form-item-password').attr('type') === 'password'
+        applyItemFormPasswordVisibility(visible)
+        try {
+            localStorage.setItem('tp_item_form_pw_visible', visible === true ? '1' : '0')
+        } catch (e) {
+            // Storage unavailable (private window, blocked site data): the choice lasts for this page only
+        }
+    })
+    ;(function loadItemFormPasswordVisibility() {
+        let visible = false
+        try {
+            visible = localStorage.getItem('tp_item_form_pw_visible') === '1'
+        } catch (e) {
+            // Storage unavailable: keep the field masked
+        }
+        applyItemFormPasswordVisibility(visible)
+    })()
+
     $('.btn-no-click')
         .click(function(e) {
             e.preventDefault();

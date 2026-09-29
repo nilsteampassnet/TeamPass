@@ -582,6 +582,12 @@ foreach ($licenceTrialDefaults as $key => $value) {
     );
 }
 
+// Custom login background (Settings -> Options). Empty keeps the shipped wallpaper.
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'custom_login_background', '')"
+);
+
 // Drop the temporary installation table left behind by the installer.
 //
 // `_install` is created unprefixed by install-steps/run.step3|4 and holds the

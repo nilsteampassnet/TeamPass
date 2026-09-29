@@ -237,6 +237,18 @@ $zones = timezone_list();
                                 </div>
                             </div>
 
+                            <div class='form-group option' data-keywords="server setting login background wallpaper">
+                                <label for='custom_login_background' class='col-sm-10 control-label'>
+                                    <?php echo $lang->get('admin_misc_custom_login_background'); ?>
+                                </label>
+                                <div class='col-sm-12'>
+                                    <input type='text' class='form-control form-control-sm' id='custom_login_background' value='<?php echo isset($SETTINGS['custom_login_background']) === true ? htmlspecialchars(html_entity_decode((string) $SETTINGS['custom_login_background'], ENT_QUOTES | ENT_HTML5, 'UTF-8'), ENT_QUOTES, 'UTF-8') : ''; ?>'>
+                                    <small class='form-text text-muted'>
+                                        <?php echo $lang->get('admin_misc_custom_login_background_tip'); ?>
+                                    </small>
+                                </div>
+                            </div>
+
                             <div class='form-group option' data-keywords="server setting">
                                 <label for='custom_login_text' class='col-sm-10 control-label'>
                                     <?php echo $lang->get('admin_misc_custom_login_text'); ?>

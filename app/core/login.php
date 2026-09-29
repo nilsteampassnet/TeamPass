@@ -106,8 +106,19 @@ if (null !== $session->get('userOauth2Info') && empty($session->get('userOauth2I
     $userOauth2InfoJson = json_encode($session->get('userOauth2Info'));
 }
 
+// Custom login background (Settings → Options), stored HTML-encoded by save_option_change.
+// Only an absolute http(s) URL is used, without any character able to leave the CSS url().
+$loginBackgroundStyle = '';
+$loginBackgroundUrl = html_entity_decode((string) ($SETTINGS['custom_login_background'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+if (filter_var($loginBackgroundUrl, FILTER_VALIDATE_URL) !== false
+    && preg_match('#^https?://#i', $loginBackgroundUrl) === 1
+    && preg_match('/["\'()\\\\\s<>]/', $loginBackgroundUrl) === 0
+) {
+    $loginBackgroundStyle = ' style="background-image: url(\'' . htmlspecialchars($loginBackgroundUrl, ENT_QUOTES, 'UTF-8') . '\');"';
+}
+
 echo '
-<body class="hold-transition login-page '.($theme_body ?? '').'">
+<body class="hold-transition login-page '.($theme_body ?? '').'"'.$loginBackgroundStyle.'>
 <div class="login-box">
     <div class="login-logo"><div style="margin:30px;">',
     // The setting is stored HTML-encoded by save_option_change: decode before escaping so an

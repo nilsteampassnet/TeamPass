@@ -197,11 +197,12 @@ if ((int) $session_user_admin === 1) {
                                     <div class="input-group-prepend">
                                         <span class="input-group-text"><?php echo $lang->get('password'); ?></span>
                                     </div>
-                                    <input id="form-item-password" type="password" class="form-control form-item-control" placeholder="<?php echo $lang->get('password'); ?>" data-field-name="pwd" data-change-ongoing="">
+                                    <!-- No spellcheck nor autocorrect: the field turns into a text input when revealed -->
+                                    <input id="form-item-password" type="password" class="form-control form-item-control" placeholder="<?php echo $lang->get('password'); ?>" data-field-name="pwd" data-change-ongoing="" spellcheck="false" autocapitalize="off" autocorrect="off">
                                     <div class="input-group-append">
                                         <span class="input-group-text hidden" id="form-item-password-loader"><i class="fa-solid fa-circle-notch fa-spin"></i></span>
                                         <!-- Show/hide password -->
-                                        <button class="btn btn-secondary btn-no-click infotip" id="item-button-password-show" title="<?php echo $lang->get('mask_pw'); ?>"><i class="fa-solid fa-low-vision"></i></button>
+                                        <button type="button" class="btn btn-secondary btn-no-click infotip" id="item-button-password-show" title="<?php echo $lang->get('mask_pw'); ?>" aria-label="<?php echo $lang->get('mask_pw'); ?>" aria-pressed="false"><i class="fa-regular fa-eye"></i></button>
                                     </div>
                                 </div>
                                 <div class="container-fluid mb-0">

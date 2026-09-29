@@ -589,6 +589,7 @@ class DatabaseInstaller
             array('admin', 'enable_email_notification_on_user_pw_change', '0'),
             array('admin', 'custom_logo', ''),
             array('admin', 'custom_login_text', ''),
+            array('admin', 'custom_login_background', ''),
             array('admin', 'default_language', 'english'),
             array('admin', 'send_stats', '0'),
             array('admin', 'send_statistics_items', 'stat_country;stat_users;stat_items;stat_items_shared;stat_folders;stat_folders_shared;stat_admins;stat_managers;stat_ro;stat_mysqlversion;stat_phpversion;stat_teampassversion;stat_languages;stat_kb;stat_suggestion;stat_customfields;stat_api;stat_2fa;stat_agses;stat_duo;stat_ldap;stat_syslog;stat_stricthttps;stat_fav;stat_pf;'),

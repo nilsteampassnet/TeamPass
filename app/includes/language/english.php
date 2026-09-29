@@ -1398,6 +1398,8 @@ return array(
     'admin_ldap_configuration' => 'LDAP configuration',
     'admin_misc_cpassman_dir' => 'TeamPass location (full path)',
     'admin_misc_cpassman_url' => 'TeamPass location (URL)',
+    'admin_misc_custom_login_background' => 'Custom login background (full URL)',
+    'admin_misc_custom_login_background_tip' => 'Absolute http(s) URL of an image hosted outside the TeamPass directory, so that upgrades do not replace it. Leave empty to keep the default background.',
     'admin_misc_custom_login_text' => 'Custom login message',
     'admin_misc_custom_logo' => 'Custom login logo (URL)',
     'admin_misc_favicon' => 'Favicon (full URL)',

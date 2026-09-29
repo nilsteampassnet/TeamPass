@@ -533,6 +533,8 @@ return array(
     'admin_ldap_configuration' => 'Configuration LDAP',
     'admin_misc_cpassman_dir' => 'Chemin d’accès à TeamPass',
     'admin_misc_cpassman_url' => 'URL complète de TeamPass',
+    'admin_misc_custom_login_background' => 'URL complète vers un fond d’écran de connexion personnel',
+    'admin_misc_custom_login_background_tip' => 'URL absolue http(s) d’une image hébergée hors du répertoire de TeamPass, pour qu’une mise à jour ne la remplace pas. Laisser vide pour conserver le fond par défaut.',
     'admin_misc_custom_login_text' => 'Texte personnel sur l’écran de connexion',
     'admin_misc_custom_logo' => 'URL complète vers un logo personnel',
     'admin_misc_favicon' => 'URL du fichier favicon',
