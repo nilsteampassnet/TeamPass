@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/otp.functions.php';
+
 /**
  * Access checks shared by the existing Secure Send handlers.
  * This file is part of TeamPass, distributed under the GPL-3.0 license.
@@ -73,6 +75,57 @@ function secureSendItemPassword(array $item, int $userId, string $privateKey, st
             throw new InvalidArgumentException('cannot_decrypt');
         }
         return $password;
+    } catch (Throwable $e) {
+        throw new InvalidArgumentException('cannot_decrypt');
+    }
+}
+
+/**
+ * Read and decrypt the enabled TOTP profile copied into a Secure Send snapshot.
+ *
+ * This must only be called after secureSendReadItem() has authorized the sender.
+ * The returned secret is encrypted again as part of the link payload and must
+ * never be exposed directly to the recipient.
+ *
+ * @param int $itemId Authorized item identifier
+ * @return array{secret:string, algorithm:string, digits:int, period:int}|null
+ * @throws InvalidArgumentException When an enabled TOTP profile cannot be decrypted or used
+ */
+function secureSendItemTotp(int $itemId): ?array
+{
+    if ($itemId <= 0) {
+        return null;
+    }
+
+    $stored = DB::queryFirstRow(
+        'SELECT secret, algorithm, digits, period FROM ' . prefixTable('items_otp') . '
+        WHERE item_id = %i AND enabled = 1',
+        $itemId
+    );
+    if (empty($stored) || empty($stored['secret'])) {
+        return null;
+    }
+
+    try {
+        $decrypted = cryption((string) $stored['secret'], '', 'decrypt');
+        if (!empty($decrypted['error']) || !isset($decrypted['string']) || $decrypted['string'] === '') {
+            throw new RuntimeException('TOTP decryption failed');
+        }
+        $totp = createItemTotp(
+            (string) $decrypted['string'],
+            (string) ($stored['algorithm'] ?? ITEM_TOTP_DEFAULT_ALGORITHM),
+            (int) ($stored['digits'] ?? ITEM_TOTP_DEFAULT_DIGITS),
+            (int) ($stored['period'] ?? ITEM_TOTP_DEFAULT_PERIOD)
+        );
+        // Force decoding now so an unusable secret cannot create a partial link.
+        $totp->now();
+
+        return [
+            'secret' => $totp->getSecret(),
+            'algorithm' => $totp->getDigest(),
+            'digits' => $totp->getDigits(),
+            'period' => $totp->getPeriod(),
+        ];
     } catch (Throwable $e) {
         throw new InvalidArgumentException('cannot_decrypt');
     }

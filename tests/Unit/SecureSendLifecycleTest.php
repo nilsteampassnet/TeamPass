@@ -14,6 +14,7 @@ class SecureSendLifecycleTest extends TestCase
 
     protected function setUp(): void
     {
+        require_once __DIR__ . '/../../app/sources/otp.functions.php';
         require_once __DIR__ . '/../Fixtures/secure_send_memory_db.php';
         require_once __DIR__ . '/../Fixtures/secure_send_dependencies.php';
         require_once __DIR__ . '/../../app/sources/secure_send.functions.php';
@@ -282,6 +283,58 @@ class SecureSendLifecycleTest extends TestCase
         self::assertSame('secret-at-creation', $result['fields']['password']);
         self::assertTrue($result['fields']['description_truncated']);
         self::assertTrue(mb_check_encoding($result['fields']['description'], 'UTF-8'));
+    }
+
+    /** TOTP seeds remain encrypted in the snapshot; recipients receive only a current code. */
+    public function testSnapshotTotpBecomesOnlyAShortLivedRecipientCode(): void
+    {
+        $profile = ['secret' => 'JBSWY3DPEHPK3PXP', 'algorithm' => 'sha1', 'digits' => 6, 'period' => 30];
+        $snapshot = secureSendEncodeSnapshot(DB::$item, DB::$password, $profile);
+        $parameters = $this->create(['password' => $snapshot['plaintext']]);
+        DB::$links[1]['send_type'] = 'item_v2';
+
+        $result = secureSendRedeem($parameters, '', $this->settings);
+        self::assertSame('', $result['error']);
+        self::assertMatchesRegularExpression('/^\d{6}$/', $result['fields']['otp_code']);
+        self::assertGreaterThanOrEqual(1, $result['fields']['otp_expires_in']);
+        self::assertLessThanOrEqual(30, $result['fields']['otp_expires_in']);
+        self::assertArrayNotHasKey('totp', $result['fields']);
+        self::assertStringNotContainsString($profile['secret'], json_encode($result, JSON_THROW_ON_ERROR));
+    }
+
+    /** Snapshots without TOTP keep the former recipient contract and render no empty row. */
+    public function testSnapshotWithoutTotpReturnsNoOtpFields(): void
+    {
+        $snapshot = secureSendEncodeSnapshot(DB::$item, DB::$password);
+        $parameters = $this->create(['password' => $snapshot['plaintext']]);
+        DB::$links[1]['send_type'] = 'item_v2';
+
+        $result = secureSendRedeem($parameters, '', $this->settings);
+        self::assertSame('', $result['error']);
+        self::assertArrayNotHasKey('totp', $result['fields']);
+        self::assertArrayNotHasKey('otp_code', $result['fields']);
+        self::assertArrayNotHasKey('otp_expires_in', $result['fields']);
+    }
+
+    /** Malformed encrypted TOTP profiles fail before a view or audit entry is consumed. */
+    public function testMalformedSnapshotTotpFailsClosed(): void
+    {
+        $profile = ['secret' => 'NOT-BASE32!', 'algorithm' => 'sha1', 'digits' => 6, 'period' => 30];
+        $snapshot = secureSendEncodeSnapshot(DB::$item, DB::$password, $profile);
+        $parameters = $this->create(['password' => $snapshot['plaintext']]);
+        DB::$links[1]['send_type'] = 'item_v2';
+        $log = tempnam(sys_get_temp_dir(), 'tp-otv-test-');
+        $previous = ini_set('error_log', $log);
+        try {
+            $result = secureSendRedeem($parameters, '', $this->settings);
+            self::assertSame(['error' => 'server_error'], $result);
+            self::assertSame(0, DB::$links[1]['views']);
+            self::assertSame([], DB::$audit);
+            self::assertStringNotContainsString($profile['secret'], file_get_contents($log));
+        } finally {
+            ini_set('error_log', $previous);
+            unlink($log);
+        }
     }
 
     public function testReservationOrAuditFailureRollsBackWithoutReturningPlaintext(): void

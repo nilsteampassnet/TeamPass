@@ -109,9 +109,17 @@ $escape = static fn (string $value): string => htmlspecialchars($value, ENT_QUOT
             <?php } elseif ($result !== null && $result['error'] === '') {
                 $fields = $result['fields'];
                 $isNote = $result['send_type'] === 'note';
-                $rows = $isNote
-                    ? ['label' => $escape($fields['title']), 'password' => $escape($fields['secret']), 'login' => $escape($fields['login']), 'url' => $escape($fields['url']), 'description' => nl2br($escape($fields['note']))]
-                    : ['label' => otvRenderPlainField($fields['label']), 'password' => $escape($fields['password']), 'login' => otvRenderPlainField($fields['login']), 'url' => otvRenderPlainField($fields['url']), 'description' => otvSanitizeDescription($fields['description'])];
+                if ($isNote) {
+                    $rows = ['label' => $escape($fields['title']), 'password' => $escape($fields['secret']), 'login' => $escape($fields['login']), 'url' => $escape($fields['url']), 'description' => nl2br($escape($fields['note']))];
+                } else {
+                    $rows = ['label' => otvRenderPlainField($fields['label']), 'password' => $escape($fields['password'])];
+                    if (($fields['otp_code'] ?? '') !== '') {
+                        $rows['otp_code'] = '<code>' . $escape($fields['otp_code']) . '</code> '
+                            . '<small class="text-muted">(' . (int) $fields['otp_expires_in'] . ' '
+                            . $escape($lang->get('seconds')) . ')</small>';
+                    }
+                    $rows += ['login' => otvRenderPlainField($fields['login']), 'url' => otvRenderPlainField($fields['url']), 'description' => otvSanitizeDescription($fields['description'])];
+                }
                 ?>
                 <p><?php echo $escape($lang->get('secure_send_recipient_intro')); ?></p>
                 <?php if (($fields['description_truncated'] ?? false) === true) { ?>

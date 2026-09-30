@@ -7155,7 +7155,11 @@ switch ($inputData['type']) {
                     (string) $session->get('user-private_key'),
                     (string) $session->get('user-public_key')
                 );
-                $snapshot = secureSendEncodeSnapshot($itemQ, $secureSendPlaintext);
+                $snapshot = secureSendEncodeSnapshot(
+                    $itemQ,
+                    $secureSendPlaintext,
+                    secureSendItemTotp($secureSendItemId)
+                );
                 $secureSendPlaintext = $snapshot['plaintext'];
                 $secureSendDescriptionTruncated = $snapshot['description_truncated'];
                 $secureSendType = 'item_v2';

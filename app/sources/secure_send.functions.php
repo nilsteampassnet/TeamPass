@@ -102,6 +102,33 @@ function secureSendDecryptPayload(array $link, string $linkSecret, string $passp
             throw new UnexpectedValueException('invalid_payload');
         }
     }
+    if ($link['send_type'] !== 'note' && array_key_exists('totp', $payload)) {
+        $profile = $payload['totp'];
+        if (!is_array($profile)
+            || !isset($profile['secret'], $profile['algorithm'], $profile['digits'], $profile['period'])
+            || !is_string($profile['secret'])
+            || !is_string($profile['algorithm'])
+            || !is_int($profile['digits'])
+            || !is_int($profile['period'])
+        ) {
+            throw new UnexpectedValueException('invalid_payload');
+        }
+        try {
+            $totp = createItemTotp(
+                $profile['secret'],
+                $profile['algorithm'],
+                $profile['digits'],
+                $profile['period']
+            );
+            $payload['otp_code'] = $totp->now();
+            $payload['otp_expires_in'] = $totp->expiresIn();
+        } catch (Throwable $e) {
+            throw new UnexpectedValueException('invalid_payload');
+        } finally {
+            // The recipient only needs the short-lived code, never the shared seed.
+            unset($payload['totp'], $profile);
+        }
+    }
     return $payload;
 }
 

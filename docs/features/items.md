@@ -282,16 +282,19 @@ date, removes the item from the list cache and updates the folder counters.
 The automatic-deletion settings are retained. These database changes roll back
 with the view reservation if the operation fails.
 
-New item links share an encrypted copy of the label, login, URL, description and
-password as they were when the link was created. Later edits do not update that
-copy, but deletion or loss of the sender's permissions still blocks access.
-Create a new link to share updated content.
+New item links share an encrypted copy of the label, login, URL, description,
+password and enabled TOTP profile as they were when the link was created. Later
+edits do not update that copy, but deletion or loss of the sender's permissions
+still blocks access. The recipient receives only the current short-lived TOTP
+code; the shared seed is never rendered. Create a new link to share updated
+content.
 
 The existing sharing table stores hex-encoded ciphertext in a TEXT column
 (65,535 bytes). If a copy would exceed that limit, only its description is
 shortened at a UTF-8 boundary until the encoded payload fits. Sender and
-recipient are warned, and the original item is unchanged. Credentials are never
-truncated; if required fields alone are too large, no link is created.
+recipient are warned, and the original item is unchanged. Credentials and TOTP
+data are never truncated; if required fields alone are too large, no link is
+created.
 Passphrases are limited to 1,024 bytes, matching the recipient form. Malformed
 fields and invalid note text are rejected before a link is created; requested
 validity and view counts remain bounded by the administrator's policy.

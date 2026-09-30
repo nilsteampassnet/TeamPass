@@ -16,16 +16,20 @@ class SecureSendAccessTest extends TestCase
         if (!extension_loaded('sqlite3')) {
             self::markTestSkipped('The SQL-backed Secure Send tests require SQLite3 (enabled in CI).');
         }
+        require_once __DIR__ . '/../../app/sources/otp.functions.php';
         require_once __DIR__ . '/../Fixtures/secure_send_access_db.php';
         require_once __DIR__ . '/../../app/sources/secure_send_access.php';
         DB::$connection = new SQLite3(':memory:');
         DB::$connection->enableExceptions(true);
         DB::$connection->exec('CREATE TABLE sharing_fixture_users (id INTEGER, admin INTEGER, disabled INTEGER, deleted_at TEXT)');
         DB::$connection->exec('CREATE TABLE sharing_fixture_items (id INTEGER, id_tree INTEGER, label TEXT, pw TEXT, pw_iv TEXT, pw_len INTEGER, inactif INTEGER, deleted_at INTEGER)');
+        DB::$connection->exec('CREATE TABLE sharing_fixture_items_otp (item_id INTEGER, enabled INTEGER, secret TEXT, algorithm TEXT, digits INTEGER, period INTEGER)');
         DB::$connection->exec('CREATE TABLE sharing_fixture_sharekeys_items (user_id INTEGER, object_id INTEGER, share_key TEXT, increment_id INTEGER)');
         DB::$connection->exec("INSERT INTO sharing_fixture_users VALUES (42, 0, 0, NULL)");
         DB::$connection->exec("INSERT INTO sharing_fixture_items VALUES (123, 7, 'Visible item', 'encrypted', 'iv', 13, 0, NULL)");
         DB::$connection->exec("INSERT INTO sharing_fixture_sharekeys_items VALUES (42, 123, 'wrapped-key', 81)");
+        DB::$totpSecret = 'JBSWY3DPEHPK3PXP';
+        DB::$totpFailure = false;
     }
 
     /** Losing a folder grant blocks an existing item link even if its sharekey remains. */
@@ -114,5 +118,33 @@ class SecureSendAccessTest extends TestCase
         $item['pw'] = '';
         $item['pw_len'] = 0;
         self::assertSame('', secureSendItemPassword($item, 42, 'private', 'public'));
+    }
+
+    /** Only enabled, decryptable TOTP profiles become part of the encrypted snapshot. */
+    public function testEnabledTotpProfileIsNormalizedAndFailuresCloseTheLink(): void
+    {
+        self::assertNull(secureSendItemTotp(123));
+        DB::$connection->exec("INSERT INTO sharing_fixture_items_otp VALUES (123, 0, 'encrypted-totp', 'sha1', 6, 30)");
+        self::assertNull(secureSendItemTotp(123));
+
+        DB::$connection->exec('UPDATE sharing_fixture_items_otp SET enabled = 1');
+        self::assertSame([
+            'secret' => 'JBSWY3DPEHPK3PXP',
+            'algorithm' => 'sha1',
+            'digits' => 6,
+            'period' => 30,
+        ], secureSendItemTotp(123));
+
+        foreach (['decrypt', 'secret', 'profile'] as $failure) {
+            DB::$totpFailure = $failure === 'decrypt';
+            DB::$totpSecret = $failure === 'secret' ? 'NOT-BASE32!' : 'JBSWY3DPEHPK3PXP';
+            DB::$connection->exec("UPDATE sharing_fixture_items_otp SET algorithm = '" . ($failure === 'profile' ? 'md5' : 'sha1') . "'");
+            try {
+                secureSendItemTotp(123);
+                self::fail('Expected TOTP failure: ' . $failure);
+            } catch (InvalidArgumentException $e) {
+                self::assertSame('cannot_decrypt', $e->getMessage(), $failure);
+            }
+        }
     }
 }
