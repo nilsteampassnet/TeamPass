@@ -83,9 +83,29 @@ $escape = static fn (string $value): string => htmlspecialchars($value, ENT_QUOT
     <meta name="referrer" content="no-referrer">
     <title><?php echo $escape(TP_TOOL_NAME . ' - ' . $lang->get('secure_send')); ?></title>
     <link rel="stylesheet" href="./plugins/adminlte/css/adminlte.min.css?v=<?php echo $escape(TP_VERSION . '.' . TP_VERSION_MINOR); ?>">
+    <style>
+        .secure-send-fields {
+            width: 100%;
+            table-layout: fixed;
+        }
+        .secure-send-fields th {
+            width: 28%;
+            overflow-wrap: normal;
+            word-break: normal;
+        }
+        .secure-send-fields td {
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+        @media (max-width: 575.98px) {
+            .secure-send-fields th {
+                width: 36%;
+            }
+        }
+    </style>
 </head>
 <body class="hold-transition login-page">
-    <main class="card card-outline card-primary m-3" style="width: min(700px, 95vw)">
+    <main class="card card-outline card-primary m-3" style="width: min(700px, calc(100vw - 2rem))">
         <div class="card-header text-center"><h1 class="h3"><?php echo $escape(TP_TOOL_NAME); ?></h1></div>
         <div class="card-body">
             <h2 class="h4 text-center"><?php echo $escape($lang->get('secure_send')); ?></h2>
@@ -126,7 +146,7 @@ $escape = static fn (string $value): string => htmlspecialchars($value, ENT_QUOT
                     <p class="alert alert-warning"><?php echo $escape($lang->get('secure_send_description_truncated')); ?></p>
                 <?php } ?>
                 <div class="table-responsive">
-                    <table class="table" style="overflow-wrap: anywhere">
+                    <table class="table secure-send-fields">
                         <tbody>
                         <?php foreach ($rows as $label => $value) { ?>
                             <tr><th scope="row"><?php echo $escape($lang->get($label)); ?></th><td><?php echo $value; ?></td></tr>
