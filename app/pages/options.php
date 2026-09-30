@@ -234,6 +234,9 @@ $zones = timezone_list();
                                 </label>
                                 <div class='col-sm-12'>
                                     <input type='text' class='form-control form-control-sm' id='custom_logo' value='<?php echo isset($SETTINGS['custom_logo']) === true ? htmlspecialchars($SETTINGS['custom_logo']) : ''; ?>'>
+                                    <small class='form-text text-muted'>
+                                        <?php echo $lang->get('admin_misc_custom_logo_tip'); ?>
+                                    </small>
                                 </div>
                             </div>
 

@@ -27,8 +27,26 @@ Basic installation paths and branding.
 | **Path to upload folder** | Server path for temporary uploads |
 | **Path to files folder** | Server path for item file attachments |
 | **Favicon URL** | Custom favicon path or URL |
-| **Custom logo URL** | Replaces the Teampass logo in the header |
+| **Custom login logo** | Replaces the Teampass logo on the login page — see [Login page branding](#login-page-branding) |
+| **Custom login background** | Replaces the background image of the login page — see [Login page branding](#login-page-branding) |
 | **Custom login text** | Message displayed on the login page |
+
+### Login page branding
+
+The **Custom login logo** and **Custom login background** options each take one of:
+
+- **the name of an image placed in `public/assets/custom/`**, for example `logo.png` or `background.jpg`. Enter the file name alone, without any folder: TeamPass looks for it in that folder. Accepted formats are PNG, JPG, GIF and WebP;
+- **a full URL**, for an image hosted elsewhere. The background only accepts an absolute `http://` or `https://` URL.
+
+Leave an option empty to keep the image shipped with TeamPass.
+
+The `public/assets/custom/` folder exists for these images. TeamPass only ships a `README.md` and an `.htaccess` file there, so an upgrade never replaces your images, and the file integrity check does not report them. Do not replace the shipped images or `public/assets/css/teampass.css` instead: the next upgrade overwrites them.
+
+> `public/` is the web root: it never appears in a URL. If you prefer a URL to an image of the folder, write `https://teampass.example.com/assets/custom/logo.png`, not `.../public/assets/custom/logo.png`. The latter does not exist, and the server answers it with the TeamPass page itself, which the browser cannot display as an image.
+
+The logo is resized to the width of the login box, up to 150 pixels high.
+
+With Docker, mount the images into the container: see [Custom login logo and background](../install/docker.md#custom-login-logo-and-background).
 
 ---
 

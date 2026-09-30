@@ -3646,7 +3646,8 @@ return array(
     'role_allow_security_posture_fix' => 'Show the Security posture Fix shortcuts',
     'role_allow_security_posture_fix_tip' => 'Members of this role get the Fix the most urgent button, the wrench on each flagged item and the Fix link of the reminder banner. These shortcuts only ever point to items the user is allowed to edit. When unchecked, they are hidden: the user still sees the Security posture and keeps the editing rights given by the folders. A user gets the shortcuts as soon as one of their roles allows them.',
     'role_security_posture_fix_disabled' => 'Security posture Fix shortcuts hidden for this role',
-    'admin_misc_custom_login_background' => 'Custom login background (full URL)',
-    'admin_misc_custom_login_background_tip' => 'Absolute http(s) URL of an image hosted outside the TeamPass directory, so that upgrades do not replace it. Leave empty to keep the default background.',
+    'admin_misc_custom_login_background' => 'Custom login background (file name or URL)',
+    'admin_misc_custom_login_background_tip' => 'Name of an image placed in the public/assets/custom/ folder of TeamPass, for example background.jpg (PNG, JPG, GIF or WebP), or the full http(s) URL of an image. Leave empty to keep the default background.',
+    'admin_misc_custom_logo_tip' => 'Name of an image placed in the public/assets/custom/ folder of TeamPass, for example logo.png (PNG, JPG, GIF or WebP), or the full URL of an image. Leave empty to keep the TeamPass logo.',
 
 );

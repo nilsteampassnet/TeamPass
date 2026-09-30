@@ -534,6 +534,7 @@ return array(
     'admin_misc_cpassman_url' => 'URL complète de TeamPass',
     'admin_misc_custom_login_text' => 'Texte personnel sur l’écran de connexion',
     'admin_misc_custom_logo' => 'URL complète vers un logo personnel',
+    'admin_misc_custom_logo_tip' => 'Nom d’une image déposée dans le dossier public/assets/custom/ de TeamPass, par exemple logo.png (PNG, JPG, GIF ou WebP), ou URL complète d’une image. Laisser vide pour conserver le logo TeamPass.',
     'admin_misc_favicon' => 'URL du fichier favicon',
     'admin_setting_activate_expiration' => 'Activer l’expiration des éléments',
     'admin_setting_activate_expiration_tip' => 'Quand activée, cette option permet de ne pas afficher les éléments expirés.',
@@ -3651,7 +3652,7 @@ return array(
     'role_allow_security_posture_fix' => 'Afficher les raccourcis « Corriger » de la posture de sécurité',
     'role_allow_security_posture_fix_tip' => 'Les membres de ce rôle voient le bouton « Corriger le plus urgent », la clé à molette de chaque élément signalé et le lien « Corriger » du bandeau de rappel. Ces raccourcis ne mènent qu’aux éléments que l’utilisateur a le droit de modifier. Décochée, l’option les masque : l’utilisateur voit toujours la posture de sécurité et conserve les droits de modification donnés par les dossiers. Un utilisateur a les raccourcis dès que l’un de ses rôles les autorise.',
     'role_security_posture_fix_disabled' => 'Raccourcis « Corriger » de la posture de sécurité masqués pour ce rôle',
-    'admin_misc_custom_login_background' => 'URL complète vers un fond d’écran de connexion personnel',
-    'admin_misc_custom_login_background_tip' => 'URL absolue http(s) d’une image hébergée hors du répertoire de TeamPass, pour qu’une mise à jour ne la remplace pas. Laisser vide pour conserver le fond par défaut.',
+    'admin_misc_custom_login_background' => 'Fond d’écran de connexion personnel (nom de fichier ou URL)',
+    'admin_misc_custom_login_background_tip' => 'Nom d’une image déposée dans le dossier public/assets/custom/ de TeamPass, par exemple fond.jpg (PNG, JPG, GIF ou WebP), ou URL complète http(s) d’une image. Laisser vide pour conserver le fond par défaut.',
 
 );

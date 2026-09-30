@@ -61,6 +61,7 @@ require_once __DIR__ . '/item_revisions_logic.php';
 require_once __DIR__ . '/folder_cache_logic.php';
 require_once __DIR__ . '/api_auth_logic.php';
 require_once __DIR__ . '/ldap_config_logic.php';
+require_once __DIR__ . '/branding_logic.php';
 // Directory access shared by the login and by the LDAP settings page test.
 require_once __DIR__ . '/ldap.functions.php';
 require_once __DIR__ . '/password_strength.functions.php';

@@ -83,6 +83,22 @@ A name made of 64 hexadecimal characters is an anonymous volume.
 
 ---
 
+## Custom login logo and background
+
+The login page takes its custom logo and background from `/var/www/html/public/assets/custom/` (see [Settings → General Info](../manage/settings.md#login-page-branding)). That folder is part of the image, so an image copied into a running container disappears the next time the container is recreated. Mount each image instead, read-only:
+
+```yaml
+services:
+  teampass:
+    volumes:
+      - ./branding/logo.png:/var/www/html/public/assets/custom/logo.png:ro
+      - ./branding/background.jpg:/var/www/html/public/assets/custom/background.jpg:ro
+```
+
+Then enter `logo.png` and `background.jpg` in the two settings. Mount the files one by one rather than the whole folder: a directory mounted over `public/assets/custom/` hides the `README.md` and `.htaccess` the image ships there, and the file integrity check then reports them as missing. The files only need to be readable by everyone (`chmod 644`).
+
+---
+
 ## Upgrading
 
 Refer to **[DOCKER-MIGRATION.md](https://github.com/nilsteampassnet/TeamPass/blob/master/docs/DOCKER-MIGRATION.md)** when you come from the 3.1.x Docker setup.

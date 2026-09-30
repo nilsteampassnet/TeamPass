@@ -106,25 +106,22 @@ if (null !== $session->get('userOauth2Info') && empty($session->get('userOauth2I
     $userOauth2InfoJson = json_encode($session->get('userOauth2Info'));
 }
 
-// Custom login background (Settings → Options), stored HTML-encoded by save_option_change.
-// Only an absolute http(s) URL is used, without any character able to leave the CSS url().
-$loginBackgroundStyle = '';
-$loginBackgroundUrl = html_entity_decode((string) ($SETTINGS['custom_login_background'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-if (filter_var($loginBackgroundUrl, FILTER_VALIDATE_URL) !== false
-    && preg_match('#^https?://#i', $loginBackgroundUrl) === 1
-    && preg_match('/["\'()\\\\\s<>]/', $loginBackgroundUrl) === 0
-) {
-    $loginBackgroundStyle = ' style="background-image: url(\'' . htmlspecialchars($loginBackgroundUrl, ENT_QUOTES, 'UTF-8') . '\');"';
-}
+// Custom logo and background (Settings → Options): the name of an image placed in
+// public/assets/custom/, or a URL. Resolved and validated by branding_logic.php.
+$brandingDirectory = TEAMPASS_ROOT . '/public/assets/custom';
+$loginLogoUrl = brandingLogoUrl((string) ($SETTINGS['custom_logo'] ?? ''), $brandingDirectory);
+$loginBackgroundUrl = brandingBackgroundUrl((string) ($SETTINGS['custom_login_background'] ?? ''), $brandingDirectory);
+$loginBackgroundStyle = $loginBackgroundUrl === ''
+    ? ''
+    : ' style="background-image: url(\'' . htmlspecialchars($loginBackgroundUrl, ENT_QUOTES, 'UTF-8') . '\');"';
 
 echo '
 <body class="hold-transition login-page '.($theme_body ?? '').'"'.$loginBackgroundStyle.'>
 <div class="login-box">
     <div class="login-logo"><div style="margin:30px;">',
-    // The setting is stored HTML-encoded by save_option_change: decode before escaping so an
-    // URL holding "&" is not double-encoded. The logo fills the box width, capped in height.
-    isset($SETTINGS['custom_logo']) === true && empty($SETTINGS['custom_logo']) === false ?
-        '<img src="' . htmlspecialchars(html_entity_decode((string) $SETTINGS['custom_logo'], ENT_QUOTES | ENT_HTML5, 'UTF-8'), ENT_QUOTES, 'UTF-8') . '" alt="" style="max-width:100%; max-height:150px;" />' :
+    // The logo fills the box width, capped in height.
+    $loginLogoUrl !== '' ?
+        '<img src="' . htmlspecialchars($loginLogoUrl, ENT_QUOTES, 'UTF-8') . '" alt="" style="max-width:100%; max-height:150px;" />' :
         '<img src="./assets/images/teampass-logo2-login.png" alt="Teampass Logo">',
         '
         </div>
