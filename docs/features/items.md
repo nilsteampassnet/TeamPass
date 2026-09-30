@@ -282,12 +282,17 @@ date, removes the item from the list cache and updates the folder counters.
 The automatic-deletion settings are retained. These database changes roll back
 with the view reservation if the operation fails.
 
-New item links share an encrypted copy of the label, login, URL, description,
-password and enabled TOTP profile as they were when the link was created. Later
-edits do not update that copy, but deletion or loss of the sender's permissions
-still blocks access. The recipient receives only the current short-lived TOTP
-code; the shared seed is never rendered. Create a new link to share updated
-content.
+New item links share an encrypted copy of the label, login, URL, description
+and password as they were when the link was created. An enabled TOTP profile is
+included only when an eligible sender explicitly selects **Include the current
+TOTP code**; the option is unchecked by default and is not offered to read-only
+accounts. The recipient receives only server-generated short-lived codes; the
+shared seed is never rendered.
+
+Later edits do not update a copied snapshot, but deletion or loss of the
+sender's permissions still blocks access. Changing or disabling the item's TOTP
+does not alter links that already contain its copied profile. Revoke those links
+and create a new one whenever the shared TOTP configuration changes.
 
 The existing sharing table stores hex-encoded ciphertext in a TEXT column
 (65,535 bytes). If a copy would exceed that limit, only its description is
@@ -313,7 +318,9 @@ When one or more valid OTV links exist for an item, a badge showing the count is
 1. Open the item action menu.
 2. Click **Secure Send**.
 3. Set validity, total views, public/internal address and an optional passphrase
-   (or a required one if enforced by the administrator).
+   (or a required one if enforced by the administrator). For an item with an
+   enabled TOTP, explicitly select **Include the current TOTP code** only when
+   the recipient should receive both authentication factors.
 4. Click **Generate link**, then **Copy**. Send any passphrase over a separate channel.
 
 Changing the form clears the displayed link and disables its copy button.
