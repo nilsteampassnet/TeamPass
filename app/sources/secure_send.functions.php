@@ -38,6 +38,40 @@ require_once __DIR__ . '/secure_send_logic.php';
 require_once __DIR__ . '/secure_send_url.php';
 
 /**
+ * Generate recipient-safe TOTP fields from a copied profile at one timestamp.
+ *
+ * A fallback code is included only when the current code has less than ten
+ * seconds left. The returned fields never contain the shared seed.
+ *
+ * @param array{secret:string, algorithm:string, digits:int, period:int} $profile Copied TOTP profile
+ * @param int|null $timestamp Reveal time, injectable for deterministic tests
+ * @return array{otp_code:string, otp_expires_in:int, otp_next_code?:string, otp_next_valid_in?:int, otp_next_valid_for?:int}
+ */
+function secureSendTotpRecipientFields(array $profile, ?int $timestamp = null): array
+{
+    $totp = createItemTotp(
+        $profile['secret'],
+        $profile['algorithm'],
+        $profile['digits'],
+        $profile['period']
+    );
+    $timestamp ??= time();
+    $period = $totp->getPeriod();
+    $expiresIn = $period - (($timestamp - $totp->getEpoch()) % $period);
+    $fields = [
+        'otp_code' => $totp->at($timestamp),
+        'otp_expires_in' => $expiresIn,
+    ];
+    if ($expiresIn < 10) {
+        $fields['otp_next_code'] = $totp->at($timestamp + $expiresIn);
+        $fields['otp_next_valid_in'] = $expiresIn;
+        $fields['otp_next_valid_for'] = $period;
+    }
+
+    return $fields;
+}
+
+/**
  * Find a link by both its random lookup code and its original timestamp.
  *
  * @param array $parameters Validated request parameters
@@ -114,14 +148,9 @@ function secureSendDecryptPayload(array $link, string $linkSecret, string $passp
             throw new UnexpectedValueException('invalid_payload');
         }
         try {
-            $totp = createItemTotp(
-                $profile['secret'],
-                $profile['algorithm'],
-                $profile['digits'],
-                $profile['period']
-            );
-            $payload['otp_code'] = $totp->now();
-            $payload['otp_expires_in'] = $totp->expiresIn();
+            foreach (secureSendTotpRecipientFields($profile) as $field => $value) {
+                $payload[$field] = $value;
+            }
         } catch (Throwable $e) {
             throw new UnexpectedValueException('invalid_payload');
         } finally {

@@ -302,6 +302,26 @@ class SecureSendLifecycleTest extends TestCase
         self::assertStringNotContainsString($profile['secret'], json_encode($result, JSON_THROW_ON_ERROR));
     }
 
+    /** A nearly expired current code is accompanied by the next server-generated code. */
+    public function testTotpFallbackCodeIsOnlyProvidedNearExpiration(): void
+    {
+        $profile = ['secret' => 'JBSWY3DPEHPK3PXP', 'algorithm' => 'sha1', 'digits' => 6, 'period' => 30];
+        $totp = createItemTotp($profile['secret'], $profile['algorithm'], $profile['digits'], $profile['period']);
+
+        $comfortable = secureSendTotpRecipientFields($profile, 100);
+        self::assertSame($totp->at(100), $comfortable['otp_code']);
+        self::assertSame(20, $comfortable['otp_expires_in']);
+        self::assertArrayNotHasKey('otp_next_code', $comfortable);
+
+        $nearExpiry = secureSendTotpRecipientFields($profile, 119);
+        self::assertSame($totp->at(119), $nearExpiry['otp_code']);
+        self::assertSame(1, $nearExpiry['otp_expires_in']);
+        self::assertSame($totp->at(120), $nearExpiry['otp_next_code']);
+        self::assertSame(1, $nearExpiry['otp_next_valid_in']);
+        self::assertSame(30, $nearExpiry['otp_next_valid_for']);
+        self::assertStringNotContainsString($profile['secret'], json_encode($nearExpiry, JSON_THROW_ON_ERROR));
+    }
+
     /** Snapshots without TOTP keep the former recipient contract and render no empty row. */
     public function testSnapshotWithoutTotpReturnsNoOtpFields(): void
     {

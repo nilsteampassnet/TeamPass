@@ -138,6 +138,15 @@ $escape = static fn (string $value): string => htmlspecialchars($value, ENT_QUOT
                             . '<small class="text-muted">(' . (int) $fields['otp_expires_in'] . ' '
                             . $escape($lang->get('seconds')) . ')</small>';
                     }
+                    if (($fields['otp_next_code'] ?? '') !== '') {
+                        $nextValidity = str_replace(
+                            ['#START#', '#DURATION#'],
+                            [(string) (int) $fields['otp_next_valid_in'], (string) (int) $fields['otp_next_valid_for']],
+                            $lang->get('secure_send_next_otp_validity')
+                        );
+                        $rows['secure_send_next_otp_code'] = '<code>' . $escape($fields['otp_next_code']) . '</code> '
+                            . '<small class="text-muted">(' . $escape($nextValidity) . ')</small>';
+                    }
                     $rows += ['login' => otvRenderPlainField($fields['login']), 'url' => otvRenderPlainField($fields['url']), 'description' => otvSanitizeDescription($fields['description'])];
                 }
                 ?>
