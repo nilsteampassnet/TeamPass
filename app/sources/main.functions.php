@@ -10003,25 +10003,40 @@ function userHasAccessToBackupFile(int $userId, string $file, string $key, strin
 /**
  * Ensure that personal items have only keys for their owner
  *
- * @param integer $userId
+ * The owner is the user whose personal tree holds the item, not its creator: a shared item
+ * moved into a personal folder keeps the at_creation entry of whoever created it, and
+ * narrowing its keys to that creator deletes the owner's own key. Same owner rule as
+ * restrictItemSharekeysToOwnerIfPersonal().
+ *
+ * @param integer $userId Owner of the personal tree holding the item
  * @param integer $itemId
  * @return boolean
  */
 function EnsurePersonalItemHasOnlyKeysForOwner(int $userId, int $itemId): bool
 {
-    // Single query: verify user is not admin, item is personal, and userId is the creator
+    // Single query: verify user is not admin, item is personal, and userId owns the
+    // personal tree the item sits in
     $check = DB::queryFirstRow(
         'SELECT 1
         FROM ' . prefixTable('users') . ' AS u
         JOIN ' . prefixTable('items') . ' AS i ON i.id = %i AND i.perso = 1
-        JOIN ' . prefixTable('log_items') . ' AS li ON li.id_item = i.id AND li.action = %s AND li.id_user = %i
+        JOIN ' . prefixTable('nested_tree') . ' AS folder ON folder.id = i.id_tree
+        JOIN ' . prefixTable('nested_tree') . ' AS root
+            ON root.personal_folder = 1 AND root.parent_id = 0
+            AND folder.nleft >= root.nleft AND folder.nright <= root.nright
+            AND root.title = %s
         WHERE u.id = %i AND u.admin = 0',
         $itemId,
-        'at_creation',
-        $userId,
+        (string) $userId,
         $userId
     );
     if ($check === null) {
+        return false;
+    }
+
+    // Never narrow the keys to an owner who lacks one of them: the object would be left
+    // with the TP_USER recovery key alone and become unreadable to its owner.
+    if (userHoldsEveryItemSharekey($itemId, $userId) === false) {
         return false;
     }
 
@@ -10128,6 +10143,9 @@ function restrictItemSharekeysToOwnerIfPersonal(int $itemId): bool
  * object would be left with the TP_USER recovery key alone and become unreadable to its owner.
  * A missing key is usually transient — the background task has not distributed it yet.
  *
+ * An item without a password needs no item key: clearing the password deletes every item
+ * sharekey, and requiring one would block the narrowing of such an item forever.
+ *
  * @param int $itemId Item
  * @param int $userId User who is to keep the keys
  *
@@ -10135,13 +10153,15 @@ function restrictItemSharekeysToOwnerIfPersonal(int $itemId): bool
  */
 function userHoldsEveryItemSharekey(int $itemId, int $userId): bool
 {
-    $itemKey = DB::queryFirstField(
-        'SELECT COUNT(*) FROM ' . prefixTable('sharekeys_items') . '
-        WHERE object_id = %i AND user_id = %i AND share_key != ""',
-        $itemId,
-        $userId
+    $missingItemKey = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('items') . ' AS item
+        LEFT JOIN ' . prefixTable('sharekeys_items') . ' AS sharekey
+            ON sharekey.object_id = item.id AND sharekey.user_id = %i AND sharekey.share_key != ""
+        WHERE item.id = %i AND item.pw != "" AND sharekey.increment_id IS NULL',
+        $userId,
+        $itemId
     );
-    if ((int) $itemKey === 0) {
+    if ((int) $missingItemKey > 0) {
         return false;
     }
 

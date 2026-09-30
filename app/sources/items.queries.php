@@ -1561,9 +1561,12 @@ switch ($inputData['type']) {
                 $inputData['itemId']
             );
 
-            // Delete all existing sharekey_items for users if the item is personal
+            // Delete all existing sharekey_items for users if the item is personal.
+            // Narrow to the editor, not to $dataItem['id_user']: that is the creator, who is
+            // not the owner once a shared item has been moved into a personal folder. The
+            // function itself checks that the editor owns the personal tree.
             if (intval($dataItem['perso']) === 1) {
-                EnsurePersonalItemHasOnlyKeysForOwner(intval($dataItem['id_user']), (int) $inputData['itemId']);
+                EnsurePersonalItemHasOnlyKeysForOwner((int) $session->get('user-id'), (int) $inputData['itemId']);
             }
 
             // update fields

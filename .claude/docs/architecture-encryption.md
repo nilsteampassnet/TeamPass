@@ -185,6 +185,12 @@ user's own one (it is on the replaced key pair). A personal object **without** a
 **Rule: in `sharekeys_files`/`_fields`/`_logs`, `object_id` is a files / categories_items / log_items
 id, never an items id** — join through that table to reach `items.perso`.
 
+**Rule: the owner of a personal item is the owner of the personal tree holding it (the root
+folder's numeric title), never its creator** — a shared item moved into a personal folder keeps the
+`at_creation` entry of whoever created it. Narrowing to the creator deleted the owner's own key at
+every save (#5407). `EnsurePersonalItemHasOnlyKeysForOwner()` receives the editor, checks that they
+own the tree, and deletes nothing unless `userHoldsEveryItemSharekey()` confirms they hold every key.
+
 **Forced batch migration** (background tasks via `/scripts/traits/PhpseclibV3MigrationTrait.php`):
 - Migrates all v1 sharekeys for a user in batches of 100
 - Triggered when `teampass_users.phpseclibv3_migration_completed = 0`
