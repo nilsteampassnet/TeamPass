@@ -10143,6 +10143,9 @@ function restrictItemSharekeysToOwnerIfPersonal(int $itemId): bool
  * object would be left with the TP_USER recovery key alone and become unreadable to its owner.
  * A missing key is usually transient — the background task has not distributed it yet.
  *
+ * An item without a password needs no item key: clearing the password deletes every item
+ * sharekey, and requiring one would block the narrowing of such an item forever.
+ *
  * @param int $itemId Item
  * @param int $userId User who is to keep the keys
  *
@@ -10150,13 +10153,15 @@ function restrictItemSharekeysToOwnerIfPersonal(int $itemId): bool
  */
 function userHoldsEveryItemSharekey(int $itemId, int $userId): bool
 {
-    $itemKey = DB::queryFirstField(
-        'SELECT COUNT(*) FROM ' . prefixTable('sharekeys_items') . '
-        WHERE object_id = %i AND user_id = %i AND share_key != ""',
-        $itemId,
-        $userId
+    $missingItemKey = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('items') . ' AS item
+        LEFT JOIN ' . prefixTable('sharekeys_items') . ' AS sharekey
+            ON sharekey.object_id = item.id AND sharekey.user_id = %i AND sharekey.share_key != ""
+        WHERE item.id = %i AND item.pw != "" AND sharekey.increment_id IS NULL',
+        $userId,
+        $itemId
     );
-    if ((int) $itemKey === 0) {
+    if ((int) $missingItemKey > 0) {
         return false;
     }
 
