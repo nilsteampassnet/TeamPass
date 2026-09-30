@@ -393,6 +393,7 @@ if (null !== $post_type) {
                 'kbs' => 'kb',
                 'tags' => 'tag',
                 'folder' => 'folder',
+                'totp' => 'totp',
             );
 
             $id_managed = '';
@@ -407,11 +408,13 @@ if (null !== $post_type) {
                     $rows = DB::query(
                         'SELECT i.id as id, i.id_tree as id_tree, i.restricted_to as restricted_to, i.perso as perso,
                             i.label as label, i.description as description, i.pw as pw, i.login as login, i.url as url,
-                            i.email as email, IFNULL(l.date, 0) as date, i.pw_iv as pw_iv, n.renewal_period as renewal_period
+                            i.email as email, IFNULL(l.date, 0) as date, i.pw_iv as pw_iv, n.renewal_period as renewal_period,
+                            o.secret as otp_secret, o.algorithm as otp_algorithm, o.digits as otp_digits, o.period as otp_period
                         FROM ' . prefixTable('items') . ' as i
                         INNER JOIN ' . prefixTable('nested_tree') . ' as n ON (i.id_tree = n.id)
                         LEFT JOIN ' . prefixTable('log_items') . ' as l
                             ON (i.id = l.id_item AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s)))
+                        LEFT JOIN ' . prefixTable('items_otp') . ' as o ON (o.item_id = i.id AND o.enabled = 1)
                         WHERE i.inactif = %i
                         AND i.id_tree= %i
                         ORDER BY i.label ASC, l.date DESC',
@@ -509,6 +512,18 @@ if (null !== $post_type) {
                                     $arr_trees = array_reverse($arr_trees);
                                 }
 
+                                // get TOTP (enabled profile only, encrypted with the master key)
+                                $totp = '';
+                                if (empty($record['otp_secret']) === false) {
+                                    $totp = formatItemTotpForExport(
+                                        (string) cryption($record['otp_secret'], '', 'decrypt')['string'],
+                                        (string) ($record['otp_algorithm'] ?? ITEM_TOTP_DEFAULT_ALGORITHM),
+                                        (int) ($record['otp_digits'] ?? ITEM_TOTP_DEFAULT_DIGITS),
+                                        (int) ($record['otp_period'] ?? ITEM_TOTP_DEFAULT_PERIOD),
+                                        empty($record['label']) === true ? '' : html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, 'UTF-8')
+                                    );
+                                }
+
                                 $full_listing[$i] = array(
                                     'id' => $record['id'],
                                     'label' => empty($record['label']) === true ? '' : html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, 'UTF-8'),
@@ -522,6 +537,7 @@ if (null !== $post_type) {
                                     'kbs' => implode(' | ', $arr_kbs),
                                     'tags' => implode(' ', $arr_tags),
                                     'folder' => implode('/', $arr_trees),
+                                    'totp' => $totp,
                                 );
                                 ++$i;
 

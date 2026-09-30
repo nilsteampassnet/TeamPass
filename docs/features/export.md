@@ -34,6 +34,20 @@ As a user,
 ![1](../../_media/tp3_export_2.png)
 
 
+## CSV export
+
+The `CSV` file holds one row per item the user can access, with the columns `id`, `label`, `description`, `pw`, `login`, `restricted_to`, `perso`, `url`, `email`, `kb`, `tag`, `folder` and `totp`.
+
+The `totp` column is filled only when TOTP is enabled on the item:
+
+* the bare Base32 secret for the standard profile (SHA-1, 6 digits, 30 seconds), which password managers accept as is;
+* an `otpauth://totp/…` provisioning URI for any other profile, because a bare secret cannot carry the algorithm, the code length or the period.
+
+Both forms can be pasted back into the TOTP field of a TeamPass item.
+
+> ⚠️ The CSV file is not encrypted: passwords and TOTP secrets are written in clear text. Store it accordingly and delete it once used.
+
+
 ## Offline mode (HTML export)
 
 The `HTML` format produces a single, self-contained file holding every item of the selected folders the user can access — label, login, password, URL, email, description, tags, folder path and the item's custom fields (custom fields the user's roles are not allowed to see are omitted).

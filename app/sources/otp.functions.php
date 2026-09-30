@@ -190,3 +190,53 @@ function createItemTotp(
         new \Carbon\FactoryImmutable()
     );
 }
+
+/**
+ * Format a stored item TOTP profile for a plain-text export.
+ *
+ * The historical SHA-1/6-digit/30-second profile is exported as the bare
+ * Base32 secret, which every password manager accepts. Any other profile is
+ * exported as an otpauth:// provisioning URI: a bare secret cannot carry its
+ * algorithm, code length or period, and would silently generate wrong codes
+ * once imported elsewhere. normalizeItemTotpConfiguration() accepts both forms.
+ *
+ * @param string $secret Decrypted Base32 secret
+ * @param string $algorithm HMAC algorithm
+ * @param int $digits Code length
+ * @param int $period Validity period in seconds
+ * @param string $label Item label, used as the provisioning URI label
+ *
+ * @return string Bare secret or provisioning URI, '' when the profile is unusable
+ */
+function formatItemTotpForExport(
+    string $secret,
+    string $algorithm = ITEM_TOTP_DEFAULT_ALGORITHM,
+    int $digits = ITEM_TOTP_DEFAULT_DIGITS,
+    int $period = ITEM_TOTP_DEFAULT_PERIOD,
+    string $label = ''
+): string {
+    if (trim($secret) === '') {
+        return '';
+    }
+
+    try {
+        $totp = createItemTotp($secret, $algorithm, $digits, $period);
+        // Force Base32 decoding: an unusable secret must not be exported.
+        $totp->at(0);
+
+        if ($totp->getDigest() === ITEM_TOTP_DEFAULT_ALGORITHM
+            && $totp->getDigits() === ITEM_TOTP_DEFAULT_DIGITS
+            && $totp->getPeriod() === ITEM_TOTP_DEFAULT_PERIOD
+        ) {
+            return $totp->getSecret();
+        }
+
+        // A colon separates issuer and account in a provisioning URI label.
+        $label = trim(str_ireplace([':', '%3A'], ' ', $label));
+        $totp->setLabel($label !== '' ? $label : 'TeamPass');
+
+        return $totp->getProvisioningUri();
+    } catch (Throwable $e) {
+        return '';
+    }
+}
