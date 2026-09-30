@@ -95,7 +95,6 @@ $escape = static fn (string $value): string => htmlspecialchars($value, ENT_QUOT
         }
         .secure-send-fields td {
             overflow-wrap: anywhere;
-            word-break: break-word;
         }
         @media (max-width: 575.98px) {
             .secure-send-fields th {
