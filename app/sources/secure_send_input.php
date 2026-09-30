@@ -38,7 +38,7 @@ declare(strict_types=1);
  */
 function secureSendValidateInput(array $input): void
 {
-    foreach (['send_type', 'id', 'passphrase', 'shared_globaly', 'days', 'views'] as $field) {
+    foreach (['send_type', 'id', 'passphrase', 'shared_globaly', 'include_totp', 'days', 'views'] as $field) {
         if (isset($input[$field]) && !is_scalar($input[$field])) {
             throw new InvalidArgumentException('invalid_payload');
         }
@@ -62,6 +62,18 @@ function secureSendValidateInput(array $input): void
             throw new InvalidArgumentException('invalid_payload');
         }
     }
+}
+
+/**
+ * Decide whether an authorized item snapshot may include its enabled TOTP profile.
+ *
+ * @param array $input Validated sender request
+ * @param bool $readOnly Whether the sender has a read-only account
+ * @return bool True only for an explicit opt-in from an eligible sender
+ */
+function secureSendShouldIncludeTotp(array $input, bool $readOnly): bool
+{
+    return $readOnly === false && ($input['include_totp'] ?? 0) === 1;
 }
 
 /**

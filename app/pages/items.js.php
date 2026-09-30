@@ -6900,6 +6900,7 @@ require __DIR__ . '/renewal.preview.js.php';
                             teampassItem.folderId = parseInt(data.folder),
                             teampassItem.timestamp = data.timestamp,
                             teampassItem.user_can_modify = data.user_can_modify,
+                            teampassItem.otp_for_item_enabled = parseInt(data.otp_for_item_enabled),
                             teampassItem.anyone_can_modify = data.anyone_can_modify,
                             teampassItem.edit_item_salt_key = data.edit_item_salt_key,
                             teampassItem.id_restricted_to = data.id_restricted_to,
@@ -8499,16 +8500,23 @@ require __DIR__ . '/renewal.preview.js.php';
         $('#form-item-otv-days').val($('#form-item-otv-days').attr('max'));
         $('#form-item-otv-views').val('1');
         $('#form-item-otv-subdomain').iCheck('uncheck');
+        $('#form-secure-send-include-totp').iCheck('uncheck');
         invalidateSecureSendLink();
         $('#secure-send-modal-title').text(<?php echo json_encode($lang->get('secure_send'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>);
 
         if (mode === 'note') {
             $('#secure-send-note-fields').removeClass('hidden');
             $('#secure-send-snapshot-hint').addClass('hidden');
+            $('#secure-send-totp-option').addClass('hidden');
             $('#form-secure-send-title, #form-secure-send-secret, #form-secure-send-note, #form-secure-send-login, #form-secure-send-url').val('');
         } else {
             $('#secure-send-note-fields').addClass('hidden');
             $('#secure-send-snapshot-hint').removeClass('hidden');
+            if (Number(store.get('teampassItem').otp_for_item_enabled) === 1) {
+                $('#secure-send-totp-option').removeClass('hidden');
+            } else {
+                $('#secure-send-totp-option').addClass('hidden');
+            }
         }
 
         loadSecureSendsList();
@@ -8556,7 +8564,10 @@ require __DIR__ . '/renewal.preview.js.php';
             "passphrase": passphrase,
             "days": $('#form-item-otv-days').val(),
             "views": $('#form-item-otv-views').val(),
-            "shared_globaly": $('#form-item-otv-subdomain').is(":checked") === true ? 1 : 0
+            "shared_globaly": $('#form-item-otv-subdomain').is(":checked") === true ? 1 : 0,
+            "include_totp": mode === 'item'
+                && Number(store.get('teampassItem').otp_for_item_enabled) === 1
+                && $('#form-secure-send-include-totp').is(':checked') === true ? 1 : 0
         };
 
         if (mode === 'note') {

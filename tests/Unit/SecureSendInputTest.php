@@ -40,7 +40,7 @@ class SecureSendInputTest extends TestCase
     {
         foreach ([
             ['send_type' => 'unexpected'], ['id' => [123]], ['days' => []], ['views' => []],
-            ['shared_globaly' => []], ['passphrase' => []], ['passphrase' => str_repeat('a', 1025)],
+            ['shared_globaly' => []], ['include_totp' => []], ['passphrase' => []], ['passphrase' => str_repeat('a', 1025)],
             ['send_type' => 'note', 'payload' => 'not-an-object'],
             ['send_type' => 'note', 'payload' => ['secret' => ['hidden']]],
             ['send_type' => 'note', 'payload' => ['note' => "\xff"]],
@@ -52,6 +52,16 @@ class SecureSendInputTest extends TestCase
                 self::assertSame('invalid_payload', $e->getMessage());
             }
         }
+    }
+
+    /** TOTP sharing requires an explicit opt-in and is unavailable to read-only senders. */
+    public function testTotpInclusionIsExplicitAndHonorsReadOnlyAccounts(): void
+    {
+        self::assertFalse(secureSendShouldIncludeTotp([], false));
+        self::assertFalse(secureSendShouldIncludeTotp(['include_totp' => 0], false));
+        self::assertFalse(secureSendShouldIncludeTotp(['include_totp' => '1'], false));
+        self::assertTrue(secureSendShouldIncludeTotp(['include_totp' => 1], false));
+        self::assertFalse(secureSendShouldIncludeTotp(['include_totp' => 1], true));
     }
 
     /** Valid UTF-8 notes and a passphrase at the recipient's byte limit remain accepted. */

@@ -34,6 +34,7 @@ use Defuse\Crypto\Key;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/../../app/sources/secure_send_snapshot.php';
+require_once __DIR__ . '/../../app/sources/secure_send_input.php';
 
 class SecureSendSnapshotTest extends TestCase
 {
@@ -57,6 +58,17 @@ class SecureSendSnapshotTest extends TestCase
         $profile = ['secret' => 'JBSWY3DPEHPK3PXP', 'algorithm' => 'sha256', 'digits' => 8, 'period' => 60];
         $withTotp = json_decode(secureSendEncodeSnapshot($item, 'secret', $profile)['plaintext'], true, 512, JSON_THROW_ON_ERROR);
         self::assertSame($profile, $withTotp['totp']);
+    }
+
+    /** An available TOTP profile stays out of the snapshot until the sender opts in. */
+    public function testTotpProfileIsExcludedWithoutTheIncludeFlag(): void
+    {
+        $item = ['label' => 'Label', 'login' => 'alice', 'url' => '', 'description' => ''];
+        $profile = ['secret' => 'JBSWY3DPEHPK3PXP', 'algorithm' => 'sha1', 'digits' => 6, 'period' => 30];
+        $totp = secureSendShouldIncludeTotp(['include_totp' => 0], false) ? $profile : null;
+        $payload = json_decode(secureSendEncodeSnapshot($item, 'secret', $totp)['plaintext'], true, 512, JSON_THROW_ON_ERROR);
+
+        self::assertArrayNotHasKey('totp', $payload);
     }
 
     /** Large HTML, escape-heavy text and multibyte descriptions fit the real hex ciphertext column. */

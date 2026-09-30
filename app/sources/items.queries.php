@@ -7158,7 +7158,10 @@ switch ($inputData['type']) {
                 $snapshot = secureSendEncodeSnapshot(
                     $itemQ,
                     $secureSendPlaintext,
-                    secureSendItemTotp($secureSendItemId)
+                    secureSendShouldIncludeTotp(
+                        $dataReceived,
+                        (int) $session->get('user-read_only') === 1
+                    ) ? secureSendItemTotp($secureSendItemId) : null
                 );
                 $secureSendPlaintext = $snapshot['plaintext'];
                 $secureSendDescriptionTruncated = $snapshot['description_truncated'];

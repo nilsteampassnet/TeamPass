@@ -3643,6 +3643,8 @@ return array(
     'secure_send_invalid_public_url' => 'Adresse de partage invalide. Saisissez une URL HTTPS, un nom d’hôte ou un préfixe de sous-domaine valide, sans identifiants, paramètres ni fragment.',
     'secure_send_address_preview' => 'Adresse utilisée pour ce lien : #URL#',
     'secure_send_use_public_url' => 'Utiliser l’adresse publique',
+    'secure_send_include_totp' => 'Inclure le code TOTP actuel',
+    'secure_send_include_totp_hint' => 'Le lien communiquera à ses destinataires à la fois le mot de passe et un second facteur valide.',
     'role_allow_security_posture_fix' => 'Afficher les raccourcis « Corriger » de la posture de sécurité',
     'role_allow_security_posture_fix_tip' => 'Les membres de ce rôle voient le bouton « Corriger le plus urgent », la clé à molette de chaque élément signalé et le lien « Corriger » du bandeau de rappel. Ces raccourcis ne mènent qu’aux éléments que l’utilisateur a le droit de modifier. Décochée, l’option les masque : l’utilisateur voit toujours la posture de sécurité et conserve les droits de modification donnés par les dossiers. Un utilisateur a les raccourcis dès que l’un de ses rôles les autorise.',
     'role_security_posture_fix_disabled' => 'Raccourcis « Corriger » de la posture de sécurité masqués pour ce rôle',

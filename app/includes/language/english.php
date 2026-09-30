@@ -43,6 +43,8 @@ return array(
     'secure_send_invalid_public_url' => 'Invalid sharing address. Enter a valid HTTPS base URL, hostname or short subdomain prefix, without credentials, query parameters or a fragment.',
     'secure_send_address_preview' => 'Address used for this link: #URL#',
     'secure_send_use_public_url' => 'Use public address',
+    'secure_send_include_totp' => 'Include the current TOTP code',
+    'secure_send_include_totp_hint' => 'The link will disclose both the password and a valid second factor to its recipients.',
     'secure_send_invalid_payload' => 'The sharing content is invalid or too large. No link was created.',
     'secure_send_description_truncated' => 'The description in this shared copy was shortened to fit the storage limit. The original item was not changed.',
     'secure_send_confirmation_expired' => 'This confirmation is no longer valid. Confirm again below to reveal the content.',
