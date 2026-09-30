@@ -89,7 +89,7 @@ function secureSendItemPassword(array $item, int $userId, string $privateKey, st
  *
  * @param int $itemId Authorized item identifier
  * @return array{secret:string, algorithm:string, digits:int, period:int}|null
- * @throws InvalidArgumentException When an enabled TOTP profile cannot be decrypted or used
+ * @throws InvalidArgumentException With totp_unusable when an enabled profile cannot be decrypted or used
  */
 function secureSendItemTotp(int $itemId): ?array
 {
@@ -127,7 +127,7 @@ function secureSendItemTotp(int $itemId): ?array
             'period' => $totp->getPeriod(),
         ];
     } catch (Throwable $e) {
-        throw new InvalidArgumentException('cannot_decrypt');
+        throw new InvalidArgumentException('totp_unusable');
     }
 }
 

@@ -3622,6 +3622,7 @@ return array(
     'ldap_step_bind_no_upn' => 'Ce compte Active Directory n’a pas de userPrincipalName. TeamPass s’authentifie sur cet attribut : le compte ne peut pas se connecter tant qu’il n’est pas renseigné dans l’annuaire.',
     'licence_trial_error_fqdn_missing' => 'Le FQDN de cette instance n’est pas encore défini. Définissez-le dans l’onglet Extension pour navigateurs avant de demander l’essai.',
     'secure_send_cannot_decrypt' => 'L’élément n’a pas pu être déchiffré. Aucun lien de partage n’a été créé. Rechargez l’élément ou contactez votre administrateur.',
+    'secure_send_totp_unusable' => 'Le TOTP de cet élément ne peut pas être utilisé. Décochez l’option TOTP ou corrigez les paramètres TOTP de l’élément.',
     'personal_items_not_reencrypted' => '#nb# élément(s) personnel(s) n’ont pas pu être déchiffrés avec cette clé de salage et ont été laissés inchangés. Votre clé de salage est conservée pour qu’ils restent récupérables : contactez votre administrateur.',
     'secure_send_invalid_payload' => 'Le contenu à partager est invalide ou trop volumineux. Aucun lien n’a été créé.',
     'secure_send_description_truncated' => 'La description de cette copie partagée a été raccourcie pour respecter la limite de stockage. L’élément d’origine n’a pas été modifié.',

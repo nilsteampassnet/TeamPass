@@ -7167,7 +7167,10 @@ switch ($inputData['type']) {
                 $secureSendDescriptionTruncated = $snapshot['description_truncated'];
                 $secureSendType = 'item_v2';
             } catch (InvalidArgumentException $e) {
-                echo json_encode(array('error' => $e->getMessage() === 'invalid_payload' ? 'invalid_payload' : 'cannot_decrypt'));
+                $secureSendError = $e->getMessage();
+                echo json_encode(array('error' => in_array($secureSendError, ['invalid_payload', 'totp_unusable'], true)
+                    ? $secureSendError
+                    : 'cannot_decrypt'));
                 break;
             }
         } else {

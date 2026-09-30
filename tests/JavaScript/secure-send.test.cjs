@@ -242,6 +242,16 @@ test('Malformed generation responses never enable copying', () => {
   assert.equal(h.$('#form-item-otv-copy-button').prop('disabled'), true)
 })
 
+test('An unusable TOTP reports its dedicated sender error', () => {
+  const h = harness({ id: 123, otp_for_item_enabled: 1 })
+  h.context.openSecureSendModal('item')
+  h.$('#form-secure-send-include-totp').prop('checked', true)
+  h.generate()
+  h.requests[0].resolve({ error: 'totp_unusable' })
+  assert.deepEqual(h.notices, ['secure_send_totp_unusable'])
+  assert.equal(h.$('#form-item-otv-copy-button').prop('disabled'), true)
+})
+
 test('A successful-looking response still requires a valid link identity', () => {
   const h = harness()
   h.context.openSecureSendModal('item')

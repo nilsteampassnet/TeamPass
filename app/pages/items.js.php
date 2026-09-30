@@ -8401,6 +8401,7 @@ require __DIR__ . '/renewal.preview.js.php';
             'notes_not_allowed': <?php echo json_encode($lang->get('error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
             'invalid_public_url': <?php echo json_encode($lang->get('secure_send_invalid_public_url'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
             'cannot_decrypt': <?php echo json_encode($lang->get('secure_send_cannot_decrypt'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+            'totp_unusable': <?php echo json_encode($lang->get('secure_send_totp_unusable'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
             'invalid_payload': <?php echo json_encode($lang->get('secure_send_invalid_payload'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
             'server_error': <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
             'not_allowed': <?php echo json_encode($lang->get('error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>

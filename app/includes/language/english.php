@@ -52,6 +52,7 @@ return array(
     'secure_send_reveal' => 'Reveal the shared content',
     'secure_send_invalid_link' => 'This sharing link is invalid, expired, revoked or no longer accessible.',
     'secure_send_cannot_decrypt' => 'The item could not be decrypted. No sharing link was created. Reload the item or contact your administrator.',
+    'secure_send_totp_unusable' => 'The TOTP of this item cannot be used. Uncheck the TOTP option or fix the item’s TOTP settings.',
     'logs_search_all_columns' => 'All columns',
     'logs_search_column' => 'Search in column',
     'logs_purge_title' => 'Purge logs',

@@ -143,7 +143,7 @@ class SecureSendAccessTest extends TestCase
                 secureSendItemTotp(123);
                 self::fail('Expected TOTP failure: ' . $failure);
             } catch (InvalidArgumentException $e) {
-                self::assertSame('cannot_decrypt', $e->getMessage(), $failure);
+                self::assertSame('totp_unusable', $e->getMessage(), $failure);
             }
         }
     }
