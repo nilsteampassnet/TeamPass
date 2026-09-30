@@ -10003,25 +10003,40 @@ function userHasAccessToBackupFile(int $userId, string $file, string $key, strin
 /**
  * Ensure that personal items have only keys for their owner
  *
- * @param integer $userId
+ * The owner is the user whose personal tree holds the item, not its creator: a shared item
+ * moved into a personal folder keeps the at_creation entry of whoever created it, and
+ * narrowing its keys to that creator deletes the owner's own key. Same owner rule as
+ * restrictItemSharekeysToOwnerIfPersonal().
+ *
+ * @param integer $userId Owner of the personal tree holding the item
  * @param integer $itemId
  * @return boolean
  */
 function EnsurePersonalItemHasOnlyKeysForOwner(int $userId, int $itemId): bool
 {
-    // Single query: verify user is not admin, item is personal, and userId is the creator
+    // Single query: verify user is not admin, item is personal, and userId owns the
+    // personal tree the item sits in
     $check = DB::queryFirstRow(
         'SELECT 1
         FROM ' . prefixTable('users') . ' AS u
         JOIN ' . prefixTable('items') . ' AS i ON i.id = %i AND i.perso = 1
-        JOIN ' . prefixTable('log_items') . ' AS li ON li.id_item = i.id AND li.action = %s AND li.id_user = %i
+        JOIN ' . prefixTable('nested_tree') . ' AS folder ON folder.id = i.id_tree
+        JOIN ' . prefixTable('nested_tree') . ' AS root
+            ON root.personal_folder = 1 AND root.parent_id = 0
+            AND folder.nleft >= root.nleft AND folder.nright <= root.nright
+            AND root.title = %s
         WHERE u.id = %i AND u.admin = 0',
         $itemId,
-        'at_creation',
-        $userId,
+        (string) $userId,
         $userId
     );
     if ($check === null) {
+        return false;
+    }
+
+    // Never narrow the keys to an owner who lacks one of them: the object would be left
+    // with the TP_USER recovery key alone and become unreadable to its owner.
+    if (userHoldsEveryItemSharekey($itemId, $userId) === false) {
         return false;
     }
 
