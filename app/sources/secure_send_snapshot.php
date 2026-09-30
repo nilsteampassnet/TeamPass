@@ -37,16 +37,20 @@ declare(strict_types=1);
  *
  * @param array $item Authorized item as stored in TeamPass
  * @param string $password Decrypted password
+ * @param array{secret:string, algorithm:string, digits:int, period:int}|null $totp Enabled TOTP profile
  * @return array{plaintext:string, description_truncated:bool}
  * @throws InvalidArgumentException When required fields exceed the storage budget or contain invalid UTF-8
  */
-function secureSendEncodeSnapshot(array $item, string $password): array
+function secureSendEncodeSnapshot(array $item, string $password, ?array $totp = null): array
 {
     $payload = [
         'label' => (string) $item['label'], 'login' => (string) $item['login'],
         'url' => (string) $item['url'], 'password' => $password,
         'description' => (string) $item['description'], 'description_truncated' => false,
     ];
+    if ($totp !== null) {
+        $payload['totp'] = $totp;
+    }
     $budget = intdiv(65535, 2) - \Defuse\Crypto\Core::MINIMUM_CIPHERTEXT_SIZE;
     $encode = static fn (array $value): string => json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     try {

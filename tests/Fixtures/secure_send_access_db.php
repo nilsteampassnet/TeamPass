@@ -11,6 +11,8 @@ class DB
     public static string $objectKey = 'item-key';
     public static string $password = 'shared-secret';
     public static bool $cryptoFailure = false;
+    public static string $totpSecret = 'JBSWY3DPEHPK3PXP';
+    public static bool $totpFailure = false;
 
     /** Execute the integer-parameterized read queries used by the access helper. */
     public static function queryFirstRow(string $sql, ...$parameters): ?array
@@ -47,4 +49,14 @@ function decryptUserObjectKeyWithMigration(...$arguments): string
 function teampassDecryptPasswordValue(...$arguments): string
 {
     return DB::$password;
+}
+
+/** Model the instance-encrypted item TOTP independently from its cipher tests. */
+function cryption(string $message, string $key, string $operation, ?array $settings = []): array
+{
+    if (DB::$totpFailure) {
+        return ['string' => '', 'error' => 'synthetic_failure'];
+    }
+
+    return ['string' => DB::$totpSecret, 'error' => false];
 }

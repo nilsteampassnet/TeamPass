@@ -43,7 +43,7 @@ const source = template.slice(from, to).replace(/<\?php[\s\S]*?\?>/g, php => {
   return php.includes('json_encode') ? JSON.stringify(value) : value
 })
 
-function harness() {
+function harness(item = { id: 123 }) {
   const nodes = new Map()
   const handlers = new Map()
   const requests = []
@@ -54,7 +54,7 @@ function harness() {
   const $ = selector => {
     if (selector?.node) return selector
     if (!nodes.has(selector)) nodes.set(selector, {
-      node: true, value: '', properties: {}, attributes: {}, dataValues: {}, content: '',
+      node: true, value: '', properties: {}, attributes: {}, dataValues: {}, content: '', classes: new Set(),
       val(value) { if (!arguments.length) return this.value; this.value = value; return this },
       prop(name, value) { if (arguments.length === 1) return this.properties[name]; this.properties[name] = value; return this },
       attr(name, value) { if (arguments.length === 1) return this.attributes[name]; this.attributes[name] = value; return this },
@@ -62,7 +62,9 @@ function harness() {
       is() { return this.properties.checked === true },
       iCheck(action) { this.properties.checked = action === 'check'; return this },
       text(value) { this.content = value; return this }, html(value) { this.content = value; return this },
-      addClass() { return this }, removeClass() { return this }, modal() { return this }, off() { return this },
+      addClass(value) { String(value).split(/\s+/).filter(Boolean).forEach(name => this.classes.add(name)); return this },
+      removeClass(value) { String(value).split(/\s+/).filter(Boolean).forEach(name => this.classes.delete(name)); return this },
+      hasClass(value) { return this.classes.has(value) }, modal() { return this }, off() { return this },
       on(events, target, fn) { handlers.set(`${selector === document ? target : selector}|${events}`, fn || target); return this }
     })
     return nodes.get(selector)
@@ -79,7 +81,7 @@ function harness() {
   }
   $('#form-item-otv-days').attr('max', '7')
   const context = {
-    $, document, TextEncoder, store: { get: () => ({ id: 123 }) },
+    $, document, TextEncoder, store: { get: () => item },
     htmlEncode: value => String(value)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -108,6 +110,30 @@ test('Each new item or note form starts on the internal address', () => {
   h.context.openSecureSendModal('note')
   assert.equal(h.$('#form-item-otv-subdomain').is(':checked'), false)
   assert.equal(h.$('#secure-send-address-preview').content, 'Address: https://vault.example.com')
+})
+
+test('TOTP sharing is offered only for eligible items and stays opt-in', () => {
+  const withoutTotp = harness({ id: 123, otp_for_item_enabled: 0 })
+  withoutTotp.context.openSecureSendModal('item')
+  assert.equal(withoutTotp.$('#secure-send-totp-option').hasClass('hidden'), true)
+  withoutTotp.generate()
+  assert.equal(JSON.parse(withoutTotp.requests[0].data.data).include_totp, 0)
+
+  const withTotp = harness({ id: 123, otp_for_item_enabled: 1 })
+  withTotp.context.openSecureSendModal('item')
+  assert.equal(withTotp.$('#secure-send-totp-option').hasClass('hidden'), false)
+  assert.equal(withTotp.$('#form-secure-send-include-totp').is(':checked'), false)
+  withTotp.$('#form-secure-send-include-totp').prop('checked', true)
+  withTotp.generate()
+  assert.equal(JSON.parse(withTotp.requests[0].data.data).include_totp, 1)
+
+  const note = harness({ id: 123, otp_for_item_enabled: 1 })
+  note.context.openSecureSendModal('note')
+  note.$('#form-secure-send-secret').val('synthetic secret')
+  note.$('#form-secure-send-include-totp').prop('checked', true)
+  note.generate()
+  assert.equal(note.$('#secure-send-totp-option').hasClass('hidden'), true)
+  assert.equal(JSON.parse(note.requests[0].data.data).include_totp, 0)
 })
 
 test('Rapid generation submits once and restores the button after network failure', () => {
@@ -213,6 +239,16 @@ test('Malformed generation responses never enable copying', () => {
   h.generate()
   h.requests[0].resolve(null)
   assert.deepEqual(h.notices, ['server_answer_error'])
+  assert.equal(h.$('#form-item-otv-copy-button').prop('disabled'), true)
+})
+
+test('An unusable TOTP reports its dedicated sender error', () => {
+  const h = harness({ id: 123, otp_for_item_enabled: 1 })
+  h.context.openSecureSendModal('item')
+  h.$('#form-secure-send-include-totp').prop('checked', true)
+  h.generate()
+  h.requests[0].resolve({ error: 'totp_unusable' })
+  assert.deepEqual(h.notices, ['secure_send_totp_unusable'])
   assert.equal(h.$('#form-item-otv-copy-button').prop('disabled'), true)
 })
 

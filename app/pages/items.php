@@ -817,6 +817,15 @@ if ((int) $session_user_admin === 1) {
                             <input type="text" class="form-control clear-me-val" id="form-secure-send-passphrase" autocomplete="off" maxlength="1024" aria-describedby="secure-send-passphrase-hint" <?php echo (int) ($SETTINGS['secure_send_require_passphrase'] ?? 0) === 1 ? 'required' : ''; ?>>
                             <small id="secure-send-passphrase-hint" class="form-text text-muted"><?php echo $lang->get('secure_send_passphrase_hint'); ?></small>
                         </div>
+                        <?php if ((int) $session->get('user-read_only') !== 1) { ?>
+                            <div class="form-group hidden" id="secure-send-totp-option">
+                                <div class="d-flex align-items-center">
+                                    <input type="checkbox" class="form-item-control flat-blue" id="form-secure-send-include-totp" aria-describedby="secure-send-include-totp-hint">
+                                    <label for="form-secure-send-include-totp" class="mb-0 ml-2"><?php echo $lang->get('secure_send_include_totp'); ?></label>
+                                </div>
+                                <small id="secure-send-include-totp-hint" class="form-text text-warning"><?php echo $lang->get('secure_send_include_totp_hint'); ?></small>
+                            </div>
+                        <?php } ?>
                         <div class="secure-send-panel">
                             <div class="d-flex align-items-center">
                                 <input type="checkbox" class="form-item-control flat-blue" id="form-item-otv-subdomain" aria-describedby="secure-send-address-preview" <?php

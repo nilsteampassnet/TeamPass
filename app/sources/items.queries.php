@@ -7158,12 +7158,22 @@ switch ($inputData['type']) {
                     (string) $session->get('user-private_key'),
                     (string) $session->get('user-public_key')
                 );
-                $snapshot = secureSendEncodeSnapshot($itemQ, $secureSendPlaintext);
+                $snapshot = secureSendEncodeSnapshot(
+                    $itemQ,
+                    $secureSendPlaintext,
+                    secureSendShouldIncludeTotp(
+                        $dataReceived,
+                        (int) $session->get('user-read_only') === 1
+                    ) ? secureSendItemTotp($secureSendItemId) : null
+                );
                 $secureSendPlaintext = $snapshot['plaintext'];
                 $secureSendDescriptionTruncated = $snapshot['description_truncated'];
                 $secureSendType = 'item_v2';
             } catch (InvalidArgumentException $e) {
-                echo json_encode(array('error' => $e->getMessage() === 'invalid_payload' ? 'invalid_payload' : 'cannot_decrypt'));
+                $secureSendError = $e->getMessage();
+                echo json_encode(array('error' => in_array($secureSendError, ['invalid_payload', 'totp_unusable'], true)
+                    ? $secureSendError
+                    : 'cannot_decrypt'));
                 break;
             }
         } else {

@@ -34,6 +34,7 @@ use Defuse\Crypto\Key;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/../../app/sources/secure_send_snapshot.php';
+require_once __DIR__ . '/../../app/sources/secure_send_input.php';
 
 class SecureSendSnapshotTest extends TestCase
 {
@@ -45,6 +46,29 @@ class SecureSendSnapshotTest extends TestCase
         self::assertFalse($result['description_truncated']);
         self::assertSame($item + ['password' => 'secret', 'description_truncated' => false],
             array_replace($item, json_decode($result['plaintext'], true, 512, JSON_THROW_ON_ERROR)));
+    }
+
+    /** TOTP is optional and its complete profile stays inside the encrypted payload. */
+    public function testTotpProfileIsIncludedOnlyWhenPresent(): void
+    {
+        $item = ['label' => 'Label', 'login' => 'alice', 'url' => '', 'description' => ''];
+        $withoutTotp = json_decode(secureSendEncodeSnapshot($item, 'secret')['plaintext'], true, 512, JSON_THROW_ON_ERROR);
+        self::assertArrayNotHasKey('totp', $withoutTotp);
+
+        $profile = ['secret' => 'JBSWY3DPEHPK3PXP', 'algorithm' => 'sha256', 'digits' => 8, 'period' => 60];
+        $withTotp = json_decode(secureSendEncodeSnapshot($item, 'secret', $profile)['plaintext'], true, 512, JSON_THROW_ON_ERROR);
+        self::assertSame($profile, $withTotp['totp']);
+    }
+
+    /** An available TOTP profile stays out of the snapshot until the sender opts in. */
+    public function testTotpProfileIsExcludedWithoutTheIncludeFlag(): void
+    {
+        $item = ['label' => 'Label', 'login' => 'alice', 'url' => '', 'description' => ''];
+        $profile = ['secret' => 'JBSWY3DPEHPK3PXP', 'algorithm' => 'sha1', 'digits' => 6, 'period' => 30];
+        $totp = secureSendShouldIncludeTotp(['include_totp' => 0], false) ? $profile : null;
+        $payload = json_decode(secureSendEncodeSnapshot($item, 'secret', $totp)['plaintext'], true, 512, JSON_THROW_ON_ERROR);
+
+        self::assertArrayNotHasKey('totp', $payload);
     }
 
     /** Large HTML, escape-heavy text and multibyte descriptions fit the real hex ciphertext column. */
@@ -63,6 +87,7 @@ class SecureSendSnapshotTest extends TestCase
             self::assertSame($item['login'], $payload['login']);
             self::assertSame($item['url'], $payload['url']);
             self::assertSame(' complete password ', $payload['password']);
+            self::assertArrayNotHasKey('totp', $payload);
             self::assertNotSame('', $payload['description']);
             self::assertTrue(str_starts_with($description, $payload['description']));
             self::assertTrue(mb_check_encoding($payload['description'], 'UTF-8'));
@@ -101,6 +126,17 @@ class SecureSendSnapshotTest extends TestCase
     {
         $this->expectExceptionMessage('invalid_payload');
         secureSendEncodeSnapshot(['label' => 'Label', 'login' => '', 'url' => '', 'description' => 'Note'], str_repeat('s', 40000));
+    }
+
+    /** A TOTP seed is credential data and must never be shortened to fit the column. */
+    public function testOversizedTotpCannotBeTruncated(): void
+    {
+        $this->expectExceptionMessage('invalid_payload');
+        secureSendEncodeSnapshot(
+            ['label' => 'Label', 'login' => '', 'url' => '', 'description' => str_repeat('d', 70000)],
+            'secret',
+            ['secret' => str_repeat('A', 40000), 'algorithm' => 'sha1', 'digits' => 6, 'period' => 30]
+        );
     }
 
     /** Malformed text is not silently replaced in a shared secret. */
