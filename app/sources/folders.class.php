@@ -311,7 +311,6 @@ class FolderManager
 
         $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
-        $folderForDel = [];
         $foldersToDelete = [];
         $foldersDeletedInfo = [];
         $deletedItemsCount = 0;
