@@ -49,27 +49,56 @@ trait UserHandlerTrait {
 
     /**
      * Generate user keys
+     *
+     * Runs in time slices: the work grows with the whole vault and can outlast the task time
+     * limit, at which the handler kills the process. A slice stops before that limit and hands
+     * the task back to the handler, which launches the next slice; the batches already done are
+     * kept.
+     *
      * @param array $arguments Arguments nécessaires pour la création des clés
      * @return void
      */
     private function generateUserKeys(array $arguments): void {
+        // A previous slice may have been killed in the middle of a batch
+        $this->recoverInterruptedUserKeysSubtasks();
+
         // Get all subtasks related to this task
         $subtasks = DB::query(
             'SELECT * FROM ' . prefixTable('background_subtasks') . ' WHERE task_id = %i AND is_in_progress = 0 ORDER BY `task` ASC',
             $this->taskId
         );
-    
+
         if (empty($subtasks)) {
             if (LOG_TASKS=== true) $this->logger->log("No subtask was found for task {$this->taskId}");
             return;
         }
-    
-        // Process each subtask
+
+        // Process each subtask, as long as the slowest one seen still fits in the slice
+        $sliceStart = time();
+        $deadline = userKeysTaskSliceDeadline((int) ($this->settings['task_maximum_run_time'] ?? 600));
+        $slowestBatch = 0;
+        $batchesInSlice = 0;
         foreach ($subtasks as $subtask) {
+            if (userKeysTaskShouldYield(time() - $sliceStart, $slowestBatch, $deadline, $batchesInSlice) === true) {
+                $this->yieldUserKeysTask($batchesInSlice);
+                return;
+            }
+
             if (LOG_TASKS=== true) $this->logger->log("Processing subtask " . strval($subtask['increment_id']) . " for task {$this->taskId}");
+            $batchStart = time();
             $this->processGenerateUserKeysSubtask($subtask, $arguments);
+            $slowestBatch = max($slowestBatch, time() - $batchStart);
+            $batchesInSlice++;
+
+            // Heartbeat: a live slice must not look stale to cleanupStaleTasks()
+            DB::update(
+                prefixTable('background_tasks'),
+                ['updated_at' => time()],
+                'increment_id = %i',
+                $this->taskId
+            );
         }
-    
+
         // Are all subtasks completed?
         $remainingSubtasks = DB::queryFirstField(
             'SELECT COUNT(*) FROM ' . prefixTable('background_subtasks') . ' WHERE task_id = %i AND is_in_progress = 0',
@@ -94,7 +123,95 @@ trait UserHandlerTrait {
             }
         }
     }
-    
+
+
+    /**
+     * End this slice and hand the task back to the handler, which launches the next one.
+     * Same contract as the subtask re-queue of processSubTasks(): execute() honours
+     * $deferCompletion and leaves the task open.
+     * @param int $batchesInSlice Batches processed by this slice
+     * @return void
+     */
+    private function yieldUserKeysTask(int $batchesInSlice): void {
+        DB::update(
+            prefixTable('background_tasks'),
+            [
+                'is_in_progress' => 0,
+                'status' => 'queued',
+                'updated_at' => time(),
+            ],
+            'increment_id = %i',
+            $this->taskId
+        );
+        $this->deferCompletion = true;
+
+        // The handler that launched this slice is still polling: relaunch without waiting for cron
+        tpWriteBackgroundTasksTrigger();
+
+        if (LOG_TASKS=== true) $this->logger->log("Task {$this->taskId} yielded after its time slice ({$batchesInSlice} batch(es) done)", 'INFO');
+    }
+
+
+    /**
+     * Replay the batch a killed slice left "in progress".
+     *
+     * Safe: the task is exclusive and a worker process runs a single task, so nothing else is
+     * working on these subtasks; and every batch upserts its sharekeys, a killed one having its
+     * transaction rolled back. A batch interrupted too many times can never fit in the time
+     * limit: the task fails with what the administrator has to change.
+     * @return void
+     * @throws Exception When a batch has used up its replays
+     */
+    private function recoverInterruptedUserKeysSubtasks(): void {
+        $interrupted = DB::query(
+            'SELECT increment_id, task, retry_count, max_retries
+            FROM ' . prefixTable('background_subtasks') . '
+            WHERE task_id = %i AND is_in_progress = 1',
+            $this->taskId
+        );
+
+        foreach ($interrupted as $subtask) {
+            $retryCount = (int) $subtask['retry_count'];
+            if (userKeysTaskInterruptedBatchDecision($retryCount, (int) $subtask['max_retries']) === 'requeue') {
+                DB::update(
+                    prefixTable('background_subtasks'),
+                    [
+                        'is_in_progress' => 0,
+                        'status' => 'queued',
+                        'retry_count' => $retryCount + 1,
+                        'updated_at' => time(),
+                        'error_message' => 'Interrupted by the task time limit, replayed',
+                    ],
+                    'increment_id = %i',
+                    $subtask['increment_id']
+                );
+                $this->logger->log("Task {$this->taskId}: subtask {$subtask['increment_id']} was interrupted, replayed (attempt " . ($retryCount + 1) . ')', 'WARNING');
+                continue;
+            }
+
+            $taskData = json_decode((string) $subtask['task'], true);
+            $message = sprintf(
+                'Batch %s was interrupted %d times by the task time limit (%d s). Raise "Maximum time a script is allowed to run" or lower "maximum_number_of_items_to_treat", then ask the user to sign in again.',
+                (string) (is_array($taskData) === true ? ($taskData['step'] ?? '') : ''),
+                $retryCount + 1,
+                (int) ($this->settings['task_maximum_run_time'] ?? 600)
+            );
+            DB::update(
+                prefixTable('background_subtasks'),
+                [
+                    'is_in_progress' => -1,
+                    'finished_at' => time(),
+                    'updated_at' => time(),
+                    'status' => 'failed',
+                    'error_message' => $message,
+                ],
+                'increment_id = %i',
+                $subtask['increment_id']
+            );
+            throw new Exception($message);
+        }
+    }
+
 
     /**
      * Process a subtask for generating user keys.
