@@ -106,12 +106,22 @@ if (null !== $session->get('userOauth2Info') && empty($session->get('userOauth2I
     $userOauth2InfoJson = json_encode($session->get('userOauth2Info'));
 }
 
+// Custom logo and background (Settings → Options): the name of an image placed in
+// public/assets/custom/, or a URL. Resolved and validated by branding_logic.php.
+$brandingDirectory = TEAMPASS_ROOT . '/public/assets/custom';
+$loginLogoUrl = brandingLogoUrl((string) ($SETTINGS['custom_logo'] ?? ''), $brandingDirectory);
+$loginBackgroundUrl = brandingBackgroundUrl((string) ($SETTINGS['custom_login_background'] ?? ''), $brandingDirectory);
+$loginBackgroundStyle = $loginBackgroundUrl === ''
+    ? ''
+    : ' style="background-image: url(\'' . htmlspecialchars($loginBackgroundUrl, ENT_QUOTES, 'UTF-8') . '\');"';
+
 echo '
-<body class="hold-transition login-page '.($theme_body ?? '').'">
+<body class="hold-transition login-page '.($theme_body ?? '').'"'.$loginBackgroundStyle.'>
 <div class="login-box">
     <div class="login-logo"><div style="margin:30px;">',
-    isset($SETTINGS['custom_logo']) === true && empty($SETTINGS['custom_logo']) === false ?
-        '<img src="' . (string) $SETTINGS['custom_logo'] . '" alt="" style="text-align:center; max-width:100px;" />' :
+    // The logo fills the box width, capped in height.
+    $loginLogoUrl !== '' ?
+        '<img src="' . htmlspecialchars($loginLogoUrl, ENT_QUOTES, 'UTF-8') . '" alt="" style="max-width:100%; max-height:150px;" />' :
         '<img src="./assets/images/teampass-logo2-login.png" alt="Teampass Logo">',
         '
         </div>

@@ -60,6 +60,10 @@ require_once __DIR__ . '/log_display_logic.php';
 require_once __DIR__ . '/item_revisions_logic.php';
 require_once __DIR__ . '/folder_cache_logic.php';
 require_once __DIR__ . '/api_auth_logic.php';
+require_once __DIR__ . '/ldap_config_logic.php';
+require_once __DIR__ . '/branding_logic.php';
+// Directory access shared by the login and by the LDAP settings page test.
+require_once __DIR__ . '/ldap.functions.php';
 require_once __DIR__ . '/password_strength.functions.php';
 require_once __DIR__ . '/roles_scope.functions.php';
 require_once __DIR__ . '/file_integrity.functions.php';
@@ -1433,6 +1437,121 @@ function securityPostureAuthorizedFolderIds(int $userId): array
 }
 
 /**
+ * Resolve the folders in which a user may edit items, for the Security Posture "Fix" shortcuts.
+ *
+ * Reads the grant sets from the database — no session — and delegates the decision to the DB-free
+ * securityPostureResolveEditableFolders() (security_posture_logic.php), which mirrors the edit
+ * check update_item enforces (getCurrentAccessRights()).
+ *
+ * Memoized per user.
+ *
+ * @param int $userId User whose edit scope is resolved.
+ *
+ * @return int[] Editable folder ids, unique and sorted ascending.
+ */
+function securityPostureEditableFolderIds(int $userId): array
+{
+    static $cache = [];
+    if (array_key_exists($userId, $cache) === true) {
+        return $cache[$userId];
+    }
+
+    loadClasses('DB');
+
+    $account = DB::queryFirstRow(
+        'SELECT admin, read_only FROM ' . prefixTable('users') . ' WHERE id = %i',
+        $userId
+    );
+    $authorizedFolders = securityPostureAuthorizedFolderIds($userId);
+    if (is_array($account) === false || count($authorizedFolders) === 0) {
+        $cache[$userId] = [];
+        return $cache[$userId];
+    }
+
+    $directGrantFolders = array_map(
+        'intval',
+        DB::queryFirstColumn(
+            'SELECT group_id FROM ' . prefixTable('users_groups') . ' WHERE user_id = %i',
+            $userId
+        )
+    );
+
+    // Access type per folder, least permissive wins across roles — as getRoleBasedAccess().
+    $roleAccessByFolder = [];
+    $userRoleIds = securityPostureUserRoleIds($userId);
+    if (count($userRoleIds) > 0) {
+        $rows = DB::query(
+            'SELECT folder_id, type FROM ' . prefixTable('roles_values') . '
+            WHERE role_id IN %li AND folder_id IN %li',
+            $userRoleIds,
+            $authorizedFolders
+        );
+        foreach ($rows as $row) {
+            $folderId = (int) $row['folder_id'];
+            $roleAccessByFolder[$folderId] = evaluateFolderAccesLevel(
+                (string) $row['type'],
+                $roleAccessByFolder[$folderId] ?? ''
+            );
+        }
+    }
+
+    // The read scope only holds the user's own personal tree, never another owner's.
+    $ownPersonalFolders = array_values(array_intersect(
+        $authorizedFolders,
+        getPersonalFolderIdsWithDescendants()
+    ));
+
+    $cache[$userId] = securityPostureResolveEditableFolders(
+        $authorizedFolders,
+        $directGrantFolders,
+        $roleAccessByFolder,
+        $ownPersonalFolders,
+        (int) $account['admin'] === 1,
+        (int) $account['read_only'] === 1
+    );
+
+    return $cache[$userId];
+}
+
+/**
+ * Resolve the folders whose items a Security Posture "Fix" shortcut may target for a user.
+ *
+ * Empty when none of the user's roles allows the shortcuts (roles_title.allow_security_posture_fix),
+ * otherwise the folders in which the user may edit items. The shortcuts are only an incentive:
+ * this never changes what the user may edit from the vault itself.
+ *
+ * Memoized per user.
+ *
+ * @param int $userId User whose shortcut scope is resolved.
+ *
+ * @return int[] Folder ids, unique and sorted ascending.
+ */
+function securityPostureFixableFolderIds(int $userId): array
+{
+    static $cache = [];
+    if (array_key_exists($userId, $cache) === true) {
+        return $cache[$userId];
+    }
+
+    loadClasses('DB');
+
+    $roleFlags = [];
+    $userRoleIds = securityPostureUserRoleIds($userId);
+    if (count($userRoleIds) > 0) {
+        $roleFlags = DB::queryFirstColumn(
+            'SELECT allow_security_posture_fix FROM ' . prefixTable('roles_title') . ' WHERE id IN %li',
+            $userRoleIds
+        );
+    }
+
+    $cache[$userId] = securityPostureFixAllowedByRoles($roleFlags) === true
+        ? securityPostureEditableFolderIds($userId)
+        : [];
+
+    return $cache[$userId];
+}
+
+/**
  * Build the SQL predicate limiting Security Posture data to items the user may read.
  *
  * A sharekey proves that the user can cryptographically unwrap an item key, but it is not an
@@ -1977,6 +2096,8 @@ function prepareSendingEmail(
  * in-session deep scan). It therefore runs both in the user's web session and in the CLI
  * background worker (which has no private key). It never decrypts and never returns any
  * plaintext — only counts and the worst flagged item's identifiers for a deep-link.
+ * The counts cover every readable item; the worst item is picked among the items the "Fix"
+ * shortcuts may target (securityPostureFixableFolderIds()), and is null when there is none.
  *
  * @param int $userId User to compute the posture for.
  *
@@ -2035,12 +2156,16 @@ function securityNudgeComputeCounts(int $userId): array
     );
 
     // Worst flagged item (severity: breached > reused > weak > overdue) for the "fix it now" deep-link.
+    // Only among the items the user may edit: a shortcut to an editor that refuses the save is a dead
+    // end. None at all when the user's roles switch the shortcuts off.
     $worstItem = null;
-    if ((int) ($agg['total_flagged'] ?? 0) > 0) {
+    $fixableFolders = securityPostureFixableFolderIds($userId);
+    if ((int) ($agg['total_flagged'] ?? 0) > 0 && count($fixableFolders) > 0) {
         $worst = DB::queryFirstRow(
             'SELECT t.id, t.id_tree
             FROM (' . $innerSql . ') AS t
             WHERE (t.flag_weak + t.flag_overdue + t.flag_breached + t.flag_reused) > 0
+                AND t.id_tree IN (' . implode(',', array_map('intval', $fixableFolders)) . ')
             ORDER BY t.flag_breached DESC, t.flag_reused DESC, t.flag_weak DESC, t.flag_overdue DESC, t.id DESC
             LIMIT 1',
             $userId, 'at_creation', 'at_modification', 'at_pw%', $userId
@@ -2197,7 +2322,9 @@ function finalizeUserReuseFlags(int $userId): void
  * scan uses. The item's cached HIBP status is reset so the client-side async check
  * re-evaluates the new password (stale "breached" clears).
  *
- * No-op when the Security Posture Dashboard is disabled.
+ * The HIBP reset runs whatever the Security Posture Dashboard setting: the stored status
+ * belongs to breach detection, and describes a password that no longer exists. Everything
+ * else is skipped when the dashboard is disabled.
  *
  * @param int    $itemId            Item whose posture is refreshed.
  * @param int    $userId            User the posture row belongs to (the editor).
@@ -2208,18 +2335,8 @@ function finalizeUserReuseFlags(int $userId): void
  */
 function refreshItemHealthAfterSave(int $itemId, int $userId, string $plaintextPassword, array $SETTINGS): void
 {
-    // Feature off → item_health is unused, nothing to refresh.
-    if ((int) ($SETTINGS['security_dashboard_enabled'] ?? 0) !== 1) {
-        return;
-    }
     if ($itemId <= 0 || $userId <= 0) {
         return;
-    }
-
-    $nowTs = time();
-    $oversharedThreshold = (int) ($SETTINGS['security_dashboard_overshared_threshold'] ?? 10);
-    if ($oversharedThreshold <= 0) {
-        $oversharedThreshold = 10;
     }
 
     // Reset the item's cached HIBP status so the stale "breached" flag clears and the
@@ -2236,6 +2353,17 @@ function refreshItemHealthAfterSave(int $itemId, int $userId, string $plaintextP
         'id = %i',
         $itemId
     );
+
+    // Dashboard off → item_health is unused, nothing else to refresh.
+    if ((int) ($SETTINGS['security_dashboard_enabled'] ?? 0) !== 1) {
+        return;
+    }
+
+    $nowTs = time();
+    $oversharedThreshold = (int) ($SETTINGS['security_dashboard_overshared_threshold'] ?? 10);
+    if ($oversharedThreshold <= 0) {
+        $oversharedThreshold = 10;
+    }
 
     // Recompute the metadata flags for this single item (no decryption). Same fragments as
     // the dashboard scan, scoped to one item.
@@ -7689,7 +7817,7 @@ function ldapCheckUserPassword(string $login, string $password, array $SETTINGS)
         if ($SETTINGS['ldap_type'] === 'ActiveDirectory') {
             $connection->auth()->attempt($login, $password, $stayAuthenticated = true);
         } else {
-            $connection->auth()->attempt($SETTINGS['ldap_user_attribute'].'='.$login.','.(isset($SETTINGS['ldap_dn_additional_user_dn']) && !empty($SETTINGS['ldap_dn_additional_user_dn']) ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'], $password, $stayAuthenticated = true);
+            $connection->auth()->attempt(ldapResolveUserAttribute($SETTINGS).'='.$login.','.(isset($SETTINGS['ldap_dn_additional_user_dn']) && !empty($SETTINGS['ldap_dn_additional_user_dn']) ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'], $password, $stayAuthenticated = true);
         }
     } catch (\LdapRecord\Auth\BindException $e) {
         $error = $e->getDetailedError();
@@ -7744,15 +7872,25 @@ function deleteUserObjetsKeys(int $userId, array $SETTINGS = []): false
         $userId
     );
     // Remove all item sharekeys fields except personal items
+    // object_id references categories_items.id, so we join through that table to get item IDs
     DB::query(
         'DELETE FROM ' . prefixTable('sharekeys_fields') . '
-        WHERE user_id = %i AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)',
+        WHERE user_id = %i AND object_id NOT IN (
+            SELECT c.id FROM ' . prefixTable('categories_items') . ' AS c
+            INNER JOIN ' . prefixTable('items') . ' AS i ON c.item_id = i.id
+            WHERE i.perso = 1
+        )',
         $userId
     );
     // Remove all item sharekeys logs except personal items
+    // object_id references log_items.increment_id, so we join through that table to get item IDs
     DB::query(
         'DELETE FROM ' . prefixTable('sharekeys_logs') . '
-        WHERE user_id = %i AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)',
+        WHERE user_id = %i AND object_id NOT IN (
+            SELECT l.increment_id FROM ' . prefixTable('log_items') . ' AS l
+            INNER JOIN ' . prefixTable('items') . ' AS i ON l.id_item = i.id
+            WHERE i.perso = 1
+        )',
         $userId
     );
     // Remove all item sharekeys suggestions except personal items
@@ -9866,25 +10004,40 @@ function userHasAccessToBackupFile(int $userId, string $file, string $key, strin
 /**
  * Ensure that personal items have only keys for their owner
  *
- * @param integer $userId
+ * The owner is the user whose personal tree holds the item, not its creator: a shared item
+ * moved into a personal folder keeps the at_creation entry of whoever created it, and
+ * narrowing its keys to that creator deletes the owner's own key. Same owner rule as
+ * restrictItemSharekeysToOwnerIfPersonal().
+ *
+ * @param integer $userId Owner of the personal tree holding the item
  * @param integer $itemId
  * @return boolean
  */
 function EnsurePersonalItemHasOnlyKeysForOwner(int $userId, int $itemId): bool
 {
-    // Single query: verify user is not admin, item is personal, and userId is the creator
+    // Single query: verify user is not admin, item is personal, and userId owns the
+    // personal tree the item sits in
     $check = DB::queryFirstRow(
         'SELECT 1
         FROM ' . prefixTable('users') . ' AS u
         JOIN ' . prefixTable('items') . ' AS i ON i.id = %i AND i.perso = 1
-        JOIN ' . prefixTable('log_items') . ' AS li ON li.id_item = i.id AND li.action = %s AND li.id_user = %i
+        JOIN ' . prefixTable('nested_tree') . ' AS folder ON folder.id = i.id_tree
+        JOIN ' . prefixTable('nested_tree') . ' AS root
+            ON root.personal_folder = 1 AND root.parent_id = 0
+            AND folder.nleft >= root.nleft AND folder.nright <= root.nright
+            AND root.title = %s
         WHERE u.id = %i AND u.admin = 0',
         $itemId,
-        'at_creation',
-        $userId,
+        (string) $userId,
         $userId
     );
     if ($check === null) {
+        return false;
+    }
+
+    // Never narrow the keys to an owner who lacks one of them: the object would be left
+    // with the TP_USER recovery key alone and become unreadable to its owner.
+    if (userHoldsEveryItemSharekey($itemId, $userId) === false) {
         return false;
     }
 
@@ -9991,6 +10144,9 @@ function restrictItemSharekeysToOwnerIfPersonal(int $itemId): bool
  * object would be left with the TP_USER recovery key alone and become unreadable to its owner.
  * A missing key is usually transient — the background task has not distributed it yet.
  *
+ * An item without a password needs no item key: clearing the password deletes every item
+ * sharekey, and requiring one would block the narrowing of such an item forever.
+ *
  * @param int $itemId Item
  * @param int $userId User who is to keep the keys
  *
@@ -9998,13 +10154,15 @@ function restrictItemSharekeysToOwnerIfPersonal(int $itemId): bool
  */
 function userHoldsEveryItemSharekey(int $itemId, int $userId): bool
 {
-    $itemKey = DB::queryFirstField(
-        'SELECT COUNT(*) FROM ' . prefixTable('sharekeys_items') . '
-        WHERE object_id = %i AND user_id = %i AND share_key != ""',
-        $itemId,
-        $userId
+    $missingItemKey = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('items') . ' AS item
+        LEFT JOIN ' . prefixTable('sharekeys_items') . ' AS sharekey
+            ON sharekey.object_id = item.id AND sharekey.user_id = %i AND sharekey.share_key != ""
+        WHERE item.id = %i AND item.pw != "" AND sharekey.increment_id IS NULL',
+        $userId,
+        $itemId
     );
-    if ((int) $itemKey === 0) {
+    if ((int) $missingItemKey > 0) {
         return false;
     }
 
@@ -11060,20 +11218,62 @@ function triggerBackgroundHandler(): void
     }
 
     // Launch the handler as a fully detached background process.
-    // We use exec() instead of Symfony Process because Process::start() creates
-    // pipes for stdout/stderr. When the parent request ends and pipes are closed,
-    // the child receives SIGPIPE and dies silently on the first write (log, error, etc.).
-    // Redirecting to /dev/null with & ensures true fire-and-forget detachment.
-    //
-    // Guard: exec() may be disabled via disable_functions in php.ini (e.g. Docker).
-    // In that case, skip the launch silently — the trigger file is already written
-    // above, and a cron job running background_tasks___handler.php will pick it up.
-    if (function_exists('exec')) {
-        $cmd = escapeshellarg(getPHPBinary())
-            . ' ' . escapeshellarg(__DIR__ . '/../scripts/background_tasks___handler.php')
-            . ' > /dev/null 2>&1 &';
-        exec($cmd);
+    // If the launch primitive is disabled (disable_functions, e.g. Docker), the
+    // trigger file is already written above and a cron job running
+    // background_tasks___handler.php will pick it up.
+    tpSpawnDetachedPhpScript(__DIR__ . '/../scripts/background_tasks___handler.php');
+}
+
+/**
+ * Start a PHP CLI script as a fire-and-forget background process.
+ *
+ * Linux/macOS: exec() with output sent to /dev/null and a trailing "&". Symfony
+ * Process is not used because Process::start() creates pipes for stdout/stderr:
+ * when the parent request ends and the pipes are closed, the child receives
+ * SIGPIPE and dies silently on the first write (log, error, etc.).
+ *
+ * Windows: the Unix redirection and "&" mean nothing to cmd.exe, and every
+ * console program started from a process without a console opens a visible
+ * window. proc_open() with an argument array bypasses cmd.exe, and
+ * create_no_window gives the child a hidden console that the processes it
+ * starts in turn (the handler's workers) inherit, so nothing flashes on screen.
+ * The process resource is deliberately not closed: proc_close() would wait for
+ * the child, while the resource destructor does not.
+ *
+ * @param string $script Absolute path of the PHP script to run.
+ * @return bool True when the process was started, false when the launch
+ *              primitive is disabled or failed.
+ */
+function tpSpawnDetachedPhpScript(string $script): bool
+{
+    if (PHP_OS_FAMILY === 'Windows') {
+        if (function_exists('proc_open') === false) {
+            return false;
+        }
+        $process = @proc_open(
+            [getPHPBinary(), $script],
+            [
+                0 => ['file', 'NUL', 'r'],
+                1 => ['file', 'NUL', 'w'],
+                2 => ['file', 'NUL', 'w'],
+            ],
+            $pipes,
+            null,
+            null,
+            ['bypass_shell' => true, 'create_no_window' => true]
+        );
+        return is_resource($process);
     }
+
+    if (function_exists('exec') === false) {
+        return false;
+    }
+    exec(
+        escapeshellarg(getPHPBinary()) . ' ' . escapeshellarg($script) . ' > /dev/null 2>&1 &',
+        $output,
+        $returnCode
+    );
+    return $returnCode === 0;
 }
 
 /**

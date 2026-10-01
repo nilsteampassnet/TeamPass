@@ -12,7 +12,7 @@ The **notification centre** adds a bell to the top bar collecting the events tha
 
 | Event | Meaning |
 |-------|---------|
-| Security scan finished | The [Security Posture Dashboard](breach-detection.md) deep scan completed, with the number of items needing attention. Clicking opens the dashboard. |
+| Security scan finished | The [Security Posture](security-posture.md) deep scan completed, with the number of items needing attention. Clicking opens the dashboard. |
 | Background task completed / failed | A background task you triggered (e.g. item encryption keys generation) finished. |
 | Your encryption keys are ready | Account provisioning completed — you can start using TeamPass. |
 | Folder access rights updated | An administrator or manager changed a role/folder grant that affects you. |

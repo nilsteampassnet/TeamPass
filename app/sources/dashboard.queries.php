@@ -107,6 +107,11 @@ $post_key = (string) $request->request->filter('key', '', FILTER_SANITIZE_SPECIA
 $post_offset = (int) $request->request->filter('offset', 0, FILTER_SANITIZE_NUMBER_INT);
 $post_limit = (int) $request->request->filter('limit', 50, FILTER_SANITIZE_NUMBER_INT);
 $post_include_hibp = (int) $request->request->filter('include_hibp', 0, FILTER_SANITIZE_NUMBER_INT);
+// The scan may only call Have I Been Pwned when the administrator enabled breach detection:
+// an instance that disabled it may have no outbound access, or refuse any external call.
+if ((int) ($SETTINGS['hibp_enabled'] ?? 0) !== 1) {
+    $post_include_hibp = 0;
+}
 
 $userId = (int) $session->get('user-id');
 $nowTs = time();
@@ -238,6 +243,10 @@ switch ($post_type) {
 
         $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
+        // The per-row "Fix" shortcut is only offered where the user may edit the item, and only
+        // when one of the user's roles allows the shortcuts.
+        $fixableFolders = securityPostureFixableFolderIds($userId);
+
         $list = [];
         foreach ($rows as $r) {
             $path = [];
@@ -260,6 +269,7 @@ switch ($post_type) {
                 'flag_breached' => (int) $r['flag_breached'],
                 'flag_reused' => (int) $r['flag_reused'],
                 'flag_orphaned' => (int) $r['flag_orphaned'],
+                'can_fix' => in_array((int) $r['id_tree'], $fixableFolders, true) === true ? 1 : 0,
             ];
         }
 

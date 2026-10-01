@@ -242,15 +242,92 @@ Once enabled by the administrator, this feature generates a time-limited link fo
 - Expires after a configurable duration (default: 7 days).
 - Is valid for a configurable number of views (default: 1).
 
-If the administrator has defined an **external subdomain**, the generated link uses that subdomain, making it accessible outside your organization's network even if the main Teampass instance is internal-only.
+An item link requires the sender to retain access to an active item. TeamPass
+checks the sender's current permissions when creating the link and each time
+the recipient opens it. A disabled/deleted sender, deleted item or revoked
+permission prevents access, even if an old sharekey still exists. Inaccessible
+item links and labels are also hidden from the sender's active-link list.
+If the item cannot be decrypted, creation fails without storing a sharing link.
+
+Administrator policy changes also apply to links that already exist:
+
+- Enabling **Require a passphrase** (`secure_send_require_passphrase`) makes
+  existing links without a passphrase unavailable; links already protected by
+  a passphrase remain subject to their usual limits.
+- Disabling **Allow secure notes** (`secure_send_allow_notes`) makes existing
+  standalone note links unavailable as well as preventing new ones.
+- A standalone note cannot be revealed once its sender is disabled or deleted.
+  Its link is deleted when a recipient submits the confirmation POST; a GET
+  alone neither deletes the link nor consumes a view.
+
+Opening a sharing URL now displays a confirmation form. Only a confirmed POST
+reveals the content and consumes a view, so link previews and scanners do not
+use up the link. A passphrase, when configured, must be transmitted separately.
+Views and failed attempts are reserved transactionally; five incorrect key or
+passphrase attempts revoke the link. Invalid stored payloads and encryption
+environment failures return a server error without consuming a view or attempt.
+Responses prohibit caching, referrers and framing.
+
+The recipient page keeps an existing visitor language preference. Without one
+(for example in a private browser window), it uses the instance's default
+language, with English as the fallback when no default is configured.
+
+Item automatic-deletion limits also apply to sharing links. The last permitted
+view is revealed and the item is then made inactive in the same transaction,
+with the usual automatic-deletion audit. An already exhausted budget or elapsed
+deletion date deactivates the item without revealing it or consuming a link view.
+All links to the inactive item are subsequently denied.
+As with automatic deletion from the item viewer, TeamPass records the deletion
+date, removes the item from the list cache and updates the folder counters.
+The automatic-deletion settings are retained. These database changes roll back
+with the view reservation if the operation fails.
+
+New item links share an encrypted copy of the label, login, URL, description
+and password as they were when the link was created. An enabled TOTP profile is
+included only when an eligible sender explicitly selects **Include the current
+TOTP code**; the option is unchecked by default and is not offered to read-only
+accounts. The recipient receives only server-generated short-lived codes; the
+shared seed is never rendered.
+
+Later edits do not update a copied snapshot, but deletion or loss of the
+sender's permissions still blocks access. Changing or disabling the item's TOTP
+does not alter links that already contain its copied profile. Revoke those links
+and create a new one whenever the shared TOTP configuration changes.
+
+The existing sharing table stores hex-encoded ciphertext in a TEXT column
+(65,535 bytes). If a copy would exceed that limit, only its description is
+shortened at a UTF-8 boundary until the encoded payload fits. Sender and
+recipient are warned, and the original item is unchanged. Credentials and TOTP
+data are never truncated; if required fields alone are too large, no link is
+created.
+Passphrases are limited to 1,024 bytes, matching the recipient form. Malformed
+fields and invalid note text are rejected before a link is created; requested
+validity and view counts remain bounded by the administrator's policy.
+No schema upgrade is needed: new copies use the existing send_type value space
+with item_v2. Legacy item and note links remain readable. Do not roll back the
+application while item_v2 links remain active.
+
+If the administrator has defined a **public sharing address**, the sender may
+select it explicitly for a link. New forms use the internal address by default,
+and the preview always shows the address that will be used. DNS, TLS and routing
+must also be configured; see [Public sharing address](../manage/settings.md#public-sharing-address).
 
 When one or more valid OTV links exist for an item, a badge showing the count is displayed on the item row.
 
 **To create a One Time View link:**
 1. Open the item action menu.
-2. Click **One Time View**.
-3. Configure expiry date and number of views.
-4. Copy the generated link and share it.
+2. Click **Secure Send**.
+3. Set validity, total views, public/internal address and an optional passphrase
+   (or a required one if enforced by the administrator). For an item with an
+   enabled TOTP, explicitly select **Include the current TOTP code** only when
+   the recipient should receive both authentication factors.
+4. Click **Generate link**, then **Copy**. Send any passphrase over a separate channel.
+
+Changing the form clears the displayed link and disables its copy button.
+Generate again to apply the new settings; this does not alter links already shown
+or sent. Use **My secure sends** to revoke those links. If the form changes or
+closes while generation is pending, a link created by the late response is
+revoked on a best-effort basis and the active-link list is refreshed.
 
 ---
 

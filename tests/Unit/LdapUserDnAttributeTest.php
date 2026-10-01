@@ -41,25 +41,32 @@ class LdapUserDnAttributeTest extends TestCase
         $this->assertSame($expected, LdapExtra::getUserDnAttribute($settings));
     }
 
-    public function testIdentifyNeverReadsTheRawSetting(): void
+    public function testTheLoginNeverReadsTheRawSetting(): void
     {
-        $source = (string) file_get_contents(__DIR__ . '/../../app/sources/identify.php');
+        // The directory functions moved to sources/ldap.functions.php so the LDAP settings page
+        // test runs the login's own code instead of a copy of it.
+        foreach (['app/sources/identify.php', 'app/sources/ldap.functions.php'] as $path) {
+            $source = (string) file_get_contents(__DIR__ . '/../../' . $path);
 
-        $this->assertStringNotContainsString(
-            "\$SETTINGS['ldap_user_dn_attribute']",
-            $source,
-            'identify.php must resolve the DN attribute through LdapExtra::getUserDnAttribute()'
-        );
+            $this->assertStringNotContainsString(
+                "\$SETTINGS['ldap_user_dn_attribute']",
+                $source,
+                $path . ' must resolve the DN attribute through LdapExtra::getUserDnAttribute()'
+            );
+        }
     }
 
     public function testAdGroupLookupFallsBackToTheEntryDn(): void
     {
-        $source = (string) file_get_contents(__DIR__ . '/../../app/sources/identify.php');
+        $source = (string) file_get_contents(__DIR__ . '/../../app/sources/ldap.functions.php');
 
         $this->assertStringContainsString(
-            "\$userDN = (string) (\$userADInfos[\$dnAttribute][0] ?? \$userADInfos['dn'] ?? '');",
+            "return (string) (\$userADInfos[\$dnAttribute][0] ?? \$userADInfos['dn'] ?? '');",
             $source,
-            'getUserADGroups() must fall back to the entry DN when the configured attribute is missing'
+            'ldapResolveUserDn() must fall back to the entry DN when the configured attribute is missing'
         );
+
+        // Both the group lookup and the login-group restriction resolve the DN through it.
+        $this->assertStringContainsString('ldapResolveUserDn($userADInfos, $ldapHandler, $SETTINGS)', $source);
     }
 }

@@ -47,6 +47,10 @@ require_once 'find.functions.php';
 require_once 'classification.functions.php';
 require_once 'lapr.functions.php';
 require_once __DIR__ . '/item_access_logic.php';
+require_once __DIR__ . '/secure_send_access.php';
+require_once __DIR__ . '/secure_send_snapshot.php';
+require_once __DIR__ . '/secure_send_input.php';
+require_once __DIR__ . '/secure_send_url.php';
 
 // init
 loadClasses('DB');
@@ -316,7 +320,11 @@ switch ($inputData['type']) {
             }
 
             // Is author authorized to create in this folder
-            if (in_array($inputData['folderId'], $session->get('user-accessible_folders')) === false) {
+            $folderRights = getCurrentFolderAccessRights(
+                (int) $session->get('user-id'),
+                (int) $inputData['folderId'],
+            );
+            if ($folderRights['error'] || $folderRights['create'] === false) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
@@ -607,7 +615,8 @@ switch ($inputData['type']) {
                 }
 
                 // Refresh the new item's security posture so a reused/weak password is flagged
-                // without waiting for a manual dashboard scan. No-op when the dashboard is disabled.
+                // without waiting for a manual dashboard scan. Only the breach status is reset when
+                // the dashboard is disabled.
                 refreshItemHealthAfterSave(
                     (int) $newID,
                     (int) $session->get('user-id'),
@@ -1552,9 +1561,12 @@ switch ($inputData['type']) {
                 $inputData['itemId']
             );
 
-            // Delete all existing sharekey_items for users if the item is personal
+            // Delete all existing sharekey_items for users if the item is personal.
+            // Narrow to the editor, not to $dataItem['id_user']: that is the creator, who is
+            // not the owner once a shared item has been moved into a personal folder. The
+            // function itself checks that the editor owns the personal tree.
             if (intval($dataItem['perso']) === 1) {
-                EnsurePersonalItemHasOnlyKeysForOwner(intval($dataItem['id_user']), (int) $inputData['itemId']);
+                EnsurePersonalItemHasOnlyKeysForOwner((int) $session->get('user-id'), (int) $inputData['itemId']);
             }
 
             // update fields
@@ -2525,7 +2537,8 @@ switch ($inputData['type']) {
 
                 // Refresh the item's security posture so the "needs attention" shield reflects
                 // the new password immediately (reused/breached flags are otherwise frozen at
-                // the last manual dashboard scan). No-op when the dashboard is disabled.
+                // the last manual dashboard scan). Only the breach status is reset when the
+                // dashboard is disabled.
                 refreshItemHealthAfterSave(
                     (int) $inputData['itemId'],
                     (int) $session->get('user-id'),
@@ -2637,8 +2650,18 @@ switch ($inputData['type']) {
                 $inputData['itemId']
             );
 
-            // Check if the folder where this item is accessible to the user
-            if (in_array($originalRecord['id_tree'], $session->get('user-accessible_folders')) === false) {
+            // The source item must be readable in the folder where it actually lives.
+            // Keep the ongoing-process check explicit: getCurrentAccessRights() reports
+            // the item as readable while disabling mutations during re-encryption.
+            $sourceRights = getCurrentAccessRights(
+                (int) $session->get('user-id'),
+                (int) $inputData['itemId'],
+                (int) $originalRecord['id_tree'],
+            );
+            if ($sourceRights['error']
+                || $sourceRights['access'] === false
+                || isProcessOnGoing((int) $inputData['itemId'])
+            ) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
@@ -2666,9 +2689,8 @@ switch ($inputData['type']) {
             // SECURITY: the user must be allowed to create items in the destination
             // folder. This rejects read-only folders (create is false only for the
             // read-only access level), mirroring the destination check in move_item.
-            $destinationRights = getCurrentAccessRights(
+            $destinationRights = getCurrentFolderAccessRights(
                 (int) $session->get('user-id'),
-                (int) $inputData['itemId'],
                 (int) $post_dest_id,
             );
             if ($destinationRights['error'] || $destinationRights['create'] === false) {
@@ -4306,6 +4328,18 @@ switch ($inputData['type']) {
             break;
         }
 
+        // Resolve the item once (GHSA-ghj3-wppx-w8j3). Every check below is made on
+        // this id, so the reads and the write must use it alone: also matching
+        // "OR item_key" deleted the item designated by a second, unchecked key
+        // along with the checked one.
+        if (empty($inputData['itemId']) === true) {
+            $resolvedItem = DB::queryFirstRow(
+                'SELECT id FROM ' . prefixTable('items') . ' WHERE item_key = %s',
+                $inputData['itemKey']
+            );
+            $inputData['itemId'] = (int) ($resolvedItem['id'] ?? 0);
+        }
+
         // Check that user can access this item
         $granted = accessToItemIsGranted($inputData['itemId'], $SETTINGS);
         if ($granted !== true) {
@@ -4323,13 +4357,9 @@ switch ($inputData['type']) {
         $data = DB::queryFirstRow(
             'SELECT id_tree, id, label
             FROM ' . prefixTable('items') . '
-            WHERE id = %i OR item_key = %s',
-            $inputData['itemId'],
-            $inputData['itemKey']
+            WHERE id = %i',
+            $inputData['itemId']
         );
-        if (empty($inputData['itemId']) === true) {
-            $inputData['itemId'] = $data['id'];
-        }
         $inputData['label'] = $data['label'];
 
         // Check that user can delete on this folder
@@ -4386,9 +4416,8 @@ switch ($inputData['type']) {
                 'inactif' => '1',
                 'deleted_at' => time(),
             ),
-            'id = %i OR item_key = %s',
-            $inputData['itemId'],
-            $inputData['itemKey']
+            'id = %i',
+            $inputData['itemId']
         );
 
         // log
@@ -4757,6 +4786,17 @@ switch ($inputData['type']) {
             );
             break;
         }
+
+        // The list uses this authoritative folder capability only to decide whether
+        // deletion controls should be rendered. The delete endpoints still repeat the
+        // check immediately before changing the item.
+        $folderRights = getCurrentFolderAccessRights(
+            (int) $session->get('user-id'),
+            (int) $inputData['id']
+        );
+        $canDeleteItemsInFolder = $folderRights['error'] === false
+            && $folderRights['access'] === true
+            && $folderRights['delete'] === true;
 
         // to do only on 1st iteration
         if ((int) $start === 0) {
@@ -5147,6 +5187,7 @@ switch ($inputData['type']) {
                             : null,
                     ];
                     $html_json[$record['id']]['user_restriction_allowed_for_user'] = ((!empty($record['restricted_to']) && $user_is_in_restricted_list === true) || empty($record['restricted_to'])) ? true : false;
+                    $html_json[$record['id']]['can_delete'] = $canDeleteItemsInFolder ? 1 : 0;
 
                     $corruptedState = $batchCorruptedItems[(int) $record['id']] ?? null;
                     $html_json[$record['id']]['is_corrupted'] = $corruptedState !== null ? 1 : 0;
@@ -7080,6 +7121,17 @@ switch ($inputData['type']) {
             'decode'
         );
 
+        if (!is_array($dataReceived)) {
+            echo json_encode(['error' => 'invalid_payload']);
+            break;
+        }
+        try {
+            secureSendValidateInput($dataReceived);
+        } catch (InvalidArgumentException $e) {
+            echo json_encode(['error' => 'invalid_payload']);
+            break;
+        }
+
         // Determine the kind of send: an existing item or an ad-hoc note/secret
         $secureSendType = (isset($dataReceived['send_type']) === true && $dataReceived['send_type'] === 'note') ? 'note' : 'item';
         if ($secureSendType === 'note' && (int) ($SETTINGS['secure_send_allow_notes'] ?? 0) !== 1) {
@@ -7089,65 +7141,47 @@ switch ($inputData['type']) {
 
         // Optional recipient passphrase (transmitted out-of-band by the sender)
         $secureSendPassphrase = (string) ($dataReceived['passphrase'] ?? '');
-        if ((int) ($SETTINGS['secure_send_require_passphrase'] ?? 0) === 1 && $secureSendPassphrase === '') {
+        if ((int) ($SETTINGS['secure_send_require_passphrase'] ?? 0) === 1 && trim($secureSendPassphrase) === '') {
             echo json_encode(array('error' => 'passphrase_required'));
             break;
         }
 
-        // Clamp expiry (days) and view count to the administrator policy
-        $secureSendMaxDays = (int) ($SETTINGS['otv_expiration_period'] ?? 7);
-        if ($secureSendMaxDays < 1) {
-            $secureSendMaxDays = 7;
-        }
-        $secureSendDays = (int) ($dataReceived['days'] ?? $secureSendMaxDays);
-        if ($secureSendDays < 1) {
-            $secureSendDays = 1;
-        }
-        if ($secureSendDays > $secureSendMaxDays) {
-            $secureSendDays = $secureSendMaxDays;
-        }
-
-        $secureSendMaxViewsCap = (int) ($SETTINGS['secure_send_max_views'] ?? 5);
-        if ($secureSendMaxViewsCap < 1) {
-            $secureSendMaxViewsCap = 1;
-        }
-        $secureSendViews = (int) ($dataReceived['views'] ?? 1);
-        if ($secureSendViews < 1) {
-            $secureSendViews = 1;
-        }
-        if ($secureSendViews > $secureSendMaxViewsCap) {
-            $secureSendViews = $secureSendMaxViewsCap;
-        }
+        $secureSendLimits = secureSendLimits($SETTINGS, $dataReceived, time());
 
         // Build the plaintext payload to share
+        $secureSendDescriptionTruncated = false;
         if ($secureSendType === 'item') {
-            // Item send: re-encrypt the item password; the recipient page reads the
-            // other fields (label, login, url, description) from the item via item_id.
+            // Item sends keep a coherent encrypted copy of all displayed fields.
             $secureSendItemId = (int) ($dataReceived['id'] ?? 0);
-            $itemQ = DB::queryFirstRow(
-                'SELECT s.share_key, s.increment_id, i.pw, i.pw_iv, i.pw_len
-                FROM ' . prefixTable('items') . ' AS i
-                INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (i.id = s.object_id)
-                WHERE s.user_id = %i AND s.object_id = %i',
-                $session->get('user-id'),
-                $secureSendItemId
-            );
-            if (DB::count() === 0 || empty($itemQ['pw']) === true) {
-                // No share key found
-                $secureSendPlaintext = '';
-            } else {
-                $secureSendPlaintext = teampassDecryptPasswordValue(
-                    $itemQ['pw'],
-                    decryptUserObjectKeyWithMigration(
-                        $itemQ['share_key'],
-                        $session->get('user-private_key'),
-                        $session->get('user-public_key'),
-                        intval($itemQ['increment_id']),
-                        'sharekeys_items'
-                    ),
-                    (int) ($itemQ['pw_len'] ?? 0),
-                    (string) ($itemQ['pw_iv'] ?? '')
+            $itemQ = secureSendReadItem($secureSendItemId, (int) $session->get('user-id'));
+            if ($itemQ === []) {
+                echo json_encode(array('error' => 'not_allowed'));
+                break;
+            }
+            try {
+                $secureSendPlaintext = secureSendItemPassword(
+                    $itemQ,
+                    (int) $session->get('user-id'),
+                    (string) $session->get('user-private_key'),
+                    (string) $session->get('user-public_key')
                 );
+                $snapshot = secureSendEncodeSnapshot(
+                    $itemQ,
+                    $secureSendPlaintext,
+                    secureSendShouldIncludeTotp(
+                        $dataReceived,
+                        (int) $session->get('user-read_only') === 1
+                    ) ? secureSendItemTotp($secureSendItemId) : null
+                );
+                $secureSendPlaintext = $snapshot['plaintext'];
+                $secureSendDescriptionTruncated = $snapshot['description_truncated'];
+                $secureSendType = 'item_v2';
+            } catch (InvalidArgumentException $e) {
+                $secureSendError = $e->getMessage();
+                echo json_encode(array('error' => in_array($secureSendError, ['invalid_payload', 'totp_unusable'], true)
+                    ? $secureSendError
+                    : 'cannot_decrypt'));
+                break;
             }
         } else {
             // Note send: self-contained encrypted JSON, not bound to any item
@@ -7202,13 +7236,23 @@ switch ($inputData['type']) {
             'encrypt',
             $SETTINGS
         );
+        if (!empty($passwd['error']) || strlen($passwd['string']) > 65535) {
+            echo json_encode(array('error' => 'invalid_payload'));
+            break;
+        }
         $timestampReference = time();
 
-        // "Shared globaly" (subdomain) only applies to item sends when configured by the admin
-        $secureSendShared = ($secureSendType === 'item'
-            && (int) ($dataReceived['shared_globaly'] ?? 0) === 1
-            && empty($SETTINGS['otv_subdomain']) === false) ? 1 : 0;
-
+        // Item copies and standalone notes use the same administrator-controlled address.
+        // The public address is opt-in: a request that does not ask for it gets the main URL.
+        $secureSendShared = (int) ($dataReceived['shared_globaly'] ?? 0) === 1 ? 1 : 0;
+        try {
+            $url = secureSendUrl($SETTINGS, $secureSendShared === 1, [
+                'otv' => 1, 'code' => $otv_code, 'key' => $secureSendLinkSecret, 'stamp' => $timestampReference,
+            ]);
+        } catch (InvalidArgumentException $e) {
+            echo json_encode(['error' => 'invalid_public_url']);
+            break;
+        }
         DB::insert(
             prefixTable('otv'),
             array(
@@ -7222,34 +7266,12 @@ switch ($inputData['type']) {
                 'protected_key' => $secureSendProtectedKey,
                 'has_passphrase' => $secureSendPassphrase === '' ? 0 : 1,
                 'failed_attempts' => 0,
-                'time_limit' => $secureSendDays * (int) TP_ONE_DAY_SECONDS + time(),
-                'max_views' => $secureSendViews,
+                'time_limit' => $secureSendLimits['time_limit'],
+                'max_views' => $secureSendLimits['views'],
                 'shared_globaly' => $secureSendShared,
             )
         );
         $newID = DB::insertId();
-
-        // Prepare URL content (the URL carries the link secret, not the Defuse key)
-        $otv_session = array(
-            'otv' => true,
-            'code' => $otv_code,
-            'key' => $secureSendLinkSecret,
-            'stamp' => $timestampReference,
-        );
-
-        if ($secureSendShared === 1) {
-            // Inject the configured subdomain into the host
-            $domain_scheme = parse_url($SETTINGS['cpassman_url'], PHP_URL_SCHEME);
-            $domain_host = parse_url($SETTINGS['cpassman_url'], PHP_URL_HOST);
-            if (str_contains((string) $domain_host, 'www.') === true) {
-                $domain_host = (string) $SETTINGS['otv_subdomain'] . '.' . substr((string) $domain_host, 4);
-            } else {
-                $domain_host = (string) $SETTINGS['otv_subdomain'] . '.' . $domain_host;
-            }
-            $url = $domain_scheme . '://' . $domain_host . '/index.php?' . http_build_query($otv_session);
-        } else {
-            $url = rtrim((string) $SETTINGS['cpassman_url'], '/') . '/index.php?' . http_build_query($otv_session);
-        }
 
         echo json_encode(
             array(
@@ -7257,89 +7279,8 @@ switch ($inputData['type']) {
                 'url' => $url,
                 'otv_id' => $newID,
                 'has_passphrase' => $secureSendPassphrase === '' ? 0 : 1,
+                'description_truncated' => $secureSendDescriptionTruncated,
             )
-        );
-        break;
-
-    /*
-    * CASE
-    * Check if Item has been changed since loaded
-    */
-    case 'update_OTV_url':
-        // Check KEY
-        if ($inputData['key'] !== $session->get('key')) {
-            echo '[ { "error" : "key_not_conform" } ]';
-            break;
-        }
-
-        // decrypt and retreive data in JSON format
-        $dataReceived = prepareExchangedData(
-            $inputData['data'],
-            'decode'
-        );
-
-        // Verify the current user owns this OTV link and can access the underlying item.
-        $otvRow = DB::queryFirstRow(
-            'SELECT item_id, originator FROM ' . prefixTable('otv') . ' WHERE id = %i',
-            $dataReceived['otv_id']
-        );
-        if (DB::count() === 0
-            || (int) $otvRow['originator'] !== (int) $session->get('user-id')
-            || accessToItemIsGranted((int) $otvRow['item_id'], $SETTINGS) !== true
-        ) {
-            echo '[ { "error" : "not_allowed" } ]';
-            break;
-        }
-
-        // get parameters from original link
-        $url = $dataReceived['original_link'];
-        $parts = parse_url($url);
-        if(isset($parts['query'])){
-            parse_str($parts['query'], $orignal_link_parameters);
-        } else {
-            $orignal_link_parameters = array();
-        }
-
-        // update database
-        DB::update(
-            prefixTable('otv'),
-            array(
-                'time_limit' => (int) $dataReceived['days'] * (int) TP_ONE_DAY_SECONDS + time(),
-                'max_views' => (int) $dataReceived['views'],
-                'shared_globaly' => (int) $dataReceived['shared_globaly'] === 1 ? 1 : 0,
-            ),
-            'id = %i',
-            $dataReceived['otv_id']
-        );
-
-        // Prepare URL content
-        $otv_session = [
-            'otv' => true,
-            'code' => $orignal_link_parameters['code'],
-            'key' => $orignal_link_parameters['key'],
-            'stamp' => $orignal_link_parameters['stamp'],
-        ];
-
-        if ((int) $dataReceived['shared_globaly'] === 1 && isset($SETTINGS['otv_subdomain']) === true && empty($SETTINGS['otv_subdomain']) === false) {
-            // Inject subdomain in URL by convering www. to subdomain.
-            $domain_scheme = parse_url($SETTINGS['cpassman_url'], PHP_URL_SCHEME);
-            $domain_host = parse_url($SETTINGS['cpassman_url'], PHP_URL_HOST);
-            if (str_contains($domain_host, 'www.') === true) {
-                $domain_host = (string) $SETTINGS['otv_subdomain'] . '.' . substr($domain_host, 4);
-            } else {
-                $domain_host = (string) $SETTINGS['otv_subdomain'] . '.' . $domain_host;
-            }
-            $url = $domain_scheme.'://'.$domain_host . '/index.php?'.http_build_query($otv_session);
-        } else {
-            $url = $SETTINGS['cpassman_url'] . '/index.php?'.http_build_query($otv_session);
-        }
-
-        echo (string) prepareExchangedData(
-            array(
-                'error' => false,
-                'new_url' => $url,
-            ),
-            'encode'
         );
         break;
 
@@ -7371,14 +7312,18 @@ switch ($inputData['type']) {
         );
 
         $secureSends = array();
-        foreach ($secureSendRows as $secureSendRow) {
+        foreach (secureSendFilterLinks($secureSendRows, (int) $session->get('user-id')) as $secureSendRow) {
             $isNote = ($secureSendRow['send_type'] ?? 'item') === 'note' || empty($secureSendRow['item_id']) === true;
             $secureSends[] = array(
                 'id' => (int) $secureSendRow['id'],
                 'send_type' => $isNote === true ? 'note' : 'item',
                 'label' => $isNote === true
                     ? $lang->get('secure_send_note')
-                    : htmlspecialchars(strip_tags((string) ($secureSendRow['item_label'] ?? '')), ENT_QUOTES, 'UTF-8'),
+                    : html_entity_decode(
+                        (string) ($secureSendRow['item_label'] ?? ''),
+                        ENT_QUOTES | ENT_HTML5,
+                        'UTF-8'
+                    ),
                 'has_passphrase' => (int) ($secureSendRow['has_passphrase'] ?? 0),
                 'remaining_views' => max(0, (int) $secureSendRow['max_views'] - (int) $secureSendRow['views']),
                 'expires_label' => date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $secureSendRow['time_limit']),
@@ -8780,22 +8725,23 @@ function fileFormatImage($ext)
 
 
 /**
- * Get rights of user on specific folder/item.
- * 
+ * Get the current user's effective rights on a folder.
+ *
+ * This resolver owns every folder-level decision shared by item operations. Item
+ * restrictions, background processes and edition locks remain item-level decisions.
+ *
  * @param int $userId ID of user.
- * @param int $itemId ID of item.
  * @param int $treeId ID of folder.
- * @param string $action Type of action (e.g., 'edit', 'delete').
- * 
- * @return array with access rights.
+ *
+ * @return array{error: bool, access: bool, edit: bool, delete: bool, create: bool}
  */
-function getCurrentAccessRights(int $userId, int $itemId, int $treeId, string $action = ''): array
+function getCurrentFolderAccessRights(int $userId, int $treeId): array
 {
     $session = SessionManager::getSession();
 
-    // Only a folder of the user's freshly resolved scope can authorize its items. The
-    // cached visible folders also list the blocked ancestors of accessible folders, so
-    // being in that list must never be enough on its own.
+    // Only a folder of the user's freshly resolved scope can authorize item operations.
+    // The cached visible folders also list blocked ancestors, so visibility alone is
+    // never sufficient.
     $configManager = new ConfigManager();
     if ($userId !== (int) $session->get('user-id')
         || refreshUserFolderPermissionScope($configManager->getAllSettings()) === false
@@ -8807,12 +8753,65 @@ function getCurrentAccessRights(int $userId, int $itemId, int $treeId, string $a
             (array) $session->get('user-forbiden_personal_folders')
         ) === false
     ) {
-        return getAccessResponse(false, false, false, false);
+        return getFolderAccessResponse(false, false, false, false);
     }
 
-    // Administrators never access shared item content (show_details_item hides it
-    // too) and own no personal folder, so every folder left here is denied.
+    // Administrators never access shared item content and own no personal folder.
     if ((int) $session->get('user-admin') === 1) {
+        return getFolderAccessResponse(false, false, false, false);
+    }
+
+    // Read-only folders, and read-only accounts outside their own personal folders.
+    if (((int) $session->get('user-read_only') === 1
+            && in_array($treeId, (array) $session->get('user-personal_folders')) === false)
+        || in_array($treeId, (array) $session->get('user-read_only_folders'))
+    ) {
+        return getFolderAccessResponse(true, false, false, false);
+    }
+
+    // A direct folder grant gives full write access.
+    if (in_array($treeId, (array) $session->get('user-allowed_folders_by_definition'))) {
+        return getFolderAccessResponse(true, true, true, true);
+    }
+
+    $visibleFolders = getUserVisibleFolders($userId);
+
+    // The user's own personal folders give full write access.
+    foreach ($visibleFolders as $folder) {
+        if ($folder['id'] == $treeId && (int) $folder['perso'] === 1) {
+            return getFolderAccessResponse(true, true, true, true);
+        }
+    }
+
+    [$edit, $delete, $create] = getRoleBasedAccess($session, $treeId);
+
+    if (!in_array($treeId, array_column($visibleFolders, 'id'))) {
+        return getFolderAccessResponse(false, false, false, false);
+    }
+
+    if (LOG_TO_SERVER === true) {
+        error_log("TEAMPASS - Folder: $treeId - User: $userId - edit: $edit - delete: $delete - create: $create");
+    }
+
+    return getFolderAccessResponse(true, $edit, $delete, $create);
+}
+
+/**
+ * Get rights of user on a specific folder/item.
+ *
+ * @param int $userId ID of user.
+ * @param int $itemId ID of item.
+ * @param int $treeId ID of folder.
+ * @param string $action Type of action (e.g., 'edit', 'delete').
+ *
+ * @return array with access rights.
+ */
+function getCurrentAccessRights(int $userId, int $itemId, int $treeId, string $action = ''): array
+{
+    $session = SessionManager::getSession();
+
+    $folderRights = getCurrentFolderAccessRights($userId, $treeId);
+    if ($folderRights['error'] || $folderRights['access'] === false) {
         return getAccessResponse(false, false, false, false);
     }
 
@@ -8829,57 +8828,20 @@ function getCurrentAccessRights(int $userId, int $itemId, int $treeId, string $a
         return getAccessResponse(false, true, false, false);
     }
 
-    // Read-only folders, and read-only accounts outside their own personal folders
-    // (the item handlers let a read-only account work in its personal folder)
-    if (((int) $session->get('user-read_only') === 1
-            && in_array($treeId, (array) $session->get('user-personal_folders')) === false)
-        || in_array($treeId, (array) $session->get('user-read_only_folders'))
-    ) {
-        return getAccessResponse(false, true, false, false);
-    }
-
-    // Check if the folder is in the user's allowed folders list defined by admin
-    if (in_array($treeId, $session->get('user-allowed_folders_by_definition'))) {
-        // Edition locks are only touched when the user actually enters edit mode.
-        $editionLock = $action === 'edit'
-            ? isItemLocked($itemId, $session, $userId, $action)
-            : ['status' => false];
-        return getAccessResponse(false, true, true, true, $editionLock, true);
-    }
-
-    // Retrieve user's visible folders from the cache_tree table
-    $visibleFolders = getUserVisibleFolders($userId);
-
-    // Check if the folder is personal to the user
-    foreach ($visibleFolders as $folder) {
-        if ($folder['id'] == $treeId && (int) $folder['perso'] === 1) {
-            $editionLock = $action === 'edit'
-                ? isItemLocked($itemId, $session, $userId, $action)
-                : ['status' => false];
-            return getAccessResponse(false, true, true, true, $editionLock, true);
-        }
-    }
-
-    // Determine the user's access rights based on their roles for this folder
-    [$edit, $delete, $create] = getRoleBasedAccess($session, $treeId);
-
-    // Is this folder in the list of visible folders?
-    if (!in_array($treeId, array_column($visibleFolders, 'id'))) {
-        return getAccessResponse(false, false, false, false);
-    }
-
-    // Log access rights information if logging is enabled
-    if (LOG_TO_SERVER === true) {
-        error_log("TEAMPASS - Folder: $treeId - User: $userId - edit: $edit - delete: $delete - create: $create");
-    }
-
     // Only create/check the edition lock when the user actually enters edit mode.
     // If edit=false or the action is read-only, no lock is acquired or refreshed.
-    $editionLock = ($edit && $action === 'edit')
+    $editionLock = ($folderRights['edit'] && $action === 'edit')
         ? isItemLocked($itemId, $session, $userId, $action)
         : ['status' => false];
 
-    return getAccessResponse(false, true, $edit, $delete, $editionLock, $create);
+    return getAccessResponse(
+        false,
+        true,
+        $folderRights['edit'],
+        $folderRights['delete'],
+        $editionLock,
+        $folderRights['create']
+    );
 }
 
 /**
@@ -9328,5 +9290,26 @@ function getAccessResponse(bool $error, bool $access, bool $edit, bool $delete, 
         'create' => $create,
         'edition_locked' => $editionLocked['status'] ?? false,
         'edition_locked_delay' => $editionLocked['delay'] ?? null,
+    ];
+}
+
+/**
+ * Construct a folder-only access response.
+ *
+ * @param bool $access Whether the user can access the folder
+ * @param bool $edit Whether the user can edit items in the folder
+ * @param bool $delete Whether the user can delete items from the folder
+ * @param bool $create Whether the user can create items in the folder
+ *
+ * @return array{error: bool, access: bool, edit: bool, delete: bool, create: bool}
+ */
+function getFolderAccessResponse(bool $access, bool $edit, bool $delete, bool $create): array
+{
+    return [
+        'error' => false,
+        'access' => $access,
+        'edit' => $edit,
+        'delete' => $delete,
+        'create' => $create,
     ];
 }

@@ -80,10 +80,9 @@ class ClientHtmlEncodingSentinelTest extends TestCase
         'app/pages/export.js.php' => ['item.title'],
         // safe — builds a lowercase needle for .indexOf(), never inserted in the DOM
         'app/pages/favorites.js.php' => ['item.login', 'item.description', 'item.folder', 'item.url'],
-        // safe — ldap_test_configuration answers with language strings and fixed diagnostics
-        // only; no directory value is interpolated into the message
-        'app/pages/ldap.js.php' => ['data.message'],
-        // safe — same handler (sources/ldap.queries.php, ldap_test_configuration)
+        // ldap.js.php needs no exemption: the configuration test now reports directory values
+        // (entry DN, bind identity, group DN), so every answer goes through htmlEncode().
+        // safe — sources/ldap.queries.php answers oauth.js.php with language strings only
         'app/pages/oauth.js.php' => ['data.message'],
         // safe — the master-key repair steps answer with language strings and counters; the
         // message is server-built markup that has to stay markup

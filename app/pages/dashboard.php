@@ -153,7 +153,9 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                         <?php echo $lang->get('security_dashboard_last_scan'); ?>:
                         <span id="dashboard-last-scan"><?php echo $lang->get('security_dashboard_never'); ?></span>
                     </span>
+                    <?php if ((int) ($SETTINGS['hibp_enabled'] ?? 0) === 1) { ?>
                     <label class="mr-2 small mb-0"><input type="checkbox" id="dashboard-include-hibp"> <?php echo $lang->get('security_dashboard_scan_hibp'); ?></label>
+                    <?php } ?>
                     <button type="button" class="btn btn-sm btn-primary" id="dashboard-scan-btn">
                         <i class="fa-solid fa-magnifying-glass-chart mr-1"></i><?php echo $lang->get('security_dashboard_scan_button'); ?>
                     </button>

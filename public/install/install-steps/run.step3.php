@@ -38,6 +38,7 @@ include TEAMPASS_ROOT . '/app/config/include.php';
 // Load functions
 include_once(__DIR__ . '/../tp.functions.php');
 require_once __DIR__.'/install.functions.php';
+require_once TEAMPASS_ROOT . '/app/sources/config_access_logic.php';
 
 $superGlobal = new SuperGlobal();
 
@@ -115,7 +116,20 @@ function checks($inputData)
         // Force connecting to this database
         DB::disconnect();
         DB::useDB($inputData['dbName']);
-        
+
+        // Never install over an instance in use: its data would be left behind a
+        // new encryption key. Checked before anything is written (issue #5380).
+        $existing = readExistingTeampassInstance($inputData['tablePrefix']);
+        if (teampassInstallerMustRefuseDatabase($existing) === true) {
+            return [
+                'success' => false,
+                'message' => teampassInstallerRefusalMessage(
+                    $existing['version'] ?? '',
+                    $inputData['tablePrefix']
+                ),
+            ];
+        }
+
         // Create install table
         DB::query(
             'CREATE TABLE IF NOT EXISTS `_install` (
@@ -158,4 +172,61 @@ function checks($inputData)
             'message' => 'Database connection failed with error: ' . $e->getMessage(),
         ];
     }
+}
+
+/**
+ * Read what the database already holds under the table prefix of the installation.
+ *
+ * Every probe tolerates a missing table: an interrupted installation may have
+ * created only part of the schema.
+ *
+ * @param string $tablePrefix Table prefix entered by the administrator.
+ *
+ * @return array{version: string, signed_in_users: int, items: int}|null null when the
+ *         database holds no TeamPass schema under this prefix.
+ */
+function readExistingTeampassInstance(string $tablePrefix): ?array
+{
+    $miscTable = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = %s',
+        $tablePrefix . 'misc'
+    );
+    if ($miscTable === 0) {
+        return null;
+    }
+
+    $version = '';
+    try {
+        // cpassman_version is the key used up to 3.1.5.x
+        $version = (string) DB::queryFirstField(
+            "SELECT valeur FROM %b WHERE type = 'admin' AND intitule IN ('teampass_version', 'cpassman_version')
+            ORDER BY intitule = 'teampass_version' DESC LIMIT 1",
+            $tablePrefix . 'misc'
+        );
+    } catch (Throwable $e) {
+        // Unknown version: the refusal message says "a TeamPass instance"
+    }
+
+    $signedInUsers = 0;
+    try {
+        $signedInUsers = (int) DB::queryFirstField(
+            "SELECT COUNT(*) FROM %b WHERE last_connexion IS NOT NULL AND last_connexion <> ''",
+            $tablePrefix . 'users'
+        );
+    } catch (Throwable $e) {
+        // No users table yet: nobody can have signed in
+    }
+
+    $items = 0;
+    try {
+        $items = (int) DB::queryFirstField('SELECT COUNT(*) FROM %b', $tablePrefix . 'items');
+    } catch (Throwable $e) {
+        // No items table yet: nothing can have been stored
+    }
+
+    return [
+        'version' => $version,
+        'signed_in_users' => $signedInUsers,
+        'items' => $items,
+    ];
 }

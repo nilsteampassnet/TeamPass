@@ -37,6 +37,7 @@ use TeampassClasses\Language\Language;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
+require_once __DIR__ . '/../sources/secure_send_url.php';
 
 // init
 loadClasses();
@@ -51,6 +52,14 @@ if ($session->get('key') === null) {
 // Load config
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
+$secureSendUrls = [];
+foreach (['internal' => false, 'public' => true] as $name => $public) {
+    try {
+        $secureSendUrls[$name] = secureSendBaseUrl($SETTINGS, $public);
+    } catch (InvalidArgumentException $e) {
+        $secureSendUrls[$name] = '';
+    }
+}
 
 // Do checks
 $checkUserAccess = new PerformChecks(
@@ -301,7 +310,11 @@ require __DIR__ . '/renewal.preview.js.php';
         $('#form-item-renewal-enabled').prop('disabled', isManaged || isCredential);
         const renewalEnabled = !isManaged && !isCredential && $('#form-item-renewal-enabled').prop('checked');
         $('#form-item-renewal-period').prop('disabled', !renewalEnabled).prop('required', renewalEnabled);
-        $('.tp-action[data-item-action="delete"]').closest('.nav-item').toggleClass('hidden', isManaged || isCredential);
+        // Folder permissions own the normal visibility state; LAPR may add another
+        // restriction but must never reveal an action hidden by ACLs.
+        const canDelete = data.can_delete === true || data.can_delete === 1;
+        $('.tp-action[data-item-action="delete"]').closest('.nav-item')
+            .toggleClass('hidden', !canDelete || isManaged || isCredential);
         $('.tp-action[data-item-action="server"]').closest('.nav-item').toggleClass('hidden', isManaged);
 
         if (isManaged) {
@@ -1572,7 +1585,8 @@ require __DIR__ . '/renewal.preview.js.php';
                 resetEditFormSkeleton(false);
                 laprRenderItemIntegration({
                     lapr: store.get('teampassItem').lapr || {},
-                    login: $('#form-item-login').val()
+                    login: $('#form-item-login').val(),
+                    can_delete: store.get('teampassItem').canDelete === true
                 }, 'edit');
 
                 // Fetch password now that we know the user is allowed
@@ -1913,7 +1927,7 @@ require __DIR__ . '/renewal.preview.js.php';
                 ).fail(function() {
                     $("#items-delete-user-confirm").modal('hide');
                     toastrUpdate(loadingToast, 'error',
-                        '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                        <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
                         { timeOut: 5000 }
                     );
                 });
@@ -2564,7 +2578,7 @@ require __DIR__ . '/renewal.preview.js.php';
                     // ERROR
                     $('#form-item-delete-perform').prop('disabled', false).html('<?php echo $lang->get('perform'); ?>');
                     toastrUpdate(loadingToast, 'error',
-                        (data && data.message) || '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                        (data && data.message) || <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
                         { timeOut: 5000 }
                     );
                     requestRunning = false;
@@ -2573,7 +2587,7 @@ require __DIR__ . '/renewal.preview.js.php';
         ).fail(function() {
             $('#form-item-delete-perform').prop('disabled', false).html('<?php echo $lang->get('perform'); ?>');
             toastrUpdate(loadingToast, 'error',
-                '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
                 { timeOut: 5000 }
             );
             requestRunning = false;
@@ -2713,7 +2727,7 @@ require __DIR__ . '/renewal.preview.js.php';
                     // ERROR
                     $btn.prop('disabled', false).html('<?php echo $lang->get('perform'); ?>');
                     toastrUpdate(loadingToast, 'error',
-                        (data && data.message) || '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                        (data && data.message) || <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
                         { timeOut: 5000 }
                     );
                 }
@@ -2721,7 +2735,7 @@ require __DIR__ . '/renewal.preview.js.php';
         ).fail(function() {
             $btn.prop('disabled', false).html('<?php echo $lang->get('perform'); ?>');
             toastrUpdate(loadingToast, 'error',
-                '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
                 { timeOut: 5000 }
             );
         });
@@ -3583,7 +3597,7 @@ require __DIR__ . '/renewal.preview.js.php';
             var itemIdToDelete = $(this).data('item-id');
 
             $.when(
-                checkAccess($(this).data('item-key'), $(this).data('item-tree-id'), <?php echo $session->get('user-id'); ?>, 'delete')
+                checkAccess(itemIdToDelete, $(this).data('item-tree-id'), <?php echo $session->get('user-id'); ?>, 'delete')
             ).then(function(retData) {
                 // Is the user allowed?
                 if (retData.access === false || retData.delete === false) {
@@ -3736,17 +3750,43 @@ require __DIR__ . '/renewal.preview.js.php';
             }
         });
 
-    // Click to reaveal password
-    $('#item-button-password-show')
-        .mouseup(function() {
-            $('#form-item-password').attr('type', 'password');
-        })
-        .mousedown(function() {
-            // Allow $('#form-item .form-item-control').on('change') to be fired
-            $('#form-item .form-item-control').blur();
-            // Display cleartext password
-            $('#form-item-password').attr('type', 'text');
-        });
+    /**
+     * Show or mask the password of the edit form.
+     *
+     * @param {boolean} visible
+     */
+    function applyItemFormPasswordVisibility(visible) {
+        $('#form-item-password').attr('type', visible === true ? 'text' : 'password')
+        $('#item-button-password-show')
+            .attr('aria-pressed', visible === true ? 'true' : 'false')
+            .find('i')
+            .toggleClass('fa-eye', visible !== true)
+            .toggleClass('fa-eye-slash', visible === true)
+    }
+
+    // Click to reveal or mask the password. The choice is remembered in this browser;
+    // the field stays masked until the user asks otherwise.
+    $('#item-button-password-show').on('click', function() {
+        // Allow $('#form-item .form-item-control').on('change') to be fired
+        $('#form-item .form-item-control').blur()
+        const visible = $('#form-item-password').attr('type') === 'password'
+        applyItemFormPasswordVisibility(visible)
+        try {
+            localStorage.setItem('tp_item_form_pw_visible', visible === true ? '1' : '0')
+        } catch (e) {
+            // Storage unavailable (private window, blocked site data): the choice lasts for this page only
+        }
+    })
+    ;(function loadItemFormPasswordVisibility() {
+        let visible = false
+        try {
+            visible = localStorage.getItem('tp_item_form_pw_visible') === '1'
+        } catch (e) {
+            // Storage unavailable: keep the field masked
+        }
+        applyItemFormPasswordVisibility(visible)
+    })()
+
     $('.btn-no-click')
         .click(function(e) {
             e.preventDefault();
@@ -4537,7 +4577,7 @@ require __DIR__ . '/renewal.preview.js.php';
                             $("#div_dialog_message").dialog("open");
 
                             toastrUpdate(loadingToast, 'error',
-                                '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                                <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
                                 { timeOut: 5000 }
                             );
                             return false;
@@ -4545,7 +4585,7 @@ require __DIR__ . '/renewal.preview.js.php';
                         // prepareExchangedData returns false (without throwing) on unusable response
                         if (data === false) {
                             toastrUpdate(loadingToast, 'error',
-                                '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                                <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
                                 { timeOut: 5000 }
                             );
                             return false;
@@ -4733,7 +4773,7 @@ require __DIR__ . '/renewal.preview.js.php';
                 ).fail(function() {
                     // HTTP-level failure (500, network...): close the spinner and unblock edition
                     toastrUpdate(loadingToast, 'error',
-                        '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                        <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
                         { timeOut: 5000 }
                     );
                     requestRunning = false;
@@ -5910,6 +5950,7 @@ require __DIR__ . '/renewal.preview.js.php';
             // ENsure numbers are ints
             value.anyone_can_modify = parseInt(value.anyone_can_modify);
             value.canMove = parseInt(value.canMove);
+            value.can_delete = parseInt(value.can_delete || 0);
             value.expired = parseInt(value.expired);
             value.is_favourited = parseInt(value.is_favourited ?? value.is_favorite ?? 0);
             value.is_result_of_search = parseInt(value.is_result_of_search);
@@ -5982,7 +6023,8 @@ require __DIR__ . '/renewal.preview.js.php';
                 }
 
                 // Trash icon
-                trash_link = value.lapr && (value.lapr.is_managed === true || value.lapr.is_credential === true)
+                trash_link = value.can_delete !== 1
+                    || (value.lapr && (value.lapr.is_managed === true || value.lapr.is_credential === true))
                     ? ''
                     : '<span class="fa-stack fa-clickable warn-user pointer infotip mr-2 list-item-clicktodelete" title="<?php echo $lang->get('delete'); ?>" data-item-id="' + value.item_id + '" data-item-tree-id="' + value.tree_id + '"><i class="fa-solid fa-circle fa-stack-2x"></i><i class="fa-solid fa-trash fa-stack-1x fa-inverse"></i></span>';
 
@@ -6467,7 +6509,8 @@ require __DIR__ . '/renewal.preview.js.php';
         // doesn't bleed through while the new item's data is loading.
         if (actionType === 'show') {
             $('#card-item-readonly-badge').addClass('hidden');
-            $('[data-item-action="edit"], [data-item-action="delete"]').removeClass('hidden');
+            $('[data-item-action="edit"]').removeClass('hidden');
+            $('[data-item-action="delete"]').closest('.nav-item').removeClass('hidden');
         }
 
         // Init
@@ -6574,9 +6617,10 @@ require __DIR__ . '/renewal.preview.js.php';
             // Apply badge and action-button visibility for the 'show' view using the
             // authoritative check_current_access_rights result — no need to wait for
             // the show_details_item response.
+            const canEdit = retData.edit === true
+            const canDelete = retData.delete === true
+
             if (actionType === 'show') {
-                const canEdit   = retData.edit   === true
-                const canDelete = retData.delete  === true
 
                 // Badge visible whenever at least one right is missing.
                 if (!canEdit || !canDelete) {
@@ -6592,9 +6636,9 @@ require __DIR__ . '/renewal.preview.js.php';
                 }
 
                 if (!canDelete) {
-                    $('[data-item-action="delete"]').addClass('hidden');
+                    $('[data-item-action="delete"]').closest('.nav-item').addClass('hidden');
                 } else {
-                    $('[data-item-action="delete"]').removeClass('hidden');
+                    $('[data-item-action="delete"]').closest('.nav-item').removeClass('hidden');
                 }
             }
 
@@ -6856,13 +6900,15 @@ require __DIR__ . '/renewal.preview.js.php';
                             teampassItem.folderId = parseInt(data.folder),
                             teampassItem.timestamp = data.timestamp,
                             teampassItem.user_can_modify = data.user_can_modify,
+                            teampassItem.otp_for_item_enabled = parseInt(data.otp_for_item_enabled),
                             teampassItem.anyone_can_modify = data.anyone_can_modify,
                             teampassItem.edit_item_salt_key = data.edit_item_salt_key,
                             teampassItem.id_restricted_to = data.id_restricted_to,
                             teampassItem.id_restricted_to_roles = data.id_restricted_to_roles,
                             teampassItem.item_rights = itemRights,
                             teampassItem.notificationStatus = data.notification_status === true,
-                            teampassItem.lapr = data.lapr || {}
+                            teampassItem.lapr = data.lapr || {},
+                            teampassItem.canDelete = canDelete
                         }
                     );
 
@@ -6949,6 +6995,7 @@ require __DIR__ . '/renewal.preview.js.php';
                     // so legitimate Font Awesome classes keep working.
                     const itemIcon = (data.fa_icon !== "") ? '<i class="'+htmlEncode(data.fa_icon)+' mr-1"></i>' : '';
                     $('#card-item-label, #form-item-title').html(itemIcon + htmlEncode(data.label));
+                    data.can_delete = canDelete;
                     laprRenderItemIntegration(data, actionType);
 
                     // Populate breadcrumb with folder path when item comes from a search result
@@ -7023,9 +7070,11 @@ require __DIR__ . '/renewal.preview.js.php';
                     }
 
                     // .text(), like the email and url below: the login is data, and it is
-                    // also the clipboard target, which reads the node's text.
-                    $('#card-item-login').text(data.login);
-                    $('#form-item-login, #form-item-suggestion-login, #form-item-server-login').val(data.login);
+                    // also the clipboard target, which reads the node's text. It is stored
+                    // entity-encoded (FULL_SPECIAL_CHARS), so decode it first, like the label.
+                    const itemLogin = htmlDecode(data.login || '');
+                    $('#card-item-login').text(itemLogin);
+                    $('#form-item-login, #form-item-suggestion-login, #form-item-server-login').val(itemLogin);
 
                     $('#card-item-email').text(data.email);
                     $('#form-item-email, #form-item-suggestion-email').val(data.email);
@@ -7527,7 +7576,7 @@ require __DIR__ . '/renewal.preview.js.php';
                 // HTTP-level failure (500, network...): close the spinner and unblock navigation
                 toastr.remove();
                 toastr.error(
-                    '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                    <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
                     '', {
                         timeOut: 5000,
                         progressBar: true
@@ -8311,6 +8360,7 @@ require __DIR__ . '/renewal.preview.js.php';
      * @return void
      */
     function bindSecureSendClipboard(url) {
+        $('#form-item-otv-copy-button').prop('disabled', !url);
         $('#form-item-otv-copy-button').off('click.securesend').on('click.securesend', async function() {
             try {
                 if (!url) {
@@ -8318,7 +8368,7 @@ require __DIR__ . '/renewal.preview.js.php';
                 }
                 await copyToClipboard(url);
                 toastr.info(
-                    '<?php echo $lang->get("copy_to_clipboard"); ?>',
+                    <?php echo json_encode($lang->get('copy_to_clipboard'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
                     '', {
                         timeOut: 2000,
                         positionClass: 'toast-bottom-right',
@@ -8327,7 +8377,7 @@ require __DIR__ . '/renewal.preview.js.php';
                 );
             } catch (error) {
                 toastr.error(
-                    '<?php echo $lang->get("clipboard_error"); ?>',
+                    <?php echo json_encode($lang->get('clipboard_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
                     '', {
                         timeOut: 3000,
                         positionClass: 'toast-bottom-right',
@@ -8346,13 +8396,23 @@ require __DIR__ . '/renewal.preview.js.php';
      */
     function secureSendErrorLabel(code) {
         var map = {
-            'passphrase_required': '<?php echo $lang->get('secure_send_passphrase_required_error'); ?>',
-            'empty_note': '<?php echo $lang->get('secure_send_empty_note_error'); ?>',
-            'notes_not_allowed': '<?php echo $lang->get('error'); ?>',
-            'not_allowed': '<?php echo $lang->get('error'); ?>'
+            'passphrase_required': <?php echo json_encode($lang->get('secure_send_passphrase_required_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+            'empty_note': <?php echo json_encode($lang->get('secure_send_empty_note_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+            'notes_not_allowed': <?php echo json_encode($lang->get('error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+            'invalid_public_url': <?php echo json_encode($lang->get('secure_send_invalid_public_url'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+            'cannot_decrypt': <?php echo json_encode($lang->get('secure_send_cannot_decrypt'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+            'totp_unusable': <?php echo json_encode($lang->get('secure_send_totp_unusable'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+            'invalid_payload': <?php echo json_encode($lang->get('secure_send_invalid_payload'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+            'server_error': <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+            'not_allowed': <?php echo json_encode($lang->get('error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>
         };
-        return map[code] || '<?php echo $lang->get('error'); ?>';
+        return map[code] || <?php echo json_encode($lang->get('error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
     }
+
+    let secureSendFormVersion = 0;
+    let secureSendListVersion = 0;
+    let secureSendGenerating = false;
+    const secureSendBaseUrls = <?php echo json_encode($secureSendUrls, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
 
     /**
      * Load and render the current user's active Secure Send links.
@@ -8360,16 +8420,20 @@ require __DIR__ . '/renewal.preview.js.php';
      * @return void
      */
     function loadSecureSendsList() {
+        const listVersion = ++secureSendListVersion;
         $.post(
             "sources/items.queries.php", {
                 type: "list_secure_sends",
                 key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
+                if (listVersion !== secureSendListVersion) {
+                    return;
+                }
                 // A real server error must not be displayed as an empty list
-                if (data.error !== undefined && data.error !== "") {
+                if (data === null || typeof data !== 'object' || Array.isArray(data) || data.error !== "" || !Array.isArray(data.sends)) {
                     toastr.error(
-                        '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                        <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
                         '', {
                             timeOut: 5000,
                             progressBar: true
@@ -8378,25 +8442,49 @@ require __DIR__ . '/renewal.preview.js.php';
                     return;
                 }
                 if (data.sends === undefined || data.sends.length === 0) {
-                    $('#secure-send-list').html('<?php echo $lang->get('secure_send_no_active'); ?>');
+                    $('#secure-send-list').html('<p class="text-muted mb-0 py-3">' + htmlEncode(<?php echo json_encode($lang->get('secure_send_no_active'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>) + '</p>');
                     return;
                 }
                 var html = '<ul class="list-unstyled mb-0">';
                 data.sends.forEach(function(s) {
-                    var lock = s.has_passphrase === 1 ? ' <i class="fa-solid fa-lock text-success"></i>' : '';
+                    var lock = s.has_passphrase === 1 ? ' <i class="fa-solid fa-lock text-success" aria-hidden="true"></i><span class="sr-only">' + htmlEncode(<?php echo json_encode($lang->get('secure_send_protected'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>) + '</span>' : '';
                     var icon = s.send_type === 'note' ? 'fa-note-sticky' : 'fa-key';
-                    html += '<li class="d-flex justify-content-between align-items-center border-bottom py-1">' +
-                        '<span><i class="fa-solid ' + icon + ' mr-2"></i>' + htmlEncode(s.label) + lock +
-                        ' <small class="text-muted ml-2">' + s.remaining_views + ' <?php echo $lang->get('secure_send_remaining_views'); ?> &middot; ' + s.expires_label + '</small></span>' +
-                        '<button type="button" class="btn btn-xs btn-outline-danger secure-send-revoke ml-2" data-id="' + s.id + '"><i class="fa-solid fa-trash"></i></button>' +
+                    html += '<li class="secure-send-entry d-flex align-items-center">' +
+                        '<i class="fa-solid ' + icon + ' text-muted mr-3" aria-hidden="true"></i>' +
+                        '<div class="secure-send-entry-content flex-grow-1"><span class="d-block font-weight-bold">' + htmlEncode(s.label) + lock + '</span>' +
+                        '<span class="d-block text-muted mt-1">' + Number(s.remaining_views) + ' ' + htmlEncode(<?php echo json_encode($lang->get('secure_send_remaining_views'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>) + ' &middot; ' + htmlEncode(s.expires_label) + '</span></div>' +
+                        '<button type="button" class="btn btn-sm btn-outline-danger secure-send-revoke ml-3" data-id="' + Number(s.id) + '"><i class="fa-solid fa-trash mr-1" aria-hidden="true"></i>' + htmlEncode(<?php echo json_encode($lang->get('secure_send_revoke'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>) + '</button>' +
                         '</li>';
                 });
                 html += '</ul>';
                 $('#secure-send-list').html(html);
             },
             "json"
-        );
+        ).fail(function() {
+            if (listVersion === secureSendListVersion) {
+                toastr.error(secureSendErrorLabel('server_error'), '', { timeOut: 5000 });
+            }
+        });
     }
+
+    /** Clear the previous URL whenever the form no longer describes that link. */
+    function invalidateSecureSendLink() {
+        secureSendFormVersion += 1;
+        $('#form-item-otv-link').val('').data('otv-id', 0);
+        $('#form-secure-send-passphrase-reminder').addClass('hidden');
+        bindSecureSendClipboard('');
+        const address = secureSendBaseUrls[$('#form-item-otv-subdomain').is(':checked') ? 'public' : 'internal'];
+        $('#secure-send-address-preview').text(address
+            ? <?php echo json_encode($lang->get('secure_send_address_preview'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>.replace('#URL#', address)
+            : secureSendErrorLabel('invalid_public_url'));
+    }
+
+    $(document).on('input change ifChanged', '#modal-item-otv input:not(#form-item-otv-link), #modal-item-otv textarea', invalidateSecureSendLink);
+    $('#modal-item-otv').on('hidden.bs.modal', function() {
+        invalidateSecureSendLink();
+        secureSendListVersion += 1;
+        $('#form-secure-send-passphrase, #form-secure-send-secret, #form-secure-send-note').val('');
+    });
 
     /**
      * Open the Secure Send modal in the given mode.
@@ -8412,37 +8500,82 @@ require __DIR__ . '/renewal.preview.js.php';
         $('#form-secure-send-passphrase-reminder').addClass('hidden');
         $('#form-item-otv-days').val($('#form-item-otv-days').attr('max'));
         $('#form-item-otv-views').val('1');
-        $('#secure-send-modal-title').text('<?php echo $lang->get('secure_send'); ?>');
+        $('#form-item-otv-subdomain').iCheck('uncheck');
+        $('#form-secure-send-include-totp').iCheck('uncheck');
+        invalidateSecureSendLink();
+        $('#secure-send-modal-title').text(<?php echo json_encode($lang->get('secure_send'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>);
 
         if (mode === 'note') {
             $('#secure-send-note-fields').removeClass('hidden');
+            $('#secure-send-snapshot-hint').addClass('hidden');
+            $('#secure-send-totp-option').addClass('hidden');
             $('#form-secure-send-title, #form-secure-send-secret, #form-secure-send-note, #form-secure-send-login, #form-secure-send-url').val('');
         } else {
             $('#secure-send-note-fields').addClass('hidden');
+            $('#secure-send-snapshot-hint').removeClass('hidden');
+            if (Number(store.get('teampassItem').otp_for_item_enabled) === 1) {
+                $('#secure-send-totp-option').removeClass('hidden');
+            } else {
+                $('#secure-send-totp-option').addClass('hidden');
+            }
         }
 
         loadSecureSendsList();
         $('#modal-item-otv').modal('show');
     }
 
+    /**
+     * Revoke a link created after its form became stale, then refresh the list.
+     *
+     * @param {number} id
+     * @return void
+     */
+    function revokeStaleSecureSend(id) {
+        $.post(
+            "sources/items.queries.php", {
+                type: "revoke_secure_send",
+                data: prepareExchangedData(JSON.stringify({"id": id}), "encode", "<?php echo $session->get('key'); ?>"),
+                key: "<?php echo $session->get('key'); ?>"
+            },
+            null,
+            "json"
+        ).always(function() {
+            loadSecureSendsList();
+        });
+    }
+
     // Generate a Secure Send link
     $(document).on('click', '#form-secure-send-generate', function() {
+        if (secureSendGenerating) {
+            return;
+        }
         var mode = $('#form-secure-send-mode').val();
         var passphrase = $('#form-secure-send-passphrase').val();
+        if ($('#form-secure-send-passphrase').prop('required') === true && passphrase.trim() === '') {
+            toastr.error(secureSendErrorLabel('passphrase_required'), '', { timeOut: 3000, progressBar: true });
+            return;
+        }
+        if (new TextEncoder().encode(passphrase).length > 1024) {
+            toastr.error(secureSendErrorLabel('invalid_payload'), '', { timeOut: 3000, progressBar: true });
+            return;
+        }
 
         var data = {
             "send_type": mode,
             "passphrase": passphrase,
             "days": $('#form-item-otv-days').val(),
             "views": $('#form-item-otv-views').val(),
-            "shared_globaly": $('#form-item-otv-subdomain').is(":checked") === true ? 1 : 0
+            "shared_globaly": $('#form-item-otv-subdomain').is(":checked") === true ? 1 : 0,
+            "include_totp": mode === 'item'
+                && Number(store.get('teampassItem').otp_for_item_enabled) === 1
+                && $('#form-secure-send-include-totp').is(':checked') === true ? 1 : 0
         };
 
         if (mode === 'note') {
             var secret = $('#form-secure-send-secret').val();
             var note = $('#form-secure-send-note').val();
             if (secret.trim() === '' && note.trim() === '') {
-                toastr.error('<?php echo $lang->get('secure_send_empty_note_error'); ?>', '', { timeOut: 3000, progressBar: true });
+                toastr.error(<?php echo json_encode($lang->get('secure_send_empty_note_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>, '', { timeOut: 3000, progressBar: true });
                 return;
             }
             data.payload = {
@@ -8457,7 +8590,10 @@ require __DIR__ . '/renewal.preview.js.php';
         }
 
         var $btn = $(this);
-        $btn.addClass('disabled');
+        invalidateSecureSendLink();
+        const formVersion = secureSendFormVersion;
+        secureSendGenerating = true;
+        $btn.prop('disabled', true);
 
         $.post(
             "sources/items.queries.php", {
@@ -8466,22 +8602,47 @@ require __DIR__ . '/renewal.preview.js.php';
                 key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
-                $btn.removeClass('disabled');
-                if (data.error === "") {
+                const responseId = data !== null && typeof data === 'object' && !Array.isArray(data)
+                    ? Number(data.otv_id)
+                    : 0;
+                if (formVersion !== secureSendFormVersion) {
+                    if (Number.isInteger(responseId) && responseId > 0) {
+                        revokeStaleSecureSend(responseId);
+                    } else {
+                        loadSecureSendsList();
+                    }
+                    return;
+                }
+                loadSecureSendsList();
+                if (data === null || typeof data !== 'object' || Array.isArray(data) || typeof data.error !== 'string') {
+                    toastr.error(secureSendErrorLabel('server_error'), '', { timeOut: 5000 });
+                } else if (data.error === "" && typeof data.url === 'string' && data.url !== '' && Number.isInteger(responseId) && responseId > 0) {
                     $('#form-item-otv-link').val(data.url).data('otv-id', data.otv_id);
                     bindSecureSendClipboard(data.url);
+                    if (data.description_truncated === true) {
+                        toastr.warning(<?php echo json_encode($lang->get('secure_send_description_truncated'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+                            '', { timeOut: 10000, escapeHtml: true });
+                    }
                     if (data.has_passphrase === 1) {
                         $('#form-secure-send-passphrase-reminder').removeClass('hidden');
                     } else {
                         $('#form-secure-send-passphrase-reminder').addClass('hidden');
                     }
-                    loadSecureSendsList();
-                } else {
+                } else if (data.error !== "") {
                     toastr.error(secureSendErrorLabel(data.error), '', { timeOut: 3000, progressBar: true });
+                } else {
+                    toastr.error(secureSendErrorLabel('server_error'), '', { timeOut: 5000 });
                 }
             },
             "json"
-        );
+        ).fail(function() {
+            if (formVersion === secureSendFormVersion) {
+                toastr.error(secureSendErrorLabel('server_error'), '', { timeOut: 5000 });
+            }
+        }).always(function() {
+            secureSendGenerating = false;
+            $btn.prop('disabled', false);
+        });
     });
 
     // Open the Secure Send modal in note mode from the top-level entry
@@ -8496,8 +8657,13 @@ require __DIR__ . '/renewal.preview.js.php';
 
     // Revoke a Secure Send link
     $(document).on('click', '.secure-send-revoke', function() {
+        var $button = $(this);
+        if ($button.prop('disabled') === true) {
+            return;
+        }
+        $button.prop('disabled', true);
         var data = {
-            "id": $(this).data('id')
+            "id": $button.data('id')
         };
         $.post(
             "sources/items.queries.php", {
@@ -8506,15 +8672,29 @@ require __DIR__ . '/renewal.preview.js.php';
                 key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
+                if (data === null || typeof data !== 'object' || Array.isArray(data) || typeof data.error !== 'string') {
+                    toastr.error(secureSendErrorLabel('server_error'), '', { timeOut: 5000 });
+                    return;
+                }
+                if (data.error !== '') {
+                    toastr.error(secureSendErrorLabel(data.error), '', { timeOut: 5000 });
+                    return;
+                }
+                if (Number($('#form-item-otv-link').data('otv-id')) === Number(data.id)) {
+                    invalidateSecureSendLink();
+                }
                 loadSecureSendsList();
             },
             "json"
-        );
+        ).fail(function() {
+            toastr.error(secureSendErrorLabel('server_error'), '', { timeOut: 5000 });
+        }).always(function() {
+            $button.prop('disabled', false);
+        });
     });
 
     // Handle max value for OTV days number
     $('#form-item-otv-days').change(function () {
-        console.log(parseInt($(this).attr('max')));
         if ($(this).val() > parseInt($(this).attr('max'))) {
             $(this).val($(this).attr('max'));
         }
@@ -9454,7 +9634,7 @@ require __DIR__ . '/renewal.preview.js.php';
                 ).fail(function() {
                     toastr.remove();
                     toastr.error(
-                        '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                        <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
                         '', {
                             timeOut: 5000,
                             progressBar: true

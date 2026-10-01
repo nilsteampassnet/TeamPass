@@ -2233,7 +2233,8 @@ class ItemModel
                 );
 
                 // Refresh the caller's security posture so the "needs attention" shield reflects
-                // the new password without waiting for a manual dashboard scan (no-op when off).
+                // the new password without waiting for a manual dashboard scan (only the breach
+                // status is reset when the dashboard is off).
                 refreshItemHealthAfterSave(
                     $itemId,
                     (int) $userData['id'],

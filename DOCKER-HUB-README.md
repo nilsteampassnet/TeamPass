@@ -34,7 +34,7 @@ docker-compose up -d
 ## 📦 Supported Tags
 
 - `latest` - Latest stable release
-- `3.2.1.7`, `3.2.1`, `3.2`, `3` - Specific versions
+- `3.2.2.0`, `3.2.2.1`, … - One tag per release, from 3.2.2.0 onward (no older versions, no rolling `3.2` / `3` tags)
 - `develop` - Development branch (not for production)
 
 ## 🔧 Configuration

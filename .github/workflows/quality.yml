@@ -22,7 +22,7 @@ jobs:
     name: Committed autoloader is production-only
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Shipping the *dev* Composer autoloader fatals every installation (the bug 3.2.1.7
       # had to fix). `composer install` rewrites app/vendor/composer/ into its dev form,
@@ -54,7 +54,7 @@ jobs:
     name: Table names use prefixTable()
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -77,7 +77,7 @@ jobs:
       matrix:
         php: ['8.2', '8.3']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up PHP ${{ matrix.php }}
         uses: shivammathur/setup-php@v2
@@ -103,10 +103,10 @@ jobs:
     name: JavaScript tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
 
@@ -117,7 +117,7 @@ jobs:
     name: PHPStan (level 4)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -140,3 +140,33 @@ jobs:
 
       - name: Run PHPStan
         run: php app/vendor/bin/phpstan analyse --memory-limit=2G --no-progress --error-format=github
+
+  secure-send-concurrency:
+    name: Concurrent recipient requests (MariaDB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      database:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: test-only-password
+          MARIADB_DATABASE: teampass_test_secure_send
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: openssl, mysqli, mbstring
+          coverage: none
+      - name: Exercise real transactions and concurrent recipients
+        env:
+          TEAMPASS_TEST_DB: teampass_test_secure_send
+          TEAMPASS_TEST_PASSWORD: test-only-password
+        run: php tests/Integration/secure_send_database.php

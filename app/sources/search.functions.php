@@ -150,8 +150,8 @@ function searchApplyPersonalFolderScope(
  * Encode a folder search term exactly like folder titles are encoded on write.
  *
  * Folder titles pass through Elegant Sanitizer's `escape` filter before being
- * stored. Item search terms must remain untouched, so this normalization is
- * deliberately limited to folder predicates.
+ * stored. Item columns hold several encodings and are matched through
+ * searchStoredTermVariants() instead.
  *
  * @param string $term Plain-text term entered by the user.
  *
@@ -160,6 +160,65 @@ function searchApplyPersonalFolderScope(
 function searchEncodeFolderTerm(string $term): string
 {
     return htmlspecialchars(strip_tags($term));
+}
+
+/**
+ * Spell an item search term the way each item write path stores text.
+ *
+ * The cache columns are not normalized: the web item form stores label and
+ * login through FILTER_SANITIZE_FULL_SPECIAL_CHARS ("é" becomes "&eacute;"),
+ * the API, the imports and the tags escape only the HTML special characters
+ * ("'" becomes "&#039;", "é" stays), and other values are raw. A LIKE on the
+ * typed term alone therefore misses every accented label saved from the web
+ * form. The first variant is always the term itself; duplicates are dropped,
+ * so a term without special characters still yields a single predicate.
+ *
+ * @param string $term Plain-text term entered by the user.
+ *
+ * @return array<int, string> Distinct spellings to OR together, raw term first.
+ */
+function searchStoredTermVariants(string $term): array
+{
+    return array_values(array_unique([
+        $term,
+        (string) filter_var($term, FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+        htmlspecialchars($term),
+    ]));
+}
+
+/**
+ * Decode one HTML entity layer from a database-backed search value.
+ *
+ * The web item form stores label and login through
+ * FILTER_SANITIZE_FULL_SPECIAL_CHARS, so accents arrive as named entities such
+ * as `&eacute;`; other write paths and older rows use numeric or special-char
+ * entities only. htmlspecialchars_decode() leaves named accents untouched, so
+ * use the full HTML5 entity set. Callers must still escape the returned plain
+ * text for their output context.
+ *
+ * @param string $storedText Value read from an item or folder column.
+ *
+ * @return string Plain text with one storage entity layer removed.
+ */
+function searchDecodeStoredText(string $storedText): string
+{
+    return html_entity_decode($storedText, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+}
+
+/**
+ * Normalize a stored search value for insertion into an HTML text context.
+ *
+ * @param string $storedText Value read from an item or folder column.
+ *
+ * @return string HTML-escaped text safe to concatenate into server-built markup.
+ */
+function searchEscapeStoredText(string $storedText): string
+{
+    return htmlspecialchars(
+        searchDecodeStoredText($storedText),
+        ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5,
+        'UTF-8'
+    );
 }
 
 /**
@@ -174,7 +233,7 @@ function searchEncodeFolderTerm(string $term): string
  */
 function searchDecodeFolderTitle(string $storedTitle): string
 {
-    return stripslashes(htmlspecialchars_decode($storedTitle, ENT_QUOTES));
+    return stripslashes(searchDecodeStoredText($storedTitle));
 }
 
 /**
@@ -678,12 +737,20 @@ function searchBuildWhere(array $filters, array $ctx): array
     $terms = (array) ($filters['terms'] ?? []);
     $fields = (array) ($filters['fields'] ?? []);
     foreach (array_values($terms) as $index => $term) {
+        // term0 is the typed term, term0_1... its stored spellings.
+        $placeholders = [];
+        foreach (searchStoredTermVariants((string) $term) as $variantIndex => $variant) {
+            $placeholder = 'term' . $index . ($variantIndex === 0 ? '' : '_' . $variantIndex);
+            $placeholders[$placeholder] = $variant;
+        }
         $columns = [];
         foreach ($fields as $field) {
             if (isset($fieldMap[$field]) === true) {
                 // The same named placeholder is reused across columns: MeekroDB
                 // resolves named args by lookup, not by position.
-                $columns[] = $fieldMap[$field] . ' LIKE %ss_term' . $index;
+                foreach (array_keys($placeholders) as $placeholder) {
+                    $columns[] = $fieldMap[$field] . ' LIKE %ss_' . $placeholder;
+                }
             }
         }
         if (count($columns) === 0) {
@@ -694,7 +761,7 @@ function searchBuildWhere(array $filters, array $ctx): array
             break;
         }
         $clauses[] = '(' . implode(' OR ', $columns) . ')';
-        $params['term' . $index] = $term;
+        $params += $placeholders;
     }
 
     // ---- Classification --------------------------------------------------

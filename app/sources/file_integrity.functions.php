@@ -320,13 +320,26 @@ function tpFileIntegrityIsExecutablePath(string $path): bool
 }
 
 /**
- * Tell whether a path is ordinary user content in the writable public avatar directory.
+ * Tell whether a path is ordinary user content: a non-executable file of the writable public
+ * avatar directory, or an image an administrator placed at the top of the custom branding
+ * folder (same extensions as BRANDING_IMAGE_EXTENSIONS in branding_logic.php).
  */
 function tpFileIntegrityIsAllowedRuntimeAsset(string $path, bool $isLink): bool
 {
-    return str_starts_with($path, 'public/assets/avatars/')
-        && $isLink === false
-        && tpFileIntegrityIsExecutablePath($path) === false;
+    if ($isLink === true || tpFileIntegrityIsExecutablePath($path) === true) {
+        return false;
+    }
+    if (str_starts_with($path, 'public/assets/avatars/')) {
+        return true;
+    }
+
+    $brandingFile = str_starts_with($path, 'public/assets/custom/')
+        ? substr($path, strlen('public/assets/custom/'))
+        : '';
+
+    return $brandingFile !== ''
+        && str_contains($brandingFile, '/') === false
+        && preg_match('/\.(?:png|jpe?g|gif|webp)$/i', $brandingFile) === 1;
 }
 
 /**

@@ -98,9 +98,26 @@ $maintenanceTasks = [
     ]
 ];
 
+// Queue a PHP script. On Windows, the library's php() jobs compile to a Unix
+// shell line ("> /dev/null 2>&1 &") that cmd.exe cannot run, and each console
+// process they start opens a visible window: start the script through
+// tpSpawnDetachedPhpScript() instead, which launches it without a window.
+$queueScript = static function (string $script) use ($scheduler): \GO\Job {
+    if (PHP_OS_FAMILY === 'Windows') {
+        return $scheduler->call(
+            static function () use ($script): void {
+                tpSpawnDetachedPhpScript($script);
+            },
+            [],
+            basename($script, '.php')
+        );
+    }
+    return $scheduler->php($script);
+};
+
 // Ajouter les tâches de fond
 foreach ($backgroundTasks as $taskName => $taskConfig) {
-    $scheduler->php($taskConfig['script'])->everyMinute($taskConfig['frequency']);
+    $queueScript($taskConfig['script'])->everyMinute($taskConfig['frequency']);
 }
 
 // Ajouter les tâches de maintenance configurées
@@ -111,9 +128,9 @@ foreach ($maintenanceTasks as $taskName => $taskConfig) {
         if (count($maintenanceTaskParams) === 2) {
             if ($maintenanceTaskParams[0] === 'hourly') {
                 $time = explode(':', $maintenanceTaskParams[1]);
-                $scheduler->php($taskConfig['script'])->hourly(is_numeric($time[0]) ? $time[0] : 0);
+                $queueScript($taskConfig['script'])->hourly(is_numeric($time[0]) ? $time[0] : 0);
             } elseif (!empty($maintenanceTaskParams[0])) {
-                $scheduler->php($taskConfig['script'])->{$maintenanceTaskParams[0]}($maintenanceTaskParams[1]);
+                $queueScript($taskConfig['script'])->{$maintenanceTaskParams[0]}($maintenanceTaskParams[1]);
             }
         }
     }

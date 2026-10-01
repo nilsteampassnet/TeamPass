@@ -109,6 +109,182 @@ class MainQueriesLogicTest extends TestCase
         self::assertStringNotContainsString("\$dataReceived['action']", $caseBody);
     }
 
+    public function testASaltkeyWithoutSpecialCharactersCostsASingleDerivation(): void
+    {
+        self::assertSame(['MySaltKey2019!'], legacyPersonalSaltkeyCandidates('MySaltKey2019!'));
+    }
+
+    /**
+     * Expected values checked against the 2.x pipelines run with the real FILTER_SANITIZE_STRING.
+     *
+     * @dataProvider legacySaltkeyProvider
+     *
+     * @param list<string> $expected
+     */
+    public function testListsTheFormsTeampass2xProtectedTheKeyWith(string $typed, array $expected): void
+    {
+        self::assertSame($expected, legacyPersonalSaltkeyCandidates($typed));
+    }
+
+    /**
+     * @return iterable<string, array{string, list<string>}>
+     */
+    public static function legacySaltkeyProvider(): iterable
+    {
+        yield 'single quote' => ["l'été", ["l'été", 'l&#39;été']];
+        yield 'double quote' => ['say "hi"', ['say "hi"', 'say &quot;hi&quot;']];
+        yield 'backslash' => ['back\\slash', ['back\\slash', 'back&#92;slash']];
+        yield 'tag' => ['a<b>c', ['a<b>c', 'ac']];
+        yield 'lone "<" followed by a space' => ['x < y', ['x < y', 'x ']];
+        yield 'script block' => ['a<script>alert(1)</script>b', ['a<script>alert(1)</script>b', 'ab']];
+        yield 'literal entity' => ['é&amp;', ['é&amp;', 'é&']];
+        yield 'every form differs' => [
+            "It's \"a\" <b>\\test</b>",
+            ["It's \"a\" <b>\\test</b>", 'It&#39;s &quot;a&quot; &#92;test', "It's \"a\" <b>&#92;test</b>"],
+        ];
+    }
+
+    public function testUnlocksAKeyProtectedByThe2xFirstDefinitionOfTheSaltkey(): void
+    {
+        $typed = "l'été \"42\"";
+        $protected = \Defuse\Crypto\KeyProtectedByPassword::createRandomPasswordProtectedKey(
+            'l&#39;été &quot;42&quot;'
+        )->saveToAsciiSafeString();
+
+        $unlocked = null;
+        foreach (legacyPersonalSaltkeyCandidates($typed) as $candidate) {
+            try {
+                $unlocked = \Defuse\Crypto\KeyProtectedByPassword::loadFromAsciiSafeString($protected)
+                    ->unlockKey($candidate);
+                break;
+            } catch (\Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $e) {
+                continue;
+            }
+        }
+
+        self::assertNotNull($unlocked, 'The saltkey as typed must unlock a key protected by TeamPass 2.x.');
+    }
+
+    /**
+     * @dataProvider reencryptionOutcomeProvider
+     */
+    public function testErasesTheSaltkeyOnlyOnceNoPersonalItemIsLeft(
+        int $batchSize,
+        int $remainingItems,
+        bool $finished,
+        bool $clearSaltkey
+    ): void {
+        self::assertSame(
+            ['finished' => $finished, 'clear_saltkey' => $clearSaltkey],
+            personalItemsReencryptionOutcome($batchSize, 1000, $remainingItems)
+        );
+    }
+
+    /**
+     * @return iterable<string, array{int, int, bool, bool}>
+     */
+    public static function reencryptionOutcomeProvider(): iterable
+    {
+        yield 'full batch, items left to read' => [1000, 1500, false, false];
+        yield 'full batch, nothing left' => [1000, 0, true, true];
+        yield 'last batch, everything re-encrypted' => [14, 0, true, true];
+        yield 'last batch, items that did not decrypt' => [14, 3, true, false];
+        yield 'nothing to read, items that did not decrypt' => [0, 3, true, false];
+    }
+
+    public function testThePersonalItemsMigrationKeepsItemsItCannotDecrypt(): void
+    {
+        $caseBody = self::switchCaseBody("case 'user_psk_reencryption'");
+        self::assertStringNotContainsString("filter_var(\$dataReceived['userPsk']", $caseBody);
+
+        $source = self::mainQueriesSource();
+        $start = strpos($source, 'function migrateTo3_DoUserPersonalItemsEncryption(');
+        self::assertIsInt($start, 'The personal items migration must exist.');
+        $end = strpos($source, "\nfunction ", $start + 1);
+        $body = substr($source, $start, $end === false ? null : $end - $start);
+
+        self::assertStringContainsString('legacyPersonalSaltkeyCandidates(', $body);
+        self::assertStringContainsString("if (\$passwd['error'] !== false) {", $body);
+        self::assertStringContainsString('personalItemsReencryptionOutcome(', $body);
+        self::assertStringContainsString("if (\$outcome['clear_saltkey'] === true) {", $body);
+        // Owner + TP_USER, like any personal object
+        self::assertStringNotContainsString('insertOrUpdateSharekey(', $body);
+        self::assertSame(
+            2,
+            preg_match_all("/storeUsersShareKey\\(\\s*'sharekeys_(?:items|files)',\\s*1,/", $body)
+        );
+    }
+
+    public function testAPreviousPasswordWithoutAffectedCharactersCostsASingleDerivation(): void
+    {
+        self::assertSame(['Pass!@#$%*123'], legacyPreviousPasswordCandidates('Pass!@#$%*123'));
+    }
+
+    /**
+     * @dataProvider legacyPreviousPasswordProvider
+     *
+     * @param list<string> $expected
+     */
+    public function testListsTheForm30xEncryptedThePrivateKeyWith(string $typed, array $expected): void
+    {
+        self::assertSame($expected, legacyPreviousPasswordCandidates($typed));
+    }
+
+    /**
+     * @return iterable<string, array{string, list<string>}>
+     */
+    public static function legacyPreviousPasswordProvider(): iterable
+    {
+        yield 'ampersand' => ['Adm1n&Pass', ['Adm1n&Pass', 'Adm1n&amp;Pass']];
+        yield 'double quote' => ['say "hi"', ['say "hi"', 'say &quot;hi&quot;']];
+        yield 'single quote' => ["it's", ["it's", 'it&#039;s']];
+        yield 'angle signs' => ['a<b>c', ['a<b>c', 'a&lt;b&gt;c']];
+        yield 'accent' => ['été', ['été', '&eacute;t&eacute;']];
+        // The 3.0.x sanitizer does not encode an entity twice
+        yield 'literal entity' => ['lit&amp;eral', ['lit&amp;eral']];
+    }
+
+    public function testUnlocksAPrivateKeyEncryptedBy30x(): void
+    {
+        $typed = 'Adm1n&Pässé"<x>';
+        $pem = "-----BEGIN PRIVATE KEY-----\nMIIBVQIBADANBgkqhkiG9w0BAQEFAASCAT8wggE7AgEAAkEA\n-----END PRIVATE KEY-----";
+        // 3.0.x format: phpseclib v1 AES-CBC, PBKDF2-SHA1, on the sanitized password
+        $encrypted = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt(
+            $pem,
+            (string) filter_var($typed, FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+            'cbc',
+            'sha1'
+        );
+
+        $unlocked = [];
+        foreach (legacyPreviousPasswordCandidates($typed) as $candidate) {
+            try {
+                $decrypted = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt($encrypted, $candidate, 'cbc', 'sha1');
+            } catch (\Throwable $e) {
+                $decrypted = '';
+            }
+            $unlocked[$candidate] = $decrypted === $pem;
+        }
+
+        self::assertFalse($unlocked[$typed], 'The password as typed must not unlock a 3.0.x key.');
+        self::assertContains(true, $unlocked, 'One candidate must unlock a key encrypted by TeamPass 3.0.x.');
+    }
+
+    public function testThePreviousPasswordDialogsTryThe30xForm(): void
+    {
+        $source = self::mainQueriesSource();
+
+        foreach (['changeUserLDAPAuthenticationPassword', 'findValidPreviousPrivateKey'] as $function) {
+            $start = strpos($source, 'function ' . $function . '(');
+            self::assertIsInt($start, sprintf('%s() must exist.', $function));
+            $end = strpos($source, "\nfunction ", $start + 1);
+            $body = substr($source, $start, $end === false ? null : $end - $start);
+
+            self::assertStringContainsString('decryptPrivateKeyWithPreviousPassword(', $body, $function);
+            self::assertDoesNotMatchRegularExpression('/[^A-Za-z]decryptPrivateKey\(\$/', $body, $function);
+        }
+    }
+
     /**
      * Read main.queries.php once, for the wiring assertions above.
      */

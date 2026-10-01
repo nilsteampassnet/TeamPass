@@ -51,6 +51,11 @@ app/includes/libraries/csrfp/libs/csrfp.config.php.*
 !/public/assets/avatars/.htaccess
 !/public/assets/avatars/empty_file.txt
 
+# Custom login branding images are site data — never commit
+/public/assets/custom/*
+!/public/assets/custom/.htaccess
+!/public/assets/custom/README.md
+
 # Generated/runtime files
 /app/includes/tables_integrity.json
 EncryptedFile_*

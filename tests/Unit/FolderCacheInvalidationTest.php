@@ -114,10 +114,14 @@ class FolderCacheInvalidationTest extends TestCase
     public function testAuthorizationRefreshPrecedesEveryShortcut(): void
     {
         $source = $this->source('app/sources/items.queries.php');
-        $access = $this->body($source, 'getCurrentAccessRights');
-        foreach (['getItemRestrictedUsersList(', 'isProcessOnGoing(', "get('user-read_only_folders')", "get('user-allowed_folders_by_definition')"] as $shortcut) {
+        $access = $this->body($source, 'getCurrentFolderAccessRights');
+        foreach (["get('user-read_only_folders')", "get('user-allowed_folders_by_definition')"] as $shortcut) {
             $this->before($access, 'refreshUserFolderPermissionScope(', $shortcut);
             $this->before($access, 'itemAccessFolderIsInScope(', $shortcut);
+        }
+        $itemAccess = $this->body($source, 'getCurrentAccessRights');
+        foreach (['getItemRestrictedUsersList(', 'isProcessOnGoing('] as $itemShortcut) {
+            $this->before($itemAccess, 'getCurrentFolderAccessRights(', $itemShortcut);
         }
         $fallback = $this->body($source, 'buildVisibleFoldersOnTheFly');
         $this->before($fallback, 'refreshUserFolderPermissionScope(', 'folderCacheVisibleScope(');
@@ -130,17 +134,17 @@ class FolderCacheInvalidationTest extends TestCase
     /** Administrators stay out of shared items once the refresh no longer fails for them. */
     public function testAdministratorsAreDeniedRightAfterTheScopeCheck(): void
     {
-        $access = $this->body($this->source('app/sources/items.queries.php'), 'getCurrentAccessRights');
-        $adminCheck = "if ((int) \$session->get('user-admin') === 1) {\n        return getAccessResponse(false, false, false, false);";
+        $access = $this->body($this->source('app/sources/items.queries.php'), 'getCurrentFolderAccessRights');
+        $adminCheck = "if ((int) \$session->get('user-admin') === 1) {\n        return getFolderAccessResponse(false, false, false, false);";
         self::assertStringContainsString($adminCheck, $access);
         $this->before($access, 'itemAccessFolderIsInScope(', $adminCheck);
-        $this->before($access, $adminCheck, 'getItemRestrictedUsersList(');
+        $this->before($access, $adminCheck, "get('user-read_only_folders')");
     }
 
     /** Read-only accounts keep their personal folder, as the item/folder handlers expect. */
     public function testReadOnlyAccountsKeepTheirPersonalFolders(): void
     {
-        $access = (string) preg_replace('/\s+/', ' ', $this->body($this->source('app/sources/items.queries.php'), 'getCurrentAccessRights'));
+        $access = (string) preg_replace('/\s+/', ' ', $this->body($this->source('app/sources/items.queries.php'), 'getCurrentFolderAccessRights'));
         self::assertStringContainsString(
             "((int) \$session->get('user-read_only') === 1 && in_array(\$treeId, (array) \$session->get('user-personal_folders')) === false)",
             $access

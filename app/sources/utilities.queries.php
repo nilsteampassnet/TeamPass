@@ -4461,6 +4461,16 @@ function tpGetSystemChecks(array $phpIni, array $tpSettings, Language $lang): ar
         }
     }
 
+    // Per-account lockout. 0 disables it, and new installations seeded 0 until the default
+    // became 10: an instance installed with an older version may never have been protected.
+    if (getBruteforceIntegerSetting($tpSettings, 'nb_bad_authentication', 10, 0) === 0) {
+        $checks[] = array(
+            'status' => 'warning',
+            'title' => $lang->get('health_check_account_lockout_off'),
+            'text' => $lang->get('health_check_account_lockout_off_message'),
+        );
+    }
+
     // Stalled background queue. A task that stays pending well beyond the drain window
     // means the handler is not being woken up any more — usually a missing cron entry,
     // exec() disabled, or an unwritable storage/logs directory. The visible symptom is

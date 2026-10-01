@@ -40,9 +40,6 @@ use TeampassClasses\PasswordManager\PasswordManager;
 use Duo\DuoUniversal\Client;
 use Duo\DuoUniversal\DuoException;
 use RobThree\Auth\TwoFactorAuth;
-use TeampassClasses\LdapExtra\LdapExtra;
-use TeampassClasses\LdapExtra\OpenLdapExtra;
-use TeampassClasses\LdapExtra\ActiveDirectoryExtra;
 use TeampassClasses\OAuth2Controller\OAuth2Controller;
 
 // Load functions
@@ -583,24 +580,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     // Without this reload, prepareUserEncryptionKeys() would use a stale
     // private_key and trigger a redundant second attemptTransparentRecovery() call.
     if ($userLdap['error'] === false) {
-        $refreshedUserInfo = getUserCompleteData($username);
-        if ($refreshedUserInfo !== null && !empty($refreshedUserInfo)) {
-            $userInfo = $refreshedUserInfo + $dataReceived;
-            // Re-compute mfa_auth_requested_roles in case it was updated during the LDAP checks
-            $userInfo['mfa_auth_requested_roles'] = mfa_auth_requested_roles(
-                (string) ($userInfo['fonction_id'] ?? ''),
-                is_null($SETTINGS['mfa_for_roles']) === true ? '' : (string) $SETTINGS['mfa_for_roles']
-            );
-            // Re-add session-derived flags that getUserCompleteData() does not return.
-            // oauth2_login_ongoing is computed from the PHP session (not stored in DB), so it
-            // must be re-injected after every DB reload; otherwise shouldUserAuthWithOauth2()
-            // treats the request as a plain-password attempt and returns error_bad_credentials
-            // for any user whose auth_type is 'oauth2'.
-            // The flag is honored only when the submitted login matches the authenticated
-            // OAuth2 subject stored in session, otherwise it could be replayed against any
-            // account (GHSA-2mvr-v9w8-34c7).
-            $userInfo['oauth2_login_ongoing'] = isOauth2LoginBoundToUser((string) $username);
-        }
+        $userInfo = identifyReloadUserInfo((string) $username, $dataReceived, $SETTINGS) ?? $userInfo;
     }
 
     if (isset($userLdap['retLDAP']['user_info']['has_been_created']) === true
@@ -687,8 +667,14 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         return false;
     }
     
+    // A legacy password migration regenerated the user's keys: reload them, otherwise the
+    // session would be built on the previous private key (and special flag) (issue #5389)
+    if (($authResult['user_keys_regenerated'] ?? false) === true) {
+        $userInfo = identifyReloadUserInfo((string) $username, $dataReceived, $SETTINGS) ?? $userInfo;
+    }
+
     // If password was migrated, then update private key
-    if ($authResult['password_migrated'] === true) {
+    if (($authResult['password_migrated'] ?? false) === true) {
         $userInfo['private_key'] = $authResult['private_key_reencrypted'];
     }
     
@@ -1856,41 +1842,13 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
             ];
         }
 
-        // Check if login is restricted to a specific LDAP group
-        $allowedGroupDn = trim($SETTINGS['ldap_allowed_login_group_dn'] ?? '');
-        if ($allowedGroupDn !== '') {
-            $groupMode = $SETTINGS['ldap_allowed_login_group_mode'] ?? 'group';
-            $dnAttribute = LdapExtra::getUserDnAttribute($SETTINGS);
-            $userDnForCheck = $ldapHandler['type'] === 'ActiveDirectory'
-                ? (string) ($userADInfos[$dnAttribute][0] ?? $userADInfos['dn'] ?? '')
-                : (string) ($userADInfos['dn'] ?? '');
-
-            if ($groupMode === 'user') {
-                // User-centric: check the user's own memberOf attribute (AD-native, no extra
-                // query). The DN and the connection let the handler resolve nested membership
-                // when the attribute alone would deny access.
-                $isMember = $ldapHandler['handler']->isUserInAllowedGroupByMemberOf(
-                    $allowedGroupDn,
-                    $userADInfos,
-                    $userDnForCheck,
-                    $ldapHandler['connection']
-                );
-            } else {
-                // Group-centric (default): scope=base read on the group entry — works outside base DN
-                $isMember = $ldapHandler['handler']->isUserInAllowedGroup(
-                    $allowedGroupDn,
-                    $userDnForCheck,
-                    $username,
-                    $ldapHandler['connection']
-                );
-            }
-
-            if (!$isMember) {
-                return [
-                    'error'   => true,
-                    'message' => $lang->get('ldap_not_in_allowed_group'),
-                ];
-            }
+        // Check if login is restricted to a specific LDAP group.
+        // Shared with the LDAP page test (ldap.functions.php) so both answer the same way.
+        if (ldapUserIsInAllowedLoginGroup($userADInfos, $ldapHandler, $SETTINGS, $username) === false) {
+            return [
+                'error'   => true,
+                'message' => $lang->get('ldap_not_in_allowed_group'),
+            ];
         }
 
         // Handle user creation if needed
@@ -1924,115 +1882,6 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
             'message' => "Error: " . $e->getMessage(),
         ];
     }
-}
-
-/**
- * Initialize LDAP connection based on type
- * 
- * @param array $SETTINGS Teampass settings
- * @return array Contains connection and type-specific handler
- * @throws Exception
- */
-function initializeLdapConnection(array $SETTINGS): array
-{
-    $ldapExtra = new LdapExtra($SETTINGS);
-    $ldapConnection = $ldapExtra->establishLdapConnection();
-    
-    switch ($SETTINGS['ldap_type']) {
-        case 'ActiveDirectory':
-            return [
-                'connection' => $ldapConnection,
-                'handler' => new ActiveDirectoryExtra(),
-                'type' => 'ActiveDirectory'
-            ];
-        case 'OpenLDAP':
-            return [
-                'connection' => $ldapConnection,
-                'handler' => new OpenLdapExtra(),
-                'type' => 'OpenLDAP'
-            ];
-        default:
-            throw new Exception("Unsupported LDAP type: " . $SETTINGS['ldap_type']);
-    }
-}
-
-/**
- * Authenticate user against LDAP
- * 
- * @param string $username Username
- * @param string $passwordClear Password
- * @param array $ldapHandler LDAP connection and handler
- * @param array $SETTINGS Teampass settings
- * @param Language $lang Language instance
- * @return array Authentication result
- */
-function authenticateUser(string $username, string $passwordClear, array $ldapHandler, array $SETTINGS, Language $lang): array
-{
-    try {
-        $userAttribute = $SETTINGS['ldap_user_attribute'] ?? 'samaccountname';
-        $dnAttribute = LdapExtra::getUserDnAttribute($SETTINGS);
-
-        // Define attributes to retrieve from LDAP
-        // These are needed for user creation and authentication.
-        // 'memberof' is included so the group-mode=user check can inspect it without a second query.
-        $ldapAttributes = [
-            'dn', 'mail', 'givenname', 'sn', 'cn', 'displayname',
-            'samaccountname', 'userprincipalname', 'uid',
-            'shadowexpire', 'accountexpires', 'useraccountcontrol',
-            'memberof',
-            $userAttribute,
-            $dnAttribute
-        ];
-
-        $userADInfos = $ldapHandler['connection']->query()
-            ->select($ldapAttributes)
-            ->where($userAttribute, '=', $username)
-            ->firstOrFail();
-
-        // Verify user status for ActiveDirectory
-        if ($ldapHandler['type'] === 'ActiveDirectory' && !$ldapHandler['handler']->userIsEnabled((string) $userADInfos['dn'], $ldapHandler['connection'])) {
-            return [
-                'error' => true,
-                'message' => "Error: User is not enabled"
-            ];
-        }
-        // Attempt authentication
-        $authIdentifier = $ldapHandler['type'] === 'ActiveDirectory' 
-            ? $userADInfos['userprincipalname'][0] 
-            : $userADInfos['dn'];
-            
-        if (!$ldapHandler['connection']->auth()->attempt($authIdentifier, $passwordClear)) {
-            return [
-                'error' => true,
-                'message' => "Error: User is not authenticated"
-            ];
-        }
-        
-        return [
-            'error' => false,
-            'user_info' => $userADInfos
-        ];
-        
-    } catch (\LdapRecord\Query\ObjectNotFoundException $e) {
-        return [
-            'error' => true,
-            'message' => $lang->get('error_bad_credentials')
-        ];
-    }
-}
-
-/**
- * Check if user account is expired
- * 
- * @param array $userADInfos User AD information
- * @return bool
- */
-function isAccountExpired(array $userADInfos): bool
-{
-    return (isset($userADInfos['shadowexpire'][0]) && (int) $userADInfos['shadowexpire'][0] === 1)
-        || (isset($userADInfos['accountexpires'][0]) 
-            && (int) $userADInfos['accountexpires'][0] < time() 
-            && (int) $userADInfos['accountexpires'][0] !== 0);
 }
 
 /**
@@ -2076,55 +1925,6 @@ function handleNewUser(string $username, string $passwordClear, array $userADInf
 
     $userInfo['has_been_created'] = 1;
     return $userInfo;
-}
-
-/**
- * Get user groups based on LDAP type
- *
- * @param array $userADInfos User AD information
- * @param array $ldapHandler LDAP connection and handler
- * @param array $SETTINGS Teampass settings
- * @param string $username User login name (used for posixGroup memberuid matching in OpenLDAP)
- * @return array{error: bool, message: string, userGroups: array} User groups, with 'error'
- *         set to true when membership could not be resolved at all
- */
-function getUserADGroups(array $userADInfos, array $ldapHandler, array $SETTINGS, string $username = ''): array
-{
-    $dnAttribute = LdapExtra::getUserDnAttribute($SETTINGS);
-
-    if ($ldapHandler['type'] === 'ActiveDirectory') {
-        // The entry DN is the same value: it covers a DN attribute name that does not exist
-        $userDN = (string) ($userADInfos[$dnAttribute][0] ?? $userADInfos['dn'] ?? '');
-    } elseif ($ldapHandler['type'] === 'OpenLDAP') {
-        $userDN = (string) ($userADInfos['dn'] ?? '');
-    } else {
-        throw new Exception("Unsupported LDAP type: " . $ldapHandler['type']);
-    }
-
-    // Without a DN nothing can be resolved. Reported as an error so the caller keeps the
-    // roles already granted instead of removing them all.
-    if ($userDN === '') {
-        return [
-            'error' => true,
-            'message' => 'No user DN available to resolve LDAP group membership.',
-            'userGroups' => [],
-        ];
-    }
-
-    if ($ldapHandler['type'] === 'ActiveDirectory') {
-        return $ldapHandler['handler']->getUserADGroups(
-            $userDN,
-            $ldapHandler['connection'],
-            $SETTINGS
-        );
-    }
-
-    return $ldapHandler['handler']->getUserADGroups(
-        $userDN,
-        $ldapHandler['connection'],
-        $SETTINGS,
-        $username
-    );
 }
 
 /**
@@ -2806,18 +2606,40 @@ function duoMFAPerform(
 function checkCredentials($passwordClear, $userInfo): array
 {
     $passwordManager = new PasswordManager();
+    $passwordSanitized = (string) filter_var($passwordClear, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
     // Strategy 1: Try with raw password (new behavior, correct way)
-    // Migrate password if needed
+    // Migrate password if needed. A legacy bcrypt hash is also matched on its 3.0.x
+    // sanitized form, and is always re-hashed with the raw password (issue #5389).
     $result = $passwordManager->migratePassword(
         $userInfo['pw'],
         $passwordClear,
         (int) $userInfo['id'],
         (bool) $userInfo['admin']
     );
-    
+
     if ($result['status'] === true && $passwordManager->verifyPassword($result['hashedPassword'], $passwordClear) === true) {
-        // Password is correct with raw password (new behavior)
+        if ($result['migratedUser'] === false) {
+            // Password is correct with raw password (new behavior)
+            return [
+                'authenticated' => true,
+            ];
+        }
+
+        // Non-admins received a new key pair from handleUserKeys(), protected by the raw
+        // password: the user data loaded by the caller no longer matches the database.
+        if ((bool) $userInfo['admin'] === false) {
+            return [
+                'authenticated' => true,
+                'user_keys_regenerated' => true,
+            ];
+        }
+
+        // Admins keep their key pair, still encrypted with the 3.0.x sanitized password
+        if ($result['legacySanitized'] === true) {
+            return migratePrivateKeyFromSanitizedPassword($passwordClear, $passwordSanitized, $userInfo);
+        }
+
         return [
             'authenticated' => true,
         ];
@@ -2825,7 +2647,6 @@ function checkCredentials($passwordClear, $userInfo): array
 
     // Strategy 2: Try with sanitized password (legacy behavior for backward compatibility)
     // This handles users who registered before fix 3.1.5.10
-    $passwordSanitized = filter_var($passwordClear, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
     // Only try sanitized version if it's different from the raw password
     if ($passwordSanitized !== $passwordClear) {
@@ -2840,40 +2661,16 @@ function checkCredentials($passwordClear, $userInfo): array
             // Password is correct with sanitized password (legacy behavior)
             // This means the user's hash in DB was created with the sanitized version
             // We need to MIGRATE: re-hash the RAW password and save it
-
-            // Re-hash the raw (non-sanitized) password
-            $newHash = $passwordManager->hashPassword($passwordClear);
-            
-            $userCurrentPrivateKey = decryptPrivateKey($passwordSanitized, $userInfo['private_key']);
-            $newUserPrivateKey = encryptPrivateKey($passwordClear, $userCurrentPrivateKey);
-            
-            // Update user with new hash and mark migration as COMPLETE (0 = done)
             DB::update(
                 prefixTable('users'),
                 [
-                    'pw' => $newHash,
-                    'private_key' => $newUserPrivateKey,
+                    'pw' => $passwordManager->hashPassword($passwordClear),
                 ],
                 'id = %i',
                 $userInfo['id']
             );
 
-            // Log the migration event
-            $configManager = new ConfigManager();
-            logEvents(
-                $configManager->getAllSettings(),
-                'user_password',
-                'password_migrated_from_sanitized',
-                (string) $userInfo['id'],
-                stripslashes($userInfo['login'] ?? ''),
-                ''
-            );
-
-            return [
-                'authenticated' => true,
-                'password_migrated' => true,
-                'private_key_reencrypted' => $newUserPrivateKey,
-            ];
+            return migratePrivateKeyFromSanitizedPassword($passwordClear, $passwordSanitized, $userInfo);
         }
     }
 
@@ -2881,6 +2678,108 @@ function checkCredentials($passwordClear, $userInfo): array
     return [
         'authenticated' => false,
     ];
+}
+
+/**
+ * Finish the migration of a user whose password was hashed in its sanitized form:
+ * re-encrypt the private key with the raw password, which every later login will send.
+ *
+ * The key is written to user_private_keys too: the login reads it from there, so a key
+ * re-encrypted in the users table only would fail again on the next login.
+ *
+ * @param string $passwordClear     Raw password supplied at login
+ * @param string $passwordSanitized FILTER_SANITIZE_FULL_SPECIAL_CHARS form of the password
+ * @param array  $userInfo          User data, as loaded before the migration
+ *
+ * @return array Same shape as checkCredentials(); private_key_reencrypted only when a key was re-encrypted
+ */
+function migratePrivateKeyFromSanitizedPassword(string $passwordClear, string $passwordSanitized, array $userInfo): array
+{
+    $configManager = new ConfigManager();
+    logEvents(
+        $configManager->getAllSettings(),
+        'user_password',
+        'password_migrated_from_sanitized',
+        (string) $userInfo['id'],
+        stripslashes($userInfo['login'] ?? ''),
+        ''
+    );
+
+    // No key yet: prepareUserEncryptionKeys() generates one with the raw password
+    $privateKey = (string) ($userInfo['private_key'] ?? '');
+    if ($privateKey === '' || $privateKey === 'none') {
+        return [
+            'authenticated' => true,
+        ];
+    }
+
+    // Never write a key that could not be decrypted: it would replace the only copy
+    $privateKeyClear = decryptPrivateKey($passwordSanitized, $privateKey);
+    if ($privateKeyClear === '') {
+        return [
+            'authenticated' => true,
+        ];
+    }
+
+    // encryptPrivateKey() returns an error message on failure: check the round trip first
+    $newUserPrivateKey = encryptPrivateKey($passwordClear, $privateKeyClear);
+    if (decryptPrivateKey($passwordClear, $newUserPrivateKey) !== $privateKeyClear) {
+        return [
+            'authenticated' => true,
+        ];
+    }
+
+    DB::update(
+        prefixTable('users'),
+        [
+            'private_key' => $newUserPrivateKey,
+        ],
+        'id = %i',
+        $userInfo['id']
+    );
+    insertPrivateKeyWithCurrentFlag((int) $userInfo['id'], $newUserPrivateKey);
+
+    return [
+        'authenticated' => true,
+        'password_migrated' => true,
+        'private_key_reencrypted' => $newUserPrivateKey,
+    ];
+}
+
+/**
+ * Reload the user data from the database during the login, with the values
+ * getUserCompleteData() does not return.
+ *
+ * @param string $username     User login
+ * @param array  $dataReceived Data posted by the login form
+ * @param array  $SETTINGS     Teampass settings
+ *
+ * @return array|null The refreshed user data, or null when the user could not be reloaded
+ */
+function identifyReloadUserInfo(string $username, array $dataReceived, array $SETTINGS): ?array
+{
+    $refreshedUserInfo = getUserCompleteData($username);
+    if ($refreshedUserInfo === null || empty($refreshedUserInfo)) {
+        return null;
+    }
+
+    $userInfo = $refreshedUserInfo + $dataReceived;
+    // Re-compute mfa_auth_requested_roles in case it was updated during the LDAP checks
+    $userInfo['mfa_auth_requested_roles'] = mfa_auth_requested_roles(
+        (string) ($userInfo['fonction_id'] ?? ''),
+        is_null($SETTINGS['mfa_for_roles']) === true ? '' : (string) $SETTINGS['mfa_for_roles']
+    );
+    // Re-add session-derived flags that getUserCompleteData() does not return.
+    // oauth2_login_ongoing is computed from the PHP session (not stored in DB), so it
+    // must be re-injected after every DB reload; otherwise shouldUserAuthWithOauth2()
+    // treats the request as a plain-password attempt and returns error_bad_credentials
+    // for any user whose auth_type is 'oauth2'.
+    // The flag is honored only when the submitted login matches the authenticated
+    // OAuth2 subject stored in session, otherwise it could be replayed against any
+    // account (GHSA-2mvr-v9w8-34c7).
+    $userInfo['oauth2_login_ongoing'] = isOauth2LoginBoundToUser($username);
+
+    return $userInfo;
 }
 
 /**

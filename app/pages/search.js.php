@@ -746,7 +746,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     };
 
     const fillItemModal = (data) => {
-        $('#search-item-modal-label').text(data.label);
+        $('#search-item-modal-label').text(htmlDecode(data.label || ''));
         // fa_icon is item data: only ever let it be a list of class names.
         const icon = String(data.fa_icon || '').trim();
         $('#search-item-glyph').attr(
@@ -755,7 +755,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         );
 
         if (data.login) {
-            $('#search-item-login').text(data.login);
+            $('#search-item-login').text(htmlDecode(data.login));
             $('#search-item-login-row').removeClass('hidden');
         }
 
@@ -787,8 +787,11 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         if (shownTags.length > 0) {
             const container = $('#search-item-tags').empty();
             shownTags.forEach((tag) => {
-                // .text() keeps a tag containing markup inert.
-                $('<span class="badge badge-secondary mr-1"></span>').text(tag).appendTo(container);
+                // Decode legacy storage entities before the text sink; .text()
+                // keeps a tag containing markup inert.
+                $('<span class="badge badge-secondary mr-1"></span>')
+                    .text(htmlDecode(String(tag)))
+                    .appendTo(container);
             });
             $('#search-item-tags-row').removeClass('hidden');
         }

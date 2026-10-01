@@ -34,7 +34,7 @@ Missing sharekeys can appear after an interrupted background task, a failure dur
 
 * **Admin only** — the tool is on the Tools page, restricted to administrators.
 * **Idempotent** — only missing (or empty) sharekeys are created. Existing keys are never modified or deleted. The tool can be relaunched safely.
-* **Personal items are excluded** — personal objects must only have a key for their owner; they are never redistributed.
+* **Personal items are never redistributed** — a personal object only carries a key for its owner and for the internal `TP` account. The repair gives the owner their key back when it is missing, and removes the keys other users may still hold on it (see [Personal objects](#personal-objects)).
 * **Eligible users** — keys are created for the same population as during a normal item save: all users owning a public key, excluding the internal OTV/SSH/API accounts.
 * **Single instance** — a new repair task is refused while a previous one is still pending or running.
 * **Audit** — the launch and the final counts are recorded in the system logs (`admin_action`).
@@ -42,6 +42,22 @@ Missing sharekeys can appear after an interrupted background task, a failure dur
 ### Objects that cannot be repaired automatically
 
 If neither the `TP` internal account nor your account own a valid sharekey for an object, its encryption key cannot be recovered by the tool. In that case, ask any user who can still open the object to **re-save it**: saving an item redistributes fresh sharekeys to all users.
+
+### Personal objects
+
+Personal items, their custom fields and their attachments are analysed in a separate table, because their repair is different: it never creates a key for anyone but the owner.
+
+| Column | Meaning |
+|--------|---------|
+| **Owner cannot read** | Personal objects whose owner has no usable key |
+| **Repairable here** | The owner's key can be rebuilt from the `TP` reference key: the **Repair** task does it |
+| **Needs the owner** | The `TP` reference key is missing, but the owner can still read the object |
+| **Not automatically recoverable** | Neither the owner nor the `TP` account holds a usable key |
+
+* **Needs the owner** — nobody but the owner can rebuild the `TP` reference key, from their own session. Ask each owner to open **My Profile** and click **Repair my personal items encryption keys**. Nothing is lost in the meantime.
+* **Not automatically recoverable** — the content cannot be recovered, only recreated.
+* The owner is the owner of the personal folder, cross-checked with the user who created the item. When the owner cannot be determined (*Owner unknown* in the details) or disagrees with the creator, the object is reported and left untouched.
+* An object without a usable `TP` reference key keeps any key another user still holds on it: that key is the last way to open it, so it is not deleted.
 
 ## Other tools
 

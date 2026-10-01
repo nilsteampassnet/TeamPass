@@ -60,6 +60,8 @@ class RenewalMigrationTest extends TestCase
             $db->exec("INSERT INTO custom_items VALUES (1, 'Existing item', '1000')");
             $db->exec('CREATE TABLE custom_lapr_endpoints (id INTEGER PRIMARY KEY, ssh_credential_source INTEGER)');
             $db->exec('INSERT INTO custom_lapr_endpoints VALUES (1, 42), (2, 42), (3, NULL)');
+            $db->exec('CREATE TABLE custom_roles_title (id INTEGER PRIMARY KEY, title TEXT)');
+            $db->exec("INSERT INTO custom_roles_title VALUES (1, 'Existing role')");
             $chain = file_get_contents(__DIR__ . '/../../public/install/upgrade_run_3.2.2.php');
             $start = strpos($chain, '// Individual item renewal policies');
             $end = strpos($chain, '// Save upgrade timestamp');
@@ -71,9 +73,13 @@ class RenewalMigrationTest extends TestCase
             eval('namespace ' . __NAMESPACE__ . ';' . $migration);
             self::assertSame(['id' => 1, 'label' => 'Existing item', 'created_at' => '1000', 'renewal_period' => 0],
                 $db->querySingle('SELECT * FROM custom_items', true));
+            // Existing roles keep the Security posture "Fix" shortcuts visible.
+            self::assertSame(1, $db->querySingle('SELECT allow_security_posture_fix FROM custom_roles_title WHERE id = 1'));
             $db->exec('UPDATE custom_items SET renewal_period = 30 WHERE id = 1');
+            $db->exec('UPDATE custom_roles_title SET allow_security_posture_fix = 0 WHERE id = 1');
             eval('namespace ' . __NAMESPACE__ . ';' . $migration);
             self::assertSame(30, $db->querySingle('SELECT renewal_period FROM custom_items WHERE id = 1'));
+            self::assertSame(0, $db->querySingle('SELECT allow_security_posture_fix FROM custom_roles_title WHERE id = 1'));
             self::assertSame(1, $db->querySingle("SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'idx_ssh_credential_source'"));
             self::assertSame(3, $db->querySingle('SELECT COUNT(*) FROM custom_lapr_endpoints'));
             // Multiple endpoints may share the same connection credential: this is not a unique index.
@@ -82,6 +88,7 @@ class RenewalMigrationTest extends TestCase
             $installer = file_get_contents(__DIR__ . '/../../public/install/install-steps/run.step5.php');
             self::assertStringContainsString('`renewal_period` INT UNSIGNED NOT NULL DEFAULT 0', $installer);
             self::assertStringContainsString('INDEX `idx_ssh_credential_source` (`ssh_credential_source`)', $installer);
+            self::assertStringContainsString("`allow_security_posture_fix` TINYINT(1) NOT NULL DEFAULT '1'", $installer);
             self::assertFileDoesNotExist(__DIR__ . '/../../public/install/upgrade_run_3.2.2.5.php');
         } finally {
             $GLOBALS['db_link'] = $previous;

@@ -31,7 +31,7 @@
 - [Users](features/users.md)
 - [Profile](features/profile.md)
 - [Knowledge Base](features/knowledge-base.md)
-- [Breach Detection](features/breach-detection.md)
+- [Security Posture](features/security-posture.md)
 - [Password Rotation (LAPR)](features/lapr.md)
 - [Notification Centre](features/notification-center.md)
 - [Real-time Collaboration](features/collaboration.md)

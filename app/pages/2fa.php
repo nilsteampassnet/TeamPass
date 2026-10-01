@@ -130,7 +130,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 </small>
                             </div>
                             <div class='col-6'>
-                                <select class='form-control form-control-sm select2 disabled' id='mfa_for_roles' onchange='' multiple="multiple" style="width:100%;">
+                                <select class='form-control form-control-sm select2' id='mfa_for_roles' onchange='' multiple="multiple" style="width:100%;">
                                     <?php
                                     // Get selected groups
                                     $arrRolesMFA = json_decode($SETTINGS['mfa_for_roles'], true);

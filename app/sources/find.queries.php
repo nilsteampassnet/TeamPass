@@ -41,6 +41,7 @@ require_once 'main.functions.php';
 require_once 'find.functions.php';
 require_once 'search.functions.php';
 require_once 'lapr.functions.php';
+require_once __DIR__ . '/item_access_logic.php';
 
 // init
 loadClasses('DB');
@@ -402,6 +403,55 @@ if (null === $request->query->get('type')) {
 
     $arr_data = [];
     $laprRelations = laprGetItemRelations(array_column($rows, 'id'), $SETTINGS);
+
+    // Search results span several folders, so resolve their role types in one query
+    // and expose the same effective delete capability as the regular folder list.
+    $searchFolderIds = array_values(array_unique(array_map('intval', array_column($rows, 'id_tree'))));
+    $searchRoleIds = array_values(array_unique(array_map('intval', (array) $session->get('user-roles_array'))));
+    $searchAccessLevels = [];
+    if ($searchFolderIds !== [] && $searchRoleIds !== []) {
+        $searchAccessRows = DB::query(
+            'SELECT folder_id, type
+            FROM ' . prefixTable('roles_values') . '
+            WHERE folder_id IN %li AND role_id IN %li',
+            $searchFolderIds,
+            $searchRoleIds
+        );
+        foreach ($searchAccessRows as $accessRow) {
+            $folderId = (int) $accessRow['folder_id'];
+            $searchAccessLevels[$folderId] = evaluateFolderAccesLevel(
+                (string) $accessRow['type'],
+                $searchAccessLevels[$folderId] ?? ''
+            );
+        }
+    }
+
+    $searchFolderDeletePermissions = [];
+    $accessibleFolders = array_map('intval', (array) $session->get('user-accessible_folders'));
+    $personalFolders = array_map('intval', (array) $session->get('user-personal_folders'));
+    $deniedFolders = array_map('intval', (array) $session->get('user-no_access_folders'));
+    $foreignPersonalFolders = array_map('intval', (array) $session->get('user-forbiden_personal_folders'));
+    $readOnlyFolders = array_map('intval', (array) $session->get('user-read_only_folders'));
+    $directlyAllowedFolders = array_map('intval', (array) $session->get('user-allowed_folders_by_definition'));
+    foreach ($searchFolderIds as $searchFolderId) {
+        $isOwnPersonalFolder = in_array($searchFolderId, $personalFolders, true);
+        $searchFolderDeletePermissions[$searchFolderId] = itemAccessFolderAllowsDelete(
+            itemAccessFolderIsInScope(
+                $searchFolderId,
+                $accessibleFolders,
+                $personalFolders,
+                $deniedFolders,
+                $foreignPersonalFolders
+            ),
+            (int) $session->get('user-admin') === 1,
+            in_array($searchFolderId, $readOnlyFolders, true)
+                || ((int) $session->get('user-read_only') === 1 && $isOwnPersonalFolder === false),
+            in_array($searchFolderId, $directlyAllowedFolders, true),
+            $isOwnPersonalFolder,
+            $searchAccessLevels[$searchFolderId] ?? ''
+        );
+    }
+
     foreach ($rows as $record) {
         $displayItem = false;
         $arr_data[$record['id']]['item_id'] = (int) $record['id'];
@@ -411,6 +461,7 @@ if (null === $request->query->get('type')) {
         $arr_data[$record['id']]['folder'] = (string)$record['folder'];
         $arr_data[$record['id']]['login'] = (string) strtr($record['login'], '"', '&quot;');
         $arr_data[$record['id']]['item_key'] = (string) $record['item_key'];
+        $arr_data[$record['id']]['can_delete'] = ($searchFolderDeletePermissions[(int) $record['id_tree']] ?? false) ? 1 : 0;
         $arr_data[$record['id']]['link'] = (string) $record['url'] !== '0' && empty($record['url']) === false ? filter_var($record['url'], FILTER_SANITIZE_URL) : '';
         $laprListRelation = $laprRelations[(int) $record['id']] ?? [];
         $arr_data[$record['id']]['lapr'] = [

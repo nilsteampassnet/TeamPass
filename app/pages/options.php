@@ -234,6 +234,21 @@ $zones = timezone_list();
                                 </label>
                                 <div class='col-sm-12'>
                                     <input type='text' class='form-control form-control-sm' id='custom_logo' value='<?php echo isset($SETTINGS['custom_logo']) === true ? htmlspecialchars($SETTINGS['custom_logo']) : ''; ?>'>
+                                    <small class='form-text text-muted'>
+                                        <?php echo $lang->get('admin_misc_custom_logo_tip'); ?>
+                                    </small>
+                                </div>
+                            </div>
+
+                            <div class='form-group option' data-keywords="server setting login background wallpaper">
+                                <label for='custom_login_background' class='col-sm-10 control-label'>
+                                    <?php echo $lang->get('admin_misc_custom_login_background'); ?>
+                                </label>
+                                <div class='col-sm-12'>
+                                    <input type='text' class='form-control form-control-sm' id='custom_login_background' value='<?php echo isset($SETTINGS['custom_login_background']) === true ? htmlspecialchars(html_entity_decode((string) $SETTINGS['custom_login_background'], ENT_QUOTES | ENT_HTML5, 'UTF-8'), ENT_QUOTES, 'UTF-8') : ''; ?>'>
+                                    <small class='form-text text-muted'>
+                                        <?php echo $lang->get('admin_misc_custom_login_background_tip'); ?>
+                                    </small>
                                 </div>
                             </div>
 
@@ -462,7 +477,7 @@ $zones = timezone_list();
                                 <?php echo $lang->get('nb_false_login_attempts'); ?>
                             </div>
                             <div class='col-2'>
-                                <input type='number' min='0' step='1' class='form-control form-control-sm' id='nb_bad_authentication' value='<?php echo htmlspecialchars($SETTINGS['nb_bad_authentication'] ?? '0'); ?>'>
+                                <input type='number' min='0' step='1' class='form-control form-control-sm' id='nb_bad_authentication' value='<?php echo htmlspecialchars($SETTINGS['nb_bad_authentication'] ?? '10'); ?>'>
                             </div>
                         </div>
 
@@ -1861,13 +1876,13 @@ if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_descr
 
                         <div class='row mb-2 option' data-keywords="one time subdomain link">
                             <div class='col-12'>
-                                <?php echo $lang->get('settings_otv_subdomain'); ?>
+                                <?php echo $lang->get('secure_send_public_url'); ?>
                                 <small class='form-text text-muted'>
-                                    <?php echo $lang->get('settings_otv_subdomain_tip'); ?>
+                                    <?php echo $lang->get('secure_send_public_url_tip'); ?>
                                 </small>
                             </div>
                             <div class='col-sm-12'>
-                                <input type='text' class='form-control form-control-sm' id='otv_subdomain' value='<?php echo isset($SETTINGS['otv_subdomain']) === true ? htmlspecialchars($SETTINGS['otv_subdomain']) : ''; ?>'>
+                                <input type='text' class='form-control form-control-sm' id='otv_subdomain' placeholder='https://share.example.com' value='<?php echo isset($SETTINGS['otv_subdomain']) === true ? htmlspecialchars($SETTINGS['otv_subdomain']) : ''; ?>'>
                             </div>
                         </div>
 

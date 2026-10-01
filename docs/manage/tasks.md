@@ -52,6 +52,17 @@ Then open the crons manager with the same user as the one used by php (example: 
 > Set it to run every minute.
 > Add the comment `#Teampass scheduler` after the command
 
+### Windows servers
+
+There is no crontab on Windows: create the job in the **Task Scheduler** instead, and the installer does not do it for you.
+
+- **Action**: *Start a program*. Program `C:\path\to\php\php.exe`, arguments `C:\path\to\Teampass\app\sources\scheduler.php`.
+- **Trigger**: daily, repeated every **1 minute** for an indefinite duration.
+- **General**: select **Run whether user is logged on or not**, with the account that runs the web server or a dedicated service account that can write to `storage/`.
+
+> :pushpin:
+> *Run whether user is logged on or not* starts the job outside the desktop session, so no console window appears every minute. TeamPass starts the scripts it launches from the scheduler without a window, but the first `php.exe` is launched by Windows, and only this option hides it.
+
 ## Tasks management follow up page
 
 > This page permits to:

@@ -33,7 +33,7 @@ Each section appears only when the corresponding feature is enabled by your admi
 | Section | Filters |
 |---------|---------|
 | **Classification** | Filter by sensitivity label, including *Unclassified*. See [Classification](classification.md). |
-| **Security** | Weak, Breached, Overdue, No expiry, Widely shared — plus Reused and Unreadable. Same vocabulary as the security dashboard; see also [Breach detection](breach-detection.md). |
+| **Security** | Weak, Breached, Overdue, No expiry, Widely shared — plus Reused and Unreadable. Same vocabulary as the security dashboard; see also [Security posture](security-posture.md). |
 | **Attachments** | Has an attachment, attachment name contains…, and filter by extension. |
 | **Dates and rotation** | Created/modified between two dates, flagged for rotation, automatic rotation enabled. |
 | **Content and scope** | Folder (including its subfolders), tags, personal vs shared, favourites, recently viewed, and custom field values. |

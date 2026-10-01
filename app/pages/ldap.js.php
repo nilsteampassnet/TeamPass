@@ -84,8 +84,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
      * TOP MENU BUTTONS ACTIONS
      */
     $(document).on('click', '.tp-action', function() {
-        console.log($(this).data('action'))
         $('#ldap-test-config-results-text').html('');
+        $('#ldap-test-config-results-steps').empty();
+
+        if ($(this).data('action') === 'ldap-check-settings') {
+            refreshLdapConfigCheck(true);
+            return;
+        }
+
         if ($(this).data('action') === 'ldap-test-config') {
             toastr.remove();
             toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
@@ -103,24 +109,27 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 },
                 function(data) {
                     data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
-                    console.log(data);
 
+                    // The step list is the point of the test: it is shown on failure too, so the
+                    // administrator sees which step of the real login refused the credentials.
+                    renderLdapTestSteps(data.steps)
+                    renderLdapConfigFindings(data.findings)
+
+                    $('#ldap-test-config-results-text')
+                        .removeClass('text-danger text-success')
+                        .addClass(data.error === true ? 'text-danger' : 'text-success')
+                        .html(htmlEncode(data.message || ''));
+                    $('#ldap-test-config-results').removeClass('hidden');
+
+                    toastr.remove();
                     if (data.error === true) {
-                        // Show error
-                        toastr.remove();
                         toastr.error(
-                            data.message,
+                            htmlEncode(data.message || ''),
                             '<?php echo $lang->get('caution'); ?>', {
-                                //timeOut: 5000,
                                 progressBar: true
                             }
                         );
                     } else {
-                        $('#ldap-test-config-results-text').html(data.message);
-                        $('#ldap-test-config-results').removeClass('hidden');
-
-                        // Inform user
-                        toastr.remove();
                         toastr.success(
                             '<?php echo $lang->get('done'); ?>',
                             '', {
@@ -137,9 +146,141 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     });
 
     /**
+     * Icon and colour of a test step or of a finding.
+     *
+     * @param {string} status ok|ko|warning|skipped|error|info
+     * @return {object}
+     */
+    const ldapStatusDecoration = (status) => {
+        const map = {
+            ok: { icon: 'fa-check-circle', css: 'text-success' },
+            ko: { icon: 'fa-times-circle', css: 'text-danger' },
+            error: { icon: 'fa-times-circle', css: 'text-danger' },
+            warning: { icon: 'fa-exclamation-triangle', css: 'text-warning' },
+            info: { icon: 'fa-info-circle', css: 'text-info' },
+            skipped: { icon: 'fa-minus-circle', css: 'text-muted' }
+        }
+        return map[status] || map.info
+    }
+
+    /**
+     * Render the steps of the last configuration test.
+     *
+     * @param {Array} steps Steps returned by the handler
+     * @return {void}
+     */
+    const renderLdapTestSteps = (steps) => {
+        const $list = $('#ldap-test-config-results-steps').empty()
+        if (Array.isArray(steps) === false) {
+            return
+        }
+
+        steps.forEach((step) => {
+            const decoration = ldapStatusDecoration(step.status)
+            let html = '<li class="mb-1"><i class="fas ' + decoration.icon + ' ' + decoration.css + ' mr-2"></i>'
+            html += '<strong>' + htmlEncode(step.label || '') + '</strong>'
+            if (step.detail) {
+                html += '<br><span class="ml-4 small text-muted">' + htmlEncode(step.detail) + '</span>'
+            }
+            $list.append(html + '</li>')
+        })
+    }
+
+    /**
+     * Render the configuration findings.
+     *
+     * @param {Array} findings Findings returned by the handler
+     * @return {void}
+     */
+    const renderLdapConfigFindings = (findings) => {
+        const $target = $('#ldap-config-check-findings').empty()
+
+        if (Array.isArray(findings) === false || findings.length === 0) {
+            $target.html('<div class="text-success"><i class="fas fa-check-circle mr-2"></i><?php echo $lang->get('ldap_config_check_all_good'); ?></div>')
+            return
+        }
+
+        findings.forEach((finding) => {
+            const decoration = ldapStatusDecoration(finding.severity)
+            let html = '<div class="mb-2"><i class="fas ' + decoration.icon + ' ' + decoration.css + ' mr-2"></i>'
+            html += htmlEncode(finding.label || '')
+            if (finding.suggestion !== '') {
+                html += '<div class="ml-4 mt-1 small">'
+                html += '<code>' + htmlEncode(finding.suggestion) + '</code>'
+                html += ' <button type="button" class="btn btn-outline-primary btn-xs ml-2 ldap-apply-suggestion"'
+                html += ' data-field="' + htmlEncode(finding.field) + '"'
+                html += ' data-value="' + htmlEncode(finding.suggestion) + '">'
+                html += '<?php echo $lang->get('ldap_config_check_apply'); ?></button>'
+                html += '</div>'
+            }
+            $target.append(html + '</div>')
+        })
+    }
+
+    /**
+     * Ask the server to audit the saved settings.
+     *
+     * @param {boolean} notify Show a toast while the audit runs
+     * @return {void}
+     */
+    const refreshLdapConfigCheck = (notify) => {
+        if (notify === true) {
+            toastr.remove()
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>')
+        }
+
+        $.post(
+            'sources/ldap.queries.php', {
+                type: 'ldap_check_settings',
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(data) {
+                try {
+                    data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>')
+                } catch (e) {
+                    return
+                }
+                if (notify === true) {
+                    toastr.remove()
+                }
+                if (data.error === true) {
+                    return
+                }
+                renderLdapConfigFindings(data.findings)
+            }
+        )
+    }
+
+    /**
+     * Write a suggested value into its field and let the generic settings handler save it.
+     */
+    $(document).on('click', '.ldap-apply-suggestion', function() {
+        const $field = $('#' + $(this).data('field'))
+        if ($field.length === 0) {
+            return
+        }
+        $field.val($(this).data('value')).trigger('change')
+        // The audit is re-run once the value is stored, not before.
+        setTimeout(function() {
+            refreshLdapConfigCheck(false)
+        }, 1200)
+    })
+
+    /**
+     * Re-audit after any LDAP setting is saved.
+     */
+    $(document).on('change', '.setting-ldap, #ldap_type, #ldap_tls_certificate_check', function() {
+        setTimeout(function() {
+            refreshLdapConfigCheck(false)
+        }, 1200)
+    })
+
+    /**
      * On page loaded
      */
     $(function() {
+        refreshLdapConfigCheck(false);
+
         //requestRunning = true;
         // Load list of groups
         $("#ldap_new_user_is_administrated_by").empty();
