@@ -20,10 +20,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DB_PREFIX: ${DB_PREFIX:-teampass_}
 
-      # Installation mode
-      INSTALL_MODE: ${INSTALL_MODE:-manual}
-      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@teampass.local}
-      ADMIN_PWD: ${ADMIN_PWD:-}
+      # Public URL (shown in the installation instructions)
       TEAMPASS_URL: ${TEAMPASS_URL:-http://localhost}
 
       # PHP configuration
