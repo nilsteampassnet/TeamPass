@@ -4328,6 +4328,18 @@ switch ($inputData['type']) {
             break;
         }
 
+        // Resolve the item once (GHSA-ghj3-wppx-w8j3). Every check below is made on
+        // this id, so the reads and the write must use it alone: also matching
+        // "OR item_key" deleted the item designated by a second, unchecked key
+        // along with the checked one.
+        if (empty($inputData['itemId']) === true) {
+            $resolvedItem = DB::queryFirstRow(
+                'SELECT id FROM ' . prefixTable('items') . ' WHERE item_key = %s',
+                $inputData['itemKey']
+            );
+            $inputData['itemId'] = (int) ($resolvedItem['id'] ?? 0);
+        }
+
         // Check that user can access this item
         $granted = accessToItemIsGranted($inputData['itemId'], $SETTINGS);
         if ($granted !== true) {
@@ -4345,13 +4357,9 @@ switch ($inputData['type']) {
         $data = DB::queryFirstRow(
             'SELECT id_tree, id, label
             FROM ' . prefixTable('items') . '
-            WHERE id = %i OR item_key = %s',
-            $inputData['itemId'],
-            $inputData['itemKey']
+            WHERE id = %i',
+            $inputData['itemId']
         );
-        if (empty($inputData['itemId']) === true) {
-            $inputData['itemId'] = $data['id'];
-        }
         $inputData['label'] = $data['label'];
 
         // Check that user can delete on this folder
@@ -4408,9 +4416,8 @@ switch ($inputData['type']) {
                 'inactif' => '1',
                 'deleted_at' => time(),
             ),
-            'id = %i OR item_key = %s',
-            $inputData['itemId'],
-            $inputData['itemKey']
+            'id = %i',
+            $inputData['itemId']
         );
 
         // log
