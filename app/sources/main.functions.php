@@ -62,6 +62,7 @@ require_once __DIR__ . '/folder_cache_logic.php';
 require_once __DIR__ . '/api_auth_logic.php';
 require_once __DIR__ . '/ldap_config_logic.php';
 require_once __DIR__ . '/branding_logic.php';
+require_once __DIR__ . '/secret_settings_logic.php';
 // Directory access shared by the login and by the LDAP settings page test.
 require_once __DIR__ . '/ldap.functions.php';
 require_once __DIR__ . '/password_strength.functions.php';
@@ -4959,6 +4960,103 @@ function getEncryptedValue(string $value, int $isEncrypted): string
 }
 
 /**
+ * Return the clear value of a credential setting (see secret_settings_logic.php).
+ *
+ * A value stored before these settings were encrypted is returned unchanged, so existing
+ * installations keep working until the value is saved again or migrated. A ciphertext that does
+ * not decrypt gives an empty string: the credential is then refused, never replaced by the
+ * ciphertext itself.
+ *
+ * @param array  $settings Teampass settings
+ * @param string $name     Setting name
+ *
+ * @return string
+ */
+function tpGetSecretSetting(array $settings, string $name): string
+{
+    $value = (string) ($settings[$name] ?? '');
+    if ($value === '' || tpIsInstanceKeyCiphertext($value) === false) {
+        return $value;
+    }
+
+    try {
+        $decrypted = cryption($value, '', 'decrypt', $settings);
+    } catch (Throwable $e) {
+        error_log('TEAMPASS Error - tpGetSecretSetting: cannot decrypt ' . $name . ': ' . $e->getMessage());
+        return '';
+    }
+    if (($decrypted['error'] ?? false) !== false) {
+        error_log('TEAMPASS Error - tpGetSecretSetting: cannot decrypt ' . $name . ': ' . $decrypted['error']);
+        return '';
+    }
+
+    return (string) ($decrypted['string'] ?? '');
+}
+
+/**
+ * Encrypt the credential settings still stored in plaintext, and flag them is_encrypted = 1.
+ *
+ * Idempotent: a value that is already ciphertext only gets its flag set. Each new ciphertext is
+ * decrypted back and compared before it replaces the plaintext, so a broken instance key leaves
+ * the credential as it was. Run by the upgrade.
+ *
+ * @param array $SETTINGS Teampass settings
+ *
+ * @return array{encrypted: int, flagged: int, failed: int}
+ */
+function tpEncryptStoredSecretSettings(array $SETTINGS): array
+{
+    $stats = ['encrypted' => 0, 'flagged' => 0, 'failed' => 0];
+
+    foreach (tpSecretSettingNames() as $name) {
+        $row = DB::queryFirstRow(
+            'SELECT valeur, is_encrypted FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s',
+            'admin',
+            $name
+        );
+        $value = (string) ($row['valeur'] ?? '');
+        if ($value === '') {
+            continue;
+        }
+
+        if (tpIsInstanceKeyCiphertext($value) === true) {
+            if ((int) $row['is_encrypted'] !== 1) {
+                DB::update(prefixTable('misc'), ['is_encrypted' => 1], 'type = %s AND intitule = %s', 'admin', $name);
+                $stats['flagged']++;
+            }
+            continue;
+        }
+
+        try {
+            $encrypted = cryption($value, '', 'encrypt', $SETTINGS);
+            $check = cryption((string) $encrypted['string'], '', 'decrypt', $SETTINGS);
+        } catch (Throwable $e) {
+            $stats['failed']++;
+            continue;
+        }
+        if ($encrypted['error'] !== false || $check['error'] !== false || $check['string'] !== $value) {
+            $stats['failed']++;
+            continue;
+        }
+
+        DB::update(
+            prefixTable('misc'),
+            ['valeur' => (string) $encrypted['string'], 'is_encrypted' => 1, 'updated_at' => time()],
+            'type = %s AND intitule = %s',
+            'admin',
+            $name
+        );
+        $stats['encrypted']++;
+    }
+
+    if ($stats['encrypted'] + $stats['flagged'] > 0) {
+        ConfigManager::invalidateCache();
+    }
+
+    return $stats;
+}
+
+/**
  * Permits to replace &#92; to permit correct display
  *
  * @param string $input Some text
@@ -7781,7 +7879,7 @@ function ldapCheckUserPassword(string $login, string $password, array $SETTINGS)
         'hosts' => [$SETTINGS['ldap_hosts']],
         'base_dn' => $SETTINGS['ldap_bdn'],
         'username' => $SETTINGS['ldap_username'],
-        'password' => $SETTINGS['ldap_password'],
+        'password' => tpGetSecretSetting($SETTINGS, 'ldap_password'),
 
         // Optional Configuration Options
         'port' => $SETTINGS['ldap_port'],

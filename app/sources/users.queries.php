@@ -3026,7 +3026,7 @@ if (null !== $post_type) {
                 'hosts'            => explode(',', (string) $SETTINGS['ldap_hosts']),
                 'base_dn'          => $SETTINGS['ldap_bdn'],
                 'username'         => $SETTINGS['ldap_username'],
-                'password'         => $SETTINGS['ldap_password'],
+                'password'         => tpGetSecretSetting($SETTINGS, 'ldap_password'),
             
                 // Optional Configuration Options
                 'port'             => $SETTINGS['ldap_port'],
@@ -5388,7 +5388,7 @@ function getLdapStatusForUserIds(array $userIds, array $SETTINGS): array
         'hosts'            => explode(',', (string) $SETTINGS['ldap_hosts']),
         'base_dn'          => $SETTINGS['ldap_bdn'],
         'username'         => $SETTINGS['ldap_username'],
-        'password'         => $SETTINGS['ldap_password'],
+        'password'         => tpGetSecretSetting($SETTINGS, 'ldap_password'),
         'port'             => $SETTINGS['ldap_port'],
         'use_ssl'          => (int) $SETTINGS['ldap_ssl'] === 1,
         'use_tls'          => (int) $SETTINGS['ldap_tls'] === 1,

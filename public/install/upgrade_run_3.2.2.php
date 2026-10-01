@@ -629,6 +629,19 @@ mysqli_query(
      ON DUPLICATE KEY UPDATE `valeur` = VALUES(`valeur`)"
 );
 
+// Encrypt the LDAP bind and SMTP passwords still stored in plaintext (secret_settings_logic.php).
+// A data migration, not a schema step: idempotent, and never blocking, since a value that cannot
+// be encrypted is left as it is and keeps working (tpGetSecretSetting() still accepts plaintext).
+$secretSettingsStats = tpEncryptStoredSecretSettings($SETTINGS);
+if ($secretSettingsStats['encrypted'] + $secretSettingsStats['flagged'] + $secretSettingsStats['failed'] > 0) {
+    error_log(
+        'TEAMPASS Upgrade 3.2.2 - credential settings: '
+        . $secretSettingsStats['encrypted'] . ' encrypted, '
+        . $secretSettingsStats['flagged'] . ' flagged, '
+        . $secretSettingsStats['failed'] . ' left in plaintext'
+    );
+}
+
 //--->END 3.2.2
 
 // Close connection
