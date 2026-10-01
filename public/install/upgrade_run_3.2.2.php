@@ -622,6 +622,13 @@ if (addColumnIfNotExist(prefixTable('roles_title'), 'allow_security_posture_fix'
     exit();
 }
 
+// Administrative protection against accidental folder deletion.
+if (addColumnIfNotExist(prefixTable('nested_tree'), 'deletion_protected', "TINYINT(1) NOT NULL DEFAULT '0'") === false) {
+    echo json_encode([['finish' => '1', 'error' => 'Error adding the folder deletion protection flag: ' . mysqli_error($db_link)]]);
+    mysqli_close($db_link);
+    exit();
+}
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,

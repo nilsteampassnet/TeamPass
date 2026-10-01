@@ -37,7 +37,9 @@ class LaprSafetyWiringTest extends TestCase
 
         $restorePosition = strpos($endpoints, 'function laprRestoreEndpoint(');
         self::assertIsInt($restorePosition);
-        $body = substr($endpoints, $restorePosition, 1600);
+        $nextFunctionPosition = strpos($endpoints, 'function laprTrustHostkey(', $restorePosition);
+        self::assertIsInt($nextFunctionPosition);
+        $body = substr($endpoints, $restorePosition, $nextFunctionPosition - $restorePosition);
 
         // The guard must run before the row is set back to 'active'.
         $guardPosition = strpos($body, 'laprEndpointTargetExists(');
@@ -46,6 +48,22 @@ class LaprSafetyWiringTest extends TestCase
         self::assertIsInt($updatePosition);
         self::assertLessThan($updatePosition, $guardPosition);
         self::assertStringContainsString('lapr_endpoint_already_enrolled', $body);
+    }
+
+    public function testFolderDeletionAndLaprEnrollmentShareAnItemLockBoundary(): void
+    {
+        $folders = $this->source('app/sources/folders.class.php');
+        $functions = $this->source('app/sources/lapr.functions.php');
+        $accounts = $this->source('app/sources/lapr_accounts.queries.php');
+        $endpoints = $this->source('app/sources/lapr_endpoints.queries.php');
+
+        self::assertMatchesRegularExpression(
+            "/FROM ' \. prefixTable\('items'\) \. '\\s+WHERE id_tree IN %li.*?FOR UPDATE/s",
+            $folders
+        );
+        self::assertGreaterThanOrEqual(2, substr_count($functions, 'FOR UPDATE'));
+        self::assertStringContainsString('Serialize enrollment with folder/item deletion', $accounts);
+        self::assertGreaterThanOrEqual(2, substr_count($endpoints, 'FOR UPDATE'));
     }
 
     public function testTasksClosedWithoutExecutionAreCancelledAndStillPurged(): void

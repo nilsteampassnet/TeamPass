@@ -441,6 +441,7 @@ if (null !== $post_type) {
             'nlevel' => 0,
             'bloquer_creation' => (int) ($fd['bloquer_creation'] ?? 0),
             'bloquer_modification' => (int) ($fd['bloquer_modification'] ?? 0),
+            'deletion_protected' => (int) ($fd['deletion_protected'] ?? 0),
             'personal_folder' => (int) ($fd['personal_folder'] ?? 0),
             'renewal_period' => (int) ($fd['renewal_period'] ?? 0),
             'categories' => (string) ($fd['categories'] ?? ''),

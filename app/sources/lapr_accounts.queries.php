@@ -520,6 +520,26 @@ function laprAddAccount(
     // whose requested first rotation was silently lost.
     DB::startTransaction();
     try {
+        // Serialize enrollment with folder/item deletion. The preliminary checks
+        // above provide user-facing validation; this locking read closes the race
+        // between those checks and activating the LAPR relationship.
+        $lockedItem = DB::queryFirstRow(
+            'SELECT id, login, id_tree, perso FROM ' . prefixTable('items') . '
+             WHERE id = %i AND inactif = 0 AND deleted_at IS NULL
+             FOR UPDATE',
+            $itemId
+        );
+        if ($lockedItem === null
+            || (int) $lockedItem['perso'] === 1
+            || (int) $lockedItem['id_tree'] !== (int) $item['id_tree']
+            || (string) $lockedItem['login'] !== (string) $item['login']
+            || laprUserCanWriteFolder((int) $lockedItem['id_tree'], $session) === false
+        ) {
+            DB::rollback();
+            echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+            return;
+        }
+
         if ($reactivated === true) {
             DB::update(prefixTable('lapr_accounts'), [
                 'endpoint_id' => $endpointId,

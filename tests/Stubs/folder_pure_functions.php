@@ -226,6 +226,7 @@ function folderBuildRecycleBinData(array $node, int $deletedBy, string $deletedB
         'nlevel' => (int) $node['nlevel'],
         'bloquer_creation' => (int) ($node['bloquer_creation'] ?? 0),
         'bloquer_modification' => (int) ($node['bloquer_modification'] ?? 0),
+        'deletion_protected' => (int) ($node['deletion_protected'] ?? 0),
         'personal_folder' => (int) ($node['personal_folder'] ?? 0),
         'renewal_period' => (int) ($node['renewal_period'] ?? 0),
         'categories' => (string) ($node['categories'] ?? ''),
