@@ -32,6 +32,12 @@ trait UserHandlerTrait {
     abstract protected function completeTask(): void;
 
     /**
+     * getOwnerInfos() results already resolved by this task, keyed by its arguments.
+     * @var array<string, array>
+     */
+    private array $ownerInfosCache = [];
+
+    /**
      * Handle user build cache tree
      * @param array $arguments Useful arguments for the task
      * @return void
@@ -854,6 +860,12 @@ trait UserHandlerTrait {
 
     /**
      * Get owner info
+     *
+     * Resolved once per task: every subtask (one batch of objects) asks again for the same two
+     * accounts, and decrypting a v2 private key costs a PBKDF2 of 600k iterations - about half a
+     * second, twice per batch, taken from the task time limit. Safe because a worker process
+     * runs a single task, and no step of a key generation or migration changes the keys it reads.
+     *
      * @param int $owner_id Owner ID
      * @param string $owner_pwd Owner password
      * @param int $only_personal_items 1 if only personal items, 0 else
@@ -861,6 +873,11 @@ trait UserHandlerTrait {
      * @return array Owner information
      */
     private function getOwnerInfos(int $owner_id, string $owner_pwd, ?int $only_personal_items = 0, ?string $owner_private_key = ''): array {
+        $cacheKey = hash('sha256', (string) json_encode([$owner_id, $owner_pwd, (int) $only_personal_items, (string) $owner_private_key]));
+        if (isset($this->ownerInfosCache[$cacheKey]) === true) {
+            return $this->ownerInfosCache[$cacheKey];
+        }
+
         $userInfo = DB::queryFirstRow(
             'SELECT u.pw, u.public_key, pk.private_key, u.login, u.name
             FROM ' . prefixTable('users') . ' AS u
@@ -875,7 +892,7 @@ trait UserHandlerTrait {
         // decrypt private key and send back
         if ((int) $only_personal_items === 1 && empty($owner_private_key) === false) {
             // Explicitely case where we only want personal items and where user has provided his private key
-            return [
+            return $this->ownerInfosCache[$cacheKey] = [
                 'private_key' => cryption($owner_private_key, '','decrypt')['string'],
                 'public_key' => $userInfo['public_key'],
                 'login' => $userInfo['login'],
@@ -883,7 +900,7 @@ trait UserHandlerTrait {
             ];
         }else {
             // Normal case
-            return [
+            return $this->ownerInfosCache[$cacheKey] = [
                 'private_key' => decryptPrivateKey($pwd, $userInfo['private_key']),
                 'public_key' => $userInfo['public_key'],
                 'login' => $userInfo['login'],
