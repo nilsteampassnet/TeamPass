@@ -180,6 +180,8 @@ if (
                 'img'
             ],
             ALLOWED_ATTR: ['href', 'target', 'rel', 'src', 'alt', 'width', 'height', 'colspan', 'rowspan'],
+            // Not URLs: without this, ALLOWED_URI_REGEXP is also applied to their values and drops them.
+            ADD_URI_SAFE_ATTR: ['width', 'height', 'colspan', 'rowspan'],
             ADD_DATA_URI_TAGS: ['img'],
             ALLOW_DATA_ATTR: false,
             ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto):|\/|\.\/|\.\.\/|#|\?|data:image\/(?:png|jpe?g|gif|webp);base64,)/i
