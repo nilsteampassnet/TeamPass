@@ -125,7 +125,15 @@ if (
         select_files: <?php echo json_encode($lang->get('select_files')); ?>,
         start_upload: <?php echo json_encode($lang->get('start_upload')); ?>,
         attached_files: <?php echo json_encode($lang->get('attached_files')); ?>,
-        exceeds_maximum_length_of: <?php echo json_encode($lang->get('exceeds_maximum_length_of')); ?>
+        exceeds_maximum_length_of: <?php echo json_encode($lang->get('exceeds_maximum_length_of')); ?>,
+        kb_markdown_paste_applied: <?php echo json_encode($lang->get('kb_markdown_paste_applied')); ?>,
+        kb_markdown_paste_keep_raw: <?php echo json_encode($lang->get('kb_markdown_paste_keep_raw')); ?>,
+        kb_markdown_view_tooltip: <?php echo json_encode($lang->get('kb_markdown_view_tooltip')); ?>,
+        kb_markdown_view_lossy: <?php echo json_encode($lang->get('kb_markdown_view_lossy')); ?>,
+        kb_markdown_lossy_underline: <?php echo json_encode($lang->get('kb_markdown_lossy_underline')); ?>,
+        kb_markdown_lossy_merged_cells: <?php echo json_encode($lang->get('kb_markdown_lossy_merged_cells')); ?>,
+        kb_markdown_lossy_image_size: <?php echo json_encode($lang->get('kb_markdown_lossy_image_size')); ?>,
+        kb_markdown_lossy_table_header: <?php echo json_encode($lang->get('kb_markdown_lossy_table_header')); ?>
     };
 
     const kbEditorOptions = {
@@ -134,6 +142,24 @@ if (
         imageMaxHeight: <?php echo isset($SETTINGS['upload_imageresize_options']) === true && (int) $SETTINGS['upload_imageresize_options'] === 1 ? max(1, (int) ($SETTINGS['upload_imageresize_height'] ?? 900)) : 900; ?>,
         imageQuality: <?php echo isset($SETTINGS['upload_imageresize_options']) === true && (int) $SETTINGS['upload_imageresize_options'] === 1 ? max(1, min(100, (int) ($SETTINGS['upload_imageresize_quality'] ?? 82))) / 100 : 0.82; ?>
     };
+
+    const kbMarkdown = createKbMarkdown({
+        markdownit: window.markdownit,
+        TurndownService: window.TurndownService,
+        turndownPluginGfm: window.turndownPluginGfm,
+        parseHtml: function(html) {
+            // DOMParser documents are inert: no script runs and no image loads.
+            return new DOMParser().parseFromString(html, 'text/html');
+        }
+    });
+    // Open Markdown view: {context, originalHtml, initialMarkdown, images, $notice, $source}.
+    let kbMarkdownView = null;
+    // Ctrl/Cmd+Shift+V on the last keydown: the user asked for a plain paste.
+    let kbPlainPasteRequested = false;
+    let kbPasteCounter = 0;
+    // Paste that "Keep plain text" can still revert, and its toast.
+    let kbArmedPasteId = '';
+    let kbPasteToast = null;
 
     const kbDirectId = parseInt($('#kb-direct-id').val(), 10) || 0;
     let kbTable = null;
@@ -358,7 +384,7 @@ if (
     }
 
     function kbNormalizeEditorContent(html) {
-        const sanitized = kbSanitizeHtml(kbDecodeEscapedRichContent((html || '').toString().trim()));
+        const sanitized = kbSanitizeHtml(kbMarkdown.clampHtmlHeadings(kbDecodeEscapedRichContent((html || '').toString().trim())));
         const $container = $('<div>').html(sanitized);
         const hasText = $.trim($container.text()) !== '';
         const hasImage = $container.find('img[src]').length > 0;
@@ -373,6 +399,9 @@ if (
     }
 
     function kbGetEditorContent() {
+        if (kbMarkdownView !== null) {
+            return kbMarkdownViewHtml();
+        }
         if (kbDescriptionEditorInitialized() === true) {
             return kbNormalizeEditorContent($('#kb-description').summernote('code'));
         }
@@ -381,6 +410,8 @@ if (
     }
 
     function kbSetEditorContent(html) {
+        kbCloseMarkdownView(false);
+        kbClosePasteOffer();
         if (kbDescriptionEditorInitialized() === true) {
             $('#kb-description').summernote('code', html || '');
             return;
@@ -390,6 +421,8 @@ if (
     }
 
     function kbDestroyDescriptionEditor() {
+        kbCloseMarkdownView(false);
+        kbClosePasteOffer();
         if (kbDescriptionEditorInitialized() === true) {
             $('#kb-description').summernote('destroy');
         }
@@ -446,6 +479,241 @@ if (
         });
     }
 
+    function kbEditable() {
+        return $('#kb-description').next('.note-editor').find('.note-editable');
+    }
+
+    function kbClipboardHtmlIsFormatted(html) {
+        const doc = new DOMParser().parseFromString(html || '', 'text/html');
+        return doc.body.querySelector('strong, b, em, i, u, s, h1, h2, h3, h4, h5, h6, ul, ol, table, a[href], blockquote, img, pre') !== null;
+    }
+
+    function kbMarkPastedBlocks(html, pasteId) {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        Array.from(doc.body.childNodes).forEach(function(node) {
+            let block = node;
+            if (node.nodeType === Node.TEXT_NODE) {
+                if (node.textContent.trim() === '') {
+                    node.remove();
+                    return;
+                }
+                block = doc.createElement('p');
+                node.replaceWith(block);
+                block.appendChild(node);
+            }
+            if (block.nodeType === Node.ELEMENT_NODE) {
+                block.setAttribute('data-tp-kb-paste', pasteId);
+            }
+        });
+        return doc.body.innerHTML;
+    }
+
+    function kbHandleEditorPaste(event) {
+        const plainRequested = kbPlainPasteRequested;
+        kbPlainPasteRequested = false;
+        const clipboard = event.originalEvent ? event.originalEvent.clipboardData : null;
+        if (!clipboard || plainRequested === true) {
+            return;
+        }
+
+        const types = Array.from(clipboard.types || []);
+        // Images go through Summernote's clipboard module, formatted content through the native paste.
+        if (types.indexOf('Files') !== -1
+            || (types.indexOf('text/html') !== -1 && kbClipboardHtmlIsFormatted(clipboard.getData('text/html')) === true)) {
+            return;
+        }
+
+        const text = clipboard.getData('text/plain');
+        if (kbMarkdown.looksLikeMarkdown(text) !== true) {
+            return;
+        }
+        const html = kbSanitizeHtml(kbMarkdown.renderMarkdown(text));
+        if (html.trim() === '') {
+            return;
+        }
+
+        event.preventDefault();
+        kbPasteCounter += 1;
+        const pasteId = String(kbPasteCounter);
+        const $description = $('#kb-description');
+        // Record the pre-paste state so Ctrl+Z can return to it: typing is not recorded.
+        $description.summernote('editor.afterCommand', true);
+        const selection = window.getSelection();
+        if (selection !== null && selection.isCollapsed === false) {
+            // Summernote's pasteHTML inserts at the caret and keeps the selection; a paste replaces it.
+            document.execCommand('delete', false);
+            $description.summernote('editor.setLastRange');
+        }
+        $description.summernote('pasteHTML', kbMarkPastedBlocks(html, pasteId));
+        kbOfferKeepPlainText(pasteId, text);
+    }
+
+    function kbOfferKeepPlainText(pasteId, text) {
+        kbArmedPasteId = pasteId;
+        toastr.remove();
+        kbPasteToast = toastr.info(
+            '<div>' + kbEscapeHtml(kbTranslations.kb_markdown_paste_applied) + '</div>' +
+            '<button type="button" class="btn btn-sm btn-light mt-2 tp-kb-keep-plain-text">' +
+            kbEscapeHtml(kbTranslations.kb_markdown_paste_keep_raw) + '</button>',
+            '',
+            {
+                timeOut: 10000,
+                extendedTimeOut: 4000,
+                closeButton: true,
+                tapToDismiss: false,
+                // toastr.remove() does not reset its duplicate tracker: a second paste would get no toast.
+                preventDuplicates: false,
+                onHidden: function() {
+                    kbDisarmPaste(pasteId);
+                }
+            }
+        );
+        kbPasteToast.find('.tp-kb-keep-plain-text').on('click', function() {
+            kbKeepPastedTextPlain(pasteId, text);
+        });
+    }
+
+    function kbClosePasteOffer() {
+        if (kbArmedPasteId !== '') {
+            kbDisarmPaste(kbArmedPasteId);
+        }
+        if (kbPasteToast !== null) {
+            // Forced: toastr keeps a toast holding the focus, such as its clicked button.
+            toastr.clear(kbPasteToast, {force: true});
+            kbPasteToast = null;
+        }
+    }
+
+    function kbDisarmPaste(pasteId) {
+        kbEditable().find('[data-tp-kb-paste="' + pasteId + '"]').removeAttr('data-tp-kb-paste');
+        if (kbArmedPasteId === pasteId) {
+            kbArmedPasteId = '';
+        }
+    }
+
+    function kbKeepPastedTextPlain(pasteId, text) {
+        const $blocks = kbEditable().find('[data-tp-kb-paste="' + pasteId + '"]');
+        const stillArmed = kbArmedPasteId === pasteId;
+        kbClosePasteOffer();
+        if (stillArmed === false || $blocks.length === 0) {
+            return;
+        }
+        $blocks.first().before(kbMarkdown.plainTextToHtml(text));
+        $blocks.remove();
+        $('#kb-description').summernote('editor.afterCommand');
+    }
+
+    function kbHandleEditorKeydown(event) {
+        const key = (event.key || '').toString();
+        kbPlainPasteRequested = (event.ctrlKey === true || event.metaKey === true) && event.shiftKey === true && key.toLowerCase() === 'v';
+        // Any edit after the paste makes "Keep plain text" unsafe: it would drop that edit.
+        if (kbArmedPasteId !== '' && /^(Shift|Control|Alt|Meta|CapsLock|Escape|Arrow\w+|Home|End|PageUp|PageDown)$/.test(key) === false) {
+            kbClosePasteOffer();
+        }
+    }
+
+    function kbMarkdownButton(context) {
+        return $.summernote.ui.button({
+            className: 'btn-kb-markdown note-codeview-keep',
+            contents: '<i class="fab fa-markdown"></i>',
+            tooltip: kbTranslations.kb_markdown_view_tooltip,
+            click: function() {
+                if (kbMarkdownView === null) {
+                    kbOpenMarkdownView(context);
+                } else {
+                    kbCloseMarkdownView(true);
+                }
+            }
+        }).render();
+    }
+
+    function kbOpenMarkdownView(context) {
+        kbClosePasteOffer();
+        if (context.invoke('codeview.isActivated') === true) {
+            context.invoke('codeview.deactivate');
+        }
+
+        const layout = context.layoutInfo;
+        const originalHtml = kbNormalizeEditorContent(context.invoke('code'));
+        const converted = kbMarkdown.htmlToMarkdown(originalHtml);
+        const $notice = $('<div class="tp-kb-markdown-notice small text-muted"></div>');
+        const $source = $('<textarea class="form-control tp-kb-markdown-source" spellcheck="false"></textarea>');
+
+        if (converted.lossy.length > 0) {
+            $notice.text(kbTranslations.kb_markdown_view_lossy.replace('#elements#', converted.lossy.map(function(kind) {
+                return kbTranslations['kb_markdown_lossy_' + kind] || kind;
+            }).join(', ')));
+        } else {
+            $notice.addClass('hidden');
+        }
+        $source.val(converted.markdown)
+            .css('height', Math.max(layout.editingArea.outerHeight(), 200) + 'px')
+            .on('dragover drop', function(event) {
+                // A dropped file would make the browser navigate away from the form.
+                const transfer = event.originalEvent ? event.originalEvent.dataTransfer : null;
+                if (transfer && Array.from(transfer.types || []).indexOf('Files') !== -1) {
+                    event.preventDefault();
+                }
+            });
+
+        layout.editingArea.addClass('hidden').after($notice, $source);
+        layout.statusbar.addClass('hidden');
+        context.invoke('toolbar.deactivate');
+        $.summernote.ui.toggleBtn(layout.toolbar.find('.btn-codeview'), false);
+        $.summernote.ui.toggleBtnActive(layout.toolbar.find('.btn-kb-markdown'), true);
+
+        kbMarkdownView = {
+            context: context,
+            originalHtml: originalHtml,
+            initialMarkdown: converted.markdown,
+            images: converted.images,
+            $notice: $notice,
+            $source: $source
+        };
+        $source.trigger('focus');
+    }
+
+    function kbMarkdownViewHtml() {
+        const markdown = kbMarkdownView.$source.val();
+        // Untouched: give back the exact original, so the view loses nothing.
+        if (markdown === kbMarkdownView.initialMarkdown) {
+            return kbMarkdownView.originalHtml;
+        }
+        return kbNormalizeEditorContent(kbMarkdown.renderMarkdown(kbMarkdown.restoreImages(markdown, kbMarkdownView.images)));
+    }
+
+    function kbCloseMarkdownView(applyChanges) {
+        if (kbMarkdownView === null) {
+            return;
+        }
+        const view = kbMarkdownView;
+        const html = applyChanges === true ? kbMarkdownViewHtml() : null;
+        const layout = view.context.layoutInfo;
+        kbMarkdownView = null;
+
+        view.$notice.remove();
+        view.$source.remove();
+        layout.editingArea.removeClass('hidden');
+        layout.statusbar.removeClass('hidden');
+        // true: also re-enable </>, which shares the note-codeview-keep class with this button.
+        view.context.invoke('toolbar.activate', true);
+        $.summernote.ui.toggleBtnActive(layout.toolbar.find('.btn-kb-markdown'), false);
+
+        if (html !== null) {
+            $('#kb-description').summernote('code', html);
+            $('#kb-description').summernote('editor.afterCommand', true);
+        }
+    }
+
+    function kbEditorKeyMap() {
+        // h1, h5 and h6 are outside the KB allowlists: map their shortcuts to the nearest allowed level.
+        // Summernote merges options shallowly, so the whole map is passed.
+        return $.extend(true, {}, $.summernote.options.keyMap, {
+            pc: {'CTRL+NUM1': 'formatH2', 'CTRL+NUM5': 'formatH4', 'CTRL+NUM6': 'formatH4'},
+            mac: {'CMD+NUM1': 'formatH2', 'CMD+NUM5': 'formatH4', 'CMD+NUM6': 'formatH4'}
+        });
+    }
+
     function kbInitDescriptionEditor(html) {
         kbDestroyDescriptionEditor();
         const $description = $('#kb-description');
@@ -458,15 +726,22 @@ if (
                 ['font', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
                 ['para', ['ul', 'ol', 'paragraph']],
                 ['insert', ['link', 'picture', 'hr', 'table']],
-                ['view', ['codeview']]
+                ['view', ['codeview', 'kbMarkdown']]
             ],
+            buttons: {
+                kbMarkdown: kbMarkdownButton
+            },
+            keyMap: kbEditorKeyMap(),
             styleTags: ['p', 'blockquote', 'pre', 'h2', 'h3', 'h4'],
             codeviewFilter: true,
             codeviewIframeFilter: true,
             callbacks: {
                 onImageUpload: function(files) {
                     kbInsertEditorImages(files);
-                }
+                },
+                onPaste: kbHandleEditorPaste,
+                onKeydown: kbHandleEditorKeydown,
+                onBeforeCommand: kbClosePasteOffer
             }
         });
         kbSetEditorContent(html || '');

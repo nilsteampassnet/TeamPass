@@ -1704,6 +1704,11 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                 <!-- SUMMERNOTE -->
                 <link rel="stylesheet" href="./plugins/summernote/summernote-bs4.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
                 <script src="./plugins/summernote/summernote-bs4.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+                <!-- MARKDOWN (KB editor) -->
+                <script src="./plugins/markdown-it/markdown-it.umd.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+                <script src="./plugins/turndown/turndown.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+                <script src="./plugins/turndown/turndown-plugin-gfm.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+                <script src="./assets/js/kb-markdown.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
             <?php
             }
             ?>
