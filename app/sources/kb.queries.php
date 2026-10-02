@@ -530,13 +530,19 @@ function kbDecodeEscapedRichHtml(string $html): string
         return $html;
     }
 
+    // Legacy rows were escaped wholesale: at most <p>/<br> wrappers are real. Any other real
+    // element means genuine rich HTML whose escaped text is literal (a code sample, a typed tag).
+    if (kbRichTextLooksLikeHtml(preg_replace('/<\/?(?:p|br)\b[^>]*>/iu', '', $html) ?? $html) === true) {
+        return $html;
+    }
+
     $hasEscapedBlock = preg_match('/&lt;\/?(?:br|p|div|ul|ol|li|blockquote|h[1-6]|pre|hr|table|thead|tbody|tr|th|td|img)\b/iu', $html) === 1;
     $candidate = $html;
 
     if ($hasEscapedBlock === true) {
-        $candidate = preg_replace('/<\/p>\s*<p[^>]*>/iu', "\n", $candidate) ?? $candidate;
+        $candidate = preg_replace('/<\/p>\s*<p\b[^>]*>/iu', "\n", $candidate) ?? $candidate;
         $candidate = preg_replace('/<br\s*\/?>/iu', "\n", $candidate) ?? $candidate;
-        $candidate = preg_replace('/<\/?p[^>]*>/iu', '', $candidate) ?? $candidate;
+        $candidate = preg_replace('/<\/?p\b[^>]*>/iu', '', $candidate) ?? $candidate;
     }
 
     $decodedHtml = html_entity_decode($candidate, ENT_QUOTES | ENT_HTML5, 'UTF-8');

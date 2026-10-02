@@ -283,14 +283,20 @@ if (
             return value;
         }
 
+        // Legacy rows were escaped wholesale: at most <p>/<br> wrappers are real. Any other real
+        // element means genuine rich HTML whose escaped text is literal (a code sample, a typed tag).
+        if (kbRichContentLooksLikeHtml(value.replace(/<\/?(?:p|br)\b[^>]*>/ig, '')) === true) {
+            return value;
+        }
+
         const hasEscapedBlock = /&lt;\/?(?:br|p|div|ul|ol|li|blockquote|h[1-6]|pre|hr|table|thead|tbody|tr|th|td|img)\b/i.test(value);
         let candidate = value;
 
         if (hasEscapedBlock === true) {
             candidate = candidate
-                .replace(/<\/p>\s*<p[^>]*>/ig, '\n')
+                .replace(/<\/p>\s*<p\b[^>]*>/ig, '\n')
                 .replace(/<br\s*\/?>/ig, '\n')
-                .replace(/<\/?p[^>]*>/ig, '');
+                .replace(/<\/?p\b[^>]*>/ig, '');
         }
 
         const decoded = kbDecodeHtmlEntities(candidate);
