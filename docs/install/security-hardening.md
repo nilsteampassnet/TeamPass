@@ -21,6 +21,7 @@ This page is a **checklist for putting a TeamPass instance into production**, an
 | 7 | New data is written with authenticated encryption (AES-256-GCM) | [Encryption at rest](#encryption-at-rest) |
 | 8 | Logs leave the server and the health checks are green | [Monitoring and audit](#monitoring-and-audit) |
 | 9 | Backups run, are stored off-site, and the Recovery Package is kept offline | [Backups](#backups) |
+| 10 | A public Secure Send address exposes only the recipient route and never logs its credentials | [Secure Send hardening](secure-send.md) |
 
 ---
 
@@ -45,6 +46,7 @@ Check one more value on an instance installed with an older version: **Maximum l
 - **Enable HSTS** once the certificate is in place: **HTTPS Strict Transport Security (HSTS)** in **Settings → Options → Security & authentication**. Browsers then refuse any plain HTTP connection to the server. A self-signed certificate does not work with HSTS.
 - **Block `public/install/`** as soon as the installation wizard completes, and again after each upgrade. The installer and upgrade scripts must not stay reachable on a running instance. See [Installation](installation.md) and [Upgrade](upgrade.md) for the Apache and Nginx directives.
 - **Keep the WebSocket daemon on `127.0.0.1`** (its default) and expose it only through the reverse proxy. See [WebSocket](websocket.md).
+- **Isolate a public Secure Send route.** When a dedicated address is Internet-facing, expose only the exact OTV entry point and required assets, preserve the public host and exclude link parameters and POST bodies from every log. See [Secure Send deployment and hardening](secure-send.md).
 
 ---
 

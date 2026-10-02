@@ -311,6 +311,8 @@ If the administrator has defined a **public sharing address**, the sender may
 select it explicitly for a link. New forms use the internal address by default,
 and the preview always shows the address that will be used. DNS, TLS and routing
 must also be configured; see [Public sharing address](../manage/settings.md#public-sharing-address).
+Administrators who make this route Internet-facing should follow the complete
+[Secure Send deployment and hardening guide](../install/secure-send.md).
 
 When one or more valid OTV links exist for an item, a badge showing the count is displayed on the item row.
 
