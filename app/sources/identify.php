@@ -254,15 +254,30 @@ function userNeedsMfa(array $SETTINGS, array $userInfo): bool
         return filter_var($userInfo['mfa_auth_requested_roles'], FILTER_VALIDATE_BOOLEAN) === true;
     }
 
-    $fonctionId = (string) ($userInfo['fonction_id'] ?? '');
+    return userMfaRequestedByRoles($SETTINGS, $userInfo);
+}
+
+/**
+ * Determine if the "MFA is requested for users in Roles" setting applies to a user.
+ *
+ * Both role sources count: the roles assigned manually (fonction_id) and the roles
+ * inherited from the AD/LDAP group mapping (roles_from_ad_groups). Reading the manual
+ * roles alone let a user holding the MFA role only through AD skip MFA.
+ *
+ * @param array<string, mixed> $SETTINGS
+ * @param array<string, mixed> $userInfo
+ */
+function userMfaRequestedByRoles(array $SETTINGS, array $userInfo): bool
+{
+    $roleIds = (string) ($userInfo['fonction_id'] ?? '');
     if (empty($userInfo['roles_from_ad_groups']) === false) {
-        $fonctionId = empty($fonctionId) === true
+        $roleIds = empty($roleIds) === true
             ? (string) $userInfo['roles_from_ad_groups']
-            : $fonctionId . ';' . (string) $userInfo['roles_from_ad_groups'];
+            : $roleIds . ';' . (string) $userInfo['roles_from_ad_groups'];
     }
 
     return mfa_auth_requested_roles(
-        $fonctionId,
+        $roleIds,
         is_null($SETTINGS['mfa_for_roles'] ?? null) === true ? '' : (string) $SETTINGS['mfa_for_roles']
     );
 }
@@ -2765,10 +2780,8 @@ function identifyReloadUserInfo(string $username, array $dataReceived, array $SE
 
     $userInfo = $refreshedUserInfo + $dataReceived;
     // Re-compute mfa_auth_requested_roles in case it was updated during the LDAP checks
-    $userInfo['mfa_auth_requested_roles'] = mfa_auth_requested_roles(
-        (string) ($userInfo['fonction_id'] ?? ''),
-        is_null($SETTINGS['mfa_for_roles']) === true ? '' : (string) $SETTINGS['mfa_for_roles']
-    );
+    // (the AD group mapping has just been synchronized into roles_from_ad_groups)
+    $userInfo['mfa_auth_requested_roles'] = userMfaRequestedByRoles($SETTINGS, $userInfo);
     // Re-add session-derived flags that getUserCompleteData() does not return.
     // oauth2_login_ongoing is computed from the PHP session (not stored in DB), so it
     // must be re-injected after every DB reload; otherwise shouldUserAuthWithOauth2()
@@ -3055,10 +3068,7 @@ function identifyDoInitialChecks(
     }
     
     // user should use MFA?
-    $userInfo['mfa_auth_requested_roles'] = mfa_auth_requested_roles(
-        (string) $userInfo['fonction_id'],
-        is_null($SETTINGS['mfa_for_roles']) === true ? '' : (string) $SETTINGS['mfa_for_roles']
-    );
+    $userInfo['mfa_auth_requested_roles'] = userMfaRequestedByRoles($SETTINGS, $userInfo);
 
     // If admin user then check if folder install exists
     // if yes then refuse connection

@@ -1705,17 +1705,12 @@ if (null !== $post_type) {
                 $post_id,
                 'ad'
             );
-            $adRoles = array_column($adRolesResult, 'role_id');
-
-            $fonctions = [];
-            if (!empty($adRoles)) {
-                foreach ($post_groups as $post_group) {
-                    if (!in_array($post_group, $adRoles)) {
-                        $fonctions[] = $post_group;
-                    }
-                }
-            }
-            $post_groups = empty($fonctions) === true ? $post_groups : $fonctions;
+            // Applied even when every submitted role comes from AD: falling back to the
+            // submission then turned the AD roles into permanent manual roles.
+            $post_groups = excludeAdRolesFromSubmittedRoles(
+                (array) $post_groups,
+                array_column($adRolesResult, 'role_id')
+            );
 
             // The submitted role set is not authoritative: the form only shows the roles the
             // caller may grant, so it is merged with the ones stored outside that scope.
