@@ -33,15 +33,18 @@ use PHPUnit\Framework\TestCase;
 
 class SecureSendBrandingSettingsTest extends TestCase
 {
-    /** Fresh and upgraded installations must expose the same optional setting. */
-    public function testPublicEntitySettingIsSeededForEveryInstallationPath(): void
+    /** Fresh and upgraded installations seed public identity with privacy-safe upgrade defaults. */
+    public function testPublicIdentitySettingsAreSeededForEveryInstallationPath(): void
     {
-        foreach ([
-            __DIR__ . '/../../public/install/install-steps/run.step5.php',
-            __DIR__ . '/../../public/install/upgrade_run_3.2.1.php',
-        ] as $path) {
-            self::assertStringContainsString("'public_entity_name'", (string) file_get_contents($path), $path);
-        }
+        $fresh = (string) file_get_contents(__DIR__ . '/../../public/install/install-steps/run.step5.php');
+        $upgrade = (string) file_get_contents(__DIR__ . '/../../public/install/upgrade_run_3.2.2.php');
+        $previousUpgrade = (string) file_get_contents(__DIR__ . '/../../public/install/upgrade_run_3.2.1.php');
+
+        self::assertStringContainsString("array('admin', 'public_entity_name', '')", $fresh);
+        self::assertStringContainsString("array('admin', 'secure_send_show_sender_name', '1')", $fresh);
+        self::assertStringContainsString("'public_entity_name', '')", $upgrade);
+        self::assertStringContainsString("'secure_send_show_sender_name', '0')", $upgrade);
+        self::assertStringNotContainsString("'public_entity_name'", $previousUpgrade);
     }
 
     /** The setting stays a single bounded plain-text field next to the existing branding. */
@@ -51,6 +54,8 @@ class SecureSendBrandingSettingsTest extends TestCase
         self::assertSame(1, substr_count($options, "id='public_entity_name'"));
         self::assertStringContainsString("maxlength='100'", $options);
         self::assertLessThan(strpos($options, "id='custom_logo'"), strpos($options, "id='public_entity_name'"));
+        self::assertSame(1, substr_count($options, "id='secure_send_show_sender_name'"));
+        self::assertStringContainsString("id='secure_send_show_sender_name_input'", $options);
     }
 
     /** Saving the public name passes through the shared normalizer before storage. */
@@ -81,6 +86,8 @@ class SecureSendBrandingSettingsTest extends TestCase
         self::assertStringContainsString("\$session->get('user-lastname')", $items);
         self::assertStringContainsString("secure_send_public_identity_notice", $items);
         self::assertStringContainsString("secure_send_public_identity_notice_entity", $items);
+        self::assertStringContainsString("secure_send_public_identity_disabled", $items);
+        self::assertStringContainsString('html_entity_decode(', $items);
         self::assertStringNotContainsString("\$session->get('user-login')", $items);
     }
 }

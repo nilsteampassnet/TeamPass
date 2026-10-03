@@ -75,8 +75,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 // Define Timezone
 date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
 $secureSendPublicEntity = brandingPublicEntityName((string) ($SETTINGS['public_entity_name'] ?? ''));
+$secureSendShowSenderName = (int) ($SETTINGS['secure_send_show_sender_name'] ?? 0) === 1;
+$decodeSecureSendProfileValue = static fn (mixed $value): string => trim(
+    html_entity_decode((string) $value, ENT_QUOTES | ENT_HTML5, 'UTF-8')
+);
 $secureSendProfileName = trim(
-    trim((string) $session->get('user-name')) . ' ' . trim((string) $session->get('user-lastname'))
+    $decodeSecureSendProfileValue($session->get('user-name')) . ' '
+    . $decodeSecureSendProfileValue($session->get('user-lastname'))
 );
 
 // Set header properties
@@ -770,8 +775,20 @@ if ((int) $session_user_admin === 1) {
                     </div>
 
                     <div class="alert alert-light border py-2 mb-4" role="note">
-                        <small class="text-muted"><i class="fa-solid fa-user-check mr-2" aria-hidden="true"></i><?php
-                            if ($secureSendProfileName !== '') {
+                        <small class="text-muted"><i class="fa-solid fa-circle-info mr-2" aria-hidden="true"></i><?php
+                            if ($secureSendShowSenderName === false) {
+                                echo htmlspecialchars(
+                                    str_replace(
+                                        '#ENTITY#',
+                                        $secureSendPublicEntity,
+                                        $lang->get($secureSendPublicEntity === ''
+                                            ? 'secure_send_public_identity_disabled'
+                                            : 'secure_send_public_identity_disabled_entity')
+                                    ),
+                                    ENT_QUOTES | ENT_SUBSTITUTE,
+                                    'UTF-8'
+                                );
+                            } elseif ($secureSendProfileName !== '') {
                                 echo htmlspecialchars(
                                     str_replace(
                                         ['#NAME#', '#ENTITY#'],

@@ -588,6 +588,16 @@ mysqli_query(
     "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'custom_login_background', '')"
 );
 
+// Secure Send public identity. Existing instances opt in before publishing profile names.
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'public_entity_name', '')"
+);
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'secure_send_show_sender_name', '0')"
+);
+
 // Drop the temporary installation table left behind by the installer.
 //
 // `_install` is created unprefixed by install-steps/run.step3|4 and holds the

@@ -217,6 +217,7 @@ Sharing, export, and content features.
 | **Enable One-Time View** | Users can generate time-limited sharing links for items (see [Items — One Time View](../features/items.md#one-time-view)) |
 | **OTV expiration period** | Default validity duration for One Time View links in days (default: 7) |
 | **Public sharing address** | HTTPS base URL used for external item and note links. The existing `otv_subdomain` setting also accepts a hostname or legacy short prefix; see below. |
+| **Show the sender’s profile name** | Publishes the sender’s first and last name on the public page before passphrase entry. Enabled on fresh installs; existing instances must opt in after upgrading. |
 | **Allow printing** | Enables the print / export-to-PDF feature |
 | **Roles allowed to print** | Restricts the print feature to selected roles |
 | **Allow import** | Enables CSV and KeePass2 XML import (see [Import](../features/import.md)) |

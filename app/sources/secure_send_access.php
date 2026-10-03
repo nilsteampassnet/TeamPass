@@ -18,18 +18,17 @@ require_once __DIR__ . '/otp.functions.php';
  * @param int $itemId Shared item
  * @param int $userId Originator, never the unauthenticated recipient
  * @param bool $lock Lock the item when called inside a redemption transaction
+ * @param array|null $originator Eligible originator row, returned for callers that also need its public profile
  * @return array Accessible item, or an empty array
  */
-function secureSendReadItem(int $itemId, int $userId, bool $lock = false): array
+function secureSendReadItem(int $itemId, int $userId, bool $lock = false, ?array &$originator = null): array
 {
+    $originator = null;
     if ($itemId <= 0 || $userId <= 0) {
         return [];
     }
-    $user = DB::queryFirstRow(
-        'SELECT id, admin FROM ' . prefixTable('users') . ' WHERE id = %i AND disabled = 0 AND deleted_at IS NULL',
-        $userId
-    );
-    if (empty($user) || (int) $user['admin'] === 1) {
+    $originator = secureSendReadEligibleOriginator($userId);
+    if ($originator === []) {
         return [];
     }
     return DB::queryFirstRow(
@@ -41,6 +40,28 @@ function secureSendReadItem(int $itemId, int $userId, bool $lock = false): array
 }
 
 /**
+ * Read the active non-administrator account allowed to originate a Secure Send link.
+ *
+ * Only public profile fields are selected alongside the identifier. Authentication
+ * identifiers such as the login and email address must never reach the recipient flow.
+ *
+ * @param int $userId Originator identifier
+ * @return array Eligible account row, or an empty array
+ */
+function secureSendReadEligibleOriginator(int $userId): array
+{
+    if ($userId <= 0) {
+        return [];
+    }
+
+    return DB::queryFirstRow(
+        'SELECT id, name, lastname FROM ' . prefixTable('users') . '
+        WHERE id = %i AND admin = 0 AND disabled = 0 AND deleted_at IS NULL',
+        $userId
+    ) ?: [];
+}
+
+/**
  * Resolve the public identity of a link originator after checking current eligibility.
  *
  * The public recipient page must never disclose a login or an email address. A missing
@@ -48,32 +69,39 @@ function secureSendReadItem(int $itemId, int $userId, bool $lock = false): array
  * Item links additionally require the originator to retain access to the active item.
  *
  * @param array $link Stored Secure Send link
+ * @param bool $showDisplayName Whether the administrator permits public profile names
  * @return array{display_name:string}|null Public identity, or null when the link must be denied
  */
-function secureSendPublicSender(array $link): ?array
+function secureSendPublicSender(array $link, bool $showDisplayName): ?array
 {
     $originator = (int) ($link['originator'] ?? 0);
     if ($originator <= 0) {
         return null;
     }
 
-    if (($link['send_type'] ?? 'item') !== 'note'
-        && secureSendReadItem((int) ($link['item_id'] ?? 0), $originator) === []
-    ) {
-        return null;
+    $user = null;
+    if (($link['send_type'] ?? 'item') !== 'note') {
+        if (secureSendReadItem((int) ($link['item_id'] ?? 0), $originator, false, $user) === []) {
+            return null;
+        }
+    } else {
+        $user = secureSendReadEligibleOriginator($originator);
     }
 
-    $user = DB::queryFirstRow(
-        'SELECT name, lastname FROM ' . prefixTable('users') . '
-        WHERE id = %i AND disabled = 0 AND deleted_at IS NULL',
-        $originator
-    );
     if (empty($user)) {
         return null;
     }
 
+    if ($showDisplayName === false) {
+        return ['display_name' => ''];
+    }
+
+    $decode = static fn (mixed $value): string => trim(
+        html_entity_decode((string) $value, ENT_QUOTES | ENT_HTML5, 'UTF-8')
+    );
+
     return [
-        'display_name' => trim(trim((string) ($user['name'] ?? '')) . ' ' . trim((string) ($user['lastname'] ?? ''))),
+        'display_name' => trim($decode($user['name'] ?? '') . ' ' . $decode($user['lastname'] ?? '')),
     ];
 }
 

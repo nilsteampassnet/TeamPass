@@ -320,7 +320,10 @@ function secureSendPrepareRecipient(array $input, string $method, array $setting
             $link = [];
             $error = 'secure_send_invalid_link';
         } else {
-            $sender = secureSendPublicSender($link);
+            $sender = secureSendPublicSender(
+                $link,
+                (int) ($settings['secure_send_show_sender_name'] ?? 0) === 1
+            );
             // GET must not expose a sender whose account or item access is no longer valid.
             // A confirmed POST still enters secureSendRedeem(), which owns the transactional
             // revocation of links invalidated between the confirmation page and submission.

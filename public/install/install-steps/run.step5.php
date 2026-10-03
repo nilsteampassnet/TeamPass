@@ -647,6 +647,7 @@ class DatabaseInstaller
             array('admin', 'secure_send_allow_notes', '0'),
             array('admin', 'secure_send_max_views', '5'),
             array('admin', 'secure_send_require_passphrase', '0'),
+            array('admin', 'secure_send_show_sender_name', '1'),
             array('admin', 'agses_authentication_enabled', '0'),
             array('admin', 'item_extra_fields', '0'),
             array('admin', 'saltkey_ante_2127', 'none'),

@@ -30,6 +30,7 @@ class SecureSendAccessTest extends TestCase
         DB::$connection->exec("INSERT INTO sharing_fixture_sharekeys_items VALUES (42, 123, 'wrapped-key', 81)");
         DB::$totpSecret = 'JBSWY3DPEHPK3PXP';
         DB::$totpFailure = false;
+        DB::$userQueries = 0;
     }
 
     /** Losing a folder grant blocks an existing item link even if its sharekey remains. */
@@ -87,19 +88,20 @@ class SecureSendAccessTest extends TestCase
     public function testPublicSenderNeverExposesAuthenticationIdentifiers(): void
     {
         $link = ['send_type' => 'item_v2', 'item_id' => 123, 'originator' => 42];
-        self::assertSame(['display_name' => 'Alice Sender'], secureSendPublicSender($link));
-        self::assertArrayNotHasKey('login', secureSendPublicSender($link));
-        self::assertArrayNotHasKey('email', secureSendPublicSender($link));
+        self::assertSame(['display_name' => 'Alice Sender'], secureSendPublicSender($link, true));
+        self::assertSame(1, DB::$userQueries, 'Item access and public identity must share the originator query.');
+        self::assertArrayNotHasKey('login', secureSendPublicSender($link, true));
+        self::assertArrayNotHasKey('email', secureSendPublicSender($link, true));
 
         DB::$folders[42] = [];
-        self::assertNull(secureSendPublicSender($link));
+        self::assertNull(secureSendPublicSender($link, true));
         self::assertSame(
             ['display_name' => 'Alice Sender'],
-            secureSendPublicSender(['send_type' => 'note', 'item_id' => null, 'originator' => 42])
+            secureSendPublicSender(['send_type' => 'note', 'item_id' => null, 'originator' => 42], true)
         );
 
         DB::$connection->exec('UPDATE sharing_fixture_users SET disabled = 1');
-        self::assertNull(secureSendPublicSender(['send_type' => 'note', 'item_id' => null, 'originator' => 42]));
+        self::assertNull(secureSendPublicSender(['send_type' => 'note', 'item_id' => null, 'originator' => 42], true));
     }
 
     /** Accounts without profile names remain valid without falling back to their login. */
@@ -109,8 +111,18 @@ class SecureSendAccessTest extends TestCase
 
         self::assertSame(
             ['display_name' => ''],
-            secureSendPublicSender(['send_type' => 'note', 'item_id' => null, 'originator' => 42])
+            secureSendPublicSender(['send_type' => 'note', 'item_id' => null, 'originator' => 42], true)
         );
+    }
+
+    /** Stored HTML entities are decoded once, and the administrator can suppress the profile name. */
+    public function testPublicSenderDecodesStoredNamesAndHonoursTheAdminOptOut(): void
+    {
+        DB::$connection->exec("UPDATE sharing_fixture_users SET name = 'Jean', lastname = 'd&#039;Alembert'");
+        $link = ['send_type' => 'item_v2', 'item_id' => 123, 'originator' => 42];
+
+        self::assertSame(['display_name' => "Jean d'Alembert"], secureSendPublicSender($link, true));
+        self::assertSame(['display_name' => ''], secureSendPublicSender($link, false));
     }
 
     /** Creation keeps the existing migration path for usable keys and passwords. */

@@ -1916,6 +1916,18 @@ if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_descr
                             </div>
                         </div>
 
+                        <div class='row mb-2 option' data-keywords="secure send sender profile name privacy identity">
+                            <div class='col-10'>
+                                <?php echo $lang->get('secure_send_show_sender_name'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('secure_send_show_sender_name_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='secure_send_show_sender_name' data-toggle-on='<?php echo isset($SETTINGS['secure_send_show_sender_name']) === true && (int) $SETTINGS['secure_send_show_sender_name'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='secure_send_show_sender_name_input' value='<?php echo isset($SETTINGS['secure_send_show_sender_name']) && (int) $SETTINGS['secure_send_show_sender_name'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
                         <div class='row mb-2 option' data-keywords="secure send views link">
                             <div class='col-10'>
                                 <?php echo $lang->get('secure_send_max_views'); ?>

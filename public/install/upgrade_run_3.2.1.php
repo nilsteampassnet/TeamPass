@@ -472,11 +472,6 @@ mysqli_query(
     $db_link,
     "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'secure_send_require_passphrase', '0')"
 );
-mysqli_query(
-    $db_link,
-    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'public_entity_name', '')"
-);
-
 // F12 First-run onboarding wizard: per-user completion flag (added only when missing).
 // Existing users are marked as completed so the wizard never auto-pops after an upgrade;
 // only accounts created afterwards (DEFAULT 0) trigger it on their first connection.
