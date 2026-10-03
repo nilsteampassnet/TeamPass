@@ -401,17 +401,19 @@ class FolderManager
                 ];
             }
 
-            // Serialize this preflight with LAPR enrollment. LAPR creation paths
-            // lock the referenced item before activating a relationship, so either
-            // the relationship is visible below or enrollment observes the item as
-            // deleted after this transaction commits.
-            DB::query(
-                'SELECT id
-                 FROM ' . prefixTable('items') . '
-                 WHERE id_tree IN %li AND inactif = 0 AND deleted_at IS NULL
-                 FOR UPDATE',
-                $folderForDel
-            );
+            if ((int) ($SETTINGS['lapr_enabled'] ?? 0) === 1) {
+                // Serialize this preflight with LAPR enrollment. LAPR creation paths
+                // lock the referenced item before activating a relationship, so either
+                // the relationship is visible below or enrollment observes the item as
+                // deleted after this transaction commits.
+                DB::query(
+                    'SELECT id
+                     FROM ' . prefixTable('items') . '
+                     WHERE id_tree IN %li AND inactif = 0 AND deleted_at IS NULL
+                     FOR UPDATE',
+                    $folderForDel
+                );
+            }
 
             require_once __DIR__ . '/lapr.functions.php';
             $laprRelations = laprGetFolderItemRelationCounts($folderForDel, $SETTINGS);
@@ -524,7 +526,11 @@ class FolderManager
         } catch (Throwable $e) {
             DB::rollback();
             error_log('TeamPass Error - deleteFolders - ' . $e->getMessage());
-            return ['error' => true, 'db_error' => true];
+            return [
+                'error' => true,
+                'db_error' => true,
+                'message' => (string) $this->lang->get('error_unknown'),
+            ];
         }
 
         // Rebuild the tree after commit (mirrors the web handler)

@@ -291,6 +291,33 @@ class FolderEndpointsRegressionTest extends TestCase
         );
     }
 
+    public function testDeleteEngineReturnsASafeMessageAfterADatabaseException(): void
+    {
+        $manager = $this->readSource('/app/sources/folders.class.php');
+        $deleteBody = $this->extractMethodBody(
+            $manager,
+            'public function deleteFolders(array $folderIds, array $context): array'
+        );
+
+        self::assertStringContainsString("'db_error' => true", $deleteBody);
+        self::assertStringContainsString("\$this->lang->get('error_unknown')", $deleteBody);
+        self::assertStringNotContainsString("'message' => \$e->getMessage()", $deleteBody);
+    }
+
+    public function testApiDeleteMapsSharedEngineRefusalsToExpectedStatuses(): void
+    {
+        $model = $this->readSource('/app/api/Model/FolderModel.php');
+        $deleteBody = $this->extractMethodBody(
+            $model,
+            'public function deleteFolder(int $folderId, array $userData): array'
+        );
+
+        self::assertStringContainsString("'folder_deletion_protected', 'folder_contains_lapr_items' => 409", $deleteBody);
+        self::assertStringContainsString("'folder_not_found' => 404", $deleteBody);
+        self::assertStringContainsString("'personal_root_protected' => 403", $deleteBody);
+        self::assertStringContainsString('default => 500', $deleteBody);
+    }
+
     public function testWebDeleteChecksTheGlobalFolderManagementGateBeforeCallingTheEngine(): void
     {
         $web = $this->readSource('/app/sources/folders.queries.php');

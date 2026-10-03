@@ -724,10 +724,18 @@ class FolderModel
         );
 
         if ($result['error'] === true) {
-            if (in_array((string) ($result['reason'] ?? ''), ['folder_deletion_protected', 'folder_contains_lapr_items'], true)) {
-                return $this->apiError(409, (string) ($result['message'] ?? 'Folder deletion blocked'));
-            }
-            return $this->apiError(500, (string) ($result['message'] ?? 'Folder deletion failed'));
+            $reason = (string) ($result['reason'] ?? '');
+            $statusCode = match ($reason) {
+                'folder_deletion_protected', 'folder_contains_lapr_items' => 409,
+                'folder_not_found' => 404,
+                'personal_root_protected' => 403,
+                default => 500,
+            };
+
+            return $this->apiError(
+                $statusCode,
+                (string) ($result['message'] ?? 'Folder deletion failed')
+            );
         }
 
         return [

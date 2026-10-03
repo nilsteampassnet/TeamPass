@@ -66,6 +66,27 @@ class LaprSafetyWiringTest extends TestCase
         self::assertGreaterThanOrEqual(2, substr_count($endpoints, 'FOR UPDATE'));
     }
 
+    public function testFolderDeletionOnlyLocksItemsWhenLaprIsEnabled(): void
+    {
+        $folders = $this->source('app/sources/folders.class.php');
+        $deleteStart = strpos($folders, 'public function deleteFolders(');
+        self::assertIsInt($deleteStart);
+        $deleteEnd = strpos($folders, 'private function ', $deleteStart);
+        $deleteBody = $deleteEnd === false
+            ? substr($folders, $deleteStart)
+            : substr($folders, $deleteStart, $deleteEnd - $deleteStart);
+
+        $laprGate = strpos($deleteBody, "if ((int) (\$SETTINGS['lapr_enabled'] ?? 0) === 1)");
+        $itemLock = strpos($deleteBody, "WHERE id_tree IN %li AND inactif = 0 AND deleted_at IS NULL");
+        self::assertIsInt($laprGate);
+        self::assertIsInt($itemLock);
+        self::assertLessThan(
+            $itemLock,
+            $laprGate,
+            'The subtree item lock must be guarded by the authoritative LAPR switch'
+        );
+    }
+
     public function testTasksClosedWithoutExecutionAreCancelledAndStillPurged(): void
     {
         $admin = $this->source('app/sources/admin.queries.php');
