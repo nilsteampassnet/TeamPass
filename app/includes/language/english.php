@@ -3029,6 +3029,7 @@ return array(
     'lapr_invalid_endpoint' => 'Invalid endpoint',
     'lapr_endpoint_not_found' => 'Endpoint not found',
     'lapr_endpoint_already_enrolled' => 'This host and SSH port are already enrolled as a LAPR endpoint.',
+    'lapr_endpoint_credential_unavailable' => 'The SSH credential item of this endpoint has been deleted or moved to a personal folder. Restore it or move it back to a shared folder before restoring the endpoint.',
     'lapr_remote_account_already_managed' => 'This Linux login is already managed on the selected endpoint.',
     'lapr_password_credential_already_used' => 'A password-based SSH credential item can only be assigned to one endpoint. Use a dedicated item for this endpoint.',
     'lapr_credential_auth_method_conflict' => 'This item is already used with a different SSH authentication method. Use an item containing the expected credential type.',

@@ -50,6 +50,35 @@ class LaprSafetyWiringTest extends TestCase
         self::assertStringContainsString('lapr_endpoint_already_enrolled', $body);
     }
 
+    public function testEndpointRestoreDistinguishesCredentialStateFromFolderPermission(): void
+    {
+        $endpoints = $this->source('app/sources/lapr_endpoints.queries.php');
+        $restorePosition = strpos($endpoints, 'function laprRestoreEndpoint(');
+        self::assertIsInt($restorePosition);
+        $nextFunctionPosition = strpos($endpoints, 'function laprTrustHostkey(', $restorePosition);
+        self::assertIsInt($nextFunctionPosition);
+        $body = substr($endpoints, $restorePosition, $nextFunctionPosition - $restorePosition);
+
+        $credentialStateGuard = strpos($body, 'if ($lockedCredential === null');
+        $credentialStateMessage = strpos($body, "get('lapr_endpoint_credential_unavailable')");
+        $permissionGuard = strpos($body, 'if (laprUserCanReadFolder(');
+        $permissionMessage = strpos($body, "get('error_not_allowed_to')", (int) $permissionGuard);
+        self::assertIsInt($credentialStateGuard);
+        self::assertIsInt($credentialStateMessage);
+        self::assertIsInt($permissionGuard);
+        self::assertIsInt($permissionMessage);
+        self::assertLessThan($credentialStateMessage, $credentialStateGuard);
+        self::assertLessThan($permissionGuard, $credentialStateMessage);
+        self::assertLessThan($permissionMessage, $permissionGuard);
+
+        foreach (['english.php', 'french.php'] as $catalogue) {
+            self::assertStringContainsString(
+                "'lapr_endpoint_credential_unavailable' =>",
+                $this->source('app/includes/language/' . $catalogue)
+            );
+        }
+    }
+
     public function testFolderDeletionAndLaprEnrollmentShareAnItemLockBoundary(): void
     {
         $folders = $this->source('app/sources/folders.class.php');

@@ -3129,6 +3129,7 @@ return array(
     'lapr_invalid_endpoint' => 'Serveur invalide',
     'lapr_endpoint_not_found' => 'Serveur introuvable',
     'lapr_endpoint_already_enrolled' => 'Cet hôte et ce port SSH sont déjà enrôlés comme serveur LAPR.',
+    'lapr_endpoint_credential_unavailable' => 'L’élément d’identification SSH de ce serveur a été supprimé ou déplacé vers un dossier personnel. Restaurez-le ou replacez-le dans un dossier partagé avant de restaurer le serveur.',
     'lapr_remote_account_already_managed' => 'Ce compte Linux est déjà géré sur le serveur sélectionné.',
     'lapr_password_credential_already_used' => 'Un élément d’identification SSH par mot de passe ne peut être affecté qu’à un seul serveur. Utilisez un élément dédié à ce serveur.',
     'lapr_credential_auth_method_conflict' => 'Cet élément est déjà utilisé avec une autre méthode d’authentification SSH. Utilisez un élément contenant le type d’identifiant attendu.',

@@ -1034,10 +1034,20 @@ function laprRestoreEndpoint(array $data, SessionInterface $session, int $userId
         );
         if ($lockedCredential === null
             || (int) $lockedCredential['perso'] === 1
-            || laprUserCanReadFolder((int) $lockedCredential['id_tree'], $session) === false
         ) {
             DB::rollback();
-            echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+            echo prepareExchangedData(
+                ['error' => true, 'message' => $lang->get('lapr_endpoint_credential_unavailable')],
+                'encode'
+            );
+            return;
+        }
+        if (laprUserCanReadFolder((int) $lockedCredential['id_tree'], $session) === false) {
+            DB::rollback();
+            echo prepareExchangedData(
+                ['error' => true, 'message' => $lang->get('error_not_allowed_to')],
+                'encode'
+            );
             return;
         }
 
