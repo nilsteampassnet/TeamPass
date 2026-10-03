@@ -15,6 +15,7 @@ require_once __DIR__ . '/../../app/scripts/personal_sharekeys_logic.php';
  *   - isPersonalSharekeyDistribution()      — the owner-only trigger (personal flag, NOT onlyForUser)
  *   - personalRootOwnerId()                 — owner resolution from the personal tree root
  *   - personalOwnerConflictsWithCreator()   — at_creation cross-check (skip on disagreement)
+ *   - personalOwnerConflictsForRepair()     — the same, except for an item its owner moved in
  *   - personalSharekeyKeepList()            — owner + system/recovery accounts
  *   - foreignSharekeyUserIds()              — the "user_id NOT IN (...)" deletion spec
  *
@@ -144,6 +145,41 @@ class PersonalSharekeysLogicTest extends TestCase
     {
         $this->assertTrue(personalOwnerConflictsWithCreator(10000000, 10000165));
         $this->assertTrue(personalOwnerConflictsWithCreator(10000205, '10000002'));
+    }
+
+    // =========================================================================
+    // personalOwnerConflictsForRepair() — owner who moved someone else's item in
+    // =========================================================================
+
+    /**
+     * #5407: user 10000001 moved an item created by 10000000 into their own personal folder.
+     * The folder owner made the latest move, so the repair accepts them as the owner.
+     */
+    public function testRepairAcceptsOwnerWhoMadeTheLatestMove(): void
+    {
+        $this->assertFalse(personalOwnerConflictsForRepair(10000001, 10000000, 10000001));
+        // MeekroDB returns column values as strings.
+        $this->assertFalse(personalOwnerConflictsForRepair(10000001, '10000000', '10000001'));
+    }
+
+    public function testRepairRefusesWhenSomeoneElseMadeTheLatestMove(): void
+    {
+        $this->assertTrue(personalOwnerConflictsForRepair(10000001, 10000000, 10000000));
+        $this->assertTrue(personalOwnerConflictsForRepair(10000001, 10000000, '10000165'));
+    }
+
+    public function testRepairRefusesAMismatchWithNoMove(): void
+    {
+        $this->assertTrue(personalOwnerConflictsForRepair(10000001, 10000000, null));
+        $this->assertTrue(personalOwnerConflictsForRepair(10000001, 10000000, ''));
+    }
+
+    public function testRepairKeepsTheCreatorRuleWhenThereIsNoMismatch(): void
+    {
+        $this->assertFalse(personalOwnerConflictsForRepair(10000001, 10000001, null));
+        $this->assertFalse(personalOwnerConflictsForRepair(10000001, '10000001', 10000000));
+        $this->assertFalse(personalOwnerConflictsForRepair(10000001, null, 10000000));
+        $this->assertFalse(personalOwnerConflictsForRepair(10000001, '', null));
     }
 
     // =========================================================================
