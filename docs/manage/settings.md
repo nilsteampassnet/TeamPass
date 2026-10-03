@@ -210,6 +210,9 @@ Sharing, export, and content features.
 | **Enable One-Time View** | Users can generate time-limited sharing links for items (see [Items — One Time View](../features/items.md#one-time-view)) |
 | **OTV expiration period** | Default validity duration for One Time View links in days (default: 7) |
 | **Public sharing address** | HTTPS base URL used for external item and note links. The existing `otv_subdomain` setting also accepts a hostname or legacy short prefix; see below. |
+| **Secure Send maximum number of views per link** | Upper bound that a sender may assign to one link; use `1` unless the use case explicitly requires more |
+| **Force a passphrase on every Secure Send link** | Requires the sender to protect every new link with a separate passphrase; recommended for Internet-facing links |
+| **Allow sending ad-hoc notes/secrets** | Permits links that are not attached to an item or folder; leave disabled unless that independent lifecycle is required |
 | **Allow printing** | Enables the print / export-to-PDF feature |
 | **Roles allowed to print** | Restricts the print feature to selected roles |
 | **Allow import** | Enables CSV and KeePass2 XML import (see [Import](../features/import.md)) |
@@ -267,10 +270,15 @@ underscores.
 
 The public hostname is not an isolation boundary for the full TeamPass application.
 If the vault should remain private, configure the public virtual host/reverse proxy
-to expose only the OTV entry point (`index.php?otv=1`, GET and POST) and its static
-assets, while retaining the internal route for authenticated use. Do not redirect
+to expose only the exact generated OTV GET query, the `index.php?otv=1`
+confirmation POST and required static assets, while retaining the internal route
+for authenticated use. Do not redirect
 public OTV requests to the private hostname. Never log link query parameters or
 recipient POST bodies, which contain sharing credentials.
+
+For deny-by-default Apache, Nginx/PHP-FPM and reverse-proxy examples, operating
+system differences, validation tests and operational policy, see
+[Secure Send deployment and hardening](../install/secure-send.md).
 
 ---
 
