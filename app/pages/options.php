@@ -228,6 +228,18 @@ $zones = timezone_list();
                                 </div>
                             </div>
 
+                            <div class='form-group option' data-keywords="branding public entity organisation organization secure send">
+                                <label for='public_entity_name' class='col-sm-10 control-label'>
+                                    <?php echo $lang->get('public_entity_name'); ?>
+                                </label>
+                                <div class='col-sm-12'>
+                                    <input type='text' class='form-control form-control-sm' id='public_entity_name' maxlength='100' value='<?php echo htmlspecialchars(brandingPublicEntityName((string) ($SETTINGS['public_entity_name'] ?? '')), ENT_QUOTES, 'UTF-8'); ?>'>
+                                    <small class='form-text text-muted'>
+                                        <?php echo $lang->get('public_entity_name_tip'); ?>
+                                    </small>
+                                </div>
+                            </div>
+
                             <div class='form-group option' data-keywords="server setting">
                                 <label for='custom_logo' class='col-sm-10 control-label'>
                                     <?php echo $lang->get('admin_misc_custom_logo'); ?>

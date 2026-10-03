@@ -69,6 +69,26 @@ class BrandingLogicTest extends TestCase
         self::assertSame('', brandingBackgroundUrl('', $this->directory));
     }
 
+    /** Secure Send only loads same-origin files from the controlled custom folder. */
+    public function testSecureSendLogoRefusesRemoteAndArbitraryPaths(): void
+    {
+        self::assertSame('./assets/custom/logo.png', brandingSecureSendLogoUrl('logo.png', $this->directory));
+        foreach (['https://cdn.example/logo.png', '/branding/logo.png', '../logo.png', 'shape.svg', 'missing.png'] as $value) {
+            self::assertSame('', brandingSecureSendLogoUrl($value, $this->directory), $value);
+        }
+    }
+
+    /** The public entity is plain display text with a small, deterministic storage budget. */
+    public function testPublicEntityNameIsDecodedTrimmedAndBounded(): void
+    {
+        self::assertSame('ACME & Partners', brandingPublicEntityName('  ACME &amp; Partners  '));
+        self::assertSame('<ACME>', brandingPublicEntityName('&lt;ACME&gt;'));
+        self::assertSame(
+            str_repeat('é', BRANDING_PUBLIC_ENTITY_MAX_LENGTH),
+            brandingPublicEntityName(str_repeat('é', BRANDING_PUBLIC_ENTITY_MAX_LENGTH + 20))
+        );
+    }
+
     public function testLogoKeepsAcceptingWhatItAcceptedBefore(): void
     {
         // A value naming no image of the folder is used as entered, as before the folder existed.

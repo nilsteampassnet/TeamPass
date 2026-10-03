@@ -588,6 +588,7 @@ class DatabaseInstaller
             array('admin', 'enable_email_notification_on_item_shown', '0'),
             array('admin', 'enable_email_notification_on_user_pw_change', '0'),
             array('admin', 'custom_logo', ''),
+            array('admin', 'public_entity_name', ''),
             array('admin', 'custom_login_text', ''),
             array('admin', 'custom_login_background', ''),
             array('admin', 'default_language', 'english'),

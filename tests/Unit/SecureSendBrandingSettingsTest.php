@@ -1,0 +1,63 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Teampass - a collaborative passwords manager.
+ * ---
+ * This file is part of the TeamPass project.
+ *
+ * TeamPass is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * TeamPass is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Certain components of this file may be under different licenses. For
+ * details, see the `licenses` directory or individual file headers.
+ * ---
+ * @file      SecureSendBrandingSettingsTest.php
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2026 Teampass.net
+ * @license   GPL-3.0
+ * @see       https://www.teampass.net
+ */
+
+use PHPUnit\Framework\TestCase;
+
+class SecureSendBrandingSettingsTest extends TestCase
+{
+    /** Fresh and upgraded installations must expose the same optional setting. */
+    public function testPublicEntitySettingIsSeededForEveryInstallationPath(): void
+    {
+        foreach ([
+            __DIR__ . '/../../public/install/install-steps/run.step5.php',
+            __DIR__ . '/../../public/install/upgrade_run_3.2.1.php',
+        ] as $path) {
+            self::assertStringContainsString("'public_entity_name'", (string) file_get_contents($path), $path);
+        }
+    }
+
+    /** The setting stays a single bounded plain-text field next to the existing branding. */
+    public function testOptionsExposeOneBoundedPublicEntityField(): void
+    {
+        $options = (string) file_get_contents(__DIR__ . '/../../app/pages/options.php');
+        self::assertSame(1, substr_count($options, "id='public_entity_name'"));
+        self::assertStringContainsString("maxlength='100'", $options);
+        self::assertLessThan(strpos($options, "id='custom_logo'"), strpos($options, "id='public_entity_name'"));
+    }
+
+    /** Saving the public name passes through the shared normalizer before storage. */
+    public function testAdminSaveNormalizesThePublicEntityName(): void
+    {
+        $admin = (string) file_get_contents(__DIR__ . '/../../app/sources/admin.queries.php');
+        self::assertStringContainsString("\$post_field === 'public_entity_name'", $admin);
+        self::assertStringContainsString('brandingPublicEntityName((string) $post_value)', $admin);
+    }
+}
