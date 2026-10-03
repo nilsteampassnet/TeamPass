@@ -615,7 +615,7 @@ if (
     function kbMarkdownButton(context) {
         return $.summernote.ui.button({
             className: 'btn-kb-markdown note-codeview-keep',
-            contents: '<i class="fab fa-markdown"></i>',
+            contents: '<i class="tp-kb-markdown-icon fa-markdown"></i>',
             tooltip: kbTranslations.kb_markdown_view_tooltip,
             click: function() {
                 if (kbMarkdownView === null) {

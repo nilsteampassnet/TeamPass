@@ -605,6 +605,19 @@ $directKbId = (int) $request->query->get('id', 0);
         padding: 0.375rem 0.75rem;
         border-bottom: 1px solid rgba(0, 0, 0, 0.125);
     }
+
+    /* Built like Summernote's toolbar icons (inline <i>, inline-block ::before aligned middle), so the
+       button keeps the height of </>: with Font Awesome's inline-block <i>, its line shrank to the icon. */
+    .tp-kb-markdown-icon::before {
+        content: var(--fa);
+        display: inline-block;
+        vertical-align: middle;
+        font-family: var(--fa-family-brands);
+        font-style: normal;
+        font-weight: 400;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
 </style>
 
 <input type="hidden" id="kb-direct-id" value="<?php echo $directKbId; ?>">
