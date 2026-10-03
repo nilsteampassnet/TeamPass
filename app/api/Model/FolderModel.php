@@ -374,6 +374,7 @@ class FolderModel
             'user_can_create_root_folder' => (int) $user_can_create_root_folder,
             'user_can_manage_all_users' => (int) $user_can_manage_all_users,
             'user_id' => (int) $user_id,
+            'user_login' => (string) $user_login,
             'user_roles' => (string) $user_roles,
         ];
         // Full lifecycle options (C1) — mirrors web add_folder so the tree is rebuilt,
@@ -461,6 +462,7 @@ class FolderModel
             'duration' => 'cast:integer',
             'create_auth_without' => 'cast:integer',
             'edit_auth_without' => 'cast:integer',
+            'deletion_protected' => 'cast:integer',
             'icon' => 'trim|escape',
             'icon_selected' => 'trim|escape',
         ];
@@ -477,6 +479,23 @@ class FolderModel
         $titleProvided = array_key_exists('title', $provided);
         $parentProvided = array_key_exists('parent_id', $provided);
         $complexityProvided = array_key_exists('complexity', $provided);
+        $deletionProtectionProvided = array_key_exists('deletion_protected', $provided);
+
+        if ($deletionProtectionProvided === true) {
+            if ((int) ($userData['is_admin'] ?? 0) !== 1) {
+                return $this->apiError(403, 'Only an administrator can change folder deletion protection');
+            }
+            $validatedDeletionProtection = filter_var(
+                $rawProvided['deletion_protected'],
+                FILTER_VALIDATE_INT
+            );
+            if ($validatedDeletionProtection === false
+                || in_array($validatedDeletionProtection, [0, 1], true) === false
+            ) {
+                return $this->apiError(422, 'Folder deletion protection must be 0 or 1');
+            }
+            $provided['deletion_protected'] = $validatedDeletionProtection;
+        }
 
         $newParentId = $parentProvided === true ? (int) $provided['parent_id'] : (int) $folder['parent_id'];
         $parentChanged = $newParentId !== (int) $folder['parent_id'];
@@ -602,11 +621,12 @@ class FolderModel
             'user_id' => $userId,
             'user_login' => (string) ($userData['username'] ?? ''),
             'user_roles' => (string) ($userData['roles'] ?? ''),
+            'user_is_admin' => (int) ($userData['is_admin'] ?? 0),
         ];
         if ($parentProvided === true) {
             $params['parent_id'] = $newParentId;
         }
-        foreach (['title', 'complexity', 'duration', 'create_auth_without', 'edit_auth_without', 'icon', 'icon_selected'] as $field) {
+        foreach (['title', 'complexity', 'duration', 'create_auth_without', 'edit_auth_without', 'deletion_protected', 'icon', 'icon_selected'] as $field) {
             if (array_key_exists($field, $provided) === true) {
                 $params[$field] = $provided[$field];
             }
@@ -617,6 +637,9 @@ class FolderModel
         $result = $folderManager->updateFolder($params);
 
         if ($result['error'] === true) {
+            if ((string) ($result['reason'] ?? '') === 'folder_contains_lapr_items') {
+                return $this->apiError(409, (string) ($result['message'] ?? 'Folder move blocked by LAPR relationships'));
+            }
             if (($result['db_error'] ?? false) === true) {
                 // Transaction rolled back — details are in the server log
                 return $this->apiError(500, 'An internal error occurred while updating the folder');
@@ -701,7 +724,18 @@ class FolderModel
         );
 
         if ($result['error'] === true) {
-            return $this->apiError(500, (string) ($result['message'] ?? 'Folder deletion failed'));
+            $reason = (string) ($result['reason'] ?? '');
+            $statusCode = match ($reason) {
+                'folder_deletion_protected', 'folder_contains_lapr_items' => 409,
+                'folder_not_found' => 404,
+                'personal_root_protected' => 403,
+                default => 500,
+            };
+
+            return $this->apiError(
+                $statusCode,
+                (string) ($result['message'] ?? 'Folder deletion failed')
+            );
         }
 
         return [

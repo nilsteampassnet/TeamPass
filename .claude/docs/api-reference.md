@@ -377,7 +377,7 @@ List all folders accessible to the authenticated user.
 
 List all folders accessible to the user with label, level, and read-only flag, **as a flat list in tree order**.
 
-**Response:** array of `{ id, label, level, parent_id, first_position, position, complexity, is_readonly, access_type, can_create, can_edit, can_delete, is_personal, is_personal_root, can_create_subfolder, can_rename_folder, can_move_folder, can_delete_folder }`.
+**Response:** array of `{ id, label, level, parent_id, first_position, position, complexity, is_readonly, access_type, can_create, can_edit, can_delete, is_personal, is_personal_root, deletion_protected, contains_deletion_protected, can_create_subfolder, can_rename_folder, can_move_folder, can_delete_folder }`.
 
 - `complexity` — minimum password strength required in the folder (`0` | `20` | `38` | `48` | `60`, the `TP_PW_STRENGTH_*` scale). LEFT JOIN on `misc` (`type='complex'`, `intitule=<folder id>`); `0` when no row exists (personal roots). Same field as in `listFolders`.
 - `access_type` — effective level resolved least-permissive-wins across every role: `W` | `ND` | `NE` | `NDNE` | `R`
@@ -389,6 +389,8 @@ List all folders accessible to the user with label, level, and read-only flag, *
 
 - `is_personal` — `nested_tree.personal_folder`. Only the caller's own personal tree is ever listed (`AuthModel::buildUserFoldersList()` adds personal folders by `title = <user id>`; admins get `personal_folder = 0` only), so `1` means "mine" in practice.
 - `is_personal_root` — `is_personal && parent_id === 0`. Never renamable / movable / deletable.
+- `deletion_protected` — direct administrative protection on this folder. Only an administrator may change it through `folder/update`.
+- `contains_deletion_protected` — direct or descendant protection; when `1`, `can_delete_folder` is `0` and the delete route returns `409`.
 - `can_create_subfolder` / `can_rename_folder` / `can_move_folder` / `can_delete_folder` — computed by `FolderAccessModel::getFolderManagementCapabilities()` from: effective access + `!is_readonly` + the global folder-management gate (`hasFolderManagementPrivilege()`) + `!is_personal_root` (except create) + the matching API CRUD claim (`allowed_to_create` / `allowed_to_update` / `allowed_to_delete`).
 
 **Rule: these four flags are UI hints, never an authorization decision.** `FolderModel::createFolder()/updateFolder()/deleteFolder()` re-run every check on mutation. In particular `can_move_folder` describes the **source only** — `updateFolder()` separately validates the destination (access, read-only, self/descendant cycle, personal ↔ shared boundary, root permission), so a `1` can still end in `403`/`422`.
@@ -425,7 +427,7 @@ Create a new folder (shared or personal, root or subfolder). Delegates to the sh
 
 Update an existing folder. **Only PUT is accepted** — other methods return 405 + `Allow: PUT`. Delegates the write to `FolderManager::updateFolder()`; a WebSocket `folder_updated` event is emitted.
 
-**Body:** `id` (required); every other field optional — **partial update**, unspecified fields keep their current value: `title`, `parent_id` (move), `complexity`, `duration`, `create_auth_without`, `edit_auth_without`, `icon`, `icon_selected`. At least one updatable field must be present → else `400 'Nothing to update'`.
+**Body:** `id` (required); every other field optional — **partial update**, unspecified fields keep their current value: `title`, `parent_id` (move), `complexity`, `duration`, `create_auth_without`, `edit_auth_without`, `deletion_protected`, `icon`, `icon_selected`. At least one updatable field must be present → else `400 'Nothing to update'`.
 
 - **`access_rights` is not updatable here** — editing the rights of an existing folder is a roles-management operation (`roles_values`), not a folder-form field (mirrors the web `update_folder`, which also ignores it on update).
 - **`personal_folder` is derived**, never client-controlled.
@@ -447,6 +449,8 @@ Soft-delete a folder and **all its descendants** into the recycle bin; every con
 
 - **Personal ROOT folders cannot be deleted** → `403`.
 - Inaccessible / read-only / another user's personal tree → `403`.
+- A folder protected against accidental deletion, or an ancestor selection containing a protected descendant, returns `409` before any mutation.
+- While LAPR is enabled, a subtree containing an active managed item or endpoint credential returns `409`; move or unlink those items first.
 
 **Response 200:** `{ error: false, message: "Folder deleted", deleted_folders: [57, 58, 61], deleted_items_count: 12 }` — `deleted_folders` lists the folder plus every descendant that was removed.
 

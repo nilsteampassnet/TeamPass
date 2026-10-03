@@ -62,6 +62,8 @@ class RenewalMigrationTest extends TestCase
             $db->exec('INSERT INTO custom_lapr_endpoints VALUES (1, 42), (2, 42), (3, NULL)');
             $db->exec('CREATE TABLE custom_roles_title (id INTEGER PRIMARY KEY, title TEXT)');
             $db->exec("INSERT INTO custom_roles_title VALUES (1, 'Existing role')");
+            $db->exec('CREATE TABLE custom_nested_tree (id INTEGER PRIMARY KEY, title TEXT)');
+            $db->exec("INSERT INTO custom_nested_tree VALUES (1, 'Existing folder')");
             $chain = file_get_contents(__DIR__ . '/../../public/install/upgrade_run_3.2.2.php');
             $start = strpos($chain, '// Individual item renewal policies');
             $end = strpos($chain, '// Save upgrade timestamp');
@@ -75,11 +77,17 @@ class RenewalMigrationTest extends TestCase
                 $db->querySingle('SELECT * FROM custom_items', true));
             // Existing roles keep the Security posture "Fix" shortcuts visible.
             self::assertSame(1, $db->querySingle('SELECT allow_security_posture_fix FROM custom_roles_title WHERE id = 1'));
+            self::assertSame(
+                ['id' => 1, 'title' => 'Existing folder', 'deletion_protected' => 0],
+                $db->querySingle('SELECT * FROM custom_nested_tree', true)
+            );
             $db->exec('UPDATE custom_items SET renewal_period = 30 WHERE id = 1');
             $db->exec('UPDATE custom_roles_title SET allow_security_posture_fix = 0 WHERE id = 1');
+            $db->exec('UPDATE custom_nested_tree SET deletion_protected = 1 WHERE id = 1');
             eval('namespace ' . __NAMESPACE__ . ';' . $migration);
             self::assertSame(30, $db->querySingle('SELECT renewal_period FROM custom_items WHERE id = 1'));
             self::assertSame(0, $db->querySingle('SELECT allow_security_posture_fix FROM custom_roles_title WHERE id = 1'));
+            self::assertSame(1, $db->querySingle('SELECT deletion_protected FROM custom_nested_tree WHERE id = 1'));
             self::assertSame(1, $db->querySingle("SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'idx_ssh_credential_source'"));
             self::assertSame(3, $db->querySingle('SELECT COUNT(*) FROM custom_lapr_endpoints'));
             // Multiple endpoints may share the same connection credential: this is not a unique index.

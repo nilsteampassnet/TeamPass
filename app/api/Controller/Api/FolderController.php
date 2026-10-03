@@ -229,7 +229,14 @@ class FolderController extends BaseController
 
                 if (empty($userFolders) === false) {
                     $rows = DB::query(
-                        'SELECT nt.id AS folder_id, nt.title, nt.nlevel, nt.parent_id, nt.nleft, nt.personal_folder
+                        'SELECT nt.id AS folder_id, nt.title, nt.nlevel, nt.parent_id, nt.nleft, nt.personal_folder,
+                                nt.deletion_protected,
+                                EXISTS(
+                                    SELECT 1 FROM ' . prefixTable('nested_tree') . ' AS protected_nt
+                                    WHERE protected_nt.deletion_protected = 1
+                                      AND protected_nt.nleft >= nt.nleft
+                                      AND protected_nt.nright <= nt.nright
+                                ) AS contains_deletion_protected
                         FROM ' . prefixTable('nested_tree') . ' AS nt
                         WHERE nt.id IN %li
                         ORDER BY nt.nleft ASC',
@@ -280,10 +287,15 @@ class FolderController extends BaseController
                             // These are UI hints only; mutation routes re-run every check.
                             'is_personal' => $isPersonal ? 1 : 0,
                             'is_personal_root' => $isPersonalRoot ? 1 : 0,
+                            'deletion_protected' => (int) ($row['deletion_protected'] ?? 0),
+                            'contains_deletion_protected' => (int) ($row['contains_deletion_protected'] ?? 0),
                             'can_create_subfolder' => $managementCapabilities['can_create_subfolder'] ? 1 : 0,
                             'can_rename_folder' => $managementCapabilities['can_rename_folder'] ? 1 : 0,
                             'can_move_folder' => $managementCapabilities['can_move_folder'] ? 1 : 0,
-                            'can_delete_folder' => $managementCapabilities['can_delete_folder'] ? 1 : 0,
+                            'can_delete_folder' => (
+                                $managementCapabilities['can_delete_folder']
+                                && (int) ($row['contains_deletion_protected'] ?? 0) === 0
+                            ) ? 1 : 0,
                         ];
                     }
                 }
@@ -343,7 +355,7 @@ class FolderController extends BaseController
                     $strErrorHeader = 'HTTP/1.1 400 Bad Request';
                 } else {
                     // At least one updatable field must be present
-                    $updatableFields = ['title', 'parent_id', 'complexity', 'duration', 'create_auth_without', 'edit_auth_without', 'icon', 'icon_selected'];
+                    $updatableFields = ['title', 'parent_id', 'complexity', 'duration', 'create_auth_without', 'edit_auth_without', 'deletion_protected', 'icon', 'icon_selected'];
                     $hasUpdateField = false;
                     foreach ($updatableFields as $field) {
                         if (array_key_exists($field, $arrQueryStringParams) === true) {

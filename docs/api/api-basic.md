@@ -1094,6 +1094,8 @@ Rows are sorted by `position` (the folder tree's own order, siblings included), 
     "can_delete": 1,
     "is_personal": 1,
     "is_personal_root": 1,
+    "deletion_protected": 0,
+    "contains_deletion_protected": 0,
     "can_create_subfolder": 1,
     "can_rename_folder": 0,
     "can_move_folder": 0,
@@ -1114,6 +1116,8 @@ Rows are sorted by `position` (the folder tree's own order, siblings included), 
     "can_delete": 0,
     "is_personal": 0,
     "is_personal_root": 0,
+    "deletion_protected": 0,
+    "contains_deletion_protected": 0,
     "can_create_subfolder": 1,
     "can_rename_folder": 1,
     "can_move_folder": 1,
@@ -1134,6 +1138,8 @@ Rows are sorted by `position` (the folder tree's own order, siblings included), 
     "can_delete": 0,
     "is_personal": 0,
     "is_personal_root": 0,
+    "deletion_protected": 0,
+    "contains_deletion_protected": 0,
     "can_create_subfolder": 0,
     "can_rename_folder": 0,
     "can_move_folder": 0,
@@ -1160,10 +1166,12 @@ Rows are sorted by `position` (the folder tree's own order, siblings included), 
 | `can_delete` | integer | **Item right** — `1` when the user may delete items (`0` for `ND`, `NDNE`, `R`). Does **not** authorize deleting the folder |
 | `is_personal` | integer | `1` when the folder is part of a personal folder tree, `0` for the shared domain. Only your own personal folders are ever listed |
 | `is_personal_root` | integer | `1` for the root of your personal tree. A personal root can never be renamed, moved or deleted |
+| `deletion_protected` | integer | `1` when this folder itself is protected against accidental deletion |
+| `contains_deletion_protected` | integer | `1` when this folder or one of its descendants is protected, so deleting this subtree is blocked |
 | `can_create_subfolder` | integer | **Folder capability** — `1` when [`folder/create`](#create-folder) may use this folder as its `parent_id` |
 | `can_rename_folder` | integer | **Folder capability** — `1` when this folder is eligible for a rename through [`folder/update`](#folder-update) |
 | `can_move_folder` | integer | **Folder capability** — `1` when this folder is eligible to be moved. Describes the **source only**, see the warning below |
-| `can_delete_folder` | integer | **Folder capability** — `1` when this folder is eligible for deletion through [`folder/delete`](#folder-delete) |
+| `can_delete_folder` | integer | **Folder capability** — `1` when this folder is eligible for deletion through [`folder/delete`](#folder-delete), including the absence of administrative protection in its subtree |
 
 > ⚠️ `is_readonly: 0` does **not** mean full write access. A folder granted as `ND`, `NE` or `NDNE` is writable but restricts deletion and/or edition — rely on `can_edit` / `can_delete` rather than on `is_readonly` alone, otherwise a legitimate call will come back as `403`.
 >
@@ -1358,6 +1366,7 @@ Partial update: only `id` is required; any field you omit keeps its current valu
 | `duration` | integer | ❌ | Expiration delay in minutes |
 | `create_auth_without` | integer | ❌ | Allow item creation below the folder's minimum password strength (0/1). Omitted: preserve the current value. |
 | `edit_auth_without` | integer | ❌ | Allow item editing below the folder's minimum password strength (0/1). Omitted: preserve the current value. |
+| `deletion_protected` | integer | ❌ | Administrative deletion protection (0/1). Only a TeamPass administrator may change it. |
 | `icon` | string | ❌ | FontAwesome icon code (closed state) |
 | `icon_selected` | string | ❌ | FontAwesome icon code (open/selected state) |
 
@@ -1434,6 +1443,7 @@ Soft-deletes the folder **and all its descendants** into the recycle bin (restor
 | 403 | Delete permission denied / read-only folder / personal root |
 | 404 | Folder not found |
 | 405 | Method not allowed (use DELETE) |
+| 409 | Folder or descendant protected against deletion, or active LAPR relationship in the subtree |
 | 500 | Server error |
 
 **Example:**
