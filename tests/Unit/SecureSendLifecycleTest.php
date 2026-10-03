@@ -76,6 +76,9 @@ class SecureSendLifecycleTest extends TestCase
         $tokens = [];
         $page = $this->page($parameters, 'GET', $tokens);
         self::assertNotEmpty($page['token']);
+        self::assertSame(['display_name' => 'Alice Sender'], $page['sender']);
+        self::assertArrayNotHasKey('login', $page['sender']);
+        self::assertArrayNotHasKey('email', $page['sender']);
         self::assertNull($page['result']);
         self::assertStringNotContainsString(DB::$password, json_encode($page));
         self::assertSame(0, DB::$links[1]['views']);
@@ -84,6 +87,21 @@ class SecureSendLifecycleTest extends TestCase
         self::assertNull($page['result']);
         self::assertSame(0, DB::$links[1]['views']);
         self::assertSame([], DB::$audit);
+    }
+
+    /** Invalid current access is rejected before a public identity or confirmation is returned. */
+    public function testGetHidesSenderWhenCurrentAccessIsInvalid(): void
+    {
+        $parameters = $this->create();
+        $tokens = [];
+        DB::$access = false;
+
+        $page = $this->page($parameters, 'GET', $tokens);
+
+        self::assertSame('secure_send_invalid_link', $page['error']);
+        self::assertNull($page['sender']);
+        self::assertSame('', $page['token']);
+        self::assertSame(0, DB::$links[1]['views']);
     }
 
     public function testConfirmationIsBoundToSessionLinkAndSecretAndCannotBeReplayed(): void

@@ -41,6 +41,43 @@ function secureSendReadItem(int $itemId, int $userId, bool $lock = false): array
 }
 
 /**
+ * Resolve the public identity of a link originator after checking current eligibility.
+ *
+ * The public recipient page must never disclose a login or an email address. A missing
+ * display name is valid: the instance entity may still identify the sender's organisation.
+ * Item links additionally require the originator to retain access to the active item.
+ *
+ * @param array $link Stored Secure Send link
+ * @return array{display_name:string}|null Public identity, or null when the link must be denied
+ */
+function secureSendPublicSender(array $link): ?array
+{
+    $originator = (int) ($link['originator'] ?? 0);
+    if ($originator <= 0) {
+        return null;
+    }
+
+    if (($link['send_type'] ?? 'item') !== 'note'
+        && secureSendReadItem((int) ($link['item_id'] ?? 0), $originator) === []
+    ) {
+        return null;
+    }
+
+    $user = DB::queryFirstRow(
+        'SELECT name, lastname FROM ' . prefixTable('users') . '
+        WHERE id = %i AND disabled = 0 AND deleted_at IS NULL',
+        $originator
+    );
+    if (empty($user)) {
+        return null;
+    }
+
+    return [
+        'display_name' => trim(trim((string) ($user['name'] ?? '')) . ' ' . trim((string) ($user['lastname'] ?? ''))),
+    ];
+}
+
+/**
  * Decrypt an authorized item's password or fail before any link can be inserted.
  *
  * @param array $item Item returned by secureSendReadItem()

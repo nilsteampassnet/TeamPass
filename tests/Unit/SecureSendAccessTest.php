@@ -21,11 +21,11 @@ class SecureSendAccessTest extends TestCase
         require_once __DIR__ . '/../../app/sources/secure_send_access.php';
         DB::$connection = new SQLite3(':memory:');
         DB::$connection->enableExceptions(true);
-        DB::$connection->exec('CREATE TABLE sharing_fixture_users (id INTEGER, admin INTEGER, disabled INTEGER, deleted_at TEXT)');
+        DB::$connection->exec('CREATE TABLE sharing_fixture_users (id INTEGER, admin INTEGER, disabled INTEGER, deleted_at TEXT, name TEXT, lastname TEXT)');
         DB::$connection->exec('CREATE TABLE sharing_fixture_items (id INTEGER, id_tree INTEGER, label TEXT, pw TEXT, pw_iv TEXT, pw_len INTEGER, inactif INTEGER, deleted_at INTEGER)');
         DB::$connection->exec('CREATE TABLE sharing_fixture_items_otp (item_id INTEGER, enabled INTEGER, secret TEXT, algorithm TEXT, digits INTEGER, period INTEGER)');
         DB::$connection->exec('CREATE TABLE sharing_fixture_sharekeys_items (user_id INTEGER, object_id INTEGER, share_key TEXT, increment_id INTEGER)');
-        DB::$connection->exec("INSERT INTO sharing_fixture_users VALUES (42, 0, 0, NULL)");
+        DB::$connection->exec("INSERT INTO sharing_fixture_users VALUES (42, 0, 0, NULL, 'Alice', 'Sender')");
         DB::$connection->exec("INSERT INTO sharing_fixture_items VALUES (123, 7, 'Visible item', 'encrypted', 'iv', 13, 0, NULL)");
         DB::$connection->exec("INSERT INTO sharing_fixture_sharekeys_items VALUES (42, 123, 'wrapped-key', 81)");
         DB::$totpSecret = 'JBSWY3DPEHPK3PXP';
@@ -81,6 +81,36 @@ class SecureSendAccessTest extends TestCase
         self::assertSame('Visible item', $visible[0]['item_label']);
         DB::$folders[42] = [];
         self::assertSame([$rows[1]], secureSendFilterLinks($rows, 42));
+    }
+
+    /** The recipient sees only the display name, and only while the sender remains eligible. */
+    public function testPublicSenderNeverExposesAuthenticationIdentifiers(): void
+    {
+        $link = ['send_type' => 'item_v2', 'item_id' => 123, 'originator' => 42];
+        self::assertSame(['display_name' => 'Alice Sender'], secureSendPublicSender($link));
+        self::assertArrayNotHasKey('login', secureSendPublicSender($link));
+        self::assertArrayNotHasKey('email', secureSendPublicSender($link));
+
+        DB::$folders[42] = [];
+        self::assertNull(secureSendPublicSender($link));
+        self::assertSame(
+            ['display_name' => 'Alice Sender'],
+            secureSendPublicSender(['send_type' => 'note', 'item_id' => null, 'originator' => 42])
+        );
+
+        DB::$connection->exec('UPDATE sharing_fixture_users SET disabled = 1');
+        self::assertNull(secureSendPublicSender(['send_type' => 'note', 'item_id' => null, 'originator' => 42]));
+    }
+
+    /** Accounts without profile names remain valid without falling back to their login. */
+    public function testPublicSenderAllowsAnEmptyDisplayName(): void
+    {
+        DB::$connection->exec("UPDATE sharing_fixture_users SET name = '', lastname = ''");
+
+        self::assertSame(
+            ['display_name' => ''],
+            secureSendPublicSender(['send_type' => 'note', 'item_id' => null, 'originator' => 42])
+        );
     }
 
     /** Creation keeps the existing migration path for usable keys and passwords. */
