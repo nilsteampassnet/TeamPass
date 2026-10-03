@@ -291,6 +291,23 @@ class FolderEndpointsRegressionTest extends TestCase
         );
     }
 
+    public function testWebDeleteChecksTheGlobalFolderManagementGateBeforeCallingTheEngine(): void
+    {
+        $web = $this->readSource('/app/sources/folders.queries.php');
+        $deleteCase = strpos($web, "case 'delete_folders':");
+        self::assertIsInt($deleteCase);
+
+        $globalGate = strpos($web, "\$SETTINGS['enable_user_can_create_folders']", $deleteCase);
+        $managerCall = strpos($web, '$folderManager->deleteFolders(', $deleteCase);
+        self::assertIsInt($globalGate);
+        self::assertIsInt($managerCall);
+        self::assertLessThan(
+            $managerCall,
+            $globalGate,
+            'The web delete handler must enforce the global folder-management gate before deletion'
+        );
+    }
+
     public function testDeletionProtectionIsAdministratorOnlyAndLaprFolderMoveIsGuarded(): void
     {
         $web = $this->readSource('/app/sources/folders.queries.php');

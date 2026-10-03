@@ -1099,6 +1099,28 @@ if (null !== $post_type) {
                 break;
             }
 
+            // Global folder-management gate (mirrors FolderModel::deleteFolder and update_folder).
+            // A user may always manage an eligible folder in their own personal tree,
+            // but deleting a shared folder requires one of the global management grants.
+            $userCanManageFolders = (int) $session->get('user-admin') === 1
+                || (int) $session->get('user-manager') === 1
+                || (int) $session->get('user-can_manage_all_users') === 1
+                || (int) ($SETTINGS['enable_user_can_create_folders'] ?? 0) === 1
+                || (int) $session->get('user-can_create_root_folder') === 1;
+            if ($userCanManageFolders === false) {
+                $sharedFolders = DB::queryFirstColumn(
+                    'SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE id IN %li AND personal_folder = 0',
+                    $post_folders
+                );
+                if (count($sharedFolders) > 0) {
+                    echo prepareExchangedData(
+                        ['error' => true, 'message' => $lang->get('error_not_allowed_to')],
+                        'encode'
+                    );
+                    break;
+                }
+            }
+
             require_once 'folders.class.php';
             $folderManager = new FolderManager($lang);
             $deletionResult = $folderManager->deleteFolders(
