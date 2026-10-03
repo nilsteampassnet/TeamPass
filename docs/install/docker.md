@@ -171,7 +171,7 @@ for v in $(docker volume ls -q); do
 done
 ```
 
-To find the attachments as well, list every volume with its creation date, its number of entries and the container using it. The previous `storage/files` volume is an unused one (no container) created at the same time as the one holding `settings.php`; it contains an `.htaccess` file next to the attachments:
+To find the attachments as well, list every volume with its creation date, its number of entries and the container using it. The previous `storage/files` volume is an unused one (no container) created at the same time as the one holding `settings.php`. The image ships that directory empty, so every entry it holds is an attachment:
 
 ```bash
 for v in $(docker volume ls -q); do
