@@ -293,18 +293,27 @@ function saveFieldValue($field, field, isSelect2) {
     }
     
     var value = $.isArray($field.val()) === false ? $field.val() : JSON.stringify($field.val().map(Number));
-    
+
+    // Credentials are sent as typed: they are stored encrypted and never rendered back into a
+    // page, so the HTML sanitising below would only corrupt them. Blank keeps the stored value.
+    var isSecret = $field.hasClass('setting-secret');
+    if (isSecret === true && value === '') {
+        return false;
+    }
+
     // Sanitize value
-    if (isSelect2 === false) {
+    if (isSelect2 === false && isSecret === false) {
         value = fieldDomPurifierWithWarning('#' + field, false, false, false, true);
     }
-    
+
     if (value === false) {
         return false;
     }
-    
-    $('#' + field).val(value);
-    
+
+    if (isSecret === false) {
+        $('#' + field).val(value);
+    }
+
     requestRunning = true;
     
     // Manage special cases
@@ -343,6 +352,9 @@ function saveFieldValue($field, field, isSelect2) {
             }
             
             if (data.error === false) {
+                if (isSecret === true) {
+                    $field.val('').attr('placeholder', <?php echo json_encode($lang->get('bck_externalized_secret_keep_existing'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>);
+                }
                 toastr.remove();
                 toastr.success(
                     '<?php echo $lang->get('saved'); ?>',

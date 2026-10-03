@@ -1541,6 +1541,38 @@ switch ($post_type) {
 
         require_once 'main.functions.php';
 
+        // Credentials are taken as typed, never HTML-encoded: they are not rendered back into a
+        // page. They are stored encrypted with the instance key, and a blank value keeps the
+        // stored one because the settings pages no longer send it to the browser.
+        $postFieldIsSecret = in_array($post_field, tpSecretSettingNames(), true);
+        if ($postFieldIsSecret === true) {
+            $clearSecret = is_string($dataReceived['value'] ?? null) === true ? $dataReceived['value'] : '';
+            if ($clearSecret === '') {
+                echo prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'message' => '',
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $encryptedSecret = cryption($clearSecret, '', 'encrypt', $SETTINGS);
+            unset($clearSecret);
+            if (($encryptedSecret['error'] ?? false) !== false || (string) ($encryptedSecret['string'] ?? '') === '') {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+            $post_value = (string) $encryptedSecret['string'];
+        }
+
         // In case of backup script key, then normalize, archive the previous state and encrypt it.
         if ($post_field === 'bck_script_passkey') {
             require_once 'backup.functions.php';
@@ -1580,11 +1612,14 @@ switch ($post_type) {
         if ($counter === 0) {
             DB::insert(
                 prefixTable('misc'),
-                array(
-                    'valeur' => $post_value,
-                    'type' => 'admin',
-                    'intitule' => $post_field,
-                    'created_at' => $timestamp,
+                array_merge(
+                    array(
+                        'valeur' => $post_value,
+                        'type' => 'admin',
+                        'intitule' => $post_field,
+                        'created_at' => $timestamp,
+                    ),
+                    $postFieldIsSecret === true ? array('is_encrypted' => 1) : array()
                 )
             );
             // in case of stats enabled, add the actual time
@@ -1603,9 +1638,12 @@ switch ($post_type) {
             // Update DB settings
             DB::update(
                 prefixTable('misc'),
-                array(
-                    'valeur' => $post_value,
-                    'updated_at' => $timestamp,
+                array_merge(
+                    array(
+                        'valeur' => $post_value,
+                        'updated_at' => $timestamp,
+                    ),
+                    $postFieldIsSecret === true ? array('is_encrypted' => 1) : array()
                 ),
                 'type = %s AND intitule = %s',
                 'admin',
