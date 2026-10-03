@@ -177,6 +177,8 @@ MFA: Google Authenticator (TOTP), Duo Security, YubiKey, AGSES.
 
 **Rule: always encrypt before INSERT for custom fields** — never insert plaintext and update afterwards. A failed UPDATE leaves plaintext with `encryption_type='not_set'`, silently bypassing decryption.
 
+**Rule: read and write `users.private_key_backup` only through `encryptPrivateKeyBackup()` / `decryptPrivateKeyBackup()`** — the key `deriveBackupKey()` returns is computable from the users row alone; the helpers seal the backup with the instance key (GHSA-fv78-jwjv-pj25).
+
 **Encryption version:** `encryption_version=1` = phpseclib v1 (SHA-1/OAEP, legacy), `encryption_version=3` = phpseclib v3 (SHA-256/OAEP, current).
 
 ## WebSocket
