@@ -98,6 +98,33 @@ if (function_exists('isPersonalSharekeyDistribution') === false) {
     }
 
     /**
+     * Repair decision: the at_creation cross-check, except for an item its folder owner moved in.
+     *
+     * Moving a shared item into a personal folder keeps the creator's at_creation entry, so for
+     * such an item the folder owner and the creator always differ (#5407). The folder owner is
+     * still the right owner when they made the item's most recent move (its latest at_moved
+     * entry): an item can only be moved into, or within, a personal tree by that tree's owner.
+     * Any other disagreement remains a conflict, and the item is skipped as before.
+     *
+     * @param int             $folderOwner      Owner resolved from the folder hierarchy.
+     * @param int|string|null $atCreationUserId User id from the at_creation log, if any.
+     * @param int|string|null $lastMoverUserId  User id of the item's most recent at_moved log, if any.
+     */
+    function personalOwnerConflictsForRepair(
+        int $folderOwner,
+        int|string|null $atCreationUserId,
+        int|string|null $lastMoverUserId
+    ): bool {
+        if (personalOwnerConflictsWithCreator($folderOwner, $atCreationUserId) === false) {
+            return false;
+        }
+        if ($lastMoverUserId === null || $lastMoverUserId === '') {
+            return true;
+        }
+        return (int) $lastMoverUserId !== $folderOwner;
+    }
+
+    /**
      * The set of user ids that must KEEP a sharekey on a personal item: the owner plus the
      * system/recovery accounts (TP_USER_ID, API_USER_ID, OTV_USER_ID, SSH_USER_ID).
      *

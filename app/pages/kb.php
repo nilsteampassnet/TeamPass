@@ -589,6 +589,35 @@ $directKbId = (int) $request->query->get('id', 0);
             flex-direction: column;
         }
     }
+
+    .tp-kb-markdown-source {
+        font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        min-height: 200px;
+        resize: vertical;
+        border: 0;
+        border-radius: 0;
+        tab-size: 4;
+    }
+
+    .tp-kb-markdown-notice {
+        padding: 0.375rem 0.75rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+    }
+
+    /* Built like Summernote's toolbar icons (inline <i>, inline-block ::before aligned middle), so the
+       button keeps the height of </>: with Font Awesome's inline-block <i>, its line shrank to the icon. */
+    .tp-kb-markdown-icon::before {
+        content: var(--fa);
+        display: inline-block;
+        vertical-align: middle;
+        font-family: var(--fa-family-brands);
+        font-style: normal;
+        font-weight: 400;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
 </style>
 
 <input type="hidden" id="kb-direct-id" value="<?php echo $directKbId; ?>">

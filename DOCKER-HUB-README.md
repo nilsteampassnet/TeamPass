@@ -47,17 +47,20 @@ docker-compose up -d
 | `DB_NAME` | `teampass` | Database name |
 | `DB_USER` | `teampass` | Database user |
 | `DB_PASSWORD` | *required* | Database password |
-| `INSTALL_MODE` | `manual` | Installation mode: `manual` or `auto` |
 | `TEAMPASS_URL` | `http://localhost` | Public URL of TeamPass |
 | `PHP_MEMORY_LIMIT` | `512M` | PHP memory limit |
 
 ### Volumes
 
-| Volume | Purpose |
-|--------|---------|
-| `/var/www/html/sk` | Encryption saltkey (critical!) |
-| `/var/www/html/files` | Uploaded files |
-| `/var/www/html/upload` | Temporary uploads |
+| Container path | Holds |
+|----------------|-------|
+| `/var/www/html/secrets` | The master encryption key (critical!) |
+| `/var/www/html/storage/config` | `settings.php` (database connection) and `csrfp.config.php` (critical!) |
+| `/var/www/html/storage/files` | Encrypted attachments |
+| `/var/www/html/storage/upload` | Temporary uploads |
+| `/var/www/html/storage/sk` | Legacy saltkey |
+
+Mount a named volume on each of these exact paths, as the examples below do. A volume on a parent directory such as `/var/www/html/storage` is not enough: Docker still mounts an **anonymous** volume on top of each path the image declares, and anonymous volumes are left behind when the container is removed. Losing `storage/config` makes TeamPass believe it was never installed; losing `secrets` makes its data unrecoverable.
 
 ## 📋 Example Usage
 
@@ -182,29 +185,36 @@ curl http://localhost:8080/health
 
 ## 💾 Backup
 
+Run these from the directory holding your compose file.
+
 ### Database Backup
 
 ```bash
-docker-compose exec db mariadb-dump -u root -p teampass > backup.sql
+docker compose exec -T db sh -c 'mariadb-dump -u root -p"$MARIADB_ROOT_PASSWORD" teampass' > teampass-$(date +%Y%m%d).sql
 ```
 
-### Files Backup
+### Master Key, Configuration and Attachments Backup
 
 ```bash
-docker run --rm \
-  -v teampass-sk:/sk:ro \
-  -v teampass-files:/files:ro \
-  -v $(pwd):/backup \
-  alpine tar czf /backup/teampass-files.tar.gz /sk /files
+docker compose exec -T teampass tar -C /var/www/html -czf - secrets storage/config storage/files > teampass-state-$(date +%Y%m%d).tar.gz
 ```
+
+The master key in `secrets/` is required to decrypt all data: without it, the data in a database dump cannot be decrypted. Keep both together, in a safe place.
 
 ## 🔄 Upgrading
 
 ```bash
-docker-compose pull
-docker-compose down
-docker-compose up -d
+# Back up first (see Backup above), then:
+docker compose pull
+docker compose up -d
+
+# Check what the container did
+docker compose logs teampass | head -60
 ```
+
+The container applies the database migrations itself when it starts, then removes the install directory: `/install/upgrade.php` answers 404 after a successful upgrade.
+
+Never add `-v` to `docker compose down`, and do not prune volumes: the master key and `settings.php` live on volumes. If the log says `TeamPass is not configured yet` on an instance that was already installed, do **not** run the installer: follow [Recovering a lost configuration](https://documentation.teampass.net/#/install/docker?id=recovering-a-lost-configuration).
 
 ## 📚 Documentation
 

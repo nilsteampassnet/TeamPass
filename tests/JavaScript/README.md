@@ -31,6 +31,28 @@ an old password into a shorter-period folder must show its existing age and warn
 when it would already be expired. These tests do not exercise a live database or
 the browser's native confirmation dialog.
 
+## KB Markdown
+
+`kb-markdown.test.cjs` runs the shipped markdown-it build and `public/assets/js/kb-markdown.js`
+in one VM context, without a DOM. It covers paste detection (AI answers converted; prose, scripts,
+YAML, INI and JSON left alone), heading levels mapped to the `h2`–`h4` range of the KB sanitizers,
+escaping of raw HTML and `javascript:` links, the GFM output used by AI answers, image placeholder
+restoration and the "Keep plain text" rendering.
+
+`htmlToMarkdown()` and `clampHtmlHeadings()` need a DOM (`DOMParser`, Turndown) and are not run
+here. Before release, check in Chrome and Firefox, in light and dark theme:
+
+- Paste an AI answer copied with the assistant's **Copy** button: it is formatted and a toast offers
+  **Keep plain text**, which restores the literal text with its line breaks. Copying the rendered
+  answer with the mouse, Ctrl/Cmd+Shift+V, a shell script, a YAML or JSON file, and a clipboard image
+  keep the native paste. Typing after the paste closes the toast.
+- **Edit as Markdown** on an article built from an AI answer: closing it without edits leaves the
+  HTML (`</>`) unchanged. On a table without header, a merged cell, underline and a resized image, the
+  notice lists the four simplifications; an edit applies them and keeps the image. Saving while the
+  view is open saves the rendered Markdown; cancelling discards the view and re-enables the toolbar.
+- Ctrl/Cmd+1, 5 and 6 produce `h2`, `h4` and `h4`, still headings after save. An HTML sample in a
+  code block is saved and displayed as text.
+
 ## Login submission
 
 The suite executes the login template's JavaScript functions and event handlers.

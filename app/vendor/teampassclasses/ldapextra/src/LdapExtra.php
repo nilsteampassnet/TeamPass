@@ -97,7 +97,10 @@ class LdapExtra
             'hosts' => explode(',', $this->settings['ldap_hosts']),
             'base_dn' => $this->settings['ldap_bdn'],
             'username' => $this->settings['ldap_username'],
-            'password' => $this->settings['ldap_password'],
+            // Stored encrypted with the instance key: see tpGetSecretSetting()
+            'password' => function_exists('tpGetSecretSetting') === true
+                ? \tpGetSecretSetting($this->settings, 'ldap_password')
+                : (string) ($this->settings['ldap_password'] ?? ''),
             'port' => $this->settings['ldap_port'],
             'use_ssl' => (int) $this->settings['ldap_ssl'] === 1 ? true : false,
             'use_tls' => (int) $this->settings['ldap_tls'] === 1 ? true : false,

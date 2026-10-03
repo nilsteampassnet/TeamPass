@@ -143,7 +143,7 @@ $localPasswordRecoveryEnabled = isset($SETTINGS['enable_local_password_recovery'
                                 <?php echo $lang->get('admin_email_auth_pwd'); ?>
                             </div>
                             <div class="col-7 mb-0">
-                                <input type='password' class='form-control form-control-sm' id='email_auth_pwd' value='<?php echo isset($SETTINGS['email_auth_pwd']) === true ? $SETTINGS['email_auth_pwd'] : ''; ?>'>
+                                <input type='password' class='form-control form-control-sm setting-secret' id='email_auth_pwd' value='' autocomplete='new-password' placeholder='<?php echo empty($SETTINGS['email_auth_pwd']) === true ? '' : $lang->get('bck_externalized_secret_keep_existing'); ?>'>
                             </div>
                         </div>
 

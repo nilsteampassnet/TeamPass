@@ -190,6 +190,11 @@ folder's numeric title), never its creator** — a shared item moved into a pers
 `at_creation` entry of whoever created it. Narrowing to the creator deleted the owner's own key at
 every save (#5407). `EnsurePersonalItemHasOnlyKeysForOwner()` receives the editor, checks that they
 own the tree, and deletes nothing unless `userHoldsEveryItemSharekey()` confirms they hold every key.
+The Tools repair (`restorePersonalScopeSharekeys()`) still cross-checks the tree owner against
+`at_creation`, but accepts an owner who wrote the item's latest `at_moved` log
+(`personalOwnerConflictsForRepair()`), which is what lets it repair the items #5407 damaged. An
+edit-form folder change logs `at_category`, not `at_moved`, so those items stay skipped. The bulk
+remediation script keeps the strict creator rule: it only deletes keys, so skipping is its safe side.
 
 **Forced batch migration** (background tasks via `/scripts/traits/PhpseclibV3MigrationTrait.php`):
 - Migrates all v1 sharekeys for a user in batches of 100
