@@ -158,7 +158,10 @@ The settings are stored in `teampass_misc` and applied on the next request:
 | `redis_port` | `6379` |
 | `redis_prefix` | `teampass_sess_` |
 
-> :bulb: **Note:** If Redis is unavailable at startup, TeamPass falls back to filesystem sessions automatically. No data is lost.
+> :bulb: **Note:** If the Redis connection fails on a request, TeamPass silently
+> falls back to a filesystem session for that request. This preserves local
+> availability, but a multi-node deployment loses shared-session continuity
+> unless session affinity keeps the following request on the same node.
 
 ### Architecture
 
