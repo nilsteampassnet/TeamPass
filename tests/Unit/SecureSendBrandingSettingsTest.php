@@ -60,4 +60,27 @@ class SecureSendBrandingSettingsTest extends TestCase
         self::assertStringContainsString("\$post_field === 'public_entity_name'", $admin);
         self::assertStringContainsString('brandingPublicEntityName((string) $post_value)', $admin);
     }
+
+    /** The recipient view uses safe branding and never renders authentication identifiers. */
+    public function testRecipientPageUsesPublicBrandingWithoutLoginOrEmail(): void
+    {
+        $page = (string) file_get_contents(__DIR__ . '/../../app/core/otv.php');
+        self::assertStringContainsString('brandingSecureSendLogoUrl(', $page);
+        self::assertStringContainsString("\$sender['display_name']", $page);
+        self::assertStringNotContainsString("\$sender['login']", $page);
+        self::assertStringNotContainsString("\$sender['email']", $page);
+        self::assertStringContainsString('Powered by <strong>TeamPass</strong>', $page);
+        self::assertStringContainsString('rel="noopener noreferrer"', $page);
+    }
+
+    /** The creation modal tells the sender exactly which non-sensitive identity is public. */
+    public function testCreationModalPreviewsThePublicDisplayNameWithoutLoginFallback(): void
+    {
+        $items = (string) file_get_contents(__DIR__ . '/../../app/pages/items.php');
+        self::assertStringContainsString("\$session->get('user-name')", $items);
+        self::assertStringContainsString("\$session->get('user-lastname')", $items);
+        self::assertStringContainsString("secure_send_public_identity_notice", $items);
+        self::assertStringContainsString("secure_send_public_identity_notice_entity", $items);
+        self::assertStringNotContainsString("\$session->get('user-login')", $items);
+    }
 }
