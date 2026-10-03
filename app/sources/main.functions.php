@@ -62,6 +62,7 @@ require_once __DIR__ . '/folder_cache_logic.php';
 require_once __DIR__ . '/api_auth_logic.php';
 require_once __DIR__ . '/ldap_config_logic.php';
 require_once __DIR__ . '/branding_logic.php';
+require_once __DIR__ . '/user_keys_task_logic.php';
 // Directory access shared by the login and by the LDAP settings page test.
 require_once __DIR__ . '/ldap.functions.php';
 require_once __DIR__ . '/password_strength.functions.php';
@@ -9129,6 +9130,45 @@ function createAllSubTasks($action, $totalElements, $elementsPerIteration, $task
 }
 
 /**
+ * Put a failed user key generation back in the queue, keeping every batch it completed.
+ *
+ * The account keeps its key pair: the batches already done stay valid and only the failed
+ * or interrupted ones run again, with a fresh replay budget since this is an explicit retry.
+ *
+ * @param int $taskId ID of the "create_user_keys" task
+ * @return void
+ */
+function requeueUserKeysTask(int $taskId): void
+{
+    DB::update(
+        prefixTable('background_subtasks'),
+        [
+            'is_in_progress' => 0,
+            'finished_at' => null,
+            'status' => 'queued',
+            'retry_count' => 0,
+            'updated_at' => time(),
+        ],
+        'task_id = %i AND (status = %s OR is_in_progress = 1)',
+        $taskId,
+        'failed'
+    );
+
+    DB::update(
+        prefixTable('background_tasks'),
+        [
+            'is_in_progress' => 0,
+            'status' => 'queued',
+            'finished_at' => null,
+            'error_message' => null,
+            'updated_at' => time(),
+        ],
+        'increment_id = %i',
+        $taskId
+    );
+}
+
+/**
  * Permeits to check the consistency of date versus columns definition
  *
  * @param string $table
@@ -11196,6 +11236,27 @@ function generateNewKeyTempo(int $userId): string
  */
 function triggerBackgroundHandler(): void
 {
+    tpWriteBackgroundTasksTrigger();
+
+    // Launch the handler as a fully detached background process.
+    // If the launch primitive is disabled (disable_functions, e.g. Docker), the
+    // trigger file is already written above and a cron job running
+    // background_tasks___handler.php will pick it up.
+    tpSpawnDetachedPhpScript(__DIR__ . '/../scripts/background_tasks___handler.php');
+}
+
+/**
+ * Tell a running background tasks handler that new work is queued, without
+ * spawning any process.
+ *
+ * The handler polls this file while it drains its pool and, once the file is
+ * consumed, keeps launching tasks even past its drain window. A worker uses it
+ * alone: the handler that launched it still holds the process lock.
+ *
+ * @return bool False when the trigger file could not be written
+ */
+function tpWriteBackgroundTasksTrigger(): bool
+{
     // Determine trigger file path
     $triggerFile = defined('TASKS_TRIGGER_FILE') && TASKS_TRIGGER_FILE !== ''
         ? TASKS_TRIGGER_FILE
@@ -11210,18 +11271,17 @@ function triggerBackgroundHandler(): void
     // A competing producer is already signalling work; do not report contention
     // as a directory-permission error or wait for it in the web request.
     $triggerWouldBlock = false;
-    if (tpWriteRuntimeFile($triggerFile, (string) time(), $triggerWouldBlock) === false && $triggerWouldBlock === false) {
-        error_log(
-            'Teampass: cannot write background tasks trigger file "' . $triggerFile
-            . '" - check that the web server user can write to this directory.'
-        );
+    if (tpWriteRuntimeFile($triggerFile, (string) time(), $triggerWouldBlock) === false) {
+        if ($triggerWouldBlock === false) {
+            error_log(
+                'Teampass: cannot write background tasks trigger file "' . $triggerFile
+                . '" - check that the web server user can write to this directory.'
+            );
+            return false;
+        }
     }
 
-    // Launch the handler as a fully detached background process.
-    // If the launch primitive is disabled (disable_functions, e.g. Docker), the
-    // trigger file is already written above and a cron job running
-    // background_tasks___handler.php will pick it up.
-    tpSpawnDetachedPhpScript(__DIR__ . '/../scripts/background_tasks___handler.php');
+    return true;
 }
 
 /**

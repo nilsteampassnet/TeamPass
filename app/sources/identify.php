@@ -3395,9 +3395,35 @@ function checkOauth2User(
             isset($userInfo['is_ready_for_usage']) && (int) $userInfo['is_ready_for_usage'] !== 1 && 
             $userInfo['ongoing_process_id'] !== null && (int) $userInfo['ongoing_process_id'] >= 0
         ) {
-            // Check if the creation of user keys has failed
-            $errorMessage = checkIfUserKeyCreationFailed((int) $userInfo['id']);
-            if (!is_null($errorMessage)) {
+            // The account points at its own key generation (or at a personal items migration)
+            $keysTask = DB::queryFirstRow(
+                'SELECT increment_id, process_type, status, arguments
+                FROM ' . prefixTable('background_tasks') . '
+                WHERE increment_id = %i',
+                (int) $userInfo['ongoing_process_id']
+            );
+
+            // A failed generation is resumed where it stopped: the account keeps its key pair
+            // and every batch already done, so a time-limited generation ends up completing
+            // instead of starting again from scratch at each sign-in
+            if (userKeysTaskIsResumable($keysTask, (int) $userInfo['id']) === true) {
+                requeueUserKeysTask((int) $keysTask['increment_id']);
+                triggerBackgroundHandler();
+
+                return [
+                    'error' => true,
+                    'message' => 'account_in_construction_please_wait_email',
+                    'no_log_event' => true
+                ];
+            }
+
+            // A failed key generation that cannot be resumed: generate the keys again
+            if ($keysTask !== null
+                && (string) $keysTask['process_type'] === 'create_user_keys'
+                && (string) $keysTask['status'] === 'failed'
+            ) {
+                $errorMessage = "The creation of user keys for user ID {$userInfo['id']} failed. Please contact your administrator to check the background tasks log for more details.";
+
                 // Refresh user info to permit retry
                 DB::update(
                     prefixTable('users'),
@@ -3415,7 +3441,7 @@ function checkOauth2User(
                 handleUserKeys(
                     (int) $userInfo['id'],
                     (string) $passwordClear,
-                    (int) NUMBER_ITEMS_IN_BATCH,
+                    (int) ($SETTINGS['maximum_number_of_items_to_treat'] ?? NUMBER_ITEMS_IN_BATCH),
                     '',
                     true,
                     true,
@@ -3507,34 +3533,6 @@ function checkOauth2User(
         'userPasswordVerified' => false,
     ];
 }
-
-/**
- * Check if a "create_user_keys" task failed for the given user_id.
- *
- * @param int $userId The user ID to check.
- * @return string|null Returns an error message in English if a failed task is found, otherwise null.
- */
-function checkIfUserKeyCreationFailed(int $userId): ?string
-{
-    // Find the latest "create_user_keys" task for the given user_id
-    $latestTask = DB::queryFirstRow(
-        'SELECT arguments, status FROM ' . prefixTable('background_tasks') . '
-        WHERE process_type = %s
-        AND arguments LIKE %s
-        ORDER BY increment_id DESC
-        LIMIT 1',
-        'create_user_keys', '%"new_user_id":' . $userId . '%'
-    );
-
-    // If a failed task is found, return an error message
-    if ($latestTask && $latestTask['status'] === 'failed') {
-        return "The creation of user keys for user ID {$userId} failed. Please contact your administrator to check the background tasks log for more details.";
-    }
-
-    // No failed task found for this user_id
-    return null;
-}
-
 
 /* * Create the user in Teampass
  *
