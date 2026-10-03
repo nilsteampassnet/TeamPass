@@ -228,6 +228,18 @@ $zones = timezone_list();
                                 </div>
                             </div>
 
+                            <div class='form-group option' data-keywords="branding public entity organisation organization secure send">
+                                <label for='public_entity_name' class='col-sm-10 control-label'>
+                                    <?php echo $lang->get('public_entity_name'); ?>
+                                </label>
+                                <div class='col-sm-12'>
+                                    <input type='text' class='form-control form-control-sm' id='public_entity_name' maxlength='100' value='<?php echo htmlspecialchars(brandingPublicEntityName((string) ($SETTINGS['public_entity_name'] ?? '')), ENT_QUOTES, 'UTF-8'); ?>'>
+                                    <small class='form-text text-muted'>
+                                        <?php echo $lang->get('public_entity_name_tip'); ?>
+                                    </small>
+                                </div>
+                            </div>
+
                             <div class='form-group option' data-keywords="server setting">
                                 <label for='custom_logo' class='col-sm-10 control-label'>
                                     <?php echo $lang->get('admin_misc_custom_logo'); ?>
@@ -1901,6 +1913,18 @@ if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_descr
                             </div>
                             <div class='col-2'>
                                 <div class='toggle toggle-modern' id='secure_send_require_passphrase' data-toggle-on='<?php echo isset($SETTINGS['secure_send_require_passphrase']) === true && (int) $SETTINGS['secure_send_require_passphrase'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='secure_send_require_passphrase_input' value='<?php echo isset($SETTINGS['secure_send_require_passphrase']) && (int) $SETTINGS['secure_send_require_passphrase'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="secure send sender profile name privacy identity">
+                            <div class='col-10'>
+                                <?php echo $lang->get('secure_send_show_sender_name'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('secure_send_show_sender_name_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='secure_send_show_sender_name' data-toggle-on='<?php echo isset($SETTINGS['secure_send_show_sender_name']) === true && (int) $SETTINGS['secure_send_show_sender_name'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='secure_send_show_sender_name_input' value='<?php echo isset($SETTINGS['secure_send_show_sender_name']) && (int) $SETTINGS['secure_send_show_sender_name'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 

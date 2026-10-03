@@ -22,7 +22,8 @@ class SecureSendLifecycleTest extends TestCase
         DB::reset();
         $this->settings = ['otv_is_enabled' => 1, 'cpassman_url' => 'https://vault.example.com',
             'otv_subdomain' => 'https://share.example.com/vault', 'otv_expiration_period' => 7,
-            'secure_send_max_views' => 5, 'secure_send_allow_notes' => 1];
+            'secure_send_max_views' => 5, 'secure_send_allow_notes' => 1,
+            'secure_send_show_sender_name' => 1];
     }
 
     private function create(array $overrides = []): array
@@ -76,6 +77,9 @@ class SecureSendLifecycleTest extends TestCase
         $tokens = [];
         $page = $this->page($parameters, 'GET', $tokens);
         self::assertNotEmpty($page['token']);
+        self::assertSame(['display_name' => 'Alice Sender'], $page['sender']);
+        self::assertArrayNotHasKey('login', $page['sender']);
+        self::assertArrayNotHasKey('email', $page['sender']);
         self::assertNull($page['result']);
         self::assertStringNotContainsString(DB::$password, json_encode($page));
         self::assertSame(0, DB::$links[1]['views']);
@@ -84,6 +88,35 @@ class SecureSendLifecycleTest extends TestCase
         self::assertNull($page['result']);
         self::assertSame(0, DB::$links[1]['views']);
         self::assertSame([], DB::$audit);
+    }
+
+    /** The privacy toggle hides only the profile name and keeps all sender eligibility checks. */
+    public function testSenderNameCanBeHiddenWithoutWeakeningCurrentAccessChecks(): void
+    {
+        $this->settings['secure_send_show_sender_name'] = 0;
+        $parameters = $this->create();
+        $tokens = [];
+
+        self::assertSame(['display_name' => ''], $this->page($parameters, 'GET', $tokens)['sender']);
+
+        DB::$access = false;
+        $tokens = [];
+        self::assertSame('secure_send_invalid_link', $this->page($parameters, 'GET', $tokens)['error']);
+    }
+
+    /** Invalid current access is rejected before a public identity or confirmation is returned. */
+    public function testGetHidesSenderWhenCurrentAccessIsInvalid(): void
+    {
+        $parameters = $this->create();
+        $tokens = [];
+        DB::$access = false;
+
+        $page = $this->page($parameters, 'GET', $tokens);
+
+        self::assertSame('secure_send_invalid_link', $page['error']);
+        self::assertNull($page['sender']);
+        self::assertSame('', $page['token']);
+        self::assertSame(0, DB::$links[1]['views']);
     }
 
     public function testConfirmationIsBoundToSessionLinkAndSecretAndCannotBeReplayed(): void

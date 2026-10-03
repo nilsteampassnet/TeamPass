@@ -272,6 +272,19 @@ The recipient page keeps an existing visitor language preference. Without one
 (for example in a private browser window), it uses the instance's default
 language, with English as the fallback when no default is configured.
 
+The recipient page can identify the sender using the account's first and last
+name and the instance's optional public entity name. Publishing the profile name
+is controlled by **Show the sender's profile name** (`secure_send_show_sender_name`).
+It defaults to enabled on fresh installations and disabled when an existing instance
+is upgraded, so administrators explicitly opt in. The name comes from the user's
+profile and is only administrator-controlled when profile editing is disabled.
+Logins and email addresses are never exposed. When profile names are disabled or
+the account has no display name, only the entity is shown. A local custom logo from
+`public/assets/custom/` is reused; remote logos
+are ignored to preserve the page's restrictive CSP and avoid third-party
+tracking. The sender sees a preview notice before generating a link, and the
+public page retains a discreet **Powered by TeamPass** attribution.
+
 Item automatic-deletion limits also apply to sharing links. The last permitted
 view is revealed and the item is then made inactive in the same transaction,
 with the usual automatic-deletion audit. An already exhausted budget or elapsed

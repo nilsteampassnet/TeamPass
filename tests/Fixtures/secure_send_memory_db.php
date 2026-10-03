@@ -55,7 +55,12 @@ class DB
             return null;
         }
         if (str_contains($sql, prefixTable('users'))) {
-            return self::$activeUser ? ['id' => $args[0], 'admin' => self::$admin ? 1 : 0] : null;
+            return self::$activeUser ? [
+                'id' => $args[0],
+                'admin' => self::$admin ? 1 : 0,
+                'name' => 'Alice',
+                'lastname' => 'Sender',
+            ] : null;
         }
         if (str_contains($sql, prefixTable('items'))) {
             return self::$access && !str_contains($sql, '(1 = 0)') && $args[0] === 123

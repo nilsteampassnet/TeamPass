@@ -74,6 +74,15 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 }
 // Define Timezone
 date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
+$secureSendPublicEntity = brandingPublicEntityName((string) ($SETTINGS['public_entity_name'] ?? ''));
+$secureSendShowSenderName = (int) ($SETTINGS['secure_send_show_sender_name'] ?? 0) === 1;
+$decodeSecureSendProfileValue = static fn (mixed $value): string => trim(
+    html_entity_decode((string) $value, ENT_QUOTES | ENT_HTML5, 'UTF-8')
+);
+$secureSendProfileName = trim(
+    $decodeSecureSendProfileValue($session->get('user-name')) . ' '
+    . $decodeSecureSendProfileValue($session->get('user-lastname'))
+);
 
 // Set header properties
 header('Content-type: text/html; charset=utf-8');
@@ -763,6 +772,44 @@ if ((int) $session_user_admin === 1) {
 
                     <div class="callout callout-info py-3 mb-4">
                         <p class="mb-0"><?php echo $lang->get('secure_send_intro'); ?></p>
+                    </div>
+
+                    <div class="alert alert-light border py-2 mb-4" role="note">
+                        <small class="text-muted"><i class="fa-solid fa-circle-info mr-2" aria-hidden="true"></i><?php
+                            if ($secureSendShowSenderName === false) {
+                                echo htmlspecialchars(
+                                    str_replace(
+                                        '#ENTITY#',
+                                        $secureSendPublicEntity,
+                                        $lang->get($secureSendPublicEntity === ''
+                                            ? 'secure_send_public_identity_disabled'
+                                            : 'secure_send_public_identity_disabled_entity')
+                                    ),
+                                    ENT_QUOTES | ENT_SUBSTITUTE,
+                                    'UTF-8'
+                                );
+                            } elseif ($secureSendProfileName !== '') {
+                                echo htmlspecialchars(
+                                    str_replace(
+                                        ['#NAME#', '#ENTITY#'],
+                                        [$secureSendProfileName, $secureSendPublicEntity],
+                                        $lang->get($secureSendPublicEntity === ''
+                                            ? 'secure_send_public_identity_notice'
+                                            : 'secure_send_public_identity_notice_entity')
+                                    ),
+                                    ENT_QUOTES | ENT_SUBSTITUTE,
+                                    'UTF-8'
+                                );
+                            } elseif ($secureSendPublicEntity !== '') {
+                                echo htmlspecialchars(
+                                    str_replace('#ENTITY#', $secureSendPublicEntity, $lang->get('secure_send_public_identity_entity_only')),
+                                    ENT_QUOTES | ENT_SUBSTITUTE,
+                                    'UTF-8'
+                                );
+                            } else {
+                                echo htmlspecialchars($lang->get('secure_send_public_identity_missing'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                            }
+                        ?></small>
                     </div>
 
                     <!-- NOTE MODE FIELDS (ad-hoc secret/note) -->
