@@ -92,6 +92,16 @@ $remainingViews = $result !== null && ($result['error'] ?? '') === ''
 $expiresLabel = $timeLimit > 0
     ? date(($SETTINGS['date_format'] ?? 'Y-m-d') . ' ' . ($SETTINGS['time_format'] ?? 'H:i'), $timeLimit)
     : '';
+$remainingViewsLabel = str_replace(
+    '#VIEWS#',
+    (string) $remainingViews,
+    $lang->get('secure_send_remaining_views_count')
+);
+$poweredBy = str_replace(
+    '#TEAMPASS#',
+    '<strong>TeamPass</strong>',
+    $escape($lang->get('secure_send_powered_by'))
+);
 ?>
 <!DOCTYPE html>
 <html lang="<?php echo $escape($languageTag); ?>">
@@ -354,21 +364,21 @@ $expiresLabel = $timeLimit > 0
             <?php } ?>
             <?php if ($sender !== null) { ?>
                 <section class="secure-send-identity" aria-label="<?php echo $escape($lang->get('secure_send_sender_identity')); ?>">
-                    <span class="secure-send-identity-icon" aria-hidden="true"><i class="fa-solid fa-user-check"></i></span>
+                    <span class="secure-send-identity-icon" aria-hidden="true"><i class="fa-solid fa-user"></i></span>
                     <span>
                         <?php if ($senderDisplayName !== '') { ?>
                             <span class="secure-send-identity-label"><?php echo $escape($lang->get('secure_send_shared_by')); ?></span>
                             <strong class="secure-send-identity-name"><?php echo $escape($senderDisplayName); ?></strong>
                             <span class="secure-send-identity-meta"><?php echo $escape($entityName === ''
-                                ? $lang->get('secure_send_authenticated_account')
-                                : str_replace('#ENTITY#', $entityName, $lang->get('secure_send_authenticated_account_entity'))); ?></span>
+                                ? $lang->get('secure_send_account_origin')
+                                : str_replace('#ENTITY#', $entityName, $lang->get('secure_send_account_origin_entity'))); ?></span>
                         <?php } elseif ($entityName !== '') { ?>
                             <span class="secure-send-identity-label"><?php echo $escape($lang->get('secure_send_shared_securely_by')); ?></span>
                             <strong class="secure-send-identity-name"><?php echo $escape($entityName); ?></strong>
-                            <span class="secure-send-identity-meta"><?php echo $escape($lang->get('secure_send_authenticated_account')); ?></span>
+                            <span class="secure-send-identity-meta"><?php echo $escape($lang->get('secure_send_account_origin')); ?></span>
                         <?php } else { ?>
                             <strong class="secure-send-identity-name"><?php echo $escape($lang->get('secure_send_shared_via_teampass')); ?></strong>
-                            <span class="secure-send-identity-meta"><?php echo $escape($lang->get('secure_send_authenticated_account')); ?></span>
+                            <span class="secure-send-identity-meta"><?php echo $escape($lang->get('secure_send_account_origin')); ?></span>
                         <?php } ?>
                     </span>
                 </section>
@@ -381,7 +391,9 @@ $expiresLabel = $timeLimit > 0
                     <?php if ($expiresLabel !== '') { ?>
                         <span class="secure-send-meta-item"><i class="fa-regular fa-calendar" aria-hidden="true"></i><?php echo $escape(str_replace('#DATE#', $expiresLabel, $lang->get('secure_send_expires_on'))); ?></span>
                     <?php } ?>
-                    <span class="secure-send-meta-item"><i class="fa-regular fa-eye" aria-hidden="true"></i><?php echo $remainingViews . ' ' . $escape($lang->get('secure_send_remaining_views')); ?></span>
+                    <?php if ($token !== '' && $parameters !== null) { ?>
+                        <span class="secure-send-meta-item"><i class="fa-regular fa-eye" aria-hidden="true"></i><?php echo $escape($remainingViewsLabel); ?></span>
+                    <?php } ?>
                 </div>
             <?php } ?>
             <?php if ($token !== '' && $parameters !== null) { ?>
@@ -446,7 +458,7 @@ $expiresLabel = $timeLimit > 0
             </div>
         </main>
         <footer class="secure-send-powered">
-            <a href="https://teampass.net" target="_blank" rel="noopener noreferrer">Powered by <strong>TeamPass</strong></a>
+            <a href="https://teampass.net" target="_blank" rel="noopener noreferrer"><?php echo $poweredBy; ?></a>
         </footer>
     </div>
 </body>

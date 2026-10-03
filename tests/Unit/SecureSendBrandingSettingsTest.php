@@ -74,7 +74,14 @@ class SecureSendBrandingSettingsTest extends TestCase
         self::assertStringContainsString("\$sender['display_name']", $page);
         self::assertStringNotContainsString("\$sender['login']", $page);
         self::assertStringNotContainsString("\$sender['email']", $page);
-        self::assertStringContainsString('Powered by <strong>TeamPass</strong>', $page);
+        self::assertStringContainsString("\$escape(\$lang->get('secure_send_powered_by'))", $page);
+        self::assertStringContainsString("'#TEAMPASS#'", $page);
+        self::assertStringContainsString("'<strong>TeamPass</strong>'", $page);
+        self::assertStringContainsString("\$lang->get('secure_send_remaining_views_count')", $page);
+        self::assertStringContainsString("if (\$token !== '' && \$parameters !== null)", $page);
+        self::assertStringContainsString('fa-solid fa-user', $page);
+        self::assertStringNotContainsString('fa-user-check', $page);
+        self::assertStringNotContainsString('secure_send_authenticated_account', $page);
         self::assertStringContainsString('rel="noopener noreferrer"', $page);
     }
 
