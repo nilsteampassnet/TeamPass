@@ -44,6 +44,7 @@ Click **New** in the toolbar to open the creation form.
 | **Icon on selection** | No | Alternative icon shown when the folder is currently selected |
 | **Create without complexity** | No | When checked, users can add items without meeting the minimum complexity. Use with care |
 | **Edit without complexity** | No | When checked, users can modify existing items without meeting the minimum complexity |
+| **Protect against accidental deletion** | No | Administrators only. Prevents this folder from being deleted, including as part of a parent subtree |
 
 The two **Special** options apply to items in this folder. They do not allow a new
 subfolder to have a lower minimum password strength than its parent.
@@ -82,13 +83,58 @@ Changes are saved immediately when clicking **Save** in the sidebar.
 
 ---
 
+## Protecting a folder against accidental deletion
+
+A TeamPass administrator can enable **Protect against accidental deletion** when
+creating or editing a folder. A red shield in the folder list identifies a protected
+folder. Only an administrator can enable or remove this protection; a user who can
+otherwise manage the folder cannot disable it.
+
+The flag applies directly to the selected folder and is not inherited by its children.
+However, deleting a folder always targets its complete subtree. TeamPass therefore
+blocks the deletion of a parent when that parent contains a protected descendant. The
+administrator must open the protected folder and remove its protection before the
+subtree can be deleted.
+
+This is useful for structural folders on which role permissions are configured: users
+can keep their normal write and folder-management rights without being able to remove a
+large branch of the vault accidentally. The protection blocks deletion of the folder,
+not ordinary item deletion inside it, and it does not prevent renaming or moving the
+folder. It stays attached to the folder when the folder is moved or restored from the
+recycle bin.
+
+> 💡 Protect the important folders themselves, not only their top-level parent. Because
+> the setting is not inherited, protecting a parent does not protect a child that is
+> selected and deleted separately.
+
+---
+
 ## Deleting folders
 
 1. Check the checkbox beside each folder to delete (checking a parent automatically selects its children).
 2. Click **Delete** in the toolbar.
 3. Confirm by checking the acknowledgement box in the confirmation modal.
 
-> 🔔 Deleting a folder also deletes **all items and sub-folders** it contains. This operation cannot be undone. Items are permanently removed along with their encrypted data and sharekeys.
+Deleting a folder moves the complete subtree and its items to **Utilities → Recycled
+bin**. It can be restored from there until it is permanently removed from the recycle
+bin. Restoring a protected folder also restores its deletion-protection flag.
+
+TeamPass checks the complete selection before changing anything. The operation is
+blocked when:
+
+- the selected folder or any descendant is protected against accidental deletion;
+- while LAPR is enabled, the subtree contains an active LAPR-managed item or an item
+  used as an enrolled endpoint's SSH credential.
+
+These checks also apply to administrators. The information dialog identifies why the
+deletion was refused. For an administrative protection, remove the protection from the
+affected folder first. For a LAPR relationship, move the linked item outside the
+selected subtree or remove/reconfigure the managed account or endpoint relationship.
+The subtree is never partially deleted when one of these checks fails.
+
+> 🔔 Deleting a folder affects **all items and sub-folders** it contains. Review the
+> complete subtree before confirming, even though it can initially be recovered from
+> the recycle bin.
 
 ---
 

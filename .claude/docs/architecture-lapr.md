@@ -82,6 +82,8 @@ Managed-target login/password updates are blocked in both `items.queries.php` an
 | `laprItemsDeletionBlocker()` | deleting an item still referenced by a managed account or an enrolled endpoint (no FK — the row would be orphaned) | `delete_item`, `mass_delete_items` | `DELETE /item/delete` → `409` |
 | `laprItemsPersonalMoveBlocker()` | moving a linked item **into a personal folder** — `laprReadItemPasswordAsTpUser()` only covers non-personal items, so the move would silently break every future rotation | `move_item`, `mass_move_items` | `PUT /item/update` (`folder_id`) → `409` |
 
+Folder mutations preserve the same invariants. Deleting a folder is rejected atomically when any descendant contains an active managed target or SSH credential. Moving a shared folder subtree into a personal tree is rejected for the same reason as an individual item move. Both guards follow the authoritative `lapr_enabled` switch.
+
 Mass paths skip the blocked items and report the count through `lapr_mass_operation_items_skipped`; they never fail the whole batch. The REST update guard compares the submitted password against the **decrypted** current value (`getItemPasswordForComparison()`), so a read-modify-write client resending the unchanged password is not a conflict; an undecryptable password fails closed.
 
 The item detail panel can enqueue the existing `lapr_rotation` background task through `lapr_accounts.queries.php`; it does not implement a second rotation path. Direct item edits never perform SSH work.

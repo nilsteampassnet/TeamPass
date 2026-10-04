@@ -1205,6 +1205,71 @@ function laprItemsDeletionBlocker(array $itemIds, array $SETTINGS): string
 }
 
 /**
+ * Count active LAPR relationships held by active items in the given folders.
+ *
+ * Callers must pass the complete folder scope (including descendants). The
+ * module switch deliberately remains authoritative, like the item deletion
+ * and personal-move guards: when LAPR is disabled, its relationships do not
+ * block ordinary vault operations.
+ *
+ * @param array $folderIds Folder ids to inspect
+ * @param array $SETTINGS  TeamPass settings
+ * @return array{blocked: bool, linked_items: int, managed_items: int, credential_items: int}
+ */
+function laprGetFolderItemRelationCounts(array $folderIds, array $SETTINGS): array
+{
+    $emptyResult = [
+        'blocked' => false,
+        'linked_items' => 0,
+        'managed_items' => 0,
+        'credential_items' => 0,
+    ];
+
+    if ((int) ($SETTINGS['lapr_enabled'] ?? 0) !== 1) {
+        return $emptyResult;
+    }
+
+    $normalizedIds = array_values(array_unique(array_filter(
+        array_map('intval', $folderIds),
+        static fn (int $folderId): bool => $folderId > 0
+    )));
+    if (count($normalizedIds) === 0) {
+        return $emptyResult;
+    }
+
+    $managedItemIds = array_map('intval', DB::queryFirstColumn(
+        'SELECT i.id
+         FROM ' . prefixTable('items') . ' AS i
+         INNER JOIN ' . prefixTable('lapr_accounts') . ' AS a ON a.item_id = i.id
+         WHERE i.id_tree IN %li AND i.inactif = 0 AND i.deleted_at IS NULL
+           AND a.status != %s
+         FOR UPDATE',
+        $normalizedIds,
+        'deleted'
+    ));
+    $credentialItemIds = array_map('intval', DB::queryFirstColumn(
+        'SELECT i.id
+         FROM ' . prefixTable('items') . ' AS i
+         INNER JOIN ' . prefixTable('lapr_endpoints') . ' AS e ON e.ssh_credential_source = i.id
+         WHERE i.id_tree IN %li AND i.inactif = 0 AND i.deleted_at IS NULL
+           AND e.status != %s
+         FOR UPDATE',
+        $normalizedIds,
+        'deleted'
+    ));
+    $managedItemIds = array_values(array_unique($managedItemIds));
+    $credentialItemIds = array_values(array_unique($credentialItemIds));
+    $linkedItemIds = array_values(array_unique(array_merge($managedItemIds, $credentialItemIds)));
+
+    return [
+        'blocked' => count($linkedItemIds) > 0,
+        'linked_items' => count($linkedItemIds),
+        'managed_items' => count($managedItemIds),
+        'credential_items' => count($credentialItemIds),
+    ];
+}
+
+/**
  * Language key blocking a move of the given items into a personal folder.
  *
  * LAPR reads item passwords server-side through the TP_USER key chain

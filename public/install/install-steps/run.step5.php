@@ -832,6 +832,7 @@ class DatabaseInstaller
             `nlevel` int(11) NOT NULL DEFAULT '0',
             `bloquer_creation` tinyint(1) NOT null DEFAULT '0',
             `bloquer_modification` tinyint(1) NOT null DEFAULT '0',
+            `deletion_protected` tinyint(1) NOT null DEFAULT '0',
             `personal_folder` tinyint(1) NOT null DEFAULT '0',
             `renewal_period` int(5) NOT null DEFAULT '0',
             `fa_icon` VARCHAR(100) NOT NULL DEFAULT 'fas fa-folder',
