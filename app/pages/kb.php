@@ -301,6 +301,10 @@ $directKbId = (int) $request->query->get('id', 0);
         gap: 0.75rem;
     }
 
+    #kb-browser-card > .card-header::after {
+        display: none;
+    }
+
     #kb-browser-card .kb-category-card {
         padding: 1rem;
         border-radius: 0.5rem;
