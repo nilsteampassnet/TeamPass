@@ -32,6 +32,7 @@ function createKbCategoryBrowser() {
         groups.get(id).count += 1
       })
       categories = Array.from(groups.values()).sort((left, right) =>
+        Number(left.id === 0) - Number(right.id === 0) ||
         left.label.localeCompare(right.label, undefined, { numeric: true, sensitivity: 'base' }) || left.id - right.id)
       if (!groups.has(selectedId)) selectedId = null
     },

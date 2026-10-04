@@ -108,7 +108,7 @@ Use **List / Categories** above the article list to switch views. **List** shows
 articles. **Categories** shows the populated categories in alphabetical order, with the
 number of active articles in each. Choose a category to display its articles in the usual
 table, or select **All categories** to return to the category overview. Older articles
-without a valid category appear under **Uncategorized**.
+without a valid category appear under **Uncategorized**, which is always placed last.
 
 The table search applies within the selected category. Switching views or choosing another
 category clears the table search and starts at the first page. Live article changes refresh

@@ -29,6 +29,20 @@ test('Initial list includes every active article; categories count articles and 
   assert.deepEqual(Array.from(navigation.getCategories(), category => [category.id, category.count]), [[10, 2], [20, 1]])
 })
 
+test('Uncategorized stays last while named categories keep their natural alphabetical order', () => {
+  const navigation = browser([
+    article(1, 0, ''), article(2, 20, 'Network 10'), article(3, 10, 'Network 2'),
+    article(4, 30, 'Applications'), article(5, 99, '')
+  ])
+  assert.deepEqual(Array.from(navigation.getCategories(), category => category.id), [30, 10, 20, 0])
+  assert.equal(navigation.getCategories().at(-1).count, 2)
+  navigation.select(0)
+  assert.deepEqual(ids(navigation), [1, 5])
+  navigation.refresh([article(1, 0, ''), article(6, 40, 'Zebra')])
+  assert.deepEqual(Array.from(navigation.getCategories(), category => category.id), [40, 0])
+  assert.equal(navigation.getState().selected.id, 0)
+})
+
 test('Category selection uses identity even for identical labels and labels with regex characters', () => {
   const navigation = browser([article(1, 1, 'VPN'), article(2, 2, 'VPN clients'), article(3, 3, 'VPN'), article(4, 4, 'C++ [prod].*')])
   assert.equal(navigation.select('1'), true)
