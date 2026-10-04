@@ -342,6 +342,15 @@ $directKbId = (int) $request->query->get('id', 0);
         color: #ced4da !important;
     }
 
+    .dark-mode #kb-browser-card .btn-outline-primary {
+        color: #8fbbff;
+        border-color: #8fbbff;
+    }
+
+    .dark-mode #kb-browser-card .btn-outline-primary:hover {
+        color: #ffffff;
+    }
+
     #kb-viewer-card .card-header,
     #kb-editor-card .card-header {
         display: flex;
