@@ -57,7 +57,8 @@ function harness(stored = null) {
             newEvents: '#count# new events', kb: 'KB', authentication: 'Auth', items: 'Items'},
         prepareExchangedData: raw => raw,
         escapeHtml: value => String(value).replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[character])),
-        formatTimeAgo: () => '1s', getActivityIcon: () => 'fas fa-eye'
+        formatTimeAgo: () => '1s', getActivityIcon: () => 'fas fa-eye',
+        getActivitySourceHint: source => source === 'kb' ? '(KB)' : ''
     })
     vm.runInContext(controller, context)
     return {$, requests, handlers, run: code => vm.runInContext(code, context), persisted: () => persisted}

@@ -103,9 +103,9 @@ function adminActivityCategoryControls(Language $lang, bool $kbEnabled, string $
     }
     foreach ($categories as $category => $key) {
         $id = 'activity-' . $context . '-' . $category;
-        echo '<div class="custom-control custom-checkbox mr-3 mb-2">'
-            . '<input type="checkbox" class="custom-control-input activity-category" id="' . $id . '" value="' . $category . '">'
-            . '<label class="custom-control-label" for="' . $id . '">' . htmlspecialchars($lang->get($key), ENT_QUOTES, 'UTF-8') . '</label></div>';
+        echo '<div class="d-flex align-items-start mr-3 mb-2">'
+            . '<input type="checkbox" class="activity-category mt-1 mr-2 flex-shrink-0" id="' . $id . '" value="' . $category . '">'
+            . '<label class="mb-0 font-weight-normal" for="' . $id . '">' . htmlspecialchars($lang->get($key), ENT_QUOTES, 'UTF-8') . '</label></div>';
     }
 }
 
@@ -401,11 +401,11 @@ function adminActivityCategoryControls(Language $lang, bool $kbEnabled, string $
                                             <i class="fas fa-circle text-danger blink"></i> 
                                             <?php echo $lang->get('live_activity'); ?>
                                         </h3>
-                                        <div class="card-tools">
-                                            <button type="button" class="btn btn-tool" data-toggle="modal" data-target="#activity-modal" title="<?php echo $lang->get('admin_activity_expand'); ?>" aria-label="<?php echo $lang->get('admin_activity_expand'); ?>"><i class="fas fa-expand"></i></button>
+                                        <div class="card-tools d-flex align-items-center">
+                                            <button type="button" class="btn-link border-0 bg-transparent p-0 mr-2" data-toggle="modal" data-target="#activity-modal" title="<?php echo $lang->get('admin_activity_expand'); ?>" aria-label="<?php echo $lang->get('admin_activity_expand'); ?>"><i class="fa-solid fa-arrow-up-right-from-square pointer"></i></button>
                                             <div class="dropdown d-inline-block">
-                                                <button type="button" class="btn btn-tool" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="<?php echo $lang->get('admin_activity_settings'); ?>" aria-label="<?php echo $lang->get('admin_activity_settings'); ?>"><i class="fas fa-cog"></i></button>
-                                                <div class="dropdown-menu dropdown-menu-right activity-settings p-3" style="min-width:240px;">
+                                                <button type="button" class="btn-link border-0 bg-transparent p-0 mr-2" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="<?php echo $lang->get('admin_activity_settings'); ?>" aria-label="<?php echo $lang->get('admin_activity_settings'); ?>"><i class="fa-solid fa-gear pointer"></i></button>
+                                                <div class="dropdown-menu dropdown-menu-right activity-settings p-3" style="width:280px; max-width:calc(100vw - 32px);">
                                                     <?php adminActivityCategoryControls($lang, (int) ($SETTINGS['enable_kb'] ?? 0) === 1, 'compact'); ?>
                                                 </div>
                                             </div>
@@ -420,7 +420,7 @@ function adminActivityCategoryControls(Language $lang, bool $kbEnabled, string $
                                         </ul>
                                     </div>
                                     <div class="card-footer clearfix">
-                                        <button type="button" class="btn btn-sm btn-outline-danger activity-failed-count mb-1" id="activity-failed-count" title="<?php echo $lang->get('admin_activity_show_failures'); ?>"></button>
+                                        <span class="small text-muted activity-failed-count" id="activity-failed-count"></span>
                                         <span class="small text-danger d-block" id="activity-error" role="status" style="display:none;"></span>
                                         <a href="index.php?page=utilities.logs#journals" class="btn btn-sm btn-warning float-right">
                                             <?php echo $lang->get('view_all_logs'); ?>

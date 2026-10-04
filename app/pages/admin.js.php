@@ -659,7 +659,7 @@ function requestActivity(options, success, complete, expanded, isCurrent = () =>
 }
 
 /** Render escaped text only; submitted logins may contain arbitrary markup. */
-function renderActivityRows(rows) {
+function renderActivityRows(rows, expanded = false) {
     if (rows.length === 0) {
         const message = adminActivityState.categories.length ? adminActivityMessages.empty : adminActivityMessages.noCategories
         return '<li class="list-group-item text-center text-muted">' + escapeHtml(message) + '</li>'
@@ -672,13 +672,15 @@ function renderActivityRows(rows) {
         const source = activity.source_type === 'kb' ? adminActivityMessages.kb :
             (failed || connected ? adminActivityMessages.authentication : adminActivityMessages.items)
         const channel = activity.channel === 'api' ? 'API' : 'Web'
+        const sourceHint = getActivitySourceHint(activity.source_type)
         return '<li class="list-group-item">' +
-            '<div class="d-flex flex-wrap justify-content-between small text-muted">' +
-            '<span><i class="far fa-clock"></i> ' + escapeHtml(formatTimeAgo(activity.timestamp)) + '</span>' +
-            '<span>' + escapeHtml(source) + ' · ' + channel + '</span></div>' +
+            '<div class="d-flex w-100 justify-content-between">' +
+            '<small class="text-muted"><i class="far fa-clock"></i> ' + escapeHtml(formatTimeAgo(activity.timestamp)) + '</small>' +
+            (expanded ? '<small class="text-muted">' + escapeHtml(source) + ' · ' + channel + '</small>' : '') + '</div>' +
             '<p class="mb-1" style="overflow-wrap:anywhere;"><i class="' + icon + '"></i> <strong>' +
             escapeHtml(activity.user_login) + '</strong> ' + escapeHtml(activity.action_text) +
-            (activity.item_label ? ' “<em>' + escapeHtml(activity.item_label) + '</em>”' : '') + '</p>' +
+            (activity.item_label ? ' "<em>' + escapeHtml(activity.item_label) + '</em>"' : '') +
+            (!expanded && sourceHint ? '<small class="text-muted ml-1">' + escapeHtml(sourceHint) + '</small>' : '') + '</p>' +
             (failed ? '<small class="text-danger d-block" style="overflow-wrap:anywhere;">' + escapeHtml(activity.reason) + '</small>' : '') + '</li>'
     }).join('')
 }
@@ -752,7 +754,7 @@ function loadExpandedActivity(mode) {
         if (mode === 'older') {
             const known = new Set(state.rows.map(row => row.id))
             const additional = data.activities.filter(row => !known.has(row.id))
-            if (additional.length) $('#activity-modal-list').append(renderActivityRows(additional))
+            if (additional.length) $('#activity-modal-list').append(renderActivityRows(additional, true))
             state.rows = state.rows.concat(additional)
         } else {
             state.rows = data.activities
@@ -760,7 +762,7 @@ function loadExpandedActivity(mode) {
             state.until = data.until
             state.pending = 0
             $('#activity-new-events').hide()
-            $('#activity-modal-list').html(renderActivityRows(state.rows))
+            $('#activity-modal-list').html(renderActivityRows(state.rows, true))
         }
         state.cursor = data.next_cursor
         state.hasMore = data.has_more
@@ -788,7 +790,7 @@ $(document).on('change', '.activity-category', function() {
     if (adminActivityState.open) resetExpandedActivity()
     loadLiveActivity()
 })
-$(document).on('click', '.activity-failed-count', function() {
+$(document).on('click', '#activity-modal-failed-count', function() {
     adminActivityState.categories = ['failed']
     // This shortcut is temporary: reopening the page restores the saved preferences.
     syncActivityControls()
