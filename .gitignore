@@ -9,6 +9,9 @@
 !/app/scripts/teampass-cli.sh
 !/scripts/release_check.sh
 !/.claude/skills/**/scripts/*.sh
+# Composer installs the maintainer scripts some packages ship: the committed vendor tree must
+# hold them, or every composer-built install (the Docker image) reports them as unknown files.
+!/app/vendor/**/*.sh
 nbproject
 nbproject/private
 node_modules
