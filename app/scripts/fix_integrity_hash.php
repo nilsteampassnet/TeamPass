@@ -172,9 +172,17 @@ foreach ($users as $user) {
                 $user['public_key'],
                 $SETTINGS
             );
-            $decryptResult = testBackupDecryption($user['private_key_backup'], $derivedKey);
+            $backupSealed = privateKeyBackupIsSealed((string) $user['private_key_backup']);
+            try {
+                $decryptResult = testBackupDecryption(
+                    privateKeyBackupUnseal((string) $user['private_key_backup'], $serverSecret),
+                    $derivedKey
+                );
+            } catch (Exception $e) {
+                $decryptResult = ['success' => false, 'version' => 'none'];
+            }
             if ($decryptResult['success']) {
-                $backupStatus = 'OK (' . $decryptResult['version'] . ')';
+                $backupStatus = 'OK (' . $decryptResult['version'] . ', ' . ($backupSealed ? 'sealed' : 'NOT SEALED') . ')';
                 $backupOk++;
             } else {
                 $backupStatus = 'DECRYPT FAILED';

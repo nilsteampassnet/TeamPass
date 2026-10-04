@@ -1725,16 +1725,14 @@ function prepareUserEncryptionKeys($userInfo, $passwordClear, array $SETTINGS = 
     try {
         // If user has seed but no backup, create it on first successful login
         if (!empty($userInfo['user_derivation_seed']) && empty($userInfo['private_key_backup'])) {
-            $derivedKey = deriveBackupKey($userInfo['user_derivation_seed'], $userInfo['public_key'], $SETTINGS);
-            // Encrypt private key backup using CryptoManager (use v3 if migration happened, otherwise v1)
+            // Encrypt private key backup (use v3 if migration happened, otherwise v1)
             $backupHashAlgorithm = ($decryptResult['needs_migration'] === true) ? 'sha256' : 'sha1';
-            $privateKeyBackup = base64_encode(
-                \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt(
-                    base64_decode($privateKeyClear),
-                    $derivedKey,
-                    'cbc',
-                    $backupHashAlgorithm
-                )
+            $privateKeyBackup = encryptPrivateKeyBackup(
+                base64_decode($privateKeyClear),
+                $userInfo['user_derivation_seed'],
+                $userInfo['public_key'],
+                $SETTINGS,
+                $backupHashAlgorithm
             );
 
             // Generate integrity hash

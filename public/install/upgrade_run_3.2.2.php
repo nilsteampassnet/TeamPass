@@ -639,6 +639,43 @@ if (addColumnIfNotExist(prefixTable('nested_tree'), 'deletion_protected', "TINYI
     exit();
 }
 
+// Seal the transparent key recovery backups with the instance key (GHSA-fv78-jwjv-pj25).
+//
+// The backup key is derived from two columns of the same users row, so a database dump alone
+// opened every private key holding a backup. Sealing wraps the stored ciphertext as is: no
+// private key is decrypted here, and sealed rows are skipped, so the step can be replayed.
+// It uses MeekroDB (loaded above), not $db_link.
+try {
+    $serverSecret = getServerSecret();
+    $lastUserId = 0;
+    do {
+        $legacyBackups = DB::query(
+            'SELECT id, private_key_backup FROM ' . prefixTable('users') . '
+            WHERE id > %i AND private_key_backup IS NOT NULL AND private_key_backup != %s
+            AND private_key_backup NOT LIKE %s
+            ORDER BY id ASC LIMIT 500',
+            $lastUserId,
+            '',
+            PRIVATE_KEY_BACKUP_SEAL_PREFIX . '%'
+        );
+        foreach ($legacyBackups as $legacyBackup) {
+            $lastUserId = (int) $legacyBackup['id'];
+            // The value is matched again, so a backup rewritten meanwhile is not overwritten
+            DB::update(
+                prefixTable('users'),
+                ['private_key_backup' => privateKeyBackupSeal((string) $legacyBackup['private_key_backup'], $serverSecret)],
+                'id = %i AND private_key_backup = %s',
+                $lastUserId,
+                (string) $legacyBackup['private_key_backup']
+            );
+        }
+    } while (count($legacyBackups) === 500);
+} catch (Exception $e) {
+    echo json_encode([['finish' => '1', 'error' => 'Error sealing the private key backups: ' . $e->getMessage()]]);
+    mysqli_close($db_link);
+    exit();
+}
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,

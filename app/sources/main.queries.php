@@ -3706,20 +3706,12 @@ function changeUserAuthenticationPassword(
 
                 // Update transparent recovery backup with new password context
                 if (!empty($userData['user_derivation_seed']) && !empty($userData['public_key'])) {
-                    $derivedKey = deriveBackupKey(
+                    // Re-encrypt private key backup
+                    $privateKeyBackup = encryptPrivateKeyBackup(
+                        base64_decode($privateKey),
                         $userData['user_derivation_seed'],
                         $userData['public_key'],
                         $SETTINGS
-                    );
-
-                    // Re-encrypt private key backup with derived key
-                    $privateKeyBackup = base64_encode(
-                        \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt(
-                            base64_decode($privateKey),
-                            $derivedKey,
-                            'cbc',
-                            'sha256'
-                        )
                     );
 
                     // Recalculate integrity hash
@@ -3843,15 +3835,7 @@ function changeUserLDAPAuthenticationPassword(
         // NOTE: $privateKey is base64_encode(PEM) — we must decode it to raw PEM bytes
         // before encrypting, consistent with how backups are created everywhere else.
         $userSeed        = bin2hex(openssl_random_pseudo_bytes(32));
-        $derivedKey      = deriveBackupKey($userSeed, $userData['public_key']);
-        $privateKeyBackup = base64_encode(
-            \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt(
-                base64_decode($privateKey),
-                $derivedKey,
-                'cbc',
-                'sha256'
-            )
-        );
+        $privateKeyBackup = encryptPrivateKeyBackup(base64_decode($privateKey), $userSeed, $userData['public_key']);
         $serverSecret   = getServerSecret();
         $integrityHash  = generateKeyIntegrityHash($userSeed, $userData['public_key'], $serverSecret);
 

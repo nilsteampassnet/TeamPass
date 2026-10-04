@@ -70,6 +70,7 @@ require_once __DIR__ . '/password_strength.functions.php';
 require_once __DIR__ . '/roles_scope.functions.php';
 require_once __DIR__ . '/file_integrity.functions.php';
 require_once __DIR__ . '/runtime_files.functions.php';
+require_once __DIR__ . '/private_key_backup_logic.php';
 // Owner resolution rules for personal objects, shared with the remediation tooling and its tests.
 require_once __DIR__ . '/../scripts/personal_sharekeys_logic.php';
 
@@ -5529,18 +5530,15 @@ function generateUserKeys(string $userPwd, ?array $SETTINGS = null): array
     // Generate unique seed for this user
     $userSeed = bin2hex(openssl_random_pseudo_bytes(32));
 
-    // Derive backup encryption key
-    $derivedKey = deriveBackupKey($userSeed, $result['public_key'], $SETTINGS);
-
-    // Encrypt private key with derived key (backup, SHA-256 for v3)
-    $privatekeyBackup = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt($res['privatekey'], $derivedKey, 'cbc', 'sha256');
+    // Encrypt private key backup (SHA-256 for v3)
+    $privatekeyBackup = encryptPrivateKeyBackup($res['privatekey'], $userSeed, $result['public_key'], $SETTINGS);
 
     // Generate integrity hash
     $serverSecret = getServerSecret();
     $integrityHash = generateKeyIntegrityHash($userSeed, $result['public_key'], $serverSecret);
 
     $result['user_seed'] = $userSeed;
-    $result['private_key_backup'] = base64_encode($privatekeyBackup);
+    $result['private_key_backup'] = $privatekeyBackup;
     $result['key_integrity_hash'] = $integrityHash;
 
     return $result;
@@ -5889,23 +5887,16 @@ function migrateAllUserKeysToV3(
         // Re-encrypt private_key_backup if it exists
         if (!empty($userInfo['private_key_backup']) && !empty($userInfo['user_derivation_seed'])) {
             try {
-                // Derive backup key (same as before, uses SHA-256 in derivation)
                 $configManager = new ConfigManager();
                 $SETTINGS = $configManager->getAllSettings();
-                $derivedKey = deriveBackupKey(
+
+                // Re-encrypt backup with SHA-256
+                $updateData['private_key_backup'] = encryptPrivateKeyBackup(
+                    base64_decode($privateKeyClear),
                     $userInfo['user_derivation_seed'],
                     $userInfo['public_key'],
                     $SETTINGS
                 );
-
-                // Re-encrypt backup with SHA-256
-                $encryptedBackup = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt(
-                    base64_decode($privateKeyClear),
-                    $derivedKey,
-                    'cbc',
-                    'sha256' // v3 uses SHA-256
-                );
-                $updateData['private_key_backup'] = base64_encode($encryptedBackup);
             } catch (Exception $e) {
                 // Log error but don't fail the whole migration
                 if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
@@ -5947,6 +5938,10 @@ function migrateAllUserKeysToV3(
  * Derives a backup encryption key from user seed and public key.
  * Uses PBKDF2 with 100k iterations for strong key derivation.
  *
+ * Every input is read from the users row, so this key alone protects nothing against a
+ * database dump: only call it through encryptPrivateKeyBackup() / decryptPrivateKeyBackup(),
+ * which seal the backup with the instance key (GHSA-fv78-jwjv-pj25).
+ *
  * @param string $userSeed User's unique derivation seed (64 hex chars)
  * @param string $publicKey User's public RSA key (base64 encoded)
  * @param array $SETTINGS Teampass settings
@@ -5977,6 +5972,90 @@ function deriveBackupKey(string $userSeed, string $publicKey, ?array $SETTINGS =
         32, // 256 bits key length
         true // raw binary output
     );
+}
+
+/**
+ * Encrypts a private key into the value stored in users.private_key_backup.
+ *
+ * The AES layer uses the key derived from the seed, then the result is sealed with the
+ * instance key. Every writer of private_key_backup must go through this function.
+ *
+ * @param string     $privateKeyPem Private key (raw PEM)
+ * @param string     $userSeed      User derivation seed (users.user_derivation_seed)
+ * @param string     $publicKey     User public key (base64 encoded)
+ * @param array|null $SETTINGS      Teampass settings
+ * @param string     $hash          PBKDF2 hash of the AES layer ('sha256' for v3, 'sha1' for v1)
+ *
+ * @return string Sealed backup
+ */
+function encryptPrivateKeyBackup(
+    string $privateKeyPem,
+    string $userSeed,
+    string $publicKey,
+    ?array $SETTINGS = null,
+    string $hash = 'sha256'
+): string {
+    $backup = base64_encode(
+        \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt(
+            $privateKeyPem,
+            deriveBackupKey($userSeed, $publicKey, $SETTINGS),
+            'cbc',
+            $hash
+        )
+    );
+
+    return privateKeyBackupSeal($backup, getServerSecret());
+}
+
+/**
+ * Decrypts users.private_key_backup back to the private key.
+ *
+ * Accepts a backup the upgrade has not sealed yet (see privateKeyBackupUnseal()).
+ *
+ * @param string     $storedBackup Value of users.private_key_backup
+ * @param string     $userSeed     User derivation seed (users.user_derivation_seed)
+ * @param string     $publicKey    User public key (base64 encoded)
+ * @param array|null $SETTINGS     Teampass settings
+ *
+ * @return string Private key (raw PEM)
+ *
+ * @throws Exception When the backup cannot be decrypted
+ */
+function decryptPrivateKeyBackup(
+    string $storedBackup,
+    string $userSeed,
+    string $publicKey,
+    ?array $SETTINGS = null
+): string {
+    $derivedKey = deriveBackupKey($userSeed, $publicKey, $SETTINGS);
+    $backupCiphertext = base64_decode(privateKeyBackupUnseal($storedBackup, getServerSecret()));
+
+    // Use version detection since backup may be encrypted with SHA-1 (v1) or SHA-256 (v3)
+    $decryptResult = \TeampassClasses\CryptoManager\CryptoManager::aesDecryptWithVersionDetection(
+        $backupCiphertext,
+        $derivedKey,
+        'cbc'
+    );
+    $recoveredPem = $decryptResult['data'];
+
+    // Guard against SHA-256 false-positive: AES-CBC with wrong key can silently produce
+    // valid-UTF-8 garbage (~0.4% probability). RSA private keys always start with '-----BEGIN'.
+    // If version detection returned a SHA-256 result that does not look like a PEM key,
+    // explicitly retry with SHA-1 (which is how the backup was originally encrypted for
+    // non-migrated legacy users).
+    if (strpos($recoveredPem, '-----BEGIN') === false) {
+        $recoveredPem = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt(
+            $backupCiphertext,
+            $derivedKey,
+            'cbc',
+            'sha1'
+        );
+        if (strpos($recoveredPem, '-----BEGIN') === false) {
+            throw new Exception('Recovered data is not a valid RSA private key (both SHA-256 and SHA-1 produced non-PEM output)');
+        }
+    }
+
+    return $recoveredPem;
 }
 
 /**
@@ -6074,54 +6153,27 @@ function attemptTransparentRecovery(array $userInfo, string $newPassword, array 
             ];
         }
 
-        // Derive backup key
-        $derivedKey = deriveBackupKey(
+        // Decrypt private key from the backup
+        $recoveredPem = decryptPrivateKeyBackup(
+            (string) $userInfo['private_key_backup'],
             $userInfo['user_derivation_seed'],
             $userInfo['public_key'],
             $SETTINGS
         );
-
-        // Decrypt private key using derived key (using CryptoManager - phpseclib v3)
-        // Use version detection since backup may be encrypted with SHA-1 (v1) or SHA-256 (v3)
-        $backupCiphertext = base64_decode($userInfo['private_key_backup']);
-        $decryptResult = \TeampassClasses\CryptoManager\CryptoManager::aesDecryptWithVersionDetection(
-            $backupCiphertext,
-            $derivedKey,
-            'cbc'
-        );
-        $recoveredPem = $decryptResult['data'];
-
-        // Guard against SHA-256 false-positive: AES-CBC with wrong key can silently produce
-        // valid-UTF-8 garbage (~0.4% probability). RSA private keys always start with '-----BEGIN'.
-        // If version detection returned a SHA-256 result that does not look like a PEM key,
-        // explicitly retry with SHA-1 (which is how the backup was originally encrypted for
-        // non-migrated legacy users).
-        if (strpos($recoveredPem, '-----BEGIN') === false) {
-            $recoveredPem = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt(
-                $backupCiphertext,
-                $derivedKey,
-                'cbc',
-                'sha1'
-            );
-            if (strpos($recoveredPem, '-----BEGIN') === false) {
-                throw new Exception('Recovered data is not a valid RSA private key (both SHA-256 and SHA-1 produced non-PEM output)');
-            }
-        }
 
         $privateKeyClear = base64_encode($recoveredPem);
 
         // Re-encrypt with new password
         $newPrivateKeyEncrypted = encryptPrivateKey($newPassword, $privateKeyClear);
 
-        // Re-encrypt backup with derived key (SHA-256 for v3)
-        $encrypted = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt(
-            base64_decode($privateKeyClear),
-            $derivedKey,
-            'cbc',
-            'sha256'
+        // Re-encrypt backup (SHA-256 for v3); this also seals a backup the upgrade has not converted
+        $newPrivateKeyBackup = encryptPrivateKeyBackup(
+            $recoveredPem,
+            $userInfo['user_derivation_seed'],
+            $userInfo['public_key'],
+            $SETTINGS
         );
-        $newPrivateKeyBackup = base64_encode($encrypted);
-        
+
         // Update database
         DB::update(
             prefixTable('users'),
