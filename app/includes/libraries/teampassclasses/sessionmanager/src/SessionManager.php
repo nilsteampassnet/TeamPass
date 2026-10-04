@@ -30,6 +30,7 @@ namespace TeampassClasses\SessionManager;
 
 use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\IpUtils;
 use Defuse\Crypto\Key;
 use TeampassClasses\SessionManager\EncryptedSessionProxy;
 use TeampassClasses\ConfigManager\ConfigManager;
@@ -63,7 +64,7 @@ class SessionManager
 
             if (session_status() === PHP_SESSION_NONE) {
                 $request = Request::createFromGlobals();
-                $isSecure = $request->isSecure();
+                $isSecure = $request->isSecure() || self::isHttpsForwardedByTrustedProxy($request);
 
                 // Configure gc_maxlifetime dynamically based on maximum_session_expiration_time
                 // This prevents PHP garbage collection from destroying session files before
@@ -88,6 +89,93 @@ class SessionManager
         }
 
         return self::$session;
+    }
+
+    /**
+     * Tell whether a declared TLS-terminating proxy forwarded this request as HTTPS.
+     *
+     * TeamPass registers no Symfony trusted proxy, so Request::isSecure() only sees the hop
+     * that reaches PHP: behind a TLS terminator the session cookie lost its Secure flag
+     * unless the backend set HTTPS=on itself. X-Forwarded-Proto is honoured under the trust
+     * model of Settings → Network, the one teampassGetClientIpForSecurity() applies to the
+     * client address. The header can only add the flag, never remove it.
+     *
+     * @param Request $request Current request
+     * @return bool
+     */
+    private static function isHttpsForwardedByTrustedProxy(Request $request): bool
+    {
+        try {
+            $configManager = new ConfigManager();
+
+            return self::isTrustedForwardedHttps(
+                (string) $request->server->get('REMOTE_ADDR', ''),
+                (string) $request->headers->get('X-Forwarded-Proto', ''),
+                (string) ($configManager->getSetting('network_security_mode') ?? 'direct'),
+                (string) ($configManager->getSetting('network_trusted_proxies') ?? '')
+            );
+        } catch (\Throwable $e) {
+            // Settings unavailable (e.g. during installation): keep the direct answer
+            return false;
+        }
+    }
+
+    /**
+     * DB-free decision behind isHttpsForwardedByTrustedProxy().
+     *
+     * The forwarded scheme counts only in reverse_proxy mode and when REMOTE_ADDR is one of
+     * the trusted proxies. They are parsed like teampassGetTrustedProxyRules() does: IPv4
+     * addresses or IPv4 CIDR blocks separated by commas, semicolons or new lines, anything
+     * else ignored. The first header value is read, with the values Symfony accepts.
+     *
+     * @param string $remoteAddr     REMOTE_ADDR of the request
+     * @param string $forwardedProto X-Forwarded-Proto header value
+     * @param string $mode           network_security_mode setting
+     * @param string $trustedProxies network_trusted_proxies setting
+     * @return bool
+     */
+    public static function isTrustedForwardedHttps(
+        string $remoteAddr,
+        string $forwardedProto,
+        string $mode,
+        string $trustedProxies
+    ): bool {
+        if (strtolower(trim($mode)) !== 'reverse_proxy') {
+            return false;
+        }
+
+        $proto = strtolower(trim(explode(',', $forwardedProto)[0]));
+        if (in_array($proto, ['https', 'on', 'ssl', '1'], true) === false) {
+            return false;
+        }
+
+        $remoteAddr = trim($remoteAddr);
+        if (filter_var($remoteAddr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+            return false;
+        }
+
+        $rules = preg_split('/[\r\n,;]+/', $trustedProxies);
+        foreach ($rules === false ? [] : $rules as $rule) {
+            [$ipPart, $maskPart] = array_pad(explode('/', trim($rule), 2), 2, null);
+            $ipPart = trim((string) $ipPart);
+            if (filter_var($ipPart, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+                continue;
+            }
+
+            if ($maskPart !== null) {
+                $maskPart = trim($maskPart);
+                if (ctype_digit($maskPart) === false || (int) $maskPart > 32) {
+                    continue;
+                }
+                $ipPart .= '/' . (int) $maskPart;
+            }
+
+            if (IpUtils::checkIp4($remoteAddr, $ipPart) === true) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
