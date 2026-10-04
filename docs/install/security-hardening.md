@@ -22,6 +22,7 @@ This page is a **checklist for putting a TeamPass instance into production**, an
 | 8 | Logs leave the server and the health checks are green | [Monitoring and audit](#monitoring-and-audit) |
 | 9 | Backups run, are stored off-site, and the Recovery Package is kept offline | [Backups](#backups) |
 | 10 | A public Secure Send address exposes only the recipient route and never logs its credentials | [Secure Send hardening](secure-send.md) |
+| 11 | Database dumps taken before 3.2.2.7 are protected like the encryption key, or destroyed | [Private key recovery copy](#private-key-recovery-copy) |
 
 ---
 
@@ -112,6 +113,14 @@ Once it is enabled, legacy data is upgraded gradually, when it is accessed or sa
 ### Encrypted client/server exchanges
 
 Keep **Encrypt client/server** (`encryptClientServer`) enabled — it is by default. The data exchanged between the browser and the server is then encrypted on top of TLS.
+
+### Private key recovery copy
+
+So that a user whose LDAP or OAuth2 password changed outside TeamPass can sign in without being asked for the previous password, TeamPass keeps a second copy of the users' private keys, in the `private_key_backup` column of the users table. Up to 3.2.2.6, that copy opened with values stored in the same database row: **a database dump alone was enough to recover the users' private keys, and through them every password those users could read** (advisory GHSA-fv78-jwjv-pj25, versions 3.1.5.0 to 3.2.2.6). Since 3.2.2.7 the copy is also encrypted with the instance key (`SECUREFILE` in the secrets directory), which a database dump does not contain. The upgrade converts the existing copies without opening them.
+
+- **Database dumps taken before the upgrade keep the old format.** A `mysqldump` file, a replica, a virtual machine or volume snapshot, or a hosting backup made before the upgrade still opens the private keys on its own. Protect these copies like the encryption key itself, or destroy those you no longer need. The backups TeamPass makes itself are encrypted, and expose nothing without the key that encrypts them.
+- **If such a dump may have leaked**, regenerating the users' keys is not enough: the passwords stored at that time could be read from the dump. Change the passwords that were stored in TeamPass when the dump was taken, starting with the most sensitive ones.
+- **Do not return to an older version after upgrading.** An older version cannot read the new format: when a user whose directory password changed signs in, it fails to recover the key and disables the account, which an administrator then has to enable again.
 
 ### Personal items isolation
 
