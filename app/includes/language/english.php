@@ -3807,4 +3807,7 @@ return array(
     'ldap_step_bind_no_upn' => 'This Active Directory account has no userPrincipalName. TeamPass binds on that attribute, so the account cannot authenticate until it is set in the directory.',
     'personal_items_not_reencrypted' => '#nb# personal item(s) could not be decrypted with this saltkey and were left unchanged. Your saltkey is kept so that they can still be recovered: please contact your administrator.',
 
-    );
+        'admin_activity_failed' => 'failed to sign in',
+    'admin_activity_connected' => 'signed in',
+
+);

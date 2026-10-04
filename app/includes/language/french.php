@@ -3794,4 +3794,7 @@ return array(
     'kb_markdown_lossy_table_header' => 'la première ligne de chaque tableau devient une ligne d’en-tête',
     'lapr_endpoint_credential_unavailable' => 'L’élément d’identification SSH de ce serveur a été supprimé ou déplacé vers un dossier personnel. Restaurez-le ou replacez-le dans un dossier partagé avant de restaurer le serveur.',
 
+    'admin_activity_failed' => 'a échoué à se connecter',
+    'admin_activity_connected' => 's’est connecté',
+
 );

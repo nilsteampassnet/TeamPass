@@ -3289,135 +3289,56 @@ case 'save_sending_statistics':
 // ========================================
 
 case 'get_live_activity':
-    /**
-     * Get recent activity (last 5 minutes, max 10 entries)
-     * 
-     * @return array [{
-     *   timestamp: int,
-     *   user_id: int,
-     *   user_login: string,
-     *   action: string,
-     *   action_text: string,
-     *   source_type: string,
-     *   source_label: string,
-     *   item_id: int|null,
-     *   item_label: string|null
-     * }]
-     */
-
-    $getActivityActionText = static function (string $action) use ($lang): string {
-        switch ($action) {
-            case 'at_shown':
-                return $lang->get('action_accessed');
-            case 'at_creation':
-                return $lang->get('action_created');
-            case 'at_modification':
-                return $lang->get('action_modified');
-            case 'at_delete':
-                return $lang->get('action_deleted');
-            case 'at_manual':
-                return $lang->get('action_manual');
-            case 'at_password_shown_edit_form':
-                return $lang->get('opened_edit_form_of');
-            case 'at_copy':
-                return $lang->get('copied');
-            case 'at_restored':
-                return $lang->get('at_restored');
-            case 'at_webauthn_credential_used':
-                return $lang->get('action_webauthn_used');
-            default:
-                return $action;
-        }
-    };
-
-    $timestamp5min = time() - 300; // 5 minutes ago
-    
-    $activities = DB::query(
-        'SELECT l.date, l.id_user, u.login, l.action, l.raison, l.id_item, i.label 
-        FROM ' . prefixTable('log_items') . ' AS l
-        LEFT JOIN ' . prefixTable('users') . ' AS u ON l.id_user = u.id
-        LEFT JOIN ' . prefixTable('items') . ' AS i ON l.id_item = i.id
-        WHERE l.date > %i
-        ORDER BY l.date DESC
-        LIMIT 10',
-        $timestamp5min
-    );
-    
-    $activityList = array();
-
-    foreach ($activities as $activity) {
-        $activity = secureOutput($activity, ['login', 'label']);
-
-        $activityList[] = array(
-            'timestamp' => intval($activity['date']),
-            'user_id' => intval($activity['id_user']),
-            'user_login' => $activity['login'] ?? $lang->get('unknown'),
-            'action' => $activity['action'],
-            'action_text' => strtolower($getActivityActionText((string) $activity['action'])),
-            'source_type' => 'item',
-            'source_label' => $lang->get('items'),
-            'item_id' => $activity['id_item'] ? intval($activity['id_item']) : null,
-            'item_label' => $activity['label'] ?? null,
-        );
+    if (!is_string($post_key) || !hash_equals((string) $session->get('key'), $post_key)) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('key_is_not_correct')], 'encode');
+        break;
     }
-
-    if (isset($SETTINGS['enable_kb']) && (int) $SETTINGS['enable_kb'] === 1) {
-        $kbActivities = DB::query(
-            'SELECT created_at, valeur
-            FROM ' . prefixTable('misc') . '
-            WHERE type = %s
-                AND created_at > %i
-            ORDER BY created_at DESC
-            LIMIT 10',
-            'kb_log',
-            $timestamp5min
-        );
-
-        foreach ($kbActivities as $kbActivity) {
-            $payload = json_decode((string) ($kbActivity['valeur'] ?? ''), true);
-            if (is_array($payload) === false) {
-                continue;
+    require_once __DIR__ . '/admin_activity_logic.php';
+    try {
+        $input = json_decode((string) ($post_data ?? '{}'), true, 32, JSON_THROW_ON_ERROR);
+        if (!is_array($input)) {
+            throw new InvalidArgumentException('Invalid activity options');
+        }
+        $options = adminActivityOptions($input, time(), (int) ($SETTINGS['enable_kb'] ?? 0) === 1);
+        [$union, $values] = adminActivityQuery($options, [
+            'log_items' => prefixTable('log_items'), 'log_system' => prefixTable('log_system'),
+            'users' => prefixTable('users'), 'items' => prefixTable('items'), 'misc' => prefixTable('misc'),
+        ]);
+        $rows = [];
+        $newCount = 0;
+        if ($union !== '') {
+            $pageWhere = '';
+            $pageValues = $values;
+            if ($options['before'] !== null) {
+                [$predicate, $cursorValues] = adminActivityCursorPredicate($options['before']);
+                $pageWhere = ' WHERE ' . $predicate;
+                array_push($pageValues, ...$cursorValues);
             }
-
-            $sanitizedPayload = secureOutput(
-                [
-                    'user_login' => (string) ($payload['user_login'] ?? ''),
-                    'label' => (string) ($payload['label'] ?? ''),
-                ],
-                ['user_login', 'label']
-            );
-
-            $action = (string) ($payload['action'] ?? '');
-            $activityList[] = array(
-                'timestamp' => (int) ($payload['date'] ?? $kbActivity['created_at'] ?? 0),
-                'user_id' => (int) ($payload['user_id'] ?? 0),
-                'user_login' => $sanitizedPayload['user_login'] !== '' ? $sanitizedPayload['user_login'] : $lang->get('unknown'),
-                'action' => $action,
-                'action_text' => strtolower($getActivityActionText($action)),
-                'source_type' => 'kb',
-                'source_label' => $lang->get('kb_logs'),
-                'item_id' => null,
-                'item_label' => $sanitizedPayload['label'] !== '' ? $sanitizedPayload['label'] : null,
-            );
+            $rows = DB::query('SELECT * FROM (' . $union . ') activity' . $pageWhere
+                . ' ORDER BY timestamp DESC, source_rank DESC, event_id DESC LIMIT %i',
+                ...array_merge($pageValues, [$options['limit'] + 1]));
+            if ($options['after'] !== null) {
+                [$predicate, $cursorValues] = adminActivityCursorPredicate($options['after'], true);
+                $newCount = (int) DB::queryFirstField('SELECT COUNT(*) FROM (' . $union . ') activity WHERE ' . $predicate,
+                    ...array_merge($values, $cursorValues));
+            }
         }
+        $hasMore = count($rows) > $options['limit'];
+        $rows = array_slice($rows, 0, $options['limit']);
+        $activities = array_map(static fn (array $row): array => adminActivityFormat($row,
+            static fn (string $key): string => $lang->get($key)), $rows);
+        $failedCount = in_array('failed', $options['categories'], true)
+            ? (int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('log_system')
+                . ' WHERE type = %s AND CAST(date AS SIGNED) > %i AND CAST(date AS SIGNED) <= %i', 'failed_auth', $options['since'], $options['until']) : 0;
+        echo prepareExchangedData([
+            'error' => false, 'activities' => $activities, 'has_more' => $hasMore,
+            'next_cursor' => $activities !== [] ? $activities[count($activities) - 1]['cursor'] : null,
+            'failed_count' => $failedCount, 'new_count' => $newCount,
+            'since' => $options['since'], 'until' => $options['until'],
+        ], 'encode');
+    } catch (JsonException | InvalidArgumentException $e) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_occurred')], 'encode');
     }
-
-    usort(
-        $activityList,
-        static function (array $left, array $right): int {
-            return $right['timestamp'] <=> $left['timestamp'];
-        }
-    );
-
-    $activityList = array_slice($activityList, 0, 10);
-    
-    echo prepareExchangedData(
-        array(
-            'error' => false,
-            'activities' => $activityList,
-        ),
-        'encode'
-    );
     break;
 
 // ========================================
