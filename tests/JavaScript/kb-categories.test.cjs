@@ -177,3 +177,33 @@ test('Direct article links still open their viewer after loading the list', () =
   assert.deepEqual(page.opened, [42])
   assert.equal(page.navigation.getState().view, 'list')
 })
+
+test('Opening a category moves native focus to its heading after the activating button is replaced', () => {
+  const navigation = browser([article(1, 1, 'VPN')])
+  const frames = []
+  const focused = []
+  let onClick
+  let rendered = false
+  const document = { getElementById(id) { return { focus() { focused.push(id) } } } }
+  const context = vm.createContext({
+    document,
+    window: { requestAnimationFrame: callback => frames.push(callback) },
+    $: element => element === document
+      ? { on(event, selector, callback) { onClick = callback } }
+      : { attr() { return element.categoryId } },
+    kbCategoryBrowser: navigation,
+    kbRenderBrowser() { rendered = true }
+  })
+  const source = readFileSync(join(__dirname, '../../app/pages/kb.js.php'), 'utf8')
+  const start = source.indexOf("        $(document).on('click', '.kb-category-card'")
+  const end = source.indexOf('\n\n', start)
+  assert.ok(start > 0 && end > start)
+  vm.runInContext(source.slice(start, end), context)
+  onClick.call({ categoryId: '1' })
+  assert.equal(navigation.getState().selected.id, 1)
+  assert.equal(rendered, true)
+  assert.deepEqual(focused, [])
+  assert.equal(frames.length, 1)
+  frames[0]()
+  assert.deepEqual(focused, ['kb-selected-category-title'])
+})

@@ -1699,7 +1699,11 @@ if (
         $(document).on('click', '.kb-category-card', function() {
             if (kbCategoryBrowser.select($(this).attr('data-category-id'))) {
                 kbRenderBrowser(true);
-                $('#kb-selected-category-title').trigger('focus');
+                // The activated button is replaced by the render. Move focus after the
+                // browser finishes its native keyboard activation on that removed node.
+                window.requestAnimationFrame(function() {
+                    document.getElementById('kb-selected-category-title').focus();
+                });
             }
         });
 
