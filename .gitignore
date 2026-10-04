@@ -61,6 +61,7 @@ app/includes/libraries/csrfp/libs/csrfp.config.php.*
 EncryptedFile_*
 
 # Local development scripts
+/AGENTS.md
 /app/scripts/_local/*
 /.auto-claude/*
 /_tools/*
