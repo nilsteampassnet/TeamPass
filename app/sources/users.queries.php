@@ -1705,17 +1705,12 @@ if (null !== $post_type) {
                 $post_id,
                 'ad'
             );
-            $adRoles = array_column($adRolesResult, 'role_id');
-
-            $fonctions = [];
-            if (!empty($adRoles)) {
-                foreach ($post_groups as $post_group) {
-                    if (!in_array($post_group, $adRoles)) {
-                        $fonctions[] = $post_group;
-                    }
-                }
-            }
-            $post_groups = empty($fonctions) === true ? $post_groups : $fonctions;
+            // Applied even when every submitted role comes from AD: falling back to the
+            // submission then turned the AD roles into permanent manual roles.
+            $post_groups = excludeAdRolesFromSubmittedRoles(
+                (array) $post_groups,
+                array_column($adRolesResult, 'role_id')
+            );
 
             // The submitted role set is not authoritative: the form only shows the roles the
             // caller may grant, so it is merged with the ones stored outside that scope.
@@ -3026,7 +3021,7 @@ if (null !== $post_type) {
                 'hosts'            => explode(',', (string) $SETTINGS['ldap_hosts']),
                 'base_dn'          => $SETTINGS['ldap_bdn'],
                 'username'         => $SETTINGS['ldap_username'],
-                'password'         => $SETTINGS['ldap_password'],
+                'password'         => tpGetSecretSetting($SETTINGS, 'ldap_password'),
             
                 // Optional Configuration Options
                 'port'             => $SETTINGS['ldap_port'],
@@ -5388,7 +5383,7 @@ function getLdapStatusForUserIds(array $userIds, array $SETTINGS): array
         'hosts'            => explode(',', (string) $SETTINGS['ldap_hosts']),
         'base_dn'          => $SETTINGS['ldap_bdn'],
         'username'         => $SETTINGS['ldap_username'],
-        'password'         => $SETTINGS['ldap_password'],
+        'password'         => tpGetSecretSetting($SETTINGS, 'ldap_password'),
         'port'             => $SETTINGS['ldap_port'],
         'use_ssl'          => (int) $SETTINGS['ldap_ssl'] === 1,
         'use_tls'          => (int) $SETTINGS['ldap_tls'] === 1,

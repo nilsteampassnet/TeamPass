@@ -35,7 +35,7 @@ Expected connection configuration keys are :
 
 * __[Hosts](https://ldaprecord.com/docs/core/v2/configuration#hosts)__ - The hosts option is an array of IP addresses or host names located on your network that serve an LDAP directory (seprated by a comma). You insert as many servers or as little as you would like depending on your forest (with the minimum of one of course). 
 * __[Base Distinguished Name](https://ldaprecord.com/docs/core/v2/configuration#base-distinguished-name)__ - The root distinguished name (DN) to use when running queries against the directory server. *Examples: o=example,c=com ; cn=users,dc=ad,dc=example,dc=com*
-* __[username & password](https://ldaprecord.com/docs/core/v2/configuration#username--password)__ - The distinguished name of the user that the application will use when connecting to the directory server, and his password. *Examples: cn=administrator,cn=users,dc=ad,dc=example,dc=com ; cn=user,dc=domain,dc=name*
+* __[username & password](https://ldaprecord.com/docs/core/v2/configuration#username--password)__ - The distinguished name of the user that the application will use when connecting to the directory server, and his password. *Examples: cn=administrator,cn=users,dc=ad,dc=example,dc=com ; cn=user,dc=domain,dc=name*. The bind password is stored encrypted with the instance key and is never sent back to the page: once saved, its field stays empty and shows *Leave empty to keep the existing value*. Leave it empty to keep the stored password, or type a new one to replace it; a blank field never erases it. The password is saved exactly as typed, including `&`, `'`, `"`, `<` and `>`.
 * __[Port](https://ldaprecord.com/docs/core/v2/configuration#port)__ - The port option is used for authenticating and binding to your LDAP server. The default ports are already used for non SSL and SSL connections (389 and 636). Only insert a port if your LDAP server uses a unique port. 
 
 Those keys are mandatory as expected in order to open the connection to the AD remote servers.
@@ -172,7 +172,7 @@ If disabled for a user, a red fingerprint symbol is shown in the users list.
 
 ![Settings tasks options](../_media/tp3_auth_mfa_3.png)
 
-👉 The option `MFA is requested for users in Roles` limits MFA to the users holding at least one of the selected roles. Leave it empty to require MFA from every user.
+👉 The option `MFA is requested for users in Roles` limits MFA to the users holding at least one of the selected roles. Leave it empty to require MFA from every user. Both kinds of roles count: the roles assigned in the user form and the roles inherited from AD groups through the [LDAP group mapping](roles.md#ldap-group-mapping), which are refreshed at each login.
 
 ### Google Authenticator enrollment
 

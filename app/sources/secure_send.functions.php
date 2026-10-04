@@ -308,6 +308,7 @@ function secureSendPrepareRecipient(array $input, string $method, array $setting
 {
     $parameters = secureSendRequestParameters($input);
     $link = [];
+    $sender = null;
     $result = null;
     $error = '';
     $token = '';
@@ -319,6 +320,19 @@ function secureSendPrepareRecipient(array $input, string $method, array $setting
             $link = [];
             $error = 'secure_send_invalid_link';
         } else {
+            $sender = secureSendPublicSender(
+                $link,
+                (int) ($settings['secure_send_show_sender_name'] ?? 0) === 1
+            );
+            // GET must not expose a sender whose account or item access is no longer valid.
+            // A confirmed POST still enters secureSendRedeem(), which owns the transactional
+            // revocation of links invalidated between the confirmation page and submission.
+            if ($sender === null && $method !== 'POST') {
+                $link = [];
+                $error = 'secure_send_invalid_link';
+            }
+        }
+        if ($link !== []) {
             $confirmationId = secureSendConfirmationId($parameters);
             if ($method === 'POST') {
                 $submitted = is_string($input['confirmation'] ?? null) ? $input['confirmation'] : '';
@@ -357,6 +371,14 @@ function secureSendPrepareRecipient(array $input, string $method, array $setting
         error_log('TEAMPASS Secure Send request failed (' . get_class($e) . ')');
         $error = 'secure_send_invalid_link';
         $link = [];
+        $sender = null;
     }
-    return ['parameters' => $parameters, 'link' => $link, 'result' => $result, 'error' => $error, 'token' => $token];
+    return [
+        'parameters' => $parameters,
+        'link' => $link,
+        'sender' => $sender,
+        'result' => $result,
+        'error' => $error,
+        'token' => $token,
+    ];
 }

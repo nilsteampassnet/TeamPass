@@ -56,7 +56,7 @@ Personal items, their custom fields and their attachments are analysed in a sepa
 
 * **Needs the owner** — nobody but the owner can rebuild the `TP` reference key, from their own session. Ask each owner to open **My Profile** and click **Repair my personal items encryption keys**. Nothing is lost in the meantime.
 * **Not automatically recoverable** — the content cannot be recovered, only recreated.
-* The owner is the owner of the personal folder, cross-checked with the user who created the item. When the owner cannot be determined (*Owner unknown* in the details) or disagrees with the creator, the object is reported and left untouched.
+* The owner is the owner of the personal folder, cross-checked with the user who created the item. When the owner cannot be determined (*Owner unknown* in the details) or disagrees with the creator, the object is reported and left untouched. One exception: a shared item moved into a personal folder keeps its creator, so the owner is accepted when they made the item's latest move, since only the owner of a personal folder can move an item into it. A folder changed from the item's edit form is not recorded as a move, so such an item is still left untouched.
 * An object without a usable `TP` reference key keeps any key another user still holds on it: that key is the last way to open it, so it is not deleted.
 
 ## Other tools

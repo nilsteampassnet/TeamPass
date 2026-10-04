@@ -138,12 +138,6 @@ PHP_UPLOAD_MAX_FILESIZE=100M
 PHP_MAX_EXECUTION_TIME=120
 ```
 
-#### Installation mode
-
-```dotenv
-INSTALL_MODE=manual   # manual (default) or auto
-```
-
 ### Docker image tags
 
 Docker Hub (`teampass/teampass`) provides:
@@ -210,6 +204,10 @@ location / {
 }
 ```
 
+### Secure session cookie behind the proxy
+
+With either setup, the proxy terminates HTTPS. Once TeamPass is installed, set **Settings → Options → Networks → IP detection mode** to `Reverse proxy / WAF` and declare the address the container sees for the proxy (the proxy container or the Docker network gateway) in **Trusted proxies**. TeamPass then trusts the proxy's `X-Forwarded-Proto` header and marks the session cookie `Secure`; without this, the cookie lacks that attribute because the container itself is reached over plain HTTP.
+
 ---
 
 ## Upgrading
@@ -242,15 +240,14 @@ docker exec teampass-db mariadb-dump \
   teampass > teampass-backup-$(date +%Y%m%d).sql
 ```
 
-**Files:**
+**Master key, configuration and attachments:**
 
 ```bash
-docker run --rm \
-  -v docker-compose_teampass-sk:/sk:ro \
-  -v docker-compose_teampass-files:/files:ro \
-  -v $(pwd):/backup \
-  alpine tar czf /backup/teampass-files-$(date +%Y%m%d).tar.gz /sk /files
+docker exec teampass-app tar -C /var/www/html -czf - secrets storage/config storage/files \
+  > teampass-state-$(date +%Y%m%d).tar.gz
 ```
+
+> The master key in `secrets/` is required to decrypt all data: without it, the data in a database dump cannot be decrypted. Keep the dump and this archive together, in a safe place.
 
 ### Restore
 
@@ -262,15 +259,14 @@ docker exec -i teampass-db mariadb \
   teampass < teampass-backup-20240315.sql
 ```
 
-**Files:**
+**Master key, configuration and attachments:**
 
 ```bash
-docker run --rm \
-  -v docker-compose_teampass-sk:/sk \
-  -v docker-compose_teampass-files:/files \
-  -v $(pwd):/backup \
-  alpine tar xzf /backup/teampass-files-20240315.tar.gz
+docker exec -i teampass-app tar -C /var/www/html -xzf - < teampass-state-20240315.tar.gz
+docker compose restart teampass
 ```
+
+The restart lets the container reset the ownership of its volumes and pick up the restored `settings.php`. Restore into the instance the archive comes from, or into a new one on which the installer has not been run: the installer creates a different master key.
 
 ---
 

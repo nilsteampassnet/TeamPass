@@ -62,12 +62,15 @@ require_once __DIR__ . '/folder_cache_logic.php';
 require_once __DIR__ . '/api_auth_logic.php';
 require_once __DIR__ . '/ldap_config_logic.php';
 require_once __DIR__ . '/branding_logic.php';
+require_once __DIR__ . '/user_keys_task_logic.php';
+require_once __DIR__ . '/secret_settings_logic.php';
 // Directory access shared by the login and by the LDAP settings page test.
 require_once __DIR__ . '/ldap.functions.php';
 require_once __DIR__ . '/password_strength.functions.php';
 require_once __DIR__ . '/roles_scope.functions.php';
 require_once __DIR__ . '/file_integrity.functions.php';
 require_once __DIR__ . '/runtime_files.functions.php';
+require_once __DIR__ . '/private_key_backup_logic.php';
 // Owner resolution rules for personal objects, shared with the remediation tooling and its tests.
 require_once __DIR__ . '/../scripts/personal_sharekeys_logic.php';
 
@@ -4959,6 +4962,103 @@ function getEncryptedValue(string $value, int $isEncrypted): string
 }
 
 /**
+ * Return the clear value of a credential setting (see secret_settings_logic.php).
+ *
+ * A value stored before these settings were encrypted is returned unchanged, so existing
+ * installations keep working until the value is saved again or migrated. A ciphertext that does
+ * not decrypt gives an empty string: the credential is then refused, never replaced by the
+ * ciphertext itself.
+ *
+ * @param array  $settings Teampass settings
+ * @param string $name     Setting name
+ *
+ * @return string
+ */
+function tpGetSecretSetting(array $settings, string $name): string
+{
+    $value = (string) ($settings[$name] ?? '');
+    if ($value === '' || tpIsInstanceKeyCiphertext($value) === false) {
+        return $value;
+    }
+
+    try {
+        $decrypted = cryption($value, '', 'decrypt', $settings);
+    } catch (Throwable $e) {
+        error_log('TEAMPASS Error - tpGetSecretSetting: cannot decrypt ' . $name . ': ' . $e->getMessage());
+        return '';
+    }
+    if (($decrypted['error'] ?? false) !== false) {
+        error_log('TEAMPASS Error - tpGetSecretSetting: cannot decrypt ' . $name . ': ' . $decrypted['error']);
+        return '';
+    }
+
+    return (string) ($decrypted['string'] ?? '');
+}
+
+/**
+ * Encrypt the credential settings still stored in plaintext, and flag them is_encrypted = 1.
+ *
+ * Idempotent: a value that is already ciphertext only gets its flag set. Each new ciphertext is
+ * decrypted back and compared before it replaces the plaintext, so a broken instance key leaves
+ * the credential as it was. Run by the upgrade.
+ *
+ * @param array $SETTINGS Teampass settings
+ *
+ * @return array{encrypted: int, flagged: int, failed: int}
+ */
+function tpEncryptStoredSecretSettings(array $SETTINGS): array
+{
+    $stats = ['encrypted' => 0, 'flagged' => 0, 'failed' => 0];
+
+    foreach (tpSecretSettingNames() as $name) {
+        $row = DB::queryFirstRow(
+            'SELECT valeur, is_encrypted FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s',
+            'admin',
+            $name
+        );
+        $value = (string) ($row['valeur'] ?? '');
+        if ($value === '') {
+            continue;
+        }
+
+        if (tpIsInstanceKeyCiphertext($value) === true) {
+            if ((int) $row['is_encrypted'] !== 1) {
+                DB::update(prefixTable('misc'), ['is_encrypted' => 1], 'type = %s AND intitule = %s', 'admin', $name);
+                $stats['flagged']++;
+            }
+            continue;
+        }
+
+        try {
+            $encrypted = cryption($value, '', 'encrypt', $SETTINGS);
+            $check = cryption((string) $encrypted['string'], '', 'decrypt', $SETTINGS);
+        } catch (Throwable $e) {
+            $stats['failed']++;
+            continue;
+        }
+        if ($encrypted['error'] !== false || $check['error'] !== false || $check['string'] !== $value) {
+            $stats['failed']++;
+            continue;
+        }
+
+        DB::update(
+            prefixTable('misc'),
+            ['valeur' => (string) $encrypted['string'], 'is_encrypted' => 1, 'updated_at' => time()],
+            'type = %s AND intitule = %s',
+            'admin',
+            $name
+        );
+        $stats['encrypted']++;
+    }
+
+    if ($stats['encrypted'] + $stats['flagged'] > 0) {
+        ConfigManager::invalidateCache();
+    }
+
+    return $stats;
+}
+
+/**
  * Permits to replace &#92; to permit correct display
  *
  * @param string $input Some text
@@ -5430,18 +5530,15 @@ function generateUserKeys(string $userPwd, ?array $SETTINGS = null): array
     // Generate unique seed for this user
     $userSeed = bin2hex(openssl_random_pseudo_bytes(32));
 
-    // Derive backup encryption key
-    $derivedKey = deriveBackupKey($userSeed, $result['public_key'], $SETTINGS);
-
-    // Encrypt private key with derived key (backup, SHA-256 for v3)
-    $privatekeyBackup = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt($res['privatekey'], $derivedKey, 'cbc', 'sha256');
+    // Encrypt private key backup (SHA-256 for v3)
+    $privatekeyBackup = encryptPrivateKeyBackup($res['privatekey'], $userSeed, $result['public_key'], $SETTINGS);
 
     // Generate integrity hash
     $serverSecret = getServerSecret();
     $integrityHash = generateKeyIntegrityHash($userSeed, $result['public_key'], $serverSecret);
 
     $result['user_seed'] = $userSeed;
-    $result['private_key_backup'] = base64_encode($privatekeyBackup);
+    $result['private_key_backup'] = $privatekeyBackup;
     $result['key_integrity_hash'] = $integrityHash;
 
     return $result;
@@ -5790,23 +5887,16 @@ function migrateAllUserKeysToV3(
         // Re-encrypt private_key_backup if it exists
         if (!empty($userInfo['private_key_backup']) && !empty($userInfo['user_derivation_seed'])) {
             try {
-                // Derive backup key (same as before, uses SHA-256 in derivation)
                 $configManager = new ConfigManager();
                 $SETTINGS = $configManager->getAllSettings();
-                $derivedKey = deriveBackupKey(
+
+                // Re-encrypt backup with SHA-256
+                $updateData['private_key_backup'] = encryptPrivateKeyBackup(
+                    base64_decode($privateKeyClear),
                     $userInfo['user_derivation_seed'],
                     $userInfo['public_key'],
                     $SETTINGS
                 );
-
-                // Re-encrypt backup with SHA-256
-                $encryptedBackup = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt(
-                    base64_decode($privateKeyClear),
-                    $derivedKey,
-                    'cbc',
-                    'sha256' // v3 uses SHA-256
-                );
-                $updateData['private_key_backup'] = base64_encode($encryptedBackup);
             } catch (Exception $e) {
                 // Log error but don't fail the whole migration
                 if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
@@ -5848,6 +5938,10 @@ function migrateAllUserKeysToV3(
  * Derives a backup encryption key from user seed and public key.
  * Uses PBKDF2 with 100k iterations for strong key derivation.
  *
+ * Every input is read from the users row, so this key alone protects nothing against a
+ * database dump: only call it through encryptPrivateKeyBackup() / decryptPrivateKeyBackup(),
+ * which seal the backup with the instance key (GHSA-fv78-jwjv-pj25).
+ *
  * @param string $userSeed User's unique derivation seed (64 hex chars)
  * @param string $publicKey User's public RSA key (base64 encoded)
  * @param array $SETTINGS Teampass settings
@@ -5878,6 +5972,90 @@ function deriveBackupKey(string $userSeed, string $publicKey, ?array $SETTINGS =
         32, // 256 bits key length
         true // raw binary output
     );
+}
+
+/**
+ * Encrypts a private key into the value stored in users.private_key_backup.
+ *
+ * The AES layer uses the key derived from the seed, then the result is sealed with the
+ * instance key. Every writer of private_key_backup must go through this function.
+ *
+ * @param string     $privateKeyPem Private key (raw PEM)
+ * @param string     $userSeed      User derivation seed (users.user_derivation_seed)
+ * @param string     $publicKey     User public key (base64 encoded)
+ * @param array|null $SETTINGS      Teampass settings
+ * @param string     $hash          PBKDF2 hash of the AES layer ('sha256' for v3, 'sha1' for v1)
+ *
+ * @return string Sealed backup
+ */
+function encryptPrivateKeyBackup(
+    string $privateKeyPem,
+    string $userSeed,
+    string $publicKey,
+    ?array $SETTINGS = null,
+    string $hash = 'sha256'
+): string {
+    $backup = base64_encode(
+        \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt(
+            $privateKeyPem,
+            deriveBackupKey($userSeed, $publicKey, $SETTINGS),
+            'cbc',
+            $hash
+        )
+    );
+
+    return privateKeyBackupSeal($backup, getServerSecret());
+}
+
+/**
+ * Decrypts users.private_key_backup back to the private key.
+ *
+ * Accepts a backup the upgrade has not sealed yet (see privateKeyBackupUnseal()).
+ *
+ * @param string     $storedBackup Value of users.private_key_backup
+ * @param string     $userSeed     User derivation seed (users.user_derivation_seed)
+ * @param string     $publicKey    User public key (base64 encoded)
+ * @param array|null $SETTINGS     Teampass settings
+ *
+ * @return string Private key (raw PEM)
+ *
+ * @throws Exception When the backup cannot be decrypted
+ */
+function decryptPrivateKeyBackup(
+    string $storedBackup,
+    string $userSeed,
+    string $publicKey,
+    ?array $SETTINGS = null
+): string {
+    $derivedKey = deriveBackupKey($userSeed, $publicKey, $SETTINGS);
+    $backupCiphertext = base64_decode(privateKeyBackupUnseal($storedBackup, getServerSecret()));
+
+    // Use version detection since backup may be encrypted with SHA-1 (v1) or SHA-256 (v3)
+    $decryptResult = \TeampassClasses\CryptoManager\CryptoManager::aesDecryptWithVersionDetection(
+        $backupCiphertext,
+        $derivedKey,
+        'cbc'
+    );
+    $recoveredPem = $decryptResult['data'];
+
+    // Guard against SHA-256 false-positive: AES-CBC with wrong key can silently produce
+    // valid-UTF-8 garbage (~0.4% probability). RSA private keys always start with '-----BEGIN'.
+    // If version detection returned a SHA-256 result that does not look like a PEM key,
+    // explicitly retry with SHA-1 (which is how the backup was originally encrypted for
+    // non-migrated legacy users).
+    if (strpos($recoveredPem, '-----BEGIN') === false) {
+        $recoveredPem = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt(
+            $backupCiphertext,
+            $derivedKey,
+            'cbc',
+            'sha1'
+        );
+        if (strpos($recoveredPem, '-----BEGIN') === false) {
+            throw new Exception('Recovered data is not a valid RSA private key (both SHA-256 and SHA-1 produced non-PEM output)');
+        }
+    }
+
+    return $recoveredPem;
 }
 
 /**
@@ -5975,54 +6153,27 @@ function attemptTransparentRecovery(array $userInfo, string $newPassword, array 
             ];
         }
 
-        // Derive backup key
-        $derivedKey = deriveBackupKey(
+        // Decrypt private key from the backup
+        $recoveredPem = decryptPrivateKeyBackup(
+            (string) $userInfo['private_key_backup'],
             $userInfo['user_derivation_seed'],
             $userInfo['public_key'],
             $SETTINGS
         );
-
-        // Decrypt private key using derived key (using CryptoManager - phpseclib v3)
-        // Use version detection since backup may be encrypted with SHA-1 (v1) or SHA-256 (v3)
-        $backupCiphertext = base64_decode($userInfo['private_key_backup']);
-        $decryptResult = \TeampassClasses\CryptoManager\CryptoManager::aesDecryptWithVersionDetection(
-            $backupCiphertext,
-            $derivedKey,
-            'cbc'
-        );
-        $recoveredPem = $decryptResult['data'];
-
-        // Guard against SHA-256 false-positive: AES-CBC with wrong key can silently produce
-        // valid-UTF-8 garbage (~0.4% probability). RSA private keys always start with '-----BEGIN'.
-        // If version detection returned a SHA-256 result that does not look like a PEM key,
-        // explicitly retry with SHA-1 (which is how the backup was originally encrypted for
-        // non-migrated legacy users).
-        if (strpos($recoveredPem, '-----BEGIN') === false) {
-            $recoveredPem = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt(
-                $backupCiphertext,
-                $derivedKey,
-                'cbc',
-                'sha1'
-            );
-            if (strpos($recoveredPem, '-----BEGIN') === false) {
-                throw new Exception('Recovered data is not a valid RSA private key (both SHA-256 and SHA-1 produced non-PEM output)');
-            }
-        }
 
         $privateKeyClear = base64_encode($recoveredPem);
 
         // Re-encrypt with new password
         $newPrivateKeyEncrypted = encryptPrivateKey($newPassword, $privateKeyClear);
 
-        // Re-encrypt backup with derived key (SHA-256 for v3)
-        $encrypted = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt(
-            base64_decode($privateKeyClear),
-            $derivedKey,
-            'cbc',
-            'sha256'
+        // Re-encrypt backup (SHA-256 for v3); this also seals a backup the upgrade has not converted
+        $newPrivateKeyBackup = encryptPrivateKeyBackup(
+            $recoveredPem,
+            $userInfo['user_derivation_seed'],
+            $userInfo['public_key'],
+            $SETTINGS
         );
-        $newPrivateKeyBackup = base64_encode($encrypted);
-        
+
         // Update database
         DB::update(
             prefixTable('users'),
@@ -7781,7 +7932,7 @@ function ldapCheckUserPassword(string $login, string $password, array $SETTINGS)
         'hosts' => [$SETTINGS['ldap_hosts']],
         'base_dn' => $SETTINGS['ldap_bdn'],
         'username' => $SETTINGS['ldap_username'],
-        'password' => $SETTINGS['ldap_password'],
+        'password' => tpGetSecretSetting($SETTINGS, 'ldap_password'),
 
         // Optional Configuration Options
         'port' => $SETTINGS['ldap_port'],
@@ -9126,6 +9277,45 @@ function createAllSubTasks($action, $totalElements, $elementsPerIteration, $task
             ]),
         ]);
     }
+}
+
+/**
+ * Put a failed user key generation back in the queue, keeping every batch it completed.
+ *
+ * The account keeps its key pair: the batches already done stay valid and only the failed
+ * or interrupted ones run again, with a fresh replay budget since this is an explicit retry.
+ *
+ * @param int $taskId ID of the "create_user_keys" task
+ * @return void
+ */
+function requeueUserKeysTask(int $taskId): void
+{
+    DB::update(
+        prefixTable('background_subtasks'),
+        [
+            'is_in_progress' => 0,
+            'finished_at' => null,
+            'status' => 'queued',
+            'retry_count' => 0,
+            'updated_at' => time(),
+        ],
+        'task_id = %i AND (status = %s OR is_in_progress = 1)',
+        $taskId,
+        'failed'
+    );
+
+    DB::update(
+        prefixTable('background_tasks'),
+        [
+            'is_in_progress' => 0,
+            'status' => 'queued',
+            'finished_at' => null,
+            'error_message' => null,
+            'updated_at' => time(),
+        ],
+        'increment_id = %i',
+        $taskId
+    );
 }
 
 /**
@@ -11196,6 +11386,27 @@ function generateNewKeyTempo(int $userId): string
  */
 function triggerBackgroundHandler(): void
 {
+    tpWriteBackgroundTasksTrigger();
+
+    // Launch the handler as a fully detached background process.
+    // If the launch primitive is disabled (disable_functions, e.g. Docker), the
+    // trigger file is already written above and a cron job running
+    // background_tasks___handler.php will pick it up.
+    tpSpawnDetachedPhpScript(__DIR__ . '/../scripts/background_tasks___handler.php');
+}
+
+/**
+ * Tell a running background tasks handler that new work is queued, without
+ * spawning any process.
+ *
+ * The handler polls this file while it drains its pool and, once the file is
+ * consumed, keeps launching tasks even past its drain window. A worker uses it
+ * alone: the handler that launched it still holds the process lock.
+ *
+ * @return bool False when the trigger file could not be written
+ */
+function tpWriteBackgroundTasksTrigger(): bool
+{
     // Determine trigger file path
     $triggerFile = defined('TASKS_TRIGGER_FILE') && TASKS_TRIGGER_FILE !== ''
         ? TASKS_TRIGGER_FILE
@@ -11210,18 +11421,17 @@ function triggerBackgroundHandler(): void
     // A competing producer is already signalling work; do not report contention
     // as a directory-permission error or wait for it in the web request.
     $triggerWouldBlock = false;
-    if (tpWriteRuntimeFile($triggerFile, (string) time(), $triggerWouldBlock) === false && $triggerWouldBlock === false) {
-        error_log(
-            'Teampass: cannot write background tasks trigger file "' . $triggerFile
-            . '" - check that the web server user can write to this directory.'
-        );
+    if (tpWriteRuntimeFile($triggerFile, (string) time(), $triggerWouldBlock) === false) {
+        if ($triggerWouldBlock === false) {
+            error_log(
+                'Teampass: cannot write background tasks trigger file "' . $triggerFile
+                . '" - check that the web server user can write to this directory.'
+            );
+            return false;
+        }
     }
 
-    // Launch the handler as a fully detached background process.
-    // If the launch primitive is disabled (disable_functions, e.g. Docker), the
-    // trigger file is already written above and a cron job running
-    // background_tasks___handler.php will pick it up.
-    tpSpawnDetachedPhpScript(__DIR__ . '/../scripts/background_tasks___handler.php');
+    return true;
 }
 
 /**

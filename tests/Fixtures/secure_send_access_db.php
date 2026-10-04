@@ -13,10 +13,14 @@ class DB
     public static bool $cryptoFailure = false;
     public static string $totpSecret = 'JBSWY3DPEHPK3PXP';
     public static bool $totpFailure = false;
+    public static int $userQueries = 0;
 
     /** Execute the integer-parameterized read queries used by the access helper. */
     public static function queryFirstRow(string $sql, ...$parameters): ?array
     {
+        if (str_contains($sql, prefixTable('users'))) {
+            self::$userQueries++;
+        }
         $statement = self::$connection->query(vsprintf(str_replace('%i', '%d', $sql), array_map('intval', $parameters)));
         return $statement->fetchArray(SQLITE3_ASSOC) ?: null;
     }

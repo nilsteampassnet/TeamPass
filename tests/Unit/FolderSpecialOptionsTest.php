@@ -33,7 +33,10 @@ class FolderSpecialOptionsTest extends TestCase
         if ($path === 'web') {
             $payload += $options;
             $source = sourceBetween(productionSource('app/sources/folders.queries.php'), "case 'add_folder':", "case 'delete_folders':");
-            $variables = evaluateSource(sourceBetween($source, '$data = [', '// Check if parent folder is personal'), ['dataReceived' => $payload]);
+            $variables = evaluateSource(
+                sourceBetween($source, '$data = [', "\n            if ("),
+                ['dataReceived' => $payload, 'session' => new TestSession()]
+            );
             $variables += ['isPersonal' => 0, 'session' => new TestSession()];
             return evaluateSource(sourceBetween($source, '$params = [', '$options = ['), $variables)['params'];
         }
@@ -108,6 +111,30 @@ class FolderSpecialOptionsTest extends TestCase
             self::assertSame(1, DB::$writes[0]['data']['bloquer_creation']);
             self::assertSame(1, DB::$writes[0]['data']['bloquer_modification']);
         }
+    }
+
+    public function testAdministrativeDeletionProtectionIsPersistedOnCreation(): void
+    {
+        DB::$rows = [['personal_folder' => 0, 'bloquer_creation' => 0, 'bloquer_modification' => 0], ['valeur' => 60]];
+        $params = $this->createParams('web', ['deletionProtection' => 1], 7);
+
+        self::assertFalse($this->manager()->createNewFolder($params)['error']);
+        self::assertSame(1, DB::$writes[0]['data']['deletion_protected']);
+    }
+
+    public function testDeletionProtectionCannotBeCreatedWithoutAdministrativeContext(): void
+    {
+        $result = $this->manager()->createNewFolder([
+            'title' => 'Child',
+            'parent_id' => 7,
+            'complexity' => 60,
+            'deletion_protected' => 1,
+            'user_is_admin' => 0,
+            'user_accessible_folders' => [7],
+        ]);
+
+        self::assertTrue($result['error']);
+        self::assertSame([], DB::$writes);
     }
 
     /** Rendering must reflect inheritance even when request defaults differ. */
@@ -199,8 +226,14 @@ class FolderSpecialOptionsTest extends TestCase
     private function webUpdate(array $dataReceived, array $current): array
     {
         $source = sourceBetween(productionSource('app/sources/folders.queries.php'), "case 'update_folder':", "case 'add_folder':");
-        $variables = evaluateSource(sourceBetween($source, '$data = [', '// Init'), ['dataReceived' => $dataReceived]);
-        evaluateSource(sourceBetween($source, '// Prepare update parameters', '// Add or update complexity row'), $variables + ['isPersonal' => 0, 'dataFolder' => $current]);
+        $variables = evaluateSource(
+            sourceBetween($source, '$data = [', "\n            if ("),
+            ['dataReceived' => $dataReceived, 'session' => new TestSession()]
+        );
+        evaluateSource(
+            sourceBetween($source, '// Prepare update parameters', '// Add or update complexity row'),
+            $variables + ['isPersonal' => 0, 'dataFolder' => $current, 'SETTINGS' => []]
+        );
         self::assertCount(1, DB::$writes);
         return array_replace($current, DB::$writes[0]['data']);
     }
@@ -215,6 +248,23 @@ class FolderSpecialOptionsTest extends TestCase
         self::assertSame((int) ($options['editRestriction'] ?? $edit), $stored['bloquer_modification']);
         self::assertSame('Renamed', $stored['title']);
         self::assertSame(9, $stored['parent_id']);
+    }
+
+    public function testWebUpdatePreservesOrChangesDeletionProtectionExplicitly(): void
+    {
+        $current = [
+            'id' => 7,
+            'parent_id' => 1,
+            'renewal_period' => 0,
+            'bloquer_creation' => 0,
+            'bloquer_modification' => 0,
+            'deletion_protected' => 1,
+        ];
+        $base = ['id' => 7, 'title' => 'Renamed', 'parentId' => 1, 'complexity' => 60];
+
+        self::assertSame(1, $this->webUpdate($base, $current)['deletion_protected']);
+        DB::reset();
+        self::assertSame(0, $this->webUpdate($base + ['deletionProtection' => 0], $current)['deletion_protected']);
     }
 
     /** Omitted (Items page), explicit zero and explicit renewal periods. */

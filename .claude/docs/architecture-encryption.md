@@ -190,6 +190,11 @@ folder's numeric title), never its creator** — a shared item moved into a pers
 `at_creation` entry of whoever created it. Narrowing to the creator deleted the owner's own key at
 every save (#5407). `EnsurePersonalItemHasOnlyKeysForOwner()` receives the editor, checks that they
 own the tree, and deletes nothing unless `userHoldsEveryItemSharekey()` confirms they hold every key.
+The Tools repair (`restorePersonalScopeSharekeys()`) still cross-checks the tree owner against
+`at_creation`, but accepts an owner who wrote the item's latest `at_moved` log
+(`personalOwnerConflictsForRepair()`), which is what lets it repair the items #5407 damaged. An
+edit-form folder change logs `at_category`, not `at_moved`, so those items stay skipped. The bulk
+remediation script keeps the strict creator rule: it only deletes keys, so skipping is its safe side.
 
 **Forced batch migration** (background tasks via `/scripts/traits/PhpseclibV3MigrationTrait.php`):
 - Migrates all v1 sharekeys for a user in batches of 100
@@ -347,6 +352,38 @@ alone cannot decrypt; `T` is 256-bit (bypasses the 64-bit `hashUserId`); AES-256
 authenticated; revocable per device; optional `expires_at`; same bruteforce + `tp_src=api` logging
 as the password path; body-only credentials, HTTPS only. The RSA sharekey layer is **untouched** —
 PATs only add an alternate unlock of the existing private key.
+
+---
+
+## Transparent Key Recovery Backup
+
+Lets a user whose password changed outside TeamPass (LDAP/AD, OAuth2) log in without the
+"previous password" dialog: `attemptTransparentRecovery()` opens a second copy of the private key,
+re-encrypts it with the new password, and rewrites the backup.
+
+**Columns** (`teampass_users`): `user_derivation_seed` (64 hex, plaintext), `private_key_backup`,
+`key_integrity_hash` (`HMAC-SHA256(seed . public_key, SECUREFILE)`, tamper detection only).
+
+**Stored format** (GHSA-fv78-jwjv-pj25, fixed after 3.2.2.6):
+```
+derivedKey         = PBKDF2-SHA256(hex2bin(seed), sha256(public_key), transparent_key_recovery_pbkdf2_iterations, 32)
+inner              = base64(CryptoManager::aesEncrypt(PEM, derivedKey, 'cbc', 'sha256'|'sha1'))
+private_key_backup = 'sealed:v1:' . Defuse::encrypt(inner, SECUREFILE key)
+```
+Every input of `derivedKey` sits in the users row, so the inner layer alone protects nothing
+against a database dump — before the fix, a dump was enough to recover every private key holding a
+backup. The Defuse seal with the instance key is what needs `TEAMPASS_SECRETS`, the same
+protection as `users.pw` and `log_items.old_value`.
+
+**Rule: read and write `private_key_backup` only through `encryptPrivateKeyBackup()` /
+`decryptPrivateKeyBackup()`** (`main.functions.php`) — never call `deriveBackupKey()` directly.
+Seal/unseal live in the DB-free `app/sources/private_key_backup_logic.php`; the sentinel
+`tests/Unit/PrivateKeyBackupSealTest.php` fails if `deriveBackupKey()` is called anywhere else.
+
+**Migration:** `upgrade_run_3.2.2.php` seals every legacy backup in place, without opening it (no
+private key is decrypted), skipping rows already sealed — replayable. A legacy value still decrypts
+(`privateKeyBackupUnseal()` passes it through) and is sealed at its next write. Database dumps
+taken before the upgrade remain exploitable: only rotating the stored secrets protects against them.
 
 ---
 

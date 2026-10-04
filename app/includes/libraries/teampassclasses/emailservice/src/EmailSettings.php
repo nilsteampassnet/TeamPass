@@ -65,7 +65,10 @@ class EmailSettings
         $this->smtpServer = $SETTINGS['email_smtp_server'] ?? '';
         $this->smtpAuth = isset($SETTINGS['email_smtp_auth']) ? ((int) $SETTINGS['email_smtp_auth']) === 1 : false;
         $this->authUsername = $SETTINGS['email_auth_username'] ?? '';
-        $this->authPassword = $SETTINGS['email_auth_pwd'] ?? '';
+        // Stored encrypted with the instance key: see tpGetSecretSetting()
+        $this->authPassword = function_exists('tpGetSecretSetting') === true
+            ? \tpGetSecretSetting($SETTINGS, 'email_auth_pwd')
+            : (string) ($SETTINGS['email_auth_pwd'] ?? '');
         $this->port = isset($SETTINGS['email_port']) ? (int) $SETTINGS['email_port'] : 25;
         $this->security = $SETTINGS['email_security'] ?? 'none';
         $this->from = $SETTINGS['email_from'] ?? 'no-reply@example.com';

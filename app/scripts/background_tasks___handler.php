@@ -38,6 +38,12 @@ require_once __DIR__ . '/taskLogger.php';
 require_once __DIR__ . '/backgroundTaskLock.php';
 
 class BackgroundTasksHandler {
+    /**
+     * Task types run in time slices whose worker replays an interrupted batch: a run killed at
+     * the time limit is requeued instead of failed.
+     */
+    private const RESUMABLE_TASK_TYPES = ['create_user_keys'];
+
     private array $settings;
     private TaskLogger $logger;
     private int $maxParallelTasks;
@@ -995,6 +1001,22 @@ class BackgroundTasksHandler {
      * Cleanup stale tasks that have been running for too long or are marked as failed.
      */
     private function cleanupStaleTasks(): void {
+        // A resumable task whose worker vanished is handed back to the queue: its next run
+        // replays the batch it was in, instead of losing everything it had done
+        DB::query(
+            'UPDATE ' . prefixTable('background_tasks') . '
+            SET is_in_progress = 0,
+                status = "queued",
+                updated_at = %i,
+                error_message = "Requeued: no sign of life for more than ' . $this->maxExecutionTime . ' seconds"
+            WHERE is_in_progress = 1
+            AND updated_at < %i
+            AND process_type IN %ls',
+            time(),
+            time() - $this->maxExecutionTime,
+            self::RESUMABLE_TASK_TYPES
+        );
+
         // Mark tasks as failed if they've been running too long
         DB::query(
             'UPDATE ' . prefixTable('background_tasks') . ' 
@@ -1100,8 +1122,14 @@ class BackgroundTasksHandler {
             try {
                 $process->checkTimeout();
             } catch (Throwable $e) {
-                $this->markTaskFailed($taskId, 'Process timeout: ' . $e->getMessage());
-                try { $process->stop(5); } catch (Throwable) {}
+                if ($this->isResumableTask((string) $entry['task']['process_type']) === true) {
+                    // Stopped before being requeued, so that the next run never overlaps it
+                    try { $process->stop(5); } catch (Throwable) {}
+                    $this->requeueInterruptedTask($taskId, 'Process timeout: ' . $e->getMessage());
+                } else {
+                    $this->markTaskFailed($taskId, 'Process timeout: ' . $e->getMessage());
+                    try { $process->stop(5); } catch (Throwable) {}
+                }
                 unset($this->pool[$taskId]);
                 continue;
             }
@@ -1415,6 +1443,38 @@ class BackgroundTasksHandler {
             WHERE is_in_progress = 0
             AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)'
         ));
+    }
+
+    /**
+     * Whether an interrupted run of this task type can be resumed by its next run.
+     *
+     * @param string $processType The process_type value from background_tasks.
+     * @return bool
+     */
+    private function isResumableTask(string $processType): bool {
+        return in_array($processType, self::RESUMABLE_TASK_TYPES, true);
+    }
+
+    /**
+     * Hand an interrupted resumable task back to the queue. Its next run replays the batch
+     * it was in, and fails the task if that batch keeps being interrupted.
+     *
+     * @param int $taskId Task ID.
+     * @param string $reason Why the run was interrupted.
+     */
+    private function requeueInterruptedTask(int $taskId, string $reason): void {
+        DB::update(
+            prefixTable('background_tasks'),
+            [
+                'is_in_progress' => 0,
+                'status' => 'queued',
+                'updated_at' => time(),
+                'error_message' => mb_substr($reason, 0, 1000),
+            ],
+            'increment_id = %i',
+            $taskId
+        );
+        if (LOG_TASKS === true) $this->logger->log('Task ' . $taskId . ' requeued: ' . $reason, 'WARNING');
     }
 
     /**

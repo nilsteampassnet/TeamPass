@@ -20,10 +20,6 @@ DB_USER="${DB_USER:-teampass}"
 DB_PASSWORD="${DB_PASSWORD:-}"
 DB_PREFIX="${DB_PREFIX:-teampass_}"
 
-ADMIN_EMAIL="${ADMIN_EMAIL:-admin@teampass.local}"
-ADMIN_PWD="${ADMIN_PWD:-}"
-
-INSTALL_MODE="${INSTALL_MODE:-manual}"
 TEAMPASS_URL="${TEAMPASS_URL:-http://localhost}"
 
 # Extract version from PHP constants (TP_VERSION and TP_VERSION_MINOR)
@@ -195,46 +191,6 @@ configure_php() {
         echo "max_execution_time = ${PHP_MAX_EXECUTION_TIME:-120}"
     } > "$PHP_INI_OVERRIDE"
     echo -e "${GREEN}✅ PHP configuration applied (memory=${PHP_MEMORY_LIMIT:-512M}, upload=${PHP_UPLOAD_MAX_FILESIZE:-100M})${NC}"
-}
-
-# Function to perform automatic installation
-auto_install() {
-    echo -e "${BLUE}🚀 Starting automatic installation...${NC}"
-
-    if [ -z "$DB_PASSWORD" ]; then
-        echo -e "${RED}❌ Error: DB_PASSWORD is required for auto installation${NC}"
-        exit 1
-    fi
-
-    if [ -z "$ADMIN_PWD" ]; then
-        echo -e "${RED}❌ Error: ADMIN_PWD is required for auto installation${NC}"
-        exit 1
-    fi
-
-    # Check if install-cli.php exists
-    if [ -f "/var/www/html/app/scripts/install-cli.php" ]; then
-        php /var/www/html/app/scripts/install-cli.php \
-            --db-host="$DB_HOST" \
-            --db-port="$DB_PORT" \
-            --db-name="$DB_NAME" \
-            --db-user="$DB_USER" \
-            --db-password="$DB_PASSWORD" \
-            --db-prefix="$DB_PREFIX" \
-            --admin-email="$ADMIN_EMAIL" \
-            --admin-pwd="$ADMIN_PWD" \
-            --url="$TEAMPASS_URL"
-
-        if [ $? -eq 0 ]; then
-            echo -e "${GREEN}✅ Automatic installation completed successfully!${NC}"
-            rm -rf /var/www/html/public/install
-        else
-            echo -e "${RED}❌ Automatic installation failed${NC}"
-            exit 1
-        fi
-    else
-        echo -e "${YELLOW}⚠️  Warning: install-cli.php not found, falling back to manual installation${NC}"
-        manual_install_instructions
-    fi
 }
 
 # Read the TeamPass version recorded in the database.
@@ -578,11 +534,12 @@ main() {
     else
         echo -e "${YELLOW}⚙️  TeamPass is not configured yet${NC}"
 
-        if [ "$INSTALL_MODE" = "auto" ]; then
-            auto_install
-        else
-            manual_install_instructions
+        # INSTALL_MODE=auto relied on install-cli.php, removed in 3.2: the
+        # installer only runs in the browser. Say so instead of ignoring it.
+        if [ "${INSTALL_MODE:-manual}" = "auto" ]; then
+            echo -e "${YELLOW}⚠️  INSTALL_MODE=auto is no longer supported; complete the installation in your browser${NC}"
         fi
+        manual_install_instructions
     fi
 
     echo ""

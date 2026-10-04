@@ -90,6 +90,8 @@ class TestSession
 function prefixTable(string $table): string { return 'test_' . $table; }
 /** Cache invalidation is outside the isolated SQL boundary. */
 function invalidateCacheForFolderUsers(int $id): void {}
+/** Administrative audit is outside these persistence-focused tests. */
+function logEvents(...$args): void {}
 
 /** Use the actual sanitizer, rather than reproducing its integer/null conversion rules. */
 function dataSanitizer(array $data, array $filters): array

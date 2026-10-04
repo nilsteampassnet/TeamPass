@@ -108,6 +108,15 @@ class LaprFunctionsTest extends TestCase
     {
         $this->assertSame('', laprItemsDeletionBlocker([1, 2], ['lapr_enabled' => '0']));
         $this->assertSame('', laprItemsPersonalMoveBlocker([1, 2], ['lapr_enabled' => '0']));
+        $this->assertSame(
+            [
+                'blocked' => false,
+                'linked_items' => 0,
+                'managed_items' => 0,
+                'credential_items' => 0,
+            ],
+            laprGetFolderItemRelationCounts([7, 8], ['lapr_enabled' => '0'])
+        );
     }
 
     /**

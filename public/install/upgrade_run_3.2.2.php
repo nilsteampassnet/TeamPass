@@ -588,6 +588,16 @@ mysqli_query(
     "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'custom_login_background', '')"
 );
 
+// Secure Send public identity. Existing instances opt in before publishing profile names.
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'public_entity_name', '')"
+);
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'secure_send_show_sender_name', '0')"
+);
+
 // Drop the temporary installation table left behind by the installer.
 //
 // `_install` is created unprefixed by install-steps/run.step3|4 and holds the
@@ -622,12 +632,69 @@ if (addColumnIfNotExist(prefixTable('roles_title'), 'allow_security_posture_fix'
     exit();
 }
 
+// Administrative protection against accidental folder deletion.
+if (addColumnIfNotExist(prefixTable('nested_tree'), 'deletion_protected', "TINYINT(1) NOT NULL DEFAULT '0'") === false) {
+    echo json_encode([['finish' => '1', 'error' => 'Error adding the folder deletion protection flag: ' . mysqli_error($db_link)]]);
+    mysqli_close($db_link);
+    exit();
+}
+
+// Seal the transparent key recovery backups with the instance key (GHSA-fv78-jwjv-pj25).
+//
+// The backup key is derived from two columns of the same users row, so a database dump alone
+// opened every private key holding a backup. Sealing wraps the stored ciphertext as is: no
+// private key is decrypted here, and sealed rows are skipped, so the step can be replayed.
+// It uses MeekroDB (loaded above), not $db_link.
+try {
+    $serverSecret = getServerSecret();
+    $lastUserId = 0;
+    do {
+        $legacyBackups = DB::query(
+            'SELECT id, private_key_backup FROM ' . prefixTable('users') . '
+            WHERE id > %i AND private_key_backup IS NOT NULL AND private_key_backup != %s
+            AND private_key_backup NOT LIKE %s
+            ORDER BY id ASC LIMIT 500',
+            $lastUserId,
+            '',
+            PRIVATE_KEY_BACKUP_SEAL_PREFIX . '%'
+        );
+        foreach ($legacyBackups as $legacyBackup) {
+            $lastUserId = (int) $legacyBackup['id'];
+            // The value is matched again, so a backup rewritten meanwhile is not overwritten
+            DB::update(
+                prefixTable('users'),
+                ['private_key_backup' => privateKeyBackupSeal((string) $legacyBackup['private_key_backup'], $serverSecret)],
+                'id = %i AND private_key_backup = %s',
+                $lastUserId,
+                (string) $legacyBackup['private_key_backup']
+            );
+        }
+    } while (count($legacyBackups) === 500);
+} catch (Exception $e) {
+    echo json_encode([['finish' => '1', 'error' => 'Error sealing the private key backups: ' . $e->getMessage()]]);
+    mysqli_close($db_link);
+    exit();
+}
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,
     "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'upgrade_timestamp', " . time() . ")
      ON DUPLICATE KEY UPDATE `valeur` = VALUES(`valeur`)"
 );
+
+// Encrypt the LDAP bind and SMTP passwords still stored in plaintext (secret_settings_logic.php).
+// A data migration, not a schema step: idempotent, and never blocking, since a value that cannot
+// be encrypted is left as it is and keeps working (tpGetSecretSetting() still accepts plaintext).
+$secretSettingsStats = tpEncryptStoredSecretSettings($SETTINGS);
+if ($secretSettingsStats['encrypted'] + $secretSettingsStats['flagged'] + $secretSettingsStats['failed'] > 0) {
+    error_log(
+        'TEAMPASS Upgrade 3.2.2 - credential settings: '
+        . $secretSettingsStats['encrypted'] . ' encrypted, '
+        . $secretSettingsStats['flagged'] . ' flagged, '
+        . $secretSettingsStats['failed'] . ' left in plaintext'
+    );
+}
 
 //--->END 3.2.2
 

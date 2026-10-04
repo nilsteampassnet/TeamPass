@@ -254,15 +254,30 @@ function userNeedsMfa(array $SETTINGS, array $userInfo): bool
         return filter_var($userInfo['mfa_auth_requested_roles'], FILTER_VALIDATE_BOOLEAN) === true;
     }
 
-    $fonctionId = (string) ($userInfo['fonction_id'] ?? '');
+    return userMfaRequestedByRoles($SETTINGS, $userInfo);
+}
+
+/**
+ * Determine if the "MFA is requested for users in Roles" setting applies to a user.
+ *
+ * Both role sources count: the roles assigned manually (fonction_id) and the roles
+ * inherited from the AD/LDAP group mapping (roles_from_ad_groups). Reading the manual
+ * roles alone let a user holding the MFA role only through AD skip MFA.
+ *
+ * @param array<string, mixed> $SETTINGS
+ * @param array<string, mixed> $userInfo
+ */
+function userMfaRequestedByRoles(array $SETTINGS, array $userInfo): bool
+{
+    $roleIds = (string) ($userInfo['fonction_id'] ?? '');
     if (empty($userInfo['roles_from_ad_groups']) === false) {
-        $fonctionId = empty($fonctionId) === true
+        $roleIds = empty($roleIds) === true
             ? (string) $userInfo['roles_from_ad_groups']
-            : $fonctionId . ';' . (string) $userInfo['roles_from_ad_groups'];
+            : $roleIds . ';' . (string) $userInfo['roles_from_ad_groups'];
     }
 
     return mfa_auth_requested_roles(
-        $fonctionId,
+        $roleIds,
         is_null($SETTINGS['mfa_for_roles'] ?? null) === true ? '' : (string) $SETTINGS['mfa_for_roles']
     );
 }
@@ -1710,16 +1725,14 @@ function prepareUserEncryptionKeys($userInfo, $passwordClear, array $SETTINGS = 
     try {
         // If user has seed but no backup, create it on first successful login
         if (!empty($userInfo['user_derivation_seed']) && empty($userInfo['private_key_backup'])) {
-            $derivedKey = deriveBackupKey($userInfo['user_derivation_seed'], $userInfo['public_key'], $SETTINGS);
-            // Encrypt private key backup using CryptoManager (use v3 if migration happened, otherwise v1)
+            // Encrypt private key backup (use v3 if migration happened, otherwise v1)
             $backupHashAlgorithm = ($decryptResult['needs_migration'] === true) ? 'sha256' : 'sha1';
-            $privateKeyBackup = base64_encode(
-                \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt(
-                    base64_decode($privateKeyClear),
-                    $derivedKey,
-                    'cbc',
-                    $backupHashAlgorithm
-                )
+            $privateKeyBackup = encryptPrivateKeyBackup(
+                base64_decode($privateKeyClear),
+                $userInfo['user_derivation_seed'],
+                $userInfo['public_key'],
+                $SETTINGS,
+                $backupHashAlgorithm
             );
 
             // Generate integrity hash
@@ -2765,10 +2778,8 @@ function identifyReloadUserInfo(string $username, array $dataReceived, array $SE
 
     $userInfo = $refreshedUserInfo + $dataReceived;
     // Re-compute mfa_auth_requested_roles in case it was updated during the LDAP checks
-    $userInfo['mfa_auth_requested_roles'] = mfa_auth_requested_roles(
-        (string) ($userInfo['fonction_id'] ?? ''),
-        is_null($SETTINGS['mfa_for_roles']) === true ? '' : (string) $SETTINGS['mfa_for_roles']
-    );
+    // (the AD group mapping has just been synchronized into roles_from_ad_groups)
+    $userInfo['mfa_auth_requested_roles'] = userMfaRequestedByRoles($SETTINGS, $userInfo);
     // Re-add session-derived flags that getUserCompleteData() does not return.
     // oauth2_login_ongoing is computed from the PHP session (not stored in DB), so it
     // must be re-injected after every DB reload; otherwise shouldUserAuthWithOauth2()
@@ -3055,10 +3066,7 @@ function identifyDoInitialChecks(
     }
     
     // user should use MFA?
-    $userInfo['mfa_auth_requested_roles'] = mfa_auth_requested_roles(
-        (string) $userInfo['fonction_id'],
-        is_null($SETTINGS['mfa_for_roles']) === true ? '' : (string) $SETTINGS['mfa_for_roles']
-    );
+    $userInfo['mfa_auth_requested_roles'] = userMfaRequestedByRoles($SETTINGS, $userInfo);
 
     // If admin user then check if folder install exists
     // if yes then refuse connection
@@ -3385,9 +3393,35 @@ function checkOauth2User(
             isset($userInfo['is_ready_for_usage']) && (int) $userInfo['is_ready_for_usage'] !== 1 && 
             $userInfo['ongoing_process_id'] !== null && (int) $userInfo['ongoing_process_id'] >= 0
         ) {
-            // Check if the creation of user keys has failed
-            $errorMessage = checkIfUserKeyCreationFailed((int) $userInfo['id']);
-            if (!is_null($errorMessage)) {
+            // The account points at its own key generation (or at a personal items migration)
+            $keysTask = DB::queryFirstRow(
+                'SELECT increment_id, process_type, status, arguments
+                FROM ' . prefixTable('background_tasks') . '
+                WHERE increment_id = %i',
+                (int) $userInfo['ongoing_process_id']
+            );
+
+            // A failed generation is resumed where it stopped: the account keeps its key pair
+            // and every batch already done, so a time-limited generation ends up completing
+            // instead of starting again from scratch at each sign-in
+            if (userKeysTaskIsResumable($keysTask, (int) $userInfo['id']) === true) {
+                requeueUserKeysTask((int) $keysTask['increment_id']);
+                triggerBackgroundHandler();
+
+                return [
+                    'error' => true,
+                    'message' => 'account_in_construction_please_wait_email',
+                    'no_log_event' => true
+                ];
+            }
+
+            // A failed key generation that cannot be resumed: generate the keys again
+            if ($keysTask !== null
+                && (string) $keysTask['process_type'] === 'create_user_keys'
+                && (string) $keysTask['status'] === 'failed'
+            ) {
+                $errorMessage = "The creation of user keys for user ID {$userInfo['id']} failed. Please contact your administrator to check the background tasks log for more details.";
+
                 // Refresh user info to permit retry
                 DB::update(
                     prefixTable('users'),
@@ -3405,7 +3439,7 @@ function checkOauth2User(
                 handleUserKeys(
                     (int) $userInfo['id'],
                     (string) $passwordClear,
-                    (int) NUMBER_ITEMS_IN_BATCH,
+                    (int) ($SETTINGS['maximum_number_of_items_to_treat'] ?? NUMBER_ITEMS_IN_BATCH),
                     '',
                     true,
                     true,
@@ -3497,34 +3531,6 @@ function checkOauth2User(
         'userPasswordVerified' => false,
     ];
 }
-
-/**
- * Check if a "create_user_keys" task failed for the given user_id.
- *
- * @param int $userId The user ID to check.
- * @return string|null Returns an error message in English if a failed task is found, otherwise null.
- */
-function checkIfUserKeyCreationFailed(int $userId): ?string
-{
-    // Find the latest "create_user_keys" task for the given user_id
-    $latestTask = DB::queryFirstRow(
-        'SELECT arguments, status FROM ' . prefixTable('background_tasks') . '
-        WHERE process_type = %s
-        AND arguments LIKE %s
-        ORDER BY increment_id DESC
-        LIMIT 1',
-        'create_user_keys', '%"new_user_id":' . $userId . '%'
-    );
-
-    // If a failed task is found, return an error message
-    if ($latestTask && $latestTask['status'] === 'failed') {
-        return "The creation of user keys for user ID {$userId} failed. Please contact your administrator to check the background tasks log for more details.";
-    }
-
-    // No failed task found for this user_id
-    return null;
-}
-
 
 /* * Create the user in Teampass
  *

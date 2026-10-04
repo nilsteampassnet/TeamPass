@@ -3006,10 +3006,23 @@ require __DIR__ . '/renewal.preview.js.php';
                 }
                 if (data.error === true) {
                     // ERROR
-                    toastrUpdate(loadingToast, 'error',
-                        data.message,
-                        { timeOut: 5000 }
-                    );
+                    if (data.reason === 'folder_contains_lapr_items') {
+                        toastr.clear(loadingToast)
+                        showModalDialogBox(
+                            '#warningModal',
+                            <?php echo json_encode($lang->get('folder_operation_blocked_title'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+                            '<div class="alert alert-info mb-0"><i class="fas fa-circle-info mr-2"></i>' + htmlEncode(data.message) + '</div>',
+                            '',
+                            <?php echo json_encode($lang->get('close'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+                            false,
+                            true
+                        )
+                    } else {
+                        toastrUpdate(loadingToast, 'error',
+                            data.message,
+                            { timeOut: 5000 }
+                        );
+                    }
                 } else {
                     if ($('#form-folder-add').data('action') === 'add') {
                         // Refresh tree from updated rights/session data, then select the new folder
@@ -3122,10 +3135,20 @@ require __DIR__ . '/renewal.preview.js.php';
 
                 if (data.error === true) {
                     // ERROR
-                    toastrUpdate(loadingToast, 'error',
-                        data.message,
-                        { timeOut: 5000 }
-                    );
+                    toastr.clear(loadingToast)
+                    if (data.reason === 'folder_deletion_protected' || data.reason === 'folder_contains_lapr_items') {
+                        showModalDialogBox(
+                            '#warningModal',
+                            <?php echo json_encode($lang->get('folder_deletion_blocked_title'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+                            '<div class="alert alert-info mb-0"><i class="fas fa-circle-info mr-2"></i>' + htmlEncode(data.message) + '</div>',
+                            '',
+                            <?php echo json_encode($lang->get('close'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+                            false,
+                            true
+                        )
+                    } else {
+                        toastr.error(data.message, '', { timeOut: 5000 })
+                    }
                 } else {
                     // Refresh visible folders/session rights, then rebuild and reselect the parent folder
                     refreshTree(data.parent_id, true, true);

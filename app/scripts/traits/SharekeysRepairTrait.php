@@ -127,7 +127,8 @@ trait SharekeysRepairTrait {
      *
      * Two deliberate refusals, both conservative:
      *  - an owner that cannot be resolved, or that disagrees with the item creator, is reported and
-     *    the object is left untouched - the same rule as the remediation script;
+     *    the object is left untouched - the same rule as the remediation script - unless that owner
+     *    made the item's latest move (an item moved into a personal folder keeps its creator, #5407);
      *  - an object with no usable TP_USER reference key keeps its foreign sharekeys. They are the
      *    only remaining way to recover it: a holder can still open the item and save it again, which
      *    is precisely what the Tools page tells the administrator to arrange. Deleting them here
@@ -189,6 +190,22 @@ trait SharekeysRepairTrait {
                 $creators[(int) $log['id_item']] = $log['id_user'];
             }
 
+            // Who made each item's latest move. An owner who moved someone else's item into their
+            // own tree is its owner even though at_creation names the creator. Rows come oldest
+            // first, so the last one kept per item is its most recent move.
+            $lastMovers = [];
+            $moves = DB::query(
+                'SELECT id_item, id_user FROM ' . prefixTable('log_items') . '
+                WHERE id_item IN %li AND action = %s AND raison LIKE %s
+                ORDER BY increment_id ASC',
+                $itemIds,
+                'at_modification',
+                'at_moved%'
+            );
+            foreach ($moves as $move) {
+                $lastMovers[(int) $move['id_item']] = $move['id_user'];
+            }
+
             // Every sharekey of the batch, read once: current holders, valid v3 keys, TP_USER refs.
             $holders = [];
             $validV3 = [];
@@ -215,7 +232,11 @@ trait SharekeysRepairTrait {
                 $objectId = (int) $object['id'];
                 $ownerId = $folderOwners[(int) $object['folder_id']] ?? null;
                 if ($ownerId === null
-                    || personalOwnerConflictsWithCreator($ownerId, $creators[(int) $object['item_id']] ?? null) === true
+                    || personalOwnerConflictsForRepair(
+                        $ownerId,
+                        $creators[(int) $object['item_id']] ?? null,
+                        $lastMovers[(int) $object['item_id']] ?? null
+                    ) === true
                 ) {
                     ++$stats['owner_unresolved'];
                     continue;

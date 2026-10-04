@@ -143,6 +143,24 @@ if (isset($SETTINGS['teampass_version']) === true && version_compare(TP_VERSION,
     exit;
 }
 
+// Patch-level schema upgrade pending (UPGRADE_MIN_DATE raised, TP_VERSION unchanged):
+// close an open session before core.php queries columns the database does not have yet.
+// The login page then shows the "upgrade requested" notice and disables sign-in.
+// The cached setting spares a query on every page; upgradeRequired() reads the database,
+// so a stale cache cannot log users out once the upgrade is done.
+if ($session->has('user-id') === true
+    && (int) ($SETTINGS['upgrade_timestamp'] ?? 0) < (int) UPGRADE_MIN_DATE
+    && upgradeRequired() === true
+) {
+    $session->invalidate();
+    $loginUrl = rtrim($request->getSchemeAndHttpHost() . $request->getBasePath(), '/') . '/index.php';
+    if (headers_sent()) {
+        echo '<script type="text/javascript">document.location.replace(' . json_encode($loginUrl) . ');</script>';
+    } else {
+        header('Location: ' . $loginUrl);
+    }
+    exit;
+}
 
 $SETTINGS = $antiXss->xss_clean($SETTINGS);
 
@@ -1704,6 +1722,12 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                 <!-- SUMMERNOTE -->
                 <link rel="stylesheet" href="./plugins/summernote/summernote-bs4.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
                 <script src="./plugins/summernote/summernote-bs4.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+                <!-- MARKDOWN (KB editor) -->
+                <script src="./plugins/markdown-it/markdown-it.umd.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+                <script src="./plugins/turndown/turndown.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+                <script src="./plugins/turndown/turndown-plugin-gfm.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+                <script src="./assets/js/kb-markdown.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+                <script src="./assets/js/kb-categories.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
             <?php
             }
             ?>

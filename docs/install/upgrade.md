@@ -142,6 +142,8 @@ Once the script completes successfully, refresh the upgrade page and proceed to 
 * Authenticate with your **Administrator** account
 * Follow all wizard steps
 
+> 🔔 When a release changes the database, TeamPass stays closed from the moment the new files are in place until the wizard has run: the login page announces the upgrade and refuses sign-in, and users already signed in are signed out at their next page load. Run the wizard right after replacing the files. The Docker image runs it by itself when the container starts.
+
 ---
 
 ### Step 4b — Restart WebSocket daemon (if WebSocket is enabled)

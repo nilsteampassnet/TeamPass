@@ -9,6 +9,7 @@
 - [Information](install/encryption.md)
 - [Encryption hardening (3.2)](install/encryption-improvements.md)
 - [Security hardening](install/security-hardening.md)
+- [Secure Send hardening](install/secure-send.md)
 - [Extra](install/extra-settings.md)
 - [Performance](install/performance.md)
 - [WebSocket](install/websocket.md)

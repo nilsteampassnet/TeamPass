@@ -122,4 +122,38 @@ class RolesScopeLogicTest extends TestCase
             mergeGrantableRoleSets(['7', '9'], ['7'], ['7'])
         );
     }
+
+    // -------------------------------------------------------------------
+    // excludeAdRolesFromSubmittedRoles()
+    // -------------------------------------------------------------------
+
+    public function testAdRolesAreNotSavedAsManualRoles(): void
+    {
+        $this->assertSame([3], excludeAdRolesFromSubmittedRoles(['3', '12'], ['12']));
+    }
+
+    public function testSubmissionHoldingOnlyAdRolesSavesNoManualRole(): void
+    {
+        // The edit form posts back the AD roles it displays. When the user holds no other
+        // role, the filter used to fall back to the submission and stored the AD role as a
+        // manual one: it then survived the user's removal from the AD group.
+        $this->assertSame([], excludeAdRolesFromSubmittedRoles(['12'], ['12']));
+        $this->assertSame([], excludeAdRolesFromSubmittedRoles(['12', '15'], [12, 15]));
+    }
+
+    public function testSubmissionIsKeptWhenUserHasNoAdRole(): void
+    {
+        $this->assertSame([3, 5], excludeAdRolesFromSubmittedRoles(['3', '', '5'], []));
+    }
+
+    public function testUserFormSaveExcludesAdRolesThroughTheHelper(): void
+    {
+        $source = (string) file_get_contents(__DIR__ . '/../../app/sources/users.queries.php');
+
+        $this->assertStringContainsString('$post_groups = excludeAdRolesFromSubmittedRoles(', $source);
+        $this->assertStringNotContainsString(
+            '$post_groups = empty($fonctions) === true ? $post_groups : $fonctions;',
+            $source
+        );
+    }
 }

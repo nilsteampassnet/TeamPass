@@ -220,6 +220,7 @@ foreach ($tst as $t) {
                                 <th scope="col" width="50px"><i class="fas fa-recycle fa-lg infotip" title="<?php echo $lang->get('group_pw_duration') . ' ' . $lang->get('group_pw_duration_tip'); ?>"></i></th>
                                 <th scope="col" width="50px"><i class="fas fa-pen fa-lg infotip" title="<?php echo $lang->get('auth_creation_without_complexity'); ?>"></i></th>
                                 <th scope="col" width="50px"><i class="fas fa-edit fa-lg infotip" title="<?php echo $lang->get('auth_modification_without_complexity'); ?>"></i></th>
+                                <th scope="col" width="50px"><i class="fas fa-shield-halved fa-lg infotip" title="<?php echo htmlspecialchars($lang->get('folder_deletion_protection'), ENT_QUOTES, 'UTF-8'); ?>"></i></th>
                                 <th scope="col" width="50px"><i class="fas fa-folder fa-lg infotip" title="<?php echo $lang->get('icon'); ?>"></i></th>
                                 <th scope="col" width="50px"><i class="fas fa-folder-open fa-lg infotip" title="<?php echo $lang->get('icon_on_selection'); ?>"></i></th>
                             </tr>
@@ -302,6 +303,17 @@ foreach ($tst as $t) {
                         <label for="new-edit-restriction" class="mb-0 ml-3"><?php echo $lang->get('edit_without_password_minimal_complexity_target'); ?></label>
                     </div>
                 </div>
+                <?php if ((int) $session->get('user-admin') === 1) { ?>
+                <div class="form-group">
+                    <label><?php echo htmlspecialchars($lang->get('folder_deletion_protection'), ENT_QUOTES, 'UTF-8'); ?></label>
+                    <div class="d-flex align-items-start">
+                        <input type="checkbox" class="form-check-input" id="new-deletion-protection">
+                        <label class="mb-0 ml-3" for="new-deletion-protection">
+                            <?php echo htmlspecialchars($lang->get('folder_deletion_protection_tip'), ENT_QUOTES, 'UTF-8'); ?>
+                        </label>
+                    </div>
+                </div>
+                <?php } ?>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary tp-action" data-action="new-submit">
@@ -372,6 +384,17 @@ foreach ($tst as $t) {
                 </label>
             </div>
         </div>
+        <?php if ((int) $session->get('user-admin') === 1) { ?>
+        <div class="form-group">
+            <label><?php echo htmlspecialchars($lang->get('folder_deletion_protection'), ENT_QUOTES, 'UTF-8'); ?></label>
+            <div class="d-flex align-items-start">
+                <input type="checkbox" class="form-check-input" id="folder-edit-deletion-protection">
+                <label class="mb-0 ml-3" for="folder-edit-deletion-protection">
+                    <?php echo htmlspecialchars($lang->get('folder_deletion_protection_tip'), ENT_QUOTES, 'UTF-8'); ?>
+                </label>
+            </div>
+        </div>
+        <?php } ?>
     </div>
     <div class="sidebar-footer px-3 py-2 d-flex justify-content-between">
         <button type="button" class="btn btn-warning" id="sidebar-submit">

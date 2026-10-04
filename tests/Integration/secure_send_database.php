@@ -80,7 +80,9 @@ try {
         encrypted TEXT NOT NULL, protected_key TEXT NULL, has_passphrase TINYINT NOT NULL DEFAULT 0,
         failed_attempts INT NOT NULL DEFAULT 0, views INT NOT NULL DEFAULT 0, max_views INT NULL,
         time_limit VARCHAR(100) NULL, shared_globaly INT NOT NULL DEFAULT 0) ENGINE=InnoDB');
-    DB::query('CREATE TABLE ' . prefixTable('users') . ' (id INT PRIMARY KEY, admin INT DEFAULT 0, disabled INT DEFAULT 0, deleted_at INT NULL) ENGINE=InnoDB');
+    DB::query('CREATE TABLE ' . prefixTable('users') . ' (
+        id INT PRIMARY KEY, name VARCHAR(255) NULL, lastname VARCHAR(255) NULL,
+        admin INT DEFAULT 0, disabled INT DEFAULT 0, deleted_at INT NULL) ENGINE=InnoDB');
     DB::query('CREATE TABLE ' . prefixTable('send_audit') . ' (item_id INT, action VARCHAR(30)) ENGINE=InnoDB');
     DB::query('CREATE TABLE ' . prefixTable('items') . ' (
         id INT PRIMARY KEY, id_tree INT, label TEXT, login TEXT, url TEXT, description TEXT,

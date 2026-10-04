@@ -17,6 +17,7 @@
 | 🐳 **[Docker](install/docker.md)** | Run it in a container |
 | 🔄 **[Upgrade](install/upgrade.md)** | Move between versions safely |
 | 🛡️ **[Security hardening](install/security-hardening.md)** | Production checklist |
+| 🔐 **[Secure Send hardening](install/secure-send.md)** | Publish the recipient route without exposing the vault |
 | 🩺 **[Troubleshooting](misc/troubleshooting.md)** | When something goes wrong |
 | 🔌 **[REST API](api/api-basic.md)** | Endpoints, JWT authentication, clients |
 
