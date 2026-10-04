@@ -104,6 +104,18 @@ class SecureSendAccessTest extends TestCase
         self::assertNull(secureSendPublicSender(['send_type' => 'note', 'item_id' => null, 'originator' => 42], true));
     }
 
+    /** An administrator's note stays valid on GET, as on redemption; its item links never do. */
+    public function testAdministratorOriginatorKeepsNoteLinksOnly(): void
+    {
+        DB::$connection->exec('UPDATE sharing_fixture_users SET admin = 1');
+
+        self::assertNull(secureSendPublicSender(['send_type' => 'item_v2', 'item_id' => 123, 'originator' => 42], true));
+        self::assertSame(
+            ['display_name' => 'Alice Sender'],
+            secureSendPublicSender(['send_type' => 'note', 'item_id' => null, 'originator' => 42], true)
+        );
+    }
+
     /** Accounts without profile names remain valid without falling back to their login. */
     public function testPublicSenderAllowsAnEmptyDisplayName(): void
     {

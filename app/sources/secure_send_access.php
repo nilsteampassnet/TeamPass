@@ -28,7 +28,9 @@ function secureSendReadItem(int $itemId, int $userId, bool $lock = false, ?array
         return [];
     }
     $originator = secureSendReadEligibleOriginator($userId);
-    if ($originator === []) {
+    // Administrators have no item access; their note links stay valid, as in secureSendRedeem().
+    if ($originator === [] || (int) $originator['admin'] === 1) {
+        $originator = null;
         return [];
     }
     return DB::queryFirstRow(
@@ -40,13 +42,14 @@ function secureSendReadItem(int $itemId, int $userId, bool $lock = false, ?array
 }
 
 /**
- * Read the active non-administrator account allowed to originate a Secure Send link.
+ * Read the active account allowed to originate a Secure Send link.
  *
- * Only public profile fields are selected alongside the identifier. Authentication
- * identifiers such as the login and email address must never reach the recipient flow.
+ * Note links only require an active account; item links additionally reject administrators
+ * in secureSendReadItem(). Only the admin flag and public profile fields are selected alongside
+ * the identifier: the login and email address must never reach the recipient flow.
  *
  * @param int $userId Originator identifier
- * @return array Eligible account row, or an empty array
+ * @return array Active account row, or an empty array
  */
 function secureSendReadEligibleOriginator(int $userId): array
 {
@@ -55,8 +58,8 @@ function secureSendReadEligibleOriginator(int $userId): array
     }
 
     return DB::queryFirstRow(
-        'SELECT id, name, lastname FROM ' . prefixTable('users') . '
-        WHERE id = %i AND admin = 0 AND disabled = 0 AND deleted_at IS NULL',
+        'SELECT id, admin, name, lastname FROM ' . prefixTable('users') . '
+        WHERE id = %i AND disabled = 0 AND deleted_at IS NULL',
         $userId
     ) ?: [];
 }
