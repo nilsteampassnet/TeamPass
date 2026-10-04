@@ -297,6 +297,51 @@ $directKbId = (int) $request->query->get('id', 0);
 </section>
 
 <style>
+    #kb-browser-card > .card-header {
+        gap: 0.75rem;
+    }
+
+    #kb-browser-card .kb-category-card {
+        padding: 1rem;
+        border-radius: 0.5rem;
+        overflow-wrap: anywhere;
+        background: #f8f9fa;
+        color: #343a40;
+    }
+
+    #kb-browser-card .kb-category-card:hover {
+        border-color: #17a2b8;
+        background: #eef8fa;
+    }
+
+    #kb-browser-card .kb-category-card:focus-visible {
+        outline: 2px solid #17a2b8;
+        outline-offset: 2px;
+    }
+
+    #kb-browser-card .kb-category-name {
+        font-weight: 600;
+    }
+
+    #kb-selected-category-title {
+        overflow-wrap: anywhere;
+    }
+
+    .dark-mode #kb-browser-card .kb-category-card {
+        background: #3f474e;
+        color: #f8f9fa;
+        border-color: #6c757d;
+    }
+
+    .dark-mode #kb-browser-card .kb-category-card:hover {
+        background: #454f58;
+        border-color: #63c4d3;
+    }
+
+    .dark-mode #kb-browser-card .kb-category-card .text-muted {
+        color: #ced4da !important;
+    }
+
     #kb-viewer-card .card-header,
     #kb-editor-card .card-header {
         display: flex;
