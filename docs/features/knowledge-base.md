@@ -104,6 +104,17 @@ Every article can have a comment thread when **Allow comments** is enabled.
 
 ## Searching and filtering
 
+Use **List / Categories** above the article list to switch views. **List** shows all active
+articles. **Categories** shows the populated categories in alphabetical order, with the
+number of active articles in each. Choose a category to display its articles in the usual
+table, or select **All categories** to return to the category overview. Older articles
+without a valid category appear under **Uncategorized**.
+
+The table search applies within the selected category. Switching views or choosing another
+category clears the table search and starts at the first page. Live article changes refresh
+category counts and preserve the selected category while it still has articles; when its
+last article disappears, the category overview is shown. The initial view is **List**.
+
 Use the table search field on the Knowledge Base page to filter articles by article data displayed in the list, including label, category, author, and summary text.
 
 Associated item and comment counters are shown in the article list when relevant.

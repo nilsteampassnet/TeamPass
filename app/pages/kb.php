@@ -252,11 +252,31 @@ $directKbId = (int) $request->query->get('id', 0);
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-header">
+            <div class="card" id="kb-browser-card">
+                <div class="card-header d-flex flex-wrap align-items-center justify-content-between">
                     <h3 class="card-title"><?php echo $lang->get('kb_menu'); ?></h3>
+                    <div class="btn-group ml-auto" role="group" aria-label="<?php echo htmlspecialchars($lang->get('kb_browse_view'), ENT_QUOTES, 'UTF-8'); ?>">
+                        <button type="button" class="btn btn-sm btn-primary" id="button-kb-list-view" aria-pressed="true">
+                            <i class="fa-solid fa-list mr-1" aria-hidden="true"></i><?php echo htmlspecialchars($lang->get('kb_list_view'), ENT_QUOTES, 'UTF-8'); ?>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="button-kb-categories-view" aria-pressed="false">
+                            <i class="fa-solid fa-folder-open mr-1" aria-hidden="true"></i><?php echo htmlspecialchars($lang->get('kb_categories_view'), ENT_QUOTES, 'UTF-8'); ?>
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body">
+                    <div id="kb-categories-zone" class="hidden">
+                        <p class="text-muted"><?php echo htmlspecialchars($lang->get('kb_categories_help'), ENT_QUOTES, 'UTF-8'); ?></p>
+                        <div id="kb-categories-grid" class="row"></div>
+                        <p id="kb-categories-empty" class="text-muted hidden" role="status"><?php echo htmlspecialchars($lang->get('kb_no_entries'), ENT_QUOTES, 'UTF-8'); ?></p>
+                    </div>
+                    <div id="kb-selected-category-zone" class="hidden mb-3">
+                        <button type="button" class="btn btn-sm btn-outline-secondary mb-2" id="button-kb-all-categories">
+                            <i class="fa-solid fa-arrow-left mr-1" aria-hidden="true"></i><?php echo htmlspecialchars($lang->get('kb_all_categories'), ENT_QUOTES, 'UTF-8'); ?>
+                        </button>
+                        <h4 id="kb-selected-category-title" tabindex="-1" aria-live="polite"></h4>
+                    </div>
+                    <div id="kb-table-zone">
                     <table id="table-kb-list" class="table table-bordered table-striped" style="width: 100%;">
                         <thead>
                             <tr>
@@ -269,6 +289,7 @@ $directKbId = (int) $request->query->get('id', 0);
                         </thead>
                         <tbody></tbody>
                     </table>
+                    </div>
                 </div>
             </div>
         </div>

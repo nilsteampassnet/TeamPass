@@ -86,6 +86,9 @@ if (
         kb_deleted: <?php echo json_encode($lang->get('kb_deleted')); ?>,
         kb_delete_confirm: <?php echo json_encode($lang->get('kb_delete_confirm')); ?>,
         kb_no_entries: <?php echo json_encode($lang->get('kb_no_entries')); ?>,
+        kb_uncategorized: <?php echo json_encode($lang->get('kb_uncategorized'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+        kb_category_article_count: <?php echo json_encode($lang->get('kb_category_article_count'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+        kb_category_article_count_one: <?php echo json_encode($lang->get('kb_category_article_count_one'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
         kb_direct_link_not_found: <?php echo json_encode($lang->get('kb_direct_link_not_found')); ?>,
         kb_add_entry: <?php echo json_encode($lang->get('kb_add_entry')); ?>,
         kb_edit_entry: <?php echo json_encode($lang->get('kb_edit_entry')); ?>,
@@ -163,6 +166,8 @@ if (
 
     const kbDirectId = parseInt($('#kb-direct-id').val(), 10) || 0;
     let kbTable = null;
+    const kbCategoryBrowser = createKbCategoryBrowser();
+    let kbListRequestId = 0;
     let kbLoadedDirectId = false;
     let kbEditionLockInterval = null;
     let kbActiveEditionLockId = 0;
@@ -1456,20 +1461,108 @@ if (
     }
 
     function kbBuildActions(entry) {
-        let html = '<button type="button" class="btn btn-sm btn-default kb-action-view" data-id="' + entry.id + '" title="' + kbTranslations.open + '"><i class="fa-solid fa-eye"></i></button>';
+        let html = '<button type="button" class="btn btn-sm btn-default kb-action-view" data-id="' + entry.id + '" title="' + kbEscapeHtml(kbTranslations.open) + '"><i class="fa-solid fa-eye"></i></button>';
 
         if (entry.can_edit === true) {
-            html += '<button type="button" class="btn btn-sm btn-default kb-action-edit" data-id="' + entry.id + '" title="' + kbTranslations.edit + '"><i class="fa-solid fa-pen"></i></button>';
+            html += '<button type="button" class="btn btn-sm btn-default kb-action-edit" data-id="' + entry.id + '" title="' + kbEscapeHtml(kbTranslations.edit) + '"><i class="fa-solid fa-pen"></i></button>';
         }
 
         if (entry.can_delete === true) {
-            html += '<button type="button" class="btn btn-sm btn-default kb-action-delete" data-id="' + entry.id + '" title="' + kbTranslations.delete + '"><i class="fa-solid fa-trash"></i></button>';
+            html += '<button type="button" class="btn btn-sm btn-default kb-action-delete" data-id="' + entry.id + '" title="' + kbEscapeHtml(kbTranslations.delete) + '"><i class="fa-solid fa-trash"></i></button>';
         }
 
         return '<div class="tp-kb-actions-wrap">' + html + '</div>';
     }
 
+    /** Restore collaboration indicators after paging, search, navigation, or live refresh. */
+    function kbRestoreListIndicators() {
+        if (window.tpLockedKbs && typeof window.tpWsShowKbEditionLock === 'function') {
+            Object.keys(window.tpLockedKbs).forEach(function(kbId) {
+                window.tpWsShowKbEditionLock(parseInt(kbId, 10), window.tpLockedKbs[kbId]);
+            });
+        }
+        if (window.tpViewingKbs && typeof window.tpWsSetKbViewers === 'function') {
+            Object.keys(window.tpViewingKbs).forEach(function(kbId) {
+                window.tpWsSetKbViewers(parseInt(kbId, 10), window.tpViewingKbs[kbId]);
+            });
+        }
+    }
+
+    /** Render category navigation and reuse the existing table for the selected articles. */
+    function kbRenderBrowser(resetTable) {
+        const state = kbCategoryBrowser.getState();
+        const overview = state.view === 'categories' && state.selected === null;
+        const $grid = $('#kb-categories-grid').empty();
+        const categories = kbCategoryBrowser.getCategories();
+
+        categories.forEach(function(category) {
+            const label = category.label || kbTranslations.kb_uncategorized;
+            const countText = (category.count === 1 ? kbTranslations.kb_category_article_count_one : kbTranslations.kb_category_article_count).replace('%d', category.count);
+            const $button = $('<button type="button" class="btn btn-default text-left w-100 h-100 kb-category-card"></button>')
+                .attr('data-category-id', category.id)
+                .append($('<i class="fa-solid fa-folder-open text-info mr-2" aria-hidden="true"></i>'))
+                .append($('<span class="kb-category-name"></span>').text(label))
+                .append($('<span class="d-block small text-muted mt-2"></span>').text(countText));
+            $grid.append($('<div class="col-12 col-sm-6 col-lg-4 col-xl-3 mb-3"></div>').append($button));
+        });
+
+        $('#kb-categories-empty').toggleClass('hidden', categories.length > 0);
+        $('#kb-categories-zone').toggleClass('hidden', !overview);
+        $('#kb-selected-category-zone').toggleClass('hidden', state.selected === null);
+        $('#kb-selected-category-title').text(state.selected ? (state.selected.label || kbTranslations.kb_uncategorized) : '');
+        $('#kb-table-zone').toggleClass('hidden', overview);
+        $('#button-kb-list-view').toggleClass('btn-primary', state.view === 'list').toggleClass('btn-outline-primary', state.view !== 'list').attr('aria-pressed', state.view === 'list' ? 'true' : 'false');
+        $('#button-kb-categories-view').toggleClass('btn-primary', state.view === 'categories').toggleClass('btn-outline-primary', state.view !== 'categories').attr('aria-pressed', state.view === 'categories' ? 'true' : 'false');
+
+        const page = kbTable.page();
+        kbTable.clear();
+        kbCategoryBrowser.getEntries().forEach(function(entry) {
+            const safeLabel = kbEscapeHtml(entry.label);
+            const safeExcerpt = kbEscapeHtml(entry.description_excerpt);
+            const safeCategory = kbEscapeHtml(entry.category || kbTranslations.kb_uncategorized);
+            const safeAuthor = kbEscapeHtml(entry.author);
+            const itemsCount = parseInt(entry.items_count || 0, 10) || 0;
+            const commentsCount = parseInt(entry.comments_count || 0, 10) || 0;
+            const metaBadges = [];
+
+            if (commentsCount > 0 || parseInt(entry.allow_comments || 0, 10) === 1) {
+                metaBadges.push('<span class="badge badge-light border"><i class="fa-solid fa-comments mr-1"></i>' + commentsCount + '</span>');
+            }
+
+            if (itemsCount > 0) {
+                metaBadges.push('<span class="badge badge-light border"><i class="fa-solid fa-link mr-1"></i>' + itemsCount + '</span>');
+            }
+
+            kbTable.row.add([
+                '<div class="tp-kb-list-entry" data-kb-id="' + entry.id + '">' +
+                    '<a href="#" class="kb-action-view tp-kb-list-entry-title" data-id="' + entry.id + '">' + safeLabel + '</a>' +
+                    (safeExcerpt !== '' ? '<div class="small tp-kb-list-entry-excerpt">' + safeExcerpt + '</div>' : '') +
+                    (metaBadges.length > 0 ? '<div class="tp-kb-list-entry-meta">' + metaBadges.join('') + '</div>' : '') +
+                '</div>',
+                safeCategory !== '' ? '<span class="badge badge-info">' + safeCategory + '</span>' : '',
+                safeAuthor,
+                itemsCount,
+                kbBuildActions(entry)
+            ]);
+        });
+
+        if (resetTable === true) {
+            kbTable.search('');
+        }
+        kbTable.draw(resetTable === true);
+        // A live deletion may remove the last page. Keep the nearest remaining page visible.
+        if (resetTable !== true) {
+            const lastPage = Math.max(0, kbTable.page.info().pages - 1);
+            kbTable.page(Math.min(page, lastPage)).draw('page');
+        }
+        if (!overview) {
+            kbTable.columns.adjust();
+            if (kbTable.responsive) kbTable.responsive.recalc();
+        }
+    }
+
     function loadKbList() {
+        const requestId = ++kbListRequestId;
         $.post(
             'sources/kb.queries.php',
             {
@@ -1478,64 +1571,22 @@ if (
                 key: kbSessionKey
             },
             function(response) {
+                if (requestId !== kbListRequestId) return;
                 const data = kbDecodeResponse(response, 'list_kbs');
                 if (data.error === true) {
                     kbToastError(data.message);
                     return;
                 }
 
-                const entries = Array.isArray(data.entries) ? data.entries : [];
-                kbTable.clear();
-
-                entries.forEach(function(entry) {
-                    const safeLabel = DOMPurify.sanitize(entry.label || '', {USE_PROFILES: {html: false}});
-                    const safeExcerpt = DOMPurify.sanitize(entry.description_excerpt || '', {USE_PROFILES: {html: false}});
-                    const safeCategory = DOMPurify.sanitize(entry.category || '', {USE_PROFILES: {html: false}});
-                    const safeAuthor = DOMPurify.sanitize(entry.author || '', {USE_PROFILES: {html: false}});
-                    const itemsCount = parseInt(entry.items_count || 0, 10) || 0;
-                    const commentsCount = parseInt(entry.comments_count || 0, 10) || 0;
-                    const metaBadges = [];
-
-                    if (commentsCount > 0 || parseInt(entry.allow_comments || 0, 10) === 1) {
-                        metaBadges.push('<span class="badge badge-light border"><i class="fa-solid fa-comments mr-1"></i>' + commentsCount + '</span>');
-                    }
-
-                    if (itemsCount > 0) {
-                        metaBadges.push('<span class="badge badge-light border"><i class="fa-solid fa-link mr-1"></i>' + itemsCount + '</span>');
-                    }
-
-                    kbTable.row.add([
-                        '<div class="tp-kb-list-entry" data-kb-id="' + entry.id + '">' +
-                            '<a href="#" class="kb-action-view tp-kb-list-entry-title" data-id="' + entry.id + '">' + safeLabel + '</a>' +
-                            (safeExcerpt !== '' ? '<div class="small tp-kb-list-entry-excerpt">' + safeExcerpt + '</div>' : '') +
-                            (metaBadges.length > 0 ? '<div class="tp-kb-list-entry-meta">' + metaBadges.join('') + '</div>' : '') +
-                        '</div>',
-                        safeCategory !== '' ? '<span class="badge badge-info">' + safeCategory + '</span>' : '',
-                        safeAuthor,
-                        itemsCount,
-                        kbBuildActions(entry)
-                    ]);
-                });
-
-                kbTable.draw();
-
-                if (window.tpLockedKbs && typeof window.tpWsShowKbEditionLock === 'function') {
-                    Object.keys(window.tpLockedKbs).forEach(function(kbId) {
-                        window.tpWsShowKbEditionLock(parseInt(kbId, 10), window.tpLockedKbs[kbId]);
-                    });
-                }
-                if (window.tpViewingKbs && typeof window.tpWsSetKbViewers === 'function') {
-                    Object.keys(window.tpViewingKbs).forEach(function(kbId) {
-                        window.tpWsSetKbViewers(parseInt(kbId, 10), window.tpViewingKbs[kbId]);
-                    });
-                }
+                kbCategoryBrowser.refresh(data.entries);
+                kbRenderBrowser(false);
 
                 if (kbDirectId > 0 && kbLoadedDirectId === false) {
                     kbOpenViewer(kbDirectId);
                 }
             }
         ).fail(function() {
-            kbToastError(kbTranslations.server_answer_error);
+            if (requestId === kbListRequestId) kbToastError(kbTranslations.server_answer_error);
         });
     }
 
@@ -1548,6 +1599,7 @@ if (
             responsive: true,
             autoWidth: false,
             order: [[0, 'asc']],
+            drawCallback: kbRestoreListIndicators,
             language: {
                 url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $session->get('user-language'); ?>.txt'
             },
@@ -1637,6 +1689,19 @@ if (
         if (typeof window.tpWsSubscribeToKb === 'function') {
             window.tpWsSubscribeToKb();
         }
+
+        $('#button-kb-list-view, #button-kb-categories-view, #button-kb-all-categories').on('click', function() {
+            kbCategoryBrowser.setView(this.id === 'button-kb-list-view' ? 'list' : 'categories');
+            kbRenderBrowser(true);
+            if (this.id === 'button-kb-all-categories') $('#button-kb-categories-view').trigger('focus');
+        });
+
+        $(document).on('click', '.kb-category-card', function() {
+            if (kbCategoryBrowser.select($(this).attr('data-category-id'))) {
+                kbRenderBrowser(true);
+                $('#kb-selected-category-title').trigger('focus');
+            }
+        });
 
         $('#button-kb-new').on('click', function() {
             kbOpenEditor(0);
