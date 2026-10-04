@@ -3797,4 +3797,21 @@ return array(
     'admin_activity_failed' => 'a échoué à se connecter',
     'admin_activity_connected' => 's’est connecté',
 
+    'admin_activity_no_categories' => 'Sélectionnez au moins une catégorie d’activité.',
+    'admin_activity_load_error' => 'L’activité n’a pas pu être actualisée. Veuillez réessayer.',
+    'admin_activity_failures_count' => '#count# échecs de connexion sur les #minutes# dernières minutes',
+    'admin_activity_new_events' => '#count# nouveaux événements — afficher l’activité récente',
+    'admin_activity_authentication' => 'Authentification',
+    'admin_activity_expand' => 'Agrandir l’activité',
+    'admin_activity_settings' => 'Catégories d’activité',
+    'admin_activity_show_failures' => 'Afficher uniquement les échecs de connexion',
+    'admin_activity_period' => 'Période',
+    'admin_activity_last_minutes' => '#minutes# dernières minutes',
+    'admin_activity_refresh_hint' => 'Actualisation toutes les 10 secondes. Les nouveaux événements sont signalés pendant la lecture des activités précédentes.',
+    'admin_activity_load_older' => 'Charger les événements précédents',
+    'admin_activity_changes' => 'Modifications des items',
+    'admin_activity_accesses' => 'Consultations des items',
+    'admin_activity_failed_category' => 'Échecs de connexion et blocages',
+    'admin_activity_connections' => 'Connexions réussies',
+
 );
