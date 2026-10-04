@@ -214,8 +214,8 @@ Sharing, export, and content features.
 
 | Option | Description |
 |--------|-------------|
-| **Enable One-Time View** | Users can generate time-limited sharing links for items (see [Items — One Time View](../features/items.md#one-time-view)) |
-| **OTV expiration period** | Default validity duration for One Time View links in days (default: 7) |
+| **User can propose One-Time-View links** | Enables Secure Send: users can generate time-limited sharing links for items (see [Items — Secure Send](../features/items.md#secure-send)) |
+| **One-time-view (OTV) links expire after XX days** | Maximum validity of a Secure Send link, in days, also proposed by default in the sender form (default: 7) |
 | **Public sharing address** | HTTPS base URL used for external item and note links. The existing `otv_subdomain` setting also accepts a hostname or legacy short prefix; see below. |
 | **Secure Send maximum number of views per link** | Upper bound that a sender may assign to one link; use `1` unless the use case explicitly requires more |
 | **Force a passphrase on every Secure Send link** | Requires the sender to protect every new link with a separate passphrase; recommended for Internet-facing links |

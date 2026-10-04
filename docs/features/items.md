@@ -233,14 +233,16 @@ In the items list, the icon is prefixed to the item label.
 
 ---
 
-## One Time View
+<a id="one-time-view"></a>
 
-> OTV lets you share an item securely with someone who has no Teampass account.
+## Secure Send
 
-Once enabled by the administrator, this feature generates a time-limited link for a single item. The link:
+> Secure Send (formerly One Time View, OTV) lets you share an item securely with someone who has no Teampass account.
 
-- Expires after a configurable duration (default: 7 days).
-- Is valid for a configurable number of views (default: 1).
+Once enabled by the administrator (**User can propose One-Time-View links**), this feature generates a time-limited link for a single item, or for a standalone note when **Allow sending ad-hoc notes/secrets** is enabled. The link:
+
+- Expires after the number of days the sender chooses, up to the administrator's maximum (default: 7 days).
+- Is valid for the number of views the sender chooses, 1 by default, up to the administrator's maximum (default: 5).
 
 An item link requires the sender to retain access to an active item. TeamPass
 checks the sender's current permissions when creating the link and each time
@@ -327,9 +329,9 @@ must also be configured; see [Public sharing address](../manage/settings.md#publ
 Administrators who make this route Internet-facing should follow the complete
 [Secure Send deployment and hardening guide](../install/secure-send.md).
 
-When one or more valid OTV links exist for an item, a badge showing the count is displayed on the item row.
+When one or more valid Secure Send links exist for an item, a badge showing the count is displayed on the item row.
 
-**To create a One Time View link:**
+**To create a Secure Send link:**
 1. Open the item action menu.
 2. Click **Secure Send**.
 3. Set validity, total views, public/internal address and an optional passphrase

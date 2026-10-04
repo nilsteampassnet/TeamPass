@@ -1112,7 +1112,7 @@ that format.
 ## References
 
 - [Teampass 3.2.2.6 release](https://github.com/nilsteampassnet/TeamPass/releases/tag/3.2.2.6)
-- [Teampass item and Secure Send behaviour](../features/items.md#one-time-view)
+- [Teampass item and Secure Send behaviour](../features/items.md#secure-send)
 - [Public sharing address](../manage/settings.md#public-sharing-address)
 - [Teampass security hardening](security-hardening.md)
 - [Apache request logging](https://httpd.apache.org/docs/2.4/mod/mod_log_config.html)
