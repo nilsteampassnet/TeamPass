@@ -371,9 +371,14 @@ log_format secure_send '$remote_addr [$time_local] '
 map "$request_method:$args" $secure_send_route {
     default 0;
     "~^GET:otv=1&code=[A-Za-z0-9]{1,100}&key=[A-Za-z0-9]{1,1024}&stamp=[0-9]{1,20}$" 1;
-    "POST:otv=1" 1;
+    "~^POST:otv=1$" 1;
 }
 ```
+
+Keep both entries as `~` regular expressions. Nginx compares plain string keys
+in a `map` case-insensitively, so a literal `"POST:otv=1"` key would also accept
+`?OTV=1`, which PHP does not route to the recipient page. `~*` has the same
+problem.
 
 This uses `$uri`, which excludes the query string. Do not use `$request` or
 `$request_uri` in a Secure Send access log.
@@ -824,6 +829,9 @@ curl --resolve ${HOST}:443:${IP} -sS -o /dev/null -w 'OTV_DUPLICATE: %{http_code
 curl --resolve ${HOST}:443:${IP} -sS -o /dev/null -w 'OTV_ENCODED: %{http_code}\n' \
   "https://${HOST}/index.php?otv=1&%6Ftv="
 
+curl --resolve ${HOST}:443:${IP} -sS -X POST -o /dev/null \
+  -w 'OTV_POST_CASE: %{http_code}\n' "https://${HOST}/index.php?OTV=1"
+
 curl --resolve ${HOST}:443:${IP} -sS -X PUT -o /dev/null \
   -w 'METHOD: %{http_code}\n' "https://${HOST}/index.php?${OTV_QUERY}"
 
@@ -847,7 +855,8 @@ Expected matrix:
 | uppercase `/index.php?OTV=1` | 404 |
 | duplicate `otv=1&otv=` | 404 |
 | encoded duplicate `otv=1&%6Ftv=` | 404 |
-| unexpected method on a well-formed query | 404 |
+| uppercase POST `/index.php?OTV=1` | 404 |
+| unexpected method on a well-formed query | 404 (Apache) or 403 (Nginx `limit_except`) |
 | wrong hostname | denied; never the Teampass login page |
 
 Only the well-formed fake query should reach TeamPass and show its generic
