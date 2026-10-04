@@ -1727,6 +1727,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                 <script src="./plugins/turndown/turndown.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
                 <script src="./plugins/turndown/turndown-plugin-gfm.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
                 <script src="./assets/js/kb-markdown.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+                <script src="./assets/js/kb-categories.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
             <?php
             }
             ?>

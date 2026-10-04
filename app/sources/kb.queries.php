@@ -932,7 +932,7 @@ function kbLoadRow(int $kbId): ?array
 {
     $row = DB::queryFirstRow(
         'SELECT k.id,
-            k.category_id,
+            c.id AS category_id,
             k.label,
             k.description,
             k.author_id,
@@ -996,6 +996,7 @@ function kbBuildEntryPayload(array $kb, SessionInterface $session, string $baseU
         'description' => (string) ($kb['description'] ?? ''),
         'description_html' => kbGetDescriptionHtml((string) ($kb['description'] ?? '')),
         'description_excerpt' => kbBuildDescriptionExcerpt((string) ($kb['description'] ?? '')),
+        'category_id' => (int) ($kb['category_id'] ?? 0),
         'category' => (string) ($kb['category'] ?? ''),
         'author' => kbBuildAuthorLabel(isset($kb['author_login']) ? (string) $kb['author_login'] : ''),
         'author_id' => (int) ($kb['author_id'] ?? 0),
@@ -1368,6 +1369,7 @@ switch ($type) {
                 k.author_id,
                 k.anyone_can_modify,
                 k.allow_comments,
+                c.id AS category_id,
                 c.category AS category,
                 u.login AS author_login
             FROM ' . prefixTable('kb') . ' AS k

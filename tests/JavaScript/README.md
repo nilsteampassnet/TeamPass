@@ -31,6 +31,20 @@ an old password into a shorter-period folder must show its existing age and warn
 when it would already be expired. These tests do not exercise a live database or
 the browser's native confirmation dialog.
 
+## KB category navigation
+
+`kb-categories.test.cjs` runs the shipped category model and the production list loader.
+It covers exact category identities, active article counts, natural sorting, legacy
+uncategorized articles, labels containing markup, returning to the complete list,
+live category changes, and responses arriving out of order. It also checks that
+direct article links still open the viewer and request failures preserve navigation.
+
+In a configured browser, check **List / Categories**, card selection and **All categories**,
+search and pagination within a category, the disappearance of its last article, and
+WebSocket lock/presence badges after pagination and refresh. Check keyboard navigation,
+long category names, a small screen and the dark theme. The automated Node tests do not
+exercise a live database or a rendered browser.
+
 ## KB Markdown
 
 `kb-markdown.test.cjs` runs the shipped markdown-it build and `public/assets/js/kb-markdown.js`
