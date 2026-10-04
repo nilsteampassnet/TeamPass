@@ -87,7 +87,7 @@ test('compact failures count is independent of the ten displayed rows and text i
     assert.equal(h.$('#activity-failed-count').content, '27 failures / 5 minutes')
     assert.match(h.$('#live-activity-list').content, /&lt;img/)
     assert.match(h.$('#live-activity-list').content, /&lt;script/)
-    assert.doesNotMatch(h.$('#live-activity-list').content, /<script>|<img/)
+    assert.doesNotMatch(h.$('#live-activity-list').content, /<script>|<img/i)
 })
 
 test('expanded pagination uses the snapshot bounds and deduplicates equal-second rows', () => {
