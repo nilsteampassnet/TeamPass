@@ -128,6 +128,10 @@ List all proxy IPs or their CIDR in **Trusted proxies**, one per line:
 
 Only the leftmost IP in the `X-Forwarded-For` header that was injected by a trusted proxy is used as the client IP.
 
+### HTTPS terminated by the proxy
+
+In `Reverse proxy / WAF` mode, a request coming from a trusted proxy with `X-Forwarded-Proto: https` is treated as HTTPS for the session cookie, which then gets the `Secure` attribute. Make the proxy overwrite that header with its own scheme (`proxy_set_header X-Forwarded-Proto $scheme;` on Nginx). The header is ignored in `Direct` mode and from any other address, and it can only add the attribute, never remove it.
+
 ### Security note
 
 Never add untrusted IP ranges to **Trusted proxies**. A client that controls a trusted-proxy header can forge any source IP and bypass blacklist rules.

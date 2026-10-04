@@ -540,15 +540,27 @@ internal backend hostname.
 
 ### Official Docker image backend safeguards
 
-The Teampass 3.2.2.6 image copies `docker/nginx/teampass.conf` to
-`/etc/nginx/http.d/default.conf`. Its server-level `access_log` does not name a
-format, so Nginx uses its built-in `combined` format and records the complete
-request line, including `code`, `key` and `stamp`. A safe edge log does not
-protect this internal log.
+Images released after 3.2.2.6 need no change for Secure Send. The Nginx process
+inside the container logs the request path without its query string and without
+the `Referer` header, and it no longer overrides the `Referrer-Policy:
+no-referrer` header that the recipient page sends.
 
-Before exposing Secure Send through the current image, make a reviewed copy of
-that release's complete `teampass.conf` and apply one of these controls. The
-preferred option keeps useful request metadata without the query string.
+The 3.2.2.6 image and earlier releases have two defects; upgrading is the
+simplest fix:
+
+- `docker/nginx/teampass.conf`, copied to `/etc/nginx/http.d/default.conf`,
+  has a server-level `access_log` that does not name a format, so Nginx uses its
+  built-in `combined` format and records the complete request line, including
+  `code`, `key` and `stamp`. A safe edge log does not protect this internal log.
+- The image's `nginx.conf` adds a second `Referrer-Policy:
+  strict-origin-when-cross-origin` header. Browsers apply the last one, so the
+  confirmation POST carries the complete link in its `Referer` header. Keep the
+  `Referer` header out of every edge log; the `secure_send` format above
+  already omits it.
+
+If the image cannot be upgraded yet, make a reviewed copy of that release's
+complete `teampass.conf` and apply one of these controls to the internal log.
+The preferred option keeps useful request metadata without the query string.
 
 Add a format before the existing `server` block; the file is included from the
 Nginx `http` context:
@@ -569,29 +581,36 @@ If an edge log already provides the required evidence, `access_log off;` is a
 safer alternative. Do not merely remove the server directive: the image's
 parent `http` configuration also defines a query-bearing access log.
 
-When the container is reachable only from the trusted TLS terminator, also add
-the following after `include fastcgi_params;` in its existing PHP location:
-
-```nginx
-fastcgi_param HTTPS on;
-```
-
 Provide the complete adjusted file through a derived image or a read-only bind
 mount at `/etc/nginx/http.d/default.conf`. Run `nginx -t` inside the container
-before restarting it, and compare the override with the shipped file after
-every image upgrade.
+before restarting it, and remove the override once the image is upgraded.
 
 ### TLS termination and the `Secure` session cookie
 
-`proxy_set_header X-Forwarded-Proto $scheme` documents the original scheme for
-the backend, but TeamPass does not configure Symfony trusted proxies and its
-session manager does not use that header. The cookie receives `Secure` only
-when PHP sees `HTTPS=on`.
+The session cookie receives `Secure` when PHP sees `HTTPS=on`. In releases
+after 3.2.2.6 it also receives it when the request comes from a declared
+trusted proxy that sends `X-Forwarded-Proto: https`:
 
+1. Under **Settings → Options → Networks**, set **IP detection mode** to
+   **Reverse proxy / WAF**.
+2. In **Trusted proxies**, declare the IPv4 address or CIDR that the Teampass
+   backend sees for the proxy. With the official Docker image, that is the
+   address of the proxy as seen from the container, typically the proxy
+   container or the Docker network gateway, not the public address.
+3. Make the proxy overwrite the header with its own scheme, for example
+   `proxy_set_header X-Forwarded-Proto $scheme;`.
+
+In any other mode, or from any other source address, the header is ignored. It
+can only add the `Secure` attribute, never remove it.
+
+On 3.2.2.6 and earlier, or without that mode, make PHP see `HTTPS=on` itself.
 For an Nginx-to-PHP-FPM backend, set `fastcgi_param HTTPS on;` as shown in the
-direct and Docker examples. For an Apache backend, set the variable only when
-both the source address and proxy-supplied scheme identify the trusted TLS
-terminator, for example:
+direct example. In the official container, add it after
+`include fastcgi_params;` in the PHP location of the reviewed `teampass.conf`
+copy, and only when the container is reachable solely from the trusted TLS
+terminator. For an Apache backend, set the variable only when both the source
+address and proxy-supplied scheme identify the trusted TLS terminator, for
+example:
 
 ```apache
 SetEnvIfExpr "-R '192.0.2.10/32' && req('X-Forwarded-Proto') == 'https'" HTTPS=on
@@ -613,8 +632,9 @@ directive.
   the private vault hostname.
 - Under **Settings → Options → Networks**, set **IP detection mode** to
   **Reverse proxy / WAF** and declare only the real proxy addresses as
-  **Trusted proxies**. This protects client-IP detection; it does not make PHP
-  treat the request as HTTPS. See [Network ACL — Reverse proxy setup](../manage/network-acl.md#reverse-proxy-setup).
+  **Trusted proxies**. This protects client-IP detection and, in releases after
+  3.2.2.6, lets the proxy's `X-Forwarded-Proto` mark the session cookie
+  `Secure`. See [Network ACL — Reverse proxy setup](../manage/network-acl.md#reverse-proxy-setup).
 - Configure the trusted backend transport as described above, then verify that
   the session cookie carries the `Secure`, `HttpOnly` and `SameSite=Lax`
   attributes.
@@ -879,7 +899,7 @@ Check for:
 
 - a valid certificate for the public hostname;
 - `Cache-Control: no-store, private, max-age=0`;
-- `Referrer-Policy: no-referrer`;
+- `Referrer-Policy: no-referrer`, as the only `Referrer-Policy` header;
 - `X-Robots-Tag: noindex, nofollow, noarchive`;
 - `X-Frame-Options: DENY`;
 - the expected Content Security Policy;
@@ -1068,12 +1088,14 @@ that format.
 - [ ] The public hostname never displays the normal Teampass login page.
 - [ ] PHP source can never be served or downloaded.
 - [ ] Query strings and POST bodies are absent from every logging layer.
-- [ ] The official container's internal Nginx log is overridden safely or
-      disabled when Docker is used.
+- [ ] With the official container up to 3.2.2.6, its internal Nginx log is
+      overridden safely or disabled.
+- [ ] No logging layer records the `Referer` header.
 - [ ] Caching is disabled for the recipient page at every proxy and CDN layer.
 - [ ] The public `Host` header is preserved to Teampass.
-- [ ] A TLS-terminating proxy makes PHP see `HTTPS=on` only from its trusted
-      backend path.
+- [ ] Behind a TLS-terminating proxy, the backend treats a request as HTTPS only
+      when it comes from that proxy: declared trusted proxy in
+      **Reverse proxy / WAF** mode, or `HTTPS=on` set on the trusted path.
 - [ ] The recipient cookie is `Secure`, `HttpOnly` and `SameSite=Lax`.
 - [ ] Multi-node deployments share sessions or have tested affinity.
 - [ ] The backend is reachable only from intended proxy or trusted networks.

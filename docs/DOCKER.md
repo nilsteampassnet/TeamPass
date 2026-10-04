@@ -204,6 +204,10 @@ location / {
 }
 ```
 
+### Secure session cookie behind the proxy
+
+With either setup, the proxy terminates HTTPS. Once TeamPass is installed, set **Settings → Options → Networks → IP detection mode** to `Reverse proxy / WAF` and declare the address the container sees for the proxy (the proxy container or the Docker network gateway) in **Trusted proxies**. TeamPass then trusts the proxy's `X-Forwarded-Proto` header and marks the session cookie `Secure`; without this, the cookie lacks that attribute because the container itself is reached over plain HTTP.
+
 ---
 
 ## Upgrading
