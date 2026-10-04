@@ -105,6 +105,8 @@ Once created, an LDAP user's group memberships are read at each login. If AD gro
 
 > 🔔 If an LDAP user is removed from an AD group, their corresponding Teampass role is revoked at the **next login**, not immediately.
 
+Saving the user form never turns a role inherited from an AD group into a manually assigned one, so the role still follows the group membership. A role the user holds both ways keeps only its AD origin once the form is saved by someone allowed to grant that role: it is removed at the first login after the user leaves the AD group.
+
 ### OAuth2 / Azure Entra accounts
 
 Users authenticated through Azure Entra are created automatically on first login. Their AD group memberships (if mapped) are applied the same way as LDAP users. See [Authentication](authentication.md) for the full OAuth2 setup.

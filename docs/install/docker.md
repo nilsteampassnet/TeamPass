@@ -120,6 +120,10 @@ The container applies the database migrations itself when it starts, then remove
 
 If the log says **`TeamPass is not configured yet`** on an instance that was already installed, its configuration was lost: follow [Recovering a lost configuration](#recovering-a-lost-configuration) and **do not run the installer**.
 
+### Access logs
+
+Since 3.2.2.7, the Nginx access logs of the container (`/var/log/nginx/access.log` and `/var/log/nginx/teampass-access.log`) record the request path **without its query string** and without the `Referer` header, because both carry secrets such as Secure Send link credentials. Each line holds the client address, the time, the method, the path, the status, the size, the user agent and `X-Forwarded-For`: adapt any tool that parsed the previous `combined` format. A custom `/etc/nginx/http.d/default.conf` that removed the query strings, as advised for 3.2.2.6 by the [Secure Send guide](secure-send.md), is no longer needed.
+
 ---
 
 ## Backup

@@ -51,6 +51,16 @@ Authors cannot edit articles created by other users unless **Anyone can modify**
 
 If files are selected while creating a new article, the article is saved first and the attachments are uploaded immediately after the article ID exists.
 
+### Writing in Markdown
+
+The description editor understands Markdown in two ways.
+
+**Pasting Markdown.** Plain text that looks like Markdown, typically an answer copied from an AI assistant (headings, bold, lists, links, quotes, code blocks, tables), is formatted when it is pasted. A notice then offers **Keep plain text**, which puts the text back exactly as it was copied; the offer is withdrawn as soon as you type in the editor, and **Ctrl+Z** also returns to the state before the paste. To paste Markdown as plain text from the start, use **Ctrl+Shift+V** (**Cmd+Shift+V** on macOS). Content copied from a web page or a document keeps its own formatting, and shell scripts and configuration files are never converted.
+
+**Edit as Markdown.** The **Markdown** button, next to the code view button (`</>`) in the editor toolbar, shows the article as Markdown text. Edit it, then click the button again to go back to the formatted view with the changes applied; saving the article from the Markdown view saves what it shows. If you leave the text unchanged, the article is restored exactly as it was. Markdown has no notation for underlining, merged table cells and image sizes, and it turns the first row of each table into a header row: when the article contains any of them, a notice lists them, and they are simplified only if you change the text in the Markdown view. Pasted inline images are kept.
+
+The article title is the page's main heading, so Markdown headings are shifted to the levels the knowledge base keeps: the highest heading of the pasted text becomes a level 2 heading, and deeper levels stop at level 4. The heading shortcuts follow the same rule: **Ctrl+1** gives a level 2 heading, **Ctrl+5** and **Ctrl+6** a level 4 heading (**Cmd** on macOS).
+
 ---
 
 ## Reading articles

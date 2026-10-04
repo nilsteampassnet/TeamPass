@@ -106,7 +106,7 @@ If a setting change is not reflected, restart PHP-FPM to clear the 60-second APC
 
 ### Checklist
 
-1. **Verify email settings** — Go to **Admin → Emails** and confirm the SMTP host, port, and credentials are correct.
+1. **Verify email settings** — Go to **Admin → Emails** and confirm the SMTP host, port, and credentials are correct. The **Mail server password** field always looks empty once a password is stored (*Leave empty to keep the existing value*): it is stored encrypted and never sent back to the page. Type the password again only to replace it. A password containing `&`, `'`, `"`, `<` or `>` saved before 3.2.2.7 was stored HTML-encoded and fails to authenticate: type it again once.
 2. **Test sending** — Use the **Send test email** button on the Emails page.
 3. **Check the task queue** — Email sending is handled by background tasks. Go to **Tasks** and verify the email task is not stuck or in error.
 4. **PHP mail function** — If using `mail()` instead of SMTP, verify that the server's mail transfer agent (Postfix, Sendmail, etc.) is running.
@@ -135,6 +135,19 @@ php /var/www/html/teampass/scripts/background_tasks___handler.php
 3. **Check file permissions** — The `www-data` user must be able to read and write inside the Teampass directory.
 
 4. **Check the Tasks page** — In the Admin menu, **Tasks** shows each task's last execution time, status, and any error messages.
+
+---
+
+## A new account stays "being created" after its first login
+
+### Symptom
+An account created at its first LDAP or OAuth2 login cannot sign in: the login page answers *Your account is currently being created*, and the **Users** page shows an hourglass on the account (*Tasks in progress - User not active*) while its key generation (`create_user_keys`) is pending.
+
+### Root cause
+The key generation re-encrypts every shared item of the vault for the new account. On a large vault, or on a server where RSA operations are slow (without the `gmp` extension, the encryption library falls back to much slower arithmetic; the Docker image ships it), it lasts longer than **Maximum time a script is allowed to run** (see [Tasks](../manage/tasks.md)).
+
+### Solution
+Since 3.2.2.7 the generation runs in slices that each stay within that limit and keeps the work already done, so it completes on its own: let the background tasks run. A generation that failed is resumed, not restarted, the next time the user signs in. If it fails again with `Batch … was interrupted … times by the task time limit`, raise **Maximum time a script is allowed to run** or lower the number of items treated by the script, then ask the user to sign in again. Check `php -m | grep gmp` with the PHP binary that runs the background tasks.
 
 ---
 
