@@ -88,12 +88,8 @@ class FolderCacheInvalidationTest extends TestCase
         self::assertStringContainsString('$affectedUserIds = [$userId]', $delete);
         self::assertStringContainsString("prefixTable('users_groups')", $delete);
         $web = $this->source('app/sources/folders.queries.php');
-        $start = strpos($web, '$affectedUserIds = [(int)');
-        self::assertNotFalse($start);
-        $webDelete = substr($web, $start, strpos($web, '// Emit WebSocket events for deleted folders', $start) - $start);
-        $this->before($webDelete, 'DB::commit()', '$tree->rebuild()');
-        $this->before($webDelete, '$tree->rebuild()', 'invalidateCacheForFolderUsers(');
-        self::assertStringContainsString("prefixTable('users_groups')", $webDelete);
+        self::assertStringContainsString('$folderManager->deleteFolders(', $web);
+        self::assertStringNotContainsString("DB::delete(prefixTable('nested_tree')", $web);
     }
 
     /** Keep consuming old tasks, but remove obsolete login/account/import producers. */

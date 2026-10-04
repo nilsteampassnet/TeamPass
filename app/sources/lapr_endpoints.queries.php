@@ -743,34 +743,59 @@ function laprAddEndpoint(array $data, SessionInterface $session, int $userId, ar
     $osInfo = json_encode($osInfoPayload, JSON_UNESCAPED_SLASHES);
     $capabilities = json_encode($snapshot['capabilities'] ?? [], JSON_UNESCAPED_SLASHES);
 
-    DB::insert(prefixTable('lapr_endpoints'), [
-        'label' => $label,
-        'hostname' => $hostname,
-        'port' => $port,
-        'ssh_username' => $sshUsername,
-        'ssh_auth_method' => $authMethod,
-        'ssh_credential_source' => $credentialItemId,
-        'os_info' => $osInfo,
-        'capabilities' => $capabilities,
-        'ssh_hostkey_fingerprint' => $fingerprint,
-        'ssh_hostkey_verified' => $skipHostkey === 1 ? 0 : 1,
-        'status' => 'active',
-        'last_check_at' => date('Y-m-d H:i:s'),
-        'last_error' => null,
-        'next_check_at' => laprComputeNextEndpointCheck($SETTINGS),
-        'created_by' => $userId,
-        'created_at' => date('Y-m-d H:i:s'),
-    ]);
-    $endpointId = (int) DB::insertId();
+    DB::startTransaction();
+    try {
+        // Serialize enrollment with folder/item deletion and revalidate the
+        // credential at the final write boundary.
+        $lockedCredential = DB::queryFirstRow(
+            'SELECT id, id_tree, perso FROM ' . prefixTable('items') . '
+             WHERE id = %i AND inactif = 0 AND deleted_at IS NULL
+             FOR UPDATE',
+            $credentialItemId
+        );
+        if ($lockedCredential === null
+            || (int) $lockedCredential['perso'] === 1
+            || (int) $lockedCredential['id_tree'] !== (int) $credentialItem['id_tree']
+            || laprUserCanReadFolder((int) $lockedCredential['id_tree'], $session) === false
+        ) {
+            DB::rollback();
+            echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+            return;
+        }
 
-    laprAuditLog('endpoint_add', $endpointId, $userId, [
-        'label' => $label,
-        'hostname' => $hostname,
-        'port' => $port,
-        'hostkey_verified' => $skipHostkey === 1 ? 0 : 1,
-        'self_target' => $selfTarget['is_self'],
-        'self_target_confidence' => $selfTarget['confidence'],
-    ], 'success', null);
+        DB::insert(prefixTable('lapr_endpoints'), [
+            'label' => $label,
+            'hostname' => $hostname,
+            'port' => $port,
+            'ssh_username' => $sshUsername,
+            'ssh_auth_method' => $authMethod,
+            'ssh_credential_source' => $credentialItemId,
+            'os_info' => $osInfo,
+            'capabilities' => $capabilities,
+            'ssh_hostkey_fingerprint' => $fingerprint,
+            'ssh_hostkey_verified' => $skipHostkey === 1 ? 0 : 1,
+            'status' => 'active',
+            'last_check_at' => date('Y-m-d H:i:s'),
+            'last_error' => null,
+            'next_check_at' => laprComputeNextEndpointCheck($SETTINGS),
+            'created_by' => $userId,
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+        $endpointId = (int) DB::insertId();
+
+        laprAuditLog('endpoint_add', $endpointId, $userId, [
+            'label' => $label,
+            'hostname' => $hostname,
+            'port' => $port,
+            'hostkey_verified' => $skipHostkey === 1 ? 0 : 1,
+            'self_target' => $selfTarget['is_self'],
+            'self_target_confidence' => $selfTarget['confidence'],
+        ], 'success', null);
+        DB::commit();
+    } catch (Throwable $exception) {
+        DB::rollback();
+        throw $exception;
+    }
 
     echo prepareExchangedData([
         'error' => false,
@@ -979,7 +1004,7 @@ function laprRestoreEndpoint(array $data, SessionInterface $session, int $userId
     // refuses permanently (ERR_DUPLICATE_ENDPOINT_TARGET), leaving both accounts
     // in error with no way back through the interface.
     $deletedEndpoint = DB::queryFirstRow(
-        'SELECT hostname, port FROM ' . prefixTable('lapr_endpoints') . '
+        'SELECT hostname, port, ssh_credential_source FROM ' . prefixTable('lapr_endpoints') . '
          WHERE id = %i AND status = %s',
         $endpointId,
         'deleted'
@@ -997,12 +1022,59 @@ function laprRestoreEndpoint(array $data, SessionInterface $session, int $userId
         return;
     }
 
-    DB::update(prefixTable('lapr_endpoints'), [
-        'status' => 'active',
-        'updated_by' => $userId,
-    ], 'id = %i AND status = %s', $endpointId, 'deleted');
+    DB::startTransaction();
+    try {
+        // Lock the credential before the endpoint row, matching folder deletion's
+        // item → relation lock order and avoiding a deadlock cycle.
+        $lockedCredential = DB::queryFirstRow(
+            'SELECT id, id_tree, perso FROM ' . prefixTable('items') . '
+             WHERE id = %i AND inactif = 0 AND deleted_at IS NULL
+             FOR UPDATE',
+            (int) $deletedEndpoint['ssh_credential_source']
+        );
+        if ($lockedCredential === null
+            || (int) $lockedCredential['perso'] === 1
+        ) {
+            DB::rollback();
+            echo prepareExchangedData(
+                ['error' => true, 'message' => $lang->get('lapr_endpoint_credential_unavailable')],
+                'encode'
+            );
+            return;
+        }
+        if (laprUserCanReadFolder((int) $lockedCredential['id_tree'], $session) === false) {
+            DB::rollback();
+            echo prepareExchangedData(
+                ['error' => true, 'message' => $lang->get('error_not_allowed_to')],
+                'encode'
+            );
+            return;
+        }
 
-    laprAuditLog('endpoint_edit', $endpointId, $userId, ['restored' => true], 'success');
+        $lockedEndpoint = DB::queryFirstRow(
+            'SELECT id FROM ' . prefixTable('lapr_endpoints') . '
+             WHERE id = %i AND status = %s
+             FOR UPDATE',
+            $endpointId,
+            'deleted'
+        );
+        if ($lockedEndpoint === null) {
+            DB::rollback();
+            echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_endpoint_not_found')], 'encode');
+            return;
+        }
+
+        DB::update(prefixTable('lapr_endpoints'), [
+            'status' => 'active',
+            'updated_by' => $userId,
+        ], 'id = %i AND status = %s', $endpointId, 'deleted');
+
+        laprAuditLog('endpoint_edit', $endpointId, $userId, ['restored' => true], 'success');
+        DB::commit();
+    } catch (Throwable $exception) {
+        DB::rollback();
+        throw $exception;
+    }
 
     echo prepareExchangedData(['error' => false, 'message' => $lang->get('lapr_endpoint_restored')], 'encode');
 }

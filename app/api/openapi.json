@@ -996,7 +996,7 @@
             "put": {
                 "operationId": "folderUpdate",
                 "summary": "Update an existing folder (partial update)",
-                "description": "PUT only. Every field except 'id' is optional; unspecified fields keep their current value. 'access_rights' is not updatable here (roles-management concern). Personal root folders cannot be renamed or moved, and cross-domain (personal ↔ shared) moves are rejected.",
+                "description": "PUT only. Every field except 'id' is optional; unspecified fields keep their current value. 'access_rights' is not updatable here (roles-management concern). Only administrators may change deletion_protected. Personal root folders cannot be renamed or moved, and cross-domain (personal ↔ shared) moves are rejected.",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -1046,7 +1046,7 @@
             "delete": {
                 "operationId": "folderDelete",
                 "summary": "Soft-delete a folder and its descendants",
-                "description": "DELETE only. The folder and all its descendants go to the recycle bin (restorable from Utilities → Recycled bin); contained items are soft-deleted. Personal root folders and folder id 0 cannot be deleted.",
+                "description": "DELETE only. The folder and all its descendants go to the recycle bin (restorable from Utilities → Recycled bin); contained items are soft-deleted. Personal root folders and folder id 0 cannot be deleted. The operation returns 409 when the subtree contains a deletion-protected folder or, while LAPR is enabled, an active item linked to a managed account or endpoint credential.",
                 "parameters": [
                     {
                         "name": "id",
@@ -1080,6 +1080,9 @@
                     },
                     "405": {
                         "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
                     },
                     "500": {
                         "$ref": "#/components/responses/InternalError"
@@ -1742,6 +1745,14 @@
                         "type": "integer",
                         "description": "Allow item editing below the folder's minimum password strength (0/1). Omitted: preserve the current value, including when moving the folder."
                     },
+                    "deletion_protected": {
+                        "type": "integer",
+                        "description": "Administrative protection against accidental deletion (0/1). Only an administrator may change it. A protected folder also prevents deletion of an ancestor subtree containing it.",
+                        "enum": [
+                            0,
+                            1
+                        ]
+                    },
                     "icon": {
                         "type": "string"
                     },
@@ -1861,7 +1872,9 @@
                     "can_create_subfolder",
                     "can_rename_folder",
                     "can_move_folder",
-                    "can_delete_folder"
+                    "can_delete_folder",
+                    "deletion_protected",
+                    "contains_deletion_protected"
                 ],
                 "properties": {
                     "id": {
@@ -1953,6 +1966,22 @@
                             1
                         ]
                     },
+                    "deletion_protected": {
+                        "type": "integer",
+                        "description": "1 when this folder itself is protected against accidental deletion.",
+                        "enum": [
+                            0,
+                            1
+                        ]
+                    },
+                    "contains_deletion_protected": {
+                        "type": "integer",
+                        "description": "1 when this folder or any descendant is protected, so deleting this subtree is blocked.",
+                        "enum": [
+                            0,
+                            1
+                        ]
+                    },
                     "can_create_subfolder": {
                         "type": "integer",
                         "description": "Folder-management hint: 1 when POST /folder/create may use this folder as its parent according to the current access, read-only state, API create permission and global folder-management rules. The create route performs the final validation.",
@@ -1979,7 +2008,7 @@
                     },
                     "can_delete_folder": {
                         "type": "integer",
-                        "description": "Folder-management hint: 1 when the source folder is eligible for deletion according to the current access, read-only state, API delete permission, global folder-management rules and personal-root protection. DELETE /folder/delete performs the final validation.",
+                        "description": "Folder-management hint: 1 when the source folder is eligible for deletion according to the current access, read-only state, API delete permission, global folder-management rules, personal-root protection and administrative deletion protection in its subtree. DELETE /folder/delete performs the final validation, including LAPR relationships at mutation time.",
                         "enum": [
                             0,
                             1

@@ -133,6 +133,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 'renewalPeriod': $('#new-renewal').val() === '' ? 0 : parseInt($('#new-renewal').val()),
                 'addRestriction': $('#new-add-restriction').prop("checked") === true ? 1 : 0,
                 'editRestriction': $('#new-edit-restriction').prop("checked") === true ? 1 : 0,
+                'deletionProtection': $('#new-deletion-protection').prop('checked') === true ? 1 : 0,
                 'icon': purifyRes.arrFields['icon'],
                 'iconSelected': purifyRes.arrFields['iconSelected'],
             }
@@ -257,13 +258,26 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     if (data.error === true) {
                         // ERROR
                         toastr.remove();
-                        toastr.error(
-                            data.message,
-                            '<?php echo $lang->get('error'); ?>', {
-                                timeOut: 5000,
-                                progressBar: true
-                            }
-                        );
+                        if (data.reason === 'folder_deletion_protected' || data.reason === 'folder_contains_lapr_items') {
+                            $('#modal-folder-delete').modal('hide')
+                            showModalDialogBox(
+                                '#warningModal',
+                                <?php echo json_encode($lang->get('folder_deletion_blocked_title'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+                                '<div class="alert alert-info mb-0"><i class="fas fa-circle-info mr-2"></i>' + htmlEncode(data.message) + '</div>',
+                                '',
+                                <?php echo json_encode($lang->get('close'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+                                false,
+                                true
+                            )
+                        } else {
+                            toastr.error(
+                                data.message,
+                                '<?php echo $lang->get('error'); ?>', {
+                                    timeOut: 5000,
+                                    progressBar: true
+                                }
+                            );
+                        }
                     } else {
                         // Remove deleted rows (and all their descendants) directly from the DOM
                         selectedFolders.forEach(function(folderId) {
@@ -494,10 +508,17 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         row += value.edit_is_blocked === 1 ? '<i class="fas fa-toggle-on text-info"></i>' : '<i class="fas fa-toggle-off"></i>'
         row += '</td>'
 
-        // Column 8 — folder icon
+        // Column 8 — administrative deletion protection
+        row += '<td class="modify pointer text-center" data-value="' + value.deletionProtected + '">'
+        row += value.deletionProtected === 1
+            ? '<i class="fas fa-shield-halved text-danger infotip" title="<?php echo htmlspecialchars($lang->get('folder_deletion_protection_tip'), ENT_QUOTES, 'UTF-8'); ?>"></i>'
+            : '<i class="fas fa-shield text-muted"></i>'
+        row += '</td>'
+
+        // Column 9 — folder icon
         row += '<td class="modify pointer text-center" data-value="' + value.icon + '"><i class="' + value.icon + '"></td>'
 
-        // Column 9 — selected folder icon
+        // Column 10 — selected folder icon
         row += '<td class="modify pointer text-center" data-value="' + value.iconSelected + '">'
         if (value.iconSelected !== '') {
             row += '<i class="' + value.iconSelected + '">'
@@ -611,11 +632,18 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             rowData.edit_is_blocked === 1 ? '<i class="fas fa-toggle-on text-info"></i>' : '<i class="fas fa-toggle-off"></i>'
         )
 
-        // col 8 — folder icon
-        $row.find('td:eq(7)').data('value', rowData.icon).html('<i class="' + rowData.icon + '">')
+        // col 8 — administrative deletion protection
+        $row.find('td:eq(7)').data('value', rowData.deletionProtected).html(
+            rowData.deletionProtected === 1
+                ? '<i class="fas fa-shield-halved text-danger infotip" title="<?php echo htmlspecialchars($lang->get('folder_deletion_protection_tip'), ENT_QUOTES, 'UTF-8'); ?>"></i>'
+                : '<i class="fas fa-shield text-muted"></i>'
+        )
 
-        // col 9 — selected folder icon
-        const $iconSelTd = $row.find('td:eq(8)').data('value', rowData.iconSelected).empty()
+        // col 9 — folder icon
+        $row.find('td:eq(8)').data('value', rowData.icon).html('<i class="' + rowData.icon + '">')
+
+        // col 10 — selected folder icon
+        const $iconSelTd = $row.find('td:eq(9)').data('value', rowData.iconSelected).empty()
         if (rowData.iconSelected !== '') {
             $iconSelTd.html('<i class="' + rowData.iconSelected + '">')
         }
@@ -783,8 +811,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         const folderRenewal         = $row.find('td:eq(4)').text()
         const folderAddRestriction  = $row.find('td:eq(5)').data('value')
         const folderEditRestriction = $row.find('td:eq(6)').data('value')
-        const folderIcon            = $row.find('td:eq(7)').data('value') || ''
-        const folderIconSel         = $row.find('td:eq(8)').data('value') || ''
+        const folderDeletionProtection = $row.find('td:eq(7)').data('value')
+        const folderIcon            = $row.find('td:eq(8)').data('value') || ''
+        const folderIconSel         = $row.find('td:eq(9)').data('value') || ''
 
         _sidebarFolderId = folderId
         $('#sidebar-submit').data('id', folderId)
@@ -836,6 +865,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $('#folder-edit-edit-restriction').iCheck('check')
         } else {
             $('#folder-edit-edit-restriction').iCheck('uncheck')
+        }
+        if (folderDeletionProtection === 1) {
+            $('#folder-edit-deletion-protection').iCheck('check')
+        } else {
+            $('#folder-edit-deletion-protection').iCheck('uncheck')
         }
 
         // Highlight the row being edited
@@ -931,6 +965,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             'renewalPeriod': $('#folder-edit-renewal').val() === '' ? 0 : parseInt($('#folder-edit-renewal').val()),
             'addRestriction': $('#folder-edit-add-restriction').prop('checked') === true ? 1 : 0,
             'editRestriction': $('#folder-edit-edit-restriction').prop('checked') === true ? 1 : 0,
+            <?php if ((int) $session->get('user-admin') === 1) { ?>
+            'deletionProtection': $('#folder-edit-deletion-protection').prop('checked') === true ? 1 : 0,
+            <?php } ?>
             'icon': purifyRes.arrFields['icon'],
             'iconSelected': purifyRes.arrFields['iconSelected'],
         }
@@ -946,13 +983,25 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                 if (data.error === true) {
                     toastr.remove()
-                    toastr.error(
-                        data.message,
-                        '<?php echo $lang->get('error'); ?>', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
-                    )
+                    if (data.reason === 'folder_contains_lapr_items') {
+                        showModalDialogBox(
+                            '#warningModal',
+                            <?php echo json_encode($lang->get('folder_operation_blocked_title'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+                            '<div class="alert alert-info mb-0"><i class="fas fa-circle-info mr-2"></i>' + htmlEncode(data.message) + '</div>',
+                            '',
+                            <?php echo json_encode($lang->get('close'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+                            false,
+                            true
+                        )
+                    } else {
+                        toastr.error(
+                            data.message,
+                            '<?php echo $lang->get('error'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        )
+                    }
                 } else {
                     // Parent changed → subtree moved → full rebuild needed
                     // Parent unchanged → update cells in-place

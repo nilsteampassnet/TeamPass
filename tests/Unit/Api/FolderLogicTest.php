@@ -337,7 +337,7 @@ class FolderLogicTest extends TestCase
 
         // Every key consumed by tpParseFolderDeletedValeur() must be present
         foreach (['id', 'parent_id', 'title', 'nleft', 'nright', 'nlevel',
-                  'bloquer_creation', 'bloquer_modification', 'personal_folder',
+                  'bloquer_creation', 'bloquer_modification', 'deletion_protected', 'personal_folder',
                   'renewal_period'] as $key) {
             self::assertArrayHasKey($key, $data, "restore key '$key' missing");
         }
