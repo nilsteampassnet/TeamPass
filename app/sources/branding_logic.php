@@ -20,6 +20,9 @@ const BRANDING_CUSTOM_WEB_PATH = './assets/custom/';
  */
 const BRANDING_IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
 
+/** Maximum length of the public entity name shown outside the authenticated vault. */
+const BRANDING_PUBLIC_ENTITY_MAX_LENGTH = 100;
+
 /**
  * Tell whether a value is the bare name of an image of the custom branding folder:
  * no directory part, no hidden file, an accepted image extension.
@@ -54,6 +57,39 @@ function brandingCustomImageUrl(string $value, string $customDirectory): string
     return is_file(rtrim($customDirectory, '/\\') . DIRECTORY_SEPARATOR . $value)
         ? BRANDING_CUSTOM_WEB_PATH . $value
         : '';
+}
+
+/**
+ * Normalize the plain-text entity name shown on public TeamPass pages.
+ *
+ * Settings are stored HTML-encoded by save_option_change. The returned value is
+ * deliberately unescaped so every caller must encode it for its own output context.
+ *
+ * @param string $storedValue Raw or HTML-encoded setting value
+ * @return string Trimmed display value, limited to the public branding budget
+ */
+function brandingPublicEntityName(string $storedValue): string
+{
+    $value = trim(html_entity_decode($storedValue, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+
+    return mb_substr($value, 0, BRANDING_PUBLIC_ENTITY_MAX_LENGTH, 'UTF-8');
+}
+
+/**
+ * Resolve a same-origin logo suitable for the public Secure Send page.
+ *
+ * Unlike the login page, Secure Send never accepts a remote or arbitrary-path logo:
+ * opening a secret link must not notify a third-party image host or weaken its CSP.
+ *
+ * @param string $storedValue Custom logo setting
+ * @param string $customDirectory Absolute path of public/assets/custom
+ * @return string Same-origin web path, or '' when no safe local logo is configured
+ */
+function brandingSecureSendLogoUrl(string $storedValue, string $customDirectory): string
+{
+    $value = trim(html_entity_decode($storedValue, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+
+    return brandingCustomImageUrl($value, $customDirectory);
 }
 
 /**
