@@ -932,7 +932,7 @@ function kbLoadRow(int $kbId): ?array
 {
     $row = DB::queryFirstRow(
         'SELECT k.id,
-            k.category_id,
+            c.id AS category_id,
             k.label,
             k.description,
             k.author_id,
