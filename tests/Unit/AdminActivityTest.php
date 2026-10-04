@@ -89,7 +89,7 @@ final class AdminActivityTest extends TestCase
     public function testDefaultsAndBoundsIgnoreUnsupportedInput(): void
     {
         $options = adminActivityOptions([], 1000, false);
-        self::assertSame(['changes', 'accesses', 'failed'], $options['categories']);
+        self::assertSame(['changes', 'accesses'], $options['categories']);
         self::assertSame(700, $options['since']);
         self::assertSame(10, $options['limit']);
         $options = adminActivityOptions(['categories' => ['failed', 'kb', 'sql injection', []],

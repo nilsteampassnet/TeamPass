@@ -2,7 +2,7 @@
 
 The **Live activity** tile on the administrator dashboard refreshes every ten seconds and shows the ten latest matching events from the last five minutes. It uses the existing journals and works without the WebSocket service.
 
-Use the gear button to select item changes, item consultations, failed sign-ins and lockouts, successful sign-ins, or knowledge-base activity (when that module is enabled). Successful sign-ins are disabled by default. The other available categories are enabled by default. Preferences are saved per administrator in the current browser; clearing browser storage resets them. No journal data is stored in browser storage.
+Use the gear button to select item changes, item consultations, failed sign-ins and lockouts, successful sign-ins, or knowledge-base activity (when that module is enabled). Item changes, item consultations, and available knowledge-base activity are enabled by default, matching the original tile. Failed and successful sign-ins are opt-in categories. Preferences are saved per administrator in the current browser; clearing browser storage resets them. No journal data is stored in browser storage.
 
 The failed-sign-in counter covers the selected time window independently of the number of visible rows. Clicking it temporarily selects failed sign-ins only and opens the expanded view. This shortcut does not overwrite saved category preferences. Failure rows show the submitted login, the recorded reason, and the Web/API channel. An unknown or misspelled login remains visible. Successful-sign-in rows exclude other authentication-related events such as sending an MFA code.
 

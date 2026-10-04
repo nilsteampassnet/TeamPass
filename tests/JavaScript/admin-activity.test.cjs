@@ -70,18 +70,18 @@ const response = (rows, overrides = {}) => ({error: false, activities: rows, fai
 test('defaults and saved categories are allow-listed, with empty selections preserved', () => {
     const defaults = harness()
     defaults.run('loadLiveActivity()')
-    assert.deepEqual(defaults.requests[0].options.categories, ['changes', 'accesses', 'failed', 'kb'])
+    assert.deepEqual(defaults.requests[0].options.categories, ['changes', 'accesses', 'kb'])
     for (const stored of ['[]', '["failed","invalid",{}]', 'malformed']) {
         const h = harness(stored)
         h.run('loadLiveActivity()')
         const expected = stored === '[]' ? [] : stored === 'malformed'
-            ? ['changes', 'accesses', 'failed', 'kb'] : ['failed']
+            ? ['changes', 'accesses', 'kb'] : ['failed']
         assert.deepEqual(h.requests[0].options.categories, expected)
     }
 })
 
 test('compact failures count is independent of the ten displayed rows and text is escaped', () => {
-    const h = harness()
+    const h = harness('["failed"]')
     h.run('loadLiveActivity()')
     h.requests[0].resolve(response([row(1, {source_type: 'failed_auth', user_login: '<img onerror="bad">', reason: '<script>bad</script>'})]))
     assert.equal(h.$('#activity-failed-count').content, '27 failures / 5 minutes')

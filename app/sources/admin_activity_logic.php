@@ -42,7 +42,7 @@ function adminActivityOptions(array $input, int $now, bool $kbEnabled): array
     }
     $categories = isset($input['categories']) && is_array($input['categories'])
         ? array_values(array_intersect($allowed, array_filter($input['categories'], 'is_string')))
-        : array_values(array_diff($allowed, ['connections']));
+        : array_values(array_diff($allowed, ['failed', 'connections']));
     $minutes = in_array($input['minutes'] ?? 5, [5, 15, 30], true) ? ($input['minutes'] ?? 5) : 5;
     $until = min($now, max($now - 1800, (int) ($input['until'] ?? $now)));
     $since = min($until, max($now - 1800, (int) ($input['since'] ?? ($until - $minutes * 60))));

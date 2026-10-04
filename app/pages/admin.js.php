@@ -614,8 +614,8 @@ const adminActivityState = {
 /** Read only category identifiers from storage; never persist activity data. */
 function initActivityPreferences() {
     if (adminActivityState.initialized) return
-    const defaults = ['changes', 'accesses', 'failed']
-    const allowed = defaults.concat(['connections'])
+    const defaults = ['changes', 'accesses']
+    const allowed = defaults.concat(['failed', 'connections'])
     if (adminActivityMessages.kbEnabled) {
         defaults.push('kb')
         allowed.push('kb')
