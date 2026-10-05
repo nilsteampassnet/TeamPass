@@ -575,7 +575,7 @@ class DatabaseInstaller
             array('admin', 'show_description', '1'),
             array('admin', 'anyone_can_modify', '0'),
             array('admin', 'anyone_can_modify_bydefault', '0'),
-            array('admin', 'nb_bad_authentication', '0'),
+            array('admin', 'nb_bad_authentication', '10'),
             array('admin', 'utf8_enabled', '1'),
             array('admin', 'restricted_to', '0'),
             array('admin', 'restricted_to_roles', '0'),
@@ -588,7 +588,9 @@ class DatabaseInstaller
             array('admin', 'enable_email_notification_on_item_shown', '0'),
             array('admin', 'enable_email_notification_on_user_pw_change', '0'),
             array('admin', 'custom_logo', ''),
+            array('admin', 'public_entity_name', ''),
             array('admin', 'custom_login_text', ''),
+            array('admin', 'custom_login_background', ''),
             array('admin', 'default_language', 'english'),
             array('admin', 'send_stats', '0'),
             array('admin', 'send_statistics_items', 'stat_country;stat_users;stat_items;stat_items_shared;stat_folders;stat_folders_shared;stat_admins;stat_managers;stat_ro;stat_mysqlversion;stat_phpversion;stat_teampassversion;stat_languages;stat_kb;stat_suggestion;stat_customfields;stat_api;stat_2fa;stat_agses;stat_duo;stat_ldap;stat_syslog;stat_stricthttps;stat_fav;stat_pf;'),
@@ -645,6 +647,7 @@ class DatabaseInstaller
             array('admin', 'secure_send_allow_notes', '0'),
             array('admin', 'secure_send_max_views', '5'),
             array('admin', 'secure_send_require_passphrase', '0'),
+            array('admin', 'secure_send_show_sender_name', '1'),
             array('admin', 'agses_authentication_enabled', '0'),
             array('admin', 'item_extra_fields', '0'),
             array('admin', 'saltkey_ante_2127', 'none'),
@@ -840,6 +843,7 @@ class DatabaseInstaller
             `nlevel` int(11) NOT NULL DEFAULT '0',
             `bloquer_creation` tinyint(1) NOT null DEFAULT '0',
             `bloquer_modification` tinyint(1) NOT null DEFAULT '0',
+            `deletion_protected` tinyint(1) NOT null DEFAULT '0',
             `personal_folder` tinyint(1) NOT null DEFAULT '0',
             `renewal_period` int(5) NOT null DEFAULT '0',
             `fa_icon` VARCHAR(100) NOT NULL DEFAULT 'fas fa-folder',
@@ -1135,6 +1139,7 @@ class DatabaseInstaller
                 `allow_pw_change` TINYINT(1) NOT null DEFAULT '0',
                 `complexity` INT(5) NOT null DEFAULT '0',
                 `creator_id` int(11) NOT null DEFAULT '0',
+                `allow_security_posture_fix` TINYINT(1) NOT NULL DEFAULT '1',
                 PRIMARY KEY (`id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
@@ -1152,7 +1157,8 @@ class DatabaseInstaller
                 'title'          => 'Default',
                 'allow_pw_change'=> 0,
                 'complexity'     => 48,
-                'creator_id'     => 0
+                'creator_id'     => 0,
+                'allow_security_posture_fix' => 1,
             ]);
         }
     }

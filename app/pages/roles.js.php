@@ -135,6 +135,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 (parseInt($(this).find(':selected').data('allow-edit-all')) === 1 ?
                     '<i class="ml-3 fas fa-exclamation-triangle text-warning infotip" ' +
                     'title="<?php echo $lang->get('role_can_edit_any_visible_item'); ?>"></i>' :
+                    '') +
+                (parseInt($(this).find(':selected').data('allow-security-posture-fix')) === 0 ?
+                    '<i class="ml-3 fa-solid fa-wrench text-muted infotip" ' +
+                    'title="<?php echo $lang->get('role_security_posture_fix_disabled'); ?>"></i>' :
                     '')
             );
 
@@ -550,6 +554,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $('#modal-role-definition-header').text('<?php echo $lang->get('new'); ?>')
             $('#form-role-label').val('')
             $('#form-role-privilege').iCheck('uncheck')
+            $('#form-role-security-posture-fix').iCheck('check')
             $('#form-complexity-list').val('').trigger('change')
             store.update('teampassApplication', function(app) { app.formUserAction = 'add_role' })
             $('#modal-role-definition').modal('show')
@@ -563,6 +568,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 $('#form-role-privilege').iCheck('check')
             } else {
                 $('#form-role-privilege').iCheck('uncheck')
+            }
+            if (parseInt($('#roles-list').find(':selected').data('allow-security-posture-fix')) === 0) {
+                $('#form-role-security-posture-fix').iCheck('uncheck')
+            } else {
+                $('#form-role-security-posture-fix').iCheck('check')
             }
             store.update('teampassApplication', function(app) { app.formUserAction = 'edit_role' })
             $('#modal-role-definition').modal('show')
@@ -595,6 +605,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 'complexity': $('#form-complexity-list').val() === null ? 0 : $('#form-complexity-list').val(),
                 'folderId': $('#roles-list').find(':selected').val(),
                 'allowEdit': $('#form-role-privilege').is(':checked') === true ? 1 : 0,
+                // Only rendered for administrators: -1 keeps the stored value.
+                'allowSecurityPostureFix': $('#form-role-security-posture-fix').length === 0 ? -1 :
+                    ($('#form-role-security-posture-fix').is(':checked') === true ? 1 : 0),
                 'action': store.get('teampassApplication').formUserAction
             }
 
@@ -619,7 +632,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                 '<i class="' + data.icon + ' infotip ml-3" title="<?php echo $lang->get('complexity'); ?>: ' +
                                 $('#form-complexity-list').find(':selected').text() + '"></i>' +
                                 (parseInt(data.allow_pw_change) === 1 ?
-                                    '<i class="ml-3 fas fa-exclamation-triangle text-warning infotip" title="<?php echo $lang->get('role_can_edit_any_visible_item'); ?>"></i>' : '')
+                                    '<i class="ml-3 fas fa-exclamation-triangle text-warning infotip" title="<?php echo $lang->get('role_can_edit_any_visible_item'); ?>"></i>' : '') +
+                                (parseInt(data.allow_security_posture_fix) === 0 ?
+                                    '<i class="ml-3 fa-solid fa-wrench text-muted infotip" title="<?php echo $lang->get('role_security_posture_fix_disabled'); ?>"></i>' : '')
                             )
                             $('.infotip').tooltip()
                         } else {
@@ -632,6 +647,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         var selectedOption = $('#roles-list option[value=' + $('#roles-list').find(':selected').val() + ']')
                         selectedOption.text($('#form-role-label').val())
                         selectedOption.data('allow-edit-all', data.allow_pw_change)
+                        selectedOption.data('allow-security-posture-fix', data.allow_security_posture_fix)
                         selectedOption.data('complexity-text', data.text)
                         selectedOption.data('complexity-icon', data.icon)
                         selectedOption.data('complexity', data.value)

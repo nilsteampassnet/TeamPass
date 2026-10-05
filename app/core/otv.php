@@ -32,367 +32,434 @@ declare(strict_types=1);
 
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
-use TeampassClasses\NestedTree\NestedTree;
-use voku\helper\AntiXSS;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\ConfigManager\ConfigManager;
 
+require_once __DIR__ . '/../sources/main.functions.php';
+require_once __DIR__ . '/../sources/otv_render_logic.php';
+require_once __DIR__ . '/../sources/secure_send.functions.php';
 
-// Load functions
-require_once __DIR__.'/../sources/main.functions.php';
-require_once __DIR__.'/../sources/otv_render_logic.php';
-loadClasses('DB');
 $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
-$lang = new Language($session->get('user-language') ?? 'english');
-$antiXSS = new AntiXSS();
-$session = SessionManager::getSession();
+$SETTINGS = (new ConfigManager())->getAllSettings();
+$recipientLanguage = secureSendRecipientLanguage($session->get('user-language'), $SETTINGS);
+$lang = new Language($recipientLanguage);
+// POEditor codes are language tags; the legacy "code" column also contains flag aliases.
+$languageTag = (string) (DB::queryFirstField(
+    'SELECT code_poeditor FROM ' . prefixTable('languages') . ' WHERE name = %s',
+    basename(strtolower($recipientLanguage))
+) ?: 'en');
+date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
 
-// Load config
-$configManager = new ConfigManager();
-$SETTINGS = $configManager->getAllSettings();
-
-// Load tree
-$tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-
-/**
- * Render the passphrase prompt form for a passphrase-protected Secure Send link.
- * The form posts back to the same URL. The One-Time-View endpoint is exempt from
- * CSRFGuard (see public/index.php) because it is unauthenticated, so no CSRF token
- * is needed here.
- *
- * @param object $lang  Language helper
- * @param string $error Optional error message to display above the field
- *
- * @return string
- */
-function secureSendPassphraseForm($lang, string $error = ''): string
-{
-    $errorHtml = $error === ''
-        ? ''
-        : '<div class="alert alert-danger">' . htmlspecialchars($error, ENT_QUOTES, 'UTF-8') . '</div>';
-
-    $actionHtml = htmlspecialchars((string) ($_SERVER['REQUEST_URI'] ?? ''), ENT_QUOTES, 'UTF-8');
-
-    return '<div class="text-center">
-        <h3><i class="fa-solid fa-lock mr-2"></i>' . htmlspecialchars($lang->get('secure_send_protected'), ENT_QUOTES, 'UTF-8') . '</h3>
-        <p class="font-weight-light mt-3">' . htmlspecialchars($lang->get('secure_send_enter_passphrase'), ENT_QUOTES, 'UTF-8') . '</p>
-        ' . $errorHtml . '
-        <form method="post" action="' . $actionHtml . '" class="mt-4">
-            <div class="form-group">
-                <input type="password" name="passphrase" class="form-control" autocomplete="off" autofocus required>
-            </div>
-            <button type="submit" class="btn btn-primary btn-block">' . htmlspecialchars($lang->get('confirm'), ENT_QUOTES, 'UTF-8') . '</button>
-        </form>
-        </div>';
+// The public endpoint has its own POST confirmation; it never enters authenticated routing.
+header('Cache-Control: no-store, private, max-age=0');
+header('Pragma: no-cache');
+header('Referrer-Policy: no-referrer');
+header('X-Robots-Tag: noindex, nofollow, noarchive');
+header('X-Frame-Options: DENY');
+header("Content-Security-Policy: default-src 'none'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; form-action 'self'; base-uri 'none'; frame-ancestors 'none'");
+if (!$request->isMethod('GET') && !$request->isMethod('POST')) {
+    header('Allow: GET, POST');
+    http_response_code(405);
+    exit;
 }
+
+$input = $request->isMethod('POST') ? $request->request->all() : $request->query->all();
+$confirmations = (array) $session->get('otv-confirmations', []);
+$page = secureSendPrepareRecipient($input, $request->getMethod(), $SETTINGS, $confirmations, (string) $request->headers->get('host', ''));
+$session->set('otv-confirmations', $confirmations);
+$parameters = $page['parameters'];
+$link = $page['link'];
+$sender = is_array($page['sender']) ? $page['sender'] : null;
+$result = $page['result'];
+$error = $page['error'];
+$token = $page['token'];
+$escape = static fn (string $value): string => htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+$entityName = brandingPublicEntityName((string) ($SETTINGS['public_entity_name'] ?? ''));
+$brandName = $entityName !== '' ? $entityName : TP_TOOL_NAME;
+$logoUrl = brandingSecureSendLogoUrl(
+    (string) ($SETTINGS['custom_logo'] ?? ''),
+    TEAMPASS_ROOT . '/public/assets/custom'
+);
+if ($logoUrl === '') {
+    $logoUrl = './assets/images/teampass-logo2-home.png';
+}
+$senderDisplayName = trim((string) ($sender['display_name'] ?? ''));
+$timeLimit = (int) ($result['time_limit'] ?? ($link['time_limit'] ?? 0));
+$remainingViews = $result !== null && ($result['error'] ?? '') === ''
+    ? (int) $result['remaining_views']
+    : max(0, (int) ($link['max_views'] ?? 0) - (int) ($link['views'] ?? 0));
+$expiresLabel = $timeLimit > 0
+    ? date(($SETTINGS['date_format'] ?? 'Y-m-d') . ' ' . ($SETTINGS['time_format'] ?? 'H:i'), $timeLimit)
+    : '';
+$remainingViewsLabel = str_replace(
+    '#VIEWS#',
+    (string) $remainingViews,
+    $lang->get('secure_send_remaining_views_count')
+);
+$poweredBy = str_replace(
+    '#TEAMPASS#',
+    '<strong>TeamPass</strong>',
+    $escape($lang->get('secure_send_powered_by'))
+);
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php echo $escape($languageTag); ?>">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?php echo TP_TOOL_NAME; ?> - <?php echo $lang->get('one_time_view'); ?></title>
-    <link rel="stylesheet" href="./plugins/adminlte/css/adminlte.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
-    <link rel="stylesheet" href="./plugins/fontawesome-free/css/fontawesome.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
-    <link rel="stylesheet" href="./plugins/fontawesome-free/css/solid.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
-    <link rel="stylesheet" href="./plugins/fontawesome-free/css/regular.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
-    <link rel="stylesheet" href="./plugins/fontawesome-free/css/brands.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
-    <link rel="stylesheet" href="./assets/css/teampass.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
-</head>
-<body class="hold-transition login-page ">
-    <div class="login-box" style="margin-top:100px; width:700px;">
-        
-        <!-- /.login-logo -->
-        <div class="card card-outline card-primary">
-            <div class="card-header text-center">
-                <a href="../../index.php" class="h1"><b><?php echo TP_TOOL_NAME; ?></b></a>
-            </div>
-            <div class="card-body login-card-body">
-<?php
-if (empty($request->query->get('code')) === false
-    && empty($request->query->get('stamp')) === false
-    && empty($request->query->get('key')) === false
-) {
-    if (isset($SETTINGS['otv_is_enabled']) === false
-        || (int) $SETTINGS['otv_is_enabled'] === 0
-    ) {
-        echo '
-        <div class="text-center text-danger">
-        <h3><i class="fas fa-exclamation-triangle mr-2"></i>One-Time-View is not allowed!</h3>
-        </div>';
-        exit(true);
-    }
-
-    // check session validity
-    $data = DB::queryFirstRow(
-        'SELECT *
-        FROM '.prefixTable('otv').'
-        WHERE code = %s',
-        filter_input(INPUT_GET, 'code', FILTER_SANITIZE_FULL_SPECIAL_CHARS)
-    );
-    
-    if (DB::count() > 0  && intval($data['timestamp']) === intval(filter_input(INPUT_GET, 'stamp', FILTER_VALIDATE_INT))) {
-        // otv is too old
-        if ($data['time_limit'] < time() || (intval($data['views']) + 1) > $data['max_views']) {
-            $html = '<div class="text-center text-danger">
-            <h3><i class="fas fa-exclamation-triangle mr-2"></i>Link is expired!</h3>
-            </div>';
-            // delete entry
-            DB::delete(prefixTable('otv'), 'id = %i', $data['id']);
-
-        } else {
-            // Check if user origine is allowed to see the item
-            // If shared_globaly enabled, then link must contain the subdomain
-            if (empty($SETTINGS['shared_globaly']) === false && intval($data['shared_globaly']) === 1 && str_contains(parse_url($_SERVER['REQUEST_URI'], PHP_URL_HOST), $SETTINGS['shared_globaly']) === false) {
-                echo '
-                <div class="text-center text-danger">
-                <h3><i class="fas fa-exclamation-triangle mr-2"></i>This link is not valid!</h3>
-                </div>';
-                exit(true);
-            }
-
-            // Resolve the decryption key.
-            $urlKey = filter_input(INPUT_GET, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $hasProtectedKey = empty($data['protected_key']) === false;
-
-            if ($hasProtectedKey === false) {
-                // Legacy model: the URL carries the unlocked Defuse key directly.
-                $decryptionKey = $urlKey;
-            } else {
-                // New model: the URL carries the link secret; the Defuse key is wrapped
-                // by it (and the recipient passphrase when one was set).
-                if ((int) ($data['has_passphrase'] ?? 0) === 1) {
-                    $submittedPassphrase = (string) (filter_input(INPUT_POST, 'passphrase', FILTER_UNSAFE_RAW) ?? '');
-                    if ($submittedPassphrase === '') {
-                        // Prompt for the passphrase, without consuming a view
-                        echo secureSendPassphraseForm($lang);
-                        echo '</div></div></div></body></html>';
-                        exit;
-                    }
-                    $wrapPassword = hash('sha256', $urlKey . '|' . $submittedPassphrase);
-                } else {
-                    $wrapPassword = $urlKey;
-                }
-
-                $decryptionKey = defuse_validate_personal_key($wrapPassword, (string) $data['protected_key']);
-
-                if (strpos($decryptionKey, 'Error') === 0) {
-                    // Wrong passphrase or tampered link: never consume a view
-                    $newFailedAttempts = (int) ($data['failed_attempts'] ?? 0) + 1;
-                    if ($newFailedAttempts >= 5) {
-                        DB::delete(prefixTable('otv'), 'id = %i', $data['id']);
-                        echo '<div class="text-center text-danger"><h3><i class="fas fa-exclamation-triangle mr-2"></i>'
-                            . htmlspecialchars($lang->get('secure_send_too_many_attempts'), ENT_QUOTES, 'UTF-8') . '</h3></div>';
-                    } else {
-                        DB::update(prefixTable('otv'), ['failed_attempts' => $newFailedAttempts], 'id = %i', $data['id']);
-                        echo secureSendPassphraseForm($lang, $lang->get('secure_send_wrong_passphrase'));
-                    }
-                    echo '</div></div></div></body>';
-                    exit;
-                }
-            }
-
-            // Decrypt the payload using the resolved key
-            $payload_decrypted = cryption(
-                $data['encrypted'],
-                $decryptionKey,
-                'decrypt',
-                $SETTINGS
-            );
-
-            $sendType = (isset($data['send_type']) === true && $data['send_type'] === 'note') ? 'note' : 'item';
-
-            if ($sendType === 'note') {
-                // Self-contained note/secret send (not bound to an item)
-                $note = json_decode((string) ($payload_decrypted['string'] ?? ''), true);
-                if (is_array($note) === false) {
-                    $note = array();
-                }
-                $noteTitle = htmlspecialchars((string) ($note['title'] ?? ''), ENT_QUOTES, 'UTF-8');
-                $noteSecret = htmlspecialchars((string) ($note['secret'] ?? ''), ENT_QUOTES, 'UTF-8');
-                $noteText = htmlspecialchars((string) ($note['note'] ?? ''), ENT_QUOTES, 'UTF-8');
-                $noteLogin = htmlspecialchars((string) ($note['login'] ?? ''), ENT_QUOTES, 'UTF-8');
-                $noteUrlRaw = (string) ($note['url'] ?? '');
-                $noteUrl = preg_match('#^https?://#i', $noteUrlRaw) === 1
-                    ? htmlspecialchars($noteUrlRaw, ENT_QUOTES, 'UTF-8')
-                    : '';
-
-                $rows = '';
-                if ($noteTitle !== '') {
-                    $rows .= '<tr><th>' . $lang->get('label') . ':</th><td>' . $noteTitle . '</td></tr>';
-                }
-                if ($noteSecret !== '') {
-                    $rows .= '<tr><th>' . $lang->get('password') . ':</th><td>' . $noteSecret . '</td></tr>';
-                }
-                if ($noteLogin !== '') {
-                    $rows .= '<tr><th>' . $lang->get('login') . ':</th><td>' . $noteLogin . '</td></tr>';
-                }
-                if ($noteUrl !== '') {
-                    $rows .= '<tr><th>' . $lang->get('url') . ':</th><td>' . $noteUrl . '</td></tr>';
-                }
-                if ($noteText !== '') {
-                    $rows .= '<tr><th>' . $lang->get('description') . ':</th><td>' . nl2br($noteText) . '</td></tr>';
-                }
-
-                $html = '<div class="text-center">
-                    <h3>' . $lang->get('secure_send') . '</h3>
-                    <p class="font-weight-light mt-3">- ' . $lang->get('secure_send_recipient_intro') . ' -</p>
-                    <div class="mt-5">
-                    <table class="table text-left" style="margin: 0 auto;">' . $rows . '</table></div>
-                    <p class="mt-3 text-info"><i class="fas fa-info mr-2"></i>' . $lang->get('secure_send_copy_carefully') . '<br>'
-                    . str_replace(
-                        ['#DATE#', '#VIEWS#'],
-                        [
-                            '<b>' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], intval($data['time_limit'])) . '</b>',
-                            '<b>' . (intval($data['max_views']) - (intval($data['views']) + 1)) . '</b>',
-                        ],
-                        $lang->get('secure_send_visibility')
-                    ) . '</p>
-                    </div>';
-
-                // log redemption (no item bound)
-                logItems(
-                    $SETTINGS,
-                    0,
-                    'secure-send-note',
-                    (int) OTV_USER_ID,
-                    'at_shown',
-                    'otv'
-                );
-
-                // update views
-                DB::update(
-                    prefixTable('otv'),
-                    ['views' => intval($data['views']) + 1],
-                    'id = %i',
-                    $data['id']
-                );
-            } else {
-                // Item send: read display fields from the shared item
-                $dataItem = DB::queryFirstRow(
-                    'SELECT *
-                    FROM '.prefixTable('items').' as i
-                    INNER JOIN '.prefixTable('log_items').' as l ON (l.id_item = i.id)
-                    INNER JOIN '.prefixTable('otv').' as otv ON (otv.item_id = i.id)
-                    WHERE i.id = %i AND l.action = %s',
-                    $data['item_id'],
-                    'at_creation'
-                );
-                // is Item still valid regarding number of times being seen
-                // Decrement the number before being deleted
-                $dataDelete = DB::queryFirstRow(
-                    'SELECT * FROM '.prefixTable('automatic_del').' WHERE item_id=%i',
-                    $data['item_id']
-                );
-                if (DB::count() > 0 && isset($SETTINGS['enable_delete_after_consultation']) && intval($SETTINGS['enable_delete_after_consultation']) === 1) {
-                    if (intval($dataDelete['del_enabled']) === 1) {
-                        if (intval($dataDelete['del_type']) === 1 && intval($dataDelete['del_value']) >= 1) {
-                            // decrease counter
-                            DB::update(
-                                prefixTable('automatic_del'),
-                                [
-                                    'del_value' => intval($dataDelete['del_value']) - 1,
-                                ],
-                                'item_id = %i',
-                                $data['item_id']
-                            );
-                        } elseif ((intval($dataDelete['del_type']) === 1 && intval($dataDelete['del_value']) <= 1)
-                            || (intval($dataDelete['del_type']) === 2 && intval($dataDelete['del_value']) < time())
-                        ) {
-                            // delete item
-                            DB::delete(prefixTable('automatic_del'), 'item_id = %i', $data['item_id']);
-                            // make inactive object
-                            DB::update(
-                                prefixTable('items'),
-                                [
-                                    'inactif' => '1',
-                                ],
-                                'id = %i',
-                                $data['item_id']
-                            );
-                            // log
-                            logItems(
-                                $SETTINGS,
-                                intval($data['item_id']),
-                                $dataItem['label'],
-                                (int) OTV_USER_ID,
-                                'at_delete',
-                                'otv',
-                                'at_automatically_deleted'
-                            );
-                            echo '<div style="padding:10px; margin:90px 30px 30px 30px; text-align:center;" class="ui-widget-content ui-state-error ui-corner-all"><i class="fas fa-warning fa-2x"></i>&nbsp;'.
-                            addslashes($lang->get('not_allowed_to_see_pw_is_expired')).'</div>';
-                            return false;
-                        }
-                    }
-                }
-
-                // Item password (already decrypted above)
-                $password_decrypted = $payload_decrypted;
-                // get data
-                // Stored values are entity-encoded by the item write paths; decode them
-                // before rendering, exactly like the item card and the exports do.
-                $label = otvRenderPlainField(strval($dataItem['label'] ?? ''));
-                $url = otvRenderPlainField(strval($dataItem['url'] ?? ''));
-                $description = otvSanitizeDescription(strval($dataItem['description'] ?? ''));
-                $login = otvRenderPlainField(strval($dataItem['login'] ?? ''));
-                // display data
-                $html = '<div class="text-center">
-                    <h3>One-Time item view page</h3>
-                    <p class="font-weight-light mt-3">- Here are the details of the Item that has been shared to you -</p>
-                    <div class="mt-5">
-                    <table class="table text-left" style="margin: 0 auto;">
-                    <tr><th>Label:</th><td>'.$label.'</td></tr>
-                    <tr><th>Password:</th><td>'.htmlspecialchars($password_decrypted['string'], ENT_QUOTES, 'UTF-8').'</td></tr>
-                    <tr><th>Description:</th><td>'.$description.'</td></tr>
-                    <tr><th>login:</th><td>'.$login.'</td></tr>
-                    <tr><th>URL:</th><td>'.$url.'</td></tr>
-                    </table></div>
-                    <p class="mt-3 text-info"><i class="fas fa-info mr-2"></i>Copy carefully the data you need.<br>This page is visible until <b>'.
-                    date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], intval($dataItem['time_limit'])).'</b> OR <b>'.(intval($dataItem['max_views']) - (intval($dataItem['views'])+1)).' more time(s)</b>.</div>
-                    </div>';
-                // log
-                logItems(
-                    $SETTINGS,
-                    intval($data['item_id']),
-                    $dataItem['label'],
-                    (int) OTV_USER_ID,
-                    'at_shown',
-                    'otv'
-                );
-
-                // update views
-                DB::update(
-                    prefixTable('otv'),
-                    [
-                        'views' => intval($data['views']) + 1,
-                    ],
-                    'id = %i',
-                    $data['id']
-                );
-            }
-
-            $html .= "</div></div>";
+    <meta name="referrer" content="no-referrer">
+    <title><?php echo $escape($brandName . ' - ' . $lang->get('secure_send')); ?></title>
+    <link rel="stylesheet" href="./plugins/adminlte/css/adminlte.min.css?v=<?php echo $escape(TP_VERSION . '.' . TP_VERSION_MINOR); ?>">
+    <link rel="stylesheet" href="./plugins/fontawesome-free/css/all.min.css?v=<?php echo $escape(TP_VERSION . '.' . TP_VERSION_MINOR); ?>">
+    <style>
+        :root {
+            color-scheme: light dark;
+            --secure-send-bg: #eef2f7;
+            --secure-send-card: #fff;
+            --secure-send-border: #dfe5ec;
+            --secure-send-heading: #182433;
+            --secure-send-text: #344054;
+            --secure-send-muted: #667085;
+            --secure-send-panel: #f7f9fc;
+            --secure-send-accent: #1578ad;
+            --secure-send-accent-soft: #e9f5fb;
         }
-
-        // display
-        // deepcode ignore ServerLeak: $html is generated by the script
-        echo ($html);
-    } else {
-        echo '<div class="text-center text-danger">
-        <h3><i class="fas fa-exclamation-triangle mr-2"></i>Not a valid page!</h3>
-        </div>';
-    }
-} else {
-    echo '
-    <div class="text-center text-danger">
-    <h3><i class="fas fa-exclamation-triangle mr-2"></i>No valid OTV parameters!</h3>
-    </div>';
-}
-?>
+        body.secure-send-page {
+            min-height: 100vh;
+            margin: 0;
+            background: var(--secure-send-bg);
+            color: var(--secure-send-text);
+        }
+        .secure-send-shell {
+            width: min(760px, calc(100% - 2rem));
+            min-height: 100vh;
+            margin: 0 auto;
+            padding: clamp(1.25rem, 5vh, 3.5rem) 0 1.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .secure-send-card {
+            overflow: hidden;
+            border: 1px solid var(--secure-send-border);
+            border-radius: 14px;
+            background: var(--secure-send-card);
+            box-shadow: 0 18px 45px rgba(24, 36, 51, .11);
+        }
+        .secure-send-brand {
+            padding: 1.6rem 1.75rem 1.35rem;
+            border-bottom: 1px solid var(--secure-send-border);
+            text-align: center;
+        }
+        .secure-send-logo {
+            display: block;
+            width: auto;
+            max-width: min(230px, 70%);
+            height: auto;
+            max-height: 72px;
+            margin: 0 auto .85rem;
+            object-fit: contain;
+        }
+        .secure-send-brand-name {
+            margin: 0;
+            color: var(--secure-send-heading);
+            font-size: 1.25rem;
+            font-weight: 600;
+            overflow-wrap: anywhere;
+        }
+        .secure-send-product {
+            display: inline-flex;
+            align-items: center;
+            margin-top: .55rem;
+            padding: .28rem .65rem;
+            border-radius: 999px;
+            background: var(--secure-send-accent-soft);
+            color: var(--secure-send-accent);
+            font-size: .78rem;
+            font-weight: 700;
+            letter-spacing: .045em;
+            text-transform: uppercase;
+        }
+        .secure-send-content {
+            padding: 1.75rem;
+        }
+        .secure-send-title {
+            margin: 0 0 1.35rem;
+            color: var(--secure-send-heading);
+            font-size: 1.45rem;
+            font-weight: 600;
+            text-align: center;
+        }
+        .secure-send-identity {
+            display: flex;
+            align-items: center;
+            gap: .9rem;
+            margin-bottom: 1.35rem;
+            padding: 1rem;
+            border: 1px solid #cfe4ef;
+            border-radius: 10px;
+            background: var(--secure-send-accent-soft);
+        }
+        .secure-send-identity-icon {
+            width: 2.65rem;
+            height: 2.65rem;
+            flex: 0 0 2.65rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: var(--secure-send-accent);
+            color: #fff;
+            font-size: 1.05rem;
+        }
+        .secure-send-identity-label,
+        .secure-send-identity-meta {
+            display: block;
+        }
+        .secure-send-identity-label {
+            color: var(--secure-send-muted);
+            font-size: .82rem;
+        }
+        .secure-send-identity-name {
+            display: block;
+            color: var(--secure-send-heading);
+            font-size: 1.05rem;
+            overflow-wrap: anywhere;
+        }
+        .secure-send-identity-meta {
+            margin-top: .15rem;
+            color: var(--secure-send-muted);
+            font-size: .82rem;
+        }
+        .secure-send-metadata {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .5rem;
+            margin: 0 0 1.35rem;
+        }
+        .secure-send-meta-item {
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+            padding: .42rem .65rem;
+            border: 1px solid var(--secure-send-border);
+            border-radius: 8px;
+            background: var(--secure-send-panel);
+            color: var(--secure-send-muted);
+            font-size: .82rem;
+        }
+        .secure-send-card .form-control {
+            border-color: #cbd5e1;
+        }
+        .secure-send-card .btn-primary {
+            padding-top: .65rem;
+            padding-bottom: .65rem;
+            border-color: var(--secure-send-accent);
+            background: var(--secure-send-accent);
+            font-weight: 600;
+        }
+        .secure-send-help {
+            color: var(--secure-send-muted);
+            line-height: 1.55;
+        }
+        .secure-send-domain-hint {
+            margin: 1rem 0 0;
+            color: var(--secure-send-muted);
+            font-size: .78rem;
+            text-align: center;
+        }
+        .secure-send-powered {
+            margin: 1rem 0 0;
+            text-align: center;
+            font-size: .78rem;
+        }
+        .secure-send-powered a {
+            color: var(--secure-send-muted);
+            text-decoration: none;
+        }
+        .secure-send-powered a:hover,
+        .secure-send-powered a:focus {
+            color: var(--secure-send-accent);
+            text-decoration: underline;
+        }
+        .secure-send-fields {
+            width: 100%;
+            table-layout: fixed;
+        }
+        .secure-send-fields th {
+            width: 28%;
+            color: var(--secure-send-heading);
+            overflow-wrap: normal;
+            word-break: normal;
+        }
+        .secure-send-fields td {
+            overflow-wrap: anywhere;
+        }
+        .secure-send-fields th,
+        .secure-send-fields td {
+            border-top-color: var(--secure-send-border);
+        }
+        @media (max-width: 575.98px) {
+            .secure-send-shell {
+                width: min(760px, calc(100% - 1rem));
+                padding: .5rem 0 1rem;
+                justify-content: flex-start;
+            }
+            .secure-send-card {
+                border-radius: 10px;
+            }
+            .secure-send-brand,
+            .secure-send-content {
+                padding: 1.25rem;
+            }
+            .secure-send-identity {
+                align-items: flex-start;
+            }
+            .secure-send-fields th {
+                width: 36%;
+            }
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --secure-send-bg: #101820;
+                --secure-send-card: #18222d;
+                --secure-send-border: #344252;
+                --secure-send-heading: #f1f5f9;
+                --secure-send-text: #d5dce5;
+                --secure-send-muted: #aab5c2;
+                --secure-send-panel: #202c38;
+                --secure-send-accent: #39a7d8;
+                --secure-send-accent-soft: #173447;
+            }
+            .secure-send-card {
+                box-shadow: 0 18px 45px rgba(0, 0, 0, .28);
+            }
+            .secure-send-identity {
+                border-color: #28536a;
+            }
+            .secure-send-card .form-control {
+                border-color: #465567;
+                background: #111a23;
+                color: #f1f5f9;
+            }
+            .secure-send-card .table {
+                color: var(--secure-send-text);
+            }
+        }
+    </style>
+</head>
+<body class="hold-transition secure-send-page">
+    <div class="secure-send-shell">
+        <main class="secure-send-card">
+            <header class="secure-send-brand">
+                <img class="secure-send-logo" src="<?php echo $escape($logoUrl); ?>" alt="">
+                <p class="secure-send-brand-name"><?php echo $escape($brandName); ?></p>
+                <span class="secure-send-product"><i class="fa-solid fa-shield-halved mr-2" aria-hidden="true"></i><?php echo $escape($lang->get('secure_send')); ?></span>
+            </header>
+            <div class="secure-send-content">
+                <h1 class="secure-send-title"><?php echo $escape($lang->get('secure_send_recipient_title')); ?></h1>
+            <?php if ($error !== '') { ?>
+                <div class="alert alert-danger" role="alert"><?php echo $escape($lang->get($error)); ?></div>
+            <?php } ?>
+            <?php if ($sender !== null) { ?>
+                <section class="secure-send-identity" aria-label="<?php echo $escape($lang->get('secure_send_sender_identity')); ?>">
+                    <span class="secure-send-identity-icon" aria-hidden="true"><i class="fa-solid fa-user"></i></span>
+                    <span>
+                        <?php if ($senderDisplayName !== '') { ?>
+                            <span class="secure-send-identity-label"><?php echo $escape($lang->get('secure_send_shared_by')); ?></span>
+                            <strong class="secure-send-identity-name"><?php echo $escape($senderDisplayName); ?></strong>
+                            <span class="secure-send-identity-meta"><?php echo $escape($entityName === ''
+                                ? $lang->get('secure_send_account_origin')
+                                : str_replace('#ENTITY#', $entityName, $lang->get('secure_send_account_origin_entity'))); ?></span>
+                        <?php } elseif ($entityName !== '') { ?>
+                            <span class="secure-send-identity-label"><?php echo $escape($lang->get('secure_send_shared_securely_by')); ?></span>
+                            <strong class="secure-send-identity-name"><?php echo $escape($entityName); ?></strong>
+                            <span class="secure-send-identity-meta"><?php echo $escape($lang->get('secure_send_account_origin')); ?></span>
+                        <?php } else { ?>
+                            <strong class="secure-send-identity-name"><?php echo $escape($lang->get('secure_send_shared_via_teampass')); ?></strong>
+                            <span class="secure-send-identity-meta"><?php echo $escape($lang->get('secure_send_account_origin')); ?></span>
+                        <?php } ?>
+                    </span>
+                </section>
+            <?php } ?>
+            <?php if ($link !== []) { ?>
+                <div class="secure-send-metadata" aria-label="<?php echo $escape($lang->get('secure_send_access_settings')); ?>">
+                    <?php if ((int) ($link['has_passphrase'] ?? 0) === 1) { ?>
+                        <span class="secure-send-meta-item"><i class="fa-solid fa-lock" aria-hidden="true"></i><?php echo $escape($lang->get('secure_send_protected')); ?></span>
+                    <?php } ?>
+                    <?php if ($expiresLabel !== '') { ?>
+                        <span class="secure-send-meta-item"><i class="fa-regular fa-calendar" aria-hidden="true"></i><?php echo $escape(str_replace('#DATE#', $expiresLabel, $lang->get('secure_send_expires_on'))); ?></span>
+                    <?php } ?>
+                    <?php if ($token !== '' && $parameters !== null) { ?>
+                        <span class="secure-send-meta-item"><i class="fa-regular fa-eye" aria-hidden="true"></i><?php echo $escape($remainingViewsLabel); ?></span>
+                    <?php } ?>
+                </div>
+            <?php } ?>
+            <?php if ($token !== '' && $parameters !== null) { ?>
+                <p class="secure-send-help"><?php echo $escape($lang->get('secure_send_reveal_hint')); ?></p>
+                <form method="post" action="index.php?otv=1" autocomplete="off">
+                    <?php foreach ($parameters + ['confirmation' => $token] as $name => $value) { ?>
+                        <input type="hidden" name="<?php echo $escape($name); ?>" value="<?php echo $escape($value); ?>">
+                    <?php } ?>
+                    <?php if ((int) ($link['has_passphrase'] ?? 0) === 1) { ?>
+                        <div class="form-group">
+                            <label for="passphrase"><?php echo $escape($lang->get('secure_send_enter_passphrase')); ?></label>
+                            <input type="password" name="passphrase" id="passphrase" class="form-control" maxlength="1024" autocomplete="off" required>
+                        </div>
+                    <?php } ?>
+                    <button type="submit" class="btn btn-primary btn-block"><i class="fa-solid fa-eye mr-2" aria-hidden="true"></i><?php echo $escape($lang->get('secure_send_reveal')); ?></button>
+                </form>
+                <p class="secure-send-domain-hint"><i class="fa-solid fa-circle-info mr-1" aria-hidden="true"></i><?php echo $escape($lang->get('secure_send_verify_address')); ?></p>
+            <?php } elseif ($result !== null && $result['error'] === '') {
+                $fields = $result['fields'];
+                $isNote = $result['send_type'] === 'note';
+                if ($isNote) {
+                    $rows = ['label' => $escape($fields['title']), 'password' => $escape($fields['secret']), 'login' => $escape($fields['login']), 'url' => $escape($fields['url']), 'description' => nl2br($escape($fields['note']))];
+                } else {
+                    $rows = ['label' => otvRenderPlainField($fields['label']), 'password' => $escape($fields['password'])];
+                    if (($fields['otp_code'] ?? '') !== '') {
+                        $rows['otp_code'] = '<code>' . $escape($fields['otp_code']) . '</code> '
+                            . '<small class="text-muted">(' . (int) $fields['otp_expires_in'] . ' '
+                            . $escape($lang->get('seconds')) . ')</small>';
+                    }
+                    if (($fields['otp_next_code'] ?? '') !== '') {
+                        $nextValidity = str_replace(
+                            ['#START#', '#DURATION#'],
+                            [(string) (int) $fields['otp_next_valid_in'], (string) (int) $fields['otp_next_valid_for']],
+                            $lang->get('secure_send_next_otp_validity')
+                        );
+                        $rows['secure_send_next_otp_code'] = '<code>' . $escape($fields['otp_next_code']) . '</code> '
+                            . '<small class="text-muted">(' . $escape($nextValidity) . ')</small>';
+                    }
+                    $rows += ['login' => otvRenderPlainField($fields['login']), 'url' => otvRenderPlainField($fields['url']), 'description' => otvSanitizeDescription($fields['description'])];
+                }
+                ?>
+                <p class="secure-send-help"><?php echo $escape($lang->get('secure_send_recipient_intro')); ?></p>
+                <?php if (($fields['description_truncated'] ?? false) === true) { ?>
+                    <p class="alert alert-warning"><?php echo $escape($lang->get('secure_send_description_truncated')); ?></p>
+                <?php } ?>
+                <div class="table-responsive">
+                    <table class="table secure-send-fields">
+                        <tbody>
+                        <?php foreach ($rows as $label => $value) { ?>
+                            <tr><th scope="row"><?php echo $escape($lang->get($label)); ?></th><td><?php echo $value; ?></td></tr>
+                        <?php } ?>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="secure-send-help"><?php echo $escape($lang->get('secure_send_copy_carefully')); ?></p>
+                <p class="text-info mb-0"><?php echo $escape(str_replace(
+                    ['#DATE#', '#VIEWS#'],
+                    [date(($SETTINGS['date_format'] ?? 'Y-m-d') . ' ' . ($SETTINGS['time_format'] ?? 'H:i'), $result['time_limit']), (string) $result['remaining_views']],
+                    $lang->get('secure_send_visibility')
+                )); ?></p>
+            <?php } ?>
             </div>
-        </div>
+        </main>
+        <footer class="secure-send-powered">
+            <a href="https://teampass.net" target="_blank" rel="noopener noreferrer"><?php echo $poweredBy; ?></a>
+        </footer>
     </div>
 </body>
 </html>

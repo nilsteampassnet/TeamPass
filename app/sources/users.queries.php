@@ -1762,17 +1762,12 @@ if (null !== $post_type) {
                 $post_id,
                 'ad'
             );
-            $adRoles = array_column($adRolesResult, 'role_id');
-
-            $fonctions = [];
-            if (!empty($adRoles)) {
-                foreach ($post_groups as $post_group) {
-                    if (!in_array($post_group, $adRoles)) {
-                        $fonctions[] = $post_group;
-                    }
-                }
-            }
-            $post_groups = empty($fonctions) === true ? $post_groups : $fonctions;
+            // Applied even when every submitted role comes from AD: falling back to the
+            // submission then turned the AD roles into permanent manual roles.
+            $post_groups = excludeAdRolesFromSubmittedRoles(
+                (array) $post_groups,
+                array_column($adRolesResult, 'role_id')
+            );
 
             // The submitted role set is not authoritative: the form only shows the roles the
             // caller may grant, so it is merged with the ones stored outside that scope.
@@ -3083,7 +3078,7 @@ if (null !== $post_type) {
                 'hosts'            => explode(',', (string) $SETTINGS['ldap_hosts']),
                 'base_dn'          => $SETTINGS['ldap_bdn'],
                 'username'         => $SETTINGS['ldap_username'],
-                'password'         => $SETTINGS['ldap_password'],
+                'password'         => tpGetSecretSetting($SETTINGS, 'ldap_password'),
             
                 // Optional Configuration Options
                 'port'             => $SETTINGS['ldap_port'],
@@ -3175,9 +3170,12 @@ if (null !== $post_type) {
                 }
             } 
             
-            // Retrieve LDAP users
+            // Retrieve LDAP users.
+            // The attribute is resolved like the login does: the installer seeds the setting with
+            // the string '0', which searches an attribute nobody has.
+            $ldapUserAttribute = ldapResolveUserAttribute($SETTINGS);
             $adUsedAttributes = array(
-                'dn', 'mail', 'givenname', 'samaccountname', 'sn', $SETTINGS['ldap_user_attribute'],
+                'dn', 'mail', 'givenname', 'samaccountname', 'sn', $ldapUserAttribute,
                 'memberof', 'name', 'displayname', 'cn', 'shadowexpire', 'distinguishedname', 'uid'
             );
 
@@ -3189,7 +3187,7 @@ if (null !== $post_type) {
                     ->select($adQueryAttributes)
                     ->rawfilter(tpLdapBuildObjectFilter((string) $SETTINGS['ldap_user_object_filter']))
                     ->in((empty($SETTINGS['ldap_dn_additional_user_dn']) === false ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'])
-                    ->whereHas($SETTINGS['ldap_user_attribute'])
+                    ->whereHas($ldapUserAttribute)
                     ->paginate(100);
             } catch (\LdapRecord\LdapRecordException $e) {
                 // Any search error, e.g. a wrong additional user DN or object filter: settings
@@ -3210,7 +3208,7 @@ if (null !== $post_type) {
             }
             
             foreach ($results as $adUser) {
-                if (isset($adUser[$SETTINGS['ldap_user_attribute']][0]) === false) continue;
+                if (isset($adUser[$ldapUserAttribute][0]) === false) continue;
                 // Build the list of all groups in AD
                 if (isset($adUser['memberof']) === true) {
                     foreach($adUser['memberof'] as $j => $adUserGroup) {
@@ -3224,7 +3222,7 @@ if (null !== $post_type) {
                 }
 
                 // Is user in Teampass ?
-                $userLogin = $adUser[$SETTINGS['ldap_user_attribute']][0];
+                $userLogin = $adUser[$ldapUserAttribute][0];
                 // Get his ID
                 $userInfo = getUserCompleteData($userLogin);
                     
@@ -3342,7 +3340,7 @@ if (null !== $post_type) {
                     // For posixGroup, memberUid typically references the 'uid' attribute of users
                     $userGroups = [];
                     $userDN = strtolower($adUser['dn'] ?? '');
-                    $userLoginAttr = strtolower($adUser[$SETTINGS['ldap_user_attribute']][0] ?? '');
+                    $userLoginAttr = strtolower($adUser[$ldapUserAttribute][0] ?? '');
                     $userCN = strtolower($adUser['cn'][0] ?? '');
                     $userUID = strtolower($adUser['uid'][0] ?? '');
 
@@ -5387,61 +5385,8 @@ function tpLdapEscapeFilterValue(string $value): string
     return strtr($value, $map);
 }
 
-/**
- * Build a valid LDAP filter from the user-object-filter setting.
- *
- * The setting accepts either a single filter, e.g. "(objectClass=user)", or
- * several filters separated by a top-level comma, e.g.
- * "(objectCategory=Person),(sAMAccountName=*)". Multiple filters are combined
- * with a logical AND. Commas located inside a value (e.g. a DN like
- * "memberOf=CN=x,OU=y") are preserved.
- *
- * @param string $rawFilter Raw value stored in settings.
- * @return string A single valid LDAP filter, or '' when none provided.
- */
-function tpLdapBuildObjectFilter(string $rawFilter): string
-{
-    $rawFilter = trim($rawFilter);
-    if ($rawFilter === '') {
-        return '';
-    }
-
-    // Split on commas located at the top level (parenthesis depth 0) only.
-    $parts = [];
-    $current = '';
-    $depth = 0;
-    $length = strlen($rawFilter);
-    for ($i = 0; $i < $length; $i++) {
-        $char = $rawFilter[$i];
-        if ($char === '(') {
-            $depth++;
-        } elseif ($char === ')') {
-            $depth--;
-        }
-        if ($char === ',' && $depth === 0) {
-            $parts[] = $current;
-            $current = '';
-            continue;
-        }
-        $current .= $char;
-    }
-    $parts[] = $current;
-
-    // Drop empty segments (e.g. trailing comma).
-    $parts = array_values(array_filter(
-        array_map('trim', $parts),
-        static fn($p) => $p !== ''
-    ));
-
-    if (count($parts) === 0) {
-        return '';
-    }
-    if (count($parts) === 1) {
-        return $parts[0];
-    }
-
-    return '(&' . implode('', $parts) . ')';
-}
+// tpLdapBuildObjectFilter() lives in sources/ldap_config_logic.php: the setup-page
+// validator and this consumer must split the setting with the very same rule.
 
 /**
  * Retrieve LDAP/AD status (disabled/expired) for a list of TeamPass user IDs.
@@ -5497,7 +5442,7 @@ function getLdapStatusForUserIds(array $userIds, array $SETTINGS): array
         'hosts'            => explode(',', (string) $SETTINGS['ldap_hosts']),
         'base_dn'          => $SETTINGS['ldap_bdn'],
         'username'         => $SETTINGS['ldap_username'],
-        'password'         => $SETTINGS['ldap_password'],
+        'password'         => tpGetSecretSetting($SETTINGS, 'ldap_password'),
         'port'             => $SETTINGS['ldap_port'],
         'use_ssl'          => (int) $SETTINGS['ldap_ssl'] === 1,
         'use_tls'          => (int) $SETTINGS['ldap_tls'] === 1,
@@ -5521,7 +5466,7 @@ function getLdapStatusForUserIds(array $userIds, array $SETTINGS): array
         );
     }
 
-    $attr = (string) $SETTINGS['ldap_user_attribute'];
+    $attr = ldapResolveUserAttribute($SETTINGS);
 
     // Build OR filter for requested logins
     $orParts = '';

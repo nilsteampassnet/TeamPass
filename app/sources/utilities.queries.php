@@ -441,6 +441,7 @@ if (null !== $post_type) {
             'nlevel' => 0,
             'bloquer_creation' => (int) ($fd['bloquer_creation'] ?? 0),
             'bloquer_modification' => (int) ($fd['bloquer_modification'] ?? 0),
+            'deletion_protected' => (int) ($fd['deletion_protected'] ?? 0),
             'personal_folder' => (int) ($fd['personal_folder'] ?? 0),
             'renewal_period' => (int) ($fd['renewal_period'] ?? 0),
             'categories' => (string) ($fd['categories'] ?? ''),
@@ -4481,6 +4482,16 @@ function tpGetSystemChecks(array $phpIni, array $tpSettings, Language $lang): ar
                 );
             }
         }
+    }
+
+    // Per-account lockout. 0 disables it, and new installations seeded 0 until the default
+    // became 10: an instance installed with an older version may never have been protected.
+    if (getBruteforceIntegerSetting($tpSettings, 'nb_bad_authentication', 10, 0) === 0) {
+        $checks[] = array(
+            'status' => 'warning',
+            'title' => $lang->get('health_check_account_lockout_off'),
+            'text' => $lang->get('health_check_account_lockout_off_message'),
+        );
     }
 
     // Stalled background queue. A task that stays pending well beyond the drain window

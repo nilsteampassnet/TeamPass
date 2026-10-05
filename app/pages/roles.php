@@ -140,7 +140,8 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                         data-complexity-text="' . addslashes(TP_PW_COMPLEXITY[$reccord['complexity']][1]) . '"
                                         data-complexity-icon="' . TP_PW_COMPLEXITY[$reccord['complexity']][2] . '"
                                         data-complexity="' . TP_PW_COMPLEXITY[$reccord['complexity']][0] . '"
-                                        data-allow-edit-all="' . strval($reccord['allow_pw_change']) . '">'.
+                                        data-allow-edit-all="' . strval($reccord['allow_pw_change']) . '"
+                                        data-allow-security-posture-fix="' . (int) ($reccord['allow_security_posture_fix'] ?? 1) . '">'.
                                         strval($reccord['title']) . '</option>';
                                 }
                                 ?>
@@ -252,6 +253,17 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                         <?php echo $lang->get('role_can_edit_any_visible_item_tip'); ?>
                     </small>
                 </div>
+                <?php if ((int) $session->get('user-admin') === 1) : ?>
+                <div class="form-group mt-2">
+                    <input type="checkbox" class="form-check-input form-item-control" id="form-role-security-posture-fix">
+                    <label class="form-check-label ml-2" for="form-role-security-posture-fix">
+                        <?php echo $lang->get('role_allow_security_posture_fix'); ?>
+                    </label>
+                    <small class="form-text text-muted">
+                        <?php echo $lang->get('role_allow_security_posture_fix_tip'); ?>
+                    </small>
+                </div>
+                <?php endif; ?>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-info tp-action" data-action="submit-edition">

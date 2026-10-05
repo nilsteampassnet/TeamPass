@@ -116,6 +116,19 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                 <?php
                 } else {
                     ?>
+                    <div class='card card-primary' id='ldap-config-check-card'>
+                        <div class='card-header'>
+                            <h3 class='card-title'><i class='fas fa-clipboard-check mr-2'></i><?php echo $lang->get('ldap_config_check'); ?></h3>
+                        </div>
+                        <!-- /.card-header -->
+                        <div class='card-body'>
+                            <div id='ldap-config-check-findings' aria-live='polite'></div>
+                            <button type='button' class='btn btn-default btn-sm tp-action mt-2' data-action='ldap-check-settings'>
+                                <i class='fas fa-sync-alt mr-2'></i><?php echo $lang->get('ldap_config_check_refresh'); ?>
+                            </button>
+                        </div>
+                    </div>
+
                     <div class='card card-primary'>
                         <div class='card-header'>
                             <h3 class='card-title'><?php echo $lang->get('admin_ldap_configuration'); ?></h3>
@@ -193,7 +206,7 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                         </small>
                                     </div>
                                     <div class='col-7'>
-                                        <input type='password' class='form-control form-control-sm setting-ldap' id='ldap_password' value='<?php echo $SETTINGS['ldap_password'] ?? ''; ?>'>
+                                        <input type='password' class='form-control form-control-sm setting-ldap setting-secret' id='ldap_password' value='' autocomplete='new-password' placeholder='<?php echo empty($SETTINGS['ldap_password']) === true ? '' : $lang->get('bck_externalized_secret_keep_existing'); ?>'>
                                     </div>
                                 </div>
 
@@ -442,6 +455,7 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                             </div>
                                             <div class='card-body'>
                                                 <p class='card-text' id='ldap-test-config-results-text'></p>
+                                                <ul class='list-unstyled mb-0' id='ldap-test-config-results-steps'></ul>
                                             </div>
                                         </div>
                                         <div class='row mb-2'>

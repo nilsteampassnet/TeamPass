@@ -361,6 +361,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         'confirm_warning' => $lang->get('licence_trial_confirm_warning'),
         'identity_unusable' => $lang->get('licence_trial_identity_unusable'),
         'error_fqdn' => $lang->get('licence_trial_error_fqdn'),
+        'error_fqdn_missing' => $lang->get('licence_trial_error_fqdn_missing'),
         'error_token' => $lang->get('licence_trial_error_token'),
         'error_email' => $lang->get('licence_trial_error_email'),
         'pending_title' => $lang->get('licence_trial_pending_title'),
@@ -656,7 +657,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         return '<div class="callout callout-danger">'
             + '<h5><i class="fas fa-triangle-exclamation mr-2"></i>' + licenceLang.identity_unusable + '</h5>'
             + '<p class="mb-0">'
-            + (vm.token_valid === false ? licenceLang.error_token : licenceLang.error_fqdn)
+            + (vm.token_valid === false
+                ? licenceLang.error_token
+                : (vm.fqdn === '' ? licenceLang.error_fqdn_missing : licenceLang.error_fqdn))
             + '</p></div>'
     }
 

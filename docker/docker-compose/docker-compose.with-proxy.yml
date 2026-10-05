@@ -84,10 +84,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:?Error: DB_PASSWORD is required}
       DB_PREFIX: ${DB_PREFIX:-teampass_}
 
-      # Installation mode
-      INSTALL_MODE: ${INSTALL_MODE:-manual}
-      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@teampass.local}
-      ADMIN_PWD: ${ADMIN_PWD:-}
+      # Public URL (shown in the installation instructions)
       TEAMPASS_URL: https://${VIRTUAL_HOST:-teampass.example.com}
 
       # PHP configuration

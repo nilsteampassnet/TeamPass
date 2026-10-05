@@ -70,6 +70,25 @@ function mergeGrantableRoleSets(
 }
 
 /**
+ * Remove the roles inherited from AD groups from a role set submitted by the user form.
+ *
+ * The edit form displays the AD roles alongside the manual ones, so they come back in
+ * the submission. Stored as manual roles they would survive the user's removal from the
+ * AD group, the AD synchronization only ever touching its own source (PR #3635).
+ *
+ * @param array $submittedRoleIds Role ids coming from the form.
+ * @param array $adRoleIds        Role ids the user holds through AD groups.
+ *
+ * @return array<int> Submitted role ids that are not AD roles, re-indexed.
+ */
+function excludeAdRolesFromSubmittedRoles(array $submittedRoleIds, array $adRoleIds): array
+{
+    return array_values(
+        array_diff(rolesScopeNormalizeIds($submittedRoleIds), rolesScopeNormalizeIds($adRoleIds))
+    );
+}
+
+/**
  * Normalize a role id list coming from a form, a session or a GROUP_CONCAT.
  *
  * Non numeric entries (empty strings mostly, produced by exploding an empty

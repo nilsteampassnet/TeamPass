@@ -86,6 +86,9 @@ if (
         kb_deleted: <?php echo json_encode($lang->get('kb_deleted')); ?>,
         kb_delete_confirm: <?php echo json_encode($lang->get('kb_delete_confirm')); ?>,
         kb_no_entries: <?php echo json_encode($lang->get('kb_no_entries')); ?>,
+        kb_uncategorized: <?php echo json_encode($lang->get('kb_uncategorized'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+        kb_category_article_count: <?php echo json_encode($lang->get('kb_category_article_count'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+        kb_category_article_count_one: <?php echo json_encode($lang->get('kb_category_article_count_one'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
         kb_direct_link_not_found: <?php echo json_encode($lang->get('kb_direct_link_not_found')); ?>,
         kb_add_entry: <?php echo json_encode($lang->get('kb_add_entry')); ?>,
         kb_edit_entry: <?php echo json_encode($lang->get('kb_edit_entry')); ?>,
@@ -125,7 +128,15 @@ if (
         select_files: <?php echo json_encode($lang->get('select_files')); ?>,
         start_upload: <?php echo json_encode($lang->get('start_upload')); ?>,
         attached_files: <?php echo json_encode($lang->get('attached_files')); ?>,
-        exceeds_maximum_length_of: <?php echo json_encode($lang->get('exceeds_maximum_length_of')); ?>
+        exceeds_maximum_length_of: <?php echo json_encode($lang->get('exceeds_maximum_length_of')); ?>,
+        kb_markdown_paste_applied: <?php echo json_encode($lang->get('kb_markdown_paste_applied')); ?>,
+        kb_markdown_paste_keep_raw: <?php echo json_encode($lang->get('kb_markdown_paste_keep_raw')); ?>,
+        kb_markdown_view_tooltip: <?php echo json_encode($lang->get('kb_markdown_view_tooltip')); ?>,
+        kb_markdown_view_lossy: <?php echo json_encode($lang->get('kb_markdown_view_lossy')); ?>,
+        kb_markdown_lossy_underline: <?php echo json_encode($lang->get('kb_markdown_lossy_underline')); ?>,
+        kb_markdown_lossy_merged_cells: <?php echo json_encode($lang->get('kb_markdown_lossy_merged_cells')); ?>,
+        kb_markdown_lossy_image_size: <?php echo json_encode($lang->get('kb_markdown_lossy_image_size')); ?>,
+        kb_markdown_lossy_table_header: <?php echo json_encode($lang->get('kb_markdown_lossy_table_header')); ?>
     };
 
     const kbEditorOptions = {
@@ -135,8 +146,28 @@ if (
         imageQuality: <?php echo isset($SETTINGS['upload_imageresize_options']) === true && (int) $SETTINGS['upload_imageresize_options'] === 1 ? max(1, min(100, (int) ($SETTINGS['upload_imageresize_quality'] ?? 82))) / 100 : 0.82; ?>
     };
 
+    const kbMarkdown = createKbMarkdown({
+        markdownit: window.markdownit,
+        TurndownService: window.TurndownService,
+        turndownPluginGfm: window.turndownPluginGfm,
+        parseHtml: function(html) {
+            // DOMParser documents are inert: no script runs and no image loads.
+            return new DOMParser().parseFromString(html, 'text/html');
+        }
+    });
+    // Open Markdown view: {context, originalHtml, initialMarkdown, images, $notice, $source}.
+    let kbMarkdownView = null;
+    // Ctrl/Cmd+Shift+V on the last keydown: the user asked for a plain paste.
+    let kbPlainPasteRequested = false;
+    let kbPasteCounter = 0;
+    // Paste that "Keep plain text" can still revert, and its toast.
+    let kbArmedPasteId = '';
+    let kbPasteToast = null;
+
     const kbDirectId = parseInt($('#kb-direct-id').val(), 10) || 0;
     let kbTable = null;
+    const kbCategoryBrowser = createKbCategoryBrowser();
+    let kbListRequestId = 0;
     let kbLoadedDirectId = false;
     let kbEditionLockInterval = null;
     let kbActiveEditionLockId = 0;
@@ -180,6 +211,8 @@ if (
                 'img'
             ],
             ALLOWED_ATTR: ['href', 'target', 'rel', 'src', 'alt', 'width', 'height', 'colspan', 'rowspan'],
+            // Not URLs: without this, ALLOWED_URI_REGEXP is also applied to their values and drops them.
+            ADD_URI_SAFE_ATTR: ['width', 'height', 'colspan', 'rowspan'],
             ADD_DATA_URI_TAGS: ['img'],
             ALLOW_DATA_ATTR: false,
             ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto):|\/|\.\/|\.\.\/|#|\?|data:image\/(?:png|jpe?g|gif|webp);base64,)/i
@@ -283,14 +316,20 @@ if (
             return value;
         }
 
+        // Legacy rows were escaped wholesale: at most <p>/<br> wrappers are real. Any other real
+        // element means genuine rich HTML whose escaped text is literal (a code sample, a typed tag).
+        if (kbRichContentLooksLikeHtml(value.replace(/<\/?(?:p|br)\b[^>]*>/ig, '')) === true) {
+            return value;
+        }
+
         const hasEscapedBlock = /&lt;\/?(?:br|p|div|ul|ol|li|blockquote|h[1-6]|pre|hr|table|thead|tbody|tr|th|td|img)\b/i.test(value);
         let candidate = value;
 
         if (hasEscapedBlock === true) {
             candidate = candidate
-                .replace(/<\/p>\s*<p[^>]*>/ig, '\n')
+                .replace(/<\/p>\s*<p\b[^>]*>/ig, '\n')
                 .replace(/<br\s*\/?>/ig, '\n')
-                .replace(/<\/?p[^>]*>/ig, '');
+                .replace(/<\/?p\b[^>]*>/ig, '');
         }
 
         const decoded = kbDecodeHtmlEntities(candidate);
@@ -350,7 +389,7 @@ if (
     }
 
     function kbNormalizeEditorContent(html) {
-        const sanitized = kbSanitizeHtml(kbDecodeEscapedRichContent((html || '').toString().trim()));
+        const sanitized = kbSanitizeHtml(kbMarkdown.clampHtmlHeadings(kbDecodeEscapedRichContent((html || '').toString().trim())));
         const $container = $('<div>').html(sanitized);
         const hasText = $.trim($container.text()) !== '';
         const hasImage = $container.find('img[src]').length > 0;
@@ -365,6 +404,9 @@ if (
     }
 
     function kbGetEditorContent() {
+        if (kbMarkdownView !== null) {
+            return kbMarkdownViewHtml();
+        }
         if (kbDescriptionEditorInitialized() === true) {
             return kbNormalizeEditorContent($('#kb-description').summernote('code'));
         }
@@ -373,6 +415,8 @@ if (
     }
 
     function kbSetEditorContent(html) {
+        kbCloseMarkdownView(false);
+        kbClosePasteOffer();
         if (kbDescriptionEditorInitialized() === true) {
             $('#kb-description').summernote('code', html || '');
             return;
@@ -382,6 +426,8 @@ if (
     }
 
     function kbDestroyDescriptionEditor() {
+        kbCloseMarkdownView(false);
+        kbClosePasteOffer();
         if (kbDescriptionEditorInitialized() === true) {
             $('#kb-description').summernote('destroy');
         }
@@ -438,6 +484,241 @@ if (
         });
     }
 
+    function kbEditable() {
+        return $('#kb-description').next('.note-editor').find('.note-editable');
+    }
+
+    function kbClipboardHtmlIsFormatted(html) {
+        const doc = new DOMParser().parseFromString(html || '', 'text/html');
+        return doc.body.querySelector('strong, b, em, i, u, s, h1, h2, h3, h4, h5, h6, ul, ol, table, a[href], blockquote, img, pre') !== null;
+    }
+
+    function kbMarkPastedBlocks(html, pasteId) {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        Array.from(doc.body.childNodes).forEach(function(node) {
+            let block = node;
+            if (node.nodeType === Node.TEXT_NODE) {
+                if (node.textContent.trim() === '') {
+                    node.remove();
+                    return;
+                }
+                block = doc.createElement('p');
+                node.replaceWith(block);
+                block.appendChild(node);
+            }
+            if (block.nodeType === Node.ELEMENT_NODE) {
+                block.setAttribute('data-tp-kb-paste', pasteId);
+            }
+        });
+        return doc.body.innerHTML;
+    }
+
+    function kbHandleEditorPaste(event) {
+        const plainRequested = kbPlainPasteRequested;
+        kbPlainPasteRequested = false;
+        const clipboard = event.originalEvent ? event.originalEvent.clipboardData : null;
+        if (!clipboard || plainRequested === true) {
+            return;
+        }
+
+        const types = Array.from(clipboard.types || []);
+        // Images go through Summernote's clipboard module, formatted content through the native paste.
+        if (types.indexOf('Files') !== -1
+            || (types.indexOf('text/html') !== -1 && kbClipboardHtmlIsFormatted(clipboard.getData('text/html')) === true)) {
+            return;
+        }
+
+        const text = clipboard.getData('text/plain');
+        if (kbMarkdown.looksLikeMarkdown(text) !== true) {
+            return;
+        }
+        const html = kbSanitizeHtml(kbMarkdown.renderMarkdown(text));
+        if (html.trim() === '') {
+            return;
+        }
+
+        event.preventDefault();
+        kbPasteCounter += 1;
+        const pasteId = String(kbPasteCounter);
+        const $description = $('#kb-description');
+        // Record the pre-paste state so Ctrl+Z can return to it: typing is not recorded.
+        $description.summernote('editor.afterCommand', true);
+        const selection = window.getSelection();
+        if (selection !== null && selection.isCollapsed === false) {
+            // Summernote's pasteHTML inserts at the caret and keeps the selection; a paste replaces it.
+            document.execCommand('delete', false);
+            $description.summernote('editor.setLastRange');
+        }
+        $description.summernote('pasteHTML', kbMarkPastedBlocks(html, pasteId));
+        kbOfferKeepPlainText(pasteId, text);
+    }
+
+    function kbOfferKeepPlainText(pasteId, text) {
+        kbArmedPasteId = pasteId;
+        toastr.remove();
+        kbPasteToast = toastr.info(
+            '<div>' + kbEscapeHtml(kbTranslations.kb_markdown_paste_applied) + '</div>' +
+            '<button type="button" class="btn btn-sm btn-light mt-2 tp-kb-keep-plain-text">' +
+            kbEscapeHtml(kbTranslations.kb_markdown_paste_keep_raw) + '</button>',
+            '',
+            {
+                timeOut: 10000,
+                extendedTimeOut: 4000,
+                closeButton: true,
+                tapToDismiss: false,
+                // toastr.remove() does not reset its duplicate tracker: a second paste would get no toast.
+                preventDuplicates: false,
+                onHidden: function() {
+                    kbDisarmPaste(pasteId);
+                }
+            }
+        );
+        kbPasteToast.find('.tp-kb-keep-plain-text').on('click', function() {
+            kbKeepPastedTextPlain(pasteId, text);
+        });
+    }
+
+    function kbClosePasteOffer() {
+        if (kbArmedPasteId !== '') {
+            kbDisarmPaste(kbArmedPasteId);
+        }
+        if (kbPasteToast !== null) {
+            // Forced: toastr keeps a toast holding the focus, such as its clicked button.
+            toastr.clear(kbPasteToast, {force: true});
+            kbPasteToast = null;
+        }
+    }
+
+    function kbDisarmPaste(pasteId) {
+        kbEditable().find('[data-tp-kb-paste="' + pasteId + '"]').removeAttr('data-tp-kb-paste');
+        if (kbArmedPasteId === pasteId) {
+            kbArmedPasteId = '';
+        }
+    }
+
+    function kbKeepPastedTextPlain(pasteId, text) {
+        const $blocks = kbEditable().find('[data-tp-kb-paste="' + pasteId + '"]');
+        const stillArmed = kbArmedPasteId === pasteId;
+        kbClosePasteOffer();
+        if (stillArmed === false || $blocks.length === 0) {
+            return;
+        }
+        $blocks.first().before(kbMarkdown.plainTextToHtml(text));
+        $blocks.remove();
+        $('#kb-description').summernote('editor.afterCommand');
+    }
+
+    function kbHandleEditorKeydown(event) {
+        const key = (event.key || '').toString();
+        kbPlainPasteRequested = (event.ctrlKey === true || event.metaKey === true) && event.shiftKey === true && key.toLowerCase() === 'v';
+        // Any edit after the paste makes "Keep plain text" unsafe: it would drop that edit.
+        if (kbArmedPasteId !== '' && /^(Shift|Control|Alt|Meta|CapsLock|Escape|Arrow\w+|Home|End|PageUp|PageDown)$/.test(key) === false) {
+            kbClosePasteOffer();
+        }
+    }
+
+    function kbMarkdownButton(context) {
+        return $.summernote.ui.button({
+            className: 'btn-kb-markdown note-codeview-keep',
+            contents: '<i class="tp-kb-markdown-icon fa-markdown"></i>',
+            tooltip: kbTranslations.kb_markdown_view_tooltip,
+            click: function() {
+                if (kbMarkdownView === null) {
+                    kbOpenMarkdownView(context);
+                } else {
+                    kbCloseMarkdownView(true);
+                }
+            }
+        }).render();
+    }
+
+    function kbOpenMarkdownView(context) {
+        kbClosePasteOffer();
+        if (context.invoke('codeview.isActivated') === true) {
+            context.invoke('codeview.deactivate');
+        }
+
+        const layout = context.layoutInfo;
+        const originalHtml = kbNormalizeEditorContent(context.invoke('code'));
+        const converted = kbMarkdown.htmlToMarkdown(originalHtml);
+        const $notice = $('<div class="tp-kb-markdown-notice small text-muted"></div>');
+        const $source = $('<textarea class="form-control tp-kb-markdown-source" spellcheck="false"></textarea>');
+
+        if (converted.lossy.length > 0) {
+            $notice.text(kbTranslations.kb_markdown_view_lossy.replace('#elements#', converted.lossy.map(function(kind) {
+                return kbTranslations['kb_markdown_lossy_' + kind] || kind;
+            }).join(', ')));
+        } else {
+            $notice.addClass('hidden');
+        }
+        $source.val(converted.markdown)
+            .css('height', Math.max(layout.editingArea.outerHeight(), 200) + 'px')
+            .on('dragover drop', function(event) {
+                // A dropped file would make the browser navigate away from the form.
+                const transfer = event.originalEvent ? event.originalEvent.dataTransfer : null;
+                if (transfer && Array.from(transfer.types || []).indexOf('Files') !== -1) {
+                    event.preventDefault();
+                }
+            });
+
+        layout.editingArea.addClass('hidden').after($notice, $source);
+        layout.statusbar.addClass('hidden');
+        context.invoke('toolbar.deactivate');
+        $.summernote.ui.toggleBtn(layout.toolbar.find('.btn-codeview'), false);
+        $.summernote.ui.toggleBtnActive(layout.toolbar.find('.btn-kb-markdown'), true);
+
+        kbMarkdownView = {
+            context: context,
+            originalHtml: originalHtml,
+            initialMarkdown: converted.markdown,
+            images: converted.images,
+            $notice: $notice,
+            $source: $source
+        };
+        $source.trigger('focus');
+    }
+
+    function kbMarkdownViewHtml() {
+        const markdown = kbMarkdownView.$source.val();
+        // Untouched: give back the exact original, so the view loses nothing.
+        if (markdown === kbMarkdownView.initialMarkdown) {
+            return kbMarkdownView.originalHtml;
+        }
+        return kbNormalizeEditorContent(kbMarkdown.renderMarkdown(kbMarkdown.restoreImages(markdown, kbMarkdownView.images)));
+    }
+
+    function kbCloseMarkdownView(applyChanges) {
+        if (kbMarkdownView === null) {
+            return;
+        }
+        const view = kbMarkdownView;
+        const html = applyChanges === true ? kbMarkdownViewHtml() : null;
+        const layout = view.context.layoutInfo;
+        kbMarkdownView = null;
+
+        view.$notice.remove();
+        view.$source.remove();
+        layout.editingArea.removeClass('hidden');
+        layout.statusbar.removeClass('hidden');
+        // true: also re-enable </>, which shares the note-codeview-keep class with this button.
+        view.context.invoke('toolbar.activate', true);
+        $.summernote.ui.toggleBtnActive(layout.toolbar.find('.btn-kb-markdown'), false);
+
+        if (html !== null) {
+            $('#kb-description').summernote('code', html);
+            $('#kb-description').summernote('editor.afterCommand', true);
+        }
+    }
+
+    function kbEditorKeyMap() {
+        // h1, h5 and h6 are outside the KB allowlists: map their shortcuts to the nearest allowed level.
+        // Summernote merges options shallowly, so the whole map is passed.
+        return $.extend(true, {}, $.summernote.options.keyMap, {
+            pc: {'CTRL+NUM1': 'formatH2', 'CTRL+NUM5': 'formatH4', 'CTRL+NUM6': 'formatH4'},
+            mac: {'CMD+NUM1': 'formatH2', 'CMD+NUM5': 'formatH4', 'CMD+NUM6': 'formatH4'}
+        });
+    }
+
     function kbInitDescriptionEditor(html) {
         kbDestroyDescriptionEditor();
         const $description = $('#kb-description');
@@ -450,15 +731,22 @@ if (
                 ['font', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
                 ['para', ['ul', 'ol', 'paragraph']],
                 ['insert', ['link', 'picture', 'hr', 'table']],
-                ['view', ['codeview']]
+                ['view', ['codeview', 'kbMarkdown']]
             ],
+            buttons: {
+                kbMarkdown: kbMarkdownButton
+            },
+            keyMap: kbEditorKeyMap(),
             styleTags: ['p', 'blockquote', 'pre', 'h2', 'h3', 'h4'],
             codeviewFilter: true,
             codeviewIframeFilter: true,
             callbacks: {
                 onImageUpload: function(files) {
                     kbInsertEditorImages(files);
-                }
+                },
+                onPaste: kbHandleEditorPaste,
+                onKeydown: kbHandleEditorKeydown,
+                onBeforeCommand: kbClosePasteOffer
             }
         });
         kbSetEditorContent(html || '');
@@ -1173,20 +1461,108 @@ if (
     }
 
     function kbBuildActions(entry) {
-        let html = '<button type="button" class="btn btn-sm btn-default kb-action-view" data-id="' + entry.id + '" title="' + kbTranslations.open + '"><i class="fa-solid fa-eye"></i></button>';
+        let html = '<button type="button" class="btn btn-sm btn-default kb-action-view" data-id="' + entry.id + '" title="' + kbEscapeHtml(kbTranslations.open) + '"><i class="fa-solid fa-eye"></i></button>';
 
         if (entry.can_edit === true) {
-            html += '<button type="button" class="btn btn-sm btn-default kb-action-edit" data-id="' + entry.id + '" title="' + kbTranslations.edit + '"><i class="fa-solid fa-pen"></i></button>';
+            html += '<button type="button" class="btn btn-sm btn-default kb-action-edit" data-id="' + entry.id + '" title="' + kbEscapeHtml(kbTranslations.edit) + '"><i class="fa-solid fa-pen"></i></button>';
         }
 
         if (entry.can_delete === true) {
-            html += '<button type="button" class="btn btn-sm btn-default kb-action-delete" data-id="' + entry.id + '" title="' + kbTranslations.delete + '"><i class="fa-solid fa-trash"></i></button>';
+            html += '<button type="button" class="btn btn-sm btn-default kb-action-delete" data-id="' + entry.id + '" title="' + kbEscapeHtml(kbTranslations.delete) + '"><i class="fa-solid fa-trash"></i></button>';
         }
 
         return '<div class="tp-kb-actions-wrap">' + html + '</div>';
     }
 
+    /** Restore collaboration indicators after paging, search, navigation, or live refresh. */
+    function kbRestoreListIndicators() {
+        if (window.tpLockedKbs && typeof window.tpWsShowKbEditionLock === 'function') {
+            Object.keys(window.tpLockedKbs).forEach(function(kbId) {
+                window.tpWsShowKbEditionLock(parseInt(kbId, 10), window.tpLockedKbs[kbId]);
+            });
+        }
+        if (window.tpViewingKbs && typeof window.tpWsSetKbViewers === 'function') {
+            Object.keys(window.tpViewingKbs).forEach(function(kbId) {
+                window.tpWsSetKbViewers(parseInt(kbId, 10), window.tpViewingKbs[kbId]);
+            });
+        }
+    }
+
+    /** Render category navigation and reuse the existing table for the selected articles. */
+    function kbRenderBrowser(resetTable) {
+        const state = kbCategoryBrowser.getState();
+        const overview = state.view === 'categories' && state.selected === null;
+        const $grid = $('#kb-categories-grid').empty();
+        const categories = kbCategoryBrowser.getCategories();
+
+        categories.forEach(function(category) {
+            const label = category.label || kbTranslations.kb_uncategorized;
+            const countText = (category.count === 1 ? kbTranslations.kb_category_article_count_one : kbTranslations.kb_category_article_count).replace('%d', category.count);
+            const $button = $('<button type="button" class="btn btn-default text-left w-100 h-100 kb-category-card"></button>')
+                .attr('data-category-id', category.id)
+                .append($('<i class="fa-solid fa-folder-open text-info mr-2" aria-hidden="true"></i>'))
+                .append($('<span class="kb-category-name"></span>').text(label))
+                .append($('<span class="d-block small text-muted mt-2"></span>').text(countText));
+            $grid.append($('<div class="col-12 col-sm-6 col-lg-4 col-xl-3 mb-3"></div>').append($button));
+        });
+
+        $('#kb-categories-empty').toggleClass('hidden', categories.length > 0);
+        $('#kb-categories-zone').toggleClass('hidden', !overview);
+        $('#kb-selected-category-zone').toggleClass('hidden', state.selected === null);
+        $('#kb-selected-category-title').text(state.selected ? (state.selected.label || kbTranslations.kb_uncategorized) : '');
+        $('#kb-table-zone').toggleClass('hidden', overview);
+        $('#button-kb-list-view').toggleClass('btn-primary', state.view === 'list').toggleClass('btn-outline-primary', state.view !== 'list').attr('aria-pressed', state.view === 'list' ? 'true' : 'false');
+        $('#button-kb-categories-view').toggleClass('btn-primary', state.view === 'categories').toggleClass('btn-outline-primary', state.view !== 'categories').attr('aria-pressed', state.view === 'categories' ? 'true' : 'false');
+
+        const page = kbTable.page();
+        kbTable.clear();
+        kbCategoryBrowser.getEntries().forEach(function(entry) {
+            const safeLabel = kbEscapeHtml(entry.label);
+            const safeExcerpt = kbEscapeHtml(entry.description_excerpt);
+            const safeCategory = kbEscapeHtml(entry.category || kbTranslations.kb_uncategorized);
+            const safeAuthor = kbEscapeHtml(entry.author);
+            const itemsCount = parseInt(entry.items_count || 0, 10) || 0;
+            const commentsCount = parseInt(entry.comments_count || 0, 10) || 0;
+            const metaBadges = [];
+
+            if (commentsCount > 0 || parseInt(entry.allow_comments || 0, 10) === 1) {
+                metaBadges.push('<span class="badge badge-light border"><i class="fa-solid fa-comments mr-1"></i>' + commentsCount + '</span>');
+            }
+
+            if (itemsCount > 0) {
+                metaBadges.push('<span class="badge badge-light border"><i class="fa-solid fa-link mr-1"></i>' + itemsCount + '</span>');
+            }
+
+            kbTable.row.add([
+                '<div class="tp-kb-list-entry" data-kb-id="' + entry.id + '">' +
+                    '<a href="#" class="kb-action-view tp-kb-list-entry-title" data-id="' + entry.id + '">' + safeLabel + '</a>' +
+                    (safeExcerpt !== '' ? '<div class="small tp-kb-list-entry-excerpt">' + safeExcerpt + '</div>' : '') +
+                    (metaBadges.length > 0 ? '<div class="tp-kb-list-entry-meta">' + metaBadges.join('') + '</div>' : '') +
+                '</div>',
+                safeCategory !== '' ? '<span class="badge badge-info">' + safeCategory + '</span>' : '',
+                safeAuthor,
+                itemsCount,
+                kbBuildActions(entry)
+            ]);
+        });
+
+        if (resetTable === true) {
+            kbTable.search('');
+        }
+        kbTable.draw(resetTable === true);
+        // A live deletion may remove the last page. Keep the nearest remaining page visible.
+        if (resetTable !== true) {
+            const lastPage = Math.max(0, kbTable.page.info().pages - 1);
+            kbTable.page(Math.min(page, lastPage)).draw('page');
+        }
+        if (!overview) {
+            kbTable.columns.adjust();
+            if (kbTable.responsive) kbTable.responsive.recalc();
+        }
+    }
+
     function loadKbList() {
+        const requestId = ++kbListRequestId;
         $.post(
             'sources/kb.queries.php',
             {
@@ -1195,64 +1571,22 @@ if (
                 key: kbSessionKey
             },
             function(response) {
+                if (requestId !== kbListRequestId) return;
                 const data = kbDecodeResponse(response, 'list_kbs');
                 if (data.error === true) {
                     kbToastError(data.message);
                     return;
                 }
 
-                const entries = Array.isArray(data.entries) ? data.entries : [];
-                kbTable.clear();
-
-                entries.forEach(function(entry) {
-                    const safeLabel = DOMPurify.sanitize(entry.label || '', {USE_PROFILES: {html: false}});
-                    const safeExcerpt = DOMPurify.sanitize(entry.description_excerpt || '', {USE_PROFILES: {html: false}});
-                    const safeCategory = DOMPurify.sanitize(entry.category || '', {USE_PROFILES: {html: false}});
-                    const safeAuthor = DOMPurify.sanitize(entry.author || '', {USE_PROFILES: {html: false}});
-                    const itemsCount = parseInt(entry.items_count || 0, 10) || 0;
-                    const commentsCount = parseInt(entry.comments_count || 0, 10) || 0;
-                    const metaBadges = [];
-
-                    if (commentsCount > 0 || parseInt(entry.allow_comments || 0, 10) === 1) {
-                        metaBadges.push('<span class="badge badge-light border"><i class="fa-solid fa-comments mr-1"></i>' + commentsCount + '</span>');
-                    }
-
-                    if (itemsCount > 0) {
-                        metaBadges.push('<span class="badge badge-light border"><i class="fa-solid fa-link mr-1"></i>' + itemsCount + '</span>');
-                    }
-
-                    kbTable.row.add([
-                        '<div class="tp-kb-list-entry" data-kb-id="' + entry.id + '">' +
-                            '<a href="#" class="kb-action-view tp-kb-list-entry-title" data-id="' + entry.id + '">' + safeLabel + '</a>' +
-                            (safeExcerpt !== '' ? '<div class="small tp-kb-list-entry-excerpt">' + safeExcerpt + '</div>' : '') +
-                            (metaBadges.length > 0 ? '<div class="tp-kb-list-entry-meta">' + metaBadges.join('') + '</div>' : '') +
-                        '</div>',
-                        safeCategory !== '' ? '<span class="badge badge-info">' + safeCategory + '</span>' : '',
-                        safeAuthor,
-                        itemsCount,
-                        kbBuildActions(entry)
-                    ]);
-                });
-
-                kbTable.draw();
-
-                if (window.tpLockedKbs && typeof window.tpWsShowKbEditionLock === 'function') {
-                    Object.keys(window.tpLockedKbs).forEach(function(kbId) {
-                        window.tpWsShowKbEditionLock(parseInt(kbId, 10), window.tpLockedKbs[kbId]);
-                    });
-                }
-                if (window.tpViewingKbs && typeof window.tpWsSetKbViewers === 'function') {
-                    Object.keys(window.tpViewingKbs).forEach(function(kbId) {
-                        window.tpWsSetKbViewers(parseInt(kbId, 10), window.tpViewingKbs[kbId]);
-                    });
-                }
+                kbCategoryBrowser.refresh(data.entries);
+                kbRenderBrowser(false);
 
                 if (kbDirectId > 0 && kbLoadedDirectId === false) {
                     kbOpenViewer(kbDirectId);
                 }
             }
         ).fail(function() {
-            kbToastError(kbTranslations.server_answer_error);
+            if (requestId === kbListRequestId) kbToastError(kbTranslations.server_answer_error);
         });
     }
 
@@ -1265,6 +1599,7 @@ if (
             responsive: true,
             autoWidth: false,
             order: [[0, 'asc']],
+            drawCallback: kbRestoreListIndicators,
             language: {
                 url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $session->get('user-language'); ?>.txt'
             },
@@ -1354,6 +1689,23 @@ if (
         if (typeof window.tpWsSubscribeToKb === 'function') {
             window.tpWsSubscribeToKb();
         }
+
+        $('#button-kb-list-view, #button-kb-categories-view, #button-kb-all-categories').on('click', function() {
+            kbCategoryBrowser.setView(this.id === 'button-kb-list-view' ? 'list' : 'categories');
+            kbRenderBrowser(true);
+            if (this.id === 'button-kb-all-categories') $('#button-kb-categories-view').trigger('focus');
+        });
+
+        $(document).on('click', '.kb-category-card', function() {
+            if (kbCategoryBrowser.select($(this).attr('data-category-id'))) {
+                kbRenderBrowser(true);
+                // The activated button is replaced by the render. Move focus after the
+                // browser finishes its native keyboard activation on that removed node.
+                window.requestAnimationFrame(function() {
+                    document.getElementById('kb-selected-category-title').focus();
+                });
+            }
+        });
 
         $('#button-kb-new').on('click', function() {
             kbOpenEditor(0);

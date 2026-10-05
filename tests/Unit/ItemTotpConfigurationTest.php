@@ -266,4 +266,62 @@ final class ItemTotpConfigurationTest extends TestCase
         );
         self::assertStringNotContainsString('const maxPeriod = <?php', $itemScript);
     }
+
+    /**
+     * The historical profile is what every importer expects as a bare secret.
+     */
+    public function testExportOfTheDefaultProfileIsTheBareSecret(): void
+    {
+        self::assertSame(
+            'JBSWY3DPEHPK3PXP',
+            formatItemTotpForExport('jbsw y3dp ehpk 3pxp', 'sha1', 6, 30, 'Mail')
+        );
+    }
+
+    /**
+     * A bare secret would lose a non-default profile: the export must carry it,
+     * in a form TeamPass reads back to the very same configuration.
+     */
+    public function testExportOfACustomProfileRoundTripsThroughAProvisioningUri(): void
+    {
+        $exported = formatItemTotpForExport('JBSWY3DPEHPK3PXP', 'sha256', 8, 60, 'Mail');
+
+        self::assertStringStartsWith('otpauth://totp/Mail?', $exported);
+        self::assertSame(
+            [
+                'secret' => 'JBSWY3DPEHPK3PXP',
+                'algorithm' => 'sha256',
+                'digits' => 8,
+                'period' => 60,
+            ],
+            normalizeItemTotpConfiguration($exported)
+        );
+    }
+
+    /**
+     * A colon in the item label would make the provisioning URI label invalid.
+     */
+    public function testExportOfACustomProfileToleratesAColonInTheLabel(): void
+    {
+        $exported = formatItemTotpForExport('JBSWY3DPEHPK3PXP', 'sha512', 6, 30, 'Mail: admin');
+
+        self::assertStringStartsWith('otpauth://totp/', $exported);
+        self::assertSame('sha512', normalizeItemTotpConfiguration($exported)['algorithm']);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function unexportableSecrets(): iterable
+    {
+        yield 'empty' => [''];
+        yield 'blank' => ['   '];
+        yield 'invalid Base32' => ['NOT-BASE32!'];
+    }
+
+    #[DataProvider('unexportableSecrets')]
+    public function testExportOfAnUnusableSecretIsEmpty(string $secret): void
+    {
+        self::assertSame('', formatItemTotpForExport($secret));
+    }
 }

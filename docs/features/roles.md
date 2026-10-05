@@ -36,6 +36,7 @@ Click **New role** to open the definition form.
 | **Label** | Name of the role, displayed everywhere in the interface |
 | **Password complexity** | Minimum password complexity required for items managed by users in this role. Teampass takes the highest complexity requirement across all of a user's roles |
 | **Can edit any visible item** | See below |
+| **Show the Security posture Fix shortcuts** | Checked by default, administrators only. Unchecked, members of this role no longer get the *Fix* shortcuts of the [security posture page](security-posture.md#fix-shortcuts). It changes no editing right |
 
 ### "Can edit any visible item"
 

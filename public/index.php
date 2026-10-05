@@ -69,8 +69,16 @@ if (!defined('TEAMPASS_STORAGE')) {
     define('TEAMPASS_STORAGE', TEAMPASS_ROOT . '/storage');
 }
 
-// Before we start processing, we should abort no install is present
-if (file_exists(TEAMPASS_APP . '/config/settings.php') === false) {
+// Before we start processing, we should abort no install is present.
+// An unreadable app/config/ must not look like a missing install: the installer
+// would replace the encryption key of an instance that is only misconfigured.
+require_once TEAMPASS_APP . '/sources/config_access_logic.php';
+$configState = teampassConfigState(TEAMPASS_APP . '/config');
+if ($configState === 'unreadable') {
+    teampassSendConfigAccessError(TEAMPASS_APP . '/config');
+    exit;
+}
+if ($configState === 'not_installed') {
     // This should never happen, but in case it does
     // this means if headers are sent, redirect will fallback to JS
     if (headers_sent()) {
@@ -83,9 +91,9 @@ if (file_exists(TEAMPASS_APP . '/config/settings.php') === false) {
 }
 
 // One-Time-View / Secure Send is a public, unauthenticated endpoint. Handle it here
-// — before CSRFGuard and before any authenticated routing — then exit. It performs
-// no session-bound mutation, so it needs no CSRF token (the anonymous recipient has
-// none); because it always exits, a crafted "?otv=" request can never fall through
+// — before CSRFGuard and before any authenticated routing — then exit. It issues
+// its own session-bound, single-use confirmation token before accepting a reveal POST;
+// because it always exits, a crafted "?otv=" request can never fall through
 // to a CSRF-protected handler. CSRFGuard therefore stays unconditionally enabled for
 // every other index.php request, and the page renders its own self-contained layout.
 if (isset($_GET['otv']) === true && $_GET['otv'] !== '') {
@@ -135,6 +143,24 @@ if (isset($SETTINGS['teampass_version']) === true && version_compare(TP_VERSION,
     exit;
 }
 
+// Patch-level schema upgrade pending (UPGRADE_MIN_DATE raised, TP_VERSION unchanged):
+// close an open session before core.php queries columns the database does not have yet.
+// The login page then shows the "upgrade requested" notice and disables sign-in.
+// The cached setting spares a query on every page; upgradeRequired() reads the database,
+// so a stale cache cannot log users out once the upgrade is done.
+if ($session->has('user-id') === true
+    && (int) ($SETTINGS['upgrade_timestamp'] ?? 0) < (int) UPGRADE_MIN_DATE
+    && upgradeRequired() === true
+) {
+    $session->invalidate();
+    $loginUrl = rtrim($request->getSchemeAndHttpHost() . $request->getBasePath(), '/') . '/index.php';
+    if (headers_sent()) {
+        echo '<script type="text/javascript">document.location.replace(' . json_encode($loginUrl) . ');</script>';
+    } else {
+        header('Location: ' . $loginUrl);
+    }
+    exit;
+}
 
 $SETTINGS = $antiXss->xss_clean($SETTINGS);
 
@@ -1285,6 +1311,40 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                 </div>
                 <!-- /.ENCRYPTION KEYS GENERATION -->
 
+                <!-- ENCRYPTION PERSONAL ITEMS GENERATION -->
+                <div class="card card-warning m-3 hidden" id="dialog-encryption-personal-items-after-upgrade">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fa-solid fa-bullhorn mr-2"></i>
+                            <?php echo $lang->get('your_attention_is_required'); ?>
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-sm-12 col-md-12">
+                                <div class="mb-2 alert alert-info">
+                                    <i class="icon fa-solid fa-info mr-2"></i>
+                                    <?php echo $lang->get('objects_encryption_explanation'); ?>
+                                </div>
+                                <div class="input-group mb-3">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><?php echo $lang->get('personal_salt_key'); ?></span>
+                                    </div>
+                                    <input type="password" class="form-control" id="user-current-defuse-psk">
+                                </div>
+                                <div class="form-control mt-3 font-weight-light grey" id="user-current-defuse-psk-progress">
+                                    <?php echo $lang->get('provide_current_psk_and_click_launch'); ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn btn-primary" id="button_do_personal_items_reencryption"><?php echo $lang->get('launch'); ?></button>
+                        <button class="btn btn-default float-right" id="button_close_personal_items_reencryption"><?php echo $lang->get('close'); ?></button>
+                    </div>
+                </div>
+                <!-- /.ENCRYPTION PERSONAL ITEMS GENERATION -->
+
                 <!-- ENCRYPTION PERSONAL ITEMS GENERATION WITH NEW PASSWORD -->
                 <div class="card card-warning m-3 hidden" id="dialog-encryption-personal-items-after-password-change">
                     <div class="card-header">
@@ -1662,6 +1722,12 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                 <!-- SUMMERNOTE -->
                 <link rel="stylesheet" href="./plugins/summernote/summernote-bs4.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
                 <script src="./plugins/summernote/summernote-bs4.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+                <!-- MARKDOWN (KB editor) -->
+                <script src="./plugins/markdown-it/markdown-it.umd.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+                <script src="./plugins/turndown/turndown.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+                <script src="./plugins/turndown/turndown-plugin-gfm.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+                <script src="./assets/js/kb-markdown.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+                <script src="./assets/js/kb-categories.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
             <?php
             }
             ?>

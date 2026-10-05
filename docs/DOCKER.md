@@ -71,23 +71,13 @@ docker compose up -d
 
 > The first run downloads images (~300 MB) and initializes the database. Wait ~30 seconds.
 
-### 4. Create the secure key directory
-
-TeamPass needs a directory to store its master encryption key. This directory must exist and be writable by the PHP-FPM process (`nginx` user inside the container).
-
-```bash
-docker exec teampass-app sh -c "mkdir -p /var/TeampassSecurity && chown nginx:nginx /var/TeampassSecurity && chmod 750 /var/TeampassSecurity"
-```
-
-> **Persistence warning:** This directory is inside the container and will be lost if the container is recreated (`docker compose down -v`). For production, mount it as a volume (see [Advanced Usage](#advanced-usage)).
-
-### 5. Complete the installation wizard
+### 4. Complete the installation wizard
 
 Open your browser: **http://localhost:8080/install/install.php**
 
 See [Installation Wizard](#installation-wizard) for field values.
 
-### 6. Restart after installation
+### 5. Restart after installation
 
 ```bash
 docker compose restart teampass
@@ -103,8 +93,6 @@ Fill in the installation form with these values:
 |---|---|
 | Absolute path of the application | `/var/www/html` |
 | URL of the application | `http://localhost:8080` |
-| Absolute path to secure key | `/var/TeampassSecurity` |
-| Saltkey absolute path | `/var/www/html/sk` |
 | Database host | `db` |
 | Database port | `3306` |
 | Database name | `teampass` (or `DB_NAME` from `.env`) |
@@ -113,6 +101,8 @@ Fill in the installation form with these values:
 | Table prefix | `teampass_` |
 
 > The database host **must** be `db` (Docker service name), not `localhost`.
+
+> The wizard creates the master key in `/var/www/html/secrets`, on the `teampass-secrets` volume: there is no key path to enter.
 
 ---
 
@@ -148,12 +138,6 @@ PHP_UPLOAD_MAX_FILESIZE=100M
 PHP_MAX_EXECUTION_TIME=120
 ```
 
-#### Installation mode
-
-```dotenv
-INSTALL_MODE=manual   # manual (default) or auto
-```
-
 ### Docker image tags
 
 Docker Hub (`teampass/teampass`) provides:
@@ -164,9 +148,13 @@ Docker Hub (`teampass/teampass`) provides:
 | `master` | Same as latest |
 | `develop` | Development branch |
 | `sha-xxxxxxx` | Specific commit build |
-| `3.1.5.2`, `3.1.6.x` | Versioned releases (published on GitHub Release only) |
+| `3.2.2.0`, `3.2.2.1`, … | One tag per release, from 3.2.2.0 onward |
 
-For testing, use `latest`. Versioned tags only appear after a GitHub Release is published.
+Use `latest` unless you need to pin a version. There is no tag for releases older than 3.2.2.0,
+and no rolling tag such as `3.2` or `3`: check the
+[tags page](https://hub.docker.com/r/teampass/teampass/tags) before pinning. A versioned tag is
+frozen once published, while `latest` is rebuilt every week to pick up the base image security
+fixes.
 
 ### Volumes
 
@@ -216,21 +204,27 @@ location / {
 }
 ```
 
+### Secure session cookie behind the proxy
+
+With either setup, the proxy terminates HTTPS. Once TeamPass is installed, set **Settings → Options → Networks → IP detection mode** to `Reverse proxy / WAF` and declare the address the container sees for the proxy (the proxy container or the Docker network gateway) in **Trusted proxies**. TeamPass then trusts the proxy's `X-Forwarded-Proto` header and marks the session cookie `Secure`; without this, the cookie lacks that attribute because the container itself is reached over plain HTTP.
+
 ---
 
 ## Upgrading
 
 1. **Backup your data first** (see [Backup and Restore](#backup-and-restore))
 
-2. Pull the new image and restart:
+2. Pull the new image and recreate the container:
 
 ```bash
 docker compose pull
-docker compose down
 docker compose up -d
+docker compose logs teampass | head -60
 ```
 
-> `down` without `-v` preserves your data volumes.
+The container applies the database migrations when it starts, then removes the install directory: `/install/upgrade.php` answers 404 after a successful upgrade. It stays available only when the log reports a pending upgrade.
+
+> Never add `-v` to `docker compose down`, and do not prune volumes: the master key and `settings.php` live on volumes. If the log says `TeamPass is not configured yet` on an installed instance, follow [Recovering a lost configuration](https://documentation.teampass.net/#/install/docker?id=recovering-a-lost-configuration) and do not run the installer.
 
 ---
 
@@ -246,15 +240,14 @@ docker exec teampass-db mariadb-dump \
   teampass > teampass-backup-$(date +%Y%m%d).sql
 ```
 
-**Files:**
+**Master key, configuration and attachments:**
 
 ```bash
-docker run --rm \
-  -v docker-compose_teampass-sk:/sk:ro \
-  -v docker-compose_teampass-files:/files:ro \
-  -v $(pwd):/backup \
-  alpine tar czf /backup/teampass-files-$(date +%Y%m%d).tar.gz /sk /files
+docker exec teampass-app tar -C /var/www/html -czf - secrets storage/config storage/files \
+  > teampass-state-$(date +%Y%m%d).tar.gz
 ```
+
+> The master key in `secrets/` is required to decrypt all data: without it, the data in a database dump cannot be decrypted. Keep the dump and this archive together, in a safe place.
 
 ### Restore
 
@@ -266,15 +259,14 @@ docker exec -i teampass-db mariadb \
   teampass < teampass-backup-20240315.sql
 ```
 
-**Files:**
+**Master key, configuration and attachments:**
 
 ```bash
-docker run --rm \
-  -v docker-compose_teampass-sk:/sk \
-  -v docker-compose_teampass-files:/files \
-  -v $(pwd):/backup \
-  alpine tar xzf /backup/teampass-files-20240315.tar.gz
+docker exec -i teampass-app tar -C /var/www/html -xzf - < teampass-state-20240315.tar.gz
+docker compose restart teampass
 ```
+
+The restart lets the container reset the ownership of its volumes and pick up the restored `settings.php`. Restore into the instance the archive comes from, or into a new one on which the installer has not been run: the installer creates a different master key.
 
 ---
 
@@ -393,6 +385,10 @@ volumes:
 ```
 
 Without these volumes TeamPass loses its configuration on `docker compose down` and shows the installer again on the next start.
+
+Mount these exact paths: a volume on a parent directory such as `/var/www/html/storage` does not cover them. The image declares each of them as a `VOLUME`, so Docker still mounts an anonymous volume on top, and that volume is left behind when the container is removed. `docker inspect teampass-app --format '{{range .Mounts}}{{.Name}} -> {{.Destination}}{{println}}{{end}}'` shows what backs each path; a 64-character hexadecimal name is an anonymous volume. If the configuration was already lost, see [Recovering a lost configuration](https://documentation.teampass.net/#/install/docker?id=recovering-a-lost-configuration).
+
+PHP runs as `nginx` inside the image and the image ships its files owned by `nginx`: do not `chown` them to `www-data`.
 
 ### Custom PHP configuration
 

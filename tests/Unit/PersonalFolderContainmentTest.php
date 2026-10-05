@@ -124,7 +124,10 @@ class PersonalFolderContainmentTest extends TestCase
     {
         $trait = $this->source('app/scripts/traits/SharekeysRepairTrait.php');
 
-        self::assertStringContainsString('personalOwnerConflictsWithCreator(', $trait);
+        // The owner/creator cross-check still gates the repair. Its only exception, an item its
+        // folder owner moved in (#5407), is decided in personal_sharekeys_logic.php.
+        self::assertStringContainsString('personalOwnerConflictsForRepair(', $trait);
+        self::assertStringContainsString("'at_moved%'", $trait);
         self::assertMatchesRegularExpression(
             '/if \(isset\(\$tpRefs\[\$objectId\]\) === false\) \{\s*\+\+\$stats\[\'no_reference\'\];\s*continue;/s',
             $trait,

@@ -191,7 +191,7 @@ class FolderEndpointsRegressionTest extends TestCase
         // Every key the restore parser (tpParseFolderDeletedValeur) relies on must be produced.
         foreach ([
             "'id' =>", "'parent_id' =>", "'title' =>", "'nleft' =>", "'nright' =>",
-            "'nlevel' =>", "'bloquer_creation' =>", "'bloquer_modification' =>",
+            "'nlevel' =>", "'bloquer_creation' =>", "'bloquer_modification' =>", "'deletion_protected' =>",
             "'personal_folder' =>", "'renewal_period' =>",
         ] as $key) {
             self::assertStringContainsString(
@@ -273,6 +273,87 @@ class FolderEndpointsRegressionTest extends TestCase
             $model,
             'deleteFolder must reject deleting a personal root'
         );
+    }
+
+    public function testDeleteEnforcesAdministrativeAndLaprBlockersInSharedEngine(): void
+    {
+        $manager = $this->readSource('/app/sources/folders.class.php');
+        $web = $this->readSource('/app/sources/folders.queries.php');
+
+        self::assertStringContainsString("'reason' => 'folder_deletion_protected'", $manager);
+        self::assertStringContainsString('laprGetFolderItemRelationCounts(', $manager);
+        self::assertStringContainsString("'reason' => 'folder_contains_lapr_items'", $manager);
+        self::assertStringContainsString('$folderManager->deleteFolders(', $web);
+        self::assertSame(
+            0,
+            substr_count($web, "DB::delete(prefixTable('nested_tree')"),
+            'The web handler must not retain a second folder deletion engine'
+        );
+    }
+
+    public function testDeleteEngineReturnsASafeMessageAfterADatabaseException(): void
+    {
+        $manager = $this->readSource('/app/sources/folders.class.php');
+        $deleteBody = $this->extractMethodBody(
+            $manager,
+            'public function deleteFolders(array $folderIds, array $context): array'
+        );
+
+        self::assertStringContainsString("'db_error' => true", $deleteBody);
+        self::assertStringContainsString("\$this->lang->get('error_unknown')", $deleteBody);
+        self::assertStringNotContainsString("'message' => \$e->getMessage()", $deleteBody);
+    }
+
+    public function testApiDeleteMapsSharedEngineRefusalsToExpectedStatuses(): void
+    {
+        $model = $this->readSource('/app/api/Model/FolderModel.php');
+        $deleteBody = $this->extractMethodBody(
+            $model,
+            'public function deleteFolder(int $folderId, array $userData): array'
+        );
+
+        self::assertStringContainsString("'folder_deletion_protected', 'folder_contains_lapr_items' => 409", $deleteBody);
+        self::assertStringContainsString("'folder_not_found' => 404", $deleteBody);
+        self::assertStringContainsString("'personal_root_protected' => 403", $deleteBody);
+        self::assertStringContainsString('default => 500', $deleteBody);
+    }
+
+    public function testWebDeleteChecksTheGlobalFolderManagementGateBeforeCallingTheEngine(): void
+    {
+        $web = $this->readSource('/app/sources/folders.queries.php');
+        $deleteCase = strpos($web, "case 'delete_folders':");
+        self::assertIsInt($deleteCase);
+
+        $globalGate = strpos($web, "\$SETTINGS['enable_user_can_create_folders']", $deleteCase);
+        $managerCall = strpos($web, '$folderManager->deleteFolders(', $deleteCase);
+        self::assertIsInt($globalGate);
+        self::assertIsInt($managerCall);
+        self::assertLessThan(
+            $managerCall,
+            $globalGate,
+            'The web delete handler must enforce the global folder-management gate before deletion'
+        );
+    }
+
+    public function testDeletionProtectionIsAdministratorOnlyAndLaprFolderMoveIsGuarded(): void
+    {
+        $web = $this->readSource('/app/sources/folders.queries.php');
+        $model = $this->readSource('/app/api/Model/FolderModel.php');
+        $manager = $this->readSource('/app/sources/folders.class.php');
+
+        self::assertStringContainsString("(int) \$session->get('user-admin') !== 1", $web);
+        self::assertStringContainsString('Only an administrator can change folder deletion protection', $model);
+        self::assertStringContainsString('folder_lapr_personal_move_blocked', $web);
+        self::assertStringContainsString('folder_lapr_personal_move_blocked', $manager);
+    }
+
+    public function testDeletionProtectionSchemaCoversFreshInstallsAndUpgrades(): void
+    {
+        $installer = $this->readSource('/public/install/install-steps/run.step5.php');
+        $upgrade = $this->readSource('/public/install/upgrade_run_3.2.2.php');
+
+        self::assertStringContainsString('`deletion_protected` tinyint(1)', $installer);
+        self::assertStringContainsString("addColumnIfNotExist(prefixTable('nested_tree'), 'deletion_protected'", $upgrade);
     }
 
     public function testAdaptersEnforceAccessChecks(): void
@@ -528,6 +609,10 @@ class FolderEndpointsRegressionTest extends TestCase
         // create keeps the private property
         $createProps = $spec['components']['schemas']['FolderCreateBody']['properties'] ?? [];
         self::assertArrayHasKey('private', $createProps, 'FolderCreateBody must document the private property');
+
+        $updateProps = $spec['components']['schemas']['FolderUpdateBody']['properties'] ?? [];
+        self::assertArrayHasKey('deletion_protected', $updateProps);
+        self::assertArrayHasKey('409', $spec['paths']['/folder/delete']['delete']['responses']);
     }
 
     // -------------------------------------------------------------------------

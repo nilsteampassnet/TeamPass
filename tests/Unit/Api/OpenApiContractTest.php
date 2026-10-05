@@ -287,6 +287,8 @@ class OpenApiContractTest extends TestCase
         foreach ([
             'is_personal',
             'is_personal_root',
+            'deletion_protected',
+            'contains_deletion_protected',
             'can_create_subfolder',
             'can_rename_folder',
             'can_move_folder',

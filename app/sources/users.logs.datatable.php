@@ -226,59 +226,37 @@ $rows = DB::query(
     $targetUserId,
     (string) $targetUserId
 );
-$sOutput = '{';
-$sOutput .= '"sEcho": '.$inputData['draw'].', ';
-$sOutput .= '"iTotalRecords": '.$iTotal.', ';
-$sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
-$sOutput .= '"aaData": ';
-if (DB::count() > 0) {
-    $sOutput .= '[';
-} else {
-    $sOutput .= '';
-}
-
+$aaData = [];
 foreach ($rows as $record) {
+    $label = (string) ($record['label'] ?? '');
     if (empty($record['action']) === true
         || $record['action'] === $inputData['userId']
     ) {
-        if (strpos($record['label'], 'at_') === 0) {
-            if (strpos($record['label'], '#') !== false) {
-                $col2 = preg_replace('/#[\s\S]+?#/', '', $lang->get($record['label']));
-            } else {
-                $col2 = str_replace('"', '\"', $lang->get($record['label']));
-            }
+        if (strpos($label, 'at_') === 0) {
+            $col2 = strpos($label, '#') !== false
+                ? (string) preg_replace('/#[\s\S]+?#/', '', $lang->get($label))
+                : $lang->get($label);
         } else {
-            $col2 = str_replace('"', '\"', $record['label']);
+            $col2 = $label;
         }
         $col3 = '';
     } else {
         $col2 = $lang->get($record['action']).' '.$lang->get('id').' '.$record['id'];
-        $col3 = str_replace('"', '\"', $record['label']);
+        $col3 = $label;
     }
 
-    $sOutput .= '["'.
-        date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", '.
-        '"'.$col2.'", '.
-        '"'.$col3.'"],';
+    $aaData[] = [
+        date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']),
+        (string) $col2,
+        (string) $col3,
+    ];
 }
 
-if (count($rows) > 0) {
-    if (strrchr($sOutput, '[') !== '[') {
-        $sOutput = substr_replace($sOutput, '', -1);
-    }
-    $sOutput .= ']';
-} else {
-    $sOutput .= '[]';
-}
-
-
-if (count($rows) > 0) {
-    if (strrchr($sOutput, '[') !== '[') {
-        $sOutput = substr_replace($sOutput, '', -1);
-    }
-    $sOutput .= ']';
-} else {
-    $sOutput .= '[]';
-}
-
-echo ($sOutput).'}';
+// Encoded rather than concatenated: the hand-built string closed "aaData" twice for an
+// account without any log ("[][]"), and never escaped backslashes or control characters.
+echo json_encode([
+    'sEcho' => (int) $inputData['draw'],
+    'iTotalRecords' => (int) $iTotal,
+    'iTotalDisplayRecords' => (int) $iTotal,
+    'aaData' => $aaData,
+], JSON_INVALID_UTF8_SUBSTITUTE);

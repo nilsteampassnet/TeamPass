@@ -9,6 +9,9 @@
 !/app/scripts/teampass-cli.sh
 !/scripts/release_check.sh
 !/.claude/skills/**/scripts/*.sh
+# Composer installs the maintainer scripts some packages ship: the committed vendor tree must
+# hold them, or every composer-built install (the Docker image) reports them as unknown files.
+!/app/vendor/**/*.sh
 nbproject
 nbproject/private
 node_modules
@@ -50,6 +53,11 @@ app/includes/libraries/csrfp/libs/csrfp.config.php.*
 /public/assets/avatars/*
 !/public/assets/avatars/.htaccess
 !/public/assets/avatars/empty_file.txt
+
+# Custom login branding images are site data — never commit
+/public/assets/custom/*
+!/public/assets/custom/.htaccess
+!/public/assets/custom/README.md
 
 # Generated/runtime files
 /app/includes/tables_integrity.json

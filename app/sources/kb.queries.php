@@ -530,13 +530,19 @@ function kbDecodeEscapedRichHtml(string $html): string
         return $html;
     }
 
+    // Legacy rows were escaped wholesale: at most <p>/<br> wrappers are real. Any other real
+    // element means genuine rich HTML whose escaped text is literal (a code sample, a typed tag).
+    if (kbRichTextLooksLikeHtml(preg_replace('/<\/?(?:p|br)\b[^>]*>/iu', '', $html) ?? $html) === true) {
+        return $html;
+    }
+
     $hasEscapedBlock = preg_match('/&lt;\/?(?:br|p|div|ul|ol|li|blockquote|h[1-6]|pre|hr|table|thead|tbody|tr|th|td|img)\b/iu', $html) === 1;
     $candidate = $html;
 
     if ($hasEscapedBlock === true) {
-        $candidate = preg_replace('/<\/p>\s*<p[^>]*>/iu', "\n", $candidate) ?? $candidate;
+        $candidate = preg_replace('/<\/p>\s*<p\b[^>]*>/iu', "\n", $candidate) ?? $candidate;
         $candidate = preg_replace('/<br\s*\/?>/iu', "\n", $candidate) ?? $candidate;
-        $candidate = preg_replace('/<\/?p[^>]*>/iu', '', $candidate) ?? $candidate;
+        $candidate = preg_replace('/<\/?p\b[^>]*>/iu', '', $candidate) ?? $candidate;
     }
 
     $decodedHtml = html_entity_decode($candidate, ENT_QUOTES | ENT_HTML5, 'UTF-8');
@@ -926,7 +932,7 @@ function kbLoadRow(int $kbId): ?array
 {
     $row = DB::queryFirstRow(
         'SELECT k.id,
-            k.category_id,
+            c.id AS category_id,
             k.label,
             k.description,
             k.author_id,
@@ -990,6 +996,7 @@ function kbBuildEntryPayload(array $kb, SessionInterface $session, string $baseU
         'description' => (string) ($kb['description'] ?? ''),
         'description_html' => kbGetDescriptionHtml((string) ($kb['description'] ?? '')),
         'description_excerpt' => kbBuildDescriptionExcerpt((string) ($kb['description'] ?? '')),
+        'category_id' => (int) ($kb['category_id'] ?? 0),
         'category' => (string) ($kb['category'] ?? ''),
         'author' => kbBuildAuthorLabel(isset($kb['author_login']) ? (string) $kb['author_login'] : ''),
         'author_id' => (int) ($kb['author_id'] ?? 0),
@@ -1362,6 +1369,7 @@ switch ($type) {
                 k.author_id,
                 k.anyone_can_modify,
                 k.allow_comments,
+                c.id AS category_id,
                 c.category AS category,
                 u.login AS author_login
             FROM ' . prefixTable('kb') . ' AS k

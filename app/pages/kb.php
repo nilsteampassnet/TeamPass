@@ -252,11 +252,31 @@ $directKbId = (int) $request->query->get('id', 0);
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-header">
+            <div class="card" id="kb-browser-card">
+                <div class="card-header d-flex flex-wrap align-items-center justify-content-between">
                     <h3 class="card-title"><?php echo $lang->get('kb_menu'); ?></h3>
+                    <div class="btn-group ml-auto" role="group" aria-label="<?php echo htmlspecialchars($lang->get('kb_browse_view'), ENT_QUOTES, 'UTF-8'); ?>">
+                        <button type="button" class="btn btn-sm btn-primary" id="button-kb-list-view" aria-pressed="true">
+                            <i class="fa-solid fa-list mr-1" aria-hidden="true"></i><?php echo htmlspecialchars($lang->get('kb_list_view'), ENT_QUOTES, 'UTF-8'); ?>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="button-kb-categories-view" aria-pressed="false">
+                            <i class="fa-solid fa-folder-open mr-1" aria-hidden="true"></i><?php echo htmlspecialchars($lang->get('kb_categories_view'), ENT_QUOTES, 'UTF-8'); ?>
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body">
+                    <div id="kb-categories-zone" class="hidden">
+                        <p class="text-muted"><?php echo htmlspecialchars($lang->get('kb_categories_help'), ENT_QUOTES, 'UTF-8'); ?></p>
+                        <div id="kb-categories-grid" class="row"></div>
+                        <p id="kb-categories-empty" class="text-muted hidden" role="status"><?php echo htmlspecialchars($lang->get('kb_no_entries'), ENT_QUOTES, 'UTF-8'); ?></p>
+                    </div>
+                    <div id="kb-selected-category-zone" class="hidden mb-3">
+                        <button type="button" class="btn btn-sm btn-outline-secondary mb-2" id="button-kb-all-categories">
+                            <i class="fa-solid fa-arrow-left mr-1" aria-hidden="true"></i><?php echo htmlspecialchars($lang->get('kb_all_categories'), ENT_QUOTES, 'UTF-8'); ?>
+                        </button>
+                        <h4 id="kb-selected-category-title" tabindex="-1" aria-live="polite"></h4>
+                    </div>
+                    <div id="kb-table-zone">
                     <table id="table-kb-list" class="table table-bordered table-striped" style="width: 100%;">
                         <thead>
                             <tr>
@@ -269,6 +289,7 @@ $directKbId = (int) $request->query->get('id', 0);
                         </thead>
                         <tbody></tbody>
                     </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -276,6 +297,64 @@ $directKbId = (int) $request->query->get('id', 0);
 </section>
 
 <style>
+    #kb-browser-card > .card-header {
+        gap: 0.75rem;
+    }
+
+    #kb-browser-card > .card-header::after {
+        display: none;
+    }
+
+    #kb-browser-card .kb-category-card {
+        padding: 1rem;
+        border-radius: 0.5rem;
+        overflow-wrap: anywhere;
+        background: #f8f9fa;
+        color: #343a40;
+    }
+
+    #kb-browser-card .kb-category-card:hover {
+        border-color: #17a2b8;
+        background: #eef8fa;
+    }
+
+    #kb-browser-card .kb-category-card:focus-visible {
+        outline: 2px solid #17a2b8;
+        outline-offset: 2px;
+    }
+
+    #kb-browser-card .kb-category-name {
+        font-weight: 600;
+    }
+
+    #kb-selected-category-title {
+        overflow-wrap: anywhere;
+    }
+
+    .dark-mode #kb-browser-card .kb-category-card {
+        background: #3f474e;
+        color: #f8f9fa;
+        border-color: #6c757d;
+    }
+
+    .dark-mode #kb-browser-card .kb-category-card:hover {
+        background: #454f58;
+        border-color: #63c4d3;
+    }
+
+    .dark-mode #kb-browser-card .kb-category-card .text-muted {
+        color: #ced4da !important;
+    }
+
+    .dark-mode #kb-browser-card .btn-outline-primary {
+        color: #8fbbff;
+        border-color: #8fbbff;
+    }
+
+    .dark-mode #kb-browser-card .btn-outline-primary:hover {
+        color: #ffffff;
+    }
+
     #kb-viewer-card .card-header,
     #kb-editor-card .card-header {
         display: flex;
@@ -588,6 +667,35 @@ $directKbId = (int) $request->query->get('id', 0);
         .tp-kb-comment-header {
             flex-direction: column;
         }
+    }
+
+    .tp-kb-markdown-source {
+        font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        min-height: 200px;
+        resize: vertical;
+        border: 0;
+        border-radius: 0;
+        tab-size: 4;
+    }
+
+    .tp-kb-markdown-notice {
+        padding: 0.375rem 0.75rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+    }
+
+    /* Built like Summernote's toolbar icons (inline <i>, inline-block ::before aligned middle), so the
+       button keeps the height of </>: with Font Awesome's inline-block <i>, its line shrank to the icon. */
+    .tp-kb-markdown-icon::before {
+        content: var(--fa);
+        display: inline-block;
+        vertical-align: middle;
+        font-family: var(--fa-family-brands);
+        font-style: normal;
+        font-weight: 400;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
     }
 </style>
 

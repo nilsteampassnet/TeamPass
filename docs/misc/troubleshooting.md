@@ -106,7 +106,7 @@ If a setting change is not reflected, restart PHP-FPM to clear the 60-second APC
 
 ### Checklist
 
-1. **Verify email settings** — Go to **Admin → Emails** and confirm the SMTP host, port, and credentials are correct.
+1. **Verify email settings** — Go to **Admin → Emails** and confirm the SMTP host, port, and credentials are correct. The **Mail server password** field always looks empty once a password is stored (*Leave empty to keep the existing value*): it is stored encrypted and never sent back to the page. Type the password again only to replace it. A password containing `&`, `'`, `"`, `<` or `>` saved before 3.2.2.7 was stored HTML-encoded and fails to authenticate: type it again once.
 2. **Test sending** — Use the **Send test email** button on the Emails page.
 3. **Check the task queue** — Email sending is handled by background tasks. Go to **Tasks** and verify the email task is not stuck or in error.
 4. **PHP mail function** — If using `mail()` instead of SMTP, verify that the server's mail transfer agent (Postfix, Sendmail, etc.) is running.
@@ -138,6 +138,19 @@ php /var/www/html/teampass/scripts/background_tasks___handler.php
 
 ---
 
+## A new account stays "being created" after its first login
+
+### Symptom
+An account created at its first LDAP or OAuth2 login cannot sign in: the login page answers *Your account is currently being created*, and the **Users** page shows an hourglass on the account (*Tasks in progress - User not active*) while its key generation (`create_user_keys`) is pending.
+
+### Root cause
+The key generation re-encrypts every shared item of the vault for the new account. On a large vault, or on a server where RSA operations are slow (without the `gmp` extension, the encryption library falls back to much slower arithmetic; the Docker image ships it), it lasts longer than **Maximum time a script is allowed to run** (see [Tasks](../manage/tasks.md)).
+
+### Solution
+Since 3.2.2.7 the generation runs in slices that each stay within that limit and keeps the work already done, so it completes on its own: let the background tasks run. A generation that failed is resumed, not restarted, the next time the user signs in. If it fails again with `Batch … was interrupted … times by the task time limit`, raise **Maximum time a script is allowed to run** or lower the number of items treated by the script, then ask the user to sign in again. Check `php -m | grep gmp` with the PHP binary that runs the background tasks.
+
+---
+
 ## A user's items all show as empty after re-encryption
 
 After a key regeneration or migration, items may temporarily appear empty while the background task processes the sharekeys. This is normal and should resolve within a few minutes.
@@ -163,6 +176,24 @@ If an upgrade via `upgrade.php` fails partway through:
 5. **Permissions**: ensure the web server can write to the Teampass directory during upgrade.
 
 If you cannot resolve the issue, open a ticket on [GitHub Issues](https://github.com/nilsteampassnet/TeamPass/issues) with the error message and your PHP / database versions.
+
+---
+
+## "TeamPass cannot read its configuration" after copying new code
+
+### Symptom
+
+After the new code was copied over an existing installation, TeamPass shows *TeamPass cannot read its configuration*. Releases that predate this message redirect the root URL to `install/install.php` instead (only the logo is displayed), and `install/upgrade.php` answers HTTP 500.
+
+### Cause
+
+The web server can no longer enter `app/config/`. The typical trigger is `rsync -a` run as root without `--no-owner --no-group`: every directory shipped in the archive (`app/config/`, `storage/`, `secrets/`, `app/includes/libraries/csrfp/libs/`…) now belongs to `root`, and their `0750` mode shuts the web server out. Files absent from the archive, such as `settings.php`, keep their owner — that is the tell-tale sign.
+
+### Fix
+
+**Do not run the installer**: it would generate a new encryption key and make every existing secret unreadable. Give the directories back to the web server user with the [Quick-setup commands](../install/file-permissions.md#quick-setup-commands), check with `sudo -u www-data test -r app/config/settings.php && echo OK`, then open `install/upgrade.php`. Use `rsync -av --no-perms --no-owner --no-group` for the next upgrades (see [Upgrade](../install/upgrade.md#option-a--release-archive-recommended)).
+
+With Docker, these symptoms usually mean the configuration file no longer exists, not a permission problem: see [Recovering a lost configuration](../install/docker.md#recovering-a-lost-configuration).
 
 ---
 

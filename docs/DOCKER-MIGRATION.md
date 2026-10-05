@@ -15,7 +15,6 @@ This guide helps you migrate from the old Docker setup to the new optimized vers
 ### New Setup (`teampass/teampass`)
 - ✅ Application code included in image
 - ✅ Modern Alpine-based PHP 8.3-FPM
-- ✅ Optional automatic installation
 - ✅ Simplified volume structure
 - ✅ Built-in health checks
 - ✅ Published on Docker Hub and GitHub Container Registry
@@ -83,9 +82,6 @@ MARIADB_ROOT_PASSWORD=YourOldRootPassword
 
 # Set port
 TEAMPASS_PORT=8080
-
-# Installation already done
-INSTALL_MODE=manual
 ```
 
 #### Option B: Update Existing docker-compose.yml
@@ -108,7 +104,6 @@ services:
       DB_USER: ${DB_USER:-teampass}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_PREFIX: ${DB_PREFIX:-teampass_}
-      INSTALL_MODE: manual
 
     volumes:
       - teampass-sk:/var/www/html/storage/sk

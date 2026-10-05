@@ -167,6 +167,35 @@ decryptUserObjectKeyWithMigration(encryptedKey, privateKey, publicKey, sharekeyI
 
 **Existing-data remediation (SEC-8):** `/scripts/remediate_personal_sharekeys.php` (`--dry-run` by default) strips foreign sharekeys from personal items created before the fix. Owner-only decision logic lives in the DB-free module `/scripts/personal_sharekeys_logic.php` (unit-tested by `tests/Unit/PersonalSharekeysLogicTest.php`). Admin runbook: `docs/install/security-hardening.md`.
 
+**Key generation and personal objects (#5392):** a key generation (`handleUserKeys()` →
+`create_user_keys`, owner = `TP_USER`) re-keys a personal object **only through its TP_USER
+sharekey** — steps 20/30/40/60 of `UserHandlerTrait` all read the owner's sharekey, never the
+user's own one (it is on the replaced key pair). A personal object **without** a TP_USER sharekey
+(typically a 2.x item converted before `56be89835`) is left on the previous key pair: it is
+*stranded*. Everything downstream keys off that definition — `TP_USER has no non-empty sharekey`:
+- step 99 raises `encrypt_personal_items_with_new_password` only when stranded items exist;
+- the recovery dialog (`user_only_personal_items_encryption`, or the LDAP card in state
+  `encrypt_personal_items`) → `findValidPreviousPrivateKey()` (never the current key pair, tested
+  on stranded sharekeys first) → `queuePersonalItemsRecoveryTask()` → a `create_user_keys` task in
+  `only_personal_items` mode: `rekeyPersonalSharekeyFromPreviousKey()` opens the **user's own**
+  sharekey with the previous private key, re-encrypts it with the current public key and backfills
+  the missing TP_USER sharekey. A sharekey the previous key cannot open is **never overwritten**.
+- "I no longer remember my previous password" blanks the stranded sharekeys only.
+
+**Rule: in `sharekeys_files`/`_fields`/`_logs`, `object_id` is a files / categories_items / log_items
+id, never an items id** — join through that table to reach `items.perso`.
+
+**Rule: the owner of a personal item is the owner of the personal tree holding it (the root
+folder's numeric title), never its creator** — a shared item moved into a personal folder keeps the
+`at_creation` entry of whoever created it. Narrowing to the creator deleted the owner's own key at
+every save (#5407). `EnsurePersonalItemHasOnlyKeysForOwner()` receives the editor, checks that they
+own the tree, and deletes nothing unless `userHoldsEveryItemSharekey()` confirms they hold every key.
+The Tools repair (`restorePersonalScopeSharekeys()`) still cross-checks the tree owner against
+`at_creation`, but accepts an owner who wrote the item's latest `at_moved` log
+(`personalOwnerConflictsForRepair()`), which is what lets it repair the items #5407 damaged. An
+edit-form folder change logs `at_category`, not `at_moved`, so those items stay skipped. The bulk
+remediation script keeps the strict creator rule: it only deletes keys, so skipping is its safe side.
+
 **Forced batch migration** (background tasks via `/scripts/traits/PhpseclibV3MigrationTrait.php`):
 - Migrates all v1 sharekeys for a user in batches of 100
 - Triggered when `teampass_users.phpseclibv3_migration_completed = 0`
@@ -323,6 +352,38 @@ alone cannot decrypt; `T` is 256-bit (bypasses the 64-bit `hashUserId`); AES-256
 authenticated; revocable per device; optional `expires_at`; same bruteforce + `tp_src=api` logging
 as the password path; body-only credentials, HTTPS only. The RSA sharekey layer is **untouched** —
 PATs only add an alternate unlock of the existing private key.
+
+---
+
+## Transparent Key Recovery Backup
+
+Lets a user whose password changed outside TeamPass (LDAP/AD, OAuth2) log in without the
+"previous password" dialog: `attemptTransparentRecovery()` opens a second copy of the private key,
+re-encrypts it with the new password, and rewrites the backup.
+
+**Columns** (`teampass_users`): `user_derivation_seed` (64 hex, plaintext), `private_key_backup`,
+`key_integrity_hash` (`HMAC-SHA256(seed . public_key, SECUREFILE)`, tamper detection only).
+
+**Stored format** (GHSA-fv78-jwjv-pj25, fixed after 3.2.2.6):
+```
+derivedKey         = PBKDF2-SHA256(hex2bin(seed), sha256(public_key), transparent_key_recovery_pbkdf2_iterations, 32)
+inner              = base64(CryptoManager::aesEncrypt(PEM, derivedKey, 'cbc', 'sha256'|'sha1'))
+private_key_backup = 'sealed:v1:' . Defuse::encrypt(inner, SECUREFILE key)
+```
+Every input of `derivedKey` sits in the users row, so the inner layer alone protects nothing
+against a database dump — before the fix, a dump was enough to recover every private key holding a
+backup. The Defuse seal with the instance key is what needs `TEAMPASS_SECRETS`, the same
+protection as `users.pw` and `log_items.old_value`.
+
+**Rule: read and write `private_key_backup` only through `encryptPrivateKeyBackup()` /
+`decryptPrivateKeyBackup()`** (`main.functions.php`) — never call `deriveBackupKey()` directly.
+Seal/unseal live in the DB-free `app/sources/private_key_backup_logic.php`; the sentinel
+`tests/Unit/PrivateKeyBackupSealTest.php` fails if `deriveBackupKey()` is called anywhere else.
+
+**Migration:** `upgrade_run_3.2.2.php` seals every legacy backup in place, without opening it (no
+private key is decrypted), skipping rows already sealed — replayable. A legacy value still decrypts
+(`privateKeyBackupUnseal()` passes it through) and is sealed at its next write. Database dumps
+taken before the upgrade remain exploitable: only rotating the stored secrets protects against them.
 
 ---
 

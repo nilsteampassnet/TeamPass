@@ -31,6 +31,14 @@ if (!defined('TEAMPASS_ROOT')) {
     define('TEAMPASS_ROOT', realpath(__DIR__ . '/../..'));
 }
 
+// An installed instance whose app/config/ is unreadable must never reach the
+// wizard: a new installation would replace its encryption key.
+require_once TEAMPASS_ROOT . '/app/sources/config_access_logic.php';
+if (teampassConfigState(TEAMPASS_ROOT . '/app/config') === 'unreadable') {
+    teampassSendConfigAccessError(TEAMPASS_ROOT . '/app/config');
+    exit;
+}
+
 // Prepare autoloader
 require TEAMPASS_ROOT . '/app/vendor/autoload.php';
 use TeampassClasses\SuperGlobal\SuperGlobal;
@@ -124,7 +132,7 @@ $csrf_token = $superGlobal->get('csrf_token', 'SESSION');
 				if (empty($post_step)) {
 					?>
 				<div class="row">
-					<?php if (file_exists(__DIR__ . '/../app/config/settings.php')): ?>
+					<?php if (file_exists(TEAMPASS_ROOT . '/app/config/settings.php')): ?>
 					<div class="col-12 mb-3">
 						<div class="alert alert-danger" role="alert">
 							<h5 class="alert-heading"><i class="fa-solid fa-triangle-exclamation"></i>&nbsp;Existing installation detected</h5>
@@ -135,7 +143,7 @@ $csrf_token = $superGlobal->get('csrf_token', 'SESSION');
 								Doing so will generate a new encryption key (SECUREFILE) and permanently invalidate all existing encrypted data (passwords, sessions, settings).<br><br>
 								If you want to <strong>upgrade</strong> TeamPass, use <code>install/upgrade.php</code> instead.<br>
 								If you are <strong>migrating</strong> TeamPass from another environment, follow the
-								<a href="../docs/#/misc/troubleshooting?id=migrating-teampass-to-another-environment" target="_blank" class="alert-link">Migration guide</a>
+								<a href="https://documentation.teampass.net/#/misc/troubleshooting?id=migrating-teampass-to-another-environment" target="_blank" rel="noopener" class="alert-link">Migration guide</a>
 								before proceeding.
 							</p>
 						</div>

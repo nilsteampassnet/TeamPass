@@ -285,6 +285,36 @@ class FileIntegrityLogicTest extends TestCase
         self::assertSame('public/assets/avatars/shell.php', $report['issues']['unknown'][0]['path']);
     }
 
+    public function testCustomBrandingFolderIgnoresTopLevelImagesOnly(): void
+    {
+        $this->write('app/known.php', 'known');
+        foreach (['logo.png', 'wall.JPG', 'a.jpeg', 'b.gif', 'c.webp'] as $image) {
+            $this->write('public/assets/custom/' . $image, 'image');
+        }
+        $this->write('public/assets/custom/shell.php', 'executable');
+        $this->write('public/assets/custom/shape.svg', 'svg');
+        $this->write('public/assets/custom/page.html', 'html');
+        $this->write('public/assets/custom/sub/logo.png', 'nested');
+        $this->manifest(array('app/known.php' => md5('known')));
+
+        $report = tpFileIntegrityScan(
+            $this->root,
+            $this->root . '/app/files_reference.txt',
+            false,
+            false
+        );
+
+        $unknown = array_column($report['issues']['unknown'], 'path');
+        sort($unknown);
+        self::assertSame(array(
+            'public/assets/custom/page.html',
+            'public/assets/custom/shape.svg',
+            'public/assets/custom/shell.php',
+            'public/assets/custom/sub/logo.png',
+        ), $unknown);
+        self::assertSame(1, $report['counts']['critical']);
+    }
+
     public function testRemovedInstallerIsAllowedButAnIncompletePresentInstallerIsNot(): void
     {
         $this->write('app/known.php', 'known');

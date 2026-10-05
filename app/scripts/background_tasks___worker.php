@@ -66,6 +66,7 @@ class TaskWorker {
 
     // FUNC-4 — set when a subtask is re-queued for retry: the parent task has been
     // reset to is_in_progress=0 for re-pickup and must NOT be marked completed.
+    // Also set by UserHandlerTrait::yieldUserKeysTask() at the end of a time slice.
     private bool $deferCompletion = false;
 
     public function __construct(int $taskId, string $processType, array $taskData) {

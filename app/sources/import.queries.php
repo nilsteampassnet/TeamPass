@@ -1396,6 +1396,8 @@ switch ($inputData['type']) {
 
             // Set the parent folder and ensure default values for certain fields
             $itemDefinition['parentFolderId'] = $previousFolder;
+            $itemDefinition['Title'] = $itemDefinition['Title'] ?? '';
+            $itemDefinition['UserName'] = $itemDefinition['UserName'] ?? '';
             $itemDefinition['Notes'] = $itemDefinition['Notes'] ?? '';
             $itemDefinition['URL'] = $itemDefinition['URL'] ?? '';
             $itemDefinition['Password'] = $itemDefinition['Password'] ?? '';
@@ -1600,7 +1602,17 @@ switch ($inputData['type']) {
 
         $inputData['editAll'] = filter_var($receivedParameters['edit-all'], FILTER_SANITIZE_NUMBER_INT);
         $inputData['editRole'] = filter_var($receivedParameters['edit-role'], FILTER_SANITIZE_NUMBER_INT);
-        
+
+        // Keep the raw passwords before the HTML sanitization below: they are stored
+        // encrypted and never rendered as HTML, so escaping them corrupts the value
+        // (& -> &amp;, " -> &quot;). Same rule as the CSV import.
+        $rawPasswords = [];
+        foreach ((array) ($receivedParameters['items'] ?? []) as $itemKey => $receivedItem) {
+            $rawPasswords[$itemKey] = is_array($receivedItem) && is_scalar($receivedItem['Password'] ?? null)
+                ? (string) $receivedItem['Password']
+                : '';
+        }
+
         $post_folders = filter_var_array(
             $receivedParameters['folders'],
             FILTER_SANITIZE_FULL_SPECIAL_CHARS
@@ -1617,7 +1629,9 @@ switch ($inputData['type']) {
         DB::startTransaction();
 
         // Import all items
-        foreach($post_items as $item) {
+        foreach($post_items as $itemKey => $item) {
+            $itemPassword = $rawPasswords[$itemKey] ?? '';
+
             // The folder map is supplied by the client, so the destination it resolves to
             // is authorized before anything is written.
             $folderId = isset($post_folders[$item['parentFolderId']]['id'])
@@ -1643,10 +1657,10 @@ switch ($inputData['type']) {
             if (($session->has('user-create_item_without_password') && null !== $session->get('user-create_item_without_password')
                 && (int) $session->get('user-create_item_without_password') !== 1
                 ) ||
-                empty($item['Password']) === false
+                $itemPassword !== ''
             ) {
                 // NEW ENCRYPTION
-                $cryptedStuff = doDataEncryption($item['Password']);
+                $cryptedStuff = doDataEncryption($itemPassword);
             } else {
                 $cryptedStuff['encrypted'] = '';
                 $cryptedStuff['objectKey'] = '';
@@ -1725,7 +1739,8 @@ switch ($inputData['type']) {
 
             // prepare return
             $returnedItems[] = array(
-                'title' => substr(stripslashes($item['Title']), 0, 500),
+                // The label arrives HTML-encoded by the filter above, and the client escapes it again.
+                'title' => substr(html_entity_decode((string) ($item['Title'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8'), 0, 500),
                 'folder' => $destinationFolderMore['title']
             );
         }

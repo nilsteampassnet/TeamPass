@@ -29,7 +29,7 @@ Aggregated posture counts: how many items are **weak**, **breached**, **over-sha
 | Flag | Source | Freshness |
 |------|--------|-----------|
 | weak · breached · over-shared · overdue · no-expiry | **Live** | Recomputed from item metadata **every time you run the report** — never stale. Base: all active items in non-personal folders. |
-| reused · orphaned | **Last scan** | Come from the [Security Posture Dashboard](../features/breach-detection.md) deep scan, which needs a live decryption context (a background job cannot read passwords). Each such row shows the **date of the last scan**. Base: the scanned population. |
+| reused · orphaned | **Last scan** | Come from the [Security Posture](../features/security-posture.md) deep scan, which needs a live decryption context (a background job cannot read passwords). Each such row shows the **date of the last scan**. Base: the scanned population. |
 
 The **Freshness** column tells the two apart. This is why a full deep-scan "refresh at report time" is neither offered nor needed: the flags that *can* be recomputed cheaply always are, and the two that genuinely require decryption (reused/orphaned) are clearly dated — run a new scan from the Security dashboard to refresh them.
 

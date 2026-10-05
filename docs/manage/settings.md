@@ -27,8 +27,33 @@ Basic installation paths and branding.
 | **Path to upload folder** | Server path for temporary uploads |
 | **Path to files folder** | Server path for item file attachments |
 | **Favicon URL** | Custom favicon path or URL |
-| **Custom logo URL** | Replaces the Teampass logo in the header |
+| **Public entity name** | Organisation name displayed to Secure Send recipients |
+| **Custom logo** | Replaces the Teampass logo on the login page and, when stored locally, on Secure Send pages — see [Public branding](#public-branding) |
+| **Custom login background** | Replaces the background image of the login page — see [Public branding](#public-branding) |
 | **Custom login text** | Message displayed on the login page |
+
+### Public branding
+
+The **Public entity name** is plain text used to identify the organisation on Secure Send pages.
+
+The **Custom logo** and **Custom login background** options each take one of:
+
+- **the name of an image placed in `public/assets/custom/`**, for example `logo.png` or `background.jpg`. Enter the file name alone, without any folder: TeamPass looks for it in that folder. Accepted formats are PNG, JPG, GIF and WebP;
+- **a full URL**, for an image hosted elsewhere. The background only accepts an absolute `http://` or `https://` URL.
+
+Leave an option empty to keep the image shipped with TeamPass.
+
+Secure Send only uses a logo stored in `public/assets/custom/`. A remote logo remains available
+to the login page but is deliberately ignored on secret-sharing pages, so opening a link never
+notifies an external image host and the restrictive public-page CSP remains unchanged.
+
+The `public/assets/custom/` folder exists for these images. TeamPass only ships a `README.md` and an `.htaccess` file there, so an upgrade never replaces your images, and the file integrity check does not report them. Do not replace the shipped images or `public/assets/css/teampass.css` instead: the next upgrade overwrites them.
+
+> `public/` is the web root: it never appears in a URL. If you prefer a URL to an image of the folder, write `https://teampass.example.com/assets/custom/logo.png`, not `.../public/assets/custom/logo.png`. The latter does not exist, and the server answers it with the TeamPass page itself, which the browser cannot display as an image.
+
+The logo is resized to the width of the login box, up to 150 pixels high.
+
+With Docker, mount the images into the container: see [Custom login logo and background](../install/docker.md#custom-login-logo-and-background).
 
 ---
 
@@ -61,7 +86,7 @@ Access control, encryption, and session security parameters.
 | **Enable HTTP request login** | Allows authentication via HTTP request parameters (use with caution) |
 | **Enable STS/HSTS** | Adds the `Strict-Transport-Security` HTTP header; requires HTTPS |
 | **Password life duration** | Number of days before a user's login password expires (0 = never) |
-| **False login attempts** | Maximum failed logins before the account is locked |
+| **Maximum login attempts before account lockout** | Maximum failed logins before the account is locked. Default: 10; `0` disables the lockout |
 | **Secure image display** | Serves item attachments through Teampass instead of direct URLs |
 | **Password overview delay** | Seconds a revealed password stays visible before being masked again |
 | **Activate item expiration** | Enables password expiration tracking on items (see [Renewal](../features/renewal.md)) |
@@ -191,9 +216,13 @@ Sharing, export, and content features.
 
 | Option | Description |
 |--------|-------------|
-| **Enable One-Time View** | Users can generate time-limited sharing links for items (see [Items — One Time View](../features/items.md#one-time-view)) |
-| **OTV expiration period** | Default validity duration for One Time View links in days (default: 7) |
-| **OTV subdomain** | External subdomain used in OTV links, for sharing outside the internal network |
+| **User can propose One-Time-View links** | Enables Secure Send: users can generate time-limited sharing links for items (see [Items — Secure Send](../features/items.md#secure-send)) |
+| **One-time-view (OTV) links expire after XX days** | Maximum validity of a Secure Send link, in days, also proposed by default in the sender form (default: 7) |
+| **Public sharing address** | HTTPS base URL used for external item and note links. The existing `otv_subdomain` setting also accepts a hostname or legacy short prefix; see below. |
+| **Secure Send maximum number of views per link** | Upper bound that a sender may assign to one link; use `1` unless the use case explicitly requires more |
+| **Force a passphrase on every Secure Send link** | Requires the sender to protect every new link with a separate passphrase; recommended for Internet-facing links |
+| **Allow sending ad-hoc notes/secrets** | Permits links that are not attached to an item or folder; leave disabled unless that independent lifecycle is required |
+| **Show the sender’s profile name** | Publishes the sender’s first and last name on the public page before passphrase entry. Enabled on fresh installs; existing instances must opt in after upgrading. |
 | **Allow printing** | Enables the print / export-to-PDF feature |
 | **Roles allowed to print** | Restricts the print feature to selected roles |
 | **Allow import** | Enables CSV and KeePass2 XML import (see [Import](../features/import.md)) |
@@ -202,18 +231,84 @@ Sharing, export, and content features.
 | **Enable knowledge base** | Activates the built-in knowledge base feature. When enabled, the Knowledge Base entry appears in the navigation menu for all users (see [Knowledge Base](../features/knowledge-base.md)) |
 | **Enable suggestions** | Users can submit password change suggestions to administrators |
 
+### Public sharing address
+
+Prefer an explicit HTTPS base URL, for example `https://share.example.com` or
+`https://share.example.com:9443/vault`. This allows the public route to differ from
+the main TeamPass route, including its port and installation path.
+
+For a main address of `https://vault.example.com:8443/team`:
+
+| Setting value | Public base address |
+| --- | --- |
+| `share` (legacy prefix) | `https://share.vault.example.com:8443/team` |
+| `share.example.com` (hostname) | `https://share.example.com:8443/team` |
+| `https://share.example.com` (full URL) | `https://share.example.com` |
+| Empty | No public address; links use the main TeamPass URL |
+
+A legacy prefix replaces a leading `www.` only. Public addresses use HTTPS;
+the internal/main address retains its configured scheme for existing LAN installations.
+Credentials, query parameters, fragments and unsafe paths are rejected when saving
+the public setting. No DNS lookup or reachability probe is performed, so DNS setup
+order cannot cause a silent fallback. Reload an already-open item page after changing
+the setting to refresh its address preview.
+
+#### Upgrading from a short prefix
+
+Existing `otv_subdomain` values are resolved differently for newly generated links:
+
+- Public links now always use HTTPS, even when the main TeamPass URL uses HTTP.
+- A short prefix now retains the main URL's port and installation path. Verify that
+  the public virtual host serves that path, or configure an explicit HTTPS base URL
+  matching the public route.
+- A dotted value such as `share.dmz` is now treated as a complete hostname. It is no
+  longer prepended to the main TeamPass hostname.
+
+Existing links remain usable when their hostname is unchanged because redemption
+checks the host, not the URL path. If a dotted legacy value changes the resolved
+hostname, verify or regenerate the affected links. Check the public route after the
+upgrade; an explicit URL such as `https://share.example.com/vault` removes ambiguity.
+
+Create DNS for the **resolved hostname**, configure a matching TLS certificate and
+route that host/path to TeamPass's `public/` directory. DNS alone does not configure
+the web server. For public links, the proxy must preserve the public `Host` header; arbitrary
+`X-Forwarded-Host` values are not accepted as proof of the destination hostname.
+Changing the configured hostname also changes where existing links may be redeemed;
+regenerate links when changing public routing. Internal links do not require an exact
+Host match, preserving reverse-proxy rewrites, DNS aliases and LAN names containing
+underscores.
+
+The public hostname is not an isolation boundary for the full TeamPass application.
+If the vault should remain private, configure the public virtual host/reverse proxy
+to expose only the exact generated OTV GET query, the `index.php?otv=1`
+confirmation POST and required static assets, while retaining the internal route
+for authenticated use. Do not redirect
+public OTV requests to the private hostname. Never log link query parameters or
+recipient POST bodies, which contain sharing credentials.
+
+For deny-by-default Apache, Nginx/PHP-FPM and reverse-proxy examples, operating
+system differences, validation tests and operational policy, see
+[Secure Send deployment and hardening](../install/secure-send.md).
+
 ---
 
-## Breach Detection
+## Security posture & breach detection
 
-Check item passwords against the Have I Been Pwned database. Disabled by default.
+Password hygiene features, all disabled by default. They are described in [Security posture](../features/security-posture.md).
 
 | Option | Description |
 |--------|-------------|
-| **Enable HIBP breach detection** (`hibp_enabled`) | Activates password breach checking globally. When enabled, passwords are checked against the HIBP Pwned Passwords API using k-anonymity (see [Breach detection](../features/breach-detection.md)) |
-| **Check interval (days)** (`hibp_check_interval_days`) | Minimum number of days between re-checks for the same item. Default: 7. Set to 0 to check on every item view (not recommended on high-traffic instances) |
+| **Enable HaveIBeenPwned password check** (`hibp_enabled`) | Checks item passwords against the Have I Been Pwned Pwned Passwords API when they are opened, using k-anonymity: only the first 5 characters of the password's SHA-1 hash leave the server |
+| **Re-check interval (days)** (`hibp_check_interval_days`) | Days before a password is checked again when its item is opened. Default: 7 (1 to 365) |
+| **Security posture dashboard** (`security_dashboard_enabled`) | Enables the per-user Security posture page and the security score badge |
+| **Widely-shared threshold (users)** (`security_dashboard_overshared_threshold`) | An item shared with more users than this is flagged as widely shared. Default: 10 |
+| **Minimum password length (characters)** (`security_dashboard_min_password_length`) | A shorter password is reported as weak. Default: 12 |
+| **Proactive health nudges** (`security_nudges_enabled`) | In-app banner and item list marker for breached, weak, reused or overdue passwords (requires the Security posture dashboard) |
+| **Email digest of at-risk passwords** (`security_nudges_email_enabled`) | Periodic counts-only email to each user concerned |
+| **Email digest frequency (days)** (`security_nudges_email_frequency_days`) | Minimum number of days between two digests for a user. Default: 7 |
+| **Stale scan threshold (days)** (`security_nudges_stale_scan_days`) | Beyond this age, the banner invites the user to run a new scan. Default: 14 |
 
-> 🔔 The server must be able to reach `api.pwnedpasswords.com` over HTTPS. Verify outbound access if your server operates behind a strict firewall.
+> 🔔 Breach detection needs outbound HTTPS access to `api.pwnedpasswords.com`. Verify it if your server operates behind a strict firewall.
 
 ---
 

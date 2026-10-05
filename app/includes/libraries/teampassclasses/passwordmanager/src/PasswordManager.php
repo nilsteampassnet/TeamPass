@@ -81,7 +81,9 @@ class PasswordManager
      * @param string $plainPassword  The plain-text password supplied at login.
      * @param int    $userId         The user's ID (for DB update and task launch).
      * @param bool   $isAdmin        Skip key-regeneration tasks for admin accounts.
-     * @return array{status: bool, hashedPassword: string, migratedUser: bool}
+     * @return array{status: bool, hashedPassword: string, migratedUser: bool, legacySanitized: bool}
+     *         legacySanitized is true when the legacy hash was computed on the 3.0.x sanitized
+     *         form of the password: keys that were not regenerated are still encrypted with it.
      */
     public function migratePassword(string $hashedPassword, string $plainPassword, int $userId, bool $isAdmin = false): array
     {
@@ -89,12 +91,15 @@ class PasswordManager
             'status' => false,
             'hashedPassword' => $hashedPassword,
             'migratedUser' => false,
+            'legacySanitized' => false,
         ];
 
         // Legacy hashes were produced by PHP's native bcrypt (cost 10) — verifiable by password_verify().
         if ($this->isLegacyBcryptHash($hashedPassword)) {
-            if ($this->verifyPasswordWithbCrypt(html_entity_decode($plainPassword), $hashedPassword)) {
-                // Password is valid, hash it with new system
+            $legacyForm = $this->matchLegacyBcryptHash($plainPassword, $hashedPassword);
+            if ($legacyForm !== null) {
+                // Password is valid, hash it with new system.
+                // Always the raw password: it is the one every later login will send.
                 $newHashedPassword = $this->hashPassword($plainPassword);
                 $this->updateInDatabase($newHashedPassword, $userId);
 
@@ -112,6 +117,7 @@ class PasswordManager
                     'status' => true,
                     'hashedPassword' => $newHashedPassword,
                     'migratedUser' => true,
+                    'legacySanitized' => $legacyForm === 'sanitized',
                 ];
             } else {
                 $result['status'] = false;
@@ -135,6 +141,29 @@ class PasswordManager
     private function isLegacyBcryptHash(string $hashedPassword): bool
     {
         return str_starts_with($hashedPassword, '$2y$10$');
+    }
+
+    /**
+     * Tell which form of the password a legacy bcrypt hash was computed on.
+     * 2.x hashed the raw password; 3.0.x hashed it after FILTER_SANITIZE_FULL_SPECIAL_CHARS,
+     * which turns & " ' < > and accented letters into HTML entities (issue #5389).
+     *
+     * @param string $plainPassword The raw password supplied at login.
+     * @param string $hash          The legacy bcrypt hash.
+     * @return string|null 'raw', 'sanitized', or null when neither form matches.
+     */
+    public function matchLegacyBcryptHash(string $plainPassword, string $hash): ?string
+    {
+        if ($this->verifyPasswordWithbCrypt($plainPassword, $hash)) {
+            return 'raw';
+        }
+
+        $sanitizedPassword = (string) filter_var($plainPassword, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        if ($sanitizedPassword !== $plainPassword && $this->verifyPasswordWithbCrypt($sanitizedPassword, $hash)) {
+            return 'sanitized';
+        }
+
+        return null;
     }
 
     /**

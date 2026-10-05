@@ -75,6 +75,18 @@ class FolderManager
             $user_can_create_root_folder = $params['user_can_create_root_folder'] ?? 0;
 
 
+        if (array_key_exists('deletion_protected', $params)) {
+            $deletionProtection = filter_var($params['deletion_protected'], FILTER_VALIDATE_INT);
+            if ($deletionProtection === false
+                || in_array($deletionProtection, [0, 1], true) === false
+                || ($deletionProtection === 1 && (int) $user_is_admin !== 1)
+            ) {
+                return $this->errorResponse($this->lang->get('error_not_allowed_to'));
+            }
+            $params['deletion_protected'] = $deletionProtection;
+        }
+
+
         if ($this->isTitleNumeric($title)) {
             return $this->errorResponse($this->lang->get('error_only_numbers_in_folder_name'));
         }
@@ -112,12 +124,14 @@ class FolderManager
      *  - id (int, required)
      *  - personal_folder (int, derived from the resolved parent — always written)
      *  - parent_id, title, duration, create_auth_without, edit_auth_without,
+     *    deletion_protected,
      *    icon, icon_selected, complexity (all optional — only written when present)
-     *  - parent_changed (bool), user_login, user_roles (context, never from session)
+     *  - parent_changed (bool), user_id, user_login, user_roles, user_is_admin
+     *    (context, never from session)
      *
      * @param array $params  Folder update parameters (see above)
      * @param array $options Reserved for future toggles (unused today)
-     * @return array{error: bool, id?: int, title?: string, parent_id?: int, message?: string, db_error?: bool}
+     * @return array{error: bool, id?: int, title?: string, parent_id?: int, message?: string, db_error?: bool, reason?: string, blocked?: bool, linked_items?: int, managed_items?: int, credential_items?: int}
      */
     public function updateFolder(array $params, array $options = []): array
     {
@@ -132,6 +146,44 @@ class FolderManager
         );
         if ($current === null) {
             return ['error' => true, 'message' => 'Folder not found'];
+        }
+
+        if (array_key_exists('deletion_protected', $params)) {
+            $deletionProtection = filter_var($params['deletion_protected'], FILTER_VALIDATE_INT);
+            if ($deletionProtection === false
+                || in_array($deletionProtection, [0, 1], true) === false
+                || (int) ($params['user_is_admin'] ?? 0) !== 1
+            ) {
+                return [
+                    'error' => true,
+                    'reason' => 'folder_deletion_protection_forbidden',
+                    'message' => (string) $this->lang->get('error_not_allowed_to'),
+                ];
+            }
+            $params['deletion_protected'] = $deletionProtection;
+        }
+
+        if (!empty($params['parent_changed'])
+            && (int) $current['personal_folder'] === 0
+            && (int) ($params['personal_folder'] ?? 0) === 1
+        ) {
+            $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+            $folderScope = array_map(
+                static fn ($folder): int => (int) $folder->id,
+                $tree->getDescendants($folderId, true)
+            );
+            require_once __DIR__ . '/lapr.functions.php';
+            $laprRelations = laprGetFolderItemRelationCounts($folderScope, $this->settings);
+            if ($laprRelations['blocked'] === true) {
+                return array_merge(
+                    [
+                        'error' => true,
+                        'reason' => 'folder_contains_lapr_items',
+                        'message' => (string) $this->lang->get('folder_lapr_personal_move_blocked'),
+                    ],
+                    $laprRelations
+                );
+            }
         }
 
         // Build the set of columns to update — only the keys present in the request
@@ -152,6 +204,9 @@ class FolderManager
         }
         if (array_key_exists('edit_auth_without', $params)) {
             $folderParameters['bloquer_modification'] = (int) $params['edit_auth_without'];
+        }
+        if (array_key_exists('deletion_protected', $params)) {
+            $folderParameters['deletion_protected'] = (int) $params['deletion_protected'];
         }
         if (array_key_exists('icon', $params)) {
             $folderParameters['fa_icon'] = empty($params['icon']) === true ? TP_DEFAULT_ICON : (string) $params['icon'];
@@ -199,6 +254,19 @@ class FolderManager
             $this->refreshCacheForUsersWithSimilarRoles((string) ($params['user_roles'] ?? ''));
         }
 
+        if (array_key_exists('deletion_protected', $folderParameters)) {
+            logEvents(
+                $this->settings,
+                'admin_action',
+                (int) $folderParameters['deletion_protected'] === 1
+                    ? 'folder_deletion_protection_enabled'
+                    : 'folder_deletion_protection_disabled',
+                (string) ($params['user_id'] ?? ''),
+                (string) ($params['user_login'] ?? ''),
+                'folder_id=' . $folderId
+            );
+        }
+
         $newTitle = $folderParameters['title'] ?? (string) $current['title'];
         $newParentId = isset($folderParameters['parent_id'])
             ? (int) $folderParameters['parent_id']
@@ -233,7 +301,7 @@ class FolderManager
      *
      * @param array<int> $folderIds Folder IDs to delete (descendants included automatically)
      * @param array      $context   user_id (int), user_login (string), SETTINGS (array)
-     * @return array{error: bool, deleted_folders?: array<int>, deleted_items_count?: int, message?: string}
+     * @return array{error: bool, reason?: string, deleted_folders?: array<int>, deleted_items_count?: int, message?: string, protected_folders?: int, linked_items?: int, managed_items?: int, credential_items?: int, blocked?: bool, db_error?: bool, parent_id?: int}
      */
     public function deleteFolders(array $folderIds, array $context): array
     {
@@ -243,20 +311,34 @@ class FolderManager
 
         $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
-        $folderForDel = [];
+        $foldersToDelete = [];
         $foldersDeletedInfo = [];
         $deletedItemsCount = 0;
+        $parentId = 0;
 
         DB::startTransaction();
         try {
+            // Resolve and deduplicate the complete scope before the first write.
+            // This allows every business blocker to reject the whole batch atomically.
             foreach ($folderIds as $requestedFolderId) {
                 $requestedFolderId = (int) $requestedFolderId;
-                if (in_array($requestedFolderId, $folderForDel, true) === true) {
+                if ($requestedFolderId <= 0 || isset($foldersToDelete[$requestedFolderId]) === true) {
                     continue;
                 }
 
                 $subFolders = $tree->getDescendants($requestedFolderId, true);
                 foreach ($subFolders as $thisSubFolders) {
+                    if ((int) $thisSubFolders->id === $requestedFolderId
+                        && (int) $thisSubFolders->parent_id === 0
+                        && (int) ($thisSubFolders->personal_folder ?? 0) === 1
+                    ) {
+                        DB::rollback();
+                        return [
+                            'error' => true,
+                            'reason' => 'personal_root_protected',
+                            'message' => (string) $this->lang->get('error_not_allowed_to'),
+                        ];
+                    }
                     // Never delete a personal root folder (defense in depth)
                     if ((int) $thisSubFolders->parent_id === 0
                         && (int) ($thisSubFolders->personal_folder ?? 0) === 1
@@ -267,9 +349,90 @@ class FolderManager
                         continue;
                     }
 
-                    // Store the deleted folder (recycled bin) as JSON — this format
-                    // is parsed by utilities.queries.php on restore; any drift breaks it.
-                    $folderDeletedData = [
+                    $folderId = (int) $thisSubFolders->id;
+                    $foldersToDelete[$folderId] = $thisSubFolders;
+                    if ($folderId === $requestedFolderId && $parentId === 0) {
+                        $parentId = (int) $thisSubFolders->parent_id;
+                    }
+                }
+            }
+
+            if (count($foldersToDelete) === 0) {
+                DB::rollback();
+                return [
+                    'error' => true,
+                    'reason' => 'folder_not_found',
+                    'message' => (string) $this->lang->get('error_not_allowed_to'),
+                ];
+            }
+
+            $folderForDel = array_map('intval', array_keys($foldersToDelete));
+
+            // Lock and re-read the deletion-protection flags so a concurrent admin
+            // change cannot race the preflight check.
+            $lockedFolders = DB::query(
+                'SELECT id, deletion_protected
+                 FROM ' . prefixTable('nested_tree') . '
+                 WHERE id IN %li
+                 FOR UPDATE',
+                $folderForDel
+            );
+            if (count($lockedFolders) !== count($folderForDel)) {
+                DB::rollback();
+                return [
+                    'error' => true,
+                    'reason' => 'folder_not_found',
+                    'message' => (string) $this->lang->get('error_not_allowed_to'),
+                ];
+            }
+            $protectedFolderCount = 0;
+            foreach ($lockedFolders as $lockedFolder) {
+                if ((int) ($lockedFolder['deletion_protected'] ?? 0) === 1) {
+                    $protectedFolderCount++;
+                }
+            }
+            if ($protectedFolderCount > 0) {
+                DB::rollback();
+                return [
+                    'error' => true,
+                    'reason' => 'folder_deletion_protected',
+                    'message' => (string) $this->lang->get('folder_deletion_protected'),
+                    'protected_folders' => $protectedFolderCount,
+                ];
+            }
+
+            if ((int) ($SETTINGS['lapr_enabled'] ?? 0) === 1) {
+                // Serialize this preflight with LAPR enrollment. LAPR creation paths
+                // lock the referenced item before activating a relationship, so either
+                // the relationship is visible below or enrollment observes the item as
+                // deleted after this transaction commits.
+                DB::query(
+                    'SELECT id
+                     FROM ' . prefixTable('items') . '
+                     WHERE id_tree IN %li AND inactif = 0 AND deleted_at IS NULL
+                     FOR UPDATE',
+                    $folderForDel
+                );
+            }
+
+            require_once __DIR__ . '/lapr.functions.php';
+            $laprRelations = laprGetFolderItemRelationCounts($folderForDel, $SETTINGS);
+            if ($laprRelations['blocked'] === true) {
+                DB::rollback();
+                return array_merge(
+                    [
+                        'error' => true,
+                        'reason' => 'folder_contains_lapr_items',
+                        'message' => (string) $this->lang->get('folder_contains_lapr_items'),
+                    ],
+                    $laprRelations
+                );
+            }
+
+            foreach ($foldersToDelete as $thisSubFolders) {
+                // Store the deleted folder (recycled bin) as JSON — this format
+                // is parsed by utilities.queries.php on restore; any drift breaks it.
+                $folderDeletedData = [
                         'id' => (int) $thisSubFolders->id,
                         'parent_id' => (int) $thisSubFolders->parent_id,
                         'title' => (string) $thisSubFolders->title,
@@ -278,23 +441,24 @@ class FolderManager
                         'nlevel' => (int) $thisSubFolders->nlevel,
                         'bloquer_creation' => (int) ($thisSubFolders->bloquer_creation ?? 0),
                         'bloquer_modification' => (int) ($thisSubFolders->bloquer_modification ?? 0),
+                        'deletion_protected' => (int) ($thisSubFolders->deletion_protected ?? 0),
                         'personal_folder' => (int) ($thisSubFolders->personal_folder ?? 0),
                         'renewal_period' => (int) ($thisSubFolders->renewal_period ?? 0),
                         'categories' => (string) ($thisSubFolders->categories ?? ''),
                         'deleted_by' => $userId,
                         'deleted_by_login' => $userLogin,
-                    ];
-                    if (isset($thisSubFolders->fa_icon) === true) {
-                        $folderDeletedData['fa_icon'] = (string) $thisSubFolders->fa_icon;
-                    }
-                    if (isset($thisSubFolders->fa_icon_selected) === true) {
-                        $folderDeletedData['fa_icon_selected'] = (string) $thisSubFolders->fa_icon_selected;
-                    }
-                    if (isset($thisSubFolders->is_template) === true) {
-                        $folderDeletedData['is_template'] = (int) $thisSubFolders->is_template;
-                    }
+                ];
+                if (isset($thisSubFolders->fa_icon) === true) {
+                    $folderDeletedData['fa_icon'] = (string) $thisSubFolders->fa_icon;
+                }
+                if (isset($thisSubFolders->fa_icon_selected) === true) {
+                    $folderDeletedData['fa_icon_selected'] = (string) $thisSubFolders->fa_icon_selected;
+                }
+                if (isset($thisSubFolders->is_template) === true) {
+                    $folderDeletedData['is_template'] = (int) $thisSubFolders->is_template;
+                }
 
-                    DB::query(
+                DB::query(
                         'INSERT INTO %l (type, intitule, valeur, created_at)
                          VALUES (%s, %s, %s, %i)
                          ON DUPLICATE KEY UPDATE valeur = VALUES(valeur), updated_at = %i',
@@ -304,60 +468,55 @@ class FolderManager
                         json_encode($folderDeletedData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
                         time(),
                         time()
+                );
+
+                $foldersDeletedInfo[] = [
+                    'folder_id' => (int) $thisSubFolders->id,
+                    'title' => (string) $thisSubFolders->title,
+                    'parent_id' => (int) $thisSubFolders->parent_id,
+                ];
+
+                // Soft-delete items in this folder
+                $itemsInSubFolder = DB::query(
+                    'SELECT id, label FROM ' . prefixTable('items') . ' WHERE id_tree = %i',
+                    $thisSubFolders->id
+                );
+                foreach ($itemsInSubFolder as $item) {
+                    DB::update(
+                        prefixTable('items'),
+                        [
+                            'inactif' => '1',
+                            'deleted_at' => time(),
+                        ],
+                        'id = %i',
+                        $item['id']
                     );
 
-                    $folderForDel[] = (int) $thisSubFolders->id;
-                    $foldersDeletedInfo[] = [
-                        'folder_id' => (int) $thisSubFolders->id,
-                        'title' => (string) $thisSubFolders->title,
-                        'parent_id' => (int) $thisSubFolders->parent_id,
-                    ];
-
-                    // Soft-delete items in this folder
-                    $itemsInSubFolder = DB::query(
-                        'SELECT id, label FROM ' . prefixTable('items') . ' WHERE id_tree = %i',
-                        $thisSubFolders->id
+                    logItems(
+                        $SETTINGS,
+                        (int) $item['id'],
+                        (string) $item['label'],
+                        $userId,
+                        'at_delete',
+                        $userLogin
                     );
-                    foreach ($itemsInSubFolder as $item) {
-                        DB::update(
-                            prefixTable('items'),
-                            [
-                                'inactif' => '1',
-                                'deleted_at' => time(),
-                            ],
-                            'id = %i',
-                            $item['id']
-                        );
 
-                        logItems(
-                            $SETTINGS,
-                            (int) $item['id'],
-                            (string) $item['label'],
-                            $userId,
-                            'at_delete',
-                            $userLogin
-                        );
-
-                        updateCacheTable('delete_value', (int) $item['id']);
-                        $deletedItemsCount++;
-                    }
+                    updateCacheTable('delete_value', (int) $item['id']);
+                    $deletedItemsCount++;
                 }
             }
 
             // Collect affected users BEFORE deleting folders/roles
-            $folderForDel = array_values(array_unique($folderForDel));
             $affectedUserIds = [$userId];
-            if (empty($folderForDel) === false) {
-                $affectedUserIds = array_merge($affectedUserIds, DB::queryFirstColumn(
-                    'SELECT DISTINCT ur.user_id FROM ' . prefixTable('users_roles') . ' ur
-                    JOIN ' . prefixTable('roles_values') . ' rv ON ur.role_id = rv.role_id
-                    WHERE rv.folder_id IN %ls',
-                    $folderForDel
-                ), DB::queryFirstColumn(
-                    'SELECT user_id FROM ' . prefixTable('users_groups') . ' WHERE group_id IN %li',
-                    $folderForDel
-                ));
-            }
+            $affectedUserIds = array_merge($affectedUserIds, DB::queryFirstColumn(
+                'SELECT DISTINCT ur.user_id FROM ' . prefixTable('users_roles') . ' ur
+                JOIN ' . prefixTable('roles_values') . ' rv ON ur.role_id = rv.role_id
+                WHERE rv.folder_id IN %ls',
+                $folderForDel
+            ), DB::queryFirstColumn(
+                'SELECT user_id FROM ' . prefixTable('users_groups') . ' WHERE group_id IN %li',
+                $folderForDel
+            ));
 
             foreach ($folderForDel as $fol) {
                 DB::delete(prefixTable('nested_tree'), 'id = %i', $fol);
@@ -366,7 +525,12 @@ class FolderManager
             DB::commit();
         } catch (Throwable $e) {
             DB::rollback();
-            return ['error' => true, 'message' => $e->getMessage()];
+            error_log('TeamPass Error - deleteFolders - ' . $e->getMessage());
+            return [
+                'error' => true,
+                'db_error' => true,
+                'message' => (string) $this->lang->get('error_unknown'),
+            ];
         }
 
         // Rebuild the tree after commit (mirrors the web handler)
@@ -381,7 +545,7 @@ class FolderManager
                 (string) $deletedFolder['title'],
                 $userLogin,
                 (int) $deletedFolder['parent_id'],
-                null
+                isset($context['exclude_user_id']) ? (int) $context['exclude_user_id'] : null
             );
         }
 
@@ -389,6 +553,7 @@ class FolderManager
             'error' => false,
             'deleted_folders' => $folderForDel,
             'deleted_items_count' => $deletedItemsCount,
+            'parent_id' => $parentId,
         ];
     }
 
@@ -578,6 +743,17 @@ class FolderManager
             // Include the creator even when no role covers the folder (personal folders).
             invalidateCacheForFolderUsers((int) $newId, [(int) $user_id]);
 
+            if ((int) ($params['deletion_protected'] ?? 0) === 1) {
+                logEvents(
+                    $this->settings,
+                    'admin_action',
+                    'folder_deletion_protection_enabled',
+                    (string) $user_id,
+                    (string) ($params['user_login'] ?? ''),
+                    'folder_id=' . (int) $newId
+                );
+            }
+
             return ['error' => false, 'newId' => $newId];
         } else {
             return ['error' => true, 'newId' => null];
@@ -608,6 +784,7 @@ class FolderManager
             'renewal_period' => $params['duration'] ?? 0,
             'bloquer_creation' => $params['create_auth_without'] ?? $parentFolderData['parentBloquerCreation'],
             'bloquer_modification' => $params['edit_auth_without'] ?? $parentFolderData['parentBloquerModification'],
+            'deletion_protected' => (int) ($params['deletion_protected'] ?? 0),
             'fa_icon' => empty($params['icon']) ? TP_DEFAULT_ICON : $params['icon'],
             'fa_icon_selected' => empty($params['icon_selected']) ? TP_DEFAULT_ICON_SELECTED : $params['icon_selected'],
             'categories' => '',

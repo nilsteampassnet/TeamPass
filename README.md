@@ -198,8 +198,7 @@ Findings are triaged, fixed and published as GitHub Security Advisories with CVE
 <summary><b>📊 Security posture</b></summary>
 <br />
 
-- Security Posture Dashboard scoring weak, reused and breached credentials
-- [Breach detection](https://documentation.teampass.net/#/features/breach-detection) — Have I Been Pwned checks without sending your passwords
+- [Security posture](https://documentation.teampass.net/#/features/security-posture) — a personal score for weak, reused and breached credentials, and Have I Been Pwned checks without sending your passwords
 - [Password renewal](https://documentation.teampass.net/#/features/renewal) — expiry policies and reminders
 - [Micro-learning](https://documentation.teampass.net/#/features/micro-learning) — in-app nudges instead of a yearly slideshow
 

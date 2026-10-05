@@ -33,6 +33,7 @@ Maintenance tasks can run on lower frequencies. You can select how to run them o
 1. Define if logging in database each task execution is requested. _It permits to check if everything works as defined and should be disabled once working_
 2. Set the maximum duration a script can execute in background. 
 _It is suggested to define a higher value that the `max_execution_time` defined in `php.ini` file. Value `0` indicates that any time for the script is allowed._ 
+_The generation of a user's encryption keys (task `create_user_keys`, run when an account is created or its keys are regenerated) re-encrypts every shared item of the vault, so it can last longer than this limit on a large vault. It runs in slices that each stay within the limit, and keeps everything already done between two slices. A slice that is still stopped at the limit has its last batch replayed; a batch that is stopped 3 times fails the task with the message `Batch … was interrupted … times by the task time limit`: raise this value, or lower the number of items treated by the script (next option), then ask the user to sign in again — the generation resumes where it stopped._ 
 1. Set the number of items will be treated by the script. _This value is to adapt depending on what happen. But you should not change it._
 1. Set the delay after which the data is refreshed in the tasks management follow up page.
 
@@ -51,6 +52,17 @@ Then open the crons manager with the same user as the one used by php (example: 
 > :pushpin: 
 > Set it to run every minute.
 > Add the comment `#Teampass scheduler` after the command
+
+### Windows servers
+
+There is no crontab on Windows: create the job in the **Task Scheduler** instead, and the installer does not do it for you.
+
+- **Action**: *Start a program*. Program `C:\path\to\php\php.exe`, arguments `C:\path\to\Teampass\app\sources\scheduler.php`.
+- **Trigger**: daily, repeated every **1 minute** for an indefinite duration.
+- **General**: select **Run whether user is logged on or not**, with the account that runs the web server or a dedicated service account that can write to `storage/`.
+
+> :pushpin:
+> *Run whether user is logged on or not* starts the job outside the desktop session, so no console window appears every minute. TeamPass starts the scripts it launches from the scheduler without a window, but the first `php.exe` is launched by Windows, and only this option hides it.
 
 ## Tasks management follow up page
 

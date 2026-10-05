@@ -239,6 +239,7 @@ if (null !== $post_type) {
                     $arrayColumns['renewalPeriod'] = (int) $t->renewal_period;
                     $arrayColumns['add_is_blocked'] = (int) $t->bloquer_creation;
                     $arrayColumns['edit_is_blocked'] = (int) $t->bloquer_modification;
+                    $arrayColumns['deletionProtected'] = (int) ($t->deletion_protected ?? 0);
                     $arrayColumns['icon'] = (string) ($t->fa_icon ?? '');
                     $arrayColumns['iconSelected'] = (string) ($t->fa_icon_selected ?? '');
 
@@ -352,6 +353,7 @@ if (null !== $post_type) {
                 'duration' => isset($dataReceived['renewalPeriod']) === true ? $dataReceived['renewalPeriod'] : -1,
                 'create_auth_without' => isset($dataReceived['addRestriction']) === true ? $dataReceived['addRestriction'] : -1,
                 'edit_auth_without' => isset($dataReceived['editRestriction']) === true ? $dataReceived['editRestriction'] : -1,
+                'deletion_protected' => isset($dataReceived['deletionProtection']) === true ? $dataReceived['deletionProtection'] : -1,
                 'icon' => isset($dataReceived['icon']) === true ? $dataReceived['icon'] : '',
                 'icon_selected' => isset($dataReceived['iconSelected']) === true ? $dataReceived['iconSelected'] : '',
                 'access_rights' => isset($dataReceived['accessRight']) === true ? $dataReceived['accessRight'] : 'W',
@@ -364,6 +366,7 @@ if (null !== $post_type) {
                 'duration' => 'cast:integer',
                 'create_auth_without' => 'cast:integer',
                 'edit_auth_without' => 'cast:integer',
+                'deletion_protected' => 'cast:integer',
                 'icon' => 'trim|escape',
                 'icon_selected' => 'trim|escape',
                 'access_rights' => 'trim|escape',
@@ -372,6 +375,25 @@ if (null !== $post_type) {
                 $data,
                 $filters
             );
+
+            $validatedDeletionProtection = filter_var(
+                $dataReceived['deletionProtection'] ?? -1,
+                FILTER_VALIDATE_INT
+            );
+            if ($validatedDeletionProtection === false
+                || in_array($validatedDeletionProtection, [-1, 0, 1], true) === false
+                || ($validatedDeletionProtection !== -1 && (int) $session->get('user-admin') !== 1)
+            ) {
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ],
+                    'encode'
+                );
+                break;
+            }
+            $inputData['deletion_protected'] = $validatedDeletionProtection;
 
             // Init
             $error = false;
@@ -582,6 +604,35 @@ if (null !== $post_type) {
                 break;
             }
 
+            // Moving a complete shared subtree into a personal tree must apply
+            // the same LAPR invariant as moving an individual linked item.
+            if (
+                $parentChanged === true
+                && (int) $dataFolder['personal_folder'] === 0
+                && (int) $isPersonal === 1
+            ) {
+                require_once __DIR__ . '/lapr.functions.php';
+                $folderScope = array_map(
+                    static fn ($folder): int => (int) $folder->id,
+                    $tree->getDescendants((int) $dataFolder['id'], true)
+                );
+                $laprRelations = laprGetFolderItemRelationCounts($folderScope, $SETTINGS);
+                if ($laprRelations['blocked'] === true) {
+                    echo prepareExchangedData(
+                        array_merge(
+                            [
+                                'error' => true,
+                                'reason' => 'folder_contains_lapr_items',
+                                'message' => $lang->get('folder_lapr_personal_move_blocked'),
+                            ],
+                            $laprRelations
+                        ),
+                        'encode'
+                    );
+                    break;
+                }
+            }
+
             // Check if user is allowed
             if (
                 !(
@@ -622,6 +673,11 @@ if (null !== $post_type) {
             if ($inputData['edit_auth_without'] !== -1 && $dataFolder['bloquer_modification'] !== $inputData['edit_auth_without']) {
                 $folderParameters['bloquer_modification'] = $inputData['edit_auth_without'];
             }
+            if ($inputData['deletion_protected'] !== -1
+                && (int) ($dataFolder['deletion_protected'] ?? 0) !== $inputData['deletion_protected']
+            ) {
+                $folderParameters['deletion_protected'] = $inputData['deletion_protected'];
+            }
             
             // Now update
             DB::update(
@@ -630,6 +686,19 @@ if (null !== $post_type) {
                 'id=%i',
                 $dataFolder['id']
             );
+
+            if (array_key_exists('deletion_protected', $folderParameters)) {
+                logEvents(
+                    $SETTINGS,
+                    'admin_action',
+                    (int) $folderParameters['deletion_protected'] === 1
+                        ? 'folder_deletion_protection_enabled'
+                        : 'folder_deletion_protection_disabled',
+                    (string) $session->get('user-id'),
+                    (string) ($session->get('user-login') ?? ''),
+                    'folder_id=' . (int) $dataFolder['id']
+                );
+            }
 
             // Add or update complexity row for this folder.
             // Personal root folders can exist without a misc/complex row,
@@ -725,6 +794,9 @@ if (null !== $post_type) {
                 'edit_is_blocked'=> isset($folderParameters['bloquer_modification'])
                     ? (int) $folderParameters['bloquer_modification']
                     : (int) $dataFolder['bloquer_modification'],
+                'deletionProtected' => isset($folderParameters['deletion_protected'])
+                    ? (int) $folderParameters['deletion_protected']
+                    : (int) ($dataFolder['deletion_protected'] ?? 0),
                 'icon'           => $folderParameters['fa_icon'],
                 'iconSelected'   => $folderParameters['fa_icon_selected'],
             ];
@@ -778,6 +850,7 @@ if (null !== $post_type) {
                 'duration' => isset($dataReceived['renewalPeriod']) === true ? $dataReceived['renewalPeriod'] : 0,
                 'create_auth_without' => isset($dataReceived['addRestriction']) === true ? $dataReceived['addRestriction'] : 0,
                 'edit_auth_without' => isset($dataReceived['editRestriction']) === true ? $dataReceived['editRestriction'] : 0,
+                'deletion_protected' => isset($dataReceived['deletionProtection']) === true ? $dataReceived['deletionProtection'] : 0,
                 'icon' => isset($dataReceived['icon']) === true ? $dataReceived['icon'] : '',
                 'icon_selected' => isset($dataReceived['iconSelected']) === true ? $dataReceived['iconSelected'] : '',
                 'access_rights' => isset($dataReceived['accessRight']) === true ? $dataReceived['accessRight'] : 'W',
@@ -789,6 +862,7 @@ if (null !== $post_type) {
                 'duration' => 'cast:integer',
                 'create_auth_without' => 'cast:integer',
                 'edit_auth_without' => 'cast:integer',
+                'deletion_protected' => 'cast:integer',
                 'icon' => 'trim|escape',
                 'icon_selected' => 'trim|escape',
                 'access_rights' => 'trim|escape',
@@ -797,6 +871,25 @@ if (null !== $post_type) {
                 $data,
                 $filters
             );
+
+            $validatedDeletionProtection = filter_var(
+                $dataReceived['deletionProtection'] ?? 0,
+                FILTER_VALIDATE_INT
+            );
+            if ($validatedDeletionProtection === false
+                || in_array($validatedDeletionProtection, [0, 1], true) === false
+                || ($validatedDeletionProtection === 1 && (int) $session->get('user-admin') !== 1)
+            ) {
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ],
+                    'encode'
+                );
+                break;
+            }
+            $inputData['deletion_protected'] = $validatedDeletionProtection;
 
             // Check if parent folder is personal
             $dataParent = DB::queryFirstRow(
@@ -820,6 +913,7 @@ if (null !== $post_type) {
                 // Null lets FolderManager inherit the parent; an explicit 0 disables the option.
                 'create_auth_without' => isset($dataReceived['addRestriction']) === true ? (int) $inputData['create_auth_without'] : null,
                 'edit_auth_without' => isset($dataReceived['editRestriction']) === true ? (int) $inputData['edit_auth_without'] : null,
+                'deletion_protected' => (int) $inputData['deletion_protected'],
                 'icon' => (string) $inputData['icon'],
                 'icon_selected' => (string) $inputData['icon_selected'],
                 'access_rights' => (string) $inputData['access_rights'],
@@ -829,6 +923,7 @@ if (null !== $post_type) {
                 'user_can_create_root_folder' => (int) $session->get('user-can_create_root_folder'),
                 'user_can_manage_all_users' => (int) $session->get('user-can_manage_all_users'),
                 'user_id' => (int) $session->get('user-id'),
+                'user_login' => (string) ($session->get('user-login') ?? ''),
                 'user_roles' => (string) $session->get('user-roles')
             ];
             $options = [
@@ -890,6 +985,7 @@ if (null !== $post_type) {
                     'renewalPeriod'  => (int) ($inputData['duration'] ?? 0),
                     'add_is_blocked' => (int) $newNode->bloquer_creation,
                     'edit_is_blocked'=> (int) $newNode->bloquer_modification,
+                    'deletionProtected' => (int) ($newNode->deletion_protected ?? 0),
                     'icon'           => empty($inputData['icon']) ? TP_DEFAULT_ICON : $inputData['icon'],
                     'iconSelected'   => empty($inputData['icon_selected']) ? TP_DEFAULT_ICON_SELECTED : $inputData['icon_selected'],
                 ];
@@ -946,6 +1042,7 @@ if (null !== $post_type) {
                 $dataReceived['selectedFolders'],
                 FILTER_SANITIZE_FULL_SPECIAL_CHARS
             );
+            $post_folders = array_values(array_unique(array_map('intval', (array) $post_folders)));
 
             // Ensure that the root folder is not part of the list
             if (in_array(0, $post_folders, true)) {
@@ -1002,193 +1099,61 @@ if (null !== $post_type) {
                 break;
             }
 
-            //decrypt and retreive data in JSON format
-            $folderForDel = array();
-            $foldersDeletedInfo = array(); // For WebSocket notifications
-
-            // Start transaction
-            DB::startTransaction();
-
-            foreach ($post_folders as $folderId) {
-                // Check if parent folder is personal
-                $dataParent = DB::queryFirstRow(
-                    'SELECT personal_folder
-                    FROM ' . prefixTable('nested_tree') . '
-                    WHERE id = %i',
-                    $folderId
+            // Global folder-management gate (mirrors FolderModel::deleteFolder and update_folder).
+            // A user may always manage an eligible folder in their own personal tree,
+            // but deleting a shared folder requires one of the global management grants.
+            $userCanManageFolders = (int) $session->get('user-admin') === 1
+                || (int) $session->get('user-manager') === 1
+                || (int) $session->get('user-can_manage_all_users') === 1
+                || (int) ($SETTINGS['enable_user_can_create_folders'] ?? 0) === 1
+                || (int) $session->get('user-can_create_root_folder') === 1;
+            if ($userCanManageFolders === false) {
+                $sharedFolders = DB::queryFirstColumn(
+                    'SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE id IN %li AND personal_folder = 0',
+                    $post_folders
                 );
-
-                $isPersonal = (isset($dataParent['personal_folder']) === true && (int) $dataParent['personal_folder'] === 1) ? 1 : 0;
-
-                // Check if user is allowed
-                if (
-                    !(
-                        (int) $isPersonal === 1
-                        || (int) $session->get('user-admin') === 1
-                        || (int) $session->get('user-manager') === 1
-                        || (int) $session->get('user-can_manage_all_users') === 1
-                        || (isset($SETTINGS['enable_user_can_create_folders']) === true
-                            && (int) $SETTINGS['enable_user_can_create_folders'] == 1)
-                        || (int) $session->get('user-can_create_root_folder') === 1
-                    )
-                ) {
+                if (count($sharedFolders) > 0) {
                     echo prepareExchangedData(
-                        array(
-                            'error' => true,
-                            'message' => $lang->get('error_not_allowed_to'),
-                        ),
+                        ['error' => true, 'message' => $lang->get('error_not_allowed_to')],
                         'encode'
                     );
-
-                    // Rollback transaction if error
-                    DB::rollback();
-
-                    exit;
-                }
-
-                // Exclude a folder with id already in the list
-                if (in_array($folderId, $folderForDel) === false) {
-                    // Get through each subfolder
-                    $subFolders = $tree->getDescendants($folderId, true);
-                    foreach ($subFolders as $thisSubFolders) {
-                        if ($thisSubFolders->parent_id >= 0
-                            && $thisSubFolders->title !== $session->get('user-id')
-                        ) {
-                            // Store the deleted folder (recycled bin)
-                            // Use JSON format to avoid issues with commas in titles and to preserve folder properties.
-                            $folderDeletedData = array(
-                                'id' => (int) $thisSubFolders->id,
-                                'parent_id' => (int) $thisSubFolders->parent_id,
-                                'title' => (string) $thisSubFolders->title,
-                                'nleft' => (int) $thisSubFolders->nleft,
-                                'nright' => (int) $thisSubFolders->nright,
-                                'nlevel' => (int) $thisSubFolders->nlevel,
-                                'bloquer_creation' => (int) ($thisSubFolders->bloquer_creation ?? 0),
-                                'bloquer_modification' => (int) ($thisSubFolders->bloquer_modification ?? 0),
-                                'personal_folder' => (int) ($thisSubFolders->personal_folder ?? 0),
-                                'renewal_period' => (int) ($thisSubFolders->renewal_period ?? 0),
-                                'categories' => (string) ($thisSubFolders->categories ?? ''),
-                                'deleted_by' => (int) $session->get('user-id'),
-                                'deleted_by_login' => (string) ($session->get('user-login') ?? ''),
-                            );
-                            if (isset($thisSubFolders->fa_icon) === true) {
-                                $folderDeletedData['fa_icon'] = (string) $thisSubFolders->fa_icon;
-                            }
-                            if (isset($thisSubFolders->fa_icon_selected) === true) {
-                                $folderDeletedData['fa_icon_selected'] = (string) $thisSubFolders->fa_icon_selected;
-                            }
-                            if (isset($thisSubFolders->is_template) === true) {
-                                $folderDeletedData['is_template'] = (int) $thisSubFolders->is_template;
-                            }
-
-                            DB::query(
-                                'INSERT INTO %l (type, intitule, valeur, created_at)
-                                 VALUES (%s, %s, %s, %i)
-                                 ON DUPLICATE KEY UPDATE valeur = VALUES(valeur), updated_at = %i',
-                                prefixTable('misc'),
-                                'folder_deleted',
-                                'f' . (int) $thisSubFolders->id,
-                                json_encode($folderDeletedData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-                                time(),
-                                time()
-                            );
-                            //array for delete folder
-                            $folderForDel[] = $thisSubFolders->id;
-
-                            // Store info for WebSocket notification
-                            $foldersDeletedInfo[] = [
-                                'folder_id' => (int) $thisSubFolders->id,
-                                'title' => (string) $thisSubFolders->title,
-                                'parent_id' => (int) $thisSubFolders->parent_id,
-                            ];
-
-                            //delete items & logs
-                            $itemsInSubFolder = DB::query(
-                                'SELECT id FROM ' . prefixTable('items') . ' 
-                                WHERE id_tree=%i', 
-                                $thisSubFolders->id
-                            );
-                            foreach ($itemsInSubFolder as $item) {
-                                DB::update(
-                                    prefixTable('items'),
-                                    array(
-                                        'inactif' => '1',
-                                        'deleted_at' => time(),
-                                    ),
-                                    'id = %i',
-                                    $item['id']
-                                );
-
-                                // log
-                                logItems(
-                                    $SETTINGS,
-                                    (int) $item['id'],
-                                    '',
-                                    $session->get('user-id'),
-                                    'at_delete',
-                                    $session->get('user-login')
-                                );
-
-                                // delete folder from SESSION
-                                if (array_search($item['id'], $session->get('user-accessible_folders')) !== false) {
-                                    SessionManager::addRemoveFromSessionArray('user-accessible_folders', [$item['id']], 'remove');
-                                }
-
-                                //Update CACHE table
-                                updateCacheTable('delete_value',(int) $item['id']);
-                            }
-
-                            //Actualize the variable
-                            $session->set('user-nb_folders', $session->get('user-nb_folders') - 1);
-                        }
-                    }
+                    break;
                 }
             }
 
-            // Collect affected users BEFORE deleting folders/roles
-            $folderForDel = array_unique($folderForDel);
-            $affectedUserIds = [(int) $session->get('user-id')];
-            if (!empty($folderForDel)) {
-                $affectedUserIds = array_merge($affectedUserIds, DB::queryFirstColumn(
-                    'SELECT DISTINCT ur.user_id FROM ' . prefixTable('users_roles') . ' ur
-                    JOIN ' . prefixTable('roles_values') . ' rv ON ur.role_id = rv.role_id
-                    WHERE rv.folder_id IN %ls',
-                    $folderForDel
-                ), DB::queryFirstColumn(
-                    'SELECT user_id FROM ' . prefixTable('users_groups') . ' WHERE group_id IN %li',
-                    $folderForDel
-                ));
-            }
+            require_once 'folders.class.php';
+            $folderManager = new FolderManager($lang);
+            $deletionResult = $folderManager->deleteFolders(
+                array_map('intval', $post_folders),
+                [
+                    'user_id' => (int) $session->get('user-id'),
+                    'user_login' => (string) ($session->get('user-login') ?? ''),
+                    'exclude_user_id' => (int) $session->get('user-id'),
+                    'SETTINGS' => $SETTINGS,
+                ]
+            );
 
-            // delete folders
-            foreach ($folderForDel as $fol) {
-                DB::delete(prefixTable('nested_tree'), 'id = %i', $fol);
-            }
-
-            // Commit transaction
-            DB::commit();
-
-            //rebuild tree
-            $tree->rebuild();
-            invalidateCacheForFolderUsers(0, $affectedUserIds);
-
-            // Emit WebSocket events for deleted folders
-            foreach ($foldersDeletedInfo as $deletedFolder) {
-                emitFolderEvent(
-                    'deleted',
-                    (int) $deletedFolder['folder_id'],
-                    $deletedFolder['title'],
-                    $session->get('user-login') ?? '',
-                    (int) $deletedFolder['parent_id'],
-                    (int) $session->get('user-id')
+            if ($deletionResult['error'] === false) {
+                $deletedFolderIds = array_map('intval', $deletionResult['deleted_folders'] ?? []);
+                SessionManager::addRemoveFromSessionArray('user-accessible_folders', $deletedFolderIds, 'remove');
+                SessionManager::addRemoveFromSessionArray('user-personal_folders', $deletedFolderIds, 'remove');
+                $session->set(
+                    'user-nb_folders',
+                    max(0, (int) $session->get('user-nb_folders') - count($deletedFolderIds))
                 );
             }
 
             echo prepareExchangedData(
-                array(
-                    'error' => false,
-                    'message' => '',
-                ),
+                [
+                    'error' => (bool) $deletionResult['error'],
+                    'message' => (string) ($deletionResult['message'] ?? ''),
+                    'reason' => (string) ($deletionResult['reason'] ?? ''),
+                    'parent_id' => (int) ($deletionResult['parent_id'] ?? 0),
+                    'protected_folders' => (int) ($deletionResult['protected_folders'] ?? 0),
+                    'linked_items' => (int) ($deletionResult['linked_items'] ?? 0),
+                    'managed_items' => (int) ($deletionResult['managed_items'] ?? 0),
+                    'credential_items' => (int) ($deletionResult['credential_items'] ?? 0),
+                ],
                 'encode'
             );
 

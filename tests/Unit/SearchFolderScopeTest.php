@@ -305,8 +305,44 @@ class SearchFolderScopeTest extends TestCase
     {
         $this->assertSame('R&D', searchDecodeFolderTitle('R&amp;D'));
         $this->assertSame("Client's data", searchDecodeFolderTitle('Client&#039;s data'));
+        $this->assertSame('Données', searchDecodeFolderTitle('Donn&eacute;es'));
         $this->assertSame('alice', searchFolderDisplayTitle('42', 1, 42, 'alice'));
         $this->assertSame('42', searchFolderDisplayTitle('42', 2, 42, 'alice'));
+    }
+
+    public function testStoredSearchTextDecodesHtml5AccentsAndPreservesUtf8(): void
+    {
+        $this->assertSame('Eligibilité', searchDecodeStoredText('Eligibilit&eacute;'));
+        $this->assertSame('Données', searchDecodeStoredText('Donn&eacute;es'));
+        $this->assertSame('Déjà en UTF-8', searchDecodeStoredText('Déjà en UTF-8'));
+    }
+
+    public function testStoredSearchTextIsReEscapedForHtmlCells(): void
+    {
+        $this->assertSame('Eligibilité', searchEscapeStoredText('Eligibilit&eacute;'));
+        $this->assertSame('R&amp;D', searchEscapeStoredText('R&amp;D'));
+        $this->assertSame(
+            '&lt;img src=x onerror=alert(1)&gt;',
+            searchEscapeStoredText('&lt;img src=x onerror=alert(1)&gt;')
+        );
+    }
+
+    public function testItemSearchCellsAndModalUseTheStoredTextContract(): void
+    {
+        $source = file_get_contents(__DIR__ . '/../../app/sources/search.queries.php');
+        $script = file_get_contents(__DIR__ . '/../../app/pages/search.js.php');
+        $this->assertIsString($source);
+        $this->assertIsString($script);
+
+        foreach (['label', 'login', 'tags'] as $field) {
+            $this->assertMatchesRegularExpression(
+                '/searchEscapeStoredText\([^\n]*\$record\[\'' . $field . '\'\]/',
+                $source
+            );
+        }
+        $this->assertStringContainsString(".text(htmlDecode(data.label || ''))", $script);
+        $this->assertStringContainsString('.text(htmlDecode(data.login))', $script);
+        $this->assertStringContainsString('.text(htmlDecode(String(tag)))', $script);
     }
 
     public function testFolderResultAndOptionLimitsAreNamedConstants(): void

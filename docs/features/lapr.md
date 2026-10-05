@@ -128,7 +128,26 @@ Errors returned by `chpasswd` after SSH connected are scoped to the managed acco
 
 > ⚠️ **Upgrading from an earlier 3.2.2 pre-release.** These relationship rules are also applied to data created before they existed. A setup that used to work — one password credential item shared by several endpoints, or an item managed as a Linux password while also serving as a private-key credential — now fails its next rotation with `ERR_SHARED_PASSWORD_CREDENTIAL`, `ERR_CREDENTIAL_RELATION_CONFLICT` or `ERR_KEY_CREDENTIAL_MANAGED`. The failure is deliberate and final rather than retried: split the credential items, then use **Reset & resume** on the affected accounts. **System Health → LAPR** lists every such relationship before the first rotation is attempted.
 
-Deleting a TeamPass item that a managed account or enrolled endpoint still references is **blocked** — remove the managed account or reconfigure/remove the endpoint first.
+### Protecting linked items and folders
+
+TeamPass prevents folder operations from silently breaking an active LAPR relationship.
+While LAPR is enabled:
+
+- deleting a TeamPass item referenced by a managed account or enrolled endpoint is
+  blocked;
+- deleting a folder is blocked when the folder or any descendant contains an active
+  managed-account item or SSH credential item, including when an administrator performs
+  the deletion;
+- moving a shared folder subtree into a personal folder is blocked when it contains one
+  of these linked items, because LAPR can only read items stored in shared folders.
+
+Folder deletion is atomic: TeamPass checks the entire subtree first and does not delete
+the unlinked folders or items when one linked item is found. The information dialog asks
+the operator to resolve the relationship before retrying:
+
+- move the linked item outside the folder subtree; or
+- remove the managed-account relationship; or
+- reconfigure or remove the endpoint that uses the item as its SSH credential.
 
 ### LAPR item integration
 
@@ -151,7 +170,12 @@ Three operations are refused while an item is linked to LAPR, on **every** path 
 | **Deleting** a managed item or an SSH credential item | the relationship has no database foreign key and would be orphaned |
 | **Moving** either kind of item into a **personal folder** | LAPR reads the item as the server, which is only possible in a shared folder |
 
-Bulk move and bulk delete skip the linked items and tell you how many were skipped, instead of failing the whole selection. The REST API answers `409 Conflict` in all three cases. Resending an unchanged password is **not** a conflict, so an API client that reads an item and writes it back untouched keeps working.
+Bulk item move and bulk item delete skip linked items and report how many were skipped,
+instead of failing the whole item selection. Folder deletion is different: the complete
+folder operation is blocked so it cannot leave a partially deleted subtree. The REST API
+answers `409 Conflict` for the corresponding item or folder conflict. Resending an
+unchanged password is **not** a conflict, so an API client that reads an item and writes
+it back untouched keeps working.
 
 > **Disabling the module releases everything and stops LAPR work.** When **Enable LAPR module** is off, linked items behave exactly like ordinary items: no badge, no read-only field, no blocked delete or move. Pending LAPR tasks are cancelled neutrally, and workers re-read the switch before dispatch and again immediately before changing a remote password. If the remote change has already succeeded, TeamPass completes the local item synchronization to avoid leaving different passwords on the server and in the vault. Managed endpoints, accounts, and audit history remain stored and resume where they left off when you re-enable LAPR.
 
