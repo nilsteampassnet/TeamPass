@@ -15,11 +15,12 @@ paths:
 operations. It is separate from `otv`, which holds disposable encrypted links,
 and from the existing `log_items` audit under the OTV system account.
 
-This first change provides storage, lifecycle instrumentation and migration.
-The next dependent changes add server-side statistics, then the Users statistics
-card. Governance/Reports can later consume this same journal through their
-existing administrator-only, feature-gated handlers; this change adds no read,
-export or purge endpoint and grants no access to another user's item contents.
+The audit foundation provides storage, lifecycle instrumentation and migration.
+Its dependent statistics change adds aggregates to the existing administrator
+statistics endpoint; the Users statistics card remains a separate follow-up.
+Governance/Reports can later consume the journal through their existing
+administrator-only, feature-gated handlers. No raw journal read, export or purge
+endpoint is added, and no access to another user's item contents is granted.
 
 ## Data contract
 
@@ -107,6 +108,57 @@ External transport failures do not undo committed operations; diagnostics contai
 only the exception class. Syslog is best effort, with no new queue or delivery
 guarantee. The database journal is authoritative for application statistics.
 
+## Statistics consumer
+
+`secureSendBuildOperationalStatistics()` adds `users.secure_send` to the existing
+`get_operational_statistics` response from `admin.queries.php`. The endpoint keeps
+its authenticated session, administrator page permission and session-key checks;
+its existing public proxy is reused. No frontend change is made by this step.
+
+The contract contains:
+
+- `enabled`: current Secure Send setting, not a filter erasing past activity;
+- `available`, `error`, `reason`: distinguish a valid empty period from failed
+  storage/schema queries. Failures return NULL totals/creation breakdowns and an
+  empty ranking, never fabricated zeros or a partially successful aggregate;
+- `meta`: inclusive `from`/`to` timestamps, `filters_applied: ['period']`,
+  `historical_backfill: false`, `recipient_identity_known: false`;
+- `totals`: `created`, `revealed`, `reveal_failed`, `revoked`, `invalidated`,
+  `expired`, distinct `sends_revealed`, and distinct creation `senders`;
+- `creations`: `items`, `notes`, `unknown`, `protected`, `unprotected`,
+  `public_links`, `internal_links`, counted only on `created` events;
+- `top_senders`: up to five original senders with creations in the period, their
+  period creation/reveal/failure counts, last creation timestamp and current
+  account identity/status (`active`, `disabled`, `deleted`, `missing`).
+
+Counters use each event's `occurred_at`, not link `created_at`, configured expiry
+or cumulative view/failure counters. They describe events in the selected period,
+not the subsequent lifecycle of that period's creation cohort. A legacy link can
+contribute reveals without an audited creation. Distinct senders refer to audited
+creations, not anonymous recipients. Failed reveals are recipient attempts against
+a sender's links, not proof of malicious activity by that sender.
+
+Period bounds reuse `opsStatsResolvePeriodRange()` in the configured PHP timezone,
+including calendar week/month and daylight-saving transitions. Native timestamp
+predicates and fixed event filters can use the journal's event/period index;
+there is no SQL timezone conversion or CAST on `occurred_at`. The helper rejects
+invalid or greater-than-90-day ranges. Summary and ranking are two read queries,
+so newly committed events can change the database between those reads; no
+transactional snapshot across the entire dashboard is claimed.
+
+The complete sender population is grouped in SQL before the top-five limit.
+Ties sort by latest creation, then original sender id. User identity is LEFT JOINed
+after aggregation; disabled, soft-deleted, purged accounts and missing source
+items do not erase history. Only internal service account originators are excluded.
+No content/keys, individual send/item identifiers or recipient identity are exposed
+in the response. Login/display name are administrator-facing sender identity only.
+
+The journal does not snapshot personal-item or API provenance. Applying those
+dashboard toggles through current item/account state would silently remove durable
+history. They therefore do not affect this block; its filter metadata makes that
+scope explicit for the subsequent card. There is no live-link inventory, abuse
+threshold, automatic quota/block, CSV export, backfill or schema change in this step.
+
 ## Installation, upgrade and retention
 
 Fresh installation adds the `secure_send_audit` action to run.step5/install.js.
@@ -154,3 +206,9 @@ legacy/snapshot, note, TOTP and automatic-deletion suites remain applicable.
 `tests/Integration/secure_send_database.php` executes the shared schema/replay and
 real concurrent operations plus audit SQL failures against disposable MariaDB
 tables with a non-default prefix. It runs in the existing concurrency CI job.
+`SecureSendStatisticsTest` executes the actual aggregate SQL through SQLite parameter
+binding, covering period boundaries, historical links/accounts, protection/type
+breakdowns, unavailable data, service-account exclusions, a population exceeding
+500 senders, deterministic top five and the admin endpoint boundary. The existing
+MariaDB harness also calls `secure_send_statistics_database.php` to verify production
+MeekroDB binding and queries with `ONLY_FULL_GROUP_BY` enabled.
