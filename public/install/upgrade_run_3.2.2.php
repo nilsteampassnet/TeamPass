@@ -609,6 +609,15 @@ mysqli_query(
 // true in Docker, where the entrypoint deletes that directory at boot.
 mysqli_query($db_link, 'DROP TABLE IF EXISTS `_install`');
 
+// Durable Secure Send metadata audit. Shared DDL keeps fresh installs and replayed
+// patch upgrades identical. Existing links are not backfilled with invented events.
+require_once TEAMPASS_ROOT . '/app/sources/secure_send_audit.php';
+if (mysqli_query($db_link, secureSendAuditSchemaSql(prefixTable('secure_send_audit'))) === false) {
+    echo json_encode([['finish' => '1', 'error' => 'Error creating the Secure Send audit table']]);
+    mysqli_close($db_link);
+    exit();
+}
+
 // Individual item renewal policies (also replayed by Docker on patch upgrades).
 if (addColumnIfNotExist(prefixTable('items'), 'renewal_period', 'INT UNSIGNED NOT NULL DEFAULT 0') === false) {
     echo json_encode([['finish' => '1', 'error' => 'Error adding the item renewal period: ' . mysqli_error($db_link)]]);

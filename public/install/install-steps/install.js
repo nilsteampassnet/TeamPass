@@ -328,7 +328,8 @@ function performStep5() {
         { id: 'check80', action: 'api_idempotency' },
         { id: 'check81', action: 'webauthn_credentials' },
         { id: 'check82', action: 'sharekeys_webauthn' },
-        { id: 'check83', action: 'user_webauthn_credentials' }
+        { id: 'check83', action: 'user_webauthn_credentials' },
+        { id: 'check84', action: 'secure_send_audit' }
     ];
     
     let errorOccurred = false; // Variable to track errors
