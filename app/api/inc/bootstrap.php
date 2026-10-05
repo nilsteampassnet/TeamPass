@@ -99,6 +99,61 @@ function folderAction(array $actions, array $userData): void
     $objFeedController->{$strMethodName}($userData);
 }
 
+/**
+ * Launch expected action for WEBAUTHN (vault passkeys driven by the browser extension)
+ *
+ * @param array $actions
+ * @param array $userData
+ * @return void
+ */
+function webauthnAction(array $actions, array $userData): void
+{
+    $configManager = new ConfigManager();
+    $SETTINGS = $configManager->getAllSettings();
+    if ((int) ($SETTINGS['webauthn_provider_enabled'] ?? 0) !== 1) {
+        errorHdl(
+            'HTTP/1.1 503 Service Unavailable',
+            json_encode(['error' => 'Passkey support is disabled'])
+        );
+        return;
+    }
+
+    if (checkWebauthnCRUDRights($userData, $actions[0]) === false) {
+        errorHdl(
+            'HTTP/1.1 403 Forbidden',
+            json_encode(['error' => 'Access denied: insufficient permissions for this action'])
+        );
+        return;
+    }
+
+    require API_ROOT_PATH . "/Controller/Api/WebauthnController.php";
+    $objFeedController = new WebauthnController();
+    $strMethodName = $actions[0] . 'Action';
+    $objFeedController->{$strMethodName}($userData);
+}
+
+/**
+ * Map a passkey action to the API right it needs.
+ *
+ * Adding or deleting a passkey modifies the item it is attached to, so both need the update
+ * right; listing and signing only use it, like reading a password.
+ *
+ * @param array  $userData
+ * @param string $actionToPerform
+ * @return bool
+ */
+function checkWebauthnCRUDRights(array $userData, string $actionToPerform): bool
+{
+    if (in_array($actionToPerform, ['list', 'assert'], true) === true) {
+        return (int) $userData['allowed_to_read'] === 1;
+    }
+    if (in_array($actionToPerform, ['create', 'delete'], true) === true) {
+        return (int) $userData['allowed_to_update'] === 1;
+    }
+
+    return false;
+}
+
 function checkUSerCRUDRights($userData, $actionToPerform): bool
 {
     if ($actionToPerform === 'create' && $userData['allowed_to_create'] === 1) {

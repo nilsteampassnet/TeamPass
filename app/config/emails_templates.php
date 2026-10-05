@@ -299,6 +299,32 @@ return [
         'trigger' => 'app/scripts/traits/LAPRRotationTrait.php',
     ],
 
+    'webauthn_credential_added' => [
+        'group' => 'security',
+        'subject_key' => 'email_subject_webauthn_credential_added',
+        'subject_prefix' => '',
+        'body_key' => 'email_body_webauthn_credential_added',
+        // '#rp_name#' and '#user_name#' come from the site that asked for the passkey: the call
+        // site escapes them, like the item label.
+        'tokens' => ['#rp_name#', '#user_name#', '#item_label#', '#link#', '#tp_date#', '#tp_time#'],
+        'required_tokens' => ['#rp_name#'],
+        'label' => 'email_tpl_webauthn_credential_added',
+        'description' => 'email_tpl_webauthn_credential_added_desc',
+        'trigger' => 'app/api/Model/WebauthnModel.php (createCredential)',
+    ],
+
+    'webauthn_login_added' => [
+        'group' => 'security',
+        'subject_key' => 'email_subject_webauthn_login_added',
+        'subject_prefix' => '',
+        'body_key' => 'email_body_webauthn_login_added',
+        'tokens' => ['#passkey_label#', '#tp_date#', '#tp_time#', '#tp_ip#'],
+        'required_tokens' => [],
+        'label' => 'email_tpl_webauthn_login_added',
+        'description' => 'email_tpl_webauthn_login_added_desc',
+        'trigger' => 'app/sources/webauthn_login.functions.php (webauthnLoginNotifyAdded)',
+    ],
+
     // ---------------------------------------------------------------- items
 
     'item_created' => [

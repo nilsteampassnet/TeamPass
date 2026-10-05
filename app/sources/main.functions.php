@@ -1079,6 +1079,7 @@ function restoreSharekeysScopeDefs(bool $personal = false): array
         'items' => '',
         'fields' => 'o.encryption_type = "' . TP_ENCRYPTION_NAME . '"',
         'files' => 'o.status = "' . TP_ENCRYPTION_NAME . '"',
+        'webauthn' => '',
     ];
     $where = static function (string $scope, string $alias) use ($objectWhere, $scopeTest): string {
         return $objectWhere[$scope] === ''
@@ -1107,6 +1108,13 @@ function restoreSharekeysScopeDefs(bool $personal = false): array
             'itemAlias' => 'i',
             'objectWhere' => $objectWhere['files'],
             'where' => $where('files', 'i'),
+        ],
+        'webauthn' => [
+            'table' => 'sharekeys_webauthn',
+            'from' => prefixTable('webauthn_credentials') . ' AS o INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = o.item_id)',
+            'itemAlias' => 'i',
+            'objectWhere' => $objectWhere['webauthn'],
+            'where' => $where('webauthn', 'i'),
         ],
     ];
 }
@@ -1306,9 +1314,12 @@ function securityPasswordHealthSql(string $itemAlias = 'i'): array
         ];
     }
 
-    // Mirrors securityPasswordHealthClassify() state by state, in the same order.
-    $emptySql = '(COALESCE(' . $itemAlias . '.pw, \'\') = \'\''
-        . ' AND (' . $itemAlias . '.pw_len IS NULL OR CAST(' . $itemAlias . '.pw_len AS SIGNED) = 0))';
+    // Mirrors securityPasswordHealthClassify() state by state, in the same order. An item holding
+    // a passkey stores its empty password encrypted: without a length it is empty, not unassessed.
+    $emptySql = '((' . $itemAlias . '.pw_len IS NULL OR CAST(' . $itemAlias . '.pw_len AS SIGNED) = 0)'
+        . ' AND (COALESCE(' . $itemAlias . '.pw, \'\') = \'\''
+        . ' OR EXISTS (SELECT 1 FROM ' . prefixTable('webauthn_credentials') . ' AS health_passkey'
+        . ' WHERE health_passkey.item_id = ' . $itemAlias . '.id)))';
 
     $assessedSql = '(NOT ' . $emptySql
         . ' AND ' . $itemAlias . '.complexity_level IS NOT NULL'
@@ -7425,7 +7436,8 @@ function getFolderIdentityWithPersonalFlag(int $folderId): ?array
  *     target_folder_id: int,
  *     target_folder_title: string,
  *     fields_count: int,
- *     files_count: int
+ *     files_count: int,
+ *     webauthn_count: int
  * }
  *
  * @throws InvalidArgumentException When the requested transition is not a personal-to-shared move
@@ -7606,6 +7618,31 @@ function movePersonalItemToSharedFolderSynchronously(
         ];
     }
 
+    // Passkeys attached to the item. A missing key aborts the move like any other object: the
+    // passkey stays usable by its owner instead of being published without keys.
+    $webauthnObjectKeys = [];
+    $credentials = DB::query(
+        'SELECT credential.id, sharekey.share_key, sharekey.increment_id
+        FROM ' . prefixTable('webauthn_credentials') . ' AS credential
+        LEFT JOIN ' . prefixTable('sharekeys_webauthn') . ' AS sharekey
+            ON sharekey.object_id = credential.id AND sharekey.user_id = %i
+        WHERE credential.item_id = %i',
+        $userId,
+        $itemId
+    );
+    foreach ($credentials as $credential) {
+        $credentialId = (int) $credential['id'];
+        $webauthnObjectKeys[] = [
+            'object_id' => $credentialId,
+            'object_key' => $decryptSourceKey(
+                $credential,
+                'sharekeys_webauthn',
+                'passkey',
+                $credentialId
+            ),
+        ];
+    }
+
     // -----------------------------------------------------------------------------------
     // Phase 2 — atomic publication: lock, revalidate, distribute, move.
     // -----------------------------------------------------------------------------------
@@ -7679,6 +7716,19 @@ function movePersonalItemToSharedFolderSynchronously(
                 $userId
             );
         }
+        foreach ($webauthnObjectKeys as $webauthnObjectKey) {
+            storeUsersShareKey(
+                'sharekeys_webauthn',
+                0,
+                (int) $webauthnObjectKey['object_id'],
+                (string) $webauthnObjectKey['object_key'],
+                false,
+                true,
+                [],
+                -1,
+                $userId
+            );
+        }
 
         // Publish the item in the shared folder only after every source object key was recovered.
         DB::update(
@@ -7704,6 +7754,7 @@ function movePersonalItemToSharedFolderSynchronously(
             'target_folder_title' => $targetFolder['title'],
             'fields_count' => count($fieldObjectKeys),
             'files_count' => count($fileObjectKeys),
+            'webauthn_count' => count($webauthnObjectKeys),
         ];
     } catch (Throwable $exception) {
         if ($transactionStarted === true) {
@@ -8048,6 +8099,17 @@ function deleteUserObjetsKeys(int $userId, array $SETTINGS = []): false
     DB::query(
         'DELETE FROM ' . prefixTable('sharekeys_suggestions') . '
         WHERE user_id = %i AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)',
+        $userId
+    );
+    // Remove all passkey sharekeys except personal items
+    // object_id references webauthn_credentials.id, so we join through it to get item IDs
+    DB::query(
+        'DELETE FROM ' . prefixTable('sharekeys_webauthn') . '
+        WHERE user_id = %i AND object_id NOT IN (
+            SELECT w.id FROM ' . prefixTable('webauthn_credentials') . ' AS w
+            INNER JOIN ' . prefixTable('items') . ' AS i ON w.item_id = i.id
+            WHERE i.perso = 1
+        )',
         $userId
     );
     return false;
@@ -8924,6 +8986,30 @@ function upgradeRequired(): bool
 }
 
 /**
+ * Drop the passwordless copies of a user's private key held by their sign-in passkeys.
+ *
+ * Called whenever the key pair is regenerated: a copy then holds an obsolete key, and a
+ * passwordless sign-in would open a session that decrypts nothing. The passkeys themselves stay,
+ * as second factors; the user enables passwordless sign-in again from their profile.
+ *
+ * @param int $userId User whose key pair changed
+ *
+ * @return int Number of passkeys that lost their copy
+ */
+function invalidateUserPasskeyWraps(int $userId): int
+{
+    DB::update(
+        prefixTable('user_webauthn_credentials'),
+        ['key_wrap_mode' => 0, 'wrapped_private_key' => null, 'wrap_salt' => null],
+        'user_id = %i AND key_wrap_mode != %i',
+        $userId,
+        0
+    );
+
+    return DB::affectedRows();
+}
+
+/**
  * Permits to change the user keys on his demand
  *
  * @param integer $userId
@@ -9079,6 +9165,7 @@ function handleUserKeys(
     // changes it can only unwrap an obsolete key, so the extension would sign in and then
     // decrypt nothing: remove those tokens instead of leaving them to fail silently.
     if ($previousPublicKey !== (string) $userKeys['public_key']) {
+        invalidateUserPasskeyWraps($userId);
         DB::delete(prefixTable('api_tokens'), 'user_id = %i', $userId);
         if (DB::affectedRows() > 0) {
             logEvents(
@@ -9232,7 +9319,10 @@ function createUserTasks($processId, $nbItemsToTreat): void
 
         'step60' => 'SELECT * FROM ' . prefixTable('files') . ' AS f
                         INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = f.id_item
-                        WHERE f.status = "' . TP_ENCRYPTION_NAME . '"'
+                        WHERE f.status = "' . TP_ENCRYPTION_NAME . '"',
+
+        'step70' => 'SELECT w.id FROM ' . prefixTable('webauthn_credentials') . ' AS w
+                        INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = w.item_id',
     ];
 
     // Perform loop on $queries to create sub-tasks
@@ -9722,6 +9812,14 @@ function purgeUnnecessaryKeysForUser(int $user_id=0)
         DB::query(
             'DELETE FROM ' . prefixTable('sharekeys_logs') . '
             WHERE object_id IN (SELECT increment_id FROM ' . prefixTable('log_items') . ' WHERE id_item IN %li)
+            AND user_id NOT IN %ls',
+            $personalItems,
+            [$user_id, TP_USER_ID, API_USER_ID, OTV_USER_ID, SSH_USER_ID]
+        );
+        // Passkey keys — object_id references webauthn_credentials.id, never the item id
+        DB::query(
+            'DELETE FROM ' . prefixTable('sharekeys_webauthn') . '
+            WHERE object_id IN (SELECT id FROM ' . prefixTable('webauthn_credentials') . ' WHERE item_id IN %li)
             AND user_id NOT IN %ls',
             $personalItems,
             [$user_id, TP_USER_ID, API_USER_ID, OTV_USER_ID, SSH_USER_ID]
@@ -10283,6 +10381,12 @@ function deleteForeignItemSharekeys(int $itemId, int $ownerId): void
         $itemId,
         $excludedUsers
     );
+    DB::query(
+        'DELETE FROM ' . prefixTable('sharekeys_webauthn') . '
+        WHERE object_id IN (SELECT id FROM ' . prefixTable('webauthn_credentials') . ' WHERE item_id = %i) AND user_id NOT IN %ls',
+        $itemId,
+        $excludedUsers
+    );
 }
 
 /**
@@ -10377,8 +10481,20 @@ function userHoldsEveryItemSharekey(int $itemId, int $userId): bool
         $itemId,
         TP_ENCRYPTION_NAME
     );
+    if ((int) $missingFileKeys > 0) {
+        return false;
+    }
 
-    return (int) $missingFileKeys === 0;
+    $missingPasskeyKeys = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('webauthn_credentials') . ' AS credential
+        LEFT JOIN ' . prefixTable('sharekeys_webauthn') . ' AS sharekey
+            ON sharekey.object_id = credential.id AND sharekey.user_id = %i AND sharekey.share_key != ""
+        WHERE credential.item_id = %i AND sharekey.increment_id IS NULL',
+        $userId,
+        $itemId
+    );
+
+    return (int) $missingPasskeyKeys === 0;
 }
 
 /**

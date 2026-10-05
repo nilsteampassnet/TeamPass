@@ -116,9 +116,10 @@ class MfaRolesFromAdGroupsTest extends TestCase
             . 'which merges the manual and the AD roles.'
         );
         self::assertSame(
-            2,
+            3,
             substr_count($identify, "\$userInfo['mfa_auth_requested_roles'] = userMfaRequestedByRoles(\$SETTINGS, \$userInfo);"),
-            'The initial checks and the post-LDAP reload must both precompute the flag from both role sources.'
+            'The initial checks, the post-LDAP reload and the passwordless passkey sign-in must all '
+            . 'precompute the flag from both role sources.'
         );
     }
 }

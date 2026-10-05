@@ -1004,6 +1004,7 @@ logItems(
                 'sharekeys_fields',
                 'sharekeys_logs',
                 'sharekeys_suggestions',
+                'sharekeys_webauthn',
             );
 
             $sharekeysStats = array();
@@ -2351,6 +2352,14 @@ function tpHardDeleteItem(int $itemId): void
     }
     DB::delete(prefixTable('files'), 'id_item = %i', $itemId);
 
+    // Delete passkeys and their sharekeys
+    DB::query(
+        'DELETE FROM ' . prefixTable('sharekeys_webauthn') . '
+        WHERE object_id IN (SELECT id FROM ' . prefixTable('webauthn_credentials') . ' WHERE item_id = %i)',
+        $itemId
+    );
+    DB::delete(prefixTable('webauthn_credentials'), 'item_id = %i', $itemId);
+
     // Finally delete the item itself
     DB::delete(prefixTable('items'), 'id = %i', $itemId);
 }
@@ -3000,6 +3009,9 @@ function tpGetSharekeysOrphans(string $shortTableName): array
             break;
         case 'sharekeys_fields':
             $targetTable = 'categories_items';
+            break;
+        case 'sharekeys_webauthn':
+            $targetTable = 'webauthn_credentials';
             break;
     }
 
@@ -4208,6 +4220,7 @@ function tpGetTeampassSettingsForHealth(array $SETTINGS): array
         'api',
         'api_cors_origins',
         'api_require_https',
+        'webauthn_provider_enabled',
     );
 
     $out = array();
@@ -4459,6 +4472,15 @@ function tpGetSystemChecks(array $phpIni, array $tpSettings, Language $lang): ar
                 'title' => $lang->get('health_check_api_https_off'),
                 'text' => $lang->get('health_check_api_https_off_message'),
             );
+
+            // Passkeys raise the stakes: an intercepted session signs in to third-party sites
+            if ((int) ($tpSettings['webauthn_provider_enabled'] ?? 0) === 1) {
+                $checks[] = array(
+                    'status' => 'warning',
+                    'title' => $lang->get('health_check_webauthn_http'),
+                    'text' => $lang->get('health_check_webauthn_http_message'),
+                );
+            }
         }
     }
 

@@ -1,6 +1,6 @@
 # Teampass License Compliance Report
 
-**Generated:** 2026-09-11 19:49:53
+**Generated:** 2026-09-13 14:17:11
 **Project License:** GNU General Public License v3.0
 
 ## PHP Dependencies (Composer)
@@ -22,6 +22,7 @@
 | defuse/php-encryption | v2.4.0 | MIT | ✅ Compatible |
 | directorytree/ldaprecord | v3.8.6 | MIT | ✅ Compatible |
 | dittertp/gibberish-aes-php | 4.0.0 | MIT | ✅ Compatible |
+| doctrine/deprecations | 1.1.6 | MIT | ✅ Compatible |
 | doctrine/inflector | 2.1.0 | MIT | ✅ Compatible |
 | doctrine/lexer | 3.0.1 | MIT | ✅ Compatible |
 | dragonmantank/cron-expression | v3.6.0 | MIT | ✅ Compatible |
@@ -56,8 +57,12 @@
 | paragonie/constant_time_encoding | v3.1.3 | MIT | ✅ Compatible |
 | paragonie/random_compat | v9.99.100 | MIT | ✅ Compatible |
 | peppeocchi/php-cron-scheduler | v4.0 | MIT | ✅ Compatible |
+| phpdocumentor/reflection-common | 2.2.0 | MIT | ✅ Compatible |
+| phpdocumentor/reflection-docblock | 6.0.3 | MIT | ✅ Compatible |
+| phpdocumentor/type-resolver | 2.0.0 | MIT | ✅ Compatible |
 | phpmailer/phpmailer | v6.12.0 | LGPL-2.1-only | ✅ Compatible |
 | phpseclib/phpseclib | 3.0.57 | MIT | ✅ Compatible |
+| phpstan/phpdoc-parser | 2.3.5 | MIT | ✅ Compatible |
 | psr/cache | 3.0.0 | MIT | ✅ Compatible |
 | psr/clock | 1.0.0 | MIT | ✅ Compatible |
 | psr/container | 2.0.2 | MIT | ✅ Compatible |
@@ -80,7 +85,10 @@
 | seld/phar-utils | 1.2.2 | MIT | ✅ Compatible |
 | seld/signal-handler | 2.0.2 | MIT | ✅ Compatible |
 | sergeytsalkov/meekrodb | v2.5.2 | LGPL-3.0 | ✅ Compatible |
+| spomky-labs/cbor-php | 3.4.1 | MIT | ✅ Compatible |
 | spomky-labs/otphp | 11.5.0 | MIT | ✅ Compatible |
+| spomky-labs/pki-framework | 1.6.3 | MIT | ✅ Compatible |
+| symfony/clock | v7.4.8 | MIT | ✅ Compatible |
 | symfony/console | v6.4.45 | MIT | ✅ Compatible |
 | symfony/contracts | v3.7.3 | MIT | ✅ Compatible |
 | symfony/filesystem | v7.4.18 | MIT | ✅ Compatible |
@@ -97,13 +105,18 @@
 | symfony/polyfill-php72 | v1.31.0 | MIT | ✅ Compatible |
 | symfony/polyfill-php73 | v1.37.0 | MIT | ✅ Compatible |
 | symfony/polyfill-php80 | v1.37.0 | MIT | ✅ Compatible |
-| symfony/polyfill-php81 | v1.38.1 | MIT | ✅ Compatible |
 | symfony/polyfill-php83 | v1.41.0 | MIT | ✅ Compatible |
 | symfony/polyfill-php84 | v1.38.1 | MIT | ✅ Compatible |
+| symfony/polyfill-uuid | v1.37.0 | MIT | ✅ Compatible |
 | symfony/process | v6.4.45 | MIT | ✅ Compatible |
+| symfony/property-access | v7.4.16 | MIT | ✅ Compatible |
+| symfony/property-info | v7.4.18 | MIT | ✅ Compatible |
 | symfony/routing | v6.4.45 | MIT | ✅ Compatible |
+| symfony/serializer | v7.4.18 | MIT | ✅ Compatible |
 | symfony/string | v7.4.15 | MIT | ✅ Compatible |
 | symfony/translation | v6.4.44 | MIT | ✅ Compatible |
+| symfony/type-info | v7.4.17 | MIT | ✅ Compatible |
+| symfony/uid | v7.4.17 | MIT | ✅ Compatible |
 | teampassclasses/configmanager | dev-composer-update | GPL-3.0-only | ✅ Compatible |
 | teampassclasses/cryptomanager | dev-composer-update | GPL-3.0-only | ✅ Compatible |
 | teampassclasses/emailservice | dev-composer-update | GPL-3.0-only | ✅ Compatible |
@@ -125,6 +138,9 @@
 | voku/anti-xss | 4.1.44 | MIT | ✅ Compatible |
 | voku/portable-ascii | 2.1.1 | MIT | ✅ Compatible |
 | voku/portable-utf8 | 6.1.1 | (Apache-2.0 or GPL-2.0) | ✅ Compatible |
+| web-auth/cose-lib | 4.8.1 | MIT | ✅ Compatible |
+| web-auth/webauthn-lib | 5.3.9 | MIT | ✅ Compatible |
+| webmozart/assert | 2.4.1 | MIT | ✅ Compatible |
 
 ## JavaScript/CSS Dependencies
 
@@ -138,8 +154,8 @@
 
 ## Summary
 
-- **Total Dependencies:** 123
-- **PHP Dependencies:** 118
+- **Total Dependencies:** 139
+- **PHP Dependencies:** 134
 - **JavaScript Dependencies:** 5
 - **Errors:** 0
 - **Warnings:** 1
@@ -172,4 +188,4 @@ php _tools/licences/compliance-checker.php
 
 ---
 
-*Auto-generated report - Last updated: 2026-09-11 19:49:53*
+*Auto-generated report - Last updated: 2026-09-13 14:17:11*

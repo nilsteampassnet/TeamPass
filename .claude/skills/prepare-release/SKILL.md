@@ -312,7 +312,7 @@ Do *not* restore them with `git archive` — they are Composer's to manage, and 
 the stale one. Run this after the merge instead:
 
 ```bash
-rm -rf app/vendor/phpstan app/vendor/phpunit app/vendor/symfony/cache
+rm -rf app/vendor/phpstan/phpstan app/vendor/phpunit app/vendor/symfony/cache
 composer install
 git checkout -- app/vendor/composer/            # restores the production autoloader
 php _tools/phpunit.phar                         # expect: OK (~1500 tests, all green)

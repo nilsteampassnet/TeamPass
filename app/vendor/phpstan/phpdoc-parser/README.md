@@ -1,0 +1,209 @@
+<h1 align="center">PHPDoc Parser for PHPStan</h1>
+
+<p align="center">
+	<a href="https://github.com/phpstan/phpdoc-parser/actions"><img src="https://github.com/phpstan/phpdoc-parser/workflows/Build/badge.svg" alt="Build Status"></a>
+	<a href="https://packagist.org/packages/phpstan/phpdoc-parser"><img src="https://poser.pugx.org/phpstan/phpdoc-parser/v/stable" alt="Latest Stable Version"></a>
+	<a href="https://choosealicense.com/licenses/mit/"><img src="https://poser.pugx.org/phpstan/phpstan/license" alt="License"></a>
+	<a href="https://phpstan.org/"><img src="https://img.shields.io/badge/PHPStan-enabled-brightgreen.svg?style=flat" alt="PHPStan Enabled"></a>
+</p>
+
+This library `phpstan/phpdoc-parser` represents PHPDocs with an AST (Abstract Syntax Tree). It supports parsing and modifying PHPDocs.
+
+For the complete list of supported PHPDoc features check out PHPStan documentation. PHPStan is the main (but not the only) user of this library.
+
+* [PHPDoc Basics](https://phpstan.org/writing-php-code/phpdocs-basics) (list of PHPDoc tags)
+* [PHPDoc Types](https://phpstan.org/writing-php-code/phpdoc-types) (list of PHPDoc types)
+* [phpdoc-parser API Reference](https://phpstan.github.io/phpdoc-parser/2.3.x/namespace-PHPStan.PhpDocParser.html) with all the AST node types etc.
+
+This parser also supports parsing [Doctrine Annotations](https://github.com/doctrine/annotations). The AST nodes live in the [PHPStan\PhpDocParser\Ast\PhpDoc\Doctrine namespace](https://phpstan.github.io/phpdoc-parser/2.1.x/namespace-PHPStan.PhpDocParser.Ast.PhpDoc.Doctrine.html).
+
+## Features
+
+### Supported type syntax
+
+The parser supports a rich type system including:
+
+- Basic types: `string`, `int`, `bool`, `null`, `self`, `static`, `$this`, etc.
+- Nullable types: `?string`
+- Union and intersection types: `string|int`, `Foo&Bar`
+- Generic types with variance: `array<string>`, `Collection<covariant T>`
+- Array shapes: `array{name: string, age: int, ...}`
+- Object shapes: `object{name: string, age: int}`
+- Callable/closure types: `callable(string): bool`, `Closure(int): void`
+- Conditional types: `($input is string ? string : int)`
+- Offset access types: `T[K]`
+- Constant type expressions: `self::CONST*`, `123`, `'string'`
+
+### Constant expression parsing
+
+Constant expressions used in PHPDoc tags are parsed via `ConstExprParser`:
+
+- Scalar values: integers, floats, strings, `true`, `false`, `null`
+- Arrays: `{1, 2, 'key' => 'value'}`
+- Class constant fetches: `ClassName::CONSTANT`
+
+### AST node traversal
+
+The library provides a visitor-based traversal system (inspired by [nikic/PHP-Parser](https://github.com/nikic/PHP-Parser)) for reading and transforming the AST.
+
+```php
+use PHPStan\PhpDocParser\Ast\AbstractNodeVisitor;
+use PHPStan\PhpDocParser\Ast\Node;
+use PHPStan\PhpDocParser\Ast\NodeTraverser;
+use PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode;
+
+$visitor = new class extends AbstractNodeVisitor {
+    public function enterNode(Node $node) {
+        if ($node instanceof IdentifierTypeNode) {
+            // inspect or transform the node
+        }
+        return $node;
+    }
+};
+
+$traverser = new NodeTraverser([$visitor]);
+$traverser->traverse([$phpDocNode]);
+```
+
+The `NodeTraverser` supports `DONT_TRAVERSE_CHILDREN`, `STOP_TRAVERSAL`, `REMOVE_NODE`, and `DONT_TRAVERSE_CURRENT_AND_CHILDREN` control constants. A built-in `CloningVisitor` is included for creating deep copies of the AST (used by the format-preserving printer).
+
+### Node attributes
+
+Nodes can carry attributes such as line numbers, token indexes, and comments. Enable them via `ParserConfig`:
+
+```php
+$config = new ParserConfig(usedAttributes: ['lines' => true, 'indexes' => true, 'comments' => true]);
+```
+
+These attributes are required for the format-preserving printer and can also be used for mapping AST nodes back to source positions.
+
+## Installation
+
+```
+composer require phpstan/phpdoc-parser
+```
+
+## Basic usage
+
+```php
+<?php
+
+require_once __DIR__ . '/vendor/autoload.php';
+
+use PHPStan\PhpDocParser\Ast\PhpDoc\ParamTagValueNode;
+use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocNode;
+use PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode;
+use PHPStan\PhpDocParser\Lexer\Lexer;
+use PHPStan\PhpDocParser\ParserConfig;
+use PHPStan\PhpDocParser\Parser\ConstExprParser;
+use PHPStan\PhpDocParser\Parser\PhpDocParser;
+use PHPStan\PhpDocParser\Parser\TokenIterator;
+use PHPStan\PhpDocParser\Parser\TypeParser;
+
+// basic setup
+
+$config = new ParserConfig(usedAttributes: []);
+$lexer = new Lexer($config);
+$constExprParser = new ConstExprParser($config);
+$typeParser = new TypeParser($config, $constExprParser);
+$phpDocParser = new PhpDocParser($config, $typeParser, $constExprParser);
+
+// parsing and reading a PHPDoc string
+
+$tokens = new TokenIterator($lexer->tokenize('/** @param Lorem $a */'));
+$phpDocNode = $phpDocParser->parse($tokens); // PhpDocNode
+$paramTags = $phpDocNode->getParamTagValues(); // ParamTagValueNode[]
+echo $paramTags[0]->parameterName; // '$a'
+echo $paramTags[0]->type; // IdentifierTypeNode - 'Lorem'
+```
+
+### Format-preserving printer
+
+This component can be used to modify the AST
+and print it again as close as possible to the original.
+
+It's heavily inspired by format-preserving printer component in [nikic/PHP-Parser](https://github.com/nikic/PHP-Parser).
+
+```php
+<?php
+
+require_once __DIR__ . '/vendor/autoload.php';
+
+use PHPStan\PhpDocParser\Ast\NodeTraverser;
+use PHPStan\PhpDocParser\Ast\NodeVisitor\CloningVisitor;
+use PHPStan\PhpDocParser\Ast\PhpDoc\PhpDocNode;
+use PHPStan\PhpDocParser\Ast\Type\IdentifierTypeNode;
+use PHPStan\PhpDocParser\Lexer\Lexer;
+use PHPStan\PhpDocParser\ParserConfig;
+use PHPStan\PhpDocParser\Parser\ConstExprParser;
+use PHPStan\PhpDocParser\Parser\PhpDocParser;
+use PHPStan\PhpDocParser\Parser\TokenIterator;
+use PHPStan\PhpDocParser\Parser\TypeParser;
+use PHPStan\PhpDocParser\Printer\Printer;
+
+// basic setup with enabled required lexer attributes
+
+$config = new ParserConfig(usedAttributes: ['lines' => true, 'indexes' => true, 'comments' => true]);
+$lexer = new Lexer($config);
+$constExprParser = new ConstExprParser($config);
+$typeParser = new TypeParser($config, $constExprParser);
+$phpDocParser = new PhpDocParser($config, $typeParser, $constExprParser);
+
+$tokens = new TokenIterator($lexer->tokenize('/** @param Lorem $a */'));
+$phpDocNode = $phpDocParser->parse($tokens); // PhpDocNode
+
+$cloningTraverser = new NodeTraverser([new CloningVisitor()]);
+
+/** @var PhpDocNode $newPhpDocNode */
+[$newPhpDocNode] = $cloningTraverser->traverse([$phpDocNode]);
+
+// change something in $newPhpDocNode
+$newPhpDocNode->getParamTagValues()[0]->type = new IdentifierTypeNode('Ipsum');
+
+// print changed PHPDoc
+$printer = new Printer();
+$newPhpDoc = $printer->printFormatPreserving($newPhpDocNode, $phpDocNode, $tokens);
+echo $newPhpDoc; // '/** @param Ipsum $a */'
+```
+
+## The grammars
+
+The language this library reads is written down as a grammar in
+[`doc/grammars`](doc/grammars), in the format the [phplrt](https://phplrt.org)
+compiler reads. A grammar says what a PHPDoc may be written as, so it can be
+walked the other way round and asked for PHPDocs instead of being asked about
+one: that is where `FuzzyTest` gets its corpus, and it covers a great deal more
+of the language than a hand-written one does. `GrammarSyncTest` walks them the
+other way, asking each grammar about the inputs of every other test in this
+project, so that what the grammars describe and what the parser reads cannot
+drift apart.
+
+Nothing in `src/` reads those files, and the library needs neither the toolchain
+writing the corpus nor the PHP 8.4 it asks for. See
+[`doc/grammars/README.md`](doc/grammars/README.md).
+
+## Code of Conduct
+
+This project adheres to a [Contributor Code of Conduct](CODE_OF_CONDUCT.md). By participating in this project and its community, you are expected to uphold this code.
+
+## Building
+
+Initially you need to run `composer install`, or `composer update` in case you aren't working in a folder which was built before.
+
+Afterwards you can either run the whole build including linting and coding standards using
+
+    make
+
+or run only tests using
+
+    make tests
+
+The grammars have a toolchain of their own, because the compiler reading them
+asks for PHP 8.4. Without it the fuzzy tests skip themselves:
+
+    make grammars-install   # install it
+
+`FuzzyTest` then writes its own corpus out of `doc/grammars/*.pp3` every time it
+runs, and leaves it in `temp/fuzzy` to be looked at afterwards. `GrammarSyncTest`
+asks the same grammars about the inputs of every other test, so that a feature
+added to the parser is one they have to describe as well.

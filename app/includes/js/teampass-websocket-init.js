@@ -111,6 +111,11 @@
   var activeKbView = null
   var kbSubscriptionRequested = false
 
+  // item_id -> time its creation was announced. An API client (the browser extension saving a
+  // passkey) creates an item then updates it at once: that update refreshes without a 2nd toast.
+  var announcedCreations = {}
+  var CREATION_UPDATE_FOLD_MS = 15000
+
   /**
    * Initialize WebSocket connection
    */
@@ -180,13 +185,19 @@
     tpWs.on('item_created', function(data) {
       if (parseInt(data.folder_id) === parseInt(currentFolderId)) {
         showNotification('success', L.new_item, '"' + escapeHtml(data.label) + '" ' + L.item_created_by + ' ' + escapeHtml(data.created_by))
+        announcedCreations[parseInt(data.item_id)] = Date.now()
         refreshItemsList()
       }
     })
 
     tpWs.on('item_updated', function(data) {
       if (parseInt(data.folder_id) === parseInt(currentFolderId)) {
-        showNotification('info', L.item_updated, '"' + escapeHtml(data.label) + '" ' + L.item_updated_by + ' ' + escapeHtml(data.updated_by))
+        // Only the first update following the creation is folded
+        var createdAt = announcedCreations[parseInt(data.item_id)]
+        delete announcedCreations[parseInt(data.item_id)]
+        if (createdAt === undefined || Date.now() - createdAt > CREATION_UPDATE_FOLD_MS) {
+          showNotification('info', L.item_updated, '"' + escapeHtml(data.label) + '" ' + L.item_updated_by + ' ' + escapeHtml(data.updated_by))
+        }
         refreshItemsList()
 
         // If the updated item is currently being viewed, reload its details

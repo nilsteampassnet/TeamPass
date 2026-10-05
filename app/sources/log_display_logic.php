@@ -86,6 +86,10 @@ function formatAdminLogLabel(string $label, Language $lang): string
         'at_licence_trial_requested' => 'licence_trial_log_requested',
         'at_licence_trial_activated' => 'licence_trial_log_activated',
         'at_licence_trial_link_sent' => 'licence_trial_log_link_sent',
+        'at_user_webauthn_added' => 'log_user_webauthn_added',
+        'at_user_webauthn_deleted' => 'log_user_webauthn_deleted',
+        'at_user_webauthn_passwordless_enabled' => 'log_user_webauthn_passwordless_enabled',
+        'at_user_webauthn_passwordless_disabled' => 'log_user_webauthn_passwordless_disabled',
     ];
     if (isset($direct[$label]) === true) {
         return (string) $lang->get($direct[$label]);

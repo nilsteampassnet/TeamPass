@@ -3502,10 +3502,19 @@ switch ($inputData['type']) {
                 $assessedPasswordLength = $pwLength;
             }
 
+            // A passkey item stores an empty password, encrypted: the card says so instead of
+            // reporting a missing password, and the posture counts it as empty, like its SQL.
+            $arrData['pw_replaced_by_passkey'] = $pwLength === 0
+                && (int) ($dataItem['pw_len'] ?? 0) === 0
+                && (int) DB::queryFirstField(
+                    'SELECT COUNT(*) FROM ' . prefixTable('webauthn_credentials') . ' WHERE item_id = %i',
+                    (int) $inputData['id']
+                ) > 0;
+
             $passwordHealthStatus = securityPasswordHealthStatus(
                 $complexityLevel,
                 $assessedPasswordLength,
-                (string) $dataItem['pw'] !== ''
+                (string) $dataItem['pw'] !== '' && $arrData['pw_replaced_by_passkey'] === false
             );
             if ($passwordHealthStatus === 'empty') {
                 $arrData['pw_health'] = null;
@@ -3988,6 +3997,7 @@ switch ($inputData['type']) {
         $returnArray = [
             'show_details' => 0,
             'attachments' => [],
+            'webauthn' => [],
             'favourite' => 0,
             'otp_for_item_enabled' => 0,
             'otp_phone_number' => '',
@@ -4093,6 +4103,33 @@ switch ($inputData['type']) {
                 );
             }
             $returnArray['attachments'] = $attachments;
+
+            // Passkeys attached to the item: metadata only, never key material. Labels come from
+            // the relying party's page and are escaped by the client.
+            $webauthnRows = DB::query(
+                'SELECT w.id, w.rp_id, w.rp_name, w.user_name, w.user_display_name, w.created_at, w.last_used_at,
+                    creator.login AS created_by_login, last_user.login AS last_used_by_login
+                FROM ' . prefixTable('webauthn_credentials') . ' AS w
+                LEFT JOIN ' . prefixTable('users') . ' AS creator ON (creator.id = w.created_by)
+                LEFT JOIN ' . prefixTable('users') . ' AS last_user ON (last_user.id = w.last_used_by)
+                WHERE w.item_id = %i
+                ORDER BY w.created_at ASC, w.id ASC',
+                $inputData['id']
+            );
+            $webauthnDateFormat = $SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'];
+            foreach ($webauthnRows as $webauthnRow) {
+                $returnArray['webauthn'][] = [
+                    'id' => (int) $webauthnRow['id'],
+                    'rp_id' => (string) $webauthnRow['rp_id'],
+                    'rp_name' => (string) ($webauthnRow['rp_name'] ?? ''),
+                    'user_name' => (string) ($webauthnRow['user_name'] ?? ''),
+                    'user_display_name' => (string) ($webauthnRow['user_display_name'] ?? ''),
+                    'created_at' => date($webauthnDateFormat, (int) $webauthnRow['created_at']),
+                    'created_by' => (string) ($webauthnRow['created_by_login'] ?? ''),
+                    'last_used_at' => $webauthnRow['last_used_at'] === null ? '' : date($webauthnDateFormat, (int) $webauthnRow['last_used_at']),
+                    'last_used_by' => (string) ($webauthnRow['last_used_by_login'] ?? ''),
+                ];
+            }
 
             // disable add bookmark if alread bookmarked
             $returnArray['favourite'] = in_array($inputData['id'], $session->get('user-favorites')) === true ? 1 : 0;
@@ -5053,8 +5090,21 @@ switch ($inputData['type']) {
             $batchExpirationDates = [];
             $batchCorruptedItems = [];
 
+            $batchWebauthnCounts = [];
+
             if (!empty($allItemIds)) {
                 $batchLaprRelations = laprGetItemRelations($allItemIds, $SETTINGS);
+
+                $webauthnCountRows = DB::query(
+                    'SELECT item_id, COUNT(*) AS nb
+                    FROM ' . prefixTable('webauthn_credentials') . '
+                    WHERE item_id IN %li
+                    GROUP BY item_id',
+                    $allItemIds
+                );
+                foreach ($webauthnCountRows as $webauthnCountRow) {
+                    $batchWebauthnCounts[(int) $webauthnCountRow['item_id']] = (int) $webauthnCountRow['nb'];
+                }
 
                 if ((int) $session->get('user-admin') !== 1 && teampassCorruptedItemsTableExists() === true) {
                     $corruptedRows = DB::query(
@@ -5176,7 +5226,8 @@ switch ($inputData['type']) {
                     $html_json[$record['id']]['link'] = $record['link'];
                     $html_json[$record['id']]['email'] = $record['email'] ?? '';
                     $html_json[$record['id']]['fa_icon'] = $record['fa_icon'];
-                    $laprListRelation = $batchLaprRelations[(int) $record['id']] ?? [];
+                    $html_json[$record['id']]['webauthn_count'] = $batchWebauthnCounts[(int) $record['id']] ?? 0;
+                $laprListRelation = $batchLaprRelations[(int) $record['id']] ?? [];
                     $html_json[$record['id']]['lapr'] = [
                         'is_managed' => (bool) ($laprListRelation['is_managed'] ?? false),
                         'is_credential' => (bool) ($laprListRelation['is_credential'] ?? false),
@@ -5991,6 +6042,96 @@ switch ($inputData['type']) {
         break;
 
     /*
+     * CASE
+     * Delete a passkey attached to an item. Needs the right to edit the item: deleting its
+     * passkey changes what the item gives access to.
+     */
+    case 'delete_webauthn_credential':
+        if ($inputData['key'] !== $session->get('key')) {
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        $dataReceived = prepareExchangedData(
+            $inputData['data'],
+            'decode'
+        );
+        $credentialId = (int) filter_var($dataReceived['credential_id'] ?? 0, FILTER_SANITIZE_NUMBER_INT);
+
+        $credential = DB::queryFirstRow(
+            'SELECT w.id, w.item_id, w.rp_id, i.id_tree, i.label, i.deleted_at
+            FROM ' . prefixTable('webauthn_credentials') . ' AS w
+            INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = w.item_id)
+            WHERE w.id = %i',
+            $credentialId
+        );
+        if ($credential === null || $credential['deleted_at'] !== null) {
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        $checkRights = getCurrentAccessRights(
+            (int) $session->get('user-id'),
+            (int) $credential['item_id'],
+            (int) $credential['id_tree'],
+        );
+        if ($checkRights['error'] || !$checkRights['edit']) {
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        DB::startTransaction();
+        DB::delete(prefixTable('sharekeys_webauthn'), 'object_id = %i', $credentialId);
+        DB::delete(prefixTable('webauthn_credentials'), 'id = %i', $credentialId);
+        DB::commit();
+
+        logItems(
+            $SETTINGS,
+            (int) $credential['item_id'],
+            (string) $credential['label'],
+            (int) $session->get('user-id'),
+            'at_modification',
+            (string) $session->get('user-login'),
+            'at_webauthn_credential_deleted : ' . $credential['rp_id']
+        );
+
+        emitItemEvent(
+            'updated',
+            (int) $credential['item_id'],
+            (int) $credential['id_tree'],
+            (string) $credential['label'],
+            (string) $session->get('user-login'),
+            (int) $session->get('user-id')
+        );
+
+        echo (string) prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => '',
+            ),
+            'encode'
+        );
+        break;
+
+    /*
      * FUNCTION
      * Launch an action when clicking on a quick icon
      * $action = 0 => Make favorite
@@ -6269,6 +6410,15 @@ switch ($inputData['type']) {
                     [$session->get('user-id'), TP_USER_ID]
                 );
             }
+
+            // Remove all passkey sharekeys but the owner's and the recovery one
+            DB::query(
+                'DELETE FROM ' . prefixTable('sharekeys_webauthn') . '
+                WHERE object_id IN (SELECT id FROM ' . prefixTable('webauthn_credentials') . ' WHERE item_id = %i)
+                AND user_id NOT IN %ls',
+                $inputData['itemId'],
+                [$session->get('user-id'), TP_USER_ID]
+            );
 
             // update pw
             DB::update(
@@ -6573,6 +6723,15 @@ switch ($inputData['type']) {
                             $session->get('user-id')
                         );
                     }
+
+                    // Remove all passkey sharekeys but the owner's and the recovery one
+                    DB::query(
+                        'DELETE FROM ' . prefixTable('sharekeys_webauthn') . '
+                        WHERE object_id IN (SELECT id FROM ' . prefixTable('webauthn_credentials') . ' WHERE item_id = %i)
+                        AND user_id NOT IN %ls',
+                        $item_id,
+                        [$session->get('user-id'), TP_USER_ID, API_USER_ID, OTV_USER_ID, SSH_USER_ID]
+                    );
 
                     // update pw
                     DB::update(
@@ -7803,6 +7962,10 @@ switch ($inputData['type']) {
             } elseif ($record['action'] === 'at_manual') {
                 $detail = $escapeDetail($reason[0]);
                 $action = $lang->get($record['action']);
+            } elseif ($record['action'] === 'at_webauthn_credential_used') {
+                // The reason is the relying party the passkey signed in to
+                $detail = $escapeDetail($reason[0]);
+                $action = $lang->get($record['action']);
             } elseif ($reason[0] === 'at_description') {
                 $action = $lang->get('description_has_changed');
             } elseif (empty($record['raison']) === false && $reason[0] !== 'at_creation') {
@@ -7845,6 +8008,8 @@ switch ($inputData['type']) {
                     $detail = $escapeDetail(
                         isBase64($tmp[0]) === true ? base64_decode($tmp[0]) . '.' . $tmp[1] : $tmp[0]
                     );
+                } elseif ($reason[0] === 'at_webauthn_credential_added' || $reason[0] === 'at_webauthn_credential_deleted') {
+                    $detail = $escapeDetail($reason[1] ?? '');
                 } elseif ($reason[0] === 'at_import') {
                     $detail = '';
                 } elseif (in_array($reason[0], array('csv', 'pdf')) === true) {

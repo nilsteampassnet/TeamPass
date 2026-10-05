@@ -155,6 +155,9 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                             <li class="nav-item">
                                 <a class="nav-link" data-toggle="tab" href="#duo" role="tab" aria-controls="duo" aria-selected="false"><?php echo $lang->get('duo_security'); ?></a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-toggle="tab" href="#webauthn-login" role="tab" aria-controls="webauthn-login" aria-selected="false"><?php echo $lang->get('webauthn_passkeys'); ?></a>
+                            </li>
                             <!--
                                 <li class="nav-item">
                                 <a class="nav-link" data-toggle="tab" href="#yubico" role="tab" aria-controls="yubico" aria-selected="false"><?php echo $lang->get('yubico'); ?></a>
@@ -256,6 +259,91 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                     <button class="btn btn-primary" id="button-duo-config-check">
                                         <?php echo $lang->get('duo-run-config-check'); ?>
                                     </button>
+                                </div>
+                            </div>
+
+                            <?php
+                            $webauthnLoginMode = (int) ($SETTINGS['webauthn_login_mode'] ?? 0);
+                            $webauthnDefaultRpId = strtolower((string) parse_url((string) ($SETTINGS['cpassman_url'] ?? ''), PHP_URL_HOST));
+                            ?>
+                            <div class="tab-pane" id="webauthn-login" role="tabpanel" aria-labelledby="webauthn-login-tab">
+                                <div class="row mb-2">
+                                    <div class="col-7">
+                                        <?php echo $lang->get('webauthn_login_mode'); ?>
+                                        <small class='form-text text-muted'>
+                                            <?php echo $lang->get('webauthn_login_mode_tip'); ?>
+                                        </small>
+                                    </div>
+                                    <div class="col-5">
+                                        <select class='form-control form-control-sm select2' id='webauthn_login_mode' style="width:100%;">
+                                            <?php
+                                            foreach ([0, 1, 2] as $mode) {
+                                                echo '
+                                            <option value="' . $mode . '"', $webauthnLoginMode === $mode ? ' selected' : '', '>' . $lang->get('webauthn_login_mode_' . $mode) . '</option>';
+                                            }
+                                            ?>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="row mb-2">
+                                    <div class="col-9">
+                                        <?php echo $lang->get('webauthn_login_require_prf'); ?>
+                                        <small class='form-text text-muted'>
+                                            <?php echo $lang->get('webauthn_login_require_prf_tip'); ?>
+                                        </small>
+                                    </div>
+                                    <div class="col-3 d-flex justify-content-end">
+                                        <div class="toggle toggle-modern" id="webauthn_login_require_prf" data-toggle-on="<?php echo (int) ($SETTINGS['webauthn_login_require_prf'] ?? 0) === 1 ? 'true' : 'false'; ?>"></div><input type="hidden" id="webauthn_login_require_prf_input" value="<?php echo (int) ($SETTINGS['webauthn_login_require_prf'] ?? 0) === 1 ? '1' : '0'; ?>">
+                                    </div>
+                                </div>
+
+                                <div class="row mb-2">
+                                    <div class="col-9">
+                                        <?php echo $lang->get('webauthn_passwordless_satisfies_mfa'); ?>
+                                        <small class='form-text text-muted'>
+                                            <?php echo $lang->get('webauthn_passwordless_satisfies_mfa_tip'); ?>
+                                        </small>
+                                    </div>
+                                    <div class="col-3 d-flex justify-content-end">
+                                        <div class="toggle toggle-modern" id="webauthn_passwordless_satisfies_mfa" data-toggle-on="<?php echo isset($SETTINGS['webauthn_passwordless_satisfies_mfa']) === false || (int) $SETTINGS['webauthn_passwordless_satisfies_mfa'] === 1 ? 'true' : 'false'; ?>"></div><input type="hidden" id="webauthn_passwordless_satisfies_mfa_input" value="<?php echo isset($SETTINGS['webauthn_passwordless_satisfies_mfa']) === false || (int) $SETTINGS['webauthn_passwordless_satisfies_mfa'] === 1 ? '1' : '0'; ?>">
+                                    </div>
+                                </div>
+
+                                <div class="row mb-2">
+                                    <div class="col-9">
+                                        <?php echo $lang->get('webauthn_email_on_add'); ?>
+                                        <small class='form-text text-muted'>
+                                            <?php echo $lang->get('webauthn_login_email_on_add_tip'); ?>
+                                        </small>
+                                    </div>
+                                    <div class="col-3 d-flex justify-content-end">
+                                        <div class="toggle toggle-modern" id="webauthn_email_on_add" data-toggle-on="<?php echo isset($SETTINGS['webauthn_email_on_add']) === false || (int) $SETTINGS['webauthn_email_on_add'] === 1 ? 'true' : 'false'; ?>"></div><input type="hidden" id="webauthn_email_on_add_input" value="<?php echo isset($SETTINGS['webauthn_email_on_add']) === false || (int) $SETTINGS['webauthn_email_on_add'] === 1 ? '1' : '0'; ?>">
+                                    </div>
+                                </div>
+
+                                <div class="row mb-2">
+                                    <div class="col-7">
+                                        <?php echo $lang->get('webauthn_rp_id'); ?>
+                                        <small class='form-text text-muted'>
+                                            <?php echo $lang->get('webauthn_rp_id_tip'); ?>
+                                        </small>
+                                    </div>
+                                    <div class="col-5">
+                                        <input type="text" class="form-control form-control-sm purify" data-field="label" id="webauthn_rp_id" placeholder="<?php echo htmlspecialchars($webauthnDefaultRpId, ENT_QUOTES, 'UTF-8'); ?>" value="<?php echo htmlspecialchars(html_entity_decode((string) ($SETTINGS['webauthn_rp_id'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8'), ENT_QUOTES, 'UTF-8'); ?>">
+                                    </div>
+                                </div>
+
+                                <div class="row mb-2">
+                                    <div class="col-7">
+                                        <?php echo $lang->get('webauthn_rp_name'); ?>
+                                        <small class='form-text text-muted'>
+                                            <?php echo $lang->get('webauthn_rp_name_tip'); ?>
+                                        </small>
+                                    </div>
+                                    <div class="col-5">
+                                        <input type="text" class="form-control form-control-sm purify" data-field="label" id="webauthn_rp_name" placeholder="TeamPass" value="<?php echo htmlspecialchars(html_entity_decode((string) ($SETTINGS['webauthn_rp_name'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8'), ENT_QUOTES, 'UTF-8'); ?>">
+                                    </div>
                                 </div>
                             </div>
 

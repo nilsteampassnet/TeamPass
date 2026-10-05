@@ -45,6 +45,7 @@
 
 - [Authentication](features/authentication.md) — local, LDAP/AD with nested groups, OAuth2 SSO
 - Multi-factor: TOTP, Duo Security, YubiKey, AGSES
+- [Passkeys](features/passkeys.md#signing-in-to-teampass-with-a-passkey) — sign in with a fingerprint, a face or a security key, as a second factor or without a password
 - [Network ACL](manage/network-acl.md) and [session management](misc/session-management.md)
 
 **Day to day**
@@ -53,6 +54,7 @@
 - [Custom fields](features/custom-fields.md), [password renewal](features/renewal.md), [security posture and breach detection](features/security-posture.md)
 - [Import](features/import.md) from Bitwarden, LastPass, 1Password, KeePassXC — and [export](features/export.md) back out
 - [Browser extension](misc/extension.md) and [real-time collaboration](features/collaboration.md)
+- [Shared passkeys](features/passkeys.md#passkeys-of-other-sites) — the browser extension keeps the passkeys of other sites in the vault, where folder rights share them like passwords
 
 ## Licence
 

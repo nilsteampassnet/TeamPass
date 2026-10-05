@@ -106,6 +106,14 @@ From that point on, you will be asked for a code at every login.
 
 > 💡 If you lose access to your authenticator app, contact your administrator. They can reset your TOTP enrollment from the **Users** page (action menu → **Email Google Auth QR**), which sends a new QR code to your registered email address.
 
+### Sign-in passkeys
+
+When the administrator enabled passkeys, the **Information** tab holds a **Sign-in passkeys** block. Add one per device: the browser asks for your fingerprint, face, PIN or security key, and from then on TeamPass asks for that passkey after your password.
+
+If passwordless sign-in is enabled and your account is a local one, the same list lets you turn a passkey into a full sign-in — no password at all — and turn it off again. A passkey can also be renamed or deleted at any time.
+
+> 💡 Lost the device? Ask an administrator to revoke the passkey: your password, and any other method, keep working. See [Passkeys](passkeys.md#signing-in-to-teampass-with-a-passkey).
+
 ### Duo Security
 
 If your organization uses Duo, you will be redirected to the Duo authentication screen after entering your Teampass credentials. Follow the Duo prompt (push notification, phone call, or passcode) to complete login.

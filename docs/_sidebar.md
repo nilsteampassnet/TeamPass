@@ -33,6 +33,7 @@
 - [Profile](features/profile.md)
 - [Knowledge Base](features/knowledge-base.md)
 - [Security Posture](features/security-posture.md)
+- [Passkeys](features/passkeys.md)
 - [Password Rotation (LAPR)](features/lapr.md)
 - [Notification Centre](features/notification-center.md)
 - [Real-time Collaboration](features/collaboration.md)

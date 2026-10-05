@@ -685,6 +685,261 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         });
     });
 
+    /**
+     * Passkeys used to sign in to TeamPass (webauthn_login_* in users.queries.php).
+     * profile.php renders the block only when the feature is on or passkeys remain; the
+     * ceremonies themselves run in assets/js/webauthn-login.js, loaded while it is on.
+     */
+    const webauthnLoginKey = '<?php echo $session->get('key'); ?>';
+    const webauthnLoginText = <?php echo json_encode([
+        'none' => $lang->get('webauthn_login_none'),
+        'created' => $lang->get('webauthn_created'),
+        'lastUsed' => $lang->get('webauthn_last_used'),
+        'neverUsed' => $lang->get('webauthn_never_used'),
+        'passwordless' => $lang->get('webauthn_login_passwordless_badge'),
+        'serverWrap' => $lang->get('webauthn_login_server_wrap_tip'),
+        'synced' => $lang->get('webauthn_login_synced_badge'),
+        'rename' => $lang->get('webauthn_login_rename'),
+        'delete' => $lang->get('webauthn_login_delete'),
+        'deleteConfirm' => $lang->get('webauthn_login_delete_confirm'),
+        'enable' => $lang->get('webauthn_login_passwordless_enable'),
+        'disable' => $lang->get('webauthn_login_passwordless_disable'),
+        'disableConfirm' => $lang->get('webauthn_login_passwordless_disable_confirm'),
+        'added' => $lang->get('webauthn_login_added'),
+        'enabled' => $lang->get('webauthn_login_passwordless_enabled'),
+        'finishLater' => $lang->get('webauthn_login_finish_later'),
+        'unsupported' => $lang->get('webauthn_login_browser_unsupported'),
+        'cancelled' => $lang->get('webauthn_login_cancelled'),
+        'exists' => $lang->get('webauthn_login_already_registered'),
+        'security' => $lang->get('webauthn_login_security_error'),
+        'failed' => $lang->get('webauthn_login_verification_failed'),
+        'serverError' => $lang->get('server_answer_error'),
+        'cancel' => $lang->get('cancel'),
+        'done' => $lang->get('done'),
+    ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+    let webauthnLoginCanWrap = false;
+
+    function webauthnLoginPost(type, payload) {
+        return new Promise(function(resolve) {
+            $.post(
+                'sources/users.queries.php', {
+                    type: type,
+                    data: prepareExchangedData(JSON.stringify(payload || {}), 'encode', webauthnLoginKey),
+                    key: webauthnLoginKey
+                },
+                function(data) {
+                    resolve(prepareExchangedData(data, 'decode', webauthnLoginKey));
+                }
+            ).fail(function() {
+                resolve({ error: true, message: webauthnLoginText.serverError });
+            });
+        });
+    }
+
+    function webauthnLoginToast(type, message) {
+        toastr.remove();
+        toastr[type](message, '', {
+            timeOut: type === 'success' ? 2000 : 8000,
+            closeButton: true,
+            positionClass: 'toast-bottom-right'
+        });
+    }
+
+    function webauthnLoginCeremonyError(error) {
+        const kind = window.tpWebauthnLogin ? window.tpWebauthnLogin.errorKind(error) : 'failed';
+        webauthnLoginToast(kind === 'cancelled' ? 'info' : 'error', webauthnLoginText[kind] || webauthnLoginText.failed);
+    }
+
+    function webauthnLoginCeremonyAvailable() {
+        return typeof window.tpWebauthnLogin !== 'undefined' && window.tpWebauthnLogin.supported() === true;
+    }
+
+    function renderWebauthnLogin(credentials) {
+        const $list = $('#webauthn-login-list');
+        if (!credentials || credentials.length === 0) {
+            $list.html('<span class="text-muted">' + $('<span>').text(webauthnLoginText.none).html() + '</span>');
+            return;
+        }
+        const enabled = parseInt($('#webauthn-login-block').data('mode'), 10) !== 0;
+        let html = '<table class="table table-sm table-striped mb-0"><tbody>';
+        credentials.forEach(function(credential) {
+            const id = parseInt(credential.id, 10);
+            const created = new Date(credential.created_at * 1000).toLocaleString();
+            const lastUsed = credential.last_used_at ? new Date(credential.last_used_at * 1000).toLocaleString() : webauthnLoginText.neverUsed;
+            let badges = '';
+            if (credential.passwordless === true) {
+                badges += ' <span class="badge badge-success ml-1"' + (credential.server_wrap === true ? ' title="' + $('<span>').text(webauthnLoginText.serverWrap).html() + '"' : '') + '>'
+                    + $('<span>').text(webauthnLoginText.passwordless).html() + '</span>';
+            }
+            if (credential.synced === true) {
+                badges += ' <span class="badge badge-info ml-1">' + $('<span>').text(webauthnLoginText.synced).html() + '</span>';
+            }
+            let actions = '<button type="button" class="btn btn-sm btn-outline-secondary webauthn-login-rename" data-id="' + id + '" title="' + $('<span>').text(webauthnLoginText.rename).html() + '"><i class="fa-solid fa-pen"></i></button>';
+            if (credential.passwordless === true) {
+                actions += ' <button type="button" class="btn btn-sm btn-outline-warning webauthn-login-passwordless-disable" data-id="' + id + '" title="' + $('<span>').text(webauthnLoginText.disable).html() + '"><i class="fa-solid fa-lock"></i></button>';
+            } else if (enabled === true && webauthnLoginCanWrap === true) {
+                actions += ' <button type="button" class="btn btn-sm btn-outline-success webauthn-login-passwordless-enable" data-id="' + id + '" title="' + $('<span>').text(webauthnLoginText.enable).html() + '"><i class="fa-solid fa-unlock"></i></button>';
+            }
+            actions += ' <button type="button" class="btn btn-sm btn-danger webauthn-login-delete" data-id="' + id + '" title="' + $('<span>').text(webauthnLoginText.delete).html() + '"><i class="fa-solid fa-trash"></i></button>';
+            html += '<tr data-label="' + $('<span>').text(credential.label).html() + '">'
+                + '<td>' + $('<span>').text(credential.label).html() + badges + '</td>'
+                + '<td class="text-muted small">' + $('<span>').text(webauthnLoginText.created + ': ' + created).html()
+                + '<br>' + $('<span>').text(webauthnLoginText.lastUsed + ': ' + lastUsed).html() + '</td>'
+                + '<td class="text-right text-nowrap">' + actions + '</td>'
+                + '</tr>';
+        });
+        html += '</tbody></table>';
+        $list.html(html);
+    }
+
+    function loadWebauthnLogin() {
+        return webauthnLoginPost('webauthn_login_list', {}).then(function(data) {
+            if (data.error === false) {
+                webauthnLoginCanWrap = data.can_wrap === true;
+                renderWebauthnLogin(data.credentials);
+            }
+        });
+    }
+
+    // Enable passwordless sign-in on a passkey: one gesture that proves it is at hand and
+    // evaluates its PRF, from which the server derives the key wrapping the private key.
+    async function enableWebauthnPasswordless(id, afterRegistration) {
+        const start = await webauthnLoginPost('webauthn_login_passwordless_options', { id: id });
+        if (start.error !== false) {
+            webauthnLoginToast('error', start.message);
+            return;
+        }
+        let result;
+        try {
+            result = await window.tpWebauthnLogin.assert(start.options, start.prf_input);
+        } catch (error) {
+            // Some browsers only allow one ceremony per click: the button is there for a second one.
+            if (afterRegistration === true) {
+                webauthnLoginToast('info', webauthnLoginText.finishLater);
+            } else {
+                webauthnLoginCeremonyError(error);
+            }
+            return;
+        }
+        const done = await webauthnLoginPost('webauthn_login_passwordless_verify', {
+            id: id,
+            credential: result.credential,
+            prf_output: result.prf_output
+        });
+        if (done.error !== false) {
+            webauthnLoginToast('error', done.message);
+        } else {
+            webauthnLoginToast('success', webauthnLoginText.enabled);
+        }
+        await loadWebauthnLogin();
+    }
+
+    if ($('#webauthn-login-block').length > 0) {
+        loadWebauthnLogin();
+    }
+
+    $(document).on('click', '#webauthn-login-add', async function() {
+        if (webauthnLoginCeremonyAvailable() === false) {
+            webauthnLoginToast('error', webauthnLoginText.unsupported);
+            return;
+        }
+        const $button = $(this).prop('disabled', true);
+        try {
+            const start = await webauthnLoginPost('webauthn_login_register_options', {});
+            if (start.error !== false) {
+                webauthnLoginToast('error', start.message);
+                return;
+            }
+            let result;
+            try {
+                result = await window.tpWebauthnLogin.register(start.options, start.prf_input);
+            } catch (error) {
+                webauthnLoginCeremonyError(error);
+                return;
+            }
+            const done = await webauthnLoginPost('webauthn_login_register_verify', Object.assign(
+                { label: $('#webauthn-login-label').val() },
+                result
+            ));
+            if (done.error !== false) {
+                webauthnLoginToast('error', done.message);
+                return;
+            }
+            $('#webauthn-login-label').val('');
+            webauthnLoginToast(done.notice ? 'warning' : 'success', done.notice ? done.notice : webauthnLoginText.added);
+            await loadWebauthnLogin();
+            if (done.finish_passwordless === true) {
+                await enableWebauthnPasswordless(parseInt(done.id, 10), true);
+            }
+        } finally {
+            $button.prop('disabled', false);
+        }
+    });
+
+    $(document).on('click', '.webauthn-login-passwordless-enable', function() {
+        if (webauthnLoginCeremonyAvailable() === false) {
+            webauthnLoginToast('error', webauthnLoginText.unsupported);
+            return;
+        }
+        enableWebauthnPasswordless(parseInt($(this).data('id'), 10), false);
+    });
+
+    $(document).on('click', '.webauthn-login-passwordless-disable', function() {
+        const id = parseInt($(this).data('id'), 10);
+        launchConfirmDialog(
+            webauthnLoginText.disable,
+            $('<span>').text(webauthnLoginText.disableConfirm).html(),
+            function() {
+                webauthnLoginPost('webauthn_login_passwordless_disable', { id: id }).then(function(response) {
+                    webauthnLoginToast(response.error === false ? 'success' : 'error', response.error === false ? webauthnLoginText.done : response.message);
+                    loadWebauthnLogin();
+                });
+            },
+            webauthnLoginText.disable,
+            webauthnLoginText.cancel
+        );
+    });
+
+    $(document).on('click', '.webauthn-login-rename', function() {
+        const id = parseInt($(this).data('id'), 10);
+        const $input = $('<input type="text" class="form-control" id="webauthn-login-rename-input" maxlength="100">')
+            // attr(), not data(): data() would turn a label such as "12" or "{...}" into another type
+            .attr('value', String($(this).closest('tr').attr('data-label') || ''));
+        launchConfirmDialog(
+            webauthnLoginText.rename,
+            $input.prop('outerHTML'),
+            function() {
+                webauthnLoginPost('webauthn_login_rename', {
+                    id: id,
+                    label: $('#webauthn-login-rename-input').val()
+                }).then(function(response) {
+                    if (response.error !== false) {
+                        webauthnLoginToast('error', response.message);
+                    }
+                    loadWebauthnLogin();
+                });
+            },
+            webauthnLoginText.rename,
+            webauthnLoginText.cancel
+        );
+    });
+
+    $(document).on('click', '.webauthn-login-delete', function() {
+        const id = parseInt($(this).data('id'), 10);
+        launchConfirmDialog(
+            webauthnLoginText.delete,
+            $('<span>').text(webauthnLoginText.deleteConfirm).html(),
+            function() {
+                webauthnLoginPost('webauthn_login_delete', { id: id }).then(function(response) {
+                    webauthnLoginToast(response.error === false ? 'success' : 'error', response.error === false ? webauthnLoginText.done : response.message);
+                    loadWebauthnLogin();
+                });
+            },
+            webauthnLoginText.delete,
+            webauthnLoginText.cancel
+        );
+    });
+
     <?php if (isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1) : ?>
     /**
      * Browser extension tokens (Personal Access Tokens).
@@ -916,7 +1171,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     $(document).on('click', '#personal-sharekeys-repair', function() {
         $(this).prop('disabled', true);
         $('#personal-sharekeys-result').html('<i class="fas fa-circle-notch fa-spin"></i>');
-        personalSharekeysRepairScope(['items', 'fields', 'files'], 0, {seeded: 0, failed: 0});
+        personalSharekeysRepairScope(['items', 'fields', 'files', 'webauthn'], 0, {seeded: 0, failed: 0});
     });
 
     if ($('#api-sessions-block').length > 0) {

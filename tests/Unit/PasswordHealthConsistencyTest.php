@@ -167,4 +167,31 @@ class PasswordHealthConsistencyTest extends TestCase
         self::assertStringContainsString('AND i.inactif = 0', $caseSource);
         self::assertStringContainsString('AND i.deleted_at IS NULL', $caseSource);
     }
+
+    /**
+     * A passkey item stores an empty password, encrypted. Neither its health nor the corruption
+     * scan may report it: the posture treats it as empty, and the scan tells an empty decryption
+     * apart from a failed one.
+     */
+    public function testPasskeyItemsWithoutPasswordAreNeverReportedAsAProblem(): void
+    {
+        $functions = $this->source('app/sources/main.functions.php');
+        $sqlStart = strpos($functions, 'function securityPasswordHealthSql(');
+        self::assertIsInt($sqlStart);
+        self::assertStringContainsString(
+            "prefixTable('webauthn_credentials')",
+            substr($functions, $sqlStart, (int) strpos($functions, "\n}\n", $sqlStart) - $sqlStart)
+        );
+
+        $items = $this->source('app/sources/items.queries.php');
+        self::assertStringContainsString(
+            "(string) \$dataItem['pw'] !== '' && \$arrData['pw_replaced_by_passkey'] === false",
+            $items
+        );
+
+        $scan = $this->source('app/scripts/scan_corrupted_items.php');
+        self::assertStringContainsString('doDataDecryptionWithStatus(', $scan);
+        self::assertStringContainsString("\$decryption['success'] === false", $scan);
+        self::assertStringNotContainsString('= doDataDecryption(', $scan);
+    }
 }

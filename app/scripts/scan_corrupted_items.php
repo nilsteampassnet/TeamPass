@@ -135,8 +135,11 @@ function tpScanCorruptedItemsViaTpUser(int $limit = 2000): array
                 continue;
             }
 
-            $decryptedB64 = doDataDecryption((string) $row['pw'], $itemKey, (string) ($row['pw_iv'] ?? ''));
-            if ($decryptedB64 === '' && (string) $row['pw'] !== '') {
+            // An empty password is encrypted too (API, personal folders): it decrypts to an empty
+            // string, which only the success flag tells apart from a failure (#5342).
+            $decryption = doDataDecryptionWithStatus((string) $row['pw'], $itemKey, (string) ($row['pw_iv'] ?? ''));
+            $decryptedB64 = $decryption['string'];
+            if ($decryption['success'] === false && (string) $row['pw'] !== '') {
                 $corrupted[] = array(
                     'id' => (int) $row['object_id'],
                     'label' => (string) $row['label'],

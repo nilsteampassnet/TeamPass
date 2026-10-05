@@ -1,0 +1,37 @@
+# Vendored copy of https://github.com/laminas/automatic-releases/blob/1.26.2/action.yml
+#
+# The upstream action pins its own Docker image to the FLOATING major tag
+# `ghcr.io/laminas/automatic-releases:1`. That tag is not a semver version: it
+# moves with every 1.x release, and GHCR publishes no `:1.26.2` manifest to
+# pin instead. So `uses: laminas/automatic-releases@1.26.2` says nothing about
+# what actually executes — whatever was last pushed to `:1` runs, with this
+# workflow's token and the release signing key in its environment.
+#
+# Vendoring the definition is the only way to name a fixed image. To refresh
+# it after reviewing an upstream release:
+#
+#     docker buildx imagetools inspect ghcr.io/laminas/automatic-releases:1 \
+#         --format '{{ .Manifest.Digest }}'
+#
+# and update both the digest below and the version recorded in the comment.
+
+name: 'laminas/automatic-releases (digest-pinned)'
+description: 'Automates automatic releases for semver-compliant repositories'
+
+inputs:
+  command-name:
+    description: |
+      Command to execute: one of
+       * `laminas:automatic-releases:release`
+       * `laminas:automatic-releases:create-merge-up-pull-request`
+       * `laminas:automatic-releases:switch-default-branch-to-next-minor`
+       * `laminas:automatic-releases:bump-changelog`
+       * `laminas:automatic-releases:create-milestones`
+    required: true
+
+runs:
+  using: 'docker'
+  # Digest of ghcr.io/laminas/automatic-releases:1 as of 2026-09-10.
+  image: 'docker://ghcr.io/laminas/automatic-releases@sha256:c86f165782c462d031f7f8a5932cad237c4a7d16a57b1b0ab0e76e68e08ffba1'
+  args:
+    - ${{ inputs.command-name }}

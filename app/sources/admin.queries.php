@@ -1545,6 +1545,13 @@ switch ($post_type) {
         if ($post_field === 'lapr_endpoint_check_interval_minutes') {
             $post_value = (string) min(525600, max(5, (int) $post_value));
         }
+        // Sign-in passkeys: 0 disabled, 1 second factor, 2 passwordless
+        if ($post_field === 'webauthn_login_mode') {
+            $post_value = (string) min(2, max(0, (int) $post_value));
+        }
+        if ($post_field === 'webauthn_rp_id') {
+            $post_value = strtolower(trim((string) $post_value));
+        }
 
         require_once 'main.functions.php';
 
@@ -3316,6 +3323,8 @@ case 'get_live_activity':
                 return $lang->get('copied');
             case 'at_restored':
                 return $lang->get('at_restored');
+            case 'at_webauthn_credential_used':
+                return $lang->get('action_webauthn_used');
             default:
                 return $action;
         }

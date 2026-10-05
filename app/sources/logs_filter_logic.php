@@ -210,6 +210,7 @@ function logsAllowedItemActions(): array
         'at_creation', 'at_modification', 'at_shown', 'at_export', 'at_restored', 'at_delete',
         'at_copy', 'at_moved', 'at_manual', 'at_import', 'at_access',
         'at_password_copied', 'at_password_shown', 'at_password_shown_edit_form',
+        'at_webauthn_credential_used',
     ];
 }
 

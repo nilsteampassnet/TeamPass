@@ -66,7 +66,7 @@ class SharedToPersonalItemMoveTest extends TestCase
         );
 
         self::assertStringContainsString('[$ownerId, TP_USER_ID, API_USER_ID, OTV_USER_ID, SSH_USER_ID]', $purge);
-        foreach (['sharekeys_items', 'sharekeys_files', 'sharekeys_fields', 'sharekeys_logs'] as $table) {
+        foreach (['sharekeys_items', 'sharekeys_files', 'sharekeys_fields', 'sharekeys_logs', 'sharekeys_webauthn'] as $table) {
             self::assertStringContainsString("prefixTable('" . $table . "')", $purge, $table . ' must be purged');
         }
         self::assertStringNotContainsString('startTransaction', $purge, 'The caller owns the transaction');
@@ -80,7 +80,7 @@ class SharedToPersonalItemMoveTest extends TestCase
             "\n}\n"
         );
 
-        foreach (['sharekeys_items', 'sharekeys_fields', 'sharekeys_files'] as $table) {
+        foreach (['sharekeys_items', 'sharekeys_fields', 'sharekeys_files', 'sharekeys_webauthn'] as $table) {
             self::assertStringContainsString("prefixTable('" . $table . "')", $check, $table . ' must be checked');
         }
         self::assertStringContainsString('share_key != ""', $check, 'A blanked key is not a usable key');

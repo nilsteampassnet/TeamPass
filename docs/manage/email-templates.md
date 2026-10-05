@@ -104,6 +104,8 @@ Placeholders in **Required** must stay in the body.
 | Account locked notification | — | `#tp_user#` `#tp_name#` `#tp_email#` `#tp_ip#` `#tp_date#` `#tp_time#` `#tp_unlock_at#` |
 | Account locked: unlock link | `#reset_url#` | `#name#` `#reset_url#` `#unlock_at#` |
 | Security summary | — | `#breached#` `#weak#` `#reused#` `#overdue#` `#total#` `#url#` |
+| Passkey saved | `#rp_name#` | `#rp_name#` `#user_name#` `#item_label#` `#link#` `#tp_date#` `#tp_time#` |
+| Sign-in passkey added | — | `#passkey_label#` `#tp_date#` `#tp_time#` `#tp_ip#` |
 
 ### Items
 
@@ -140,7 +142,7 @@ TeamPass renders an email when it is *queued*, not when it is sent. Messages alr
 
 ### Which language an email uses is not always the recipient's
 
-Some emails are written in the **recipient's** language (account notifications, inactive account notice, backup report, security summary, *New user: credentials*, *Temporary password*), others in the language of the **user who triggered the action** (item created, item updated, item shared, access request). So a French user acting on an item may send a French notification to an English colleague.
+Some emails are written in the **recipient's** language (account notifications, inactive account notice, backup report, security summary, *Passkey saved*, *Sign-in passkey added*, *New user: credentials*, *Temporary password*), others in the language of the **user who triggered the action** (item created, item updated, item shared, access request). So a French user acting on an item may send a French notification to an English colleague.
 
 This predates the customization feature and is unchanged by it, but it becomes visible once you maintain several languages: keep an English version of the item emails up to date.
 

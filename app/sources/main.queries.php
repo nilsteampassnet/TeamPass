@@ -2485,6 +2485,8 @@ function initializeUserPassword(
 
                 // Store private key in dedicated table
                 insertPrivateKeyWithCurrentFlag($post_user_id, $userKeys['private_key']);
+                // New key pair: passkey copies of the old private key are obsolete
+                invalidateUserPasskeyWraps((int) $post_user_id);
 
                 // Return
                 return prepareExchangedData(
@@ -2579,6 +2581,8 @@ function generateOneTimeCode(
                 $userId,
                 $userKeys['private_key'],
             );
+            // New key pair: passkey copies of the old private key are obsolete
+            invalidateUserPasskeyWraps($userId);
 
             return prepareExchangedData(
                 array(
@@ -4182,6 +4186,17 @@ function setUserOnlyPersonalItemsEncryption(string $userPreviousPwd, string $use
             AND skf.user_id = %i
             AND tp.increment_id IS NULL',
             TP_USER_ID,
+            $userId
+        );
+
+        // Remove all sharekeys for personal passkeys
+        DB::query(
+            'UPDATE ' . prefixTable('sharekeys_webauthn') . ' AS skw
+            INNER JOIN ' . prefixTable('webauthn_credentials') . ' AS w ON skw.object_id = w.id
+            INNER JOIN ' . prefixTable('items') . ' AS i ON w.item_id = i.id
+            SET skw.share_key = ""
+            WHERE i.perso = 1
+            AND skw.user_id = %i',
             $userId
         );
 

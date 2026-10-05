@@ -158,6 +158,8 @@ Options governing the REST API and the clients built on it (browser extension, m
 | Option | Description |
 |--------|-------------|
 | **Offline synchronization window (days)** (`offline_sync_window_days`) | How long a mobile device may stay offline and still catch up incrementally when it reconnects. Beyond this delay the device rebuilds its local cache instead. Default: 90. Set to 0 for no limit |
+| **Allow the browser extension to save passkeys** (`webauthn_provider_enabled`) | *Browser Extension* tab. Lets the extension keep the passkeys of third-party sites in items and sign in with them. Default: off. See [Passkeys](../features/passkeys.md) |
+| **Notify users when a passkey is saved** (`webauthn_email_on_add`) | *Browser Extension* tab. Emails the user who saved a passkey. Default: on |
 
 > 🔔 **The synchronization window is not a data retention.** Lowering it deletes no item, no password and no history — item history and audit logs are governed separately and are never affected. It only bounds how far back the incremental catch-up reaches: a device outside the window downloads its vault again instead of downloading only what changed. Raising it costs database space; lowering it costs bandwidth for devices that were offline a long time.
 

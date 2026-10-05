@@ -1039,6 +1039,11 @@ case 'perform_fix_pf_items-step3':
                 'extra' => 'o.name AS extra',
                 'extraJoin' => '',
             ],
+            'webauthn' => [
+                'label' => 'i.label AS label',
+                'extra' => 'o.rp_id AS extra',
+                'extraJoin' => '',
+            ],
         ];
 
         $details = [];
