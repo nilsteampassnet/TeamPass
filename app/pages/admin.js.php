@@ -672,7 +672,8 @@ function renderActivityRows(rows, expanded = false) {
         const source = activity.source_type === 'kb' ? adminActivityMessages.kb :
             (failed || connected ? adminActivityMessages.authentication : adminActivityMessages.items)
         const channel = activity.channel === 'api' ? 'API' : 'Web'
-        const sourceHint = getActivitySourceHint(activity.source_type)
+        const sourceHint = [getActivitySourceHint(activity.source_type), activity.channel === 'api' ? '(API)' : '']
+            .filter(Boolean).join(' ')
         return '<li class="list-group-item">' +
             '<div class="d-flex w-100 justify-content-between">' +
             '<small class="text-muted"><i class="far fa-clock"></i> ' + escapeHtml(formatTimeAgo(activity.timestamp)) + '</small>' +

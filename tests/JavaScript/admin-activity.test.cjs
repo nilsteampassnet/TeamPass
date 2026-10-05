@@ -91,6 +91,20 @@ test('compact failures count is independent of the ten displayed rows and text i
     assert.doesNotMatch(h.$('#live-activity-list').content, /<script>|<img/i)
 })
 
+test('compact rows distinguish API events while preserving Web and KB presentation', () => {
+    const h = harness()
+    const render = (overrides, expanded = false) => h.run('renderActivityRows(' + JSON.stringify([row(1, overrides)]) + ', ' + expanded + ')')
+    const api = render({channel: 'api', item_label: '<Item>'})
+    assert.match(api, /"<em>&lt;Item&gt;<\/em>"<small class="text-muted ml-1">\(API\)<\/small>/)
+    assert.doesNotMatch(api, /Items ·|tp_src=api/)
+    assert.doesNotMatch(render({channel: 'web'}), /\(API\)|Web|Items ·/)
+    assert.doesNotMatch(render({channel: undefined}), /\(API\)/)
+    assert.match(render({source_type: 'kb'}), /\(KB\)/)
+    assert.match(render({channel: 'api', source_type: 'failed_auth', reason: 'Denied'}), /\(API\)/)
+    assert.match(render({channel: 'api'}, true), /Items · API/)
+    assert.doesNotMatch(render({channel: 'api'}, true), /\(API\)/)
+})
+
 test('expanded pagination uses the snapshot bounds and deduplicates equal-second rows', () => {
     const h = harness()
     h.run('initActivityPreferences(); adminActivityState.open = true; resetExpandedActivity()')

@@ -122,6 +122,19 @@ final class AdminActivityTest extends TestCase
         self::assertCount(2, $this->rows($categories, $cursor, true));
     }
 
+    public function testItemChannelSurvivesQueryAndFormattingWithoutExposingLogDetails(): void
+    {
+        $this->db->exec("INSERT INTO test_log_items VALUES (3, '991', 1, 'at_shown', 'tp_src=api', 1)");
+        $rows = $this->rows(['accesses']);
+        $api = adminActivityFormat($rows[0], static fn ($key) => $key);
+        $web = adminActivityFormat($rows[1], static fn ($key) => $key);
+        self::assertSame('api', $api['channel']);
+        self::assertSame('web', $web['channel']);
+        self::assertSame($web['action_text'], $api['action_text']);
+        self::assertSame('Item', $api['item_label']);
+        self::assertArrayNotHasKey('detail', $api);
+    }
+
     public function testMalformedCursorIsRejected(): void
     {
         $this->expectException(InvalidArgumentException::class);
