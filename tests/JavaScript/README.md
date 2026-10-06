@@ -12,6 +12,21 @@ parents, returning to root, and explicit overrides of inherited defaults. Before
 release, check the same flows in the browser and verify that the newly inserted
 folder row and its edit sidebar display the values actually saved by the server.
 
+## Secure Send usage statistics
+
+`secure-send-statistics.test.cjs` executes the shipped card renderer and dashboard
+request handling. It covers zero versus unavailable data, loading/failure cleanup,
+disabled-feature history, sender identity escaping and account fallbacks, exact
+top-five display, and overlapping/failed requests without stale cached values.
+`SecureSendStatisticsPresentationTest` renders the real PHP fragments in both
+catalogs, including dynamic metric labels and hostile HTML/script translations.
+
+In a configured administrator session, check Statistics → Users with long sender
+names, small screens and dark mode, and exercise period changes, tab switches,
+disabled Secure Send, missing journal and network failures. The Personal/API
+toggles must not change this card's period-only scope. Automated adapters and
+isolated previews do not replace this live installation check.
+
 ## Renewal previews
 
 `renewal-preview.test.cjs` runs the shipped shared notice renderer and request handling

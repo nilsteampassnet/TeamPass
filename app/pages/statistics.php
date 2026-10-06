@@ -679,6 +679,59 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 </div>
                             </div>
                         </div>
+                        <div class='card card-outline card-info' id='tp-secure-send-card' aria-busy='true'>
+                            <div class='card-header'>
+                                <h3 class='card-title'>
+                                    <i class='fas fa-paper-plane mr-2' aria-hidden='true'></i><?php echo htmlspecialchars($lang->get('ops_secure_send_title'), ENT_QUOTES, 'UTF-8'); ?>
+                                </h3>
+                                <div class='card-tools'>
+                                    <span class='badge badge-light' id='tp-secure-send-period'></span>
+                                </div>
+                            </div>
+                            <div class='card-body'>
+                                <p class='small text-muted'><?php echo htmlspecialchars($lang->get('ops_secure_send_scope'), ENT_QUOTES, 'UTF-8'); ?></p>
+                                <div id='tp-secure-send-status' role='status' aria-live='polite'><?php echo htmlspecialchars($lang->get('ops_secure_send_loading'), ENT_QUOTES, 'UTF-8'); ?></div>
+                                <div id='tp-secure-send-disabled' class='alert alert-light border py-2' hidden><?php echo htmlspecialchars($lang->get('ops_secure_send_disabled'), ENT_QUOTES, 'UTF-8'); ?></div>
+                                <div id='tp-secure-send-content' hidden>
+                                    <dl class='row mb-3'>
+                                        <?php foreach (['created', 'revealed', 'reveal_failed', 'senders'] as $metric) { ?>
+                                        <div class='col-sm-6 col-xl-3 mb-3'>
+                                            <dt><?php echo htmlspecialchars($lang->get('ops_secure_send_' . $metric), ENT_QUOTES, 'UTF-8'); ?></dt>
+                                            <dd class='h3 mb-0' data-tp-secure-send-count='totals.<?php echo $metric; ?>'>—</dd>
+                                        </div>
+                                        <?php } ?>
+                                    </dl>
+                                    <div class='row'>
+                                        <div class='col-xl-4 mb-3'>
+                                            <h4 class='h6'><?php echo htmlspecialchars($lang->get('ops_secure_send_details'), ENT_QUOTES, 'UTF-8'); ?></h4>
+                                            <dl class='row small mb-0'>
+                                                <?php foreach (['totals.sends_revealed', 'totals.revoked', 'totals.invalidated', 'totals.expired', 'creations.items', 'creations.notes', 'creations.unknown', 'creations.protected', 'creations.unprotected', 'creations.public_links', 'creations.internal_links'] as $metric) { ?>
+                                                <dt class='col-8'><?php echo htmlspecialchars($lang->get('ops_secure_send_' . explode('.', $metric)[1]), ENT_QUOTES, 'UTF-8'); ?></dt>
+                                                <dd class='col-4 text-right' data-tp-secure-send-count='<?php echo $metric; ?>'>—</dd>
+                                                <?php } ?>
+                                            </dl>
+                                        </div>
+                                        <div class='col-xl-8'>
+                                            <h4 class='h6'><?php echo htmlspecialchars($lang->get('ops_secure_send_top_senders'), ENT_QUOTES, 'UTF-8'); ?></h4>
+                                            <div class='table-responsive'>
+                                                <table class='table table-sm table-hover mb-0'>
+                                                    <caption class='sr-only'><?php echo htmlspecialchars($lang->get('ops_secure_send_top_senders'), ENT_QUOTES, 'UTF-8'); ?></caption>
+                                                    <thead><tr>
+                                                        <th scope='col'><?php echo htmlspecialchars($lang->get('ops_secure_send_sender'), ENT_QUOTES, 'UTF-8'); ?></th>
+                                                        <th scope='col' class='text-right'><?php echo htmlspecialchars($lang->get('ops_secure_send_created'), ENT_QUOTES, 'UTF-8'); ?></th>
+                                                        <th scope='col' class='text-right'><?php echo htmlspecialchars($lang->get('ops_secure_send_revealed'), ENT_QUOTES, 'UTF-8'); ?></th>
+                                                        <th scope='col' class='text-right'><?php echo htmlspecialchars($lang->get('ops_secure_send_reveal_failed'), ENT_QUOTES, 'UTF-8'); ?></th>
+                                                    </tr></thead>
+                                                    <tbody id='tp-secure-send-senders'></tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class='small text-muted mt-3 mb-1'><?php echo htmlspecialchars($lang->get('ops_secure_send_history'), ENT_QUOTES, 'UTF-8'); ?></p>
+                                <p class='small text-muted mb-0'><?php echo htmlspecialchars($lang->get('ops_secure_send_interpretation'), ENT_QUOTES, 'UTF-8'); ?></p>
+                            </div>
+                        </div>
                     </div>
 
                     <div class='tab-pane fade' id='tp-ops-lapr' role='tabpanel' aria-labelledby='tp-ops-lapr-tab'>
