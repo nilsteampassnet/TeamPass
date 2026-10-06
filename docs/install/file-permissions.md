@@ -412,6 +412,14 @@ sudo -u www-data php ${TEAMPASS}/app/scripts/file_integrity.php --permissions-pl
 
 The command exits with `0` only for a clean result, `2` when findings or a stale report require review, and `1` when the scan itself cannot run.
 
+The scan lock file is intentionally retained after a scan finishes. Its presence
+or stored PID does not mean a scan is active: the status check attempts a
+non-blocking shared lock, which conflicts with the scanner's exclusive lock.
+This read-only check also works on NFS-backed storage such as Longhorn RWX
+volumes. A locking error is reported as an error rather than as a running scan.
+Do not delete the lock file while a scan may be active, as doing so can let a
+second scanner lock a different file at the same path.
+
 There is deliberately no web action that deletes unknown files or changes permissions. In the hardened ownership model, PHP can read `app/` and `public/` but cannot modify them. The Health page therefore provides copyable, `sudo`-based SSH commands for an administrator to review and run separately.
 
 Development dependencies are removed by the bundled offline CLI below, which uses `composer.lock` and the same deterministic logic as install/upgrade:
