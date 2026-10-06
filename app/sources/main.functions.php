@@ -9677,7 +9677,7 @@ function createTaskForItem(
                         'task' => json_encode([
                             'step' => 'create_users_files_key',
                             'index' => 0,
-                            'fields_keys' => $files_keys,
+                            'files_keys' => $files_keys,
                         ]),
                     )
                 );
