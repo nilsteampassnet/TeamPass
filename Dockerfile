@@ -1,35 +1,13 @@
 # ============================================
-# TeamPass Docker Image - Optimized Multi-stage Build
+# TeamPass Docker Image
 # ============================================
 
-# Stage 1: Composer dependencies builder
-# Current Composer line. The installed versions come from composer.lock, not from this
-# binary, so the only thing the version buys is Composer's own fixes — hence "latest
-# supported line" rather than an alignment with any particular developer setup. Pinned to
-# the minor line, never to "latest", so a future major cannot land silently.
-FROM composer:2.10 AS composer-builder
-
-WORKDIR /app
-
-# Copy composer files
-COPY composer.json composer.lock ./
-
-# Copy local packages required by composer
-COPY app/includes/libraries/teampassclasses ./app/includes/libraries/teampassclasses
-COPY app/includes/libraries/ezimuel ./app/includes/libraries/ezimuel
-
-# Install production dependencies only
-RUN composer install \
-    --no-dev \
-    --no-scripts \
-    --no-interaction \
-    --optimize-autoloader \
-    --prefer-dist\
-    --ignore-platform-reqs
-
-# ============================================
-# Stage 2: Final production image
-# ============================================
+# The PHP dependencies are not installed here: the repository ships them in app/vendor/
+# with the production autoloader already generated, and the file integrity check compares
+# them with app/files_reference.txt. Running `composer install` in the image regenerated
+# Composer's own files (a random APCu prefix in autoload_real.php, the builder's
+# InstalledVersions.php, a lock-derived autoloader suffix), which every container then
+# reported as modified.
 FROM php:8.3-fpm-alpine3.24
 
 # Metadata labels
@@ -140,8 +118,10 @@ WORKDIR /var/www/html
 # Copy application files
 COPY --chown=nginx:nginx . .
 
-# Copy vendor from composer builder
-COPY --from=composer-builder --chown=nginx:nginx /app/app/vendor ./app/vendor
+# A build context taken from a development clone may also hold Composer's development
+# packages, which are never tracked. Remove them with the bundled offline cleanup (the same
+# logic as install/upgrade); on a clean checkout there is nothing to remove.
+RUN php app/scripts/cleanup_dev_dependencies.php
 
 # Create required directories with proper permissions
 RUN mkdir -p \
