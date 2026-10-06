@@ -693,9 +693,9 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 <div id='tp-secure-send-status' role='status' aria-live='polite'><?php echo htmlspecialchars($lang->get('ops_secure_send_loading'), ENT_QUOTES, 'UTF-8'); ?></div>
                                 <div id='tp-secure-send-disabled' class='alert alert-light border py-2' hidden><?php echo htmlspecialchars($lang->get('ops_secure_send_disabled'), ENT_QUOTES, 'UTF-8'); ?></div>
                                 <div id='tp-secure-send-content' hidden>
-                                    <dl class='row mb-3'>
+                                    <dl class='tp-secure-send-kpis mb-3'>
                                         <?php foreach (['created', 'revealed', 'reveal_failed', 'senders'] as $metric) { ?>
-                                        <div class='col-sm-6 col-xl-3 mb-3'>
+                                        <div>
                                             <dt><?php echo htmlspecialchars($lang->get('ops_secure_send_' . $metric), ENT_QUOTES, 'UTF-8'); ?></dt>
                                             <dd class='h3 mb-0' data-tp-secure-send-count='totals.<?php echo $metric; ?>'>—</dd>
                                         </div>
@@ -704,7 +704,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                     <div class='row'>
                                         <div class='col-xl-4 mb-3'>
                                             <h4 class='h6'><?php echo htmlspecialchars($lang->get('ops_secure_send_details'), ENT_QUOTES, 'UTF-8'); ?></h4>
-                                            <dl class='row small mb-0'>
+                                            <dl class='row small mb-0 tp-secure-send-breakdown'>
                                                 <?php foreach (['totals.sends_revealed', 'totals.revoked', 'totals.invalidated', 'totals.expired', 'creations.items', 'creations.notes', 'creations.unknown', 'creations.protected', 'creations.unprotected', 'creations.public_links', 'creations.internal_links'] as $metric) { ?>
                                                 <dt class='col-8'><?php echo htmlspecialchars($lang->get('ops_secure_send_' . explode('.', $metric)[1]), ENT_QUOTES, 'UTF-8'); ?></dt>
                                                 <dd class='col-4 text-right' data-tp-secure-send-count='<?php echo $metric; ?>'>—</dd>
@@ -714,7 +714,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                         <div class='col-xl-8'>
                                             <h4 class='h6'><?php echo htmlspecialchars($lang->get('ops_secure_send_top_senders'), ENT_QUOTES, 'UTF-8'); ?></h4>
                                             <div class='table-responsive'>
-                                                <table class='table table-sm table-hover mb-0'>
+                                                <table class='table table-sm table-hover mb-0 tp-secure-send-senders-table'>
                                                     <caption class='sr-only'><?php echo htmlspecialchars($lang->get('ops_secure_send_top_senders'), ENT_QUOTES, 'UTF-8'); ?></caption>
                                                     <thead><tr>
                                                         <th scope='col'><?php echo htmlspecialchars($lang->get('ops_secure_send_sender'), ENT_QUOTES, 'UTF-8'); ?></th>
