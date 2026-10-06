@@ -253,6 +253,8 @@ chmod 0750 secrets/
 
 > :warning: **Security note:** `app/` and `public/` must **not** be writable by the web server. Only the specific sub-paths listed above need write access.
 
+These permissions prepare a **fresh installation**, with temporary write ownership on configuration and secrets. After the wizard completes, restore the [hardened normal-runtime permission plan](file-permissions.md#quick-setup-commands); before a later web upgrade, temporarily unlock only its [installation/upgrade paths](file-permissions.md#temporary-installupgrade-write-access). Do not give the entire installation to the PHP account as a repair.
+
 ---
 
 ### Finish the installation

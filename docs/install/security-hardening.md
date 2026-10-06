@@ -54,7 +54,7 @@ Check one more value on an instance installed with an older version: **Maximum l
 ## File system
 
 - **Apply the permission model of [File permissions](file-permissions.md)**: application code not writable by the web server, `app/config/settings.php` writable only during an installation or an upgrade, runtime directories writable, never `0777` nor `0775`.
-- **Protect the encryption key.** `secrets/` sits outside the webroot, readable by the web server only (`0750`), and the key file is readable by its owner only (`0600`). The split-owner model described in [File permissions](file-permissions.md) goes further: the web server can read the key but never rewrite or replace it.
+- **Protect the encryption key.** `secrets/` sits outside the webroot. In the recommended split-owner model it is owned by `root` with the PHP group: directory `0750`, key `0640`. PHP can read the key but cannot rewrite or replace it. The simple model (including the official Docker image) uses a PHP-owned directory in `0700` and key in `0600`: private to that owner, but still modifiable by PHP. See [File permissions](file-permissions.md).
 - **Run the verification checklist** of [File permissions](file-permissions.md) after the installation and after each upgrade.
 - **Scan file integrity** from **Utilities → System Health → File integrity**. The scan compares the TeamPass files with the release manifest and reports modified, missing and unknown files.
 

@@ -80,7 +80,7 @@ rm -rf /tmp/tp-new 3.2.0.zip
 sudo -u www-data test -r teampass/app/config/settings.php && echo "settings.php: OK"
 ```
 
-> :warning: **Keep `--no-owner --no-group`.** `-a` includes `-o -g`: run as root, it gives every directory shipped in the archive — `app/config/`, `storage/`, `secrets/`, `app/includes/libraries/csrfp/libs/` — to the owner of the extracted files, `root`. With their `0750` mode, the web server then loses access to them: the root URL redirects to `install/install.php` and `install/upgrade.php` fails. If that already happened, give the directories back to the web server user with the [Quick-setup commands](file-permissions.md#quick-setup-commands) and **do not run the installer**, which would replace your encryption key.
+> :warning: **Keep `--no-owner --no-group`.** `-a` includes `-o -g`: run as root, it gives every directory shipped in the archive — `app/config/`, `storage/`, `secrets/`, `app/includes/libraries/csrfp/libs/` — to the owner of the extracted files, `root`. With `root:root` and `0750`, PHP loses access: the root URL redirects to `install/install.php` and `install/upgrade.php` fails. If that happened, restore the [permission model](file-permissions.md#quick-setup-commands), retaining a non-web code owner and PHP read access, then temporarily unlock the wizard paths. **Do not run the installer**, which would replace your encryption key. A `root:PHP-group` code or secrets directory in `0750` is valid and must not be confused with inaccessible `root:root`.
 
 > `rsync` copies new and updated files without deleting anything, and leaves the owner and mode of your existing directories unchanged. Updated code files become owned by `root`, as they should be. Any old 3.1.x code files that were removed from the repository will simply remain on disk — they are harmless because after Step 3 the web server DocumentRoot will point to `public/`, leaving the old root-level code outside the webroot.
 
@@ -137,6 +137,8 @@ Once the script completes successfully, refresh the upgrade page and proceed to 
 ---
 
 ### Step 4a — Run the web-based upgrade wizard
+
+On a hardened non-Docker installation, first grant the [temporary configuration write access](file-permissions.md#temporary-installupgrade-write-access) needed by the wizard. Once it completes, restore the [normal-runtime plan](file-permissions.md#quick-setup-commands) and verify access as the actual PHP account. The Docker entrypoint manages its own upgrade permissions; do not apply host `www-data` commands inside the image.
 
 * Browse to `https://<your_teampass_instance>/install/upgrade.php`
 * Authenticate with your **Administrator** account
