@@ -645,7 +645,8 @@ function tpFilePermissionsProtectedTopLevelPaths(string $root): array
 }
 
 /**
- * Remove child paths already covered by an earlier recursive parent path.
+ * Remove child paths covered by an inherited SELinux context.
+ * This is not suitable for find traversal: a child may be a mount point.
  *
  * @param array<int,string> $paths
  *
@@ -701,6 +702,49 @@ function tpFilePermissionsResolveCodeOwner(string $root, string $webUser): strin
 }
 
 /**
+ * Tell whether a fixed runtime path or one of its ancestors is a symbolic link.
+ */
+function tpFilePermissionsPathHasSymlink(string $root, string $relativePath): bool
+{
+    $absolute = $root;
+    foreach (explode('/', $relativePath) as $segment) {
+        $absolute .= DIRECTORY_SEPARATOR . $segment;
+        if (is_link($absolute)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Build ownership and mode repairs with the same bounded traversal policy.
+ * Top-level repository artifacts have already been excluded by the caller;
+ * prune the shared metadata names at every depth, without following symlinks.
+ *
+ * @param array<int,string> $paths Explicit starting points, including mount roots
+ *
+ * @return array<int,string>
+ */
+function tpFilePermissionsTreeRemediationCommands(array $paths, string $owner, string $fileMode): array
+{
+    if ($paths === []) {
+        return [];
+    }
+    $rules = tpFileScopeRepositoryArtifactRules();
+    $metadataNames = array_values(array_unique(array_merge($rules['segments'], $rules['basenames'])));
+    $pruneTests = array_map(static fn (string $name): string => '-name ' . escapeshellarg($name), $metadataNames);
+    $find = 'sudo find -P ' . implode(' ', array_map('escapeshellarg', $paths))
+        . ' -xdev \\( ' . implode(' -o ', $pruneTests) . ' \\) -prune -o ';
+
+    return [
+        $find . '\\( -type d -o -type f \\) -exec chown -h -- ' . escapeshellarg($owner) . ' {} +',
+        $find . '-type d -exec chmod 0750 {} +',
+        $find . '-type f -exec chmod ' . $fileMode . ' {} +',
+    ];
+}
+
+/**
  * Build sudo-based runtime permission remediation for supported distributions.
  *
  * Commands implement the hardened normal-runtime model: code keeps an existing
@@ -734,10 +778,14 @@ function tpFilePermissionsRemediationCommands(string $root, array $permissionRep
     $codeOwner = tpFilePermissionsResolveCodeOwner($rootReal, $webUser);
 
     $protected = tpFilePermissionsProtectedTopLevelPaths($rootReal);
-    $protectedArguments = implode(' ', array_map('escapeshellarg', $protected));
     $runtimePaths = [];
     $commands = [];
     foreach (tpFilePermissionsRuntimeRules() as $rule) {
+        // Do not create/chown directories through a symlinked runtime root.
+        // Such custom layouts require an administrator to review the target.
+        if (tpFilePermissionsPathHasSymlink($rootReal, $rule['path'])) {
+            continue;
+        }
         $absolute = $rootReal . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $rule['path']);
         if ($rule['required']) {
             $commands[] = 'sudo install -d -o ' . escapeshellarg($webUser) . ' -g ' . escapeshellarg($webGroup)
@@ -747,7 +795,9 @@ function tpFilePermissionsRemediationCommands(string $root, array $permissionRep
             $runtimePaths[] = $absolute;
         }
     }
-    $runtimePaths = tpFilePermissionsReduceNestedPaths(array_values(array_unique($runtimePaths)));
+    // Keep child roots even when their parent is present: -xdev does not cross
+    // into their contents when they are mounted on another filesystem.
+    $runtimePaths = array_values(array_unique($runtimePaths));
     $runtimeArguments = implode(' ', array_map('escapeshellarg', $runtimePaths));
 
     array_unshift(
@@ -755,41 +805,29 @@ function tpFilePermissionsRemediationCommands(string $root, array $permissionRep
         'sudo chown ' . escapeshellarg($codeOwner . ':' . $webGroup) . ' -- ' . escapeshellarg($rootReal),
         'sudo chmod 0750 -- ' . escapeshellarg($rootReal)
     );
-    if ($protectedArguments !== '') {
-        $commands[] = 'sudo chown -R ' . escapeshellarg($codeOwner . ':' . $webGroup) . ' -- ' . $protectedArguments;
-        $commands[] = 'sudo find ' . $protectedArguments . ' -xdev -type d -exec chmod 0750 {} +';
-        $commands[] = 'sudo find ' . $protectedArguments . ' -xdev -type f -exec chmod u=rwX,g=rX,o= {} +';
-    }
-    if ($runtimeArguments !== '') {
-        $commands[] = 'sudo chown -R ' . escapeshellarg($webUser . ':' . $webGroup) . ' -- ' . $runtimeArguments;
-        $commands[] = 'sudo find ' . $runtimeArguments . ' -xdev -type d -exec chmod 0750 {} +';
-        $commands[] = 'sudo find ' . $runtimeArguments . ' -xdev -type f -exec chmod 0640 {} +';
-    }
+    $commands = array_merge(
+        $commands,
+        tpFilePermissionsTreeRemediationCommands($protected, $codeOwner . ':' . $webGroup, 'u=rwX,g=rX,o='),
+        tpFilePermissionsTreeRemediationCommands($runtimePaths, $webUser . ':' . $webGroup, '0640')
+    );
 
     $secretsPath = $rootReal . DIRECTORY_SEPARATOR . 'secrets';
-    if (is_dir($secretsPath)) {
-        $commands[] = 'sudo chown -R ' . escapeshellarg('root:' . $webGroup) . ' -- ' . escapeshellarg($secretsPath);
-        $commands[] = 'sudo find ' . escapeshellarg($secretsPath) . ' -type d -exec chmod 0750 {} +';
-        $commands[] = 'sudo find ' . escapeshellarg($secretsPath) . ' -type f -exec chmod 0640 {} +';
+    if (is_dir($secretsPath) && is_link($secretsPath) === false) {
+        $commands = array_merge($commands, tpFilePermissionsTreeRemediationCommands([$secretsPath], 'root:' . $webGroup, '0640'));
     }
 
     $legacyDataPaths = [];
     foreach (['files', 'upload', 'backups'] as $legacyRoot) {
         $legacyPath = $rootReal . DIRECTORY_SEPARATOR . $legacyRoot;
-        if (is_dir($legacyPath)) {
+        if (is_dir($legacyPath) && is_link($legacyPath) === false) {
             $legacyDataPaths[] = $legacyPath;
         }
     }
-    if ($legacyDataPaths !== []) {
-        $legacyArguments = implode(' ', array_map('escapeshellarg', $legacyDataPaths));
-        $commands[] = 'sudo chown -R ' . escapeshellarg('root:' . $webGroup) . ' -- ' . $legacyArguments;
-        $commands[] = 'sudo find ' . $legacyArguments . ' -xdev -type d -exec chmod 0750 {} +';
-        $commands[] = 'sudo find ' . $legacyArguments . ' -xdev -type f -exec chmod 0640 {} +';
-    }
+    $commands = array_merge($commands, tpFilePermissionsTreeRemediationCommands($legacyDataPaths, 'root:' . $webGroup, '0640'));
 
     $platform = is_array($permissionReport['platform'] ?? null) ? $permissionReport['platform'] : [];
     if (($platform['family'] ?? '') === 'rhel' && $runtimePaths !== []) {
-        foreach ($runtimePaths as $runtimePath) {
+        foreach (tpFilePermissionsReduceNestedPaths($runtimePaths) as $runtimePath) {
             $contextPattern = preg_quote(str_replace('\\', '/', $runtimePath), '#') . '(/.*)?';
             $quotedPattern = escapeshellarg($contextPattern);
             $commands[] = 'if command -v semanage >/dev/null 2>&1; then sudo semanage fcontext -a -t httpd_sys_rw_content_t '

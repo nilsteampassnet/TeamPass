@@ -26,6 +26,9 @@ class FilePermissionsLogicTest extends TestCase
         foreach (['app', 'public/assets/avatars', 'storage/logs', 'storage/files', 'secrets', 'app/includes/libraries/csrfp/log'] as $directory) {
             self::assertTrue(mkdir($this->root . DIRECTORY_SEPARATOR . $directory, 0770, true));
         }
+        $resolvedRoot = realpath($this->root);
+        self::assertNotFalse($resolvedRoot);
+        $this->root = $resolvedRoot;
         self::assertNotFalse(file_put_contents($this->root . '/app/known.php', '<?php'));
     }
 
@@ -180,6 +183,123 @@ class FilePermissionsLogicTest extends TestCase
         self::assertContains('.env', $relativePaths);
         self::assertContains('app', $relativePaths);
         self::assertContains('public', $relativePaths);
+    }
+
+    public function testEveryRuntimeRootRemainsAnExplicitTraversalStartingPoint(): void
+    {
+        foreach (['storage/upload', 'storage/backups', 'app/websocket/logs'] as $directory) {
+            self::assertTrue(mkdir($this->root . '/' . $directory, 0750, true));
+        }
+        $commands = tpFilePermissionsRemediationCommands($this->root, $this->repairReport());
+        $storageArgument = escapeshellarg($this->root . DIRECTORY_SEPARATOR . 'storage');
+        $runtimeFileCommands = array_values(array_filter(
+            $commands,
+            static fn (string $command): bool => str_contains($command, '-type f -exec chmod 0640')
+                && str_contains($command, $storageArgument)
+        ));
+
+        self::assertCount(1, $runtimeFileCommands);
+        foreach (tpFilePermissionsRuntimeRules() as $rule) {
+            $path = $this->root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $rule['path']);
+            self::assertStringContainsString(escapeshellarg($path), $runtimeFileCommands[0]);
+        }
+    }
+
+    public function testOwnershipAndModeRepairsUseTheSameNonFollowingFilesystemBoundary(): void
+    {
+        $commands = tpFilePermissionsRemediationCommands($this->root, $this->repairReport());
+        self::assertStringNotContainsString('chown -R', implode("\n", $commands));
+        $findCommands = array_values(array_filter(
+            $commands,
+            static fn (string $command): bool => str_starts_with($command, 'sudo find ')
+        ));
+        self::assertNotEmpty($findCommands);
+        foreach ($findCommands as $command) {
+            self::assertStringStartsWith('sudo find -P ', $command);
+            self::assertStringContainsString(' -xdev ', $command);
+            self::assertStringContainsString(' -prune -o ', $command);
+        }
+    }
+
+    public function testGeneratedFindPrunesVendoredMetadataButKeepsRuntimeDotfiles(): void
+    {
+        foreach (['app/vendor/package/.github/workflows', 'app/includes/.externals'] as $directory) {
+            self::assertTrue(mkdir($this->root . '/' . $directory, 0750, true));
+        }
+        $excluded = ['app/vendor/package/.github/workflows/ci.yml', 'app/vendor/package/.gitignore'];
+        $included = ['app/vendor/package/.htaccess', 'app/.env', 'app/includes/.externals/library.php'];
+        foreach (array_merge($excluded, $included) as $path) {
+            self::assertNotFalse(file_put_contents($this->root . '/' . $path, 'fixture'));
+        }
+        $commands = tpFilePermissionsRemediationCommands($this->root, $this->repairReport());
+        $ownershipCommands = array_values(array_filter(
+            $commands,
+            static fn (string $command): bool => str_contains($command, ' -exec chown -h -- ')
+        ));
+        self::assertNotEmpty($ownershipCommands);
+        $command = $ownershipCommands[0];
+        $actionOffset = strpos($command, ' -exec chown -h -- ');
+        self::assertNotFalse($actionOffset);
+        // Execute only the generated selection, never sudo, chown or chmod.
+        $selection = substr($command, strlen('sudo '), $actionOffset - strlen('sudo ')) . ' -print';
+        $selection = str_replace($this->root, str_replace('\\', '/', $this->root), $selection);
+        $bash = PHP_OS_FAMILY === 'Windows' ? 'C:/Program Files/Git/bin/bash.exe' : '/bin/bash';
+        if (is_file($bash) === false || function_exists('proc_open') === false) {
+            self::markTestSkipped('Bash is required to execute the generated find selection.');
+        }
+        $process = proc_open([$bash, '--noprofile', '--norc', '-s'], [
+            0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w'],
+        ], $pipes);
+        self::assertIsResource($process);
+        fwrite($pipes[0], $selection . "\n");
+        fclose($pipes[0]);
+        $output = stream_get_contents($pipes[1]);
+        $error = stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        self::assertSame(0, proc_close($process), (string) $error);
+        $selected = array_map('trim', preg_split('/\R/', str_replace('\\', '/', (string) $output)) ?: []);
+        $normalizedRoot = str_replace('\\', '/', $this->root);
+        foreach ($excluded as $path) {
+            self::assertNotContains($normalizedRoot . '/' . $path, $selected);
+        }
+        foreach ($included as $path) {
+            self::assertContains($normalizedRoot . '/' . $path, $selected);
+        }
+    }
+
+    public function testSymlinkedRuntimeRootsAreLeftForManualReview(): void
+    {
+        if (PHP_OS_FAMILY !== 'Linux') {
+            self::markTestSkipped('Linux symlink semantics are required.');
+        }
+        self::assertTrue(rmdir($this->root . '/storage/files'));
+        self::assertTrue(rmdir($this->root . '/storage/logs'));
+        self::assertTrue(rmdir($this->root . '/storage'));
+        self::assertTrue(mkdir($this->root . '/docs/external-storage/logs', 0750, true));
+        self::assertTrue(mkdir($this->root . '/docs/external-storage/files', 0750));
+        self::assertTrue(symlink($this->root . '/docs/external-storage', $this->root . '/storage'));
+        $commands = tpFilePermissionsRemediationCommands($this->root, $this->repairReport());
+
+        self::assertStringNotContainsString($this->root . '/storage', implode("\n", $commands));
+        self::assertStringNotContainsString($this->root . '/docs', implode("\n", $commands));
+    }
+
+    /**
+     * Return a supported report requiring a permission repair, without scanning.
+     *
+     * @return array<string,mixed>
+     */
+    private function repairReport(): array
+    {
+        $report = tpFilePermissionsDefaultReport();
+        $report['remediation_supported'] = true;
+        $report['counts']['issues'] = 1;
+        $report['identity']['web_user'] = 'www-data';
+        $report['identity']['web_group'] = 'www-data';
+        $report['platform']['family'] = 'debian';
+
+        return $report;
     }
 
     public function testPermissionFindingsAreAggregatedWithBoundedSamples(): void
