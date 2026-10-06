@@ -65,8 +65,8 @@ The image declares five paths as volumes. Everything TeamPass cannot rebuild liv
 |---|---|
 | `/var/www/html/secrets` | The master encryption key |
 | `/var/www/html/storage/config` | `settings.php` (database connection) and `csrfp.config.php` |
-| `/var/www/html/storage/files` | Encrypted attachments |
-| `/var/www/html/storage/upload` | Temporary uploads |
+| `/var/www/html/storage/files` | Generated files, imports and restore/backup working files |
+| `/var/www/html/storage/upload` | Encrypted item attachments — persistent data, never a temporary-upload cache |
 | `/var/www/html/storage/sk` | Legacy saltkey |
 
 The provided `docker-compose.yml` mounts a **named** volume on each of them. If you write your own compose file or stack, mount these exact paths too. A volume on a parent directory such as `/var/www/html/storage` is not enough: Docker still mounts an **anonymous** volume on top of each path the image declares, and anonymous volumes are left behind when the container is removed (`docker compose down`, a stack redeploy). Losing `storage/config` makes TeamPass believe it was never installed; losing `secrets` makes its data unrecoverable.
@@ -80,6 +80,8 @@ docker inspect teampass-app --format '{{range .Mounts}}{{.Name}} -> {{.Destinati
 A name made of 64 hexadecimal characters is an anonymous volume.
 
 **File ownership.** PHP runs as `nginx` inside the image, and the image ships its files owned by `nginx`. Do not `chown` them to `www-data`, the web server account of Debian and Ubuntu hosts: it does not apply to the container. `docker compose up -d --force-recreate` restores the image's ownership; the container resets the ownership of its volumes at every start.
+
+The entrypoint sets `secrets/` and `storage/sk/` to `0700`, and the storage/configuration/data directory nodes to `0750`. The installer creates the master key in `0600`; the entrypoint changes volume ownership but does not recursively reset every file's mode. This is the simple ownership model: PHP-owned code and secrets can trigger writable-path warnings in the [permission audit](file-permissions.md#docker). Do not apply the Debian/RHEL hardened repair plan to this Alpine image. Review custom non-root images, read-only mounts and NFS/RWX ownership restrictions separately.
 
 ---
 
@@ -128,14 +130,22 @@ Since 3.2.2.7, the Nginx access logs of the container (`/var/log/nginx/access.lo
 
 ## Backup
 
-Critical data to back up:
+Critical data to back up (default paths):
+
+Quiesce application and background writes while taking the database dump and file archive so they describe the same instance state. Restrict new backup-file permissions on the Docker host before running these commands:
+
+```bash
+umask 077
+```
 
 | What | How |
 |------|-----|
 | Database | `docker exec teampass-db sh -c 'mariadb-dump -u root -p"$MARIADB_ROOT_PASSWORD" teampass' > teampass-$(date +%Y%m%d).sql` |
-| Master key, configuration and attachments | `docker exec teampass-app tar -C /var/www/html -czf - secrets storage/config storage/files > teampass-state-$(date +%Y%m%d).tar.gz` |
+| Master key, configuration and attachments | `docker exec teampass-app tar -C /var/www/html -czf - secrets storage/config storage/files storage/upload storage/sk > teampass-state-$(date +%Y%m%d).tar.gz` |
 
-> 🔔 The master key in `secrets/` is required to decrypt all data. Losing it makes the database unrecoverable. Keep the database dump and the key together, in a safe place: together they open every secret.
+The archive covers all five state volumes declared by the image, including attachments in `storage/upload/` and the legacy saltkey in `storage/sk/`. Include any additional configured data paths or volumes (for example avatars or external backup destinations) in your backup policy, and test a restore. Listing an archive does not establish that its matching database dump and master key can restore the instance.
+
+> 🔔 The master key in `secrets/` is required to decrypt all data. Losing it makes the database unrecoverable. The file archive contains this key and the configuration: protect/encrypt it and keep it separate from the database backup, as described in [Security hardening](security-hardening.md#backups). Access to both opens every secret.
 
 ---
 
@@ -143,7 +153,7 @@ Critical data to back up:
 
 **Symptoms:** on an instance that was installed, the root URL redirects to `install/install.php`, `install/upgrade.php` reports that it cannot find its configuration (older images: HTTP 500), and the container log says `TeamPass is not configured yet`. `docker exec teampass-app ls -la /var/www/html/storage/config/` shows no `settings.php`. Typically, the container was recreated while `storage/config` was not on a named volume.
 
-The database and the master key are usually intact. `settings.php` is missing, and so are the attachments when `storage/files` was not on a named volume either.
+The database and the master key are usually intact. `settings.php` is missing, and so are the attachments when `storage/upload` was not on a named volume either.
 
 > :warning: **Do not run the installer**: it would generate a new master key and make every existing secret unreadable. **Do not delete any Docker volume** before the end of this procedure: the previous copy of `settings.php` may still sit in an unused one.
 
@@ -175,7 +185,7 @@ for v in $(docker volume ls -q); do
 done
 ```
 
-To find the attachments as well, list every volume with its creation date, its number of entries and the container using it. The previous `storage/files` volume is an unused one (no container) created at the same time as the one holding `settings.php`. The image ships that directory empty, so every entry it holds is an attachment:
+To find the attachments as well, list every volume with its creation date, its number of entries and the container using it. Look for the previous volume mounted at `storage/upload`, often unused and created around the same time as the lost configuration volume. Entry counts and dates are clues, not proof: confirm the old mount destination or inspect a read-only copy before choosing a source. The image also ships housekeeping files such as `.htaccess` and `empty_file.txt`; not every entry is an attachment. If the administrator changed the attachment path, use the configured `path_to_upload_folder` instead.
 
 ```bash
 for v in $(docker volume ls -q); do
@@ -194,9 +204,11 @@ docker run --rm -v <volume>:/v:ro alpine cat /v/settings.php \
 docker run --rm -v <volume>:/v:ro alpine cat /v/csrfp.config.php \
   | docker exec -i teampass-app sh -c 'cat > /var/www/html/storage/config/csrfp.config.php'
 docker run --rm -v <attachments-volume>:/v:ro alpine tar -C /v -cf - . \
-  | docker exec -i teampass-app tar -C /var/www/html/storage/files -xf -
+  | docker exec -i teampass-app tar -C /var/www/html/storage/upload -xf -
 docker compose restart teampass
 ```
+
+The attachment copy writes into the selected destination and may replace files with the same names. Back up that destination first and perform the recovery while application writes are stopped. Do not restore attachment files into `storage/files/`, which serves a different purpose.
 
 **3. Otherwise, rebuild it.** As long as `secrets/` still holds the master key, `settings.php` can be written again. Save the script below as `recover-config.php`, fill in the values of your `.env` file at the top, and run it inside the container. It checks that the database answers and that the key opens it, and only writes the files that are missing:
 
