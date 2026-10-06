@@ -135,6 +135,19 @@ final class AdminActivityTest extends TestCase
         self::assertArrayNotHasKey('detail', $api);
     }
 
+    public function testPasskeyUseIsAnAccessWithTheUpstreamTranslatedLabel(): void
+    {
+        $this->db->exec("INSERT INTO test_log_items VALUES (3, '991', 1, 'at_webauthn_credential_used', 'example.test | tp_src=api', 1)");
+        self::assertSame(['at_creation'], array_column($this->rows(['changes']), 'action'));
+        $rows = $this->rows(['accesses']);
+        self::assertSame(['at_webauthn_credential_used', 'at_shown'], array_column($rows, 'action'));
+        $formatted = adminActivityFormat($rows[0], static fn ($key) => $key);
+        self::assertSame('action_webauthn_used', $formatted['action_text']);
+        self::assertSame('api', $formatted['channel']);
+        self::assertSame('Item', $formatted['item_label']);
+        self::assertArrayNotHasKey('detail', $formatted);
+    }
+
     public function testMalformedCursorIsRejected(): void
     {
         $this->expectException(InvalidArgumentException::class);

@@ -69,7 +69,8 @@ function adminActivityQuery(array $options, array $tables): array
 {
     $queries = [];
     $values = [];
-    $accesses = ['at_shown', 'at_access', 'at_password_shown', 'at_password_copied', 'at_password_shown_edit_form'];
+    $accesses = ['at_shown', 'at_access', 'at_password_shown', 'at_password_copied',
+        'at_password_shown_edit_form', 'at_webauthn_credential_used'];
     $categories = $options['categories'];
     if (in_array('changes', $categories, true) || in_array('accesses', $categories, true)) {
         $actionFilter = '';
@@ -159,6 +160,7 @@ function adminActivityFormat(array $row, callable $translate): array
         'at_modification' => 'action_modified', 'at_delete' => 'action_deleted',
         'at_manual' => 'action_manual', 'at_password_shown_edit_form' => 'opened_edit_form_of',
         'at_copy' => 'copied', 'at_restored' => 'at_restored',
+        'at_webauthn_credential_used' => 'action_webauthn_used',
     ];
     $actionText = $source === 'failed_auth' ? $translate('admin_activity_failed')
         : ($source === 'user_connection' ? $translate('admin_activity_connected') : $translate($actions[$action] ?? $action));
