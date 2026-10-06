@@ -12,6 +12,7 @@ declare(strict_types=1);
  */
 
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class DockerBackupDocumentationTest extends TestCase
 {
@@ -51,7 +52,22 @@ class DockerBackupDocumentationTest extends TestCase
         rmdir($root);
     }
 
-    public function testDocumentedArchiveContainsAttachmentsAndEveryDeclaredStateVolume(): void
+    /**
+     * Return every shipped guide containing the default Docker state backup.
+     *
+     * @return array<string,array{0:string}>
+     */
+    public static function backupGuides(): array
+    {
+        return [
+            'installation guide' => ['docs/install/docker.md'],
+            'full Docker guide' => ['docs/DOCKER.md'],
+            'Docker Hub README' => ['DOCKER-HUB-README.md'],
+        ];
+    }
+
+    #[DataProvider('backupGuides')]
+    public function testDocumentedArchiveContainsAttachmentsAndEveryDeclaredStateVolume(string $guide): void
     {
         $files = [
             'secrets/master.key', 'storage/config/settings.php', 'storage/files/import.tmp',
@@ -60,15 +76,25 @@ class DockerBackupDocumentationTest extends TestCase
         foreach ($files as $file) {
             self::assertNotFalse(file_put_contents($this->root . '/' . $file, 'synthetic fixture, not a real secret'));
         }
-        $source = $this->documentation();
-        self::assertSame(1, preg_match('/`(docker exec teampass-app tar -C \/var\/www\/html -czf - [^`]+)`/', $source, $match));
+        $source = preg_replace('/\\\\\n\s*/', ' ', $this->documentation($guide));
+        self::assertSame(1, preg_match(
+            '/(docker (?:exec teampass-app|compose exec -T teampass) tar -C \/var\/www\/html -czf - [^\n`]+ > teampass-state-[^\n`]+)/',
+            (string) $source,
+            $match
+        ));
         // Substitute only Docker transport; run the documented tar arguments.
         $script = <<<'BASH'
 set -eu
 docker() {
-    [ "$1" = exec ] && [ "$2" = teampass-app ] && [ "$3" = tar ] \
-        && [ "$4" = -C ] && [ "$5" = /var/www/html ] || return 1
-    shift 5
+    if [ "$1" = compose ]; then
+        [ "$2" = exec ] && [ "$3" = -T ] && [ "$4" = teampass ] && [ "$5" = tar ] \
+            && [ "$6" = -C ] && [ "$7" = /var/www/html ] || return 1
+        shift 7
+    else
+        [ "$1" = exec ] && [ "$2" = teampass-app ] && [ "$3" = tar ] \
+            && [ "$4" = -C ] && [ "$5" = /var/www/html ] || return 1
+        shift 5
+    fi
     tar -C "$TEAMPASS_DOC_TEST_ROOT" "$@"
 }
 BASH;
@@ -129,9 +155,9 @@ BASH;
     /**
      * Read the shipped Docker guide, normalizing Windows checkout line endings.
      */
-    private function documentation(): string
+    private function documentation(string $guide = 'docs/install/docker.md'): string
     {
-        return str_replace("\r\n", "\n", (string) file_get_contents(__DIR__ . '/../../docs/install/docker.md'));
+        return str_replace("\r\n", "\n", (string) file_get_contents(__DIR__ . '/../../' . $guide));
     }
 
     /**
