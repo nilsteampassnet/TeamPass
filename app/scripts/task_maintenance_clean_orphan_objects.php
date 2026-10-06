@@ -120,6 +120,30 @@ function cleanOrphanObjectsAndScanIntegrity(): array
         WHERE i.id IS NULL'
     );
 
+    // The other sharekeys tables also keep the keys of deleted accounts, deleted log entries and
+    // deleted suggestions. The Health page counts them as orphans, and nothing else removes them.
+    foreach (['sharekeys_files', 'sharekeys_fields', 'sharekeys_logs', 'sharekeys_suggestions'] as $sharekeysTable) {
+        DB::query(
+            'DELETE k.* FROM ' . prefixTable($sharekeysTable) . ' k
+            LEFT JOIN ' . prefixTable('users') . ' u ON k.user_id = u.id
+            WHERE u.id IS NULL'
+        );
+    }
+
+    // Log keys reference log_items.increment_id, never an item id
+    DB::query(
+        'DELETE k.* FROM ' . prefixTable('sharekeys_logs') . ' k
+        LEFT JOIN ' . prefixTable('log_items') . ' l ON k.object_id = l.increment_id
+        WHERE l.increment_id IS NULL'
+    );
+
+    // Delete all suggestion keys for which no suggestion exist
+    DB::query(
+        'DELETE k.* FROM ' . prefixTable('sharekeys_suggestions') . ' k
+        LEFT JOIN ' . prefixTable('suggestion') . ' s ON k.object_id = s.id
+        WHERE s.id IS NULL'
+    );
+
     // Delete all system logs for which no user exist
     DB::query(
         'DELETE l.* FROM ' . prefixTable('log_system') . ' l
