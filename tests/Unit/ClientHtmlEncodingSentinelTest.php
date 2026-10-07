@@ -84,9 +84,9 @@ class ClientHtmlEncodingSentinelTest extends TestCase
         // (entry DN, bind identity, group DN), so every answer goes through htmlEncode().
         // safe — sources/ldap.queries.php answers oauth.js.php with language strings only
         'app/pages/oauth.js.php' => ['data.message'],
-        // safe — the master-key repair steps answer with language strings and counters; the
+        // safe — the master-key backup restore answers with language strings and counters; the
         // message is server-built markup that has to stay markup
-        'app/pages/tools.js.php' => ['dataStep1.message', 'dataStep3.message'],
+        'app/pages/tools.js.php' => ['dataStep1.message'],
         // safe — showUsersActionModal() is fed by six local call sites, each passing a
         // language string plus a page-owned <i> icon and a numeric count
         'app/pages/users.js.php' => ['opts.title', 'opts.message'],

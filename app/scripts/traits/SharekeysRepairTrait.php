@@ -76,16 +76,18 @@ trait SharekeysRepairTrait {
         $summary = [];
         foreach (restoreSharekeysScopeDefs() as $scopeName => $def) {
             $result = $this->restoreScopeMissingSharekeys(
-                'SELECT o.id AS id FROM ' . $def['from'] . '
+                'SELECT o.id AS id' . restoreSharekeysCipherColumns($def) . ' FROM ' . $def['from'] . '
                 WHERE ' . $def['where'] . ' AND o.id > %i
                 ORDER BY o.id ASC LIMIT %i',
                 $def['table'],
                 $tpPrivateKey,
                 (string) $userTpInfo['public_key'],
-                $users
+                $users,
+                $def['ciphertext'] !== ''
             );
             $summary[] = $scopeName . ': ' . $result['created'] . ' key(s) created/rebuilt, '
-                . $result['unrecoverable'] . ' object(s) without reference key';
+                . $result['unrecoverable'] . ' object(s) without reference key, '
+                . $result['invalid_reference'] . ' object(s) whose reference key does not open them';
         }
 
         // Personal objects: one key, for the owner alone. Never the fan-out above - that is the
@@ -324,19 +326,26 @@ trait SharekeysRepairTrait {
      * every such user. A legacy v1 row is overwritten in place via the
      * (object_id, user_id) unique key.
      *
-     * @param string $objectsQuery Paginated query returning object ids (placeholders: lastId, limit)
+     * The TP_USER object key is checked against the object's ciphertext before it is distributed:
+     * a reference key left behind by an incomplete distribution would otherwise hand every user a
+     * key that does not open the object. Such objects are counted as 'invalid_reference' and left
+     * for the reference-key step of the Tools page, run with a user who can open them.
+     *
+     * @param string $objectsQuery Paginated query returning object ids, ciphertext and meta (placeholders: lastId, limit)
      * @param string $sharekeysTable Sharekeys table name (without prefix)
      * @param string $tpPrivateKey TP_USER decrypted private key
      * @param string $tpPublicKey TP_USER public key (for v1->v3 sharekey migration)
      * @param array $users Eligible users (id + public_key)
-     * @return array ['created' => int, 'unrecoverable' => int]
+     * @param bool $checkable False when the scope has no ciphertext to check the key against (files)
+     * @return array{created: int, unrecoverable: int, invalid_reference: int}
      */
     private function restoreScopeMissingSharekeys(
         string $objectsQuery,
         string $sharekeysTable,
         string $tpPrivateKey,
         string $tpPublicKey,
-        array $users
+        array $users,
+        bool $checkable
     ): array {
         $eligibleIds = [];
         $publicKeys = [];
@@ -348,6 +357,7 @@ trait SharekeysRepairTrait {
         $lastId = 0;
         $created = 0;
         $unrecoverable = 0;
+        $invalidReference = 0;
         $batchSize = 100;
 
         while (true) {
@@ -357,8 +367,10 @@ trait SharekeysRepairTrait {
             }
 
             $objectIds = [];
+            $ciphertexts = [];
             foreach ($objects as $object) {
                 $objectIds[] = (int) $object['id'];
+                $ciphertexts[(int) $object['id']] = [(string) $object['ciphertext'], (string) $object['meta']];
             }
             $lastId = max($objectIds);
 
@@ -423,6 +435,11 @@ trait SharekeysRepairTrait {
                     $this->logger->log('restore_missing_sharekeys: cannot decrypt TP_USER sharekey for ' . $sharekeysTable . ' object #' . $objectId, 'WARNING');
                     continue;
                 }
+                if (restoreSharekeysCheckObjectKey($objectKey, $ciphertexts[$objectId][0], $ciphertexts[$objectId][1], $checkable)['opens'] === false) {
+                    $invalidReference++;
+                    $this->logger->log('restore_missing_sharekeys: the TP_USER key of ' . $sharekeysTable . ' object #' . $objectId . ' does not open it', 'WARNING');
+                    continue;
+                }
 
                 foreach ($rebuildUserIds as $userId) {
                     try {
@@ -458,6 +475,6 @@ trait SharekeysRepairTrait {
             );
         }
 
-        return ['created' => $created, 'unrecoverable' => $unrecoverable];
+        return ['created' => $created, 'unrecoverable' => $unrecoverable, 'invalid_reference' => $invalidReference];
     }
 }

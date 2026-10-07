@@ -20,7 +20,7 @@ This guide helps you migrate from the old Docker setup to the new optimized vers
 - ✅ Simplified volume structure
 - ✅ Built-in health checks
 - ✅ Published on Docker Hub and GitHub Container Registry
-- ✅ Multi-stage build (smaller image)
+- ✅ PHP dependencies shipped with the code, identical to the release files
 - ✅ Better security and performance
 
 ---

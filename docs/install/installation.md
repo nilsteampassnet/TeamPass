@@ -20,7 +20,7 @@ Since version 3.2.0, Teampass uses a split directory structure. Your web server'
 │   ├── config/
 │   │   └── settings.php    ← DB credentials
 │   ├── includes/
-│   └── vendor/             ← Composer dependencies
+│   └── vendor/             ← PHP dependencies (shipped, never run Composer)
 ├── public/       ← webroot (DocumentRoot points here)
 │   ├── index.php
 │   ├── install/
@@ -128,15 +128,14 @@ EXIT;
 ```bash
 cd /var/www/html
 git clone https://github.com/nilsteampassnet/TeamPass.git teampass
-cd teampass
-composer install --no-dev --optimize-autoloader
 ```
 
 #### Manual download
 
 * Download from [Teampass releases](https://github.com/nilsteampassnet/TeamPass/releases/latest)
 * Unzip into the web root (e.g. `/var/www/html/teampass`)
-* Run `composer install --no-dev --optimize-autoloader` inside the folder
+
+> :warning: **Do not run Composer on the server.** Every PHP dependency is shipped in `app/vendor/`, with the production autoloader already generated, so the code is complete as cloned or unzipped. Running `composer install` or `composer update` regenerates Composer's own files (`app/vendor/composer/autoload_real.php`, `InstalledVersions.php`, `installed.php`), which the file integrity check then reports as modified. To repair such an installation, restore `app/vendor/` from the release archive of the version you run.
 
 ---
 

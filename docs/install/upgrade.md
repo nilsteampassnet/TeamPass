@@ -20,6 +20,8 @@ There is **nothing else to do.** The following 3.2.0-only steps must be **skippe
 
 > The web-based wizard only applies the database schema deltas between your current patch release and the new one — no file moves, no permission changes, no web server reconfiguration.
 
+> Do not run Composer after replacing the code: the release ships every PHP dependency in `app/vendor/`. Running `composer install` regenerates Composer's own files, which the file integrity check then reports as modified.
+
 ---
 
 ## Upgrading to version 3.2.x
