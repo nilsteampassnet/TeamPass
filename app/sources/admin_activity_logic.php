@@ -147,14 +147,17 @@ function adminActivityFormat(array $row, callable $translate): array
         $login = (string) ($payload['user_login'] ?? '');
         $label = (string) ($payload['label'] ?? '');
     } elseif ($source === 'failed_auth' || $source === 'user_connection') {
-        $isApi = logsSystemRowIsApi($source, $action, (string) $row['detail']);
+        $detail = $source === 'failed_auth' ? stripslashes((string) $row['detail']) : (string) $row['detail'];
+        $isApi = logsSystemRowIsApi($source, $action, $detail);
         $channel = $isApi ? 'api' : 'web';
         if ($source === 'failed_auth') {
-            $login = logsStripApiMarker((string) $row['detail'], $isApi);
+            $login = logsStripApiMarker($detail, $isApi);
         }
     } elseif (strpos((string) $row['detail'], 'tp_src=api') !== false) {
         $channel = 'api';
     }
+    $login = html_entity_decode($login, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $label = $label === null ? null : html_entity_decode((string) $label, ENT_QUOTES | ENT_HTML5, 'UTF-8');
     $actions = [
         'at_shown' => 'action_accessed', 'at_creation' => 'action_created',
         'at_modification' => 'action_modified', 'at_delete' => 'action_deleted',

@@ -160,6 +160,35 @@ final class AdminActivityTest extends TestCase
         self::assertArrayNotHasKey('detail', $formatted);
     }
 
+    public function testStoredEntitiesAreDecodedOnceForItemsConnectionsAndKnowledgeBase(): void
+    {
+        $encodedLogin = 'O&#039;Brien &amp; Zo&euml;';
+        $encodedLabel = 'S&eacute;curit&eacute; &lt;script&gt; &amp;lt;literal&amp;gt;';
+        foreach (['item', 'user_connection', 'kb'] as $source) {
+            $row = $this->rows(['changes'])[0];
+            $row['source_type'] = $source;
+            $row['user_login'] = $encodedLogin;
+            $row['item_label'] = $source === 'user_connection' ? null : $encodedLabel;
+            if ($source === 'kb') {
+                $row['detail'] = json_encode(['action' => 'at_creation', 'user_login' => $encodedLogin,
+                    'label' => $encodedLabel], JSON_THROW_ON_ERROR);
+            }
+            $formatted = adminActivityFormat($row, static fn ($key) => $key);
+            self::assertSame("O'Brien & Zoë", $formatted['user_login']);
+            self::assertSame($source === 'user_connection' ? null : 'Sécurité <script> &lt;literal&gt;', $formatted['item_label']);
+        }
+    }
+
+    public function testFailedLoginEscapingMatchesTheJournalsPage(): void
+    {
+        $row = $this->rows(['failed'])[0];
+        $row['action'] = 'api_invalid_password';
+        $row['detail'] = addslashes('O&#039;Brien\\example | tp_src=api');
+        $formatted = adminActivityFormat($row, static fn ($key) => $key);
+        self::assertSame("O'Brien\\example", $formatted['user_login']);
+        self::assertSame('api', $formatted['channel']);
+    }
+
     public function testMalformedCursorIsRejected(): void
     {
         $this->expectException(InvalidArgumentException::class);
