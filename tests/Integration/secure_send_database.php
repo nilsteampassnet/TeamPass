@@ -110,7 +110,7 @@ $settings = ['otv_is_enabled' => 1, 'secure_send_allow_notes' => 1, 'secure_send
 $tables = ['otv', 'users', 'send_audit', 'items', 'automatic_del', 'cache', 'nested_tree',
     'secure_send_audit', 'secure_send_audit_unavailable'];
 try {
-    // Execute the exact DDL shared by fresh installation and patch migration twice.
+    // Execute the exact DDL shared by fresh installation and the 3.2.3 migration twice.
     DB::query(secureSendAuditSchemaSql(prefixTable('secure_send_audit')));
     DB::query(secureSendAuditSchemaSql(prefixTable('secure_send_audit')));
     $auditIndexes = DB::query('SHOW INDEX FROM ' . prefixTable('secure_send_audit'));
@@ -211,6 +211,31 @@ try {
     check((int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('secure_send_audit') . ' WHERE send_id = %i AND event = %s',
         $created['otv_id'], 'expired') === 1, 'Concurrent expiration cleanup duplicated evidence');
     echo "OK: concurrent cleanup records expiration once\n";
+
+    // Invalid historical senders must not occupy the first batch forever. Execute
+    // the actual SQL predicate before LIMIT with more than a full invalid batch.
+    $invalidIds = [];
+    $invalid = secureSendFixtureCreate(['send_type' => 'note']);
+    $invalidLink = DB::queryFirstRow('SELECT * FROM ' . prefixTable('otv') . ' WHERE id = %i', $invalid['otv_id']);
+    DB::delete(prefixTable('otv'), 'id = %i', $invalid['otv_id']);
+    unset($invalidLink['id']);
+    $invalidLink['originator'] = 0;
+    $invalidLink['time_limit'] = time() - 1;
+    for ($index = 0; $index < 101; ++$index) {
+        DB::insert(prefixTable('otv'), $invalidLink);
+        $invalidIds[] = (int) DB::insertId();
+    }
+    $valid = secureSendFixtureCreate(['send_type' => 'note']);
+    DB::update(prefixTable('otv'), ['time_limit' => time() - 1], 'id = %i', $valid['otv_id']);
+    check(secureSendPurgeExpiredLinks($settings) === 1, 'Invalid historical rows starved the auditable batch');
+    check(secureSendPurgeExpiredLinks($settings) === 0, 'Invalid historical rows made repeated cleanup fail');
+    check((int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('otv') . ' WHERE id IN %li', $invalidIds) === 101,
+        'Invalid historical rows were deleted without evidence');
+    check((int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('secure_send_audit') . ' WHERE send_id = %i AND event = %s',
+        $valid['otv_id'], 'expired') === 1, 'Valid cleanup lost or duplicated expiration evidence');
+    // Remove only these synthetic rows from the disposable fixture, not production data.
+    DB::query('DELETE FROM ' . prefixTable('otv') . ' WHERE id IN %li', $invalidIds);
+    echo "OK: malformed historical senders do not stall atomic expiration cleanup\n";
 
     $created = secureSendFixtureCreate(['send_type' => 'note', 'views' => 5]);
     parse_str((string) parse_url($created['url'], PHP_URL_QUERY), $query);

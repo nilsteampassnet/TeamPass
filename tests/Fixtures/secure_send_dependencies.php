@@ -36,6 +36,12 @@ use Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException;
 
 // Explicit dependency adapters: real Defuse encryption, without booting a vault
 // or extracting/evaluating functions from main.functions.php.
+/** Supply random lookup/link secrets when exercising the authenticated handler tail. */
+function GenerateCryptKey(int $length, bool ...$options): string
+{
+    return substr(bin2hex(random_bytes($length)), 0, $length);
+}
+
 if (!defined('OTV_USER_ID')) {
     define('OTV_USER_ID', 9999991);
 }

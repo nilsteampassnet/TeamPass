@@ -1037,6 +1037,12 @@ the row, not by a scheduler exactly at the deadline. Cleanup processes at most
 links stay unusable and are omitted from the active list. Invalidations due to
 permission/account changes are recorded when a confirmed reveal observes them.
 
+A cleanup error rolls back that batch and is logged without blocking an otherwise
+authorized creation or listing. Creation/reveal/revocation still require their own
+atomic audit writes. Expired historical rows with invalid link/sender identifiers
+are retained for investigation, diagnosed without their contents and excluded
+before the cleanup batch limit; they cannot prevent valid rows from being cleaned.
+
 This first audit change has no statistics, Reports export or audit-purge interface.
 There is no automatic audit retention: plan capacity, protect database and backup
 access, and define the organisation's retention and archiving policy. SQL access

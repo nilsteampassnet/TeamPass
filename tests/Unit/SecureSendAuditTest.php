@@ -303,6 +303,29 @@ class SecureSendAuditTest extends TestCase
         }
     }
 
+    public function testMalformedHistoricalRowsCannotStarveAuditableCleanup(): void
+    {
+        $created = $this->create();
+        $row = DB::$links[$created['id']];
+        $now = time();
+        DB::$links = [];
+        for ($id = 1; $id <= 101; ++$id) {
+            DB::$links[$id] = array_replace($row, ['id' => $id, 'originator' => 0,
+                'time_limit' => $now - 1]);
+        }
+        DB::$links[102] = array_replace($row, ['id' => 102, 'originator' => -1, 'time_limit' => $now - 1]);
+        DB::$links[103] = array_replace($row, ['id' => 103, 'time_limit' => $now - 1]);
+        self::assertSame(1, secureSendPurgeExpiredLinks($this->settings, $now));
+        self::assertSame(0, secureSendPurgeExpiredLinks($this->settings, $now));
+        self::assertCount(102, DB::$links);
+        self::assertSame([103], array_column(DB::$secureAudit, 'send_id'));
+        self::assertSame(['expired'], array_column(DB::$secureAudit, 'event'));
+        self::assertCount(1, DB::$forwarded);
+        self::assertStringContainsString('cleanup skipped invalid metadata (InvalidArgumentException)',
+            (string) file_get_contents($this->log));
+        self::assertFalse(DB::inTransaction());
+    }
+
     public function testGetUnconfirmedPostAndUnknownLinksDoNotGenerateAuditNoise(): void
     {
         $created = $this->create();

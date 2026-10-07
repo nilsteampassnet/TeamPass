@@ -52,6 +52,7 @@ class DB
     public static bool $failDelete = false;
     public static bool $failCache = false;
     public static bool $failCounter = false;
+    public static bool $failCleanupQuery = false;
     public static string|false $cipherError = false;
     public static string $unwrapError = '';
     public static string $objectKey = 'object-key';
@@ -68,6 +69,7 @@ class DB
         self::$failSecureAudit = self::$failForward = self::$failDelete = false;
         self::$failSecureAuditAfter = null;
         self::$failCache = self::$failCounter = false;
+        self::$failCleanupQuery = false;
         self::$cipherError = false;
         self::$unwrapError = '';
         self::$cache = [123 => ['id' => 123]];
@@ -115,12 +117,23 @@ class DB
 
     public static function queryFirstField(string $sql, ...$args): ?int
     {
+        if (str_contains($sql, prefixTable('otv')) && str_contains($sql, 'originator <= 0')) {
+            foreach (self::$links as $row) {
+                if ((int) $row['time_limit'] < $args[0]
+                    && ((int) $row['id'] <= 0 || (int) $row['originator'] <= 0)
+                ) {
+                    return (int) $row['id'];
+                }
+            }
+            return null;
+        }
         return self::$activeUser ? (int) $args[0] : null;
     }
 
     public static function insert(string $table, array $row): void
     {
         if ($table === prefixTable('otv')) {
+            $row += ['views' => 0];
             $row['id'] = ++self::$id;
             self::$links[self::$id] = $row;
         } elseif ($table === prefixTable('send_audit')) {
@@ -175,8 +188,18 @@ class DB
     {
         self::$affected = 0;
         if (str_contains($sql, 'ORDER BY id ASC LIMIT 100 FOR UPDATE')) {
+            if (self::$failCleanupQuery) {
+                throw new RuntimeException('Synthetic lock timeout containing secret-canary');
+            }
             return array_slice(array_values(array_filter(self::$links,
-                static fn (array $row): bool => (int) $row['time_limit'] < $args[0])), 0, 100);
+                static fn (array $row): bool => (int) $row['time_limit'] < $args[0]
+                    && (int) $row['id'] > 0 && (int) $row['originator'] > 0)), 0, 100);
+        }
+        if (str_contains($sql, 'WHERE o.originator = %i')) {
+            return array_values(array_map(
+                static fn (array $row): array => $row + ['item_label' => 'Original label'],
+                array_filter(self::$links, static fn (array $row): bool => (int) $row['originator'] === $args[0])
+            ));
         }
         if (str_contains($sql, 'SET views = views + 1')) {
             $id = $args[0];

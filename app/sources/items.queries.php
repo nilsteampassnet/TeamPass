@@ -7372,8 +7372,6 @@ switch ($inputData['type']) {
             secureSendPurgeExpiredLinks($SETTINGS);
         } catch (Throwable $e) {
             error_log('TEAMPASS Secure Send cleanup failed (' . get_class($e) . ')');
-            echo json_encode(['error' => 'server_error']);
-            break;
         }
 
         // Generate the lookup code and the link secret carried in the URL.
@@ -7467,8 +7465,6 @@ switch ($inputData['type']) {
             secureSendPurgeExpiredLinks($SETTINGS);
         } catch (Throwable $e) {
             error_log('TEAMPASS Secure Send cleanup failed (' . get_class($e) . ')');
-            echo json_encode(['error' => 'server_error']);
-            break;
         }
 
         $secureSendRows = DB::query(

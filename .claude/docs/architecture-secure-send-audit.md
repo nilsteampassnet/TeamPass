@@ -63,6 +63,14 @@ rolls back the whole batch. Repeated or concurrent cleanup cannot duplicate an
 event for a removed link. Expired rows left beyond a batch remain unusable and
 are omitted from the active-link list.
 
+Cleanup is opportunistic: a failed batch is rolled back and logged (exception
+class only), but does not abort an otherwise authorized creation or list request.
+The creation itself still requires its own committed audit event. Historical rows
+with a non-positive link/sender identifier cannot satisfy the audit allowlist:
+cleanup retains them, reports a metadata-validation diagnostic and excludes them
+before the batch limit so they cannot starve valid rows. They remain expired and
+unusable, and require separate operator investigation rather than silent deletion.
+
 The final allowed reveal is identifiable from `views == max_views`; it does not
 delete the link immediately. When a successful reveal deactivates a source item,
 the existing item-deletion audit is retained; other links are invalidated when
