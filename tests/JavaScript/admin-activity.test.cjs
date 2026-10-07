@@ -145,6 +145,7 @@ test('top-of-list refresh rolls the time window; changing filters rejects stale 
     h.requests[0].resolve(response([row(1)]))
     h.run('loadExpandedActivity("refresh")')
     assert.equal(h.requests[1].options.since, undefined)
+    assert.equal(h.requests[1].options.after, undefined)
     h.run('adminActivityState.categories = ["failed"]; resetExpandedActivity()')
     h.requests[1].resolve(response([row(999)]))
     assert.equal(h.run('adminActivityState.rows.length'), 0)
@@ -152,6 +153,23 @@ test('top-of-list refresh rolls the time window; changing filters rejects stale 
     h.requests[2].resolve(response([row(2, {source_type: 'failed_auth'})]))
     assert.equal(h.run('adminActivityState.rows[0].id'), '1:2')
     assert.equal(h.run('adminActivityState.busy'), false)
+})
+
+test('refresh counts only while reading history, including scrolling during a request', () => {
+    const h = harness()
+    h.run('initActivityPreferences(); adminActivityState.open = true; resetExpandedActivity()')
+    h.requests[0].resolve(response([row(2), row(1)]))
+    const previous = h.$('#activity-modal-list').content
+    h.run('loadExpandedActivity("refresh")')
+    assert.equal(h.requests[1].options.after, undefined)
+    h.$('#activity-modal-scroll').position = 200
+    h.requests[1].resolve(response([row(3)]))
+    assert.equal(h.$('#activity-modal-list').content, previous)
+    assert.equal(h.$('#activity-modal-scroll').position, 200)
+    h.run('loadExpandedActivity("refresh")')
+    assert.deepEqual(h.requests[2].options.after, [1000, 1, 2])
+    h.requests[2].resolve(response([row(3)], {new_count: 1}))
+    assert.equal(h.$('#activity-new-events').visible, true)
 })
 
 test('closing the modal rejects late responses and failures allow retry', () => {

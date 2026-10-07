@@ -733,12 +733,13 @@ function loadExpandedActivity(mode) {
     if (!state.open || state.busy || (mode === 'older' && !state.hasMore)) return
     state.busy = true
     const generation = state.generation
+    const readingHistory = $('#activity-modal-scroll').scrollTop() > 8 || state.rows.length > 50
     const options = {categories: state.categories, minutes: state.minutes, expanded: true}
     if (mode === 'older') {
         options.since = state.since
         options.until = state.until
         options.before = state.cursor
-    } else if (mode === 'refresh' && state.rows.length) {
+    } else if (mode === 'refresh' && state.rows.length && readingHistory) {
         options.after = state.rows[0].cursor
     }
     $('#activity-modal-loading').show()
@@ -746,9 +747,8 @@ function loadExpandedActivity(mode) {
     requestActivity(options, function(data) {
         if (!state.open || generation !== state.generation) return
         if (mode !== 'older') activityCount('#activity-modal-failed-count', data.failed_count, state.minutes)
-        const readingHistory = $('#activity-modal-scroll').scrollTop() > 8 || state.rows.length > 50
-        if (mode === 'refresh' && state.rows.length && readingHistory) {
-            state.pending = data.new_count
+        if (mode === 'refresh' && state.rows.length && (readingHistory || $('#activity-modal-scroll').scrollTop() > 8)) {
+            if (options.after) state.pending = data.new_count
             $('#activity-new-events').text(adminActivityMessages.newEvents.replace('#count#', state.pending)).toggle(state.pending > 0)
             return
         }

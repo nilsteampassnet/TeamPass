@@ -3317,7 +3317,7 @@ case 'get_live_activity':
             $rows = DB::query('SELECT * FROM (' . $union . ') activity' . $pageWhere
                 . ' ORDER BY timestamp DESC, source_rank DESC, event_id DESC LIMIT %i',
                 ...array_merge($pageValues, [$options['limit'] + 1]));
-            if ($options['after'] !== null) {
+            if ($options['after'] !== null && $options['before'] === null) {
                 [$predicate, $cursorValues] = adminActivityCursorPredicate($options['after'], true);
                 $newCount = (int) DB::queryFirstField('SELECT COUNT(*) FROM (' . $union . ') activity WHERE ' . $predicate,
                     ...array_merge($values, $cursorValues));
@@ -3327,7 +3327,7 @@ case 'get_live_activity':
         $rows = array_slice($rows, 0, $options['limit']);
         $activities = array_map(static fn (array $row): array => adminActivityFormat($row,
             static fn (string $key): string => $lang->get($key)), $rows);
-        $failedCount = in_array('failed', $options['categories'], true)
+        $failedCount = $options['before'] === null && in_array('failed', $options['categories'], true)
             ? (int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('log_system')
                 . ' WHERE type = %s AND CAST(date AS SIGNED) > %i AND CAST(date AS SIGNED) <= %i', 'failed_auth', $options['since'], $options['until']) : 0;
         echo prepareExchangedData([
