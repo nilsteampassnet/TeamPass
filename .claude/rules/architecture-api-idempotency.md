@@ -1,3 +1,13 @@
+---
+paths:
+  - "app/api/Model/{ApiIdempotency,Item}Model.php"
+  - "app/api/Controller/Api/ItemController.php"
+  - "app/sources/api_idempotency_logic.php"
+  - "app/scripts/task_maintenance_clean_orphan_objects.php"
+  - "tests/Unit/ApiIdempotencyLogicTest.php"
+  - "tests/Unit/Api/ApiItemIdempotencyTest.php"
+---
+
 # API Item Mutation Idempotency
 
 > Target release: 3.2.2

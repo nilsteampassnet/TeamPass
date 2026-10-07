@@ -1,3 +1,11 @@
+---
+paths:
+  - "app/api/**"
+  - "public/api/**"
+  - "tests/Unit/Api/**"
+  - "docs/api/**"
+---
+
 # API Reference
 
 ## Entry Points

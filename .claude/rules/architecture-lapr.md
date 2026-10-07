@@ -1,3 +1,13 @@
+---
+paths:
+  - "app/sources/lapr*.php"
+  - "app/pages/lapr_*"
+  - "app/pages/admin_lapr.*"
+  - "app/scripts/traits/LAPR*.php"
+  - "app/includes/libraries/teampassclasses/lapr/**"
+  - "tests/Unit/Lapr*.php"
+---
+
 # LAPR Architecture (Linux Account Password Rotation)
 
 > Feature branch `feature/lapr-mvp1`, target release **3.2.2**. Analysis and design in

@@ -1,3 +1,15 @@
+---
+paths:
+  - "app/sources/item_revisions_logic.php"
+  - "app/sources/{import,fields}.queries.php"
+  - "app/sources/upload.attachments.php"
+  - "app/sources/users_purge.functions.php"
+  - "app/scripts/task_maintenance_clean_orphan_objects.php"
+  - "app/api/Model/ItemModel.php"
+  - "app/api/Controller/Api/ItemController.php"
+  - "tests/Unit/ItemRevisionsLogicTest.php"
+---
+
 # Item Revisions & Offline Synchronization
 
 > Last updated: 2026-08-25 — target release 3.2.2

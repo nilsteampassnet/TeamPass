@@ -1,3 +1,10 @@
+---
+paths:
+  - "app/websocket/**"
+  - "app/includes/js/teampass-websocket*.js"
+  - "tests/Unit/WebSocket/**"
+---
+
 # WebSocket Architecture (feature/websockets)
 
 Real-time synchronization layer built on **Ratchet 0.4.4** (PHP) + **ReactPHP** event loop. The WebSocket server runs as a **separate daemon** alongside the web app.

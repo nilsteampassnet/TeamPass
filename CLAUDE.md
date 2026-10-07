@@ -115,6 +115,15 @@ Database schema: initial install via `/install/install.php`, upgrades via `/inst
 
 **Dual-location classes:** **every** `teampassclasses` package (`ConfigManager`, `SessionManager`, `CryptoManager`, `LdapExtra`, …) exists in both `app/includes/libraries/teampassclasses/` and `app/vendor/teampassclasses/`. Always edit both — **only the `vendor/` copy is autoloaded** (`app/vendor/composer/autoload_psr4.php`), so editing `includes/libraries/` alone produces a change with zero runtime effect. Sentinel tests: `tests/Unit/CryptoManagerCopiesInSyncTest.php`, `tests/Unit/LdapExtraCopiesInSyncTest.php`.
 
+**Domain references (`.claude/rules/`):** the full architecture of each domain summarized below
+(encryption, WebSocket, PHP-FPM, item revisions, API, LAPR, licence trial, extension
+auto-configuration) lives in `.claude/rules/*.md`. Each file declares `paths:` globs and Claude Code
+loads it the first time a matching file is read or edited — not at session start, and not on a
+Grep or graph query. **Rule: when a change is designed from search results alone, read the relevant
+rule file first.** The one-line rules kept in this file are the always-on guardrails; the rule files
+hold the details and the why. Never `@`-import them here: an import loads at launch and brings back
+the context-size warning.
+
 ## Database Layer: MeekroDB
 
 ```php
@@ -169,7 +178,7 @@ MFA: Google Authenticator (TOTP), Duo Security, YubiKey, AGSES.
 
 ## Encryption — Critical Rules
 
-> Full architecture details: @.claude/docs/architecture-encryption.md
+> Full architecture details: `.claude/rules/architecture-encryption.md`
 
 **Rule: always use `decryptUserObjectKeyWithMigration()` in new code** — never call `rsaDecrypt()` directly for sharekeys. This transparently upgrades phpseclib v1 → v3 on access.
 
@@ -183,7 +192,7 @@ MFA: Google Authenticator (TOTP), Duo Security, YubiKey, AGSES.
 
 ## WebSocket
 
-> Full architecture details: @.claude/docs/architecture-websocket.md
+> Full architecture details: `.claude/rules/architecture-websocket.md`
 
 **Rule: always call the high-level helpers** (`emitItemEvent`, `emitFolderEvent`, etc.) after any write on items/folders in `sources/*.queries.php`. Never insert into `teampass_websocket_events` directly.
 
@@ -201,13 +210,13 @@ Save-time normalization + token validation live in the DB-free `app/sources/emai
 
 ## PHP-FPM
 
-> Full architecture details: @.claude/docs/architecture-php-fpm.md
+> Full architecture details: `.claude/rules/architecture-php-fpm.md`
 
 **Rule: spawn background tasks with `getPHPBinary()`** — it resolves a real PHP CLI binary under FPM (never `php-fpm` / `'false'`). **Rule: `tpFinishRequestEarly()` only after the full response is echoed** — later output is not delivered. Admin settings: `cli_php_binary_path`, `enable_fastcgi_finish_request`.
 
 ## Item Revisions & Offline Sync
 
-> Full architecture details: @.claude/docs/architecture-item-revisions.md
+> Full architecture details: `.claude/rules/architecture-item-revisions.md`
 
 Every item carries a monotonic `revision`, allocated from the `teampass_items_revisions` journal
 whose `AUTO_INCREMENT` key **is** the global sequence. It lets an offline client detect staleness,
@@ -222,14 +231,14 @@ a "retention": pruning it loses nothing, a client outside the window just does a
 
 ## API
 
-> Full reference: @.claude/docs/api-reference.md
-> Item mutation idempotency architecture: @.claude/docs/architecture-api-idempotency.md
+> Full reference: `.claude/rules/api-reference.md`
+> Item mutation idempotency architecture: `.claude/rules/architecture-api-idempotency.md`
 
 Controllers in `/api/Controller/Api/`. JWT auth via `Authorization: Bearer <token>`. Key endpoints: `/api/authorize`, `/api/item/get`, `/api/item/create`, `/api/item/getOtp`, `/api/folder/listFolders`.
 
 ## LAPR (Linux Account Password Rotation)
 
-> Full architecture details: @.claude/docs/architecture-lapr.md
+> Full architecture details: `.claude/rules/architecture-lapr.md`
 
 Agentless SSH rotation of local Linux account passwords (release 3.2.2, feature `feature/lapr-mvp1`). Pages `lapr_endpoints|lapr_accounts|lapr_policies|admin_lapr`, handlers `sources/lapr_*.queries.php`, SSH class `TeampassClasses\Lapr\LAPRSshService` (require_once, not PSR-4), background traits `LAPRSshTestTrait|LAPRDiscoverTrait|LAPRRotationTrait`.
 
@@ -237,7 +246,7 @@ Agentless SSH rotation of local Linux account passwords (release 3.2.2, feature 
 
 ## Licence Trial (self-service extension trial)
 
-> Full architecture details: @.claude/docs/architecture-licence-trial.md
+> Full architecture details: `.claude/rules/architecture-licence-trial.md`
 
 Settings → API → **Licence** lets an administrator request a 30-day extension trial from
 `licence.teampass.net` (release 3.2.2). Decisions in the DB-free `app/sources/licence_trial_logic.php`,
@@ -262,7 +271,7 @@ the extension validates from the browser, so that costs nothing.
 
 ## Browser Extension Auto-Configuration
 
-> Full architecture details: @.claude/docs/architecture-extension-autoconfig.md
+> Full architecture details: `.claude/rules/architecture-extension-autoconfig.md`
 
 One-click setup of the browser extension from the web app: a same-origin `window.postMessage` bridge detects the extension (content script on `<all_urls>`) and pushes a config bundle; a downloadable JSON file is the fallback. Credentials use token mode (a durable PAT) — **the password is never transmitted**.
 

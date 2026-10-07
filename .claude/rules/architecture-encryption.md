@@ -1,3 +1,21 @@
+---
+paths:
+  - "app/includes/libraries/teampassclasses/cryptomanager/**"
+  - "app/vendor/teampassclasses/cryptomanager/**"
+  - "app/sources/main.functions.php"
+  - "app/sources/items.queries.php"
+  - "app/sources/users.queries.php"
+  - "app/sources/identify.php"
+  - "app/sources/private_key_backup_logic.php"
+  - "app/scripts/personal_sharekeys_logic.php"
+  - "app/scripts/remediate_personal_sharekeys.php"
+  - "app/scripts/repair_phpseclib_migration.php"
+  - "app/scripts/background_tasks___worker.php"
+  - "app/scripts/traits/{ItemHandler,UserHandler,MigrateUserHandler,PhpseclibV3Migration,SharekeysRepair}Trait.php"
+  - "app/api/inc/encryption_utils.php"
+  - "tests/Unit/*{Crypto,Sharekey,PrivateKeyBackup}*.php"
+---
+
 # Encryption Architecture
 
 > Last updated: 2026-05-26 — Analysis in `workReadmeFiles/encryption-analysis.md`
