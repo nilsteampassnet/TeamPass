@@ -69,7 +69,7 @@ function adminActivityQuery(array $options, array $tables): array
 {
     $queries = [];
     $values = [];
-    $accesses = ['at_shown', 'at_access', 'at_password_shown', 'at_password_copied',
+    $accesses = ['at_shown', 'at_access', 'at_export', 'at_password_shown', 'at_password_copied',
         'at_password_shown_edit_form', 'at_webauthn_credential_used'];
     $categories = $options['categories'];
     if (in_array('changes', $categories, true) || in_array('accesses', $categories, true)) {

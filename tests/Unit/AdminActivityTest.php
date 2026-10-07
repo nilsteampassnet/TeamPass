@@ -205,6 +205,13 @@ final class AdminActivityTest extends TestCase
         }
     }
 
+    public function testExportsBelongToConsultationsRatherThanChanges(): void
+    {
+        $this->db->exec("INSERT INTO test_log_items VALUES (3, '991', 1, 'at_export', 'tp_src=api', 1)");
+        self::assertSame(['at_creation'], array_column($this->rows(['changes']), 'action'));
+        self::assertSame(['at_export', 'at_shown'], array_column($this->rows(['accesses']), 'action'));
+    }
+
     public function testMalformedCursorIsRejected(): void
     {
         $this->expectException(InvalidArgumentException::class);
