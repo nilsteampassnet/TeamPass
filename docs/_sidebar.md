@@ -41,6 +41,7 @@
 - [Leaver Risk](features/leaver-risk.md)
 - [Classification](features/classification.md)
 - **Manage**
+- [Administrator live activity](manage/admin-live-activity.md)
 - [Settings](manage/settings.md)
 - [Email templates](manage/email-templates.md)
 - [Compliance Reports](manage/compliance-reports.md)
