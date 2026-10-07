@@ -3295,7 +3295,7 @@ case 'get_live_activity':
     }
     require_once __DIR__ . '/admin_activity_logic.php';
     try {
-        $input = json_decode((string) ($post_data ?? '{}'), true, 32, JSON_THROW_ON_ERROR);
+        $input = prepareExchangedData($post_data, 'decode');
         if (!is_array($input)) {
             throw new InvalidArgumentException('Invalid activity options');
         }
@@ -3336,7 +3336,7 @@ case 'get_live_activity':
             'failed_count' => $failedCount, 'new_count' => $newCount,
             'since' => $options['since'], 'until' => $options['until'],
         ], 'encode');
-    } catch (JsonException | InvalidArgumentException $e) {
+    } catch (InvalidArgumentException $e) {
         echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_occurred')], 'encode');
     }
     break;

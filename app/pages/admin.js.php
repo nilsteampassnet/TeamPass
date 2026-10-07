@@ -643,7 +643,8 @@ function requestActivity(options, success, complete, expanded, isCurrent = () =>
     const errorSelector = expanded ? '#activity-modal-error' : '#activity-error'
     $(errorSelector).hide()
     return $.post('sources/admin.queries.php', {
-        type: 'get_live_activity', key: adminActivityMessages.key, data: JSON.stringify(options)
+        type: 'get_live_activity', key: adminActivityMessages.key,
+        data: prepareExchangedData(JSON.stringify(options), 'encode', adminActivityMessages.key)
     }).done(function(raw) {
         if (!isCurrent()) return
         try {

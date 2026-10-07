@@ -36,6 +36,7 @@ namespace TeamPass\Tests\AdminActivityEndpoint;
 use InvalidArgumentException;
 use JsonException;
 use PHPUnit\Framework\TestCase;
+use TeampassClasses\Encryption\Encryption;
 
 require_once __DIR__ . '/../../app/sources/admin_activity_logic.php';
 
@@ -65,38 +66,75 @@ function prefixTable(string $table): string
     return 'activity_test_' . $table;
 }
 
-/** Isolate the transport; decoding is tested separately. */
-function prepareExchangedData($value, string $operation)
+/** Supply only the session values read by the real exchange adapter. */
+final class SessionManager
 {
-    return $operation === 'encode' ? json_encode($value, JSON_THROW_ON_ERROR) : json_decode($value, true);
+    public static bool $encrypted = false;
+
+    /** Return a session fixture without booting an installed vault. */
+    public static function getSession(): object
+    {
+        return new class {
+            public function get(string $key) { return $key === 'encryptClientServer' ? (int) SessionManager::$encrypted : 'session'; }
+        };
+    }
 }
 
 /** Exercise the production case body rather than reproducing its query decisions. */
 final class AdminActivityEndpointTest extends TestCase
 {
-    private function request(array $options): array
+    public static function setUpBeforeClass(): void
+    {
+        // Execute the production exchange wrapper and JSON-envelope decoder with the real cipher.
+        $source = (string) file_get_contents(__DIR__ . '/../../app/sources/main.functions.php');
+        foreach (['teampassDecodeJsonPayload', 'prepareExchangedData'] as $function) {
+            $start = strpos($source, 'function ' . $function . '(');
+            $end = strpos($source, "\n}", $start) + 2;
+            eval('namespace ' . __NAMESPACE__ . '; use TeampassClasses\\Encryption\\Encryption;' . substr($source, $start, $end - $start));
+        }
+    }
+
+    private function request(array $options, bool $encrypted = false, ?string $payload = null, string $key = 'session'): array
     {
         $source = (string) file_get_contents(__DIR__ . '/../../app/sources/admin.queries.php');
         $start = strpos($source, "case 'get_live_activity':");
         $end = strpos($source, "case 'get_system_status':", $start);
         $handler = substr($source, $start, $end - $start);
         $handler = str_replace("require_once __DIR__ . '/admin_activity_logic.php';", '', $handler);
-        $session = new class {
-            public function get(string $key): string { return 'session'; }
-        };
+        SessionManager::$encrypted = $encrypted;
+        $session = SessionManager::getSession();
         $lang = new class {
             public function get(string $key): string { return $key; }
         };
         $SETTINGS = ['enable_kb' => 1];
-        $post_key = 'session';
-        $post_data = json_encode($options, JSON_THROW_ON_ERROR);
+        $post_key = $key;
+        $post_data = $payload ?? json_encode($options, JSON_THROW_ON_ERROR);
+        if ($encrypted) {
+            $post_data = Encryption::encrypt($post_data, 'session');
+        }
         DB::$queries = [];
         ob_start();
         try {
             eval('namespace ' . __NAMESPACE__ . '; use JsonException; use InvalidArgumentException; switch (\'get_live_activity\') {' . $handler . '}');
-            return json_decode((string) ob_get_contents(), true, 512, JSON_THROW_ON_ERROR);
+            return prepareExchangedData((string) ob_get_contents(), 'decode');
         } finally {
             ob_end_clean();
+        }
+    }
+
+    public function testHandlerUsesTheExchangeProtocolWithEncryptionOnAndOff(): void
+    {
+        foreach ([false, true] as $encrypted) {
+            $response = $this->request(['categories' => ['failed']], $encrypted);
+            self::assertFalse($response['error']);
+            self::assertSame(7, $response['failed_count']);
+            self::assertCount(2, DB::$queries);
+            self::assertStringContainsString('log_system', DB::$queries[0][0]);
+            self::assertStringNotContainsString('log_items', DB::$queries[0][0]);
+            self::assertTrue($this->request([], $encrypted, 'invalid JSON')['error']);
+            self::assertSame([], DB::$queries);
+            self::assertTrue($this->request([], $encrypted, null, 'wrong-key')['error']);
+            self::assertSame([], DB::$queries);
         }
     }
 

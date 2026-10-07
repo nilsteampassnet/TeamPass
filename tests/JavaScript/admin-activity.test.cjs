@@ -11,11 +11,12 @@ const vm = require('node:vm')
 const source = fs.readFileSync('app/pages/admin.js.php', 'utf8')
 const controller = source.split('// ADMIN ACTIVITY CONTROLLER')[1].split('// END ADMIN ACTIVITY CONTROLLER')[0]
 
-function harness(stored = null) {
+function harness(stored = null, encrypted = false) {
     const elements = new Map()
     const handlers = new Map()
     const requests = []
     let persisted = stored
+    const exchanges = []
     const document = {}
     function $(selector) {
         if (selector === document) return {on(event, target, handler) { handlers.set(event + ':' + target, handler) }}
@@ -39,7 +40,7 @@ function harness(stored = null) {
     $.post = (url, body) => {
         const callbacks = {}
         const request = {
-            body, options: JSON.parse(body.data),
+            body, options: JSON.parse(encrypted ? body.data.slice('cipher:'.length) : body.data),
             done(fn) { callbacks.done = fn; return this },
             fail(fn) { callbacks.fail = fn; return this },
             always(fn) { callbacks.always = fn; return this },
@@ -55,13 +56,16 @@ function harness(stored = null) {
         adminActivityMessages: {kbEnabled: true, storageKey: 'user-1', key: 'session', empty: 'Empty',
             noCategories: 'Choose categories', error: 'Retry', failures: '#count# failures / #minutes# minutes',
             newEvents: '#count# new events', kb: 'KB', authentication: 'Auth', items: 'Items'},
-        prepareExchangedData: raw => raw,
+        prepareExchangedData: (raw, operation, key) => {
+            exchanges.push({raw, operation, key})
+            return operation === 'encode' && encrypted ? 'cipher:' + raw : raw
+        },
         escapeHtml: value => String(value).replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[character])),
         formatTimeAgo: () => '1s', getActivityIcon: () => 'fas fa-eye',
         getActivitySourceHint: source => source === 'kb' ? '(KB)' : ''
     })
     vm.runInContext(controller, context)
-    return {$, requests, handlers, run: code => vm.runInContext(code, context), persisted: () => persisted}
+    return {$, requests, handlers, exchanges, run: code => vm.runInContext(code, context), persisted: () => persisted}
 }
 const row = (id, overrides = {}) => ({id: '1:' + id, cursor: [1000, 1, id], timestamp: 1000,
     user_login: 'alice', action: 'at_shown', action_text: 'viewed', source_type: 'item', channel: 'web', ...overrides})
@@ -78,6 +82,20 @@ test('defaults and saved categories are allow-listed, with empty selections pres
         const expected = stored === '[]' ? [] : stored === 'malformed'
             ? ['changes', 'accesses', 'kb'] : ['failed']
         assert.deepEqual(h.requests[0].options.categories, expected)
+    }
+})
+
+test('activity requests use the standard exchange adapter with encryption on and off', () => {
+    for (const encrypted of [false, true]) {
+        const h = harness(null, encrypted)
+        h.run('loadLiveActivity()')
+        assert.equal(h.exchanges[0].operation, 'encode')
+        assert.equal(h.exchanges[0].key, 'session')
+        assert.equal(h.requests[0].body.data.startsWith('cipher:'), encrypted)
+        assert.deepEqual(h.requests[0].options.categories, ['changes', 'accesses', 'kb'])
+        h.requests[0].resolve(response([row(1)]))
+        assert.equal(h.exchanges[1].operation, 'decode')
+        assert.equal(h.exchanges[1].key, 'session')
     }
 })
 
