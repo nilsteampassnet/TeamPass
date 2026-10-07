@@ -3793,5 +3793,15 @@ return array(
     'kb_markdown_lossy_image_size' => 'image sizes',
     'kb_markdown_lossy_table_header' => 'the first row of each table becomes a header row',
     'lapr_endpoint_credential_unavailable' => 'The SSH credential item of this endpoint has been deleted or moved to a personal folder. Restore it or move it back to a shared folder before restoring the endpoint.',
+    'restore_missing_sharekeys_source' => 'Open the objects with the keys of',
+    'restore_missing_sharekeys_source_self' => 'My own account',
+    'restore_missing_sharekeys_source_keys_fmt' => '%d shared item key(s)',
+    'restore_missing_sharekeys_source_tip' => 'The repair opens every object with these keys to check, and rebuild when needed, the reference key of the TP internal account. Choose a user who can still open the objects your own account cannot, and enter their password: it is only used on the server to open their keys for this repair, and is neither stored nor sent back.',
+    'restore_missing_sharekeys_source_pwd_required' => 'Enter the password of the selected user.',
+    'restore_missing_sharekeys_source_refused' => 'This password does not open the keys of the selected user, or this account cannot be used for the repair.',
+    'restore_missing_sharekeys_tp_key_unavailable' => 'The key of the TP internal account cannot be opened on this server, so no object can be checked or repaired. Check that the instance key (TEAMPASS_SECRETS) is the one this database was created with.',
+    'restore_missing_sharekeys_state_expired' => 'The repair session has expired. Click Repair again.',
+    'restore_missing_sharekeys_seed_progress' => 'Checking the reference keys (#scope#): #checked# object(s) checked...',
+    'restore_missing_sharekeys_seed_replaced' => '#replaced# object(s) had a reference key that no longer opened them, left by a key distribution that never completed. It was replaced, and the other users’ keys on these objects are being recreated by the background task.',
 
 );

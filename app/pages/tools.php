@@ -192,90 +192,6 @@ if (is_null($tableExists) === true) {
          
         <div class='card card-primary'>
             <div class='card-header'>
-                <h3 class='card-title'><?php echo $lang->get('tools_fix_items_otp_title'); ?></h3>
-            </div>
-            <!-- /.card-header -->
-            <!-- form start -->
-            <form role='form-horizontal'>
-                <div class='card-body'>
-
-                    <div class='row mb-3'>
-                        <div class='col-12'>
-                            <small id='passwordHelpBlock' class='form-text text-muted'>
-                                <?php echo $lang->get('tools_fix_items_otp_tip'); ?><br>
-                                <strong><?php echo $lang->get('warning'); ?>:</strong> <?php echo sprintf($lang->get('tools_fix_items_otp_warning'), DB_PREFIX); ?>
-                            </small>
-                        </div>
-                    </div>
-                    <?php                            
-// Check if table  exists
-DB::query('SELECT id from ' . prefixTable('items') . ' WHERE perso = 0;');
-$nbItems = DB::count();
-
-// Get list of users
-$selectOptions = '';
-$users = DB::query('
-    SELECT id, login, lastname, name, personal_folder 
-    FROM ' . prefixTable('users') . ' 
-    WHERE disabled = 0 AND (login NOT LIKE "%_deleted%")
-    ORDER BY login');
-foreach ($users as $user) {
-    // Get number of items for this user
-    DB::query(
-        'SELECT i.id 
-        FROM ' . prefixTable('items') . ' AS i
-        INNER JOIN ' . prefixTable('sharekeys_items') . ' AS si ON i.id = si.object_id
-        WHERE i.perso = %i AND si.user_id = %i;',
-        0,
-        $user['id']
-    );
-    $selectOptions .= '<option value="'.strval($user['id']).'">'.strval($user['lastname']).' '.strval($user['name']).' ('.strval($user['login']).')'.
-        ' - '.DB::count().'/'.$nbItems.''.
-        '</option>';
-}
-?>
-                    <div class='row mb-2'>
-                        <div class='col-5'>
-                            <?php echo $lang->get('tools_select_full_access_user'); ?>
-                        </div>
-                        <div class='col-7'>
-                            <select class='form-control' id='fix_items_master_keys_user_id'>
-                                <option value='0'><?php echo $lang->get('select_user'); ?></option>
-                                <?php echo $selectOptions; ?>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class='row mb-2'>
-                        <div class='col-5'>
-                            <?php echo $lang->get('password'); ?>
-                        </div>
-                        <div class='col-7'>
-                            <input type='password' class='form-control' id='fix_items_master_keys_pwd' placeholder='<?php echo htmlspecialchars($lang->get('user_password'), ENT_QUOTES, 'UTF-8'); ?>'>
-                        </div>
-                    </div>
-                    
-                    <div class='row mb-3'>
-                        <button type='button' class='btn btn-primary btn-sm tp-action mr-2' id="fix_items_master_keys_but" data-action='fix_items_master_keys_but'>
-                            <i class='fas fa-cog mr-2'></i><?php echo $lang->get('perform'); ?>
-                        </button>
-                    </div>
-                    
-                    <div class='row mb-2'>
-                        <div class='col-12'>
-                            <div id='fix_items_master_keys_results'>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-            </form>
-        </div>
-
-        
-         
-        <div class='card card-primary'>
-            <div class='card-header'>
                 <h3 class='card-title'><?php echo $lang->get('tools_restore_items_otp_title'); ?></h3>
             </div>
             <!-- /.card-header -->
@@ -358,6 +274,59 @@ foreach ($backups as $bck) {
                         <div class='col-12'>
                             <small class='form-text text-muted'>
                                 <?php echo $lang->get('restore_missing_sharekeys_tip'); ?>
+                            </small>
+                        </div>
+                    </div>
+
+                    <?php
+// Users whose keys the repair may open the objects with (see restoreSharekeysSourceUser()), with
+// the number of shared item keys each one holds, to help choosing who can open the most.
+$sourceKeyCounts = [];
+foreach (DB::query(
+    'SELECT sk.user_id, COUNT(*) AS nb
+    FROM ' . prefixTable('sharekeys_items') . ' AS sk
+    INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = sk.object_id AND i.perso = 0)
+    WHERE sk.share_key != ""
+    GROUP BY sk.user_id'
+) as $row) {
+    $sourceKeyCounts[(int) $row['user_id']] = (int) $row['nb'];
+}
+$sourceUsers = DB::query(
+    'SELECT id, login, name, lastname
+    FROM ' . prefixTable('users') . '
+    WHERE deleted_at IS NULL AND public_key != "" AND id != %i AND id NOT IN %li
+    ORDER BY login',
+    (int) $session->get('user-id'),
+    [TP_USER_ID, OTV_USER_ID, SSH_USER_ID, API_USER_ID]
+);
+?>
+                    <div class='row mb-2'>
+                        <div class='col-5'>
+                            <?php echo $lang->get('restore_missing_sharekeys_source'); ?>
+                        </div>
+                        <div class='col-7'>
+                            <select class='form-control' id='restore_missing_sharekeys_source_user'>
+                                <option value='0'><?php echo htmlspecialchars($lang->get('restore_missing_sharekeys_source_self'), ENT_QUOTES, 'UTF-8'); ?></option>
+<?php foreach ($sourceUsers as $sourceUser) { ?>
+                                <option value='<?php echo (int) $sourceUser['id']; ?>'><?php echo htmlspecialchars(trim((string) $sourceUser['lastname'] . ' ' . (string) $sourceUser['name']) . ' (' . (string) $sourceUser['login'] . ') - ' . sprintf($lang->get('restore_missing_sharekeys_source_keys_fmt'), $sourceKeyCounts[(int) $sourceUser['id']] ?? 0), ENT_QUOTES, 'UTF-8'); ?></option>
+<?php } ?>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class='row mb-2 hidden' id='restore_missing_sharekeys_source_pwd_row'>
+                        <div class='col-5'>
+                            <?php echo $lang->get('password'); ?>
+                        </div>
+                        <div class='col-7'>
+                            <input type='password' class='form-control' id='restore_missing_sharekeys_source_pwd' autocomplete='new-password' placeholder='<?php echo htmlspecialchars($lang->get('user_password'), ENT_QUOTES, 'UTF-8'); ?>'>
+                        </div>
+                    </div>
+
+                    <div class='row mb-3'>
+                        <div class='col-12'>
+                            <small class='form-text text-muted'>
+                                <?php echo $lang->get('restore_missing_sharekeys_source_tip'); ?>
                             </small>
                         </div>
                     </div>

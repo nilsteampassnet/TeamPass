@@ -3218,6 +3218,10 @@ function tpGetUsersWithV1SharekeysButMigrated(array $excludedUserIds = array()):
 /**
  * Returns unioned sources to count v1/v3 sharekeys by user.
  * $targetVersion: 1 or 3
+ *
+ * Only non-empty keys count, as in the phpseclib v3 migration itself: a blanked row (the "I no
+ * longer remember my previous password" reset keeps its version) holds no key to migrate, so
+ * counting it reported a user as inconsistent forever.
  */
 function tpGetSharekeysUserUnionSources(int $targetVersion): string
 {
@@ -3240,7 +3244,7 @@ function tpGetSharekeysUserUnionSources(int $targetVersion): string
         }
 
         // safe: table names come from a fixed list + prefixTable
-        $parts[] = 'SELECT user_id, COUNT(*) AS cnt FROM ' . $tableName . ' WHERE encryption_version = ' . (int) $targetVersion . ' GROUP BY user_id';
+        $parts[] = 'SELECT user_id, COUNT(*) AS cnt FROM ' . $tableName . ' WHERE encryption_version = ' . (int) $targetVersion . ' AND share_key != "" GROUP BY user_id';
     }
 
     return implode("\nUNION ALL\n", $parts);
