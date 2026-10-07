@@ -189,6 +189,22 @@ final class AdminActivityTest extends TestCase
         self::assertSame('api', $formatted['channel']);
     }
 
+    public function testItemAndKnowledgeBaseActionsAreLowercasedWithUnicodeSupport(): void
+    {
+        foreach (['item', 'kb', 'failed_auth', 'user_connection'] as $source) {
+            foreach (['at_copy', 'at_restored', 'at_password_shown_edit_form', 'at_password_shown'] as $action) {
+                $row = $this->rows(['changes'])[0];
+                $row['source_type'] = $source;
+                $row['action'] = $action;
+                if ($source === 'kb') {
+                    $row['detail'] = json_encode(['action' => $action], JSON_THROW_ON_ERROR);
+                }
+                $formatted = adminActivityFormat($row, static fn ($key) => 'ÉLÉMENT Copied');
+                self::assertSame(in_array($source, ['item', 'kb'], true) ? 'élément copied' : 'ÉLÉMENT Copied', $formatted['action_text']);
+            }
+        }
+    }
+
     public function testMalformedCursorIsRejected(): void
     {
         $this->expectException(InvalidArgumentException::class);

@@ -167,6 +167,9 @@ function adminActivityFormat(array $row, callable $translate): array
     ];
     $actionText = $source === 'failed_auth' ? $translate('admin_activity_failed')
         : ($source === 'user_connection' ? $translate('admin_activity_connected') : $translate($actions[$action] ?? $action));
+    if ($source === 'item' || $source === 'kb') {
+        $actionText = mb_strtolower($actionText, 'UTF-8');
+    }
     return [
         'id' => $row['source_rank'] . ':' . $row['event_id'],
         'cursor' => [(int) $row['timestamp'], (int) $row['source_rank'], (int) $row['event_id']],
