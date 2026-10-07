@@ -24,7 +24,20 @@ function harness(stored = null, encrypted = false) {
         if (!elements.has(selector)) {
             elements.set(selector, {
                 content: '', visible: true, position: 0, value: '5', properties: {},
-                each() { return this }, html(value) { this.content = value; return this },
+                each(callback) {
+                    if (selector === '.activity-category') {
+                        for (const scope of ['compact', 'expanded']) {
+                            for (const category of ['changes', 'accesses', 'failed', 'connections', 'kb']) {
+                                const element = $('#activity-' + scope + '-' + category)
+                                element.value = category
+                                callback.call(element)
+                            }
+                        }
+                    }
+                    return this
+                },
+                id: selector.startsWith('#') ? selector.slice(1) : '',
+                html(value) { this.content = value; return this },
                 append(value) { this.content += value; return this }, empty() { this.content = ''; return this },
                 text(value) { this.content = String(value); return this },
                 show() { this.visible = true; return this }, hide() { this.visible = false; return this },
@@ -188,6 +201,49 @@ test('refresh counts only while reading history, including scrolling during a re
     assert.deepEqual(h.requests[2].options.after, [1000, 1, 2])
     h.requests[2].resolve(response([row(3)], {new_count: 1}))
     assert.equal(h.$('#activity-new-events').visible, true)
+})
+
+test('failed-only shortcut affects the modal and never changes tile or saved preferences', () => {
+    const saved = '["changes","accesses","failed"]'
+    const h = harness(saved)
+    h.run('loadLiveActivity(); adminActivityState.open = true; resetExpandedActivity()')
+    h.requests[0].resolve(response([row(1)]))
+    h.requests[1].resolve(response([row(1)]))
+    const widget = h.$('#live-activity-list').content
+    h.handlers.get('click:#activity-modal-failed-count')()
+    assert.equal(h.requests.length, 3)
+    assert.deepEqual(h.requests[2].options.categories, ['failed'])
+    assert.equal(h.$('#live-activity-list').content, widget)
+    assert.equal(h.$('#activity-compact-accesses').properties.checked, true)
+    assert.equal(h.$('#activity-expanded-accesses').properties.checked, false)
+    assert.equal(h.persisted(), saved)
+    h.requests[2].resolve(response([row(2, {source_type: 'failed_auth'})]))
+    h.run('loadLiveActivity()')
+    assert.deepEqual(h.requests[3].options.categories, ['changes', 'accesses', 'failed'])
+    assert.deepEqual(h.requests[4].options.categories, ['failed'])
+    h.handlers.get('hidden.bs.modal:#activity-modal')()
+    assert.equal(h.run('adminActivityState.modalCategories'), null)
+    h.requests[4].resolve(response([row(99)]))
+    assert.equal(h.$('#activity-expanded-accesses').properties.checked, true)
+    h.handlers.get('shown.bs.modal:#activity-modal')()
+    assert.deepEqual(h.requests.at(-1).options.categories, ['changes', 'accesses', 'failed'])
+    assert.equal(h.persisted(), saved)
+})
+
+test('changing a category clears the shortcut using saved categories as the baseline', () => {
+    const h = harness('["changes","accesses","failed"]')
+    h.run('initActivityPreferences(); adminActivityState.open = true; resetExpandedActivity()')
+    h.requests[0].resolve(response([row(1)]))
+    h.handlers.get('click:#activity-modal-failed-count')()
+    const category = h.$('#activity-expanded-connections')
+    category.prop('checked', true)
+    h.handlers.get('change:.activity-category').call(category)
+    assert.equal(h.run('adminActivityState.modalCategories'), null)
+    assert.deepEqual(JSON.parse(h.persisted()), ['changes', 'accesses', 'failed', 'connections'])
+    assert.equal(h.$('#activity-expanded-accesses').properties.checked, true)
+    h.requests[1].resolve(response([row(99)]))
+    assert.equal(h.run('adminActivityState.rows.length'), 0)
+    assert.deepEqual(h.requests[2].options.categories, ['changes', 'accesses', 'failed', 'connections'])
 })
 
 test('closing the modal rejects late responses and failures allow retry', () => {

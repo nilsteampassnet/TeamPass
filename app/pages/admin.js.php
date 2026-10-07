@@ -608,7 +608,7 @@ const adminActivityMessages = <?php echo json_encode([
 const adminActivityState = {
     initialized: false, categories: [], widgetRequest: null, widgetGeneration: 0,
     open: false, generation: 0, busy: false, rows: [], since: null, until: null,
-    cursor: null, hasMore: false, minutes: 5, pending: 0
+    cursor: null, hasMore: false, minutes: 5, pending: 0, modalCategories: null
 }
 
 /** Read only category identifiers from storage; never persist activity data. */
@@ -630,12 +630,19 @@ function initActivityPreferences() {
     syncActivityControls()
 }
 
-/** Keep the compact and expanded category selectors in sync. */
+/** Apply the temporary shortcut only to the expanded view. */
+function activityCategories(expanded = false) {
+    return expanded && adminActivityState.modalCategories !== null
+        ? adminActivityState.modalCategories : adminActivityState.categories
+}
+
+/** Reflect saved categories in the tile and any temporary override in the modal. */
 function syncActivityControls() {
     $('.activity-category').each(function() {
-        $(this).prop('checked', adminActivityState.categories.includes($(this).val()))
+        $(this).prop('checked', activityCategories(this.id.startsWith('activity-expanded-')).includes($(this).val()))
     })
-    $('.activity-failed-count').toggle(adminActivityState.categories.includes('failed'))
+    $('#activity-failed-count').toggle(activityCategories().includes('failed'))
+    $('#activity-modal-failed-count').toggle(activityCategories(true).includes('failed'))
 }
 
 /** Send a feed request, decoding errors without disturbing the currently displayed rows. */
@@ -662,7 +669,7 @@ function requestActivity(options, success, complete, expanded, isCurrent = () =>
 /** Render escaped text only; submitted logins may contain arbitrary markup. */
 function renderActivityRows(rows, expanded = false) {
     if (rows.length === 0) {
-        const message = adminActivityState.categories.length ? adminActivityMessages.empty : adminActivityMessages.noCategories
+        const message = activityCategories(expanded).length ? adminActivityMessages.empty : adminActivityMessages.noCategories
         return '<li class="list-group-item text-center text-muted">' + escapeHtml(message) + '</li>'
     }
     return rows.map(activity => {
@@ -735,7 +742,7 @@ function loadExpandedActivity(mode) {
     state.busy = true
     const generation = state.generation
     const readingHistory = $('#activity-modal-scroll').scrollTop() > 8 || state.rows.length > 50
-    const options = {categories: state.categories, minutes: state.minutes, expanded: true}
+    const options = {categories: activityCategories(true), minutes: state.minutes, expanded: true}
     if (mode === 'older') {
         options.since = state.since
         options.until = state.until
@@ -783,6 +790,7 @@ $(document).on('change', '.activity-category', function() {
     const selected = new Set(adminActivityState.categories)
     if ($(this).prop('checked')) selected.add(category)
     else selected.delete(category)
+    adminActivityState.modalCategories = null
     adminActivityState.categories = Array.from(selected)
     try { localStorage.setItem(adminActivityMessages.storageKey, JSON.stringify(adminActivityState.categories)) } catch (error) { /* Optional storage. */ }
     syncActivityControls()
@@ -793,14 +801,10 @@ $(document).on('change', '.activity-category', function() {
     loadLiveActivity()
 })
 $(document).on('click', '#activity-modal-failed-count', function() {
-    adminActivityState.categories = ['failed']
-    // This shortcut is temporary: reopening the page restores the saved preferences.
+    if (!adminActivityState.open) return
+    adminActivityState.modalCategories = ['failed']
     syncActivityControls()
-    if (adminActivityState.open) resetExpandedActivity()
-    else $('#activity-modal').modal('show')
-    if (adminActivityState.widgetRequest) adminActivityState.widgetRequest.abort()
-    adminActivityState.widgetRequest = null
-    loadLiveActivity()
+    resetExpandedActivity()
 })
 $(document).on('shown.bs.modal', '#activity-modal', function() {
     initActivityPreferences()
@@ -809,9 +813,11 @@ $(document).on('shown.bs.modal', '#activity-modal', function() {
 })
 $(document).on('hidden.bs.modal', '#activity-modal', function() {
     adminActivityState.open = false
+    adminActivityState.modalCategories = null
     adminActivityState.generation++
     adminActivityState.busy = false
     $('#activity-modal-loading').hide()
+    syncActivityControls()
 })
 $(document).on('change', '#activity-minutes', function() {
     adminActivityState.minutes = Number($(this).val())
