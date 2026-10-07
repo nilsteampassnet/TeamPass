@@ -61,7 +61,8 @@ class SecureSendAuditSchemaTest extends TestCase
         $root = dirname(__DIR__, 2);
         $install = (string) file_get_contents($root . '/public/install/install-steps/run.step5.php');
         $steps = (string) file_get_contents($root . '/public/install/install-steps/install.js');
-        $upgrade = (string) file_get_contents($root . '/public/install/upgrade_run_3.2.2.php');
+        $upgrade = (string) file_get_contents($root . '/public/install/upgrade_run_3.2.3.php');
+        $hotfix = (string) file_get_contents($root . '/public/install/upgrade_run_3.2.2.php');
         self::assertStringContainsString('private function secure_send_audit()', $install);
         self::assertStringContainsString("secureSendAuditSchemaSql(\$this->inputData['tablePrefix'] . 'secure_send_audit')", $install);
         self::assertStringContainsString("action: 'secure_send_audit'", $steps);
@@ -70,8 +71,10 @@ class SecureSendAuditSchemaTest extends TestCase
         $ddl = strpos($upgrade, "secureSendAuditSchemaSql(prefixTable('secure_send_audit'))");
         self::assertIsInt($ddl);
         self::assertLessThan(strpos($upgrade, '// Save upgrade timestamp'), $ddl);
+        self::assertStringContainsString("require_once TEAMPASS_ROOT . '/app/sources/secure_send_audit.php'", $upgrade);
+        self::assertStringNotContainsString('secureSendAuditSchemaSql(', $hotfix);
         require_once $root . '/app/config/include.php';
         // Reusing the previous audit floor could skip the journal on instances upgraded to 3.2.2.8 since then.
-        self::assertGreaterThan(1791204091, (int) UPGRADE_MIN_DATE);
+        self::assertGreaterThan(1791351029, (int) UPGRADE_MIN_DATE);
     }
 }

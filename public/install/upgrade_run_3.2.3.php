@@ -192,6 +192,15 @@ foreach ($webauthnSettings as $key => $value) {
     );
 }
 
+// Durable Secure Send metadata audit. Shared DDL keeps fresh installs and replayed
+// 3.2.3 upgrades identical. Existing links are not backfilled with invented events.
+require_once TEAMPASS_ROOT . '/app/sources/secure_send_audit.php';
+if (mysqli_query($db_link, secureSendAuditSchemaSql(prefixTable('secure_send_audit'))) === false) {
+    echo json_encode([['finish' => '1', 'error' => 'Error creating the Secure Send audit table']]);
+    mysqli_close($db_link);
+    exit();
+}
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,

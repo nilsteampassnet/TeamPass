@@ -87,9 +87,11 @@ guarantee. The database journal is authoritative for application statistics.
 ## Installation, upgrade and retention
 
 Fresh installation adds the `secure_send_audit` action to run.step5/install.js.
-The 3.2.2 patch upgrade calls the same `secureSendAuditSchemaSql()` DDL with
+The 3.2.3 feature upgrade (`public/install/upgrade_run_3.2.3.php`) calls the same
+`secureSendAuditSchemaSql()` DDL with
 `CREATE TABLE IF NOT EXISTS`; replay preserves existing records. `UPGRADE_MIN_DATE`
-is raised so existing installations must run the patch migration. No dependency,
+is raised so existing installations must run the feature migration. The maintained
+3.2.2.x hotfix migration does not introduce this feature's schema. No dependency,
 secret/configuration file, release version or cipher format is changed.
 
 The journal starts with operations observed after installation/upgrade. Existing
