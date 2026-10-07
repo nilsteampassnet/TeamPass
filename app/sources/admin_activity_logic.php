@@ -101,7 +101,7 @@ function adminActivityQuery(array $options, array $tables): array
             COALESCE(u.id, 0) AS user_id, COALESCE(u.login, \'\') AS user_login, l.label AS action,
             l.field_1 AS detail, NULL AS item_id, NULL AS item_label, l.type AS source_type
             FROM ' . $tables['log_system'] . ' l
-            LEFT JOIN ' . $tables['users'] . ' u ON l.type = \'user_connection\' AND l.qui = CAST(u.id AS CHAR)
+            LEFT JOIN ' . $tables['users'] . ' u ON l.type = \'user_connection\' AND l.qui = u.id
             WHERE CAST(l.date AS SIGNED) > %i AND CAST(l.date AS SIGNED) <= %i AND l.type IN %ls
             AND (l.type = \'failed_auth\' OR l.label IN (\'connection\', \'user_connection\'))';
         array_push($values, $options['since'], $options['until'], $types);

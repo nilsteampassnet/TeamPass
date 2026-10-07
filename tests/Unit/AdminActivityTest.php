@@ -109,6 +109,18 @@ final class AdminActivityTest extends TestCase
         self::assertCount(1, $this->rows(['kb']));
     }
 
+    public function testAuthenticationJoinDoesNotDependOnConnectionCollation(): void
+    {
+        foreach ([['failed'], ['connections'], ['failed', 'connections']] as $categories) {
+            [$sql] = adminActivityQuery(adminActivityOptions(['categories' => $categories], 1000, true), $this->tables);
+            self::assertStringContainsString('l.qui = u.id', $sql);
+            self::assertDoesNotMatchRegularExpression('/CAST\([^)]*\bAS\s+CHAR\b/i', $sql);
+        }
+        $connection = $this->rows(['connections'])[0];
+        self::assertSame('alice', $connection['user_login']);
+        self::assertSame(1, (int) $connection['user_id']);
+    }
+
     public function testPaginationIsStableAcrossEqualSecondsAndNewInserts(): void
     {
         $categories = ['changes', 'accesses', 'failed', 'connections', 'kb'];
