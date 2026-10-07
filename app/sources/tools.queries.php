@@ -303,404 +303,6 @@ case 'perform_fix_pf_items-step3':
     );
     break;
 
-    /* TOOL #2 - Fixing items master keys */
-    /*
-    * STEP 1 - Check if we have the correct pwd for TP_USER
-    */
-    case 'perform_fix_items_master_keys-step1':
-        // Check KEY
-        if (!hash_equals((string) $session->get('key'), (string) $post_key)) {
-            echo prepareExchangedData(
-                array(
-                    'error' => true,
-                    'message' => $lang->get('key_is_not_correct'),
-                ),
-                'encode'
-            );
-            break;
-        }
-        // Is admin?
-        if ((int) $session->get('user-admin') !== 1) {
-            echo prepareExchangedData(
-                array(
-                    'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
-                ),
-                'encode'
-            );
-            break;
-        }
-
-        // decrypt and retrieve data in JSON format
-        $dataReceived = prepareExchangedData(
-            $post_data,
-            'decode'
-        );
-
-        // Get TP_USER info
-        $userInfo = DB::queryFirstRow(
-            'SELECT u.pw, u.public_key, pk.private_key, u.login, u.name
-            FROM ' . prefixTable('users') . ' AS u
-            LEFT JOIN ' . prefixTable('user_private_keys') . ' AS pk ON (u.id = pk.user_id AND pk.is_current = 1)
-            WHERE u.id = %i',
-            TP_USER_ID
-        );
-
-        // decrypt owner password
-        $decryptedData = cryption($userInfo['pw'], '', 'decrypt', $SETTINGS);
-        $pwd = $decryptedData['string'] ?? '';
-
-        $privateKey = decryptPrivateKey($pwd, $userInfo['private_key']);
-
-        if (empty($privateKey)) {
-            // Generate new keys for TP user
-            $userKeys = generateUserKeys($pwd, $SETTINGS);
-
-            // Update user keys
-            $updateData = array(
-                'public_key' => $userKeys['public_key'],
-                'private_key' => $userKeys['private_key'],
-            );
-
-            // Include transparent recovery data if available
-            if (isset($userKeys['user_seed'])) {
-                $updateData['user_derivation_seed'] = $userKeys['user_seed'];
-                $updateData['private_key_backup'] = $userKeys['private_key_backup'];
-                $updateData['key_integrity_hash'] = $userKeys['key_integrity_hash'];
-                $updateData['last_pw_change'] = time();
-            }
-
-            DB::update(
-                prefixTable('users'),
-                $updateData,
-                'id = %i',
-                TP_USER_ID
-            );
-
-            // Store private key in dedicated table
-            insertPrivateKeyWithCurrentFlag((int) TP_USER_ID, $userKeys['private_key']);
-
-            $privateKey = decryptPrivateKey($pwd, $userKeys['private_key']);
-
-            if (empty($privateKey)) {
-                error_log("Teampass - Error: impossible to decrypt the private key for master user");
-            }
-        }
-
-        // Checking that this pwd cannot decrypt an item sharekey        
-        // Get one itemKey from current user
-        $currentUserKey = DB::queryFirstRow(
-            'SELECT ski.share_key, ski.increment_id AS increment_id
-            FROM ' . prefixTable('sharekeys_items') . ' AS ski
-            INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = ski.object_id
-            WHERE ski.user_id = %i AND ski.share_key != ""
-            ORDER BY RAND()
-            LIMIT 1',
-            TP_USER_ID
-        );
-        /*
-        // CAN BE COMMENTED OUT FOR DEV PURPOSE ; THIS SHOULD BE KEPT IN NORMAL CASE
-        if (!empty($currentUserKey)) {
-            // Decrypt itemkey with user key
-            // use old password to decrypt private_key
-            $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $privateKey);
-            
-            if (!empty(@base64_decode($itemKey))) {
-                // GOOD password
-                // THings all good
-                echo  prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => 'No issue found, normal process should work. This process is now finished. (item id : ' . $currentUserKey['increment_id'] . ')',
-                    ),
-                    'encode'
-                );
-                break;
-            }
-        }
-        */
-        
-        //Show done
-        echo prepareExchangedData(
-            array(
-                'error' => empty($pwd) === false ? false : true,
-                'message' => empty($pwd) === false ? 
-                    'Master password decrypted.'
-                    : 'Master password not decrypted, We have a problem.', 
-                'tp_user_publicKey' => $userInfo['public_key'],
-                'tp_user_pwd' => $pwd,
-            ),
-            'encode'
-        );
-        break;
-
-    /*
-    * STEP 2 - Check if we have the correct pwd for selected user
-    */
-    case 'perform_fix_items_master_keys-step2':
-        // Check KEY
-        if (!hash_equals((string) $session->get('key'), (string) $post_key)) {
-            echo prepareExchangedData(
-                array(
-                    'error' => true,
-                    'message' => $lang->get('key_is_not_correct'),
-                ),
-                'encode'
-            );
-            break;
-        }
-        // Is admin?
-        if ((int) $session->get('user-admin') !== 1) {
-            echo prepareExchangedData(
-                array(
-                    'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
-                ),
-                'encode'
-            );
-            break;
-        }
-
-        // decrypt and retrieve data in JSON format
-        $dataReceived = prepareExchangedData(
-            $post_data,
-            'decode'
-        );
-        $userId = filter_var($dataReceived['userId'], FILTER_SANITIZE_NUMBER_INT);
-        // IMPORTANT: Passwords should NOT be sanitized (fix 3.1.5.10)
-        $userPwd = $dataReceived['userPassword'];
-
-        // Get user info
-        $userInfo = DB::queryFirstRow(
-            'SELECT u.public_key, pk.private_key
-            FROM ' . prefixTable('users') . ' AS u
-            LEFT JOIN ' . prefixTable('user_private_keys') . ' AS pk ON (u.id = pk.user_id AND pk.is_current = 1)
-            WHERE u.id = %i',
-            $userId
-        );
-
-        // decrypt user provate key
-        $privateKey = decryptPrivateKey($userPwd, $userInfo['private_key']);
-
-        if (empty($privateKey)) {
-            echo prepareExchangedData(
-                array(
-                    'error' => true,
-                    'message' => 'User private key not decrypted, ',
-                ),
-                'encode'
-            );
-            break;
-        }
-
-        // Checking that this pwd cannot decrypt an item sharekey        
-        // Get one itemKey from current user
-        $currentUserKey = DB::queryFirstRow(
-            'SELECT ski.share_key, ski.increment_id AS increment_id
-            FROM ' . prefixTable('sharekeys_items') . ' AS ski
-            INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = ski.object_id
-            WHERE ski.user_id = %i AND ski.share_key != ""
-            ORDER BY RAND()
-            LIMIT 1',
-            $userId
-        );
-
-        if (!empty($currentUserKey)) {
-            // Decrypt itemkey with user key
-            // use old password to decrypt private_key
-            $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $privateKey);
-            
-            if (!empty(@base64_decode($itemKey))) {
-                // GOOD password
-                // THings all good
-
-                // Check and prepare backup table
-                $tableExists = DB::queryFirstField("SHOW TABLES LIKE %s", prefixTable('sharekeys_backup'));
-                if (empty($tableExists)) {
-                    // Table doesn't exist, create it
-                    DB::query(
-                        'CREATE TABLE `'.prefixTable('sharekeys_backup').'` (
-                        `increment_id` INT(12) NOT NULL AUTO_INCREMENT,
-                        `object_type` VARCHAR(50) NOT NULL,
-                        `object_id` INT(12) NOT NULL,
-                        `user_id` INT(12) NOT NULL,
-                        `share_key` MEDIUMTEXT NOT NULL,
-                        `increment_id_value` INT(12) NOT NULL,
-                        `operation_code` VARCHAR(50) NOT NULL,
-                        `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                        PRIMARY KEY (`increment_id`)
-                        ) CHARSET=utf8;'
-                    );
-                }
-
-                // Get number of users to treat
-                DB::query(
-                    'SELECT i.id 
-                    FROM ' . prefixTable('items') . ' AS i
-                    INNER JOIN ' . prefixTable('sharekeys_items') . ' AS si ON i.id = si.object_id
-                    WHERE i.perso = %i AND si.user_id = %i;',
-                    0,
-                    $userId
-                );
-                
-                echo prepareExchangedData(
-                    array(
-                        'error' => false,
-                        'message' => 'Could decrypt the privatekey. We can proceed with '.DB::count().' items.',
-                        'nb_items_to_proceed' => DB::count(),
-                        'selected_user_privateKey' => $privateKey,
-                    ),
-                    'encode'
-                );
-                break;
-            }
-        }
-        
-        //Show done
-        echo prepareExchangedData(
-            array(
-                'error' => true,
-                'message' => 'We could not decrypt the item share key with user provided, We have a problem.', 
-            ),
-            'encode'
-        );
-        break;
-
-    /*
-    * STEP 3 - Start the process of changing the keys
-    */
-    case 'perform_fix_items_master_keys-step3':
-        // Check KEY
-        if (!hash_equals((string) $session->get('key'), (string) $post_key)) {
-            echo prepareExchangedData(
-                array(
-                    'error' => true,
-                    'message' => $lang->get('key_is_not_correct'),
-                ),
-                'encode'
-            );
-            break;
-        }
-        // Is admin?
-        if ((int) $session->get('user-admin') !== 1) {
-            echo prepareExchangedData(
-                array(
-                    'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
-                ),
-                'encode'
-            );
-            break;
-        }
-
-        // decrypt and retrieve data in JSON format
-        $dataReceived = prepareExchangedData(
-            $post_data,
-            'decode'
-        );
-        $userId = intval($dataReceived['userId']);
-        $tpUserPublicKey = htmlspecialchars($dataReceived['tp_user_publicKey'], ENT_QUOTES, 'UTF-8');
-        $selectedUserPrivateKey = htmlspecialchars($dataReceived['selected_user_privateKey'], ENT_QUOTES, 'UTF-8');
-        $nbItems = intval($dataReceived['nbItems']);
-        $startIndex = intval($dataReceived['startIndex']);
-        $limit = intval($dataReceived['limit']);
-        $operationCode = htmlspecialchars($dataReceived['operationCode'], ENT_QUOTES, 'UTF-8');
-
-
-        // Start transaction for better performance
-        try {
-            DB::startTransaction();
-
-            // If we are starting then generate a code
-            if (empty($operationCode)) {
-                $operationCode = uniqidReal(32);
-            }
-
-            // Loop on items
-            $rows = DB::query(
-                'SELECT si.object_id AS object_id, si.share_key AS share_key, i.pw AS pw, si.increment_id as increment_id
-                FROM ' . prefixTable('sharekeys_items') . ' AS si
-                INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = si.object_id)
-                WHERE si.user_id = %i
-                ORDER BY si.increment_id ASC
-                LIMIT ' . $startIndex . ', ' . $limit,
-                $userId
-            );        
-            
-            if (!empty($rows)) {
-                foreach ($rows as $record) {
-                    // Decrypt itemkey with admin key
-                    $itemKey = decryptUserObjectKey(
-                        $record['share_key'],
-                        $selectedUserPrivateKey
-                    );
-                    
-                    // Prevent to change key if its key is empty
-                    if (empty($itemKey) === true) {
-                        continue;
-                    }
-
-                    // Encrypt Item key for TP USER
-                    $share_key_for_item = encryptUserObjectKey($itemKey, $tpUserPublicKey);
-                    
-                    // Get object for TP USER
-                    // It will be updated if already exists
-                    $currentTPUserKey = DB::queryFirstRow(
-                        'SELECT increment_id, user_id, share_key
-                        FROM ' . prefixTable('sharekeys_items') . '
-                        WHERE object_id = %i AND user_id = %i',
-                        $record['object_id'],
-                        TP_USER_ID
-                    );
-                    
-                    if (!empty($currentTPUserKey)) {
-                        // Backup current value
-                        DB::insert(
-                            prefixTable('sharekeys_backup'),
-                            array(
-                                'object_id' => (int) $record['object_id'],
-                                'user_id' => (int) $currentTPUserKey['user_id'],
-                                'share_key' => $currentTPUserKey['share_key'],
-                                'object_type' => 'item',
-                                'increment_id_value' => (int) $currentTPUserKey['increment_id'],
-                                'operation_code' => $operationCode,
-                            )
-                        );
-
-                        // NOw update
-                        DB::update(
-                            prefixTable('sharekeys_items'),
-                            array(
-                                'share_key' => $share_key_for_item,
-                            ),
-                            'increment_id = %i',
-                            $currentTPUserKey['increment_id']
-                        );
-                    }
-                }
-            }
-            // Commit transaction
-            DB::commit();
-        } catch (Exception $e) {
-            DB::rollback();
-            error_log("Teampass - Error: Keys treatment: " . $e->getMessage());
-        }
-
-        $nextIndex = (int) $startIndex + (int) $limit;
-        
-        //Show done
-        echo prepareExchangedData(
-            array(
-                'error' => false,
-                'message' => '', 
-                'nextIndex' => $nextIndex,
-                'status' => (int) $nextIndex >= (int) $nbItems ? 'done' : 'continue',
-                'operationCode' => $operationCode,
-            ),
-            'encode'
-        );
-        break;
-
         /*
         * RESTORE a backup
         */
@@ -895,6 +497,17 @@ case 'perform_fix_pf_items-step3':
 
         $specialUserIds = [OTV_USER_ID, SSH_USER_ID, API_USER_ID];
 
+        // Whose keys the repair will open the objects with: yours by default, or the reference
+        // user chosen on the page. Counting needs no password, only the user's sharekeys.
+        $sourceUserId = (int) $session->get('user-id');
+        if (is_string($post_data) === true && $post_data !== '') {
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+            $requestedSourceId = is_array($dataReceived) === true ? (int) ($dataReceived['sourceUserId'] ?? 0) : 0;
+            if ($requestedSourceId > 0 && restoreSharekeysSourceUser($requestedSourceId) !== null) {
+                $sourceUserId = $requestedSourceId;
+            }
+        }
+
         // Number of users expected to own a sharekey for every shared object
         // (same eligibility rule as storeUsersShareKey)
         $eligibleUsersCount = (int) DB::queryFirstField(
@@ -924,7 +537,7 @@ case 'perform_fix_pf_items-step3':
                 INNER JOIN ' . prefixTable($def['table']) . ' AS ska ON (ska.object_id = o.id AND ska.user_id = %i AND ska.share_key != "")
                 LEFT JOIN ' . prefixTable($def['table']) . ' AS sk ON (sk.object_id = o.id AND sk.user_id = ' . TP_USER_ID . ' AND sk.share_key != "")
                 WHERE ' . $def['where'] . ' AND sk.increment_id IS NULL',
-                (int) $session->get('user-id')
+                $sourceUserId
             );
 
             $analysis[$scopeName] = [
@@ -1153,12 +766,12 @@ case 'perform_fix_pf_items-step3':
         break;
 
     /*
-    * RESTORE MISSING SHAREKEYS - STEP 2 - Seed TP_USER reference keys
-    * Recreates missing TP_USER sharekeys using the executing admin's own keys
-    * (the admin private key only exists in the web session, hence this
-    * synchronous, JS-batched step). Called in a loop per scope until finished.
+    * RESTORE MISSING SHAREKEYS - STEP 2 - Choose whose keys open the objects
+    * Your own keys by default. A reference user's private key is opened here, with that user's
+    * password, and kept in the server session for the duration of the repair only: no private
+    * key and no password ever goes back to the browser.
     */
-    case 'restore_missing_sharekeys-seed':
+    case 'restore_missing_sharekeys-prepare':
         // Check KEY
         if (!hash_equals((string) $session->get('key'), (string) $post_key)) {
             echo prepareExchangedData(
@@ -1187,6 +800,109 @@ case 'perform_fix_pf_items-step3':
             $post_data,
             'decode'
         );
+        $sourceUserId = (int) ($dataReceived['sourceUserId'] ?? 0);
+        // IMPORTANT: Passwords should NOT be sanitized (fix 3.1.5.10)
+        $sourcePassword = (string) ($dataReceived['sourcePassword'] ?? '');
+
+        // Every check opens objects through the internal account: without its key nothing can be
+        // verified, and the background task would stop on its first object.
+        $tpKeys = getTpUserKeyPair($SETTINGS);
+        if ($tpKeys['private_key'] === '') {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('restore_missing_sharekeys_tp_key_unavailable'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        $state = [
+            'source_user_id' => (int) $session->get('user-id'),
+            'private_key' => '',
+            'public_key' => '',
+            'expires_at' => time() + 3600,
+        ];
+        if ($sourceUserId > 0 && $sourceUserId !== (int) $session->get('user-id')) {
+            $sourceUser = restoreSharekeysSourceUser($sourceUserId);
+            $sourcePrivateKey = $sourceUser !== null && $sourcePassword !== ''
+                ? decryptPrivateKey($sourcePassword, $sourceUser['private_key'])
+                : '';
+            if ($sourceUser === null || empty($sourcePrivateKey) === true) {
+                logEvents($SETTINGS, 'admin_action', 'restore_missing_sharekeys_reference_refused', (string) $session->get('user-id'), $session->get('user-login'), (string) $sourceUserId);
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('restore_missing_sharekeys_source_refused'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+            $state['source_user_id'] = $sourceUser['id'];
+            $state['private_key'] = (string) $sourcePrivateKey;
+            $state['public_key'] = $sourceUser['public_key'];
+            logEvents($SETTINGS, 'admin_action', 'restore_missing_sharekeys_reference_user', (string) $session->get('user-id'), $session->get('user-login'), (string) $sourceUserId);
+        }
+        $session->set('restore_missing_sharekeys-state', $state);
+
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+            ),
+            'encode'
+        );
+        break;
+
+    /*
+    * RESTORE MISSING SHAREKEYS - STEP 3 - Check and rebuild the TP_USER reference keys
+    * Walks the objects the source user can open (JS-batched, one scope at a time) and makes the
+    * internal TP account key of each one a key that really opens it: a sharekey only proves an
+    * object key was encrypted for someone, not that the object is still encrypted with it.
+    */
+    case 'restore_missing_sharekeys-seed':
+        // Check KEY
+        if (!hash_equals((string) $session->get('key'), (string) $post_key)) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ((int) $session->get('user-admin') !== 1) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        $state = $session->get('restore_missing_sharekeys-state');
+        if (is_array($state) === false || (int) ($state['expires_at'] ?? 0) < time()) {
+            $session->remove('restore_missing_sharekeys-state');
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('restore_missing_sharekeys_state_expired'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // decrypt and retrieve data in JSON format
+        $dataReceived = prepareExchangedData(
+            $post_data,
+            'decode'
+        );
         $scopeName = filter_var($dataReceived['scope'] ?? '', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $lastId = (int) filter_var($dataReceived['lastId'] ?? 0, FILTER_SANITIZE_NUMBER_INT);
 
@@ -1204,55 +920,115 @@ case 'perform_fix_pf_items-step3':
         $def = $scopeDefs[$scopeName];
         $batchSize = 25;
 
-        // Objects the admin can decrypt but for which TP_USER has no valid v3 key.
-        // A leftover legacy v1 key on TP_USER is treated as "not good enough"
-        // (it may be broken and fail to decrypt server-side): the admin's
-        // in-session key re-seeds TP_USER as v3, so the object stays recoverable
-        // by the background task even when TP_USER's own key was broken (#5252).
+        $tpKeys = getTpUserKeyPair($SETTINGS);
+        if ($tpKeys['private_key'] === '') {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('restore_missing_sharekeys_tp_key_unavailable'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // The reference user's keys when one was chosen, your own otherwise
+        $sourceUserId = (int) $state['source_user_id'];
+        $sourcePrivateKey = (string) $state['private_key'] !== '' ? (string) $state['private_key'] : (string) $session->get('user-private_key');
+        $sourcePublicKey = (string) $state['public_key'] !== '' ? (string) $state['public_key'] : (string) $session->get('user-public_key');
+        $checkable = $def['ciphertext'] !== '';
+
         $rows = DB::query(
-            'SELECT o.id AS object_id, ska.share_key AS admin_share_key, ska.increment_id AS admin_key_id
+            'SELECT o.id AS object_id' . restoreSharekeysCipherColumns($def) . ',
+                src.share_key AS source_share_key, src.increment_id AS source_key_id,
+                tp.share_key AS tp_share_key, tp.increment_id AS tp_key_id, tp.encryption_version AS tp_version
             FROM ' . $def['from'] . '
-            INNER JOIN ' . prefixTable($def['table']) . ' AS ska ON (ska.object_id = o.id AND ska.user_id = %i AND ska.share_key != "")
-            LEFT JOIN ' . prefixTable($def['table']) . ' AS sk ON (sk.object_id = o.id AND sk.user_id = ' . TP_USER_ID . ' AND sk.share_key != "" AND sk.encryption_version = 3)
-            WHERE ' . $def['where'] . ' AND sk.increment_id IS NULL AND o.id > %i
+            INNER JOIN ' . prefixTable($def['table']) . ' AS src ON (src.object_id = o.id AND src.user_id = %i AND src.share_key != "")
+            LEFT JOIN ' . prefixTable($def['table']) . ' AS tp ON (tp.object_id = o.id AND tp.user_id = ' . TP_USER_ID . ' AND tp.share_key != "")
+            WHERE ' . $def['where'] . ' AND o.id > %i
             ORDER BY o.id ASC
             LIMIT %i',
-            (int) $session->get('user-id'),
+            $sourceUserId,
             $lastId,
             $batchSize
         );
 
-        $tpUserPublicKey = (string) DB::queryFirstField(
-            'SELECT public_key FROM ' . prefixTable('users') . ' WHERE id = %i',
-            TP_USER_ID
-        );
-
+        $checked = 0;
         $seeded = 0;
+        $replaced = 0;
         $failed = 0;
         foreach ($rows as $record) {
             $lastId = (int) $record['object_id'];
-            $objectKey = decryptUserObjectKeyWithMigration(
-                (string) $record['admin_share_key'],
-                $session->get('user-private_key'),
-                $session->get('user-public_key'),
-                (int) $record['admin_key_id'],
-                $def['table']
-            );
-            if (empty($objectKey)) {
-                $failed++;
-                continue;
-            }
+            ++$checked;
+            $ciphertext = (string) $record['ciphertext'];
+            $meta = (string) $record['meta'];
+
             try {
-                insertOrUpdateSharekey(
-                    prefixTable($def['table']),
-                    (int) $record['object_id'],
-                    (int) TP_USER_ID,
-                    encryptUserObjectKey($objectKey, $tpUserPublicKey)
+                // The reference key in place, when it is current: does it open the object?
+                $tpHasCurrentKey = $record['tp_share_key'] !== null && (int) $record['tp_version'] === 3;
+                $tpObjectKey = $tpHasCurrentKey === true
+                    ? decryptUserObjectKeyWithMigration(
+                        (string) $record['tp_share_key'],
+                        $tpKeys['private_key'],
+                        $tpKeys['public_key'],
+                        (int) $record['tp_key_id'],
+                        $def['table']
+                    )
+                    : '';
+                $tpCheck = restoreSharekeysCheckObjectKey($tpObjectKey, $ciphertext, $meta, $checkable);
+                if ($tpHasCurrentKey === true && $tpCheck['opens'] === true) {
+                    continue;
+                }
+
+                $sourceObjectKey = decryptUserObjectKeyWithMigration(
+                    (string) $record['source_share_key'],
+                    $sourcePrivateKey,
+                    $sourcePublicKey,
+                    (int) $record['source_key_id'],
+                    $def['table']
                 );
-                $seeded++;
-            } catch (Exception $e) {
-                $failed++;
-                error_log('TEAMPASS Error - restore_missing_sharekeys-seed - object #' . $record['object_id'] . ' (' . $def['table'] . '): ' . $e->getMessage());
+                $sourceCheck = restoreSharekeysCheckObjectKey($sourceObjectKey, $ciphertext, $meta, $checkable);
+                $action = sharekeyRepairReferenceAction(
+                    $tpHasCurrentKey,
+                    $tpObjectKey !== '',
+                    $tpCheck['opens'],
+                    $sourceCheck['opens'],
+                    $sourceCheck['proves'],
+                    $tpObjectKey !== '' && hash_equals($tpObjectKey, $sourceObjectKey)
+                );
+                if ($action === 'source_unusable') {
+                    ++$failed;
+                    continue;
+                }
+
+                $written = insertOrUpdateSharekey(
+                    prefixTable($def['table']),
+                    $lastId,
+                    (int) TP_USER_ID,
+                    encryptUserObjectKey($sourceObjectKey, $tpKeys['public_key'])
+                );
+                if ($written === false) {
+                    ++$failed;
+                    continue;
+                }
+                if ($action === 'replace') {
+                    // The other users received their key from the same incomplete distribution, so
+                    // they hold the same stale key. Removing it makes them missing keys, which the
+                    // background task recreates from the reference key just checked; the internal
+                    // accounts are left alone, the distribution never covers them.
+                    DB::delete(
+                        prefixTable($def['table']),
+                        'object_id = %i AND user_id NOT IN %li',
+                        $lastId,
+                        [(int) TP_USER_ID, $sourceUserId, (int) OTV_USER_ID, (int) SSH_USER_ID, (int) API_USER_ID]
+                    );
+                    ++$replaced;
+                } else {
+                    ++$seeded;
+                }
+            } catch (Throwable $e) {
+                ++$failed;
+                error_log('TEAMPASS Error - restore_missing_sharekeys-seed - object #' . $lastId . ' (' . $def['table'] . '): ' . $e->getMessage());
             }
         }
 
@@ -1260,7 +1036,9 @@ case 'perform_fix_pf_items-step3':
             array(
                 'error' => false,
                 'scope' => $scopeName,
+                'checked' => $checked,
                 'seeded' => $seeded,
+                'replaced' => $replaced,
                 'failed' => $failed,
                 'lastId' => $lastId,
                 'finished' => count($rows) < $batchSize,
@@ -1270,7 +1048,7 @@ case 'perform_fix_pf_items-step3':
         break;
 
     /*
-    * RESTORE MISSING SHAREKEYS - STEP 3 - Launch the background repair task
+    * RESTORE MISSING SHAREKEYS - STEP 4 - Launch the background repair task
     * The task distributes the missing sharekeys to all eligible users using
     * TP_USER as reference (server-side decryptable).
     */
@@ -1314,6 +1092,9 @@ case 'perform_fix_pf_items-step3':
             );
             break;
         }
+
+        // The reference user's private key is not needed past the previous step
+        $session->remove('restore_missing_sharekeys-state');
 
         DB::insert(
             prefixTable('background_tasks'),

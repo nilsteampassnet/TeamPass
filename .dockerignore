@@ -88,8 +88,7 @@ node_modules/
 package-lock.json
 .npm
 
-# Vendor (will be copied from builder stage)
-# Don't ignore vendor/ as we copy it from composer stage
+# Vendor: never ignore app/vendor/ - the image uses the dependencies shipped in the repository
 
 # OS files
 Thumbs.db
