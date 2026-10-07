@@ -91,23 +91,7 @@ require_once __DIR__ . '/../sources/admin_notices.functions.php';
 $adminNotices = adminNoticesCollect($SETTINGS, $lang);
 $adminNoticesColumns = adminNoticesLayoutColumns($adminNotices);
 
-/** Render the same allow-listed category controls in the tile and modal. */
-function adminActivityCategoryControls(Language $lang, bool $kbEnabled, string $context): void
-{
-    $categories = [
-        'changes' => 'admin_activity_changes', 'accesses' => 'admin_activity_accesses',
-        'failed' => 'admin_activity_failed_category', 'connections' => 'admin_activity_connections',
-    ];
-    if ($kbEnabled) {
-        $categories['kb'] = 'kb_logs';
-    }
-    foreach ($categories as $category => $key) {
-        $id = 'activity-' . $context . '-' . $category;
-        echo '<div class="d-flex align-items-start mr-3 mb-2">'
-            . '<input type="checkbox" class="activity-category mt-1 mr-2 flex-shrink-0" id="' . $id . '" value="' . $category . '">'
-            . '<label class="mb-0 font-weight-normal" for="' . $id . '">' . htmlspecialchars($lang->get($key), ENT_QUOTES, 'UTF-8') . '</label></div>';
-    }
-}
+require_once __DIR__ . '/../sources/admin_activity_logic.php';
 
 ?>
 
