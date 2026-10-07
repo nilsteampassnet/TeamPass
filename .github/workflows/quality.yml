@@ -171,3 +171,8 @@ jobs:
           TEAMPASS_TEST_DB: teampass_test_secure_send
           TEAMPASS_TEST_PASSWORD: test-only-password
         run: php tests/Integration/secure_send_database.php
+      - name: Check activity queries with mixed collations
+        env:
+          TEAMPASS_TEST_DB: teampass_test_secure_send
+          TEAMPASS_TEST_PASSWORD: test-only-password
+        run: php tests/Integration/admin_activity_database.php

@@ -91,6 +91,8 @@ require_once __DIR__ . '/../sources/admin_notices.functions.php';
 $adminNotices = adminNoticesCollect($SETTINGS, $lang);
 $adminNoticesColumns = adminNoticesLayoutColumns($adminNotices);
 
+require_once __DIR__ . '/../sources/admin_activity_logic.php';
+
 ?>
 
 <!-- Content Header (Page header) -->
@@ -383,19 +385,28 @@ $adminNoticesColumns = adminNoticesLayoutColumns($adminNotices);
                                             <i class="fas fa-circle text-danger blink"></i> 
                                             <?php echo $lang->get('live_activity'); ?>
                                         </h3>
-                                        <div class="card-tools">
+                                        <div class="card-tools d-flex align-items-center">
+                                            <button type="button" class="btn-link border-0 bg-transparent p-0 mr-2" data-toggle="modal" data-target="#activity-modal" title="<?php echo $lang->get('admin_activity_expand'); ?>" aria-label="<?php echo $lang->get('admin_activity_expand'); ?>"><i class="fa-solid fa-arrow-up-right-from-square pointer"></i></button>
+                                            <div class="dropdown d-inline-block">
+                                                <button type="button" class="btn-link border-0 bg-transparent p-0 mr-2" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="<?php echo $lang->get('admin_activity_settings'); ?>" aria-label="<?php echo $lang->get('admin_activity_settings'); ?>"><i class="fa-solid fa-gear pointer"></i></button>
+                                                <div class="dropdown-menu dropdown-menu-right activity-settings p-3" style="width:280px; max-width:calc(100vw - 32px);">
+                                                    <?php adminActivityCategoryControls($lang, (int) ($SETTINGS['enable_kb'] ?? 0) === 1, 'compact'); ?>
+                                                </div>
+                                            </div>
                                             <span class="badge badge-warning" id="activity-refresh-countdown">10s</span>
                                         </div>
                                     </div>
                                     <div class="card-body p-0" style="max-height: 350px; overflow-y: auto;">
-                                        <ul class="list-group list-group-flush" id="live-activity-list">
+                                        <ul class="list-group list-group-flush" id="live-activity-list" aria-live="off">
                                             <li class="list-group-item text-center text-muted">
                                                 <i class="fas fa-sync fa-spin"></i> <?php echo $lang->get('loading'); ?>
                                             </li>
                                         </ul>
                                     </div>
                                     <div class="card-footer clearfix">
-                                        <a href="index.php?page=utilities.logs#items" class="btn btn-sm btn-warning float-right">
+                                        <span class="small text-muted activity-failed-count" id="activity-failed-count"></span>
+                                        <span class="small text-danger d-block" id="activity-error" role="status" style="display:none;"></span>
+                                        <a href="index.php?page=utilities.logs#journals" class="btn btn-sm btn-warning float-right">
                                             <?php echo $lang->get('view_all_logs'); ?>
                                         </a>
                                     </div>
@@ -668,6 +679,44 @@ $serverTime = date('H:i:s');
         
     </div>
 </section>
+
+<!-- Expanded administrator activity -->
+<div class="modal fade" id="activity-modal" tabindex="-1" role="dialog" aria-labelledby="activity-modal-title" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="activity-modal-title"><?php echo $lang->get('live_activity'); ?></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="<?php echo $lang->get('close'); ?>"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="px-3 pt-3 border-bottom">
+                <div class="d-flex flex-wrap align-items-center mb-2">
+                    <label for="activity-minutes" class="mr-2 mb-0"><?php echo $lang->get('admin_activity_period'); ?></label>
+                    <select id="activity-minutes" class="custom-select custom-select-sm w-auto mr-2">
+                        <?php foreach ([5, 15, 30] as $minutes) { ?>
+                        <option value="<?php echo $minutes; ?>"><?php echo str_replace('#minutes#', (string) $minutes, $lang->get('admin_activity_last_minutes')); ?></option>
+                        <?php } ?>
+                    </select>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="activity-modal-refresh"><?php echo $lang->get('refresh'); ?></button>
+                </div>
+                <div class="d-flex flex-wrap"><?php adminActivityCategoryControls($lang, (int) ($SETTINGS['enable_kb'] ?? 0) === 1, 'expanded'); ?></div>
+                <button type="button" class="btn btn-sm btn-outline-danger activity-failed-count mb-2" id="activity-modal-failed-count" title="<?php echo $lang->get('admin_activity_show_failures'); ?>"></button>
+                <button type="button" class="btn btn-sm btn-primary mb-2" id="activity-new-events" style="display:none;"></button>
+                <p class="small text-muted mb-2"><?php echo $lang->get('admin_activity_refresh_hint'); ?></p>
+            </div>
+            <div class="modal-body p-0" id="activity-modal-scroll" style="min-height:120px;">
+                <ul class="list-group list-group-flush" id="activity-modal-list" aria-live="off"></ul>
+                <div class="text-center p-2" id="activity-modal-loading" role="status" style="display:none;"><i class="fas fa-sync fa-spin"></i> <?php echo $lang->get('loading'); ?></div>
+            </div>
+            <div class="modal-footer d-block">
+                <span class="small text-danger d-block mb-2" id="activity-modal-error" role="status" style="display:none;"></span>
+                <div class="d-flex flex-wrap justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary mb-1" id="activity-load-older" style="display:none;"><?php echo $lang->get('admin_activity_load_older'); ?></button>
+                    <a href="index.php?page=utilities.logs#journals" class="btn btn-warning mb-1"><?php echo $lang->get('view_all_logs'); ?></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Info Modal -->
 <div class="modal fade" id="info-modal" tabindex="-1" role="dialog" aria-labelledby="info-modal-title" aria-hidden="true">

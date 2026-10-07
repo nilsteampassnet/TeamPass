@@ -590,76 +590,243 @@ function loadDashboardStats() {
     );
 }
 
-/**
- * Load live activity feed
- * 
- * @return {void}
- */
-function loadLiveActivity() {
-    $('#loading-activity').show()
-    
-    $.post(
-        'sources/admin.queries.php', {
-            type: 'get_live_activity',
-            key: '<?php echo $session->get('key'); ?>'
-        },
-        function(data) {
-            // Handle server answer
-            try {
-                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
-            } catch (e) {
-                // error
-                toastr.remove();
-                toastr.error(
-                    '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
-                    '', {
-                        closeButton: true,
-                        positionClass: 'toast-bottom-right'
-                    }
-                );
-                return false;
-            }
+const adminActivityMessages = <?php echo json_encode([
+    'key' => $session->get('key'),
+    'storageKey' => 'tp_admin_activity_' . (int) $session->get('user-id'),
+    'kbEnabled' => (int) ($SETTINGS['enable_kb'] ?? 0) === 1,
+    'empty' => $lang->get('no_recent_activity'),
+    'noCategories' => $lang->get('admin_activity_no_categories'),
+    'error' => $lang->get('admin_activity_load_error'),
+    'failures' => $lang->get('admin_activity_failures_count'),
+    'newEvents' => $lang->get('admin_activity_new_events'),
+    'kb' => $lang->get('kb_logs'),
+    'items' => $lang->get('items'),
+    'authentication' => $lang->get('admin_activity_authentication'),
+], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>;
 
-            if (data.error === false && data.activities && data.activities.length > 0) {
-                let html = ''
-                
-                data.activities.forEach(activity => {
-                    const iconClass = getActivityIcon(activity.action, activity.source_type)
-                    const sourceHint = getActivitySourceHint(activity.source_type)
-                    const timeAgo = formatTimeAgo(activity.timestamp)
-                    
-                    html += `
-                        <li class="list-group-item">
-                            <div class="d-flex w-100 justify-content-between">
-                                <small class="text-muted">
-                                    <i class="far fa-clock"></i> ${timeAgo}
-                                </small>
-                            </div>
-                            <p class="mb-1">
-                                <i class="${iconClass}"></i> 
-                                <strong>${escapeHtml(activity.user_login)}</strong> 
-                                ${escapeHtml(activity.action_text)}
-                                ${activity.item_label ? `"<em>${escapeHtml(activity.item_label)}</em>"` : ''}
-                                ${sourceHint ? `<small class="text-muted ml-1">${escapeHtml(sourceHint)}</small>` : ''}
-                            </p>
-                        </li>
-                    `
-                })
-                
-                $('#live-activity-list').html(html)
-            } else if (data.activities && data.activities.length === 0) {
-                $('#live-activity-list').html(`
-                    <li class="list-group-item text-center text-muted">
-                        <i class="fas fa-info-circle"></i> <?php echo $lang->get('no_recent_activity'); ?>
-                    </li>
-                `)
-            } else {
-                showErrorToast(data.message || '<?php echo $lang->get('error_occurred'); ?>')
-            }
-            $('#loading-activity').hide();
-        }
-    );
+// ADMIN ACTIVITY CONTROLLER
+const adminActivityState = {
+    initialized: false, categories: [], widgetRequest: null, widgetGeneration: 0,
+    open: false, generation: 0, busy: false, rows: [], since: null, until: null,
+    cursor: null, hasMore: false, minutes: 5, pending: 0, modalCategories: null
 }
+
+/** Read only category identifiers from storage; never persist activity data. */
+function initActivityPreferences() {
+    if (adminActivityState.initialized) return
+    const defaults = ['changes', 'accesses']
+    const allowed = defaults.concat(['failed', 'connections'])
+    if (adminActivityMessages.kbEnabled) {
+        defaults.push('kb')
+        allowed.push('kb')
+    }
+    let categories = defaults
+    try {
+        const stored = JSON.parse(localStorage.getItem(adminActivityMessages.storageKey))
+        if (Array.isArray(stored)) categories = allowed.filter(category => stored.includes(category))
+    } catch (error) { /* Storage may be unavailable; the defaults remain usable. */ }
+    adminActivityState.categories = categories
+    adminActivityState.initialized = true
+    syncActivityControls()
+}
+
+/** Apply the temporary shortcut only to the expanded view. */
+function activityCategories(expanded = false) {
+    return expanded && adminActivityState.modalCategories !== null
+        ? adminActivityState.modalCategories : adminActivityState.categories
+}
+
+/** Reflect saved categories in the tile and any temporary override in the modal. */
+function syncActivityControls() {
+    $('.activity-category').each(function() {
+        $(this).prop('checked', activityCategories(this.id.startsWith('activity-expanded-')).includes($(this).val()))
+    })
+    $('#activity-failed-count').toggle(activityCategories().includes('failed'))
+    $('#activity-modal-failed-count').toggle(activityCategories(true).includes('failed'))
+}
+
+/** Send a feed request, decoding errors without disturbing the currently displayed rows. */
+function requestActivity(options, success, complete, expanded, isCurrent = () => true) {
+    const errorSelector = expanded ? '#activity-modal-error' : '#activity-error'
+    $(errorSelector).hide()
+    return $.post('sources/admin.queries.php', {
+        type: 'get_live_activity', key: adminActivityMessages.key,
+        data: prepareExchangedData(JSON.stringify(options), 'encode', adminActivityMessages.key)
+    }).done(function(raw) {
+        if (!isCurrent()) return
+        try {
+            const data = prepareExchangedData(raw, 'decode', adminActivityMessages.key)
+            if (data.error !== false) throw new Error('Activity request failed')
+            success(data)
+        } catch (error) {
+            $(errorSelector).text(adminActivityMessages.error).show()
+        }
+    }).fail(function(xhr, status) {
+        if (isCurrent() && status !== 'abort') $(errorSelector).text(adminActivityMessages.error).show()
+    }).always(complete)
+}
+
+/** Render escaped text only; submitted logins may contain arbitrary markup. */
+function renderActivityRows(rows, expanded = false) {
+    if (rows.length === 0) {
+        const message = activityCategories(expanded).length ? adminActivityMessages.empty : adminActivityMessages.noCategories
+        return '<li class="list-group-item text-center text-muted">' + escapeHtml(message) + '</li>'
+    }
+    return rows.map(activity => {
+        const failed = activity.source_type === 'failed_auth'
+        const connected = activity.source_type === 'user_connection'
+        const icon = failed ? 'fas fa-sign-in-alt text-danger'
+            : (connected ? 'fas fa-sign-in-alt text-success' : getActivityIcon(activity.action, activity.source_type))
+        const source = activity.source_type === 'kb' ? adminActivityMessages.kb :
+            (failed || connected ? adminActivityMessages.authentication : adminActivityMessages.items)
+        const channel = activity.channel === 'api' ? 'API' : 'Web'
+        const sourceHint = [getActivitySourceHint(activity.source_type), activity.channel === 'api' ? '(API)' : '']
+            .filter(Boolean).join(' ')
+        return '<li class="list-group-item">' +
+            '<div class="d-flex w-100 justify-content-between">' +
+            '<small class="text-muted"><i class="far fa-clock"></i> ' + escapeHtml(formatTimeAgo(activity.timestamp)) + '</small>' +
+            (expanded ? '<small class="text-muted">' + escapeHtml(source) + ' · ' + channel + '</small>' : '') + '</div>' +
+            '<p class="mb-1" style="overflow-wrap:anywhere;"><i class="' + icon + '"></i> <strong>' +
+            escapeHtml(activity.user_login) + '</strong> ' + escapeHtml(activity.action_text) +
+            (activity.item_label ? ' "<em>' + escapeHtml(activity.item_label) + '</em>"' : '') +
+            (!expanded && sourceHint ? '<small class="text-muted ml-1">' + escapeHtml(sourceHint) + '</small>' : '') + '</p>' +
+            (failed ? '<small class="text-danger d-block" style="overflow-wrap:anywhere;">' + escapeHtml(activity.reason) + '</small>' : '') + '</li>'
+    }).join('')
+}
+
+/** Show a count independent of the number of returned rows. */
+function activityCount(selector, count, minutes) {
+    $(selector).text(adminActivityMessages.failures.replace('#count#', count).replace('#minutes#', minutes))
+}
+
+/** Refresh the compact rolling five-minute feed and probe the open modal. */
+function loadLiveActivity() {
+    initActivityPreferences()
+    if (!adminActivityState.widgetRequest) {
+        const generation = ++adminActivityState.widgetGeneration
+        $('#loading-activity').show()
+        adminActivityState.widgetRequest = requestActivity({categories: adminActivityState.categories, minutes: 5}, function(data) {
+            if (generation !== adminActivityState.widgetGeneration) return
+            $('#live-activity-list').html(renderActivityRows(data.activities))
+            activityCount('#activity-failed-count', data.failed_count, 5)
+        }, function() {
+            if (generation !== adminActivityState.widgetGeneration) return
+            adminActivityState.widgetRequest = null
+            $('#loading-activity').hide()
+        }, false, () => generation === adminActivityState.widgetGeneration)
+    }
+    if (adminActivityState.open) loadExpandedActivity('refresh')
+}
+
+/** Reset the expanded snapshot when its filters or time window change. */
+function resetExpandedActivity() {
+    adminActivityState.generation++
+    adminActivityState.busy = false
+    adminActivityState.rows = []
+    adminActivityState.since = null
+    adminActivityState.until = null
+    adminActivityState.cursor = null
+    adminActivityState.hasMore = false
+    $('#activity-load-older').hide()
+    adminActivityState.pending = 0
+    $('#activity-new-events').hide()
+    $('#activity-modal-list').empty()
+    $('#activity-modal-scroll').scrollTop(0)
+    loadExpandedActivity('initial')
+}
+
+/** Page a fixed snapshot; announce new events while the administrator reads older rows. */
+function loadExpandedActivity(mode) {
+    const state = adminActivityState
+    if (!state.open || state.busy || (mode === 'older' && !state.hasMore)) return
+    state.busy = true
+    const generation = state.generation
+    const readingHistory = $('#activity-modal-scroll').scrollTop() > 8 || state.rows.length > 50
+    const options = {categories: activityCategories(true), minutes: state.minutes, expanded: true}
+    if (mode === 'older') {
+        options.since = state.since
+        options.until = state.until
+        options.before = state.cursor
+    } else if (mode === 'refresh' && state.rows.length && readingHistory) {
+        options.after = state.rows[0].cursor
+    }
+    $('#activity-modal-loading').show()
+    $('#activity-load-older').prop('disabled', true)
+    requestActivity(options, function(data) {
+        if (!state.open || generation !== state.generation) return
+        if (mode !== 'older') activityCount('#activity-modal-failed-count', data.failed_count, state.minutes)
+        if (mode === 'refresh' && state.rows.length && (readingHistory || $('#activity-modal-scroll').scrollTop() > 8)) {
+            if (options.after) state.pending = data.new_count
+            $('#activity-new-events').text(adminActivityMessages.newEvents.replace('#count#', state.pending)).toggle(state.pending > 0)
+            return
+        }
+        if (mode === 'older') {
+            const known = new Set(state.rows.map(row => row.id))
+            const additional = data.activities.filter(row => !known.has(row.id))
+            if (additional.length) $('#activity-modal-list').append(renderActivityRows(additional, true))
+            state.rows = state.rows.concat(additional)
+        } else {
+            state.rows = data.activities
+            state.since = data.since
+            state.until = data.until
+            state.pending = 0
+            $('#activity-new-events').hide()
+            $('#activity-modal-list').html(renderActivityRows(state.rows, true))
+        }
+        state.cursor = data.next_cursor
+        state.hasMore = data.has_more
+        $('#activity-load-older').toggle(state.hasMore)
+    }, function() {
+        if (!state.open || generation !== state.generation) return
+        state.busy = false
+        $('#activity-modal-loading').hide()
+        $('#activity-load-older').prop('disabled', false)
+    }, true, () => state.open && generation === state.generation)
+}
+
+$(document).on('click', '.activity-settings', function(event) { event.stopPropagation() })
+$(document).on('change', '.activity-category', function() {
+    const category = $(this).val()
+    const selected = new Set(adminActivityState.categories)
+    if ($(this).prop('checked')) selected.add(category)
+    else selected.delete(category)
+    adminActivityState.modalCategories = null
+    adminActivityState.categories = Array.from(selected)
+    try { localStorage.setItem(adminActivityMessages.storageKey, JSON.stringify(adminActivityState.categories)) } catch (error) { /* Optional storage. */ }
+    syncActivityControls()
+    adminActivityState.widgetGeneration++
+    if (adminActivityState.widgetRequest) adminActivityState.widgetRequest.abort()
+    adminActivityState.widgetRequest = null
+    if (adminActivityState.open) resetExpandedActivity()
+    loadLiveActivity()
+})
+$(document).on('click', '#activity-modal-failed-count', function() {
+    if (!adminActivityState.open) return
+    adminActivityState.modalCategories = ['failed']
+    syncActivityControls()
+    resetExpandedActivity()
+})
+$(document).on('shown.bs.modal', '#activity-modal', function() {
+    initActivityPreferences()
+    adminActivityState.open = true
+    resetExpandedActivity()
+})
+$(document).on('hidden.bs.modal', '#activity-modal', function() {
+    adminActivityState.open = false
+    adminActivityState.modalCategories = null
+    adminActivityState.generation++
+    adminActivityState.busy = false
+    $('#activity-modal-loading').hide()
+    syncActivityControls()
+})
+$(document).on('change', '#activity-minutes', function() {
+    adminActivityState.minutes = Number($(this).val())
+    resetExpandedActivity()
+})
+$(document).on('click', '#activity-load-older', function() { loadExpandedActivity('older') })
+$(document).on('click', '#activity-new-events, #activity-modal-refresh', resetExpandedActivity)
+// END ADMIN ACTIVITY CONTROLLER
+
 
 /**
  * Load system status (CPU, RAM, disk, tasks)
