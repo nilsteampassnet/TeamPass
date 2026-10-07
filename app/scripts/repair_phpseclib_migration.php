@@ -130,7 +130,8 @@ if (isset($options['diagnose']) || isset($options['repair'])) {
     $sharekeysV1UnionParts = [];
     foreach ($sharekeysTablesList as $table) {
         // Table names come from the fixed $sharekeysTablesList + prefixTable (safe)
-        $sharekeysV1UnionParts[] = "SELECT user_id FROM " . prefixTable($table) . " WHERE encryption_version = 1";
+        // Empty rows hold no key: the migration ignores them, so must this check (and the reset below)
+        $sharekeysV1UnionParts[] = "SELECT user_id FROM " . prefixTable($table) . " WHERE encryption_version = 1 AND share_key != ''";
     }
     $sharekeysV1Union = implode("\nUNION\n", $sharekeysV1UnionParts);
     $inconsistentUsers = DB::query(
@@ -159,7 +160,7 @@ if (isset($options['diagnose']) || isset($options['repair'])) {
             foreach ($sharekeysTablesList as $table) {
                 $v1Count += intval(DB::queryFirstField(
                     "SELECT COUNT(*) FROM " . prefixTable($table) . "
-                    WHERE user_id = %i AND encryption_version = 1",
+                    WHERE user_id = %i AND encryption_version = 1 AND share_key != ''",
                     $incUserId
                 ));
             }

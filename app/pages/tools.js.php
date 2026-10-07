@@ -221,245 +221,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // ---
         }
 
-        else if ($(this).data('action') === 'fix_items_master_keys_but') {
-            // check if possible
-            if ($('#fix_items_master_keys_user_id').val() === 0) {
-                toastr.remove();
-                toastr.error(
-                    '<?php echo $lang->get('user_config_not_compliant'); ?>1',
-                    '<?php echo $lang->get('caution'); ?>', {
-                        timeOut: 5000,
-                        progressBar: true
-                    }
-                );
-                return false;
-            } else if ($('#fix_items_master_keys_pwd').val() === '') {
-                toastr.remove();
-                toastr.error(
-                    '<?php echo $lang->get('user_config_not_compliant'); ?>1',
-                    '<?php echo $lang->get('caution'); ?>', {
-                        timeOut: 5000,
-                        progressBar: true
-                    }
-                );
-                return false;
-            }
-
-            // continue
-            $(this).prop('disabled', true);            
-            
-            // Ask confirmation to the user through a checkbox and button
-            $('#fix_items_master_keys_results').html(
-                '<div class="alert alert-warning" role="alert">'+
-                    '<i class="fas fa-exclamation-triangle"></i> '+
-                    'This operation will encrypt all items master keys using the ones from the selected user. '+
-                    'This operation is irreversible. '+
-                    '<br>Please confirm by checking the box below and clicking on the button.'+
-                    '<div class="form-check mt-2">'+
-                        '<input class="form-check-input" type="checkbox" value="" id="restore_items_master_keys_confirm">'+
-                        '<label class="form-check-label" for="restore_items_master_keys_confirm">'+
-                            'I confirm the operation and I have a backup of table <code><?php echo htmlspecialchars(DB_PREFIX, ENT_QUOTES, "UTF-8"); ?>sharekeys_items</code>.'+
-                        '</label>'+
-                    '</div>'+
-                    '<button type="button" class="btn btn-danger mt-2 btn-sm tp-action" id="fix_items_master_keys_confirm_but" data-action="fix_items_master_keys_confirm_but">'+
-                        'Confirm'+
-                    '</button>'+
-                    '<button type="button" class="btn btn-secundary mt-2 ml-2 btn-sm tp-action" id="fix_items_master_keys_cancel_but" data-action="fix_items_master_keys_cancel_but">'+
-                        'Cancel'+
-                    '</button>'+
-                '</div>'
-            );
-        }
-
-        // Fix items shared keys -> CANCEL
-        else if ($(this).data('action') === 'fix_items_master_keys_cancel_but') {
-            //
-            $('#fix_items_master_keys_results').html("");
-            $('#fix_items_master_keys_but').prop('disabled', false);
-        }
-
-        // Fix items shared keys -> GO
-        else if ($(this).data('action') === 'fix_items_master_keys_confirm_but') {
-            // check if possible
-            if ($('#fix_items_master_keys_user_id').val() === 0) {
-                toastr.remove();
-                toastr.error(
-                    '<?php echo $lang->get('user_config_not_compliant'); ?>1',
-                    '<?php echo $lang->get('caution'); ?>', {
-                        timeOut: 5000,
-                        progressBar: true
-                    }
-                );
-                return false;
-            } else if ($('#fix_items_master_keys_pwd').val() === '') {
-                toastr.remove();
-                toastr.error(
-                    '<?php echo $lang->get('user_config_not_compliant'); ?>1',
-                    '<?php echo $lang->get('caution'); ?>', {
-                        timeOut: 5000,
-                        progressBar: true
-                    }
-                );
-                return false;
-            }
-
-            $('#fix_items_master_keys_results').html("");
-            toastr.remove();
-            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
-
-            var data = {}
-
-            $.post(
-                "sources/tools.queries.php", {
-                    type: "perform_fix_items_master_keys-step1",
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
-                    key: "<?php echo $session->get('key'); ?>"
-                },
-                function(dataStep1) {
-                    dataStep1 = prepareExchangedData(dataStep1, 'decode', '<?php echo $session->get('key'); ?>');
-                    console.log(dataStep1);
-
-                    $('#fix_items_master_keys_results').html(dataStep1.message);
-
-                    if (dataStep1.error === true) {
-                        // Show error
-                        toastr.remove();
-                        toastr.error(
-                            dataStep1.message,
-                            '<?php echo $lang->get('caution'); ?>', {
-                                timeOut: 5000,
-                                progressBar: true
-                            }
-                        );
-                        $('#fix_items_master_keys_but').prop('disabled', false);
-                    } else {
-                        $('#fix_items_master_keys_results').html('Step 1:<br>'+htmlEncode(dataStep1.message)+'<br>Public key is available');
-
-                        // Launch step 2
-                        // CHecking                        
-                        var data = {
-                            'userId': $('#fix_items_master_keys_user_id').val(),
-                            'userPassword': $('#fix_items_master_keys_pwd').val(),
-                        }
-                        console.log(data);
-                        $.post(
-                            "sources/tools.queries.php", {
-                                type: "perform_fix_items_master_keys-step2",
-                                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
-                                key: "<?php echo $session->get('key'); ?>"
-                            },
-                            function(dataStep2) {
-                                dataStep2 = prepareExchangedData(dataStep2, 'decode', '<?php echo $session->get('key'); ?>');
-                                console.log('-- STEP2 RESULTS --');
-                                console.log(dataStep2);
-
-                                $('#fix_items_master_keys_results').append('<br><br>Step 2:<br>'+htmlEncode(dataStep2.message));
-
-                                if (dataStep2.error === true) {
-                                    // Show error
-                                    toastr.remove();
-                                    toastr.error(
-                                        dataStep2.message,
-                                        '<?php echo $lang->get('caution'); ?>', {
-                                            progressBar: true
-                                        }
-                                    );
-                                    $('#fix_items_master_keys_but').prop('disabled', false);
-                                } else {
-                                    //$('#fix_items_master_keys_results').append(dataStep2.message);
-                                    // Recursievely decrypt all items
-                                    function fetchData(startIndex, limit, operationCode, dataStep1, dataStep2) {
-                                        var data = {
-                                            'userId': $('#fix_items_master_keys_user_id').val(),
-                                            'tp_user_publicKey': dataStep1.tp_user_publicKey,
-                                            'selected_user_privateKey': dataStep2.selected_user_privateKey,
-                                            'nbItems': dataStep2.nb_items_to_proceed,
-                                            'startIndex': startIndex,
-                                            'limit': limit,
-                                            'operationCode': operationCode,
-                                        }
-                                        console.log(data);
-                                        $.post(
-                                            "sources/tools.queries.php", {
-                                                type: "perform_fix_items_master_keys-step3",
-                                                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
-                                                key: "<?php echo $session->get('key'); ?>"
-                                            },
-                                            function(dataStep3) {
-                                                dataStep3 = prepareExchangedData(dataStep3, 'decode', '<?php echo $session->get('key'); ?>');
-                                                console.log(dataStep3);
-
-                                                if (dataStep2.error === true) {
-                                                    $('#fix_items_master_keys_results').append(dataStep3.message);
-                                                    // Show error
-                                                    toastr.remove();
-                                                    toastr.error(
-                                                        dataStep3.message,
-                                                        '<?php echo $lang->get('caution'); ?>', {
-                                                            //timeOut: 5000,
-                                                            progressBar: true
-                                                        }
-                                                    );
-                                                    $('#fix_items_master_keys_but').prop('disabled', false);
-                                                } else { 
-                                                    updateProgressBar(dataStep3.nextIndex, dataStep2.nb_items_to_proceed); // Update progress bar
-                                                    if (dataStep3.status === 'continue') {
-                                                        fetchData(
-                                                            dataStep3.nextIndex,
-                                                            limit,
-                                                            dataStep3.operationCode,
-                                                            dataStep1,
-                                                            dataStep2
-                                                        );  // Rappelle la fonction avec le nouvel index
-                                                    } else {
-                                                        $('#fix_items_master_keys-progress').remove();
-                                                        //$('#fix_items_master_keys-progressbar').remove();
-                                                        $('#fix_items_master_keys_results').append('Items master key have been encrypted.');
-                                                        $('#fix_items_master_keys_but').prop('disabled', false);
-
-                                                        toastr.remove();
-                                                        toastr.success(
-                                                            '',
-                                                            'Done', {
-                                                                timeOut: 5000,
-                                                                progressBar: true
-                                                            }
-                                                        );
-                                                    }
-                                                }
-                                            }
-                                        );
-                                    }
-
-                                    function updateProgressBar(offset, totalSize) {
-                                        // Show progress to user
-                                        var percentage = Math.round((offset / totalSize) * 100);
-                                        //$('#fix_items_master_keys-progress-text').text(percentage);
-                                        //$('#fix_items_master_keys-progress-text2').text('('+offset+' / '+totalSize+')');
-                                        $('#fix_items_master_keys-progressbar-value').css('width', percentage+'%').text(percentage+'%');
-                                    }
-
-                                    $('#fix_items_master_keys_results').append(                                        
-                                        '<br><br>Step 3:<br>'+
-                                        '<div class="alert alert-info ml-2 mt-1 mr-2" id="fix_items_master_keys-progress">'+
-                                            '<i class="mr-2 fa-solid fa-rocket fa-beat"></i>Encryption process performed at'+ // <b><span id="fix_items_master_keys-progress-text">0</span>%</b>'+
-                                            //'<span class="ml-3" id="fix_items_master_keys-progress-text2">(0 / '+dataStep2.nb_items_to_proceed+')</span>'+
-                                            '<div class="progress mt-3" id="fix_items_master_keys-progressbar">'+
-                                                '<div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"  style="width: 0%" id="fix_items_master_keys-progressbar-value">0%</div>'+                                            
-                                            '</div>'+
-                                        '</div>'
-                                    );
-                                    // Exemple d'appel initial
-                                    fetchData(0, 50, '', dataStep1, dataStep2);
-                                }
-                            }
-                        );
-                    }
-                }
-            );
-        } 
-
-        
         /**
          * Restore backup
          */
@@ -674,6 +435,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $.post(
                 'sources/tools.queries.php', {
                     type: 'restore_missing_sharekeys-analyze',
+                    data: prepareExchangedData(
+                        JSON.stringify({
+                            'sourceUserId': parseInt($('#restore_missing_sharekeys_source_user').val(), 10) || 0
+                        }),
+                        'encode',
+                        '<?php echo $session->get('key'); ?>'
+                    ),
                     key: '<?php echo $session->get('key'); ?>'
                 },
                 function(data) {
@@ -874,14 +642,81 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
          * 2) launch the background task distributing keys to all users
          */
         else if ($(this).data('action') === 'restore_missing_sharekeys_repair_but') {
+            var sourceUserId = parseInt($('#restore_missing_sharekeys_source_user').val(), 10) || 0;
+            if (sourceUserId > 0 && $('#restore_missing_sharekeys_source_pwd').val() === '') {
+                toastr.remove();
+                toastr.error(
+                    <?php echo json_encode($lang->get('restore_missing_sharekeys_source_pwd_required'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+                    '<?php echo $lang->get('caution'); ?>', {
+                        timeOut: 5000,
+                        progressBar: true
+                    }
+                );
+                return false;
+            }
+
             $(this).prop('disabled', true);
-            $('#restore_missing_sharekeys_analyze_but').prop('disabled', true);
+            $('#restore_missing_sharekeys_analyze_but, #restore_missing_sharekeys_source_user').prop('disabled', true);
             toastr.remove();
             toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
-            restoreSharekeysSeedScope(['items', 'fields', 'files', 'webauthn'], 0, {seeded: 0, failed: 0});
+            // The password only travels to the server, which opens the reference user's key there
+            // and keeps it for the duration of the repair: nothing comes back to the page.
+            var prepareData = {
+                'sourceUserId': sourceUserId,
+                'sourcePassword': $('#restore_missing_sharekeys_source_pwd').val()
+            };
+            $('#restore_missing_sharekeys_source_pwd').val('');
+
+            $.post(
+                'sources/tools.queries.php', {
+                    type: 'restore_missing_sharekeys-prepare',
+                    data: prepareExchangedData(JSON.stringify(prepareData), 'encode', '<?php echo $session->get('key'); ?>'),
+                    key: '<?php echo $session->get('key'); ?>'
+                },
+                function(ret) {
+                    ret = prepareExchangedData(ret, 'decode', '<?php echo $session->get('key'); ?>');
+                    if (ret.error === true) {
+                        toastr.remove();
+                        toastr.error(
+                            ret.message,
+                            '<?php echo $lang->get('caution'); ?>', {
+                                progressBar: true
+                            }
+                        );
+                        restoreSharekeysUnlock();
+                        $('#restore_missing_sharekeys_repair_but').prop('disabled', false);
+                        return;
+                    }
+
+                    $('#restore_missing_sharekeys_results').append('<div class="alert alert-info" id="restore_missing_sharekeys_progress"></div>');
+                    restoreSharekeysSeedScope(['items', 'fields', 'files', 'webauthn'], 0, {checked: 0, seeded: 0, replaced: 0, failed: 0});
+                }
+            );
         }
     });
+
+    /**
+     * Show the password field only when another user's keys are chosen.
+     */
+    $(document).on('change', '#restore_missing_sharekeys_source_user', function() {
+        $('#restore_missing_sharekeys_source_pwd').val('');
+        if ((parseInt($(this).val(), 10) || 0) > 0) {
+            $('#restore_missing_sharekeys_source_pwd_row').removeClass('hidden');
+        } else {
+            $('#restore_missing_sharekeys_source_pwd_row').addClass('hidden');
+        }
+        // The analysis counted what the previous choice could open
+        $('#restore_missing_sharekeys_repair_but').prop('disabled', true);
+        $('#restore_missing_sharekeys_results').html('');
+    });
+
+    /**
+     * Give the controls back once the repair stops.
+     */
+    function restoreSharekeysUnlock() {
+        $('#restore_missing_sharekeys_analyze_but, #restore_missing_sharekeys_source_user').prop('disabled', false);
+    }
 
     /**
      * Escape a value for safe insertion in HTML.
@@ -891,7 +726,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     }
 
     /**
-     * Seed the missing TP_USER reference keys, one scope at a time, then
+     * Check and rebuild the TP_USER reference keys, one scope at a time, then
      * launch the background repair task. The running totals are carried along
      * so the operator is told how many objects the repair could actually open:
      * a silent "Done" on a batch where every seed failed reads as a success.
@@ -924,12 +759,22 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             progressBar: true
                         }
                     );
-                    $('#restore_missing_sharekeys_analyze_but').prop('disabled', false);
+                    restoreSharekeysUnlock();
                     return;
                 }
 
+                totals.checked += parseInt(ret.checked, 10) || 0;
                 totals.seeded += parseInt(ret.seeded, 10) || 0;
+                totals.replaced += parseInt(ret.replaced, 10) || 0;
                 totals.failed += parseInt(ret.failed, 10) || 0;
+                $('#restore_missing_sharekeys_progress').html(
+                    '<i class="fas fa-circle-notch fa-spin mr-2"></i>' +
+                    htmlEncode(
+                        <?php echo json_encode($lang->get('restore_missing_sharekeys_seed_progress'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>
+                            .replace('#scope#', String(scopes[0]))
+                            .replace('#checked#', String(totals.checked))
+                    )
+                );
 
                 if (ret.finished === true) {
                     restoreSharekeysSeedScope(scopes.slice(1), 0, totals);
@@ -952,7 +797,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             function(ret) {
                 ret = prepareExchangedData(ret, 'decode', '<?php echo $session->get('key'); ?>');
                 toastr.remove();
-                $('#restore_missing_sharekeys_analyze_but').prop('disabled', false);
+                restoreSharekeysUnlock();
+                $('#restore_missing_sharekeys_progress').remove();
 
                 if (ret.error === true) {
                     toastr.error(
@@ -971,12 +817,22 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 // json_encode, not a quoted echo: a translation carrying an apostrophe
                 // would otherwise break out of the JS string literal.
                 var seedReport = <?php echo json_encode($lang->get('restore_missing_sharekeys_seed_report'), JSON_UNESCAPED_UNICODE); ?>
+                    .replace('#checked#', String(totals.checked))
                     .replace('#seeded#', String(totals.seeded))
                     .replace('#failed#', String(totals.failed));
                 $('#restore_missing_sharekeys_results').append(
                     '<div class="alert alert-' + (totals.failed > 0 ? 'warning' : 'info') + '">' +
                     '<i class="fas fa-key mr-2"></i>' + htmlEncode(seedReport) + '</div>'
                 );
+                if (totals.replaced > 0) {
+                    $('#restore_missing_sharekeys_results').append(
+                        '<div class="alert alert-warning"><i class="fas fa-rotate mr-2"></i>' +
+                        htmlEncode(
+                            <?php echo json_encode($lang->get('restore_missing_sharekeys_seed_replaced'), JSON_UNESCAPED_UNICODE); ?>
+                                .replace('#replaced#', String(totals.replaced))
+                        ) + '</div>'
+                    );
+                }
                 toastr.success(
                     '<?php echo $lang->get('done'); ?>',
                     '', {

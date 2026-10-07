@@ -64,6 +64,7 @@ require_once __DIR__ . '/ldap_config_logic.php';
 require_once __DIR__ . '/branding_logic.php';
 require_once __DIR__ . '/user_keys_task_logic.php';
 require_once __DIR__ . '/secret_settings_logic.php';
+require_once __DIR__ . '/sharekeys_repair_logic.php';
 // Directory access shared by the login and by the LDAP settings page test.
 require_once __DIR__ . '/ldap.functions.php';
 require_once __DIR__ . '/password_strength.functions.php';
@@ -1057,7 +1058,10 @@ function getPersonalFolderIdsWithDescendants(): array
  * 'objectWhere' is the object-type condition alone, without the scope test - what a caller needs
  * when it scopes the objects itself, as the personal self-repair does on one user's own tree.
  *
- * @return array<string, array{table: string, from: string, where: string, itemAlias: string, objectWhere: string}>
+ * 'ciphertext' and 'meta' name the encrypted value and its AES v2 metadata, so an object key can be
+ * checked against what it must open. They are empty for files, whose content lives on disk.
+ *
+ * @return array<string, array{table: string, from: string, where: string, itemAlias: string, objectWhere: string, ciphertext: string, meta: string}>
  */
 function restoreSharekeysScopeDefs(bool $personal = false): array
 {
@@ -1094,6 +1098,8 @@ function restoreSharekeysScopeDefs(bool $personal = false): array
             'itemAlias' => 'o',
             'objectWhere' => $objectWhere['items'],
             'where' => $where('items', 'o'),
+            'ciphertext' => 'o.pw',
+            'meta' => 'o.pw_iv',
         ],
         'fields' => [
             'table' => 'sharekeys_fields',
@@ -1101,6 +1107,8 @@ function restoreSharekeysScopeDefs(bool $personal = false): array
             'itemAlias' => 'i',
             'objectWhere' => $objectWhere['fields'],
             'where' => $where('fields', 'i'),
+            'ciphertext' => 'o.data',
+            'meta' => 'o.data_iv',
         ],
         'files' => [
             'table' => 'sharekeys_files',
@@ -1108,6 +1116,8 @@ function restoreSharekeysScopeDefs(bool $personal = false): array
             'itemAlias' => 'i',
             'objectWhere' => $objectWhere['files'],
             'where' => $where('files', 'i'),
+            'ciphertext' => '',
+            'meta' => '',
         ],
         'webauthn' => [
             'table' => 'sharekeys_webauthn',
@@ -1115,7 +1125,128 @@ function restoreSharekeysScopeDefs(bool $personal = false): array
             'itemAlias' => 'i',
             'objectWhere' => $objectWhere['webauthn'],
             'where' => $where('webauthn', 'i'),
+            'ciphertext' => 'o.private_key',
+            'meta' => 'o.private_key_meta',
         ],
+    ];
+}
+
+/**
+ * SQL select fragment returning, for a "Restore missing sharekeys" scope, the object's ciphertext
+ * and AES v2 metadata aliased "ciphertext" and "meta" - two empty strings for a scope whose content
+ * cannot be checked (files).
+ *
+ * @param array{ciphertext: string, meta: string} $def Scope definition from restoreSharekeysScopeDefs()
+ *
+ * @return string Fragment starting with a comma, to append to a column list
+ */
+function restoreSharekeysCipherColumns(array $def): string
+{
+    if ($def['ciphertext'] === '') {
+        return ', "" AS ciphertext, "" AS meta';
+    }
+
+    return ', ' . $def['ciphertext'] . ' AS ciphertext, COALESCE(' . $def['meta'] . ', "") AS meta';
+}
+
+/**
+ * Check an object key against the object it is stored for. A sharekey only proves a key was
+ * encrypted for a user, not that the object is still encrypted with it.
+ *
+ * 'opens' is true when the ciphertext decrypts (valid padding, or authenticated AES v2), 'proves'
+ * when the plaintext is also plausible - see sharekeyRepairDecryptionProvesKey(). A scope without
+ * ciphertext (files) cannot be checked: any non-empty key is accepted there.
+ *
+ * @param string $objectKey  Object key decrypted from a sharekey (base64)
+ * @param string $ciphertext Stored ciphertext
+ * @param string $meta       Stored AES v2 metadata
+ * @param bool   $checkable  False for a scope without ciphertext
+ *
+ * @return array{opens: bool, proves: bool}
+ */
+function restoreSharekeysCheckObjectKey(string $objectKey, string $ciphertext, string $meta, bool $checkable): array
+{
+    if ($objectKey === '') {
+        return ['opens' => false, 'proves' => false];
+    }
+    if ($checkable === false || $ciphertext === '') {
+        return ['opens' => true, 'proves' => true];
+    }
+
+    $decryption = doDataDecryptionWithStatus($ciphertext, $objectKey, $meta);
+
+    return [
+        'opens' => (bool) $decryption['success'],
+        'proves' => sharekeyRepairDecryptionProvesKey(
+            (bool) $decryption['success'],
+            (string) $decryption['string'],
+            $ciphertext,
+            $meta
+        ),
+    ];
+}
+
+/**
+ * Open the key pair of the internal TP account, which needs no human password: its password is
+ * stored encrypted with the instance key.
+ *
+ * @param array $SETTINGS Teampass settings
+ *
+ * @return array{private_key: string, public_key: string} private_key is empty when it cannot be opened
+ */
+function getTpUserKeyPair(array $SETTINGS): array
+{
+    $userTpInfo = DB::queryFirstRow(
+        'SELECT u.pw, u.public_key, pk.private_key
+        FROM ' . prefixTable('users') . ' AS u
+        LEFT JOIN ' . prefixTable('user_private_keys') . ' AS pk ON (u.id = pk.user_id AND pk.is_current = 1)
+        WHERE u.id = %i',
+        TP_USER_ID
+    );
+    if ($userTpInfo === null) {
+        return ['private_key' => '', 'public_key' => ''];
+    }
+
+    $decryptedData = cryption((string) ($userTpInfo['pw'] ?? ''), '', 'decrypt', $SETTINGS);
+    $privateKey = decryptPrivateKey((string) ($decryptedData['string'] ?? ''), (string) ($userTpInfo['private_key'] ?? ''));
+
+    return [
+        'private_key' => $privateKey,
+        'public_key' => (string) ($userTpInfo['public_key'] ?? ''),
+    ];
+}
+
+/**
+ * Load a user whose keys the "Restore missing sharekeys" tool may open objects with: an existing,
+ * non-deleted account holding a key pair, never one of the internal system accounts.
+ *
+ * @param int $userId User id
+ *
+ * @return array{id: int, login: string, public_key: string, private_key: string}|null
+ */
+function restoreSharekeysSourceUser(int $userId): ?array
+{
+    $systemIds = array_map('intval', [TP_USER_ID, OTV_USER_ID, SSH_USER_ID, API_USER_ID]);
+    if ($userId <= 0 || in_array($userId, $systemIds, true) === true) {
+        return null;
+    }
+
+    $user = DB::queryFirstRow(
+        'SELECT u.id, u.login, u.public_key, pk.private_key
+        FROM ' . prefixTable('users') . ' AS u
+        LEFT JOIN ' . prefixTable('user_private_keys') . ' AS pk ON (u.id = pk.user_id AND pk.is_current = 1)
+        WHERE u.id = %i AND u.deleted_at IS NULL AND u.public_key != ""',
+        $userId
+    );
+    if ($user === null || empty($user['private_key']) === true) {
+        return null;
+    }
+
+    return [
+        'id' => (int) $user['id'],
+        'login' => (string) $user['login'],
+        'public_key' => (string) $user['public_key'],
+        'private_key' => (string) $user['private_key'],
     ];
 }
 
@@ -9638,7 +9769,7 @@ function createTaskForItem(
                         'task' => json_encode([
                             'step' => 'create_users_files_key',
                             'index' => 0,
-                            'fields_keys' => $files_keys,
+                            'files_keys' => $files_keys,
                         ]),
                     )
                 );

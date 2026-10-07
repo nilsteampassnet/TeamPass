@@ -133,8 +133,8 @@ Manual checks the gate does not cover — run them when the range touches the ma
   `403 Access Forbidden by CSRFProtector`).
 - **Idempotency of the upgrade script** if DDL was added (§4).
 - **Docker image freshness.** The image ships an OS, so it ages on its own even when no code
-  changed, and Trivy publishes the result as GitHub code-scanning alerts. Check both `FROM`
-  lines of `Dockerfile`:
+  changed, and Trivy publishes the result as GitHub code-scanning alerts. Check the `FROM`
+  line of `Dockerfile`:
 
   ```bash
   grep -n '^FROM' Dockerfile
@@ -154,10 +154,13 @@ Manual checks the gate does not cover — run them when the range touches the ma
   tar xzf /tmp/idx.tar.gz -O APKINDEX | grep -x 'P:<package>'
   ```
 
-  Keep the `composer:` builder tag on the **current Composer line** (2.10 as of 3.2.1.7). It
-  does *not* need to match the local `composer --version`: the installed versions come from
-  `composer.lock`, not from the binary that reads it. The builder is a discarded stage, so its
-  own CVEs never ship either — which is why "latest stable" is the right default here.
+  Since 3.2.2.8 the image has **no Composer stage**: it ships the committed `app/vendor/`, like
+  every other installation, and only removes untracked development packages with
+  `app/scripts/cleanup_dev_dependencies.php`. Never reintroduce a `composer install` in the
+  `Dockerfile` (nor in the installation docs): every Composer run rewrites
+  `app/vendor/composer/autoload_real.php` (random APCu prefix, `apcu-autoloader` is on),
+  `InstalledVersions.php` (copied from the Composer binary) and `installed.php`, and the file
+  integrity check of every container then reports them as critical modifications.
 
   > Docker is installed in the dev environment but WSL integration is off, so there is no
   > daemon and no local build. **This does not mean the `FROM` change goes unvalidated until
@@ -241,6 +244,32 @@ git commit -m "Bump version to <VERSION>"
 
 `composer.json` carries a `version` field that has not been maintained since 3.2.0. That one is
 genuinely not part of the procedure — leave it alone unless the user asks.
+
+### 5b. Patch release while `develop` already carries the next line (hotfix)
+
+When `develop` holds work meant for a later version (3.2.3.0 passkeys while 3.2.2.8 was cut),
+the patch is built from `master` instead — the procedure used for 3.2.2.8:
+
+1. Work in a **separate worktree**, so the main clone keeps `develop` and its untracked
+   development packages: `git worktree add ../TeamPass-hotfix -b hotfix/<VERSION> master`.
+   Fixes already on `develop` are brought with `git cherry-pick -x <sha>`.
+2. The worktree has no `app/config/settings.php`, `_tools/` nor development packages: link the
+   settings file and copy `_tools/phpunit.phar`, `app/vendor/phpstan` and `app/vendor/bin/phpstan`
+   (all gitignored) to run the gate. Copy, never symlink, the PHPStan package: through a symlink
+   it loads the main clone's autoloader and dies on a duplicate `ComposerAutoloaderInit` class.
+3. Gate (§3, base = previous tag), bump commit (§5) and checksums (§6) are committed **on the
+   hotfix branch**.
+4. In the worktree: `git checkout master`, `git merge --no-ff hotfix/<VERSION> -m "Merge branch
+   'hotfix/<VERSION>'"`, then the annotated tag. In the main clone (on `develop`):
+   `git merge --no-ff <VERSION> -m "Merge tag '<VERSION>' into develop"`; conflicts come from
+   code `develop` changed in the same places — resolve them for `develop`'s features, run
+   PHPUnit and PHPStan, then commit the merge. `develop` then reports the patch version until the
+   next line is bumped, and the next release's range starts at this tag.
+5. **POEditor has one project for both branches.** Sync the hotfix strings from the hotfix tree
+   with `sync --lang=french --no-delete` (its `english.php` lacks `develop`'s new keys), and sync
+   `develop`'s own new strings from `develop` **only after** the tag is merged — before that,
+   `sync` would delete the hotfix terms, and a `pull` would drop `develop`'s unsent keys.
+6. Remove the worktree and delete the hotfix branch once the tag is merged into both branches.
 
 ---
 
