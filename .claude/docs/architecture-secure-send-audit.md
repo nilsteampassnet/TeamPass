@@ -77,6 +77,12 @@ the existing item-deletion audit is retained; other links are invalidated when
 their lost access is subsequently observed. Invalidations are observations,
 not a proactive scan of every outstanding link after each permission change.
 
+Behaviour change: if the source item's automatic-deletion policy is already
+elapsed or exhausted before reveal, the link itself is now removed with an
+`invalidated` / `item_auto_deleted` event, in addition to deactivating the item.
+Previously that denied reveal retained the link. Successful final-view behaviour
+and the existing item-deletion audit remain unchanged.
+
 GET, missing/forged/replayed confirmations, unknown links, wrong hosts and already
 unavailable links do not create events. This avoids a public, unbounded audit
 amplification path. Missing required passphrases consume neither an attempt nor
@@ -115,6 +121,19 @@ retention policy; future purge tooling must be administrator-authorized and itse
 audited. Administrators with SQL access can alter this table: it is not a
 tamper-proof evidence store. Centralized syslog, protected archives and synchronized
 clocks are separate operational controls, not a claim of regulatory compliance.
+
+### Planned retention follow-up (after the three-PR series)
+
+Step 2 remains limited to aggregates and step 3 to presentation. A separate
+follow-up should integrate journal retention into the existing
+`app/scripts/task_maintenance_clean_orphan_objects.php`, not introduce another
+tool. It should add an administrator-controlled retention setting (keep all
+evidence by default), delete old events in bounded batches using `occurred_at`,
+and retain an audit summary of the maintenance action without link secrets.
+Installation/defaults, configuration-cache invalidation, replayable migration,
+cutoff/disabled-policy regression tests and documented DB/backup/collector
+retention implications belong to that follow-up. No retention setting or deletion
+of journal evidence is implemented by this series.
 
 ## Validation
 

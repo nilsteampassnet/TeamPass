@@ -220,6 +220,20 @@ bump** — re-encrypting does not change the plaintext a client caches. **Rule: 
 history** (that is `log_items`), and its setting `offline_sync_window_days` is a sync window, never
 a "retention": pruning it loses nothing, a client outside the window just does a full resync.
 
+## Secure Send audit
+
+> Full architecture details: @.claude/docs/architecture-secure-send-audit.md
+
+**Rule: every path that changes or deletes an `otv` row records its lifecycle event
+with `secureSendAudit()` in the same transaction.** Cleanup batches stay atomic;
+cleanup failures must not block unrelated creation/listing, and malformed historical
+rows are retained and excluded before the batch limit rather than deleted unaudited.
+**Rule: external forwarding (`secureSendEmitAudit()`, item syslog and WebSocket)
+happens only after commit.** **Rule: never copy a link row into the journal — use
+the `secureSendAuditRecord()` metadata allowlist; never log payloads or credentials.**
+The feature migration belongs to `public/install/upgrade_run_3.2.3.php`, not the
+maintained 3.2.2.x hotfix line.
+
 ## API
 
 > Full reference: @.claude/docs/api-reference.md
