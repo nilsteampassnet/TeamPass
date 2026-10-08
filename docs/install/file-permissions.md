@@ -246,6 +246,56 @@ sudo -u "$WEB_USER" php "$TEAMPASS/app/scripts/file_integrity.php" --permissions
 
 The generated plan uses the selected PHP user/group and proposes `httpd_sys_rw_content_t` for runtime paths, including WebSocket logs when present. It adds or updates the context rule when `semanage` is available, then runs `restorecon`. This does not install SELinux tools or configure the read-only contexts for code and secrets on a custom deployment path: those must already be correct. POSIX permissions alone cannot resolve a SELinux denial.
 
+### Other distributions
+
+On SUSE, Arch and other Linux distributions, the audit still works but does not guess a repair plan. For an **existing installed release**, the following manual example applies the hardened model using GNU `find` and coreutils. Replace all placeholders with the actual path, non-PHP code owner, PHP user and private PHP group. Stop application writes and review the commands first; do not run the installer again.
+
+```bash
+TEAMPASS=/absolute/path/to/teampass
+CODE_OWNER=your_deployment_user   # must NOT be the PHP account
+PHP_USER=your_php_user
+PHP_GROUP=your_private_php_group
+TEAMPASS=$(realpath -e -- "$TEAMPASS") || exit 1
+[ "$CODE_OWNER" != "$PHP_USER" ] || exit 1
+
+# Each supplied root is an explicit filesystem boundary. Links are re-owned,
+# never followed; chmod applies only to real directories and regular files.
+repair_tree() {
+    owner=$1; file_mode=$2; shift 2
+    sudo find -P "$@" -xdev \( -type d -o -type f -o -type l \) -exec chown -h -- "$owner" {} + &&
+    sudo find -P "$@" -xdev -type d -exec chmod 0750 {} + &&
+    sudo find -P "$@" -xdev -type f -exec chmod "$file_mode" {} +
+}
+
+# Protect the project root, its files, and the shipped code/configuration.
+# This manual code pass includes vendored metadata; use an installed release,
+# not a developer checkout. Add any other reviewed code roots explicitly.
+repair_tree "$CODE_OWNER:$PHP_GROUP" 'u=rwX,g=rX,o=' "$TEAMPASS" -maxdepth 1 || exit 1
+repair_tree "$CODE_OWNER:$PHP_GROUP" 'u=rwX,g=rX,o=' "$TEAMPASS/app" "$TEAMPASS/public" || exit 1
+
+for path in storage storage/files storage/logs storage/upload storage/backups \
+    app/includes/libraries/csrfp/log public/assets/avatars app/websocket/logs \
+    secrets files upload backups; do
+    # realpath -m detects symlink components even if the final path is missing.
+    if [ "$(realpath -m -- "$TEAMPASS/$path")" != "$TEAMPASS/$path" ]; then
+        printf '# Manual review: %s is reached through a symbolic link; repair its target manually.\n' "$path"
+        continue
+    fi
+    case "$path" in
+        storage|storage/files|storage/logs|app/includes/libraries/csrfp/log)
+            sudo install -d -o "$PHP_USER" -g "$PHP_GROUP" -m 0750 -- "$TEAMPASS/$path" || exit 1 ;;
+    esac
+    [ -d "$TEAMPASS/$path" ] || continue
+    case "$path" in
+        secrets|files|upload|backups) owner="root:$PHP_GROUP" ;;
+        *) owner="$PHP_USER:$PHP_GROUP" ;;
+    esac
+    repair_tree "$owner" 0640 "$TEAMPASS/$path" || exit 1
+done
+```
+
+Known runtime mounts remain explicit roots, so `-xdev` does not leave their contents unrepaired. Review any additional mounts or custom data/key locations separately. This is the normal-runtime model, not temporary wizard access or the Docker entrypoint policy; configure ACLs and SELinux/AppArmor policy separately as required by your distribution. Afterwards, rerun `--deep-permissions` as the PHP account and use the [verification checklist](#verification-checklist).
+
 ### Docker
 
 The official Docker entrypoint sets its own volume permissions at each start. Use the container's `nginx` account, never the Debian/Ubuntu host's `www-data`. The image uses the simple ownership model, not the split-owner hardened plan: code owned by `nginx` can legitimately trigger the audit's writable-code warnings. Alpine supports scanning but deliberately receives no generated Debian/RHEL repair commands. A custom non-root image or RWX volume can also impose ownership restrictions that the entrypoint cannot repair.
