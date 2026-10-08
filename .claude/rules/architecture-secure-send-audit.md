@@ -205,6 +205,11 @@ clocks are separate operational controls, not a claim of regulatory compliance.
 
 `secure_send_audit_retention_days` is an administrator setting: `0` (default)
 keeps all evidence; whole numbers from `1` to `36500` set the retention window.
+It appears in **Options / Collaboration / Secure sharing**, after the Secure Send
+view limit, with scheduling and irreversible-deletion warnings. It reuses the
+existing settings autosave JavaScript and Bootstrap responsive/dark-theme styles;
+only English/French catalogs are changed. The Users statistics card also warns
+that retention can make a selected period incomplete.
 The existing authenticated, administrator-only `save_option_change` handler
 validates the raw value before sanitization and invalidates ConfigManager's cache
 after persistence. Malformed values are rejected rather than rounded or clamped.
