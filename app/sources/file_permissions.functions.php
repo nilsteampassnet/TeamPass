@@ -681,6 +681,40 @@ function tpFilePermissionsReduceNestedPaths(array $paths): array
 }
 
 /**
+ * Avoid repeated traversal, retaining separate mounts and unknown devices.
+ * Compare the nearest explicit ancestor, including retained mount boundaries.
+ *
+ * @param array<int,string> $paths
+ *
+ * @return array<int,string>
+ */
+function tpFilePermissionsTraversalRoots(array $paths): array
+{
+    $paths = array_values(array_unique($paths));
+    usort($paths, static fn (string $left, string $right): int => strlen($left) <=> strlen($right));
+    $devices = [];
+    $roots = [];
+    foreach ($paths as $path) {
+        $normalized = rtrim(str_replace('\\', '/', $path), '/');
+        $stat = @stat($path);
+        $device = is_array($stat) ? ($stat['dev'] ?? null) : null;
+        $covered = false;
+        foreach (array_reverse($devices, true) as $parent => $parentDevice) {
+            if (str_starts_with($normalized, $parent . '/')) {
+                $covered = $device !== null && $parentDevice !== null && $device === $parentDevice;
+                break;
+            }
+        }
+        $devices[$normalized] = $device;
+        if ($covered === false) {
+            $roots[] = $path;
+        }
+    }
+
+    return $roots;
+}
+
+/**
  * Preserve an existing non-web deployment owner, otherwise fall back to root.
  */
 function tpFilePermissionsResolveCodeOwner(string $root, string $webUser): string
@@ -719,26 +753,28 @@ function tpFilePermissionsPathHasSymlink(string $root, string $relativePath): bo
 
 /**
  * Build ownership and mode repairs with the same bounded traversal policy.
- * Top-level repository artifacts have already been excluded by the caller;
- * prune the shared metadata names at every depth, without following symlinks.
+ * Prune vendored metadata only in the protected code pass. Runtime and secret
+ * trees contain application data, not repository artifacts.
  *
  * @param array<int,string> $paths Explicit starting points, including mount roots
  *
  * @return array<int,string>
  */
-function tpFilePermissionsTreeRemediationCommands(array $paths, string $owner, string $fileMode): array
+function tpFilePermissionsTreeRemediationCommands(array $paths, string $owner, string $fileMode, bool $pruneMetadata = false): array
 {
     if ($paths === []) {
         return [];
     }
-    $rules = tpFileScopeRepositoryArtifactRules();
-    $metadataNames = array_values(array_unique(array_merge($rules['segments'], $rules['basenames'])));
-    $pruneTests = array_map(static fn (string $name): string => '-name ' . escapeshellarg($name), $metadataNames);
-    $find = 'sudo find -P ' . implode(' ', array_map('escapeshellarg', $paths))
-        . ' -xdev \\( ' . implode(' -o ', $pruneTests) . ' \\) -prune -o ';
+    $find = 'sudo find -P ' . implode(' ', array_map('escapeshellarg', $paths)) . ' -xdev ';
+    if ($pruneMetadata) {
+        $rules = tpFileScopeRepositoryArtifactRules();
+        $metadataNames = array_values(array_unique(array_merge($rules['segments'], $rules['basenames'])));
+        $pruneTests = array_map(static fn (string $name): string => '-name ' . escapeshellarg($name), $metadataNames);
+        $find .= '\\( ' . implode(' -o ', $pruneTests) . ' \\) -prune -o ';
+    }
 
     return [
-        $find . '\\( -type d -o -type f \\) -exec chown -h -- ' . escapeshellarg($owner) . ' {} +',
+        $find . '\\( -type d -o -type f -o -type l \\) -exec chown -h -- ' . escapeshellarg($owner) . ' {} +',
         $find . '-type d -exec chmod 0750 {} +',
         $find . '-type f -exec chmod ' . $fileMode . ' {} +',
     ];
@@ -784,6 +820,8 @@ function tpFilePermissionsRemediationCommands(string $root, array $permissionRep
         // Do not create/chown directories through a symlinked runtime root.
         // Such custom layouts require an administrator to review the target.
         if (tpFilePermissionsPathHasSymlink($rootReal, $rule['path'])) {
+            $commands[] = '# Manual review: ' . $rule['path']
+                . ' is reached through a symbolic link; repair its target manually.';
             continue;
         }
         $absolute = $rootReal . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $rule['path']);
@@ -795,9 +833,7 @@ function tpFilePermissionsRemediationCommands(string $root, array $permissionRep
             $runtimePaths[] = $absolute;
         }
     }
-    // Keep child roots even when their parent is present: -xdev does not cross
-    // into their contents when they are mounted on another filesystem.
-    $runtimePaths = array_values(array_unique($runtimePaths));
+    $runtimePaths = tpFilePermissionsTraversalRoots($runtimePaths);
     $runtimeArguments = implode(' ', array_map('escapeshellarg', $runtimePaths));
 
     array_unshift(
@@ -807,19 +843,24 @@ function tpFilePermissionsRemediationCommands(string $root, array $permissionRep
     );
     $commands = array_merge(
         $commands,
-        tpFilePermissionsTreeRemediationCommands($protected, $codeOwner . ':' . $webGroup, 'u=rwX,g=rX,o='),
+        tpFilePermissionsTreeRemediationCommands($protected, $codeOwner . ':' . $webGroup, 'u=rwX,g=rX,o=', true),
         tpFilePermissionsTreeRemediationCommands($runtimePaths, $webUser . ':' . $webGroup, '0640')
     );
 
     $secretsPath = $rootReal . DIRECTORY_SEPARATOR . 'secrets';
-    if (is_dir($secretsPath) && is_link($secretsPath) === false) {
+    if (is_link($secretsPath)) {
+        $commands[] = '# Manual review: secrets is reached through a symbolic link; repair its target manually.';
+    } elseif (is_dir($secretsPath)) {
         $commands = array_merge($commands, tpFilePermissionsTreeRemediationCommands([$secretsPath], 'root:' . $webGroup, '0640'));
     }
 
     $legacyDataPaths = [];
     foreach (['files', 'upload', 'backups'] as $legacyRoot) {
         $legacyPath = $rootReal . DIRECTORY_SEPARATOR . $legacyRoot;
-        if (is_dir($legacyPath) && is_link($legacyPath) === false) {
+        if (is_link($legacyPath)) {
+            $commands[] = '# Manual review: ' . $legacyRoot
+                . ' is reached through a symbolic link; repair its target manually.';
+        } elseif (is_dir($legacyPath)) {
             $legacyDataPaths[] = $legacyPath;
         }
     }

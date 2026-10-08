@@ -423,14 +423,17 @@ Repeated permission findings are grouped by reason and protected scope in the de
 The web account is taken from the background process. If the CLI scan is run as root, the conventional account for the detected distribution is used instead, avoiding root-access false positives. The hardened repair plan preserves the current code owner when it is already different from the web account and otherwise falls back to `root`; runtime paths are returned to the detected web owner. Permission repair commands are generated only for Debian/Ubuntu and the common RHEL family (RHEL, Rocky Linux, AlmaLinux and CentOS). Other Linux distributions can be scanned, but deliberately receive no guessed remediation. RHEL-family guidance also restores SELinux `httpd_sys_rw_content_t` contexts on runtime paths when `semanage` is available.
 
 Ownership and mode repairs use the same `find -P -xdev` traversal: neither follows
-symbolic links or crosses into another filesystem below a starting point, and
-both prune the shared repository metadata names. Every known runtime directory
-remains an explicit starting point, including `storage/files/` and
-`storage/upload/`, so their contents can be repaired even on separate filesystems.
+symbolic links or crosses into another filesystem below a starting point.
+Ownership repair includes the links themselves with `chown -h`; mode repair
+touches only regular files and directories. Only the protected code pass prunes
+the shared repository metadata names. Nested runtime roots on the same device
+are covered by their parent; separate mounts and roots whose device cannot be
+identified remain explicit starting points, including `storage/files/` and
+`storage/upload/` when needed.
 Additional mount points are not recursively repaired; review them separately.
 Runtime paths with a symbolic-link component, and symlinked secrets or legacy
-data roots, are left for manual target review rather than creating or changing
-directories through the link. These commands are not atomic: stop application
+data roots, produce a `# Manual review:` comment for each skipped path rather
+than creating or changing directories through the link. These commands are not atomic: stop application
 writes during repair and do not allow untrusted users to replace the paths.
 
 The manifest is a **release artifact**. A checkout of the development branch can legitimately report files added or changed since the latest published manifest; production releases should ship with an updated manifest.
