@@ -1937,6 +1937,23 @@ if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_descr
                             </div>
                         </div>
 
+                        <!-- Secure Send audit retention -->
+                        <div class='row mb-2 option' data-keywords="secure send audit retention logs purge">
+                            <div class='col-12 col-sm-9 col-lg-10'>
+                                <label for='secure_send_audit_retention_days'><?php echo htmlspecialchars($lang->get('secure_send_audit_retention_days'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?></label>
+                                <small class='form-text text-muted' id='secure_send_audit_retention_hint'>
+                                    <?php echo htmlspecialchars($lang->get('secure_send_audit_retention_hint'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?>
+                                </small>
+                                <small class='form-text text-muted' id='secure_send_audit_retention_warning'>
+                                    <?php echo htmlspecialchars($lang->get('secure_send_audit_retention_warning'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?>
+                                </small>
+                            </div>
+                            <div class='col-12 col-sm-3 col-lg-2'>
+                                <input type='number' min='0' max='36500' step='1' class='form-control form-control-sm' id='secure_send_audit_retention_days' aria-describedby='secure_send_audit_retention_hint secure_send_audit_retention_warning' value='<?php echo htmlspecialchars((string) ($SETTINGS['secure_send_audit_retention_days'] ?? '0'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?>'>
+                            </div>
+                        </div>
+                        <!-- End Secure Send audit retention -->
+
                         <div class='row settings-subgroup mt-2 mb-2'>
                             <div class='col-12'>
                                 <h6 class='text-info text-uppercase font-weight-bold mb-2 pb-2 border-bottom'><i class="fa-solid fa-file-export mr-2"></i><?php echo $lang->get('settings_group_collab_portability'); ?></h6>
