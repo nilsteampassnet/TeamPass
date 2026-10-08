@@ -38,6 +38,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
+require_once __DIR__.'/../sources/folder_list_logic.php';
 
 // init
 loadClasses('DB');
@@ -115,18 +116,18 @@ if ((int) $session->get('user-admin') === 1 || (int) $session->get('user-manager
 }
 // Personal folders are not managed from this page: keep them out of the parent list.
 $personalFolderIds = getPersonalFolderIdsWithDescendants();
+$accessibleFolderSet = array_fill_keys(array_map('intval', (array) $session->get('user-accessible_folders')), true);
+$personalFolderSet = array_fill_keys($personalFolderIds, true);
 
 foreach ($tst as $t) {
     if (
-        in_array($t->id, $session->get('user-accessible_folders')) === true
-        && in_array((int) $t->id, $personalFolderIds, true) === false
+        isset($accessibleFolderSet[(int) $t->id])
+        && !isset($personalFolderSet[(int) $t->id])
     ) {
-        $droplist .= '<option value="' . $t->id . '">' . addslashes($t->title);
-        $text = '';
-        foreach ($tree->getPath($t->id, false) as $fld) {
-            $text .= empty($text) === true ? '     [' . $fld->title : ' > ' . $fld->title;
-        }
-        $droplist .= (empty($text) === true ? '' : $text . '</i>]') . '</option>';
+        $path = folderListAncestorPath($tst, (int) $t->id);
+        $label = (string) $t->title . ($path['titles'] === [] ? '' : ' [' . implode(' > ', $path['titles']) . ']');
+        $droplist .= '<option value="' . (int) $t->id . '">'
+            . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</option>';
     }
 }
 

@@ -39,6 +39,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 // Load functions
 require_once 'main.functions.php';
 require_once __DIR__ . '/item_access_logic.php';
+require_once __DIR__ . '/folder_list_logic.php';
 
 // init
 loadClasses('DB');
@@ -1685,10 +1686,7 @@ if (null !== $post_type) {
                     && in_array((int) $folder->id, $personalFolderIds, true) === false
                 ) {
                     // Get path
-                    $text = '';
-                    foreach ($tree->getPath($folder->id, false) as $fld) {
-                        $text .= empty($text) === true ? '     [<i>' . $fld->title : ' > ' . $fld->title;
-                    }
+                    $path = folderListAncestorPath($folders, (int) $folder->id);
 
                     // Save array
                     array_push(
@@ -1697,7 +1695,7 @@ if (null !== $post_type) {
                             'id' => (int) $folder->id,
                             'label' => $folder->title,
                             'level' => $folder->nlevel,
-                            'path' => empty($text) === true ? '' : $text . '</i>]'
+                            'path' => $path['titles'] === [] ? '' : ' [' . implode(' > ', $path['titles']) . ']'
                         )
                     );
                 }
