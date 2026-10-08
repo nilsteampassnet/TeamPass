@@ -697,7 +697,7 @@ function tpFilePermissionsTraversalRoots(array $paths): array
     foreach ($paths as $path) {
         $normalized = rtrim(str_replace('\\', '/', $path), '/');
         $stat = @stat($path);
-        $device = is_array($stat) ? ($stat['dev'] ?? null) : null;
+        $device = is_array($stat) ? $stat['dev'] : null;
         $covered = false;
         foreach (array_reverse($devices, true) as $parent => $parentDevice) {
             if (str_starts_with($normalized, $parent . '/')) {
