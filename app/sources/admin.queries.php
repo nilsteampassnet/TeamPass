@@ -1494,6 +1494,18 @@ switch ($post_type) {
             'decode'
         );
         
+        // Validate destructive retention policy before generic HTML sanitization
+        // can coerce arrays, booleans or floats into a different value.
+        if (($dataReceived['field'] ?? null) === 'secure_send_audit_retention_days') {
+            require_once __DIR__ . '/secure_send_retention.php';
+            try {
+                $dataReceived['value'] = (string) secureSendAuditRetentionDays($dataReceived['value'] ?? null);
+            } catch (InvalidArgumentException $e) {
+                echo prepareExchangedData(['error' => true, 'message' => $lang->get('secure_send_audit_retention_invalid')], 'encode');
+                break;
+            }
+        }
+
         // prepare data
         $post_value = filter_var($dataReceived['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $post_field = filter_var($dataReceived['field'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);

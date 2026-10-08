@@ -865,6 +865,8 @@ return array(
     'secure_send_visibility' => 'The link expires on #DATE# or after #VIEWS# more view(s), whichever comes first. Content already revealed cannot be erased remotely.',
     'secure_send_allow_notes' => 'Allow sending ad-hoc notes/secrets (not only items)',
     'secure_send_max_views' => 'Secure Send maximum number of views per link',
+    'secure_send_audit_retention_invalid' => 'Enter a whole number of days between 0 and 36500. Use 0 to keep all Secure Send audit events.',
+    'secure_send_audit_retention_purge' => 'Secure Send audit retention purge',
     'secure_send_require_passphrase' => 'Force a passphrase on every Secure Send link',
     'secure_send_show_sender_name' => 'Show the sender’s profile name to Secure Send recipients',
     'secure_send_show_sender_name_tip' => 'The name is visible before the passphrase is entered. Existing instances must opt in after upgrading.',

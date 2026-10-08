@@ -45,6 +45,7 @@ class SecureSendAuditSchemaTest extends TestCase
         self::assertStringContainsString('(`originator`, `occurred_at`)', $sql);
         self::assertStringContainsString('(`event`, `occurred_at`)', $sql);
         self::assertStringContainsString('(`send_id`, `id`)', $sql);
+        self::assertStringContainsString('KEY `idx_retention_period` (`occurred_at`, `id`)', $sql);
         foreach (['FOREIGN KEY', 'encrypted', 'protected_key', 'password', '`code`', '`url`', '`label`'] as $forbidden) {
             self::assertStringNotContainsString($forbidden, $sql);
         }
