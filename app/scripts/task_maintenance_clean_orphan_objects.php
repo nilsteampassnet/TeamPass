@@ -30,6 +30,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
+require_once __DIR__.'/../sources/secure_send_retention.php';
 
 // init
 loadClasses('DB');
@@ -66,14 +67,25 @@ $prunedRevisions = pruneItemRevisionsJournal(
 );
 $prunedIdempotencyRecords = pruneApiIdempotencyRecords();
 
+$prunedSecureSendEvents = 0;
+$secureSendRetentionFailed = false;
+try {
+    $prunedSecureSendEvents = secureSendPruneAuditHistory($SETTINGS);
+} catch (Throwable $e) {
+    $secureSendRetentionFailed = true;
+    error_log('TEAMPASS Secure Send retention failed (' . get_class($e) . ')');
+}
+
 // log end
-doLog('completed', '', 1, $logID);
+doLog($secureSendRetentionFailed ? 'error' : 'completed', '', 1, $logID);
 
 echo sprintf(
-    'Items integrity scan completed: %d active corrupted item(s). %d journal entry(ies) pruned. %d API idempotency record(s) pruned.',
+    'Items integrity scan completed: %d active corrupted item(s). %d journal entry(ies) pruned. %d API idempotency record(s) pruned. %d Secure Send audit event(s) pruned.%s',
     (int) ($integritySummary['count'] ?? 0),
     $prunedRevisions,
-    $prunedIdempotencyRecords
+    $prunedIdempotencyRecords,
+    $prunedSecureSendEvents,
+    $secureSendRetentionFailed ? ' Secure Send retention failed; no audit batch was committed.' : ''
 );
 
 /**

@@ -2304,6 +2304,8 @@ return array(
     'secure_send_visibility' => 'Le lien expire le #DATE# ou après #VIEWS# consultation(s) supplémentaire(s), selon la première limite atteinte. Un contenu déjà révélé ne peut pas être effacé à distance.',
     'secure_send_allow_notes' => 'Autoriser l’envoi de notes/secrets ad-hoc (pas seulement des éléments)',
     'secure_send_max_views' => 'Envoi sécurisé : nombre maximum de vues par lien',
+    'secure_send_audit_retention_invalid' => 'Saisissez un nombre entier de jours entre 0 et 36500. Utilisez 0 pour conserver tous les événements d’audit des envois sécurisés.',
+    'secure_send_audit_retention_purge' => 'Purge de rétention de l’audit des envois sécurisés',
     'secure_send_require_passphrase' => 'Imposer une phrase secrète sur chaque lien d’envoi sécurisé',
     'generate' => 'Générer',
     'secure_send_passphrase' => 'Phrase secrète (optionnelle)',

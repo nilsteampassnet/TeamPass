@@ -63,7 +63,8 @@ function secureSendAuditSchemaSql(string $tableName): string
         PRIMARY KEY (`id`),
         KEY `idx_send_history` (`send_id`, `id`),
         KEY `idx_event_period` (`event`, `occurred_at`),
-        KEY `idx_originator_period` (`originator`, `occurred_at`)
+        KEY `idx_originator_period` (`originator`, `occurred_at`),
+        KEY `idx_retention_period` (`occurred_at`, `id`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci';
 }
 

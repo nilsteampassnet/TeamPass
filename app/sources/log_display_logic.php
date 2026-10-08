@@ -83,6 +83,7 @@ function formatAdminLogLabel(string $label, Language $lang): string
         'at_user_keys_download' => 'user_keys_downloaded',
         'at_2fa_google_code_send_by_email' => 'mfa_code_send_by_email',
         'authentication_lockout_removed' => 'authentication_lockout_removed',
+        'secure_send_audit_retention_purge' => 'secure_send_audit_retention_purge',
         'at_licence_trial_requested' => 'licence_trial_log_requested',
         'at_licence_trial_activated' => 'licence_trial_log_activated',
         'at_licence_trial_link_sent' => 'licence_trial_log_link_sent',
