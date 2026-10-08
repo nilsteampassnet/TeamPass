@@ -14,7 +14,6 @@ declare(strict_types=1);
  */
 
 use PHPUnit\Framework\TestCase;
-use TeampassClasses\Language\Language;
 
 class HealthSystemConsistencyTest extends TestCase
 {
@@ -162,15 +161,12 @@ class HealthSystemConsistencyTest extends TestCase
         $this->assertStringNotContainsString('credential.pw', $this->laprMonitoringSource);
     }
 
-    /** POEditor updates can lag new English keys; exercise the runtime fallback. */
-    public function testEveryHealthTranslationKeyResolvesWithEnglishFallback(): void
+    public function testEveryHealthTranslationKeyExistsInEnglishAndFrench(): void
     {
-        $directory = __DIR__ . '/../../app/includes/language/';
         /** @var array<string,string> $english */
-        $english = include $directory . 'english.php';
+        $english = include __DIR__ . '/../../app/includes/language/english.php';
         /** @var array<string,string> $french */
-        $french = include $directory . 'french.php';
-        $language = new Language('french', $directory);
+        $french = include __DIR__ . '/../../app/includes/language/french.php';
 
         preg_match_all(
             '/\$lang->get\(\'([A-Za-z0-9_]+)\'\)/',
@@ -180,8 +176,8 @@ class HealthSystemConsistencyTest extends TestCase
         foreach (array_unique($matches[1]) as $key) {
             $this->assertArrayHasKey($key, $english, 'english: ' . $key);
             $this->assertNotSame('', trim((string) $english[$key]), 'english: ' . $key);
-            $expected = ($french[$key] ?? '') !== '' ? $french[$key] : $english[$key];
-            $this->assertSame($expected, $language->get($key), 'french or English fallback: ' . $key);
+            $this->assertArrayHasKey($key, $french, 'french: ' . $key);
+            $this->assertNotSame('', trim((string) $french[$key]), 'french: ' . $key);
         }
     }
 
