@@ -77,6 +77,8 @@ test('Rename, insertion and deletion keep paths, selection and child counts cons
 test('The shipped page script compiles with translated text and server-side branches', () => {
   const page = readFileSync(require.resolve('../../app/pages/folders.js.php'), 'utf8')
   const script = page.slice(page.indexOf("<script type='text/javascript'>") + "<script type='text/javascript'>".length, page.lastIndexOf('</script>'))
+    // PHP consumes the newline immediately following a closing tag.
+    .replace(/\?>(?:\r?\n)/g, '?>')
     .replace(/<\?php echo json_encode\([\s\S]*?\?>/g, '"Translated"')
     .replace(/<\?php echo[\s\S]*?\?>/g, 'fixture')
     .replace(/<\?php[\s\S]*?\?>/g, '')

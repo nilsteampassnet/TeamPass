@@ -173,11 +173,11 @@ $complexityHtml .= $complexitySelect . '</select></div>';
                         </div>
                     </div>
 
-                <!-- Folder loading progress bar -->
+                <!-- Indeterminate progress while loading the folder snapshot -->
                 <div id="folders-load-progress" class="mt-2 mb-2" style="display:none">
                     <div class="progress" style="height:18px">
                         <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
-                            role="progressbar" style="width:0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                            role="progressbar" style="width:100%" aria-label="<?php echo htmlspecialchars($lang->get('loading'), ENT_QUOTES, 'UTF-8'); ?>"></div>
                     </div>
                     <small class="text-muted folders-load-text mt-1 d-block"></small>
                 </div>

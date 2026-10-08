@@ -27,6 +27,8 @@ branch to display its children. The page initially renders at most 100 matching 
 **Show more folders** reveals the next 100. Search covers the complete authorized
 folder list (names and parent paths), including collapsed branches. A complexity
 filter also finds folders inside collapsed branches. The depth filter still applies.
+Search waits briefly after typing stops, and unchanged visible rows keep their widgets
+instead of rebuilding them on every interaction.
 
 Selections survive filtering and collapsing. Selecting a parent selects all its
 authorized descendants, including folders that are not displayed. The selection

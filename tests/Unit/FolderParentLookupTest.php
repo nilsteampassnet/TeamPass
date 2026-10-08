@@ -59,6 +59,7 @@ class FolderParentLookupTest extends TestCase
         return $nodes;
     }
 
+    /** Check page boundaries across a production-sized authorized snapshot. */
     public function testPaginationIsBoundedAndDoesNotSkipOrRepeatResults(): void
     {
         $nodes = $this->nodes(3161);
@@ -75,6 +76,7 @@ class FolderParentLookupTest extends TestCase
         self::assertFalse($last['pagination']['more']);
     }
 
+    /** Keep lookup results within the permitted scope and search complete paths. */
     public function testScopeMoveExclusionsUnicodeAndDuplicateNames(): void
     {
         $nodes = $this->nodes();
@@ -99,23 +101,32 @@ class FolderParentLookupTest extends TestCase
             'user-admin' => 0, 'user-manager' => 1, 'user-can_create_root_folder' => 0,
             'user-read_only' => 0, 'user-read_only_folders' => [6], 'user-no_access_folders' => [7]], $overrides);
         $session = new class($values) {
+            /** Store the fixture session. */
             public function __construct(private array $values) {}
+            /** Read a fixture session value. */
             public function get(string $key) { return $this->values[$key] ?? null; }
         };
         $checkUserAccess = new class($pageAllowed) {
+            /** Store the fixture page permission. */
             public function __construct(private bool $allowed) {}
+            /** Return the fixture page permission. */
             public function userAccessPage(string $page): bool { return $this->allowed; }
         };
         $tree = new class($this->nodes()) {
             public int $reads = 0;
+            /** Store the fixture tree snapshot. */
             public function __construct(private array $nodes) {}
+            /** Record each snapshot load. */
             public function getDescendants(): array { $this->reads++; return $this->nodes; }
         };
         $request = (object) ['request' => new class($posted) {
+            /** Store the fixture request parameters. */
             public function __construct(private array $values) {}
+            /** Read a fixture request parameter. */
             public function get(string $key, $default = null) { return $this->values[$key] ?? $default; }
         }];
         $lang = new class {
+            /** Resolve a translation without loading real session state. */
             public function get(string $key): string { return $key; }
         };
         $post_key = $key;
@@ -129,6 +140,7 @@ class FolderParentLookupTest extends TestCase
         return $result;
     }
 
+    /** Reject unauthorized lookups before reading any folders. */
     public function testControllerEnforcesKeyPageAndReadOnlyGatesBeforeReadingFolders(): void
     {
         foreach ([[$this->request([], 'wrong')], [$this->request([], 'session-key', false)],
@@ -138,6 +150,7 @@ class FolderParentLookupTest extends TestCase
         }
     }
 
+    /** Exercise target exclusions, root privileges and the bulk metadata query. */
     public function testControllerExcludesPersonalForbiddenAndReadOnlyTargetsAndBoundsQueries(): void
     {
         $result = $this->request();

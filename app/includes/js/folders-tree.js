@@ -9,6 +9,7 @@
 
   /** Keep selection and expansion independent of the rows currently rendered. */
   class FolderTree {
+    /** Initialize an empty folder snapshot and its view state. */
     constructor() {
       this.rows = []
       this.byId = new Map()

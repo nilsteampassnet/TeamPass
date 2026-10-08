@@ -16,6 +16,7 @@ require_once __DIR__ . '/../../app/sources/folder_list_logic.php';
 /** Regression coverage for large folder lists and damaged tree snapshots. */
 class FolderListLogicTest extends TestCase
 {
+    /** Preserve root-to-parent ordering even when names repeat. */
     public function testPathsKeepRootOrderAndDuplicateNames(): void
     {
         $nodes = [
@@ -27,6 +28,7 @@ class FolderListLogicTest extends TestCase
         self::assertSame(['ids' => [], 'titles' => []], folderListAncestorPath($nodes, 7));
     }
 
+    /** Bound traversal for incomplete or corrupt snapshots. */
     public function testMissingParentsAndCyclesTerminateWithoutIncludingTheFolderItself(): void
     {
         $nodes = [
@@ -38,6 +40,7 @@ class FolderListLogicTest extends TestCase
         self::assertSame(['ids' => [], 'titles' => []], folderListAncestorPath($nodes, 9));
     }
 
+    /** Exercise production-sized path resolution without any database connection. */
     public function testThousandsOfPathsNeedNoDatabaseConnection(): void
     {
         $nodes = [1 => (object) ['parent_id' => 0, 'title' => 'Root']];
@@ -49,6 +52,7 @@ class FolderListLogicTest extends TestCase
         }
     }
 
+    /** Prevent the two parent-list entry points from restoring per-folder SQL reads. */
     public function testParentListsNeverReadOnePathPerFolderFromTheDatabase(): void
     {
         $page = (string) file_get_contents(__DIR__ . '/../../app/pages/folders.php');

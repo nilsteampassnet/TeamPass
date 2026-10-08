@@ -84,7 +84,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     // Clear
     $('#folders-search').val('');
 
-    // Generation counter: incremented on each buildTable() call so stale batch loops self-cancel
+    // Ignore responses from an earlier refresh when a newer snapshot is loading.
     var _buildGeneration = 0
     const _folderTree = new TeampassFolderTree()
     let _foldersRequest = null
@@ -93,6 +93,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     let _syncingFolderSelection = false
     let _canUseFolderRoot = false
     const _parentMetadata = new Map()
+    const _renderedFolderMarkup = new Map()
+    let _folderSearchTimer = null
     var _userIsAdmin = 0
     var _userCanCreateRootFolder = 0
 
@@ -259,6 +261,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     } else {
                         // Remove deleted rows (and all their descendants) directly from the DOM
                         _folderTree.removeBranches(selectedFolders)
+                        _parentMetadata.clear()
                         renderFolderView()
 
                         $('#modal-folder-delete').modal('hide')
@@ -313,8 +316,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 return
             }
             _folderTree.replace(data.matrix)
-            _userIsAdmin = data.userIsAdmin
-            _userCanCreateRootFolder = data.userCanCreateRootFolder
+            _userIsAdmin = Number(data.userIsAdmin)
+            _userCanCreateRootFolder = Number(data.userCanCreateRootFolder)
             _canUseFolderRoot = data.userCanUseRoot === true
             _parentMetadata.clear()
 
@@ -328,7 +331,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 app.complexityOptions = complexityOptions
             })
             const maxDepth = data.matrix.reduce((max, row) => Math.max(max, Number(row.level)), 0)
-            const allLabel = <?php echo json_encode($lang->get('all'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>
+            const allLabel = <?php echo json_encode($lang->get('all'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
             $('#folders-depth').empty().append(new Option(allLabel, 'all'))
             for (let depth = 1; depth <= maxDepth; depth++) {
                 $('#folders-depth').append(new Option(String(depth), String(depth)))
@@ -363,14 +366,48 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         })
         const displayed = rows.slice(0, _visibleLimit)
         const $body = $('#table-folders > tbody')
-        $body.find('.infotip').tooltip('dispose')
-        $body.html(displayed.map(row => buildFolderRowHtml(row, _userIsAdmin, _userCanCreateRootFolder)).join(''))
+        const desiredIds = new Set(displayed.map(row => Number(row.id)))
+        const existing = new Map()
+        $body.children('tr[data-id]').each(function() {
+            const id = Number(this.dataset.id)
+            if (desiredIds.has(id)) existing.set(id, this)
+            else {
+                $(this).find('.infotip').tooltip('dispose')
+                $(this).remove()
+                _renderedFolderMarkup.delete(id)
+            }
+        })
+        const added = []
+        let nextRow = $body[0].firstChild
+        displayed.forEach(function(row) {
+            const id = Number(row.id)
+            const markup = buildFolderRowHtml(row, _userIsAdmin, _userCanCreateRootFolder)
+            let node = existing.get(id)
+            if (!node || _renderedFolderMarkup.get(id) !== markup) {
+                if (node) {
+                    if (node === nextRow) nextRow = node.nextSibling
+                    $(node).find('.infotip').tooltip('dispose')
+                    $(node).remove()
+                }
+                node = $(markup)[0]
+                _renderedFolderMarkup.set(id, markup)
+                added.push(node)
+            }
+            if (node === nextRow) nextRow = node.nextSibling
+            else $body[0].insertBefore(node, nextRow)
+        })
         _syncingFolderSelection = true
-        $body.find('input.checkbox-folder').iCheck({ checkboxClass: 'icheckbox_flat-blue' })
+        added.forEach(function(node) {
+            $(node).find('input.checkbox-folder').iCheck({ checkboxClass: 'icheckbox_flat-blue' })
+            $(node).find('.infotip').tooltip()
+        })
+        $body.find('input.checkbox-folder').each(function() {
+            const checked = _folderTree.selected.has(Number(this.dataset.id))
+            if (this.checked !== checked) $(this).iCheck(checked ? 'check' : 'uncheck')
+        })
         _syncingFolderSelection = false
-        $body.find('.infotip').tooltip()
         $('#folders-show-more').prop('hidden', displayed.length >= rows.length)
-        const count = <?php echo json_encode($lang->get('folders_view_count'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>
+        const count = <?php echo json_encode($lang->get('folders_view_count'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
         $('#folders-view-count').text(count.replace('{shown}', displayed.length).replace('{total}', rows.length).replace('{selected}', _folderTree.selected.size))
     }
 
@@ -397,10 +434,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
         // Column 1 — checkbox + collapse icon
         if ((value.parentId === 0 && (userIsAdmin === 1 || userCanCreateRootFolder === 1)) || value.parentId !== 0) {
-            row += '<input type="checkbox" class="checkbox-folder" id="cb-' + value.id + '" data-id="' + value.id + '"' + (_folderTree.selected.has(Number(value.id)) ? ' checked' : '') + '>'
-            if (value.numOfChildren > 0) {
-                row += '<i class="fas ' + (_folderTree.expanded.has(Number(value.id)) ? 'fa-folder-minus' : 'fa-folder-plus') + ' infotip ml-2 pointer icon-collapse" data-id="' + value.id + '" title="<?php echo $lang->get('collapse'); ?>"></i>'
-            }
+            row += '<input type="checkbox" class="checkbox-folder" id="cb-' + value.id + '" data-id="' + value.id + '">'
+        }
+        if (value.numOfChildren > 0) {
+            row += '<i class="fas ' + (_folderTree.expanded.has(Number(value.id)) ? 'fa-folder-minus' : 'fa-folder-plus') + ' infotip ml-2 pointer icon-collapse" data-id="' + value.id + '" title="<?php echo $lang->get('collapse'); ?>"></i>'
         }
         row += '</td>'
 
@@ -468,8 +505,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
      */
     function insertFolderRow(rowData) {
         _folderTree.upsert(rowData)
-
-
+        _parentMetadata.clear()
         if (Number(rowData.parentId) > 0) _folderTree.expanded.add(Number(rowData.parentId))
         renderFolderView()
         toastr.remove()
@@ -482,6 +518,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
      */
     function updateFolderRow(rowData) {
         _folderTree.upsert(rowData)
+        _parentMetadata.clear()
         renderFolderView()
         closeSidebar()
         toastr.remove()
@@ -525,7 +562,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         applyFilters()
     })
     $(document).on('change', '#folders-complexity', applyFilters)
-    $('#folders-search').on('keyup', applyFilters)
+    $('#folders-search').on('input', function() {
+        clearTimeout(_folderSearchTimer)
+        _folderSearchTimer = setTimeout(applyFilters, 200)
+    })
 
     /**
      * Check / Uncheck children folders
@@ -574,7 +614,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
         // Keep only the selected parent in the DOM; search loads other candidates on demand.
         const parent = _folderTree.byId.get(Number(folderParent))
-        const rootLabel = <?php echo json_encode($lang->get('root'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>
+        const rootLabel = <?php echo json_encode($lang->get('root'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
         $('#folder-edit-parent').empty().append(new Option(parent ? [...parent.path, parent.title].join(' / ') : rootLabel, String(folderParent), true, true))
         initializeParentPicker($('#folder-edit-parent'), $('#folder-edit-sidebar'), () => _sidebarFolderId || 0)
         $('#folder-edit-complexity').html(store.get('teampassApplication').complexityOptions)
