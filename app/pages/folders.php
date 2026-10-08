@@ -230,6 +230,12 @@ foreach ($tst as $t) {
 
                         </tbody>
                     </table>
+                    <div class="d-flex align-items-center justify-content-between mt-2">
+                        <small class="text-muted" id="folders-view-count" aria-live="polite"></small>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="folders-show-more" hidden>
+                            <?php echo htmlspecialchars($lang->get('folders_show_more'), ENT_QUOTES, 'UTF-8'); ?>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

@@ -22,6 +22,17 @@ The page displays all folders in a tree-shaped table. Each row shows:
 
 Three filters at the top of the table can be combined freely:
 
+On installations with more than 100 shared folders, branches start collapsed. Expand a
+branch to display its children. The page initially renders at most 100 matching rows;
+**Show more folders** reveals the next 100. Search covers the complete authorized
+folder list (names and parent paths), including collapsed branches. A complexity
+filter also finds folders inside collapsed branches. The depth filter still applies.
+
+Selections survive filtering and collapsing. Selecting a parent selects all its
+authorized descendants, including folders that are not displayed. The selection
+counter and deletion confirmation include those folders. Unchecking a child also
+unchecks selected ancestors, so the child is not implicitly deleted through its parent.
+
 | Filter | Effect |
 |--------|--------|
 | **Depth** | Shows only folders up to the selected hierarchy level (useful on large trees) |
