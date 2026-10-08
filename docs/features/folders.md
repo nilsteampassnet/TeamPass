@@ -70,6 +70,11 @@ existing folder preserves its options. This behavior is independent of the
 
 > 💡 Icons use the same FontAwesome classes as item icons. See [Items — adding an icon](items.md#adding-icon-to-item-or-folder).
 
+The parent picker searches names and paths on demand, 30 results at a time. It only
+offers authorized shared folders that are writable. Root is offered when the account
+has the corresponding management privilege. During a move, the folder itself and
+its descendants are excluded. The server rechecks permissions when saving.
+
 ### Password complexity levels
 
 | Level | Label |

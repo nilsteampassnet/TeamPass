@@ -32,13 +32,11 @@ declare(strict_types=1);
 use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
-use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
-require_once __DIR__.'/../sources/folder_list_logic.php';
 
 // init
 loadClasses('DB');
@@ -83,9 +81,6 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
 // --------------------------------- //
 
-// Load tree
-$tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-
 // Ensure Complexity levels are translated
 if (defined('TP_PW_COMPLEXITY') === false) {
     define(
@@ -106,30 +101,6 @@ foreach (TP_PW_COMPLEXITY as $level) {
     $complexitySelect .= '<option value="' . $level[0] . '">' . $level[1] . '</option>';
 }
 $complexityHtml .= $complexitySelect . '</select></div>';
-
-/* Get full tree structure */
-$tst = $tree->getDescendants();
-// prepare options list
-$droplist = '<option value="na">---' . $lang->get('select') . '---</option>';
-if ((int) $session->get('user-admin') === 1 || (int) $session->get('user-manager') === 1 || (int) $session->get('user-can_create_root_folder') === 1) {
-    $droplist .= '<option value="0">' . $lang->get('root') . '</option>';
-}
-// Personal folders are not managed from this page: keep them out of the parent list.
-$personalFolderIds = getPersonalFolderIdsWithDescendants();
-$accessibleFolderSet = array_fill_keys(array_map('intval', (array) $session->get('user-accessible_folders')), true);
-$personalFolderSet = array_fill_keys($personalFolderIds, true);
-
-foreach ($tst as $t) {
-    if (
-        isset($accessibleFolderSet[(int) $t->id])
-        && !isset($personalFolderSet[(int) $t->id])
-    ) {
-        $path = folderListAncestorPath($tst, (int) $t->id);
-        $label = (string) $t->title . ($path['titles'] === [] ? '' : ' [' . implode(' > ', $path['titles']) . ']');
-        $droplist .= '<option value="' . (int) $t->id . '">'
-            . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</option>';
-    }
-}
 
 ?>
 
@@ -262,7 +233,7 @@ foreach ($tst as $t) {
                 <div class="form-group">
                     <label for="new-parent"><?php echo $lang->get('parent'); ?></label>
                     <select id="new-parent" class="form-control form-item-control no-root" style="width:100%;">
-                        <?php echo $droplist; ?>
+                        <option value=""></option>
                     </select>
                 </div>
                 <div class="form-group">

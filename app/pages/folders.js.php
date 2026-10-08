@@ -91,6 +91,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     let _foldersLoading = false
     let _visibleLimit = 100
     let _syncingFolderSelection = false
+    let _canUseFolderRoot = false
+    const _parentMetadata = new Map()
     var _userIsAdmin = 0
     var _userCanCreateRootFolder = 0
 
@@ -119,6 +121,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
         } else if ($(this).data('action') === 'new-submit') {
             //--- SAVE NEW FOLDER
+            if ($('#new-parent').val() === null || $('#new-parent').val() === '') {
+                toastr.warning(<?php echo json_encode($lang->get('select'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>)
+                return
+            }
 
             // Sanitize text fields
             purifyRes = fieldDomPurifierLoop('#modal-folder-new .purify');
@@ -172,32 +178,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             buildTable()
                         }
 
-                        // Add new folder to the list 'new-parent'
-                        // Launch action
-                        $.post(
-                            'sources/folders.queries.php', {
-                                type: 'refresh_folders_list',
-                                key: '<?php echo $session->get('key'); ?>'
-                            },
-                            function(data) { //decrypt data
-                                data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
 
-                                // prepare options list
-                                var prev_level = 0,
-                                    droplist = '';
-
-                                $(data.subfolders).each(function(i, folder) {
-                                    droplist += '<option value="' + folder['id'] + '">' +
-                                        folder['label'] +
-                                        folder['path'] +
-                                        '</option>';
-                                });
-
-                                $('#new-parent')
-                                    .empty()
-                                    .append(droplist);
-                            }
-                        );
 
                         $('#modal-folder-new').modal('hide')
                     }
@@ -334,18 +315,16 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             _folderTree.replace(data.matrix)
             _userIsAdmin = data.userIsAdmin
             _userCanCreateRootFolder = data.userCanCreateRootFolder
+            _canUseFolderRoot = data.userCanUseRoot === true
+            _parentMetadata.clear()
 
-            // Keep parent choices independent of the currently rendered rows.
-            let foldersSelect = '<option value="0">' + htmlEncode(<?php echo json_encode($lang->get('root'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>) + '</option>'
-            data.matrix.forEach(function(row) {
-                foldersSelect += '<option value="' + Number(row.id) + '">' + htmlEncode(row.title) + '</option>'
-            })
+
+
             let complexityOptions = ''
             data.fullComplexity.forEach(function(option) {
                 complexityOptions += '<option value="' + Number(option.value) + '">' + htmlEncode(option.text) + '</option>'
             })
             store.update('teampassApplication', function(app) {
-                app.foldersSelect = foldersSelect
                 app.complexityOptions = complexityOptions
             })
             const maxDepth = data.matrix.reduce((max, row) => Math.max(max, Number(row.level)), 0)
@@ -489,9 +468,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
      */
     function insertFolderRow(rowData) {
         _folderTree.upsert(rowData)
-        store.update('teampassApplication', function(app) {
-            app.foldersSelect += '<option value="' + Number(rowData.id) + '">' + htmlEncode(rowData.title) + '</option>'
-        })
+
+
         if (Number(rowData.parentId) > 0) _folderTree.expanded.add(Number(rowData.parentId))
         renderFolderView()
         toastr.remove()
@@ -594,29 +572,21 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         $('#folder-edit-overlay').fadeIn(150)
         $('#folder-edit-sidebar').addClass('open')
 
-        // Populate selects from stored options then set values
-        $('#folder-edit-parent').html(store.get('teampassApplication').foldersSelect)
+        // Keep only the selected parent in the DOM; search loads other candidates on demand.
+        const parent = _folderTree.byId.get(Number(folderParent))
+        const rootLabel = <?php echo json_encode($lang->get('root'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>
+        $('#folder-edit-parent').empty().append(new Option(parent ? [...parent.path, parent.title].join(' / ') : rootLabel, String(folderParent), true, true))
+        initializeParentPicker($('#folder-edit-parent'), $('#folder-edit-sidebar'), () => _sidebarFolderId || 0)
         $('#folder-edit-complexity').html(store.get('teampassApplication').complexityOptions)
-
-        // Re-initialize Select2 cleanly each time the sidebar opens
-        if ($('#folder-edit-parent').hasClass('select2-hidden-accessible')) {
-            $('#folder-edit-parent').select2('destroy')
+        if (!$('#folder-edit-complexity').hasClass('select2-hidden-accessible')) {
+            $('#folder-edit-complexity').select2({
+                language: <?php echo json_encode($session->get('user-language_code'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+                dropdownParent: $('#folder-edit-sidebar'),
+                width: '100%'
+            })
         }
-        if ($('#folder-edit-complexity').hasClass('select2-hidden-accessible')) {
-            $('#folder-edit-complexity').select2('destroy')
-        }
+        $('#folder-edit-complexity').val(String(folderComplexity)).trigger('change')
 
-        $('#folder-edit-parent').select2({
-            language: '<?php echo $session->get('user-language_code'); ?>',
-            dropdownParent: $('#folder-edit-sidebar'),
-            width: '100%'
-        }).val(String(folderParent)).trigger('change')
-
-        $('#folder-edit-complexity').select2({
-            language: '<?php echo $session->get('user-language_code'); ?>',
-            dropdownParent: $('#folder-edit-sidebar'),
-            width: '100%'
-        }).val(String(folderComplexity)).trigger('change')
 
         // Checkboxes
         if (folderAddRestriction === 1) {
@@ -667,31 +637,70 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     // changes (the server rejects a lower value)
     $('#new-parent').on('change', function() {
         const parentId = parseInt($(this).val())
-        const parent = _folderTree.byId.get(parentId) || {}
+        const parent = _parentMetadata.get(parentId) || _folderTree.byId.get(parentId) || {}
         // Initialize the new folder's options from its parent; the user can override either.
         $('#new-add-restriction').iCheck(parseInt(parent.add_is_blocked, 10) === 1 ? 'check' : 'uncheck')
         $('#new-edit-restriction').iCheck(parseInt(parent.edit_is_blocked, 10) === 1 ? 'check' : 'uncheck')
         if (isNaN(parentId) === true || parentId === 0) return
-        const parentComplexity = parent.folderComplexity ? parent.folderComplexity.value : undefined
+        const parentComplexity = parent.complexity !== undefined ? parent.complexity : (parent.folderComplexity ? parent.folderComplexity.value : undefined)
         if (parentComplexity !== undefined && parentComplexity !== '') {
             $('#new-complexity').val(String(parentComplexity)).trigger('change')
         }
     })
 
-    // Init select2 with dropdownParent when the new-folder modal opens
+    /** Initialize a paginated, authorized parent search once per picker. */
+    function initializeParentPicker($select, $container, excludedId) {
+        if ($select.hasClass('select2-hidden-accessible')) return
+        $select.select2({
+            language: <?php echo json_encode($session->get('user-language_code'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+            dropdownParent: $container,
+            width: '100%',
+            placeholder: <?php echo json_encode($lang->get('select'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+            ajax: {
+                delay: 250,
+                data: params => ({ term: params.term || '', page: params.page || 1 }),
+                transport: function(params, success, failure) {
+                    const sourceId = excludedId()
+                    return $.post('sources/folders.queries.php', {
+                        type: 'search_folder_parents',
+                        key: '<?php echo $session->get('key'); ?>',
+                        term: params.data.term,
+                        page: params.data.page,
+                        exclude_id: sourceId
+                    }).done(function(response) {
+                        if (sourceId !== excludedId()) return
+                        const data = prepareExchangedData(response, 'decode', '<?php echo $session->get('key'); ?>')
+                        if (data.error !== false) {
+                            failure()
+                            return
+                        }
+                        data.results.forEach(parent => _parentMetadata.set(Number(parent.id), parent))
+                        success(data)
+                    }).fail(failure)
+                },
+                processResults: data => ({ results: data.results, pagination: data.pagination })
+            }
+        })
+    }
+
     $('#modal-folder-new').on('shown.bs.modal', function() {
-        $('#new-parent').html(store.get('teampassApplication').foldersSelect)
-            .select2({
-                language: '<?php echo $session->get('user-language_code'); ?>',
-                dropdownParent: $('#modal-folder-new')
-            }).val('0').trigger('change')
+        const $parent = $('#new-parent').empty().append(new Option('', ''))
+        if (_canUseFolderRoot) {
+            $parent.append(new Option(<?php echo json_encode($lang->get('root'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>, '0', true, true))
+        }
+        initializeParentPicker($parent, $('#modal-folder-new'), () => 0)
+        $parent.val(_canUseFolderRoot ? '0' : '').trigger('change')
         $('#new-complexity').html(store.get('teampassApplication').complexityOptions)
-            .select2({
-                language: '<?php echo $session->get('user-language_code'); ?>',
+        if (!$('#new-complexity').hasClass('select2-hidden-accessible')) {
+            $('#new-complexity').select2({
+                language: <?php echo json_encode($session->get('user-language_code'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
                 dropdownParent: $('#modal-folder-new')
-            }).val('0').trigger('change')
+            })
+        }
+        $('#new-complexity').val('0').trigger('change')
         $('#new-title').focus()
     })
+
 
     // Close buttons
     $('#sidebar-close, #sidebar-cancel').on('click', function() {
