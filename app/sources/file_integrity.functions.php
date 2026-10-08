@@ -843,6 +843,7 @@ function tpFileIntegrityApplyRuntimeState(string $root, array $payload): array
     $payload['stale'] = false;
     $payload['reference_missing'] = false;
     $payload['reference_unreadable'] = false;
+    $payload['lock_probe_failed'] = false;
     $payload['status'] = (string) ($payload['scan_status'] ?? $payload['status'] ?? 'not_run');
 
     if ((bool) ($payload['report_invalid'] ?? false)) {
@@ -873,8 +874,7 @@ function tpFileIntegrityApplyRuntimeState(string $root, array $payload): array
         $payload['status'] = 'running';
     } elseif ($probeFailed) {
         $payload['status'] = 'error';
-        $payload['last_error'] = 'The file integrity scan lock could not be checked. '
-            . 'Check storage/logs access and filesystem locking support.';
+        $payload['lock_probe_failed'] = true;
     }
 
     return $payload;

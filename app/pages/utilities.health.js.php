@@ -118,6 +118,7 @@ var TP_HEALTH_L10N = {
     file_integrity_reference_missing: "<?php echo addslashes($lang->get('health_file_integrity_reference_missing')); ?>",
     file_integrity_reference_unreadable: "<?php echo addslashes($lang->get('health_file_integrity_reference_unreadable')); ?>",
     file_integrity_report_invalid: "<?php echo addslashes($lang->get('health_file_integrity_report_invalid')); ?>",
+    file_integrity_lock_probe_failed: <?php echo json_encode($lang->get('health_file_integrity_lock_probe_failed'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
     file_permissions: "<?php echo addslashes($lang->get('health_file_permissions')); ?>",
     file_permissions_unsupported: "<?php echo addslashes($lang->get('health_file_permissions_unsupported')); ?>",
     file_permissions_remediation_unsupported: "<?php echo addslashes($lang->get('health_file_permissions_remediation_unsupported')); ?>",
@@ -875,8 +876,11 @@ function tpRenderFileIntegrity(report) {
         .removeClass('bg-secondary bg-success bg-warning bg-danger bg-info')
         .addClass(overviewClass);
     $('#health-file-integrity-running').toggle(running);
+    var lockProbeFailed = Boolean(summary.lock_probe_failed);
     var lastError = '';
-    if (summary.reference_missing) {
+    if (lockProbeFailed) {
+        lastError = TP_HEALTH_L10N.file_integrity_lock_probe_failed;
+    } else if (summary.reference_missing) {
         lastError = TP_HEALTH_L10N.file_integrity_reference_missing;
     } else if (summary.reference_unreadable) {
         lastError = TP_HEALTH_L10N.file_integrity_reference_unreadable;
@@ -887,7 +891,7 @@ function tpRenderFileIntegrity(report) {
     }
     $('#health-file-integrity-error')
         .toggle(!running && String(summary.status || '') === 'error' && lastError !== '')
-        .text(lastError !== '' ? TP_HEALTH_L10N.file_integrity_scan_failed + ' ' + lastError : '');
+        .text(lastError === '' || lockProbeFailed ? lastError : TP_HEALTH_L10N.file_integrity_scan_failed + ' ' + lastError);
     $('#health-file-integrity-scan-btn').prop('disabled', running);
     $('#health-file-integrity-results').toggle(hasResult);
     $('#health-file-integrity-checked').text(Number(counts.checked || 0));

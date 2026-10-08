@@ -331,6 +331,7 @@ echo json_encode([
     'has_result' => $summary['has_result'],
     'running' => $summary['running'],
     'status' => $summary['status'],
+    'lock_probe_failed' => $summary['lock_probe_failed'] ?? null,
     'lock_present' => is_file($path),
     'lock_unchanged' => $before !== '' && file_get_contents($path) === $before,
 ]);
@@ -339,6 +340,7 @@ PHP, ['-d', 'disable_functions=flock']);
             'has_result' => true,
             'running' => false,
             'status' => 'success',
+            'lock_probe_failed' => false,
             'lock_present' => true,
             'lock_unchanged' => true,
         ], json_decode($probe->getOutput(), true));
@@ -377,6 +379,7 @@ echo json_encode([
     'summary_running' => $summary['running'],
     'has_result' => $summary['has_result'],
     'status' => $summary['status'],
+    'lock_probe_failed' => $summary['lock_probe_failed'] ?? null,
     'last_error' => $summary['last_error'] ?? '',
 ]);
 PHP, ['-d', 'disable_functions=flock']);
@@ -386,9 +389,27 @@ PHP, ['-d', 'disable_functions=flock']);
             'summary_running' => false,
             'has_result' => true,
             'status' => 'error',
-            'last_error' => 'The file integrity scan lock could not be checked. Check storage/logs access and filesystem locking support.',
+            'lock_probe_failed' => true,
+            'last_error' => '',
         ], json_decode($probe->getOutput(), true));
         self::assertSame('12345', file_get_contents($path));
+    }
+
+    /** Runtime flags must be recomputed without replacing saved scanner diagnostics. */
+    public function testRuntimeStateClearsPreviousLockProbeFailure(): void
+    {
+        self::assertSame(0, file_put_contents($this->root . '/app/files_reference.txt', ''));
+        $payload = tpFileIntegrityDefaultReport();
+        $payload['lock_probe_failed'] = true;
+        $payload['status'] = 'error';
+        $payload['last_error'] = 'Saved scanner diagnostic';
+
+        $summary = tpFileIntegrityApplyRuntimeState($this->root, $payload);
+
+        self::assertFalse($summary['lock_probe_failed']);
+        self::assertFalse($summary['running']);
+        self::assertSame('error', $summary['status']);
+        self::assertSame('Saved scanner diagnostic', $summary['last_error']);
     }
 
     /** Check real contention across processes without waiting or changing the worker's PID. */
