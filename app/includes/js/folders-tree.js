@@ -21,11 +21,20 @@
     /** Replace a server snapshot while retaining valid selections and expanded branches. */
     replace(rows) {
       const counts = new Map()
-      rows.forEach(row => row.parents.forEach(id => counts.set(Number(id), (counts.get(Number(id)) || 0) + 1)))
+      const incompleteSelections = new Set()
+      rows.forEach(row => {
+        const checked = this.selected.has(Number(row.id))
+        row.parents.forEach(parent => {
+          const id = Number(parent)
+          counts.set(id, (counts.get(id) || 0) + 1)
+          // Deleting a checked parent must never implicitly include an unchecked descendant.
+          if (!checked && this.selected.has(id)) incompleteSelections.add(id)
+        })
+      })
       this.rows = rows.map(row => ({ ...row, numOfChildren: counts.get(Number(row.id)) || 0 }))
       this.byId = new Map(this.rows.map(row => [Number(row.id), row]))
       this.expanded = new Set([...this.expanded].filter(id => this.byId.has(id)))
-      this.selected = new Set([...this.selected].filter(id => this.byId.has(id)))
+      this.selected = new Set([...this.selected].filter(id => this.byId.has(id) && !incompleteSelections.has(id)))
       if (!this.initialized && rows.length <= 100) {
         this.expanded = new Set(this.byId.keys())
       }

@@ -34,6 +34,9 @@ Selections survive filtering and collapsing. Selecting a parent selects all its
 authorized descendants, including folders that are not displayed. The selection
 counter and deletion confirmation include those folders. Unchecking a child also
 unchecks selected ancestors, so the child is not implicitly deleted through its parent.
+After a refresh or move, a checked parent is also unchecked if its branch contains
+an unchecked descendant. Existing individual selections remain checked; select the
+parent again to explicitly include its current descendants in the deletion confirmation.
 
 | Filter | Effect |
 |--------|--------|

@@ -57,6 +57,46 @@ test('Selecting a collapsed branch includes every descendant and survives filter
   assert.deepEqual(tree.selectedRows(), [])
 })
 
+test('Moving an unchecked subtree under checked ancestors invalidates only those ancestors', () => {
+  const tree = new FolderTree()
+  tree.replace([row(1), row(2, [1]), row(3, [1, 2]), row(4), row(5, [4]), row(6)])
+  tree.selectBranch(1, true)
+  tree.selectBranch(6, true)
+  tree.replace([row(1), row(2, [1]), row(3, [1, 2]), row(4, [1, 2]), row(5, [1, 2, 4]), row(6)])
+  assert.deepEqual(tree.selectedRows().map(row => row.id), [3, 6])
+  assert.equal(tree.selected.has(4), false)
+  assert.equal(tree.selected.has(5), false)
+  tree.selectBranch(2, true)
+  assert.deepEqual(tree.selectedRows().map(row => row.id), [2, 3, 4, 5, 6])
+})
+
+test('New hidden descendants invalidate ancestor selection until the branch is explicitly reselected', () => {
+  const tree = new FolderTree()
+  tree.replace([row(1), row(2, [1]), row(3, [1, 2])])
+  tree.selectBranch(1, true)
+  tree.expanded.clear()
+  tree.replace([row(1), row(2, [1]), row(3, [1, 2]),
+    ...Array.from({ length: 3158 }, (_, i) => row(i + 4, [1, 2]))])
+  assert.deepEqual(tree.visible().map(row => row.id), [1])
+  assert.deepEqual(tree.selectedRows().map(row => row.id), [3])
+  tree.visible({ term: 'Folder 3161' })
+  assert.deepEqual(tree.selectedRows().map(row => row.id), [3])
+  tree.selectBranch(1, true)
+  assert.equal(tree.selectedRows().length, 3161)
+  tree.replace(tree.rows)
+  assert.equal(tree.selectedRows().length, 3161)
+})
+
+test('Moving an already checked subtree retains complete and unrelated selections', () => {
+  const tree = new FolderTree()
+  tree.replace([row(1), row(2, [1]), row(3), row(4, [3]), row(5)])
+  tree.selectBranch(1, true)
+  tree.selectBranch(3, true)
+  tree.selectBranch(5, true)
+  tree.replace([row(1), row(2, [1]), row(3, [1]), row(4, [1, 3]), row(5)])
+  assert.deepEqual(tree.selectedRows().map(row => row.id), [1, 2, 3, 4, 5])
+})
+
 test('Rename, insertion and deletion keep paths, selection and child counts consistent', () => {
   const tree = new FolderTree()
   tree.replace([row(1), row(2, [1]), row(3, [1, 2]), row(4)])
