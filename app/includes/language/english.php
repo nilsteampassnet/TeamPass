@@ -3817,4 +3817,24 @@ return array(
     'ldap_step_bind_no_upn' => 'This Active Directory account has no userPrincipalName. TeamPass binds on that attribute, so the account cannot authenticate until it is set in the directory.',
     'personal_items_not_reencrypted' => '#nb# personal item(s) could not be decrypted with this saltkey and were left unchanged. Your saltkey is kept so that they can still be recovered: please contact your administrator.',
 
-    );
+    'admin_activity_failed' => 'failed to sign in',
+    'admin_activity_connected' => 'signed in',
+
+    'admin_activity_no_categories' => 'Select at least one activity category.',
+    'admin_activity_load_error' => 'Activity could not be refreshed. Please try again.',
+    'admin_activity_failures_count' => '#count# failed sign-ins in the last #minutes# minutes',
+    'admin_activity_new_events' => '#count# new events — show latest activity',
+    'admin_activity_authentication' => 'Authentication',
+    'admin_activity_expand' => 'Expand activity',
+    'admin_activity_settings' => 'Activity categories',
+    'admin_activity_show_failures' => 'Show failed sign-ins only',
+    'admin_activity_period' => 'Period',
+    'admin_activity_last_minutes' => 'Last #minutes# minutes',
+    'admin_activity_refresh_hint' => 'Refreshes every 10 seconds. New events are announced while you read older activity.',
+    'admin_activity_load_older' => 'Load previous events',
+    'admin_activity_changes' => 'Item changes',
+    'admin_activity_accesses' => 'Item consultations',
+    'admin_activity_failed_category' => 'Failed sign-ins and lockouts',
+    'admin_activity_connections' => 'Successful sign-ins',
+
+);
