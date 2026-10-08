@@ -1046,14 +1046,16 @@ before the cleanup batch limit; they cannot prevent valid rows from being cleane
 The administrator statistics backend aggregates the observed events and ranks
 original senders by creations in the selected period, including deleted or
 disabled accounts. Its dedicated statistics card is in the Users tab;
-there is no Reports export or audit-purge interface. The aggregate uses the period
+there is no Reports export or manual audit-purge interface. The aggregate uses the period
 filter only: personal-item/API provenance is not captured in the journal and
 cannot be reliably reconstructed from current items. Recipient credential failures
 are not evidence of misconduct by the sender; counters do not enforce quotas or
 automatically identify abuse. Disabling Secure Send does not erase its history.
-There is no automatic audit retention: plan capacity, protect database and backup
-access, and define the organisation's retention and archiving policy. SQL access
-can still alter evidence; a protected external collector is a separate control.
+All audit events are kept by default. Administrator-configured retention can
+remove old events through scheduled maintenance (see below). Plan capacity,
+protect database and backup access, and define the organisation's retention and
+archiving policy. SQL access can still alter evidence; a protected external
+collector is a separate control.
 A successful reveal event proves the server committed a reveal, not that a named
 recipient received, read or copied its response. Before relying on this evidence
 for a regulated workflow, assess these limits and the surrounding controls.
@@ -1061,6 +1063,36 @@ for a regulated workflow, assess these limits and the surrounding controls.
 Secure Send is enabled globally. Current item access is rechecked, but
 organisations that require a separate role allowlist for issuing links should
 verify the available policy controls before enabling the feature.
+
+### Audit retention
+
+After completing the feature upgrade, administrators can set **Secure Send audit
+retention (days)** in **Options → Collaboration → Secure sharing**. The default
+`0` keeps all events; whole numbers from `1` to `36500` opt into deletion. Invalid
+values are rejected. Changing the setting does not purge immediately.
+
+Schedule the existing orphan-object maintenance task (`clean_orphan_objects_task`)
+and ensure the scheduler runs. Its `task_maintenance_clean_orphan_objects.php`
+script removes at most 1000 events per invocation, oldest first, strictly older
+than the chosen number of elapsed 24-hour days. The cutoff uses event observation
+time, not link creation/expiry; events exactly at the cutoff are retained.
+Backlogs drain over successive runs. Retention still runs if Secure Send is
+disabled, so disable the retention policy separately if all evidence must remain.
+
+Each committed batch leaves a summary in **Utilities → Logs → Administration**:
+retention days, cutoff, actual deleted count and batch limit, attributed to the
+TeamPass system account. Both journals must use InnoDB; deletion and summary
+commit together or the batch rolls back and maintenance reports an error.
+Nontransactional tables are not silently converted. Optional syslog forwards the
+summary after commit, on a best-effort basis. Empty batches create no summary.
+
+Deletion is permanent: increasing retention cannot recover history. Statistics
+count retained events only, so shorter retention can make a reporting period
+incomplete. Select a duration covering your investigation/reporting needs and
+check that batch size and schedule can keep up with activity. Database backups,
+general system logs (including purge summaries) and external collectors have
+independent retention policies; this task does not erase their copies, preserve
+summaries forever or implement legal holds or tamper-proof evidence.
 
 ---
 
@@ -1146,6 +1178,9 @@ that format.
 - [ ] A fictitious external end-to-end test succeeded.
 - [ ] Revocation, expiration and automatic deletion were tested.
 - [ ] Upgrade regression testing and periodic active-link review are scheduled.
+- [ ] Audit retention is explicitly chosen (0 keeps all), the orphan-object
+      maintenance schedule is verified if enabled, and reporting/backup/collector
+      retention windows are aligned with organisational requirements.
 
 ---
 
@@ -1159,6 +1194,8 @@ five senders by creations in the selected period.
 Only the period filter applies: Personal/API toggles do not filter this journal.
 Coverage starts after the audit migration, with no reconstructed earlier activity.
 Deleting a link/account or disabling Secure Send does not erase recorded history.
+Configured audit retention can remove old events and make the selected period
+incomplete; increasing it does not restore history.
 An unavailable journal is reported as unavailable, not as zero usage.
 
 These are event counts, not the later lifecycle of links created in the period.
