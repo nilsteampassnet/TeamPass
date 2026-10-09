@@ -2516,6 +2516,7 @@ class DatabaseInstaller
         `id` INT(12) NOT NULL AUTO_INCREMENT,
         `user_id` INT(12) NOT NULL,
         `credential_id` VARCHAR(255) NOT NULL COMMENT 'base64url',
+        `rp_id` VARCHAR(255) NULL DEFAULT NULL COMMENT 'Relying party id it was registered for',
         `public_key_cose` TEXT NOT NULL,
         `sign_count` INT UNSIGNED NOT NULL DEFAULT '0',
         `aaguid` VARCHAR(36) NULL DEFAULT NULL,

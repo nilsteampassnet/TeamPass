@@ -324,7 +324,7 @@ function userMfaRequestedByRoles(array $SETTINGS, array $userInfo): bool
 function getMfaMethodsForUserInfo(array $SETTINGS, array $userInfo): array
 {
     $hasPasskey = webauthnLoginMode($SETTINGS) !== TP_WEBAUTHN_LOGIN_MODE_DISABLED
-        && webauthnLoginUserHasPasskey((int) ($userInfo['id'] ?? 0));
+        && webauthnLoginUserHasPasskey((int) ($userInfo['id'] ?? 0), webauthnLoginRpId($SETTINGS));
 
     return buildMfaMethodsResponse($SETTINGS, userNeedsMfa($SETTINGS, $userInfo, $hasPasskey), $hasPasskey);
 }

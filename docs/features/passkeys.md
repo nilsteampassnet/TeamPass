@@ -111,7 +111,15 @@ New users receive the keys of the passkeys they can reach while their encryption
 
 ### Limitations
 
-- Passkeys already stored elsewhere (browser, phone, another password manager) cannot be imported.
+- **No TeamPass, no passkey.** The private key never leaves the server: a passkey kept in TeamPass cannot be used while the server is down or unreachable, and it is not part of the offline HTML export. Keep another way to sign in — a password, recovery codes — on every account it protects.
+- **Backups.** Restoring a backup loses the passkeys saved since that backup: the site still expects them, TeamPass no longer holds them. Back up after saving passkeys, and keep the fallback above.
+- **API credentials give access to passkeys.** TeamPass signs for any API client authenticated as the user, not only for the extension. Protect API keys and extension tokens like the passwords they unlock. The *user verified* flag a site receives is stated by the extension, after its vault lock.
+- **Sites that require user verification** need the vault lock of the extension (PIN or biometrics): without it, the extension cannot use TeamPass passkeys on them.
+- **Sites that require attestation or device-bound passkeys** (some enterprise identity providers) do not accept TeamPass passkeys: choose *Use another device* in the extension window.
+- **A passkey that stays *Never used*** right after it was saved was probably not accepted by the site: delete it from the item.
+- When empty passwords are not allowed, an item created to hold a passkey receives a random password, which is not the password of the site.
+- When the server takes more than 5 seconds to answer, or cannot be reached, the browser's own passkey window opens instead, and TeamPass is skipped for a few minutes.
+- Passkeys already stored elsewhere (browser, phone, another password manager) cannot be imported, and the passkeys kept in TeamPass cannot be exported.
 - Only `ES256` passkeys are created. A site that does not accept `ES256` is left to the browser.
 - The extension does not offer passkeys in the browser's autofill suggestions, nor inside frames: those requests go to the browser as usual.
 
@@ -131,7 +139,7 @@ New users receive the keys of the passkeys they can reach while their encryption
 
 A passkey — a fingerprint, a face, a PIN or a security key — confirms a TeamPass sign-in instead of a code, and can replace the password entirely. It is registered by the user, on the device they sign in from, and it never leaves that device: TeamPass only stores its public key.
 
-> ⚠️ **HTTPS is required.** Browsers only offer passkeys in a secure context, which means HTTPS or `localhost`. On plain HTTP the buttons below do nothing and the browser reports that passkeys are unavailable.
+> ⚠️ **HTTPS is required.** Browsers only offer passkeys in a secure context, which means HTTPS or `localhost`. On plain HTTP, TeamPass hides the *Sign in with a passkey* and *Add a passkey* buttons, and **Settings → MFA → Passkeys** shows a warning.
 
 ---
 
@@ -217,6 +225,8 @@ The second copy exists because several authenticators (some Windows Hello config
 
 As a **second factor**, a passkey holds no copy at all: the password still unlocks the key.
 
+Whoever holds both the database and the instance secret file can open the server copies — the same exposure as the transparent recovery backup of the encryption keys, which relies on that file too. And like any server, a compromised TeamPass sees what reaches it at sign-in: the PRF output, as it sees passwords.
+
 ---
 
 ### Restrictions
@@ -249,6 +259,21 @@ From **Users → action menu → Sign-in passkeys**, an administrator (or a mana
 
 ---
 
+### Limitations of sign-in passkeys
+
+- **One address.** Passkeys work only through the exact address of the TeamPass URL setting — scheme, host name and port. Another host name, an IP address or another port is refused by the browser.
+- **Moving TeamPass to another domain** makes the sign-in passkeys unusable, unless the **Relying party ID** is a parent domain kept across the move: set it before users register. Passkeys registered for a previous ID are no longer asked for at sign-in, and their owners see them marked *no longer usable* in their profile.
+- **Changing your password does not remove your passkeys**, nor the copies they hold. After a suspected compromise, review **Profile → Sign-in passkeys**; an administrator can revoke them from the Users page.
+- **Device-bound passkeys** (Windows Hello, security keys) do not follow the user to another device: register one per device, or a second passkey on a phone or a key.
+- **Security keys** hold a limited number of passkeys that sign in without a username, and passwordless sign-in needs one of those slots.
+- **PRF support varies** with the browser, the system and the authenticator. A passkey without PRF falls back to the server copy, or stays a second factor when PRF is required.
+- **Instances whose accounts are all LDAP or OAuth2** gain nothing from the passwordless mode: choose *As a second factor*.
+- By default, a passkey **can replace an imposed Google Authenticator or Duo factor** (*Passwordless sign-in counts as MFA*). Turn that setting off to keep them mandatory.
+- Switching from passwordless back to second factor keeps the copies held by the passkeys: they work again when passwordless is turned back on.
+- Keep at least one administrator able to sign in with a password and another factor.
+
+---
+
 ### Troubleshooting a sign-in
 
 | Symptom | Cause and solution |
@@ -263,4 +288,4 @@ From **Users → action menu → Sign-in passkeys**, an administrator (or a mana
 | *For your security, sign in again before adding a passkey …* | OAuth2 account whose sign-in is more than 10 minutes old: sign out, sign in, and add the passkey right away |
 | *Your account requires another second factor* | *Passwordless sign-in counts as MFA* is off and Google or Duo is imposed on this account: sign in with the password |
 | A user lost their authenticator | Revoke the passkey from the Users page; the account keeps its password and its other methods |
-| Every passkey stopped working at once | The **Relying party ID** was changed. Restore the previous value, or have the users register their passkeys again |
+| Every passkey stopped working at once | The **Relying party ID** — or, when it is empty, the host of the TeamPass URL — changed. **Settings → MFA → Passkeys** counts the passkeys registered for another ID; they are no longer asked for at sign-in, and their owners see them marked in their profile. Restore the previous value, or have the users register new passkeys |

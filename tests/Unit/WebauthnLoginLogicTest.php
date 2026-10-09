@@ -95,6 +95,26 @@ final class WebauthnLoginLogicTest extends TestCase
         $this->assertSame('webauthn_login_passwordless_not_enabled', webauthnLoginPasswordlessRefusal($on, ['key_wrap_mode' => TP_WEBAUTHN_LOGIN_WRAP_NONE] + $local));
     }
 
+    public function testOnlySecureContextsCanUsePasskeys(): void
+    {
+        foreach (['https://tp.example.com', 'https://tp.example.com:8443', 'http://localhost', 'http://localhost:8080',
+            'http://teampass.localhost', 'http://127.0.0.1', 'http://127.0.0.2:8000', 'http://[::1]'] as $origin) {
+            $this->assertTrue(webauthnLoginOriginIsSecure($origin), $origin);
+        }
+        foreach (['http://tp.example.com', 'http://192.168.1.10', 'http://127.example.com', 'ftp://tp.example.com', ''] as $origin) {
+            $this->assertFalse(webauthnLoginOriginIsSecure($origin), $origin);
+        }
+    }
+
+    public function testAPasskeyOfAPreviousRelyingPartyIdIsNoLongerUsable(): void
+    {
+        $this->assertTrue(webauthnLoginPasskeyIsUsable('tp.example.com', 'tp.example.com'));
+        $this->assertFalse(webauthnLoginPasskeyIsUsable('old.example.com', 'tp.example.com'));
+        // Registered before the relying party id was recorded: nothing says it changed
+        $this->assertTrue(webauthnLoginPasskeyIsUsable(null, 'tp.example.com'));
+        $this->assertTrue(webauthnLoginPasskeyIsUsable('', 'tp.example.com'));
+    }
+
     public function testRequiringPrfRefusesTheServerCopiesAlreadyRegistered(): void
     {
         $requirePrf = ['webauthn_login_mode' => '2', 'webauthn_login_require_prf' => '1'];

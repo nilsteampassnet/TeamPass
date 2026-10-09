@@ -117,7 +117,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             function() {
                 confirmed = true;
                 saveFieldValue($field, 'webauthn_rp_id', false);
-                $field.attr('data-effective', next);
+                // No passkey is registered for the new value yet
+                $field.attr('data-effective', next).attr('data-passkeys', '0');
             },
             <?php echo json_encode($lang->get('confirm'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
             <?php echo json_encode($lang->get('cancel'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>

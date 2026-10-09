@@ -513,7 +513,11 @@ declare(strict_types=1);
             });
         });
 
-        // Passwordless sign-in with a passkey
+        // Passwordless sign-in with a passkey. Browsers only run passkeys in a secure context
+        // (HTTPS or localhost): elsewhere the button could only fail.
+        if (window.isSecureContext !== true) {
+            $('#but_login_with_passkey').addClass('hidden');
+        }
         $('#but_login_with_passkey').click(function() {
             if (debugJavascript === true) {
                 console.log('User starts a passwordless sign-in with a passkey');

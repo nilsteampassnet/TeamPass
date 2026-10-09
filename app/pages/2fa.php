@@ -269,9 +269,33 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                             // asks for a confirmation when some exist.
                             require_once __DIR__ . '/../sources/webauthn_login_logic.php';
                             $webauthnEffectiveRpId = webauthnLoginRpId($SETTINGS);
-                            $webauthnLoginPasskeyCount = (int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('user_webauthn_credentials'));
+                            $webauthnLoginPasskeyCount = (int) DB::queryFirstField(
+                                'SELECT COUNT(*) FROM ' . prefixTable('user_webauthn_credentials') . ' WHERE rp_id IS NULL OR rp_id = %s',
+                                $webauthnEffectiveRpId
+                            );
+                            $webauthnLoginOrphanedCount = (int) DB::queryFirstField(
+                                'SELECT COUNT(*) FROM ' . prefixTable('user_webauthn_credentials') . ' WHERE rp_id IS NOT NULL AND rp_id != %s',
+                                $webauthnEffectiveRpId
+                            );
                             ?>
                             <div class="tab-pane" id="webauthn-login" role="tabpanel" aria-labelledby="webauthn-login-tab">
+                                <?php
+                                // Browsers only run passkeys in a secure context: say so before anyone enables them
+                                $webauthnLoginOrigin = webauthnLoginOriginOf((string) ($SETTINGS['cpassman_url'] ?? ''));
+                                if ($webauthnLoginOrigin !== '' && webauthnLoginOriginIsSecure($webauthnLoginOrigin) === false) {
+                                    echo '
+                                <div class="alert alert-warning" id="webauthn-login-https-warning">
+                                    <i class="fa-solid fa-triangle-exclamation mr-2"></i>' . htmlspecialchars(sprintf($lang->get('webauthn_login_https_required'), $webauthnLoginOrigin), ENT_QUOTES, 'UTF-8') . '
+                                </div>';
+                                }
+                                // Passkeys bound to a previous relying party ID: no longer asked at sign-in
+                                if ($webauthnLoginOrphanedCount > 0) {
+                                    echo '
+                                <div class="alert alert-info" id="webauthn-login-orphaned">
+                                    <i class="fa-solid fa-circle-info mr-2"></i>' . htmlspecialchars(sprintf($lang->get('webauthn_login_orphaned_passkeys'), $webauthnLoginOrphanedCount), ENT_QUOTES, 'UTF-8') . '
+                                </div>';
+                                }
+                                ?>
                                 <div class="row mb-2">
                                     <div class="col-7">
                                         <?php echo $lang->get('webauthn_login_mode'); ?>

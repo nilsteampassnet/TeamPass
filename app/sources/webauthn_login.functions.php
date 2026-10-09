@@ -116,7 +116,7 @@ function webauthnLoginAdminAction(string $type, array $data, array $SETTINGS, La
         return [
             'error' => false,
             'user' => trim((string) $target['name'] . ' ' . (string) $target['lastname'] . ' [' . (string) $target['login'] . ']'),
-            'credentials' => webauthnLoginRows($targetId),
+            'credentials' => webauthnLoginRows($targetId, webauthnLoginRpId($SETTINGS)),
         ];
     }
 
@@ -139,7 +139,7 @@ function webauthnLoginList(int $userId, array $SETTINGS): array
         'can_wrap' => webauthnLoginSessionCanWrap($SETTINGS),
         'require_prf' => (int) ($SETTINGS['webauthn_login_require_prf'] ?? 0) === 1,
         'stepup_password' => webauthnLoginStepUpUsesPassword((string) SessionManager::getSession()->get('user-auth_type')),
-        'credentials' => webauthnLoginRows($userId),
+        'credentials' => webauthnLoginRows($userId, webauthnLoginRpId($SETTINGS)),
     ];
 }
 
@@ -163,7 +163,7 @@ function webauthnLoginRegisterOptions(int $userId, array $data, array $SETTINGS,
     if ($rpId === '' || webauthnLoginOriginOf((string) ($SETTINGS['cpassman_url'] ?? '')) === '') {
         return webauthnLoginError($lang->get('webauthn_login_misconfigured'));
     }
-    if (count(webauthnLoginRows($userId)) >= TP_WEBAUTHN_LOGIN_MAX_CREDENTIALS) {
+    if (count(webauthnLoginRows($userId, '')) >= TP_WEBAUTHN_LOGIN_MAX_CREDENTIALS) {
         return webauthnLoginError($lang->get('webauthn_login_too_many'));
     }
 
@@ -223,7 +223,7 @@ function webauthnLoginRegisterVerify(int $userId, array $data, array $SETTINGS, 
     if (webauthnLoginMode($SETTINGS) === TP_WEBAUTHN_LOGIN_MODE_DISABLED) {
         return webauthnLoginError($lang->get('webauthn_login_disabled'));
     }
-    if (count(webauthnLoginRows($userId)) >= TP_WEBAUTHN_LOGIN_MAX_CREDENTIALS) {
+    if (count(webauthnLoginRows($userId, '')) >= TP_WEBAUTHN_LOGIN_MAX_CREDENTIALS) {
         return webauthnLoginError($lang->get('webauthn_login_too_many'));
     }
 
@@ -239,6 +239,9 @@ function webauthnLoginRegisterVerify(int $userId, array $data, array $SETTINGS, 
     }
 
     $credentialIdB64 = webauthnBase64UrlEncode($record->publicKeyCredentialId);
+    // The relying party id of the options the passkey answered: the one it is bound to
+    $pendingOptions = json_decode((string) $pending['options'], true);
+    $registeredRpId = is_array($pendingOptions) === true ? (string) ($pendingOptions['rp']['id'] ?? '') : '';
     if ((int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('user_webauthn_credentials') . ' WHERE credential_id = %s', $credentialIdB64) > 0) {
         return webauthnLoginError($lang->get('webauthn_login_already_registered'));
     }
@@ -272,6 +275,7 @@ function webauthnLoginRegisterVerify(int $userId, array $data, array $SETTINGS, 
         [
             'user_id' => $userId,
             'credential_id' => $credentialIdB64,
+            'rp_id' => $registeredRpId !== '' ? $registeredRpId : null,
             'public_key_cose' => base64_encode($record->credentialPublicKey),
             'sign_count' => $record->counter,
             'aaguid' => (string) $record->aaguid,
@@ -636,14 +640,15 @@ function webauthnLoginTakePending(string $purpose): ?array
 /**
  * The passkeys of an account, without any key material.
  *
- * @param int $userId Owner
+ * @param int    $userId      Owner
+ * @param string $currentRpId Relying party id in force, which tells the passkeys still usable
  *
  * @return array<int, array<string, mixed>>
  */
-function webauthnLoginRows(int $userId): array
+function webauthnLoginRows(int $userId, string $currentRpId): array
 {
     $rows = DB::query(
-        'SELECT id, label, key_wrap_mode, backup_eligible, backup_state, created_at, last_used_at
+        'SELECT id, label, rp_id, key_wrap_mode, backup_eligible, backup_state, created_at, last_used_at
         FROM ' . prefixTable('user_webauthn_credentials') . '
         WHERE user_id = %i
         ORDER BY created_at DESC, id DESC',
@@ -654,6 +659,8 @@ function webauthnLoginRows(int $userId): array
         static fn (array $row): array => [
             'id' => (int) $row['id'],
             'label' => (string) $row['label'],
+            'rp_id' => (string) ($row['rp_id'] ?? ''),
+            'usable' => webauthnLoginPasskeyIsUsable($row['rp_id'], $currentRpId),
             'passwordless' => (int) $row['key_wrap_mode'] !== TP_WEBAUTHN_LOGIN_WRAP_NONE,
             'server_wrap' => (int) $row['key_wrap_mode'] === TP_WEBAUTHN_LOGIN_WRAP_SERVER,
             'synced' => (int) $row['backup_state'] === 1,
@@ -692,30 +699,39 @@ function webauthnLoginRow(int $userId, int $id): ?array
  * Raw ids of an account's passkeys: excluded at registration, so an authenticator does not
  * register a second one, and allowed at sign-in.
  *
- * @param int $userId Owner
+ * @param int         $userId Owner
+ * @param string|null $rpId   Only the passkeys still usable under this relying party id, null for all
  *
  * @return string[]
  */
-function webauthnLoginCredentialIds(int $userId): array
+function webauthnLoginCredentialIds(int $userId, ?string $rpId = null): array
 {
-    return array_map(
-        static fn ($id): string => webauthnBase64UrlDecode((string) $id),
-        DB::queryFirstColumn('SELECT credential_id FROM ' . prefixTable('user_webauthn_credentials') . ' WHERE user_id = %i', $userId)
-    );
+    $ids = $rpId === null
+        ? DB::queryFirstColumn('SELECT credential_id FROM ' . prefixTable('user_webauthn_credentials') . ' WHERE user_id = %i', $userId)
+        : DB::queryFirstColumn(
+            'SELECT credential_id FROM ' . prefixTable('user_webauthn_credentials') . ' WHERE user_id = %i AND (rp_id IS NULL OR rp_id = %s)',
+            $userId,
+            $rpId
+        );
+
+    return array_map(static fn ($id): string => webauthnBase64UrlDecode((string) $id), $ids);
 }
 
 /**
- * Tell whether an account has at least one sign-in passkey.
+ * Tell whether an account has a sign-in passkey it can still use. One registered for a previous
+ * relying party id does not count: asking for it would lock the account out of its sign-in.
  *
- * @param int $userId Owner
+ * @param int    $userId Owner
+ * @param string $rpId   Relying party id in force
  *
  * @return bool
  */
-function webauthnLoginUserHasPasskey(int $userId): bool
+function webauthnLoginUserHasPasskey(int $userId, string $rpId): bool
 {
     return $userId > 0 && (int) DB::queryFirstField(
-        'SELECT COUNT(*) FROM ' . prefixTable('user_webauthn_credentials') . ' WHERE user_id = %i',
-        $userId
+        'SELECT COUNT(*) FROM ' . prefixTable('user_webauthn_credentials') . ' WHERE user_id = %i AND (rp_id IS NULL OR rp_id = %s)',
+        $userId,
+        $rpId
     ) > 0;
 }
 
@@ -736,15 +752,16 @@ function webauthnLoginUserHasPasskey(int $userId): bool
  */
 function webauthnLoginSecondFactor(array $SETTINGS, int $userId, $assertion, Language $lang): array
 {
-    if (webauthnLoginMode($SETTINGS) === TP_WEBAUTHN_LOGIN_MODE_DISABLED || webauthnLoginUserHasPasskey($userId) === false) {
+    $rpId = webauthnLoginRpId($SETTINGS);
+    if (webauthnLoginMode($SETTINGS) === TP_WEBAUTHN_LOGIN_MODE_DISABLED || webauthnLoginUserHasPasskey($userId, $rpId) === false) {
         return ['state' => 'failed', 'message' => $lang->get('webauthn_login_disabled'), 'setup_error' => true];
     }
     $origin = webauthnLoginOriginOf((string) ($SETTINGS['cpassman_url'] ?? ''));
 
     if (is_array($assertion) === false) {
         $optionsJson = webauthnLoginSerializeOptions(webauthnLoginRequestOptions(
-            webauthnLoginRpId($SETTINGS),
-            webauthnLoginCredentialIds($userId),
+            $rpId,
+            webauthnLoginCredentialIds($userId, $rpId),
             false
         ));
         SessionManager::getSession()->set(TP_WEBAUTHN_LOGIN_PENDING_KEY, [

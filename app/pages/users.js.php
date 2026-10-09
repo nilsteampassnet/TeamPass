@@ -4314,6 +4314,12 @@ function refreshListInactiveUsers(filterValue) {
                     if (credential.passwordless === true) {
                         $label.append(' ', $('<span class="badge badge-success">').text(<?php echo json_encode($lang->get('webauthn_login_passwordless_badge'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>))
                     }
+                    // Bound to a previous relying party ID: it can no longer sign in
+                    if (credential.usable === false) {
+                        $label.append(' ', $('<span class="badge badge-warning">')
+                            .attr('title', <?php echo json_encode($lang->get('webauthn_login_other_rp_tip'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>)
+                            .text(<?php echo json_encode($lang->get('webauthn_login_other_rp'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>.replace('%s', credential.rp_id)))
+                    }
                     const lastUsed = credential.last_used_at ? new Date(credential.last_used_at * 1000).toLocaleString() : <?php echo json_encode($lang->get('webauthn_never_used'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
                     $row.append(
                         $label,

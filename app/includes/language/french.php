@@ -3808,7 +3808,11 @@ return array(
     'webauthn_login_stepup_failed' => 'Mot de passe non confirmé pour une clé d’accès',
     'webauthn_login_passwordless_prf_required' => 'Cette clé d’accès ne peut plus vous connecter sans mot de passe : votre administrateur exige désormais PRF, que son authentificateur ne propose pas. Connectez-vous avec votre mot de passe ; la clé d’accès le confirme toujours.',
     'webauthn_rp_id_invalid' => 'L’identifiant de la partie de confiance doit être l’hôte de l’URL de TeamPass (%s) ou l’un de ses domaines parents.',
-    'webauthn_rp_id_change_confirm' => 'Les #count# clés d’accès de connexion enregistrées pour #rp_id# cesseront de fonctionner, et leurs propriétaires devront les enregistrer de nouveau. Continuer ?',
+    'webauthn_rp_id_change_confirm' => 'Clés d’accès de connexion enregistrées pour #rp_id# : #count#. Avec cette nouvelle valeur, elles cessent de fonctionner et leurs propriétaires devront les enregistrer de nouveau. Continuer ?',
+    'webauthn_login_https_required' => 'Les clés d’accès exigent HTTPS : les navigateurs les refusent sur une adresse HTTP comme l’URL de TeamPass (%s). Servez TeamPass en HTTPS avant de les activer.',
+    'webauthn_login_other_rp' => 'Enregistrée pour %s : inutilisable',
+    'webauthn_login_other_rp_tip' => 'L’identifiant de la partie de confiance a changé depuis l’enregistrement de cette clé d’accès : elle ne peut plus servir à se connecter. Supprimez-la et ajoutez-en une nouvelle.',
+    'webauthn_login_orphaned_passkeys' => 'Clés d’accès de connexion enregistrées pour un autre identifiant de partie de confiance : %d. Elles ne peuvent plus servir à se connecter : elles ne sont plus demandées à leurs propriétaires, qui les voient signalées dans leur profil, où ils peuvent les supprimer.',
     'webauthn_passwordless_satisfies_mfa' => 'La connexion sans mot de passe vaut MFA',
     'webauthn_passwordless_satisfies_mfa_tip' => 'Une clé d’accès qui vérifie son utilisateur (code PIN ou biométrie) constitue déjà deux facteurs. Désactivée, les comptes auxquels Google ou Duo est imposé doivent se connecter avec leur mot de passe.',
 

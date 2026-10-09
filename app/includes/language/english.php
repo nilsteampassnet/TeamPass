@@ -3764,7 +3764,11 @@ return array(
     'webauthn_login_stepup_failed' => 'Password not confirmed for a passkey',
     'webauthn_login_passwordless_prf_required' => 'This passkey can no longer sign you in without a password: your administrator now requires PRF, which its authenticator does not offer. Sign in with your password; the passkey still confirms it.',
     'webauthn_rp_id_invalid' => 'The relying party ID must be the host of the TeamPass URL (%s) or one of its parent domains.',
-    'webauthn_rp_id_change_confirm' => 'The #count# sign-in passkeys registered for #rp_id# will stop working, and their owners will have to register them again. Continue?',
+    'webauthn_rp_id_change_confirm' => 'Sign-in passkeys registered for #rp_id#: #count#. With this new value they stop working, and their owners will have to register them again. Continue?',
+    'webauthn_login_https_required' => 'Passkeys need HTTPS: browsers refuse them on a plain HTTP address such as the TeamPass URL (%s). Serve TeamPass over HTTPS before enabling them.',
+    'webauthn_login_other_rp' => 'Registered for %s: no longer usable',
+    'webauthn_login_other_rp_tip' => 'The relying party ID changed since this passkey was registered: it can no longer sign in. Delete it and add a new one.',
+    'webauthn_login_orphaned_passkeys' => 'Sign-in passkeys registered for another relying party ID: %d. They can no longer sign in: their owners are no longer asked for them, and see them marked in their profile, where they can delete them.',
     'webauthn_passwordless_satisfies_mfa' => 'Passwordless sign-in counts as MFA',
     'webauthn_passwordless_satisfies_mfa_tip' => 'A passkey that verifies its user (PIN or biometrics) is already two factors. When this is off, accounts on which Google or Duo is imposed must sign in with their password.',
     // LDAP setup page - configuration checks and representative test

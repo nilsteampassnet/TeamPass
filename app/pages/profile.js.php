@@ -699,6 +699,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         'passwordless' => $lang->get('webauthn_login_passwordless_badge'),
         'serverWrap' => $lang->get('webauthn_login_server_wrap_tip'),
         'synced' => $lang->get('webauthn_login_synced_badge'),
+        'otherRp' => $lang->get('webauthn_login_other_rp'),
+        'otherRpTip' => $lang->get('webauthn_login_other_rp_tip'),
         'rename' => $lang->get('webauthn_login_rename'),
         'delete' => $lang->get('webauthn_login_delete'),
         'deleteConfirm' => $lang->get('webauthn_login_delete_confirm'),
@@ -778,10 +780,15 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             if (credential.synced === true) {
                 badges += ' <span class="badge badge-info ml-1">' + $('<span>').text(webauthnLoginText.synced).html() + '</span>';
             }
+            // Bound to a previous relying party ID: it can no longer sign in
+            if (credential.usable === false) {
+                badges += ' <span class="badge badge-warning ml-1" title="' + $('<span>').text(webauthnLoginText.otherRpTip).html() + '">'
+                    + $('<span>').text(webauthnLoginText.otherRp.replace('%s', credential.rp_id)).html() + '</span>';
+            }
             let actions = '<button type="button" class="btn btn-sm btn-outline-secondary webauthn-login-rename" data-id="' + id + '" title="' + $('<span>').text(webauthnLoginText.rename).html() + '"><i class="fa-solid fa-pen"></i></button>';
             if (credential.passwordless === true) {
                 actions += ' <button type="button" class="btn btn-sm btn-outline-warning webauthn-login-passwordless-disable" data-id="' + id + '" title="' + $('<span>').text(webauthnLoginText.disable).html() + '"><i class="fa-solid fa-lock"></i></button>';
-            } else if (enabled === true && webauthnLoginCanWrap === true) {
+            } else if (enabled === true && webauthnLoginCanWrap === true && credential.usable !== false) {
                 actions += ' <button type="button" class="btn btn-sm btn-outline-success webauthn-login-passwordless-enable" data-id="' + id + '" title="' + $('<span>').text(webauthnLoginText.enable).html() + '"><i class="fa-solid fa-unlock"></i></button>';
             }
             actions += ' <button type="button" class="btn btn-sm btn-danger webauthn-login-delete" data-id="' + id + '" title="' + $('<span>').text(webauthnLoginText.delete).html() + '"><i class="fa-solid fa-trash"></i></button>';
@@ -905,6 +912,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     }
 
     if ($('#webauthn-login-block').length > 0) {
+        // Browsers only run passkeys in a secure context (HTTPS or localhost)
+        if (window.isSecureContext !== true && $('#webauthn-login-add').length > 0) {
+            $('#webauthn-login-add').closest('.input-group').replaceWith(
+                $('<div class="text-warning small mt-2">').text(webauthnLoginText.unsupported)
+            );
+        }
         loadWebauthnLogin();
     }
 

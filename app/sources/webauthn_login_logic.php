@@ -163,6 +163,31 @@ function webauthnLoginOriginOf(string $url): string
 }
 
 /**
+ * Tell whether browsers treat an origin as a secure context, the only place they run passkeys:
+ * HTTPS, or plain HTTP on the loopback (localhost, *.localhost, 127.0.0.1, [::1]).
+ *
+ * @param string $origin Origin, as webauthnLoginOriginOf() writes it
+ *
+ * @return bool
+ */
+function webauthnLoginOriginIsSecure(string $origin): bool
+{
+    $parts = parse_url($origin);
+    if (is_array($parts) === false || empty($parts['scheme']) === true || empty($parts['host']) === true) {
+        return false;
+    }
+    if ($parts['scheme'] === 'https') {
+        return true;
+    }
+    $host = strtolower(trim((string) $parts['host'], '[]'));
+
+    $loopbackIpv4 = filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false && str_starts_with($host, '127.');
+
+    return $parts['scheme'] === 'http'
+        && ($host === 'localhost' || str_ends_with($host, '.localhost') || $host === '::1' || $loopbackIpv4);
+}
+
+/**
  * Tell whether a relying party id may be used by a page served from a host: the host itself,
  * or a parent domain of it. An IP address only accepts itself.
  *
@@ -202,6 +227,21 @@ function webauthnLoginRpId(array $settings): string
     $configured = strtolower(trim(html_entity_decode((string) ($settings['webauthn_rp_id'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8')));
 
     return $configured !== '' && webauthnLoginRpIdIsValidFor($configured, $host) === true ? $configured : $host;
+}
+
+/**
+ * Tell whether a sign-in passkey can still sign in. Authenticators bind a passkey to the relying
+ * party id it was registered for: once that id changes, the passkey is out of reach.
+ *
+ * @param string|null $storedRpId  Relying party id it was registered for, null when unknown
+ *                                 (registered before it was recorded)
+ * @param string      $currentRpId Relying party id in force
+ *
+ * @return bool
+ */
+function webauthnLoginPasskeyIsUsable(?string $storedRpId, string $currentRpId): bool
+{
+    return $storedRpId === null || $storedRpId === '' || $storedRpId === $currentRpId;
 }
 
 /**

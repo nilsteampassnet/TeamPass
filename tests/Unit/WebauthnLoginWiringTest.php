@@ -244,6 +244,46 @@ final class WebauthnLoginWiringTest extends TestCase
         $this->assertStringNotContainsString("webauthnLoginPost('webauthn_login_passwordless_options'", $profile);
     }
 
+    public function testPasskeyActionsAreHiddenOutsideASecureContext(): void
+    {
+        $login = (string) file_get_contents(__DIR__ . '/../../app/core/login.js.php');
+        $this->assertMatchesRegularExpression(
+            "/if \\(window\\.isSecureContext !== true\\) \\{\\s*\\$\\('#but_login_with_passkey'\\)\\.addClass\\('hidden'\\);/",
+            $login
+        );
+        $profile = (string) file_get_contents(__DIR__ . '/../../app/pages/profile.js.php');
+        $this->assertStringContainsString("if (window.isSecureContext !== true && \$('#webauthn-login-add').length > 0) {", $profile);
+
+        $page = (string) file_get_contents(__DIR__ . '/../../app/pages/2fa.php');
+        $this->assertStringContainsString('webauthnLoginOriginIsSecure($webauthnLoginOrigin) === false', $page);
+        $this->assertStringContainsString("\$lang->get('webauthn_login_https_required')", $page);
+    }
+
+    public function testPasskeysOfAPreviousRelyingPartyIdAreNeverAskedFor(): void
+    {
+        // Same column in a fresh install and in the upgrade, added apart for earlier 3.2.3 builds
+        $column = "`rp_id` VARCHAR(255) NULL DEFAULT NULL COMMENT 'Relying party id it was registered for',";
+        $upgrade = (string) file_get_contents(__DIR__ . '/../../public/install/upgrade_run_3.2.3.php');
+        $install = (string) file_get_contents(__DIR__ . '/../../public/install/install-steps/run.step5.php');
+        $this->assertStringContainsString($column, $this->between($upgrade, "user_webauthn_credentials` (", 'ENGINE=InnoDB'));
+        $this->assertStringContainsString($column, $this->between($install, "user_webauthn_credentials` (", 'ENGINE=InnoDB'));
+        $this->assertMatchesRegularExpression("/addColumnIfNotExist\\(\\s*\\\$pre \\. 'user_webauthn_credentials',\\s*'rp_id',/", $upgrade);
+
+        $functions = (string) file_get_contents(__DIR__ . '/../../app/sources/webauthn_login.functions.php');
+        $this->assertStringContainsString("'rp_id' => \$registeredRpId !== '' ? \$registeredRpId : null,", $functions);
+        $secondFactor = $this->between($functions, 'function webauthnLoginSecondFactor(', 'function webauthnLoginPasswordlessLoginOptions(');
+        $this->assertStringContainsString('webauthnLoginUserHasPasskey($userId, $rpId)', $secondFactor);
+        $this->assertStringContainsString('webauthnLoginCredentialIds($userId, $rpId)', $secondFactor);
+        $this->assertStringContainsString('(rp_id IS NULL OR rp_id = %s)', $this->between($functions, 'function webauthnLoginUserHasPasskey(', 'function webauthnLoginSecondFactor('));
+
+        $identify = (string) file_get_contents(__DIR__ . '/../../app/sources/identify.php');
+        $this->assertStringContainsString("webauthnLoginUserHasPasskey((int) (\$userInfo['id'] ?? 0), webauthnLoginRpId(\$SETTINGS))", $identify);
+
+        // Shown, not hidden: the owner and the administrators can delete them
+        $this->assertStringContainsString('if (credential.usable === false) {', (string) file_get_contents(__DIR__ . '/../../app/pages/profile.js.php'));
+        $this->assertStringContainsString('if (credential.usable === false) {', (string) file_get_contents(__DIR__ . '/../../app/pages/users.js.php'));
+    }
+
     public function testRelyingPartyIdAndRequirePrfAreEnforcedWhenSaved(): void
     {
         $admin = (string) file_get_contents(__DIR__ . '/../../app/sources/admin.queries.php');
