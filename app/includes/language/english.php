@@ -519,6 +519,8 @@ return array(
     'login_page_refresh_now' => 'Refresh now',
     'login_page_refreshed_retype_password' => 'Page refreshed. Please type your password again.',
     'folder_created' => 'Folder created',
+    'folders_show_more' => 'Show more folders',
+    'folders_view_count' => '{shown} / {total} matching folders · {selected} selected',
     'allowed_to_create' => 'Allowed to create',
     'allowed_to_read' => 'Allowed to read',
     'allowed_to_update' => 'Allowed to update',

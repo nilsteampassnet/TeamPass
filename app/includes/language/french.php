@@ -3673,6 +3673,8 @@ return array(
     'secure_send_public_identity_missing' => 'Votre compte ne possède aucun nom public. Aucun nom d’expéditeur ne sera communiqué.',
     'secure_send_public_identity_disabled' => 'Votre administrateur a désactivé les noms d’expéditeur sur les pages publiques d’envoi sécurisé. Aucun nom ne sera communiqué.',
     'secure_send_public_identity_disabled_entity' => 'Votre administrateur a désactivé les noms d’expéditeur sur les pages publiques d’envoi sécurisé. Le destinataire verra uniquement #ENTITY#.',
+    'folders_show_more' => 'Afficher davantage de dossiers',
+    'folders_view_count' => '{shown} / {total} dossiers correspondants · {selected} sélectionnés',
     'folder_deletion_protection' => 'Protéger contre la suppression accidentelle',
     'folder_deletion_protection_tip' => 'Seul un administrateur TeamPass peut modifier cette protection. Un dossier protégé, ou un parent qui en contient un, ne peut pas être supprimé.',
     'folder_deletion_protected' => 'La suppression a été bloquée car l’arborescence sélectionnée contient au moins un dossier protégé contre la suppression accidentelle. Un administrateur doit d’abord retirer la protection.',
