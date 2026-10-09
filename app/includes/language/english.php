@@ -2385,6 +2385,7 @@ return array(
     'health_file_integrity_reference_missing' => 'The file integrity reference manifest is missing.',
     'health_file_integrity_reference_unreadable' => 'The file integrity reference manifest is not readable.',
     'health_file_integrity_report_invalid' => 'The saved file integrity report is unreadable or invalid.',
+    'health_file_integrity_lock_probe_failed' => 'The file integrity scan lock could not be checked. Check storage/logs access and filesystem locking support.',
     'health_copy_ssh_commands' => 'Copy SSH commands',
     'health_file_permissions' => 'File and directory permissions',
     'health_file_permissions_intro' => 'Audits TeamPass code and runtime directory permissions. High-volume attachment, backup and avatar contents are skipped by the regular Health scan and can be audited from the CLI.',
