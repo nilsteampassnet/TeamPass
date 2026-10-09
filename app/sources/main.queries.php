@@ -1408,7 +1408,6 @@ function changePassword(
                 array(
                     'pw' => $post_new_password_hashed,
                     'last_pw_change' => mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')),
-                    'last_pw' => $post_current_password,
                     'special' => $special_action,
                     'private_key' => $newEncryptedPrivateKey,
                 ),
