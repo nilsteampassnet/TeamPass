@@ -4,6 +4,7 @@ paths:
   - "tests/Unit/SecureSend*.php"
   - "tests/Fixtures/secure_send_*.php"
   - "tests/Integration/secure_send_*.php"
+  - "tests/JavaScript/secure-send*.test.cjs"
   - "docs/install/secure-send.md"
 ---
 
