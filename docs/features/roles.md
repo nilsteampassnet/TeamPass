@@ -57,8 +57,7 @@ excluded. Paths omit inaccessible ancestor names. Matrix reads and permission
 updates validate the selected role against the caller's grantable roles; updates
 also recheck every explicit folder target. Propagation only affects authorized
 shared descendants. A forged or no-longer-authorized explicit target rejects the
-entire submission. Existing transactions, cache invalidation and WebSocket
-notifications are retained. No installation or database migration is required.
+entire submission.
 
 ### Browsing large trees
 
@@ -86,11 +85,6 @@ notifications are retained. No installation or database migration is required.
   selected ancestors rather than silently entering their selection. After a
   successful permission save, selection is cleared while expanded branches and
   the number of displayed rows are retained.
-
-No elapsed-time benchmark on a production installation is claimed. Automated
-fixtures exercise 3,161 folders; real-instance timings and visual checks remain
-separate validation steps. Deploy the updated pages and controller with the
-existing `public/assets/js/folders-tree.js` asset from PR #5426.
 
 ### Editing a single folder
 
