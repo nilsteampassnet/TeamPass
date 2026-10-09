@@ -36,8 +36,11 @@ declare(strict_types=1);
  * the submitted set alone cannot be taken as the final state: applying it as-is
  * would silently revoke every role outside the caller's scope.
  *
- * The DB-facing wrappers live in main.functions.php (callerGrantableRoleIds()
- * and reconcileManualUserRoles()).
+ * It also bounds the folders a role rights change may write to (Roles page),
+ * unit-tested by tests/Unit/RoleRightsScopeTest.php.
+ *
+ * The DB-facing wrappers live in main.functions.php (callerGrantableRoleIds(),
+ * callerRoleAssignableFolderIds() and reconcileManualUserRoles()).
  */
 
 /**
@@ -86,6 +89,64 @@ function excludeAdRolesFromSubmittedRoles(array $submittedRoleIds, array $adRole
     return array_values(
         array_diff(rolesScopeNormalizeIds($submittedRoleIds), rolesScopeNormalizeIds($adRoleIds))
     );
+}
+
+/**
+ * List the folders whose rights the caller may change on a role.
+ *
+ * A folder qualifies when the caller can access it, it still exists in the tree, and it is
+ * neither in a personal tree (never granted to a role) nor denied to the caller.
+ *
+ * @param array $accessibleIds Folder ids the caller can access (session).
+ * @param array $existingIds   Folder ids currently in the tree.
+ * @param array $excludedIds   Personal and denied folder ids.
+ *
+ * @return array<int> Folder ids the caller may assign, re-indexed.
+ */
+function roleRightsAssignableFolderIds(array $accessibleIds, array $existingIds, array $excludedIds): array
+{
+    return array_values(array_diff(
+        array_intersect(rolesScopeNormalizeIds($accessibleIds), rolesScopeNormalizeIds($existingIds)),
+        rolesScopeNormalizeIds($excludedIds)
+    ));
+}
+
+/**
+ * Resolve the folders a role rights change writes to.
+ *
+ * Every explicitly selected folder must be assignable, otherwise the whole submission is
+ * refused: a forged id must never be silently dropped from a request that otherwise succeeds.
+ * Descendants reached by propagation are kept only when they are assignable too.
+ *
+ * @param array $selectedIds   Folder ids submitted by the caller.
+ * @param array $descendantIds Descendant ids of the selected folders (empty without propagation).
+ * @param array $assignableIds Folder ids the caller may assign.
+ *
+ * @return array<int>|null Target folder ids, or null when the selection is empty or out of scope.
+ */
+function roleRightsTargetFolders(array $selectedIds, array $descendantIds, array $assignableIds): ?array
+{
+    $assignable = array_fill_keys(rolesScopeNormalizeIds($assignableIds), true);
+    $targets = [];
+    foreach ($selectedIds as $folderId) {
+        if (is_int($folderId) === false && (is_string($folderId) === false || ctype_digit($folderId) === false)) {
+            return null;
+        }
+        if (isset($assignable[(int) $folderId]) === false) {
+            return null;
+        }
+        $targets[(int) $folderId] = true;
+    }
+    if ($targets === []) {
+        return null;
+    }
+    foreach (rolesScopeNormalizeIds($descendantIds) as $folderId) {
+        if (isset($assignable[$folderId]) === true) {
+            $targets[$folderId] = true;
+        }
+    }
+
+    return array_keys($targets);
 }
 
 /**

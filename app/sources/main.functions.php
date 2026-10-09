@@ -13526,6 +13526,29 @@ function callerGrantableRoleIds(): array
 }
 
 /**
+ * Returns the ids of the folders whose rights the caller may change on a role.
+ *
+ * Same folders as the permission matrix of the Roles page: the folders the caller can
+ * access, minus every folder in a personal tree (never granted to a role, and
+ * user-personal_visible_folders stays empty for non-admin users, whose own personal
+ * folders ARE in accessible_folders) and minus the folders denied to the caller. Folders
+ * no longer in the tree are dropped, so a stale id never reaches NestedTree::getDescendants(),
+ * which returns the whole tree for an unknown node.
+ *
+ * @return array<int> Folder ids the caller may assign, empty when none.
+ */
+function callerRoleAssignableFolderIds(): array
+{
+    $session = SessionManager::getSession();
+
+    return roleRightsAssignableFolderIds(
+        (array) $session->get('user-accessible_folders'),
+        DB::queryFirstColumn('SELECT id FROM ' . prefixTable('nested_tree')),
+        array_merge(getPersonalFolderIdsWithDescendants(), (array) $session->get('user-no_access_folders'))
+    );
+}
+
+/**
  * Merges a submitted role set with the roles the caller is not entitled to touch.
  *
  * The user edit form replaces the whole manual role set while a manager only ever sees a

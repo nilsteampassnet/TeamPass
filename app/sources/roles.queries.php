@@ -115,7 +115,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($session->get('user-read_only') === 1) {
+            } elseif ((int) $session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -127,20 +127,29 @@ if (null !== $post_type) {
             }
 
             // Prepare variables
-            $post_role_id = filter_input(INPUT_POST, 'role_id', FILTER_SANITIZE_NUMBER_INT);
+            $post_role_id = (int) filter_input(INPUT_POST, 'role_id', FILTER_SANITIZE_NUMBER_INT);
             $arrData = array();
 
-            // Personal folders are never granted to a role: exclude them from the matrix.
-            // user-personal_visible_folders stays empty for non-admin users, whose own personal
-            // folders ARE in accessible_folders, so the exclusion list has to be resolved here.
-            $personalFolderIds = getPersonalFolderIdsWithDescendants();
+            // The caller may only read the rights of a role they may grant
+            if (in_array($post_role_id, callerGrantableRoleIds(), true) === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Same folders as the ones change_access_right_on_folder accepts: no personal tree,
+            // no folder denied to the caller.
+            $assignableFolderIds = array_fill_keys(callerRoleAssignableFolderIds(), true);
 
             //Display each folder with associated rights by role
             $descendants = $tree->getDescendants();
             foreach ($descendants as $node) {
-                if (in_array($node->id, $session->get('user-accessible_folders')) === true
-                    && in_array((int) $node->id, $personalFolderIds, true) === false
-                ) {
+                if (isset($assignableFolderIds[(int) $node->id]) === true) {
                     $arrNode = array();
                     $arrNode['ident'] = (int) $node->nlevel;
                     $arrNode['title'] = $node->title;
@@ -194,7 +203,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($session->get('user-read_only') === 1) {
+            } elseif ((int) $session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -212,13 +221,14 @@ if (null !== $post_type) {
             );
 
             // Prepare variables
-            $post_selectedFolders = filter_var_array($dataReceived['selectedFolders'], FILTER_SANITIZE_NUMBER_INT);
+            // Raw ids: roleRightsTargetFolders() refuses anything that is not a plain folder id.
+            $post_selectedFolders = (array) ($dataReceived['selectedFolders'] ?? []);
             $post_access = filter_var($dataReceived['access'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_roleId = (int) filter_var($dataReceived['roleId'], FILTER_SANITIZE_NUMBER_INT);
             $post_propagate = (int) filter_var($dataReceived['propagate'], FILTER_SANITIZE_NUMBER_INT);
 
-            // Validate role ID
-            if ($post_roleId <= 0) {
+            // Validate role ID: the caller may only change the rights of a role they may grant
+            if (in_array($post_roleId, callerGrantableRoleIds(), true) === false) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -242,24 +252,18 @@ if (null !== $post_type) {
                 break;
             }
 
-            // Collect all target folder IDs (selected + descendants), deduplicated
-            $allFolderIds = [];
-            foreach ($post_selectedFolders as $folderId) {
-                $folderId = (int) $folderId;
-                if ($folderId <= 0) {
-                    continue;
+            // Collect all target folder IDs (selected + descendants), deduplicated.
+            // Every selected folder must be one the caller may assign (else the whole request is
+            // refused), and propagation only reaches assignable descendants.
+            $assignableFolderIds = callerRoleAssignableFolderIds();
+            $allFolderIds = roleRightsTargetFolders($post_selectedFolders, [], $assignableFolderIds);
+            if ($allFolderIds !== null && $post_propagate === 1) {
+                $descendantIds = [];
+                foreach ($allFolderIds as $folderId) {
+                    $descendantIds = array_merge($descendantIds, $tree->getDescendants($folderId, false, false, true));
                 }
-                $allFolderIds[] = $folderId;
-
-                // Add descendants if propagation is enabled
-                if ($post_propagate === 1) {
-                    $descendants = $tree->getDescendants($folderId);
-                    foreach ($descendants as $node) {
-                        $allFolderIds[] = (int) $node->id;
-                    }
-                }
+                $allFolderIds = roleRightsTargetFolders($allFolderIds, $descendantIds, $assignableFolderIds);
             }
-            $allFolderIds = array_values(array_unique(array_filter($allFolderIds)));
 
             if (empty($allFolderIds)) {
                 echo prepareExchangedData(
@@ -364,7 +368,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($session->get('user-read_only') === 1) {
+            } elseif ((int) $session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -394,6 +398,20 @@ if (null !== $post_type) {
                 && in_array($post_allowSecurityPostureFix, [0, 1], true) === true
                 ? ['allow_security_posture_fix' => $post_allowSecurityPostureFix]
                 : [];
+
+            // Editing a role is limited to the roles the caller may grant; creating one is not.
+            if (in_array($post_action, ['edit_role', 'edit_folder'], true) === true
+                && in_array((int) $post_folderId, callerGrantableRoleIds(), true) === false
+            ) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
 
             // Init
             $return = array(
@@ -595,7 +613,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($session->get('user-read_only') === 1) {
+            } elseif ((int) $session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -613,7 +631,19 @@ if (null !== $post_type) {
             );
 
             // Prepare variables
-            $post_roleId = filter_var($dataReceived['roleId'], FILTER_SANITIZE_NUMBER_INT);
+            $post_roleId = (int) filter_var($dataReceived['roleId'], FILTER_SANITIZE_NUMBER_INT);
+
+            // The caller may only delete a role they may grant
+            if (in_array($post_roleId, callerGrantableRoleIds(), true) === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
 
             // Delete roles
             DB::delete(
@@ -669,6 +699,16 @@ if (null !== $post_type) {
                     array(
                         'error' => true,
                         'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ((int) $session->get('user-admin') !== 1) {
+                // The AD group mapping is an administrator setting (roles.php only shows it to them)
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -774,6 +814,16 @@ if (null !== $post_type) {
                     array(
                         'error' => true,
                         'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ((int) $session->get('user-admin') !== 1) {
+                // Mapping an AD group to a role grants that role to every member of the group
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
