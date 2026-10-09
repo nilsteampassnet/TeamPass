@@ -1012,11 +1012,44 @@ snapshot until those backups expire.
 
 ### Audit scope
 
-Teampass records successful Secure Send reveals under the OTV system identity
-and records automatic item deletion. Web-server logs can provide traffic and
-failure indicators without storing the URL secret. Before using Secure Send for
-a regulated workflow, verify that the available creation, revocation, reveal
-and retention evidence meets the organisation's audit requirements.
+After applying the Secure Send audit migration, Teampass retains a dedicated
+metadata journal for creations, successful server-side reveals, confirmed
+credential failures, owner revocations, observed access invalidations and expired
+link cleanup. Each event keeps the internal sharing identifier, original sender,
+observation time, source item identifier (if any), sharing type, protection policy
+and counters. Creation/revocation identify the authenticated sender; anonymous
+recipients are not identified. No shared content, item label, note title, link
+code, key, passphrase or complete URL is stored in this journal.
+
+Journal writes share the operation's transaction. If the journal cannot be
+written, the operation fails without returning a usable new URL or decrypted
+content. The existing OTV item audit and automatic-deletion records remain.
+When the existing syslog option is enabled, structured events are forwarded after
+commit using `action=secure_send` and JSON metadata. Forwarding is best effort;
+configure and monitor the central collector separately.
+
+The journal survives link cleanup and account/item deletion. It starts with
+operations observed after upgrade: past creations and reveals cannot be rebuilt.
+`created_at` preserves the original link timestamp, while `occurred_at` is when
+an event was recorded. Expiration is audited when cleanup observes and removes
+the row, not by a scheduler exactly at the deadline. Cleanup processes at most
+100 expired links per authenticated creation/list operation; remaining expired
+links stay unusable and are omitted from the active list. Invalidations due to
+permission/account changes are recorded when a confirmed reveal observes them.
+
+A cleanup error rolls back that batch and is logged without blocking an otherwise
+authorized creation or listing. Creation/reveal/revocation still require their own
+atomic audit writes. Expired historical rows with invalid link/sender identifiers
+are retained for investigation, diagnosed without their contents and excluded
+before the cleanup batch limit; they cannot prevent valid rows from being cleaned.
+
+This first audit change has no statistics, Reports export or audit-purge interface.
+There is no automatic audit retention: plan capacity, protect database and backup
+access, and define the organisation's retention and archiving policy. SQL access
+can still alter evidence; a protected external collector is a separate control.
+A successful reveal event proves the server committed a reveal, not that a named
+recipient received, read or copied its response. Before relying on this evidence
+for a regulated workflow, assess these limits and the surrounding controls.
 
 Secure Send is enabled globally. Current item access is rechecked, but
 organisations that require a separate role allowlist for issuing links should

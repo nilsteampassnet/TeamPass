@@ -51,6 +51,7 @@ require_once __DIR__ . '/secure_send_access.php';
 require_once __DIR__ . '/secure_send_snapshot.php';
 require_once __DIR__ . '/secure_send_input.php';
 require_once __DIR__ . '/secure_send_url.php';
+require_once __DIR__ . '/secure_send_storage.php';
 
 // init
 loadClasses('DB');
@@ -7366,12 +7367,12 @@ switch ($inputData['type']) {
             );
         }
 
-        // delete all existing old otv codes
-        DB::delete(
-            prefixTable('otv'),
-            'time_limit < %i',
-            time()
-        );
+        // Opportunistic cleanup keeps evidence before removing expired ciphertext.
+        try {
+            secureSendPurgeExpiredLinks($SETTINGS);
+        } catch (Throwable $e) {
+            error_log('TEAMPASS Secure Send cleanup failed (' . get_class($e) . ')');
+        }
 
         // Generate the lookup code and the link secret carried in the URL.
         // The Defuse key that encrypts the payload is wrapped by the link secret
@@ -7412,25 +7413,30 @@ switch ($inputData['type']) {
             echo json_encode(['error' => 'invalid_public_url']);
             break;
         }
-        DB::insert(
-            prefixTable('otv'),
-            array(
-                'id' => null,
-                'item_id' => $secureSendItemId,
-                'send_type' => $secureSendType,
-                'timestamp' => $timestampReference,
-                'originator' => intval($session->get('user-id')),
-                'code' => $otv_code,
-                'encrypted' => $passwd['string'],
-                'protected_key' => $secureSendProtectedKey,
-                'has_passphrase' => $secureSendPassphrase === '' ? 0 : 1,
-                'failed_attempts' => 0,
-                'time_limit' => $secureSendLimits['time_limit'],
-                'max_views' => $secureSendLimits['views'],
-                'shared_globaly' => $secureSendShared,
-            )
-        );
-        $newID = DB::insertId();
+        try {
+            $newID = secureSendStoreLink(
+                array(
+                    'id' => null,
+                    'item_id' => $secureSendItemId,
+                    'send_type' => $secureSendType,
+                    'timestamp' => $timestampReference,
+                    'originator' => intval($session->get('user-id')),
+                    'code' => $otv_code,
+                    'encrypted' => $passwd['string'],
+                    'protected_key' => $secureSendProtectedKey,
+                    'has_passphrase' => $secureSendPassphrase === '' ? 0 : 1,
+                    'failed_attempts' => 0,
+                    'time_limit' => $secureSendLimits['time_limit'],
+                    'max_views' => $secureSendLimits['views'],
+                    'shared_globaly' => $secureSendShared,
+                ),
+                $SETTINGS
+            );
+        } catch (Throwable $e) {
+            error_log('TEAMPASS Secure Send creation failed (' . get_class($e) . ')');
+            echo json_encode(['error' => 'server_error']);
+            break;
+        }
 
         echo json_encode(
             array(
@@ -7454,12 +7460,12 @@ switch ($inputData['type']) {
             break;
         }
 
-        // Drop expired links opportunistically
-        DB::delete(
-            prefixTable('otv'),
-            'time_limit < %i',
-            time()
-        );
+        // Drop expired links opportunistically, retaining their audit history.
+        try {
+            secureSendPurgeExpiredLinks($SETTINGS);
+        } catch (Throwable $e) {
+            error_log('TEAMPASS Secure Send cleanup failed (' . get_class($e) . ')');
+        }
 
         $secureSendRows = DB::query(
             'SELECT o.id, o.send_type, o.item_id, o.has_passphrase, o.views, o.max_views, o.time_limit, i.label AS item_label
@@ -7472,6 +7478,10 @@ switch ($inputData['type']) {
 
         $secureSends = array();
         foreach (secureSendFilterLinks($secureSendRows, (int) $session->get('user-id')) as $secureSendRow) {
+            // A bounded cleanup may leave expired rows for the next operation.
+            if ((int) $secureSendRow['time_limit'] <= time()) {
+                continue;
+            }
             $isNote = ($secureSendRow['send_type'] ?? 'item') === 'note' || empty($secureSendRow['item_id']) === true;
             $secureSends[] = array(
                 'id' => (int) $secureSendRow['id'],
@@ -7508,19 +7518,18 @@ switch ($inputData['type']) {
             $inputData['data'],
             'decode'
         );
-        $secureSendId = (int) ($dataReceived['id'] ?? 0);
+        $secureSendId = is_array($dataReceived) ? (int) ($dataReceived['id'] ?? 0) : 0;
 
-        // Verify the current user owns this link before deleting it
-        $secureSendOwner = DB::queryFirstRow(
-            'SELECT originator FROM ' . prefixTable('otv') . ' WHERE id = %i',
-            $secureSendId
-        );
-        if (DB::count() === 0 || (int) $secureSendOwner['originator'] !== (int) $session->get('user-id')) {
-            echo json_encode(array('error' => 'not_allowed'));
+        try {
+            if (!secureSendRevokeLink($secureSendId, (int) $session->get('user-id'), $SETTINGS)) {
+                echo json_encode(array('error' => 'not_allowed'));
+                break;
+            }
+        } catch (Throwable $e) {
+            error_log('TEAMPASS Secure Send revocation failed (' . get_class($e) . ')');
+            echo json_encode(['error' => 'server_error']);
             break;
         }
-
-        DB::delete(prefixTable('otv'), 'id = %i', $secureSendId);
 
         echo json_encode(array('error' => '', 'id' => $secureSendId));
         break;

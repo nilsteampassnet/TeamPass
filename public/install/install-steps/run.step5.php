@@ -1527,6 +1527,13 @@ class DatabaseInstaller
         );
     }
 
+    // Create the durable Secure Send metadata journal independently from live links.
+    private function secure_send_audit()
+    {
+        require_once TEAMPASS_ROOT . '/app/sources/secure_send_audit.php';
+        DB::query(secureSendAuditSchemaSql($this->inputData['tablePrefix'] . 'secure_send_audit'));
+    }
+
     // Create table suggestion
     private function suggestion()
     {
