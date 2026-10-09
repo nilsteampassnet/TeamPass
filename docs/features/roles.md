@@ -83,7 +83,9 @@ notifications are retained. No installation or database migration is required.
 - Switching or clearing the role invalidates pending matrix and comparison
   requests and resets selection. Refreshing the same role preserves valid
   selection and expansion; a newly discovered unchecked descendant unchecks
-  selected ancestors rather than silently entering their selection.
+  selected ancestors rather than silently entering their selection. After a
+  successful permission save, selection is cleared while expanded branches and
+  the number of displayed rows are retained.
 
 No elapsed-time benchmark on a production installation is claimed. Automated
 fixtures exercise 3,161 folders; real-instance timings and visual checks remain

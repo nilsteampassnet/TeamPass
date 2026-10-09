@@ -535,6 +535,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     toastr.remove()
                     toastr.error(data.message, '', { timeOut: 5000, progressBar: true })
                 } else {
+                    _roleTree.selected.clear()
                     refreshMatrix($('#roles-list').val())
                     toastr.remove()
                 }

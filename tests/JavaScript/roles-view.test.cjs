@@ -374,26 +374,59 @@ test('Input, paste and clear debounce full-path search', () => {
   assert.equal(renders, 1)
 })
 
-test('Sidebar submission sends all model selections, including hidden rows, and ignores stale completion', () => {
+function sidebarSaveContext() {
   let handler
-  let completion
-  let posted
-  let refreshed = 0
+  const submissions = []
+  const refreshSelections = []
+  const changes = []
   const tree = new FolderTree()
-  tree.replace(nodes())
+  const rows = nodes()
+  rows[1] = { ...rows[1], parentId: 1, parents: [1], path: ['Folder 1'], level: 2, ident: 2 }
+  tree.replace(rows)
+  tree.expanded.add(1)
   tree.selected = new Set([1, 3161])
-  const $ = target => ({ on(event, fn) { handler = fn }, data() { return 'R' }, is() { return false }, val() { return '7' } })
-  $.post = (url, data, callback) => { posted = data; completion = callback }
+  const $ = target => ({ on(event, fn) { handler = fn }, data() { return 'R' }, is() { return false }, val() { return '7' },
+    removeClass() { return this }, addClass() { return this }, fadeIn() { return this },
+    text(value) { changes.push([target, value]); return this }, iCheck() { return this } })
+  $.post = (url, data, callback) => { submissions.push({ data: JSON.parse(data.data), complete: callback }) }
   const context = vm.createContext({ $, _roleTree: tree, _matrixLoading: false, _matrixRoleId: '7',
     _matrixGeneration: 1, _sidebarFolderId: 1, closeRightsSidebar() {},
     prepareExchangedData(data) { return data }, decodeQueryReturn(data) { return data },
-    toastr: { remove() {}, info() {}, error() {} }, refreshMatrix() { refreshed++ } })
+    toastr: { remove() {}, info() {}, error() {} }, refreshMatrix() {
+      refreshSelections.push([...tree.selected])
+      tree.replace(rows)
+    } })
   vm.runInContext(section("    $('#sidebar-role-submit').on", '    // Focus label'), context)
-  handler()
-  assert.deepEqual(JSON.parse(posted.data).selectedFolders, [1, 3161])
-  context._matrixGeneration++
-  completion({ error: false })
-  assert.equal(refreshed, 0)
+  vm.runInContext(section('    function openRightsSidebar(', '    /**'), context)
+  return { context, tree, submissions, refreshSelections, changes, submit() { handler() } }
+}
+
+test('Successful sidebar saves clear hidden selections before refresh, retain expansion and target the next clicked row', () => {
+  const ui = sidebarSaveContext()
+  ui.submit()
+  assert.deepEqual(ui.submissions[0].data.selectedFolders, [1, 3161])
+  assert.equal(ui.tree.selected.size, 2)
+  ui.submissions[0].complete({ error: false })
+  assert.deepEqual(ui.refreshSelections, [[]])
+  assert.equal(ui.tree.selected.size, 0)
+  assert.equal(ui.tree.expanded.has(1), true)
+  ui.context.openRightsSidebar(2, 'W', 'Folder 2')
+  assert.ok(ui.changes.some(([selector, value]) => selector === '#sidebar-role-info' && value === 'Folder 2'))
+  ui.submit()
+  assert.deepEqual(ui.submissions[1].data.selectedFolders, [2])
+})
+
+test('Failed or stale sidebar saves retain the selection and never refresh the matrix', () => {
+  for (const result of ['error', 'generation', 'role']) {
+    const ui = sidebarSaveContext()
+    ui.submit()
+    if (result === 'generation') ui.context._matrixGeneration++
+    if (result === 'role') ui.context._matrixRoleId = '8'
+    ui.submissions[0].complete({ error: result === 'error' })
+    assert.deepEqual([...ui.tree.selected], [1, 3161])
+    assert.equal(ui.tree.expanded.has(1), true)
+    assert.equal(ui.refreshSelections.length, 0)
+  }
 })
 
 test('A single hidden selection labels the sidebar with the actual target and its permission', () => {
