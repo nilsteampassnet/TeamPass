@@ -48,7 +48,43 @@ When this option is checked, users of this role can modify any item they can ope
 
 ## Configuring folder permissions
 
-After selecting a role, the **permission matrix** shows the full folder tree with a permission badge on each row.
+After selecting a role, the **permission matrix** shows an authorized folder tree
+with a permission badge on each displayed row.
+
+The matrix is limited to the caller's authorized shared folders. Personal trees,
+including legacy descendants without a personal flag, and forbidden folders are
+excluded. Paths omit inaccessible ancestor names. Matrix reads and permission
+updates validate the selected role against the caller's grantable roles; updates
+also recheck every explicit folder target. Propagation only affects authorized
+shared descendants. A forged or no-longer-authorized explicit target rejects the
+entire submission.
+
+### Browsing large trees
+
+- The initial request loads the complete authorized metadata; the main matrix is
+  not paginated on the server. Paths and role permissions use bulk reads rather
+  than per-folder queries.
+- Above 100 folders, branches start collapsed. Smaller trees start expanded.
+  The folder button expands or collapses a branch and only appears when it has
+  authorized descendants.
+- At most 100 matching rows are displayed initially. **Show more folders** adds
+  the next 100. Unchanged rows and their widgets are reused.
+- Depth and search filters apply together. Search matches decoded folder names
+  and full authorized paths, including `R&D`, `O'Brien`, quotes and angle brackets.
+  Searching a parent's name also finds its descendants. Search reveals matches
+  inside collapsed branches, subject to the depth limit. Changing depth alone
+  does not expand collapsed branches. The saved depth preference is retained.
+- The counter shows displayed, matching and selected folder counts. Selection
+  survives filtering, collapse and progressive rendering. Checking a parent
+  includes every authorized descendant, including rows outside the view;
+  unchecking a child also unchecks selected ancestors. **Select all** selects the
+  entire authorized matrix, including filtered and unrendered folders.
+- Switching or clearing the role invalidates pending matrix and comparison
+  requests and resets selection. Refreshing the same role preserves valid
+  selection and expansion; a newly discovered unchecked descendant unchecks
+  selected ancestors rather than silently entering their selection. After a
+  successful permission save, selection is cleared while expanded branches and
+  the number of displayed rows are retained.
 
 ### Editing a single folder
 
@@ -83,11 +119,19 @@ The **Propagate to descendants** checkbox applies the same permission type to al
 
 Check several folder rows using the checkboxes, then use the **edit sidebar** to apply the same permission to all selected folders at once. The propagation option applies to each selected folder's descendants independently.
 
+The sidebar count and submission include selected folders outside the current
+view. Propagation is evaluated on the current authorized tree by the server.
+
 ---
 
 ## Comparing two roles
 
-The **Compare** dropdown (in the filter bar above the matrix) overlays the permissions of a second role on top of the current role's matrix. Folders where the two roles differ are highlighted. This is useful for reviewing inconsistencies before merging roles or adjusting a user's assignment.
+The **Compare** dropdown (in the filter bar above the matrix) adds a second
+permission column. Comparison permissions are indexed once and remain available
+when branches expand, search changes or more rows are displayed. Superseded
+responses are discarded; clearing the comparison removes the column. This is
+useful for reviewing inconsistencies before merging roles or adjusting a user's
+assignment.
 
 ---
 

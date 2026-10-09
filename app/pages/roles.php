@@ -208,6 +208,12 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                         <div class="table-responsive" id="role-details">
                             &nbsp;
                         </div>
+                        <div class="d-flex align-items-center flex-wrap mt-2">
+                            <small class="text-muted mr-3" id="roles-view-count" aria-live="polite"></small>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="roles-show-more" hidden>
+                                <?php echo htmlspecialchars($lang->get('folders_show_more'), ENT_QUOTES, 'UTF-8'); ?>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
