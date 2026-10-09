@@ -248,7 +248,7 @@ The generated plan uses the selected PHP user/group and proposes `httpd_sys_rw_c
 
 ### Other distributions
 
-On SUSE, Arch and other Linux distributions, the audit still works but does not guess a repair plan. For an **existing installed release**, the following manual example applies the hardened model using GNU `find` and coreutils. Replace all placeholders with the actual path, non-PHP code owner, PHP user and private PHP group. Stop application writes and review the commands first; do not run the installer again.
+On SUSE, Arch and other Linux distributions, the audit still works but does not guess a repair plan. For an **existing installed release**, the following manual example applies the hardened model using GNU `find` and coreutils. Replace all placeholders with the actual path, non-PHP code owner, PHP user and private PHP group. Stop application writes and review the commands first; do not run the installer again. Save the example as a script and run it with `bash`: its `exit 1` guards stop the script on the first failure, and would close your shell if pasted into a terminal.
 
 ```bash
 TEAMPASS=/absolute/path/to/teampass
