@@ -161,8 +161,8 @@ fixes.
 | Volume | Container path | Purpose |
 |---|---|---|
 | `teampass-sk` | `/var/www/html/storage/sk` | Saltkey file |
-| `teampass-files` | `/var/www/html/storage/files` | Uploaded files |
-| `teampass-upload` | `/var/www/html/storage/upload` | Temporary uploads |
+| `teampass-files` | `/var/www/html/storage/files` | Generated files, imports and restore/backup working files |
+| `teampass-upload` | `/var/www/html/storage/upload` | Encrypted item attachments (persistent data, not a temporary cache) |
 | `teampass-config` | `/var/www/html/storage/config` | Install state (`settings.php`, `csrfp.config.php`) |
 | `teampass-secrets` | `/var/www/html/secrets` | Defuse master key |
 | `teampass-db` | `/var/lib/mysql` | Database data |
@@ -232,6 +232,12 @@ The container applies the database migrations when it starts, then removes the i
 
 ### Backup
 
+Quiesce application/background writes while taking the database dump and file archive. Restrict new backup-file permissions on the Docker host:
+
+```bash
+umask 077
+```
+
 **Database:**
 
 ```bash
@@ -243,11 +249,13 @@ docker exec teampass-db mariadb-dump \
 **Master key, configuration and attachments:**
 
 ```bash
-docker exec teampass-app tar -C /var/www/html -czf - secrets storage/config storage/files \
+docker exec teampass-app tar -C /var/www/html -czf - secrets storage/config storage/files storage/upload storage/sk \
   > teampass-state-$(date +%Y%m%d).tar.gz
 ```
 
-> The master key in `secrets/` is required to decrypt all data: without it, the data in a database dump cannot be decrypted. Keep the dump and this archive together, in a safe place.
+The file archive covers the image's five state volumes. Add any additional configured data paths/volumes to your backup policy and test a restore.
+
+> The master key in `secrets/` is required to decrypt all data: without it, the data in a database dump cannot be decrypted. Protect/encrypt the key/configuration archive and keep it separate from the database backup. Both are needed for recovery; access to both opens every secret.
 
 ### Restore
 
@@ -389,6 +397,8 @@ Without these volumes TeamPass loses its configuration on `docker compose down` 
 Mount these exact paths: a volume on a parent directory such as `/var/www/html/storage` does not cover them. The image declares each of them as a `VOLUME`, so Docker still mounts an anonymous volume on top, and that volume is left behind when the container is removed. `docker inspect teampass-app --format '{{range .Mounts}}{{.Name}} -> {{.Destination}}{{println}}{{end}}'` shows what backs each path; a 64-character hexadecimal name is an anonymous volume. If the configuration was already lost, see [Recovering a lost configuration](https://documentation.teampass.net/#/install/docker?id=recovering-a-lost-configuration).
 
 PHP runs as `nginx` inside the image and the image ships its files owned by `nginx`: do not `chown` them to `www-data`.
+
+The entrypoint uses `0700` for `secrets/` and `storage/sk/`, and `0750` for storage/configuration/data directory nodes. The installer creates the key in `0600`; the entrypoint resets ownership, not every file's mode. This simple ownership model can trigger writable-code/key warnings in the [permission audit](install/file-permissions.md#docker). Alpine has no generated Debian/RHEL repair plan; review custom non-root images and NFS/RWX restrictions separately.
 
 ### Custom PHP configuration
 

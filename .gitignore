@@ -134,7 +134,7 @@ entities.json
 # Added by code-review-graph
 .code-review-graph/
 
-# Claude Code — the project's own documentation, commands and skills are shared; only what
+# Claude Code — the project's own documentation, rules, commands and skills are shared; only what
 # carries machine-specific paths stays out.
 #
 # The pattern is `.claude/*` and not `.claude/` on purpose: git never descends into an
@@ -142,6 +142,7 @@ entities.json
 .claude/*
 !.claude/commands/
 !.claude/docs/
+!.claude/rules/
 !.claude/skills/
 
 # Machine-specific, never shared: settings.json hardcodes this checkout's absolute path in

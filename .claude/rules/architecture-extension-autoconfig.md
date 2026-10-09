@@ -1,3 +1,11 @@
+---
+paths:
+  - "app/core/extension-autoconfig.js.php"
+  - "app/api/Model/AuthModel.php"
+  - "app/pages/{profile,api}.php"
+  - "tests/Unit/Api/ExtensionTokenAuthTest.php"
+---
+
 # Browser-Extension Auto-Configuration
 
 > Last updated: 2026-06-07 — Branch `improv/extension-auto-config` (TeamPass) +

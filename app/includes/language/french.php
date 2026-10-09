@@ -3351,6 +3351,7 @@ return array(
     'health_file_integrity_reference_missing' => 'Le manifeste de référence de l’intégrité des fichiers est manquant.',
     'health_file_integrity_reference_unreadable' => 'Le manifeste de référence de l’intégrité des fichiers est illisible.',
     'health_file_integrity_report_invalid' => 'Le rapport d’intégrité enregistré est illisible ou invalide.',
+    'health_file_integrity_lock_probe_failed' => 'Le verrou du scan d’intégrité des fichiers n’a pas pu être vérifié. Vérifiez les droits d’accès à storage/logs et la prise en charge du verrouillage par le système de fichiers.',
     'health_copy_ssh_commands' => 'Copier les commandes SSH',
     'health_file_permissions' => 'Droits des fichiers et dossiers',
     'health_file_permissions_intro' => 'Vérifie les droits du code et des dossiers d’exécution TeamPass. Le contenu volumineux des pièces jointes, sauvegardes et avatars est ignoré par le scan Health courant et peut être audité en ligne de commande.',

@@ -1,3 +1,11 @@
+---
+paths:
+  - "app/sources/licence*.php"
+  - "app/pages/api.{php,js.php}"
+  - "_things/licence-server-api/**"
+  - "tests/Unit/Licence*.php"
+---
+
 # Licence Trial Architecture (self-service extension trial)
 
 > Release **3.2.2**. Client contract: `workReadmeFiles/CLIENT-INTEGRATION-TRIAL.md` — **authoritative**,

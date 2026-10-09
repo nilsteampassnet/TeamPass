@@ -1,3 +1,13 @@
+---
+paths:
+  - "app/pages/tasks.php"
+  - "app/sources/tasks.queries.php"
+  - "app/sources/utilities.queries.php"
+  - "app/scripts/background_tasks___handler.php"
+  - "docker/nginx/**"
+  - "docs/install/performance.md"
+---
+
 # PHP-FPM Optimization
 
 TeamPass runs under any PHP SAPI (Apache `mod_php`, `php-fpm`/`fpm-fcgi`, CLI). PHP-FPM is the

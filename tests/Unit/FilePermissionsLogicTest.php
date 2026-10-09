@@ -26,6 +26,9 @@ class FilePermissionsLogicTest extends TestCase
         foreach (['app', 'public/assets/avatars', 'storage/logs', 'storage/files', 'secrets', 'app/includes/libraries/csrfp/log'] as $directory) {
             self::assertTrue(mkdir($this->root . DIRECTORY_SEPARATOR . $directory, 0770, true));
         }
+        $resolvedRoot = realpath($this->root);
+        self::assertNotFalse($resolvedRoot);
+        $this->root = $resolvedRoot;
         self::assertNotFalse(file_put_contents($this->root . '/app/known.php', '<?php'));
     }
 
@@ -182,6 +185,208 @@ class FilePermissionsLogicTest extends TestCase
         self::assertContains('public', $relativePaths);
     }
 
+    public function testRuntimeChildrenOnTheSameDeviceAreNotTraversedTwice(): void
+    {
+        foreach (['storage/upload', 'storage/backups', 'app/websocket/logs'] as $directory) {
+            self::assertTrue(mkdir($this->root . '/' . $directory, 0750, true));
+        }
+        $commands = tpFilePermissionsRemediationCommands($this->root, $this->repairReport());
+        $storageArgument = escapeshellarg($this->root . DIRECTORY_SEPARATOR . 'storage');
+        $runtimeFileCommands = array_values(array_filter(
+            $commands,
+            static fn (string $command): bool => str_contains($command, '-type f -exec chmod 0640')
+                && str_contains($command, $storageArgument)
+        ));
+
+        self::assertCount(1, $runtimeFileCommands);
+        foreach (['storage/files', 'storage/upload', 'storage/logs', 'storage/backups'] as $child) {
+            $path = $this->root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $child);
+            self::assertStringNotContainsString(escapeshellarg($path), $runtimeFileCommands[0]);
+        }
+        self::assertStringContainsString(escapeshellarg($this->root . DIRECTORY_SEPARATOR . 'app'
+            . DIRECTORY_SEPARATOR . 'websocket' . DIRECTORY_SEPARATOR . 'logs'), $runtimeFileCommands[0]);
+    }
+
+    public function testTraversalKeepsSeparateMountsAndUnknownDevices(): void
+    {
+        $prefix = 'tp-permissions-device://';
+        FilePermissionsDeviceFixture::$devices = [
+            $prefix . 'storage' => 1,
+            $prefix . 'storage/files' => 1,
+            $prefix . 'storage/upload' => 2,
+            $prefix . 'storage/upload/cache' => 1,
+        ];
+        self::assertTrue(stream_wrapper_register('tp-permissions-device', FilePermissionsDeviceFixture::class));
+        try {
+            $paths = array_keys(FilePermissionsDeviceFixture::$devices);
+            $paths[] = $prefix . 'storage/unavailable';
+            $paths[] = $prefix . 'missing';
+            $paths[] = $prefix . 'missing/child';
+            $roots = tpFilePermissionsTraversalRoots(array_reverse($paths));
+
+            self::assertNotContains($prefix . 'storage/files', $roots);
+            foreach (array_diff($paths, [$prefix . 'storage/files']) as $path) {
+                self::assertContains($path, $roots);
+            }
+        } finally {
+            stream_wrapper_unregister('tp-permissions-device');
+            clearstatcache();
+        }
+    }
+
+    public function testOwnershipAndModeRepairsUseTheSameNonFollowingFilesystemBoundary(): void
+    {
+        $commands = tpFilePermissionsRemediationCommands($this->root, $this->repairReport());
+        self::assertStringNotContainsString('chown -R', implode("\n", $commands));
+        $findCommands = array_values(array_filter(
+            $commands,
+            static fn (string $command): bool => str_starts_with($command, 'sudo find ')
+        ));
+        self::assertNotEmpty($findCommands);
+        foreach ($findCommands as $command) {
+            self::assertStringStartsWith('sudo find -P ', $command);
+            self::assertStringContainsString(' -xdev ', $command);
+            if (str_contains($command, 'u=rwX,g=rX,o=')
+                || str_contains($command, escapeshellarg($this->root . DIRECTORY_SEPARATOR . 'app'))) {
+                self::assertStringContainsString(' -prune -o ', $command);
+            } else {
+                self::assertStringNotContainsString(' -prune -o ', $command);
+            }
+            if (str_contains($command, ' -exec chown ')) {
+                self::assertStringContainsString('\\( -type d -o -type f -o -type l \\) -exec chown -h -- ', $command);
+            } else {
+                self::assertStringNotContainsString('-type l', $command);
+            }
+        }
+    }
+
+    public function testGeneratedFindPrunesVendoredMetadataButKeepsRuntimeDotfiles(): void
+    {
+        if (PHP_OS_FAMILY === 'Windows' || function_exists('proc_open') === false) {
+            self::markTestSkipped('A POSIX shell and find are required for the generated selection.');
+        }
+        foreach (['app/vendor/package/.github/workflows', 'app/includes/.externals'] as $directory) {
+            self::assertTrue(mkdir($this->root . '/' . $directory, 0750, true));
+        }
+        $excluded = ['app/vendor/package/.github/workflows/ci.yml', 'app/vendor/package/.gitignore'];
+        $included = ['app/vendor/package/.htaccess', 'app/.env', 'app/includes/.externals/library.php'];
+        foreach (array_merge($excluded, $included) as $path) {
+            self::assertNotFalse(file_put_contents($this->root . '/' . $path, 'fixture'));
+        }
+        $commands = tpFilePermissionsRemediationCommands($this->root, $this->repairReport());
+        $ownershipCommands = array_values(array_filter(
+            $commands,
+            static fn (string $command): bool => str_contains($command, ' -exec chown -h -- ')
+        ));
+        self::assertNotEmpty($ownershipCommands);
+        $command = $ownershipCommands[0];
+        $actionOffset = strpos($command, ' -exec chown -h -- ');
+        self::assertNotFalse($actionOffset);
+        // Execute only the generated selection, never sudo, chown or chmod.
+        $selection = substr($command, strlen('sudo '), $actionOffset - strlen('sudo ')) . ' -print';
+        $selection = str_replace($this->root, str_replace('\\', '/', $this->root), $selection);
+        $process = proc_open(['sh', '-s'], [
+            0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w'],
+        ], $pipes);
+        self::assertIsResource($process);
+        fwrite($pipes[0], $selection . "\n");
+        fclose($pipes[0]);
+        $output = stream_get_contents($pipes[1]);
+        $error = stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        self::assertSame(0, proc_close($process), (string) $error);
+        $selected = array_map('trim', preg_split('/\R/', str_replace('\\', '/', (string) $output)) ?: []);
+        $normalizedRoot = str_replace('\\', '/', $this->root);
+        foreach ($excluded as $path) {
+            self::assertNotContains($normalizedRoot . '/' . $path, $selected);
+        }
+        foreach ($included as $path) {
+            self::assertContains($normalizedRoot . '/' . $path, $selected);
+        }
+    }
+
+    public function testSymlinkedRuntimeRootsAreLeftForManualReview(): void
+    {
+        if (PHP_OS_FAMILY !== 'Linux') {
+            self::markTestSkipped('Linux symlink semantics are required.');
+        }
+        self::assertTrue(rmdir($this->root . '/storage/files'));
+        self::assertTrue(rmdir($this->root . '/storage/logs'));
+        self::assertTrue(rmdir($this->root . '/storage'));
+        self::assertTrue(mkdir($this->root . '/docs/external-storage/logs', 0750, true));
+        self::assertTrue(mkdir($this->root . '/docs/external-storage/files', 0750));
+        self::assertTrue(symlink($this->root . '/docs/external-storage', $this->root . '/storage'));
+        $commands = tpFilePermissionsRemediationCommands($this->root, $this->repairReport());
+
+        self::assertStringNotContainsString($this->root . '/storage', implode("\n", $commands));
+        self::assertStringNotContainsString($this->root . '/docs', implode("\n", $commands));
+        foreach (tpFilePermissionsRuntimeRules() as $rule) {
+            if (str_starts_with($rule['path'], 'storage')) {
+                self::assertContains('# Manual review: ' . $rule['path']
+                    . ' is reached through a symbolic link; repair its target manually.', $commands);
+            }
+        }
+    }
+
+    public function testSymlinkedSecretsAndLegacyRootsAreExplainedEvenWhenDangling(): void
+    {
+        if (PHP_OS_FAMILY !== 'Linux') {
+            self::markTestSkipped('Linux symlink semantics are required.');
+        }
+        self::assertTrue(rmdir($this->root . '/secrets'));
+        foreach (['secrets', 'files', 'upload', 'backups'] as $path) {
+            self::assertTrue(symlink($this->root . '/missing-' . $path, $this->root . '/' . $path));
+        }
+        $commands = tpFilePermissionsRemediationCommands($this->root, $this->repairReport());
+        foreach (['secrets', 'files', 'upload', 'backups'] as $path) {
+            self::assertContains('# Manual review: ' . $path
+                . ' is reached through a symbolic link; repair its target manually.', $commands);
+            self::assertStringNotContainsString(escapeshellarg($this->root . '/' . $path), implode("\n", $commands));
+        }
+    }
+
+    public function testOwnershipSelectionIncludesSymlinksWithoutFollowingTheirTargets(): void
+    {
+        if (PHP_OS_FAMILY !== 'Linux' || function_exists('proc_open') === false) {
+            self::markTestSkipped('Linux symlink and find semantics are required.');
+        }
+        self::assertTrue(mkdir($this->root . '/docs/external', 0750, true));
+        self::assertNotFalse(file_put_contents($this->root . '/docs/external/target.txt', 'outside code'));
+        self::assertTrue(symlink($this->root . '/docs/external', $this->root . '/public/link'));
+        self::assertTrue(symlink($this->root . '/app/known.php', $this->root . '/public/datatables.txt'));
+        $commands = tpFilePermissionsTreeRemediationCommands([$this->root . '/public'], 'root:www-data', '0640', true);
+        $selection = explode(' -exec chown -h -- ', substr($commands[0], strlen('sudo ')))[0] . ' -print';
+        $process = proc_open(['sh', '-c', $selection], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+        self::assertIsResource($process);
+        $selected = preg_split('/\R/', trim((string) stream_get_contents($pipes[1]))) ?: [];
+        $error = stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        self::assertSame(0, proc_close($process), (string) $error);
+        self::assertContains($this->root . '/public/link', $selected);
+        self::assertContains($this->root . '/public/datatables.txt', $selected);
+        self::assertNotContains($this->root . '/docs/external/target.txt', $selected);
+        self::assertNotContains($this->root . '/public/link/target.txt', $selected);
+    }
+
+    /**
+     * Return a supported report requiring a permission repair, without scanning.
+     *
+     * @return array<string,mixed>
+     */
+    private function repairReport(): array
+    {
+        $report = tpFilePermissionsDefaultReport();
+        $report['remediation_supported'] = true;
+        $report['counts']['issues'] = 1;
+        $report['identity']['web_user'] = 'www-data';
+        $report['identity']['web_group'] = 'www-data';
+        $report['platform']['family'] = 'debian';
+
+        return $report;
+    }
+
     public function testPermissionFindingsAreAggregatedWithBoundedSamples(): void
     {
         $report = tpFilePermissionsDefaultReport();
@@ -231,5 +436,24 @@ class FilePermissionsLogicTest extends TestCase
         self::assertSame('deep', $deep['scope']['mode']);
         self::assertSame([], $deep['scope']['skipped_descendants']);
         self::assertSame(25, $deep['counts']['checked'] - $standard['counts']['checked']);
+    }
+}
+
+/**
+ * Provide deterministic stat devices without requiring privileged mounts.
+ */
+class FilePermissionsDeviceFixture
+{
+    /** @var array<string,int> */
+    public static array $devices = [];
+
+    /**
+     * Return the fixture device, or an unavailable stat result.
+     *
+     * @return array<string,int>|false
+     */
+    public function url_stat(string $path, int $flags): array|false
+    {
+        return isset(self::$devices[$path]) ? ['dev' => self::$devices[$path], 'mode' => 0040750] : false;
     }
 }

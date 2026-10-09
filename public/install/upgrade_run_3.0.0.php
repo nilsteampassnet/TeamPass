@@ -60,6 +60,12 @@ if ($ret['error'] === true) {
     echo '[{"finish":"1", "msg":"", "error":"'.$ret['message'].'"}]';
     exit();
 }
+if ($ret['reload'] === true) {
+    // SECUREFILE still names the legacy key file in this request: have the wizard run this
+    // script again so it loads the rewritten settings.php (issue #5423)
+    echo '[{"finish":"0", "next":"0", "msg":"", "error":""}]';
+    exit();
+}
 
 // DataBase
 // Test DB connexion
