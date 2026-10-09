@@ -94,8 +94,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     let _compareAccess = new Map()
     const _renderedRoleMarkup = new Map()
     const _roleLabels = <?php echo json_encode(array_combine(
-        ['add_allowed', 'edit_allowed', 'delete_allowed', 'edit_not_allowed', 'delete_not_allowed', 'read_only', 'no_access', 'collapse'],
-        array_map(fn($key) => $lang->get($key), ['add_allowed', 'edit_allowed', 'delete_allowed', 'edit_not_allowed', 'delete_not_allowed', 'read_only', 'no_access', 'collapse'])
+        ['add_allowed', 'edit_allowed', 'delete_allowed', 'edit_not_allowed', 'delete_not_allowed', 'read_only', 'no_access', 'collapse', 'expand'],
+        array_map(fn($key) => $lang->get($key), ['add_allowed', 'edit_allowed', 'delete_allowed', 'edit_not_allowed', 'delete_not_allowed', 'read_only', 'no_access', 'collapse', 'expand'])
     ), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>
 
     var _sidebarFolderId = ''
@@ -203,8 +203,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             ? '<i class="fas fa-folder text-warning mr-1"></i>'
             : '<i class="fas fa-folder-open text-warning mr-1" style="opacity:.7"></i>'
 
+        const expanded = _roleTree.expanded.has(Number(value.id))
         const toggle = value.numOfChildren > 0
-            ? '<button type="button" class="btn btn-link btn-sm p-0 mr-1 role-collapse" data-id="' + Number(value.id) + '" aria-label="' + htmlEncode(_roleLabels.collapse) + '" aria-expanded="' + _roleTree.expanded.has(Number(value.id)) + '"><i class="fas ' + (_roleTree.expanded.has(Number(value.id)) ? 'fa-folder-minus' : 'fa-folder-plus') + '"></i></button>'
+            ? '<button type="button" class="btn btn-link btn-sm p-0 mr-1 role-collapse" data-id="' + Number(value.id) + '" aria-label="' + htmlEncode(expanded ? _roleLabels.collapse : _roleLabels.expand) + '" aria-expanded="' + expanded + '"><i class="fas ' + (expanded ? 'fa-folder-minus' : 'fa-folder-plus') + '"></i></button>'
             : ''
 
         return '<tr data-level="' + value.ident + '" class="' + (value.ident === 1 ? 'parent' : 'descendant') + '" data-id="' + value.id + '">' +

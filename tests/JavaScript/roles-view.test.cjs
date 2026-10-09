@@ -85,7 +85,7 @@ function view(rows = nodes()) {
     _matrixLoading: false, _syncingRoleSelection: false, _sidebarFolderId: '',
     _renderedRoleMarkup: new Map(), _compareAccess: new Map(),
     _roleLabels: { add_allowed: 'Add', edit_allowed: 'Edit', delete_allowed: 'Delete',
-      edit_not_allowed: 'No edit', delete_not_allowed: 'No delete', read_only: 'Read', no_access: 'None', collapse: 'Collapse' },
+      edit_not_allowed: 'No edit', delete_not_allowed: 'No delete', read_only: 'Read', no_access: 'None', collapse: 'Collapse', expand: 'Expand' },
     htmlEncode: encode
   })
   vm.runInContext(section('    function buildMatrixAccessHtml', '    /** Render one folder'), context)
@@ -237,8 +237,11 @@ test('Depth never expands a collapsed branch; small trees start expanded', () =>
   const ui = view(rows)
   ui.render()
   assert.equal(ui.body.children.length, 2)
+  assert.ok(ui.body.children[0].markup.includes('aria-label="Collapse" aria-expanded="true"'))
+  assert.ok(!ui.body.children[1].markup.includes('role-collapse'))
   ui.handlers['.role-collapse'].call({ dataset: { id: 1 } }, { stopPropagation() {} })
   assert.equal(ui.body.children.length, 1)
+  assert.ok(ui.body.children[0].markup.includes('aria-label="Expand" aria-expanded="false"'))
   ui.filters['#folders-depth'] = '2'
   ui.render()
   assert.equal(ui.body.children.length, 1)
