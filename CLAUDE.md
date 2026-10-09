@@ -116,8 +116,8 @@ Database schema: initial install via `/install/install.php`, upgrades via `/inst
 **Dual-location classes:** **every** `teampassclasses` package (`ConfigManager`, `SessionManager`, `CryptoManager`, `LdapExtra`, …) exists in both `app/includes/libraries/teampassclasses/` and `app/vendor/teampassclasses/`. Always edit both — **only the `vendor/` copy is autoloaded** (`app/vendor/composer/autoload_psr4.php`), so editing `includes/libraries/` alone produces a change with zero runtime effect. Sentinel tests: `tests/Unit/CryptoManagerCopiesInSyncTest.php`, `tests/Unit/LdapExtraCopiesInSyncTest.php`.
 
 **Domain references (`.claude/rules/`):** the full architecture of each domain summarized below
-(encryption, WebSocket, PHP-FPM, item revisions, API, LAPR, licence trial, extension
-auto-configuration) lives in `.claude/rules/*.md`. Each file declares `paths:` globs and Claude Code
+(encryption, WebSocket, PHP-FPM, item revisions, Secure Send audit, API, LAPR, licence trial,
+extension auto-configuration) lives in `.claude/rules/*.md`. Each file declares `paths:` globs and Claude Code
 loads it the first time a matching file is read or edited — not at session start, and not on a
 Grep or graph query. **Rule: when a change is designed from search results alone, read the relevant
 rule file first.** The one-line rules kept in this file are the always-on guardrails; the rule files
@@ -231,7 +231,7 @@ a "retention": pruning it loses nothing, a client outside the window just does a
 
 ## Secure Send audit
 
-> Full architecture details: @.claude/docs/architecture-secure-send-audit.md
+> Full architecture details: `.claude/rules/architecture-secure-send-audit.md`
 
 **Rule: every path that changes or deletes an `otv` row records its lifecycle event
 with `secureSendAudit()` in the same transaction.** Cleanup batches stay atomic;

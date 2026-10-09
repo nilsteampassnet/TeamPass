@@ -1,3 +1,12 @@
+---
+paths:
+  - "app/sources/secure_send*.php"
+  - "tests/Unit/SecureSend*.php"
+  - "tests/Fixtures/secure_send_*.php"
+  - "tests/Integration/secure_send_database.php"
+  - "docs/install/secure-send.md"
+---
+
 # Secure Send audit journal
 
 ## Scope and consumers
