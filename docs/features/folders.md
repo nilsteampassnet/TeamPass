@@ -22,6 +22,12 @@ The page displays all folders in a tree-shaped table. Each row shows:
 
 Three filters at the top of the table can be combined freely:
 
+| Filter | Effect |
+|--------|--------|
+| **Depth** | Shows only folders up to the selected hierarchy level (useful on large trees) |
+| **Complexity** | Shows only folders with the selected minimum complexity |
+| **Search** | Filters folder names and parent paths after typing stops |
+
 On installations with more than 100 shared folders, branches start collapsed. Expand a
 branch to display its children. The page initially renders at most 100 matching rows;
 **Show more folders** reveals the next 100. Search covers the complete authorized
@@ -37,12 +43,6 @@ unchecks selected ancestors, so the child is not implicitly deleted through its 
 After a refresh or move, a checked parent is also unchecked if its branch contains
 an unchecked descendant. Existing individual selections remain checked; select the
 parent again to explicitly include its current descendants in the deletion confirmation.
-
-| Filter | Effect |
-|--------|--------|
-| **Depth** | Shows only folders up to the selected hierarchy level (useful on large trees) |
-| **Complexity** | Shows only folders with the selected minimum complexity |
-| **Search** | Filters folder names in real time |
 
 ---
 

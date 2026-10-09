@@ -95,8 +95,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     const _parentMetadata = new Map()
     const _renderedFolderMarkup = new Map()
     let _folderSearchTimer = null
-    var _userIsAdmin = 0
-    var _userCanCreateRootFolder = 0
+    let _userIsAdmin = 0
+    let _userCanCreateRootFolder = 0
 
     buildTable();
 
@@ -124,7 +124,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         } else if ($(this).data('action') === 'new-submit') {
             //--- SAVE NEW FOLDER
             if ($('#new-parent').val() === null || $('#new-parent').val() === '') {
-                toastr.warning(<?php echo json_encode($lang->get('select'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>)
+                toastr.warning(<?php echo json_encode($lang->get('select_folder_parent'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>)
                 return
             }
 
@@ -179,9 +179,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         } else {
                             buildTable()
                         }
-
-
-
                         $('#modal-folder-new').modal('hide')
                     }
                 }
@@ -331,7 +328,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 app.complexityOptions = complexityOptions
             })
             const maxDepth = data.matrix.reduce((max, row) => Math.max(max, Number(row.level)), 0)
-            const allLabel = <?php echo json_encode($lang->get('all'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
+            const allLabel = <?php echo json_encode($lang->get('all'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>
+
             $('#folders-depth').empty().append(new Option(allLabel, 'all'))
             for (let depth = 1; depth <= maxDepth; depth++) {
                 $('#folders-depth').append(new Option(String(depth), String(depth)))
@@ -407,7 +405,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         })
         _syncingFolderSelection = false
         $('#folders-show-more').prop('hidden', displayed.length >= rows.length)
-        const count = <?php echo json_encode($lang->get('folders_view_count'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
+        const count = <?php echo json_encode($lang->get('folders_view_count'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>
+
         $('#folders-view-count').text(count.replace('{shown}', displayed.length).replace('{total}', rows.length).replace('{selected}', _folderTree.selected.size))
     }
 
@@ -599,7 +598,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
         // Keep only the selected parent in the DOM; search loads other candidates on demand.
         const row = _folderTree.byId.get(Number(folderId))
-        const rootLabel = <?php echo json_encode($lang->get('root'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
+        const rootLabel = <?php echo json_encode($lang->get('root'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>
+
         const parentLabel = row && row.path.length > 0 ? row.path.join(' / ') : rootLabel
         $('#folder-edit-parent').empty().append(new Option(parentLabel, String(folderParent), true, true))
         initializeParentPicker($('#folder-edit-parent'), $('#folder-edit-sidebar'), () => _sidebarFolderId || 0)
@@ -684,7 +684,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             language: <?php echo json_encode($session->get('user-language_code'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
             dropdownParent: $container,
             width: '100%',
-            placeholder: <?php echo json_encode($lang->get('select'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+            placeholder: <?php echo json_encode($lang->get('select_folder_parent'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
             ajax: {
                 delay: 250,
                 data: params => ({ term: params.term || '', page: params.page || 1 }),
