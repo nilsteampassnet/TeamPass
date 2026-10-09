@@ -538,6 +538,27 @@ if (null !== $post_type) {
                 break;
             }
 
+            // A visible read-only folder cannot receive a moved subtree.
+            if (
+                $parentChanged === true
+                && (int) $session->get('user-admin') !== 1
+                && (int) $inputData['parentId'] !== 0
+                && in_array(
+                    (int) $inputData['parentId'],
+                    array_map('intval', (array) $session->get('user-read_only_folders')),
+                    true
+                )
+            ) {
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ],
+                    'encode'
+                );
+                break;
+            }
+
             //check if parent folder is personal
             $dataParent = DB::queryFirstRow(
                 'SELECT personal_folder, bloquer_creation, bloquer_modification
@@ -896,6 +917,26 @@ if (null !== $post_type) {
                 break;
             }
             $inputData['deletion_protected'] = $validatedDeletionProtection;
+
+            // Enforce the writable-parent restriction for direct creation requests too.
+            if (
+                (int) $session->get('user-admin') !== 1
+                && (int) $inputData['parentId'] !== 0
+                && in_array(
+                    (int) $inputData['parentId'],
+                    array_map('intval', (array) $session->get('user-read_only_folders')),
+                    true
+                )
+            ) {
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ],
+                    'encode'
+                );
+                break;
+            }
 
             // Check if parent folder is personal
             $dataParent = DB::queryFirstRow(
