@@ -84,7 +84,16 @@ function roleMatrixTargets(array $matrix, array $selectedIds, bool $propagate): 
     }
     $targets = [];
     foreach ($matrix as $row) {
-        if (isset($selected[$row['id']]) || ($propagate && array_intersect($row['parents'], array_keys($selected)) !== [])) {
+        $included = isset($selected[$row['id']]);
+        if (!$included && $propagate) {
+            foreach ($row['parents'] as $parentId) {
+                if (isset($selected[$parentId])) {
+                    $included = true;
+                    break;
+                }
+            }
+        }
+        if ($included) {
             $targets[] = (int) $row['id'];
         }
     }

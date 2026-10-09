@@ -99,6 +99,8 @@ class RoleMatrixTest extends TestCase
         foreach ([[], [4], [1, 5], [7], [99], [0], [-1], ['1x'], [[]]] as $selection) {
             self::assertNull(\roleMatrixTargets($matrix, $selection, true));
         }
+        $large = \roleMatrixBuild($this->nodes(3161), range(1, 3161), [], []);
+        self::assertSame(range(1, 3161), \roleMatrixTargets($large, range(1, 3161), true));
     }
 
     private function request(int $count, array $overrides = [], string $key = 'fixture-key', int $role = 7,

@@ -77,10 +77,27 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 ?>
 
 
+<script src="./assets/js/folders-tree.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
 <script type='text/javascript'>
     // Globals
     var currentThis = ''
-    var _matrixGeneration = 0
+    let _matrixGeneration = 0
+    let _matrixRequest = null
+    let _matrixLoading = false
+    let _matrixRoleId = ''
+    let _roleTree = new TeampassFolderTree()
+    let _visibleLimit = 100
+    let _syncingRoleSelection = false
+    let _roleSearchTimer = null
+    let _compareGeneration = 0
+    let _compareRequest = null
+    let _compareAccess = new Map()
+    const _renderedRoleMarkup = new Map()
+    const _roleLabels = <?php echo json_encode(array_combine(
+        ['add_allowed', 'edit_allowed', 'delete_allowed', 'edit_not_allowed', 'delete_not_allowed', 'read_only', 'no_access', 'collapse'],
+        array_map(fn($key) => $lang->get($key), ['add_allowed', 'edit_allowed', 'delete_allowed', 'edit_not_allowed', 'delete_not_allowed', 'read_only', 'no_access', 'collapse'])
+    ), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>
+
     var _sidebarFolderId = ''
 
     // Preapre select drop list
@@ -116,9 +133,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     // On role selection
     $(document).on('change', '#roles-list', function() {
-        // initi checkboxes
-        $('input[type="checkbox"]').iCheck('uncheck');
+        toastr.remove()
+        closeRightsSidebar()
         if ($(this).find(':selected').text() === '') {
+            cancelMatrixRequests()
+            _matrixRoleId = ''
+            _roleTree = new TeampassFolderTree()
+            renderRoleView()
             // Hide
             $('#card-role-details').addClass('hidden');
             $('#button-edit, #button-delete').addClass('disabled');
@@ -149,31 +170,24 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     });
 
     /**
-     * Build the HTML string for a single row of the permissions matrix.
+     * Build identical escaped permission badges for both matrix columns.
      */
-    function buildMatrixRowHtml(value) {
-        var access = ''
-        if (value.access === 'W') {
-            access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo $lang->get('add_allowed'); ?>"></i>' +
-                '<i class="fas fa-pen mr-2 text-success infotip" title="<?php echo $lang->get('edit_allowed'); ?>"></i>' +
-                '<i class="fas fa-eraser mr-2 text-success infotip" title="<?php echo $lang->get('delete_allowed'); ?>"></i>'
-        } else if (value.access === 'ND') {
-            access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo $lang->get('add_allowed'); ?>"></i>' +
-                '<i class="fas fa-pen mr-2 text-success infotip" title="<?php echo $lang->get('edit_allowed'); ?>"></i>' +
-                '<i class="fas fa-eraser mr-2 text-danger infotip" title="<?php echo $lang->get('delete_not_allowed'); ?>"></i>'
-        } else if (value.access === 'NE') {
-            access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo $lang->get('add_allowed'); ?>"></i>' +
-                '<i class="fas fa-pen mr-2 text-danger infotip" title="<?php echo $lang->get('edit_not_allowed'); ?>"></i>' +
-                '<i class="fas fa-eraser mr-2 text-success infotip" title="<?php echo $lang->get('delete_allowed'); ?>"></i>'
-        } else if (value.access === 'NDNE') {
-            access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo $lang->get('add_allowed'); ?>"></i>' +
-                '<i class="fas fa-pen mr-2 text-danger infotip" title="<?php echo $lang->get('edit_not_allowed'); ?>"></i>' +
-                '<i class="fas fa-eraser mr-2 text-danger infotip" title="<?php echo $lang->get('delete_not_allowed'); ?>"></i>'
-        } else if (value.access === 'R') {
-            access = '<i class="fas fa-book-reader mr-2 text-warning infotip" title="<?php echo $lang->get('read_only'); ?>"></i>'
-        } else {
-            access = '<i class="fas fa-ban mr-2 text-danger infotip" title="<?php echo $lang->get('no_access'); ?>"></i>'
+    function buildMatrixAccessHtml(accessType) {
+        const icon = (css, label) => '<i class="fas ' + css + ' mr-2 infotip" title="' + htmlEncode(_roleLabels[label]) + '"></i>'
+        if (['W', 'ND', 'NE', 'NDNE'].includes(accessType)) {
+            const noEdit = accessType === 'NE' || accessType === 'NDNE'
+            const noDelete = accessType === 'ND' || accessType === 'NDNE'
+            return icon('fa-indent text-success', 'add_allowed') +
+                icon('fa-pen ' + (noEdit ? 'text-danger' : 'text-success'), noEdit ? 'edit_not_allowed' : 'edit_allowed') +
+                icon('fa-eraser ' + (noDelete ? 'text-danger' : 'text-success'), noDelete ? 'delete_not_allowed' : 'delete_allowed')
         }
+        return accessType === 'R' ? icon('fa-book-reader text-warning', 'read_only') : icon('fa-ban text-danger', 'no_access')
+    }
+
+    /** Render one folder's current and comparison permissions with escaped labels. */
+    function buildMatrixRowHtml(value) {
+        const access = buildMatrixAccessHtml(value.access)
+        const comparing = ($('#folders-compare').val() || '') !== '' && _compareAccess.size > 0
 
         // Folder titles and the path built from them are user-supplied. purifyData() drops
         // tags, but a title stored double-encoded comes back out as live markup, so encode
@@ -189,222 +203,210 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             ? '<i class="fas fa-folder text-warning mr-1"></i>'
             : '<i class="fas fa-folder-open text-warning mr-1" style="opacity:.7"></i>'
 
+        const toggle = value.numOfChildren > 0
+            ? '<button type="button" class="btn btn-link btn-sm p-0 mr-1 role-collapse" data-id="' + Number(value.id) + '" aria-label="' + htmlEncode(_roleLabels.collapse) + '" aria-expanded="' + _roleTree.expanded.has(Number(value.id)) + '"><i class="fas ' + (_roleTree.expanded.has(Number(value.id)) ? 'fa-folder-minus' : 'fa-folder-plus') + '"></i></button>'
+            : ''
+
         return '<tr data-level="' + value.ident + '" class="' + (value.ident === 1 ? 'parent' : 'descendant') + '" data-id="' + value.id + '">' +
             '<td width="35px"><input type="checkbox" id="cb-' + value.id + '" data-id="' + value.id + '" class="folder-select"></td>' +
-            '<td class="pointer modify folder-name" data-id="' + value.id + '" data-access="' + value.access + '" style="padding-left:' + indent + 'px">' + folderIcon + htmlEncode(value.title) + '</td>' +
+            '<td class="pointer modify folder-name" data-id="' + value.id + '" data-access="' + value.access + '" style="padding-left:' + indent + 'px">' + toggle + folderIcon + htmlEncode(value.title) + '</td>' +
             '<td class="font-italic pointer modify" data-id="' + value.id + '" data-access="' + value.access + '"><small class="text-muted">' + path + '</small></td>' +
             '<td class="pointer modify td-100 text-center" data-id="' + value.id + '" data-access="' + value.access + '">' + access + '</td>' +
-            '<td class="hidden compare tp-borders td-100 text-center"></td>' +
+            '<td class="' + (comparing ? '' : 'hidden ') + 'compare tp-borders td-100 text-center">' +
+                (comparing ? buildMatrixAccessHtml(_compareAccess.get(Number(value.id)) || 'none') : '') + '</td>' +
             '</tr>'
     }
 
     /**
-     * Load and render the permissions matrix for a role, using batch rendering
-     * so the browser can paint the progress bar between batches.
+     * Load the authorized role snapshot and render only a bounded view.
      */
-    function refreshMatrix(selectedRoleId) {
-        const BATCH_SIZE = 25
-        const myGeneration = ++_matrixGeneration
-
-        $('#card-role-details').removeClass('hidden')
-        $('#role-details').html('')
-        closeRightsSidebar()
-
-        // Show progress bar, clear any previous toast
-        $('#roles-load-progress').show()
-        $('#roles-load-progress .progress-bar').css('width', '0%').attr('aria-valuenow', 0)
-        $('#roles-load-progress .roles-load-text').text('')
-        toastr.remove()
-
-        $.post(
-            'sources/roles.queries.php', {
-                type: 'build_matrix',
-                role_id: selectedRoleId,
-                key: '<?php echo $session->get('key'); ?>'
-            },
-            function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>')
-
-                if (data.error === true) {
-                    toastr.remove()
-                    toastr.error(data.message, '', { timeOut: 5000, progressBar: true })
-                    $('#roles-load-progress').hide()
-                    return
-                }
-
-                const matrix = data.matrix
-                const total = matrix.length
-                let offset = 0
-                let max_folder_depth = 1
-
-                // Insert empty table structure up front
-                $('#role-details').html(
-                    '<table id="table-role-details" class="table table-hover table-striped table-responsive" style="width:100%">' +
-                    '<tbody></tbody></table>'
-                )
-                const tableBody = $('#table-role-details > tbody')
-
-                function renderBatch() {
-                    // A newer refreshMatrix() call has started — discard this stale loop
-                    if (_matrixGeneration !== myGeneration) return
-
-                    const end = Math.min(offset + BATCH_SIZE, total)
-                    let batchHtml = ''
-
-                    for (let i = offset; i < end; i++) {
-                        const value = matrix[i]
-                        batchHtml += buildMatrixRowHtml(value)
-                        if (parseInt(value.ident) > max_folder_depth) {
-                            max_folder_depth = parseInt(value.ident)
-                        }
-                    }
-
-                    tableBody.append(batchHtml)
-                    offset = end
-
-                    // Update progress bar
-                    const pct = total > 0 ? Math.round((offset / total) * 100) : 100
-                    $('#roles-load-progress .progress-bar').css('width', pct + '%').attr('aria-valuenow', pct)
-                    $('#roles-load-progress .roles-load-text').text(offset + ' / ' + total)
-
-                    if (offset < total) {
-                        // Yield to browser so it can paint the progress update
-                        setTimeout(renderBatch, 0)
-                    } else {
-                        // All rows rendered — finalize
-                        $('#role-details input[type="checkbox"]').iCheck({
-                            checkboxClass: 'icheckbox_flat-blue'
-                        })
-                        $('.infotip').tooltip()
-
-                        $('#folders-depth').empty().change()
-                        $('#folders-depth').append('<option value="all"><?php echo $lang->get('all'); ?></option>')
-                        for (let x = 1; x < max_folder_depth; x++) {
-                            $('#folders-depth').append('<option value="' + x + '">' + x + '</option>')
-                        }
-                        // Restore saved depth or default to 2 (if option exists)
-                        const savedDepth = store.get('teampassUser') && store.get('teampassUser').rolesDepthFilter !== undefined
-                            ? store.get('teampassUser').rolesDepthFilter
-                            : '2'
-                        const targetDepth = $('#folders-depth option[value="' + savedDepth + '"]').length > 0
-                            ? savedDepth
-                            : ($('#folders-depth option[value="2"]').length > 0 ? '2' : 'all')
-                        $('#folders-depth').val(targetDepth).change()
-
-                        $('#roles-load-progress').hide()
-                        toastr.success('<?php echo $lang->get('done'); ?>', '', { timeOut: 2000, closeButton: true })
-
-                        // Re-apply comparison column if one is selected
-                        if ($('#folders-compare').val() !== '') {
-                            buildRoleCompare(store.get('teampassUser').compareRole)
-                        }
-                    }
-                }
-
-                renderBatch()
-            }
-        )
+    function decodeRoleMatrixResponse(response) {
+        // Folder names are plain text, including literal angle brackets. The generic
+        // purifier treats decoded <...> as tags, so decode labels once and escape at
+        // every rendering sink instead. Never pass the raw response to an HTML sink.
+        const data = prepareExchangedData(response, 'decode', '<?php echo $session->get('key'); ?>', '', '', false)
+        if (!data || data.error !== false) {
+            return { error: true, message: purifyServerData(data && data.message ? data.message : '') }
+        }
+        const accessTypes = ['W', 'R', 'ND', 'NE', 'NDNE', 'none']
+        return { error: false, matrix: data.matrix.map(row => ({
+            id: Number(row.id),
+            parentId: Number(row.parentId),
+            level: Number(row.level),
+            ident: Number(row.ident),
+            parents: row.parents.map(Number),
+            path: row.path.map(decodeStorageEntities),
+            title: decodeStorageEntities(row.title),
+            access: accessTypes.includes(row.access) ? row.access : 'none'
+        })) }
     }
 
-    var operationOngoin = false;
-    $(document).on('ifChecked', '.folder-select', function() {
-        if (operationOngoin === false) {
-            operationOngoin = true;
-
-            // Show spinner
-            toastr.remove();
-            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
-
-            // Show selection of folders
-            var selected_cb = $(this),
-                id = $(this).data('id');
-
-            // change language string
-            if ($(this).attr('id') === 'cb-all-selection') {
-                $('#cb-all-selection-lang').html('<?php echo $lang->get('unselect_all'); ?>');
-            }
-
-            // Now get subfolders
-            $.post(
-                'sources/folders.queries.php', {
-                    type: 'select_sub_folders',
-                    id: id,
-                    key: '<?php echo $session->get('key'); ?>'
-                },
-                function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
-                    // check/uncheck checkbox
-                    if (data.subfolders !== '') {
-                        $.each(JSON.parse(data.subfolders), function(i, value) {
-                            $('#cb-' + value).iCheck('check');
-                        });
-                    }
-                    operationOngoin = false;
-
-                    toastr.remove();
-                    toastr.info(
-                        '<?php echo $lang->get('done'); ?>',
-                        '', {
-                            timeOut: 1000
-                        }
-                    );
-                }
-            );
+    /** Load the authorized snapshot; superseded responses cannot change the view. */
+    function refreshMatrix(selectedRoleId) {
+        cancelMatrixRequests()
+        const generation = _matrixGeneration
+        if (_matrixRoleId !== String(selectedRoleId)) {
+            _roleTree = new TeampassFolderTree()
+            _renderedRoleMarkup.clear()
+            $('#role-details .infotip').tooltip('dispose')
+            $('#role-details').html('<table id="table-role-details" class="table table-hover table-striped" style="width:100%"><tbody></tbody></table>')
         }
-    });
-
-    $(document).on('ifUnchecked', '.folder-select', function() {
-        if (operationOngoin === false) {
-            operationOngoin = true;
-
-            // Show spinner
-            toastr.remove();
-            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
-
-            // Show selection of folders
-            var selected_cb = $(this),
-                id = $(this).data('id');
-
-            // change language string
-            if ($(this).attr('id') === 'cb-all-selection') {
-                $('#cb-all-selection-lang').html('<?php echo $lang->get('select_all'); ?>');
+        _matrixRoleId = String(selectedRoleId)
+        _matrixLoading = true
+        closeRightsSidebar()
+        $('#card-role-details').removeClass('hidden')
+        $('#roles-load-progress').show()
+        $('#roles-load-progress .progress-bar').css('width', '100%').attr('aria-valuenow', 100)
+        $('#roles-load-progress .roles-load-text').text(<?php echo json_encode($lang->get('loading'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>)
+        _matrixRequest = $.post('sources/roles.queries.php', {
+            type: 'build_matrix',
+            role_id: selectedRoleId,
+            key: '<?php echo $session->get('key'); ?>'
+        }).done(function(response) {
+            if (generation !== _matrixGeneration) return
+            const data = decodeRoleMatrixResponse(response)
+            if (data.error !== false) {
+                _roleTree = new TeampassFolderTree()
+                toastr.error(data.message)
+                return
             }
+            _roleTree.replace(data.matrix)
+            const maxDepth = data.matrix.reduce((max, row) => Math.max(max, Number(row.level)), 0)
+            const allLabel = <?php echo json_encode($lang->get('all'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>
 
-            // Now get subfolders
-            $.post(
-                'sources/folders.queries.php', {
-                    type: 'select_sub_folders',
-                    id: id,
-                    key: '<?php echo $session->get('key'); ?>'
-                },
-                function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
-                    // check/uncheck checkbox
-                    if (data.subfolders !== '') {
-                        $.each(JSON.parse(data.subfolders), function(i, value) {
-                            $('#cb-' + value).iCheck('uncheck');
-                        });
-                    }
-                    operationOngoin = false;
+            $('#folders-depth').empty().append(new Option(allLabel, 'all'))
+            for (let depth = 1; depth <= maxDepth; depth++) {
+                $('#folders-depth').append(new Option(String(depth), String(depth)))
+            }
+            const stored = store.get('teampassUser') || {}
+            const depth = stored.rolesDepthFilter || (maxDepth >= 2 ? '2' : 'all')
+            $('#folders-depth').val(depth === 'all' || Number(depth) <= maxDepth ? depth : 'all')
+            _visibleLimit = 100
+            _matrixLoading = false
+            renderRoleView()
+            refreshRoleComparison()
+        }).fail(function(xhr, status) {
+            if (status !== 'abort' && generation === _matrixGeneration) {
+                _roleTree = new TeampassFolderTree()
+                toastr.error(<?php echo json_encode($lang->get('error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>)
+            }
+        }).always(function() {
+            if (generation !== _matrixGeneration) return
+            _matrixLoading = false
+            _matrixRequest = null
+            $('#roles-load-progress').hide()
+            renderRoleView()
+        })
+    }
 
-                    toastr.remove();
-                    toastr.info(
-                        '<?php echo $lang->get('done'); ?>',
-                        '', {
-                            timeOut: 1000
-                        }
-                    );
+    /** Invalidate pending callbacks before aborting their requests, including on clear. */
+    function cancelMatrixRequests() {
+        ++_matrixGeneration
+        ++_compareGeneration
+        if (_matrixRequest) _matrixRequest.abort()
+        if (_compareRequest) _compareRequest.abort()
+        _matrixRequest = null
+        _compareRequest = null
+        _matrixLoading = false
+        _compareAccess.clear()
+        $('#roles-load-progress').hide()
+    }
+
+    /** Render at most the requested number of rows and reuse unchanged row widgets. */
+    function renderRoleView() {
+        if (_matrixLoading) return
+        const rows = _roleTree.visible({
+            depth: $('#folders-depth').val() || 'all',
+            term: $('#folders-search').val() || ''
+        })
+        const displayed = rows.slice(0, _visibleLimit)
+        const $body = $('#table-role-details > tbody')
+        if (!$body.length) return
+        const desiredIds = new Set(displayed.map(row => Number(row.id)))
+        const existing = new Map()
+        $body.children('tr[data-id]').each(function() {
+            const id = Number(this.dataset.id)
+            if (desiredIds.has(id)) existing.set(id, this)
+            else {
+                $(this).find('.infotip').tooltip('dispose')
+                $(this).remove()
+                _renderedRoleMarkup.delete(id)
+            }
+        })
+        const added = []
+        let nextRow = $body[0].firstChild
+        displayed.forEach(function(row) {
+            const id = Number(row.id)
+            const markup = buildMatrixRowHtml(row)
+            let node = existing.get(id)
+            if (!node || _renderedRoleMarkup.get(id) !== markup) {
+                if (node) {
+                    if (node === nextRow) nextRow = node.nextSibling
+                    $(node).find('.infotip').tooltip('dispose')
+                    $(node).remove()
                 }
-            );
+                node = $(markup)[0]
+                _renderedRoleMarkup.set(id, markup)
+                added.push(node)
+            }
+            if (node === nextRow) nextRow = node.nextSibling
+            else $body[0].insertBefore(node, nextRow)
+            $(node).toggleClass('editing-active', Number(_sidebarFolderId) === id)
+        })
+        _syncingRoleSelection = true
+        added.forEach(function(node) {
+            $(node).find('input.folder-select').iCheck({ checkboxClass: 'icheckbox_flat-blue' })
+            $(node).find('.infotip').tooltip()
+        })
+        $body.find('input.folder-select').each(function() {
+            const checked = _roleTree.selected.has(Number(this.dataset.id))
+            if (this.checked !== checked) $(this).iCheck(checked ? 'check' : 'uncheck')
+        })
+        const allChecked = _roleTree.rows.length > 0 && _roleTree.selected.size === _roleTree.rows.length
+        if ($('#cb-all-selection').is(':checked') !== allChecked) {
+            $('#cb-all-selection').iCheck(allChecked ? 'check' : 'uncheck')
         }
-    });
+        _syncingRoleSelection = false
+        $('#cb-all-selection-lang').text(allChecked
+            ? <?php echo json_encode($lang->get('unselect_all'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>
+            : <?php echo json_encode($lang->get('select_all'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>)
+        $('#roles-show-more').prop('hidden', displayed.length >= rows.length)
+        const count = <?php echo json_encode($lang->get('folders_view_count'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>
+
+        $('#roles-view-count').text(count.replace('{shown}', displayed.length).replace('{total}', rows.length).replace('{selected}', _roleTree.selected.size))
+    }
+
+    /** Keep the complete authorized selection independent of collapsed or unrendered rows. */
+    $(document).on('ifChecked ifUnchecked', '.folder-select', function(event) {
+        if (_syncingRoleSelection || _matrixLoading) return
+        const checked = event.type === 'ifChecked'
+        if (this.id === 'cb-all-selection') {
+            _roleTree.selected = checked ? new Set(_roleTree.byId.keys()) : new Set()
+        } else {
+            _roleTree.selectBranch($(this).data('id'), checked)
+        }
+        renderRoleView()
+    })
+
+    $('#roles-show-more').on('click', function() {
+        _visibleLimit += 100
+        renderRoleView()
+    })
+
+    $(document).on('click', '.role-collapse', function(event) {
+        event.stopPropagation()
+        if (_matrixLoading) return
+        _roleTree.toggle($(this).data('id'))
+        renderRoleView()
+    })
 
     /**
      * Handle the form for folder access rights change
      */
     var currentFolderEdited = '';
     // Open the rights sidebar when the user clicks any cell of a matrix row
-    $(document).on('click', '.modify', function() {
+    $(document).on('click', '.modify', function(event) {
+        if (_matrixLoading || $(event.target).closest('.role-collapse').length) return
         var folderId = $(this).data('id')
         var folderAccess = $(this).data('access')
         var folderTitle = $(this).closest('tr').find('.folder-name').text()
@@ -416,16 +418,21 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
      */
     function openRightsSidebar(folderId, folderAccess, folderTitle) {
         _sidebarFolderId = folderId
+        const selectedFolder = _roleTree.selectedRows()[0]
+        if (_roleTree.selected.size === 1 && selectedFolder) {
+            folderTitle = selectedFolder.title
+            folderAccess = selectedFolder.access
+        }
 
         // Highlight the row being edited
         $('#table-role-details tbody tr').removeClass('editing-active')
         $('tr[data-id="' + folderId + '"]').addClass('editing-active')
 
         // Header: show folder name or count when multi-selection is active
-        var checkedCount = $('input.folder-select:checked').not('#cb-all-selection').length
+        const checkedCount = _roleTree.selected.size
         if (checkedCount > 1) {
             $('#sidebar-role-icon').removeClass('fa-graduation-cap').addClass('fa-layer-group')
-            $('#sidebar-role-info').text(checkedCount + ' <?php echo $lang->get('folders'); ?>')
+            $('#sidebar-role-info').text(checkedCount + ' ' + <?php echo json_encode($lang->get('folders'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>)
         } else {
             $('#sidebar-role-icon').removeClass('fa-layer-group').addClass('fa-graduation-cap')
             $('#sidebar-role-info').text(folderTitle)
@@ -484,17 +491,17 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     // Sidebar submit
     $('#sidebar-role-submit').on('click', function() {
+        // Collect selected folder IDs; fall back to the clicked folder if none selected
+        if (_matrixLoading) return
+        const selectedFolders = _roleTree.selectedRows().map(row => Number(row.id))
+        if (selectedFolders.length === 0 && _roleTree.byId.has(Number(_sidebarFolderId))) {
+            selectedFolders.push(Number(_sidebarFolderId))
+        }
+        if (selectedFolders.length === 0) return
+        const submittedRoleId = _matrixRoleId
+        const generation = _matrixGeneration
         toastr.remove()
         toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>')
-
-        // Collect selected folder IDs; fall back to the clicked folder if none selected
-        var selectedFolders = []
-        $('input.folder-select:checked').not('#cb-all-selection').each(function() {
-            selectedFolders.push($(this).data('id'))
-        })
-        if (selectedFolders.length === 0) {
-            selectedFolders.push(_sidebarFolderId)
-        }
 
         // Determine access type
         var access = $('input[name=sb-right]:checked').data('type')
@@ -507,7 +514,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         }
 
         var postData = {
-            'roleId': $('#roles-list').val(),
+            'roleId': submittedRoleId,
             'selectedFolders': selectedFolders,
             'access': access,
             'propagate': $('#sb-propagate-rights').is(':checked') === true ? 1 : 0,
@@ -522,6 +529,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 key: '<?php echo $session->get('key'); ?>'
             },
             function(data) {
+                if (generation !== _matrixGeneration || submittedRoleId !== _matrixRoleId) return
                 data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>')
                 if (data.error === true) {
                     toastr.remove()
@@ -695,6 +703,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             placeholder: '<?php echo $lang->get('select_a_role'); ?>',
                             allowClear: true
                         })
+                        cancelMatrixRequests()
+                        _matrixRoleId = ''
+                        _roleTree = new TeampassFolderTree()
+                        renderRoleView()
                         $('#card-role-details').addClass('hidden')
                         $('#button-edit, #button-delete').addClass('disabled')
 
@@ -904,128 +916,55 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
      */
     $(document).on('change', '#folders-depth', function() {
         const depth = $(this).val()
-
-        // Persist selection (only when a valid value is set)
         if (depth !== null && depth !== '') {
-            store.update('teampassUser', function(teampassUser) {
-                teampassUser.rolesDepthFilter = depth
-            })
+            store.update('teampassUser', function(user) { user.rolesDepthFilter = depth })
         }
+        applyRoleFilters()
+    })
 
-        if (depth === 'all' || depth === null || depth === '') {
-            $('tr').removeClass('hidden');
-        } else {
-            const depthInt = parseInt(depth, 10)
-            // Only filter rows that explicitly have a data-level attribute
-            $('tr[data-level]').each(function() {
-                if (parseInt($(this).data('level'), 10) <= depthInt) {
-                    $(this).removeClass('hidden');
-                } else {
-                    $(this).addClass('hidden');
-                }
-            });
-        }
-    });
-
-    /**
-     * Handle search criteria
-     */
-    $('#folders-search').on('keyup', function() {
-        var criteria = $(this).val();
-        $('.folder-name').filter(function() {
-            if ($(this).text().toLowerCase().indexOf(criteria) !== -1) {
-                $(this).closest('tr').removeClass('hidden');
-            } else {
-                $(this).closest('tr').addClass('hidden');
-            }
-        });
-    });
-
-    $(document).on('change', '#folders-compare', function() {
-        if ($(this).val() === '') {
-            $('#table-role-details tr').find('th:last-child, td:last-child').addClass('hidden');
-        } else {
-            // Show spinner
-            toastr.remove();
-            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
-
-            // Load the rights for this folder
-            $.post(
-                'sources/roles.queries.php', {
-                    type: 'build_matrix',
-                    role_id: $('#folders-compare').val(),
-                    key: '<?php echo $session->get('key'); ?>'
-                },
-                function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
-                    if (data.error !== false) {
-                        // Show error
-                        toastr.remove();
-                        toastr.error(
-                            data.message,
-                            '', {
-                                timeOut: 5000,
-                                progressBar: true
-                            }
-                        );
-                    } else {
-                        buildRoleCompare(data.matrix);
-
-                        // Store in teampassUser
-                        store.update(
-                            'teampassUser',
-                            function(teampassUser) {
-                                teampassUser.compareRole = data.matrix;
-                            }
-                        );
-
-                        // Inform user
-                        toastr.remove();
-                        toastr.info(
-                            '<?php echo $lang->get('done'); ?>',
-                            '', {
-                                timeOut: 1000
-                            }
-                        );
-                    }
-                }
-            );
-        }
-    });
-
-    function buildRoleCompare(data) {
-        // Loop on array
-        $(data).each(function(i, value) {
-            var row = $('tr[data-id="' + value.id + '"]');
-            if (row !== undefined) {
-                // Access
-                access = '';
-                if (value.access === 'W') {
-                    access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo $lang->get('add_allowed'); ?>"></i>' +
-                        '<i class="fas fa-pen mr-2 text-success infotip" title="<?php echo $lang->get('edit_allowed'); ?>"></i>' +
-                        '<i class="fas fa-eraser mr-2 text-success infotip" title="<?php echo $lang->get('delete_allowed'); ?>"></i>';
-                } else if (value.access === 'ND') {
-                    access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo $lang->get('add_allowed'); ?>"></i>' +
-                        '<i class="fas fa-pen mr-2 text-success infotip" title="<?php echo $lang->get('edit_allowed'); ?>"></i>' +
-                        '<i class="fas fa-eraser mr-2 text-danger infotip" title="<?php echo $lang->get('delete_not_allowed'); ?>"></i>';
-                } else if (value.access === 'NE') {
-                    access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo $lang->get('add_allowed'); ?>"></i>' +
-                        '<i class="fas fa-pen mr-2 text-danger infotip" title="<?php echo $lang->get('edit_not_allowed'); ?>"></i>' +
-                        '<i class="fas fa-eraser mr-2 text-success infotip" title="<?php echo $lang->get('delete_allowed'); ?>"></i>';
-                } else if (value.access === 'NDNE') {
-                    access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo $lang->get('add_allowed'); ?>"></i>' +
-                        '<i class="fas fa-pen mr-2 text-danger infotip" title="<?php echo $lang->get('edit_not_allowed'); ?>"></i>' +
-                        '<i class="fas fa-eraser mr-2 text-danger infotip" title="<?php echo $lang->get('delete_not_allowed'); ?>"></i>';
-                } else if (value.access === 'R') {
-                    access = '<i class="fas fa-book-reader mr-2 text-warning infotip" title="<?php echo $lang->get('read_only'); ?>"></i>';
-                } else {
-                    access = '<i class="fas fa-ban mr-2 text-danger infotip" title="<?php echo $lang->get('no_access'); ?>"></i>';
-                }
-                row.find('td:last-child').html(access).removeClass('hidden');
-            }
-        });
-
-        // Tooltips
-        $('.infotip').tooltip();
+    /** Apply depth and full-path search together without dropping hidden selections. */
+    function applyRoleFilters() {
+        _visibleLimit = 100
+        renderRoleView()
     }
+
+    $('#folders-search').on('input', function() {
+        clearTimeout(_roleSearchTimer)
+        _roleSearchTimer = setTimeout(applyRoleFilters, 200)
+    })
+
+    $(document).on('change', '#folders-compare', refreshRoleComparison)
+
+    /** Index comparison permissions once; rows rendered later use the same snapshot. */
+    function refreshRoleComparison() {
+        const generation = ++_compareGeneration
+        const matrixGeneration = _matrixGeneration
+        if (_compareRequest) _compareRequest.abort()
+        _compareRequest = null
+        _compareAccess.clear()
+        renderRoleView()
+        const roleId = $('#folders-compare').val() || ''
+        if (roleId === '' || _matrixRoleId === '' || _matrixLoading) return
+        _compareRequest = $.post('sources/roles.queries.php', {
+            type: 'build_matrix',
+            role_id: roleId,
+            key: '<?php echo $session->get('key'); ?>'
+        }).done(function(response) {
+            if (generation !== _compareGeneration || matrixGeneration !== _matrixGeneration) return
+            const data = decodeRoleMatrixResponse(response)
+            if (data.error !== false) {
+                toastr.error(data.message)
+                return
+            }
+            _compareAccess = new Map(data.matrix.map(row => [Number(row.id), row.access]))
+            renderRoleView()
+        }).fail(function(xhr, status) {
+            if (status !== 'abort' && generation === _compareGeneration && matrixGeneration === _matrixGeneration) {
+                toastr.error(<?php echo json_encode($lang->get('error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>)
+            }
+        }).always(function() {
+            if (generation === _compareGeneration) _compareRequest = null
+        })
+    }
+
 </script>
