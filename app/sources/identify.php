@@ -1244,7 +1244,6 @@ function buildUserSession(
     $session->set('user-can_manage_lapr', (int) ($userInfo['can_manage_lapr'] ?? 0));
     $session->set('user-read_only', $userInfo['read_only']);
     $session->set('user-last_pw_change', $userInfo['last_pw_change']);
-    $session->set('user-last_pw', $userInfo['last_pw']);
     $session->set('user-force_relog', $userInfo['force-relog']);
     $session->set('user-can_create_root_folder', $userInfo['can_create_root_folder']);
     $session->set('user-email', $userInfo['email']);

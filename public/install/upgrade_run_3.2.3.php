@@ -201,6 +201,14 @@ if (mysqli_query($db_link, secureSendAuditSchemaSql(prefixTable('secure_send_aud
     exit();
 }
 
+// users.last_pw is no longer written or read (GHSA-4462-cjq3-pcxv). changePassword() used to
+// copy the submitted current password into it verbatim, and 2.x kept a list of previous password
+// hashes there. Empty it so no previous password stays at rest. Replayable.
+mysqli_query(
+    $db_link,
+    "UPDATE `" . $pre . "users` SET `last_pw` = '' WHERE `last_pw` IS NOT NULL AND `last_pw` <> ''"
+);
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,
