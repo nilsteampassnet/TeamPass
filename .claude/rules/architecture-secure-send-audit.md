@@ -2,6 +2,9 @@
 paths:
   - "app/sources/secure_send*.php"
   - "app/sources/admin.queries.php"
+  - "app/sources/log_display_logic.php"
+  - "app/scripts/task_maintenance_clean_orphan_objects.php"
+  - "app/pages/options.php"
   - "app/pages/statistics*.php"
   - "public/assets/css/statistics.css"
   - "app/includes/language/english.php"
@@ -10,6 +13,8 @@ paths:
   - "tests/Fixtures/secure_send_*.php"
   - "tests/Integration/secure_send_*.php"
   - "tests/JavaScript/secure-send*.test.cjs"
+  - "public/install/install-steps/run.step5.php"
+  - "public/install/upgrade_run_3.2.3.php"
   - "docs/install/secure-send.md"
 ---
 
