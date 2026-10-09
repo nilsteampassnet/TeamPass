@@ -1,9 +1,10 @@
 ---
 paths:
   - "app/sources/secure_send*.php"
+  - "app/sources/admin.queries.php"
   - "tests/Unit/SecureSend*.php"
   - "tests/Fixtures/secure_send_*.php"
-  - "tests/Integration/secure_send_database.php"
+  - "tests/Integration/secure_send_*.php"
   - "docs/install/secure-send.md"
 ---
 
