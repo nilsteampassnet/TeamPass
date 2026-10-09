@@ -50,6 +50,15 @@ When this option is checked, users of this role can modify any item they can ope
 
 After selecting a role, the **permission matrix** shows the full folder tree with a permission badge on each row.
 
+The matrix is limited to the caller's authorized shared folders. Personal trees,
+including legacy descendants without a personal flag, and forbidden folders are
+excluded. Paths omit inaccessible ancestor names. Matrix reads and permission
+updates validate the selected role against the caller's grantable roles; updates
+also recheck every explicit folder target. Propagation only affects authorized
+shared descendants. A forged or no-longer-authorized explicit target rejects the
+entire submission. Existing transactions, cache invalidation and WebSocket
+notifications are retained. No installation or database migration is required.
+
 ### Editing a single folder
 
 Click any folder row to open the **edit sidebar** on the right.
