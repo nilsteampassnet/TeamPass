@@ -129,12 +129,17 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
 }
 ';
 
+        // Written as is: the values come from the UTF-8 settings.php, utf8_encode() would double-encode them
         $fileCreation = fwrite(
             $file_handled,
-            utf8_encode($settingsTxt)
+            $settingsTxt
         );
 
         fclose($file_handled);
+        // Make the next request compile the rewritten file, whatever the OPcache revalidation policy
+        if (function_exists('opcache_invalidate') === true) {
+            @opcache_invalidate(TEAMPASS_ROOT . '/app/config/settings.php', true);
+        }
         sleep(3);
         if ($fileCreation === false) {
             return [
@@ -145,14 +150,18 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
 
         return [
             'error' => false,
-            'message' => ''
+            'message' => '',
+            // SECUREFILE already held the legacy name: it cannot be redefined, so it still names
+            // the file renamed above for the rest of this request (issue #5423)
+            'reload' => SECUREFILE !== $secureFile,
         ];
     }
 
     // SECUREFILE is already a valid random name and no legacy file exists — nothing to do.
     return [
         'error' => false,
-        'message' => ''
+        'message' => '',
+        'reload' => false,
     ];
 }
 
