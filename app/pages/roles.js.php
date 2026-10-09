@@ -246,6 +246,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         cancelMatrixRequests()
         const generation = _matrixGeneration
         if (_matrixRoleId !== String(selectedRoleId)) {
+            _visibleLimit = 100
             _roleTree = new TeampassFolderTree()
             _renderedRoleMarkup.clear()
             $('#role-details .infotip').tooltip('dispose')
@@ -281,7 +282,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             const stored = store.get('teampassUser') || {}
             const depth = stored.rolesDepthFilter || (maxDepth >= 2 ? '2' : 'all')
             $('#folders-depth').val(depth === 'all' || Number(depth) <= maxDepth ? depth : 'all')
-            _visibleLimit = 100
             _matrixLoading = false
             renderRoleView()
             refreshRoleComparison()

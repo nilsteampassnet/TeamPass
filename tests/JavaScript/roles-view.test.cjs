@@ -292,6 +292,37 @@ test('Successful loads include the deepest level, retain same-role selections an
   assert.equal(ui.context._roleTree.selected.size, 0)
 })
 
+test('Same-role refresh keeps the show-more limit; changing roles or filters resets it', () => {
+  const ui = requestsContext()
+  ui.filters['#folders-compare'] = ''
+  ui.context.refreshMatrix(7)
+  ui.requests[0].onDone({ error: false, matrix: nodes() })
+  ui.requests[0].onAlways()
+  const rendered = view(ui.context._roleTree.rows)
+  ui.context.renderRoleView = () => {
+    rendered.context._visibleLimit = ui.context._visibleLimit
+    rendered.render()
+  }
+  rendered.handlers['#roles-show-more']()
+  ui.context._visibleLimit = rendered.context._visibleLimit
+  ui.context.refreshMatrix(7)
+  assert.equal(ui.context._visibleLimit, 200)
+  ui.requests[1].onDone({ error: false, matrix: nodes() })
+  ui.requests[1].onAlways()
+  assert.equal(rendered.body.children.length, 200)
+  assert.equal(rendered.body.children[149].dataset.id, '150')
+  ui.context.refreshMatrix(8)
+  assert.equal(ui.context._visibleLimit, 100)
+  ui.requests[2].onDone({ error: false, matrix: nodes() })
+  ui.requests[2].onAlways()
+  assert.equal(rendered.body.children.length, 100)
+  ui.context._visibleLimit = 300
+  vm.runInContext(section('    function applyRoleFilters()', "    $('#folders-search').on"), ui.context)
+  ui.context.applyRoleFilters()
+  assert.equal(ui.context._visibleLimit, 100)
+  assert.equal(rendered.body.children.length, 100)
+})
+
 test('Superseded matrix responses and role clear never decode or replace the current state', () => {
   const ui = requestsContext()
   ui.context.refreshMatrix(7)
