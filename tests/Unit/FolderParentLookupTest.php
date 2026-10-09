@@ -149,7 +149,9 @@ class FolderParentLookupTest extends TestCase
         $post_key = $key;
         $source = (string) file_get_contents(__DIR__ . '/../../app/sources/folders.queries.php');
         $start = strpos($source, "case 'search_folder_parents':");
-        $end = strpos($source, "case 'refresh_folders_list':", $start);
+        $end = strpos($source, "\n    }", $start);
+        self::assertNotFalse($start);
+        self::assertNotFalse($end);
         ob_start();
         eval('namespace FolderParentLookupRuntime; switch ("search_folder_parents") {' . substr($source, $start, $end - $start) . '}');
         $result = json_decode((string) ob_get_clean(), true);

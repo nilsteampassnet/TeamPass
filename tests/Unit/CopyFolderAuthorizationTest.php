@@ -29,7 +29,7 @@ class CopyFolderAuthorizationTest extends TestCase
 
         $start = strpos($content, "case 'copy_folder':");
         self::assertNotFalse($start, 'The copy_folder case must exist.');
-        $end = strpos($content, "case 'refresh_folders_list':", $start);
+        $end = strpos($content, "case 'search_folder_parents':", $start);
         self::assertNotFalse($end, 'The case following copy_folder must exist.');
 
         return substr($content, $start, $end - $start);

@@ -52,13 +52,13 @@ class FolderListLogicTest extends TestCase
         }
     }
 
-    /** Prevent the two parent-list entry points from restoring per-folder SQL reads. */
+    /** Prevent parent searches from restoring per-folder SQL reads. */
     public function testParentListsNeverReadOnePathPerFolderFromTheDatabase(): void
     {
         $page = (string) file_get_contents(__DIR__ . '/../../app/pages/folders.php');
         $queries = (string) file_get_contents(__DIR__ . '/../../app/sources/folders.queries.php');
-        $refresh = substr($queries, (int) strpos($queries, "case 'refresh_folders_list':"));
+        $search = substr($queries, (int) strpos($queries, "case 'search_folder_parents':"));
         self::assertStringNotContainsString('->getPath(', $page);
-        self::assertStringNotContainsString('->getPath(', $refresh);
+        self::assertStringNotContainsString('->getPath(', $search);
     }
 }

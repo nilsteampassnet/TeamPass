@@ -526,24 +526,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     }
 
     /**
-     * Build list of folders
-     */
-    function refreshFoldersList() {
-        // Launch action
-        $.post(
-            'sources/folders.queries.php', {
-                type: 'select_sub_folders',
-                key: '<?php echo $session->get('key'); ?>'
-            },
-            function(data) { //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
-
-            }
-        );
-    }
-
-
-    /**
      * Apply all active filters (depth, complexity, search) simultaneously.
      * Centralising the logic avoids filters overriding each other.
      */
