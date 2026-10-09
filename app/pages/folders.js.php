@@ -585,6 +585,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
      * Open the edit sidebar for the given table row.
      */
     function openSidebar($row) {
+        if ($('#folder-edit-parent').hasClass('select2-hidden-accessible')) {
+            $('#folder-edit-parent').select2('close')
+        }
         const folderId              = $row.data('id')
         const folderTitle           = $row.find('td:eq(1) .folder-name').text()
         const folderParent          = $row.find('td:eq(2)').data('value')
@@ -613,9 +616,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         $('#folder-edit-sidebar').addClass('open')
 
         // Keep only the selected parent in the DOM; search loads other candidates on demand.
-        const parent = _folderTree.byId.get(Number(folderParent))
+        const row = _folderTree.byId.get(Number(folderId))
         const rootLabel = <?php echo json_encode($lang->get('root'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
-        $('#folder-edit-parent').empty().append(new Option(parent ? [...parent.path, parent.title].join(' / ') : rootLabel, String(folderParent), true, true))
+        const parentLabel = row && row.path.length > 0 ? row.path.join(' / ') : rootLabel
+        $('#folder-edit-parent').empty().append(new Option(parentLabel, String(folderParent), true, true))
         initializeParentPicker($('#folder-edit-parent'), $('#folder-edit-sidebar'), () => _sidebarFolderId || 0)
         $('#folder-edit-complexity').html(store.get('teampassApplication').complexityOptions)
         if (!$('#folder-edit-complexity').hasClass('select2-hidden-accessible')) {
@@ -655,6 +659,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
      * Close the edit sidebar.
      */
     function closeSidebar() {
+        if ($('#folder-edit-parent').hasClass('select2-hidden-accessible')) {
+            $('#folder-edit-parent').select2('close')
+        }
         $('#folder-edit-sidebar').removeClass('open')
         $('#folder-edit-overlay').fadeOut(150)
         $('#table-folders tbody tr.editing-active').removeClass('editing-active')
@@ -708,7 +715,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         page: params.data.page,
                         exclude_id: sourceId
                     }).done(function(response) {
-                        if (sourceId !== excludedId()) return
+                        if (sourceId !== excludedId()) {
+                            success({ results: [], pagination: { more: false } })
+                            return
+                        }
                         const data = prepareExchangedData(response, 'decode', '<?php echo $session->get('key'); ?>')
                         if (data.error !== false) {
                             failure()

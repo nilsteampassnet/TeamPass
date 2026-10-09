@@ -172,7 +172,7 @@ test('A superseded load cannot replace the latest view or clear its loading stat
   assert.equal(context._foldersLoading, false)
 })
 
-test('Parent searches are paginated, initialized once, and ignore a response for a previous edited folder', () => {
+test('Parent searches finish with empty results for a previous edited folder without decoding stale data', () => {
   const responses = []
   const requests = []
   let options
@@ -201,9 +201,49 @@ test('Parent searches are paginated, initialized once, and ignore a response for
   edited = 3
   requests[0].respond({ error: false, results: [{ id: '1' }], pagination: { more: false } })
   assert.equal(decoded, 0)
+  assert.equal(responses.length, 1)
+  assert.equal(responses[0].results.length, 0)
+  assert.equal(responses[0].pagination.more, false)
+  assert.equal(context._parentMetadata.size, 0)
   options.ajax.transport({ data: { term: 'Production', page: 1 } }, result => responses.push(result), () => assert.fail('unexpected failure'))
   requests[1].respond({ error: false, results: [{ id: '4', complexity: 60 }], pagination: { more: true } })
-  assert.equal(responses.length, 1)
+  assert.equal(responses.length, 2)
   assert.equal(context._parentMetadata.get(4).complexity, 60)
-  assert.equal(options.ajax.processResults(responses[0]).pagination.more, true)
+  assert.equal(options.ajax.processResults(responses[1]).pagination.more, true)
+})
+
+test('Sidebar preserves an unlisted parent path and closes the parent picker on folder switches and close', () => {
+  let selected
+  let closed = 0
+  const controls = {
+    val() { return this }, data() { return this }, text() { return this },
+    fadeIn() { return this }, fadeOut() { return this },
+    addClass() { return this }, removeClass() { return this },
+    html() { return this }, iCheck() { return this }, trigger() { return this },
+    hasClass() { return true }, empty() { return this },
+    append(option) { selected = option; return this },
+    select2(action) { assert.equal(action, 'close'); closed++; return this }
+  }
+  const context = vm.createContext({ $: () => controls,
+    _folderTree: { byId: new Map([[2, { path: ['Unlisted', 'Parent'] }], [3, { path: [] }]]) },
+    _sidebarFolderId: null, store: { get: () => ({ complexityOptions: '' }) },
+    initializeParentPicker() {},
+    Option: function(text, value) { this.text = text; this.value = value }
+  })
+  vm.runInContext(section('    function openSidebar', '    /**\n     * Open sidebar on row click'), context)
+  const row = (id, parent) => ({
+    data: () => id, addClass() {},
+    find: selector => ({ text: () => 'Child', data: () => selector === 'td:eq(2)' ? parent : 0 })
+  })
+  context.openSidebar(row(2, 99))
+  assert.equal(selected.text, 'Unlisted / Parent')
+  assert.equal(selected.value, '99')
+  assert.equal(closed, 1)
+  context.openSidebar(row(3, 0))
+  assert.equal(selected.text, 'Translated')
+  assert.equal(selected.value, '0')
+  assert.equal(closed, 2)
+  context.closeSidebar()
+  assert.equal(closed, 3)
+  assert.equal(context._sidebarFolderId, null)
 })
