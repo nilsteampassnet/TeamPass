@@ -94,6 +94,23 @@ class FolderParentLookupTest extends TestCase
         self::assertSame([], $privateAncestor['results']);
     }
 
+    /** Search decoded names and paths while preserving encoded labels in the response. */
+    public function testSearchMatchesSpecialCharactersWithoutMatchingEntityNames(): void
+    {
+        $nodes = $this->nodes(2);
+        $nodes[1]->title = 'R&amp;D';
+        $nodes[2]->parent_id = 1;
+        $nodes[2]->title = 'O&#039;Brien &quot;Lab&quot; &lt;Test&gt;';
+        foreach (['R&D', "O'Brien", '"Lab"', '<Test>', "R&D / O'Brien"] as $term) {
+            $result = \folderListParentPage($nodes, [1, 2], [], false, 'Root', $term, 1);
+            self::assertContains('2', array_column($result['results'], 'id'), $term);
+            self::assertSame('R&amp;D / O&#039;Brien &quot;Lab&quot; &lt;Test&gt;', array_column($result['results'], 'text', 'id')[2]);
+        }
+        foreach (['amp', 'quot', '#039', '&lt;', '&gt;'] as $term) {
+            self::assertSame([], \folderListParentPage($nodes, [1, 2], [], false, 'Root', $term, 1)['results'], $term);
+        }
+    }
+
     private function request(array $overrides = [], string $key = 'session-key', bool $pageAllowed = true, array $posted = []): array
     {
         DB::$calls = [];

@@ -80,7 +80,8 @@ function folderListParentPage(
             }
         }
         $text = implode(' / ', array_merge($titles, [(string) $node->title]));
-        if ($term !== '' && mb_stripos($text, $term) === false) {
+        $haystack = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        if ($term !== '' && mb_stripos($haystack, $term) === false) {
             continue;
         }
         if ($matched++ < $offset) {
