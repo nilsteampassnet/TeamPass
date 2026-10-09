@@ -2,9 +2,14 @@
 paths:
   - "app/sources/secure_send*.php"
   - "app/sources/admin.queries.php"
+  - "app/pages/statistics*.php"
+  - "public/assets/css/statistics.css"
+  - "app/includes/language/english.php"
+  - "app/includes/language/french.php"
   - "tests/Unit/SecureSend*.php"
   - "tests/Fixtures/secure_send_*.php"
   - "tests/Integration/secure_send_*.php"
+  - "tests/JavaScript/secure-send*.test.cjs"
   - "docs/install/secure-send.md"
 ---
 
