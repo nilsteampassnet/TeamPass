@@ -3802,6 +3802,13 @@ return array(
     'webauthn_login_prf_missing' => 'Ce navigateur ne peut pas déverrouiller cette clé d’accès pour une connexion sans mot de passe. Connectez-vous avec votre mot de passe.',
     'webauthn_login_passwordless_mfa_required' => 'Votre compte exige un autre second facteur : connectez-vous avec votre mot de passe.',
     'webauthn_login_passwordless_failed' => 'Connexion par clé d’accès refusée',
+    'webauthn_login_stepup_title' => 'Confirmez votre mot de passe',
+    'webauthn_login_stepup_prompt' => 'Pour votre sécurité, saisissez votre mot de passe pour ajouter une clé d’accès ou lui permettre de vous connecter sans mot de passe.',
+    'webauthn_login_stepup_signin' => 'Pour votre sécurité, reconnectez-vous avant d’ajouter une clé d’accès ou de lui permettre de vous connecter sans mot de passe.',
+    'webauthn_login_stepup_failed' => 'Mot de passe non confirmé pour une clé d’accès',
+    'webauthn_login_passwordless_prf_required' => 'Cette clé d’accès ne peut plus vous connecter sans mot de passe : votre administrateur exige désormais PRF, que son authentificateur ne propose pas. Connectez-vous avec votre mot de passe ; la clé d’accès le confirme toujours.',
+    'webauthn_rp_id_invalid' => 'L’identifiant de la partie de confiance doit être l’hôte de l’URL de TeamPass (%s) ou l’un de ses domaines parents.',
+    'webauthn_rp_id_change_confirm' => 'Les #count# clés d’accès de connexion enregistrées pour #rp_id# cesseront de fonctionner, et leurs propriétaires devront les enregistrer de nouveau. Continuer ?',
     'webauthn_passwordless_satisfies_mfa' => 'La connexion sans mot de passe vaut MFA',
     'webauthn_passwordless_satisfies_mfa_tip' => 'Une clé d’accès qui vérifie son utilisateur (code PIN ou biométrie) constitue déjà deux facteurs. Désactivée, les comptes auxquels Google ou Duo est imposé doivent se connecter avec leur mot de passe.',
 

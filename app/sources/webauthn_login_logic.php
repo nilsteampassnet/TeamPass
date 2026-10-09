@@ -104,6 +104,15 @@ const TP_WEBAUTHN_LOGIN_LABEL_MAX = 100;
 const TP_WEBAUTHN_LOGIN_SECRET_BYTES = 32;
 
 /**
+ * A password confirmed before adding a passkey stays valid this many seconds: the PRF
+ * evaluation that may follow a registration does not ask for it twice.
+ */
+const TP_WEBAUTHN_LOGIN_STEPUP_TTL = 300;
+
+/** An account without a password TeamPass can check proves itself with a sign-in this recent. */
+const TP_WEBAUTHN_LOGIN_RECENT_SIGNIN = 600;
+
+/**
  * Read webauthn_login_mode, an unknown value meaning disabled.
  *
  * @param array<string, mixed> $settings TeamPass settings
@@ -249,7 +258,9 @@ function webauthnLoginIsSecondFactor(array $settings, int $mfaEnabled, bool $has
  *
  * Only in passwordless mode, only for local accounts (a directory account would bypass its
  * directory), only with a copy of the private key, and never while the account is in a state
- * that needs the password: keys to generate or to re-encrypt, one-time code to enter.
+ * that needs the password: keys to generate or to re-encrypt, one-time code to enter. A copy
+ * the server opens alone is refused once the administrator requires PRF, including the copies
+ * made before that setting was turned on.
  *
  * @param array<string, mixed> $settings TeamPass settings
  * @param array<string, mixed> $account  auth_type, special and key_wrap_mode of the passkey
@@ -266,11 +277,69 @@ function webauthnLoginPasswordlessRefusal(array $settings, array $account): ?str
     ) {
         return 'webauthn_login_passwordless_unavailable';
     }
-    if ((int) ($account['key_wrap_mode'] ?? 0) === TP_WEBAUTHN_LOGIN_WRAP_NONE) {
+    $wrapMode = (int) ($account['key_wrap_mode'] ?? 0);
+    if ($wrapMode === TP_WEBAUTHN_LOGIN_WRAP_NONE) {
         return 'webauthn_login_passwordless_not_enabled';
+    }
+    if ($wrapMode === TP_WEBAUTHN_LOGIN_WRAP_SERVER && (int) ($settings['webauthn_login_require_prf'] ?? 0) === 1) {
+        return 'webauthn_login_passwordless_prf_required';
     }
 
     return null;
+}
+
+/**
+ * Tell whether an account confirms its password before adding a sign-in passkey: local
+ * accounts, and directory accounts, whose password of the last sign-in TeamPass keeps hashed.
+ * OAuth2 accounts have no password TeamPass can check.
+ *
+ * @param string $authType users.auth_type
+ *
+ * @return bool
+ */
+function webauthnLoginStepUpUsesPassword(string $authType): bool
+{
+    return in_array($authType, ['local', 'ldap'], true);
+}
+
+/**
+ * Tell what the caller must still do before adding a sign-in passkey or giving one a
+ * passwordless copy of the private key. An open session alone is not enough: whoever holds it
+ * — an unattended browser, a stolen cookie, an XSS — could plant a passkey that outlives it,
+ * and survives a change of password.
+ *
+ * @param string $authType   users.auth_type
+ * @param int    $provenAt   When the password was last confirmed for a passkey, 0 if never
+ * @param int    $signedInAt When the session signed in, 0 if unknown
+ * @param int    $now        Current time
+ *
+ * @return string 'none' when a recent proof stands, 'password' to confirm the password,
+ *                'signin' to sign in again
+ */
+function webauthnLoginStepUpRequirement(string $authType, int $provenAt, int $signedInAt, int $now): string
+{
+    if (webauthnLoginIsRecent($provenAt, $now, TP_WEBAUTHN_LOGIN_STEPUP_TTL) === true) {
+        return 'none';
+    }
+    if (webauthnLoginStepUpUsesPassword($authType) === true) {
+        return 'password';
+    }
+
+    return webauthnLoginIsRecent($signedInAt, $now, TP_WEBAUTHN_LOGIN_RECENT_SIGNIN) === true ? 'none' : 'signin';
+}
+
+/**
+ * Tell whether a moment lies within the last $ttl seconds.
+ *
+ * @param int $at  Moment, 0 when unknown
+ * @param int $now Current time
+ * @param int $ttl Window in seconds
+ *
+ * @return bool
+ */
+function webauthnLoginIsRecent(int $at, int $now, int $ttl): bool
+{
+    return $at > 0 && $at <= $now && $now - $at < $ttl;
 }
 
 /**

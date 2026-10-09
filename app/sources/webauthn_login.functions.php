@@ -35,10 +35,14 @@ declare(strict_types=1);
 require_once __DIR__ . '/webauthn_login_logic.php';
 
 use TeampassClasses\Language\Language;
+use TeampassClasses\PasswordManager\PasswordManager;
 use TeampassClasses\SessionManager\SessionManager;
 
 /** Session key of the ceremony in progress (options handed to the browser). */
 const TP_WEBAUTHN_LOGIN_PENDING_KEY = 'webauthn_login_pending';
+
+/** Session key of the last password confirmation before a passkey was added. */
+const TP_WEBAUTHN_LOGIN_STEPUP_KEY = 'webauthn_login_stepup_at';
 
 /**
  * Run a profile action on the caller's own passkeys.
@@ -63,7 +67,7 @@ function webauthnLoginProfileAction(string $type, array $data, array $SETTINGS, 
             case 'webauthn_login_list':
                 return webauthnLoginList($userId, $SETTINGS);
             case 'webauthn_login_register_options':
-                return webauthnLoginRegisterOptions($userId, $SETTINGS, $lang);
+                return webauthnLoginRegisterOptions($userId, $data, $SETTINGS, $lang);
             case 'webauthn_login_register_verify':
                 return webauthnLoginRegisterVerify($userId, $data, $SETTINGS, $lang);
             case 'webauthn_login_rename':
@@ -71,7 +75,7 @@ function webauthnLoginProfileAction(string $type, array $data, array $SETTINGS, 
             case 'webauthn_login_delete':
                 return webauthnLoginDelete($userId, (int) ($data['id'] ?? 0), $userId, $SETTINGS, $lang);
             case 'webauthn_login_passwordless_options':
-                return webauthnLoginPasswordlessOptions($userId, (int) ($data['id'] ?? 0), $SETTINGS, $lang);
+                return webauthnLoginPasswordlessOptions($userId, $data, $SETTINGS, $lang);
             case 'webauthn_login_passwordless_verify':
                 return webauthnLoginPasswordlessVerify($userId, $data, $SETTINGS, $lang);
             case 'webauthn_login_passwordless_disable':
@@ -134,20 +138,23 @@ function webauthnLoginList(int $userId, array $SETTINGS): array
         'mode' => webauthnLoginMode($SETTINGS),
         'can_wrap' => webauthnLoginSessionCanWrap($SETTINGS),
         'require_prf' => (int) ($SETTINGS['webauthn_login_require_prf'] ?? 0) === 1,
+        'stepup_password' => webauthnLoginStepUpUsesPassword((string) SessionManager::getSession()->get('user-auth_type')),
         'credentials' => webauthnLoginRows($userId),
     ];
 }
 
 /**
- * Start registering a passkey: options for navigator.credentials.create().
+ * Start registering a passkey: options for navigator.credentials.create(), once the caller has
+ * confirmed their password (webauthnLoginCheckStepUp()).
  *
  * @param int                  $userId   Caller
+ * @param array<string, mixed> $data     current_password
  * @param array<string, mixed> $SETTINGS Settings
  * @param Language             $lang     Language
  *
  * @return array<string, mixed>
  */
-function webauthnLoginRegisterOptions(int $userId, array $SETTINGS, Language $lang): array
+function webauthnLoginRegisterOptions(int $userId, array $data, array $SETTINGS, Language $lang): array
 {
     if (webauthnLoginMode($SETTINGS) === TP_WEBAUTHN_LOGIN_MODE_DISABLED) {
         return webauthnLoginError($lang->get('webauthn_login_disabled'));
@@ -163,6 +170,10 @@ function webauthnLoginRegisterOptions(int $userId, array $SETTINGS, Language $la
     $user = DB::queryFirstRow('SELECT login, name, lastname FROM ' . prefixTable('users') . ' WHERE id = %i', $userId);
     if ($user === null) {
         return webauthnLoginError($lang->get('error_not_allowed_to'));
+    }
+    $stepUp = webauthnLoginCheckStepUp($userId, $data, $SETTINGS, $lang);
+    if ($stepUp !== null) {
+        return $stepUp;
     }
 
     $forPasswordless = webauthnLoginSessionCanWrap($SETTINGS);
@@ -335,23 +346,28 @@ function webauthnLoginDelete(int $ownerId, int $id, int $actorId, array $SETTING
 
 /**
  * Start enabling passwordless sign-in on an existing passkey: an assertion that proves the
- * passkey is at hand and evaluates its PRF.
+ * passkey is at hand and evaluates its PRF, once the caller has confirmed their password.
  *
  * @param int                  $userId   Caller
- * @param int                  $id       Passkey
+ * @param array<string, mixed> $data     id of the passkey, current_password
  * @param array<string, mixed> $SETTINGS Settings
  * @param Language             $lang     Language
  *
  * @return array<string, mixed>
  */
-function webauthnLoginPasswordlessOptions(int $userId, int $id, array $SETTINGS, Language $lang): array
+function webauthnLoginPasswordlessOptions(int $userId, array $data, array $SETTINGS, Language $lang): array
 {
     if (webauthnLoginSessionCanWrap($SETTINGS) === false) {
         return webauthnLoginError($lang->get('webauthn_login_passwordless_unavailable'));
     }
+    $id = (int) ($data['id'] ?? 0);
     $row = webauthnLoginRow($userId, $id);
     if ($row === null || (int) $row['key_wrap_mode'] !== TP_WEBAUTHN_LOGIN_WRAP_NONE) {
         return webauthnLoginError($lang->get('error_not_allowed_to'));
+    }
+    $stepUp = webauthnLoginCheckStepUp($userId, $data, $SETTINGS, $lang);
+    if ($stepUp !== null) {
+        return $stepUp;
     }
 
     $optionsJson = webauthnLoginSerializeOptions(webauthnLoginRequestOptions(
@@ -523,6 +539,82 @@ function webauthnLoginSessionCanWrap(array $SETTINGS): bool
     return webauthnLoginCanWrap($SETTINGS, (string) $session->get('user-auth_type'))
         && $privateKey !== ''
         && $privateKey !== 'none';
+}
+
+/**
+ * Check that the caller confirmed who they are before adding a sign-in passkey or giving one a
+ * passwordless copy of the private key: their password for local and directory accounts, a
+ * recent sign-in for the others. A wrong password is a failed authentication, so this check is
+ * no password oracle for whoever holds the session.
+ *
+ * @param int                  $userId   Caller
+ * @param array<string, mixed> $data     current_password
+ * @param array<string, mixed> $SETTINGS Settings
+ * @param Language             $lang     Language
+ *
+ * @return array<string, mixed>|null Error response, with stepup = password|signin when the
+ *                                   caller has to act; null when the caller may go on
+ */
+function webauthnLoginCheckStepUp(int $userId, array $data, array $SETTINGS, Language $lang): ?array
+{
+    $session = SessionManager::getSession();
+    $now = time();
+    $requirement = webauthnLoginStepUpRequirement(
+        (string) $session->get('user-auth_type'),
+        (int) $session->get(TP_WEBAUTHN_LOGIN_STEPUP_KEY),
+        (int) $session->get('user-authenticated_at'),
+        $now
+    );
+    if ($requirement === 'none') {
+        return null;
+    }
+    if ($requirement === 'signin') {
+        return webauthnLoginError($lang->get('webauthn_login_stepup_signin')) + ['stepup' => 'signin'];
+    }
+
+    $password = is_string($data['current_password'] ?? null) === true ? $data['current_password'] : '';
+    if ($password === '') {
+        return webauthnLoginError($lang->get('webauthn_login_stepup_prompt')) + ['stepup' => 'password'];
+    }
+    $login = (string) $session->get('user-login');
+    if (getAuthenticationLockUntil($login, getClientIpServer()) !== null) {
+        return webauthnLoginError($lang->get('bruteforce_account_locked'));
+    }
+    $hash = (string) DB::queryFirstField('SELECT pw FROM ' . prefixTable('users') . ' WHERE id = %i', $userId);
+    if (webauthnLoginPasswordMatches($hash, $password) === false) {
+        logEvents($SETTINGS, 'failed_auth', 'webauthn_login_stepup_failed', '', $login, $login);
+        addFailedAuthentication($login, getClientIpServer(), $SETTINGS);
+        return webauthnLoginError($lang->get('password_is_not_correct')) + ['stepup' => 'password'];
+    }
+
+    $session->set(TP_WEBAUTHN_LOGIN_STEPUP_KEY, $now);
+
+    return null;
+}
+
+/**
+ * Tell whether a password matches the stored hash, without migrating anything.
+ *
+ * @param string $hash     users.pw
+ * @param string $password Password as typed
+ *
+ * @return bool
+ */
+function webauthnLoginPasswordMatches(string $hash, string $password): bool
+{
+    if ($hash === '' || $password === '') {
+        return false;
+    }
+    $passwordManager = new PasswordManager();
+    if ($passwordManager->verifyPassword($hash, $password) === true) {
+        return true;
+    }
+
+    // A 3.0.x hash was made from the sanitized password (#5389). A password sign-in rehashes it,
+    // a passwordless one never sees the password: it may still be there.
+    $sanitized = (string) filter_var($password, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+    return $sanitized !== $password && $passwordManager->verifyPassword($hash, $sanitized);
 }
 
 /**

@@ -308,6 +308,23 @@ function webauthnBuildAttestationObject(string $authenticatorData): string
 }
 
 /**
+ * Next signature counter of a passkey: above the stored one, and never below the clock.
+ *
+ * Relying parties read a counter that does not grow as a cloned authenticator. Following the
+ * clock keeps it above every value signed before a database restore, which a plain increment
+ * would sign again. A jump from a small counter to the clock is legal: it only has to grow.
+ *
+ * @param int $stored Counter of the last signature
+ * @param int $now    Current time
+ *
+ * @return int
+ */
+function webauthnNextSignCount(int $stored, int $now): int
+{
+    return min(max($stored + 1, $now), 0xFFFFFFFF);
+}
+
+/**
  * Sign an assertion.
  *
  * The signed payload is authenticatorData ‖ SHA-256(clientDataJSON). OpenSSL returns a DER

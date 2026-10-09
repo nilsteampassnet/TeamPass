@@ -201,6 +201,73 @@ final class WebauthnLoginWiringTest extends TestCase
         foreach (['at_user_webauthn_added', 'at_user_webauthn_deleted', 'at_user_webauthn_passwordless_enabled', 'at_user_webauthn_passwordless_disabled'] as $label) {
             $this->assertNotSame($label, formatAdminLogLabel($label, $lang), $label);
         }
+        // failed_auth rows are labelled with their key
+        foreach (['webauthn_login_2fa_failed', 'webauthn_login_passwordless_failed', 'webauthn_login_stepup_failed'] as $label) {
+            $this->assertNotSame($label, $lang->get($label), $label);
+        }
+    }
+
+    public function testAddingAPasskeyOrAPasswordlessCopyAsksForTheAccountFirst(): void
+    {
+        $functions = (string) file_get_contents(__DIR__ . '/../../app/sources/webauthn_login.functions.php');
+
+        // No ceremony is handed out before the step-up: the verify steps need that ceremony.
+        $ceremonies = [
+            ['function webauthnLoginRegisterOptions(', 'function webauthnLoginRegisterVerify('],
+            ['function webauthnLoginPasswordlessOptions(', 'function webauthnLoginPasswordlessVerify('],
+        ];
+        foreach ($ceremonies as [$start, $end]) {
+            $body = $this->between($functions, $start, $end);
+            $check = strpos($body, 'webauthnLoginCheckStepUp(');
+            $pending = strpos($body, '->set(TP_WEBAUTHN_LOGIN_PENDING_KEY');
+            $this->assertIsInt($check, $start);
+            $this->assertIsInt($pending, $start);
+            $this->assertLessThan($pending, $check, $start);
+        }
+
+        // A wrong password is a failed authentication, refused while the account is locked
+        $stepUp = $this->between($functions, 'function webauthnLoginCheckStepUp(', 'function webauthnLoginPasswordMatches(');
+        $this->assertStringContainsString('getAuthenticationLockUntil(', $stepUp);
+        $this->assertStringContainsString('addFailedAuthentication(', $stepUp);
+        $this->assertStringContainsString("'webauthn_login_stepup_failed'", $stepUp);
+
+        $identify = (string) file_get_contents(__DIR__ . '/../../app/sources/identify.php');
+        $this->assertStringContainsString(
+            "\$session->set('user-authenticated_at', time());",
+            $this->between($identify, 'function buildUserSession(', 'function performPostLoginTasks(')
+        );
+
+        $profile = (string) file_get_contents(__DIR__ . '/../../app/pages/profile.js.php');
+        $this->assertStringContainsString("webauthnLoginStart('webauthn_login_register_options'", $profile);
+        $this->assertStringContainsString("'webauthn_login_passwordless_options',", $profile);
+        $this->assertStringNotContainsString("webauthnLoginPost('webauthn_login_register_options'", $profile);
+        $this->assertStringNotContainsString("webauthnLoginPost('webauthn_login_passwordless_options'", $profile);
+    }
+
+    public function testRelyingPartyIdAndRequirePrfAreEnforcedWhenSaved(): void
+    {
+        $admin = (string) file_get_contents(__DIR__ . '/../../app/sources/admin.queries.php');
+
+        // A relying party ID that does not suit the TeamPass URL is refused, never stored
+        $rpId = $this->between($admin, "if (\$post_field === 'webauthn_rp_id') {", "require_once 'main.functions.php';");
+        $this->assertStringContainsString('webauthnLoginRpIdIsValidFor(', $rpId);
+        $this->assertStringContainsString('break;', $rpId);
+
+        // Requiring PRF deletes the server copies already registered
+        $purge = $this->between($admin, "if (\$post_field === 'webauthn_login_require_prf' && (int) \$post_value === 1) {", '// Keep local settings array aligned');
+        $this->assertStringContainsString('TP_WEBAUTHN_LOGIN_WRAP_SERVER', $purge);
+        $this->assertStringContainsString("'wrapped_private_key' => null", $purge);
+
+        // Saved by 2fa.js.php once the administrator confirmed, not by the generic handler
+        $page = (string) file_get_contents(__DIR__ . '/../../app/pages/2fa.php');
+        $field = array_values(array_filter(
+            explode("\n", $page),
+            static fn (string $line): bool => str_contains($line, 'id="webauthn_rp_id"')
+        ));
+        $this->assertCount(1, $field);
+        $this->assertMatchesRegularExpression('/class="[^"]*\bno-save\b/', $field[0]);
+        $js = (string) file_get_contents(__DIR__ . '/../../app/pages/2fa.js.php');
+        $this->assertStringContainsString("saveFieldValue(\$field, 'webauthn_rp_id', false);", $js);
     }
 
     private function between(string $source, string $startMarker, string $endMarker): string

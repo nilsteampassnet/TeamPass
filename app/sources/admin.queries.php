@@ -1549,8 +1549,23 @@ switch ($post_type) {
         if ($post_field === 'webauthn_login_mode') {
             $post_value = (string) min(2, max(0, (int) $post_value));
         }
+        // Relying party ID: the host of the TeamPass URL or a parent domain of it. Any other value
+        // would be ignored until the URL changes, then suddenly orphan every sign-in passkey.
         if ($post_field === 'webauthn_rp_id') {
-            $post_value = strtolower(trim((string) $post_value));
+            require_once __DIR__ . '/webauthn_login_logic.php';
+            $post_value = strtolower(trim(html_entity_decode((string) $post_value, ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+            $teampassHost = webauthnLoginHostOf((string) ($SETTINGS['cpassman_url'] ?? ''));
+            if ($post_value !== '' && webauthnLoginRpIdIsValidFor($post_value, $teampassHost) === false) {
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        // Shown as text (escapeHtml in admin.js.php)
+                        'message' => sprintf($lang->get('webauthn_rp_id_invalid'), $teampassHost),
+                    ],
+                    'encode'
+                );
+                break;
+            }
         }
 
         require_once 'main.functions.php';
@@ -1762,6 +1777,33 @@ switch ($post_type) {
                 '',
                 '0'
             );
+        }
+
+        // Requiring PRF refuses the copies of a private key the server opens alone: those made
+        // before are deleted, not merely refused. Their passkeys stay second factors.
+        if ($post_field === 'webauthn_login_require_prf' && (int) $post_value === 1) {
+            require_once __DIR__ . '/webauthn_login_logic.php';
+            $serverWraps = DB::query(
+                'SELECT id, user_id FROM ' . prefixTable('user_webauthn_credentials') . ' WHERE key_wrap_mode = %i',
+                TP_WEBAUTHN_LOGIN_WRAP_SERVER
+            );
+            foreach ($serverWraps as $serverWrap) {
+                DB::update(
+                    prefixTable('user_webauthn_credentials'),
+                    ['key_wrap_mode' => TP_WEBAUTHN_LOGIN_WRAP_NONE, 'wrapped_private_key' => null, 'wrap_salt' => null],
+                    'id = %i AND key_wrap_mode = %i',
+                    (int) $serverWrap['id'],
+                    TP_WEBAUTHN_LOGIN_WRAP_SERVER
+                );
+                logEvents(
+                    $SETTINGS,
+                    'user_mngt',
+                    'at_user_webauthn_passwordless_disabled',
+                    (string) $session->get('user-id'),
+                    (string) $session->get('user-login'),
+                    (string) $serverWrap['user_id']
+                );
+            }
         }
 
         // Keep local settings array aligned with the saved value

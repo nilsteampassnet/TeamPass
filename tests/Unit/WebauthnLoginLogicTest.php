@@ -95,6 +95,44 @@ final class WebauthnLoginLogicTest extends TestCase
         $this->assertSame('webauthn_login_passwordless_not_enabled', webauthnLoginPasswordlessRefusal($on, ['key_wrap_mode' => TP_WEBAUTHN_LOGIN_WRAP_NONE] + $local));
     }
 
+    public function testRequiringPrfRefusesTheServerCopiesAlreadyRegistered(): void
+    {
+        $requirePrf = ['webauthn_login_mode' => '2', 'webauthn_login_require_prf' => '1'];
+        $local = ['auth_type' => 'local', 'special' => 'none'];
+
+        $this->assertSame(
+            'webauthn_login_passwordless_prf_required',
+            webauthnLoginPasswordlessRefusal($requirePrf, ['key_wrap_mode' => TP_WEBAUTHN_LOGIN_WRAP_SERVER] + $local)
+        );
+        $this->assertNull(webauthnLoginPasswordlessRefusal($requirePrf, ['key_wrap_mode' => TP_WEBAUTHN_LOGIN_WRAP_PRF] + $local));
+        $this->assertNull(webauthnLoginPasswordlessRefusal(
+            ['webauthn_login_require_prf' => '0'] + $requirePrf,
+            ['key_wrap_mode' => TP_WEBAUTHN_LOGIN_WRAP_SERVER] + $local
+        ));
+    }
+
+    public function testAddingAPasskeyNeedsTheAccountToProveItselfAgain(): void
+    {
+        $now = 1_800_000_000;
+
+        // An open session is not enough: local and directory accounts confirm their password
+        foreach (['local', 'ldap'] as $authType) {
+            $this->assertTrue(webauthnLoginStepUpUsesPassword($authType), $authType);
+            $this->assertSame('password', webauthnLoginStepUpRequirement($authType, 0, $now - 5, $now), $authType);
+        }
+        // ... which then covers the PRF evaluation that may follow a registration, briefly
+        $this->assertSame('none', webauthnLoginStepUpRequirement('local', $now - 60, 0, $now));
+        $this->assertSame('password', webauthnLoginStepUpRequirement('local', $now - TP_WEBAUTHN_LOGIN_STEPUP_TTL, 0, $now));
+        $this->assertSame('password', webauthnLoginStepUpRequirement('local', $now + 60, 0, $now));
+
+        // No password TeamPass can check: a recent sign-in, else sign in again
+        $this->assertFalse(webauthnLoginStepUpUsesPassword('oauth2'));
+        $this->assertSame('none', webauthnLoginStepUpRequirement('oauth2', 0, $now - 120, $now));
+        $this->assertSame('signin', webauthnLoginStepUpRequirement('oauth2', 0, $now - TP_WEBAUTHN_LOGIN_RECENT_SIGNIN, $now));
+        $this->assertSame('signin', webauthnLoginStepUpRequirement('oauth2', 0, 0, $now));
+        $this->assertSame('signin', webauthnLoginStepUpRequirement('', 0, 0, $now));
+    }
+
     public function testImposedMfaBlocksPasswordlessOnlyWhenTheAdministratorSaysSo(): void
     {
         $this->assertFalse(webauthnLoginPasswordlessBlockedByMfa([], true));

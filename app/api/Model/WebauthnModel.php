@@ -357,7 +357,7 @@ class WebauthnModel
             $transactionStarted = true;
 
             // The counter is the relying party's clone detector: two concurrent assertions must
-            // never sign the same value.
+            // never sign the same value, nor a restored database one the site already saw.
             $signCount = DB::queryFirstField(
                 'SELECT sign_count FROM ' . prefixTable('webauthn_credentials') . ' WHERE id = %i FOR UPDATE',
                 $credentialRowId
@@ -366,7 +366,7 @@ class WebauthnModel
                 DB::rollback();
                 return $this->error(404, 'Passkey not found');
             }
-            $newSignCount = min((int) $signCount + 1, 0xFFFFFFFF);
+            $newSignCount = webauthnNextSignCount((int) $signCount, time());
 
             $authenticatorData = webauthnBuildAuthenticatorData(
                 $request['rp_id'],

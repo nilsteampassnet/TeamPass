@@ -1282,6 +1282,8 @@ function buildUserSession(
 
     // Manage session expiration
     $session->set('user-session_duration', (int) $lifetime);
+    // When this session proved who it is: adding a sign-in passkey asks for a recent proof
+    $session->set('user-authenticated_at', time());
 
     // User signature keys
     if ($privateKeyClear !== null) {

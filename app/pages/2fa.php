@@ -265,6 +265,11 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                             <?php
                             $webauthnLoginMode = (int) ($SETTINGS['webauthn_login_mode'] ?? 0);
                             $webauthnDefaultRpId = strtolower((string) parse_url((string) ($SETTINGS['cpassman_url'] ?? ''), PHP_URL_HOST));
+                            // Changing the relying party ID orphans the registered passkeys: 2fa.js.php
+                            // asks for a confirmation when some exist.
+                            require_once __DIR__ . '/../sources/webauthn_login_logic.php';
+                            $webauthnEffectiveRpId = webauthnLoginRpId($SETTINGS);
+                            $webauthnLoginPasskeyCount = (int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('user_webauthn_credentials'));
                             ?>
                             <div class="tab-pane" id="webauthn-login" role="tabpanel" aria-labelledby="webauthn-login-tab">
                                 <div class="row mb-2">
@@ -330,7 +335,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                         </small>
                                     </div>
                                     <div class="col-5">
-                                        <input type="text" class="form-control form-control-sm purify" data-field="label" id="webauthn_rp_id" placeholder="<?php echo htmlspecialchars($webauthnDefaultRpId, ENT_QUOTES, 'UTF-8'); ?>" value="<?php echo htmlspecialchars(html_entity_decode((string) ($SETTINGS['webauthn_rp_id'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8'), ENT_QUOTES, 'UTF-8'); ?>">
+                                        <input type="text" class="form-control form-control-sm purify no-save" data-field="label" data-effective="<?php echo htmlspecialchars($webauthnEffectiveRpId, ENT_QUOTES, 'UTF-8'); ?>" data-passkeys="<?php echo $webauthnLoginPasskeyCount; ?>" id="webauthn_rp_id" placeholder="<?php echo htmlspecialchars($webauthnDefaultRpId, ENT_QUOTES, 'UTF-8'); ?>" value="<?php echo htmlspecialchars(html_entity_decode((string) ($SETTINGS['webauthn_rp_id'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8'), ENT_QUOTES, 'UTF-8'); ?>">
                                     </div>
                                 </div>
 
