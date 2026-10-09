@@ -67,6 +67,9 @@ function roleMatrixBuild(array $nodes, array $accessibleIds, array $excludedIds,
  * Resolve a rights submission against the current authorized matrix.
  * Reject an invalid explicit target; propagation only includes authorized descendants.
  *
+ * @param array<int, array> $matrix Authorized folder metadata in tree order
+ * @param array $selectedIds Explicitly selected folder IDs to validate
+ * @param bool $propagate Whether to include authorized descendants of selected folders
  * @return array<int>|null Target IDs, or null when the explicit selection is invalid
  */
 function roleMatrixTargets(array $matrix, array $selectedIds, bool $propagate): ?array
