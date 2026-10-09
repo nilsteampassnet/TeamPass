@@ -2,6 +2,8 @@
 
 This guide helps you migrate from the old Docker setup to the new optimized version.
 
+> The source backup examples below use the old flat layout. Current 3.2.x images use `storage/sk/`, `storage/files/`, `storage/upload/`, `storage/config/` and `secrets/`. For an instance already on 3.2.x, use the [current backup and recovery guide](install/docker.md#backup) instead. The legacy saltkey is not the Defuse master key: preserve the actual configuration and master-key location of the old installation, and restore both to the current state volumes before starting the new image. Do not treat copying only `sk/`, `files/` and `upload/` as a complete migration backup.
+
 ## 📋 What's Changed?
 
 ### Old Setup (`dormancygrace/teampass`)
@@ -357,7 +359,7 @@ docker-compose config | grep DB_
 **Solution:**
 ```bash
 # Manually remove install directory
-docker-compose exec teampass rm -rf /var/www/html/install
+docker-compose exec teampass rm -rf /var/www/html/public/install
 
 # Restart
 docker-compose restart teampass
@@ -370,27 +372,27 @@ docker-compose restart teampass
 **Solution:**
 ```bash
 # Check sk directory
-docker-compose exec teampass ls -la /var/www/html/sk
+docker-compose exec teampass ls -la /var/www/html/storage/sk
 
 # Restore from backup
-docker cp ./backup-sk/sk.txt teampass-app:/var/www/html/sk/
+docker cp ./backup-sk/sk.txt teampass-app:/var/www/html/storage/sk/
 
 # Fix permissions
-docker-compose exec teampass chown -R nginx:nginx /var/www/html/sk
-docker-compose exec teampass chmod 700 /var/www/html/sk
+docker-compose exec teampass chown -R nginx:nginx /var/www/html/storage/sk
+docker-compose exec teampass chmod 700 /var/www/html/storage/sk
 ```
 
 ### Issue 4: "Permission denied"
 
 **Cause:** Wrong file ownership
 
-**Solution:**
+**Solution:** Confirm the current mount destinations and restart the official image so its entrypoint restores volume ownership and directory modes. Do not give the whole application tree to a host web account:
 ```bash
-docker-compose exec teampass chown -R nginx:nginx \
-  /var/www/html/sk \
-  /var/www/html/files \
-  /var/www/html/upload
+docker inspect teampass-app --format '{{range .Mounts}}{{.Name}} -> {{.Destination}}{{println}}{{end}}'
+docker compose restart teampass
 ```
+
+The entrypoint uses `nginx:nginx`, `0700` for `secrets/` and `storage/sk/`, and `0750` for storage/configuration/data directories. It does not recursively reset every file mode. For a custom non-root image, read-only mounts or NFS/RWX volumes, review the runtime identity and volume restrictions instead of assuming that `chown` will succeed. See [File permissions](install/file-permissions.md#docker).
 
 ### Issue 5: Images still from old registry
 
