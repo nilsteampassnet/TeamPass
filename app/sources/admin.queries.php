@@ -1494,6 +1494,18 @@ switch ($post_type) {
             'decode'
         );
         
+        // Validate destructive retention policy before generic HTML sanitization
+        // can coerce arrays, booleans or floats into a different value.
+        if (($dataReceived['field'] ?? null) === 'secure_send_audit_retention_days') {
+            require_once __DIR__ . '/secure_send_retention.php';
+            try {
+                $dataReceived['value'] = (string) secureSendAuditRetentionDays($dataReceived['value'] ?? null);
+            } catch (InvalidArgumentException $e) {
+                echo prepareExchangedData(['error' => true, 'message' => $lang->get('secure_send_audit_retention_invalid')], 'encode');
+                break;
+            }
+        }
+
         // prepare data
         $post_value = filter_var($dataReceived['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $post_field = filter_var($dataReceived['field'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -2243,6 +2255,15 @@ case 'get_operational_statistics':
         );
         $topUsers = $userRankings['overall'];
 
+        // Independent audit history: personal-item/API filters cannot reconstruct provenance.
+        require_once __DIR__ . '/secure_send_statistics.php';
+        $secureSendStatistics = secureSendBuildOperationalStatistics(
+            $fromTs,
+            $nowTs,
+            $SETTINGS,
+            array(TP_USER_ID, OTV_USER_ID, API_USER_ID, SSH_USER_ID)
+        );
+
         // ---- ROLES
         $rolesTotal = intval(DB::queryFirstField("SELECT COUNT(*) FROM " . prefixTable('roles_title')));
 
@@ -2621,6 +2642,7 @@ case 'get_operational_statistics':
                 'series' => $series,
                 'top' => $topUsers,
                 'rankings' => $userRankings,
+                'secure_send' => $secureSendStatistics,
             ),
             'roles' => array(
                 'total' => $rolesTotal,

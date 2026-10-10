@@ -36,10 +36,13 @@ declare(strict_types=1);
  * ACL and legacy item-audit adapters are explicit fixtures.
  */
 require_once __DIR__ . '/../../app/vendor/autoload.php';
+require_once __DIR__ . '/../../app/config/include.php';
 require_once __DIR__ . '/../../app/sources/otp.functions.php';
 require_once __DIR__ . '/../Fixtures/secure_send_dependencies.php';
 require_once __DIR__ . '/../../app/sources/secure_send.functions.php';
 require_once __DIR__ . '/../../app/sources/secure_send_storage.php';
+require_once __DIR__ . '/../../app/sources/secure_send_statistics.php';
+require_once __DIR__ . '/../../app/sources/secure_send_retention.php';
 
 $database = (string) getenv('TEAMPASS_TEST_DB');
 if (!preg_match('/^teampass_test_[a-z0-9_]+$/', $database)) {
@@ -61,6 +64,7 @@ if (($argv[1] ?? '') === 'worker') {
     $result = match ($input['operation'] ?? 'reveal') {
         'revoke' => ['revoked' => secureSendRevokeLink((int) $input['parameters']['id'], 42, $input['settings'])],
         'purge' => ['purged' => secureSendPurgeExpiredLinks($input['settings'])],
+        'retention' => ['pruned' => secureSendPruneAuditHistory($input['settings'], (int) $input['parameters']['now'])],
         default => secureSendRedeem($input['parameters'], $input['passphrase'], $input['settings']),
     };
     echo json_encode($result, JSON_THROW_ON_ERROR);
@@ -108,13 +112,13 @@ function concurrentRedemptions(array $parameters, array $settings, int $count, s
 $settings = ['otv_is_enabled' => 1, 'secure_send_allow_notes' => 1, 'secure_send_max_views' => 5,
     'otv_expiration_period' => 7, 'cpassman_url' => 'https://vault.example.com', 'otv_subdomain' => 'https://share.example.com'];
 $tables = ['otv', 'users', 'send_audit', 'items', 'automatic_del', 'cache', 'nested_tree',
-    'secure_send_audit', 'secure_send_audit_unavailable'];
+    'secure_send_audit', 'secure_send_audit_unavailable', 'log_system', 'log_system_unavailable', 'misc'];
 try {
     // Execute the exact DDL shared by fresh installation and the 3.2.3 migration twice.
     DB::query(secureSendAuditSchemaSql(prefixTable('secure_send_audit')));
     DB::query(secureSendAuditSchemaSql(prefixTable('secure_send_audit')));
     $auditIndexes = DB::query('SHOW INDEX FROM ' . prefixTable('secure_send_audit'));
-    check(count(array_unique(array_column($auditIndexes, 'Key_name'))) === 4, 'Audit schema indexes differ from the reporting/history contract');
+    check(count(array_unique(array_column($auditIndexes, 'Key_name'))) === 5, 'Audit schema indexes differ from the reporting/history/retention contract');
     // Same relevant types/defaults as the installer, including the historical string timestamps.
     DB::query('CREATE TABLE ' . prefixTable('otv') . ' (
         id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, timestamp TEXT NOT NULL, code VARCHAR(100) NOT NULL,
@@ -123,7 +127,7 @@ try {
         failed_attempts INT NOT NULL DEFAULT 0, views INT NOT NULL DEFAULT 0, max_views INT NULL,
         time_limit VARCHAR(100) NULL, shared_globaly INT NOT NULL DEFAULT 0) ENGINE=InnoDB');
     DB::query('CREATE TABLE ' . prefixTable('users') . ' (
-        id INT PRIMARY KEY, name VARCHAR(255) NULL, lastname VARCHAR(255) NULL,
+        id INT PRIMARY KEY, login VARCHAR(255) NULL, name VARCHAR(255) NULL, lastname VARCHAR(255) NULL,
         admin INT DEFAULT 0, disabled INT DEFAULT 0, deleted_at INT NULL) ENGINE=InnoDB');
     DB::query('CREATE TABLE ' . prefixTable('send_audit') . ' (item_id INT, action VARCHAR(30)) ENGINE=InnoDB');
     DB::query('CREATE TABLE ' . prefixTable('items') . ' (
@@ -243,6 +247,9 @@ try {
     $link = DB::queryFirstRow('SELECT * FROM ' . prefixTable('otv') . ' WHERE id = %i', $created['otv_id']);
     // Fail the real SQL insert, preserving the journal in an isolated fixture table.
     DB::query('RENAME TABLE ' . prefixTable('secure_send_audit') . ' TO ' . prefixTable('secure_send_audit_unavailable'));
+    $statistics = secureSendBuildOperationalStatistics(100, 200, $settings, []);
+    check($statistics['available'] === false && $statistics['totals'] === null,
+        'Unavailable real audit SQL was reported as zero usage');
     check(secureSendRedeem($parameters, '', $settings) === ['error' => 'server_error'], 'Audit failure disclosed plaintext');
     check((int) DB::queryFirstField('SELECT views FROM ' . prefixTable('otv') . ' WHERE id = %i', $created['otv_id']) === 0, 'Audit failure consumed a view');
     try {
@@ -260,6 +267,10 @@ try {
     }
     DB::query('RENAME TABLE ' . prefixTable('secure_send_audit_unavailable') . ' TO ' . prefixTable('secure_send_audit'));
     echo "OK: real audit SQL failures roll back creation, reveal and revocation\n";
+    require_once __DIR__ . '/secure_send_statistics_database.php';
+    secureSendStatisticsDatabaseChecks($settings);
+    require_once __DIR__ . '/secure_send_retention_database.php';
+    secureSendRetentionDatabaseChecks();
 } finally {
     foreach ($tables as $table) {
         DB::query('DROP TABLE IF EXISTS ' . prefixTable($table));
