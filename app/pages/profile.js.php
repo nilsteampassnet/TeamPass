@@ -721,6 +721,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         'confirm' => $lang->get('confirm'),
         'stepUpTitle' => $lang->get('webauthn_login_stepup_title'),
         'stepUpPrompt' => $lang->get('webauthn_login_stepup_prompt'),
+        'notices' => [
+            'not_asked' => $lang->get('webauthn_login_notice_not_asked'),
+            'single_device' => $lang->get('webauthn_login_notice_single_device'),
+        ],
     ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
     let webauthnLoginCanWrap = false;
     let webauthnLoginStepUpPassword = true;
@@ -760,7 +764,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         return typeof window.tpWebauthnLogin !== 'undefined' && window.tpWebauthnLogin.supported() === true;
     }
 
-    function renderWebauthnLogin(credentials) {
+    function renderWebauthnLogin(credentials, notices) {
         const $list = $('#webauthn-login-list');
         if (!credentials || credentials.length === 0) {
             $list.html('<span class="text-muted">' + $('<span>').text(webauthnLoginText.none).html() + '</span>');
@@ -792,14 +796,26 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 actions += ' <button type="button" class="btn btn-sm btn-outline-success webauthn-login-passwordless-enable" data-id="' + id + '" title="' + $('<span>').text(webauthnLoginText.enable).html() + '"><i class="fa-solid fa-unlock"></i></button>';
             }
             actions += ' <button type="button" class="btn btn-sm btn-danger webauthn-login-delete" data-id="' + id + '" title="' + $('<span>').text(webauthnLoginText.delete).html() + '"><i class="fa-solid fa-trash"></i></button>';
+            // The passkey manager, when the name given to the passkey does not already say it
+            const authenticator = credential.authenticator && credential.authenticator !== credential.label
+                ? '<br><span class="text-muted small">' + $('<span>').text(credential.authenticator).html() + '</span>'
+                : '';
             html += '<tr data-label="' + $('<span>').text(credential.label).html() + '">'
-                + '<td>' + $('<span>').text(credential.label).html() + badges + '</td>'
+                + '<td>' + $('<span>').text(credential.label).html() + badges + authenticator + '</td>'
                 + '<td class="text-muted small">' + $('<span>').text(webauthnLoginText.created + ': ' + created).html()
                 + '<br>' + $('<span>').text(webauthnLoginText.lastUsed + ': ' + lastUsed).html() + '</td>'
                 + '<td class="text-right text-nowrap">' + actions + '</td>'
                 + '</tr>';
         });
         html += '</tbody></table>';
+        // What the list alone does not say: a passkey that is not asked for, a single device
+        (Array.isArray(notices) ? notices : []).forEach(function(notice) {
+            if (webauthnLoginText.notices[notice]) {
+                html += '<div class="callout callout-' + (notice === 'not_asked' ? 'warning' : 'info') + ' webauthn-login-notice small mt-2 mb-0 py-2 px-3">'
+                    + '<i class="fa-solid ' + (notice === 'not_asked' ? 'fa-triangle-exclamation' : 'fa-circle-info') + ' mr-1"></i>'
+                    + $('<span>').text(webauthnLoginText.notices[notice]).html() + '</div>';
+            }
+        });
         $list.html(html);
     }
 
@@ -808,7 +824,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             if (data.error === false) {
                 webauthnLoginCanWrap = data.can_wrap === true;
                 webauthnLoginStepUpPassword = data.stepup_password !== false;
-                renderWebauthnLogin(data.credentials);
+                renderWebauthnLogin(data.credentials, data.notices);
+                // Let the passkey managers of this device drop the passkeys deleted here
+                if (data.signal && webauthnLoginCeremonyAvailable() === true
+                    && typeof window.tpWebauthnLogin.signalAccepted === 'function'
+                ) {
+                    window.tpWebauthnLogin.signalAccepted(data.signal);
+                }
             }
         });
     }

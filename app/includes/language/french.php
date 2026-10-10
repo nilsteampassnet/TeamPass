@@ -3818,6 +3818,10 @@ return array(
     'webauthn_login_orphaned_passkeys' => 'Clés d’accès de connexion enregistrées pour un autre identifiant de partie de confiance : %d. Elles ne peuvent plus servir à se connecter : elles ne sont plus demandées à leurs propriétaires, qui les voient signalées dans leur profil, où ils peuvent les supprimer.',
     'webauthn_passwordless_satisfies_mfa' => 'La connexion sans mot de passe vaut MFA',
     'webauthn_passwordless_satisfies_mfa_tip' => 'Une clé d’accès qui vérifie son utilisateur (code PIN ou biométrie) constitue déjà deux facteurs. Désactivée, les comptes auxquels Google ou Duo est imposé doivent se connecter avec leur mot de passe.',
+    'webauthn_login_unknown_passkey' => 'Cette clé d’accès n’est plus enregistrée dans TeamPass. Supprimez-la de votre appareil ou de votre gestionnaire de mots de passe, puis connectez-vous avec votre mot de passe.',
+    'webauthn_login_notice_not_asked' => 'TeamPass ne demande pas votre clé d’accès après votre mot de passe : l’authentification multifacteur est désactivée pour votre compte. Demandez à votre administrateur de l’activer.',
+    'webauthn_login_notice_single_device' => 'Votre seule clé d’accès reste sur l’appareil qui l’a créée. Ajoutez-en une seconde, sur un téléphone ou une clé de sécurité, pour continuer à vous connecter quand cet appareil n’est pas à portée de main.',
+    'webauthn_login_log_method' => 'clé d’accès',
 
     'admin_activity_failed' => 'a échoué à se connecter',
     'admin_activity_connected' => 's’est connecté',

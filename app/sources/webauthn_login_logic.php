@@ -552,6 +552,107 @@ function webauthnLoginNormalizeLabel($label): string
 }
 
 /**
+ * Name of the passkey manager behind an AAGUID, '' when it is not one of the common ones.
+ *
+ * It names a passkey the user left unnamed, and tells the listed ones apart. A convenience, never
+ * a security statement: without attestation the AAGUID is whatever the authenticator declares,
+ * and browsers blank the one of a security key. Names and identifiers are those of the community
+ * list passkeydeveloper/passkey-authenticator-aaguids; only this hand-picked subset is kept here.
+ *
+ * @param string $aaguid user_webauthn_credentials.aaguid
+ *
+ * @return string
+ */
+function webauthnLoginAuthenticatorName(string $aaguid): string
+{
+    $names = [
+        'ea9b8d66-4d01-1d21-3ce4-b6b48cb575d4' => 'Google Password Manager',
+        'adce0002-35bc-c60a-648b-0b25f1f05503' => 'Chrome on Mac',
+        '08987058-cadc-4b81-b6e1-30de50dcbe96' => 'Windows Hello',
+        '9ddd1817-af5a-4672-a2b9-3e3dd95000a9' => 'Windows Hello',
+        '6028b017-b1d4-4c02-b4b3-afcdafc96bb2' => 'Windows Hello',
+        'fbfc3007-154e-4ecc-8c0b-6e020557d7bd' => 'Apple Passwords',
+        'dd4ec289-e01d-41c9-bb89-70fa845d4bf2' => 'iCloud Keychain (Managed)',
+        'd3452668-01fd-4c12-926c-83a4204853aa' => 'Microsoft Password Manager',
+        '771b48fd-d3d4-4f74-9232-fc157ab0507a' => 'Edge on Mac',
+        '53414d53-554e-4700-0000-000000000000' => 'Samsung Pass',
+        'bada5566-a7aa-401f-bd96-45619a55120d' => '1Password',
+        'd548826e-79b4-db40-a3d8-11116f7e8349' => 'Bitwarden',
+        '531126d6-e717-415c-9320-3d9aa6981239' => 'Dashlane',
+        '50726f74-6f6e-5061-7373-50726f746f6e' => 'Proton Pass',
+        '0ea242b4-43c4-4a1b-8b17-dd6d0b6baec6' => 'Keeper',
+        'b84e4048-15dc-4dd0-8640-f4f60813c8af' => 'NordPass',
+        'b78a0a55-6ef8-d246-a042-ba0f6d55050c' => 'LastPass',
+        'fdb141b2-5d84-443e-8a35-4698c205a502' => 'KeePassXC',
+        'f3809540-7f14-49c1-a8b3-8f813b225541' => 'Enpass',
+        TP_WEBAUTHN_AAGUID => 'TeamPass',
+    ];
+
+    return $names[strtolower(trim($aaguid))] ?? '';
+}
+
+/**
+ * What the profile tells the owner about their sign-in passkeys, beyond the list itself.
+ *
+ * 'not_asked': the account is not asked for a passkey after its password, because MFA is turned
+ * off for it — a registered passkey would otherwise give a false sense of protection.
+ * 'single_device': the only usable passkey never leaves the device that created it; a second one
+ * keeps the account reachable from elsewhere.
+ *
+ * @param array<string, mixed>             $settings   TeamPass settings
+ * @param int                              $mfaEnabled users.mfa_enabled
+ * @param array<int, array<string, mixed>> $passkeys   Passkeys of the account, with usable and synced
+ *
+ * @return string[]
+ */
+function webauthnLoginProfileNotices(array $settings, int $mfaEnabled, array $passkeys): array
+{
+    $usable = array_values(array_filter(
+        $passkeys,
+        static fn (array $passkey): bool => ($passkey['usable'] ?? true) === true
+    ));
+    if (webauthnLoginMode($settings) === TP_WEBAUTHN_LOGIN_MODE_DISABLED || $usable === []) {
+        return [];
+    }
+
+    $notices = [];
+    if (webauthnLoginIsSecondFactor($settings, $mfaEnabled, true) === false) {
+        $notices[] = 'not_asked';
+    }
+    if (count($usable) === 1 && ($usable[0]['synced'] ?? false) !== true) {
+        $notices[] = 'single_device';
+    }
+
+    return $notices;
+}
+
+/**
+ * What a connection log row keeps of a sign-in made with a passkey alone: its method and the
+ * passkey used. The id, never the name the user gave it: field_1 also carries the markers the
+ * logs classify rows with, which free text could imitate.
+ *
+ * @param int $passkeyId user_webauthn_credentials.id
+ *
+ * @return string
+ */
+function webauthnLoginConnectionMarker(int $passkeyId): string
+{
+    return 'tp_auth=passkey:' . $passkeyId;
+}
+
+/**
+ * Read the passkey a connection log row was made with, null when it was not a passkey sign-in.
+ *
+ * @param string $field1 log_system.field_1 of a user_connection row
+ *
+ * @return int|null user_webauthn_credentials.id
+ */
+function webauthnLoginConnectionPasskeyId(string $field1): ?int
+{
+    return preg_match('/(?:^|\| )tp_auth=passkey:(\d{1,18})(?: \||$)/', $field1, $match) === 1 ? (int) $match[1] : null;
+}
+
+/**
  * Read a base64url value the browser sent, '' when absent or malformed.
  *
  * @param mixed $value Submitted value

@@ -27,7 +27,7 @@ function load({ secure = true, created = null, got = null } = {}) {
   }
   vm.createContext(context)
   vm.runInContext(source, context)
-  return { api: context.window.tpWebauthnLogin, calls }
+  return { api: context.window.tpWebauthnLogin, calls, window: context.window }
 }
 
 function arrayBuffer(bytes) {
@@ -140,4 +140,38 @@ test('ceremony errors map to messages the user understands', () => {
 test('passkeys are only offered in a secure context', () => {
   assert.equal(load({ secure: true }).api.supported(), true)
   assert.equal(load({ secure: false }).api.supported(), false)
+})
+
+test('a passkey the server no longer knows, and the list it still accepts, are reported to the browser', async () => {
+  const calls = []
+  const signalling = load()
+  const PublicKeyCredential = function () {}
+  PublicKeyCredential.signalUnknownCredential = async details => { calls.push(['unknown', details]) }
+  PublicKeyCredential.signalAllAcceptedCredentials = details => { calls.push(['accepted', details]); return Promise.reject(new Error('SecurityError')) }
+  signalling.window.PublicKeyCredential = PublicKeyCredential
+
+  assert.equal(signalling.api.signalUnknown('tp.example.com', b64u(rawId)), true)
+  assert.equal(signalling.api.signalAccepted({ rp_id: 'tp.example.com', user_id: b64u(userId), credential_ids: [b64u(rawId)] }), true)
+  // An account left without any passkey still reports its (empty) list
+  assert.equal(signalling.api.signalAccepted({ rp_id: 'tp.example.com', user_id: b64u(userId), credential_ids: [] }), true)
+  await new Promise(resolve => setImmediate(resolve))
+  assert.deepEqual(JSON.parse(JSON.stringify(calls)), [
+    ['unknown', { rpId: 'tp.example.com', credentialId: b64u(rawId) }],
+    ['accepted', { rpId: 'tp.example.com', userId: b64u(userId), allAcceptedCredentialIds: [b64u(rawId)] }],
+    ['accepted', { rpId: 'tp.example.com', userId: b64u(userId), allAcceptedCredentialIds: [] }],
+  ])
+
+  // Incomplete data reports nothing: a partial list would make a manager drop valid passkeys
+  assert.equal(signalling.api.signalAccepted(null), false)
+  assert.equal(signalling.api.signalAccepted({ rp_id: 'tp.example.com', user_id: b64u(userId) }), false)
+  assert.equal(signalling.api.signalAccepted({ rp_id: '', user_id: b64u(userId), credential_ids: [] }), false)
+  assert.equal(signalling.api.signalUnknown('tp.example.com', ''), false)
+  assert.equal(calls.length, 3)
+})
+
+test('a browser without the Signal API is left alone', () => {
+  const { api } = load()
+  assert.equal(api.signalUnknown('tp.example.com', b64u(rawId)), false)
+  assert.equal(api.signalAccepted({ rp_id: 'tp.example.com', user_id: b64u(userId), credential_ids: [] }), false)
+  assert.equal(load({ secure: false }).api.signalUnknown('tp.example.com', b64u(rawId)), false)
 })

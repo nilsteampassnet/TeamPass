@@ -3775,6 +3775,10 @@ return array(
     'webauthn_login_orphaned_passkeys' => 'Sign-in passkeys registered for another relying party ID: %d. They can no longer sign in: their owners are no longer asked for them, and see them marked in their profile, where they can delete them.',
     'webauthn_passwordless_satisfies_mfa' => 'Passwordless sign-in counts as MFA',
     'webauthn_passwordless_satisfies_mfa_tip' => 'A passkey that verifies its user (PIN or biometrics) is already two factors. When this is off, accounts on which Google or Duo is imposed must sign in with their password.',
+    'webauthn_login_unknown_passkey' => 'This passkey is no longer registered in TeamPass. Remove it from your device or password manager, then sign in with your password.',
+    'webauthn_login_notice_not_asked' => 'TeamPass does not ask for your passkey after your password: multi-factor authentication is turned off for your account. Ask your administrator to turn it on.',
+    'webauthn_login_notice_single_device' => 'Your only passkey stays on the device that created it. Add a second one, on a phone or a security key, to keep signing in when that device is not at hand.',
+    'webauthn_login_log_method' => 'passkey',
     // LDAP setup page - configuration checks and representative test
     'ldap_config_check' => 'Configuration check',
     'ldap_config_check_refresh' => 'Check the configuration',

@@ -41,6 +41,7 @@ use voku\helper\AntiXSS;
 // Load functions
 require_once 'main.functions.php';
 require_once __DIR__ . '/logs_filter_logic.php';
+require_once __DIR__ . '/webauthn_login_logic.php';
 
 /**
  * Encode a single value as a safe JSON string literal for the manually built DataTables output.
@@ -372,6 +373,26 @@ if (isset($params['action']) && $params['action'] === 'logs') {
             }
         }
 
+        // A connection made with a passkey alone names it by id: one query for the page here too.
+        $passkeyIds = [];
+        foreach ($rows as $record) {
+            $passkeyId = (string) $record['type'] === 'user_connection'
+                ? webauthnLoginConnectionPasskeyId((string) ($record['field_1'] ?? ''))
+                : null;
+            if ($passkeyId !== null && in_array($passkeyId, $passkeyIds, true) === false) {
+                $passkeyIds[] = $passkeyId;
+            }
+        }
+        $passkeyLabels = [];
+        if ($passkeyIds !== []) {
+            foreach (DB::query(
+                'SELECT id, label FROM ' . prefixTable('user_webauthn_credentials') . ' WHERE id IN %li',
+                $passkeyIds
+            ) as $passkey) {
+                $passkeyLabels[(int) $passkey['id']] = (string) $passkey['label'];
+            }
+        }
+
         $isAdminSession = (int) ($session->get('user-admin') ?? 0) === 1;
 
         foreach ($rows as $record) {
@@ -398,6 +419,14 @@ if (isset($params['action']) && $params['action'] === 'logs') {
                 $display = normalizeLogDisplayValue(formatAdminLogLabel($label, $lang));
             } else {
                 $display = normalizeLogDisplayValue(str_replace([chr(10), chr(13)], [' ', ' '], stripslashes($label)));
+                // Signed in with a passkey alone: say so, and which one while it still exists
+                $passkeyId = $type === 'user_connection' ? webauthnLoginConnectionPasskeyId($field1) : null;
+                if ($passkeyId !== null) {
+                    $display .= ' (' . normalizeLogDisplayValue(
+                        $lang->get('webauthn_login_log_method')
+                        . (isset($passkeyLabels[$passkeyId]) === true ? ': ' . $passkeyLabels[$passkeyId] : '')
+                    ) . ')';
+                }
                 if ($user === '') {
                     $user = 'IP: ' . normalizeLogDisplayValue((string) ($record['who'] ?? ''));
                 }

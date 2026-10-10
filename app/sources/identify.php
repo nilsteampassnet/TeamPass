@@ -926,6 +926,8 @@ function identifyUserWithPasskey(string $sentData, array $SETTINGS): bool
             [
                 'error' => true,
                 'message' => (string) ($check['message'] ?? $lang->get('webauthn_login_verification_failed')),
+                // The browser then tells the user's passkey manager to stop offering it
+                'unknown_credential' => ($check['unknown'] ?? false) === true,
             ],
             'encode'
         );
@@ -982,7 +984,8 @@ function identifyUserWithPasskey(string $sentData, array $SETTINGS): bool
         (int) $sessionPwdAttempts,
         false,
         false,
-        (string) $check['private_key']
+        (string) $check['private_key'],
+        (int) ($check['passkey_id'] ?? 0)
     );
 }
 
@@ -1001,6 +1004,7 @@ function identifyUserWithPasskey(string $sentData, array $SETTINGS): bool
  * @param bool                 $isNewExternalUser  Whether the account was just created from LDAP/OAuth2
  * @param string|null          $privateKeyClear    Private key a passkey already unlocked, null to
  *                                                 unlock it with the password
+ * @param int                  $passkeyId          Passkey that signed in alone, 0 for a password sign-in
  *
  * @return bool
  */
@@ -1014,7 +1018,8 @@ function identifyFinishLogin(
     int $sessionPwdAttempts,
     $ldapConnection,
     bool $isNewExternalUser,
-    ?string $privateKeyClear = null
+    ?string $privateKeyClear = null,
+    int $passkeyId = 0
 ): bool {
     $session = SessionManager::getSession();
     $lang = new Language($session->get('user-language') ?? 'english');
@@ -1041,6 +1046,7 @@ function identifyFinishLogin(
             $userInfo['last_connexion'],
             $username,
             $SETTINGS,
+            $passkeyId > 0 ? webauthnLoginConnectionMarker($passkeyId) : null,
         );
 
         // Avoid unlimited session.
@@ -1685,6 +1691,7 @@ function setupUserRolesAndPermissions($session, array &$userInfo, array $SETTING
  * @param string    $userInfoLastConnection
  * @param string    $username
  * @param array     $SETTINGS
+ * @param string|null $signInMethod Marker kept with the connection log, null for a password sign-in
  * @return array
  */
 function handleLoginAttempts(
@@ -1692,7 +1699,8 @@ function handleLoginAttempts(
     $userInfoLogin,
     $userInfoLastConnection,
     $username,
-    $SETTINGS
+    $SETTINGS,
+    ?string $signInMethod = null
 ) : array
 {
     $rows = DB::query(
@@ -1719,7 +1727,7 @@ function handleLoginAttempts(
 
     // Log into DB the user's connection
     if (isKeyExistingAndEqual('log_connections', 1, $SETTINGS) === true) {
-        logEvents($SETTINGS, 'user_connection', 'connection', (string) $userInfoId, stripslashes($username));
+        logEvents($SETTINGS, 'user_connection', 'connection', (string) $userInfoId, stripslashes($username), $signInMethod);
     }
 
     return [
