@@ -1043,7 +1043,14 @@ atomic audit writes. Expired historical rows with invalid link/sender identifier
 are retained for investigation, diagnosed without their contents and excluded
 before the cleanup batch limit; they cannot prevent valid rows from being cleaned.
 
-This first audit change has no statistics, Reports export or audit-purge interface.
+The administrator statistics backend aggregates the observed events and ranks
+original senders by creations in the selected period, including deleted or
+disabled accounts. Its dedicated statistics card is in the Users tab;
+there is no Reports export or audit-purge interface. The aggregate uses the period
+filter only: personal-item/API provenance is not captured in the journal and
+cannot be reliably reconstructed from current items. Recipient credential failures
+are not evidence of misconduct by the sender; counters do not enforce quotas or
+automatically identify abuse. Disabling Secure Send does not erase its history.
 There is no automatic audit retention: plan capacity, protect database and backup
 access, and define the organisation's retention and archiving policy. SQL access
 can still alter evidence; a protected external collector is a separate control.
@@ -1141,6 +1148,24 @@ that format.
 - [ ] Upgrade regression testing and periodic active-link review are scheduled.
 
 ---
+
+## Usage statistics
+
+Administrators can view Secure Send activity in **Statistics → Users**, below the
+item-activity ranking. The card shows observed creations, successful reveals,
+incorrect-credential attempts, lifecycle events, creation policies and the top
+five senders by creations in the selected period.
+
+Only the period filter applies: Personal/API toggles do not filter this journal.
+Coverage starts after the audit migration, with no reconstructed earlier activity.
+Deleting a link/account or disabling Secure Send does not erase recorded history.
+An unavailable journal is reported as unavailable, not as zero usage.
+
+These are event counts, not the later lifecycle of links created in the period.
+A server-side reveal does not identify the recipient or prove the content was
+read. Failed attempts against a sender's links do not alone prove sender abuse.
+The card does not impose quotas, block users, export raw logs or add a Reports
+consumer; review unusual activity in its operational context.
 
 ## References
 

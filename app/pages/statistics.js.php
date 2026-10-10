@@ -79,6 +79,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
 <script type='text/javascript'>
     // Operational statistics dashboard
+    var tpOpsRequestId = 0;
     initOperationalStatistics();
 
 
@@ -214,6 +215,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     }
 
     function loadOperationalStatistics() {
+        var requestId = ++tpOpsRequestId;
+        // A failed/new period must not be repainted from the previous payload on tab changes.
+        tpOpsLastData = null;
+        renderSecureSendStatistics(null, 'loading');
+        $('#tp-secure-send-period').text($('#tp-ops-period option:selected').text());
         var payload = {
             period: $('#tp-ops-period').val() || '30d',
             include_personal: $('#tp-ops-include-personal').is(':checked') ? 1 : 0,
@@ -238,9 +244,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
+                if (requestId !== tpOpsRequestId) { return; }
                 try {
                     data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
                 } catch (e) {
+                    renderSecureSendStatistics(null);
                     toastr.remove();
                     toastr.error("<?php echo addslashes($lang->get('ops_stats_load_error')); ?>");
                     $('#tp-ops-refresh').prop('disabled', false);
@@ -248,9 +256,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     return;
                 }
 
-                if (data.error === true) {
+                if (!data || data.error === true) {
+                    renderSecureSendStatistics(null);
                     toastr.remove();
-                    toastr.error(data.message ? data.message : "<?php echo addslashes($lang->get('ops_stats_db_error')); ?>");
+                    toastr.error(data && data.message ? data.message : "<?php echo addslashes($lang->get('ops_stats_db_error')); ?>");
                     $('#tp-ops-refresh').prop('disabled', false);
                     $('#tp-ops-refresh i').removeClass('fa-spin');
                     return;
@@ -264,6 +273,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 $('#tp-ops-refresh i').removeClass('fa-spin');
             }
         ).fail(function() {
+            if (requestId !== tpOpsRequestId) { return; }
+            renderSecureSendStatistics(null);
             toastr.remove();
             toastr.error("<?php echo addslashes($lang->get('ops_stats_load_error')); ?>");
             $('#tp-ops-refresh').prop('disabled', false);
@@ -328,6 +339,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             }
         }
         renderUserRanking(data);
+        renderSecureSendStatistics(data.users && data.users.secure_send);
 
         // ---------------- ROLES KPIs
         $('#tp-kpi-roles-total').text(data.roles.total !== undefined ? data.roles.total : 0);
@@ -995,6 +1007,64 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         }
 
         $('#tp-items-topcopied-body').html(rows);
+    }
+
+    function tpOpsSecureSendText(key) {
+        var labels = {
+            loading: <?php echo json_encode($lang->get('ops_secure_send_loading'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+            unavailable: <?php echo json_encode($lang->get('ops_secure_send_unavailable'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+            empty: <?php echo json_encode($lang->get('ops_secure_send_no_creations'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+            sender: <?php echo json_encode($lang->get('ops_secure_send_sender'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+            disabled: <?php echo json_encode($lang->get('ops_secure_send_account_disabled'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+            deleted: <?php echo json_encode($lang->get('ops_secure_send_account_deleted'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+            missing: <?php echo json_encode($lang->get('ops_secure_send_account_missing'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>
+        };
+        return labels[key] || '';
+    }
+
+    function tpOpsSecureSendCount(value) {
+        return Number.isSafeInteger(value) && value >= 0 ? value : null;
+    }
+
+    function renderSecureSendStatistics(secureSend, state) {
+        var counts = $('#tp-secure-send-card [data-tp-secure-send-count]');
+        var available = !!(state !== 'loading' && secureSend && secureSend.available === true && secureSend.error === false);
+        // Missing/null counters are unavailable data, not a valid zero-activity period.
+        counts.each(function() {
+            var path = $(this).attr('data-tp-secure-send-count').split('.');
+            if (!secureSend || !secureSend[path[0]] || tpOpsSecureSendCount(secureSend[path[0]][path[1]]) === null) {
+                available = false;
+            }
+        });
+        if (!secureSend || !Array.isArray(secureSend.top_senders) || secureSend.top_senders.some(function(sender) { return !sender || typeof sender !== 'object'; })) { available = false; }
+        $('#tp-secure-send-card').attr('aria-busy', state === 'loading' ? 'true' : 'false');
+        $('#tp-secure-send-content').prop('hidden', !available);
+        $('#tp-secure-send-disabled').prop('hidden', !available || secureSend.enabled !== false);
+        $('#tp-secure-send-status').text(state === 'loading' ? tpOpsSecureSendText('loading') : (available ? '' : tpOpsSecureSendText('unavailable'))).prop('hidden', !!available);
+        counts.each(function() {
+            var path = $(this).attr('data-tp-secure-send-count').split('.');
+            $(this).text(available ? secureSend[path[0]][path[1]] : '—');
+        });
+        var rows = '';
+        if (available && secureSend.top_senders.length === 0) {
+            rows = "<tr><td colspan='4' class='text-center text-muted'>" + escapeHtml(tpOpsSecureSendText('empty')) + '</td></tr>';
+        } else if (available) {
+            $.each(secureSend.top_senders.slice(0, 5), function(_, sender) {
+                var id = tpOpsSecureSendCount(sender.id);
+                var identity = sender.name || sender.login || (tpOpsSecureSendText('sender') + ' #' + (id === null ? '—' : id));
+                var login = sender.name && sender.login && sender.name !== sender.login
+                    ? "<small class='d-block text-muted'>" + escapeHtml(sender.login) + '</small>' : '';
+                var accountState = ['disabled', 'deleted', 'missing'].indexOf(sender.account_state) !== -1
+                    ? " <span class='badge badge-secondary'>" + escapeHtml(tpOpsSecureSendText(sender.account_state)) + '</span>' : '';
+                rows += '<tr><th scope="row"><strong>' + escapeHtml(identity) + '</strong>' + accountState + login + '</th>';
+                $.each(['created', 'revealed', 'reveal_failed'], function(_, metric) {
+                    var count = tpOpsSecureSendCount(sender[metric]);
+                    rows += '<td class="text-right">' + (count === null ? '—' : count) + '</td>';
+                });
+                rows += '</tr>';
+            });
+        }
+        $('#tp-secure-send-senders').html(rows);
     }
 
     function renderUserRanking(data) {
