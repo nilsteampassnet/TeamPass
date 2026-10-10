@@ -2,6 +2,33 @@
 
 declare(strict_types=1);
 
+/**
+ * Teampass - a collaborative passwords manager.
+ * ---
+ * This file is part of the TeamPass project.
+ *
+ * TeamPass is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * TeamPass is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Certain components of this file may be under different licenses. For
+ * details, see the `licenses` directory or individual file headers.
+ * ---
+ * @file      RenewalAuthorizationTest.php
+ * @author    guerricv
+ * @copyright 2009-2026 Teampass.net
+ * @license   GPL-3.0
+ * @see       https://www.teampass.net
+ */
+
 namespace TeamPass\Tests\Renewal;
 
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -445,6 +472,69 @@ class RenewalAuthorizationTest extends TestCase
             self::assertSame(3, $filtered['recordsTotal']);
             self::assertSame(0, $filtered['recordsFiltered'], $term);
             self::assertSame([], $filtered['data'], $term);
+        }
+    }
+
+    /** Encoded labels remain safe HTML while searches use their displayed text. */
+    #[DataProvider('encodedTableNames')]
+    public function testEncodedNamesAreDisplayedAndSearchedAsPlainText(string $stored, string $display): void
+    {
+        DB::query('UPDATE renewal_items SET label = %s WHERE id = 1', $stored);
+        DB::query('UPDATE renewal_nested_tree SET title = %s WHERE id = 11', $stored);
+        $namespace = newRequest();
+        $result = runTable($namespace, ['search' => ['value' => $display], 'length' => 1]);
+        self::assertSame(3, $result['recordsTotal']);
+        self::assertSame(2, $result['recordsFiltered']);
+        self::assertCount(1, $result['data']);
+        $safeText = htmlspecialchars($display, ENT_QUOTES, 'UTF-8');
+        self::assertStringContainsString('>' . $safeText . '</a>', $result['data'][0][0]);
+        self::assertSame($safeText, $result['data'][0][2]);
+        $default = runTable($namespace);
+        self::assertStringContainsString('>' . $safeText . '</a>', $default['data'][0][0]);
+        self::assertSame($safeText, $default['data'][0][2]);
+        foreach (['eacute', 'amp', 'quot', '039', 'lt;', 'gt;'] as $fragment) {
+            $filtered = runTable($namespace, ['search' => ['value' => $fragment]]);
+            self::assertSame(0, $filtered['recordsFiltered'], $fragment);
+            self::assertSame([], $filtered['data']);
+        }
+        DB::query('UPDATE renewal_items SET label = %s WHERE id = 1', 'Unrelated');
+        self::assertSame(2, runTable($namespace, ['search' => ['value' => $display]])['recordsFiltered']);
+        DB::query('UPDATE renewal_items SET label = %s WHERE id = 1', $stored);
+        DB::query('UPDATE renewal_nested_tree SET title = %s WHERE id = 11', 'Unrelated');
+        self::assertSame(1, runTable($namespace, ['search' => ['value' => $display]])['recordsFiltered']);
+    }
+
+    /** Stored entities and raw UTF-8 must follow the same text and HTML contract. */
+    public static function encodedTableNames(): iterable
+    {
+        yield 'named accent' => ['Arriv&eacute;e', 'Arrivée'];
+        yield 'numeric accent' => ['Arriv&#233;e', 'Arrivée'];
+        yield 'UTF-8 accent' => ['Arrivée', 'Arrivée'];
+        yield 'ampersand' => ['R&amp;D', 'R&D'];
+        yield 'apostrophe' => ['O&#039;Brien', "O'Brien"];
+        yield 'quotes and brackets' => ['&quot;Lab&quot; &lt;Test&gt;', '"Lab" <Test>'];
+        yield 'encoded markup' => ['&lt;img src=x onerror=&quot;alert(1)&quot;&gt;', '<img src=x onerror="alert(1)">'];
+    }
+
+    /** Text sorting uses decoded values before pagination, with deterministic ties. */
+    public function testEncodedNamesSortBeforePagination(): void
+    {
+        DB::query('UPDATE renewal_items SET label = %s WHERE id = 1', '&#90;ebra');
+        DB::query('UPDATE renewal_items SET label = %s WHERE id = 4', 'Alpha');
+        DB::query('UPDATE renewal_items SET label = %s WHERE id = 5', 'Middle');
+        DB::query('UPDATE renewal_nested_tree SET title = %s WHERE id = 11', '&#90;ebra');
+        DB::query('UPDATE renewal_nested_tree SET title = %s WHERE id = 21', 'Alpha');
+        $namespace = newRequest();
+        foreach ([
+            [0, 'asc', 0, 4], [0, 'asc', 1, 5], [0, 'desc', 0, 1],
+            [2, 'asc', 0, 5], [2, 'desc', 0, 1], [2, 'desc', 1, 4],
+        ] as [$column, $direction, $start, $id]) {
+            $result = runTable($namespace, [
+                'order' => [['column' => $column, 'dir' => $direction]], 'start' => $start, 'length' => 1,
+            ]);
+            self::assertSame(3, $result['recordsFiltered']);
+            self::assertCount(1, $result['data']);
+            self::assertStringContainsString('&amp;id=' . $id . '"', $result['data'][0][0]);
         }
     }
 

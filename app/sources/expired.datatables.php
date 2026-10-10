@@ -95,6 +95,8 @@ $aColumns = ['i.label', 'expiration_date', 'n.title'];
 $aSortTypes = ['ASC', 'DESC'];
 //init SQL variables
 $sOrder = ' ORDER BY expiration_date ASC, i.id ASC';
+$sortColumn = 1;
+$sortDirection = 'ASC';
 $sLimit = '';
 
 $draw = (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT);
@@ -162,11 +164,6 @@ $baseQueryParams = $queryParams;
 // Filtering
 $search = $request->query->all('search');
 $searchValue = isset($search['value']) === true ? trim((string) $search['value']) : '';
-if ($searchValue !== '') {
-    $fromWhereSql .= ' AND (i.label LIKE %ss OR n.title LIKE %ss)';
-    $queryParams[] = $searchValue;
-    $queryParams[] = $searchValue;
-}
 
 /* BUILD QUERY */
 //Paging
@@ -186,22 +183,52 @@ if ($request->query->has('order')) {
         $columnIndex = filter_var($order[0]['column'], FILTER_SANITIZE_NUMBER_INT);
 
         if (array_key_exists($columnIndex, $aColumns)) {
-            $sOrder = ' ORDER BY ' . $aColumns[$columnIndex] . ' ' . strtoupper((string) $order[0]['dir']) . ', i.id ASC';
+            $sortColumn = (int) $columnIndex;
+            $sortDirection = strtoupper((string) $order[0]['dir']);
+            $sOrder = ' ORDER BY ' . $aColumns[$sortColumn] . ' ' . $sortDirection . ', i.id ASC';
         }
     }
 }
 
 $totalCountSql = 'SELECT COUNT(*) FROM (SELECT i.id ' . $baseFromWhereSql . ') AS renewal_items';
-$filteredCountSql = 'SELECT COUNT(*) FROM (SELECT i.id ' . $fromWhereSql . ') AS renewal_items';
 $iTotal = (int) DB::queryFirstField($totalCountSql, ...$baseQueryParams);
-$iFilteredTotal = (int) DB::queryFirstField($filteredCountSql, ...$queryParams);
+// MySQL cannot decode all named/numeric HTML entities. Only text operations
+// need all authorized rows; the default chronological view keeps SQL pagination.
+$processDisplayText = $searchValue !== '' || $sortColumn !== 1;
+$iFilteredTotal = $iTotal;
 $rows = DB::query(
-    'SELECT i.id, i.label, i.id_tree, ' . $expirationDateSql . ' AS expiration_date ' .
+    'SELECT i.id, i.label, i.id_tree, n.title AS folder_title, ' . $expirationDateSql . ' AS expiration_date ' .
     $fromWhereSql .
     $sOrder .
-    $sLimit,
+    ($processDisplayText ? '' : $sLimit),
     ...$queryParams
 );
+
+if ($processDisplayText) {
+    foreach ($rows as &$row) {
+        $row['label_display'] = html_entity_decode((string) $row['label'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $row['folder_display'] = html_entity_decode((string) $row['folder_title'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    }
+    unset($row);
+    if ($searchValue !== '') {
+        $rows = array_values(array_filter($rows, static function (array $row) use ($searchValue): bool {
+            return mb_stripos($row['label_display'], $searchValue, 0, 'UTF-8') !== false
+                || mb_stripos($row['folder_display'], $searchValue, 0, 'UTF-8') !== false;
+        }));
+    }
+    $iFilteredTotal = count($rows);
+    if ($sortColumn !== 1) {
+        $sortField = $sortColumn === 0 ? 'label_display' : 'folder_display';
+        usort($rows, static function (array $left, array $right) use ($sortField, $sortDirection): int {
+            $comparison = strcmp(mb_strtolower($left[$sortField], 'UTF-8'), mb_strtolower($right[$sortField], 'UTF-8'));
+            return ($sortDirection === 'DESC' ? -$comparison : $comparison)
+                ?: ((int) $left['id'] <=> (int) $right['id']);
+        });
+    }
+    if ($length !== -1) {
+        $rows = array_slice($rows, $start, $length);
+    }
+}
 
 $data = [];
 foreach ($rows as $record) {
@@ -210,14 +237,14 @@ foreach ($rows as $record) {
     foreach ($treeDesc as $t) {
         // A visible child does not grant access to its ancestors' names.
         if (in_array((int) $t->id, $visibleFolders, true)) {
-            $path[] = htmlspecialchars((string) $t->title, ENT_QUOTES, 'UTF-8');
+            $path[] = htmlspecialchars(html_entity_decode((string) $t->title, ENT_QUOTES | ENT_HTML5, 'UTF-8'), ENT_QUOTES, 'UTF-8');
         }
     }
 
     $itemUrl = 'index.php?page=items&group=' . (int) $record['id_tree'] . '&id=' . (int) $record['id'];
     $data[] = [
         '<a href="' . htmlspecialchars($itemUrl, ENT_QUOTES, 'UTF-8') . '">'
-            . htmlspecialchars((string) $record['label'], ENT_QUOTES, 'UTF-8') . '</a>',
+            . htmlspecialchars(html_entity_decode((string) $record['label'], ENT_QUOTES | ENT_HTML5, 'UTF-8'), ENT_QUOTES, 'UTF-8') . '</a>',
         date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['expiration_date']),
         implode('<i class="fas fa-angle-right ml-1 mr-1"></i>', $path),
     ];
