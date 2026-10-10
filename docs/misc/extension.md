@@ -114,7 +114,7 @@ Open the **Users** tab. For each user of the extension, turn API access on and c
 
 > ⚠️ New accounts, including those created from LDAP or OAuth2, have **no API access by default**. It is the most common reason for a refused sign-in.
 
-**Build missing API keys for users** creates an API key for every account that has none. Each user finds their key in **Profile → Information → API token**.
+**Build missing API keys for users** creates an API key for every account that has none. Each user finds their key in **Profile → Help and advanced → API key**.
 
 ### 3. Identify the instance for the licence
 
@@ -174,10 +174,10 @@ There are three ways to set up the extension. The first one is the fastest.
 Available when your administrator has allowed it (see [Allow the one-click setup](#_4-allow-the-one-click-setup)).
 
 1. Sign in to TeamPass in the browser where the extension is installed.
-2. When the extension is not configured yet, TeamPass offers to configure it. Otherwise open **Profile → Information** and click **Configure my extension**.
+2. When the extension is not configured yet, TeamPass offers to configure it. Otherwise open **Profile → Browser extension** and click **Configure my extension**.
 3. A window of the extension opens and shows the server and the account about to be configured. Click **Confirm**.
 
-The server, your account and the licence are set up. Your password is not transmitted: TeamPass creates a Personal Access Token, listed in **Profile → Browser extension tokens**, where you can revoke it at any time.
+The server, your account and the licence are set up. Your password is not transmitted: TeamPass creates a Personal Access Token, listed in **Profile → Browser extension → Access given to the extension**, where you can revoke it at any time.
 
 ### Configuration file
 
@@ -195,8 +195,8 @@ Open the extension settings (right-click the TeamPass icon → **Options**) and 
 
 1. **Your server** — the address you open TeamPass with, for example `https://teampass.example.com`.
 2. **Your account** — how you sign in to TeamPass:
-   - **Username and password** (TeamPass or LDAP account): your username, your password, and the API key shown in **Profile → Information → API token**.
-   - **Company account** (SSO): your username and an extension token, generated in **Profile → Browser extension tokens**. The token is shown only once: copy it straight away.
+   - **Username and password** (TeamPass or LDAP account): your username, your password, and the API key shown in **Profile → Help and advanced → API key**.
+   - **Company account** (SSO): your username and an extension token, generated in **Profile → Browser extension → Access given to the extension**. The token is shown only once: copy it straight away.
 3. **Your licence** — usually automatic. If the extension could not fetch it from TeamPass, enter the licence e-mail, the server domain name and the licence key given by your administrator, then click **Verify my licence**.
 
 > 💡 LDAP users: after a password change in the directory, sign in once to the TeamPass web interface before using the extension. Until then, the extension is refused with the new password.

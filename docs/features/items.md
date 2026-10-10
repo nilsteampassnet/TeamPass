@@ -383,7 +383,7 @@ Sub-folders can be shown inline inside the parent folder's item list, so you don
 This feature is disabled by default. To enable it:
 
 1. Open **My Profile** (top-right menu).
-2. Go to the **Settings** tab.
+2. Open the **Preferences** section.
 3. Enable **Show sub-directories in main items list**.
 4. Save.
 

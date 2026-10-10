@@ -179,7 +179,7 @@ Where Google Authenticator or Duo is already required, a passkey is simply offer
 
 ### Registering a passkey
 
-A user registers their own passkeys in **Profile → Information → Sign-in passkeys**:
+A user registers their own passkeys in **Profile → Sign-in and security → Sign-in passkeys**:
 
 1. Give the device a name (optional) and click **Add a passkey**.
 2. TeamPass asks for the password of the account (see [Confirming the password](#confirming-the-password)).
