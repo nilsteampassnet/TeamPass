@@ -253,10 +253,11 @@ function passwordHandler(string $post_type, array $dataReceived, array $SETTINGS
 
             // Check if new password is strong
             if (!isPasswordStrong($dataReceived['new_password'])) {
+                // The refusal has several causes: the message states the whole rule
                 return prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => $lang->get('complexity_level_not_reached'),
+                        'message' => $lang->get('password_policy_not_met'),
                     ),
                     'encode'
                 );

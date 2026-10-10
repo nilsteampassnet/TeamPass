@@ -286,6 +286,55 @@ class MainQueriesLogicTest extends TestCase
     }
 
     /**
+     * @dataProvider forbiddenWordProvider
+     *
+     * @param array<array-key, mixed> $words
+     */
+    public function testANewPasswordMayNotHoldAWordOfTheAccount(string $password, array $words, bool $expected): void
+    {
+        self::assertSame($expected, passwordHoldsForbiddenWord($password, $words));
+    }
+
+    /**
+     * @return array<string, array{string, array<array-key, mixed>, bool}>
+     */
+    public static function forbiddenWordProvider(): array
+    {
+        return [
+            'login inside the password' => ['My-jdoe-2026!', ['jdoe', 'John', 'Doe'], true],
+            'match ignores the case' => ['Summer-JOHN-77', ['jdoe', 'john', 'Doe'], true],
+            'three characters are enough' => ['Blue-Lee-4821', ['slee', 'Sam', 'Lee'], true],
+            'email part' => ['Acme-rocks-99', ['jdoe', 'John', 'Doe', 'j.doe', 'acme'], true],
+            'no word of the account' => ['Tr0ub4dor&Horse', ['jdoe', 'John', 'Doe'], false],
+            'one-letter lastname is ignored' => ['Nw-d41d8cd98fZq7!', ['passkey.d', 'Passkey', 'D'], false],
+            'two-letter name is ignored' => ['Strong-Lighthouse-9', ['wli', 'Li', 'Ng'], false],
+            'two accented letters are two characters' => ['Forêt-Lê-2026', ['tle', 'Lê', 'Thi'], false],
+            'empty and missing values are ignored' => ['Tr0ub4dor&Horse', ['', null, false, 0], false],
+        ];
+    }
+
+    public function testThePasswordChangeAppliesTheRuleAndExplainsARefusal(): void
+    {
+        $functions = file_get_contents(__DIR__ . '/../../app/sources/main.functions.php');
+        self::assertIsString($functions, 'main.functions.php must be readable.');
+        $start = strpos($functions, 'function isPasswordStrong(');
+        self::assertIsInt($start, 'isPasswordStrong() must exist.');
+        $body = substr($functions, $start, (int) strpos($functions, "\nfunction ", $start + 1) - $start);
+
+        self::assertStringContainsString('passwordHoldsForbiddenWord((string) $password, $forbiddenWords)', $body);
+        self::assertStringNotContainsString('stripos(', $body, 'The rule lives in passwordHoldsForbiddenWord() only.');
+        // The helper must be loaded wherever isPasswordStrong() is
+        self::assertStringContainsString("require_once __DIR__ . '/main_queries_logic.php';", $functions);
+
+        // A refusal has several causes: the answer states the whole rule, not a complexity level
+        $case = self::switchCaseBody("case 'change_user_auth_password'");
+        self::assertStringContainsString("\$lang->get('password_policy_not_met')", $case);
+        $english = file_get_contents(__DIR__ . '/../../app/includes/language/english.php');
+        self::assertIsString($english, 'english.php must be readable.');
+        self::assertStringContainsString("'password_policy_not_met' =>", $english);
+    }
+
+    /**
      * Read main.queries.php once, for the wiring assertions above.
      */
     private static function mainQueriesSource(): string
