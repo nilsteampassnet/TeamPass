@@ -142,6 +142,20 @@ final class WebauthnAuthenticatorTest extends TestCase
         webauthnBuildAuthenticatorData(self::RP_ID, TP_WEBAUTHN_FLAG_UP, 0x100000000);
     }
 
+    public function testSignCountGrowsAndNeverFallsBelowTheClock(): void
+    {
+        $now = 1_800_000_000;
+
+        // A first use, or a counter rolled back by a database restore, jumps to the clock
+        $this->assertSame($now, webauthnNextSignCount(0, $now));
+        $this->assertSame($now, webauthnNextSignCount(41, $now));
+        // Several signatures in the same second still grow strictly
+        $this->assertSame($now + 1, webauthnNextSignCount($now, $now));
+        $this->assertSame($now + 6, webauthnNextSignCount($now + 5, $now));
+        // Capped to the 32 bits of the authenticator data
+        $this->assertSame(0xFFFFFFFF, webauthnNextSignCount(0xFFFFFFFF, $now));
+    }
+
     public function testAttestationObjectMatchesHandComputedEncoding(): void
     {
         $authData = str_repeat("\xab", 164);

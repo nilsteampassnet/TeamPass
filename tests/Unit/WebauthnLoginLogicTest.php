@@ -95,6 +95,114 @@ final class WebauthnLoginLogicTest extends TestCase
         $this->assertSame('webauthn_login_passwordless_not_enabled', webauthnLoginPasswordlessRefusal($on, ['key_wrap_mode' => TP_WEBAUTHN_LOGIN_WRAP_NONE] + $local));
     }
 
+    public function testACeremonyOfTheInstanceItselfIsRecognisedByItsOrigin(): void
+    {
+        $settings = ['cpassman_url' => 'https://TeamPass.example.com/'];
+        $clientData = static fn (string $origin): string => (string) json_encode(
+            ['type' => 'webauthn.get', 'challenge' => 'AAAA', 'origin' => $origin]
+        );
+
+        $this->assertTrue(webauthnLoginIsOwnCeremony($clientData('https://teampass.example.com'), $settings));
+        $this->assertTrue(webauthnLoginIsOwnCeremony($clientData('https://teampass.example.com:443'), $settings));
+        $this->assertTrue(webauthnLoginIsOwnCeremony(
+            $clientData('https://vault.example.com:8443'),
+            ['cpassman_url' => 'https://vault.example.com:8443/teampass']
+        ));
+        // Another site, even one sharing the relying party ID of the instance (parent domain)
+        $this->assertFalse(webauthnLoginIsOwnCeremony($clientData('https://app.example.com'), $settings));
+        $this->assertFalse(webauthnLoginIsOwnCeremony($clientData('https://example.com'), $settings));
+        $this->assertFalse(webauthnLoginIsOwnCeremony($clientData('https://teampass.example.com:8443'), $settings));
+        $this->assertFalse(webauthnLoginIsOwnCeremony($clientData('http://teampass.example.com'), $settings));
+        // Nothing to compare: never a match
+        $this->assertFalse(webauthnLoginIsOwnCeremony($clientData('https://teampass.example.com'), []));
+        $this->assertFalse(webauthnLoginIsOwnCeremony('not json', $settings));
+        $this->assertFalse(webauthnLoginIsOwnCeremony('{"origin":42}', $settings));
+    }
+
+    public function testAnAccountWhoseKeysAreRegeneratedGetsTheAnswerOfThePasswordPath(): void
+    {
+        $on = ['webauthn_login_mode' => '2'];
+        $local = ['auth_type' => 'local', 'special' => 'generate-keys', 'key_wrap_mode' => TP_WEBAUTHN_LOGIN_WRAP_NONE];
+
+        // Password reset: closed to every sign-in until the task ends, which is temporary
+        $this->assertSame(
+            'account_in_construction_please_wait_email',
+            webauthnLoginPasswordlessRefusal($on, ['is_ready_for_usage' => '0'] + $local)
+        );
+        // New encryption code: the account is usable, it needs its password and the code
+        $this->assertSame(
+            'webauthn_login_passwordless_unavailable',
+            webauthnLoginPasswordlessRefusal($on, ['is_ready_for_usage' => '1'] + $local)
+        );
+        // Only that state says so, and a directory account is told about itself first
+        $this->assertSame(
+            'webauthn_login_passwordless_unavailable',
+            webauthnLoginPasswordlessRefusal($on, ['special' => 'recrypt-private-key', 'is_ready_for_usage' => '0'] + $local)
+        );
+        $this->assertSame(
+            'webauthn_login_passwordless_unavailable',
+            webauthnLoginPasswordlessRefusal($on, ['auth_type' => 'ldap', 'is_ready_for_usage' => '0'] + $local)
+        );
+    }
+
+    public function testOnlySecureContextsCanUsePasskeys(): void
+    {
+        foreach (['https://tp.example.com', 'https://tp.example.com:8443', 'http://localhost', 'http://localhost:8080',
+            'http://teampass.localhost', 'http://127.0.0.1', 'http://127.0.0.2:8000', 'http://[::1]'] as $origin) {
+            $this->assertTrue(webauthnLoginOriginIsSecure($origin), $origin);
+        }
+        foreach (['http://tp.example.com', 'http://192.168.1.10', 'http://127.example.com', 'ftp://tp.example.com', ''] as $origin) {
+            $this->assertFalse(webauthnLoginOriginIsSecure($origin), $origin);
+        }
+    }
+
+    public function testAPasskeyOfAPreviousRelyingPartyIdIsNoLongerUsable(): void
+    {
+        $this->assertTrue(webauthnLoginPasskeyIsUsable('tp.example.com', 'tp.example.com'));
+        $this->assertFalse(webauthnLoginPasskeyIsUsable('old.example.com', 'tp.example.com'));
+        // Registered before the relying party id was recorded: nothing says it changed
+        $this->assertTrue(webauthnLoginPasskeyIsUsable(null, 'tp.example.com'));
+        $this->assertTrue(webauthnLoginPasskeyIsUsable('', 'tp.example.com'));
+    }
+
+    public function testRequiringPrfRefusesTheServerCopiesAlreadyRegistered(): void
+    {
+        $requirePrf = ['webauthn_login_mode' => '2', 'webauthn_login_require_prf' => '1'];
+        $local = ['auth_type' => 'local', 'special' => 'none'];
+
+        $this->assertSame(
+            'webauthn_login_passwordless_prf_required',
+            webauthnLoginPasswordlessRefusal($requirePrf, ['key_wrap_mode' => TP_WEBAUTHN_LOGIN_WRAP_SERVER] + $local)
+        );
+        $this->assertNull(webauthnLoginPasswordlessRefusal($requirePrf, ['key_wrap_mode' => TP_WEBAUTHN_LOGIN_WRAP_PRF] + $local));
+        $this->assertNull(webauthnLoginPasswordlessRefusal(
+            ['webauthn_login_require_prf' => '0'] + $requirePrf,
+            ['key_wrap_mode' => TP_WEBAUTHN_LOGIN_WRAP_SERVER] + $local
+        ));
+    }
+
+    public function testAddingAPasskeyNeedsTheAccountToProveItselfAgain(): void
+    {
+        $now = 1_800_000_000;
+
+        // An open session is not enough: local and directory accounts confirm their password
+        foreach (['local', 'ldap'] as $authType) {
+            $this->assertTrue(webauthnLoginStepUpUsesPassword($authType), $authType);
+            $this->assertSame('password', webauthnLoginStepUpRequirement($authType, 0, $now - 5, $now), $authType);
+        }
+        // ... which then covers the PRF evaluation that may follow a registration, briefly
+        $this->assertSame('none', webauthnLoginStepUpRequirement('local', $now - 60, 0, $now));
+        $this->assertSame('password', webauthnLoginStepUpRequirement('local', $now - TP_WEBAUTHN_LOGIN_STEPUP_TTL, 0, $now));
+        $this->assertSame('password', webauthnLoginStepUpRequirement('local', $now + 60, 0, $now));
+
+        // No password TeamPass can check: a recent sign-in, else sign in again
+        $this->assertFalse(webauthnLoginStepUpUsesPassword('oauth2'));
+        $this->assertSame('none', webauthnLoginStepUpRequirement('oauth2', 0, $now - 120, $now));
+        $this->assertSame('signin', webauthnLoginStepUpRequirement('oauth2', 0, $now - TP_WEBAUTHN_LOGIN_RECENT_SIGNIN, $now));
+        $this->assertSame('signin', webauthnLoginStepUpRequirement('oauth2', 0, 0, $now));
+        $this->assertSame('signin', webauthnLoginStepUpRequirement('', 0, 0, $now));
+    }
+
     public function testImposedMfaBlocksPasswordlessOnlyWhenTheAdministratorSaysSo(): void
     {
         $this->assertFalse(webauthnLoginPasswordlessBlockedByMfa([], true));

@@ -265,8 +265,43 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                             <?php
                             $webauthnLoginMode = (int) ($SETTINGS['webauthn_login_mode'] ?? 0);
                             $webauthnDefaultRpId = strtolower((string) parse_url((string) ($SETTINGS['cpassman_url'] ?? ''), PHP_URL_HOST));
+                            // Changing the relying party ID orphans the registered passkeys: 2fa.js.php
+                            // asks for a confirmation when some exist.
+                            require_once __DIR__ . '/../sources/webauthn_login_logic.php';
+                            $webauthnEffectiveRpId = webauthnLoginRpId($SETTINGS);
+                            $webauthnLoginPasskeyCount = (int) DB::queryFirstField(
+                                'SELECT COUNT(*) FROM ' . prefixTable('user_webauthn_credentials') . ' WHERE rp_id IS NULL OR rp_id = %s',
+                                $webauthnEffectiveRpId
+                            );
+                            $webauthnLoginOrphanedCount = (int) DB::queryFirstField(
+                                'SELECT COUNT(*) FROM ' . prefixTable('user_webauthn_credentials') . ' WHERE rp_id IS NOT NULL AND rp_id != %s',
+                                $webauthnEffectiveRpId
+                            );
+                            // Requiring PRF deletes the copies of a private key the server opens
+                            // alone: 2fa.js.php asks for a confirmation when some exist.
+                            $webauthnLoginServerCopyCount = (int) DB::queryFirstField(
+                                'SELECT COUNT(*) FROM ' . prefixTable('user_webauthn_credentials') . ' WHERE key_wrap_mode = %i',
+                                TP_WEBAUTHN_LOGIN_WRAP_SERVER
+                            );
                             ?>
                             <div class="tab-pane" id="webauthn-login" role="tabpanel" aria-labelledby="webauthn-login-tab">
+                                <?php
+                                // Browsers only run passkeys in a secure context: say so before anyone enables them
+                                $webauthnLoginOrigin = webauthnLoginOriginOf((string) ($SETTINGS['cpassman_url'] ?? ''));
+                                if ($webauthnLoginOrigin !== '' && webauthnLoginOriginIsSecure($webauthnLoginOrigin) === false) {
+                                    echo '
+                                <div class="alert alert-warning" id="webauthn-login-https-warning">
+                                    <i class="fa-solid fa-triangle-exclamation mr-2"></i>' . htmlspecialchars(sprintf($lang->get('webauthn_login_https_required'), $webauthnLoginOrigin), ENT_QUOTES, 'UTF-8') . '
+                                </div>';
+                                }
+                                // Passkeys bound to a previous relying party ID: no longer asked at sign-in
+                                if ($webauthnLoginOrphanedCount > 0) {
+                                    echo '
+                                <div class="alert alert-info" id="webauthn-login-orphaned">
+                                    <i class="fa-solid fa-circle-info mr-2"></i>' . htmlspecialchars(sprintf($lang->get('webauthn_login_orphaned_passkeys'), $webauthnLoginOrphanedCount), ENT_QUOTES, 'UTF-8') . '
+                                </div>';
+                                }
+                                ?>
                                 <div class="row mb-2">
                                     <div class="col-7">
                                         <?php echo $lang->get('webauthn_login_mode'); ?>
@@ -294,7 +329,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                         </small>
                                     </div>
                                     <div class="col-3 d-flex justify-content-end">
-                                        <div class="toggle toggle-modern" id="webauthn_login_require_prf" data-toggle-on="<?php echo (int) ($SETTINGS['webauthn_login_require_prf'] ?? 0) === 1 ? 'true' : 'false'; ?>"></div><input type="hidden" id="webauthn_login_require_prf_input" value="<?php echo (int) ($SETTINGS['webauthn_login_require_prf'] ?? 0) === 1 ? '1' : '0'; ?>">
+                                        <div class="toggle toggle-modern no-save" id="webauthn_login_require_prf" data-server-copies="<?php echo $webauthnLoginServerCopyCount; ?>" data-toggle-on="<?php echo (int) ($SETTINGS['webauthn_login_require_prf'] ?? 0) === 1 ? 'true' : 'false'; ?>"></div><input type="hidden" id="webauthn_login_require_prf_input" value="<?php echo (int) ($SETTINGS['webauthn_login_require_prf'] ?? 0) === 1 ? '1' : '0'; ?>">
                                     </div>
                                 </div>
 
@@ -330,7 +365,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                         </small>
                                     </div>
                                     <div class="col-5">
-                                        <input type="text" class="form-control form-control-sm purify" data-field="label" id="webauthn_rp_id" placeholder="<?php echo htmlspecialchars($webauthnDefaultRpId, ENT_QUOTES, 'UTF-8'); ?>" value="<?php echo htmlspecialchars(html_entity_decode((string) ($SETTINGS['webauthn_rp_id'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8'), ENT_QUOTES, 'UTF-8'); ?>">
+                                        <input type="text" class="form-control form-control-sm purify no-save" data-field="label" data-effective="<?php echo htmlspecialchars($webauthnEffectiveRpId, ENT_QUOTES, 'UTF-8'); ?>" data-passkeys="<?php echo $webauthnLoginPasskeyCount; ?>" id="webauthn_rp_id" placeholder="<?php echo htmlspecialchars($webauthnDefaultRpId, ENT_QUOTES, 'UTF-8'); ?>" value="<?php echo htmlspecialchars(html_entity_decode((string) ($SETTINGS['webauthn_rp_id'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8'), ENT_QUOTES, 'UTF-8'); ?>">
                                     </div>
                                 </div>
 

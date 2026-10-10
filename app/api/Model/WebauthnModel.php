@@ -36,9 +36,17 @@ use TeampassClasses\ConfigManager\ConfigManager;
 use TeampassClasses\Language\Language;
 
 require_once API_ROOT_PATH . '/../sources/webauthn.functions.php';
+require_once API_ROOT_PATH . '/../sources/webauthn_login_logic.php';
 
 class WebauthnModel
 {
+    /**
+     * Returned to a ceremony started by the sign-in page of this instance: see
+     * webauthnLoginIsOwnCeremony().
+     */
+    private const OWN_INSTANCE_ERROR = 'TeamPass does not keep the passkeys of its own sign-in page: '
+        . 'use another authenticator for this TeamPass instance.';
+
     /**
      * Returned when the caller holds no usable sharekey on a credential. The usual cause is
      * transient: the background task has not distributed the keys of a new item yet.
@@ -63,6 +71,10 @@ class WebauthnModel
 
         try {
             $SETTINGS = (new ConfigManager())->getAllSettings();
+
+            if (webauthnLoginIsOwnCeremony((string) $request['client_data_json'], $SETTINGS) === true) {
+                return $this->error(422, self::OWN_INSTANCE_ERROR);
+            }
 
             DB::startTransaction();
             $transactionStarted = true;
@@ -301,6 +313,11 @@ class WebauthnModel
         try {
             $SETTINGS = (new ConfigManager())->getAllSettings();
 
+            // Also closes a passkey created before the rule, or by a client that named another origin
+            if (webauthnLoginIsOwnCeremony((string) $request['client_data_json'], $SETTINGS) === true) {
+                return $this->error(422, self::OWN_INSTANCE_ERROR);
+            }
+
             $credential = DB::queryFirstRow(
                 'SELECT w.id, w.item_id, w.rp_id, w.user_handle, w.private_key, w.private_key_meta,
                     i.id_tree, i.label, i.deleted_at
@@ -357,7 +374,7 @@ class WebauthnModel
             $transactionStarted = true;
 
             // The counter is the relying party's clone detector: two concurrent assertions must
-            // never sign the same value.
+            // never sign the same value, nor a restored database one the site already saw.
             $signCount = DB::queryFirstField(
                 'SELECT sign_count FROM ' . prefixTable('webauthn_credentials') . ' WHERE id = %i FOR UPDATE',
                 $credentialRowId
@@ -366,7 +383,7 @@ class WebauthnModel
                 DB::rollback();
                 return $this->error(404, 'Passkey not found');
             }
-            $newSignCount = min((int) $signCount + 1, 0xFFFFFFFF);
+            $newSignCount = webauthnNextSignCount((int) $signCount, time());
 
             $authenticatorData = webauthnBuildAuthenticatorData(
                 $request['rp_id'],

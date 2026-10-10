@@ -699,6 +699,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         'passwordless' => $lang->get('webauthn_login_passwordless_badge'),
         'serverWrap' => $lang->get('webauthn_login_server_wrap_tip'),
         'synced' => $lang->get('webauthn_login_synced_badge'),
+        'otherRp' => $lang->get('webauthn_login_other_rp'),
+        'otherRpTip' => $lang->get('webauthn_login_other_rp_tip'),
         'rename' => $lang->get('webauthn_login_rename'),
         'delete' => $lang->get('webauthn_login_delete'),
         'deleteConfirm' => $lang->get('webauthn_login_delete_confirm'),
@@ -716,8 +718,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         'serverError' => $lang->get('server_answer_error'),
         'cancel' => $lang->get('cancel'),
         'done' => $lang->get('done'),
+        'confirm' => $lang->get('confirm'),
+        'stepUpTitle' => $lang->get('webauthn_login_stepup_title'),
+        'stepUpPrompt' => $lang->get('webauthn_login_stepup_prompt'),
     ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
     let webauthnLoginCanWrap = false;
+    let webauthnLoginStepUpPassword = true;
 
     function webauthnLoginPost(type, payload) {
         return new Promise(function(resolve) {
@@ -774,10 +780,15 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             if (credential.synced === true) {
                 badges += ' <span class="badge badge-info ml-1">' + $('<span>').text(webauthnLoginText.synced).html() + '</span>';
             }
+            // Bound to a previous relying party ID: it can no longer sign in
+            if (credential.usable === false) {
+                badges += ' <span class="badge badge-warning ml-1" title="' + $('<span>').text(webauthnLoginText.otherRpTip).html() + '">'
+                    + $('<span>').text(webauthnLoginText.otherRp.replace('%s', credential.rp_id)).html() + '</span>';
+            }
             let actions = '<button type="button" class="btn btn-sm btn-outline-secondary webauthn-login-rename" data-id="' + id + '" title="' + $('<span>').text(webauthnLoginText.rename).html() + '"><i class="fa-solid fa-pen"></i></button>';
             if (credential.passwordless === true) {
                 actions += ' <button type="button" class="btn btn-sm btn-outline-warning webauthn-login-passwordless-disable" data-id="' + id + '" title="' + $('<span>').text(webauthnLoginText.disable).html() + '"><i class="fa-solid fa-lock"></i></button>';
-            } else if (enabled === true && webauthnLoginCanWrap === true) {
+            } else if (enabled === true && webauthnLoginCanWrap === true && credential.usable !== false) {
                 actions += ' <button type="button" class="btn btn-sm btn-outline-success webauthn-login-passwordless-enable" data-id="' + id + '" title="' + $('<span>').text(webauthnLoginText.enable).html() + '"><i class="fa-solid fa-unlock"></i></button>';
             }
             actions += ' <button type="button" class="btn btn-sm btn-danger webauthn-login-delete" data-id="' + id + '" title="' + $('<span>').text(webauthnLoginText.delete).html() + '"><i class="fa-solid fa-trash"></i></button>';
@@ -796,15 +807,81 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         return webauthnLoginPost('webauthn_login_list', {}).then(function(data) {
             if (data.error === false) {
                 webauthnLoginCanWrap = data.can_wrap === true;
+                webauthnLoginStepUpPassword = data.stepup_password !== false;
                 renderWebauthnLogin(data.credentials);
             }
         });
     }
 
+    // Ask for the current password. Resolves with it, or with null when the user cancels.
+    function webauthnLoginAskPassword() {
+        return new Promise(function(resolve) {
+            let answered = false;
+            launchConfirmDialog(
+                webauthnLoginText.stepUpTitle,
+                '<p>' + $('<span>').text(webauthnLoginText.stepUpPrompt).html() + '</p>'
+                    + '<input type="password" class="form-control" id="webauthn-login-stepup-password" autocomplete="current-password">',
+                function() {
+                    answered = true;
+                    resolve(String($('#webauthn-login-stepup-password').val() || ''));
+                },
+                webauthnLoginText.confirm,
+                webauthnLoginText.cancel
+            );
+            $('#warningModal')
+                .one('shown.bs.modal', function() {
+                    $('#webauthn-login-stepup-password').trigger('focus');
+                })
+                .one('hidden.bs.modal', function() {
+                    if (answered === false) {
+                        resolve(null);
+                    }
+                });
+        });
+    }
+
+    // Enter in the password field confirms, like the dialog button
+    $(document).on('keydown', '#webauthn-login-stepup-password', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            $('#warningModalButtonAction').trigger('click');
+        }
+    });
+
+    // Start a ceremony that adds a passkey or a passwordless copy of the private key. The server
+    // asks for the password first (or a recent sign-in when the account has none it can check):
+    // an open session alone must not be able to plant a passkey. A password confirmed for a
+    // registration also covers the PRF evaluation that may follow it.
+    async function webauthnLoginStart(type, payload, askPassword) {
+        let password = '';
+        if (askPassword === true) {
+            password = await webauthnLoginAskPassword();
+            if (password === null) {
+                return null;
+            }
+        }
+        let start = await webauthnLoginPost(type, Object.assign({}, payload, { current_password: password }));
+        if (start.error !== false && start.stepup === 'password' && askPassword !== true) {
+            password = await webauthnLoginAskPassword();
+            if (password === null) {
+                return null;
+            }
+            start = await webauthnLoginPost(type, Object.assign({}, payload, { current_password: password }));
+        }
+        return start;
+    }
+
     // Enable passwordless sign-in on a passkey: one gesture that proves it is at hand and
     // evaluates its PRF, from which the server derives the key wrapping the private key.
     async function enableWebauthnPasswordless(id, afterRegistration) {
-        const start = await webauthnLoginPost('webauthn_login_passwordless_options', { id: id });
+        const start = await webauthnLoginStart(
+            'webauthn_login_passwordless_options',
+            { id: id },
+            afterRegistration !== true && webauthnLoginStepUpPassword === true
+        );
+        if (start === null) {
+            return;
+        }
         if (start.error !== false) {
             webauthnLoginToast('error', start.message);
             return;
@@ -835,6 +912,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     }
 
     if ($('#webauthn-login-block').length > 0) {
+        // Browsers only run passkeys in a secure context (HTTPS or localhost)
+        if (window.isSecureContext !== true && $('#webauthn-login-add').length > 0) {
+            $('#webauthn-login-add').closest('.input-group').replaceWith(
+                $('<div class="text-warning small mt-2">').text(webauthnLoginText.unsupported)
+            );
+        }
         loadWebauthnLogin();
     }
 
@@ -845,7 +928,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         }
         const $button = $(this).prop('disabled', true);
         try {
-            const start = await webauthnLoginPost('webauthn_login_register_options', {});
+            const start = await webauthnLoginStart('webauthn_login_register_options', {}, webauthnLoginStepUpPassword);
+            if (start === null) {
+                return;
+            }
             if (start.error !== false) {
                 webauthnLoginToast('error', start.message);
                 return;

@@ -104,6 +104,15 @@ const TP_WEBAUTHN_LOGIN_LABEL_MAX = 100;
 const TP_WEBAUTHN_LOGIN_SECRET_BYTES = 32;
 
 /**
+ * A password confirmed before adding a passkey stays valid this many seconds: the PRF
+ * evaluation that may follow a registration does not ask for it twice.
+ */
+const TP_WEBAUTHN_LOGIN_STEPUP_TTL = 300;
+
+/** An account without a password TeamPass can check proves itself with a sign-in this recent. */
+const TP_WEBAUTHN_LOGIN_RECENT_SIGNIN = 600;
+
+/**
  * Read webauthn_login_mode, an unknown value meaning disabled.
  *
  * @param array<string, mixed> $settings TeamPass settings
@@ -154,6 +163,54 @@ function webauthnLoginOriginOf(string $url): string
 }
 
 /**
+ * Tell whether a WebAuthn ceremony was started by the pages of this TeamPass instance.
+ *
+ * The vault never holds, nor signs with, a passkey of its own sign-in page: whoever can open the
+ * item would sign in as its owner, and without a password once a copy of the private key the
+ * server opens alone exists. The signature of an assertion covers the client data, so the origin
+ * read here is the one the sign-in page verifies: a client cannot name another one.
+ *
+ * @param string               $clientDataJson Client data JSON, as bytes
+ * @param array<string, mixed> $settings       TeamPass settings
+ *
+ * @return bool False when either origin cannot be read
+ */
+function webauthnLoginIsOwnCeremony(string $clientDataJson, array $settings): bool
+{
+    $clientData = json_decode($clientDataJson, true);
+    $origin = is_array($clientData) === true && is_string($clientData['origin'] ?? null) === true
+        ? webauthnLoginOriginOf($clientData['origin'])
+        : '';
+
+    return $origin !== '' && $origin === webauthnLoginOriginOf((string) ($settings['cpassman_url'] ?? ''));
+}
+
+/**
+ * Tell whether browsers treat an origin as a secure context, the only place they run passkeys:
+ * HTTPS, or plain HTTP on the loopback (localhost, *.localhost, 127.0.0.1, [::1]).
+ *
+ * @param string $origin Origin, as webauthnLoginOriginOf() writes it
+ *
+ * @return bool
+ */
+function webauthnLoginOriginIsSecure(string $origin): bool
+{
+    $parts = parse_url($origin);
+    if (is_array($parts) === false || empty($parts['scheme']) === true || empty($parts['host']) === true) {
+        return false;
+    }
+    if ($parts['scheme'] === 'https') {
+        return true;
+    }
+    $host = strtolower(trim((string) $parts['host'], '[]'));
+
+    $loopbackIpv4 = filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false && str_starts_with($host, '127.');
+
+    return $parts['scheme'] === 'http'
+        && ($host === 'localhost' || str_ends_with($host, '.localhost') || $host === '::1' || $loopbackIpv4);
+}
+
+/**
  * Tell whether a relying party id may be used by a page served from a host: the host itself,
  * or a parent domain of it. An IP address only accepts itself.
  *
@@ -193,6 +250,21 @@ function webauthnLoginRpId(array $settings): string
     $configured = strtolower(trim(html_entity_decode((string) ($settings['webauthn_rp_id'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8')));
 
     return $configured !== '' && webauthnLoginRpIdIsValidFor($configured, $host) === true ? $configured : $host;
+}
+
+/**
+ * Tell whether a sign-in passkey can still sign in. Authenticators bind a passkey to the relying
+ * party id it was registered for: once that id changes, the passkey is out of reach.
+ *
+ * @param string|null $storedRpId  Relying party id it was registered for, null when unknown
+ *                                 (registered before it was recorded)
+ * @param string      $currentRpId Relying party id in force
+ *
+ * @return bool
+ */
+function webauthnLoginPasskeyIsUsable(?string $storedRpId, string $currentRpId): bool
+{
+    return $storedRpId === null || $storedRpId === '' || $storedRpId === $currentRpId;
 }
 
 /**
@@ -249,10 +321,13 @@ function webauthnLoginIsSecondFactor(array $settings, int $mfaEnabled, bool $has
  *
  * Only in passwordless mode, only for local accounts (a directory account would bypass its
  * directory), only with a copy of the private key, and never while the account is in a state
- * that needs the password: keys to generate or to re-encrypt, one-time code to enter.
+ * that needs the password: keys to generate or to re-encrypt, one-time code to enter. A copy
+ * the server opens alone is refused once the administrator requires PRF, including the copies
+ * made before that setting was turned on.
  *
  * @param array<string, mixed> $settings TeamPass settings
- * @param array<string, mixed> $account  auth_type, special and key_wrap_mode of the passkey
+ * @param array<string, mixed> $account  auth_type, special and is_ready_for_usage of the account,
+ *                                       key_wrap_mode of the passkey
  *
  * @return string|null Language key of the refusal
  */
@@ -261,16 +336,82 @@ function webauthnLoginPasswordlessRefusal(array $settings, array $account): ?str
     if (webauthnLoginMode($settings) !== TP_WEBAUTHN_LOGIN_MODE_PASSWORDLESS) {
         return 'webauthn_login_disabled';
     }
-    if ((string) ($account['auth_type'] ?? '') !== 'local'
-        || in_array((string) ($account['special'] ?? ''), ['generate-keys', 'recrypt-private-key', 'otc_is_required_on_next_login', 'user_added_from_ad'], true) === true
-    ) {
+    if ((string) ($account['auth_type'] ?? '') !== 'local') {
         return 'webauthn_login_passwordless_unavailable';
     }
-    if ((int) ($account['key_wrap_mode'] ?? 0) === TP_WEBAUTHN_LOGIN_WRAP_NONE) {
+    $special = (string) ($account['special'] ?? '');
+    // Keys regenerated after a password reset: the account is closed to every sign-in until the
+    // background task ends. Answer what the password path answers, not a refusal that reads as
+    // permanent.
+    if ($special === 'generate-keys' && (int) ($account['is_ready_for_usage'] ?? 1) !== 1) {
+        return 'account_in_construction_please_wait_email';
+    }
+    if (in_array($special, ['generate-keys', 'recrypt-private-key', 'otc_is_required_on_next_login', 'user_added_from_ad'], true) === true) {
+        return 'webauthn_login_passwordless_unavailable';
+    }
+    $wrapMode = (int) ($account['key_wrap_mode'] ?? 0);
+    if ($wrapMode === TP_WEBAUTHN_LOGIN_WRAP_NONE) {
         return 'webauthn_login_passwordless_not_enabled';
+    }
+    if ($wrapMode === TP_WEBAUTHN_LOGIN_WRAP_SERVER && (int) ($settings['webauthn_login_require_prf'] ?? 0) === 1) {
+        return 'webauthn_login_passwordless_prf_required';
     }
 
     return null;
+}
+
+/**
+ * Tell whether an account confirms its password before adding a sign-in passkey: local
+ * accounts, and directory accounts, whose password of the last sign-in TeamPass keeps hashed.
+ * OAuth2 accounts have no password TeamPass can check.
+ *
+ * @param string $authType users.auth_type
+ *
+ * @return bool
+ */
+function webauthnLoginStepUpUsesPassword(string $authType): bool
+{
+    return in_array($authType, ['local', 'ldap'], true);
+}
+
+/**
+ * Tell what the caller must still do before adding a sign-in passkey or giving one a
+ * passwordless copy of the private key. An open session alone is not enough: whoever holds it
+ * — an unattended browser, a stolen cookie, an XSS — could plant a passkey that outlives it,
+ * and survives a change of password.
+ *
+ * @param string $authType   users.auth_type
+ * @param int    $provenAt   When the password was last confirmed for a passkey, 0 if never
+ * @param int    $signedInAt When the session signed in, 0 if unknown
+ * @param int    $now        Current time
+ *
+ * @return string 'none' when a recent proof stands, 'password' to confirm the password,
+ *                'signin' to sign in again
+ */
+function webauthnLoginStepUpRequirement(string $authType, int $provenAt, int $signedInAt, int $now): string
+{
+    if (webauthnLoginIsRecent($provenAt, $now, TP_WEBAUTHN_LOGIN_STEPUP_TTL) === true) {
+        return 'none';
+    }
+    if (webauthnLoginStepUpUsesPassword($authType) === true) {
+        return 'password';
+    }
+
+    return webauthnLoginIsRecent($signedInAt, $now, TP_WEBAUTHN_LOGIN_RECENT_SIGNIN) === true ? 'none' : 'signin';
+}
+
+/**
+ * Tell whether a moment lies within the last $ttl seconds.
+ *
+ * @param int $at  Moment, 0 when unknown
+ * @param int $now Current time
+ * @param int $ttl Window in seconds
+ *
+ * @return bool
+ */
+function webauthnLoginIsRecent(int $at, int $now, int $ttl): bool
+{
+    return $at > 0 && $at <= $now && $now - $at < $ttl;
 }
 
 /**

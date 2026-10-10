@@ -148,6 +148,7 @@ $res = mysqli_query(
         `id` INT(12) NOT NULL AUTO_INCREMENT,
         `user_id` INT(12) NOT NULL,
         `credential_id` VARCHAR(255) NOT NULL COMMENT 'base64url',
+        `rp_id` VARCHAR(255) NULL DEFAULT NULL COMMENT 'Relying party id it was registered for',
         `public_key_cose` TEXT NOT NULL,
         `sign_count` INT UNSIGNED NOT NULL DEFAULT '0',
         `aaguid` VARCHAR(36) NULL DEFAULT NULL,
@@ -168,6 +169,20 @@ $res = mysqli_query(
 );
 if ($res === false) {
     echo '[{"finish":"1", "msg":"", "error":"Error creating user_webauthn_credentials table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// The relying party id a sign-in passkey was registered for: a passkey bound to a previous
+// one can no longer sign in. Added separately for databases that ran an earlier 3.2.3 build;
+// NULL means "registered before it was recorded".
+$res = addColumnIfNotExist(
+    $pre . 'user_webauthn_credentials',
+    'rp_id',
+    "VARCHAR(255) NULL DEFAULT NULL COMMENT 'Relying party id it was registered for' AFTER `credential_id`"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error adding column rp_id to user_webauthn_credentials table: ' . addslashes(mysqli_error($db_link)) . '"}]';
     mysqli_close($db_link);
     exit();
 }

@@ -324,7 +324,7 @@ function userMfaRequestedByRoles(array $SETTINGS, array $userInfo): bool
 function getMfaMethodsForUserInfo(array $SETTINGS, array $userInfo): array
 {
     $hasPasskey = webauthnLoginMode($SETTINGS) !== TP_WEBAUTHN_LOGIN_MODE_DISABLED
-        && webauthnLoginUserHasPasskey((int) ($userInfo['id'] ?? 0));
+        && webauthnLoginUserHasPasskey((int) ($userInfo['id'] ?? 0), webauthnLoginRpId($SETTINGS));
 
     return buildMfaMethodsResponse($SETTINGS, userNeedsMfa($SETTINGS, $userInfo, $hasPasskey), $hasPasskey);
 }
@@ -1281,6 +1281,8 @@ function buildUserSession(
 
     // Manage session expiration
     $session->set('user-session_duration', (int) $lifetime);
+    // When this session proved who it is: adding a sign-in passkey asks for a recent proof
+    $session->set('user-authenticated_at', time());
 
     // User signature keys
     if ($privateKeyClear !== null) {
