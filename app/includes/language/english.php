@@ -1041,6 +1041,7 @@ return array(
     'mfa_configuration' => 'MFA configuration',
     'yubico_authentication_tip' => 'Please visit www.yubico.com for more details.',
     'complexity_level_not_reached' => 'Complexity level is not reached',
+    'password_policy_not_met' => 'This password is not accepted. It needs at least 8 characters, with uppercase and lowercase letters and a digit or a special character. It must differ from your current password and may not contain your login, your name or a part of your email address.',
     'expected_complexity_level' => 'Expected complexity level',
     'your_attention_is_required' => 'Your attention is required',
     'favorite' => 'Favorite',

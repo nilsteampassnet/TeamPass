@@ -65,6 +65,7 @@ require_once __DIR__ . '/branding_logic.php';
 require_once __DIR__ . '/user_keys_task_logic.php';
 require_once __DIR__ . '/secret_settings_logic.php';
 require_once __DIR__ . '/sharekeys_repair_logic.php';
+require_once __DIR__ . '/main_queries_logic.php';
 // Directory access shared by the login and by the LDAP settings page test.
 require_once __DIR__ . '/ldap.functions.php';
 require_once __DIR__ . '/password_strength.functions.php';
@@ -10185,10 +10186,10 @@ function convertPasswordStrength($passwordStrength): int
 
 /**
  * Check that a password is strong. The password needs to have at least :
- *   - length >= 10.
+ *   - length >= 8.
  *   - Uppercase and lowercase chars.
  *   - Number or special char.
- *   - Not contain username, name or mail part.
+ *   - Not contain username, name or mail part (of three characters or more).
  *   - Different from previous password.
  * 
  * @param string $password - Password to ckeck.
@@ -10220,13 +10221,8 @@ function isPasswordStrong($password) {
     }
 
     // Search forbidden words in password
-    foreach ($forbiddenWords as $word) {
-        if (empty($word))
-            continue;
-
-        // Stop if forbidden word found in password
-        if (stripos($password, $word) !== false)
-            return false;
+    if (passwordHoldsForbiddenWord((string) $password, $forbiddenWords) === true) {
+        return false;
     }
 
     // Get password complexity
