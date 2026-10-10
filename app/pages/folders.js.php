@@ -442,18 +442,21 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
         // Column 2 — folder name with left indent proportional to tree depth + item count badge
         const indent = (value.level - 1) * 16
+        const folderIcon = Number(value.level) === 1
+            ? '<i class="fas fa-folder text-warning mr-1"></i>'
+            : '<i class="fas fa-folder-open text-warning mr-1" style="opacity:.7"></i>'
         let nameCell = '<span id="folder-' + value.id + '" data-id="' + value.id + '" class="infotip folder-name" data-html="true" title="<?php echo $lang->get('id'); ?>: ' + value.id + '<br><?php echo $lang->get('level'); ?>: ' + value.level + '<br><?php echo $lang->get('nb_items'); ?>: ' + value.nbItems + '">' + htmlEncode(value.title) + '</span>'
         if (value.nbItems > 0) {
             nameCell += ' <span class="badge badge-secondary ml-1">' + value.nbItems + '</span>'
         }
-        row += '<td class="modify pointer" style="padding-left:' + indent + 'px">' + nameCell + '</td>'
+        row += '<td class="modify pointer" style="padding-left:' + indent + 'px">' + folderIcon + nameCell + '</td>'
 
         // Column 3 — parent path breadcrumb
         let path = ''
         $(value.path).each(function(j, folder) {
-            path = path === '' ? htmlEncode(folder) : path + '<i class="fas fa-angle-right fa-sm ml-1 mr-1"></i>' + htmlEncode(folder)
+            path = path === '' ? htmlEncode(folder) : path + ' / ' + htmlEncode(folder)
         })
-        row += '<td class="modify pointer" min-width="200px" data-value="' + value.parentId + '"><small class="text-muted">' + path + '</small></td>'
+        row += '<td class="modify pointer font-italic" min-width="200px" data-value="' + value.parentId + '"><small class="text-muted">' + path + '</small></td>'
 
         // Column 4 — complexity
         row += '<td class="modify pointer text-center">'
