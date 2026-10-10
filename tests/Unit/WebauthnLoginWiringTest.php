@@ -259,6 +259,23 @@ final class WebauthnLoginWiringTest extends TestCase
         $this->assertStringContainsString("\$lang->get('webauthn_login_https_required')", $page);
     }
 
+    public function testPasswordlessSignInRecoversLikeThePasswordSignIn(): void
+    {
+        // A login page that outlived its server-side session gets "ERROR SESSION EXPIRED" back
+        // from identifyUserWithPasskey(); like the password path, it renews the key and resends.
+        $login = (string) file_get_contents(__DIR__ . '/../../app/core/login.js.php');
+        $ceremony = $this->between($login, 'function runPasswordlessCeremony(pending)', 'function runWebauthnSecondFactor(');
+        $this->assertStringContainsString('return recoverFromStaleSessionKey(sendAssertion);', $ceremony);
+        $this->assertStringNotContainsString('showLoginRequestError()', $ceremony);
+        // The maintenance refusal has no message of its own: the page supplies the notice
+        $this->assertStringContainsString("if (data.error === 'maintenance_mode_enabled') {", $ceremony);
+        $this->assertStringContainsString("\$lang->get('index_maintenance_mode_admin')", $ceremony);
+
+        $identify = (string) file_get_contents(__DIR__ . '/../../app/sources/identify.php');
+        $server = $this->between($identify, 'function identifyUserWithPasskey(', 'webauthnLoginPasswordlessLoginVerify(');
+        $this->assertStringContainsString("echo 'ERROR SESSION EXPIRED';", $server);
+    }
+
     public function testPasskeysOfAPreviousRelyingPartyIdAreNeverAskedFor(): void
     {
         // Same column in a fresh install and in the upgrade, added apart for earlier 3.2.3 builds

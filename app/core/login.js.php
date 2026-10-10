@@ -1617,26 +1617,47 @@ declare(strict_types=1);
             positionClass: 'toast-top-center'
         });
         return window.tpWebauthnLogin.assert(pending.options, pending.prfInput).then(function(result) {
-            return $.post('sources/identify.php', {
-                type: 'webauthn_login_verify',
-                data: prepareExchangedData(JSON.stringify({
-                    credential: result.credential,
-                    prf_output: result.prf_output,
-                    randomstring: pending.randomstring,
-                    duree_session: $('#session_duration').val(),
-                    screenHeight: $('body').innerHeight(),
-                    TimezoneOffset: new Date().getTimezoneOffset() * 60,
-                    client: ''
-                }), 'encode', tpSessionKey)
-            }).then(function(answer) {
+            // Encoded at each call, so that a replay after a key renewal uses the new key
+            const sendAssertion = function() {
+                return $.post('sources/identify.php', {
+                    type: 'webauthn_login_verify',
+                    data: prepareExchangedData(JSON.stringify({
+                        credential: result.credential,
+                        prf_output: result.prf_output,
+                        randomstring: pending.randomstring,
+                        duree_session: $('#session_duration').val(),
+                        screenHeight: $('body').innerHeight(),
+                        TimezoneOffset: new Date().getTimezoneOffset() * 60,
+                        client: ''
+                    }), 'encode', tpSessionKey)
+                }).then(handleAnswer);
+            };
+            const handleAnswer = function(answer) {
+                // The page outlived the server-side session: renew the key and send the same
+                // assertion again. The server answered before taking the challenge, still pending.
                 if (isStaleSessionKeyAnswer(answer) === true) {
-                    showLoginRequestError();
-                    return false;
+                    return recoverFromStaleSessionKey(sendAssertion);
                 }
+
+                // The answer is exploitable: allow a future recovery again.
+                sessionKeyRecoveryDone = false;
+
                 const data = prepareExchangedData(answer, 'decode', tpSessionKey);
                 if (data.value === pending.randomstring) {
                     completeSignIn(data);
                     return true;
+                }
+                // Same notice as the password sign-in: this refusal carries no message
+                if (data.error === 'maintenance_mode_enabled') {
+                    toastr.remove();
+                    toastr.warning(
+                        <?php echo json_encode($lang->get('index_maintenance_mode_admin'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+                        <?php echo json_encode($lang->get('caution'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>, {
+                            timeOut: 0,
+                            positionClass: 'toast-bottom-right'
+                        }
+                    );
+                    return false;
                 }
                 toastr.remove();
                 toastr.error(data.message, <?php echo json_encode($lang->get('caution'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>, {
@@ -1645,7 +1666,8 @@ declare(strict_types=1);
                     positionClass: 'toast-bottom-right'
                 });
                 return false;
-            });
+            };
+            return sendAssertion();
         }, function(error) {
             // Keep the challenge: some browsers only run a ceremony started by a click
             passwordlessLoginPending = pending;
