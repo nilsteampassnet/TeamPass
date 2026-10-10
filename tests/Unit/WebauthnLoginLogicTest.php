@@ -95,6 +95,32 @@ final class WebauthnLoginLogicTest extends TestCase
         $this->assertSame('webauthn_login_passwordless_not_enabled', webauthnLoginPasswordlessRefusal($on, ['key_wrap_mode' => TP_WEBAUTHN_LOGIN_WRAP_NONE] + $local));
     }
 
+    public function testAnAccountWhoseKeysAreRegeneratedGetsTheAnswerOfThePasswordPath(): void
+    {
+        $on = ['webauthn_login_mode' => '2'];
+        $local = ['auth_type' => 'local', 'special' => 'generate-keys', 'key_wrap_mode' => TP_WEBAUTHN_LOGIN_WRAP_NONE];
+
+        // Password reset: closed to every sign-in until the task ends, which is temporary
+        $this->assertSame(
+            'account_in_construction_please_wait_email',
+            webauthnLoginPasswordlessRefusal($on, ['is_ready_for_usage' => '0'] + $local)
+        );
+        // New encryption code: the account is usable, it needs its password and the code
+        $this->assertSame(
+            'webauthn_login_passwordless_unavailable',
+            webauthnLoginPasswordlessRefusal($on, ['is_ready_for_usage' => '1'] + $local)
+        );
+        // Only that state says so, and a directory account is told about itself first
+        $this->assertSame(
+            'webauthn_login_passwordless_unavailable',
+            webauthnLoginPasswordlessRefusal($on, ['special' => 'recrypt-private-key', 'is_ready_for_usage' => '0'] + $local)
+        );
+        $this->assertSame(
+            'webauthn_login_passwordless_unavailable',
+            webauthnLoginPasswordlessRefusal($on, ['auth_type' => 'ldap', 'is_ready_for_usage' => '0'] + $local)
+        );
+    }
+
     public function testOnlySecureContextsCanUsePasskeys(): void
     {
         foreach (['https://tp.example.com', 'https://tp.example.com:8443', 'http://localhost', 'http://localhost:8080',

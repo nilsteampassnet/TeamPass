@@ -303,7 +303,8 @@ function webauthnLoginIsSecondFactor(array $settings, int $mfaEnabled, bool $has
  * made before that setting was turned on.
  *
  * @param array<string, mixed> $settings TeamPass settings
- * @param array<string, mixed> $account  auth_type, special and key_wrap_mode of the passkey
+ * @param array<string, mixed> $account  auth_type, special and is_ready_for_usage of the account,
+ *                                       key_wrap_mode of the passkey
  *
  * @return string|null Language key of the refusal
  */
@@ -312,9 +313,17 @@ function webauthnLoginPasswordlessRefusal(array $settings, array $account): ?str
     if (webauthnLoginMode($settings) !== TP_WEBAUTHN_LOGIN_MODE_PASSWORDLESS) {
         return 'webauthn_login_disabled';
     }
-    if ((string) ($account['auth_type'] ?? '') !== 'local'
-        || in_array((string) ($account['special'] ?? ''), ['generate-keys', 'recrypt-private-key', 'otc_is_required_on_next_login', 'user_added_from_ad'], true) === true
-    ) {
+    if ((string) ($account['auth_type'] ?? '') !== 'local') {
+        return 'webauthn_login_passwordless_unavailable';
+    }
+    $special = (string) ($account['special'] ?? '');
+    // Keys regenerated after a password reset: the account is closed to every sign-in until the
+    // background task ends. Answer what the password path answers, not a refusal that reads as
+    // permanent.
+    if ($special === 'generate-keys' && (int) ($account['is_ready_for_usage'] ?? 1) !== 1) {
+        return 'account_in_construction_please_wait_email';
+    }
+    if (in_array($special, ['generate-keys', 'recrypt-private-key', 'otc_is_required_on_next_login', 'user_added_from_ad'], true) === true) {
         return 'webauthn_login_passwordless_unavailable';
     }
     $wrapMode = (int) ($account['key_wrap_mode'] ?? 0);

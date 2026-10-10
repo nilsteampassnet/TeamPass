@@ -276,6 +276,16 @@ final class WebauthnLoginWiringTest extends TestCase
         $this->assertStringContainsString("echo 'ERROR SESSION EXPIRED';", $server);
     }
 
+    public function testThePasswordlessRefusalReadsWhetherTheAccountIsReady(): void
+    {
+        // webauthnLoginPasswordlessRefusal() tells an account whose keys are being regenerated
+        // from the other refusals with is_ready_for_usage: without the column it never would.
+        $functions = (string) file_get_contents(__DIR__ . '/../../app/sources/webauthn_login.functions.php');
+        $verify = $this->between($functions, 'function webauthnLoginPasswordlessLoginVerify(', 'function webauthnLoginPrivateKeyMatches(');
+        $this->assertStringContainsString('u.is_ready_for_usage', $verify);
+        $this->assertStringContainsString('webauthnLoginPasswordlessRefusal($SETTINGS, $row)', $verify);
+    }
+
     public function testPasskeysOfAPreviousRelyingPartyIdAreNeverAskedFor(): void
     {
         // Same column in a fresh install and in the upgrade, added apart for earlier 3.2.3 builds

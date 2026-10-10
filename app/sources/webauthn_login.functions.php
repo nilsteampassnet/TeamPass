@@ -877,7 +877,7 @@ function webauthnLoginPasswordlessLoginVerify(array $SETTINGS, $credential, $prf
     $row = DB::queryFirstRow(
         'SELECT c.id, c.user_id, c.credential_id, c.public_key_cose, c.sign_count, c.aaguid, c.transports,
             c.key_wrap_mode, c.wrapped_private_key, c.wrap_salt, c.backup_eligible, c.backup_state,
-            u.login, u.auth_type, u.special, u.public_key
+            u.login, u.auth_type, u.special, u.is_ready_for_usage, u.public_key
         FROM ' . prefixTable('user_webauthn_credentials') . ' AS c
         INNER JOIN ' . prefixTable('users') . ' AS u ON (u.id = c.user_id)
         WHERE c.credential_id = %s AND u.deleted_at IS NULL',
