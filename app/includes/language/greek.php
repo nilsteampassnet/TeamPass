@@ -3819,5 +3819,7 @@ return array(
     'webauthn_login_notice_not_asked' => 'TeamPass does not ask for your passkey after your password: multi-factor authentication is turned off for your account. Ask your administrator to turn it on.',
     'webauthn_login_notice_single_device' => 'Your only passkey stays on the device that created it. Add a second one, on a phone or a security key, to keep signing in when that device is not at hand.',
     'webauthn_login_log_method' => 'passkey',
+    'webauthn_login_users_not_asked' => 'Not asked after the password: MFA is disabled for this account.',
+    'webauthn_login_adoption_tip' => 'Active accounts that hold at least one sign-in passkey, and their share of the active accounts.',
 
 );

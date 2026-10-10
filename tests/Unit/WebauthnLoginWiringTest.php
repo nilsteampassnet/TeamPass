@@ -497,6 +497,49 @@ final class WebauthnLoginWiringTest extends TestCase
         $this->assertStringContainsString("\$lang->get('webauthn_login_log_method')", $logs);
     }
 
+    public function testAdministratorsSeeHowFarPasskeysAreAdopted(): void
+    {
+        $functions = (string) file_get_contents(__DIR__ . '/../../app/sources/webauthn_login.functions.php');
+
+        // Users list: one query for the page, counting what a sign-in would accept
+        $counts = $this->between($functions, 'function webauthnLoginCountsByUser(', 'function webauthnLoginAccountsWithPasskey(');
+        $this->assertStringContainsString('WHERE user_id IN %li AND (rp_id IS NULL OR rp_id = %s)', $counts);
+        $this->assertStringContainsString('GROUP BY user_id', $counts);
+        $list = (string) file_get_contents(__DIR__ . '/../../app/sources/users.datatable.php');
+        $this->assertStringContainsString("webauthnLoginCountsByUser(array_column(\$rows, 'id'), webauthnLoginRpId(\$SETTINGS))", $list);
+        $this->assertStringContainsString('$passkeyBadge = webauthnLoginUsersBadge(', $list);
+        // The count query comes after the test that opens the JSON array: DB::count() reads the last query
+        $this->assertLessThan(strpos($list, 'webauthnLoginCountsByUser('), strpos($list, 'if (DB::count() > 0) {'));
+        // Only numbers and translations reach the hand-built JSON, escaped for the attribute
+        $badge = $this->between($list, '$passkeyBadge = webauthnLoginUsersBadge(', '// Inactive users management icon');
+        $this->assertStringContainsString("htmlspecialchars(\$passkeyTitle, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')", $badge);
+        $this->assertStringContainsString("\$passkeyBadge['asked'] === true ? 'badge-info' : 'badge-warning'", $badge);
+
+        // Dashboard: accounts that can sign in, system accounts left out like the other counters
+        $adoption = $this->between($functions, 'function webauthnLoginAccountsWithPasskey(', 'function webauthnLoginSecondFactor(');
+        $this->assertStringContainsString('COUNT(DISTINCT c.user_id)', $adoption);
+        $this->assertStringContainsString('u.disabled = %i', $adoption);
+        $this->assertStringContainsString('u.deleted_at IS NULL', $adoption);
+        $this->assertStringContainsString("['tp', 'otv', 'api']", $adoption);
+
+        $admin = (string) file_get_contents(__DIR__ . '/../../app/sources/admin.queries.php');
+        $stats = $this->between($admin, "case 'get_dashboard_stats':", "case 'get_live_activity':");
+        $this->assertStringContainsString('webauthnLoginAccountsWithPasskey(webauthnLoginRpId($SETTINGS))', $stats);
+        $this->assertStringContainsString("'passkeys' => \$usersWithPasskey,", $stats);
+        // Shown only while the feature is on
+        $page = (string) file_get_contents(__DIR__ . '/../../app/pages/admin.php');
+        $this->assertMatchesRegularExpression(
+            "/webauthn_login_mode'\\] \\?\\? 0\\) !== 0\\) \\{ \\?>.*?id=\"stat-users-passkeys\".*?<\\?php \\} \\?>/s",
+            $page
+        );
+        $this->assertStringContainsString("\$('#stat-users-passkeys').text(", (string) file_get_contents(__DIR__ . '/../../app/pages/admin.js.php'));
+
+        $lang = new Language('english', __DIR__ . '/../../app/includes/language');
+        foreach (['webauthn_login_users_not_asked', 'webauthn_login_adoption_tip'] as $key) {
+            $this->assertNotSame($key, $lang->get($key), $key);
+        }
+    }
+
     private function between(string $source, string $startMarker, string $endMarker): string
     {
         $start = strpos($source, $startMarker);

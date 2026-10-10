@@ -173,12 +173,12 @@ require_once __DIR__ . '/../sources/admin_activity_logic.php';
                     <!-- ============================================ -->
                     <div class="tab-pane fade show active" id="tab-dashboard" role="tabpanel" aria-labelledby="tab-dashboard-link">
                         
-                        <!-- Statistics Cards Row -->
+                        <!-- Statistics Cards Row: the tiles stretch to the tallest one, footers aligned -->
                         <div class="row">
                             <!-- Users Statistics -->
-                            <div class="col-lg-3 col-6">
-                                <div class="small-box bg-info">
-                                    <div class="inner">
+                            <div class="col-lg-3 col-6 d-flex">
+                                <div class="small-box bg-info d-flex flex-column w-100">
+                                    <div class="inner flex-fill">
                                         <h3 id="stat-users-active">-</h3>
                                         <p><?php echo $lang->get('active_users'); ?></p>
                                         <div class="small text-white">
@@ -190,6 +190,11 @@ require_once __DIR__ . '/../sources/admin_activity_logic.php';
                                                 <span><?php echo $lang->get('blocked'); ?>: <strong id="stat-users-blocked">-</strong></span>
                                                 <span><?php echo $lang->get('inactive_users_mgmt_badge_warned'); ?>: <strong id="stat-users-warned">-</strong></span>
                                             </div>
+                                            <?php if ((int) ($SETTINGS['webauthn_login_mode'] ?? 0) !== 0) { ?>
+                                            <div class="infotip" title="<?php echo htmlspecialchars($lang->get('webauthn_login_adoption_tip'), ENT_QUOTES, 'UTF-8'); ?>">
+                                                <span><i class="fa-solid fa-fingerprint mr-1"></i><?php echo $lang->get('webauthn_login_passkeys'); ?>: <strong id="stat-users-passkeys">-</strong></span>
+                                            </div>
+                                            <?php } ?>
                                         </div>
                                     </div>
                                     <div class="icon">
@@ -205,9 +210,9 @@ require_once __DIR__ . '/../sources/admin_activity_logic.php';
                             </div>
                             
                             <!-- Items Statistics -->
-                            <div class="col-lg-3 col-6">
-                                <div class="small-box bg-success">
-                                    <div class="inner">
+                            <div class="col-lg-3 col-6 d-flex">
+                                <div class="small-box bg-success d-flex flex-column w-100">
+                                    <div class="inner flex-fill">
                                         <h3 id="stat-items-total">-</h3>
                                         <p><?php echo $lang->get('total_items'); ?></p>
                                         <div class="small text-white">
@@ -228,9 +233,9 @@ require_once __DIR__ . '/../sources/admin_activity_logic.php';
                             </div>
                             
                             <!-- Folders Statistics -->
-                            <div class="col-lg-3 col-6">
-                                <div class="small-box bg-warning">
-                                    <div class="inner">
+                            <div class="col-lg-3 col-6 d-flex">
+                                <div class="small-box bg-warning d-flex flex-column w-100">
+                                    <div class="inner flex-fill">
                                         <h3 id="stat-folders-total">-</h3>
                                         <p><?php echo $lang->get('total_folders'); ?></p>
                                         <div class="small text-white">
@@ -251,9 +256,9 @@ require_once __DIR__ . '/../sources/admin_activity_logic.php';
                             </div>
                             
                             <!-- Logs Statistics -->
-                            <div class="col-lg-3 col-6">
-                                <div class="small-box bg-danger">
-                                    <div class="inner">
+                            <div class="col-lg-3 col-6 d-flex">
+                                <div class="small-box bg-danger d-flex flex-column w-100">
+                                    <div class="inner flex-fill">
                                         <h3 id="stat-logs-actions">-</h3>
                                         <p><?php echo $lang->get('logs_24h'); ?></p>
                                         <div class="small text-white">

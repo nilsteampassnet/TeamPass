@@ -565,6 +565,12 @@ function loadDashboardStats() {
                 $('#stat-users-api-online').text(data.users.api_online !== undefined ? data.users.api_online : '-')
                 $('#stat-users-blocked').text(data.users.blocked)
                 $('#stat-users-warned').text(data.users.warned !== undefined ? data.users.warned : '-')
+                // Accounts holding a sign-in passkey, and their share of the active accounts
+                $('#stat-users-passkeys').text(
+                    data.users.passkeys === undefined || data.users.passkeys === null
+                        ? '-'
+                        : data.users.passkeys + (data.users.active > 0 ? ' (' + Math.round(data.users.passkeys * 100 / data.users.active) + ' %)' : '')
+                )
                 updateSidebarOnlineUsersCounter(data.users.online)
                 if (typeof window.TeamPassOnlineUsers !== 'undefined' && window.TeamPassOnlineUsers.isOpen() === true) {
                     window.TeamPassOnlineUsers.reloadList(true)

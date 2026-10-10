@@ -3822,6 +3822,8 @@ return array(
     'webauthn_login_notice_not_asked' => 'TeamPass ne demande pas votre clé d’accès après votre mot de passe : l’authentification multifacteur est désactivée pour votre compte. Demandez à votre administrateur de l’activer.',
     'webauthn_login_notice_single_device' => 'Votre seule clé d’accès reste sur l’appareil qui l’a créée. Ajoutez-en une seconde, sur un téléphone ou une clé de sécurité, pour continuer à vous connecter quand cet appareil n’est pas à portée de main.',
     'webauthn_login_log_method' => 'clé d’accès',
+    'webauthn_login_users_not_asked' => 'Non demandée après le mot de passe : l’authentification multifacteur est désactivée pour ce compte.',
+    'webauthn_login_adoption_tip' => 'Comptes actifs possédant au moins une clé d’accès de connexion, et leur part des comptes actifs.',
 
     'admin_activity_failed' => 'a échoué à se connecter',
     'admin_activity_connected' => 's’est connecté',

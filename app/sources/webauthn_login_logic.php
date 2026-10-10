@@ -627,6 +627,36 @@ function webauthnLoginProfileNotices(array $settings, int $mfaEnabled, array $pa
 }
 
 /**
+ * How the Users list marks an account that holds sign-in passkeys, null when it has nothing to
+ * mark: feature off, or no passkey usable under the relying party id in force.
+ *
+ * 'asked' tells whether a sign-in with the password asks for one of them. When it does not —
+ * MFA is turned off for the account — the passkeys protect nothing, which the list points out.
+ *
+ * @param array<string, mixed> $settings     TeamPass settings
+ * @param int                  $mfaEnabled   users.mfa_enabled
+ * @param int                  $passkeys     Usable sign-in passkeys of the account
+ * @param int                  $passwordless Those that can sign in without the password
+ *
+ * @return array{count: int, passwordless: int, asked: bool}|null
+ */
+function webauthnLoginUsersBadge(array $settings, int $mfaEnabled, int $passkeys, int $passwordless): ?array
+{
+    if (webauthnLoginMode($settings) === TP_WEBAUTHN_LOGIN_MODE_DISABLED || $passkeys <= 0) {
+        return null;
+    }
+
+    return [
+        'count' => $passkeys,
+        // A copy kept from a time the passwordless mode was on signs in alone only while it is on
+        'passwordless' => webauthnLoginMode($settings) === TP_WEBAUTHN_LOGIN_MODE_PASSWORDLESS
+            ? max(0, min($passwordless, $passkeys))
+            : 0,
+        'asked' => webauthnLoginIsSecondFactor($settings, $mfaEnabled, true),
+    ];
+}
+
+/**
  * What a connection log row keeps of a sign-in made with a passkey alone: its method and the
  * passkey used. The id, never the name the user gave it: field_1 also carries the markers the
  * logs classify rows with, which free text could imitate.

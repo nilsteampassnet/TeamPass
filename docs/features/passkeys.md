@@ -264,6 +264,19 @@ Whoever holds both the database and the instance secret file can open the server
 
 ---
 
+### Following the adoption
+
+Since nothing is imposed, an administrator needs to see who registered a passkey. Two places show it while sign-in passkeys are enabled:
+
+| Where | What is shown |
+|---|---|
+| **Users**, next to the login | A fingerprint badge with the number of sign-in passkeys of the account; its tooltip adds how many of them sign in without a password. The badge is **orange** when the passkeys are not asked after the password, because **MFA enabled** is unchecked on the account: they protect nothing until it is checked |
+| **Administration dashboard**, *Active Users* tile | *Sign-in passkeys*: the number of active accounts that hold at least one, and their share of the active accounts |
+
+Both count the passkeys a sign-in accepts: one registered for a previous relying party ID is left out. Managers see the badge on the accounts they manage.
+
+---
+
 ### Revoking a user’s passkeys
 
 From **Users → action menu → Sign-in passkeys**, an administrator (or a manager of that account) lists the passkeys of a user, each with the passkey manager that holds it, and revokes any of them. A revocation takes effect at once, even though the passkey remains on the user's device.

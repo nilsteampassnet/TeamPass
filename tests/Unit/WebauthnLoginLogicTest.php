@@ -295,6 +295,23 @@ final class WebauthnLoginLogicTest extends TestCase
         $this->assertSame([], webauthnLoginProfileNotices(['webauthn_login_mode' => '0'], 0, [$device]));
     }
 
+    public function testUsersListMarksTheAccountsThatHoldPasskeys(): void
+    {
+        $secondFactor = ['webauthn_login_mode' => '1'];
+        $passwordless = ['webauthn_login_mode' => '2'];
+
+        // Nothing to mark: no passkey, or the feature is off and none of them can sign in
+        $this->assertNull(webauthnLoginUsersBadge($secondFactor, 1, 0, 0));
+        $this->assertNull(webauthnLoginUsersBadge(['webauthn_login_mode' => '0'], 1, 3, 1));
+
+        $this->assertSame(['count' => 2, 'passwordless' => 1, 'asked' => true], webauthnLoginUsersBadge($passwordless, 1, 2, 1));
+        // A copy kept from the passwordless mode signs in alone only while that mode is on
+        $this->assertSame(['count' => 2, 'passwordless' => 0, 'asked' => true], webauthnLoginUsersBadge($secondFactor, 1, 2, 1));
+        // MFA turned off for the account: its passkeys are not asked after the password
+        $this->assertSame(['count' => 1, 'passwordless' => 0, 'asked' => false], webauthnLoginUsersBadge($secondFactor, 0, 1, 0));
+        $this->assertSame(['count' => 1, 'passwordless' => 1, 'asked' => false], webauthnLoginUsersBadge($passwordless, 0, 1, 4));
+    }
+
     public function testAConnectionLogKeepsThePasskeyThatSignedIn(): void
     {
         $this->assertSame(42, webauthnLoginConnectionPasskeyId(webauthnLoginConnectionMarker(42)));

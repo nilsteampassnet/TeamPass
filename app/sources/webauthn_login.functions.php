@@ -781,6 +781,64 @@ function webauthnLoginUserHasPasskey(int $userId, string $rpId): bool
 }
 
 /**
+ * Count the sign-in passkeys of several accounts in one query, for the Users list. Like the
+ * sign-in, it only counts those still usable under the relying party id in force.
+ *
+ * @param int[]  $userIds Accounts of the page
+ * @param string $rpId    Relying party id in force
+ *
+ * @return array<int, array{passkeys: int, passwordless: int}> Indexed by user id; accounts
+ *                                                             without a passkey are absent
+ */
+function webauthnLoginCountsByUser(array $userIds, string $rpId): array
+{
+    $userIds = array_values(array_unique(array_filter(array_map('intval', $userIds), static fn (int $id): bool => $id > 0)));
+    if ($userIds === []) {
+        return [];
+    }
+
+    $counts = [];
+    foreach (DB::query(
+        'SELECT user_id, COUNT(*) AS passkeys,
+            SUM(CASE WHEN key_wrap_mode <> %i THEN 1 ELSE 0 END) AS passwordless
+        FROM ' . prefixTable('user_webauthn_credentials') . '
+        WHERE user_id IN %li AND (rp_id IS NULL OR rp_id = %s)
+        GROUP BY user_id',
+        TP_WEBAUTHN_LOGIN_WRAP_NONE,
+        $userIds,
+        $rpId
+    ) as $row) {
+        $counts[(int) $row['user_id']] = ['passkeys' => (int) $row['passkeys'], 'passwordless' => (int) $row['passwordless']];
+    }
+
+    return $counts;
+}
+
+/**
+ * Count the accounts that can sign in and hold at least one usable sign-in passkey: how far
+ * passkeys are adopted, for the administration dashboard.
+ *
+ * @param string $rpId Relying party id in force
+ *
+ * @return int
+ */
+function webauthnLoginAccountsWithPasskey(string $rpId): int
+{
+    return (int) DB::queryFirstField(
+        'SELECT COUNT(DISTINCT c.user_id)
+        FROM ' . prefixTable('user_webauthn_credentials') . ' AS c
+        INNER JOIN ' . prefixTable('users') . ' AS u ON (u.id = c.user_id)
+        WHERE (c.rp_id IS NULL OR c.rp_id = %s)
+            AND u.disabled = %i
+            AND u.deleted_at IS NULL
+            AND LOWER(u.login) NOT IN %ls',
+        $rpId,
+        0,
+        ['tp', 'otv', 'api']
+    );
+}
+
+/**
  * The passkey as a second factor, once the password has been verified in the same request.
  *
  * Without an assertion, it starts the ceremony: options that allow the account's passkeys only,
