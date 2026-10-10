@@ -163,6 +163,29 @@ function webauthnLoginOriginOf(string $url): string
 }
 
 /**
+ * Tell whether a WebAuthn ceremony was started by the pages of this TeamPass instance.
+ *
+ * The vault never holds, nor signs with, a passkey of its own sign-in page: whoever can open the
+ * item would sign in as its owner, and without a password once a copy of the private key the
+ * server opens alone exists. The signature of an assertion covers the client data, so the origin
+ * read here is the one the sign-in page verifies: a client cannot name another one.
+ *
+ * @param string               $clientDataJson Client data JSON, as bytes
+ * @param array<string, mixed> $settings       TeamPass settings
+ *
+ * @return bool False when either origin cannot be read
+ */
+function webauthnLoginIsOwnCeremony(string $clientDataJson, array $settings): bool
+{
+    $clientData = json_decode($clientDataJson, true);
+    $origin = is_array($clientData) === true && is_string($clientData['origin'] ?? null) === true
+        ? webauthnLoginOriginOf($clientData['origin'])
+        : '';
+
+    return $origin !== '' && $origin === webauthnLoginOriginOf((string) ($settings['cpassman_url'] ?? ''));
+}
+
+/**
  * Tell whether browsers treat an origin as a secure context, the only place they run passkeys:
  * HTTPS, or plain HTTP on the loopback (localhost, *.localhost, 127.0.0.1, [::1]).
  *

@@ -276,6 +276,56 @@ final class WebauthnLoginWiringTest extends TestCase
         $this->assertStringContainsString("echo 'ERROR SESSION EXPIRED';", $server);
     }
 
+    public function testRequiringPrfIsConfirmedWhenItDeletesCopies(): void
+    {
+        // Turning the setting on deletes the server copies for good (admin.queries.php), and
+        // turning it off does not bring them back: the page asks first, with their number.
+        $page = (string) file_get_contents(__DIR__ . '/../../app/pages/2fa.php');
+        $toggle = array_values(array_filter(
+            explode("\n", $page),
+            static fn (string $line): bool => str_contains($line, 'id="webauthn_login_require_prf"')
+        ));
+        $this->assertCount(1, $toggle);
+        $this->assertMatchesRegularExpression('/class="[^"]*\bno-save\b/', $toggle[0]);
+        $this->assertStringContainsString('data-server-copies="<?php echo $webauthnLoginServerCopyCount; ?>"', $toggle[0]);
+        $this->assertStringContainsString("WHERE key_wrap_mode = %i',\n                                TP_WEBAUTHN_LOGIN_WRAP_SERVER", $page);
+
+        // The generic toggle handler leaves a no-save toggle to its page
+        $generic = (string) file_get_contents(__DIR__ . '/../../app/pages/admin.js.php');
+        $handler = $this->between($generic, "\$('.toggle').on('toggle', function(e, active) {", '// .-> END. TOGGLES');
+        $skip = "if (\$(e.target).hasClass('no-save') === true) {";
+        $this->assertStringContainsString($skip, $handler);
+        $this->assertLessThan(strpos($handler, '$.post('), strpos($handler, $skip));
+
+        $js = (string) file_get_contents(__DIR__ . '/../../app/pages/2fa.js.php');
+        $own = $this->between($js, "\$(document).on('toggle', '#webauthn_login_require_prf'", "\$(document).on('click', '#button-duo-config-check'");
+        $this->assertStringContainsString("\$lang->get('webauthn_login_require_prf_confirm')", $own);
+        $this->assertStringContainsString("saveFieldValue(\$input, 'webauthn_login_require_prf', true);", $own);
+        // A cancelled confirmation puts the toggle back without saving anything
+        $this->assertStringContainsString("\$toggle.data('toggles').toggle(false, false, true);", $own);
+
+        $english = require __DIR__ . '/../../app/includes/language/english.php';
+        $this->assertStringContainsString('#count#', (string) ($english['webauthn_login_require_prf_confirm'] ?? ''));
+    }
+
+    public function testTheVaultNeitherKeepsNorUsesAPasskeyOfItsOwnSignInPage(): void
+    {
+        // A sign-in passkey of the instance kept in an item would let whoever can open the item
+        // sign in as its owner. Refused at creation, and at signature — the binding check, since
+        // the signature covers the client data — before anything is read or written.
+        $model = (string) file_get_contents(__DIR__ . '/../../app/api/Model/WebauthnModel.php');
+        $guard = "webauthnLoginIsOwnCeremony((string) \$request['client_data_json'], \$SETTINGS) === true";
+
+        $create = $this->between($model, 'public function createCredential(', 'public function listCredentials(');
+        $this->assertStringContainsString($guard, $create);
+        $this->assertLessThan(strpos($create, 'DB::startTransaction()'), strpos($create, $guard));
+
+        $assert = $this->between($model, 'public function assertCredential(', 'public function deleteCredential(');
+        $this->assertStringContainsString($guard, $assert);
+        $this->assertLessThan(strpos($assert, 'DB::queryFirstRow('), strpos($assert, $guard));
+        $this->assertLessThan(strpos($assert, 'webauthnSignAssertion('), strpos($assert, $guard));
+    }
+
     public function testThePasswordlessRefusalReadsWhetherTheAccountIsReady(): void
     {
         // webauthnLoginPasswordlessRefusal() tells an account whose keys are being regenerated

@@ -187,6 +187,11 @@ $('.toggle').on('toggle', function(e, active) {
         }
     }
 
+    // A toggle its page saves itself, after a confirmation (as the other fields marked no-save)
+    if ($(e.target).hasClass('no-save') === true) {
+        return;
+    }
+
     var data = {
         "field": e.target.id,
         "value": $("#" + e.target.id + "_input").val(),
@@ -195,7 +200,7 @@ $('.toggle').on('toggle', function(e, active) {
         console.log('Sending to server:');
         console.log(data);
     }
-    // Store in DB   
+    // Store in DB
     $.post(
         "sources/admin.queries.php", {
             type: "save_option_change",

@@ -113,6 +113,7 @@ New users receive the keys of the passkeys they can reach while their encryption
 
 - **No TeamPass, no passkey.** The private key never leaves the server: a passkey kept in TeamPass cannot be used while the server is down or unreachable, and it is not part of the offline HTML export. Keep another way to sign in — a password, recovery codes — on every account it protects.
 - **Backups.** Restoring a backup loses the passkeys saved since that backup: the site still expects them, TeamPass no longer holds them. Back up after saving passkeys, and keep the fallback above.
+- **TeamPass does not keep the passkeys of its own sign-in page.** The extension leaves the pages of its TeamPass server to the browser, and the server refuses to save or to use such a passkey: an item holding it would let everyone who can open it sign in to TeamPass as its owner. Register the passkeys that sign in to TeamPass on another authenticator — Windows Hello, a phone, a security key.
 - **API credentials give access to passkeys.** TeamPass signs for any API client authenticated as the user, not only for the extension. Protect API keys and extension tokens like the passwords they unlock. The *user verified* flag a site receives is stated by the extension, after its vault lock.
 - **Sites that require user verification** need the vault lock of the extension (PIN or biometrics): without it, the extension cannot use TeamPass passkeys on them.
 - **Sites that require attestation or device-bound passkeys** (some enterprise identity providers) do not accept TeamPass passkeys: choose *Use another device* in the extension window.
@@ -150,7 +151,7 @@ In **Settings → MFA → Passkeys**:
 | Setting | Description |
 |---|---|
 | **Sign in with a passkey** (`webauthn_login_mode`) | *Disabled* · *As a second factor* · *Passwordless and as a second factor*. Default: disabled |
-| **Require PRF for passwordless sign-in** (`webauthn_login_require_prf`) | Refuses the server-held copy of the encryption key described in [What a passwordless passkey holds](#what-a-passwordless-passkey-holds). Turning it on also deletes the copies already registered: those passkeys become second factors. Default: off |
+| **Require PRF for passwordless sign-in** (`webauthn_login_require_prf`) | Refuses the server-held copy of the encryption key described in [What a passwordless passkey holds](#what-a-passwordless-passkey-holds). Turning it on also deletes the copies already registered, after a confirmation that gives their number: those passkeys become second factors, and turning the setting off again does not bring the copies back — their owners enable passwordless sign-in again from their profile. Default: off |
 | **Passwordless sign-in counts as MFA** (`webauthn_passwordless_satisfies_mfa`) | Default: on. When off, an account on which Google or Duo is imposed must sign in with its password |
 | **Notify users when a passkey is saved** (`webauthn_email_on_add`) | The same setting as on the Browser Extension tab: it covers both kinds of passkey |
 | **Relying party ID** (`webauthn_rp_id`) | Domain the passkeys are bound to. Empty means the host of the TeamPass URL; a parent domain is also accepted, any other value is refused |
@@ -221,7 +222,7 @@ Every item, field and file is encrypted with the user's key, and that key is its
 | **Authenticator (PRF)** | A secret only that authenticator can produce, and only after verifying its user | Nothing: the copy cannot be opened without the authenticator |
 | **Server** | A key derived from the instance secret file, outside the database | Nothing on its own — the file is needed too — but the server can open it by itself |
 
-The second copy exists because several authenticators (some Windows Hello configurations) do not support PRF. Turn **Require PRF for passwordless sign-in** on to refuse it: those passkeys then stay second factors, which the user is told when registering. The copies registered before the setting was turned on are deleted at that moment.
+The second copy exists because several authenticators (some Windows Hello configurations) do not support PRF. Turn **Require PRF for passwordless sign-in** on to refuse it: those passkeys then stay second factors, which the user is told when registering. The copies registered before the setting was turned on are deleted at that moment, and are not restored when it is turned off.
 
 As a **second factor**, a passkey holds no copy at all: the password still unlocks the key.
 

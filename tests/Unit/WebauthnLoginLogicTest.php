@@ -95,6 +95,30 @@ final class WebauthnLoginLogicTest extends TestCase
         $this->assertSame('webauthn_login_passwordless_not_enabled', webauthnLoginPasswordlessRefusal($on, ['key_wrap_mode' => TP_WEBAUTHN_LOGIN_WRAP_NONE] + $local));
     }
 
+    public function testACeremonyOfTheInstanceItselfIsRecognisedByItsOrigin(): void
+    {
+        $settings = ['cpassman_url' => 'https://TeamPass.example.com/'];
+        $clientData = static fn (string $origin): string => (string) json_encode(
+            ['type' => 'webauthn.get', 'challenge' => 'AAAA', 'origin' => $origin]
+        );
+
+        $this->assertTrue(webauthnLoginIsOwnCeremony($clientData('https://teampass.example.com'), $settings));
+        $this->assertTrue(webauthnLoginIsOwnCeremony($clientData('https://teampass.example.com:443'), $settings));
+        $this->assertTrue(webauthnLoginIsOwnCeremony(
+            $clientData('https://vault.example.com:8443'),
+            ['cpassman_url' => 'https://vault.example.com:8443/teampass']
+        ));
+        // Another site, even one sharing the relying party ID of the instance (parent domain)
+        $this->assertFalse(webauthnLoginIsOwnCeremony($clientData('https://app.example.com'), $settings));
+        $this->assertFalse(webauthnLoginIsOwnCeremony($clientData('https://example.com'), $settings));
+        $this->assertFalse(webauthnLoginIsOwnCeremony($clientData('https://teampass.example.com:8443'), $settings));
+        $this->assertFalse(webauthnLoginIsOwnCeremony($clientData('http://teampass.example.com'), $settings));
+        // Nothing to compare: never a match
+        $this->assertFalse(webauthnLoginIsOwnCeremony($clientData('https://teampass.example.com'), []));
+        $this->assertFalse(webauthnLoginIsOwnCeremony('not json', $settings));
+        $this->assertFalse(webauthnLoginIsOwnCeremony('{"origin":42}', $settings));
+    }
+
     public function testAnAccountWhoseKeysAreRegeneratedGetsTheAnswerOfThePasswordPath(): void
     {
         $on = ['webauthn_login_mode' => '2'];

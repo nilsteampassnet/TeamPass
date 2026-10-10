@@ -3765,6 +3765,7 @@ return array(
     'webauthn_login_passwordless_prf_required' => 'This passkey can no longer sign you in without a password: your administrator now requires PRF, which its authenticator does not offer. Sign in with your password; the passkey still confirms it.',
     'webauthn_rp_id_invalid' => 'The relying party ID must be the host of the TeamPass URL (%s) or one of its parent domains.',
     'webauthn_rp_id_change_confirm' => 'Sign-in passkeys registered for #rp_id#: #count#. With this new value they stop working, and their owners will have to register them again. Continue?',
+    'webauthn_login_require_prf_confirm' => 'Sign-in passkeys that rely on a copy of the encryption key the server opens alone: #count#. Requiring PRF deletes those copies for good: these passkeys will only confirm a password, and turning this setting off again does not bring the copies back. Their owners will have to enable passwordless sign-in again from their profile. Continue?',
     'webauthn_login_https_required' => 'Passkeys need HTTPS: browsers refuse them on a plain HTTP address such as the TeamPass URL (%s). Serve TeamPass over HTTPS before enabling them.',
     'webauthn_login_other_rp' => 'Registered for %s: no longer usable',
     'webauthn_login_other_rp_tip' => 'The relying party ID changed since this passkey was registered: it can no longer sign in. Delete it and add a new one.',

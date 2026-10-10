@@ -277,6 +277,12 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 'SELECT COUNT(*) FROM ' . prefixTable('user_webauthn_credentials') . ' WHERE rp_id IS NOT NULL AND rp_id != %s',
                                 $webauthnEffectiveRpId
                             );
+                            // Requiring PRF deletes the copies of a private key the server opens
+                            // alone: 2fa.js.php asks for a confirmation when some exist.
+                            $webauthnLoginServerCopyCount = (int) DB::queryFirstField(
+                                'SELECT COUNT(*) FROM ' . prefixTable('user_webauthn_credentials') . ' WHERE key_wrap_mode = %i',
+                                TP_WEBAUTHN_LOGIN_WRAP_SERVER
+                            );
                             ?>
                             <div class="tab-pane" id="webauthn-login" role="tabpanel" aria-labelledby="webauthn-login-tab">
                                 <?php
@@ -323,7 +329,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                         </small>
                                     </div>
                                     <div class="col-3 d-flex justify-content-end">
-                                        <div class="toggle toggle-modern" id="webauthn_login_require_prf" data-toggle-on="<?php echo (int) ($SETTINGS['webauthn_login_require_prf'] ?? 0) === 1 ? 'true' : 'false'; ?>"></div><input type="hidden" id="webauthn_login_require_prf_input" value="<?php echo (int) ($SETTINGS['webauthn_login_require_prf'] ?? 0) === 1 ? '1' : '0'; ?>">
+                                        <div class="toggle toggle-modern no-save" id="webauthn_login_require_prf" data-server-copies="<?php echo $webauthnLoginServerCopyCount; ?>" data-toggle-on="<?php echo (int) ($SETTINGS['webauthn_login_require_prf'] ?? 0) === 1 ? 'true' : 'false'; ?>"></div><input type="hidden" id="webauthn_login_require_prf_input" value="<?php echo (int) ($SETTINGS['webauthn_login_require_prf'] ?? 0) === 1 ? '1' : '0'; ?>">
                                     </div>
                                 </div>
 

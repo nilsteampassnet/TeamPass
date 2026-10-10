@@ -131,6 +131,52 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         });
     });
 
+    /**
+     * "Require PRF" deletes, for good, the copies of a private key the server opens alone: the
+     * passkeys that relied on one only confirm a password afterwards, and turning the setting off
+     * does not bring the copies back. Saved here instead of by the generic toggle handler of
+     * admin.js.php, which has already mirrored the state in the hidden input: the administrator
+     * confirms first when such copies exist.
+     */
+    $(document).on('toggle', '#webauthn_login_require_prf', function(event, active) {
+        const $toggle = $(this);
+        const $input = $('#webauthn_login_require_prf_input');
+        // Third argument: no HTML sanitising, the value is 0 or 1
+        const save = function() {
+            saveFieldValue($input, 'webauthn_login_require_prf', true);
+        };
+
+        const count = parseInt($toggle.attr('data-server-copies'), 10) || 0;
+        if (active !== true || count === 0) {
+            save();
+            return;
+        }
+
+        let confirmed = false;
+        launchConfirmDialog(
+            <?php echo json_encode($lang->get('webauthn_login_require_prf'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+            $('<span>').text(
+                <?php echo json_encode($lang->get('webauthn_login_require_prf_confirm'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>
+                    .replace('#count#', String(count))
+            ).html(),
+            function() {
+                confirmed = true;
+                save();
+                // The server has deleted them
+                $toggle.attr('data-server-copies', '0');
+            },
+            <?php echo json_encode($lang->get('confirm'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+            <?php echo json_encode($lang->get('cancel'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>
+        );
+        // Cancelled: back to "off", the value still in force, without another toggle event
+        $('#warningModal').one('hidden.bs.modal', function() {
+            if (confirmed === false) {
+                $input.val(0);
+                $toggle.data('toggles').toggle(false, false, true);
+            }
+        });
+    });
+
     $(document).on('click', '#button-duo-config-check', function() {
         toastr
             .info('<?php echo $lang->get('loading_item'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
