@@ -796,14 +796,21 @@ if (
 
     // Sidebar redirection. The click has already been acknowledged by
     // app/core/page-transition.js.php (progress bar + spinner on the entry).
-    $('.nav-link').click(function() {
+    $('.nav-link').click(function(event) {
         if ($(this).data('name') !== undefined) {
+            // The entry is an href="#" anchor: its fragment navigation fires popstate,
+            // and the back-button guard below answers with history.go(1), which
+            // cancels the pending redirect in WebKit (Safari, every iOS browser).
+            event.preventDefault();
             document.location.href = "index.php?page=" + $(this).data('name');
         }
     });
 
     // User menu action
-    $('.user-menu').click(function() {
+    $('.user-menu').click(function(event) {
+        // Same href="#" anchors as the sidebar: keep the fragment navigation from
+        // cancelling the profile and logout redirects in WebKit.
+        event.preventDefault();
         if ($(this).data('name') !== undefined) {
             if ($(this).data('name') === 'increase_session') {
                 showExtendSession();
