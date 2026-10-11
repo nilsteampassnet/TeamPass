@@ -142,8 +142,12 @@ a sender's links, not proof of malicious activity by that sender.
 
 Period bounds reuse `opsStatsResolvePeriodRange()` in the configured PHP timezone,
 including calendar week/month and daylight-saving transitions. Native timestamp
-predicates and fixed event filters can use the journal's event/period index;
-there is no SQL timezone conversion or CAST on `occurred_at`. The helper rejects
+predicates avoid SQL timezone conversion or CAST on `occurred_at`, but do not
+guarantee use of the event/period index. The optimizer chooses according to the
+database version, data distribution and selected period; long windows can scan
+the journal, and the sender grouping/exclusion can favor the originator index.
+Use EXPLAIN and representative-volume measurements rather than assuming an
+index plan from these predicates alone. The helper rejects
 invalid or greater-than-90-day ranges. Summary and ranking are two read queries,
 so newly committed events can change the database between those reads; no
 transactional snapshot across the entire dashboard is claimed.
