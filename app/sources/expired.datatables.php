@@ -38,6 +38,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 
 // Load functions
 require_once 'main.functions.php';
+require_once __DIR__ . '/search.functions.php';
 $session = SessionManager::getSession();
 
 
@@ -199,28 +200,40 @@ $iFilteredTotal = $iTotal;
 $rows = DB::query(
     'SELECT i.id, i.label, i.id_tree, n.title AS folder_title, ' . $expirationDateSql . ' AS expiration_date ' .
     $fromWhereSql .
-    $sOrder .
+    ($sortColumn === 1 ? $sOrder : '') .
     ($processDisplayText ? '' : $sLimit),
     ...$queryParams
 );
 
 if ($processDisplayText) {
+    // intl is optional; without it retain case-insensitive UTF-8 comparisons.
+    $fold = static function (string $text): string {
+        if (class_exists('Normalizer')) {
+            $normalized = \Normalizer::normalize($text, \Normalizer::FORM_D);
+            if ($normalized !== false) {
+                $text = preg_replace('/\p{Mn}+/u', '', $normalized) ?? $text;
+            }
+        }
+        return mb_strtolower($text, 'UTF-8');
+    };
+    // Decode and fold once per row, rather than inside the sort comparator.
     foreach ($rows as &$row) {
-        $row['label_display'] = html_entity_decode((string) $row['label'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $row['folder_display'] = html_entity_decode((string) $row['folder_title'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $row['label_key'] = $fold(searchDecodeStoredText((string) $row['label']));
+        $row['folder_key'] = $fold(searchDecodeFolderTitle((string) $row['folder_title']));
     }
     unset($row);
     if ($searchValue !== '') {
-        $rows = array_values(array_filter($rows, static function (array $row) use ($searchValue): bool {
-            return mb_stripos($row['label_display'], $searchValue, 0, 'UTF-8') !== false
-                || mb_stripos($row['folder_display'], $searchValue, 0, 'UTF-8') !== false;
+        $searchKey = $fold($searchValue);
+        $rows = array_values(array_filter($rows, static function (array $row) use ($searchKey): bool {
+            return mb_strpos($row['label_key'], $searchKey, 0, 'UTF-8') !== false
+                || mb_strpos($row['folder_key'], $searchKey, 0, 'UTF-8') !== false;
         }));
     }
     $iFilteredTotal = count($rows);
     if ($sortColumn !== 1) {
-        $sortField = $sortColumn === 0 ? 'label_display' : 'folder_display';
+        $sortField = $sortColumn === 0 ? 'label_key' : 'folder_key';
         usort($rows, static function (array $left, array $right) use ($sortField, $sortDirection): int {
-            $comparison = strcmp(mb_strtolower($left[$sortField], 'UTF-8'), mb_strtolower($right[$sortField], 'UTF-8'));
+            $comparison = strcmp($left[$sortField], $right[$sortField]);
             return ($sortDirection === 'DESC' ? -$comparison : $comparison)
                 ?: ((int) $left['id'] <=> (int) $right['id']);
         });
@@ -237,14 +250,14 @@ foreach ($rows as $record) {
     foreach ($treeDesc as $t) {
         // A visible child does not grant access to its ancestors' names.
         if (in_array((int) $t->id, $visibleFolders, true)) {
-            $path[] = htmlspecialchars(html_entity_decode((string) $t->title, ENT_QUOTES | ENT_HTML5, 'UTF-8'), ENT_QUOTES, 'UTF-8');
+            $path[] = htmlspecialchars(searchDecodeFolderTitle((string) $t->title), ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
         }
     }
 
     $itemUrl = 'index.php?page=items&group=' . (int) $record['id_tree'] . '&id=' . (int) $record['id'];
     $data[] = [
         '<a href="' . htmlspecialchars($itemUrl, ENT_QUOTES, 'UTF-8') . '">'
-            . htmlspecialchars(html_entity_decode((string) $record['label'], ENT_QUOTES | ENT_HTML5, 'UTF-8'), ENT_QUOTES, 'UTF-8') . '</a>',
+            . searchEscapeStoredText((string) $record['label']) . '</a>',
         date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['expiration_date']),
         implode('<i class="fas fa-angle-right ml-1 mr-1"></i>', $path),
     ];

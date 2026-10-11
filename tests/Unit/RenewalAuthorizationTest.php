@@ -45,6 +45,7 @@ class RenewalAuthorizationTest extends TestCase
             self::markTestSkipped('The SQL-backed renewal tests require SQLite3 (enabled in CI).');
         }
         DB::$connection = new \SQLite3(':memory:');
+        DB::$queries = [];
         DB::$connection->enableExceptions(true);
         DB::$connection->createFunction('CONCAT', static fn (...$parts): string => implode('', $parts));
         ConfigManager::$settings = [
@@ -486,7 +487,7 @@ class RenewalAuthorizationTest extends TestCase
         self::assertSame(3, $result['recordsTotal']);
         self::assertSame(2, $result['recordsFiltered']);
         self::assertCount(1, $result['data']);
-        $safeText = htmlspecialchars($display, ENT_QUOTES, 'UTF-8');
+        $safeText = htmlspecialchars($display, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
         self::assertStringContainsString('>' . $safeText . '</a>', $result['data'][0][0]);
         self::assertSame($safeText, $result['data'][0][2]);
         $default = runTable($namespace);
@@ -535,6 +536,103 @@ class RenewalAuthorizationTest extends TestCase
             self::assertSame(3, $result['recordsFiltered']);
             self::assertCount(1, $result['data']);
             self::assertStringContainsString('&amp;id=' . $id . '"', $result['data'][0][0]);
+        }
+    }
+
+    /** Accented initials follow their base letter in either sort direction. */
+    #[DataProvider('accentedInitials')]
+    public function testAccentedInitialsSortWithTheirBaseLetter(string $stored): void
+    {
+        if (!extension_loaded('intl')) {
+            self::markTestSkipped('Accent folding requires the optional intl extension.');
+        }
+        DB::query('UPDATE renewal_items SET label = %s WHERE id = 1', 'eclair');
+        DB::query('UPDATE renewal_items SET label = %s WHERE id = 4', $stored);
+        DB::query('UPDATE renewal_items SET label = %s WHERE id = 5', 'Zebra');
+        DB::query('UPDATE renewal_items SET label = %s, restricted_to = %s WHERE id = 2', 'Été', '7');
+        foreach (['asc' => [1, 4, 2, 5], 'desc' => [5, 2, 4, 1]] as $direction => $ids) {
+            $namespace = newRequest();
+            $result = runTable($namespace, ['order' => [['column' => 0, 'dir' => $direction]]]);
+            foreach ($ids as $index => $id) {
+                self::assertStringContainsString('&amp;id=' . $id . '"', $result['data'][$index][0]);
+            }
+            $page = runTable($namespace, [
+                'order' => [['column' => 0, 'dir' => $direction]], 'start' => 1, 'length' => 1,
+            ]);
+            self::assertSame(4, $page['recordsFiltered']);
+            self::assertStringContainsString('&amp;id=' . $ids[1] . '"', $page['data'][0][0]);
+        }
+        DB::query('UPDATE renewal_nested_tree SET title = %s WHERE id = 11', $stored);
+        DB::query('UPDATE renewal_nested_tree SET title = %s WHERE id = 21', 'Zebra');
+        $folders = runTable(newRequest(), ['order' => [['column' => 2, 'dir' => 'asc']]]);
+        self::assertStringContainsString('&amp;id=5"', $folders['data'][3][0]);
+    }
+
+    /** Named entities and raw UTF-8 share the same accent-insensitive sort key. */
+    public static function accentedInitials(): iterable
+    {
+        yield 'named entity' => ['&Eacute;cran'];
+        yield 'raw UTF-8' => ['Écran'];
+    }
+
+    /** Accent-free search matches decoded item/folder names and folds the term as well. */
+    #[DataProvider('accentedSearchNames')]
+    public function testSearchIgnoresAccentsWhenIntlIsAvailable(string $stored): void
+    {
+        if (!extension_loaded('intl')) {
+            self::markTestSkipped('Accent folding requires the optional intl extension.');
+        }
+        DB::query('UPDATE renewal_items SET label = %s WHERE id = 1', $stored);
+        DB::query('UPDATE renewal_items SET label = %s WHERE id = 5', 'ARRIVEE');
+        DB::query('UPDATE renewal_nested_tree SET title = %s WHERE id = 11', $stored);
+        $namespace = newRequest();
+        foreach (['arrivee', 'ARRIVÉE', "arrive\u{0301}e"] as $term) {
+            $result = runTable($namespace, ['search' => ['value' => $term]]);
+            self::assertSame(3, $result['recordsFiltered']);
+            self::assertCount(3, $result['data']);
+        }
+        DB::query('UPDATE renewal_nested_tree SET title = %s WHERE id = 11', 'Unrelated');
+        self::assertSame(2, runTable($namespace, ['search' => ['value' => 'arrivee']])['recordsFiltered']);
+        DB::query('UPDATE renewal_items SET label = %s WHERE id = 1', 'Unrelated');
+        DB::query('UPDATE renewal_nested_tree SET title = %s WHERE id = 11', $stored);
+        self::assertSame(3, runTable($namespace, ['search' => ['value' => 'arrivee']])['recordsFiltered']);
+    }
+
+    /** Decomposed combining marks must fold like precomposed accented characters. */
+    public static function accentedSearchNames(): iterable
+    {
+        yield 'named entity' => ['Arriv&eacute;e'];
+        yield 'raw UTF-8' => ['Arrivée'];
+        yield 'decomposed UTF-8' => ["Arrive\u{0301}e"];
+    }
+
+    /** PHP text sorting must not request an unused database sort over every row. */
+    public function testOnlyDateSortingUsesSqlOrdering(): void
+    {
+        foreach ([0, 1, 2] as $column) {
+            DB::$queries = [];
+            runTable(newRequest(), ['order' => [['column' => $column, 'dir' => 'desc']], 'length' => 1]);
+            $itemQueries = array_values(array_filter(DB::$queries, static fn (string $sql): bool => str_starts_with($sql, 'SELECT i.id, i.label')));
+            self::assertCount(1, $itemQueries);
+            if ($column === 1) {
+                self::assertStringContainsString(' ORDER BY expiration_date DESC, i.id ASC', $itemQueries[0]);
+                self::assertStringContainsString(' LIMIT 0, 1', $itemQueries[0]);
+            } else {
+                self::assertStringNotContainsString(' ORDER BY ', $itemQueries[0]);
+                self::assertStringNotContainsString(' LIMIT ', $itemQueries[0]);
+            }
+        }
+    }
+
+    /** Invalid UTF-8 is replaced in rendered text rather than erasing the link. */
+    public function testInvalidUtf8NamesRemainVisibleAndSafe(): void
+    {
+        DB::query('UPDATE renewal_items SET label = %s WHERE id = 1', "Bad\xFF<label>");
+        DB::query('UPDATE renewal_nested_tree SET title = %s WHERE id = 11', "Bad\xFF<folder>");
+        foreach ([1, 0] as $column) {
+            $result = runTable(newRequest(), ['order' => [['column' => $column, 'dir' => 'asc']]]);
+            self::assertStringContainsString('Bad�&lt;label&gt;</a>', $result['data'][0][0]);
+            self::assertSame('Bad�&lt;folder&gt;', $result['data'][0][2]);
         }
     }
 
