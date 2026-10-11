@@ -25,6 +25,13 @@ assert.ok(!renderer.includes('<?php'))
 const encoder = source.slice(source.indexOf('    function escapeHtml('), source.indexOf('</script>'))
 const loader = section('loadOperationalStatistics(', 'renderOperationalStatistics(')
   .replace(/<\?php[\s\S]*?\?>/g, 'inert-test-value')
+const loadError = 'Load failed: R&D, O\'Brien, "<img onerror=alert(1)>"'
+const errorRenderer = section('tpOpsShowLoadError(', 'loadOperationalStatistics(').replace(
+  /<\?php echo json_encode\(\$lang->get\('ops_stats_load_error'\), JSON_HEX_TAG \| JSON_HEX_AMP \| JSON_HEX_APOS \| JSON_HEX_QUOT\); \?>/g,
+  () => JSON.stringify(loadError)
+)
+assert.ok(!errorRenderer.includes('<?php'))
+const loadingTables = { '#tp-roles-top-body': 5, '#tp-users-ranking-body': 3, '#tp-items-topcopied-body': 6, '#tp-lapr-endpoints-body': 5 }
 const fields = {
   totals: ['created', 'revealed', 'reveal_failed', 'senders', 'sends_revealed', 'revoked', 'invalidated', 'expired'],
   creations: ['items', 'notes', 'unknown', 'protected', 'unprotected', 'public_links', 'internal_links']
@@ -41,14 +48,14 @@ function harness() {
   const requests = []
   function element(selector) {
     if (!elements.has(selector)) {
-      const state = { selector, value: '', properties: {}, attributes: {} }
+      const state = { selector, value: '', properties: {}, attributes: {}, classes: new Set() }
       const adapter = {
         state,
         text(value) { if (value === undefined) return state.value; state.value = value; return adapter },
         html(value) { state.html = value; return adapter },
         prop(key, value) { state.properties[key] = value; return adapter },
         attr(key, value) { if (value === undefined) return state.attributes[key]; state.attributes[key] = value; return adapter },
-        addClass() { return adapter }, removeClass() { return adapter },
+        addClass(name) { state.classes.add(name); return adapter }, removeClass(name) { state.classes.delete(name); return adapter },
         val() { return '30d' }, is() { return true }
       }
       elements.set(selector, adapter)
@@ -77,7 +84,7 @@ function harness() {
     prepareExchangedData(value) { if (value === 'decode-failure') throw new Error('decode'); return value },
     toastr: { remove() {}, error() {} } }
   vm.createContext(context)
-  vm.runInContext(encoder + renderer + loader + section('tpOpsRerenderFromCache(', 'tpOpsEnsureLoadedOrRerender('), context)
+  vm.runInContext(encoder + renderer + errorRenderer + loader + section('tpOpsRerenderFromCache(', 'tpOpsEnsureLoadedOrRerender('), context)
   context.renderOperationalStatistics = data => context.renderSecureSendStatistics(data.users.secure_send)
   return { context, requests, node: selector => element(selector).state, render: (data, state) => context.renderSecureSendStatistics(data, state) }
 }
@@ -171,8 +178,10 @@ test('latest request wins; late success/failure cannot restore a previous period
   h.context.loadOperationalStatistics()
   const current = payload(); current.totals.created = 17
   h.requests[1].callback({ users: { secure_send: current } })
+  for (const selector of Object.keys(loadingTables)) h.node(selector).html = '<tr><td>current rows</td></tr>'
   h.requests[0].callback({ users: { secure_send: payload() } })
   h.requests[0].fail()
+  for (const selector of Object.keys(loadingTables)) assert.equal(h.node(selector).html, '<tr><td>current rows</td></tr>')
   assert.equal(h.node('totals.created').value, 17)
   assert.equal(h.context.tpOpsLastData.users.secure_send.totals.created, 17)
   assert.equal(h.node('#tp-ops-refresh').properties.disabled, false)
@@ -184,6 +193,7 @@ test('network, decoding and server failures clear cached activity even across ta
     h.context.loadOperationalStatistics()
     h.requests[0].callback({ users: { secure_send: payload() } })
     h.context.loadOperationalStatistics()
+    for (const selector of Object.keys(loadingTables)) assert.match(h.node(selector).html, /fa-spin/)
     if (failure === 'network') h.requests[1].fail()
     if (failure === 'decode') h.requests[1].callback('decode-failure')
     if (failure === 'server') h.requests[1].callback({ error: true })
@@ -193,5 +203,26 @@ test('network, decoding and server failures clear cached activity even across ta
     assert.equal(h.node('totals.created').value, '—')
     assert.match(h.node('#tp-secure-send-status').value, /ops_secure_send_unavailable/)
     assert.equal(h.node('#tp-ops-refresh').properties.disabled, false)
+    assert.equal(h.node('#tp-ops-refresh i').classes.has('fa-spin'), false)
+    for (const [selector, columns] of Object.entries(loadingTables)) {
+      const html = h.node(selector).html
+      assert.ok(!html.includes('fa-spin'))
+      assert.ok(!html.includes('<img'))
+      assert.ok(html.includes('Load failed: R&amp;D, O&#039;Brien, &quot;&lt;img onerror=alert(1)&gt;&quot;'))
+      assert.ok(html.includes("colspan='" + columns + "'"))
+    }
   }
+})
+
+test('a superseded failure cannot clear the newer request loading state', () => {
+  const h = harness()
+  h.context.loadOperationalStatistics()
+  h.context.loadOperationalStatistics()
+  h.requests[0].callback('decode-failure')
+  h.requests[0].callback({ error: true })
+  h.requests[0].fail()
+  for (const selector of Object.keys(loadingTables)) assert.match(h.node(selector).html, /fa-spin/)
+  assert.equal(h.node('#tp-ops-refresh').properties.disabled, true)
+  assert.equal(h.node('#tp-ops-refresh i').classes.has('fa-spin'), true)
+  assert.match(h.node('#tp-secure-send-status').value, /ops_secure_send_loading/)
 })

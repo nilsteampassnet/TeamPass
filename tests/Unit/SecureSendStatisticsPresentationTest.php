@@ -91,6 +91,28 @@ class SecureSendStatisticsPresentationTest extends TestCase
         self::assertStringContainsString('&lt;img src=x onerror=&quot;alert(1)&quot;&gt; &amp;', $html);
     }
 
+    public function testLoadErrorTranslationCannotCloseTheScript(): void
+    {
+        $javascript = $this->source('app/pages/statistics.js.php');
+        $start = strpos($javascript, 'function tpOpsShowLoadError(');
+        self::assertIsInt($start);
+        $end = strpos($javascript, 'function loadOperationalStatistics(', $start);
+        self::assertIsInt($end);
+        $template = substr($javascript, $start, $end - $start);
+        $hostile = "</script><img title=\"x\"> R&D O'Brien \\ newline\n中文";
+        foreach (['english', 'french'] as $language) {
+            $messages = include __DIR__ . '/../../app/includes/language/' . $language . '.php';
+            $this->render($template, $messages);
+            $rendered = $this->render($template, $messages, $hostile);
+            $pattern = <<<'REGEX'
+/var message = ("(?:[^"\\]|\\.)*");/
+REGEX;
+            self::assertSame(1, preg_match($pattern, $rendered, $match));
+            self::assertSame($hostile, json_decode($match[1], true, 512, JSON_THROW_ON_ERROR));
+            self::assertStringNotContainsString('</script', strtolower($rendered));
+        }
+    }
+
     public function testJavascriptTranslationsRoundTripAndCannotCloseTheScript(): void
     {
         $javascript = $this->source('app/pages/statistics.js.php');

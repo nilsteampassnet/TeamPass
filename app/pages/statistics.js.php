@@ -214,6 +214,19 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         document.head.appendChild(s);
     }
 
+    function tpOpsShowLoadError() {
+        var message = <?php echo json_encode($lang->get('ops_stats_load_error'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+        $.each([
+            ['#tp-roles-top-body', 5],
+            ['#tp-users-ranking-body', 3],
+            ['#tp-items-topcopied-body', 6],
+            ['#tp-lapr-endpoints-body', 5]
+        ], function(index, table) {
+            $(table[0]).html("<tr><td colspan='" + table[1] + "' class='text-center text-muted'>" + escapeHtml(message) + '</td></tr>');
+        });
+        renderSecureSendStatistics(null);
+    }
+
     function loadOperationalStatistics() {
         var requestId = ++tpOpsRequestId;
         // A failed/new period must not be repainted from the previous payload on tab changes.
@@ -248,7 +261,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 try {
                     data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
                 } catch (e) {
-                    renderSecureSendStatistics(null);
+                    tpOpsShowLoadError();
                     toastr.remove();
                     toastr.error("<?php echo addslashes($lang->get('ops_stats_load_error')); ?>");
                     $('#tp-ops-refresh').prop('disabled', false);
@@ -257,7 +270,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 }
 
                 if (!data || data.error === true) {
-                    renderSecureSendStatistics(null);
+                    tpOpsShowLoadError();
                     toastr.remove();
                     toastr.error(data && data.message ? data.message : "<?php echo addslashes($lang->get('ops_stats_db_error')); ?>");
                     $('#tp-ops-refresh').prop('disabled', false);
@@ -274,7 +287,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             }
         ).fail(function() {
             if (requestId !== tpOpsRequestId) { return; }
-            renderSecureSendStatistics(null);
+            tpOpsShowLoadError();
             toastr.remove();
             toastr.error("<?php echo addslashes($lang->get('ops_stats_load_error')); ?>");
             $('#tp-ops-refresh').prop('disabled', false);
