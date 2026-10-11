@@ -3931,5 +3931,17 @@ return array(
     'profile_api_connections_tip' => 'Each script, browser extension or mobile app that signed in with your account appears here. Revoke a line to cut its access immediately.',
     'profile_api_connections_none' => 'No open connection.',
     'profile_technical_details' => 'Technical details',
+    'objects_remaining' => 'Objects Remaining',
+    'otp_status' => 'OTP status',
+    'error_not_allowed' => 'You are not allowed to do that!',
+    'error_occurred' => 'An error occurred',
+    'error_user_not_exists' => 'User does not exist',
+    'oauth2_user_created_automatically' => 'Your account has been created automatically.',
+    'admin_logs_cleaned_success' => 'Log entries older than 90 days have been deleted.',
+    'admin_encryption_key_not_found' => 'The encryption key file could not be read.',
+    'admin_encryption_test_failed' => 'Encryption test failed: the decrypted value does not match the original one.',
+    'admin_encryption_test_success' => 'Encryption test passed.',
+    'admin_export_metric' => 'Metric',
+    'admin_export_value' => 'Value',
 
 );
