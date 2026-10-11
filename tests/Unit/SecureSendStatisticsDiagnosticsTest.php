@@ -45,6 +45,8 @@ class SecureSendStatisticsDiagnosticsTest extends TestCase
             'missing migration' => ["Table 'fixture_secure_send_audit' doesn't exist", true],
             'unknown column' => ["Unknown column 'a.event' in 'field list'", true],
             'connection lost' => ["MySQL server has gone away\nsecond line", true],
+            'localized path and controls' => ["Échec de connexion /srv/mysql/data\r\n\tsecond line", true],
+            'invalid UTF-8' => ["Échec /srv/mysql/\xB1\nsecond line", true],
             'unrelated failure' => ['secret-canary', false],
         ];
     }
@@ -86,7 +88,8 @@ class SecureSendStatisticsDiagnosticsTest extends TestCase
             self::assertStringNotContainsString('secret-canary', $contents);
             self::assertStringNotContainsString('SELECT', $contents);
             if ($databaseError) {
-                self::assertStringContainsString('MeekroDBException): ' . json_encode($message), $contents);
+                self::assertStringContainsString('MeekroDBException): '
+                    . json_encode($message, JSON_INVALID_UTF8_SUBSTITUTE | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), $contents);
                 self::assertSame(1, substr_count($contents, "\n"));
             } else {
                 self::assertStringContainsString('(RuntimeException)', $contents);
