@@ -84,7 +84,10 @@ class SecureSendRetentionSettingsTest extends TestCase
         $source = str_replace("\r\n", "\n", (string) file_get_contents(__DIR__ . '/../../app/sources/main.functions.php'));
         foreach (['teampassDecodeJsonPayload', 'prepareExchangedData'] as $function) {
             $start = strpos($source, 'function ' . $function . '(');
-            $end = strpos($source, "\n}", $start) + 2;
+            self::assertIsInt($start, 'Missing function ' . $function . '( in app/sources/main.functions.php');
+            $closingBrace = strpos($source, "\n}", $start);
+            self::assertIsInt($closingBrace, 'Missing closing brace for ' . $function . ' in app/sources/main.functions.php');
+            $end = $closingBrace + 2;
             eval('namespace ' . __NAMESPACE__ . '; use TeampassClasses\\Encryption\\Encryption;' . substr($source, $start, $end - $start));
         }
     }
@@ -93,7 +96,10 @@ class SecureSendRetentionSettingsTest extends TestCase
     {
         $source = (string) file_get_contents(__DIR__ . '/../../app/sources/admin.queries.php');
         $start = strpos($source, "case 'save_option_change':");
+        self::assertIsInt($start, "Missing case 'save_option_change': in app/sources/admin.queries.php");
         $end = strpos($source, "case 'get_values_for_statistics':", $start);
+        self::assertIsInt($end, "Missing case 'get_values_for_statistics': in app/sources/admin.queries.php");
+        self::assertGreaterThan($start, $end, "case 'get_values_for_statistics': must follow save_option_change in app/sources/admin.queries.php");
         $handler = substr($source, $start, $end - $start);
         $handler = str_replace(["require_once 'main.functions.php';", "require_once __DIR__ . '/secure_send_retention.php';"], '', $handler);
         SessionManager::$encrypted = $encrypted;

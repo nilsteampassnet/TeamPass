@@ -56,15 +56,20 @@ class SecureSendRetentionMigrationTest extends TestCase
         if (!function_exists(__NAMESPACE__ . '\\checkIndexExist')) {
             $functions = str_replace("\r\n", "\n", (string) file_get_contents(__DIR__ . '/../../public/install/tp.functions.php'));
             $start = strpos($functions, 'function checkIndexExist(');
-            $end = strpos($functions, "\n}", $start) + 2;
+            self::assertIsInt($start, 'Missing function checkIndexExist( in public/install/tp.functions.php');
+            $closingBrace = strpos($functions, "\n}", $start);
+            self::assertIsInt($closingBrace, 'Missing closing brace for checkIndexExist in public/install/tp.functions.php');
+            $end = $closingBrace + 2;
             eval('namespace ' . __NAMESPACE__ . ';' . substr($functions, $start, $end - $start));
         }
         $source = (string) file_get_contents(__DIR__ . '/../../public/install/upgrade_run_3.2.3.php');
         $start = strpos($source, '// Secure Send retention migration:');
+        self::assertIsInt($start, 'Missing // Secure Send retention migration: in public/install/upgrade_run_3.2.3.php');
         $end = strpos($source, '// End Secure Send retention migration.', $start);
-        self::assertIsInt($start);
-        self::assertIsInt($end);
-        self::assertLessThan(strpos($source, '// Save upgrade timestamp'), $end);
+        self::assertIsInt($end, 'Missing // End Secure Send retention migration. in public/install/upgrade_run_3.2.3.php');
+        $timestampMarker = strpos($source, '// Save upgrade timestamp');
+        self::assertIsInt($timestampMarker, 'Missing // Save upgrade timestamp in public/install/upgrade_run_3.2.3.php');
+        self::assertLessThan($timestampMarker, $end);
         $migration = substr($source, $start, $end - $start);
         $previous = $GLOBALS['db_link'] ?? null;
         $db_link = new \SQLite3(':memory:');

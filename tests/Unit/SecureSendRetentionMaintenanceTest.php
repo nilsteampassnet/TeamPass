@@ -57,9 +57,9 @@ class SecureSendRetentionMaintenanceTest extends TestCase
         require_once __DIR__ . '/../../app/vendor/sergeytsalkov/meekrodb/db.class.php';
         $source = (string) file_get_contents(__DIR__ . '/../../app/scripts/task_maintenance_clean_orphan_objects.php');
         $start = strpos($source, '$prunedSecureSendEvents = 0;');
+        self::assertIsInt($start, 'Missing $prunedSecureSendEvents = 0; in app/scripts/task_maintenance_clean_orphan_objects.php');
         $end = strpos($source, '/**', $start);
-        self::assertIsInt($start);
-        self::assertIsInt($end);
+        self::assertIsInt($end, 'Missing closing /** in app/scripts/task_maintenance_clean_orphan_objects.php');
         $previousLog = (string) ini_get('error_log');
         $log = tempnam(sys_get_temp_dir(), 'tp-retention-reasons-');
         ini_set('error_log', $log);
@@ -115,9 +115,9 @@ class SecureSendRetentionMaintenanceTest extends TestCase
     {
         $source = (string) file_get_contents(__DIR__ . '/../../app/scripts/task_maintenance_clean_orphan_objects.php');
         $start = strpos($source, '$prunedSecureSendEvents = 0;');
+        self::assertIsInt($start, 'Missing $prunedSecureSendEvents = 0; in app/scripts/task_maintenance_clean_orphan_objects.php');
         $end = strpos($source, '/**', $start);
-        self::assertIsInt($start);
-        self::assertIsInt($end);
+        self::assertIsInt($end, 'Missing closing /** in app/scripts/task_maintenance_clean_orphan_objects.php');
         self::assertStringContainsString("require_once __DIR__.'/../sources/secure_send_retention.php';", $source);
         self::assertLessThan($start, strpos($source, '$prunedIdempotencyRecords = pruneApiIdempotencyRecords();'));
         $previousLog = (string) ini_get('error_log');

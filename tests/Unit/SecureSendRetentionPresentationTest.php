@@ -37,9 +37,9 @@ class SecureSendRetentionPresentationTest extends TestCase
         $SETTINGS = $settings;
         $source = (string) file_get_contents(__DIR__ . '/../../app/pages/options.php');
         $start = strpos($source, '<!-- Secure Send audit retention -->');
+        self::assertIsInt($start, 'Missing <!-- Secure Send audit retention --> in app/pages/options.php');
         $end = strpos($source, '<!-- End Secure Send audit retention -->', $start);
-        self::assertIsInt($start);
-        self::assertIsInt($end);
+        self::assertIsInt($end, 'Missing <!-- End Secure Send audit retention --> in app/pages/options.php');
         ob_start();
         try {
             // Only repository-owned PHP is evaluated; test values remain variables.
