@@ -148,6 +148,11 @@ invalid or greater-than-90-day ranges. Summary and ranking are two read queries,
 so newly committed events can change the database between those reads; no
 transactional snapshot across the entire dashboard is claimed.
 
+Query failures expose no diagnostic in the response. Server logs include the
+MeekroDB exception message (control characters JSON-escaped), not its separately
+stored SQL query. These reads bind only integer timestamps and account IDs.
+Other exception messages remain omitted because they have no such safe contract.
+
 The complete sender population is grouped in SQL before the top-five limit.
 Ties sort by latest creation, then original sender id. User identity is LEFT JOINed
 after aggregation; disabled, soft-deleted, purged accounts and missing source
