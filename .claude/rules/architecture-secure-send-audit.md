@@ -235,8 +235,10 @@ types and remains active when Secure Send itself is disabled.
 
 Deletion and its `log_system` summary share one transaction; both tables must be
 InnoDB or retention refuses to run. A database/summary/commit error rolls back
-the whole batch. The maintenance task reports an error, without logging SQL,
-exception messages or secrets, and other completed maintenance remains intact.
+the whole batch. The maintenance task reports an error without logging SQL or
+secrets, and other completed maintenance remains intact. Known retention refusals
+use fixed, data-free reasons. MeekroDB messages are JSON-encoded on one line;
+its separate SQL query is never logged. Other exceptions retain the class only.
 An empty batch writes no summary. In **Utilities / Logs / Administration**, the
 `secure_send_audit_retention_purge` action is attributed to the TeamPass system
 account. Its JSON details contain only `retention_days`, `cutoff`, actual

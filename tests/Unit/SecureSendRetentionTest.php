@@ -84,7 +84,8 @@ class SecureSendRetentionTest extends TestCase
                 try {
                     secureSendPruneAuditHistory(['secure_send_audit_retention_days' => $invalid], 200000);
                     self::fail('Malformed policy caused a purge');
-                } catch (InvalidArgumentException $e) {
+                } catch (SecureSendRetentionRefusal $e) {
+                    self::assertStringContainsString('Invalid stored Secure Send audit retention policy', $e->getMessage());
                     self::assertSame([], DB::$queries);
                 }
             }
@@ -160,7 +161,8 @@ class SecureSendRetentionTest extends TestCase
             try {
                 secureSendPruneAuditHistory(['secure_send_audit_retention_days' => 1], 200000);
                 self::fail('Unsafe tables accepted');
-            } catch (RuntimeException $e) {
+            } catch (SecureSendRetentionRefusal $e) {
+                self::assertStringContainsString('both audit and system log tables to exist and use InnoDB', $e->getMessage());
                 self::assertSame(1, $this->rowCount('secure_send_audit'));
                 self::assertSame(0, $this->rowCount('log_system'));
                 self::assertFalse(DB::$inTransaction);

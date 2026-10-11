@@ -21,10 +21,13 @@ namespace TeamPass\Tests\SecureSendRetentionMaintenance;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
+require_once __DIR__ . '/../../app/sources/secure_send_retention.php';
+
 /** Isolate task orchestration from separately tested database transactions. */
 class MaintenanceProbe
 {
     public static bool $fail = false;
+    public static ?\Throwable $failure = null;
     public static int $deleted = 0;
     public static array $statuses = [];
 }
@@ -32,6 +35,9 @@ class MaintenanceProbe
 /** Simulate either a committed batch or a rolled-back failure. */
 function secureSendPruneAuditHistory(array $settings): int
 {
+    if (MaintenanceProbe::$failure !== null) {
+        throw MaintenanceProbe::$failure;
+    }
     if (MaintenanceProbe::$fail) {
         throw new RuntimeException('Synthetic storage failure: secret-canary');
     }
@@ -46,6 +52,65 @@ function doLog(string $status, string $job, int $enabled, int $id): void
 
 class SecureSendRetentionMaintenanceTest extends TestCase
 {
+    public function testTaskLogsOnlyKnownRefusalsAndSingleLineDatabaseDiagnostics(): void
+    {
+        require_once __DIR__ . '/../../app/vendor/sergeytsalkov/meekrodb/db.class.php';
+        $source = (string) file_get_contents(__DIR__ . '/../../app/scripts/task_maintenance_clean_orphan_objects.php');
+        $start = strpos($source, '$prunedSecureSendEvents = 0;');
+        $end = strpos($source, '/**', $start);
+        self::assertIsInt($start);
+        self::assertIsInt($end);
+        $previousLog = (string) ini_get('error_log');
+        $log = tempnam(sys_get_temp_dir(), 'tp-retention-reasons-');
+        ini_set('error_log', $log);
+        $messages = ["Table 'fixture_secure_send_audit' doesn't exist", 'Unknown column occurred_at',
+            "Échec de connexion /srv/mysql/data\r\n\tsecond line", "Invalid UTF-8 /srv/mysql/\xB1\nsecond line"];
+        $failures = [new \SecureSendRetentionRefusal('invalid_policy'), new \SecureSendRetentionRefusal('unsafe_tables')];
+        foreach ($messages as $message) {
+            $failures[] = new \MeekroDBException($message, 'DELETE secret-canary FROM private_table', 1146);
+        }
+        $failures[] = new RuntimeException('Synthetic storage failure: secret-canary');
+        $failures[] = new \InvalidArgumentException('Invalid policy: secret-canary');
+        try {
+            foreach ($failures as $failure) {
+                $before = strlen((string) file_get_contents($log));
+                MaintenanceProbe::$failure = $failure;
+                MaintenanceProbe::$statuses = [];
+                $SETTINGS = [];
+                $integritySummary = ['count' => 2];
+                $prunedRevisions = 3;
+                $prunedIdempotencyRecords = 4;
+                $logID = 12;
+                ob_start();
+                try {
+                    eval('namespace ' . __NAMESPACE__ . '; use Throwable;' . substr($source, $start, $end - $start));
+                    $output = (string) ob_get_contents();
+                } finally {
+                    ob_end_clean();
+                }
+                $diagnostic = substr((string) file_get_contents($log), $before);
+                self::assertSame([['error', '', 1, 12]], MaintenanceProbe::$statuses);
+                self::assertStringContainsString('0 Secure Send audit event(s) pruned.', $output);
+                self::assertStringNotContainsString($failure->getMessage(), $output);
+                self::assertStringNotContainsString('secret-canary', $output . $diagnostic);
+                self::assertStringNotContainsString('DELETE', $diagnostic);
+                self::assertSame(1, substr_count($diagnostic, "\n"));
+                if ($failure instanceof \SecureSendRetentionRefusal) {
+                    self::assertStringContainsString($failure->getMessage(), $diagnostic);
+                } elseif ($failure instanceof \MeekroDBException) {
+                    self::assertStringContainsString('MeekroDBException): '
+                        . json_encode($failure->getMessage(), JSON_INVALID_UTF8_SUBSTITUTE | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), $diagnostic);
+                } else {
+                    self::assertStringContainsString('(' . get_class($failure) . ')', $diagnostic);
+                }
+            }
+        } finally {
+            MaintenanceProbe::$failure = null;
+            ini_set('error_log', $previousLog);
+            unlink($log);
+        }
+    }
+
     public function testTaskReportsCommittedCountsAndFailuresWithoutSecrets(): void
     {
         $source = (string) file_get_contents(__DIR__ . '/../../app/scripts/task_maintenance_clean_orphan_objects.php');

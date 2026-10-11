@@ -16,6 +16,39 @@ declare(strict_types=1);
  * @license GPL-3.0
  */
 
+/** A retention refusal whose message comes only from fixed, data-free reasons. */
+final class SecureSendRetentionRefusal extends RuntimeException
+{
+    /** Construct a safe operator diagnostic without accepting arbitrary error text. */
+    public function __construct(string $reason)
+    {
+        parent::__construct(match ($reason) {
+            'invalid_policy' => 'Invalid stored Secure Send audit retention policy (expected 0-36500 whole days)',
+            'invalid_time' => 'Invalid Secure Send retention observation time',
+            'unsafe_tables' => 'Secure Send retention requires both audit and system log tables to exist and use InnoDB',
+            default => throw new InvalidArgumentException('Unknown Secure Send retention refusal'),
+        });
+    }
+}
+
+/**
+ * Format a server-only failure without SQL or arbitrary exception messages.
+ *
+ * Retention SQL binds only integer cutoffs and fixed table/engine names. MeekroDB
+ * keeps SQL in getQuery(), separate from its message. JSON encoding keeps that
+ * diagnostic on one line, including control characters and invalid UTF-8.
+ */
+function secureSendRetentionFailureDiagnostic(Throwable $error): string
+{
+    $diagnostic = '';
+    if ($error instanceof SecureSendRetentionRefusal) {
+        $diagnostic = ': ' . $error->getMessage();
+    } elseif ($error instanceof MeekroDBException) {
+        $diagnostic = ': ' . json_encode($error->getMessage(), JSON_INVALID_UTF8_SUBSTITUTE | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+    return 'TEAMPASS Secure Send retention failed (' . get_class($error) . ')' . $diagnostic;
+}
+
 /**
  * Validate the administrator policy without coercing malformed values to a purge.
  *
@@ -51,10 +84,14 @@ function secureSendAuditRetentionDays(mixed $value): int
  */
 function secureSendPruneAuditHistory(array $settings, ?int $now = null): int
 {
-    $days = secureSendAuditRetentionDays($settings['secure_send_audit_retention_days'] ?? 0);
+    try {
+        $days = secureSendAuditRetentionDays($settings['secure_send_audit_retention_days'] ?? 0);
+    } catch (InvalidArgumentException $e) {
+        throw new SecureSendRetentionRefusal('invalid_policy');
+    }
     $now = $now ?? time();
     if ($now < 0) {
-        throw new InvalidArgumentException('Invalid Secure Send retention time');
+        throw new SecureSendRetentionRefusal('invalid_time');
     }
     $cutoff = max(0, $now - $days * 86400);
     if ($days === 0 || $cutoff === 0) {
@@ -70,7 +107,7 @@ function secureSendPruneAuditHistory(array $settings, ?int $now = null): int
         'InnoDB'
     );
     if ($transactionalTables !== 2) {
-        throw new RuntimeException('Secure Send retention requires transactional audit tables');
+        throw new SecureSendRetentionRefusal('unsafe_tables');
     }
 
     DB::startTransaction();

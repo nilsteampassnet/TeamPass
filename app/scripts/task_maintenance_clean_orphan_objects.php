@@ -73,7 +73,7 @@ try {
     $prunedSecureSendEvents = secureSendPruneAuditHistory($SETTINGS);
 } catch (Throwable $e) {
     $secureSendRetentionFailed = true;
-    error_log('TEAMPASS Secure Send retention failed (' . get_class($e) . ')');
+    error_log(secureSendRetentionFailureDiagnostic($e));
 }
 
 // log end
