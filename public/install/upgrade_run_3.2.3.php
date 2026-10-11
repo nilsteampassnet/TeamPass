@@ -224,6 +224,24 @@ mysqli_query(
     "UPDATE `" . $pre . "users` SET `last_pw` = '' WHERE `last_pw` IS NOT NULL AND `last_pw` <> ''"
 );
 
+// Secure Send retention migration: preserve an existing administrator policy.
+// CREATE IF NOT EXISTS above cannot add an index to an already deployed journal.
+if (checkIndexExist(
+    prefixTable('secure_send_audit'),
+    'idx_retention_period',
+    'ADD INDEX `idx_retention_period` (`occurred_at`, `id`)'
+) === false || mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`)
+     VALUES ('admin', 'secure_send_audit_retention_days', '0')"
+) === false) {
+    echo json_encode([['finish' => '1', 'error' => 'Error installing Secure Send audit retention']]);
+    mysqli_close($db_link);
+    exit();
+}
+ConfigManager::invalidateCache();
+// End Secure Send retention migration.
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,

@@ -646,6 +646,7 @@ class DatabaseInstaller
             array('admin', 'otv_is_enabled', '0'),
             array('admin', 'secure_send_allow_notes', '0'),
             array('admin', 'secure_send_max_views', '5'),
+            array('admin', 'secure_send_audit_retention_days', '0'),
             array('admin', 'secure_send_require_passphrase', '0'),
             array('admin', 'secure_send_show_sender_name', '1'),
             array('admin', 'agses_authentication_enabled', '0'),

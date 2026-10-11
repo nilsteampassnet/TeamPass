@@ -1043,11 +1043,13 @@ atomic audit writes. Expired historical rows with invalid link/sender identifier
 are retained for investigation, diagnosed without their contents and excluded
 before the cleanup batch limit; they cannot prevent valid rows from being cleaned.
 
-There is no automatic audit retention: plan capacity, protect database and backup
-access, and define the organisation's retention and archiving policy. SQL access
-can still alter evidence; a protected external collector is a separate control.
-Before relying on this evidence for a regulated workflow, assess these limits
-and the surrounding controls.
+All audit events are kept by default. Administrator-configured retention can
+remove old events through scheduled maintenance (see below). Plan capacity,
+protect database and backup access, and define the organisation's retention and
+archiving policy. SQL access can still alter evidence; a protected external
+collector is a separate control.
+Before relying on this evidence
+for a regulated workflow, assess these limits and the surrounding controls.
 
 Secure Send is enabled globally. Current item access is rechecked, but
 organisations that require a separate role allowlist for issuing links should
@@ -1065,15 +1067,48 @@ Only the period filter applies: Personal/API toggles do not filter this journal.
 Personal-item/API provenance is not captured and cannot be reliably reconstructed
 from current items. Coverage starts after the audit migration, with no
 reconstructed earlier activity. Deleting a link/account or disabling Secure Send
-does not erase recorded history. An unavailable journal is reported as
-unavailable, not as zero usage.
+does not erase recorded history. Configured audit retention can remove old events
+and make the selected period incomplete; increasing it does not restore history.
+An unavailable journal is reported as unavailable, not as zero usage.
 
 These are event counts, not the later lifecycle of links created in the period.
 A server-side reveal does not identify the recipient or prove the content was
 received, read or copied. Failed attempts against a sender's links do not alone
 prove sender abuse. The card does not impose quotas, block users, export raw logs
-or add a Reports consumer or audit-purge interface; review unusual activity in
+or add a Reports consumer or manual audit-purge interface; review unusual activity in
 its operational context.
+
+### Audit retention
+
+From Teampass 3.2.3.0, after completing the upgrade, administrators can set **Secure Send audit
+retention (days)** in **Options → Collaboration → Secure sharing**. The default
+`0` keeps all events; whole numbers from `1` to `36500` opt into deletion. Invalid
+values are rejected. Changing the setting does not purge immediately.
+
+Schedule the existing orphan-object maintenance task (`clean_orphan_objects_task`)
+and ensure the scheduler runs. Its `task_maintenance_clean_orphan_objects.php`
+script removes at most 1000 events per invocation, oldest first, strictly older
+than the chosen number of elapsed 24-hour days. The cutoff uses event observation
+time, not link creation/expiry; events exactly at the cutoff are retained.
+Backlogs drain over successive runs. Retention still runs if Secure Send is
+disabled, so disable the retention policy separately if all evidence must remain.
+
+Each committed batch leaves a summary in **Utilities → Logs → Administration**:
+retention days, cutoff, actual deleted count and batch limit, attributed to the
+TeamPass system account. The Administration target column displays a localized
+sentence with the cutoff in the instance date/time format; unrecognized summaries
+remain visible as stored. Both journals must use InnoDB; deletion and summary
+commit together or the batch rolls back and maintenance reports an error.
+Nontransactional tables are not silently converted. Optional syslog forwards the
+summary after commit, on a best-effort basis. Empty batches create no summary.
+
+Deletion is permanent: increasing retention cannot recover history. Statistics
+count retained events only, so shorter retention can make a reporting period
+incomplete. Select a duration covering your investigation/reporting needs and
+check that batch size and schedule can keep up with activity. Database backups,
+general system logs (including purge summaries) and external collectors have
+independent retention policies; this task does not erase their copies, preserve
+summaries forever or implement legal holds or tamper-proof evidence.
 
 ---
 
@@ -1159,6 +1194,9 @@ that format.
 - [ ] A fictitious external end-to-end test succeeded.
 - [ ] Revocation, expiration and automatic deletion were tested.
 - [ ] Upgrade regression testing and periodic active-link review are scheduled.
+- [ ] Audit retention is explicitly chosen (0 keeps all), the orphan-object
+      maintenance schedule is verified if enabled, and reporting/backup/collector
+      retention windows are aligned with organisational requirements.
 
 ---
 
