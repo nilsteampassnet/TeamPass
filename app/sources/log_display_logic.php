@@ -112,6 +112,41 @@ function formatAdminLogLabel(string $label, Language $lang): string
 }
 
 /**
+ * Describe a retention batch without changing its stored, metadata-only summary.
+ *
+ * Invalid or historical summaries stay visible as stored. The caller must apply
+ * the usual log display escaping to both the formatted text and the fallback.
+ *
+ * @param string $details Stored field_1 JSON
+ * @param Language $lang Administrator's language
+ * @param array $settings Instance date and time formats
+ * @return string Localized summary, or the original value when not recognized
+ */
+function formatSecureSendRetentionSummary(string $details, Language $lang, array $settings): string
+{
+    $summary = json_decode($details, true);
+    if (!is_array($summary)) {
+        return $details;
+    }
+    foreach (['retention_days', 'cutoff', 'deleted_count', 'batch_limit'] as $field) {
+        if (!isset($summary[$field]) || !is_int($summary[$field])) {
+            return $details;
+        }
+    }
+    if ($summary['retention_days'] < 1 || $summary['retention_days'] > 36500
+        || $summary['cutoff'] < 0 || $summary['batch_limit'] < 1 || $summary['batch_limit'] > 1000
+        || $summary['deleted_count'] < 1 || $summary['deleted_count'] > $summary['batch_limit']) {
+        return $details;
+    }
+    return strtr((string) $lang->get('secure_send_audit_retention_summary'), [
+        '{deleted_count}' => (string) $summary['deleted_count'],
+        '{retention_days}' => (string) $summary['retention_days'],
+        '{cutoff}' => date(($settings['date_format'] ?? 'Y-m-d') . ' ' . ($settings['time_format'] ?? 'H:i:s'), $summary['cutoff']),
+        '{batch_limit}' => (string) $summary['batch_limit'],
+    ]);
+}
+
+/**
  * Resolve a knowledge-base log row's display fields without database access.
  * The handler normalizes these fields before sending them to the text renderer.
  *

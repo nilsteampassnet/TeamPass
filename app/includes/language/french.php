@@ -2307,6 +2307,7 @@ return array(
     'secure_send_audit_retention_hint' => '0 conserve tous les événements. Sinon, conservation de 1 à 36500 jours. Les purges nécessitent la planification de la maintenance des objets orphelins, par lots de 1000 maximum.',
     'secure_send_audit_retention_warning' => 'La suppression est définitive et peut rendre les statistiques incomplètes. Augmenter la durée ne restaure pas l’historique. Les sauvegardes et journaux externes ont leur propre rétention.',
     'secure_send_audit_retention_purge' => 'Purge de rétention de l’audit des envois sécurisés',
+    'secure_send_audit_retention_summary' => '{deleted_count} événements d’audit supprimés avant le {cutoff} ; conservation : {retention_days} jours ; limite du lot : {batch_limit}.',
     'secure_send_require_passphrase' => 'Imposer une phrase secrète sur chaque lien d’envoi sécurisé',
     'generate' => 'Générer',
     'secure_send_passphrase' => 'Phrase secrète (optionnelle)',

@@ -870,6 +870,7 @@ return array(
     'secure_send_audit_retention_hint' => '0 keeps all events. Otherwise, keep events for 1–36500 days. Purges run only when the orphan-object maintenance task is scheduled, in batches of up to 1000.',
     'secure_send_audit_retention_warning' => 'Deletion is permanent and can make statistics incomplete. Increasing retention does not restore history. Backups and external logs have separate retention.',
     'secure_send_audit_retention_purge' => 'Secure Send audit retention purge',
+    'secure_send_audit_retention_summary' => '{deleted_count} audit events deleted before {cutoff}; retention: {retention_days} days; batch limit: {batch_limit}.',
     'secure_send_require_passphrase' => 'Force a passphrase on every Secure Send link',
     'secure_send_show_sender_name' => 'Show the sender’s profile name to Secure Send recipients',
     'secure_send_show_sender_name_tip' => 'The name is visible before the passphrase is entered. Existing instances must opt in after upgrading.',

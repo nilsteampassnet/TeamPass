@@ -438,7 +438,11 @@ if (isset($params['action']) && $params['action'] === 'logs') {
                 // text there (a backup file name, a recipient address), and resolving those as an
                 // id labelled every one of them "Removed user (...)".
                 $targetId = filter_var($field1, FILTER_VALIDATE_INT);
-                if ($label === 'authentication_lockout_removed' || $targetId === false || $targetId <= 0) {
+                if ($label === 'secure_send_audit_retention_purge') {
+                    $target = normalizeLogDisplayValue(formatSecureSendRetentionSummary(
+                        (string) ($record['field_1'] ?? ''), $lang, $SETTINGS
+                    ));
+                } elseif ($label === 'authentication_lockout_removed' || $targetId === false || $targetId <= 0) {
                     $target = normalizeLogDisplayValue($field1);
                 } elseif (isset($targets[$targetId]) === true) {
                     $target = trim(

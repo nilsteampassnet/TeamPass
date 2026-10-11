@@ -1095,7 +1095,9 @@ disabled, so disable the retention policy separately if all evidence must remain
 
 Each committed batch leaves a summary in **Utilities → Logs → Administration**:
 retention days, cutoff, actual deleted count and batch limit, attributed to the
-TeamPass system account. Both journals must use InnoDB; deletion and summary
+TeamPass system account. The Administration target column displays a localized
+sentence with the cutoff in the instance date/time format; unrecognized summaries
+remain visible as stored. Both journals must use InnoDB; deletion and summary
 commit together or the batch rolls back and maintenance reports an error.
 Nontransactional tables are not silently converted. Optional syslog forwards the
 summary after commit, on a best-effort basis. Empty batches create no summary.
