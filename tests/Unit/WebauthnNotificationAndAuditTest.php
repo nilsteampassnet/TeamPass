@@ -58,6 +58,39 @@ final class WebauthnNotificationAndAuditTest extends TestCase
         $this->assertStringContainsString('htmlspecialchars(', $notifier);
     }
 
+    /**
+     * The API sets no default time zone: date() there gave the time of the server (13:02 UTC for a
+     * passkey saved at 15:02 in Paris), in an e-mail that asks "did you do this?".
+     */
+    public function testEmailGivesTheTimeOfTheRecipientNotOfTheServer(): void
+    {
+        require_once __DIR__ . '/../../app/sources/webauthn.functions.php';
+        $settings = ['timezone' => 'Europe/Paris', 'date_format' => 'd/m/Y', 'time_format' => 'H:i:s'];
+        $savedAt = 1791637342; // 2026-10-10 13:02:22 UTC
+
+        // No time zone chosen by the user: the one of the instance
+        foreach (['', 'not_defined', 'Not/AZone'] as $userTimezone) {
+            $this->assertSame(
+                ['date' => '10/10/2026', 'time' => '15:02:22'],
+                webauthnNotificationDateTime($settings, $userTimezone, $savedAt),
+                $userTimezone
+            );
+        }
+        // The user's own time zone wins, as on the web pages
+        $this->assertSame('09:02:22', webauthnNotificationDateTime($settings, 'America/New_York', $savedAt)['time']);
+        // Nothing usable: UTC, and the formats of the settings are still applied
+        $this->assertSame(
+            ['date' => '2026-10-10', 'time' => '13:02'],
+            webauthnNotificationDateTime(['timezone' => 'Not/AZone', 'date_format' => 'Y-m-d', 'time_format' => 'H:i'], '', $savedAt)
+        );
+        $this->assertSame(['date' => '10/10/2026', 'time' => '13:02:22'], webauthnNotificationDateTime([], '', $savedAt));
+
+        $model = (string) file_get_contents(__DIR__ . '/../../app/api/Model/WebauthnModel.php');
+        $notifier = $this->between($model, 'private function notifyCredentialAdded(', 'private function canEditItem(');
+        $this->assertStringContainsString("webauthnNotificationDateTime(\$SETTINGS, (string) (\$user['usertimezone'] ?? ''))", $notifier);
+        $this->assertDoesNotMatchRegularExpression('/=>\s*date\(/', $notifier);
+    }
+
     public function testEmailIsCustomizable(): void
     {
         $catalog = require __DIR__ . '/../../app/config/emails_templates.php';
