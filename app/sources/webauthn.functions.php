@@ -803,3 +803,39 @@ function webauthnReadBool(array $input, string $name): bool
 
     throw new InvalidArgumentException($name . ' must be a boolean.', 400);
 }
+
+/**
+ * Date and time written in a passkey notification e-mail, in the time zone of its recipient.
+ *
+ * The web pages get their default time zone from core.php; the API never sets one, so date()
+ * there answers in the PHP default zone, usually UTC. Same order as core.php: the time zone
+ * chosen by the user, else the one of the instance, else UTC.
+ *
+ * @param array<string, mixed> $settings     TeamPass settings (timezone, date_format, time_format)
+ * @param string               $userTimezone users.usertimezone of the recipient
+ * @param int|null             $timestamp    Moment to write, now when null
+ *
+ * @return array{date: string, time: string}
+ */
+function webauthnNotificationDateTime(array $settings, string $userTimezone, ?int $timestamp = null): array
+{
+    $timezone = new DateTimeZone('UTC');
+    foreach ([$userTimezone, (string) ($settings['timezone'] ?? '')] as $name) {
+        $name = trim($name);
+        if ($name === '' || $name === 'not_defined') {
+            continue;
+        }
+        try {
+            $timezone = new DateTimeZone($name);
+            break;
+        } catch (Throwable $e) {
+            // Unknown time zone name: try the next one
+        }
+    }
+    $moment = (new DateTimeImmutable('@' . ($timestamp ?? time())))->setTimezone($timezone);
+
+    return [
+        'date' => $moment->format((string) ($settings['date_format'] ?? 'd/m/Y')),
+        'time' => $moment->format((string) ($settings['time_format'] ?? 'H:i:s')),
+    ];
+}

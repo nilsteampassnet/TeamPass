@@ -552,12 +552,15 @@ class WebauthnModel
 
         try {
             $user = DB::queryFirstRow(
-                'SELECT email, name, lastname, user_language FROM ' . prefixTable('users') . ' WHERE id = %i',
+                'SELECT email, name, lastname, user_language, usertimezone FROM ' . prefixTable('users') . ' WHERE id = %i',
                 $userId
             );
             if ($user === null || filter_var((string) $user['email'], FILTER_VALIDATE_EMAIL) === false) {
                 return;
             }
+
+            // The API sets no default time zone: date() would give the server's, not the recipient's.
+            $when = webauthnNotificationDateTime($SETTINGS, (string) ($user['usertimezone'] ?? ''));
 
             // The recipient's language, never the one of the current request.
             $language = trim((string) ($user['user_language'] ?? ''));
@@ -585,8 +588,8 @@ class WebauthnModel
                     '#user_name#' => $escape($accountName !== '' ? $accountName : '—'),
                     '#item_label#' => $escape(html_entity_decode($itemLabel, ENT_QUOTES | ENT_HTML5, 'UTF-8')),
                     '#link#' => $escape(rtrim($baseUrl, '/') . '/index.php?page=items&group=' . $folderId . '&id=' . $itemId),
-                    '#tp_date#' => date((string) ($SETTINGS['date_format'] ?? 'd/m/Y')),
-                    '#tp_time#' => date((string) ($SETTINGS['time_format'] ?? 'H:i:s')),
+                    '#tp_date#' => $when['date'],
+                    '#tp_time#' => $when['time'],
                 ],
                 false,
                 '',
