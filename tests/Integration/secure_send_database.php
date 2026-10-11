@@ -40,6 +40,7 @@ require_once __DIR__ . '/../../app/sources/otp.functions.php';
 require_once __DIR__ . '/../Fixtures/secure_send_dependencies.php';
 require_once __DIR__ . '/../../app/sources/secure_send.functions.php';
 require_once __DIR__ . '/../../app/sources/secure_send_storage.php';
+require_once __DIR__ . '/../../app/sources/secure_send_statistics.php';
 
 $database = (string) getenv('TEAMPASS_TEST_DB');
 if (!preg_match('/^teampass_test_[a-z0-9_]+$/', $database)) {
@@ -123,7 +124,7 @@ try {
         failed_attempts INT NOT NULL DEFAULT 0, views INT NOT NULL DEFAULT 0, max_views INT NULL,
         time_limit VARCHAR(100) NULL, shared_globaly INT NOT NULL DEFAULT 0) ENGINE=InnoDB');
     DB::query('CREATE TABLE ' . prefixTable('users') . ' (
-        id INT PRIMARY KEY, name VARCHAR(255) NULL, lastname VARCHAR(255) NULL,
+        id INT PRIMARY KEY, login VARCHAR(255) NULL, name VARCHAR(255) NULL, lastname VARCHAR(255) NULL,
         admin INT DEFAULT 0, disabled INT DEFAULT 0, deleted_at INT NULL) ENGINE=InnoDB');
     DB::query('CREATE TABLE ' . prefixTable('send_audit') . ' (item_id INT, action VARCHAR(30)) ENGINE=InnoDB');
     DB::query('CREATE TABLE ' . prefixTable('items') . ' (
@@ -243,6 +244,9 @@ try {
     $link = DB::queryFirstRow('SELECT * FROM ' . prefixTable('otv') . ' WHERE id = %i', $created['otv_id']);
     // Fail the real SQL insert, preserving the journal in an isolated fixture table.
     DB::query('RENAME TABLE ' . prefixTable('secure_send_audit') . ' TO ' . prefixTable('secure_send_audit_unavailable'));
+    $statistics = secureSendBuildOperationalStatistics(100, 200, $settings, []);
+    check($statistics['available'] === false && $statistics['totals'] === null,
+        'Unavailable real audit SQL was reported as zero usage');
     check(secureSendRedeem($parameters, '', $settings) === ['error' => 'server_error'], 'Audit failure disclosed plaintext');
     check((int) DB::queryFirstField('SELECT views FROM ' . prefixTable('otv') . ' WHERE id = %i', $created['otv_id']) === 0, 'Audit failure consumed a view');
     try {
@@ -260,6 +264,8 @@ try {
     }
     DB::query('RENAME TABLE ' . prefixTable('secure_send_audit_unavailable') . ' TO ' . prefixTable('secure_send_audit'));
     echo "OK: real audit SQL failures roll back creation, reveal and revocation\n";
+    require_once __DIR__ . '/secure_send_statistics_database.php';
+    secureSendStatisticsDatabaseChecks($settings);
 } finally {
     foreach ($tables as $table) {
         DB::query('DROP TABLE IF EXISTS ' . prefixTable($table));
