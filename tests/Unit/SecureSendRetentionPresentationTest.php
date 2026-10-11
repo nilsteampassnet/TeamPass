@@ -68,7 +68,11 @@ class SecureSendRetentionPresentationTest extends TestCase
                 self::assertSame('secure_send_audit_retention_hint secure_send_audit_retention_warning', $input->getAttribute('aria-describedby'));
                 self::assertNotNull($document->getElementById('secure_send_audit_retention_hint'));
                 self::assertNotNull($document->getElementById('secure_send_audit_retention_warning'));
-                self::assertSame('secure_send_audit_retention_days', $document->getElementsByTagName('label')->item(0)->getAttribute('for'));
+                $label = $document->getElementsByTagName('label')->item(0);
+                self::assertSame('secure_send_audit_retention_days', $label->getAttribute('for'));
+                self::assertSame('font-weight-normal mb-0', $label->getAttribute('class'));
+                self::assertSame('col-10', $label->parentNode->getAttribute('class'));
+                self::assertSame('col-2', $input->parentNode->getAttribute('class'));
             }
         }
         $javascript = (string) file_get_contents(__DIR__ . '/../../app/pages/admin.js.php');
