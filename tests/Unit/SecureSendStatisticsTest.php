@@ -335,7 +335,10 @@ class SecureSendStatisticsTest extends TestCase
     {
         $source = (string) file_get_contents(__DIR__ . '/../../app/sources/admin.queries.php');
         $start = strpos($source, "case 'get_operational_statistics':");
+        self::assertNotFalse($start, 'The operational statistics case must exist before slicing it.');
         $end = strpos($source, "case 'save_sending_statistics':", $start);
+        self::assertNotFalse($end, 'The following admin case must exist before slicing the statistics case.');
+        self::assertGreaterThan($start, $end, 'The statistics case boundaries must be ordered.');
         $case = substr($source, $start, $end - $start);
         self::assertStringContainsString("checkSession() === false", substr($source, 0, $start));
         self::assertStringContainsString("userAccessPage('admin') === false", substr($source, 0, $start));

@@ -244,7 +244,20 @@ try {
     $link = DB::queryFirstRow('SELECT * FROM ' . prefixTable('otv') . ' WHERE id = %i', $created['otv_id']);
     // Fail the real SQL insert, preserving the journal in an isolated fixture table.
     DB::query('RENAME TABLE ' . prefixTable('secure_send_audit') . ' TO ' . prefixTable('secure_send_audit_unavailable'));
-    $statistics = secureSendBuildOperationalStatistics(100, 200, $settings, []);
+    $previousLog = (string) ini_get('error_log');
+    $statisticsLog = tempnam(sys_get_temp_dir(), 'tp-send-statistics-db-');
+    ini_set('error_log', $statisticsLog);
+    try {
+        $statistics = secureSendBuildOperationalStatistics(100, 200, $settings, []);
+        $diagnostic = (string) file_get_contents($statisticsLog);
+        check(str_contains($diagnostic, 'MeekroDBException): ')
+            && str_contains($diagnostic, "doesn't exist"), 'Missing migration diagnostic was not logged');
+        check(!str_contains($diagnostic, 'SELECT') && !str_contains($diagnostic, 'SUM('),
+            'Statistics diagnostic leaked the SQL query');
+    } finally {
+        ini_set('error_log', $previousLog);
+        unlink($statisticsLog);
+    }
     check($statistics['available'] === false && $statistics['totals'] === null,
         'Unavailable real audit SQL was reported as zero usage');
     check(secureSendRedeem($parameters, '', $settings) === ['error' => 'server_error'], 'Audit failure disclosed plaintext');

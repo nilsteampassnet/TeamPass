@@ -154,8 +154,13 @@ function secureSendBuildOperationalStatistics(int $fromTs, int $toTs, array $set
         $payload['creations'] = $creations;
         $payload['top_senders'] = $senders;
     } catch (Throwable $e) {
-        // Do not leak SQL, account identity, connection details or exception messages.
-        error_log('TEAMPASS Secure Send statistics failed (' . get_class($e) . ')');
+        // These reads bind only integer bounds/account IDs. MeekroDB keeps SQL in
+        // getQuery(), separate from the database diagnostic; never log that query.
+        // Encode control characters to keep the server-only diagnostic on one line.
+        $diagnostic = $e instanceof MeekroDBException
+            ? ': ' . json_encode($e->getMessage(), JSON_INVALID_UTF8_SUBSTITUTE | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+            : '';
+        error_log('TEAMPASS Secure Send statistics failed (' . get_class($e) . ')' . $diagnostic);
     }
 
     return $payload;

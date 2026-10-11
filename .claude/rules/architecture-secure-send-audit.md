@@ -4,6 +4,7 @@ paths:
   - "tests/Unit/SecureSend*.php"
   - "tests/Fixtures/secure_send_*.php"
   - "tests/Integration/secure_send_*.php"
+  - "tests/JavaScript/secure-send*.test.cjs"
   - "docs/install/secure-send.md"
 ---
 
@@ -17,7 +18,7 @@ and from the existing `log_items` audit under the OTV system account.
 
 The audit foundation provides storage, lifecycle instrumentation and migration.
 Its dependent statistics change adds aggregates to the existing administrator
-statistics endpoint; the Users statistics card remains a separate follow-up.
+statistics endpoint; the Users statistics card displays them below item activity.
 Governance/Reports can later consume the journal through their existing
 administrator-only, feature-gated handlers. No raw journal read, export or purge
 endpoint is added, and no access to another user's item contents is granted.
@@ -113,7 +114,8 @@ guarantee. The database journal is authoritative for application statistics.
 `secureSendBuildOperationalStatistics()` adds `users.secure_send` to the existing
 `get_operational_statistics` response from `admin.queries.php`. The endpoint keeps
 its authenticated session, administrator page permission and session-key checks;
-its existing public proxy is reused. No frontend change is made by this step.
+its existing public proxy is reused. The separate presentation change consumes this
+contract without adding an endpoint, database query or permission bypass.
 
 The contract contains:
 
@@ -140,11 +142,20 @@ a sender's links, not proof of malicious activity by that sender.
 
 Period bounds reuse `opsStatsResolvePeriodRange()` in the configured PHP timezone,
 including calendar week/month and daylight-saving transitions. Native timestamp
-predicates and fixed event filters can use the journal's event/period index;
-there is no SQL timezone conversion or CAST on `occurred_at`. The helper rejects
+predicates avoid SQL timezone conversion or CAST on `occurred_at`, but do not
+guarantee use of the event/period index. The optimizer chooses according to the
+database version, data distribution and selected period; long windows can scan
+the journal, and the sender grouping/exclusion can favor the originator index.
+Use EXPLAIN and representative-volume measurements rather than assuming an
+index plan from these predicates alone. The helper rejects
 invalid or greater-than-90-day ranges. Summary and ranking are two read queries,
 so newly committed events can change the database between those reads; no
 transactional snapshot across the entire dashboard is claimed.
+
+Query failures expose no diagnostic in the response. Server logs include the
+MeekroDB exception message (control characters JSON-escaped), not its separately
+stored SQL query. These reads bind only integer timestamps and account IDs.
+Other exception messages remain omitted because they have no such safe contract.
 
 The complete sender population is grouped in SQL before the top-five limit.
 Ties sort by latest creation, then original sender id. User identity is LEFT JOINed
@@ -156,8 +167,18 @@ in the response. Login/display name are administrator-facing sender identity onl
 The journal does not snapshot personal-item or API provenance. Applying those
 dashboard toggles through current item/account state would silently remove durable
 history. They therefore do not affect this block; its filter metadata makes that
-scope explicit for the subsequent card. There is no live-link inventory, abuse
+scope explicit in the card. There is no live-link inventory, abuse
 threshold, automatic quota/block, CSV export, backfill or schema change in this step.
+
+The Users card shows period event totals, creation-policy breakdowns and the top
+five creation senders. It keeps historical data visible when Secure Send is
+disabled, labels disabled/deleted/removed accounts, and explains coverage and
+anonymous-recipient limitations. A valid empty period shows zero counters; missing
+or failed aggregates show an unavailable message instead. Loading/failure clears
+the prior card values and cached payload; overlapping requests ignore superseded
+responses so tab switches cannot restore a previous period's activity. Sender
+identity uses HTML escaping and translation strings are JSON/HTML-context encoded.
+No Chart.js dependency is introduced for this card.
 
 ## Installation, upgrade and retention
 
