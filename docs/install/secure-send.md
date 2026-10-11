@@ -1085,8 +1085,9 @@ retention (days)** in **Options → Collaboration → Secure sharing**. The defa
 `0` keeps all events; whole numbers from `1` to `36500` opt into deletion. Invalid
 values are rejected. Changing the setting does not purge immediately.
 
-Schedule the existing orphan-object maintenance task (`clean_orphan_objects_task`)
-and ensure the scheduler runs. Its `task_maintenance_clean_orphan_objects.php`
+Schedule the existing maintenance task listed as **Items integrity scan** in
+**Tasks → Settings** (setting `clean_orphan_objects_task`) and ensure the
+scheduler runs. Its `task_maintenance_clean_orphan_objects.php`
 script removes at most 1000 events per invocation, oldest first, strictly older
 than the chosen number of elapsed 24-hour days. The cutoff uses event observation
 time, not link creation/expiry; events exactly at the cutoff are retained.
@@ -1194,8 +1195,8 @@ that format.
 - [ ] A fictitious external end-to-end test succeeded.
 - [ ] Revocation, expiration and automatic deletion were tested.
 - [ ] Upgrade regression testing and periodic active-link review are scheduled.
-- [ ] Audit retention is explicitly chosen (0 keeps all), the orphan-object
-      maintenance schedule is verified if enabled, and reporting/backup/collector
+- [ ] Audit retention is explicitly chosen (0 keeps all), the **Items integrity
+      scan** task schedule is verified if enabled, and reporting/backup/collector
       retention windows are aligned with organisational requirements.
 
 ---

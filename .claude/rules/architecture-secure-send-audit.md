@@ -224,7 +224,9 @@ invalid policies fail closed and mark the maintenance run as an error.
 `app/scripts/task_maintenance_clean_orphan_objects.php` calls
 `secureSendPruneAuditHistory()` once per invocation. Configure the existing
 `clean_orphan_objects_task` schedule and keep the scheduler running: the setting
-alone does not schedule work. Each invocation deletes at most **1000** events,
+alone does not schedule work. Administrators see that task as **Items integrity
+scan** in **Tasks / Settings** (`clean_orphan_objects` language key): name it that
+way in every interface string and operator document. Each invocation deletes at most **1000** events,
 oldest `occurred_at` then `id` first, with a strict
 `occurred_at < now - days * 86400` predicate. Events exactly at the cutoff,
 newer events and future timestamps remain. UTC elapsed days, not local calendar

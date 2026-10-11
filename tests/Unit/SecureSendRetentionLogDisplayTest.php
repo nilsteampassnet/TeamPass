@@ -42,7 +42,7 @@ class SecureSendRetentionLogDisplayTest extends TestCase
                         . ($settings['time_format'] ?? 'H:i:s'), $summary['cutoff']), $text);
                     self::assertStringNotContainsString('{', $text);
                     self::assertStringNotContainsString('retention_days', $text);
-                    self::assertStringContainsString($language === 'english' ? 'audit events deleted' : 'événements d’audit supprimés', $text);
+                    self::assertStringContainsString($language === 'english' ? 'audit event(s) deleted' : 'événement(s) d’audit supprimé(s)', $text);
                 }
             }
         } finally {
