@@ -98,6 +98,8 @@ class SecureSendRetentionMigrationTest extends TestCase
         require_once __DIR__ . '/../../app/config/include.php';
         // Instances upgraded to the merged audit foundation must also run retention migration.
         self::assertGreaterThan(1791525735, (int) UPGRADE_MIN_DATE);
+        // Also cover the develop installation timestamp reported during retention review.
+        self::assertGreaterThan(1791532163, (int) UPGRADE_MIN_DATE);
         self::assertStringNotContainsString('secure_send_audit_retention_days',
             (string) file_get_contents(__DIR__ . '/../../public/install/upgrade_run_3.2.2.php'));
     }
