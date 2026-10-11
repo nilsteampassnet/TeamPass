@@ -23,7 +23,7 @@ For the rules governing how permissions from multiple roles combine, see [Rights
 
 ## Roles list
 
-The dropdown at the top of the page lists all existing roles. Selecting one loads the **permission matrix** for that role: a tree of all folders with the current permission type shown for each.
+The dropdown at the top of the page lists all existing roles for an administrator. A manager or HR manager only sees the roles they hold or created, which are the only roles they can edit, delete or change the permissions of. Selecting one loads the **permission matrix** for that role: a tree of the folders you can access, personal folders excluded, with the current permission type shown for each.
 
 ---
 
@@ -145,7 +145,7 @@ Click **Delete role** and confirm in the modal. A role can only be deleted if no
 
 ## LDAP group mapping
 
-When LDAP authentication is enabled and the option *AD user roles mapped with their AD groups* is active (in Settings → LDAP), an additional **LDAP synchronization** button appears in the toolbar.
+When LDAP authentication is enabled and the option *AD user roles mapped with their AD groups* is active (in Settings → LDAP), an additional **LDAP synchronization** button appears in the toolbar for administrators. Mapping AD groups to roles is reserved to them.
 
 ### How it works
 

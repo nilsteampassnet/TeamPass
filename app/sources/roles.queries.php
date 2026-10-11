@@ -333,7 +333,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($session->get('user-read_only') === 1) {
+            } elseif ((int) $session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -363,6 +363,20 @@ if (null !== $post_type) {
                 && in_array($post_allowSecurityPostureFix, [0, 1], true) === true
                 ? ['allow_security_posture_fix' => $post_allowSecurityPostureFix]
                 : [];
+
+            // Editing a role is limited to the roles the caller may grant; creating one is not.
+            if (in_array($post_action, ['edit_role', 'edit_folder'], true) === true
+                && in_array((int) $post_folderId, callerGrantableRoleIds(), true) === false
+            ) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
 
             // Init
             $return = array(
@@ -564,7 +578,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($session->get('user-read_only') === 1) {
+            } elseif ((int) $session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -582,7 +596,19 @@ if (null !== $post_type) {
             );
 
             // Prepare variables
-            $post_roleId = filter_var($dataReceived['roleId'], FILTER_SANITIZE_NUMBER_INT);
+            $post_roleId = (int) filter_var($dataReceived['roleId'], FILTER_SANITIZE_NUMBER_INT);
+
+            // The caller may only delete a role they may grant
+            if (in_array($post_roleId, callerGrantableRoleIds(), true) === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
 
             // Delete roles
             DB::delete(
@@ -638,6 +664,16 @@ if (null !== $post_type) {
                     array(
                         'error' => true,
                         'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ((int) $session->get('user-admin') !== 1) {
+                // The AD group mapping is an administrator setting (roles.php only shows it to them)
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -743,6 +779,16 @@ if (null !== $post_type) {
                     array(
                         'error' => true,
                         'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ((int) $session->get('user-admin') !== 1) {
+                // Mapping an AD group to a role grants that role to every member of the group
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );

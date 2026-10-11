@@ -128,12 +128,12 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                             <select id="roles-list" class="form-control form-item-control select2" style="width:100%;">
                                 <option></option>
                                 <?php
-                                $arrUserRoles = array_filter($session->get('user-roles_array'));
-                                $where = '';
-                                if (count($arrUserRoles) > 0 && (int) $session->get('user-admin') !== 1) {
-                                    $where = ' WHERE id IN (' . implode(',', $arrUserRoles) . ')';
-                                }
-                                $rows = DB::query('SELECT * FROM ' . prefixTable('roles_title') . $where);
+                                // Same scope as the handlers of roles.queries.php: every role for an
+                                // administrator, the roles held or created by the caller otherwise.
+                                $grantableRoleIds = callerGrantableRoleIds();
+                                $rows = $grantableRoleIds === []
+                                    ? []
+                                    : DB::query('SELECT * FROM ' . prefixTable('roles_title') . ' WHERE id IN %li', $grantableRoleIds);
                                 foreach ($rows as $reccord) {
                                     echo '
                                     <option value="' . strval($reccord['id']) . '"
