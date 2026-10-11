@@ -94,8 +94,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     let _compareAccess = new Map()
     const _renderedRoleMarkup = new Map()
     const _roleLabels = <?php echo json_encode(array_combine(
-        ['add_allowed', 'edit_allowed', 'delete_allowed', 'edit_not_allowed', 'delete_not_allowed', 'read_only', 'no_access', 'collapse', 'expand'],
-        array_map(fn($key) => $lang->get($key), ['add_allowed', 'edit_allowed', 'delete_allowed', 'edit_not_allowed', 'delete_not_allowed', 'read_only', 'no_access', 'collapse', 'expand'])
+        ['add_allowed', 'edit_allowed', 'delete_allowed', 'edit_not_allowed', 'delete_not_allowed', 'read_only', 'no_access', 'collapse', 'expand', 'collapse_all', 'expand_all', 'group', 'group_parent', 'menu_access'],
+        array_map(fn($key) => $lang->get($key), ['add_allowed', 'edit_allowed', 'delete_allowed', 'edit_not_allowed', 'delete_not_allowed', 'read_only', 'no_access', 'collapse', 'expand', 'collapse_all', 'expand_all', 'group', 'group_parent', 'menu_access'])
     ), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>
 
     var _sidebarFolderId = ''
@@ -184,6 +184,17 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         return accessType === 'R' ? icon('fa-book-reader text-warning', 'read_only') : icon('fa-ban text-danger', 'no_access')
     }
 
+    /** Build the matrix header: tree-wide toggle, column titles and fixed-width rights columns. */
+    function buildMatrixHeadHtml() {
+        return '<thead><tr>' +
+            '<th scope="col" width="35px"></th>' +
+            '<th scope="col" class="pl-0"><button type="button" class="tp-tree-toggle tp-tree-toggle-all" id="roles-toggle-all"><i class="fas fa-angles-down"></i></button>' + htmlEncode(_roleLabels.group) + '</th>' +
+            '<th scope="col">' + htmlEncode(_roleLabels.group_parent) + '</th>' +
+            '<th scope="col" class="tp-tree-rights text-center">' + htmlEncode(_roleLabels.menu_access) + '</th>' +
+            '<th scope="col" class="tp-tree-rights" id="roles-compare-head" hidden></th>' +
+            '</tr></thead>'
+    }
+
     /** Render one folder's current and comparison permissions with escaped labels. */
     function buildMatrixRowHtml(value) {
         const access = buildMatrixAccessHtml(value.access)
@@ -199,21 +210,26 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         })
 
         var indent = (parseInt(value.ident) - 1) * 16
-        var folderIcon = value.ident === 1
-            ? '<i class="fas fa-folder text-warning mr-1"></i>'
-            : '<i class="fas fa-folder-open text-warning mr-1" style="opacity:.7"></i>'
 
+        // The folder icon follows the branch: closed while collapsed, open while expanded,
+        // open and dimmed when the folder has no children.
         const expanded = _roleTree.expanded.has(Number(value.id))
+        var folderIcon = value.numOfChildren > 0
+            ? '<i class="fas ' + (expanded ? 'fa-folder-open' : 'fa-folder') + ' text-warning mr-1"></i>'
+            : '<i class="fas fa-folder-open text-warning mr-1" style="opacity:.45"></i>'
+
+        // A childless folder keeps an empty slot of the same width so that names stay aligned.
+        const toggleLabel = htmlEncode(expanded ? _roleLabels.collapse : _roleLabels.expand)
         const toggle = value.numOfChildren > 0
-            ? '<button type="button" class="btn btn-link btn-sm p-0 mr-1 role-collapse" data-id="' + Number(value.id) + '" aria-label="' + htmlEncode(expanded ? _roleLabels.collapse : _roleLabels.expand) + '" aria-expanded="' + expanded + '"><i class="fas ' + (expanded ? 'fa-folder-minus' : 'fa-folder-plus') + '"></i></button>'
-            : ''
+            ? '<button type="button" class="tp-tree-toggle role-collapse" data-id="' + Number(value.id) + '" aria-label="' + toggleLabel + '" aria-expanded="' + expanded + '" title="' + toggleLabel + '"><i class="fas ' + (expanded ? 'fa-chevron-down' : 'fa-chevron-right') + '"></i></button>'
+            : '<span class="tp-tree-spacer"></span>'
 
         return '<tr data-level="' + value.ident + '" class="' + (value.ident === 1 ? 'parent' : 'descendant') + '" data-id="' + value.id + '">' +
             '<td width="35px"><input type="checkbox" id="cb-' + value.id + '" data-id="' + value.id + '" class="folder-select"></td>' +
             '<td class="pointer modify folder-name" data-id="' + value.id + '" data-access="' + value.access + '" style="padding-left:' + indent + 'px">' + toggle + folderIcon + htmlEncode(value.title) + '</td>' +
             '<td class="font-italic pointer modify" data-id="' + value.id + '" data-access="' + value.access + '"><small class="text-muted">' + path + '</small></td>' +
-            '<td class="pointer modify td-100 text-center" data-id="' + value.id + '" data-access="' + value.access + '">' + access + '</td>' +
-            '<td class="' + (comparing ? '' : 'hidden ') + 'compare tp-borders td-100 text-center">' +
+            '<td class="pointer modify tp-tree-rights text-center" data-id="' + value.id + '" data-access="' + value.access + '">' + access + '</td>' +
+            '<td class="' + (comparing ? '' : 'hidden ') + 'compare tp-borders tp-tree-rights text-center">' +
                 (comparing ? buildMatrixAccessHtml(_compareAccess.get(Number(value.id)) || 'none') : '') + '</td>' +
             '</tr>'
     }
@@ -251,7 +267,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             _roleTree = new TeampassFolderTree()
             _renderedRoleMarkup.clear()
             $('#role-details .infotip').tooltip('dispose')
-            $('#role-details').html('<table id="table-role-details" class="table table-hover table-striped" style="width:100%"><tbody></tbody></table>')
+            $('#role-details').html('<table id="table-role-details" class="table table-hover table-striped" style="width:100%">' + buildMatrixHeadHtml() + '<tbody></tbody></table>')
         }
         _matrixRoleId = String(selectedRoleId)
         _matrixLoading = true
@@ -375,6 +391,17 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         const count = <?php echo json_encode($lang->get('folders_view_count'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>
 
         $('#roles-view-count').text(count.replace('{shown}', displayed.length).replace('{total}', rows.length).replace('{selected}', _roleTree.selected.size))
+        // The header follows the rows: its comparison cell only exists while a comparison is shown.
+        $('#roles-compare-head').prop('hidden', ($('#folders-compare').val() || '') === '' || _compareAccess.size === 0)
+        syncRoleToggleAll()
+    }
+
+    /** Show on the tree-wide toggle the action its next click performs. */
+    function syncRoleToggleAll() {
+        const expanded = _roleTree.hasExpandedBranch()
+        const label = expanded ? _roleLabels.collapse_all : _roleLabels.expand_all
+        $('#roles-toggle-all').attr({ title: label, 'aria-label': label, 'aria-expanded': String(expanded) })
+            .children('i').attr('class', 'fas ' + (expanded ? 'fa-angles-up' : 'fa-angles-down'))
     }
 
     /** Keep the complete authorized selection independent of collapsed or unrendered rows. */
@@ -398,6 +425,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         event.stopPropagation()
         if (_matrixLoading) return
         _roleTree.toggle($(this).data('id'))
+        renderRoleView()
+    })
+
+    // Collapse every branch when at least one is open, expand them all otherwise.
+    $(document).on('click', '#roles-toggle-all', function() {
+        if (_matrixLoading) return
+        if (_roleTree.hasExpandedBranch()) _roleTree.collapseAll()
+        else _roleTree.expandAll()
         renderRoleView()
     })
 

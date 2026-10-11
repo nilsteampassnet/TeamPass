@@ -700,6 +700,8 @@ return array(
     'file_protection_password' => 'Définir le mot de passe du fichier',
     'expand' => 'Étendre ',
     'collapse' => 'Réduire',
+    'expand_all' => 'Tout déplier',
+    'collapse_all' => 'Tout replier',
     'settings_ldap_user_attribute' => 'Attribut dans lequel rechercher l’utilisateur',
     'settings_ldap_user_attribute_tip' => 'Attribut LDAP dans lequel rechercher l’utilisateur.<br>Exemples: Pour openLDAP: cn ; uid. Pour Active Directory : samaccountname.',
     'log_user_email_changed' => 'Email de l’utilisateur changé par ',

@@ -114,6 +114,23 @@ test('Rename, insertion and deletion keep paths, selection and child counts cons
   assert.deepEqual(tree.selectedRows().map(row => row.id), [1])
 })
 
+test('Tree-wide expand and collapse ignore childless folders when reporting an open branch', () => {
+  const tree = new FolderTree()
+  tree.replace([row(1), row(2, [1]), row(3, [1, 2]), row(4)])
+  assert.equal(tree.hasExpandedBranch(), true)
+  tree.collapseAll()
+  assert.deepEqual(tree.visible().map(row => row.id), [1, 4])
+  assert.equal(tree.hasExpandedBranch(), false)
+  tree.toggle(4)
+  assert.equal(tree.hasExpandedBranch(), false)
+  tree.expandAll()
+  assert.equal(tree.visible().length, 4)
+  assert.equal(tree.hasExpandedBranch(), true)
+  tree.toggle(1)
+  tree.toggle(2)
+  assert.equal(tree.hasExpandedBranch(), false)
+})
+
 test('The shipped page script compiles with translated text and server-side branches', () => {
   const page = readFileSync(require.resolve('../../app/pages/folders.js.php'), 'utf8')
   const script = page.slice(page.indexOf("<script type='text/javascript'>") + "<script type='text/javascript'>".length, page.lastIndexOf('</script>'))

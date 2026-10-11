@@ -1672,6 +1672,8 @@ return array(
     'file_protection_password' => 'Define file password',
     'expand' => 'Expand',
     'collapse' => 'Collapse',
+    'expand_all' => 'Expand all',
+    'collapse_all' => 'Collapse all',
     'settings_ldap_user_attribute' => 'User name attribute',
     'settings_ldap_user_attribute_tip' => 'The attribute field to use when loading the username.<br>Example: For openLDAP: cn ; uid. For Active Directory: samaccountname.',
     'log_user_email_changed' => 'User email changed to',

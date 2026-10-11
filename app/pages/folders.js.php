@@ -97,6 +97,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     let _folderSearchTimer = null
     let _userIsAdmin = 0
     let _userCanCreateRootFolder = 0
+    const _folderLabels = <?php echo json_encode(array_combine(
+        ['collapse', 'expand', 'collapse_all', 'expand_all'],
+        array_map(fn($key) => $lang->get($key), ['collapse', 'expand', 'collapse_all', 'expand_all'])
+    ), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>
+
 
     buildTable();
 
@@ -408,6 +413,15 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         const count = <?php echo json_encode($lang->get('folders_view_count'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>
 
         $('#folders-view-count').text(count.replace('{shown}', displayed.length).replace('{total}', rows.length).replace('{selected}', _folderTree.selected.size))
+        syncFolderToggleAll()
+    }
+
+    /** Show on the tree-wide toggle the action its next click performs. */
+    function syncFolderToggleAll() {
+        const expanded = _folderTree.hasExpandedBranch()
+        const label = expanded ? _folderLabels.collapse_all : _folderLabels.expand_all
+        $('#folders-toggle-all').attr({ title: label, 'aria-label': label, 'aria-expanded': String(expanded) })
+            .children('i').attr('class', 'fas ' + (expanded ? 'fa-angles-up' : 'fa-angles-down'))
     }
 
     $('#folders-show-more').on('click', function() {
@@ -431,29 +445,37 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             ? value.folderComplexity.value : ''
         let row = '<tr data-id="' + value.id + '" data-parent-id="' + value.parentId + '" data-level="' + value.level + '" data-complexity="' + complexityVal + '" class="' + parentsClass + '"><td>'
 
-        // Column 1 — checkbox + collapse icon
+        // Column 1 — checkbox
         if ((value.parentId === 0 && (userIsAdmin === 1 || userCanCreateRootFolder === 1)) || value.parentId !== 0) {
             row += '<input type="checkbox" class="checkbox-folder" id="cb-' + value.id + '" data-id="' + value.id + '">'
         }
-        if (value.numOfChildren > 0) {
-            row += '<i class="fas ' + (_folderTree.expanded.has(Number(value.id)) ? 'fa-folder-minus' : 'fa-folder-plus') + ' infotip ml-2 pointer icon-collapse" data-id="' + value.id + '" title="<?php echo $lang->get('collapse'); ?>"></i>'
-        }
         row += '</td>'
 
-        // Column 2 — folder name with left indent proportional to tree depth + item count badge
+        // Column 2 — tree toggle, folder icon and name with left indent proportional to tree depth + item count badge
+        // A childless folder keeps an empty slot of the same width so that names stay aligned.
         const indent = (value.level - 1) * 16
+        const expanded = _folderTree.expanded.has(Number(value.id))
+        const toggleLabel = htmlEncode(expanded ? _folderLabels.collapse : _folderLabels.expand)
+        const toggle = value.numOfChildren > 0
+            ? '<button type="button" class="tp-tree-toggle icon-collapse" data-id="' + Number(value.id) + '" aria-label="' + toggleLabel + '" aria-expanded="' + expanded + '" title="' + toggleLabel + '"><i class="fas ' + (expanded ? 'fa-chevron-down' : 'fa-chevron-right') + '"></i></button>'
+            : '<span class="tp-tree-spacer"></span>'
+        // The folder icon follows the branch: closed while collapsed, open while expanded,
+        // open and dimmed when the folder has no children.
+        const folderIcon = value.numOfChildren > 0
+            ? '<i class="fas ' + (expanded ? 'fa-folder-open' : 'fa-folder') + ' text-warning mr-1"></i>'
+            : '<i class="fas fa-folder-open text-warning mr-1" style="opacity:.45"></i>'
         let nameCell = '<span id="folder-' + value.id + '" data-id="' + value.id + '" class="infotip folder-name" data-html="true" title="<?php echo $lang->get('id'); ?>: ' + value.id + '<br><?php echo $lang->get('level'); ?>: ' + value.level + '<br><?php echo $lang->get('nb_items'); ?>: ' + value.nbItems + '">' + htmlEncode(value.title) + '</span>'
         if (value.nbItems > 0) {
             nameCell += ' <span class="badge badge-secondary ml-1">' + value.nbItems + '</span>'
         }
-        row += '<td class="modify pointer" style="padding-left:' + indent + 'px">' + nameCell + '</td>'
+        row += '<td class="modify pointer" style="padding-left:' + indent + 'px">' + toggle + folderIcon + nameCell + '</td>'
 
         // Column 3 — parent path breadcrumb
         let path = ''
         $(value.path).each(function(j, folder) {
-            path = path === '' ? htmlEncode(folder) : path + '<i class="fas fa-angle-right fa-sm ml-1 mr-1"></i>' + htmlEncode(folder)
+            path = path === '' ? htmlEncode(folder) : path + ' / ' + htmlEncode(folder)
         })
-        row += '<td class="modify pointer" min-width="200px" data-value="' + value.parentId + '"><small class="text-muted">' + path + '</small></td>'
+        row += '<td class="modify pointer font-italic" min-width="200px" data-value="' + value.parentId + '"><small class="text-muted">' + path + '</small></td>'
 
         // Column 4 — complexity
         row += '<td class="modify pointer text-center">'
@@ -653,7 +675,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     /**
      * Open sidebar on row click — toggle if same row clicked again
      */
-    $('#table-folders').on('click', '.modify', function() {
+    $('#table-folders').on('click', '.modify', function(event) {
+        // The tree toggle sits in the name cell: it must not open the sidebar.
+        if ($(event.target).closest('.icon-collapse').length) return
         const $row = $(this).closest('tr')
         if (_sidebarFolderId !== null && _sidebarFolderId === $row.data('id')) {
             closeSidebar()
@@ -824,6 +848,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     // Expanding a branch creates its rows only when they enter the current view.
     $(document).on('click', '.icon-collapse', function() {
         _folderTree.toggle($(this).data('id'))
+        renderFolderView()
+    })
+
+    // Collapse every branch when at least one is open, expand them all otherwise.
+    $('#folders-toggle-all').on('click', function() {
+        if (_folderTree.hasExpandedBranch()) _folderTree.collapseAll()
+        else _folderTree.expandAll()
         renderFolderView()
     })
 

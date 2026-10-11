@@ -79,13 +79,16 @@ function view(rows = nodes()) {
     return { val: () => filters[target],
       prop(key, value) { controls[target] = { ...controls[target], [key]: value }; return this },
       text(value) { controls[target] = { ...controls[target], text: value }; return this },
+      attr(values) { controls[target] = { ...controls[target], ...values }; return this },
+      children() { return { attr(key, value) { controls[target] = { ...controls[target], icon: value } } } },
       on(event, fn) { handlers[target] = fn } }
   }
   const context = vm.createContext({ $, document, _roleTree: tree, _visibleLimit: 100,
     _matrixLoading: false, _syncingRoleSelection: false, _sidebarFolderId: '',
     _renderedRoleMarkup: new Map(), _compareAccess: new Map(),
     _roleLabels: { add_allowed: 'Add', edit_allowed: 'Edit', delete_allowed: 'Delete',
-      edit_not_allowed: 'No edit', delete_not_allowed: 'No delete', read_only: 'Read', no_access: 'None', collapse: 'Collapse', expand: 'Expand' },
+      edit_not_allowed: 'No edit', delete_not_allowed: 'No delete', read_only: 'Read', no_access: 'None', collapse: 'Collapse', expand: 'Expand',
+      collapse_all: 'Collapse all', expand_all: 'Expand all', group: 'Folder', group_parent: 'Parent', menu_access: 'Access' },
     htmlEncode: encode
   })
   vm.runInContext(section('    function buildMatrixAccessHtml', '    /** Render one folder'), context)
@@ -170,11 +173,44 @@ test('Comparison covers rows added later and clearing it restores the primary co
   assert.ok(markup.includes('class="compare '))
   assert.ok(markup.includes('title="No edit"'))
   assert.ok(markup.includes('title="No delete"'))
+  assert.equal(ui.controls['#roles-compare-head'].hidden, false)
   ui.filters['#folders-compare'] = ''
   ui.context._compareAccess.clear()
   ui.render()
   assert.ok(ui.body.children[0].markup.includes('class="hidden compare '))
   assert.ok(!ui.body.children[0].markup.includes('title="No delete"'))
+  assert.equal(ui.controls['#roles-compare-head'].hidden, true)
+})
+
+test('The tree-wide toggle flips every branch, labels its next action and keeps names aligned', () => {
+  const rows = nodes(3)
+  rows[1] = { ...rows[1], parentId: 1, parents: [1], path: ['Folder 1'], level: 2, ident: 2 }
+  const ui = view(rows)
+  ui.render()
+  assert.equal(ui.body.children.length, 3)
+  assert.equal(ui.controls['#roles-toggle-all']['aria-label'], 'Collapse all')
+  assert.equal(ui.controls['#roles-toggle-all'].icon, 'fas fa-angles-up')
+  assert.ok(ui.body.children[0].markup.includes('fa-chevron-down'))
+  assert.ok(ui.body.children[2].markup.includes('tp-tree-spacer'))
+  // The folder icon follows the branch: open while expanded, closed while collapsed, open and dimmed without children.
+  assert.ok(ui.body.children[0].markup.includes('fa-folder-open text-warning mr-1"></i>'))
+  assert.ok(ui.body.children[2].markup.includes('fa-folder-open text-warning mr-1" style="opacity:.45"></i>'))
+  ui.handlers['#roles-toggle-all']()
+  assert.deepEqual(ui.body.children.map(node => node.dataset.id), ['1', '3'])
+  assert.equal(ui.controls['#roles-toggle-all']['aria-expanded'], 'false')
+  assert.equal(ui.controls['#roles-toggle-all'].title, 'Expand all')
+  assert.equal(ui.controls['#roles-toggle-all'].icon, 'fas fa-angles-down')
+  assert.ok(ui.body.children[0].markup.includes('fa-chevron-right'))
+  assert.ok(ui.body.children[0].markup.includes('fa-folder text-warning mr-1"></i>'))
+  ui.handlers['#roles-toggle-all']()
+  assert.equal(ui.body.children.length, 3)
+  ui.context._matrixLoading = true
+  ui.handlers['#roles-toggle-all']()
+  assert.equal(ui.tree.hasExpandedBranch(), true)
+  ui.context._roleLabels.group = '<b>Folder</b>'
+  const head = ui.context.buildMatrixHeadHtml()
+  assert.ok(head.includes('id="roles-toggle-all"'))
+  assert.ok(head.includes('&lt;b&gt;Folder&lt;/b&gt;'))
 })
 
 test('Permission badges preserve all six access states and escape translated attributes', () => {
@@ -265,7 +301,7 @@ function requestsContext() {
   const context = vm.createContext({ $, _matrixGeneration: 0, _matrixRequest: null, _matrixLoading: false,
     _matrixRoleId: '', _roleTree: new FolderTree(), TeampassFolderTree: FolderTree,
     _compareGeneration: 0, _compareRequest: null, _compareAccess: new Map(), _renderedRoleMarkup: new Map(),
-    _sidebarFolderId: '', closeRightsSidebar() {}, renderRoleView() {}, toastr: { error() {} },
+    _sidebarFolderId: '', closeRightsSidebar() {}, renderRoleView() {}, buildMatrixHeadHtml() { return '' }, toastr: { error() {} },
     Option: class { constructor(text, value) { this.text = text; this.value = value } },
     store: { get() { return { rolesDepthFilter: '2' } } },
     decodeRoleMatrixResponse(response) { decoded++; return response } })

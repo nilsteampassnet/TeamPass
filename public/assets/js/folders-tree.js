@@ -62,6 +62,21 @@
       else this.expanded.add(id)
     }
 
+    /** Expand every branch of the snapshot. */
+    expandAll() {
+      this.expanded = new Set(this.byId.keys())
+    }
+
+    /** Collapse every branch of the snapshot. */
+    collapseAll() {
+      this.expanded = new Set()
+    }
+
+    /** Tell whether at least one folder holding children is currently expanded. */
+    hasExpandedBranch() {
+      return this.rows.some(row => row.numOfChildren > 0 && this.expanded.has(Number(row.id)))
+    }
+
     /** Select every authorized descendant, even when it has no DOM row. */
     selectBranch(id, checked) {
       id = Number(id)
