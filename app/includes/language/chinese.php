@@ -3391,6 +3391,8 @@ return array(
     'admin_checklist_backup_desc' => '请设置计划数据库备份，以便在发生事故后恢复保险库。',
     'admin_checklist_mfa' => '未启用任何多因素身份验证方式',
     'admin_checklist_mfa_desc' => '至少启用一种 MFA 方式，以保护账户免遭密码被盗的风险。',
+    'admin_checklist_mfa_passkeys_only' => 'Passkeys are the only multi-factor method, and nothing imposes them',
+    'admin_checklist_mfa_passkeys_only_desc' => 'An account without a sign-in passkey still signs in with its password alone. Enable another MFA method to make a second factor mandatory.',
     'admin_checklist_auth_source' => '未配置外部身份验证源',
     'admin_checklist_auth_source_desc' => '将 TeamPass 连接至 LDAP / Active Directory 或 OAuth2，以便从您的目录管理用户。',
     'admin_checklist_api_https' => 'API 已启用，但未强制使用 HTTPS',

@@ -3391,6 +3391,8 @@ return array(
     'admin_checklist_backup_desc' => 'Set up a scheduled database backup so the vault can be restored after an incident.',
     'admin_checklist_mfa' => 'No multi-factor authentication method is enabled',
     'admin_checklist_mfa_desc' => 'Enable at least one MFA method to protect accounts against stolen passwords.',
+    'admin_checklist_mfa_passkeys_only' => 'Passkeys are the only multi-factor method, and nothing imposes them',
+    'admin_checklist_mfa_passkeys_only_desc' => 'An account without a sign-in passkey still signs in with its password alone. Enable another MFA method to make a second factor mandatory.',
     'admin_checklist_auth_source' => 'No external authentication source is configured',
     'admin_checklist_auth_source_desc' => 'Connect TeamPass to LDAP / Active Directory or OAuth2 to manage users from your directory.',
     'admin_checklist_api_https' => 'The API is enabled but HTTPS is not enforced',

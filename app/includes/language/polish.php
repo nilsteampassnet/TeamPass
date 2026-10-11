@@ -3391,6 +3391,8 @@ return array(
     'admin_checklist_backup_desc' => 'Skonfiguruj zaplanowaną kopię zapasową bazy danych, aby umożliwić przywrócenie sejfu po incydencie.',
     'admin_checklist_mfa' => 'Nie włączono żadnej metody uwierzytelniania wieloskładnikowego',
     'admin_checklist_mfa_desc' => 'Włącz co najmniej jedną metodę MFA, aby chronić konta przed użyciem skradzionych haseł.',
+    'admin_checklist_mfa_passkeys_only' => 'Passkeys are the only multi-factor method, and nothing imposes them',
+    'admin_checklist_mfa_passkeys_only_desc' => 'An account without a sign-in passkey still signs in with its password alone. Enable another MFA method to make a second factor mandatory.',
     'admin_checklist_auth_source' => 'Nie skonfigurowano zewnętrznego źródła uwierzytelniania',
     'admin_checklist_auth_source_desc' => 'Połącz TeamPass z LDAP / Active Directory lub OAuth2, aby zarządzać użytkownikami z usługi katalogowej.',
     'admin_checklist_api_https' => 'API jest włączone, ale HTTPS nie jest wymagany',

@@ -3392,6 +3392,8 @@ return array(
     'admin_checklist_backup_desc' => 'Configurez une sauvegarde planifiée de la base de données afin de pouvoir restaurer le coffre-fort après un incident.',
     'admin_checklist_mfa' => 'Aucune méthode d’authentification multifacteur n’est activée',
     'admin_checklist_mfa_desc' => 'Activez au moins une méthode MFA pour protéger les comptes en cas de vol de mot de passe.',
+    'admin_checklist_mfa_passkeys_only' => 'Les clés d’accès sont la seule méthode multifacteur, et rien ne les impose',
+    'admin_checklist_mfa_passkeys_only_desc' => 'Un compte sans clé d’accès de connexion se connecte toujours avec son seul mot de passe. Activez une autre méthode MFA pour rendre un second facteur obligatoire.',
     'admin_checklist_auth_source' => 'Aucune source d’authentification externe n’est configurée',
     'admin_checklist_auth_source_desc' => 'Connectez TeamPass à LDAP / Active Directory ou OAuth2 pour gérer les utilisateurs depuis votre annuaire.',
     'admin_checklist_api_https' => 'L’API est activée mais HTTPS n’est pas imposé',

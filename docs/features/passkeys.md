@@ -275,6 +275,8 @@ Since nothing is imposed, an administrator needs to see who registered a passkey
 
 Both count the passkeys a sign-in accepts: one registered for a previous relying party ID is left out. Managers see the badge on the accounts they manage.
 
+The recommendations of the administration dashboard follow the same rule. While passkeys are the only multi-factor method enabled, *No multi-factor authentication method is enabled* gives way to *Passkeys are the only multi-factor method, and nothing imposes them*: an account without a passkey still signs in with its password alone. Enabling Google Authenticator, YubiKey, Duo or AGSES clears it; like the other recommendations, it can also be dismissed.
+
 ---
 
 ### Revoking a user’s passkeys
