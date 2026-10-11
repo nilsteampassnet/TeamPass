@@ -1080,7 +1080,7 @@ its operational context.
 
 ### Audit retention
 
-After completing the feature upgrade, administrators can set **Secure Send audit
+From Teampass 3.2.3.0, after completing the upgrade, administrators can set **Secure Send audit
 retention (days)** in **Options → Collaboration → Secure sharing**. The default
 `0` keeps all events; whole numbers from `1` to `36500` opt into deletion. Invalid
 values are rejected. Changing the setting does not purge immediately.
