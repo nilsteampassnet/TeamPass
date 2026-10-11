@@ -182,11 +182,12 @@ $complexityHtml .= $complexitySelect . '</select></div>';
                     <small class="text-muted folders-load-text mt-1 d-block"></small>
                 </div>
 
-                    <table id="table-folders" class="table table-hover table-striped table-responsive" style="width:100%">
+                    <div class="table-responsive">
+                    <table id="table-folders" class="table table-hover table-striped" style="width:100%">
                         <thead>
                             <tr>
-                                <th scope="col" width="80px"></th>
-                                <th scope="col" min-width="200px"><?php echo $lang->get('group'); ?></th>
+                                <th scope="col" width="40px"></th>
+                                <th scope="col" class="pl-0" min-width="200px"><button type="button" class="tp-tree-toggle tp-tree-toggle-all" id="folders-toggle-all"><i class="fas fa-angles-down"></i></button><?php echo $lang->get('group'); ?></th>
                                 <th scope="col" min-width="200px"><?php echo $lang->get('group_parent'); ?></th>
                                 <th scope="col" width="50px"><i class="fas fa-gavel fa-lg infotip" title="<?php echo $lang->get('password_strength'); ?>"></i></th>
                                 <th scope="col" width="50px"><i class="fas fa-recycle fa-lg infotip" title="<?php echo $lang->get('group_pw_duration') . ' ' . $lang->get('group_pw_duration_tip'); ?>"></i></th>
@@ -201,6 +202,7 @@ $complexityHtml .= $complexitySelect . '</select></div>';
 
                         </tbody>
                     </table>
+                    </div>
                     <div class="d-flex align-items-center justify-content-between mt-2">
                         <small class="text-muted" id="folders-view-count" aria-live="polite"></small>
                         <button type="button" class="btn btn-outline-secondary btn-sm" id="folders-show-more" hidden>

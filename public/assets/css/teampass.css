@@ -333,6 +333,61 @@
     width:100px;
 }
 
+/* Folder tree shared by the Roles and Folders administration pages.
+   The toggles set their own box: an icon-only button collapses to the glyph height on these pages. */
+.tp-tree-toggle,
+.tp-tree-spacer {
+    display: inline-flex;
+    width: 1.5rem;
+    height: 1.25rem;
+    vertical-align: middle;
+}
+
+.tp-tree-toggle {
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #6c757d;
+    font-size: .75rem;
+    line-height: 1;
+}
+
+.tp-tree-toggle:hover,
+.tp-tree-toggle:focus {
+    color: #343a40;
+}
+
+.dark-mode .tp-tree-toggle {
+    color: #adb5bd;
+}
+
+.dark-mode .tp-tree-toggle:hover,
+.dark-mode .tp-tree-toggle:focus {
+    color: #fff;
+}
+
+/* Tree-wide toggle of the header: same box as the row toggles, outlined */
+.tp-tree-toggle-all {
+    height: 1.5rem;
+    margin-right: .25rem;
+    border: 1px solid #ced4da;
+    border-radius: .2rem;
+    background: #fff;
+}
+
+.dark-mode .tp-tree-toggle-all {
+    border-color: #6c757d;
+    background: transparent;
+}
+
+/* Trailing columns keep a fixed width so the tree columns share the remaining space */
+.tp-tree-rights {
+    width: 132px;
+    white-space: nowrap;
+}
+
 .footer {
     position: fixed;
     bottom: 10px;

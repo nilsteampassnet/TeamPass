@@ -30,6 +30,8 @@ function view() {
   tree.replace(rows)
   const stats = { widgets: 0, tips: 0, moves: 0 }
   const filters = { '#folders-depth': 'all', '#folders-complexity': 'all', '#folders-search': '' }
+  const controls = {}
+  const handlers = {}
   const body = { children: [], get firstChild() { return this.children[0] || null }, insertBefore(node, before) {
     if (node.parent) node.parent.children.splice(node.parent.children.indexOf(node), 1)
     this.children.splice(before ? this.children.indexOf(before) : this.children.length, 0, node)
@@ -65,15 +67,20 @@ function view() {
       return wrap([{ dataset: { id }, checkbox: { dataset: { id }, checked: false },
         get nextSibling() { return this.parent ? this.parent.children[this.parent.children.indexOf(this) + 1] || null : null } }])
     }
-    return { val: () => filters[target], prop() {}, text() {} }
+    return { val: () => filters[target], prop() {}, text() {},
+      attr(values) { controls[target] = { ...controls[target], ...values }; return this },
+      children() { return { attr(key, value) { controls[target] = { ...controls[target], icon: value } } } },
+      on(event, fn) { handlers[target] = fn } }
   }
   const context = vm.createContext({ $, _folderTree: tree, _visibleLimit: 100,
     _userIsAdmin: 1, _userCanCreateRootFolder: 1, _syncingFolderSelection: false,
+    _folderLabels: { collapse: 'Collapse', expand: 'Expand', collapse_all: 'Collapse all', expand_all: 'Expand all' },
     _renderedFolderMarkup: new Map(), htmlEncode: text => String(text).replace(/</g, '&lt;').replace(/"/g, '&quot;')
   })
   vm.runInContext(section('    function renderFolderView()', "    $('#folders-show-more').on"), context)
   vm.runInContext(section('    function buildFolderRowHtml', '    /**'), context)
-  return { context, tree, body, stats, filters, render() { context.renderFolderView() } }
+  vm.runInContext(section("    $('#folders-toggle-all').on", '    //]]>'), context)
+  return { context, tree, body, stats, filters, controls, handlers, render() { context.renderFolderView() } }
 }
 
 test('3161 root folders render 100 rows and initialize widgets only for newly displayed rows', () => {
@@ -126,6 +133,49 @@ test('A root branch remains expandable when its deletion checkbox is unavailable
   const markup = ui.context.buildFolderRowHtml(row, 0, 0)
   assert.ok(markup.includes('icon-collapse'))
   assert.ok(!markup.includes('checkbox-folder'))
+})
+
+test('The tree toggle lives in the name cell and the tree-wide toggle flips every branch', () => {
+  const ui = view()
+  const rows = ui.tree.rows.slice(0, 3).map(row => ({ ...row }))
+  rows[1] = { ...rows[1], parentId: 1, parents: [1], path: ['Folder 1'], level: 2 }
+  ui.tree.replace(rows)
+  ui.render()
+  assert.deepEqual(ui.body.children.map(node => node.dataset.id), ['1', '3'])
+  assert.equal(ui.controls['#folders-toggle-all']['aria-label'], 'Expand all')
+  assert.equal(ui.controls['#folders-toggle-all'].icon, 'fas fa-angles-down')
+  const cells = ui.context.buildFolderRowHtml(ui.tree.byId.get(1), 1, 1).split('<td')
+  assert.ok(cells[1].includes('checkbox-folder') && !cells[1].includes('icon-collapse'))
+  assert.ok(cells[2].includes('icon-collapse') && cells[2].includes('fa-chevron-right'))
+  assert.ok(cells[2].includes('aria-label="Expand" aria-expanded="false"'))
+  // A childless folder reserves the toggle slot, so names stay aligned.
+  const leaf = ui.context.buildFolderRowHtml(ui.tree.byId.get(3), 1, 1).split('<td')[2]
+  assert.ok(leaf.includes('tp-tree-spacer'))
+  // The folder icon follows the branch: closed while collapsed, open while expanded, open and dimmed without children.
+  assert.ok(cells[2].includes('fa-folder text-warning mr-1"></i>'))
+  assert.ok(leaf.includes('fa-folder-open text-warning mr-1" style="opacity:.45"></i>'))
+  ui.handlers['#folders-toggle-all']()
+  assert.ok(ui.context.buildFolderRowHtml(ui.tree.byId.get(1), 1, 1).includes('fa-folder-open text-warning mr-1"></i>'))
+  assert.equal(ui.body.children.length, 3)
+  assert.equal(ui.controls['#folders-toggle-all']['aria-expanded'], 'true')
+  assert.equal(ui.controls['#folders-toggle-all'].title, 'Collapse all')
+  assert.equal(ui.controls['#folders-toggle-all'].icon, 'fas fa-angles-up')
+  ui.handlers['#folders-toggle-all']()
+  assert.equal(ui.body.children.length, 2)
+})
+
+test('Clicking the tree toggle never opens the edit sidebar', () => {
+  let handler
+  let opened = 0
+  const context = { _sidebarFolderId: null, openSidebar() { opened++ }, closeSidebar() {},
+    $: target => target === '#table-folders'
+      ? { on(event, selector, fn) { assert.equal(selector, '.modify'); handler = fn } }
+      : { closest: selector => (selector === '.icon-collapse' ? { length: target.toggle ? 1 : 0 } : { data: () => 7 }) } }
+  vm.runInNewContext(section("    $('#table-folders').on('click', '.modify'", '    // Preset complexity'), context)
+  handler.call({}, { target: { toggle: true } })
+  assert.equal(opened, 0)
+  handler.call({}, { target: { toggle: false } })
+  assert.equal(opened, 1)
 })
 
 test('Typing, paste and clearing coalesce into one delayed search', () => {
