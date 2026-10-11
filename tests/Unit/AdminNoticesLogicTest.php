@@ -111,6 +111,33 @@ class AdminNoticesLogicTest extends TestCase
     }
 
     /**
+     * A method that is imposed on the accounts closes the subject, with or without passkeys.
+     */
+    public function testNoMfaRecommendationOnceAnImposedMethodIsEnabled(): void
+    {
+        self::assertSame('', adminNoticesMfaRecommendation(true, false));
+        self::assertSame('', adminNoticesMfaRecommendation(true, true));
+    }
+
+    /**
+     * Nothing enabled at all: the historical recommendation.
+     */
+    public function testMfaRecommendationWhenNoMethodIsEnabled(): void
+    {
+        self::assertSame('checklist_mfa', adminNoticesMfaRecommendation(false, false));
+    }
+
+    /**
+     * Passkeys alone are a method, so "no method is enabled" would be false; they are only
+     * offered, so the checklist must not go silent either. The notice has its own id: an
+     * administrator who dismissed the first one still learns that passkeys impose nothing.
+     */
+    public function testPasskeysAloneGetTheirOwnMfaRecommendation(): void
+    {
+        self::assertSame('checklist_mfa_passkeys_only', adminNoticesMfaRecommendation(false, true));
+    }
+
+    /**
      * With no notice the card is not rendered at all and system health takes the full
      * width: an empty card is exactly what made a fresh installation look broken.
      */

@@ -299,7 +299,7 @@ Local and LDAP users are not affected — they keep authenticating the API with 
 #### How an OAuth2 user connects the API / browser extension
 
 1. The OAuth2 user logs into the TeamPass web interface as usual (through Entra).
-2. In **Profile → Browser extension tokens**, they click *Generate a new token*. A 256-bit **Personal Access Token** is shown **once** — they copy it immediately (it is never displayed again).
+2. In **Profile → Browser extension → Access given to the extension**, they click *Generate a new token*. A 256-bit **Personal Access Token** is shown **once** — they copy it immediately (it is never displayed again).
 3. In the API client / browser extension they authenticate with their **login** and this **token** (no password, no API key). The server returns the same kind of session as the password path.
 4. Tokens can be **revoked** at any time from the same profile screen; a revoked token stops working immediately.
 

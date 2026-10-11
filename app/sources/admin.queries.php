@@ -3170,7 +3170,7 @@ case 'save_sending_statistics':
      * Returns: users, items, folders, and logs statistics
      * 
      * @return array {
-     *   users: {active: int, online: int, api_online: int, blocked: int},
+     *   users: {active: int, online: int, api_online: int, blocked: int, warned: int, passkeys: int|null},
      *   items: {total: int, shared: int, personal: int},
      *   folders: {total: int, public: int, personal: int},
      *   logs: {actions: int, accesses: int, errors: int}
@@ -3228,6 +3228,12 @@ case 'save_sending_statistics':
     );
 
     $usersBlocked = (int) $usersDisabled + (int) $usersBruteforceLocked;
+
+    // Adoption of sign-in passkeys: active accounts holding one, null while the feature is off
+    require_once __DIR__ . '/webauthn_login.functions.php';
+    $usersWithPasskey = webauthnLoginMode($SETTINGS) !== TP_WEBAUTHN_LOGIN_MODE_DISABLED
+        ? webauthnLoginAccountsWithPasskey(webauthnLoginRpId($SETTINGS))
+        : null;
 
     // Inactive users warned (as per Inactive Users Management)
     $usersWarned = DB::queryFirstField(
@@ -3315,6 +3321,7 @@ case 'save_sending_statistics':
                 'api_online' => intval($usersApiOnline),
                 'blocked' => intval($usersBlocked),
                 'warned' => intval($usersWarned),
+                'passkeys' => $usersWithPasskey,
             ),
             'items' => array(
                 'total' => intval($itemsTotal),

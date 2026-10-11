@@ -56,7 +56,9 @@ $lang = new Language($session->get('user-language') ?? 'english');
         var state = {
             detected: false,
             configured: null,
-            version: null
+            version: null,
+            // true once the handshake was answered or given up
+            probed: false
         }
         var pendingApply = {}
 
@@ -151,9 +153,16 @@ $lang = new Language($session->get('user-language') ?? 'english');
             }
         }
 
+        // Tell the page the handshake has settled: the profile shows its outcome.
+        function publishState() {
+            state.probed = true
+            $(document).trigger('tpExtAutoconfig:state')
+        }
+
         function onExtensionDetected() {
             // Manual button stays the primary entry-point; hide the file fallback.
             $('#extension-autoconfig-download').addClass('hidden')
+            publishState()
 
             if (state.configured === false) {
                 // Auto-prompt once per browser session.
@@ -167,6 +176,7 @@ $lang = new Language($session->get('user-language') ?? 'english');
         function onExtensionNotDetected() {
             // No extension answered: expose the downloadable-file fallback.
             $('#extension-autoconfig-download').removeClass('hidden')
+            publishState()
         }
 
         function promptAutoConfigure() {

@@ -45,9 +45,20 @@ declare(strict_types=1);
     // Passkey second factor: the options the server sent and the submission to replay with
     // the assertion, kept until the ceremony succeeds so a click can start it again.
     var webauthnMfaPending = null;
-    // Passwordless sign-in: a challenge the browser refused to use without a click, kept so the
-    // next click on the passkey button signs it directly.
+    // Passwordless sign-in: the challenge is fetched ahead of the click, so that the click itself
+    // starts the ceremony - a gesture some browsers require. One the browser refused to use is
+    // kept here too, for the next click to sign.
     var passwordlessLoginPending = null;
+    // The request for that challenge while it is on its way: one at a time, since the server only
+    // keeps the last challenge it handed out.
+    var passwordlessChallengeRequest = null;
+    var passwordlessChallengeAskedAt = 0;
+    // Turned off once the server refuses to hand out a challenge: nothing to fetch ahead.
+    var passwordlessPrefetchEnabled = true;
+    // An older challenge is replaced, not signed: the server forgets it 300 seconds after handing
+    // it out (TP_WEBAUTHN_LOGIN_CEREMONY_TTL), and the browser gives the user up to 120 seconds
+    // to answer (TP_WEBAUTHN_LOGIN_TIMEOUT_MS).
+    const passwordlessChallengeMaxAge = 150000;
     var loginInProgress = false;
     var loginNavigationPending = false;
     var loginReadOnlyFields = null;
@@ -524,6 +535,12 @@ declare(strict_types=1);
             }
             launchPasswordlessLogin();
         });
+        // Fetch the challenge ahead of that click, and keep one ready while the page is looked at
+        if ($('#but_login_with_passkey').length > 0 && window.isSecureContext === true) {
+            prefetchPasswordlessChallenge();
+            setInterval(prefetchPasswordlessChallenge, 30000);
+            $(document).on('visibilitychange', prefetchPasswordlessChallenge);
+        }
 
         // Click on log in button with Azure Entra
         if($("#but_login_with_oauth2").length > 0) {
@@ -1573,34 +1590,149 @@ declare(strict_types=1);
         }
 
         beginLoginAttempt();
-        const pending = passwordlessLoginPending;
-        passwordlessLoginPending = null;
-        // A kept challenge is signed straight from this click; otherwise ask for one first
+        // A challenge already at hand is signed straight from this click; otherwise ask for one first
+        const pending = takePasswordlessChallenge();
         const started = pending !== null
             ? runPasswordlessCeremony(pending)
-            : $.when(sessionKeyCheckRequest).then(function() {
-                return $.post('sources/identify.php', { type: 'webauthn_login_options' });
-            }).then(function(answer) {
-                const start = prepareExchangedData(answer, 'decode', tpSessionKey);
-                if (start.error !== false) {
-                    toastr.remove();
-                    toastr.error(start.message, <?php echo json_encode($lang->get('caution'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>, {
+            : signNewPasswordlessChallenge();
+
+        return $.when(started).then(function() {
+            finishLoginAttempt();
+            // The attempt used its challenge up: have the next one ready
+            prefetchPasswordlessChallenge(true);
+        }, function() {
+            finishLoginAttempt();
+            showLoginRequestError();
+        });
+    }
+
+    /**
+     * Read a server answer without any dialog: what runs in the background fails silently.
+     *
+     * @param {*} answer Raw answer of identify.php.
+     * @returns {object|null} Decoded answer, null when it cannot be read.
+     */
+    function decodeAnswerSilently(answer) {
+        try {
+            if (typeof answer === 'string') {
+                const plain = parseInt($('#encryptClientServerStatus').val()) === 1
+                    ? (new Encryption()).decrypt(answer, tpSessionKey)
+                    : answer;
+                if (safeParseJSONMaybe(plain).ok !== true) {
+                    return null;
+                }
+            }
+            const data = prepareExchangedData(answer, 'decode', tpSessionKey);
+            return data !== null && typeof data === 'object' ? data : null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    /**
+     * Tell whether the passwordless challenge at hand can still be signed.
+     *
+     * @returns {boolean}
+     */
+    function passwordlessChallengeIsFresh() {
+        return passwordlessLoginPending !== null &&
+            (Date.now() - passwordlessLoginPending.fetchedAt) < passwordlessChallengeMaxAge;
+    }
+
+    /**
+     * Take the passwordless challenge at hand: each one is signed once.
+     *
+     * @returns {object|null} The challenge, null when there is none or it is too old.
+     */
+    function takePasswordlessChallenge() {
+        const pending = passwordlessChallengeIsFresh() === true ? passwordlessLoginPending : null;
+        passwordlessLoginPending = null;
+        return pending;
+    }
+
+    /**
+     * Ask the server for a passwordless challenge and keep it at hand. A request already on its
+     * way is shared: the server only remembers the last challenge it handed out.
+     *
+     * @returns {object} Promise of the decoded answer, null when it cannot be read.
+     */
+    function requestPasswordlessChallenge() {
+        if (passwordlessChallengeRequest !== null) {
+            return passwordlessChallengeRequest;
+        }
+        passwordlessChallengeAskedAt = Date.now();
+        const request = $.when(sessionKeyCheckRequest).then(function() {
+            return $.post('sources/identify.php', { type: 'webauthn_login_options' });
+        }).then(function(answer) {
+            const start = decodeAnswerSilently(answer);
+            if (start !== null && start.error !== false) {
+                passwordlessPrefetchEnabled = false;
+            }
+            passwordlessLoginPending = start !== null && start.error === false ? {
+                options: start.options,
+                prfInput: start.prf_input,
+                randomstring: CreateRandomString(10),
+                fetchedAt: Date.now(),
+                ahead: true
+            } : null;
+            return start;
+        });
+        const release = function() {
+            if (passwordlessChallengeRequest === request) {
+                passwordlessChallengeRequest = null;
+            }
+        };
+        passwordlessChallengeRequest = request;
+        request.then(release, release);
+        return request;
+    }
+
+    /**
+     * Have a passwordless challenge ready before the passkey button is clicked. Silent: without
+     * it, the click asks for one itself.
+     *
+     * @param {boolean} force Fetch even though one was asked for a moment ago.
+     * @returns {void}
+     */
+    function prefetchPasswordlessChallenge(force) {
+        if (passwordlessPrefetchEnabled !== true || loginInProgress === true || loginNavigationPending === true ||
+            document.visibilityState === 'hidden' || passwordlessChallengeIsFresh() === true ||
+            typeof window.tpWebauthnLogin === 'undefined' || window.tpWebauthnLogin.supported() !== true
+        ) {
+            return;
+        }
+        if (force !== true && (Date.now() - passwordlessChallengeAskedAt) < passwordlessChallengeMaxAge) {
+            return;
+        }
+        const ignore = function() {};
+        requestPasswordlessChallenge().then(ignore, ignore);
+    }
+
+    /**
+     * Ask for a passwordless challenge and sign it at once, when none was at hand.
+     *
+     * @returns {object} Promise settled once the server answered or the ceremony failed.
+     */
+    function signNewPasswordlessChallenge() {
+        return requestPasswordlessChallenge().then(function(start) {
+            const pending = takePasswordlessChallenge();
+            if (pending === null) {
+                toastr.remove();
+                toastr.error(
+                    start !== null && start.message
+                        ? start.message
+                        : <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+                    <?php echo json_encode($lang->get('caution'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>, {
                         timeOut: 10000,
                         progressBar: true,
                         positionClass: 'toast-bottom-right'
-                    });
-                    return false;
-                }
-                return runPasswordlessCeremony({
-                    options: start.options,
-                    prfInput: start.prf_input,
-                    randomstring: CreateRandomString(10)
-                });
-            });
-
-        return $.when(started).then(finishLoginAttempt, function() {
-            finishLoginAttempt();
-            showLoginRequestError();
+                    }
+                );
+                return false;
+            }
+            // Asked for this very attempt: the server still holds it if the session key is renewed
+            pending.ahead = false;
+            return runPasswordlessCeremony(pending);
         });
     }
 
@@ -1636,6 +1768,10 @@ declare(strict_types=1);
                 // The page outlived the server-side session: renew the key and send the same
                 // assertion again. The server answered before taking the challenge, still pending.
                 if (isStaleSessionKeyAnswer(answer) === true) {
+                    if (pending.ahead === true) {
+                        // Fetched ahead of the click, the challenge went with the session that held it
+                        return recoverFromStaleSessionKey(signNewPasswordlessChallenge);
+                    }
                     return recoverFromStaleSessionKey(sendAssertion);
                 }
 
@@ -1659,6 +1795,10 @@ declare(strict_types=1);
                     );
                     return false;
                 }
+                // Deleted from TeamPass, still on the device: let its passkey manager drop it
+                if (data.unknown_credential === true && typeof window.tpWebauthnLogin.signalUnknown === 'function') {
+                    window.tpWebauthnLogin.signalUnknown(pending.options.rpId, result.credential.rawId);
+                }
                 toastr.remove();
                 toastr.error(data.message, <?php echo json_encode($lang->get('caution'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>, {
                     timeOut: 10000,
@@ -1670,6 +1810,7 @@ declare(strict_types=1);
             return sendAssertion();
         }, function(error) {
             // Keep the challenge: some browsers only run a ceremony started by a click
+            pending.ahead = true;
             passwordlessLoginPending = pending;
             const kind = window.tpWebauthnLogin.errorKind(error);
             const messages = {

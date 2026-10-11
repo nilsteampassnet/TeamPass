@@ -169,7 +169,7 @@ Enabling another MFA method makes MFA mandatory for every account it applies to.
 |---|---|
 | Has no passkey | Signs in exactly as before |
 | Has a passkey | Must present it after the password |
-| Has a passkey, but **MFA enabled** is unchecked on its user form | Is not asked for it |
+| Has a passkey, but **MFA enabled** is unchecked on its user form | Is not asked for it — the user's profile says so under the list of passkeys |
 
 Where Google Authenticator or Duo is already required, a passkey is simply offered next to them, and the user picks one. This is why there is no enrolment during sign-in: a user registers a passkey from their profile, whenever they choose to.
 
@@ -179,7 +179,7 @@ Where Google Authenticator or Duo is already required, a passkey is simply offer
 
 ### Registering a passkey
 
-A user registers their own passkeys in **Profile → Information → Sign-in passkeys**:
+A user registers their own passkeys in **Profile → Sign-in and security → Sign-in passkeys**:
 
 1. Give the device a name (optional) and click **Add a passkey**.
 2. TeamPass asks for the password of the account (see [Confirming the password](#confirming-the-password)).
@@ -187,6 +187,15 @@ A user registers their own passkeys in **Profile → Information → Sign-in pas
 4. The passkey appears in the list, with its creation date and its last use.
 
 From the same list a passkey can be **renamed**, **deleted**, and — in passwordless mode — turned on or off for signing in without a password. An account may hold up to **20** passkeys.
+
+A passkey left without a name takes the name of the passkey manager that holds it — *Windows Hello*, *Google Password Manager*, *Apple Passwords*, *1Password*, *Bitwarden*… — when TeamPass recognises it, and a dated name otherwise. The list shows that manager under the name the user chose. It is a convenience, not a guarantee: the manager is what the authenticator declares, and a security key declares none.
+
+Under the list, the profile tells the user what the list alone does not:
+
+| Notice | When |
+|---|---|
+| TeamPass does not ask for the passkey after the password | **MFA enabled** is unchecked on the account: the passkey protects nothing until an administrator checks it |
+| The only passkey stays on the device that created it | The account has a single usable passkey and it is not *Synced*: a second one, on a phone or a security key, keeps the account reachable when that device is not at hand |
 
 #### Confirming the password
 
@@ -209,7 +218,7 @@ A confirmed password stays valid for 5 minutes, so a registration followed by th
 
 **Without a password.** In passwordless mode, the login page also shows **Sign in with a passkey**. The browser offers the passkeys registered for this TeamPass, and the account is the one the chosen passkey belongs to: nothing has to be typed.
 
-> 💡 Some browsers only run a passkey request started by a click. When that happens the page says so, and a second click on the same button completes the sign-in.
+> 💡 The login page prepares the passkey request as soon as it is displayed, and keeps one ready while it stays open: the click on **Sign in with a passkey** opens the browser dialog at once, including in the browsers that only run a passkey request started by a click. If the request could not be prepared — the page was just restored, the network was slow — the page says so, and a second click on the same button completes the sign-in.
 
 ---
 
@@ -248,15 +257,33 @@ Whoever holds both the database and the instance secret file can open the server
 | Where | What is recorded |
 |---|---|
 | **Monitoring → Logs**, administration entries | *Sign-in passkey added*, *Sign-in passkey deleted*, *Passwordless sign-in enabled on a passkey* and *Passwordless sign-in disabled on a passkey*, each naming the account |
+| **Monitoring → Logs**, connections | A sign-in made with a passkey alone reads *connection (passkey: name of the passkey)*, or *connection (passkey)* once that passkey has been deleted. A sign-in with the password, with or without a second factor, reads *connection* |
 | **Monitoring → Logs**, failed authentications | *Passkey sign-in refused* — a wrong or unknown passkey; *Password not confirmed for a passkey* — a wrong password when adding a passkey. Both count towards the account lockout like a wrong password |
 | **Email** | The owner is told when a passkey is added to their account, unless the notification setting is off. The text is customizable in [Email templates](../manage/email-templates.md) (*Sign-in passkey added*) |
 | **Profile** | Each passkey shows its creation date and its last use |
 
 ---
 
+### Following the adoption
+
+Since nothing is imposed, an administrator needs to see who registered a passkey. Two places show it while sign-in passkeys are enabled:
+
+| Where | What is shown |
+|---|---|
+| **Users**, next to the login | A fingerprint badge with the number of sign-in passkeys of the account; its tooltip adds how many of them sign in without a password. The badge is **orange** when the passkeys are not asked after the password, because **MFA enabled** is unchecked on the account: they protect nothing until it is checked |
+| **Administration dashboard**, *Active Users* tile | *Sign-in passkeys*: the number of active accounts that hold at least one, and their share of the active accounts |
+
+Both count the passkeys a sign-in accepts: one registered for a previous relying party ID is left out. Managers see the badge on the accounts they manage.
+
+The recommendations of the administration dashboard follow the same rule. While passkeys are the only multi-factor method enabled, *No multi-factor authentication method is enabled* gives way to *Passkeys are the only multi-factor method, and nothing imposes them*: an account without a passkey still signs in with its password alone. Enabling Google Authenticator, YubiKey, Duo or AGSES clears it; like the other recommendations, it can also be dismissed.
+
+---
+
 ### Revoking a user’s passkeys
 
-From **Users → action menu → Sign-in passkeys**, an administrator (or a manager of that account) lists the passkeys of a user and revokes any of them. A revocation takes effect at once, even though the passkey remains on the user's device.
+From **Users → action menu → Sign-in passkeys**, an administrator (or a manager of that account) lists the passkeys of a user, each with the passkey manager that holds it, and revokes any of them. A revocation takes effect at once, even though the passkey remains on the user's device.
+
+**Removing it from the device.** A passkey deleted in TeamPass — by its owner or by an administrator — is still offered by the device that holds it. In the browsers that implement the WebAuthn *Signal API*, TeamPass tells the passkey manager of the device which passkeys still exist, and the manager stops offering the others: when the owner opens their profile on that device, and when someone tries to sign in with the deleted passkey. Elsewhere nothing changes: the passkey is refused with *This passkey is no longer registered in TeamPass*, and the user removes it from the device by hand. Nothing is reported while sign-in passkeys are disabled, since the passkeys are kept and work again once the feature is back on.
 
 ---
 
@@ -283,6 +310,7 @@ From **Users → action menu → Sign-in passkeys**, an administrator (or a mana
 | No passkey button on the login page or in the profile | The feature is off, or the page is served over plain HTTP. Passkeys need HTTPS (or `localhost`) |
 | *This browser cannot use passkeys here* | Same causes, or a browser too old for WebAuthn |
 | The browser asks, then nothing happens | Some browsers refuse a request that no click started: click the button again |
+| *This passkey is no longer registered in TeamPass* | It was deleted from the profile, revoked by an administrator, or its account was removed. Sign in with the password, and remove the passkey from the device or the password manager if the browser did not do it (see [Revoking a user’s passkeys](#revoking-a-users-passkeys)) |
 | *This passkey is not set up to sign in without a password* | It was registered as a second factor, or the encryption keys of the account were regenerated since — typically after an administrator reset the password. Sign in with the password, then use **Use for passwordless sign-in** in the profile |
 | *Passwordless sign-in is not available for your account* | The account is a directory (LDAP) or OAuth2 account, whose passkeys are second factors only, or it is in a state that needs the password first: private key to re-encrypt, one-time code to enter. Sign in with the password |
 | *Your account is currently being created* | The encryption keys of the account are being regenerated, typically after an administrator reset the password. No sign-in works until the operation ends, with or without a passkey: try again a little later |

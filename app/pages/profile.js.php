@@ -101,6 +101,33 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     // every statement below (avatar uploader included) was never executed.
     $('#profile-user-language option[value="<?php echo addslashes(strval($session->get('user-language') ?? ''));?>"]').prop('selected', true);
 
+    // Shortcuts of the overview open the matching section of the menu
+    $(document).on('click', '.profile-goto', function(event) {
+        event.preventDefault();
+        $('#profile-tabs a[href="' + $(this).attr('href') + '"]').tab('show');
+    });
+
+    // Same action as the "Change password" entry of the account menu
+    $(document).on('click', '#profile-change-password', function() {
+        $('.user-menu[data-name="password-change"]').first().trigger('click');
+    });
+
+    // Text made safe for an element and for a double-quoted attribute
+    function profileEscape(text) {
+        return $('<span>').text(String(text)).html().replace(/"/g, '&quot;');
+    }
+
+    /**
+     * One line of a profile list: what it is, when it was used, and its actions.
+     * Every argument is HTML that is already escaped.
+     */
+    function profileListRow(title, details, actions, attributes) {
+        return '<div class="d-flex flex-wrap align-items-center border-top py-2"' + (attributes || '') + '>'
+            + '<div class="flex-grow-1 mr-3 py-1">' + title + '<div class="text-muted small">' + details + '</div></div>'
+            + '<div class="py-1">' + actions + '</div>'
+            + '</div>';
+    }
+
 
     // AVATAR IMPORT
     const updateAccountAvatar = (avatarUrl) => {
@@ -323,8 +350,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             'email': formEmail,
             'timezone': $('#profile-user-timezone').val() ?? '',
             'language': ($('#profile-user-language').val() ?? '').toLowerCase(),
-            'split_view_mode': $('#profile-user-split_view_mode').val(),
-            'show_subfolders': $('#profile-user-show_subfolders').val(),
+            'split_view_mode': $('#profile-user-split_view_mode').is(':checked') === true ? '1' : '0',
+            'show_subfolders': $('#profile-user-show_subfolders').is(':checked') === true ? '1' : '0',
         };
 
         const treeLoadStrategyField = $('#profile-user-treeloadstrategy');
@@ -370,8 +397,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     );
                 } else {
                     const selectedLanguage = ($('#profile-user-language').val() ?? '').toLowerCase();
-                    const selectedSplitViewMode = String($('#profile-user-split_view_mode').val() ?? '');
-                    const selectedShowSubfolders = String($('#profile-user-show_subfolders').val() ?? '');
+                    const selectedSplitViewMode = $('#profile-user-split_view_mode').is(':checked') === true ? '1' : '0';
+                    const selectedShowSubfolders = $('#profile-user-show_subfolders').is(':checked') === true ? '1' : '0';
 
                     const languageChanged = selectedLanguage !== '<?php echo strtolower((string) ($session->get('user-language') ?? 'english')); ?>';
                     const splitViewModeChanged = selectedSplitViewMode !== '<?php echo (int) ($session->get('user-split_view_mode') ?? 0); ?>';
@@ -486,7 +513,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
                             $("#" + target).text(newApiKey);
                             if (silent === false) {
-                                $('#profile-tabs a[href="#tab_information"]').tab('show');
                                 toastr.remove();
                                 toastr.info(
                                     '<?php echo $lang->get('done'); ?>',
@@ -661,8 +687,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         }
     });
 
-    // Handle the copy in clipboard button for api key
-    document.getElementById('copy-api-key').addEventListener('click', function() {
+    // Handle the copy in clipboard button for api key.
+    // Delegated: the key is only rendered while the API is enabled, and a missing
+    // button must not stop the rest of this script.
+    $(document).on('click', '#copy-api-key', function() {
         const apiKey = document.getElementById('profile-user-api-token').textContent;
         // Shared helper: falls back to execCommand when the async Clipboard API is
         // unavailable, which is the case on an instance served over plain HTTP.
@@ -703,6 +731,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         'otherRpTip' => $lang->get('webauthn_login_other_rp_tip'),
         'rename' => $lang->get('webauthn_login_rename'),
         'delete' => $lang->get('webauthn_login_delete'),
+        'deleteShort' => $lang->get('delete'),
         'deleteConfirm' => $lang->get('webauthn_login_delete_confirm'),
         'enable' => $lang->get('webauthn_login_passwordless_enable'),
         'disable' => $lang->get('webauthn_login_passwordless_disable'),
@@ -721,6 +750,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         'confirm' => $lang->get('confirm'),
         'stepUpTitle' => $lang->get('webauthn_login_stepup_title'),
         'stepUpPrompt' => $lang->get('webauthn_login_stepup_prompt'),
+        'notices' => [
+            'not_asked' => $lang->get('webauthn_login_notice_not_asked'),
+            'single_device' => $lang->get('webauthn_login_notice_single_device'),
+        ],
     ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
     let webauthnLoginCanWrap = false;
     let webauthnLoginStepUpPassword = true;
@@ -760,14 +793,15 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         return typeof window.tpWebauthnLogin !== 'undefined' && window.tpWebauthnLogin.supported() === true;
     }
 
-    function renderWebauthnLogin(credentials) {
+    function renderWebauthnLogin(credentials, notices) {
         const $list = $('#webauthn-login-list');
         if (!credentials || credentials.length === 0) {
             $list.html('<span class="text-muted">' + $('<span>').text(webauthnLoginText.none).html() + '</span>');
+            $('#profile-glance-passkeys').text(webauthnLoginText.none);
             return;
         }
         const enabled = parseInt($('#webauthn-login-block').data('mode'), 10) !== 0;
-        let html = '<table class="table table-sm table-striped mb-0"><tbody>';
+        let html = '';
         credentials.forEach(function(credential) {
             const id = parseInt(credential.id, 10);
             const created = new Date(credential.created_at * 1000).toLocaleString();
@@ -785,22 +819,37 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 badges += ' <span class="badge badge-warning ml-1" title="' + $('<span>').text(webauthnLoginText.otherRpTip).html() + '">'
                     + $('<span>').text(webauthnLoginText.otherRp.replace('%s', credential.rp_id)).html() + '</span>';
             }
-            let actions = '<button type="button" class="btn btn-sm btn-outline-secondary webauthn-login-rename" data-id="' + id + '" title="' + $('<span>').text(webauthnLoginText.rename).html() + '"><i class="fa-solid fa-pen"></i></button>';
+            // Buttons carry their name: an icon alone does not say what it does
+            let actions = '<button type="button" class="btn btn-sm btn-outline-secondary mr-1 my-1 webauthn-login-rename" data-id="' + id + '"><i class="fa-solid fa-pen mr-1"></i>' + profileEscape(webauthnLoginText.rename) + '</button>';
             if (credential.passwordless === true) {
-                actions += ' <button type="button" class="btn btn-sm btn-outline-warning webauthn-login-passwordless-disable" data-id="' + id + '" title="' + $('<span>').text(webauthnLoginText.disable).html() + '"><i class="fa-solid fa-lock"></i></button>';
+                actions += '<button type="button" class="btn btn-sm btn-outline-warning mr-1 my-1 webauthn-login-passwordless-disable" data-id="' + id + '"><i class="fa-solid fa-lock mr-1"></i>' + profileEscape(webauthnLoginText.disable) + '</button>';
             } else if (enabled === true && webauthnLoginCanWrap === true && credential.usable !== false) {
-                actions += ' <button type="button" class="btn btn-sm btn-outline-success webauthn-login-passwordless-enable" data-id="' + id + '" title="' + $('<span>').text(webauthnLoginText.enable).html() + '"><i class="fa-solid fa-unlock"></i></button>';
+                actions += '<button type="button" class="btn btn-sm btn-outline-success mr-1 my-1 webauthn-login-passwordless-enable" data-id="' + id + '"><i class="fa-solid fa-unlock mr-1"></i>' + profileEscape(webauthnLoginText.enable) + '</button>';
             }
-            actions += ' <button type="button" class="btn btn-sm btn-danger webauthn-login-delete" data-id="' + id + '" title="' + $('<span>').text(webauthnLoginText.delete).html() + '"><i class="fa-solid fa-trash"></i></button>';
-            html += '<tr data-label="' + $('<span>').text(credential.label).html() + '">'
-                + '<td>' + $('<span>').text(credential.label).html() + badges + '</td>'
-                + '<td class="text-muted small">' + $('<span>').text(webauthnLoginText.created + ': ' + created).html()
-                + '<br>' + $('<span>').text(webauthnLoginText.lastUsed + ': ' + lastUsed).html() + '</td>'
-                + '<td class="text-right text-nowrap">' + actions + '</td>'
-                + '</tr>';
+            actions += '<button type="button" class="btn btn-sm btn-outline-danger my-1 webauthn-login-delete" data-id="' + id + '" title="' + profileEscape(webauthnLoginText.delete) + '"><i class="fa-solid fa-trash mr-1"></i>' + profileEscape(webauthnLoginText.deleteShort) + '</button>';
+            // The passkey manager, when the name given to the passkey does not already say it
+            const authenticator = credential.authenticator && credential.authenticator !== credential.label
+                ? credential.authenticator + ' · '
+                : '';
+            html += profileListRow(
+                profileEscape(credential.label) + badges,
+                profileEscape(authenticator + webauthnLoginText.created + ': ' + created + ' · ' + webauthnLoginText.lastUsed + ': ' + lastUsed),
+                actions,
+                ' data-label="' + profileEscape(credential.label) + '"'
+            );
         });
-        html += '</tbody></table>';
+        // What the list alone does not say: a passkey that is not asked for, a single device
+        (Array.isArray(notices) ? notices : []).forEach(function(notice) {
+            if (webauthnLoginText.notices[notice]) {
+                html += '<div class="callout callout-' + (notice === 'not_asked' ? 'warning' : 'info') + ' webauthn-login-notice small mt-2 mb-0 py-2 px-3">'
+                    + '<i class="fa-solid ' + (notice === 'not_asked' ? 'fa-triangle-exclamation' : 'fa-circle-info') + ' mr-1"></i>'
+                    + $('<span>').text(webauthnLoginText.notices[notice]).html() + '</div>';
+            }
+        });
         $list.html(html);
+        $('#profile-glance-passkeys').text(credentials.map(function(credential) {
+            return credential.label;
+        }).join(', '));
     }
 
     function loadWebauthnLogin() {
@@ -808,7 +857,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             if (data.error === false) {
                 webauthnLoginCanWrap = data.can_wrap === true;
                 webauthnLoginStepUpPassword = data.stepup_password !== false;
-                renderWebauthnLogin(data.credentials);
+                renderWebauthnLogin(data.credentials, data.notices);
+                // Let the passkey managers of this device drop the passkeys deleted here
+                if (data.signal && webauthnLoginCeremonyAvailable() === true
+                    && typeof window.tpWebauthnLogin.signalAccepted === 'function'
+                ) {
+                    window.tpWebauthnLogin.signalAccepted(data.signal);
+                }
             }
         });
     }
@@ -990,7 +1045,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         const id = parseInt($(this).data('id'), 10);
         const $input = $('<input type="text" class="form-control" id="webauthn-login-rename-input" maxlength="100">')
             // attr(), not data(): data() would turn a label such as "12" or "{...}" into another type
-            .attr('value', String($(this).closest('tr').attr('data-label') || ''));
+            .attr('value', String($(this).closest('[data-label]').attr('data-label') || ''));
         launchConfirmDialog(
             webauthnLoginText.rename,
             $input.prop('outerHTML'),
@@ -1043,21 +1098,46 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             list.html('<span class="text-muted"><?php echo $lang->get('extension_token_none'); ?></span>');
             return;
         }
-        var html = '<table class="table table-sm table-striped mb-0"><tbody>';
+        var html = '';
         tokens.forEach(function(token) {
             var created = new Date(token.created_at * 1000).toLocaleString();
             var lastUsed = token.last_used_at ? new Date(token.last_used_at * 1000).toLocaleString() : '<?php echo $lang->get('extension_token_never_used'); ?>';
             // Label is escaped to prevent XSS (also sanitized server-side on insert).
             var label = token.label ? $('<span>').text(token.label).html() : '<i class="text-muted">&mdash;</i>';
-            html += '<tr>'
-                + '<td>' + label + '</td>'
-                + '<td class="text-muted small"><?php echo $lang->get('extension_token_created'); ?>: ' + created + '<br><?php echo $lang->get('extension_token_last_used'); ?>: ' + lastUsed + '</td>'
-                + '<td class="text-right"><button type="button" class="btn btn-sm btn-danger revoke-extension-token" data-id="' + parseInt(token.id, 10) + '" title="<?php echo $lang->get('extension_token_revoke'); ?>"><i class="fa-solid fa-trash"></i></button></td>'
-                + '</tr>';
+            html += profileListRow(
+                label,
+                '<?php echo $lang->get('extension_token_created'); ?>: ' + created + ' · <?php echo $lang->get('extension_token_last_used'); ?>: ' + lastUsed,
+                '<button type="button" class="btn btn-sm btn-outline-danger my-1 revoke-extension-token" data-id="' + parseInt(token.id, 10) + '"><i class="fa-solid fa-trash mr-1"></i><?php echo $lang->get('extension_token_revoke'); ?></button>'
+            );
         });
-        html += '</tbody></table>';
         list.html(html);
     }
+
+    /**
+     * Browser extension: what extension-autoconfig.js.php found in this browser.
+     */
+    var extensionStatusText = <?php echo json_encode([
+        'ready' => $lang->get('profile_extension_status_ready'),
+        'todo' => $lang->get('profile_extension_status_todo'),
+        'absent' => $lang->get('profile_extension_status_absent'),
+    ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+
+    function renderExtensionStatus() {
+        var state = window.tpExtAutoconfig ? window.tpExtAutoconfig.state : null;
+        // Nothing to say until the handshake has settled
+        if (state === null || state.probed !== true) {
+            return;
+        }
+        var kind = state.detected !== true ? 'absent' : (state.configured === true ? 'ready' : 'todo');
+        $('#extension-autoconfig-status')
+            .text(extensionStatusText[kind])
+            .removeClass('hidden badge-secondary badge-success badge-warning')
+            .addClass(kind === 'ready' ? 'badge-success' : (kind === 'todo' ? 'badge-warning' : 'badge-secondary'));
+        $('#profile-glance-extension').text(extensionStatusText[kind]);
+    }
+
+    $(document).on('tpExtAutoconfig:state', renderExtensionStatus);
+    renderExtensionStatus();
 
     function loadExtensionTokens() {
         $.post(
@@ -1161,31 +1241,60 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
      */
     var apiSessionsKey = '<?php echo $session->get('key'); ?>';
 
+    /**
+     * A readable name for an API client ("Chrome · Windows"), from its user agent.
+     * Empty when the user agent is not a browser's: it is then shown as it is.
+     */
+    function profileApiClientName(userAgent) {
+        // Order matters: Edge and Opera also say Chrome, Chrome also says Safari,
+        // Android also says Linux and iOS also says Mac OS X.
+        var browsers = [['Edg/', 'Edge'], ['OPR/', 'Opera'], ['Firefox/', 'Firefox'], ['Chrome/', 'Chrome'], ['Safari/', 'Safari']];
+        var systems = [['Windows', 'Windows'], ['Android', 'Android'], ['iPhone', 'iOS'], ['iPad', 'iOS'], ['Mac OS X', 'macOS'], ['CrOS', 'ChromeOS'], ['Linux', 'Linux']];
+        var found = function(entries) {
+            for (var i = 0; i < entries.length; i++) {
+                if (userAgent.indexOf(entries[i][0]) !== -1) {
+                    return entries[i][1];
+                }
+            }
+            return '';
+        };
+        var browser = found(browsers);
+        var system = found(systems);
+        if (browser === '') {
+            return '';
+        }
+        return browser + (system === '' ? '' : ' · ' + system);
+    }
+
     function renderApiSessions(sessions) {
         var list = $('#api-sessions-list');
         if (list.length === 0) {
             return;
         }
         if (!sessions || sessions.length === 0) {
-            list.html('<span class="text-muted"><?php echo $lang->get('api_sessions_none'); ?></span>');
+            list.html('<span class="text-muted"><?php echo $lang->get('profile_api_connections_none'); ?></span>');
             return;
         }
-        var html = '<table class="table table-sm table-striped mb-0"><tbody>';
+        var html = '';
         sessions.forEach(function(apiSession) {
             var created = new Date(apiSession.created_at * 1000).toLocaleString();
             var expires = new Date(apiSession.expires_at * 1000).toLocaleString();
             var lastUsed = apiSession.last_used_at ? new Date(apiSession.last_used_at * 1000).toLocaleString() : '<?php echo $lang->get('extension_token_never_used'); ?>';
-            // User agent is escaped to prevent XSS
-            var client = apiSession.user_agent ? $('<span>').text(apiSession.user_agent).html() : '<i class="text-muted">&mdash;</i>';
-            html += '<tr>'
-                + '<td class="small">' + client + '</td>'
-                + '<td class="text-muted small"><?php echo $lang->get('extension_token_created'); ?>: ' + created
-                + '<br><?php echo $lang->get('extension_token_last_used'); ?>: ' + lastUsed
-                + '<br><?php echo $lang->get('expiration_date'); ?>: ' + expires + '</td>'
-                + '<td class="text-right"><button type="button" class="btn btn-sm btn-danger revoke-api-session" data-id="' + parseInt(apiSession.id, 10) + '" title="<?php echo $lang->get('api_session_revoke'); ?>"><i class="fa-solid fa-ban"></i></button></td>'
-                + '</tr>';
+            // User agent is escaped to prevent XSS; the full one stays available as a tooltip
+            var client = '<i class="text-muted">&mdash;</i>';
+            if (apiSession.user_agent) {
+                var clientName = profileApiClientName(String(apiSession.user_agent));
+                client = '<span title="' + profileEscape(apiSession.user_agent) + '">'
+                    + profileEscape(clientName !== '' ? clientName : apiSession.user_agent) + '</span>';
+            }
+            html += profileListRow(
+                client,
+                '<?php echo $lang->get('extension_token_created'); ?>: ' + created
+                    + ' · <?php echo $lang->get('extension_token_last_used'); ?>: ' + lastUsed
+                    + ' · <?php echo $lang->get('expiration_date'); ?>: ' + expires,
+                '<button type="button" class="btn btn-sm btn-outline-danger my-1 revoke-api-session" data-id="' + parseInt(apiSession.id, 10) + '" title="<?php echo $lang->get('api_session_revoke'); ?>"><i class="fa-solid fa-ban mr-1"></i><?php echo $lang->get('extension_token_revoke'); ?></button>'
+            );
         });
-        html += '</tbody></table>';
         list.html(html);
     }
 

@@ -169,5 +169,9 @@ relaxes **both** gates behind one admin toggle:
   Configure) itself is unaffected — it only ever runs once the TLS connection is trusted.
 - **Diagnose detection** in the page console: `window.tpExtAutoconfig.state` — `detected:false` after a
   reload means the content-script bridge is not answering (injection/reload issue, not the web UI).
+  `probed` turns `true` once the handshake was answered or given up; the bridge then triggers
+  `tpExtAutoconfig:state` on `document`, which the profile (Browser extension section) listens to
+  to show "Set up / Not set up yet / Not detected". The page is not told when the confirmation
+  window succeeds, so that status only refreshes at the next page load.
 - The confirmation window is opened with `chrome.runtime.getURL('confirm/confirm.html') + '?id=' + confirmId`;
   the pending bundle lives in `chrome.storage.session` keyed by `autoconfig_pending_<confirmId>`.

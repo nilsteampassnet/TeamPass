@@ -155,5 +155,53 @@
     return 'failed'
   }
 
-  window.tpWebauthnLogin = { supported, register, assert, errorKind }
+  // WebAuthn Signal API, where the browser has it: reports to the user's passkey managers what
+  // the server knows, so that a passkey deleted in TeamPass stops being offered by the device.
+  // Best effort: a browser without it, or a manager that ignores it, changes nothing.
+  const signal = (method, details) => {
+    try {
+      const api = window.PublicKeyCredential
+      if (window.isSecureContext !== true || typeof api === 'undefined' || typeof api[method] !== 'function') {
+        return false
+      }
+      Promise.resolve(api[method](details)).catch(() => {})
+      return true
+    } catch (error) {
+      return false
+    }
+  }
+
+  /**
+   * Report a passkey the server no longer knows, right after it was presented.
+   *
+   * @param {string} rpId  Relying party id of the request it answered
+   * @param {string} credentialId  base64url id of the passkey
+   * @returns {boolean} Whether the browser was told
+   */
+  const signalUnknown = (rpId, credentialId) => {
+    if (!rpId || !credentialId) {
+      return false
+    }
+    return signal('signalUnknownCredential', { rpId, credentialId })
+  }
+
+  /**
+   * Report the complete list of an account's passkeys: the managers drop the others. Only to be
+   * called with a list the server just sent for the signed-in account.
+   *
+   * @param {{rp_id: string, user_id: string, credential_ids: string[]}} accepted  From the server
+   * @returns {boolean} Whether the browser was told
+   */
+  const signalAccepted = (accepted) => {
+    if (!accepted || !accepted.rp_id || !accepted.user_id || !Array.isArray(accepted.credential_ids)) {
+      return false
+    }
+    return signal('signalAllAcceptedCredentials', {
+      rpId: accepted.rp_id,
+      userId: accepted.user_id,
+      allAcceptedCredentialIds: accepted.credential_ids
+    })
+  }
+
+  window.tpWebauthnLogin = { supported, register, assert, errorKind, signalUnknown, signalAccepted }
 })()

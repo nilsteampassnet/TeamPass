@@ -4320,6 +4320,10 @@ function refreshListInactiveUsers(filterValue) {
                             .attr('title', <?php echo json_encode($lang->get('webauthn_login_other_rp_tip'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>)
                             .text(<?php echo json_encode($lang->get('webauthn_login_other_rp'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>.replace('%s', credential.rp_id)))
                     }
+                    // The passkey manager, when the name given to the passkey does not already say it
+                    if (credential.authenticator && credential.authenticator !== credential.label) {
+                        $label.append('<br>', $('<span class="text-muted small">').text(credential.authenticator))
+                    }
                     const lastUsed = credential.last_used_at ? new Date(credential.last_used_at * 1000).toLocaleString() : <?php echo json_encode($lang->get('webauthn_never_used'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
                     $row.append(
                         $label,

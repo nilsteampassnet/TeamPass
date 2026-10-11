@@ -30,8 +30,9 @@ declare(strict_types=1);
  *   - app/sources/admin_notices.functions.php   (collection adapters + rendering)
  *   - tests/Unit/AdminNoticesLogicTest.php      (unit tests)
  *
- * Everything about severity ranking, ordering and the adaptive two-card layout lives
- * here; the adapters only read the database and the settings.
+ * Everything about severity ranking, ordering, the adaptive two-card layout and the
+ * choice of the multi-factor recommendation lives here; the adapters only read the
+ * database and the settings.
  *
  * @file      admin_notices_logic.php
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -171,6 +172,30 @@ function adminNoticeIconClass(string $severity): string
         default:
             return 'text-muted';
     }
+}
+
+/**
+ * Picks the multi-factor recommendation of the getting-started checklist.
+ *
+ * Google Authenticator, YubiKey, Duo and AGSES are imposed on the accounts they apply
+ * to: one of them enabled closes the subject. Sign-in passkeys are only offered, so when
+ * they are the single method enabled the recommendation changes instead of going away:
+ * "no method is enabled" would be false, and saying nothing would let the administrator
+ * believe every account is covered.
+ *
+ * @param bool $imposedMethodEnabled Whether Google Authenticator, YubiKey, Duo or AGSES is enabled.
+ * @param bool $passkeysEnabled      Whether passkeys can sign in to TeamPass.
+ *
+ * @return string Notice id ('checklist_mfa' or 'checklist_mfa_passkeys_only'), '' when
+ *                there is nothing to recommend.
+ */
+function adminNoticesMfaRecommendation(bool $imposedMethodEnabled, bool $passkeysEnabled): string
+{
+    if ($imposedMethodEnabled === true) {
+        return '';
+    }
+
+    return $passkeysEnabled === true ? 'checklist_mfa_passkeys_only' : 'checklist_mfa';
 }
 
 /**

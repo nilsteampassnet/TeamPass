@@ -10,6 +10,8 @@ The **Users** page is the central place for managing accounts in Teampass. An ad
 
 The page opens on a table listing all accounts. Each row shows the login, full name, email address, assigned role label, account status, admin flag, and MFA status.
 
+When sign-in passkeys are enabled, a fingerprint badge next to the login gives the number of [passkeys](passkeys.md#following-the-adoption) the account signs in with; it turns orange when they are not asked for because MFA is disabled on the account.
+
 The gear icon at the left of each row opens the **action menu** for that user.
 
 ### Action menu

@@ -387,6 +387,159 @@ final class WebauthnLoginWiringTest extends TestCase
         $this->assertStringContainsString("saveFieldValue(\$field, 'webauthn_rp_id', false);", $js);
     }
 
+    public function testThePasswordlessChallengeNeverReplacesACeremonyInProgress(): void
+    {
+        // The login page fetches that challenge ahead of any click: it has a slot of its own, so
+        // that it cannot overwrite the second factor the same session is waiting on.
+        $functions = (string) file_get_contents(__DIR__ . '/../../app/sources/webauthn_login.functions.php');
+
+        $options = $this->between($functions, 'function webauthnLoginPasswordlessLoginOptions(', 'function webauthnLoginPasswordlessLoginVerify(');
+        $this->assertStringContainsString('->set(TP_WEBAUTHN_LOGIN_PRELOGIN_KEY', $options);
+        $this->assertStringNotContainsString('TP_WEBAUTHN_LOGIN_PENDING_KEY', $options);
+
+        $take = $this->between($functions, 'function webauthnLoginTakePending(', 'function webauthnLoginRows(');
+        $this->assertStringContainsString(
+            "\$slot = \$purpose === 'passwordless_login' ? TP_WEBAUTHN_LOGIN_PRELOGIN_KEY : TP_WEBAUTHN_LOGIN_PENDING_KEY;",
+            $take
+        );
+        $this->assertStringContainsString('$session->remove($slot);', $take);
+
+        $secondFactor = $this->between($functions, 'function webauthnLoginSecondFactor(', 'function webauthnLoginPasswordlessLoginOptions(');
+        $this->assertStringContainsString('->set(TP_WEBAUTHN_LOGIN_PENDING_KEY', $secondFactor);
+    }
+
+    public function testTheLoginPageKeepsAChallengeItCanStillSign(): void
+    {
+        require_once __DIR__ . '/../../app/sources/webauthn_login_logic.php';
+        $login = (string) file_get_contents(__DIR__ . '/../../app/core/login.js.php');
+
+        // Fetched when the page loads, so that the click itself starts the ceremony
+        $this->assertMatchesRegularExpression(
+            "/if \\(\\$\\('#but_login_with_passkey'\\)\\.length > 0 && window\\.isSecureContext === true\\) \\{\\s*prefetchPasswordlessChallenge\\(\\);/",
+            $login
+        );
+        // Never signed once the server may have forgotten it by the time the user answers
+        $this->assertSame(1, preg_match('/const passwordlessChallengeMaxAge = (\\d+);/', $login, $match));
+        $this->assertLessThanOrEqual(
+            TP_WEBAUTHN_LOGIN_CEREMONY_TTL * 1000 - TP_WEBAUTHN_LOGIN_TIMEOUT_MS,
+            (int) $match[1]
+        );
+        // Fetched ahead, it dies with a session the page outlived: a new one is signed instead
+        $ceremony = $this->between($login, 'function runPasswordlessCeremony(pending)', 'function runWebauthnSecondFactor(');
+        $this->assertStringContainsString('return recoverFromStaleSessionKey(signNewPasswordlessChallenge);', $ceremony);
+    }
+
+    public function testAPasskeyDeletedHereIsReportedToTheDevice(): void
+    {
+        $functions = (string) file_get_contents(__DIR__ . '/../../app/sources/webauthn_login.functions.php');
+        $verify = $this->between($functions, 'function webauthnLoginPasswordlessLoginVerify(', 'function webauthnLoginPrivateKeyMatches(');
+        // An unknown passkey says so, and still counts as a failed authentication
+        $this->assertMatchesRegularExpression(
+            "/if \\(\\\$row === null\\) \\{.*?'webauthn_login_unknown_passkey'\\), 'counted' => true, 'unknown' => true/s",
+            $verify
+        );
+
+        $identify = (string) file_get_contents(__DIR__ . '/../../app/sources/identify.php');
+        $passkey = $this->between($identify, 'function identifyUserWithPasskey(', 'function identifyFinishLogin(');
+        $this->assertStringContainsString("'unknown_credential' => (\$check['unknown'] ?? false) === true,", $passkey);
+
+        $login = (string) file_get_contents(__DIR__ . '/../../app/core/login.js.php');
+        $this->assertStringContainsString('window.tpWebauthnLogin.signalUnknown(pending.options.rpId, result.credential.rawId);', $login);
+
+        // The profile reports the complete list, and nothing while the feature is off: the
+        // passkeys are kept then, and a manager drops whatever the list omits
+        $signal = $this->between($functions, 'function webauthnLoginSignalData(', 'function webauthnLoginRegisterOptions(');
+        $this->assertStringContainsString("if (webauthnLoginMode(\$SETTINGS) === TP_WEBAUTHN_LOGIN_MODE_DISABLED || \$rpId === '') {\n        return null;", $signal);
+        $this->assertStringContainsString('webauthnLoginCredentialIds($userId, $rpId)', $signal);
+        $profile = (string) file_get_contents(__DIR__ . '/../../app/pages/profile.js.php');
+        $load = $this->between($profile, 'function loadWebauthnLogin()', 'function webauthnLoginAskPassword()');
+        $this->assertStringContainsString('if (data.error === false) {', $load);
+        $this->assertStringContainsString('window.tpWebauthnLogin.signalAccepted(data.signal);', $load);
+    }
+
+    public function testTheProfileExplainsWhatTheListDoesNotSay(): void
+    {
+        $functions = (string) file_get_contents(__DIR__ . '/../../app/sources/webauthn_login.functions.php');
+        $list = $this->between($functions, 'function webauthnLoginList(', 'function webauthnLoginSignalData(');
+        $this->assertStringContainsString("'notices' => webauthnLoginProfileNotices(\$SETTINGS, \$mfaEnabled, \$credentials),", $list);
+        // MFA is read from the account, not from a session an administrator may have outdated
+        $this->assertStringContainsString("'SELECT mfa_enabled FROM ' . prefixTable('users') . ' WHERE id = %i'", $list);
+
+        $profile = (string) file_get_contents(__DIR__ . '/../../app/pages/profile.js.php');
+        $lang = new Language('english', __DIR__ . '/../../app/includes/language');
+        foreach (['not_asked', 'single_device'] as $notice) {
+            $this->assertStringContainsString("'" . $notice . "' => \$lang->get('webauthn_login_notice_" . $notice . "'),", $profile);
+            $this->assertNotSame('webauthn_login_notice_' . $notice, $lang->get('webauthn_login_notice_' . $notice));
+        }
+
+        // A passkey left unnamed takes the name of its manager
+        $register = $this->between($functions, 'function webauthnLoginRegisterVerify(', 'function webauthnLoginRename(');
+        $this->assertSame(2, substr_count($register, "webauthnLoginLabelOrDefault(\$data['label'] ?? '', \$lang, (string) \$record->aaguid)"));
+    }
+
+    public function testAPasskeySignInIsToldApartInTheConnectionLogs(): void
+    {
+        $identify = (string) file_get_contents(__DIR__ . '/../../app/sources/identify.php');
+        $this->assertStringContainsString("(int) (\$check['passkey_id'] ?? 0)", $this->between($identify, 'function identifyUserWithPasskey(', 'function identifyFinishLogin('));
+        $this->assertStringContainsString(
+            '$passkeyId > 0 ? webauthnLoginConnectionMarker($passkeyId) : null,',
+            $this->between($identify, 'function identifyFinishLogin(', 'function buildUserSession(')
+        );
+        // The label stays 'connection': the dashboards and the last-connection lookups filter on it
+        $this->assertStringContainsString(
+            "logEvents(\$SETTINGS, 'user_connection', 'connection', (string) \$userInfoId, stripslashes(\$username), \$signInMethod);",
+            $identify
+        );
+
+        $logs = (string) file_get_contents(__DIR__ . '/../../app/sources/logs.datatables.php');
+        $this->assertStringContainsString("require_once __DIR__ . '/webauthn_login_logic.php';", $logs);
+        $this->assertStringContainsString("\$type === 'user_connection' ? webauthnLoginConnectionPasskeyId(\$field1) : null;", $logs);
+        $this->assertStringContainsString("\$lang->get('webauthn_login_log_method')", $logs);
+    }
+
+    public function testAdministratorsSeeHowFarPasskeysAreAdopted(): void
+    {
+        $functions = (string) file_get_contents(__DIR__ . '/../../app/sources/webauthn_login.functions.php');
+
+        // Users list: one query for the page, counting what a sign-in would accept
+        $counts = $this->between($functions, 'function webauthnLoginCountsByUser(', 'function webauthnLoginAccountsWithPasskey(');
+        $this->assertStringContainsString('WHERE user_id IN %li AND (rp_id IS NULL OR rp_id = %s)', $counts);
+        $this->assertStringContainsString('GROUP BY user_id', $counts);
+        $list = (string) file_get_contents(__DIR__ . '/../../app/sources/users.datatable.php');
+        $this->assertStringContainsString("webauthnLoginCountsByUser(array_column(\$rows, 'id'), webauthnLoginRpId(\$SETTINGS))", $list);
+        $this->assertStringContainsString('$passkeyBadge = webauthnLoginUsersBadge(', $list);
+        // The count query comes after the test that opens the JSON array: DB::count() reads the last query
+        $this->assertLessThan(strpos($list, 'webauthnLoginCountsByUser('), strpos($list, 'if (DB::count() > 0) {'));
+        // Only numbers and translations reach the hand-built JSON, escaped for the attribute
+        $badge = $this->between($list, '$passkeyBadge = webauthnLoginUsersBadge(', '// Inactive users management icon');
+        $this->assertStringContainsString("htmlspecialchars(\$passkeyTitle, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')", $badge);
+        $this->assertStringContainsString("\$passkeyBadge['asked'] === true ? 'badge-info' : 'badge-warning'", $badge);
+
+        // Dashboard: accounts that can sign in, system accounts left out like the other counters
+        $adoption = $this->between($functions, 'function webauthnLoginAccountsWithPasskey(', 'function webauthnLoginSecondFactor(');
+        $this->assertStringContainsString('COUNT(DISTINCT c.user_id)', $adoption);
+        $this->assertStringContainsString('u.disabled = %i', $adoption);
+        $this->assertStringContainsString('u.deleted_at IS NULL', $adoption);
+        $this->assertStringContainsString("['tp', 'otv', 'api']", $adoption);
+
+        $admin = (string) file_get_contents(__DIR__ . '/../../app/sources/admin.queries.php');
+        $stats = $this->between($admin, "case 'get_dashboard_stats':", "case 'get_live_activity':");
+        $this->assertStringContainsString('webauthnLoginAccountsWithPasskey(webauthnLoginRpId($SETTINGS))', $stats);
+        $this->assertStringContainsString("'passkeys' => \$usersWithPasskey,", $stats);
+        // Shown only while the feature is on
+        $page = (string) file_get_contents(__DIR__ . '/../../app/pages/admin.php');
+        $this->assertMatchesRegularExpression(
+            "/webauthn_login_mode'\\] \\?\\? 0\\) !== 0\\) \\{ \\?>.*?id=\"stat-users-passkeys\".*?<\\?php \\} \\?>/s",
+            $page
+        );
+        $this->assertStringContainsString("\$('#stat-users-passkeys').text(", (string) file_get_contents(__DIR__ . '/../../app/pages/admin.js.php'));
+
+        $lang = new Language('english', __DIR__ . '/../../app/includes/language');
+        foreach (['webauthn_login_users_not_asked', 'webauthn_login_adoption_tip'] as $key) {
+            $this->assertNotSame($key, $lang->get($key), $key);
+        }
+    }
+
     private function between(string $source, string $startMarker, string $endMarker): string
     {
         $start = strpos($source, $startMarker);

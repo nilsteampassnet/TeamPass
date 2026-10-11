@@ -1163,7 +1163,6 @@ $LANG = array(
     'error_no_reason_of_access' => 'Please provide a reason for accessing this item.',
     'settings_ldap_and_local_authentication' => 'Local and LDAP users',
     'settings_ldap_and_local_authentication_tip' => 'Enable this option to permit both users authenticated in LDAP library or in local Teampass users list.',
-    'user_profile_api_key' => 'Your API key',
     'report_a_bug' => 'Report a bug',
     'enable_http_request_login' => 'Automatic login using http header credentials',
     'duration_login_attempt' => 'Seconds till auto login:',

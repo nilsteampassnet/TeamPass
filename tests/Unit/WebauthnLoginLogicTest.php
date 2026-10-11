@@ -262,6 +262,68 @@ final class WebauthnLoginLogicTest extends TestCase
         $this->assertSame('', webauthnLoginNormalizeLabel("\xff\xfe"));
     }
 
+    public function testCommonPasskeyManagersAreNamedFromTheirAaguid(): void
+    {
+        $this->assertSame('Windows Hello', webauthnLoginAuthenticatorName('08987058-cadc-4b81-b6e1-30de50dcbe96'));
+        $this->assertSame('Google Password Manager', webauthnLoginAuthenticatorName(' EA9B8D66-4D01-1D21-3CE4-B6B48CB575D4 '));
+        $this->assertSame('TeamPass', webauthnLoginAuthenticatorName(TP_WEBAUTHN_AAGUID));
+        // A security key registered without attestation declares no AAGUID: the dated default stays
+        $this->assertSame('', webauthnLoginAuthenticatorName('00000000-0000-0000-0000-000000000000'));
+        $this->assertSame('', webauthnLoginAuthenticatorName(''));
+    }
+
+    public function testProfileSaysWhenAPasskeyIsNotAskedOrStaysOnOneDevice(): void
+    {
+        $on = ['webauthn_login_mode' => '1'];
+        $device = ['usable' => true, 'synced' => false];
+        $synced = ['usable' => true, 'synced' => true];
+        $orphan = ['usable' => false, 'synced' => false];
+
+        $this->assertSame([], webauthnLoginProfileNotices($on, 1, []));
+        $this->assertSame([], webauthnLoginProfileNotices($on, 1, [$synced]));
+        // MFA turned off for the account: the passkey is never asked after the password
+        $this->assertSame(['not_asked'], webauthnLoginProfileNotices($on, 0, [$synced]));
+        $this->assertSame(['single_device'], webauthnLoginProfileNotices($on, 1, [$device]));
+        $this->assertSame(['not_asked', 'single_device'], webauthnLoginProfileNotices(['webauthn_login_mode' => '2'], 0, [$device]));
+        // A second passkey, or a synced one, already covers the loss of a device
+        $this->assertSame([], webauthnLoginProfileNotices($on, 1, [$device, $device]));
+        $this->assertSame([], webauthnLoginProfileNotices($on, 1, [$device, $synced]));
+        // One bound to a previous relying party ID no longer counts
+        $this->assertSame(['single_device'], webauthnLoginProfileNotices($on, 1, [$device, $orphan]));
+        $this->assertSame([], webauthnLoginProfileNotices($on, 0, [$orphan]));
+        // Feature off: the passkeys are only listed for deletion
+        $this->assertSame([], webauthnLoginProfileNotices(['webauthn_login_mode' => '0'], 0, [$device]));
+    }
+
+    public function testUsersListMarksTheAccountsThatHoldPasskeys(): void
+    {
+        $secondFactor = ['webauthn_login_mode' => '1'];
+        $passwordless = ['webauthn_login_mode' => '2'];
+
+        // Nothing to mark: no passkey, or the feature is off and none of them can sign in
+        $this->assertNull(webauthnLoginUsersBadge($secondFactor, 1, 0, 0));
+        $this->assertNull(webauthnLoginUsersBadge(['webauthn_login_mode' => '0'], 1, 3, 1));
+
+        $this->assertSame(['count' => 2, 'passwordless' => 1, 'asked' => true], webauthnLoginUsersBadge($passwordless, 1, 2, 1));
+        // A copy kept from the passwordless mode signs in alone only while that mode is on
+        $this->assertSame(['count' => 2, 'passwordless' => 0, 'asked' => true], webauthnLoginUsersBadge($secondFactor, 1, 2, 1));
+        // MFA turned off for the account: its passkeys are not asked after the password
+        $this->assertSame(['count' => 1, 'passwordless' => 0, 'asked' => false], webauthnLoginUsersBadge($secondFactor, 0, 1, 0));
+        $this->assertSame(['count' => 1, 'passwordless' => 1, 'asked' => false], webauthnLoginUsersBadge($passwordless, 0, 1, 4));
+    }
+
+    public function testAConnectionLogKeepsThePasskeyThatSignedIn(): void
+    {
+        $this->assertSame(42, webauthnLoginConnectionPasskeyId(webauthnLoginConnectionMarker(42)));
+        $this->assertSame(42, webauthnLoginConnectionPasskeyId(webauthnLoginConnectionMarker(42) . ' | tp_src=api'));
+        $this->assertNull(webauthnLoginConnectionPasskeyId(''));
+        $this->assertNull(webauthnLoginConnectionPasskeyId('api | tp_src=api'));
+        $this->assertNull(webauthnLoginConnectionPasskeyId('tp_auth=passkey:abc'));
+        $this->assertNull(webauthnLoginConnectionPasskeyId('xtp_auth=passkey:42'));
+        // The marker holds no free text: nothing in it can imitate the API marker of the logs
+        $this->assertMatchesRegularExpression('/^tp_auth=passkey:\d+$/', webauthnLoginConnectionMarker(7));
+    }
+
     public function testReadBytesRejectsMalformedInput(): void
     {
         $bytes = random_bytes(32);

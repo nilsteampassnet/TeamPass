@@ -41,6 +41,13 @@ use TeampassClasses\SessionManager\SessionManager;
 /** Session key of the ceremony in progress (options handed to the browser). */
 const TP_WEBAUTHN_LOGIN_PENDING_KEY = 'webauthn_login_pending';
 
+/**
+ * Session key of the passwordless sign-in challenge. A slot of its own: the login page fetches
+ * that challenge ahead of any click, and must never replace the ceremony a sign-in is waiting on
+ * (the passkey second factor of the same session, in this tab or another one).
+ */
+const TP_WEBAUTHN_LOGIN_PRELOGIN_KEY = 'webauthn_login_prelogin';
+
 /** Session key of the last password confirmation before a passkey was added. */
 const TP_WEBAUTHN_LOGIN_STEPUP_KEY = 'webauthn_login_stepup_at';
 
@@ -133,13 +140,49 @@ function webauthnLoginAdminAction(string $type, array $data, array $SETTINGS, La
  */
 function webauthnLoginList(int $userId, array $SETTINGS): array
 {
+    $rpId = webauthnLoginRpId($SETTINGS);
+    $credentials = webauthnLoginRows($userId, $rpId);
+    $mfaEnabled = (int) DB::queryFirstField('SELECT mfa_enabled FROM ' . prefixTable('users') . ' WHERE id = %i', $userId);
+
     return [
         'error' => false,
         'mode' => webauthnLoginMode($SETTINGS),
         'can_wrap' => webauthnLoginSessionCanWrap($SETTINGS),
         'require_prf' => (int) ($SETTINGS['webauthn_login_require_prf'] ?? 0) === 1,
         'stepup_password' => webauthnLoginStepUpUsesPassword((string) SessionManager::getSession()->get('user-auth_type')),
-        'credentials' => webauthnLoginRows($userId, webauthnLoginRpId($SETTINGS)),
+        'credentials' => $credentials,
+        'notices' => webauthnLoginProfileNotices($SETTINGS, $mfaEnabled, $credentials),
+        'signal' => webauthnLoginSignalData($userId, $rpId, $SETTINGS),
+    ];
+}
+
+/**
+ * What the browser needs to tell the user's passkey managers which passkeys of this account
+ * still exist (WebAuthn Signal API), so that one deleted here stops being offered there.
+ *
+ * Null while the feature is off: the passkeys are kept and work again once it is back on, so
+ * nothing may be reported as gone. The list is the complete set of the relying party id in
+ * force — a manager drops every passkey of the account that is missing from it.
+ *
+ * @param int                  $userId   Owner
+ * @param string               $rpId     Relying party id in force
+ * @param array<string, mixed> $SETTINGS Settings
+ *
+ * @return array{rp_id: string, user_id: string, credential_ids: string[]}|null
+ */
+function webauthnLoginSignalData(int $userId, string $rpId, array $SETTINGS): ?array
+{
+    if (webauthnLoginMode($SETTINGS) === TP_WEBAUTHN_LOGIN_MODE_DISABLED || $rpId === '') {
+        return null;
+    }
+
+    return [
+        'rp_id' => $rpId,
+        'user_id' => webauthnBase64UrlEncode(webauthnLoginUserHandle($userId, getServerSecret())),
+        'credential_ids' => array_map(
+            static fn (string $id): string => webauthnBase64UrlEncode($id),
+            webauthnLoginCredentialIds($userId, $rpId)
+        ),
     ];
 }
 
@@ -280,7 +323,7 @@ function webauthnLoginRegisterVerify(int $userId, array $data, array $SETTINGS, 
             'sign_count' => $record->counter,
             'aaguid' => (string) $record->aaguid,
             'transports' => json_encode(array_values($record->transports)),
-            'label' => webauthnLoginLabelOrDefault($data['label'] ?? '', $lang),
+            'label' => webauthnLoginLabelOrDefault($data['label'] ?? '', $lang, (string) $record->aaguid),
             'key_wrap_mode' => $wrap['mode'],
             'wrapped_private_key' => $wrap['wrapped'],
             'wrap_salt' => $wrap['salt'],
@@ -293,7 +336,7 @@ function webauthnLoginRegisterVerify(int $userId, array $data, array $SETTINGS, 
 
     $session = SessionManager::getSession();
     logEvents($SETTINGS, 'user_mngt', 'at_user_webauthn_added', (string) $userId, (string) $session->get('user-login'), (string) $userId);
-    webauthnLoginNotifyAdded($SETTINGS, $userId, webauthnLoginLabelOrDefault($data['label'] ?? '', $lang));
+    webauthnLoginNotifyAdded($SETTINGS, $userId, webauthnLoginLabelOrDefault($data['label'] ?? '', $lang, (string) $record->aaguid));
 
     return [
         'error' => false,
@@ -624,15 +667,16 @@ function webauthnLoginPasswordMatches(string $hash, string $password): bool
 /**
  * Take the ceremony in progress out of the session: each set of options is answered once.
  *
- * @param string $purpose register|passwordless
+ * @param string $purpose register|passwordless|second_factor|passwordless_login
  *
  * @return array<string, mixed>|null
  */
 function webauthnLoginTakePending(string $purpose): ?array
 {
     $session = SessionManager::getSession();
-    $pending = $session->get(TP_WEBAUTHN_LOGIN_PENDING_KEY);
-    $session->remove(TP_WEBAUTHN_LOGIN_PENDING_KEY);
+    $slot = $purpose === 'passwordless_login' ? TP_WEBAUTHN_LOGIN_PRELOGIN_KEY : TP_WEBAUTHN_LOGIN_PENDING_KEY;
+    $pending = $session->get($slot);
+    $session->remove($slot);
 
     return webauthnLoginPendingIsUsable($pending, $purpose, time()) === true ? $pending : null;
 }
@@ -648,7 +692,7 @@ function webauthnLoginTakePending(string $purpose): ?array
 function webauthnLoginRows(int $userId, string $currentRpId): array
 {
     $rows = DB::query(
-        'SELECT id, label, rp_id, key_wrap_mode, backup_eligible, backup_state, created_at, last_used_at
+        'SELECT id, label, rp_id, aaguid, key_wrap_mode, backup_eligible, backup_state, created_at, last_used_at
         FROM ' . prefixTable('user_webauthn_credentials') . '
         WHERE user_id = %i
         ORDER BY created_at DESC, id DESC',
@@ -659,6 +703,7 @@ function webauthnLoginRows(int $userId, string $currentRpId): array
         static fn (array $row): array => [
             'id' => (int) $row['id'],
             'label' => (string) $row['label'],
+            'authenticator' => webauthnLoginAuthenticatorName((string) ($row['aaguid'] ?? '')),
             'rp_id' => (string) ($row['rp_id'] ?? ''),
             'usable' => webauthnLoginPasskeyIsUsable($row['rp_id'], $currentRpId),
             'passwordless' => (int) $row['key_wrap_mode'] !== TP_WEBAUTHN_LOGIN_WRAP_NONE,
@@ -733,6 +778,64 @@ function webauthnLoginUserHasPasskey(int $userId, string $rpId): bool
         $userId,
         $rpId
     ) > 0;
+}
+
+/**
+ * Count the sign-in passkeys of several accounts in one query, for the Users list. Like the
+ * sign-in, it only counts those still usable under the relying party id in force.
+ *
+ * @param int[]  $userIds Accounts of the page
+ * @param string $rpId    Relying party id in force
+ *
+ * @return array<int, array{passkeys: int, passwordless: int}> Indexed by user id; accounts
+ *                                                             without a passkey are absent
+ */
+function webauthnLoginCountsByUser(array $userIds, string $rpId): array
+{
+    $userIds = array_values(array_unique(array_filter(array_map('intval', $userIds), static fn (int $id): bool => $id > 0)));
+    if ($userIds === []) {
+        return [];
+    }
+
+    $counts = [];
+    foreach (DB::query(
+        'SELECT user_id, COUNT(*) AS passkeys,
+            SUM(CASE WHEN key_wrap_mode <> %i THEN 1 ELSE 0 END) AS passwordless
+        FROM ' . prefixTable('user_webauthn_credentials') . '
+        WHERE user_id IN %li AND (rp_id IS NULL OR rp_id = %s)
+        GROUP BY user_id',
+        TP_WEBAUTHN_LOGIN_WRAP_NONE,
+        $userIds,
+        $rpId
+    ) as $row) {
+        $counts[(int) $row['user_id']] = ['passkeys' => (int) $row['passkeys'], 'passwordless' => (int) $row['passwordless']];
+    }
+
+    return $counts;
+}
+
+/**
+ * Count the accounts that can sign in and hold at least one usable sign-in passkey: how far
+ * passkeys are adopted, for the administration dashboard.
+ *
+ * @param string $rpId Relying party id in force
+ *
+ * @return int
+ */
+function webauthnLoginAccountsWithPasskey(string $rpId): int
+{
+    return (int) DB::queryFirstField(
+        'SELECT COUNT(DISTINCT c.user_id)
+        FROM ' . prefixTable('user_webauthn_credentials') . ' AS c
+        INNER JOIN ' . prefixTable('users') . ' AS u ON (u.id = c.user_id)
+        WHERE (c.rp_id IS NULL OR c.rp_id = %s)
+            AND u.disabled = %i
+            AND u.deleted_at IS NULL
+            AND LOWER(u.login) NOT IN %ls',
+        $rpId,
+        0,
+        ['tp', 'otv', 'api']
+    );
 }
 
 /**
@@ -837,7 +940,7 @@ function webauthnLoginPasswordlessLoginOptions(array $SETTINGS, Language $lang):
     }
 
     $optionsJson = webauthnLoginSerializeOptions(webauthnLoginRequestOptions($rpId, [], true));
-    SessionManager::getSession()->set(TP_WEBAUTHN_LOGIN_PENDING_KEY, [
+    SessionManager::getSession()->set(TP_WEBAUTHN_LOGIN_PRELOGIN_KEY, [
         'purpose' => 'passwordless_login',
         'options' => $optionsJson,
         'created_at' => time(),
@@ -861,8 +964,9 @@ function webauthnLoginPasswordlessLoginOptions(array $SETTINGS, Language $lang):
  * @param mixed                $prfOutput  base64url PRF output, when the authenticator gave one
  * @param Language             $lang       Language
  *
- * @return array{state: string, message?: string, counted?: bool, login?: string, user_id?: int, private_key?: string}
- *               state verified|failed; counted when the failure is a wrong factor
+ * @return array{state: string, message?: string, counted?: bool, unknown?: bool, login?: string, user_id?: int, passkey_id?: int, private_key?: string}
+ *               state verified|failed; counted when the failure is a wrong factor; unknown when
+ *               no account holds the passkey any more
  */
 function webauthnLoginPasswordlessLoginVerify(array $SETTINGS, $credential, $prfOutput, Language $lang): array
 {
@@ -884,7 +988,9 @@ function webauthnLoginPasswordlessLoginVerify(array $SETTINGS, $credential, $prf
         webauthnBase64UrlEncode(webauthnLoginReadBytes($credential['rawId'] ?? ''))
     );
     if ($row === null) {
-        return ['state' => 'failed', 'message' => $lang->get('webauthn_login_verification_failed'), 'counted' => true, 'login' => ''];
+        // Deleted here, still offered by the user's device: say so, the retry would never succeed.
+        // Nothing is disclosed to someone who holds no passkey: its id is a random value.
+        return ['state' => 'failed', 'message' => $lang->get('webauthn_login_unknown_passkey'), 'counted' => true, 'unknown' => true, 'login' => ''];
     }
     $userId = (int) $row['user_id'];
     $login = (string) $row['login'];
@@ -941,7 +1047,7 @@ function webauthnLoginPasswordlessLoginVerify(array $SETTINGS, $credential, $prf
 
     DB::update(prefixTable('user_webauthn_credentials'), ['last_used_at' => time()], 'id = %i', (int) $row['id']);
 
-    return ['state' => 'verified', 'login' => $login, 'user_id' => $userId, 'private_key' => $privateKey];
+    return ['state' => 'verified', 'login' => $login, 'user_id' => $userId, 'passkey_id' => (int) $row['id'], 'private_key' => $privateKey];
 }
 
 /**
@@ -967,18 +1073,24 @@ function webauthnLoginPrivateKeyMatches(string $privateKey, string $publicKey): 
 }
 
 /**
- * The device name the user typed, or a dated default.
+ * The device name the user typed, else the name of the passkey manager that holds the passkey,
+ * else a dated default.
  *
- * @param mixed    $label Submitted value
- * @param Language $lang  Language
+ * @param mixed    $label  Submitted value
+ * @param Language $lang   Language
+ * @param string   $aaguid AAGUID the authenticator declared
  *
  * @return string
  */
-function webauthnLoginLabelOrDefault($label, Language $lang): string
+function webauthnLoginLabelOrDefault($label, Language $lang, string $aaguid = ''): string
 {
     $label = webauthnLoginNormalizeLabel($label);
+    if ($label !== '') {
+        return $label;
+    }
+    $authenticator = webauthnLoginAuthenticatorName($aaguid);
 
-    return $label !== '' ? $label : $lang->get('webauthn_login_default_label') . ' ' . date('Y-m-d');
+    return $authenticator !== '' ? $authenticator : $lang->get('webauthn_login_default_label') . ' ' . date('Y-m-d');
 }
 
 /**
