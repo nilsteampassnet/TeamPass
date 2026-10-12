@@ -56,7 +56,7 @@ class DatabaseBackupStreamingTest extends TestCase
             $this->source
         );
         $this->assertStringContainsString(
-            "@fopen(\$plainTempPath, 'x+b')",
+            "tpBackupOpenProtectedFile(\$plainTempPath, 'x+b', true)",
             $this->source
         );
         $this->assertStringNotContainsString("fopen(\$filepath, 'w+'", $this->source);

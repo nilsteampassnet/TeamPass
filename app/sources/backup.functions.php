@@ -35,6 +35,140 @@ declare(strict_types=1);
  * (manual UI + scheduled/background tasks).
  */
 
+require_once __DIR__ . '/runtime_files.functions.php';
+
+/**
+ * Open a local backup file without truncating it, and protect it before writing.
+ *
+ * Preserve owner-only permissions; otherwise allow at most owner read/write and
+ * group read. Plaintext dumps use owner-only access. Never change the process
+ * umask. As with runtime files, the parent directory must be trusted.
+ *
+ * @return resource|false The caller owns the stream.
+ */
+function tpBackupOpenProtectedFile(string $path, string $mode = 'x+b', bool $ownerOnly = false)
+{
+    clearstatcache(true, $path);
+    if (
+        !in_array($mode, ['x+b', 'c+b', 'r+b'], true)
+        || str_contains($path, '://')
+        || is_link($path)
+        || (file_exists($path) && is_file($path) === false)
+    ) {
+        return false;
+    }
+
+    $handle = @fopen($path, $mode);
+    if ($handle === false) {
+        return false;
+    }
+
+    $stat = @fstat($handle);
+    if ($stat === false || tpRuntimeFileMatchesPath($path, $stat) === false) {
+        fclose($handle);
+        return false;
+    }
+
+    // Windows uses ACLs; System Health audits POSIX permissions on Unix.
+    if (PHP_OS_FAMILY === 'Windows') {
+        return $handle;
+    }
+
+    $restrictedMode = $ownerOnly ? 0600 : (($stat['mode'] & 0640) | 0600);
+    if (
+        ($stat['mode'] & 07777) !== $restrictedMode
+        && (!function_exists('chmod') || @chmod($path, $restrictedMode) === false)
+    ) {
+        // Exclusive creation guarantees this is still empty. Do not remove an
+        // existing metadata file or a target replaced while opening it.
+        if ($mode === 'x+b' && tpRuntimeFileMatchesPath($path, $stat)) {
+            fclose($handle);
+            @unlink($path);
+        } else {
+            fclose($handle);
+        }
+        return false;
+    }
+
+    $securedStat = @fstat($handle);
+    if (
+        $securedStat === false
+        || ($securedStat['mode'] & 07777) !== $restrictedMode
+        || tpRuntimeFileMatchesPath($path, $stat) === false
+    ) {
+        fclose($handle);
+        return false;
+    }
+
+    return $handle;
+}
+
+/**
+ * Encrypt into a protected temporary file and verify its permissions afterwards.
+ *
+ * Defuse opens the destination with "wb", preserving its existing permissions.
+ * Callers only publish the file after this succeeds, and clean up on failure.
+ *
+ * @return array{success: bool, message: string}
+ */
+function tpBackupEncryptProtectedFile(string $sourceFile, string $destFile, string $encryptionKey): array
+{
+    $handle = tpBackupOpenProtectedFile($destFile);
+    if ($handle === false) {
+        return ['success' => false, 'message' => 'Could not create or protect temporary encrypted backup file.'];
+    }
+    fclose($handle);
+
+    $result = tpPrepareFileWithDefuseNormalized('encrypt', $sourceFile, $destFile, $encryptionKey);
+    if ($result['success'] !== true) {
+        return $result;
+    }
+
+    $handle = tpBackupOpenProtectedFile($destFile, 'r+b');
+    if ($handle === false) {
+        return ['success' => false, 'message' => 'Could not verify encrypted backup file protection.'];
+    }
+    fclose($handle);
+
+    return $result;
+}
+
+/**
+ * Write backup metadata only after protecting and exclusively locking its file.
+ */
+function tpBackupWriteProtectedFile(string $path, string $contents): bool
+{
+    clearstatcache(true, $path);
+    $handle = tpBackupOpenProtectedFile($path, file_exists($path) ? 'c+b' : 'x+b');
+    if ($handle === false) {
+        return false;
+    }
+
+    try {
+        if (@flock($handle, LOCK_EX) === false) {
+            return false;
+        }
+        $stat = @fstat($handle);
+        if ($stat === false || tpRuntimeFileMatchesPath($path, $stat) === false || @ftruncate($handle, 0) === false) {
+            return false;
+        }
+
+        $length = strlen($contents);
+        $offset = 0;
+        while ($offset < $length) {
+            $written = @fwrite($handle, substr($contents, $offset));
+            if ($written === false || $written === 0) {
+                return false;
+            }
+            $offset += $written;
+        }
+
+        return @fflush($handle);
+    } finally {
+        fclose($handle);
+    }
+}
+
 function tpBackupGetScheduledDefaultDir(): string
 {
     return defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/backups' : __DIR__ . '/../../storage/backups';
@@ -380,7 +514,7 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
         // backup that looks valid.
         // Suppress the filesystem warning because AJAX callers expect a clean
         // encoded response; the structured failure below remains actionable.
-        $handle = @fopen($plainTempPath, 'x+b');
+        $handle = tpBackupOpenProtectedFile($plainTempPath, 'x+b', true);
         if ($handle === false) {
             return [
                 'success' => false,
@@ -388,7 +522,7 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
                 'filepath' => $filepath,
                 'encrypted' => false,
                 'size_bytes' => 0,
-                'message' => 'Could not create temporary backup file: ' . $plainTempPath,
+                'message' => 'Could not create or protect temporary backup file: ' . $plainTempPath,
             ];
         }
 
@@ -536,9 +670,9 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
                 ];
             }
 
-            $ret = prepareFileWithDefuse('encrypt', $plainTempPath, $encryptedTempPath, $encryptionKey);
+            $ret = tpBackupEncryptProtectedFile($plainTempPath, $encryptedTempPath, $encryptionKey);
 
-            if ($ret !== true) {
+            if ($ret['success'] !== true) {
                 if (file_exists($plainTempPath)) {
                     unlink($plainTempPath);
                 }
@@ -551,7 +685,7 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
                     'filepath' => $filepath,
                     'encrypted' => false,
                     'size_bytes' => 0,
-                    'message' => 'Encryption failed: ' . (is_string($ret) ? $ret : 'unknown error'),
+                    'message' => 'Encryption failed: ' . $ret['message'],
                 ];
             }
 
@@ -4618,7 +4752,7 @@ function tpCreateBackupPackage(array $SETTINGS, string $encryptionKey, array $op
         $filepath = rtrim($outputDir, '/\\') . DIRECTORY_SEPARATOR . $filename;
         $encryptedTmpPath = $workDir . DIRECTORY_SEPARATOR . 'payload.encrypted';
 
-        $encryptResult = tpPrepareFileWithDefuseNormalized('encrypt', $zipPath, $encryptedTmpPath, $encryptionKey);
+        $encryptResult = tpBackupEncryptProtectedFile($zipPath, $encryptedTmpPath, $encryptionKey);
         if ($encryptResult['success'] !== true || is_file($encryptedTmpPath) === false) {
             return [
                 'success' => false,
@@ -6034,9 +6168,8 @@ function tpWriteBackupMetadata(string $backupFilePath, string $tpFilesVersion = 
             return ['success' => false, 'message' => 'Unable to encode metadata as JSON', 'meta_path' => $metaPath];
         }
 
-        $ok = @file_put_contents($metaPath, $json, LOCK_EX);
-        if ($ok === false) {
-            return ['success' => false, 'message' => 'Unable to write metadata file', 'meta_path' => $metaPath];
+        if (tpBackupWriteProtectedFile($metaPath, $json) === false) {
+            return ['success' => false, 'message' => 'Unable to write or protect metadata file', 'meta_path' => $metaPath];
         }
 
         return ['success' => true, 'message' => '', 'meta_path' => $metaPath];
@@ -6075,9 +6208,8 @@ function tpUpsertBackupMetadata(string $backupFilePath, array $updates): array
             return ['success' => false, 'message' => 'Unable to encode metadata as JSON', 'meta_path' => $metaPath];
         }
 
-        $ok = @file_put_contents($metaPath, $json);
-        if ($ok === false) {
-            return ['success' => false, 'message' => 'Unable to write metadata file', 'meta_path' => $metaPath];
+        if (tpBackupWriteProtectedFile($metaPath, $json) === false) {
+            return ['success' => false, 'message' => 'Unable to write or protect metadata file', 'meta_path' => $metaPath];
         }
 
         return ['success' => true, 'message' => 'OK', 'meta_path' => $metaPath];

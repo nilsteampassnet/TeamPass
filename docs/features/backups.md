@@ -13,6 +13,16 @@ All backups are encrypted to ensure data security. On-the-fly backups use the en
 
 > ⚠️ Only administrators have access to the backup functionality.
 
+On Unix, newly generated local backups and their `.meta.json` files have at most
+`0640` permissions. Owner-only `0600` permissions are preserved, and temporary
+plaintext SQL dumps use `0600`. This applies to on-the-fly, scheduled and local
+externalized backups without changing PHP's process-wide `umask`. Windows uses
+the existing filesystem ACLs.
+
+Existing backup archives are not changed automatically. The System Health file
+integrity permission repair plan can restrict them; the CLI option
+`--deep-permissions` also checks the contents of `storage/backups`.
+
 
 ## On the fly backup
 
