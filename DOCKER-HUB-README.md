@@ -56,11 +56,13 @@ docker-compose up -d
 |----------------|-------|
 | `/var/www/html/secrets` | The master encryption key (critical!) |
 | `/var/www/html/storage/config` | `settings.php` (database connection) and `csrfp.config.php` (critical!) |
-| `/var/www/html/storage/files` | Encrypted attachments |
-| `/var/www/html/storage/upload` | Temporary uploads |
+| `/var/www/html/storage/files` | Generated files, imports and restore/backup working files |
+| `/var/www/html/storage/upload` | Encrypted item attachments (persistent data, never a temporary cache) |
 | `/var/www/html/storage/sk` | Legacy saltkey |
 
 Mount a named volume on each of these exact paths, as the examples below do. A volume on a parent directory such as `/var/www/html/storage` is not enough: Docker still mounts an **anonymous** volume on top of each path the image declares, and anonymous volumes are left behind when the container is removed. Losing `storage/config` makes TeamPass believe it was never installed; losing `secrets` makes its data unrecoverable.
+
+PHP runs as `nginx` inside the official image, not the host's `www-data`. At startup the entrypoint sets `secrets/` and `storage/sk/` to `0700`, and storage/configuration/data directory nodes to `0750`; the installer creates the key in `0600`. Volume ownership is reset at each start, but file modes are not recursively reset. The image uses PHP ownership, not the split-owner hardened model; see [File permissions](https://documentation.teampass.net/#/install/file-permissions) for audit warnings and custom-image/NFS restrictions.
 
 ## 📋 Example Usage
 
@@ -187,6 +189,12 @@ curl http://localhost:8080/health
 
 Run these from the directory holding your compose file.
 
+Quiesce application/background writes while taking the database and file backups. Restrict new backup-file permissions on the host:
+
+```bash
+umask 077
+```
+
 ### Database Backup
 
 ```bash
@@ -196,10 +204,10 @@ docker compose exec -T db sh -c 'mariadb-dump -u root -p"$MARIADB_ROOT_PASSWORD"
 ### Master Key, Configuration and Attachments Backup
 
 ```bash
-docker compose exec -T teampass tar -C /var/www/html -czf - secrets storage/config storage/files > teampass-state-$(date +%Y%m%d).tar.gz
+docker compose exec -T teampass tar -C /var/www/html -czf - secrets storage/config storage/files storage/upload storage/sk > teampass-state-$(date +%Y%m%d).tar.gz
 ```
 
-The master key in `secrets/` is required to decrypt all data: without it, the data in a database dump cannot be decrypted. Keep both together, in a safe place.
+The archive covers all five declared state volumes, including attachments in `storage/upload/` and the legacy saltkey. Include any additional configured data paths/volumes and test a restore. The master key in `secrets/` is required to decrypt the database dump: protect/encrypt this key/configuration archive and keep it separate from the database backup. Both are needed for recovery; access to both opens every secret.
 
 ## 🔄 Upgrading
 

@@ -76,6 +76,8 @@ function tpPurgeDeletedUserById(int $userId): array
         // Delete extension tokens and API sessions: both hold a wrapped copy of the private key
         DB::delete(prefixTable('api_tokens'), 'user_id = %i', $userId);
         DB::delete(prefixTable('api_sessions'), 'user_id = %i', $userId);
+        // Sign-in passkeys, some holding a copy of the private key
+        DB::delete(prefixTable('user_webauthn_credentials'), 'user_id = %i', $userId);
 
         // Delete cache
         DB::delete(prefixTable('cache'), 'author = %i', $userId);

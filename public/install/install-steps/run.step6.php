@@ -192,10 +192,13 @@ class teampassInstaller
             $newSalt = $key->saveToAsciiSafeString();
     
             // Store key in file
-            file_put_contents(
-                rtrim($this->installConfig['teampassSecurePath'].'/').'/'.$secureFile,
-                $newSalt
-            );
+            $secureFilePath = rtrim($this->installConfig['teampassSecurePath'], '/\\').'/'.$secureFile;
+            if (@file_put_contents($secureFilePath, $newSalt) !== strlen($newSalt)) {
+                throw new RuntimeException('Unable to write the encryption key file.');
+            }
+            if (@chmod($secureFilePath, 0600) === false) {
+                throw new RuntimeException('Unable to restrict encryption key file permissions.');
+            }
             
             // Store the secure file name in the database
             DB::insertUpdate('_install', [

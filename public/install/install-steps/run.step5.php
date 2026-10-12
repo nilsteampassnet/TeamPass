@@ -646,6 +646,7 @@ class DatabaseInstaller
             array('admin', 'otv_is_enabled', '0'),
             array('admin', 'secure_send_allow_notes', '0'),
             array('admin', 'secure_send_max_views', '5'),
+            array('admin', 'secure_send_audit_retention_days', '0'),
             array('admin', 'secure_send_require_passphrase', '0'),
             array('admin', 'secure_send_show_sender_name', '1'),
             array('admin', 'agses_authentication_enabled', '0'),
@@ -802,7 +803,16 @@ class DatabaseInstaller
             array('admin', 'licence_info_budget', ''),
             // Staging escape hatch, not exposed in the interface. Empty means the production
             // licence server.
-            array('admin', 'licence_server_base_url', '')
+            array('admin', 'licence_server_base_url', ''),
+            // Passkeys. Every feature is off by default; an empty webauthn_rp_id means the
+            // host of cpassman_url.
+            array('admin', 'webauthn_provider_enabled', '0'),
+            array('admin', 'webauthn_email_on_add', '1'),
+            array('admin', 'webauthn_login_mode', '0'),
+            array('admin', 'webauthn_login_require_prf', '0'),
+            array('admin', 'webauthn_passwordless_satisfies_mfa', '1'),
+            array('admin', 'webauthn_rp_id', ''),
+            array('admin', 'webauthn_rp_name', 'TeamPass')
         );
         foreach ($aMiscVal as $elem) {
             $value = isset($elem[3]) ? $elem[3] : 0;
@@ -1516,6 +1526,13 @@ class DatabaseInstaller
             PRIMARY KEY (`id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
+    }
+
+    // Create the durable Secure Send metadata journal independently from live links.
+    private function secure_send_audit()
+    {
+        require_once TEAMPASS_ROOT . '/app/sources/secure_send_audit.php';
+        DB::query(secureSendAuditSchemaSql($this->inputData['tablePrefix'] . 'secure_send_audit'));
     }
 
     // Create table suggestion
@@ -2439,6 +2456,85 @@ class DatabaseInstaller
         KEY `idx_api_idempotency_resource` (`operation`, `resource_id`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     COMMENT='Replay-safe metadata for idempotent API mutations'"
+        );
+    }
+
+    // Create table webauthn_credentials
+    private function webauthn_credentials()
+    {
+        DB::query(
+            'CREATE TABLE IF NOT EXISTS `' . $this->inputData['tablePrefix'] . "webauthn_credentials` (
+        `id` INT(12) NOT NULL AUTO_INCREMENT,
+        `item_id` INT(12) NOT NULL,
+        `credential_id` VARCHAR(255) NOT NULL COMMENT 'base64url, server-generated',
+        `rp_id` VARCHAR(255) NOT NULL COMMENT 'Relying party id, e.g. github.com',
+        `rp_name` VARCHAR(255) NULL DEFAULT NULL,
+        `user_handle` VARCHAR(255) NOT NULL COMMENT 'base64url, relying party user id',
+        `user_name` VARCHAR(255) NULL DEFAULT NULL,
+        `user_display_name` VARCHAR(255) NULL DEFAULT NULL,
+        `algorithm` INT(6) NOT NULL DEFAULT '-7' COMMENT 'COSE algorithm, ES256 only',
+        `private_key` TEXT NOT NULL COMMENT 'Encrypted PKCS#8 PEM',
+        `private_key_meta` TEXT NULL DEFAULT NULL COMMENT 'Encryption metadata, mirrors items.pw_iv',
+        `public_key_cose` TEXT NOT NULL COMMENT 'base64 COSE_Key, not secret',
+        `sign_count` INT UNSIGNED NOT NULL DEFAULT '0',
+        `discoverable` TINYINT(1) NOT NULL DEFAULT '1',
+        `created_at` INT(12) NOT NULL,
+        `created_by` INT(12) NOT NULL,
+        `last_used_at` INT(12) NULL DEFAULT NULL,
+        `last_used_by` INT(12) NULL DEFAULT NULL,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `uk_credential_id` (`credential_id`),
+        KEY `idx_item` (`item_id`),
+        KEY `idx_rp` (`rp_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    COMMENT='Passkeys for third-party sites held by the vault'"
+        );
+    }
+
+    // Create table sharekeys_webauthn
+    private function sharekeys_webauthn()
+    {
+        DB::query(
+            'CREATE TABLE IF NOT EXISTS `' . $this->inputData['tablePrefix'] . "sharekeys_webauthn` (
+        `increment_id` INT(12) NOT NULL AUTO_INCREMENT,
+        `object_id` INT(12) NOT NULL,
+        `user_id` INT(12) NOT NULL,
+        `share_key` TEXT NOT NULL,
+        `encryption_version` TINYINT(1) NOT NULL DEFAULT '3' COMMENT '1=phpseclib v1 (SHA-1), 3=phpseclib v3 (SHA-256)',
+        PRIMARY KEY (`increment_id`),
+        UNIQUE KEY `idx_unique_object_user` (`object_id`, `user_id`),
+        KEY `user_id_idx` (`user_id`),
+        KEY `encryption_version` (`encryption_version`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+        );
+    }
+
+    // Create table user_webauthn_credentials
+    private function user_webauthn_credentials()
+    {
+        DB::query(
+            'CREATE TABLE IF NOT EXISTS `' . $this->inputData['tablePrefix'] . "user_webauthn_credentials` (
+        `id` INT(12) NOT NULL AUTO_INCREMENT,
+        `user_id` INT(12) NOT NULL,
+        `credential_id` VARCHAR(255) NOT NULL COMMENT 'base64url',
+        `rp_id` VARCHAR(255) NULL DEFAULT NULL COMMENT 'Relying party id it was registered for',
+        `public_key_cose` TEXT NOT NULL,
+        `sign_count` INT UNSIGNED NOT NULL DEFAULT '0',
+        `aaguid` VARCHAR(36) NULL DEFAULT NULL,
+        `transports` VARCHAR(255) NULL DEFAULT NULL,
+        `label` VARCHAR(255) NULL DEFAULT NULL COMMENT 'User-chosen device name',
+        `key_wrap_mode` TINYINT(1) NOT NULL DEFAULT '0' COMMENT '0=none (second factor), 1=PRF, 2=server',
+        `wrapped_private_key` TEXT NULL DEFAULT NULL,
+        `wrap_salt` VARCHAR(64) NULL DEFAULT NULL,
+        `backup_eligible` TINYINT(1) NOT NULL DEFAULT '0',
+        `backup_state` TINYINT(1) NOT NULL DEFAULT '0',
+        `created_at` INT(12) NOT NULL,
+        `last_used_at` INT(12) NULL DEFAULT NULL,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `uk_user_credential_id` (`credential_id`),
+        KEY `idx_user` (`user_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    COMMENT='Passkeys used to sign in to TeamPass'"
         );
     }
 

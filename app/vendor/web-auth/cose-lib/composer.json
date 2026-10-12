@@ -1,0 +1,56 @@
+{
+    "name": "web-auth/cose-lib",
+    "description": "CBOR Object Signing and Encryption (COSE) For PHP",
+    "license": "MIT",
+    "type": "library",
+    "keywords": [
+        "COSE",
+        "RFC8152"
+    ],
+    "authors": [
+        {
+            "name": "Florent Morselli",
+            "homepage": "https://github.com/Spomky"
+        },
+        {
+            "name": "All contributors",
+            "homepage": "https://github.com/web-auth/cose/contributors"
+        }
+    ],
+    "homepage": "https://github.com/web-auth",
+    "require": {
+        "php": ">=8.1",
+        "ext-json": "*",
+        "ext-openssl": "*",
+        "brick/math": "^0.9 || ^0.10 || ^0.11 || ^0.12 || ^0.13 || ^0.14 || ^0.15 || ^0.16 || ^0.17 || ^0.18 || ^0.19 || ^0.20 || ^1.0",
+        "spomky-labs/pki-framework": "^1.0"
+    },
+    "require-dev": {
+        "spomky-labs/cbor-php": "^3.4"
+    },
+    "replace": {
+        "symfony/polyfill-php81": "*"
+    },
+    "conflict": {
+        "spomky-labs/cbor-php": "<3.4.0"
+    },
+    "suggest": {
+        "ext-bcmath": "Recommended: without GMP or BCMath, signing with RSASSA-PSS (PS256/PS384/PS512) blinds its private exponentiation in pure PHP",
+        "ext-gmp": "Recommended: without GMP or BCMath, signing with RSASSA-PSS (PS256/PS384/PS512) blinds its private exponentiation in pure PHP",
+        "ext-sodium": "Required by the EdDSA/Ed25519 signature algorithms (-8, -19, -260, -261) and to recompute an OKP public key from its private key",
+        "spomky-labs/cbor-php": "Required by the RFC 9052 header reader and cryptographic structures. 3.4.0 or later: it ships the six COSE message classes (CBOR\\Tag\\CoseSign1Tag and its siblings) that replace the deprecated Cose\\...Tag classes, and its decoder is what enforces the RFC 9052 label uniqueness and nesting bounds this library relies on"
+    },
+    "autoload": {
+        "psr-4": {
+            "Cose\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Cose\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "@composer exec -- phpunit-11 --configuration .ci-tools/phpunit.xml.dist"
+    }
+}

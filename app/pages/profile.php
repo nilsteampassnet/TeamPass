@@ -168,6 +168,94 @@ foreach ($session->get('user-roles_array') as $role) {
     }
 }
 
+// Password: only an account TeamPass authenticates by itself changes it here,
+// like the "Change password" entry of the account menu.
+$userAuthType = (string) $session->get('user-auth_type');
+$passwordManagedHere = $userAuthType !== '' && $userAuthType !== 'ldap' && $userAuthType !== 'oauth2';
+$passwordSummary = '';
+if ($passwordManagedHere === true && (int) ($userInfo['last_pw_change'] ?? 0) > 0) {
+    $passwordSummary = sprintf(
+        $lang->get('profile_password_changed_on'),
+        date($SETTINGS['date_format'] ?? 'd/m/Y', (int) $userInfo['last_pw_change'])
+    );
+    // 'infinite' when passwords never expire
+    $daysBeforeExpiration = $session->get('user-num_days_before_exp');
+    if (is_numeric($daysBeforeExpiration) === true && (int) $daysBeforeExpiration > 0) {
+        $passwordSummary .= ' ' . sprintf($lang->get('profile_password_expires_in'), (string) (int) $daysBeforeExpiration);
+    }
+}
+
+// Passkeys used to sign in to TeamPass. Still listed when the
+// administrator turned the feature off, so they can be deleted.
+$webauthnLoginMode = (int) ($SETTINGS['webauthn_login_mode'] ?? 0);
+if ($webauthnLoginMode === 0) {
+    $webauthnLoginShown = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('user_webauthn_credentials') . ' WHERE user_id = %i',
+        (int) $session->get('user-id')
+    ) > 0;
+    $webauthnLoginTip = $lang->get('webauthn_login_tip_disabled');
+} else {
+    $webauthnLoginShown = true;
+    if ($webauthnLoginMode === 1) {
+        $webauthnLoginTip = $lang->get('webauthn_login_tip_second_factor');
+    } elseif ($session->get('user-auth_type') === 'local') {
+        $webauthnLoginTip = $lang->get('webauthn_login_tip_passwordless');
+    } else {
+        $webauthnLoginTip = $lang->get('webauthn_login_tip_directory');
+    }
+}
+
+$apiFeatureEnabled = isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1;
+// Per-user API access, as /authorize checks it. Read now rather than from the
+// session: an administrator may change it while the user is signed in.
+$userApiAccessEnabled = $apiFeatureEnabled === true
+    && (int) DB::queryFirstField(
+        'SELECT enabled FROM ' . prefixTable('api') . ' WHERE user_id = %i',
+        (int) $session->get('user-id')
+    ) === 1;
+// Same gate as generate_extension_token in users.queries.php
+$extensionTokensAllowed = $apiFeatureEnabled === true
+    && (
+        (isset($SETTINGS['extension_token_all_auth_types']) === true && (int) $SETTINGS['extension_token_all_auth_types'] === 1)
+        || (isset($SETTINGS['oauth2_api_enabled']) === true && (int) $SETTINGS['oauth2_api_enabled'] === 1 && $session->get('user-auth_type') === 'oauth2')
+    );
+// Tokens issued before an administrator turned token access off stay listable
+// and revocable: they would work again if it were turned back on.
+$extensionTokensOwned = $apiFeatureEnabled === true
+    && $extensionTokensAllowed === false
+    && (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('api_tokens') . ' WHERE user_id = %i',
+        (int) $session->get('user-id')
+    ) > 0;
+
+// Personal items encryption keys — self-repair. A personal object
+// only ever has keys for its owner and the internal account, so
+// when the internal one is gone the owner's own session is the
+// only place it can be rebuilt: no administrator can do it.
+$personalItemsCheckShown = (int) $session->get('user-personal_folder_enabled') === 1
+    && isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1;
+
+// Sections of the page, in menu order. One with nothing to show is left out.
+$profileSections = [
+    'overview' => true,
+    'security' => $passwordManagedHere === true || $webauthnLoginShown === true,
+    'extension' => $extensionTokensAllowed === true || $extensionTokensOwned === true,
+    'settings' => true,
+    'timeline' => true,
+    'advanced' => true,
+];
+// icon, label, what the section holds
+$profileMenu = [
+    'overview' => ['fa-solid fa-table-cells-large', $lang->get('profile_section_overview'), $lang->get('profile_section_overview_tip')],
+    'security' => ['fa-solid fa-shield-halved', $lang->get('profile_section_security'), $lang->get('profile_section_security_tip')],
+    'extension' => ['fa-solid fa-puzzle-piece', $lang->get('profile_section_extension'), $lang->get('profile_section_extension_tip')],
+    'settings' => ['fa-solid fa-sliders', $lang->get('profile_section_preferences'), $lang->get('profile_section_preferences_tip')],
+    'timeline' => ['fa-solid fa-clock-rotate-left', $lang->get('profile_section_activity'), $lang->get('profile_section_activity_tip')],
+    'advanced' => ['fa-solid fa-screwdriver-wrench', $lang->get('profile_section_advanced'), $lang->get('profile_section_advanced_tip')],
+];
+// ?tab= opens a section directly; 'settings' and 'timeline' are the names existing links use
+$activeTab = is_string($get['tab']) === true && ($profileSections[$get['tab']] ?? false) === true ? $get['tab'] : 'overview';
+
 ?>
 
 <!-- Content Header (Page header) -->
@@ -213,326 +301,272 @@ foreach ($session->get('user-roles_array') as $role) {
                         </h3>
 
                         <p class="text-info text-center"><?php echo $session->get('user-email'); ?></p>
-                        <p class="text-muted text-center"><?php echo $session->get('user-privilege'); ?></p>
+                        <p class="text-muted text-center mb-0"><?php echo $session->get('user-privilege'); ?></p>
+                    </div>
+                    <!-- /.card-body -->
+                </div>
+                <!-- /.card -->
 
-                        <ul class="list-group list-group-unbordered mb-3">
-                            <li class="list-group-item">
-                                <b><?php echo $lang->get('created_items'); ?></b>
-                                <a class="float-right"><?php echo strval($userItemsNumber); ?></a>
+                <!-- Sections -->
+                <div class="card">
+                    <div class="card-body p-2">
+                        <ul class="nav nav-pills flex-column" id="profile-tabs">
+                            <?php foreach ($profileMenu as $section => $entry) :
+                                if ($profileSections[$section] === false) {
+                                    continue;
+                                } ?>
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center<?php echo $activeTab === $section ? ' active' : ''; ?>" href="#tab_<?php echo $section; ?>" data-toggle="tab">
+                                    <i class="<?php echo $entry[0]; ?> fa-fw fa-lg mr-3"></i>
+                                    <span>
+                                        <span class="d-block font-weight-bold"><?php echo $entry[1]; ?></span>
+                                        <small class="d-block"><?php echo $entry[2]; ?></small>
+                                    </span>
+                                </a>
                             </li>
-                            <li class="list-group-item">
-                                <b><?php echo $lang->get('modification_performed'); ?></b>
-                                <a class="float-right"><?php echo strval($userModificationNumber); ?></a>
-                            </li>
-                            <li class="list-group-item">
-                                <b><?php echo $lang->get('items_opened'); ?></b>
-                                <a class="float-right"><?php echo strval($userSeenItemsNumber); ?></a>
-                            </li>
-                            <li class="list-group-item">
-                                <b><?php echo $lang->get('passwords_seen'); ?></b>
-                                <a class="float-right"><?php echo strval($userSeenPasswordsNumber); ?></a>
-                            </li>
+                            <?php endforeach; ?>
                         </ul>
                     </div>
                 </div>
-                <!-- /.card-body -->
+                <!-- /.card -->
             </div>
-            <!-- /.card -->
 
             <div class="col-md-9">
-                <div class="card">
-                    <div class="card-header p-2">
-                        <ul class="nav nav-pills" id="profile-tabs">
-                            <li class="nav-item">
-                                <a class="nav-link<?php echo empty($get['tab']) === true ? ' active' : ''; ?>" href="#tab_information" data-toggle="tab"><?php echo $lang->get('information'); ?></a>
-                            </li>
-                            <li class="nav-item"><a class="nav-link<?php echo $get['tab'] === 'settings' ? ' active' : ''; ?>" href="#tab_settings" data-toggle="tab"><?php echo $lang->get('settings'); ?></a></li>
-                            <li class="nav-item">
-                                <a class="nav-link<?php echo $get['tab'] === 'timeline' ? ' active' : ''; ?>" href="#tab_timeline" data-toggle="tab">Timeline</a>
-                            </li>
-                        </ul>
-                    </div><!-- /.card-header -->
-                    <div class="card-body">
-                        <div class="tab-content">
-                            <!-- INFO -->
-                            <div class="<?php echo empty($get['tab']) === true ? 'active ' : ''; ?> tab-pane" id="tab_information">
-                                <ul class="list-group list-group-unbordered mb-3">
-                                    <li class="list-group-item">
-                                        <b><i class="fas fa-users fa-fw fa-lg mr-2"></i><?php echo $lang->get('part_of_groups'); ?></b>
-                                        <a class="float-right">
-                                            <span id="profile-groups" class=""><?php echo implode(', ', $userParOfGroups); ?></span>
-                                        </a>
-                                    </li>
-                                    <li class="list-group-item">
-                                        <b><i class="fas fa-child fa-fw fa-lg mr-2"></i><?php echo $lang->get('index_last_seen'); ?></b>
-                                        <a class="float-right">
-                                            <?php
-                                            if (isset($SETTINGS['date_format']) === true) {
-                                                echo date($SETTINGS['date_format'], (int) $session->get('user-last_connection'));
-                                            } else {
-                                                echo date('d/m/Y', (int) $session->get('user-last_connection'));
-                                            }
-                                            echo ' ' . $lang->get('at') . ' ';
-                                            if (isset($SETTINGS['time_format']) === true) {
-                                                echo date($SETTINGS['time_format'], (int) $session->get('user-last_connection'));
-                                            } else {
-                                                echo date('H:i:s', (int) $session->get('user-last_connection'));
-                                            }
-                                            ?>
-                                        </a>
-                                    </li>
-                                    <?php
-                                    if (null !== $session->get('user-last_pw_change') && ! empty($session->get('user-last_pw_change') === true)) {
-                                        // Handle last password change string
-                                        if ($session->has('user-last_pw_change')) {
-                                            if (isset($SETTINGS['date_format']) === true) {
-                                                $last_pw_change = date($SETTINGS['date_format']." ".$SETTINGS['time_format'], intval($userInfo['last_pw_change']));
-                                            } else {
-                                                $last_pw_change = date('d/m/Y', (int) $session->get('user-last_pw_change'));
-                                            }
-                                        } else {
-                                            $last_pw_change = '-';
-                                        }
+                <div class="tab-content">
 
-                                        // Handle expiration for pw
-                                        if (
-                                            $session->has('user-num_days_before_exp') && null !== $session->get('user-num_days_before_exp')
-                                            || $session->get('user-num_days_before_exp') === ''
-                                            || $session->get('user-num_days_before_exp') === 'infinite'
-                                        ) {
-                                            $numDaysBeforePwExpiration = '';
-                                        } else {
-                                            $numDaysBeforePwExpiration = $lang->get('index_pw_expiration') . ' ' . $session->get('user-num_days_before_exp') . ' ' . $lang->get('days') . '.';
-                                        }
-                                        echo '
-                                    <li class="list-group-item">
-                                        <b><i class="fas fa-calendar-alt fa-fw fa-lg mr-2"></i>' . $lang->get('index_last_pw_change') . '</b>
-                                        <a class="float-right">' . $last_pw_change . ' ' . $numDaysBeforePwExpiration . '</a>
-                                    </li>';
-                                    }
-                                    ?>
-                                    <li class="list-group-item">
-                                        <b><i class="fas fa-cloud-upload-alt fa-fw fa-lg mr-2"></i><?php echo $lang->get('upload_feature'); ?></b>
-                                        <a class="float-right">
-                                            <span id="profile-plupload-runtime" class="text-danger" data-enabled="0"><?php echo $lang->get('error_upload_runtime_not_found'); ?></span>
-                                        </a>
-                                    </li>
-                                    <li class="list-group-item">
-                                        <b><i class="fas fa-stream fa-fw fa-lg mr-2"></i><?php echo $lang->get('tree_load_strategy'); ?></b>
-                                        <a class="float-right">
-                                            <?php echo null !== $session->get('user-tree_load_strategy') ? $session->get('user-tree_load_strategy') : ''; ?>
-                                        </a>
-                                    </li>
-                                    <?php
-                                    $apiFeatureEnabled = isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1;
-                                    // Per-user API access, as /authorize checks it. Read now rather than from the
-                                    // session: an administrator may change it while the user is signed in.
-                                    $userApiAccessEnabled = $apiFeatureEnabled === true
-                                        && (int) DB::queryFirstField(
-                                            'SELECT enabled FROM ' . prefixTable('api') . ' WHERE user_id = %i',
-                                            (int) $session->get('user-id')
-                                        ) === 1;
-                                    // Same gate as generate_extension_token in users.queries.php
-                                    $extensionTokensAllowed = $apiFeatureEnabled === true
-                                        && (
-                                            (isset($SETTINGS['extension_token_all_auth_types']) === true && (int) $SETTINGS['extension_token_all_auth_types'] === 1)
-                                            || (isset($SETTINGS['oauth2_api_enabled']) === true && (int) $SETTINGS['oauth2_api_enabled'] === 1 && $session->get('user-auth_type') === 'oauth2')
-                                        );
-                                    // Tokens issued before an administrator turned token access off stay listable
-                                    // and revocable: they would work again if it were turned back on.
-                                    $extensionTokensOwned = $apiFeatureEnabled === true
-                                        && $extensionTokensAllowed === false
-                                        && (int) DB::queryFirstField(
-                                            'SELECT COUNT(*) FROM ' . prefixTable('api_tokens') . ' WHERE user_id = %i',
-                                            (int) $session->get('user-id')
-                                        ) > 0;
+                    <!-- OVERVIEW -->
+                    <div class="tab-pane<?php echo $activeTab === 'overview' ? ' active' : ''; ?>" id="tab_overview">
+                        <?php if ($profileSections['security'] === true || $profileSections['extension'] === true) : ?>
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title"><?php echo $lang->get('profile_glance_title'); ?></h3>
+                            </div>
+                            <div class="list-group list-group-flush">
+                                <?php if ($passwordManagedHere === true) : ?>
+                                <a href="#tab_security" class="list-group-item list-group-item-action d-flex align-items-center profile-goto">
+                                    <i class="fa-solid fa-lock fa-fw fa-lg mr-3 text-primary"></i>
+                                    <span class="flex-grow-1">
+                                        <span class="d-block font-weight-bold"><?php echo $lang->get('password'); ?></span>
+                                        <span class="d-block text-muted small"><?php echo $passwordSummary !== '' ? $passwordSummary : $lang->get('index_change_pw'); ?></span>
+                                    </span>
+                                    <i class="fa-solid fa-chevron-right text-muted"></i>
+                                </a>
+                                <?php endif;
+                                if ($webauthnLoginShown === true) : ?>
+                                <a href="#tab_security" class="list-group-item list-group-item-action d-flex align-items-center profile-goto">
+                                    <i class="fa-solid fa-fingerprint fa-fw fa-lg mr-3 text-primary"></i>
+                                    <span class="flex-grow-1">
+                                        <span class="d-block font-weight-bold"><?php echo $lang->get('webauthn_login_passkeys'); ?></span>
+                                        <span class="d-block text-muted small" id="profile-glance-passkeys">&nbsp;</span>
+                                    </span>
+                                    <i class="fa-solid fa-chevron-right text-muted"></i>
+                                </a>
+                                <?php endif;
+                                if ($profileSections['extension'] === true) : ?>
+                                <a href="#tab_extension" class="list-group-item list-group-item-action d-flex align-items-center profile-goto">
+                                    <i class="fa-solid fa-puzzle-piece fa-fw fa-lg mr-3 text-primary"></i>
+                                    <span class="flex-grow-1">
+                                        <span class="d-block font-weight-bold"><?php echo $lang->get('profile_section_extension'); ?></span>
+                                        <span class="d-block text-muted small"<?php echo $extensionTokensAllowed === true ? ' id="profile-glance-extension"' : ''; ?>><?php echo $lang->get('profile_section_extension_tip'); ?></span>
+                                    </span>
+                                    <i class="fa-solid fa-chevron-right text-muted"></i>
+                                </a>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <?php endif; ?>
 
-                                    if ($apiFeatureEnabled === true) {
-                                        // Why /authorize would refuse this key, the most blocking reason first
-                                        $apiKeyWarning = '';
-                                        if ($userApiAccessEnabled === false) {
-                                            $apiKeyWarning = $lang->get('user_profile_api_access_disabled');
-                                        } elseif ($session->get('user-special') === 'recrypt-private-key') {
-                                            $apiKeyWarning = $lang->get('user_profile_api_key_needs_recrypt');
-                                        }
-                                        echo '
-                                    <li class="list-group-item">
-                                        <button class="btn btn-sm btn-primary float-right infotip ml-1" id="generate-api-key" title="'.$lang->get('generate_api_token').'"><i class="fa-solid fa-rotate pointer"></i></button>
-                                        <b><i class="fas fa-paper-plane fa-fw fa-lg mr-2"></i>' . $lang->get('user_profile_api_key') . '</b>
-                                        <button class="btn btn-sm btn-primary float-right infotip" id="copy-api-key" title="'.$lang->get('copy_to_clipboard').'"><i class="fa-regular fa-copy pointer"></i></button>
-                                        <a class="float-right mr-2" id="profile-user-api-token">',
-                                            null !== $session->get('user-api_key') ? $session->get('user-api_key') : '',
-                                        '</a>',
-                                        // clearfix: the notes go below the floated key and buttons
-                                        $apiKeyWarning !== ''
-                                            ? '
-                                        <div class="clearfix"></div>
-                                        <small class="form-text text-warning" id="profile-user-api-access-warning"><i class="fa-solid fa-triangle-exclamation mr-1"></i>' . $apiKeyWarning . '</small>'
-                                            : '',
-                                        // The API only knows the directory password seen at the last web sign-in
-                                        $apiKeyWarning === '' && $session->get('user-auth_type') === 'ldap'
-                                            ? '
-                                        <div class="clearfix"></div>
-                                        <small class="form-text text-muted">' . $lang->get('user_profile_api_key_ldap_tip') . '</small>'
-                                            : '',
-                                        '
-                                    </li>';
-                                    }
-                                    // Browser extension tokens (Personal Access Tokens)
-                                    if ($extensionTokensAllowed === true || $extensionTokensOwned === true) {
-                                        if ($extensionTokensAllowed === false) {
-                                            $extensionTokensTip = $lang->get('extension_tokens_tip_revoke_only');
-                                        } elseif (isset($SETTINGS['extension_token_all_auth_types']) === true && (int) $SETTINGS['extension_token_all_auth_types'] === 1) {
-                                            $extensionTokensTip = $lang->get('extension_tokens_tip_all_auth_types');
-                                        } else {
-                                            $extensionTokensTip = $lang->get('extension_tokens_tip');
-                                        }
-                                        echo '
-                                    <li class="list-group-item" id="extension-tokens-block">',
-                                        $extensionTokensAllowed === true
-                                            ? '
-                                        <button class="btn btn-sm btn-primary float-right infotip" id="generate-extension-token" title="' . $lang->get('extension_token_generate') . '"><i class="fa-solid fa-plus pointer"></i></button>'
-                                            : '',
-                                        '
-                                        <b><i class="fa-solid fa-puzzle-piece fa-fw fa-lg mr-2"></i>' . $lang->get('extension_tokens') . '</b>
-                                        <small class="form-text text-muted">' . $extensionTokensTip . '</small>
-                                        <div class="mt-2" id="extension-tokens-list"></div>
-                                    </li>';
-                                    }
-                                    // Active API sessions (one per issued JWT) — list and revoke
-                                    if (isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1) {
-                                        echo '
-                                    <li class="list-group-item" id="api-sessions-block">
-                                        <b><i class="fa-solid fa-tower-broadcast fa-fw fa-lg mr-2"></i>' . $lang->get('api_sessions') . '</b>
-                                        <small class="form-text text-muted">' . $lang->get('api_sessions_tip') . '</small>
-                                        <div class="mt-2" id="api-sessions-list"></div>
-                                    </li>';
-                                    }
-                                    // Personal items encryption keys — self-repair. A personal object
-                                    // only ever has keys for its owner and the internal account, so
-                                    // when the internal one is gone the owner's own session is the
-                                    // only place it can be rebuilt: no administrator can do it.
-                                    if ((int) $session->get('user-personal_folder_enabled') === 1
-                                        && isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1
-                                    ) {
-                                        echo '
-                                    <li class="list-group-item" id="personal-sharekeys-block">
-                                        <b><i class="fa-solid fa-key fa-fw fa-lg mr-2"></i>' . $lang->get('personal_sharekeys_selfrepair') . '</b>
-                                        <small class="form-text text-muted">' . $lang->get('personal_sharekeys_selfrepair_tip') . '</small>
-                                        <div class="mt-2">
-                                            <button type="button" class="btn btn-sm btn-primary" id="personal-sharekeys-repair"><i class="fa-solid fa-wrench mr-1"></i>' . $lang->get('personal_sharekeys_selfrepair') . '</button>
-                                            <span class="ml-2" id="personal-sharekeys-result"></span>
-                                        </div>
-                                    </li>';
-                                    }
-                                    // Browser extension auto-configuration — when token-based access is
-                                    // available to this user (OAuth2, or all-auth-types toggle on).
-                                    if ($extensionTokensAllowed === true) {
-                                        echo '
-                                    <li class="list-group-item" id="extension-autoconfig-block">
-                                        <b><i class="fa-solid fa-wand-magic-sparkles fa-fw fa-lg mr-2"></i>' . $lang->get('extension_autoconfig_button') . '</b>
-                                        <small class="form-text text-muted">' . $lang->get('extension_autoconfig_prompt') . '</small>
-                                        <div class="mt-2">
-                                            <button class="btn btn-sm btn-primary" id="extension-autoconfig-configure"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>' . $lang->get('extension_autoconfig_button') . '</button>
-                                            <button class="btn btn-sm btn-secondary ml-1 hidden" id="extension-autoconfig-download"><i class="fa-solid fa-download mr-1"></i>' . $lang->get('extension_autoconfig_download') . '</button>
-                                        </div>
-                                    </li>';
-                                    }
-                                    ?>
-                                </ul>
-                                <?php
-                                if ($extensionTokensAllowed === true) { ?>
-                                <div class="modal fade" id="extension-token-modal" tabindex="-1" role="dialog" aria-hidden="true">
-                                    <div class="modal-dialog modal-dialog-centered" role="document">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title"><i class="fa-solid fa-puzzle-piece mr-2"></i><?php echo $lang->get('extension_tokens'); ?></h5>
-                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <div class="row">
+                            <div class="col-lg-6 d-flex">
+                                <div class="card flex-fill">
+                                    <div class="card-header">
+                                        <h3 class="card-title"><?php echo $lang->get('profile_my_account'); ?></h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <dl class="row mb-0">
+                                            <dt class="col-sm-5"><i class="fas fa-users fa-fw mr-2"></i><?php echo $lang->get('part_of_groups'); ?></dt>
+                                            <dd class="col-sm-7"><span id="profile-groups"><?php echo implode(', ', $userParOfGroups); ?></span></dd>
+                                            <dt class="col-sm-5"><i class="fas fa-child fa-fw mr-2"></i><?php echo $lang->get('index_last_seen'); ?></dt>
+                                            <dd class="col-sm-7 mb-0">
+                                                <?php
+                                                if (isset($SETTINGS['date_format']) === true) {
+                                                    echo date($SETTINGS['date_format'], (int) $session->get('user-last_connection'));
+                                                } else {
+                                                    echo date('d/m/Y', (int) $session->get('user-last_connection'));
+                                                }
+                                                echo ' ' . $lang->get('at') . ' ';
+                                                if (isset($SETTINGS['time_format']) === true) {
+                                                    echo date($SETTINGS['time_format'], (int) $session->get('user-last_connection'));
+                                                } else {
+                                                    echo date('H:i:s', (int) $session->get('user-last_connection'));
+                                                }
+                                                ?>
+                                            </dd>
+                                        </dl>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-6 d-flex">
+                                <div class="card flex-fill">
+                                    <div class="card-header">
+                                        <h3 class="card-title"><?php echo $lang->get('profile_my_activity'); ?></h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row text-center">
+                                            <div class="col-6 pb-3">
+                                                <div class="h3 mb-0"><?php echo strval($userItemsNumber); ?></div>
+                                                <div class="text-muted small"><?php echo $lang->get('created_items'); ?></div>
                                             </div>
-                                            <div class="modal-body">
-                                                <div class="alert alert-warning" role="alert"><i class="fa-solid fa-triangle-exclamation mr-2"></i><?php echo $lang->get('extension_token_copy_once'); ?></div>
-                                                <div class="input-group">
-                                                    <input type="text" readonly class="form-control" id="extension-token-value">
-                                                    <div class="input-group-append">
-                                                        <button class="btn btn-primary" type="button" id="copy-extension-token" title="<?php echo $lang->get('copy_to_clipboard'); ?>"><i class="fa-regular fa-copy"></i></button>
-                                                    </div>
-                                                </div>
+                                            <div class="col-6 pb-3">
+                                                <div class="h3 mb-0"><?php echo strval($userModificationNumber); ?></div>
+                                                <div class="text-muted small"><?php echo $lang->get('modification_performed'); ?></div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="h3 mb-0"><?php echo strval($userSeenItemsNumber); ?></div>
+                                                <div class="text-muted small"><?php echo $lang->get('items_opened'); ?></div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="h3 mb-0"><?php echo strval($userSeenPasswordsNumber); ?></div>
+                                                <div class="text-muted small"><?php echo $lang->get('passwords_seen'); ?></div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                <?php } ?>
                             </div>
+                        </div>
+                    </div>
 
-                            <!-- TIMELINE -->
-                            <div class="tab-pane<?php echo $get['tab'] === 'timeline' ? ' active' : ''; ?>" id="tab_timeline">
-                                <div class="mt-4">
-                                    <ul class="list-group list-group-flush">
-                                        <?php
-                                        // qui also stores IP addresses: compared as an integer, '10.0.0.5'
-                                        // would match user 10, so it is compared as text.
-                                        $rows = DB::query(
-                                            'SELECT label AS labelAction, date, null
-                                                    FROM ' . prefixTable('log_system') . '
-                                                    WHERE qui = %s
-                                                    UNION
-                                                    SELECT l.action, l.date, i.label AS itemLabel
-                                                    FROM ' . prefixTable('log_items') . ' AS l
-                                                    INNER JOIN ' . prefixTable('items') . ' AS i ON (l.id_item = i.id)
-                                                    WHERE l.id_user = %i AND l.action IN ("at_access")
-                                                    ORDER BY date DESC
-                                                    LIMIT 0, 40',
-                                            (string) $session->get('user-id'),
-                                            $session->get('user-id')
-                                        );
-                                        foreach ($rows as $record) {
-                                            if (substr($record['labelAction'], 0, 3) === 'at_') {
-                                                $text = $lang->get(substr($record['labelAction'], 3));
-                                            } else {
-                                                $text = $lang->get($record['labelAction']);
-                                            }
-                                            if (empty($record['NULL']) === false) {
-                                                $text .= ' ' . $lang->get('for') . ' <span class="font-weight-light">' . addslashes($record['NULL']) . '</span>';
-                                            }
-                                            echo '<li class="list-group-item">' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], intval($record['date'])) . ' - ' . $text . '</li>';
-                                        }
-                                        ?>
-                                    </ul>
+                    <!-- SIGN-IN AND SECURITY -->
+                    <?php if ($profileSections['security'] === true) : ?>
+                    <div class="tab-pane<?php echo $activeTab === 'security' ? ' active' : ''; ?>" id="tab_security">
+                        <?php if ($passwordManagedHere === true) : ?>
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fa-solid fa-lock mr-2"></i><?php echo $lang->get('password'); ?></h3>
+                            </div>
+                            <div class="card-body d-flex flex-wrap align-items-center justify-content-between">
+                                <span class="mr-3 py-1"><?php echo $passwordSummary; ?></span>
+                                <button type="button" class="btn btn-outline-secondary" id="profile-change-password"><i class="fa-solid fa-lock mr-1"></i><?php echo $lang->get('index_change_pw'); ?></button>
+                            </div>
+                        </div>
+                        <?php endif;
+                        if ($webauthnLoginShown === true) : ?>
+                        <div class="card" id="webauthn-login-block" data-mode="<?php echo $webauthnLoginMode; ?>">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fa-solid fa-fingerprint mr-2"></i><?php echo $lang->get('webauthn_login_passkeys'); ?></h3>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted"><?php echo $webauthnLoginTip; ?></p>
+                                <div id="webauthn-login-list"></div>
+                                <?php if ($webauthnLoginMode !== 0) : ?>
+                                <div class="input-group mt-3" style="max-width: 32rem;">
+                                    <input type="text" class="form-control" id="webauthn-login-label" maxlength="100" placeholder="<?php echo $lang->get('webauthn_login_label_placeholder'); ?>">
+                                    <div class="input-group-append">
+                                        <button type="button" class="btn btn-primary" id="webauthn-login-add"><i class="fa-solid fa-plus mr-1"></i><?php echo $lang->get('webauthn_login_add'); ?></button>
+                                    </div>
+                                </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                    <?php endif; ?>
+
+                    <!-- BROWSER EXTENSION -->
+                    <?php
+                    // Extension tokens (Personal Access Tokens) and the one-click set-up that issues them
+                    if ($extensionTokensAllowed === true || $extensionTokensOwned === true) {
+                        if ($extensionTokensAllowed === false) {
+                            $extensionTokensTip = $lang->get('extension_tokens_tip_revoke_only');
+                        } elseif (isset($SETTINGS['extension_token_all_auth_types']) === true && (int) $SETTINGS['extension_token_all_auth_types'] === 1) {
+                            $extensionTokensTip = $lang->get('extension_tokens_tip_all_auth_types');
+                        } else {
+                            $extensionTokensTip = $lang->get('extension_tokens_tip');
+                        }
+                        ?>
+                    <div class="tab-pane<?php echo $activeTab === 'extension' ? ' active' : ''; ?>" id="tab_extension">
+                        <?php
+                        // Browser extension auto-configuration — when token-based access is
+                        // available to this user (OAuth2, or all-auth-types toggle on).
+                        if ($extensionTokensAllowed === true) { ?>
+                        <div class="card" id="extension-autoconfig-block">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fa-solid fa-wand-magic-sparkles mr-2"></i><?php echo $lang->get('profile_extension_setup_title'); ?></h3>
+                                <div class="card-tools">
+                                    <span class="badge badge-secondary hidden" id="extension-autoconfig-status"></span>
                                 </div>
                             </div>
-                            
-                            <!-- SETTINGS -->
-                            <div class="tab-pane<?php echo $get['tab'] === 'settings' ? ' active' : ''; ?>" id="tab_settings">
-                                <form class="needs-validation" novalidate onsubmit="return false;">
+                            <div class="card-body">
+                                <p class="text-muted"><?php echo $lang->get('profile_extension_setup_tip'); ?></p>
+                                <button class="btn btn-primary" id="extension-autoconfig-configure"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i><?php echo $lang->get('extension_autoconfig_button'); ?></button>
+                                <button class="btn btn-outline-secondary ml-1 hidden" id="extension-autoconfig-download"><i class="fa-solid fa-download mr-1"></i><?php echo $lang->get('extension_autoconfig_download'); ?></button>
+                            </div>
+                        </div>
+                        <?php } ?>
+                        <div class="card" id="extension-tokens-block">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fa-solid fa-puzzle-piece mr-2"></i><?php echo $lang->get('profile_extension_access_title'); ?></h3>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted"><?php echo $extensionTokensTip; ?></p>
+                                <div id="extension-tokens-list"></div>
+                                <?php echo $extensionTokensAllowed === true
+                                    ? '<button class="btn btn-outline-secondary mt-3" id="generate-extension-token"><i class="fa-solid fa-plus mr-1"></i>' . $lang->get('extension_token_generate') . '</button>'
+                                    : ''; ?>
+                            </div>
+                        </div>
+                    </div>
+                    <?php } ?>
+
+                    <!-- PREFERENCES -->
+                    <div class="tab-pane<?php echo $activeTab === 'settings' ? ' active' : ''; ?>" id="tab_settings">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fa-solid fa-sliders mr-2"></i><?php echo $lang->get('profile_section_preferences'); ?></h3>
+                            </div>
+                            <form class="needs-validation" novalidate onsubmit="return false;">
+                                <div class="card-body">
                                 <?php if (($SETTINGS['disable_user_edit_profile'] ?? '0') === '0') : ?>
-                                    <div class="form-group">
-                                        <label for="profile-name" class="col-sm-2 control-label"><?php echo $lang->get('name'); ?></label>
-                                        <div class="col-sm-10">
+                                    <h5 class="mb-3"><?php echo $lang->get('profile_preferences_identity'); ?></h5>
+                                    <div class="form-row">
+                                        <div class="form-group col-md-6">
+                                            <label for="profile-user-name"><?php echo $lang->get('name'); ?></label>
                                             <input type="text" class="form-control" id="profile-user-name" placeholder="" value="<?php echo $session->get('user-name'); ?>">
                                         </div>
-                                    </div>
 
-                                    <div class="form-group">
-                                        <label for="profile-lastname" class="col-sm-2 control-label"><?php echo $lang->get('lastname'); ?></label>
-                                        <div class="col-sm-10">
+                                        <div class="form-group col-md-6">
+                                            <label for="profile-user-lastname"><?php echo $lang->get('lastname'); ?></label>
                                             <input type="text" class="form-control" id="profile-user-lastname" placeholder="" value="<?php echo $session->get('user-lastname'); ?>">
                                         </div>
-                                    </div>
 
-                                    <div class="form-group">
-                                        <label for="profile-email" class="col-sm-2 control-label"><?php echo $lang->get('email'); ?></label>
-                                        <div class="col-sm-10">
+                                        <div class="form-group col-md-6">
+                                            <label for="profile-user-email"><?php echo $lang->get('email'); ?></label>
                                             <input type="email" class="form-control" id="profile-user-email" placeholder="name@domain.com" value="<?php echo $session->get('user-email'); ?>">
                                         </div>
+
+                                        <?php if ($canEditAvatar === true) { ?>
+                                        <div class="form-group col-md-6">
+                                            <label><?php echo $lang->get('profile_picture'); ?></label>
+                                            <div class="d-flex align-items-center">
+                                                <button type="button" class="btn btn-outline-secondary" id="profile-avatar-file"><?php echo $lang->get('upload_new_avatar'); ?></button>
+                                                <button type="button" class="btn btn-outline-danger ml-2<?php echo $hasCustomAvatar === true ? '' : ' hidden'; ?>" id="profile-avatar-delete" title="<?php echo $lang->get('delete_current_avatar'); ?>" aria-label="<?php echo $lang->get('delete_current_avatar'); ?>" data-toggle="tooltip">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                            <small class="form-text text-muted"><?php echo $lang->get('avatar_upload_hint'); ?></small>
+                                        </div>
+                                        <?php } ?>
                                     </div>
-                                <?php endif; /* disable_user_edit_profile */
-                                if (($SETTINGS['disable_user_edit_timezone'] ?? '0') === '0') : ?>
-                                    <div class="form-group">
-                                        <label class="col-sm-10 control-label"><?php echo $lang->get('timezone_selection');?></label>
-                                        <div class="col-sm-10">
+                                <?php endif; /* disable_user_edit_profile */ ?>
+
+                                    <h5 class="mb-3"><?php echo $lang->get('profile_preferences_display'); ?></h5>
+                                    <div class="form-row">
+                                    <?php if (($SETTINGS['disable_user_edit_timezone'] ?? '0') === '0') : ?>
+                                        <div class="form-group col-md-6">
+                                            <label for="profile-user-timezone"><?php echo $lang->get('timezone_selection');?></label>
                                             <select class="form-control" id="profile-user-timezone">
                                                 <?php foreach ($zones as $key => $zone): ?>
-                                                    <option value="<?php echo $key; ?>"<?php 
+                                                    <option value="<?php echo $key; ?>"<?php
                                                         if ($session->has('user-timezone'))
                                                             if($session->get('user-timezone') === $key)
                                                                 echo ' selected';
@@ -543,12 +577,10 @@ foreach ($session->get('user-roles_array') as $role) {
                                                 <?php endforeach; ?>
                                             </select>
                                         </div>
-                                    </div>
-                                <?php endif; /* disable_user_edit_timezone */
-                                if (($SETTINGS['disable_user_edit_language'] ?? '0') === '0') : ?>
-                                    <div class="form-group">
-                                        <label class="col-sm-10 control-label"><?php echo $lang->get('language'); ?></label>
-                                        <div class="col-sm-10">
+                                    <?php endif; /* disable_user_edit_timezone */
+                                    if (($SETTINGS['disable_user_edit_language'] ?? '0') === '0') : ?>
+                                        <div class="form-group col-md-6">
+                                            <label for="profile-user-language"><?php echo $lang->get('language'); ?></label>
                                             <select class="form-control" id="profile-user-language">
                                                 <?php
                                                     foreach ($languages as $language) {
@@ -560,70 +592,173 @@ foreach ($session->get('user-roles_array') as $role) {
                                                 ?>
                                             </select>
                                         </div>
+                                    <?php endif; /* disable_user_edit_language */ ?>
                                     </div>
-                                <?php endif; /* disable_user_edit_language */
+
+                                    <div class="custom-control custom-switch mb-2">
+                                        <input type="checkbox" class="custom-control-input" id="profile-user-split_view_mode"<?php echo (int) $session->get('user-split_view_mode') === 1 ? ' checked' : ''; ?>>
+                                        <label class="custom-control-label" for="profile-user-split_view_mode"><?php echo $lang->get('items_page_split_view_mode'); ?></label>
+                                    </div>
+
+                                    <div class="custom-control custom-switch">
+                                        <input type="checkbox" class="custom-control-input" id="profile-user-show_subfolders"<?php echo (int) $session->get('user-show_subfolders') === 1 ? ' checked' : ''; ?>>
+                                        <label class="custom-control-label" for="profile-user-show_subfolders"><?php echo $lang->get('show_subfolders_in_main_view'); ?></label>
+                                    </div>
+
+                                    <div id="profile-avatar-file-container" class="hidden"></div>
+                                    <div id="profile-avatar-file-list" class="hidden"></div>
+                                    <input type="hidden" id="profile-user-token">
+                                </div>
+                                <div class="card-footer">
+                                    <button type="button" class="btn btn-info" id="profile-user-save-settings"><?php echo $lang->get('save'); ?></button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- ACTIVITY -->
+                    <div class="tab-pane<?php echo $activeTab === 'timeline' ? ' active' : ''; ?>" id="tab_timeline">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fa-solid fa-clock-rotate-left mr-2"></i><?php echo $lang->get('profile_activity_title'); ?></h3>
+                            </div>
+                            <div class="card-body pb-0">
+                                <p class="text-muted mb-0"><?php echo $lang->get('profile_activity_tip'); ?></p>
+                            </div>
+                            <ul class="list-group list-group-flush">
+                                <?php
+                                // qui also stores IP addresses: compared as an integer, '10.0.0.5'
+                                // would match user 10, so it is compared as text.
+                                $rows = DB::query(
+                                    'SELECT label AS labelAction, date, null
+                                            FROM ' . prefixTable('log_system') . '
+                                            WHERE qui = %s
+                                            UNION
+                                            SELECT l.action, l.date, i.label AS itemLabel
+                                            FROM ' . prefixTable('log_items') . ' AS l
+                                            INNER JOIN ' . prefixTable('items') . ' AS i ON (l.id_item = i.id)
+                                            WHERE l.id_user = %i AND l.action IN ("at_access")
+                                            ORDER BY date DESC
+                                            LIMIT 0, 40',
+                                    (string) $session->get('user-id'),
+                                    $session->get('user-id')
+                                );
+                                foreach ($rows as $record) {
+                                    if (substr($record['labelAction'], 0, 3) === 'at_') {
+                                        $text = $lang->get(substr($record['labelAction'], 3));
+                                    } else {
+                                        $text = $lang->get($record['labelAction']);
+                                    }
+                                    if (empty($record['NULL']) === false) {
+                                        $text .= ' ' . $lang->get('for') . ' <span class="font-weight-light">' . addslashes($record['NULL']) . '</span>';
+                                    }
+                                    echo '<li class="list-group-item">' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], intval($record['date'])) . ' - ' . $text . '</li>';
+                                }
                                 ?>
-                                    <div class="form-group">
-                                        <label class="col-sm-10 control-label"><?php echo $lang->get('items_page_split_view_mode'); ?></label>
-                                        <div class="col-sm-10">
-                                            <select class="form-control" id="profile-user-split_view_mode">
-                                                
-                                                <option value="0" <?php echo $session->has('user-split_view_mode') && $session->get('user-split_view_mode') === 0 ? 'selected' : '';?>>
-                                                    <?php echo $lang->get('no'); ?>
-                                                </option>
-                                                
-                                                <option value="1" <?php echo $session->has('user-split_view_mode') && (int) $session->get('user-split_view_mode') === 1 ? 'selected' : '';?>>
-                                                    <?php echo $lang->get('yes'); ?>
-                                                </option>
-                                            </select>
-                                        </div>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- HELP AND ADVANCED -->
+                    <div class="tab-pane<?php echo $activeTab === 'advanced' ? ' active' : ''; ?>" id="tab_advanced">
+                        <div class="callout callout-info">
+                            <i class="fa-solid fa-circle-info mr-2"></i><?php echo $lang->get('profile_advanced_notice'); ?>
+                        </div>
+
+                        <?php if ($personalItemsCheckShown === true) : ?>
+                        <div class="card" id="personal-sharekeys-block">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fa-solid fa-key mr-2"></i><?php echo $lang->get('profile_personal_items_check_title'); ?></h3>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted"><?php echo $lang->get('profile_personal_items_check_tip'); ?></p>
+                                <button type="button" class="btn btn-primary" id="personal-sharekeys-repair"><i class="fa-solid fa-wrench mr-1"></i><?php echo $lang->get('profile_personal_items_check_button'); ?></button>
+                                <span class="ml-2" id="personal-sharekeys-result"></span>
+                            </div>
+                        </div>
+                        <?php endif;
+
+                        if ($apiFeatureEnabled === true) :
+                            // Why /authorize would refuse this key, the most blocking reason first
+                            $apiKeyWarning = '';
+                            if ($userApiAccessEnabled === false) {
+                                $apiKeyWarning = $lang->get('user_profile_api_access_disabled');
+                            } elseif ($session->get('user-special') === 'recrypt-private-key') {
+                                $apiKeyWarning = $lang->get('user_profile_api_key_needs_recrypt');
+                            }
+                            ?>
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fas fa-paper-plane mr-2"></i><?php echo $lang->get('profile_api_key_title'); ?></h3>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted"><?php echo $lang->get('profile_api_key_tip'); ?></p>
+                                <div class="d-flex flex-wrap align-items-center">
+                                    <code class="mr-3 my-1" style="word-break: break-all;" id="profile-user-api-token"><?php echo null !== $session->get('user-api_key') ? $session->get('user-api_key') : ''; ?></code>
+                                    <button class="btn btn-sm btn-outline-secondary mr-1 my-1" id="copy-api-key"><i class="fa-regular fa-copy mr-1"></i><?php echo $lang->get('copy'); ?></button>
+                                    <button class="btn btn-sm btn-outline-secondary my-1" id="generate-api-key"><i class="fa-solid fa-rotate mr-1"></i><?php echo $lang->get('profile_api_key_generate'); ?></button>
+                                </div>
+                                <?php if ($apiKeyWarning !== '') : ?>
+                                <small class="form-text text-warning" id="profile-user-api-access-warning"><i class="fa-solid fa-triangle-exclamation mr-1"></i><?php echo $apiKeyWarning; ?></small>
+                                <?php elseif ($session->get('user-auth_type') === 'ldap') :
+                                    // The API only knows the directory password seen at the last web sign-in ?>
+                                <small class="form-text text-muted"><?php echo $lang->get('user_profile_api_key_ldap_tip'); ?></small>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+
+                        <?php // Open API connections (one per issued JWT) — list and revoke ?>
+                        <div class="card" id="api-sessions-block">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fa-solid fa-tower-broadcast mr-2"></i><?php echo $lang->get('profile_api_connections_title'); ?></h3>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted"><?php echo $lang->get('profile_api_connections_tip'); ?></p>
+                                <div id="api-sessions-list"></div>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fa-solid fa-circle-info mr-2"></i><?php echo $lang->get('profile_technical_details'); ?></h3>
+                            </div>
+                            <div class="card-body">
+                                <dl class="row mb-0">
+                                    <dt class="col-sm-4"><i class="fas fa-cloud-upload-alt fa-fw mr-2"></i><?php echo $lang->get('upload_feature'); ?></dt>
+                                    <dd class="col-sm-8"><span id="profile-plupload-runtime" class="text-danger" data-enabled="0"><?php echo $lang->get('error_upload_runtime_not_found'); ?></span></dd>
+                                    <dt class="col-sm-4"><i class="fas fa-stream fa-fw mr-2"></i><?php echo $lang->get('tree_load_strategy'); ?></dt>
+                                    <dd class="col-sm-8 mb-0"><?php echo null !== $session->get('user-tree_load_strategy') ? $session->get('user-tree_load_strategy') : ''; ?></dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <!-- /.tab-content -->
+
+                <?php
+                if ($extensionTokensAllowed === true) { ?>
+                <div class="modal fade" id="extension-token-modal" tabindex="-1" role="dialog" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title"><i class="fa-solid fa-puzzle-piece mr-2"></i><?php echo $lang->get('extension_tokens'); ?></h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="alert alert-warning" role="alert"><i class="fa-solid fa-triangle-exclamation mr-2"></i><?php echo $lang->get('extension_token_copy_once'); ?></div>
+                                <div class="input-group">
+                                    <input type="text" readonly class="form-control" id="extension-token-value">
+                                    <div class="input-group-append">
+                                        <button class="btn btn-primary" type="button" id="copy-extension-token" title="<?php echo $lang->get('copy_to_clipboard'); ?>"><i class="fa-regular fa-copy"></i></button>
                                     </div>
-
-                                    <div class="form-group">
-                                        <label class="col-sm-10 control-label"><?php echo $lang->get('show_subfolders_in_main_view'); ?></label>
-                                        <div class="col-sm-10">
-                                            <select class="form-control" id="profile-user-show_subfolders">
-                                                
-                                                <option value="0" <?php echo $session->has('user-show_subfolders') && $session->get('user-show_subfolders') === 0 ? 'selected' : '';?>>
-                                                    <?php echo $lang->get('no'); ?>
-                                                </option>
-
-                                                <option value="1" <?php echo $session->has('user-show_subfolders') && (int) $session->get('user-show_subfolders') === 1 ? 'selected' : '';?>>
-                                                    <?php echo $lang->get('yes'); ?>
-                                                </option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group">
-                                        <div class="row">
-                                            <div class="col-sm-offset-2 col-sm-2">
-                                                <button type="button" class="btn btn-info" id="profile-user-save-settings"><?php echo $lang->get('save'); ?></button>
-                                            </div>
-                                            <div class="col-sm-8">
-                                                <?php if ($canEditAvatar === true) { ?>
-                                                    <div class="text-muted small text-right mb-2"><?php echo $lang->get('avatar_upload_hint'); ?></div>
-                                                    <div class="d-flex justify-content-end align-items-center">
-                                                        <button type="button" class="btn btn-sm btn-outline-danger mr-2<?php echo $hasCustomAvatar === true ? '' : ' hidden'; ?>" id="profile-avatar-delete" title="<?php echo $lang->get('delete_current_avatar'); ?>" aria-label="<?php echo $lang->get('delete_current_avatar'); ?>" data-toggle="tooltip">
-                                                            <i class="fas fa-trash"></i>
-                                                        </button>
-                                                        <button type="button" class="btn btn-warning" id="profile-avatar-file"><?php echo $lang->get('upload_new_avatar'); ?></button>
-                                                    </div>
-                                                <?php 
-                                                }
-                                                ?>
-                                                <div id="profile-avatar-file-container" class="hidden"></div>
-                                                <div id="profile-avatar-file-list" class="hidden"></div>
-                                                <input type="hidden" id="profile-user-token">
-                                            </div>
-                                        </div>
-                                    </div>
-                                </form>
-
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
+                <?php } ?>
             </div>
 
         </div>

@@ -1,0 +1,49 @@
+{
+    "name": "spomky-labs/cbor-php",
+    "type": "library",
+    "license": "MIT",
+    "keywords": ["CBOR", "Concise Binary Object Representation", "RFC7049"],
+    "description": "CBOR Encoder/Decoder for PHP",
+    "authors": [
+        {
+            "name": "Florent Morselli",
+            "homepage": "https://github.com/Spomky"
+        },{
+            "name": "All contributors",
+            "homepage": "https://github.com/Spomky-Labs/cbor-php/contributors"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "CBOR\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "CBOR\\Test\\": "tests/"
+        }
+    },
+    "require": {
+        "php": ">=8.0",
+        "ext-mbstring": "*",
+        "brick/math": "^0.9|^0.10|^0.11|^0.12|^0.13|^0.14|^0.15|^0.16|^0.17|^0.18|^0.19|^0.20|^1.0",
+        "symfony/polyfill-php81": "^1.32"
+    },
+    "require-dev": {
+        "ext-json": "*",
+        "roave/security-advisories": "dev-latest",
+        "symfony/error-handler": "^6.4|^7.1|^8.0",
+        "symfony/var-dumper": "^6.4|^7.1|^8.0"
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "phpstan/extension-installer": true,
+            "infection/extension-installer": true
+        }
+    },
+    "suggest": {
+        "ext-gmp": "Strongly recommended when decoding untrusted input: without it, converting the byte string of a Big Number Tag (2 and 3) is quadratic in its length. Also improves the library performance overall",
+        "ext-bcmath": "Improves the library performance when ext-gmp is missing, and is required to handle the Big Float and Decimal Fraction Tags (4 and 5)"
+    }
+}

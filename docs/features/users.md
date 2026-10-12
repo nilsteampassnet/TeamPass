@@ -10,6 +10,8 @@ The **Users** page is the central place for managing accounts in Teampass. An ad
 
 The page opens on a table listing all accounts. Each row shows the login, full name, email address, assigned role label, account status, admin flag, and MFA status.
 
+When sign-in passkeys are enabled, a fingerprint badge next to the login gives the number of [passkeys](passkeys.md#following-the-adoption) the account signs in with; it turns orange when they are not asked for because MFA is disabled on the account.
+
 The gear icon at the left of each row opens the **action menu** for that user.
 
 ### Action menu
@@ -22,6 +24,7 @@ The gear icon at the left of each row opens the **action menu** for that user.
 | **Generate new keys** | Regenerates the user's encryption key pair (used after a forced password reset) |
 | **See logs** | Displays the audit log of that user's actions |
 | **Email Google Auth QR** | Sends the TOTP setup QR code by email |
+| **Sign-in passkeys** | Lists the [passkeys](passkeys.md#signing-in-to-teampass-with-a-passkey) the account signs in with, and revokes them. Shown when passkeys are enabled |
 | **Visible folders** | Opens the [permissions inspector](#inspecting-a-users-permissions) modal |
 | **Disable / Enable** | Toggles account active state without deleting it |
 | **Delete** | Permanently removes the account |

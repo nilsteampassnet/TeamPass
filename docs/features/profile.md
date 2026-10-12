@@ -2,17 +2,41 @@
 
 ## Overview
 
-The **My Profile** page lets every user consult their account information, adjust personal preferences, and change their password. It is accessible from the top-right user menu.
+The **My Profile** page lets every user consult their account information, manage how they sign in, set up the browser extension and adjust personal preferences. It is accessible from the top-right user menu.
+
+The left column shows your picture, name, email and role, followed by a menu. Each entry opens one section of the page:
+
+| Section | What it holds |
+|---------|---------------|
+| **Overview** | Your account at a glance |
+| **Sign-in and security** | Your password and your sign-in passkeys |
+| **Browser extension** | One-click set-up of the extension and the access it was given |
+| **Preferences** | Name, email, picture, language and display options |
+| **Activity** | Your recent actions |
+| **Help and advanced** | Repair tool, API key and technical details |
+
+A section with nothing to show for your account is left out of the menu. **Browser extension**, for instance, only appears when your administrator allowed extension tokens for your account.
 
 > 🔔 Some fields may be locked by the administrator (e.g. name, timezone, language). When an option is grayed out or absent, it means the administrator has disabled self-editing for that field.
 
+> 💡 A section can be opened directly with the `tab` parameter: `index.php?page=profile&tab=security` (`security`, `extension`, `settings` for Preferences, `timeline` for Activity, `advanced`).
+
 ---
 
-## Information tab
+## Overview section
 
-The default tab gives a read-only summary of the account.
+The default section gives a read-only summary of the account.
 
-### Activity counters
+### At a glance
+
+One line per topic, with its current state: when your password was last changed, the passkeys you registered, and whether the browser extension is set up in this browser. Click a line to open the matching section.
+
+### My account
+
+- **Groups** — The roles you are currently a member of.
+- **Last connection** — Date and time of your last login.
+
+### My activity
 
 | Counter | What it measures |
 |---------|-----------------|
@@ -21,45 +45,46 @@ The default tab gives a read-only summary of the account.
 | **Items opened** | Total number of times you have opened an item |
 | **Passwords seen** | Total number of times you have revealed a password |
 
-### Account details
+---
 
-- **Groups** — The roles you are currently a member of.
-- **Last seen** — Date and time of your last login.
-- **Password expiration** — If your administrator has set a password expiration policy, this shows how many days remain before your login password must be changed.
-- **Last password change** — Date of your last password update.
-- **File upload** — Indicates whether your browser supports the file upload feature used for item attachments.
-- **Tree load strategy** — Shows whether the folder tree is loaded lazily (on demand) or fully at login.
+## Sign-in and security section
 
-### API key
+### Password
 
-If the API is enabled, your personal API key is shown here. You can:
+Shown for accounts whose password is managed by TeamPass. It gives the date of your last password change and, if your administrator has set a password expiration policy, how many days remain before it must be changed. **Change password** opens the same panel as the user menu (see [Changing your password](#changing-your-password)).
 
-- **Copy** the key to the clipboard using the copy icon.
-- **Regenerate** a new key using the rotate icon (this invalidates the previous key immediately).
+> 🔔 **LDAP and OAuth2 accounts** do not have this block: their password is changed in the directory or the identity provider.
 
-> 🔔 Treat your API key like a password. Anyone who has it can access Teampass on your behalf via the API.
+### Sign-in passkeys
+
+See [Sign-in passkeys](#sign-in-passkeys) below.
 
 ---
 
-## Timeline tab
+## Browser extension section
 
-The Timeline shows a chronological log of your own recent actions (items viewed, created, edited, etc.). It is a personal audit trail — only your actions are shown, not other users'.
+### Set up the extension in this browser
+
+A badge tells what TeamPass found in the browser you are using: **Set up in this browser**, **Not set up in this browser yet**, or **Not detected in this browser**. Click **Configure my extension** to set it up in one click; your password is never sent to the extension. When the extension is not detected, a **Download configuration file** button appears instead. See [Browser extension](../misc/extension.md).
+
+### Access given to the extension
+
+Each line is a Personal Access Token: it lets the extension, or a script, connect to TeamPass without your password. **Revoke** the ones you no longer use. **Generate a new token** creates one by hand; it is shown only once.
 
 ---
 
-## Settings tab
+## Preferences section
 
-### Identity
+### About me
 
 | Field | Description |
 |-------|-------------|
 | **Name** | Your first name as displayed in the interface |
 | **Last name** | Your last name |
 | **Email** | Your email address, used for notifications and for receiving MFA setup codes |
+| **Picture** | Click **Select profile image file** to replace your profile picture. Supported formats are JPEG and PNG. The image is resized and stored server-side |
 
-Click **Save** to apply identity changes.
-
-### Interface preferences
+### Language and display
 
 | Option | Effect |
 |--------|--------|
@@ -68,15 +93,47 @@ Click **Save** to apply identity changes.
 | **Split view mode** | When enabled, the item list and item details are shown side by side instead of a single expanding list |
 | **Show sub-folders in main view** | When enabled, items from sub-folders are listed inline below the parent folder's items. See [Show sub-directories](items.md#show-sub-directories-with-items-list) |
 
-### Avatar
+Click **Save** to apply every change of the section.
 
-Click **Upload new avatar** to replace your profile picture. Supported formats are JPEG and PNG. The image is resized and stored server-side.
+---
+
+## Activity section
+
+A chronological log of your own recent actions (sign-ins, items opened, etc.), limited to the last 40. It is a personal audit trail — only your actions are shown, not other users'.
+
+---
+
+## Help and advanced section
+
+Most users never need this section. Open it when your administrator or the support team asks you to.
+
+### Check my personal items
+
+Shown when personal folders are enabled. **Run the check** makes sure your personal items can still be recovered if you ever lose your own key, and rebuilds what is missing. It is safe to run at any time and never changes what your items contain.
+
+### API key
+
+If the API is enabled, your personal API key is shown here. You can:
+
+- **Copy** the key to the clipboard.
+- **Generate a new key** (this invalidates the previous key immediately).
+
+> 🔔 Treat your API key like a password. Anyone who has it can access Teampass on your behalf via the API.
+
+### Open API connections
+
+Each script, browser extension or mobile app that signed in with your account appears here, with the dates it was opened, last used and expires. **Revoke** a line to cut its access immediately.
+
+### Technical details
+
+- **Upload feature** — Indicates whether your browser supports the file upload feature used for item attachments.
+- **Tree load strategy** — Shows whether the folder tree is loaded lazily (on demand) or fully at login.
 
 ---
 
 ## Changing your password
 
-The password change panel is accessible from the **top-right user menu → Change password** (or directly from the lock icon in the navigation bar).
+The password change panel is accessible from the **top-right user menu → Change password**, or from **Profile → Sign-in and security → Change password**.
 
 1. Enter your **current password**.
 2. Enter the **new password**. The strength meter updates in real time — make sure the complexity meets your administrator's requirements.
@@ -105,6 +162,14 @@ When TOTP is enabled by the administrator, you will be prompted to scan a QR cod
 From that point on, you will be asked for a code at every login.
 
 > 💡 If you lose access to your authenticator app, contact your administrator. They can reset your TOTP enrollment from the **Users** page (action menu → **Email Google Auth QR**), which sends a new QR code to your registered email address.
+
+### Sign-in passkeys
+
+When the administrator enabled passkeys, the **Sign-in and security** section holds a **Sign-in passkeys** block. Add one per device: the browser asks for your fingerprint, face, PIN or security key, and from then on TeamPass asks for that passkey after your password.
+
+If passwordless sign-in is enabled and your account is a local one, the same list lets you turn a passkey into a full sign-in — no password at all — and turn it off again. A passkey can also be renamed or deleted at any time.
+
+> 💡 Lost the device? Ask an administrator to revoke the passkey: your password, and any other method, keep working. See [Passkeys](passkeys.md#signing-in-to-teampass-with-a-passkey).
 
 ### Duo Security
 

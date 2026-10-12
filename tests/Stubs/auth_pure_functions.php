@@ -120,7 +120,8 @@ function countEnabledMfaMethods(array $mfaMethods): int
     return (int) (($mfaMethods['agses'] ?? false) === true)
         + (int) (($mfaMethods['google'] ?? false) === true)
         + (int) (($mfaMethods['yubico'] ?? false) === true)
-        + (int) (($mfaMethods['duo'] ?? false) === true);
+        + (int) (($mfaMethods['duo'] ?? false) === true)
+        + (int) (($mfaMethods['webauthn'] ?? false) === true);
 }
 
 /**

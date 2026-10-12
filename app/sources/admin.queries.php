@@ -1494,6 +1494,18 @@ switch ($post_type) {
             'decode'
         );
         
+        // Validate destructive retention policy before generic HTML sanitization
+        // can coerce arrays, booleans or floats into a different value.
+        if (($dataReceived['field'] ?? null) === 'secure_send_audit_retention_days') {
+            require_once __DIR__ . '/secure_send_retention.php';
+            try {
+                $dataReceived['value'] = (string) secureSendAuditRetentionDays($dataReceived['value'] ?? null);
+            } catch (InvalidArgumentException $e) {
+                echo prepareExchangedData(['error' => true, 'message' => $lang->get('secure_send_audit_retention_invalid')], 'encode');
+                break;
+            }
+        }
+
         // prepare data
         $post_value = filter_var($dataReceived['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $post_field = filter_var($dataReceived['field'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -1544,6 +1556,28 @@ switch ($post_type) {
         }
         if ($post_field === 'lapr_endpoint_check_interval_minutes') {
             $post_value = (string) min(525600, max(5, (int) $post_value));
+        }
+        // Sign-in passkeys: 0 disabled, 1 second factor, 2 passwordless
+        if ($post_field === 'webauthn_login_mode') {
+            $post_value = (string) min(2, max(0, (int) $post_value));
+        }
+        // Relying party ID: the host of the TeamPass URL or a parent domain of it. Any other value
+        // would be ignored until the URL changes, then suddenly orphan every sign-in passkey.
+        if ($post_field === 'webauthn_rp_id') {
+            require_once __DIR__ . '/webauthn_login_logic.php';
+            $post_value = strtolower(trim(html_entity_decode((string) $post_value, ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+            $teampassHost = webauthnLoginHostOf((string) ($SETTINGS['cpassman_url'] ?? ''));
+            if ($post_value !== '' && webauthnLoginRpIdIsValidFor($post_value, $teampassHost) === false) {
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        // Shown as text (escapeHtml in admin.js.php)
+                        'message' => sprintf($lang->get('webauthn_rp_id_invalid'), $teampassHost),
+                    ],
+                    'encode'
+                );
+                break;
+            }
         }
 
         require_once 'main.functions.php';
@@ -1755,6 +1789,33 @@ switch ($post_type) {
                 '',
                 '0'
             );
+        }
+
+        // Requiring PRF refuses the copies of a private key the server opens alone: those made
+        // before are deleted, not merely refused. Their passkeys stay second factors.
+        if ($post_field === 'webauthn_login_require_prf' && (int) $post_value === 1) {
+            require_once __DIR__ . '/webauthn_login_logic.php';
+            $serverWraps = DB::query(
+                'SELECT id, user_id FROM ' . prefixTable('user_webauthn_credentials') . ' WHERE key_wrap_mode = %i',
+                TP_WEBAUTHN_LOGIN_WRAP_SERVER
+            );
+            foreach ($serverWraps as $serverWrap) {
+                DB::update(
+                    prefixTable('user_webauthn_credentials'),
+                    ['key_wrap_mode' => TP_WEBAUTHN_LOGIN_WRAP_NONE, 'wrapped_private_key' => null, 'wrap_salt' => null],
+                    'id = %i AND key_wrap_mode = %i',
+                    (int) $serverWrap['id'],
+                    TP_WEBAUTHN_LOGIN_WRAP_SERVER
+                );
+                logEvents(
+                    $SETTINGS,
+                    'user_mngt',
+                    'at_user_webauthn_passwordless_disabled',
+                    (string) $session->get('user-id'),
+                    (string) $session->get('user-login'),
+                    (string) $serverWrap['user_id']
+                );
+            }
         }
 
         // Keep local settings array aligned with the saved value
@@ -2194,6 +2255,15 @@ case 'get_operational_statistics':
         );
         $topUsers = $userRankings['overall'];
 
+        // Independent audit history: personal-item/API filters cannot reconstruct provenance.
+        require_once __DIR__ . '/secure_send_statistics.php';
+        $secureSendStatistics = secureSendBuildOperationalStatistics(
+            $fromTs,
+            $nowTs,
+            $SETTINGS,
+            array(TP_USER_ID, OTV_USER_ID, API_USER_ID, SSH_USER_ID)
+        );
+
         // ---- ROLES
         $rolesTotal = intval(DB::queryFirstField("SELECT COUNT(*) FROM " . prefixTable('roles_title')));
 
@@ -2572,6 +2642,7 @@ case 'get_operational_statistics':
                 'series' => $series,
                 'top' => $topUsers,
                 'rankings' => $userRankings,
+                'secure_send' => $secureSendStatistics,
             ),
             'roles' => array(
                 'total' => $rolesTotal,
@@ -3111,7 +3182,7 @@ case 'save_sending_statistics':
      * Returns: users, items, folders, and logs statistics
      * 
      * @return array {
-     *   users: {active: int, online: int, api_online: int, blocked: int},
+     *   users: {active: int, online: int, api_online: int, blocked: int, warned: int, passkeys: int|null},
      *   items: {total: int, shared: int, personal: int},
      *   folders: {total: int, public: int, personal: int},
      *   logs: {actions: int, accesses: int, errors: int}
@@ -3169,6 +3240,12 @@ case 'save_sending_statistics':
     );
 
     $usersBlocked = (int) $usersDisabled + (int) $usersBruteforceLocked;
+
+    // Adoption of sign-in passkeys: active accounts holding one, null while the feature is off
+    require_once __DIR__ . '/webauthn_login.functions.php';
+    $usersWithPasskey = webauthnLoginMode($SETTINGS) !== TP_WEBAUTHN_LOGIN_MODE_DISABLED
+        ? webauthnLoginAccountsWithPasskey(webauthnLoginRpId($SETTINGS))
+        : null;
 
     // Inactive users warned (as per Inactive Users Management)
     $usersWarned = DB::queryFirstField(
@@ -3256,6 +3333,7 @@ case 'save_sending_statistics':
                 'api_online' => intval($usersApiOnline),
                 'blocked' => intval($usersBlocked),
                 'warned' => intval($usersWarned),
+                'passkeys' => $usersWithPasskey,
             ),
             'items' => array(
                 'total' => intval($itemsTotal),
@@ -3282,133 +3360,56 @@ case 'save_sending_statistics':
 // ========================================
 
 case 'get_live_activity':
-    /**
-     * Get recent activity (last 5 minutes, max 10 entries)
-     * 
-     * @return array [{
-     *   timestamp: int,
-     *   user_id: int,
-     *   user_login: string,
-     *   action: string,
-     *   action_text: string,
-     *   source_type: string,
-     *   source_label: string,
-     *   item_id: int|null,
-     *   item_label: string|null
-     * }]
-     */
-
-    $getActivityActionText = static function (string $action) use ($lang): string {
-        switch ($action) {
-            case 'at_shown':
-                return $lang->get('action_accessed');
-            case 'at_creation':
-                return $lang->get('action_created');
-            case 'at_modification':
-                return $lang->get('action_modified');
-            case 'at_delete':
-                return $lang->get('action_deleted');
-            case 'at_manual':
-                return $lang->get('action_manual');
-            case 'at_password_shown_edit_form':
-                return $lang->get('opened_edit_form_of');
-            case 'at_copy':
-                return $lang->get('copied');
-            case 'at_restored':
-                return $lang->get('at_restored');
-            default:
-                return $action;
-        }
-    };
-
-    $timestamp5min = time() - 300; // 5 minutes ago
-    
-    $activities = DB::query(
-        'SELECT l.date, l.id_user, u.login, l.action, l.raison, l.id_item, i.label 
-        FROM ' . prefixTable('log_items') . ' AS l
-        LEFT JOIN ' . prefixTable('users') . ' AS u ON l.id_user = u.id
-        LEFT JOIN ' . prefixTable('items') . ' AS i ON l.id_item = i.id
-        WHERE l.date > %i
-        ORDER BY l.date DESC
-        LIMIT 10',
-        $timestamp5min
-    );
-    
-    $activityList = array();
-
-    foreach ($activities as $activity) {
-        $activity = secureOutput($activity, ['login', 'label']);
-
-        $activityList[] = array(
-            'timestamp' => intval($activity['date']),
-            'user_id' => intval($activity['id_user']),
-            'user_login' => $activity['login'] ?? $lang->get('unknown'),
-            'action' => $activity['action'],
-            'action_text' => strtolower($getActivityActionText((string) $activity['action'])),
-            'source_type' => 'item',
-            'source_label' => $lang->get('items'),
-            'item_id' => $activity['id_item'] ? intval($activity['id_item']) : null,
-            'item_label' => $activity['label'] ?? null,
-        );
+    if (!is_string($post_key) || !hash_equals((string) $session->get('key'), $post_key)) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('key_is_not_correct')], 'encode');
+        break;
     }
-
-    if (isset($SETTINGS['enable_kb']) && (int) $SETTINGS['enable_kb'] === 1) {
-        $kbActivities = DB::query(
-            'SELECT created_at, valeur
-            FROM ' . prefixTable('misc') . '
-            WHERE type = %s
-                AND created_at > %i
-            ORDER BY created_at DESC
-            LIMIT 10',
-            'kb_log',
-            $timestamp5min
-        );
-
-        foreach ($kbActivities as $kbActivity) {
-            $payload = json_decode((string) ($kbActivity['valeur'] ?? ''), true);
-            if (is_array($payload) === false) {
-                continue;
+    require_once __DIR__ . '/admin_activity_logic.php';
+    try {
+        $input = prepareExchangedData($post_data, 'decode');
+        if (!is_array($input)) {
+            throw new InvalidArgumentException('Invalid activity options');
+        }
+        $options = adminActivityOptions($input, time(), (int) ($SETTINGS['enable_kb'] ?? 0) === 1);
+        [$union, $values] = adminActivityQuery($options, [
+            'log_items' => prefixTable('log_items'), 'log_system' => prefixTable('log_system'),
+            'users' => prefixTable('users'), 'items' => prefixTable('items'), 'misc' => prefixTable('misc'),
+        ]);
+        $rows = [];
+        $newCount = 0;
+        if ($union !== '') {
+            $pageWhere = '';
+            $pageValues = $values;
+            if ($options['before'] !== null) {
+                [$predicate, $cursorValues] = adminActivityCursorPredicate($options['before']);
+                $pageWhere = ' WHERE ' . $predicate;
+                array_push($pageValues, ...$cursorValues);
             }
-
-            $sanitizedPayload = secureOutput(
-                [
-                    'user_login' => (string) ($payload['user_login'] ?? ''),
-                    'label' => (string) ($payload['label'] ?? ''),
-                ],
-                ['user_login', 'label']
-            );
-
-            $action = (string) ($payload['action'] ?? '');
-            $activityList[] = array(
-                'timestamp' => (int) ($payload['date'] ?? $kbActivity['created_at'] ?? 0),
-                'user_id' => (int) ($payload['user_id'] ?? 0),
-                'user_login' => $sanitizedPayload['user_login'] !== '' ? $sanitizedPayload['user_login'] : $lang->get('unknown'),
-                'action' => $action,
-                'action_text' => strtolower($getActivityActionText($action)),
-                'source_type' => 'kb',
-                'source_label' => $lang->get('kb_logs'),
-                'item_id' => null,
-                'item_label' => $sanitizedPayload['label'] !== '' ? $sanitizedPayload['label'] : null,
-            );
+            $rows = DB::query('SELECT * FROM (' . $union . ') activity' . $pageWhere
+                . ' ORDER BY timestamp DESC, source_rank DESC, event_id DESC LIMIT %i',
+                ...array_merge($pageValues, [$options['limit'] + 1]));
+            if ($options['after'] !== null && $options['before'] === null) {
+                [$predicate, $cursorValues] = adminActivityCursorPredicate($options['after'], true);
+                $newCount = (int) DB::queryFirstField('SELECT COUNT(*) FROM (' . $union . ') activity WHERE ' . $predicate,
+                    ...array_merge($values, $cursorValues));
+            }
         }
+        $hasMore = count($rows) > $options['limit'];
+        $rows = array_slice($rows, 0, $options['limit']);
+        $activities = array_map(static fn (array $row): array => adminActivityFormat($row,
+            static fn (string $key): string => $lang->get($key)), $rows);
+        $failedCount = $options['before'] === null && in_array('failed', $options['categories'], true)
+            ? (int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('log_system')
+                . ' WHERE type = %s AND CAST(date AS SIGNED) > %i AND CAST(date AS SIGNED) <= %i', 'failed_auth', $options['since'], $options['until']) : 0;
+        echo prepareExchangedData([
+            'error' => false, 'activities' => $activities, 'has_more' => $hasMore,
+            'next_cursor' => $activities !== [] ? $activities[count($activities) - 1]['cursor'] : null,
+            'failed_count' => $failedCount, 'new_count' => $newCount,
+            'since' => $options['since'], 'until' => $options['until'],
+        ], 'encode');
+    } catch (InvalidArgumentException $e) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_occurred')], 'encode');
     }
-
-    usort(
-        $activityList,
-        static function (array $left, array $right): int {
-            return $right['timestamp'] <=> $left['timestamp'];
-        }
-    );
-
-    $activityList = array_slice($activityList, 0, 10);
-    
-    echo prepareExchangedData(
-        array(
-            'error' => false,
-            'activities' => $activityList,
-        ),
-        'encode'
-    );
     break;
 
 // ========================================

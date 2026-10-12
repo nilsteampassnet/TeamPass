@@ -2,6 +2,33 @@
 
 declare(strict_types=1);
 
+/**
+ * Teampass - a collaborative passwords manager.
+ * ---
+ * This file is part of the TeamPass project.
+ *
+ * TeamPass is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * TeamPass is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Certain components of this file may be under different licenses. For
+ * details, see the `licenses` directory or individual file headers.
+ * ---
+ * @file      secure_send_dependencies.php
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2026 Teampass.net
+ * @license   GPL-3.0
+ * @see       https://www.teampass.net
+ */
+
 use Defuse\Crypto\Crypto;
 use Defuse\Crypto\Key;
 use Defuse\Crypto\KeyProtectedByPassword;
@@ -9,6 +36,12 @@ use Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException;
 
 // Explicit dependency adapters: real Defuse encryption, without booting a vault
 // or extracting/evaluating functions from main.functions.php.
+/** Supply random lookup/link secrets when exercising the authenticated handler tail. */
+function GenerateCryptKey(int $length, bool ...$options): string
+{
+    return substr(bin2hex(random_bytes($length)), 0, $length);
+}
+
 if (!defined('OTV_USER_ID')) {
     define('OTV_USER_ID', 9999991);
 }
@@ -95,6 +128,26 @@ function adjustFolderItemsCounter(int $folderId, int $delta): void
 function emitItemEvent(string $action, int $itemId, int $folderId, string $label, string $login, ?int $excludeUserId = null): bool
 {
     return true;
+}
+
+/** Legacy item syslog transport is independent of the new structured journal. */
+function emitItemSyslog(array $settings, int $itemId, string $label, string $action, ?string $login = null, ?string $reason = null): void
+{
+    if (method_exists('DB', 'inTransaction') && DB::inTransaction()) {
+        throw new LogicException('Item audit forwarded before commit');
+    }
+}
+
+/** Capture metadata forwarding independently from the transaction; transport may fail. */
+function send_syslog(string $message, string $host, int|string $port, string $tag): void
+{
+    if (DB::inTransaction()) {
+        throw new LogicException('Audit forwarded before commit');
+    }
+    if (DB::$failForward) {
+        throw new RuntimeException('Synthetic transport failure containing secret-canary');
+    }
+    DB::$forwarded[] = $message;
 }
 
 /** Seed links in the existing storage format; creation-handler authorization has its own suite. */

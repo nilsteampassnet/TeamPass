@@ -1012,15 +1012,104 @@ snapshot until those backups expire.
 
 ### Audit scope
 
-Teampass records successful Secure Send reveals under the OTV system identity
-and records automatic item deletion. Web-server logs can provide traffic and
-failure indicators without storing the URL secret. Before using Secure Send for
-a regulated workflow, verify that the available creation, revocation, reveal
-and retention evidence meets the organisation's audit requirements.
+After applying the Secure Send audit migration, Teampass retains a dedicated
+metadata journal for creations, successful server-side reveals, confirmed
+credential failures, owner revocations, observed access invalidations and expired
+link cleanup. Each event keeps the internal sharing identifier, original sender,
+observation time, source item identifier (if any), sharing type, protection policy
+and counters. Creation/revocation identify the authenticated sender; anonymous
+recipients are not identified. No shared content, item label, note title, link
+code, key, passphrase or complete URL is stored in this journal.
+
+Journal writes share the operation's transaction. If the journal cannot be
+written, the operation fails without returning a usable new URL or decrypted
+content. The existing OTV item audit and automatic-deletion records remain.
+When the existing syslog option is enabled, structured events are forwarded after
+commit using `action=secure_send` and JSON metadata. Forwarding is best effort;
+configure and monitor the central collector separately.
+
+The journal survives link cleanup and account/item deletion. It starts with
+operations observed after upgrade: past creations and reveals cannot be rebuilt.
+`created_at` preserves the original link timestamp, while `occurred_at` is when
+an event was recorded. Expiration is audited when cleanup observes and removes
+the row, not by a scheduler exactly at the deadline. Cleanup processes at most
+100 expired links per authenticated creation/list operation; remaining expired
+links stay unusable and are omitted from the active list. Invalidations due to
+permission/account changes are recorded when a confirmed reveal observes them.
+
+A cleanup error rolls back that batch and is logged without blocking an otherwise
+authorized creation or listing. Creation/reveal/revocation still require their own
+atomic audit writes. Expired historical rows with invalid link/sender identifiers
+are retained for investigation, diagnosed without their contents and excluded
+before the cleanup batch limit; they cannot prevent valid rows from being cleaned.
+
+All audit events are kept by default. Administrator-configured retention can
+remove old events through scheduled maintenance (see below). Plan capacity,
+protect database and backup access, and define the organisation's retention and
+archiving policy. SQL access can still alter evidence; a protected external
+collector is a separate control.
+Before relying on this evidence
+for a regulated workflow, assess these limits and the surrounding controls.
 
 Secure Send is enabled globally. Current item access is rechecked, but
 organisations that require a separate role allowlist for issuing links should
 verify the available policy controls before enabling the feature.
+
+### Usage statistics
+
+Administrators can view Secure Send activity in **Statistics → Users**, below the
+item-activity ranking. The card shows observed creations, successful reveals,
+incorrect-credential attempts, lifecycle events, creation policies and the top
+five senders by creations in the selected period, including disabled or deleted
+accounts.
+
+Only the period filter applies: Personal/API toggles do not filter this journal.
+Personal-item/API provenance is not captured and cannot be reliably reconstructed
+from current items. Coverage starts after the audit migration, with no
+reconstructed earlier activity. Deleting a link/account or disabling Secure Send
+does not erase recorded history. Configured audit retention can remove old events
+and make the selected period incomplete; increasing it does not restore history.
+An unavailable journal is reported as unavailable, not as zero usage.
+
+These are event counts, not the later lifecycle of links created in the period.
+A server-side reveal does not identify the recipient or prove the content was
+received, read or copied. Failed attempts against a sender's links do not alone
+prove sender abuse. The card does not impose quotas, block users, export raw logs
+or add a Reports consumer or manual audit-purge interface; review unusual activity in
+its operational context.
+
+### Audit retention
+
+From Teampass 3.2.3.0, after completing the upgrade, administrators can set **Secure Send audit
+retention (days)** in **Options → Collaboration → Secure sharing**. The default
+`0` keeps all events; whole numbers from `1` to `36500` opt into deletion. Invalid
+values are rejected. Changing the setting does not purge immediately.
+
+Schedule the existing maintenance task listed as **Items integrity scan** in
+**Tasks → Settings** (setting `clean_orphan_objects_task`) and ensure the
+scheduler runs. Its `task_maintenance_clean_orphan_objects.php`
+script removes at most 1000 events per invocation, oldest first, strictly older
+than the chosen number of elapsed 24-hour days. The cutoff uses event observation
+time, not link creation/expiry; events exactly at the cutoff are retained.
+Backlogs drain over successive runs. Retention still runs if Secure Send is
+disabled, so disable the retention policy separately if all evidence must remain.
+
+Each committed batch leaves a summary in **Utilities → Logs → Administration**:
+retention days, cutoff, actual deleted count and batch limit, attributed to the
+TeamPass system account. The Administration target column displays a localized
+sentence with the cutoff in the instance date/time format; unrecognized summaries
+remain visible as stored. Both journals must use InnoDB; deletion and summary
+commit together or the batch rolls back and maintenance reports an error.
+Nontransactional tables are not silently converted. Optional syslog forwards the
+summary after commit, on a best-effort basis. Empty batches create no summary.
+
+Deletion is permanent: increasing retention cannot recover history. Statistics
+count retained events only, so shorter retention can make a reporting period
+incomplete. Select a duration covering your investigation/reporting needs and
+check that batch size and schedule can keep up with activity. Database backups,
+general system logs (including purge summaries) and external collectors have
+independent retention policies; this task does not erase their copies, preserve
+summaries forever or implement legal holds or tamper-proof evidence.
 
 ---
 
@@ -1106,13 +1195,16 @@ that format.
 - [ ] A fictitious external end-to-end test succeeded.
 - [ ] Revocation, expiration and automatic deletion were tested.
 - [ ] Upgrade regression testing and periodic active-link review are scheduled.
+- [ ] Audit retention is explicitly chosen (0 keeps all), the **Items integrity
+      scan** task schedule is verified if enabled, and reporting/backup/collector
+      retention windows are aligned with organisational requirements.
 
 ---
 
 ## References
 
 - [Teampass 3.2.2.6 release](https://github.com/nilsteampassnet/TeamPass/releases/tag/3.2.2.6)
-- [Teampass item and Secure Send behaviour](../features/items.md#one-time-view)
+- [Teampass item and Secure Send behaviour](../features/items.md#secure-send)
 - [Public sharing address](../manage/settings.md#public-sharing-address)
 - [Teampass security hardening](security-hardening.md)
 - [Apache request logging](https://httpd.apache.org/docs/2.4/mod/mod_log_config.html)

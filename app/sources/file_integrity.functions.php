@@ -510,9 +510,12 @@ function tpFileIntegrityEnqueueLockPath(string $root): string
 
 /**
  * Tell whether another process currently owns the scan lock.
+ *
+ * @param bool $probeFailed Set when an existing lock cannot be inspected.
  */
-function tpFileIntegrityIsRunning(string $root): bool
+function tpFileIntegrityIsRunning(string $root, bool &$probeFailed = false): bool
 {
+    $probeFailed = false;
     $lockPath = tpFileIntegrityLockPath($root);
     if (is_link($lockPath) || is_file($lockPath) === false) {
         return false;
@@ -520,14 +523,20 @@ function tpFileIntegrityIsRunning(string $root): bool
 
     $handle = @fopen($lockPath, 'rb');
     if ($handle === false) {
+        $probeFailed = true;
         return false;
     }
     $stat = @fstat($handle);
     if ($stat === false || tpRuntimeFileMatchesPath($lockPath, $stat) === false) {
+        $probeFailed = true;
         fclose($handle);
         return false;
     }
-    $available = @flock($handle, LOCK_EX | LOCK_NB);
+    // A shared probe conflicts with the worker's exclusive lock while staying
+    // read-only. NFS requires a writable descriptor for an exclusive lock.
+    $wouldBlock = 0;
+    $available = @flock($handle, LOCK_SH | LOCK_NB, $wouldBlock);
+    $probeFailed = $available === false && $wouldBlock !== 1;
     if ($available && @flock($handle, LOCK_UN) === false) {
         // Closing the stream is the fallback lock release mechanism.
         fclose($handle);
@@ -535,7 +544,7 @@ function tpFileIntegrityIsRunning(string $root): bool
     }
     fclose($handle);
 
-    return $available === false;
+    return $available === false && $wouldBlock === 1;
 }
 
 /**
@@ -834,6 +843,7 @@ function tpFileIntegrityApplyRuntimeState(string $root, array $payload): array
     $payload['stale'] = false;
     $payload['reference_missing'] = false;
     $payload['reference_unreadable'] = false;
+    $payload['lock_probe_failed'] = false;
     $payload['status'] = (string) ($payload['scan_status'] ?? $payload['status'] ?? 'not_run');
 
     if ((bool) ($payload['report_invalid'] ?? false)) {
@@ -858,9 +868,13 @@ function tpFileIntegrityApplyRuntimeState(string $root, array $payload): array
         }
     }
 
-    $payload['running'] = tpFileIntegrityIsRunning($root);
+    $probeFailed = false;
+    $payload['running'] = tpFileIntegrityIsRunning($root, $probeFailed);
     if ($payload['running']) {
         $payload['status'] = 'running';
+    } elseif ($probeFailed) {
+        $payload['status'] = 'error';
+        $payload['lock_probe_failed'] = true;
     }
 
     return $payload;

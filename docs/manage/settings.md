@@ -158,6 +158,8 @@ Options governing the REST API and the clients built on it (browser extension, m
 | Option | Description |
 |--------|-------------|
 | **Offline synchronization window (days)** (`offline_sync_window_days`) | How long a mobile device may stay offline and still catch up incrementally when it reconnects. Beyond this delay the device rebuilds its local cache instead. Default: 90. Set to 0 for no limit |
+| **Allow the browser extension to save passkeys** (`webauthn_provider_enabled`) | *Browser Extension* tab. Lets the extension keep the passkeys of third-party sites in items and sign in with them. Default: off. See [Passkeys](../features/passkeys.md) |
+| **Notify users when a passkey is saved** (`webauthn_email_on_add`) | *Browser Extension* tab. Emails the user who saved a passkey. Default: on |
 
 > 🔔 **The synchronization window is not a data retention.** Lowering it deletes no item, no password and no history — item history and audit logs are governed separately and are never affected. It only bounds how far back the incremental catch-up reaches: a device outside the window downloads its vault again instead of downloading only what changed. Raising it costs database space; lowering it costs bandwidth for devices that were offline a long time.
 
@@ -214,10 +216,11 @@ Sharing, export, and content features.
 
 | Option | Description |
 |--------|-------------|
-| **Enable One-Time View** | Users can generate time-limited sharing links for items (see [Items — One Time View](../features/items.md#one-time-view)) |
-| **OTV expiration period** | Default validity duration for One Time View links in days (default: 7) |
+| **User can propose One-Time-View links** | Enables Secure Send: users can generate time-limited sharing links for items (see [Items — Secure Send](../features/items.md#secure-send)) |
+| **One-time-view (OTV) links expire after XX days** | Maximum validity of a Secure Send link, in days, also proposed by default in the sender form (default: 7) |
 | **Public sharing address** | HTTPS base URL used for external item and note links. The existing `otv_subdomain` setting also accepts a hostname or legacy short prefix; see below. |
 | **Secure Send maximum number of views per link** | Upper bound that a sender may assign to one link; use `1` unless the use case explicitly requires more |
+| **Secure Send audit retention (days)** | `0` keeps all audit events (default); `1`–`36500` opts into irreversible deletion of older events, up to 1000 per scheduled run of the **Items integrity scan** maintenance task. Statistics may become incomplete; see [Audit retention](../install/secure-send.md#audit-retention). Backups and external logs retain separate policies. |
 | **Force a passphrase on every Secure Send link** | Requires the sender to protect every new link with a separate passphrase; recommended for Internet-facing links |
 | **Allow sending ad-hoc notes/secrets** | Permits links that are not attached to an item or folder; leave disabled unless that independent lifecycle is required |
 | **Show the sender’s profile name** | Publishes the sender’s first and last name on the public page before passphrase entry. Enabled on fresh installs; existing instances must opt in after upgrading. |

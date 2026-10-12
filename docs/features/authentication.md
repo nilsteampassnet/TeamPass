@@ -174,6 +174,16 @@ If disabled for a user, a red fingerprint symbol is shown in the users list.
 
 👉 The option `MFA is requested for users in Roles` limits MFA to the users holding at least one of the selected roles. Leave it empty to require MFA from every user. Both kinds of roles count: the roles assigned in the user form and the roles inherited from AD groups through the [LDAP group mapping](roles.md#ldap-group-mapping), which are refreshed at each login.
 
+### Passkeys
+
+A passkey — fingerprint, face, PIN or security key — can also confirm a sign-in, and even replace the password. It works differently from the methods above:
+
+- **It is never imposed.** Enabling it asks nothing of the accounts that have no passkey; an account is asked for one only after its owner registered it from their profile.
+- **There is no enrolment during sign-in**, and therefore no temporary code by e-mail.
+- **Passwordless sign-in** (*Settings → MFA → Passkeys*) is reserved for local accounts: signing in without the directory password would bypass a directory that may have disabled the account.
+
+See [Passkeys](passkeys.md#signing-in-to-teampass-with-a-passkey) for the settings, what a passwordless passkey holds and how to revoke one.
+
 ### Google Authenticator enrollment
 
 When `Google Authenticator` is the selected MFA protocol, a user has to enroll their authenticator app (Google Authenticator, FreeOTP, Authy, etc.) the first time. The flow is:
@@ -289,7 +299,7 @@ Local and LDAP users are not affected — they keep authenticating the API with 
 #### How an OAuth2 user connects the API / browser extension
 
 1. The OAuth2 user logs into the TeamPass web interface as usual (through Entra).
-2. In **Profile → Browser extension tokens**, they click *Generate a new token*. A 256-bit **Personal Access Token** is shown **once** — they copy it immediately (it is never displayed again).
+2. In **Profile → Browser extension → Access given to the extension**, they click *Generate a new token*. A 256-bit **Personal Access Token** is shown **once** — they copy it immediately (it is never displayed again).
 3. In the API client / browser extension they authenticate with their **login** and this **token** (no password, no API key). The server returns the same kind of session as the password path.
 4. Tokens can be **revoked** at any time from the same profile screen; a revoked token stops working immediately.
 

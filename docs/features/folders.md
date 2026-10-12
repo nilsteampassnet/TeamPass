@@ -26,7 +26,23 @@ Three filters at the top of the table can be combined freely:
 |--------|--------|
 | **Depth** | Shows only folders up to the selected hierarchy level (useful on large trees) |
 | **Complexity** | Shows only folders with the selected minimum complexity |
-| **Search** | Filters folder names in real time |
+| **Search** | Filters folder names and parent paths after typing stops |
+
+On installations with more than 100 shared folders, branches start collapsed. Expand a
+branch to display its children. The page initially renders at most 100 matching rows;
+**Show more folders** reveals the next 100. Search covers the complete authorized
+folder list (names and parent paths), including collapsed branches. A complexity
+filter also finds folders inside collapsed branches. The depth filter still applies.
+Search waits briefly after typing stops, and unchanged visible rows keep their widgets
+instead of rebuilding them on every interaction.
+
+Selections survive filtering and collapsing. Selecting a parent selects all its
+authorized descendants, including folders that are not displayed. The selection
+counter and deletion confirmation include those folders. Unchecking a child also
+unchecks selected ancestors, so the child is not implicitly deleted through its parent.
+After a refresh or move, a checked parent is also unchecked if its branch contains
+an unchecked descendant. Existing individual selections remain checked; select the
+parent again to explicitly include its current descendants in the deletion confirmation.
 
 ---
 
@@ -58,6 +74,11 @@ existing folder preserves its options. This behavior is independent of the
 `subfolder_rights_as_parent` setting for role permissions.
 
 > 💡 Icons use the same FontAwesome classes as item icons. See [Items — adding an icon](items.md#adding-icon-to-item-or-folder).
+
+The parent picker searches names and paths on demand, 30 results at a time. It only
+offers authorized shared folders that are writable. Root is offered when the account
+has the corresponding management privilege. During a move, the folder itself and
+its descendants are excluded. The server rechecks permissions when saving.
 
 ### Password complexity levels
 

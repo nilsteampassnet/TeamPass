@@ -41,6 +41,7 @@ use TeampassClasses\LdapExtra\ActiveDirectoryExtra;
 
 // Load functions
 require_once 'main.functions.php';
+require_once __DIR__ . '/role_matrix_logic.php';
 
 // init
 loadClasses('DB');
@@ -115,7 +116,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($session->get('user-read_only') === 1) {
+            } elseif ((int) $session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -127,50 +128,28 @@ if (null !== $post_type) {
             }
 
             // Prepare variables
-            $post_role_id = filter_input(INPUT_POST, 'role_id', FILTER_SANITIZE_NUMBER_INT);
-            $arrData = array();
+            $post_role_id = (int) $request->request->get('role_id', 0);
+            if (!in_array($post_role_id, callerGrantableRoleIds(), true)) {
+                echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+                break;
+            }
 
             // Personal folders are never granted to a role: exclude them from the matrix.
             // user-personal_visible_folders stays empty for non-admin users, whose own personal
             // folders ARE in accessible_folders, so the exclusion list has to be resolved here.
             $personalFolderIds = getPersonalFolderIdsWithDescendants();
 
-            //Display each folder with associated rights by role
-            $descendants = $tree->getDescendants();
-            foreach ($descendants as $node) {
-                if (in_array($node->id, $session->get('user-accessible_folders')) === true
-                    && in_array((int) $node->id, $personalFolderIds, true) === false
-                ) {
-                    $arrNode = array();
-                    $arrNode['ident'] = (int) $node->nlevel;
-                    $arrNode['title'] = $node->title;
-                    $arrNode['id'] = $node->id;
-
-                    $arbo = $tree->getPath($node->id, false);
-                    $parentClass = array();
-                    foreach ($arbo as $elem) {
-                        array_push($parentClass, $elem->title);
-                    }
-                    $arrNode['path'] = $parentClass;
-
-                    // Role access
-                    $role_detail = DB::queryFirstRow(
-                        'SELECT *
-                        FROM '.prefixTable('roles_values').'
-                        WHERE folder_id = %i AND role_id = %i',
-                        $node->id,
-                        $post_role_id
-                    );
-
-                    if (DB::count() > 0) {
-                        $arrNode['access'] = $role_detail['type'];
-                    } else {
-                        $arrNode['access'] = 'none';
-                    }
-
-                    array_push($arrData, $arrNode);
-                }
-            }
+            // Read permissions once; paths come from the same in-memory tree snapshot.
+            $permissions = DB::query(
+                'SELECT folder_id, type FROM ' . prefixTable('roles_values') . ' WHERE role_id = %i',
+                $post_role_id
+            );
+            $arrData = roleMatrixBuild(
+                $tree->getDescendants(),
+                (array) $session->get('user-accessible_folders'),
+                array_merge($personalFolderIds, (array) $session->get('user-no_access_folders')),
+                $permissions
+            );
 
             echo prepareExchangedData(
                 array(
@@ -194,7 +173,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($session->get('user-read_only') === 1) {
+            } elseif ((int) $session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -212,13 +191,13 @@ if (null !== $post_type) {
             );
 
             // Prepare variables
-            $post_selectedFolders = filter_var_array($dataReceived['selectedFolders'], FILTER_SANITIZE_NUMBER_INT);
+            $post_selectedFolders = (array) ($dataReceived['selectedFolders'] ?? []);
             $post_access = filter_var($dataReceived['access'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_roleId = (int) filter_var($dataReceived['roleId'], FILTER_SANITIZE_NUMBER_INT);
             $post_propagate = (int) filter_var($dataReceived['propagate'], FILTER_SANITIZE_NUMBER_INT);
 
             // Validate role ID
-            if ($post_roleId <= 0) {
+            if (!in_array($post_roleId, callerGrantableRoleIds(), true)) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -242,24 +221,14 @@ if (null !== $post_type) {
                 break;
             }
 
-            // Collect all target folder IDs (selected + descendants), deduplicated
-            $allFolderIds = [];
-            foreach ($post_selectedFolders as $folderId) {
-                $folderId = (int) $folderId;
-                if ($folderId <= 0) {
-                    continue;
-                }
-                $allFolderIds[] = $folderId;
-
-                // Add descendants if propagation is enabled
-                if ($post_propagate === 1) {
-                    $descendants = $tree->getDescendants($folderId);
-                    foreach ($descendants as $node) {
-                        $allFolderIds[] = (int) $node->id;
-                    }
-                }
-            }
-            $allFolderIds = array_values(array_unique(array_filter($allFolderIds)));
+            // Recheck the same scope on save, including hidden rows and propagation.
+            $matrix = roleMatrixBuild(
+                $tree->getDescendants(),
+                (array) $session->get('user-accessible_folders'),
+                array_merge(getPersonalFolderIdsWithDescendants(), (array) $session->get('user-no_access_folders')),
+                []
+            );
+            $allFolderIds = roleMatrixTargets($matrix, $post_selectedFolders, $post_propagate === 1);
 
             if (empty($allFolderIds)) {
                 echo prepareExchangedData(
@@ -364,7 +333,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($session->get('user-read_only') === 1) {
+            } elseif ((int) $session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -394,6 +363,20 @@ if (null !== $post_type) {
                 && in_array($post_allowSecurityPostureFix, [0, 1], true) === true
                 ? ['allow_security_posture_fix' => $post_allowSecurityPostureFix]
                 : [];
+
+            // Editing a role is limited to the roles the caller may grant; creating one is not.
+            if (in_array($post_action, ['edit_role', 'edit_folder'], true) === true
+                && in_array((int) $post_folderId, callerGrantableRoleIds(), true) === false
+            ) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
 
             // Init
             $return = array(
@@ -595,7 +578,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($session->get('user-read_only') === 1) {
+            } elseif ((int) $session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -613,7 +596,19 @@ if (null !== $post_type) {
             );
 
             // Prepare variables
-            $post_roleId = filter_var($dataReceived['roleId'], FILTER_SANITIZE_NUMBER_INT);
+            $post_roleId = (int) filter_var($dataReceived['roleId'], FILTER_SANITIZE_NUMBER_INT);
+
+            // The caller may only delete a role they may grant
+            if (in_array($post_roleId, callerGrantableRoleIds(), true) === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
 
             // Delete roles
             DB::delete(
@@ -669,6 +664,16 @@ if (null !== $post_type) {
                     array(
                         'error' => true,
                         'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ((int) $session->get('user-admin') !== 1) {
+                // The AD group mapping is an administrator setting (roles.php only shows it to them)
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -774,6 +779,16 @@ if (null !== $post_type) {
                     array(
                         'error' => true,
                         'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ((int) $session->get('user-admin') !== 1) {
+                // Mapping an AD group to a role grants that role to every member of the group
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );

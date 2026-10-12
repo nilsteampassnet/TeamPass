@@ -145,7 +145,7 @@ curl -X POST "https://your-teampass.com/api/index.php/authorize" \
 
 > 📋 Returns a JWT token for **OAuth2 (SSO) users**, using a Personal Access Token (PAT) instead of a password + API key.
 
-OAuth2/SSO users have no usable password (their stored credential is a hash of the non-secret identity provider object id), so they cannot use [`authorize`](#authorize). Instead, they generate a **Personal Access Token** from their profile (**Profile → Browser extension tokens → Generate a new token**). The token is displayed **only once** — copy it immediately. The resulting JWT is used exactly like the one from `authorize` (`Authorization: Bearer <jwt>`).
+OAuth2/SSO users have no usable password (their stored credential is a hash of the non-secret identity provider object id), so they cannot use [`authorize`](#authorize). Instead, they generate a **Personal Access Token** from their profile (**Profile → Browser extension → Access given to the extension → Generate a new token**). The token is displayed **only once** — copy it immediately. The resulting JWT is used exactly like the one from `authorize` (`Authorization: Bearer <jwt>`).
 
 | Info | Description |
 | ---- | ----------- |

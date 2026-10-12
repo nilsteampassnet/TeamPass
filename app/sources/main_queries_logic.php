@@ -158,3 +158,32 @@ function personalItemsReencryptionOutcome(int $batchSize, int $batchLength, int 
         'clear_saltkey' => $remainingItems === 0,
     ];
 }
+
+/**
+ * Tell whether a new password holds a word it may not contain: the login, the name, the
+ * lastname or a part of the e-mail address of its owner.
+ *
+ * A word of one or two characters is ignored, the threshold Active Directory applies to the
+ * same rule. Without it, a user called "Li", or whose lastname is a single letter, is refused
+ * every password holding those letters.
+ *
+ * @param string                  $password       Candidate password
+ * @param array<array-key, mixed> $forbiddenWords Words taken from the account, empty ones included
+ *
+ * @return bool True when the password holds one of the words
+ */
+function passwordHoldsForbiddenWord(string $password, array $forbiddenWords): bool
+{
+    foreach ($forbiddenWords as $word) {
+        $word = is_scalar($word) === true ? (string) $word : '';
+        if (mb_strlen($word) < 3) {
+            continue;
+        }
+
+        if (stripos($password, $word) !== false) {
+            return true;
+        }
+    }
+
+    return false;
+}

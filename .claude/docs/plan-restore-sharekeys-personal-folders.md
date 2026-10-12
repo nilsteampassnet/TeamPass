@@ -46,7 +46,7 @@ then fans the object key out to every eligible user.
 Dropping `perso = 0` would make `restoreScopeMissingSharekeys()`
 (`SharekeysRepairTrait.php:142`) distribute personal objects' keys to **every eligible user** —
 which is exactly SEC-8, the critical leak fixed in June 2026
-(`.claude/docs/architecture-encryption.md` → `storeUsersShareKey()` behavior, and the
+(`.claude/rules/architecture-encryption.md` → `storeUsersShareKey()` behavior, and the
 `project_personal_items_leak_tp_user_redistribution` regression that followed it).
 
 **Invariant I1 — a personal object carries sharekeys for its owner and `TP_USER_ID` only.**

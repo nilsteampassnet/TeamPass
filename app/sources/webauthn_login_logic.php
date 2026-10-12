@@ -1,0 +1,990 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Teampass - a collaborative passwords manager.
+ * ---
+ * This file is part of the TeamPass project.
+ *
+ * TeamPass is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * TeamPass is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ * ---
+ * Passkeys used to sign in to TeamPass itself: TeamPass acting as a relying party.
+ *
+ * Every decision of that role lives here, free of any database and session dependency so it
+ * can be unit-tested (tests/Unit/WebauthnLoginLogicTest.php): which relying party id and origin
+ * to use, who may get a passwordless wrap, how the wrap key is derived, and the registration
+ * and assertion ceremonies, which web-auth/webauthn-lib verifies.
+ *
+ * A passwordless sign-in never sees the password, and the user's private key is encrypted with
+ * it. So a passkey that signs in without a password carries a second copy of the private key,
+ * encrypted (AES-256-GCM) with a key derived either from the WebAuthn PRF output of the
+ * authenticator (key_wrap_mode 1: a database dump cannot open it) or, for authenticators
+ * without PRF, from the instance secret file (key_wrap_mode 2: the server can open it alone).
+ *
+ * @file      webauthn_login_logic.php
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2026 Teampass.net
+ * @license   GPL-3.0
+ * @see       https://www.teampass.net
+ */
+
+require_once __DIR__ . '/webauthn.functions.php';
+require_once __DIR__ . '/../api/inc/encryption_utils.php';
+
+use Cose\Algorithm\Manager;
+use Cose\Algorithm\Signature\ECDSA\ES256;
+use Cose\Algorithm\Signature\RSA\RS256;
+use Symfony\Component\Serializer\Encoder\JsonEncode;
+use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
+use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Uid\Uuid;
+use Webauthn\AttestationStatement\AttestationStatementSupportManager;
+use Webauthn\AttestationStatement\FidoU2FAttestationStatementSupport;
+use Webauthn\AttestationStatement\NoneAttestationStatementSupport;
+use Webauthn\AttestationStatement\PackedAttestationStatementSupport;
+use Webauthn\AuthenticatorAssertionResponse;
+use Webauthn\AuthenticatorAssertionResponseValidator;
+use Webauthn\AuthenticatorAttestationResponse;
+use Webauthn\AuthenticatorAttestationResponseValidator;
+use Webauthn\AuthenticatorSelectionCriteria;
+use Webauthn\CeremonyStep\CeremonyStepManagerFactory;
+use Webauthn\CredentialRecord;
+use Webauthn\Denormalizer\WebauthnSerializerFactory;
+use Webauthn\PublicKeyCredential;
+use Webauthn\PublicKeyCredentialCreationOptions;
+use Webauthn\PublicKeyCredentialDescriptor;
+use Webauthn\PublicKeyCredentialParameters;
+use Webauthn\PublicKeyCredentialRequestOptions;
+use Webauthn\PublicKeyCredentialRpEntity;
+use Webauthn\PublicKeyCredentialUserEntity;
+use Webauthn\TrustPath\EmptyTrustPath;
+
+/** webauthn_login_mode: passkeys cannot sign in to TeamPass. */
+const TP_WEBAUTHN_LOGIN_MODE_DISABLED = 0;
+
+/** webauthn_login_mode: a passkey is a second factor, the password is still typed. */
+const TP_WEBAUTHN_LOGIN_MODE_SECOND_FACTOR = 1;
+
+/** webauthn_login_mode: a passkey can also sign in alone (local accounts only). */
+const TP_WEBAUTHN_LOGIN_MODE_PASSWORDLESS = 2;
+
+/** key_wrap_mode: no copy of the private key — second factor only. */
+const TP_WEBAUTHN_LOGIN_WRAP_NONE = 0;
+
+/** key_wrap_mode: private key copy opened by the PRF output of the authenticator. */
+const TP_WEBAUTHN_LOGIN_WRAP_PRF = 1;
+
+/** key_wrap_mode: private key copy opened by the instance secret (authenticator without PRF). */
+const TP_WEBAUTHN_LOGIN_WRAP_SERVER = 2;
+
+/** A pending ceremony (options handed to the browser) expires after this many seconds. */
+const TP_WEBAUTHN_LOGIN_CEREMONY_TTL = 300;
+
+/** Time the browser gives the user to complete a ceremony, in milliseconds. */
+const TP_WEBAUTHN_LOGIN_TIMEOUT_MS = 120000;
+
+/** Passkeys one account may register. */
+const TP_WEBAUTHN_LOGIN_MAX_CREDENTIALS = 20;
+
+/** Longest device name the user may give. */
+const TP_WEBAUTHN_LOGIN_LABEL_MAX = 100;
+
+/** Size of the PRF output, of the wrap salt and of the user handle, in bytes. */
+const TP_WEBAUTHN_LOGIN_SECRET_BYTES = 32;
+
+/**
+ * A password confirmed before adding a passkey stays valid this many seconds: the PRF
+ * evaluation that may follow a registration does not ask for it twice.
+ */
+const TP_WEBAUTHN_LOGIN_STEPUP_TTL = 300;
+
+/** An account without a password TeamPass can check proves itself with a sign-in this recent. */
+const TP_WEBAUTHN_LOGIN_RECENT_SIGNIN = 600;
+
+/**
+ * Read webauthn_login_mode, an unknown value meaning disabled.
+ *
+ * @param array<string, mixed> $settings TeamPass settings
+ *
+ * @return int One of the TP_WEBAUTHN_LOGIN_MODE_* constants
+ */
+function webauthnLoginMode(array $settings): int
+{
+    $mode = (int) ($settings['webauthn_login_mode'] ?? 0);
+
+    return in_array($mode, [TP_WEBAUTHN_LOGIN_MODE_SECOND_FACTOR, TP_WEBAUTHN_LOGIN_MODE_PASSWORDLESS], true)
+        ? $mode
+        : TP_WEBAUTHN_LOGIN_MODE_DISABLED;
+}
+
+/**
+ * Host of a URL, lower case, '' when there is none.
+ *
+ * @param string $url URL
+ *
+ * @return string
+ */
+function webauthnLoginHostOf(string $url): string
+{
+    return strtolower((string) parse_url(trim($url), PHP_URL_HOST));
+}
+
+/**
+ * Origin of a URL — scheme, host and non-default port — as the browser writes it in the
+ * client data. '' when the URL has no scheme or host.
+ *
+ * @param string $url URL
+ *
+ * @return string
+ */
+function webauthnLoginOriginOf(string $url): string
+{
+    $parts = parse_url(trim($url));
+    if (is_array($parts) === false || empty($parts['scheme']) === true || empty($parts['host']) === true) {
+        return '';
+    }
+    $scheme = strtolower((string) $parts['scheme']);
+    $port = isset($parts['port']) === true ? (int) $parts['port'] : null;
+    $defaultPort = $scheme === 'https' ? 443 : ($scheme === 'http' ? 80 : null);
+
+    return $scheme . '://' . strtolower((string) $parts['host'])
+        . ($port !== null && $port !== $defaultPort ? ':' . $port : '');
+}
+
+/**
+ * Tell whether a WebAuthn ceremony was started by the pages of this TeamPass instance.
+ *
+ * The vault never holds, nor signs with, a passkey of its own sign-in page: whoever can open the
+ * item would sign in as its owner, and without a password once a copy of the private key the
+ * server opens alone exists. The signature of an assertion covers the client data, so the origin
+ * read here is the one the sign-in page verifies: a client cannot name another one.
+ *
+ * @param string               $clientDataJson Client data JSON, as bytes
+ * @param array<string, mixed> $settings       TeamPass settings
+ *
+ * @return bool False when either origin cannot be read
+ */
+function webauthnLoginIsOwnCeremony(string $clientDataJson, array $settings): bool
+{
+    $clientData = json_decode($clientDataJson, true);
+    $origin = is_array($clientData) === true && is_string($clientData['origin'] ?? null) === true
+        ? webauthnLoginOriginOf($clientData['origin'])
+        : '';
+
+    return $origin !== '' && $origin === webauthnLoginOriginOf((string) ($settings['cpassman_url'] ?? ''));
+}
+
+/**
+ * Tell whether browsers treat an origin as a secure context, the only place they run passkeys:
+ * HTTPS, or plain HTTP on the loopback (localhost, *.localhost, 127.0.0.1, [::1]).
+ *
+ * @param string $origin Origin, as webauthnLoginOriginOf() writes it
+ *
+ * @return bool
+ */
+function webauthnLoginOriginIsSecure(string $origin): bool
+{
+    $parts = parse_url($origin);
+    if (is_array($parts) === false || empty($parts['scheme']) === true || empty($parts['host']) === true) {
+        return false;
+    }
+    if ($parts['scheme'] === 'https') {
+        return true;
+    }
+    $host = strtolower(trim((string) $parts['host'], '[]'));
+
+    $loopbackIpv4 = filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false && str_starts_with($host, '127.');
+
+    return $parts['scheme'] === 'http'
+        && ($host === 'localhost' || str_ends_with($host, '.localhost') || $host === '::1' || $loopbackIpv4);
+}
+
+/**
+ * Tell whether a relying party id may be used by a page served from a host: the host itself,
+ * or a parent domain of it. An IP address only accepts itself.
+ *
+ * @param string $rpId Candidate relying party id
+ * @param string $host Host serving TeamPass
+ *
+ * @return bool
+ */
+function webauthnLoginRpIdIsValidFor(string $rpId, string $host): bool
+{
+    if ($rpId === '' || $host === '') {
+        return false;
+    }
+    if ($rpId === $host) {
+        return true;
+    }
+    if (filter_var($host, FILTER_VALIDATE_IP) !== false || strpos($rpId, '.') === false) {
+        return false;
+    }
+
+    return str_ends_with($host, '.' . $rpId);
+}
+
+/**
+ * Relying party id of the TeamPass sign-in: the configured one when it suits the host of
+ * cpassman_url, that host otherwise.
+ *
+ * Changing it orphans every passkey already registered, which the authenticators bind to it.
+ *
+ * @param array<string, mixed> $settings TeamPass settings
+ *
+ * @return string '' when cpassman_url has no host
+ */
+function webauthnLoginRpId(array $settings): string
+{
+    $host = webauthnLoginHostOf((string) ($settings['cpassman_url'] ?? ''));
+    $configured = strtolower(trim(html_entity_decode((string) ($settings['webauthn_rp_id'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+
+    return $configured !== '' && webauthnLoginRpIdIsValidFor($configured, $host) === true ? $configured : $host;
+}
+
+/**
+ * Tell whether a sign-in passkey can still sign in. Authenticators bind a passkey to the relying
+ * party id it was registered for: once that id changes, the passkey is out of reach.
+ *
+ * @param string|null $storedRpId  Relying party id it was registered for, null when unknown
+ *                                 (registered before it was recorded)
+ * @param string      $currentRpId Relying party id in force
+ *
+ * @return bool
+ */
+function webauthnLoginPasskeyIsUsable(?string $storedRpId, string $currentRpId): bool
+{
+    return $storedRpId === null || $storedRpId === '' || $storedRpId === $currentRpId;
+}
+
+/**
+ * Name of the relying party the authenticator shows, 'TeamPass' by default.
+ *
+ * @param array<string, mixed> $settings TeamPass settings
+ *
+ * @return string
+ */
+function webauthnLoginRpName(array $settings): string
+{
+    $name = trim(html_entity_decode((string) ($settings['webauthn_rp_name'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+
+    return $name !== '' ? mb_substr($name, 0, 64) : 'TeamPass';
+}
+
+/**
+ * Tell whether a passkey of this account may carry a passwordless copy of the private key.
+ *
+ * Only in passwordless mode, and only for local accounts: a directory or OAuth2 account signing
+ * in without its password would bypass the directory, which may have disabled it.
+ *
+ * @param array<string, mixed> $settings TeamPass settings
+ * @param string               $authType users.auth_type
+ *
+ * @return bool
+ */
+function webauthnLoginCanWrap(array $settings, string $authType): bool
+{
+    return webauthnLoginMode($settings) === TP_WEBAUTHN_LOGIN_MODE_PASSWORDLESS && $authType === 'local';
+}
+
+/**
+ * Tell whether an account must present a passkey after its password.
+ *
+ * Opt-in: turning passkeys on imposes nothing. An account that registered a passkey is asked
+ * for one at each sign-in, unless the administrator turned MFA off for it (mfa_enabled).
+ *
+ * @param array<string, mixed> $settings   TeamPass settings
+ * @param int                  $mfaEnabled users.mfa_enabled
+ * @param bool                 $hasPasskey Whether the account has a sign-in passkey
+ *
+ * @return bool
+ */
+function webauthnLoginIsSecondFactor(array $settings, int $mfaEnabled, bool $hasPasskey): bool
+{
+    return webauthnLoginMode($settings) !== TP_WEBAUTHN_LOGIN_MODE_DISABLED
+        && $mfaEnabled === 1
+        && $hasPasskey === true;
+}
+
+/**
+ * Tell why a passkey cannot sign in without a password, null when it can.
+ *
+ * Only in passwordless mode, only for local accounts (a directory account would bypass its
+ * directory), only with a copy of the private key, and never while the account is in a state
+ * that needs the password: keys to generate or to re-encrypt, one-time code to enter. A copy
+ * the server opens alone is refused once the administrator requires PRF, including the copies
+ * made before that setting was turned on.
+ *
+ * @param array<string, mixed> $settings TeamPass settings
+ * @param array<string, mixed> $account  auth_type, special and is_ready_for_usage of the account,
+ *                                       key_wrap_mode of the passkey
+ *
+ * @return string|null Language key of the refusal
+ */
+function webauthnLoginPasswordlessRefusal(array $settings, array $account): ?string
+{
+    if (webauthnLoginMode($settings) !== TP_WEBAUTHN_LOGIN_MODE_PASSWORDLESS) {
+        return 'webauthn_login_disabled';
+    }
+    if ((string) ($account['auth_type'] ?? '') !== 'local') {
+        return 'webauthn_login_passwordless_unavailable';
+    }
+    $special = (string) ($account['special'] ?? '');
+    // Keys regenerated after a password reset: the account is closed to every sign-in until the
+    // background task ends. Answer what the password path answers, not a refusal that reads as
+    // permanent.
+    if ($special === 'generate-keys' && (int) ($account['is_ready_for_usage'] ?? 1) !== 1) {
+        return 'account_in_construction_please_wait_email';
+    }
+    if (in_array($special, ['generate-keys', 'recrypt-private-key', 'otc_is_required_on_next_login', 'user_added_from_ad'], true) === true) {
+        return 'webauthn_login_passwordless_unavailable';
+    }
+    $wrapMode = (int) ($account['key_wrap_mode'] ?? 0);
+    if ($wrapMode === TP_WEBAUTHN_LOGIN_WRAP_NONE) {
+        return 'webauthn_login_passwordless_not_enabled';
+    }
+    if ($wrapMode === TP_WEBAUTHN_LOGIN_WRAP_SERVER && (int) ($settings['webauthn_login_require_prf'] ?? 0) === 1) {
+        return 'webauthn_login_passwordless_prf_required';
+    }
+
+    return null;
+}
+
+/**
+ * Tell whether an account confirms its password before adding a sign-in passkey: local
+ * accounts, and directory accounts, whose password of the last sign-in TeamPass keeps hashed.
+ * OAuth2 accounts have no password TeamPass can check.
+ *
+ * @param string $authType users.auth_type
+ *
+ * @return bool
+ */
+function webauthnLoginStepUpUsesPassword(string $authType): bool
+{
+    return in_array($authType, ['local', 'ldap'], true);
+}
+
+/**
+ * Tell what the caller must still do before adding a sign-in passkey or giving one a
+ * passwordless copy of the private key. An open session alone is not enough: whoever holds it
+ * — an unattended browser, a stolen cookie, an XSS — could plant a passkey that outlives it,
+ * and survives a change of password.
+ *
+ * @param string $authType   users.auth_type
+ * @param int    $provenAt   When the password was last confirmed for a passkey, 0 if never
+ * @param int    $signedInAt When the session signed in, 0 if unknown
+ * @param int    $now        Current time
+ *
+ * @return string 'none' when a recent proof stands, 'password' to confirm the password,
+ *                'signin' to sign in again
+ */
+function webauthnLoginStepUpRequirement(string $authType, int $provenAt, int $signedInAt, int $now): string
+{
+    if (webauthnLoginIsRecent($provenAt, $now, TP_WEBAUTHN_LOGIN_STEPUP_TTL) === true) {
+        return 'none';
+    }
+    if (webauthnLoginStepUpUsesPassword($authType) === true) {
+        return 'password';
+    }
+
+    return webauthnLoginIsRecent($signedInAt, $now, TP_WEBAUTHN_LOGIN_RECENT_SIGNIN) === true ? 'none' : 'signin';
+}
+
+/**
+ * Tell whether a moment lies within the last $ttl seconds.
+ *
+ * @param int $at  Moment, 0 when unknown
+ * @param int $now Current time
+ * @param int $ttl Window in seconds
+ *
+ * @return bool
+ */
+function webauthnLoginIsRecent(int $at, int $now, int $ttl): bool
+{
+    return $at > 0 && $at <= $now && $now - $at < $ttl;
+}
+
+/**
+ * Tell whether a passwordless sign-in must be refused because the account requires another
+ * second factor. A passkey that verified its user is already two factors (possession and PIN or
+ * biometrics); the administrator decides whether that satisfies an imposed MFA.
+ *
+ * @param array<string, mixed> $settings         TeamPass settings
+ * @param bool                 $otherMfaRequired Whether Google, Duo... would be required
+ *
+ * @return bool
+ */
+function webauthnLoginPasswordlessBlockedByMfa(array $settings, bool $otherMfaRequired): bool
+{
+    return $otherMfaRequired === true
+        && (int) ($settings['webauthn_passwordless_satisfies_mfa'] ?? 1) !== 1;
+}
+
+/**
+ * The WebAuthn user handle of an account: stable, so an authenticator keeps one passkey per
+ * account, and opaque, so it discloses neither the user id nor the login.
+ *
+ * @param int    $userId       User id
+ * @param string $serverSecret Instance secret
+ *
+ * @return string 32 raw bytes
+ */
+function webauthnLoginUserHandle(int $userId, string $serverSecret): string
+{
+    return hash_hmac('sha256', 'teampass-webauthn-login-user-v1|' . $userId, $serverSecret, true);
+}
+
+/**
+ * The PRF input every sign-in passkey is evaluated with.
+ *
+ * Constant on purpose: a passwordless sign-in lets the user pick any discoverable passkey, so the
+ * server cannot send a per-passkey input (evalByCredential needs the passkeys listed). The output
+ * stays secret and specific to each passkey — the PRF is keyed by the authenticator — and the
+ * per-passkey random salt goes into the key derivation instead.
+ *
+ * @return string 32 raw bytes
+ */
+function webauthnLoginPrfInput(): string
+{
+    return hash('sha256', 'teampass-webauthn-login-prf-input-v1', true);
+}
+
+/**
+ * Derive the wrap key from the PRF output of the authenticator.
+ *
+ * @param string $prfOutput 32 raw bytes returned by the PRF extension
+ * @param string $salt      32 raw bytes, random, stored with the credential
+ *
+ * @return string 32 raw bytes
+ *
+ * @throws InvalidArgumentException
+ */
+function webauthnLoginPrfWrapKey(string $prfOutput, string $salt): string
+{
+    if (strlen($prfOutput) !== TP_WEBAUTHN_LOGIN_SECRET_BYTES || strlen($salt) !== TP_WEBAUTHN_LOGIN_SECRET_BYTES) {
+        throw new InvalidArgumentException('PRF output and salt must be 32 bytes.');
+    }
+
+    return hash_hkdf('sha256', $prfOutput, 32, 'teampass-webauthn-login-prf-v1', $salt);
+}
+
+/**
+ * Derive the wrap key of an authenticator without PRF from the instance secret. The secret is
+ * a file outside the database: a dump alone cannot open the wrap, the server can.
+ *
+ * @param string $serverSecret Instance secret
+ * @param string $salt         32 raw bytes, stored with the credential
+ * @param string $credentialId Raw credential id, binding the key to one passkey
+ *
+ * @return string 32 raw bytes
+ *
+ * @throws InvalidArgumentException
+ */
+function webauthnLoginServerWrapKey(string $serverSecret, string $salt, string $credentialId): string
+{
+    if ($serverSecret === '' || strlen($salt) !== TP_WEBAUTHN_LOGIN_SECRET_BYTES || $credentialId === '') {
+        throw new InvalidArgumentException('A server wrap needs the instance secret, a 32-byte salt and the credential id.');
+    }
+
+    return hash_hkdf('sha256', $serverSecret, 32, 'teampass-webauthn-login-server-v1|' . webauthnBase64UrlEncode($credentialId), $salt);
+}
+
+/**
+ * Encrypt the cleartext private key under a wrap key (AES-256-GCM).
+ *
+ * @param string $privateKey Cleartext private key
+ * @param string $wrapKey    32 raw bytes
+ *
+ * @return string base64
+ *
+ * @throws RuntimeException
+ */
+function webauthnLoginWrapPrivateKey(string $privateKey, string $wrapKey): string
+{
+    $wrapped = $privateKey === '' ? false : encrypt_with_session_key($privateKey, $wrapKey);
+    if ($wrapped === false) {
+        throw new RuntimeException('The private key could not be wrapped.');
+    }
+
+    return $wrapped;
+}
+
+/**
+ * Decrypt a wrapped private key; null when the key is wrong or the data was altered.
+ *
+ * @param string $wrapped base64 wrap
+ * @param string $wrapKey 32 raw bytes
+ *
+ * @return string|null
+ */
+function webauthnLoginUnwrapPrivateKey(string $wrapped, string $wrapKey): ?string
+{
+    $privateKey = decrypt_with_session_key($wrapped, $wrapKey);
+
+    return is_string($privateKey) === true && $privateKey !== '' ? $privateKey : null;
+}
+
+/**
+ * Normalize the device name a user gives a passkey. Stored as plain text, escaped on output.
+ *
+ * @param mixed $label Submitted value
+ *
+ * @return string
+ */
+function webauthnLoginNormalizeLabel($label): string
+{
+    if (is_string($label) === false || mb_check_encoding($label, 'UTF-8') === false) {
+        return '';
+    }
+    $label = trim((string) preg_replace('/[\x00-\x1F\x7F]+/u', ' ', strip_tags($label)));
+
+    return mb_substr($label, 0, TP_WEBAUTHN_LOGIN_LABEL_MAX);
+}
+
+/**
+ * Name of the passkey manager behind an AAGUID, '' when it is not one of the common ones.
+ *
+ * It names a passkey the user left unnamed, and tells the listed ones apart. A convenience, never
+ * a security statement: without attestation the AAGUID is whatever the authenticator declares,
+ * and browsers blank the one of a security key. Names and identifiers are those of the community
+ * list passkeydeveloper/passkey-authenticator-aaguids; only this hand-picked subset is kept here.
+ *
+ * @param string $aaguid user_webauthn_credentials.aaguid
+ *
+ * @return string
+ */
+function webauthnLoginAuthenticatorName(string $aaguid): string
+{
+    $names = [
+        'ea9b8d66-4d01-1d21-3ce4-b6b48cb575d4' => 'Google Password Manager',
+        'adce0002-35bc-c60a-648b-0b25f1f05503' => 'Chrome on Mac',
+        '08987058-cadc-4b81-b6e1-30de50dcbe96' => 'Windows Hello',
+        '9ddd1817-af5a-4672-a2b9-3e3dd95000a9' => 'Windows Hello',
+        '6028b017-b1d4-4c02-b4b3-afcdafc96bb2' => 'Windows Hello',
+        'fbfc3007-154e-4ecc-8c0b-6e020557d7bd' => 'Apple Passwords',
+        'dd4ec289-e01d-41c9-bb89-70fa845d4bf2' => 'iCloud Keychain (Managed)',
+        'd3452668-01fd-4c12-926c-83a4204853aa' => 'Microsoft Password Manager',
+        '771b48fd-d3d4-4f74-9232-fc157ab0507a' => 'Edge on Mac',
+        '53414d53-554e-4700-0000-000000000000' => 'Samsung Pass',
+        'bada5566-a7aa-401f-bd96-45619a55120d' => '1Password',
+        'd548826e-79b4-db40-a3d8-11116f7e8349' => 'Bitwarden',
+        '531126d6-e717-415c-9320-3d9aa6981239' => 'Dashlane',
+        '50726f74-6f6e-5061-7373-50726f746f6e' => 'Proton Pass',
+        '0ea242b4-43c4-4a1b-8b17-dd6d0b6baec6' => 'Keeper',
+        'b84e4048-15dc-4dd0-8640-f4f60813c8af' => 'NordPass',
+        'b78a0a55-6ef8-d246-a042-ba0f6d55050c' => 'LastPass',
+        'fdb141b2-5d84-443e-8a35-4698c205a502' => 'KeePassXC',
+        'f3809540-7f14-49c1-a8b3-8f813b225541' => 'Enpass',
+        TP_WEBAUTHN_AAGUID => 'TeamPass',
+    ];
+
+    return $names[strtolower(trim($aaguid))] ?? '';
+}
+
+/**
+ * What the profile tells the owner about their sign-in passkeys, beyond the list itself.
+ *
+ * 'not_asked': the account is not asked for a passkey after its password, because MFA is turned
+ * off for it — a registered passkey would otherwise give a false sense of protection.
+ * 'single_device': the only usable passkey never leaves the device that created it; a second one
+ * keeps the account reachable from elsewhere.
+ *
+ * @param array<string, mixed>             $settings   TeamPass settings
+ * @param int                              $mfaEnabled users.mfa_enabled
+ * @param array<int, array<string, mixed>> $passkeys   Passkeys of the account, with usable and synced
+ *
+ * @return string[]
+ */
+function webauthnLoginProfileNotices(array $settings, int $mfaEnabled, array $passkeys): array
+{
+    $usable = array_values(array_filter(
+        $passkeys,
+        static fn (array $passkey): bool => ($passkey['usable'] ?? true) === true
+    ));
+    if (webauthnLoginMode($settings) === TP_WEBAUTHN_LOGIN_MODE_DISABLED || $usable === []) {
+        return [];
+    }
+
+    $notices = [];
+    if (webauthnLoginIsSecondFactor($settings, $mfaEnabled, true) === false) {
+        $notices[] = 'not_asked';
+    }
+    if (count($usable) === 1 && ($usable[0]['synced'] ?? false) !== true) {
+        $notices[] = 'single_device';
+    }
+
+    return $notices;
+}
+
+/**
+ * How the Users list marks an account that holds sign-in passkeys, null when it has nothing to
+ * mark: feature off, or no passkey usable under the relying party id in force.
+ *
+ * 'asked' tells whether a sign-in with the password asks for one of them. When it does not —
+ * MFA is turned off for the account — the passkeys protect nothing, which the list points out.
+ *
+ * @param array<string, mixed> $settings     TeamPass settings
+ * @param int                  $mfaEnabled   users.mfa_enabled
+ * @param int                  $passkeys     Usable sign-in passkeys of the account
+ * @param int                  $passwordless Those that can sign in without the password
+ *
+ * @return array{count: int, passwordless: int, asked: bool}|null
+ */
+function webauthnLoginUsersBadge(array $settings, int $mfaEnabled, int $passkeys, int $passwordless): ?array
+{
+    if (webauthnLoginMode($settings) === TP_WEBAUTHN_LOGIN_MODE_DISABLED || $passkeys <= 0) {
+        return null;
+    }
+
+    return [
+        'count' => $passkeys,
+        // A copy kept from a time the passwordless mode was on signs in alone only while it is on
+        'passwordless' => webauthnLoginMode($settings) === TP_WEBAUTHN_LOGIN_MODE_PASSWORDLESS
+            ? max(0, min($passwordless, $passkeys))
+            : 0,
+        'asked' => webauthnLoginIsSecondFactor($settings, $mfaEnabled, true),
+    ];
+}
+
+/**
+ * What a connection log row keeps of a sign-in made with a passkey alone: its method and the
+ * passkey used. The id, never the name the user gave it: field_1 also carries the markers the
+ * logs classify rows with, which free text could imitate.
+ *
+ * @param int $passkeyId user_webauthn_credentials.id
+ *
+ * @return string
+ */
+function webauthnLoginConnectionMarker(int $passkeyId): string
+{
+    return 'tp_auth=passkey:' . $passkeyId;
+}
+
+/**
+ * Read the passkey a connection log row was made with, null when it was not a passkey sign-in.
+ *
+ * @param string $field1 log_system.field_1 of a user_connection row
+ *
+ * @return int|null user_webauthn_credentials.id
+ */
+function webauthnLoginConnectionPasskeyId(string $field1): ?int
+{
+    return preg_match('/(?:^|\| )tp_auth=passkey:(\d{1,18})(?: \||$)/', $field1, $match) === 1 ? (int) $match[1] : null;
+}
+
+/**
+ * Read a base64url value the browser sent, '' when absent or malformed.
+ *
+ * @param mixed $value Submitted value
+ * @param int   $bytes Expected decoded length, 0 for any
+ *
+ * @return string Raw bytes
+ */
+function webauthnLoginReadBytes($value, int $bytes = 0): string
+{
+    if (is_string($value) === false || $value === '' || preg_match('/^[A-Za-z0-9_-]+={0,2}$/', $value) !== 1) {
+        return '';
+    }
+    try {
+        $raw = webauthnBase64UrlDecode($value);
+    } catch (Throwable $e) {
+        return '';
+    }
+
+    return $bytes === 0 || strlen($raw) === $bytes ? $raw : '';
+}
+
+/**
+ * Tell whether a pending ceremony stored in session can still be completed.
+ *
+ * @param mixed  $pending Session value
+ * @param string $purpose Ceremony the caller expects
+ * @param int    $now     Current time
+ *
+ * @return bool
+ */
+function webauthnLoginPendingIsUsable($pending, string $purpose, int $now): bool
+{
+    return is_array($pending) === true
+        && ($pending['purpose'] ?? '') === $purpose
+        && is_string($pending['options'] ?? null) === true
+        && (int) ($pending['created_at'] ?? 0) > $now - TP_WEBAUTHN_LOGIN_CEREMONY_TTL
+        && (int) ($pending['created_at'] ?? 0) <= $now;
+}
+
+/**
+ * The webauthn-lib serializer, which reads and writes the WebAuthn JSON wire format.
+ *
+ * @return SerializerInterface
+ */
+function webauthnLoginSerializer(): SerializerInterface
+{
+    return (new WebauthnSerializerFactory(webauthnLoginAttestationSupport()))->create();
+}
+
+/**
+ * Attestation formats accepted at registration. TeamPass asks for none; a few authenticators
+ * still send packed or fido-u2f statements, verified but not trusted further.
+ *
+ * @return AttestationStatementSupportManager
+ */
+function webauthnLoginAttestationSupport(): AttestationStatementSupportManager
+{
+    return new AttestationStatementSupportManager([
+        new NoneAttestationStatementSupport(),
+        PackedAttestationStatementSupport::create(webauthnLoginAlgorithms()),
+        FidoU2FAttestationStatementSupport::create(),
+    ]);
+}
+
+/**
+ * Signature algorithms accepted: ES256, and RS256 which Windows Hello uses.
+ *
+ * @return Manager
+ */
+function webauthnLoginAlgorithms(): Manager
+{
+    return Manager::create()->add(ES256::create(), RS256::create());
+}
+
+/**
+ * Ceremony checks bound to the one origin TeamPass is served from.
+ *
+ * @param string $origin Origin of cpassman_url
+ *
+ * @return CeremonyStepManagerFactory
+ */
+function webauthnLoginCeremonyFactory(string $origin): CeremonyStepManagerFactory
+{
+    $factory = new CeremonyStepManagerFactory();
+    $factory->setAllowedOrigins([$origin]);
+    $factory->setAlgorithmManager(webauthnLoginAlgorithms());
+    $factory->setAttestationStatementSupportManager(webauthnLoginAttestationSupport());
+
+    return $factory;
+}
+
+/**
+ * Serialize options to the JSON the browser receives (binary fields in base64url).
+ *
+ * @param PublicKeyCredentialCreationOptions|PublicKeyCredentialRequestOptions $options Options
+ *
+ * @return string
+ */
+function webauthnLoginSerializeOptions($options): string
+{
+    return webauthnLoginSerializer()->serialize($options, 'json', [
+        AbstractObjectNormalizer::SKIP_NULL_VALUES => true,
+        JsonEncode::OPTIONS => JSON_THROW_ON_ERROR,
+    ]);
+}
+
+/**
+ * Build the registration options of a sign-in passkey.
+ *
+ * @param string   $rpId           Relying party id
+ * @param string   $rpName         Relying party name
+ * @param string   $userHandle     32-byte user handle
+ * @param string   $login          User login
+ * @param string   $displayName    User full name
+ * @param string[] $excludeIds     Raw ids of the passkeys the account already has
+ * @param bool     $forPasswordless Whether the passkey will sign in alone
+ *
+ * @return PublicKeyCredentialCreationOptions
+ */
+function webauthnLoginCreationOptions(
+    string $rpId,
+    string $rpName,
+    string $userHandle,
+    string $login,
+    string $displayName,
+    array $excludeIds,
+    bool $forPasswordless
+): PublicKeyCredentialCreationOptions {
+    // Signing in alone requires a discoverable passkey that verifies the user; as a second
+    // factor, the password already proves who is there.
+    $selection = AuthenticatorSelectionCriteria::create(
+        null,
+        $forPasswordless === true
+            ? AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_REQUIRED
+            : AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_PREFERRED,
+        $forPasswordless === true
+            ? AuthenticatorSelectionCriteria::RESIDENT_KEY_REQUIREMENT_REQUIRED
+            : AuthenticatorSelectionCriteria::RESIDENT_KEY_REQUIREMENT_PREFERRED
+    );
+
+    return PublicKeyCredentialCreationOptions::create(
+        PublicKeyCredentialRpEntity::create($rpName, $rpId),
+        PublicKeyCredentialUserEntity::create($login, $userHandle, $displayName !== '' ? $displayName : $login),
+        random_bytes(TP_WEBAUTHN_LOGIN_SECRET_BYTES),
+        [
+            PublicKeyCredentialParameters::create('public-key', -7),
+            PublicKeyCredentialParameters::create('public-key', -257),
+        ],
+        $selection,
+        PublicKeyCredentialCreationOptions::ATTESTATION_CONVEYANCE_PREFERENCE_NONE,
+        array_map(
+            static fn (string $id): PublicKeyCredentialDescriptor => PublicKeyCredentialDescriptor::create('public-key', $id),
+            $excludeIds
+        ),
+        TP_WEBAUTHN_LOGIN_TIMEOUT_MS
+    );
+}
+
+/**
+ * Build the assertion options of a sign-in passkey.
+ *
+ * @param string   $rpId       Relying party id
+ * @param string[] $allowIds   Raw ids of the passkeys accepted, [] for any discoverable one
+ * @param bool     $requireUv  Whether the user must be verified (PIN or biometrics)
+ *
+ * @return PublicKeyCredentialRequestOptions
+ */
+function webauthnLoginRequestOptions(string $rpId, array $allowIds, bool $requireUv): PublicKeyCredentialRequestOptions
+{
+    return PublicKeyCredentialRequestOptions::create(
+        random_bytes(TP_WEBAUTHN_LOGIN_SECRET_BYTES),
+        $rpId,
+        array_map(
+            static fn (string $id): PublicKeyCredentialDescriptor => PublicKeyCredentialDescriptor::create('public-key', $id),
+            $allowIds
+        ),
+        $requireUv === true
+            ? PublicKeyCredentialRequestOptions::USER_VERIFICATION_REQUIREMENT_REQUIRED
+            : PublicKeyCredentialRequestOptions::USER_VERIFICATION_REQUIREMENT_PREFERRED,
+        TP_WEBAUTHN_LOGIN_TIMEOUT_MS
+    );
+}
+
+/**
+ * Turn the credential the browser sent into a webauthn-lib object.
+ *
+ * Only the members the ceremony needs are kept: clientExtensionResults carries the PRF output,
+ * which must never reach a log or an exception message.
+ *
+ * @param array<string, mixed> $credential Browser credential, binary fields in base64url
+ *
+ * @return PublicKeyCredential
+ *
+ * @throws InvalidArgumentException
+ */
+function webauthnLoginReadCredential(array $credential): PublicKeyCredential
+{
+    $response = is_array($credential['response'] ?? null) === true ? $credential['response'] : [];
+    $keep = ['clientDataJSON', 'attestationObject', 'transports', 'authenticatorData', 'signature', 'userHandle'];
+    $clean = [
+        'id' => (string) ($credential['id'] ?? ''),
+        'rawId' => (string) ($credential['rawId'] ?? ''),
+        'type' => (string) ($credential['type'] ?? ''),
+        'response' => array_intersect_key($response, array_flip($keep)),
+    ];
+    // A passkey that is not discoverable returns no user handle
+    if (isset($clean['response']['userHandle']) === true && $clean['response']['userHandle'] === '') {
+        unset($clean['response']['userHandle']);
+    }
+    if ($clean['type'] !== 'public-key' || $clean['id'] === '' || $clean['id'] !== $clean['rawId']) {
+        throw new InvalidArgumentException('Malformed passkey response.');
+    }
+
+    try {
+        return webauthnLoginSerializer()->deserialize((string) json_encode($clean), PublicKeyCredential::class, 'json');
+    } catch (Throwable $e) {
+        throw new InvalidArgumentException('Malformed passkey response.', 0, $e);
+    }
+}
+
+/**
+ * Verify a registration against the options handed to the browser.
+ *
+ * @param array<string, mixed> $credential  Browser credential
+ * @param string               $optionsJson Options stored when the ceremony started
+ * @param string               $origin      Origin of cpassman_url
+ *
+ * @return CredentialRecord
+ *
+ * @throws InvalidArgumentException When the response does not verify
+ */
+function webauthnLoginVerifyRegistration(array $credential, string $optionsJson, string $origin): CredentialRecord
+{
+    $options = webauthnLoginSerializer()->deserialize($optionsJson, PublicKeyCredentialCreationOptions::class, 'json');
+    $response = webauthnLoginReadCredential($credential)->response;
+    if ($response instanceof AuthenticatorAttestationResponse === false) {
+        throw new InvalidArgumentException('Malformed passkey response.');
+    }
+
+    try {
+        return AuthenticatorAttestationResponseValidator::create(webauthnLoginCeremonyFactory($origin)->creationCeremony())
+            ->check($response, $options, webauthnLoginHostOf($origin));
+    } catch (Throwable $e) {
+        throw new InvalidArgumentException('The passkey could not be verified: ' . $e->getMessage(), 0, $e);
+    }
+}
+
+/**
+ * Rebuild the webauthn-lib record of a stored passkey.
+ *
+ * @param array<string, mixed> $row        user_webauthn_credentials row
+ * @param string               $userHandle User handle of its owner
+ *
+ * @return CredentialRecord
+ */
+function webauthnLoginRecordFromRow(array $row, string $userHandle): CredentialRecord
+{
+    $transports = json_decode((string) ($row['transports'] ?? ''), true);
+
+    return CredentialRecord::create(
+        webauthnBase64UrlDecode((string) $row['credential_id']),
+        'public-key',
+        is_array($transports) === true ? array_values(array_filter($transports, 'is_string')) : [],
+        'none',
+        EmptyTrustPath::create(),
+        Uuid::isValid((string) ($row['aaguid'] ?? '')) === true ? Uuid::fromString((string) $row['aaguid']) : Uuid::fromString('00000000-0000-0000-0000-000000000000'),
+        (string) base64_decode((string) $row['public_key_cose'], true),
+        $userHandle,
+        (int) $row['sign_count'],
+        null,
+        (int) ($row['backup_eligible'] ?? 0) === 1,
+        (int) ($row['backup_state'] ?? 0) === 1
+    );
+}
+
+/**
+ * Verify an assertion of a stored passkey against the options handed to the browser.
+ *
+ * @param CredentialRecord     $record      Stored passkey
+ * @param array<string, mixed> $credential  Browser credential
+ * @param string               $optionsJson Options stored when the ceremony started
+ * @param string               $origin      Origin of cpassman_url
+ *
+ * @return CredentialRecord The record with its new counter and backup state
+ *
+ * @throws InvalidArgumentException When the response does not verify
+ */
+function webauthnLoginVerifyAssertion(CredentialRecord $record, array $credential, string $optionsJson, string $origin): CredentialRecord
+{
+    $options = webauthnLoginSerializer()->deserialize($optionsJson, PublicKeyCredentialRequestOptions::class, 'json');
+    $publicKeyCredential = webauthnLoginReadCredential($credential);
+    $response = $publicKeyCredential->response;
+    if ($response instanceof AuthenticatorAssertionResponse === false
+        || $publicKeyCredential->rawId !== $record->publicKeyCredentialId
+    ) {
+        throw new InvalidArgumentException('Malformed passkey response.');
+    }
+
+    try {
+        return AuthenticatorAssertionResponseValidator::create(webauthnLoginCeremonyFactory($origin)->requestCeremony())
+            ->check($record, $response, $options, webauthnLoginHostOf($origin), $record->userHandle);
+    } catch (Throwable $e) {
+        throw new InvalidArgumentException('The passkey could not be verified: ' . $e->getMessage(), 0, $e);
+    }
+}

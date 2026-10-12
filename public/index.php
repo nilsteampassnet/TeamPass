@@ -1753,6 +1753,9 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
     <!-- functions -->
     <script type="text/javascript" src="./assets/js/functions.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <script type="text/javascript" src="./assets/js/CreateRandomString.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+    <?php if ((int) ($SETTINGS['webauthn_login_mode'] ?? 0) !== 0) { ?>
+    <script type="text/javascript" src="./assets/js/webauthn-login.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+    <?php } ?>
     <input type="hidden" id="encryptClientServerStatus" value="<?php echo $SETTINGS['encryptClientServer'] ?? 1; ?>" />
 
     <!-- WebSocket real-time notifications -->

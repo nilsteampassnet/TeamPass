@@ -1,0 +1,29 @@
+name: 'Lock Issues'
+
+on:
+  schedule:
+    - cron: '12 6 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  lock:
+    runs-on: ubuntu-latest
+    permissions:
+      # Required to comment on and lock closed issues.
+      issues: write
+    steps:
+      - uses: dessant/lock-threads@v6.0.2
+        with:
+          github-token: ${{ github.token }}
+          issue-inactive-days: '31'
+          exclude-issue-created-before: ''
+          exclude-any-issue-labels: ''
+          add-issue-labels: ''
+          issue-comment: >
+            This thread has been automatically locked since there has not been
+            any recent activity after it was closed. Please open a new issue for
+            related bugs.
+          issue-lock-reason: 'resolved'
+          process-only: 'issues'

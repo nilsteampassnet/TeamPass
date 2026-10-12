@@ -39,6 +39,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 // Load functions
 require_once 'main.functions.php';
 require_once __DIR__ . '/item_access_logic.php';
+require_once __DIR__ . '/folder_list_logic.php';
 
 // init
 loadClasses('DB');
@@ -155,12 +156,14 @@ if (null !== $post_type) {
             // The raw personal_folder flag is not enough: a sub-folder of a personal root can
             // carry 0 when the flag was never written, and would then show up in this list.
             $personalFolderIds = getPersonalFolderIdsWithDescendants();
+            $accessibleFolderSet = array_fill_keys(array_map('intval', (array) $session->get('user-accessible_folders')), true);
+            $personalFolderSet = array_fill_keys($personalFolderIds, true);
 
             $accessibleFolders = [];
             foreach ($treeDesc as $t) {
                 if (
-                    in_array($t->id, $session->get('user-accessible_folders')) === true
-                    && in_array((int) $t->id, $personalFolderIds, true) === false
+                    isset($accessibleFolderSet[(int) $t->id])
+                    && !isset($personalFolderSet[(int) $t->id])
                 ) {
                     $accessibleFolders[] = $t;
                 }
@@ -263,6 +266,9 @@ if (null !== $post_type) {
                     'matrix' => $arrData,
                     'userIsAdmin' => $session->get('user-admin'),
                     'userCanCreateRootFolder' => (int) $session->get('user-can_create_root_folder'),
+                    'userCanUseRoot' => (int) $session->get('user-admin') === 1
+                        || (int) $session->get('user-manager') === 1
+                        || (int) $session->get('user-can_create_root_folder') === 1,
                     'fullComplexity' => $complexity,
                 ),
                 'encode'
@@ -527,6 +533,27 @@ if (null !== $post_type) {
                         'error' => true,
                         'message' => $lang->get('error_not_allowed_to'),
                     ),
+                    'encode'
+                );
+                break;
+            }
+
+            // A visible read-only folder cannot receive a moved subtree.
+            if (
+                $parentChanged === true
+                && (int) $session->get('user-admin') !== 1
+                && (int) $inputData['parentId'] !== 0
+                && in_array(
+                    (int) $inputData['parentId'],
+                    array_map('intval', (array) $session->get('user-read_only_folders')),
+                    true
+                )
+            ) {
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ],
                     'encode'
                 );
                 break;
@@ -890,6 +917,26 @@ if (null !== $post_type) {
                 break;
             }
             $inputData['deletion_protected'] = $validatedDeletionProtection;
+
+            // Enforce the writable-parent restriction for direct creation requests too.
+            if (
+                (int) $session->get('user-admin') !== 1
+                && (int) $inputData['parentId'] !== 0
+                && in_array(
+                    (int) $inputData['parentId'],
+                    array_map('intval', (array) $session->get('user-read_only_folders')),
+                    true
+                )
+            ) {
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ],
+                    'encode'
+                );
+                break;
+            }
 
             // Check if parent folder is personal
             $dataParent = DB::queryFirstRow(
@@ -1633,84 +1680,58 @@ if (null !== $post_type) {
 
             break;
 
-        // CASE where selecting/deselecting sub-folders
-        case 'refresh_folders_list':
-            // Check KEY
-            if ($post_key !== $session->get('key')) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            } elseif ($session->get('user-read_only') === 1) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('error_not_allowed_to'),
-                    ),
-                    'encode'
-                );
+        case 'search_folder_parents':
+            if (!hash_equals((string) $session->get('key'), (string) $post_key)
+                || $checkUserAccess->userAccessPage('folders') === false
+                || (int) $session->get('user-read_only') === 1
+            ) {
+                echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
                 break;
             }
-
-            $subfolders = array();
-
-            if ((int) $session->get('user-admin') === 1 || (int) $session->get('user-manager') === 1 || (int) $session->get('user-can_create_root_folder') === 1) {
-                array_push(
-                    $subfolders,
-                    array(
-                        'id' => 0,
-                        'label' => $lang->get('root'),
-                        'level' => 0,
-                        'path' => ''
-                    )
-                );
+            $folders = $tree->getDescendants();
+            $accessibleIds = (array) $session->get('user-accessible_folders');
+            $excludedIds = array_merge(
+                getPersonalFolderIdsWithDescendants(),
+                (array) $session->get('user-read_only_folders'),
+                (array) $session->get('user-no_access_folders')
+            );
+            $movingId = max(0, (int) $request->request->get('exclude_id', 0));
+            if ($movingId > 0 && (!in_array($movingId, array_map('intval', $accessibleIds), true)
+                || in_array($movingId, array_map('intval', $excludedIds), true)
+                || !isset($folders[$movingId]))
+            ) {
+                echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+                break;
             }
-
-            // get sub folders
-
-            // Get through each subfolder
-            $folders = $tree->getDescendants(0, false);
-
-            // Same filter as the server-rendered list in pages/folders.php: personal folders
-            // must not appear as a possible parent.
-            $personalFolderIds = getPersonalFolderIdsWithDescendants();
-
-            foreach ($folders as $folder) {
-                if (
-                    in_array($folder->id, $session->get('user-accessible_folders')) === true
-                    && in_array((int) $folder->id, $personalFolderIds, true) === false
-                ) {
-                    // Get path
-                    $text = '';
-                    foreach ($tree->getPath($folder->id, false) as $fld) {
-                        $text .= empty($text) === true ? '     [<i>' . $fld->title : ' > ' . $fld->title;
-                    }
-
-                    // Save array
-                    array_push(
-                        $subfolders,
-                        array(
-                            'id' => (int) $folder->id,
-                            'label' => $folder->title,
-                            'level' => $folder->nlevel,
-                            'path' => empty($text) === true ? '' : $text . '</i>]'
-                        )
-                    );
+            $parentPage = folderListParentPage(
+                $folders,
+                $accessibleIds,
+                $excludedIds,
+                (int) $session->get('user-admin') === 1 || (int) $session->get('user-manager') === 1
+                    || (int) $session->get('user-can_create_root_folder') === 1,
+                (string) $lang->get('root'),
+                (string) $request->request->get('term', ''),
+                (int) $request->request->get('page', 1),
+                $movingId
+            );
+            // Only the requested page needs complexity metadata for creation defaults.
+            $parentIds = array_map(static fn (array $row): int => (int) $row['id'], $parentPage['results']);
+            $complexityMap = [];
+            if ($parentIds !== []) {
+                foreach (DB::query(
+                    'SELECT intitule, valeur FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule IN %ls',
+                    'complex',
+                    $parentIds
+                ) as $complexityRow) {
+                    $complexityMap[(int) $complexityRow['intitule']] = (int) $complexityRow['valeur'];
                 }
             }
-
-            echo prepareExchangedData(
-                array(
-                    'error' => false,
-                    'subfolders' => ($subfolders),
-                ),
-                'encode'
-            );
-
+            foreach ($parentPage['results'] as &$parentResult) {
+                $parentResult['complexity'] = $complexityMap[(int) $parentResult['id']] ?? 0;
+            }
+            unset($parentResult);
+            echo prepareExchangedData(array_merge(['error' => false], $parentPage), 'encode');
             break;
+
     }
 }

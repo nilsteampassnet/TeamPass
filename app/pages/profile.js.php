@@ -101,6 +101,33 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     // every statement below (avatar uploader included) was never executed.
     $('#profile-user-language option[value="<?php echo addslashes(strval($session->get('user-language') ?? ''));?>"]').prop('selected', true);
 
+    // Shortcuts of the overview open the matching section of the menu
+    $(document).on('click', '.profile-goto', function(event) {
+        event.preventDefault();
+        $('#profile-tabs a[href="' + $(this).attr('href') + '"]').tab('show');
+    });
+
+    // Same action as the "Change password" entry of the account menu
+    $(document).on('click', '#profile-change-password', function() {
+        $('.user-menu[data-name="password-change"]').first().trigger('click');
+    });
+
+    // Text made safe for an element and for a double-quoted attribute
+    function profileEscape(text) {
+        return $('<span>').text(String(text)).html().replace(/"/g, '&quot;');
+    }
+
+    /**
+     * One line of a profile list: what it is, when it was used, and its actions.
+     * Every argument is HTML that is already escaped.
+     */
+    function profileListRow(title, details, actions, attributes) {
+        return '<div class="d-flex flex-wrap align-items-center border-top py-2"' + (attributes || '') + '>'
+            + '<div class="flex-grow-1 mr-3 py-1">' + title + '<div class="text-muted small">' + details + '</div></div>'
+            + '<div class="py-1">' + actions + '</div>'
+            + '</div>';
+    }
+
 
     // AVATAR IMPORT
     const updateAccountAvatar = (avatarUrl) => {
@@ -323,8 +350,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             'email': formEmail,
             'timezone': $('#profile-user-timezone').val() ?? '',
             'language': ($('#profile-user-language').val() ?? '').toLowerCase(),
-            'split_view_mode': $('#profile-user-split_view_mode').val(),
-            'show_subfolders': $('#profile-user-show_subfolders').val(),
+            'split_view_mode': $('#profile-user-split_view_mode').is(':checked') === true ? '1' : '0',
+            'show_subfolders': $('#profile-user-show_subfolders').is(':checked') === true ? '1' : '0',
         };
 
         const treeLoadStrategyField = $('#profile-user-treeloadstrategy');
@@ -370,8 +397,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     );
                 } else {
                     const selectedLanguage = ($('#profile-user-language').val() ?? '').toLowerCase();
-                    const selectedSplitViewMode = String($('#profile-user-split_view_mode').val() ?? '');
-                    const selectedShowSubfolders = String($('#profile-user-show_subfolders').val() ?? '');
+                    const selectedSplitViewMode = $('#profile-user-split_view_mode').is(':checked') === true ? '1' : '0';
+                    const selectedShowSubfolders = $('#profile-user-show_subfolders').is(':checked') === true ? '1' : '0';
 
                     const languageChanged = selectedLanguage !== '<?php echo strtolower((string) ($session->get('user-language') ?? 'english')); ?>';
                     const splitViewModeChanged = selectedSplitViewMode !== '<?php echo (int) ($session->get('user-split_view_mode') ?? 0); ?>';
@@ -486,7 +513,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
                             $("#" + target).text(newApiKey);
                             if (silent === false) {
-                                $('#profile-tabs a[href="#tab_information"]').tab('show');
                                 toastr.remove();
                                 toastr.info(
                                     '<?php echo $lang->get('done'); ?>',
@@ -661,8 +687,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         }
     });
 
-    // Handle the copy in clipboard button for api key
-    document.getElementById('copy-api-key').addEventListener('click', function() {
+    // Handle the copy in clipboard button for api key.
+    // Delegated: the key is only rendered while the API is enabled, and a missing
+    // button must not stop the rest of this script.
+    $(document).on('click', '#copy-api-key', function() {
         const apiKey = document.getElementById('profile-user-api-token').textContent;
         // Shared helper: falls back to execCommand when the async Clipboard API is
         // unavailable, which is the case on an instance served over plain HTTP.
@@ -685,6 +713,374 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         });
     });
 
+    /**
+     * Passkeys used to sign in to TeamPass (webauthn_login_* in users.queries.php).
+     * profile.php renders the block only when the feature is on or passkeys remain; the
+     * ceremonies themselves run in assets/js/webauthn-login.js, loaded while it is on.
+     */
+    const webauthnLoginKey = '<?php echo $session->get('key'); ?>';
+    const webauthnLoginText = <?php echo json_encode([
+        'none' => $lang->get('webauthn_login_none'),
+        'created' => $lang->get('webauthn_created'),
+        'lastUsed' => $lang->get('webauthn_last_used'),
+        'neverUsed' => $lang->get('webauthn_never_used'),
+        'passwordless' => $lang->get('webauthn_login_passwordless_badge'),
+        'serverWrap' => $lang->get('webauthn_login_server_wrap_tip'),
+        'synced' => $lang->get('webauthn_login_synced_badge'),
+        'otherRp' => $lang->get('webauthn_login_other_rp'),
+        'otherRpTip' => $lang->get('webauthn_login_other_rp_tip'),
+        'rename' => $lang->get('webauthn_login_rename'),
+        'delete' => $lang->get('webauthn_login_delete'),
+        'deleteShort' => $lang->get('delete'),
+        'deleteConfirm' => $lang->get('webauthn_login_delete_confirm'),
+        'enable' => $lang->get('webauthn_login_passwordless_enable'),
+        'disable' => $lang->get('webauthn_login_passwordless_disable'),
+        'disableConfirm' => $lang->get('webauthn_login_passwordless_disable_confirm'),
+        'added' => $lang->get('webauthn_login_added'),
+        'enabled' => $lang->get('webauthn_login_passwordless_enabled'),
+        'finishLater' => $lang->get('webauthn_login_finish_later'),
+        'unsupported' => $lang->get('webauthn_login_browser_unsupported'),
+        'cancelled' => $lang->get('webauthn_login_cancelled'),
+        'exists' => $lang->get('webauthn_login_already_registered'),
+        'security' => $lang->get('webauthn_login_security_error'),
+        'failed' => $lang->get('webauthn_login_verification_failed'),
+        'serverError' => $lang->get('server_answer_error'),
+        'cancel' => $lang->get('cancel'),
+        'done' => $lang->get('done'),
+        'confirm' => $lang->get('confirm'),
+        'stepUpTitle' => $lang->get('webauthn_login_stepup_title'),
+        'stepUpPrompt' => $lang->get('webauthn_login_stepup_prompt'),
+        'notices' => [
+            'not_asked' => $lang->get('webauthn_login_notice_not_asked'),
+            'single_device' => $lang->get('webauthn_login_notice_single_device'),
+        ],
+    ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+    let webauthnLoginCanWrap = false;
+    let webauthnLoginStepUpPassword = true;
+
+    function webauthnLoginPost(type, payload) {
+        return new Promise(function(resolve) {
+            $.post(
+                'sources/users.queries.php', {
+                    type: type,
+                    data: prepareExchangedData(JSON.stringify(payload || {}), 'encode', webauthnLoginKey),
+                    key: webauthnLoginKey
+                },
+                function(data) {
+                    resolve(prepareExchangedData(data, 'decode', webauthnLoginKey));
+                }
+            ).fail(function() {
+                resolve({ error: true, message: webauthnLoginText.serverError });
+            });
+        });
+    }
+
+    function webauthnLoginToast(type, message) {
+        toastr.remove();
+        toastr[type](message, '', {
+            timeOut: type === 'success' ? 2000 : 8000,
+            closeButton: true,
+            positionClass: 'toast-bottom-right'
+        });
+    }
+
+    function webauthnLoginCeremonyError(error) {
+        const kind = window.tpWebauthnLogin ? window.tpWebauthnLogin.errorKind(error) : 'failed';
+        webauthnLoginToast(kind === 'cancelled' ? 'info' : 'error', webauthnLoginText[kind] || webauthnLoginText.failed);
+    }
+
+    function webauthnLoginCeremonyAvailable() {
+        return typeof window.tpWebauthnLogin !== 'undefined' && window.tpWebauthnLogin.supported() === true;
+    }
+
+    function renderWebauthnLogin(credentials, notices) {
+        const $list = $('#webauthn-login-list');
+        if (!credentials || credentials.length === 0) {
+            $list.html('<span class="text-muted">' + $('<span>').text(webauthnLoginText.none).html() + '</span>');
+            $('#profile-glance-passkeys').text(webauthnLoginText.none);
+            return;
+        }
+        const enabled = parseInt($('#webauthn-login-block').data('mode'), 10) !== 0;
+        let html = '';
+        credentials.forEach(function(credential) {
+            const id = parseInt(credential.id, 10);
+            const created = new Date(credential.created_at * 1000).toLocaleString();
+            const lastUsed = credential.last_used_at ? new Date(credential.last_used_at * 1000).toLocaleString() : webauthnLoginText.neverUsed;
+            let badges = '';
+            if (credential.passwordless === true) {
+                badges += ' <span class="badge badge-success ml-1"' + (credential.server_wrap === true ? ' title="' + $('<span>').text(webauthnLoginText.serverWrap).html() + '"' : '') + '>'
+                    + $('<span>').text(webauthnLoginText.passwordless).html() + '</span>';
+            }
+            if (credential.synced === true) {
+                badges += ' <span class="badge badge-info ml-1">' + $('<span>').text(webauthnLoginText.synced).html() + '</span>';
+            }
+            // Bound to a previous relying party ID: it can no longer sign in
+            if (credential.usable === false) {
+                badges += ' <span class="badge badge-warning ml-1" title="' + $('<span>').text(webauthnLoginText.otherRpTip).html() + '">'
+                    + $('<span>').text(webauthnLoginText.otherRp.replace('%s', credential.rp_id)).html() + '</span>';
+            }
+            // Buttons carry their name: an icon alone does not say what it does
+            let actions = '<button type="button" class="btn btn-sm btn-outline-secondary mr-1 my-1 webauthn-login-rename" data-id="' + id + '"><i class="fa-solid fa-pen mr-1"></i>' + profileEscape(webauthnLoginText.rename) + '</button>';
+            if (credential.passwordless === true) {
+                actions += '<button type="button" class="btn btn-sm btn-outline-warning mr-1 my-1 webauthn-login-passwordless-disable" data-id="' + id + '"><i class="fa-solid fa-lock mr-1"></i>' + profileEscape(webauthnLoginText.disable) + '</button>';
+            } else if (enabled === true && webauthnLoginCanWrap === true && credential.usable !== false) {
+                actions += '<button type="button" class="btn btn-sm btn-outline-success mr-1 my-1 webauthn-login-passwordless-enable" data-id="' + id + '"><i class="fa-solid fa-unlock mr-1"></i>' + profileEscape(webauthnLoginText.enable) + '</button>';
+            }
+            actions += '<button type="button" class="btn btn-sm btn-outline-danger my-1 webauthn-login-delete" data-id="' + id + '" title="' + profileEscape(webauthnLoginText.delete) + '"><i class="fa-solid fa-trash mr-1"></i>' + profileEscape(webauthnLoginText.deleteShort) + '</button>';
+            // The passkey manager, when the name given to the passkey does not already say it
+            const authenticator = credential.authenticator && credential.authenticator !== credential.label
+                ? credential.authenticator + ' · '
+                : '';
+            html += profileListRow(
+                profileEscape(credential.label) + badges,
+                profileEscape(authenticator + webauthnLoginText.created + ': ' + created + ' · ' + webauthnLoginText.lastUsed + ': ' + lastUsed),
+                actions,
+                ' data-label="' + profileEscape(credential.label) + '"'
+            );
+        });
+        // What the list alone does not say: a passkey that is not asked for, a single device
+        (Array.isArray(notices) ? notices : []).forEach(function(notice) {
+            if (webauthnLoginText.notices[notice]) {
+                html += '<div class="callout callout-' + (notice === 'not_asked' ? 'warning' : 'info') + ' webauthn-login-notice small mt-2 mb-0 py-2 px-3">'
+                    + '<i class="fa-solid ' + (notice === 'not_asked' ? 'fa-triangle-exclamation' : 'fa-circle-info') + ' mr-1"></i>'
+                    + $('<span>').text(webauthnLoginText.notices[notice]).html() + '</div>';
+            }
+        });
+        $list.html(html);
+        $('#profile-glance-passkeys').text(credentials.map(function(credential) {
+            return credential.label;
+        }).join(', '));
+    }
+
+    function loadWebauthnLogin() {
+        return webauthnLoginPost('webauthn_login_list', {}).then(function(data) {
+            if (data.error === false) {
+                webauthnLoginCanWrap = data.can_wrap === true;
+                webauthnLoginStepUpPassword = data.stepup_password !== false;
+                renderWebauthnLogin(data.credentials, data.notices);
+                // Let the passkey managers of this device drop the passkeys deleted here
+                if (data.signal && webauthnLoginCeremonyAvailable() === true
+                    && typeof window.tpWebauthnLogin.signalAccepted === 'function'
+                ) {
+                    window.tpWebauthnLogin.signalAccepted(data.signal);
+                }
+            }
+        });
+    }
+
+    // Ask for the current password. Resolves with it, or with null when the user cancels.
+    function webauthnLoginAskPassword() {
+        return new Promise(function(resolve) {
+            let answered = false;
+            launchConfirmDialog(
+                webauthnLoginText.stepUpTitle,
+                '<p>' + $('<span>').text(webauthnLoginText.stepUpPrompt).html() + '</p>'
+                    + '<input type="password" class="form-control" id="webauthn-login-stepup-password" autocomplete="current-password">',
+                function() {
+                    answered = true;
+                    resolve(String($('#webauthn-login-stepup-password').val() || ''));
+                },
+                webauthnLoginText.confirm,
+                webauthnLoginText.cancel
+            );
+            $('#warningModal')
+                .one('shown.bs.modal', function() {
+                    $('#webauthn-login-stepup-password').trigger('focus');
+                })
+                .one('hidden.bs.modal', function() {
+                    if (answered === false) {
+                        resolve(null);
+                    }
+                });
+        });
+    }
+
+    // Enter in the password field confirms, like the dialog button
+    $(document).on('keydown', '#webauthn-login-stepup-password', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            $('#warningModalButtonAction').trigger('click');
+        }
+    });
+
+    // Start a ceremony that adds a passkey or a passwordless copy of the private key. The server
+    // asks for the password first (or a recent sign-in when the account has none it can check):
+    // an open session alone must not be able to plant a passkey. A password confirmed for a
+    // registration also covers the PRF evaluation that may follow it.
+    async function webauthnLoginStart(type, payload, askPassword) {
+        let password = '';
+        if (askPassword === true) {
+            password = await webauthnLoginAskPassword();
+            if (password === null) {
+                return null;
+            }
+        }
+        let start = await webauthnLoginPost(type, Object.assign({}, payload, { current_password: password }));
+        if (start.error !== false && start.stepup === 'password' && askPassword !== true) {
+            password = await webauthnLoginAskPassword();
+            if (password === null) {
+                return null;
+            }
+            start = await webauthnLoginPost(type, Object.assign({}, payload, { current_password: password }));
+        }
+        return start;
+    }
+
+    // Enable passwordless sign-in on a passkey: one gesture that proves it is at hand and
+    // evaluates its PRF, from which the server derives the key wrapping the private key.
+    async function enableWebauthnPasswordless(id, afterRegistration) {
+        const start = await webauthnLoginStart(
+            'webauthn_login_passwordless_options',
+            { id: id },
+            afterRegistration !== true && webauthnLoginStepUpPassword === true
+        );
+        if (start === null) {
+            return;
+        }
+        if (start.error !== false) {
+            webauthnLoginToast('error', start.message);
+            return;
+        }
+        let result;
+        try {
+            result = await window.tpWebauthnLogin.assert(start.options, start.prf_input);
+        } catch (error) {
+            // Some browsers only allow one ceremony per click: the button is there for a second one.
+            if (afterRegistration === true) {
+                webauthnLoginToast('info', webauthnLoginText.finishLater);
+            } else {
+                webauthnLoginCeremonyError(error);
+            }
+            return;
+        }
+        const done = await webauthnLoginPost('webauthn_login_passwordless_verify', {
+            id: id,
+            credential: result.credential,
+            prf_output: result.prf_output
+        });
+        if (done.error !== false) {
+            webauthnLoginToast('error', done.message);
+        } else {
+            webauthnLoginToast('success', webauthnLoginText.enabled);
+        }
+        await loadWebauthnLogin();
+    }
+
+    if ($('#webauthn-login-block').length > 0) {
+        // Browsers only run passkeys in a secure context (HTTPS or localhost)
+        if (window.isSecureContext !== true && $('#webauthn-login-add').length > 0) {
+            $('#webauthn-login-add').closest('.input-group').replaceWith(
+                $('<div class="text-warning small mt-2">').text(webauthnLoginText.unsupported)
+            );
+        }
+        loadWebauthnLogin();
+    }
+
+    $(document).on('click', '#webauthn-login-add', async function() {
+        if (webauthnLoginCeremonyAvailable() === false) {
+            webauthnLoginToast('error', webauthnLoginText.unsupported);
+            return;
+        }
+        const $button = $(this).prop('disabled', true);
+        try {
+            const start = await webauthnLoginStart('webauthn_login_register_options', {}, webauthnLoginStepUpPassword);
+            if (start === null) {
+                return;
+            }
+            if (start.error !== false) {
+                webauthnLoginToast('error', start.message);
+                return;
+            }
+            let result;
+            try {
+                result = await window.tpWebauthnLogin.register(start.options, start.prf_input);
+            } catch (error) {
+                webauthnLoginCeremonyError(error);
+                return;
+            }
+            const done = await webauthnLoginPost('webauthn_login_register_verify', Object.assign(
+                { label: $('#webauthn-login-label').val() },
+                result
+            ));
+            if (done.error !== false) {
+                webauthnLoginToast('error', done.message);
+                return;
+            }
+            $('#webauthn-login-label').val('');
+            webauthnLoginToast(done.notice ? 'warning' : 'success', done.notice ? done.notice : webauthnLoginText.added);
+            await loadWebauthnLogin();
+            if (done.finish_passwordless === true) {
+                await enableWebauthnPasswordless(parseInt(done.id, 10), true);
+            }
+        } finally {
+            $button.prop('disabled', false);
+        }
+    });
+
+    $(document).on('click', '.webauthn-login-passwordless-enable', function() {
+        if (webauthnLoginCeremonyAvailable() === false) {
+            webauthnLoginToast('error', webauthnLoginText.unsupported);
+            return;
+        }
+        enableWebauthnPasswordless(parseInt($(this).data('id'), 10), false);
+    });
+
+    $(document).on('click', '.webauthn-login-passwordless-disable', function() {
+        const id = parseInt($(this).data('id'), 10);
+        launchConfirmDialog(
+            webauthnLoginText.disable,
+            $('<span>').text(webauthnLoginText.disableConfirm).html(),
+            function() {
+                webauthnLoginPost('webauthn_login_passwordless_disable', { id: id }).then(function(response) {
+                    webauthnLoginToast(response.error === false ? 'success' : 'error', response.error === false ? webauthnLoginText.done : response.message);
+                    loadWebauthnLogin();
+                });
+            },
+            webauthnLoginText.disable,
+            webauthnLoginText.cancel
+        );
+    });
+
+    $(document).on('click', '.webauthn-login-rename', function() {
+        const id = parseInt($(this).data('id'), 10);
+        const $input = $('<input type="text" class="form-control" id="webauthn-login-rename-input" maxlength="100">')
+            // attr(), not data(): data() would turn a label such as "12" or "{...}" into another type
+            .attr('value', String($(this).closest('[data-label]').attr('data-label') || ''));
+        launchConfirmDialog(
+            webauthnLoginText.rename,
+            $input.prop('outerHTML'),
+            function() {
+                webauthnLoginPost('webauthn_login_rename', {
+                    id: id,
+                    label: $('#webauthn-login-rename-input').val()
+                }).then(function(response) {
+                    if (response.error !== false) {
+                        webauthnLoginToast('error', response.message);
+                    }
+                    loadWebauthnLogin();
+                });
+            },
+            webauthnLoginText.rename,
+            webauthnLoginText.cancel
+        );
+    });
+
+    $(document).on('click', '.webauthn-login-delete', function() {
+        const id = parseInt($(this).data('id'), 10);
+        launchConfirmDialog(
+            webauthnLoginText.delete,
+            $('<span>').text(webauthnLoginText.deleteConfirm).html(),
+            function() {
+                webauthnLoginPost('webauthn_login_delete', { id: id }).then(function(response) {
+                    webauthnLoginToast(response.error === false ? 'success' : 'error', response.error === false ? webauthnLoginText.done : response.message);
+                    loadWebauthnLogin();
+                });
+            },
+            webauthnLoginText.delete,
+            webauthnLoginText.cancel
+        );
+    });
+
     <?php if (isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1) : ?>
     /**
      * Browser extension tokens (Personal Access Tokens).
@@ -702,21 +1098,46 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             list.html('<span class="text-muted"><?php echo $lang->get('extension_token_none'); ?></span>');
             return;
         }
-        var html = '<table class="table table-sm table-striped mb-0"><tbody>';
+        var html = '';
         tokens.forEach(function(token) {
             var created = new Date(token.created_at * 1000).toLocaleString();
             var lastUsed = token.last_used_at ? new Date(token.last_used_at * 1000).toLocaleString() : '<?php echo $lang->get('extension_token_never_used'); ?>';
             // Label is escaped to prevent XSS (also sanitized server-side on insert).
             var label = token.label ? $('<span>').text(token.label).html() : '<i class="text-muted">&mdash;</i>';
-            html += '<tr>'
-                + '<td>' + label + '</td>'
-                + '<td class="text-muted small"><?php echo $lang->get('extension_token_created'); ?>: ' + created + '<br><?php echo $lang->get('extension_token_last_used'); ?>: ' + lastUsed + '</td>'
-                + '<td class="text-right"><button type="button" class="btn btn-sm btn-danger revoke-extension-token" data-id="' + parseInt(token.id, 10) + '" title="<?php echo $lang->get('extension_token_revoke'); ?>"><i class="fa-solid fa-trash"></i></button></td>'
-                + '</tr>';
+            html += profileListRow(
+                label,
+                '<?php echo $lang->get('extension_token_created'); ?>: ' + created + ' · <?php echo $lang->get('extension_token_last_used'); ?>: ' + lastUsed,
+                '<button type="button" class="btn btn-sm btn-outline-danger my-1 revoke-extension-token" data-id="' + parseInt(token.id, 10) + '"><i class="fa-solid fa-trash mr-1"></i><?php echo $lang->get('extension_token_revoke'); ?></button>'
+            );
         });
-        html += '</tbody></table>';
         list.html(html);
     }
+
+    /**
+     * Browser extension: what extension-autoconfig.js.php found in this browser.
+     */
+    var extensionStatusText = <?php echo json_encode([
+        'ready' => $lang->get('profile_extension_status_ready'),
+        'todo' => $lang->get('profile_extension_status_todo'),
+        'absent' => $lang->get('profile_extension_status_absent'),
+    ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+
+    function renderExtensionStatus() {
+        var state = window.tpExtAutoconfig ? window.tpExtAutoconfig.state : null;
+        // Nothing to say until the handshake has settled
+        if (state === null || state.probed !== true) {
+            return;
+        }
+        var kind = state.detected !== true ? 'absent' : (state.configured === true ? 'ready' : 'todo');
+        $('#extension-autoconfig-status')
+            .text(extensionStatusText[kind])
+            .removeClass('hidden badge-secondary badge-success badge-warning')
+            .addClass(kind === 'ready' ? 'badge-success' : (kind === 'todo' ? 'badge-warning' : 'badge-secondary'));
+        $('#profile-glance-extension').text(extensionStatusText[kind]);
+    }
+
+    $(document).on('tpExtAutoconfig:state', renderExtensionStatus);
+    renderExtensionStatus();
 
     function loadExtensionTokens() {
         $.post(
@@ -820,31 +1241,60 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
      */
     var apiSessionsKey = '<?php echo $session->get('key'); ?>';
 
+    /**
+     * A readable name for an API client ("Chrome · Windows"), from its user agent.
+     * Empty when the user agent is not a browser's: it is then shown as it is.
+     */
+    function profileApiClientName(userAgent) {
+        // Order matters: Edge and Opera also say Chrome, Chrome also says Safari,
+        // Android also says Linux and iOS also says Mac OS X.
+        var browsers = [['Edg/', 'Edge'], ['OPR/', 'Opera'], ['Firefox/', 'Firefox'], ['Chrome/', 'Chrome'], ['Safari/', 'Safari']];
+        var systems = [['Windows', 'Windows'], ['Android', 'Android'], ['iPhone', 'iOS'], ['iPad', 'iOS'], ['Mac OS X', 'macOS'], ['CrOS', 'ChromeOS'], ['Linux', 'Linux']];
+        var found = function(entries) {
+            for (var i = 0; i < entries.length; i++) {
+                if (userAgent.indexOf(entries[i][0]) !== -1) {
+                    return entries[i][1];
+                }
+            }
+            return '';
+        };
+        var browser = found(browsers);
+        var system = found(systems);
+        if (browser === '') {
+            return '';
+        }
+        return browser + (system === '' ? '' : ' · ' + system);
+    }
+
     function renderApiSessions(sessions) {
         var list = $('#api-sessions-list');
         if (list.length === 0) {
             return;
         }
         if (!sessions || sessions.length === 0) {
-            list.html('<span class="text-muted"><?php echo $lang->get('api_sessions_none'); ?></span>');
+            list.html('<span class="text-muted"><?php echo $lang->get('profile_api_connections_none'); ?></span>');
             return;
         }
-        var html = '<table class="table table-sm table-striped mb-0"><tbody>';
+        var html = '';
         sessions.forEach(function(apiSession) {
             var created = new Date(apiSession.created_at * 1000).toLocaleString();
             var expires = new Date(apiSession.expires_at * 1000).toLocaleString();
             var lastUsed = apiSession.last_used_at ? new Date(apiSession.last_used_at * 1000).toLocaleString() : '<?php echo $lang->get('extension_token_never_used'); ?>';
-            // User agent is escaped to prevent XSS
-            var client = apiSession.user_agent ? $('<span>').text(apiSession.user_agent).html() : '<i class="text-muted">&mdash;</i>';
-            html += '<tr>'
-                + '<td class="small">' + client + '</td>'
-                + '<td class="text-muted small"><?php echo $lang->get('extension_token_created'); ?>: ' + created
-                + '<br><?php echo $lang->get('extension_token_last_used'); ?>: ' + lastUsed
-                + '<br><?php echo $lang->get('expiration_date'); ?>: ' + expires + '</td>'
-                + '<td class="text-right"><button type="button" class="btn btn-sm btn-danger revoke-api-session" data-id="' + parseInt(apiSession.id, 10) + '" title="<?php echo $lang->get('api_session_revoke'); ?>"><i class="fa-solid fa-ban"></i></button></td>'
-                + '</tr>';
+            // User agent is escaped to prevent XSS; the full one stays available as a tooltip
+            var client = '<i class="text-muted">&mdash;</i>';
+            if (apiSession.user_agent) {
+                var clientName = profileApiClientName(String(apiSession.user_agent));
+                client = '<span title="' + profileEscape(apiSession.user_agent) + '">'
+                    + profileEscape(clientName !== '' ? clientName : apiSession.user_agent) + '</span>';
+            }
+            html += profileListRow(
+                client,
+                '<?php echo $lang->get('extension_token_created'); ?>: ' + created
+                    + ' · <?php echo $lang->get('extension_token_last_used'); ?>: ' + lastUsed
+                    + ' · <?php echo $lang->get('expiration_date'); ?>: ' + expires,
+                '<button type="button" class="btn btn-sm btn-outline-danger my-1 revoke-api-session" data-id="' + parseInt(apiSession.id, 10) + '" title="<?php echo $lang->get('api_session_revoke'); ?>"><i class="fa-solid fa-ban mr-1"></i><?php echo $lang->get('extension_token_revoke'); ?></button>'
+            );
         });
-        html += '</tbody></table>';
         list.html(html);
     }
 
@@ -916,7 +1366,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     $(document).on('click', '#personal-sharekeys-repair', function() {
         $(this).prop('disabled', true);
         $('#personal-sharekeys-result').html('<i class="fas fa-circle-notch fa-spin"></i>');
-        personalSharekeysRepairScope(['items', 'fields', 'files'], 0, {seeded: 0, failed: 0});
+        personalSharekeysRepairScope(['items', 'fields', 'files', 'webauthn'], 0, {seeded: 0, failed: 0});
     });
 
     if ($('#api-sessions-block').length > 0) {

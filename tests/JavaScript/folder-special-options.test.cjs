@@ -32,7 +32,10 @@ function form() {
       trigger() {}
     }
   }
-  vm.runInNewContext(handlerSource, { $ })
+  vm.runInNewContext(handlerSource, { $, _parentMetadata: new Map(), _folderTree: { byId: { get(id) {
+    const parent = parents.get(id)
+    return parent && { add_is_blocked: parent.create, edit_is_blocked: parent.edit, folderComplexity: { value: parent.complexity } }
+  } } } })
   return { fields, parents, select(id) { onChange.call({ val: () => String(id) }) } }
 }
 

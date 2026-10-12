@@ -36,6 +36,7 @@ use Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException;
 require_once __DIR__ . '/secure_send_access.php';
 require_once __DIR__ . '/secure_send_logic.php';
 require_once __DIR__ . '/secure_send_url.php';
+require_once __DIR__ . '/secure_send_audit.php';
 
 /**
  * Generate recipient-safe TOTP fields from a copied profile at one timestamp.
@@ -189,15 +190,19 @@ function secureSendRedeem(array $parameters, string $passphrase, array $settings
         $item = [];
         $automatic = [];
         if ($isNote && !DB::queryFirstField('SELECT id FROM ' . prefixTable('users') . ' WHERE id = %i AND disabled = 0 AND deleted_at IS NULL', $link['originator'])) {
+            $event = secureSendAudit($link, 'invalidated', 'sender_unavailable');
             DB::delete(prefixTable('otv'), 'id = %i', $link['id']);
             DB::commit();
+            secureSendEmitAudit($event, $settings);
             return ['error' => 'invalid_link'];
         }
         if (!$isNote) {
             $item = secureSendReadItem((int) $link['item_id'], (int) $link['originator'], true);
             if ($item === []) {
+                $event = secureSendAudit($link, 'invalidated', 'item_access_lost');
                 DB::delete(prefixTable('otv'), 'id = %i', $link['id']);
                 DB::commit();
+                secureSendEmitAudit($event, $settings);
                 return ['error' => 'invalid_link'];
             }
             if ((int) ($settings['enable_delete_after_consultation'] ?? 0) === 1) {
@@ -210,7 +215,11 @@ function secureSendRedeem(array $parameters, string $passphrase, array $settings
                     || ((int) $automatic['del_type'] === 2 && (int) $automatic['del_value'] <= time()))
                 ) {
                     secureSendDeactivateItem($item, $settings);
+                    $event = secureSendAudit($link, 'invalidated', 'item_auto_deleted');
+                    DB::delete(prefixTable('otv'), 'id = %i', $link['id']);
                     DB::commit();
+                    secureSendEmitAudit($event, $settings);
+                    secureSendEmitItemAudit($item, $settings, false, true);
                     return ['error' => 'invalid_link'];
                 }
             }
@@ -223,12 +232,19 @@ function secureSendRedeem(array $parameters, string $passphrase, array $settings
             $fields = secureSendDecryptPayload($link, $parameters['key'], $passphrase, $settings);
         } catch (WrongKeyOrModifiedCiphertextException $e) {
             $attempts = (int) ($link['failed_attempts'] ?? 0) + 1;
+            $link['failed_attempts'] = $attempts;
+            $failedEvent = secureSendAudit($link, 'reveal_failed', 'wrong_credentials');
             if ($attempts >= 5) {
+                $invalidatedEvent = secureSendAudit($link, 'invalidated', 'attempts_exhausted');
                 DB::delete(prefixTable('otv'), 'id = %i', $link['id']);
             } else {
                 DB::update(prefixTable('otv'), ['failed_attempts' => $attempts], 'id = %i', $link['id']);
             }
             DB::commit();
+            secureSendEmitAudit($failedEvent, $settings);
+            if (isset($invalidatedEvent)) {
+                secureSendEmitAudit($invalidatedEvent, $settings);
+            }
             return ['error' => $attempts >= 5 ? 'too_many_attempts' : ((int) ($link['has_passphrase'] ?? 0) === 1 ? 'wrong_passphrase' : 'invalid_link')];
         }
         if (($link['send_type'] ?? 'item') === 'item') {
@@ -258,14 +274,19 @@ function secureSendRedeem(array $parameters, string $passphrase, array $settings
             }
         }
         logItems($settings, $isNote ? 0 : (int) $link['item_id'], $isNote ? 'secure-send-note' : $item['label'],
-            (int) OTV_USER_ID, 'at_shown', 'otv', null, null, null, null, true, true);
+            (int) OTV_USER_ID, 'at_shown', 'otv', null, null, null, null, false, true);
+        $event = secureSendAudit(array_replace($link, ['views' => (int) $link['views'] + 1]), 'revealed');
+        $itemDeleted = false;
         if ((int) ($automatic['del_enabled'] ?? 0) === 1
             && (int) $automatic['del_type'] === 1 && (int) $automatic['del_value'] === 1
         ) {
             // The final permitted reveal succeeds; subsequent links cannot read the inactive item.
             secureSendDeactivateItem($item, $settings);
+            $itemDeleted = true;
         }
         DB::commit();
+        secureSendEmitAudit($event, $settings);
+        secureSendEmitItemAudit($item, $settings, true, $itemDeleted);
         return ['error' => '', 'fields' => $fields, 'send_type' => $isNote ? 'note' : 'item',
             'time_limit' => (int) $link['time_limit'], 'remaining_views' => (int) $link['max_views'] - (int) $link['views'] - 1];
     } catch (Throwable $e) {
@@ -288,10 +309,33 @@ function secureSendDeactivateItem(array $item, array $settings): void
     DB::update(prefixTable('items'), ['inactif' => 1, 'deleted_at' => time()], 'id = %i', (int) $item['id']);
     // Keep the automatic-deletion settings, as the authenticated item-view path does.
     logItems($settings, (int) $item['id'], $item['label'], (int) OTV_USER_ID,
-        'at_delete', 'otv', 'at_automatically_deleted', null, null, null, true, true);
+        'at_delete', 'otv', 'at_automatically_deleted', null, null, null, false, true);
     updateCacheTable('delete_value', (int) $item['id']);
     adjustFolderItemsCounter((int) $item['id_tree'], -1);
-    emitItemEvent('deleted', (int) $item['id'], (int) $item['id_tree'], $item['label'], 'otv');
+}
+
+/**
+ * Emit the existing item syslog/WebSocket events only after the audit transaction commits.
+ *
+ * @param array $item Item metadata, or an empty array for a standalone note
+ * @param array $settings Application settings
+ * @param bool $revealed Whether a reveal succeeded
+ * @param bool $deleted Whether automatic deletion deactivated the source item
+ * @return void
+ */
+function secureSendEmitItemAudit(array $item, array $settings, bool $revealed, bool $deleted): void
+{
+    try {
+        if ($revealed) {
+            emitItemSyslog($settings, (int) ($item['id'] ?? 0), $item['label'] ?? 'secure-send-note', 'at_shown', 'otv');
+        }
+        if ($deleted) {
+            emitItemSyslog($settings, (int) $item['id'], $item['label'], 'at_delete', 'otv', 'at_automatically_deleted');
+            emitItemEvent('deleted', (int) $item['id'], (int) $item['id_tree'], $item['label'], 'otv');
+        }
+    } catch (Throwable $e) {
+        error_log('TEAMPASS Secure Send item event forwarding failed (' . get_class($e) . ')');
+    }
 }
 
 /**

@@ -82,6 +82,101 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 <script type='text/javascript'>
     //<![CDATA[
 
+    /**
+     * Relying party ID of the sign-in passkeys. Saved here instead of by the generic handler of
+     * admin.js.php: moving the passkeys to another domain makes every registered one unusable,
+     * so the administrator confirms first. The server refuses a value that does not suit the
+     * TeamPass URL; the same rule decides here whether the domain really changes.
+     */
+    $(document).on('change', '#webauthn_rp_id', function() {
+        const $field = $(this);
+        const host = String($field.attr('placeholder') || '');
+        const typed = String($field.val() || '').trim().toLowerCase();
+        const next = typed !== '' ? typed : host;
+        const isIp = /^[0-9.]+$/.test(host) || host.indexOf(':') !== -1;
+        const valid = next === host || (isIp === false && next.indexOf('.') !== -1 && host.endsWith('.' + next));
+        const count = parseInt($field.attr('data-passkeys'), 10) || 0;
+        const current = String($field.attr('data-effective') || '');
+
+        if (valid === false || count === 0 || next === current) {
+            saveFieldValue($field, 'webauthn_rp_id', false);
+            if (valid === true) {
+                $field.attr('data-effective', next);
+            }
+            return;
+        }
+
+        let confirmed = false;
+        launchConfirmDialog(
+            <?php echo json_encode($lang->get('webauthn_rp_id'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+            $('<span>').text(
+                <?php echo json_encode($lang->get('webauthn_rp_id_change_confirm'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>
+                    .replace('#count#', String(count))
+                    .replace('#rp_id#', current)
+            ).html(),
+            function() {
+                confirmed = true;
+                saveFieldValue($field, 'webauthn_rp_id', false);
+                // No passkey is registered for the new value yet
+                $field.attr('data-effective', next).attr('data-passkeys', '0');
+            },
+            <?php echo json_encode($lang->get('confirm'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+            <?php echo json_encode($lang->get('cancel'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>
+        );
+        // Cancelled: the field shows the value still in force
+        $('#warningModal').one('hidden.bs.modal', function() {
+            if (confirmed === false) {
+                $field.val(current === host ? '' : current);
+            }
+        });
+    });
+
+    /**
+     * "Require PRF" deletes, for good, the copies of a private key the server opens alone: the
+     * passkeys that relied on one only confirm a password afterwards, and turning the setting off
+     * does not bring the copies back. Saved here instead of by the generic toggle handler of
+     * admin.js.php, which has already mirrored the state in the hidden input: the administrator
+     * confirms first when such copies exist.
+     */
+    $(document).on('toggle', '#webauthn_login_require_prf', function(event, active) {
+        const $toggle = $(this);
+        const $input = $('#webauthn_login_require_prf_input');
+        // Third argument: no HTML sanitising, the value is 0 or 1
+        const save = function() {
+            saveFieldValue($input, 'webauthn_login_require_prf', true);
+        };
+
+        const count = parseInt($toggle.attr('data-server-copies'), 10) || 0;
+        if (active !== true || count === 0) {
+            save();
+            return;
+        }
+
+        let confirmed = false;
+        launchConfirmDialog(
+            <?php echo json_encode($lang->get('webauthn_login_require_prf'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+            $('<span>').text(
+                <?php echo json_encode($lang->get('webauthn_login_require_prf_confirm'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>
+                    .replace('#count#', String(count))
+            ).html(),
+            function() {
+                confirmed = true;
+                save();
+                // The server has deleted them
+                $toggle.attr('data-server-copies', '0');
+            },
+            <?php echo json_encode($lang->get('confirm'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+            <?php echo json_encode($lang->get('cancel'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>
+        );
+        // Cancelled: back to "off", the value still in force, without another toggle event
+        $('#warningModal').one('hidden.bs.modal', function() {
+            if (confirmed === false) {
+                $input.val(0);
+                $toggle.data('toggles').toggle(false, false, true);
+            }
+        });
+    });
+
     $(document).on('click', '#button-duo-config-check', function() {
         toastr
             .info('<?php echo $lang->get('loading_item'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');

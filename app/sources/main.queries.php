@@ -253,10 +253,11 @@ function passwordHandler(string $post_type, array $dataReceived, array $SETTINGS
 
             // Check if new password is strong
             if (!isPasswordStrong($dataReceived['new_password'])) {
+                // The refusal has several causes: the message states the whole rule
                 return prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => $lang->get('complexity_level_not_reached'),
+                        'message' => $lang->get('password_policy_not_met'),
                     ),
                     'encode'
                 );
@@ -1408,7 +1409,6 @@ function changePassword(
                 array(
                     'pw' => $post_new_password_hashed,
                     'last_pw_change' => mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')),
-                    'last_pw' => $post_current_password,
                     'special' => $special_action,
                     'private_key' => $newEncryptedPrivateKey,
                 ),
@@ -2485,6 +2485,8 @@ function initializeUserPassword(
 
                 // Store private key in dedicated table
                 insertPrivateKeyWithCurrentFlag($post_user_id, $userKeys['private_key']);
+                // New key pair: passkey copies of the old private key are obsolete
+                invalidateUserPasskeyWraps((int) $post_user_id);
 
                 // Return
                 return prepareExchangedData(
@@ -2579,6 +2581,8 @@ function generateOneTimeCode(
                 $userId,
                 $userKeys['private_key'],
             );
+            // New key pair: passkey copies of the old private key are obsolete
+            invalidateUserPasskeyWraps($userId);
 
             return prepareExchangedData(
                 array(
@@ -4182,6 +4186,17 @@ function setUserOnlyPersonalItemsEncryption(string $userPreviousPwd, string $use
             AND skf.user_id = %i
             AND tp.increment_id IS NULL',
             TP_USER_ID,
+            $userId
+        );
+
+        // Remove all sharekeys for personal passkeys
+        DB::query(
+            'UPDATE ' . prefixTable('sharekeys_webauthn') . ' AS skw
+            INNER JOIN ' . prefixTable('webauthn_credentials') . ' AS w ON skw.object_id = w.id
+            INNER JOIN ' . prefixTable('items') . ' AS i ON w.item_id = i.id
+            SET skw.share_key = ""
+            WHERE i.perso = 1
+            AND skw.user_id = %i',
             $userId
         );
 

@@ -32,7 +32,6 @@ declare(strict_types=1);
 use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
-use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
 
@@ -82,9 +81,6 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
 // --------------------------------- //
 
-// Load tree
-$tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-
 // Ensure Complexity levels are translated
 if (defined('TP_PW_COMPLEXITY') === false) {
     define(
@@ -105,30 +101,6 @@ foreach (TP_PW_COMPLEXITY as $level) {
     $complexitySelect .= '<option value="' . $level[0] . '">' . $level[1] . '</option>';
 }
 $complexityHtml .= $complexitySelect . '</select></div>';
-
-/* Get full tree structure */
-$tst = $tree->getDescendants();
-// prepare options list
-$droplist = '<option value="na">---' . $lang->get('select') . '---</option>';
-if ((int) $session->get('user-admin') === 1 || (int) $session->get('user-manager') === 1 || (int) $session->get('user-can_create_root_folder') === 1) {
-    $droplist .= '<option value="0">' . $lang->get('root') . '</option>';
-}
-// Personal folders are not managed from this page: keep them out of the parent list.
-$personalFolderIds = getPersonalFolderIdsWithDescendants();
-
-foreach ($tst as $t) {
-    if (
-        in_array($t->id, $session->get('user-accessible_folders')) === true
-        && in_array((int) $t->id, $personalFolderIds, true) === false
-    ) {
-        $droplist .= '<option value="' . $t->id . '">' . addslashes($t->title);
-        $text = '';
-        foreach ($tree->getPath($t->id, false) as $fld) {
-            $text .= empty($text) === true ? '     [' . $fld->title : ' > ' . $fld->title;
-        }
-        $droplist .= (empty($text) === true ? '' : $text . '</i>]') . '</option>';
-    }
-}
 
 ?>
 
@@ -201,20 +173,21 @@ foreach ($tst as $t) {
                         </div>
                     </div>
 
-                <!-- Folder loading progress bar -->
+                <!-- Indeterminate progress while loading the folder snapshot -->
                 <div id="folders-load-progress" class="mt-2 mb-2" style="display:none">
                     <div class="progress" style="height:18px">
                         <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
-                            role="progressbar" style="width:0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                            role="progressbar" style="width:100%" aria-label="<?php echo htmlspecialchars($lang->get('loading'), ENT_QUOTES, 'UTF-8'); ?>"></div>
                     </div>
                     <small class="text-muted folders-load-text mt-1 d-block"></small>
                 </div>
 
-                    <table id="table-folders" class="table table-hover table-striped table-responsive" style="width:100%">
+                    <div class="table-responsive">
+                    <table id="table-folders" class="table table-hover table-striped" style="width:100%">
                         <thead>
                             <tr>
-                                <th scope="col" width="80px"></th>
-                                <th scope="col" min-width="200px"><?php echo $lang->get('group'); ?></th>
+                                <th scope="col" width="40px"></th>
+                                <th scope="col" class="pl-0" min-width="200px"><button type="button" class="tp-tree-toggle tp-tree-toggle-all" id="folders-toggle-all"><i class="fas fa-angles-down"></i></button><?php echo $lang->get('group'); ?></th>
                                 <th scope="col" min-width="200px"><?php echo $lang->get('group_parent'); ?></th>
                                 <th scope="col" width="50px"><i class="fas fa-gavel fa-lg infotip" title="<?php echo $lang->get('password_strength'); ?>"></i></th>
                                 <th scope="col" width="50px"><i class="fas fa-recycle fa-lg infotip" title="<?php echo $lang->get('group_pw_duration') . ' ' . $lang->get('group_pw_duration_tip'); ?>"></i></th>
@@ -229,6 +202,13 @@ foreach ($tst as $t) {
 
                         </tbody>
                     </table>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between mt-2">
+                        <small class="text-muted" id="folders-view-count" aria-live="polite"></small>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="folders-show-more" hidden>
+                            <?php echo htmlspecialchars($lang->get('folders_show_more'), ENT_QUOTES, 'UTF-8'); ?>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -255,7 +235,7 @@ foreach ($tst as $t) {
                 <div class="form-group">
                     <label for="new-parent"><?php echo $lang->get('parent'); ?></label>
                     <select id="new-parent" class="form-control form-item-control no-root" style="width:100%;">
-                        <?php echo $droplist; ?>
+                        <option value=""></option>
                     </select>
                 </div>
                 <div class="form-group">

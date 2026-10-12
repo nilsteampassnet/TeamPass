@@ -43,6 +43,7 @@ declare(strict_types=1);
 use TeampassClasses\Language\Language;
 
 require_once __DIR__ . '/admin_notices_logic.php';
+require_once __DIR__ . '/webauthn_login_logic.php';
 
 /**
  * TeamPass system accounts, excluded from every user-based maintenance check.
@@ -294,18 +295,23 @@ function adminNoticesCollectChecklist(array $SETTINGS, Language $lang): array
         ]);
     }
 
-    // Not a single MFA method enabled.
+    // Not a single MFA method enabled, or sign-in passkeys alone, which nothing imposes.
     $mfaEnabled = (int) ($SETTINGS['google_authentication'] ?? 0) === 1
         || (int) ($SETTINGS['yubico_authentication'] ?? 0) === 1
         || (int) ($SETTINGS['duo'] ?? 0) === 1
         || (int) ($SETTINGS['agses_authentication_enabled'] ?? 0) === 1;
-    if ($mfaEnabled === false) {
+    $mfaNotice = adminNoticesMfaRecommendation(
+        $mfaEnabled,
+        webauthnLoginMode($SETTINGS) !== TP_WEBAUTHN_LOGIN_MODE_DISABLED
+    );
+    if ($mfaNotice !== '') {
+        $passkeysOnly = $mfaNotice === 'checklist_mfa_passkeys_only';
         $notices[] = adminNoticeBuild([
-            'id' => 'checklist_mfa',
+            'id' => $mfaNotice,
             'severity' => 'info',
-            'icon' => 'fa-solid fa-mobile-screen-button',
-            'title' => $lang->get('admin_checklist_mfa'),
-            'description' => $lang->get('admin_checklist_mfa_desc'),
+            'icon' => $passkeysOnly === true ? 'fa-solid fa-fingerprint' : 'fa-solid fa-mobile-screen-button',
+            'title' => $lang->get($passkeysOnly === true ? 'admin_checklist_mfa_passkeys_only' : 'admin_checklist_mfa'),
+            'description' => $lang->get($passkeysOnly === true ? 'admin_checklist_mfa_passkeys_only_desc' : 'admin_checklist_mfa_desc'),
             'action' => adminNoticeActionLink('index.php?page=2fa', $lang->get('open')),
             'dismissible' => true,
         ]);

@@ -33,6 +33,7 @@
 - [Profile](features/profile.md)
 - [Knowledge Base](features/knowledge-base.md)
 - [Security Posture](features/security-posture.md)
+- [Passkeys](features/passkeys.md)
 - [Password Rotation (LAPR)](features/lapr.md)
 - [Notification Centre](features/notification-center.md)
 - [Real-time Collaboration](features/collaboration.md)
@@ -40,6 +41,7 @@
 - [Leaver Risk](features/leaver-risk.md)
 - [Classification](features/classification.md)
 - **Manage**
+- [Administrator live activity](manage/admin-live-activity.md)
 - [Settings](manage/settings.md)
 - [Email templates](manage/email-templates.md)
 - [Compliance Reports](manage/compliance-reports.md)

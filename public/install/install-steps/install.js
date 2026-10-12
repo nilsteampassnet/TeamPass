@@ -325,7 +325,11 @@ function performStep5() {
         { id: 'check77', action: 'lapr_audit_log' },
         { id: 'check78', action: 'lapr_rate_limit' },
         { id: 'check79', action: 'items_revisions' },
-        { id: 'check80', action: 'api_idempotency' }
+        { id: 'check80', action: 'api_idempotency' },
+        { id: 'check81', action: 'webauthn_credentials' },
+        { id: 'check82', action: 'sharekeys_webauthn' },
+        { id: 'check83', action: 'user_webauthn_credentials' },
+        { id: 'check84', action: 'secure_send_audit' }
     ];
     
     let errorOccurred = false; // Variable to track errors

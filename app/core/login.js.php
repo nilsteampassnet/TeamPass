@@ -42,6 +42,23 @@ declare(strict_types=1);
     var debugJavascript = false;
     var mfaStepPending = false;
     var cachedMfaData = null;
+    // Passkey second factor: the options the server sent and the submission to replay with
+    // the assertion, kept until the ceremony succeeds so a click can start it again.
+    var webauthnMfaPending = null;
+    // Passwordless sign-in: the challenge is fetched ahead of the click, so that the click itself
+    // starts the ceremony - a gesture some browsers require. One the browser refused to use is
+    // kept here too, for the next click to sign.
+    var passwordlessLoginPending = null;
+    // The request for that challenge while it is on its way: one at a time, since the server only
+    // keeps the last challenge it handed out.
+    var passwordlessChallengeRequest = null;
+    var passwordlessChallengeAskedAt = 0;
+    // Turned off once the server refuses to hand out a challenge: nothing to fetch ahead.
+    var passwordlessPrefetchEnabled = true;
+    // An older challenge is replaced, not signed: the server forgets it 300 seconds after handing
+    // it out (TP_WEBAUTHN_LOGIN_CEREMONY_TTL), and the browser gives the user up to 120 seconds
+    // to answer (TP_WEBAUTHN_LOGIN_TIMEOUT_MS).
+    const passwordlessChallengeMaxAge = 150000;
     var loginInProgress = false;
     var loginNavigationPending = false;
     var loginReadOnlyFields = null;
@@ -307,6 +324,7 @@ declare(strict_types=1);
     function resetMfaStep() {
         mfaStepPending = false;
         cachedMfaData = null;
+        webauthnMfaPending = null;
         $('#2fa_user_selection').val('');
         $('#2fa_methods_selector').addClass('hidden');
         $('.div-2fa-method').addClass('hidden');
@@ -488,6 +506,41 @@ declare(strict_types=1);
             store.set('userOauth2Info', '');
             launchIdentify(false, '<?php echo isset($nextUrl) === true ? $nextUrl : ''; ?>');
         });
+
+        // Passkey second factor. Without a pending challenge the button asks the server for
+        // one; with it, the click starts the ceremony itself, as a gesture Safari requires.
+        $('#webauthn-2fa-button').click(function() {
+            if (loginInProgress === true || loginNavigationPending === true) {
+                return;
+            }
+            if (webauthnMfaPending === null) {
+                launchIdentify(false, '<?php echo isset($nextUrl) === true ? $nextUrl : ''; ?>');
+                return;
+            }
+            beginLoginAttempt();
+            $.when(runWebauthnSecondFactor(false)).then(finishLoginAttempt, function() {
+                finishLoginAttempt();
+                showLoginRequestError();
+            });
+        });
+
+        // Passwordless sign-in with a passkey. Browsers only run passkeys in a secure context
+        // (HTTPS or localhost): elsewhere the button could only fail.
+        if (window.isSecureContext !== true) {
+            $('#but_login_with_passkey').addClass('hidden');
+        }
+        $('#but_login_with_passkey').click(function() {
+            if (debugJavascript === true) {
+                console.log('User starts a passwordless sign-in with a passkey');
+            }
+            launchPasswordlessLogin();
+        });
+        // Fetch the challenge ahead of that click, and keep one ready while the page is looked at
+        if ($('#but_login_with_passkey').length > 0 && window.isSecureContext === true) {
+            prefetchPasswordlessChallenge();
+            setInterval(prefetchPasswordlessChallenge, 30000);
+            $(document).on('visibilitychange', prefetchPasswordlessChallenge);
+        }
 
         // Click on log in button with Azure Entra
         if($("#but_login_with_oauth2").length > 0) {
@@ -1114,6 +1167,8 @@ declare(strict_types=1);
                     mfaMethod = 'duo';
                 } else if (availableMfaMethods.yubico === true) {
                     mfaMethod = 'yubico';
+                } else if (availableMfaMethods.webauthn === true) {
+                    mfaMethod = 'webauthn';
                 }
             }
         }
@@ -1192,6 +1247,10 @@ declare(strict_types=1);
         // decoded payload, making the arguments unreachable from inside it.
         const replayIdentify = function() {
             return identifyUser(redirect, psk, data, randomstring, oauth2Info);
+        };
+        // The passkey second factor answers the challenge with the same submission
+        const replayWithWebauthnAssertion = function(assertion) {
+            return identifyUser(redirect, psk, Object.assign({}, data, { webauthn_assertion: assertion }), randomstring, oauth2Info);
         };
 
         //send query
@@ -1430,6 +1489,14 @@ declare(strict_types=1);
                             timeOut: 1000
                         }
                     );
+                } else if (data.error === false && typeof data.webauthn_options === 'object' && data.webauthn_options !== null) {
+                    // Passkey as a second factor: the server sent its challenge
+                    webauthnMfaPending = {
+                        options: data.webauthn_options,
+                        replay: replayWithWebauthnAssertion
+                    };
+                    $('#div-2fa-webauthn').removeClass('hidden');
+                    return runWebauthnSecondFactor(true);
                 } else if(data.error === false && data.duo_url_ready === true) {
                     loginNavigationPending = true;
                     toastr.remove();
@@ -1448,37 +1515,7 @@ declare(strict_types=1);
                         500
                     );
                 } else if (data.value === randomstring) {
-                    // Update session
-                    store.update(
-                        'teampassUser', {},
-                        function(teampassUser) {
-                            teampassUser.sessionDuration = 3600;
-                            teampassUser.sessionStartTimestamp = Date.now();
-                            teampassUser.sessionKey = data.session_key;
-                            teampassUser.user_id = data.user_id;
-                            teampassUser.user_has_psk = data.has_psk;
-                            teampassUser.special = data.special;
-                            teampassUser.auth_type = '';
-                            teampassUser.location_stored = 0;
-                            teampassUser.mfaSelector = false;
-                            teampassUser.mfaCode = '';
-                            teampassUser.page_reload = 0;
-                            teampassUser.split_view_mode = data.split_view_mode;
-                            teampassUser.show_subfolders = data.show_subfolders;
-                            teampassUser.validite_pw = data.validite_pw === true ? 1 : 0;
-                            teampassUser.num_days_before_exp = data.num_days_before_exp;
-                        }
-                    );
-
-                    //redirection for admin is specific
-                    loginNavigationPending = true;
-                    if (parseInt(data.user_admin) === 1) {
-                        window.location.href = './index.php?page=admin';
-                    } else if (data.initial_url !== '' && data.initial_url !== null) {
-                        window.location.href = data.initial_url;
-                    } else {
-                        window.location.href = './index.php?page=items';
-                    }
+                    completeSignIn(data);
                 }
 
                 // Clear Yubico
@@ -1487,6 +1524,367 @@ declare(strict_types=1);
                 }
             }
         );
+    }
+
+    /**
+     * Store the new session and leave the login page, after a password or a passkey sign-in.
+     *
+     * @param {object} data Successful answer of identify.php.
+     * @returns {void}
+     */
+    function completeSignIn(data) {
+        // Update session
+        store.update(
+            'teampassUser', {},
+            function(teampassUser) {
+                teampassUser.sessionDuration = 3600;
+                teampassUser.sessionStartTimestamp = Date.now();
+                teampassUser.sessionKey = data.session_key;
+                teampassUser.user_id = data.user_id;
+                teampassUser.user_has_psk = data.has_psk;
+                teampassUser.special = data.special;
+                teampassUser.auth_type = '';
+                teampassUser.location_stored = 0;
+                teampassUser.mfaSelector = false;
+                teampassUser.mfaCode = '';
+                teampassUser.page_reload = 0;
+                teampassUser.split_view_mode = data.split_view_mode;
+                teampassUser.show_subfolders = data.show_subfolders;
+                teampassUser.validite_pw = data.validite_pw === true ? 1 : 0;
+                teampassUser.num_days_before_exp = data.num_days_before_exp;
+            }
+        );
+
+        //redirection for admin is specific
+        loginNavigationPending = true;
+        if (parseInt(data.user_admin) === 1) {
+            window.location.href = './index.php?page=admin';
+        } else if (data.initial_url !== '' && data.initial_url !== null) {
+            window.location.href = data.initial_url;
+        } else {
+            window.location.href = './index.php?page=items';
+        }
+    }
+
+    /**
+     * Sign in with a passkey alone. The server picks nothing: the browser offers the passkeys
+     * saved for this site, and the account is the one the chosen passkey belongs to.
+     *
+     * @returns {object|boolean} Sign-in promise, or false when nothing was started.
+     */
+    function launchPasswordlessLogin() {
+        if (loginInProgress === true || loginNavigationPending === true) {
+            return false;
+        }
+        if (typeof window.tpWebauthnLogin === 'undefined' || window.tpWebauthnLogin.supported() !== true) {
+            toastr.remove();
+            toastr.error(
+                <?php echo json_encode($lang->get('webauthn_login_browser_unsupported'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+                <?php echo json_encode($lang->get('caution'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>, {
+                    timeOut: 10000,
+                    progressBar: true,
+                    positionClass: 'toast-bottom-right'
+                }
+            );
+            return false;
+        }
+
+        beginLoginAttempt();
+        // A challenge already at hand is signed straight from this click; otherwise ask for one first
+        const pending = takePasswordlessChallenge();
+        const started = pending !== null
+            ? runPasswordlessCeremony(pending)
+            : signNewPasswordlessChallenge();
+
+        return $.when(started).then(function() {
+            finishLoginAttempt();
+            // The attempt used its challenge up: have the next one ready
+            prefetchPasswordlessChallenge(true);
+        }, function() {
+            finishLoginAttempt();
+            showLoginRequestError();
+        });
+    }
+
+    /**
+     * Read a server answer without any dialog: what runs in the background fails silently.
+     *
+     * @param {*} answer Raw answer of identify.php.
+     * @returns {object|null} Decoded answer, null when it cannot be read.
+     */
+    function decodeAnswerSilently(answer) {
+        try {
+            if (typeof answer === 'string') {
+                const plain = parseInt($('#encryptClientServerStatus').val()) === 1
+                    ? (new Encryption()).decrypt(answer, tpSessionKey)
+                    : answer;
+                if (safeParseJSONMaybe(plain).ok !== true) {
+                    return null;
+                }
+            }
+            const data = prepareExchangedData(answer, 'decode', tpSessionKey);
+            return data !== null && typeof data === 'object' ? data : null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    /**
+     * Tell whether the passwordless challenge at hand can still be signed.
+     *
+     * @returns {boolean}
+     */
+    function passwordlessChallengeIsFresh() {
+        return passwordlessLoginPending !== null &&
+            (Date.now() - passwordlessLoginPending.fetchedAt) < passwordlessChallengeMaxAge;
+    }
+
+    /**
+     * Take the passwordless challenge at hand: each one is signed once.
+     *
+     * @returns {object|null} The challenge, null when there is none or it is too old.
+     */
+    function takePasswordlessChallenge() {
+        const pending = passwordlessChallengeIsFresh() === true ? passwordlessLoginPending : null;
+        passwordlessLoginPending = null;
+        return pending;
+    }
+
+    /**
+     * Ask the server for a passwordless challenge and keep it at hand. A request already on its
+     * way is shared: the server only remembers the last challenge it handed out.
+     *
+     * @returns {object} Promise of the decoded answer, null when it cannot be read.
+     */
+    function requestPasswordlessChallenge() {
+        if (passwordlessChallengeRequest !== null) {
+            return passwordlessChallengeRequest;
+        }
+        passwordlessChallengeAskedAt = Date.now();
+        const request = $.when(sessionKeyCheckRequest).then(function() {
+            return $.post('sources/identify.php', { type: 'webauthn_login_options' });
+        }).then(function(answer) {
+            const start = decodeAnswerSilently(answer);
+            if (start !== null && start.error !== false) {
+                passwordlessPrefetchEnabled = false;
+            }
+            passwordlessLoginPending = start !== null && start.error === false ? {
+                options: start.options,
+                prfInput: start.prf_input,
+                randomstring: CreateRandomString(10),
+                fetchedAt: Date.now(),
+                ahead: true
+            } : null;
+            return start;
+        });
+        const release = function() {
+            if (passwordlessChallengeRequest === request) {
+                passwordlessChallengeRequest = null;
+            }
+        };
+        passwordlessChallengeRequest = request;
+        request.then(release, release);
+        return request;
+    }
+
+    /**
+     * Have a passwordless challenge ready before the passkey button is clicked. Silent: without
+     * it, the click asks for one itself.
+     *
+     * @param {boolean} force Fetch even though one was asked for a moment ago.
+     * @returns {void}
+     */
+    function prefetchPasswordlessChallenge(force) {
+        if (passwordlessPrefetchEnabled !== true || loginInProgress === true || loginNavigationPending === true ||
+            document.visibilityState === 'hidden' || passwordlessChallengeIsFresh() === true ||
+            typeof window.tpWebauthnLogin === 'undefined' || window.tpWebauthnLogin.supported() !== true
+        ) {
+            return;
+        }
+        if (force !== true && (Date.now() - passwordlessChallengeAskedAt) < passwordlessChallengeMaxAge) {
+            return;
+        }
+        const ignore = function() {};
+        requestPasswordlessChallenge().then(ignore, ignore);
+    }
+
+    /**
+     * Ask for a passwordless challenge and sign it at once, when none was at hand.
+     *
+     * @returns {object} Promise settled once the server answered or the ceremony failed.
+     */
+    function signNewPasswordlessChallenge() {
+        return requestPasswordlessChallenge().then(function(start) {
+            const pending = takePasswordlessChallenge();
+            if (pending === null) {
+                toastr.remove();
+                toastr.error(
+                    start !== null && start.message
+                        ? start.message
+                        : <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+                    <?php echo json_encode($lang->get('caution'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>, {
+                        timeOut: 10000,
+                        progressBar: true,
+                        positionClass: 'toast-bottom-right'
+                    }
+                );
+                return false;
+            }
+            // Asked for this very attempt: the server still holds it if the session key is renewed
+            pending.ahead = false;
+            return runPasswordlessCeremony(pending);
+        });
+    }
+
+    /**
+     * Sign the passwordless challenge, then send the assertion and the PRF output that opens the
+     * passkey's copy of the private key.
+     *
+     * @param {object} pending Challenge options, PRF input and the nonce of this attempt.
+     * @returns {object} Promise settled once the server answered or the ceremony failed.
+     */
+    function runPasswordlessCeremony(pending) {
+        toastr.remove();
+        toastr.info(<?php echo json_encode($lang->get('webauthn_login_2fa_touch'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>, '', {
+            positionClass: 'toast-top-center'
+        });
+        return window.tpWebauthnLogin.assert(pending.options, pending.prfInput).then(function(result) {
+            // Encoded at each call, so that a replay after a key renewal uses the new key
+            const sendAssertion = function() {
+                return $.post('sources/identify.php', {
+                    type: 'webauthn_login_verify',
+                    data: prepareExchangedData(JSON.stringify({
+                        credential: result.credential,
+                        prf_output: result.prf_output,
+                        randomstring: pending.randomstring,
+                        duree_session: $('#session_duration').val(),
+                        screenHeight: $('body').innerHeight(),
+                        TimezoneOffset: new Date().getTimezoneOffset() * 60,
+                        client: ''
+                    }), 'encode', tpSessionKey)
+                }).then(handleAnswer);
+            };
+            const handleAnswer = function(answer) {
+                // The page outlived the server-side session: renew the key and send the same
+                // assertion again. The server answered before taking the challenge, still pending.
+                if (isStaleSessionKeyAnswer(answer) === true) {
+                    if (pending.ahead === true) {
+                        // Fetched ahead of the click, the challenge went with the session that held it
+                        return recoverFromStaleSessionKey(signNewPasswordlessChallenge);
+                    }
+                    return recoverFromStaleSessionKey(sendAssertion);
+                }
+
+                // The answer is exploitable: allow a future recovery again.
+                sessionKeyRecoveryDone = false;
+
+                const data = prepareExchangedData(answer, 'decode', tpSessionKey);
+                if (data.value === pending.randomstring) {
+                    completeSignIn(data);
+                    return true;
+                }
+                // Same notice as the password sign-in: this refusal carries no message
+                if (data.error === 'maintenance_mode_enabled') {
+                    toastr.remove();
+                    toastr.warning(
+                        <?php echo json_encode($lang->get('index_maintenance_mode_admin'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+                        <?php echo json_encode($lang->get('caution'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>, {
+                            timeOut: 0,
+                            positionClass: 'toast-bottom-right'
+                        }
+                    );
+                    return false;
+                }
+                // Deleted from TeamPass, still on the device: let its passkey manager drop it
+                if (data.unknown_credential === true && typeof window.tpWebauthnLogin.signalUnknown === 'function') {
+                    window.tpWebauthnLogin.signalUnknown(pending.options.rpId, result.credential.rawId);
+                }
+                toastr.remove();
+                toastr.error(data.message, <?php echo json_encode($lang->get('caution'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>, {
+                    timeOut: 10000,
+                    progressBar: true,
+                    positionClass: 'toast-bottom-right'
+                });
+                return false;
+            };
+            return sendAssertion();
+        }, function(error) {
+            // Keep the challenge: some browsers only run a ceremony started by a click
+            pending.ahead = true;
+            passwordlessLoginPending = pending;
+            const kind = window.tpWebauthnLogin.errorKind(error);
+            const messages = {
+                cancelled: <?php echo json_encode($lang->get('webauthn_login_2fa_retry_passwordless'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+                security: <?php echo json_encode($lang->get('webauthn_login_security_error'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+                failed: <?php echo json_encode($lang->get('webauthn_login_verification_failed'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>
+            };
+            toastr.remove();
+            toastr[kind === 'cancelled' ? 'info' : 'error'](messages[kind] || messages.failed, '', {
+                timeOut: 10000,
+                progressBar: true,
+                positionClass: 'toast-bottom-right'
+            });
+            return false;
+        });
+    }
+
+    /**
+     * Sign the challenge of the passkey second factor, then replay the submission with the
+     * assertion. When the browser refuses a ceremony that no click started (Safari does), the
+     * options are kept and the passkey button starts it again.
+     *
+     * @param {boolean} automatic Whether the ceremony follows a server answer rather than a click.
+     * @returns {object|boolean} Authentication promise, or false when nothing was submitted.
+     */
+    function runWebauthnSecondFactor(automatic) {
+        const pending = webauthnMfaPending;
+        if (pending === null) {
+            return false;
+        }
+        if (typeof window.tpWebauthnLogin === 'undefined' || window.tpWebauthnLogin.supported() !== true) {
+            toastr.remove();
+            toastr.error(
+                <?php echo json_encode($lang->get('webauthn_login_browser_unsupported'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+                <?php echo json_encode($lang->get('caution'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>, {
+                    timeOut: 10000,
+                    progressBar: true,
+                    positionClass: 'toast-bottom-right'
+                }
+            );
+            return false;
+        }
+
+        toastr.remove();
+        toastr.info(
+            <?php echo json_encode($lang->get('webauthn_login_2fa_touch'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+            '', {
+                positionClass: 'toast-top-center'
+            }
+        );
+        return window.tpWebauthnLogin.assert(pending.options, '').then(function(result) {
+            webauthnMfaPending = null;
+            return pending.replay(result.credential);
+        }, function(error) {
+            const kind = window.tpWebauthnLogin.errorKind(error);
+            const messages = {
+                cancelled: automatic === true
+                    ? <?php echo json_encode($lang->get('webauthn_login_2fa_retry'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>
+                    : <?php echo json_encode($lang->get('webauthn_login_cancelled'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+                security: <?php echo json_encode($lang->get('webauthn_login_security_error'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+                failed: <?php echo json_encode($lang->get('webauthn_login_verification_failed'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>
+            };
+            toastr.remove();
+            toastr[kind === 'cancelled' ? 'info' : 'error'](
+                messages[kind] || messages.failed,
+                '', {
+                    timeOut: 10000,
+                    progressBar: true,
+                    positionClass: 'toast-bottom-right'
+                }
+            );
+            $('#webauthn-2fa-button').focus();
+            return false;
+        });
     }
 
     /**
@@ -1639,7 +2037,8 @@ declare(strict_types=1);
         var twoFaMethods = (data.google === true ? 1 : 0) +
             (data.agses === true ? 1 : 0) +
             (data.duo === true ? 1 : 0) +
-            (data.yubico === true ? 1 : 0);
+            (data.yubico === true ? 1 : 0) +
+            (data.webauthn === true ? 1 : 0);
 
         if (twoFaMethods > 1) {
             // Multiple methods - show selector
@@ -1658,6 +2057,18 @@ declare(strict_types=1);
                 group: false,
                 autowidth: true
             });
+
+            // The page renders every method the instance enables, but a passkey is only
+            // offered to an account that has one: hide what this account cannot use.
+            var methodRadios = $('.2fa_selector_select');
+            for (var methodIndex = 0; methodIndex < methodRadios.length; methodIndex++) {
+                var methodButton = $('.radiosforbuttons-2fa_selector_select').eq(methodIndex);
+                if (data[methodRadios.eq(methodIndex).data('mfa')] === true) {
+                    methodButton.removeClass('hidden');
+                } else {
+                    methodButton.addClass('hidden');
+                }
+            }
 
             // Handle click
             $('.radiosforbuttons-2fa_selector_select')
@@ -1685,6 +2096,8 @@ declare(strict_types=1);
                         $('#ga_code').focus();
                     } else if (twofaMethod === 'yubico') {
                         $('#yubico_key').focus();
+                    } else if (twofaMethod === 'webauthn') {
+                        $('#webauthn-2fa-button').focus();
                     }
                 });
         } else if (twoFaMethods === 1) {
@@ -1703,6 +2116,10 @@ declare(strict_types=1);
                 $('#2fa_user_selection').val('duo');
                 $('#div-2fa-duo').removeClass('hidden');
                 return true;
+            } else if (data.webauthn === true) {
+                $('#2fa_user_selection').val('webauthn');
+                $('#div-2fa-webauthn').removeClass('hidden');
+                $('#webauthn-2fa-button').focus();
             }
         }
         return false;

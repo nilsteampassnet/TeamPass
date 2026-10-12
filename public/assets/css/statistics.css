@@ -192,6 +192,102 @@
     padding: 0.35rem 0.5rem;
 }
 
+/* Secure Send: keep presentation local to its card, including dark-mode colors. */
+#tp-secure-send-card .tp-secure-send-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+#tp-secure-send-card .tp-secure-send-kpis > div {
+    border: 1px solid #e4e7ec;
+    border-radius: 0.25rem;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: 0.85rem;
+}
+
+#tp-secure-send-card .tp-secure-send-kpis dt {
+    font-size: 0.85rem;
+    font-weight: 600;
+    line-height: 1.4;
+    margin-bottom: 0.5rem;
+}
+
+#tp-secure-send-card .tp-secure-send-kpis dd {
+    color: #117a8b;
+    margin-top: auto;
+    overflow-wrap: anywhere;
+}
+
+#tp-secure-send-card [data-tp-secure-send-count],
+#tp-secure-send-card .tp-secure-send-senders-table td {
+    font-variant-numeric: tabular-nums;
+}
+
+#tp-secure-send-card .tp-secure-send-breakdown dt {
+    font-weight: 500;
+}
+
+#tp-secure-send-card .tp-secure-send-senders-table {
+    min-width: 500px;
+}
+
+#tp-secure-send-card .tp-secure-send-senders-table th,
+#tp-secure-send-card .tp-secure-send-senders-table td {
+    vertical-align: middle;
+}
+
+#tp-secure-send-card .tp-secure-send-senders-table th:first-child {
+    overflow-wrap: anywhere;
+    width: 40%;
+}
+
+#tp-secure-send-card .tp-secure-send-senders-table tbody th {
+    font-weight: 400;
+}
+
+#tp-secure-send-card .tp-secure-send-senders-table .badge {
+    white-space: normal;
+}
+
+#tp-secure-send-status:not([hidden]) {
+    border: 1px dashed #adb5bd;
+    border-radius: 0.25rem;
+    padding: 1rem;
+}
+
+.dark-mode #tp-secure-send-card .tp-secure-send-kpis > div {
+    border-color: #6c757d;
+}
+
+.dark-mode #tp-secure-send-card .tp-secure-send-kpis dd {
+    color: #3fc0d1;
+}
+
+@media (max-width: 991.98px) {
+    #tp-secure-send-card .tp-secure-send-kpis {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 575.98px) {
+    #tp-secure-send-card .card-tools {
+        float: none;
+        clear: both;
+        padding-top: 0.5rem;
+    }
+
+    #tp-secure-send-card .card-body {
+        padding: 0.75rem;
+    }
+
+    #tp-secure-send-card .tp-secure-send-kpis > div {
+        padding: 0.65rem;
+    }
+}
+
 @media (max-width: 991.98px) {
     #tp-operational-stats-card .card-tools {
         float: none;

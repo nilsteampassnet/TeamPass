@@ -690,7 +690,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     }
 
                     $('#restore_missing_sharekeys_results').append('<div class="alert alert-info" id="restore_missing_sharekeys_progress"></div>');
-                    restoreSharekeysSeedScope(['items', 'fields', 'files'], 0, {checked: 0, seeded: 0, replaced: 0, failed: 0});
+                    restoreSharekeysSeedScope(['items', 'fields', 'files', 'webauthn'], 0, {checked: 0, seeded: 0, replaced: 0, failed: 0});
                 }
             );
         }

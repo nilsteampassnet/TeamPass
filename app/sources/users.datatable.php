@@ -41,6 +41,7 @@ use voku\helper\AntiXSS;
 
 // Load functions
 require_once 'main.functions.php';
+require_once __DIR__ . '/webauthn_login.functions.php';
 
 // init
 loadClasses('DB');
@@ -230,6 +231,11 @@ if (DB::count() > 0) {
     $sOutput .= '';
 }
 
+// Sign-in passkeys of the listed accounts, counted in one query for the whole page
+$passkeyCounts = webauthnLoginMode($SETTINGS) !== TP_WEBAUTHN_LOGIN_MODE_DISABLED
+    ? webauthnLoginCountsByUser(array_column($rows, 'id'), webauthnLoginRpId($SETTINGS))
+    : [];
+
 foreach ($rows as $record) {
     //Show user only if can be administrated by the adapted Roles manager
     // Uses $arrUserRoles (filtered, consistent with the SQL WHERE clause) instead of the
@@ -295,6 +301,23 @@ foreach ($rows as $record) {
                 )
             .
             (($unlock_at) ? '<i class=\"fas fa-solid text-red fa-lock infotip text-info ml-1\" title=\"'.$lang->get('bruteforce_unlock_at').$unlock_at.'\"></i>' : '');
+        // Sign-in passkeys: how many the account holds, and whether a sign-in asks for one
+        $passkeyBadge = webauthnLoginUsersBadge(
+            $SETTINGS,
+            (int) $record['mfa_enabled'],
+            $passkeyCounts[(int) $record['id']]['passkeys'] ?? 0,
+            $passkeyCounts[(int) $record['id']]['passwordless'] ?? 0
+        );
+        $passkeyIcon = '';
+        if ($passkeyBadge !== null) {
+            $passkeyTitle = $lang->get('webauthn_login_passkeys') . ': ' . $passkeyBadge['count']
+                . ($passkeyBadge['passwordless'] > 0 ? ' — ' . $lang->get('webauthn_login_passwordless_badge') . ': ' . $passkeyBadge['passwordless'] : '')
+                . ($passkeyBadge['asked'] === false ? ' — ' . $lang->get('webauthn_login_users_not_asked') : '');
+            $passkeyIcon = '<span class=\"badge ' . ($passkeyBadge['asked'] === true ? 'badge-info' : 'badge-warning') . ' infotip ml-2\" title=\"'
+                . htmlspecialchars($passkeyTitle, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
+                . '\"><i class=\"fa-solid fa-fingerprint mr-1\"></i>' . $passkeyBadge['count'] . '</span>';
+        }
+
         // Inactive users management icon (yellow card)
         $iumIcon = '';
         if ((int) $record['admin'] !== 1 && in_array($record['id'], [OTV_USER_ID, TP_USER_ID, SSH_USER_ID, API_USER_ID]) === false) {
@@ -340,6 +363,7 @@ foreach ($rows as $record) {
             $iumIcon.
             '<span data-id=\"'.$record['id'].'\" data-field=\"login\" data-html=\"true\" id=\"user-login-'.$record['id'].'\">'.addslashes(str_replace("'", '&lsquo;', $record['login'])).'</span>'.
             $userDisplayInfos.
+            $passkeyIcon.
             (is_null($record['ongoing_process_id']) === false ? '<i class=\"fas fa-hourglass-half fa-beat-fade infotip text-warning ml-3\" title=\"'.$lang->get('task_in_progress_user_not_active').'\"></i>' : '').
             '" , ';
         //col3

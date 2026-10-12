@@ -30,6 +30,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
+require_once __DIR__.'/../sources/secure_send_retention.php';
 
 // init
 loadClasses('DB');
@@ -66,14 +67,25 @@ $prunedRevisions = pruneItemRevisionsJournal(
 );
 $prunedIdempotencyRecords = pruneApiIdempotencyRecords();
 
+$prunedSecureSendEvents = 0;
+$secureSendRetentionFailed = false;
+try {
+    $prunedSecureSendEvents = secureSendPruneAuditHistory($SETTINGS);
+} catch (Throwable $e) {
+    $secureSendRetentionFailed = true;
+    error_log(secureSendRetentionFailureDiagnostic($e));
+}
+
 // log end
-doLog('completed', '', 1, $logID);
+doLog($secureSendRetentionFailed ? 'error' : 'completed', '', 1, $logID);
 
 echo sprintf(
-    'Items integrity scan completed: %d active corrupted item(s). %d journal entry(ies) pruned. %d API idempotency record(s) pruned.',
+    'Items integrity scan completed: %d active corrupted item(s). %d journal entry(ies) pruned. %d API idempotency record(s) pruned. %d Secure Send audit event(s) pruned.%s',
     (int) ($integritySummary['count'] ?? 0),
     $prunedRevisions,
-    $prunedIdempotencyRecords
+    $prunedIdempotencyRecords,
+    $prunedSecureSendEvents,
+    $secureSendRetentionFailed ? ' Secure Send retention failed; no audit batch was committed.' : ''
 );
 
 /**
@@ -111,6 +123,19 @@ function cleanOrphanObjectsAndScanIntegrity(): array
         LEFT JOIN ' . prefixTable('categories_items') . ' c ON k.object_id = c.id
         LEFT JOIN ' . prefixTable('items') . ' i ON c.item_id = i.id
         WHERE c.id IS NULL OR i.id IS NULL'
+    );
+
+    // Delete all passkeys whose item no longer exists, then the keys left without a passkey
+    DB::query(
+        'DELETE w.* FROM ' . prefixTable('webauthn_credentials') . ' w
+        LEFT JOIN ' . prefixTable('items') . ' i ON w.item_id = i.id
+        WHERE i.id IS NULL'
+    );
+    DB::query(
+        'DELETE k.* FROM ' . prefixTable('sharekeys_webauthn') . ' k
+        LEFT JOIN ' . prefixTable('webauthn_credentials') . ' w ON k.object_id = w.id
+        LEFT JOIN ' . prefixTable('users') . ' u ON k.user_id = u.id
+        WHERE w.id IS NULL OR u.id IS NULL'
     );
 
     // Delete all item logs for which no user exist

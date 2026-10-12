@@ -2,6 +2,15 @@
 
 declare(strict_types=1);
 
+/**
+ * Teampass - a collaborative passwords manager.
+ * ---
+ * @file      RuntimeFilesTest.php
+ * @author    Teampass Community
+ * @copyright 2009-2026 Teampass.net
+ * @license   GPL-3.0
+ */
+
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Process\Process;
@@ -282,6 +291,180 @@ PHP);
         self::assertSame(0400, fileperms($path) & 0777);
     }
 
+    /** Reading the status of an installation without a scan never creates a lock. */
+    public function testStatusOfMissingScanLockDoesNotCreateIt(): void
+    {
+        $path = tpFileIntegrityLockPath($this->root);
+        $probeFailed = true;
+        self::assertFalse(tpFileIntegrityIsRunning($this->root, $probeFailed));
+        self::assertFalse($probeFailed);
+        self::assertFileDoesNotExist($path);
+    }
+
+    /** A completed scan on NFS must not look busy merely because its lock file remains. */
+    public function testCompletedScanIsIdleWithNfsLockSemantics(): void
+    {
+        $path = tpFileIntegrityLockPath($this->root);
+        $probe = $this->runRuntimeProbe($path, <<<'PHP'
+if (function_exists('flock')) {
+    throw new RuntimeException('The NFS locking fixture was not enabled.');
+} else {
+    function flock($stream, int $operation, &$wouldBlock = null): bool {
+        $wouldBlock = 0;
+        $mode = stream_get_meta_data($stream)['mode'];
+        // Linux emulates flock over NFS with fcntl: exclusive locks need write access.
+        if (($operation & ~LOCK_NB) === LOCK_EX && strpbrk($mode, '+wac') === false) {
+            return false;
+        }
+        return true;
+    }
+}
+$root = dirname(dirname(dirname($path)));
+$reference = $root . '/app/files_reference.txt';
+file_put_contents($reference, 'app/known.txt ' . md5('known') . "\n");
+file_put_contents($root . '/app/known.txt', 'known');
+$report = tpFileIntegrityScan($root, $reference, true, false);
+tpFileIntegritySaveReport($root, $report);
+$before = file_get_contents($path);
+$summary = tpFileIntegrityLoadSummary($root);
+echo json_encode([
+    'has_result' => $summary['has_result'],
+    'running' => $summary['running'],
+    'status' => $summary['status'],
+    'lock_probe_failed' => $summary['lock_probe_failed'] ?? null,
+    'lock_present' => is_file($path),
+    'lock_unchanged' => $before !== '' && file_get_contents($path) === $before,
+]);
+PHP, ['-d', 'disable_functions=flock']);
+        self::assertSame([
+            'has_result' => true,
+            'running' => false,
+            'status' => 'success',
+            'lock_probe_failed' => false,
+            'lock_present' => true,
+            'lock_unchanged' => true,
+        ], json_decode($probe->getOutput(), true));
+        self::assertSame('', $probe->getErrorOutput());
+    }
+
+    /** A failed lock operation is an error, not evidence of an active scanner. */
+    public function testStatusReportsLockFailureWithoutPretendingAScanIsRunning(): void
+    {
+        $path = tpFileIntegrityLockPath($this->root);
+        self::assertSame(5, file_put_contents($path, '12345'));
+        $probe = $this->runRuntimeProbe($path, <<<'PHP'
+if (function_exists('flock')) {
+    throw new RuntimeException('The lock failure fixture was not enabled.');
+} else {
+    function flock($stream, int $operation, &$wouldBlock = null): bool {
+        $wouldBlock = 0;
+        // Fail only the scan-lock probe; the persisted summary remains readable.
+        return stream_get_meta_data($stream)['uri'] !== $GLOBALS['path'];
+    }
+}
+$probeFailed = false;
+$root = dirname(dirname(dirname($path)));
+$reference = $root . '/app/files_reference.txt';
+file_put_contents($reference, '');
+$report = tpFileIntegrityDefaultReport();
+$report['has_result'] = true;
+$report['status'] = 'success';
+$report['reference_hash'] = hash_file('sha256', $reference);
+file_put_contents(tpFileIntegritySummaryPath($root), json_encode(tpFileIntegritySummary($report)));
+$running = tpFileIntegrityIsRunning($root, $probeFailed);
+$summary = tpFileIntegrityLoadSummary($root);
+echo json_encode([
+    'running' => $running,
+    'probe_failed' => $probeFailed,
+    'summary_running' => $summary['running'],
+    'has_result' => $summary['has_result'],
+    'status' => $summary['status'],
+    'lock_probe_failed' => $summary['lock_probe_failed'] ?? null,
+    'last_error' => $summary['last_error'] ?? '',
+]);
+PHP, ['-d', 'disable_functions=flock']);
+        self::assertSame([
+            'running' => false,
+            'probe_failed' => true,
+            'summary_running' => false,
+            'has_result' => true,
+            'status' => 'error',
+            'lock_probe_failed' => true,
+            'last_error' => '',
+        ], json_decode($probe->getOutput(), true));
+        self::assertSame('12345', file_get_contents($path));
+    }
+
+    /** Runtime flags must be recomputed without replacing saved scanner diagnostics. */
+    public function testRuntimeStateClearsPreviousLockProbeFailure(): void
+    {
+        self::assertSame(0, file_put_contents($this->root . '/app/files_reference.txt', ''));
+        $payload = tpFileIntegrityDefaultReport();
+        $payload['lock_probe_failed'] = true;
+        $payload['status'] = 'error';
+        $payload['last_error'] = 'Saved scanner diagnostic';
+
+        $summary = tpFileIntegrityApplyRuntimeState($this->root, $payload);
+
+        self::assertFalse($summary['lock_probe_failed']);
+        self::assertFalse($summary['running']);
+        self::assertSame('error', $summary['status']);
+        self::assertSame('Saved scanner diagnostic', $summary['last_error']);
+    }
+
+    /** Check real contention across processes without waiting or changing the worker's PID. */
+    public function testStatusDetectsAnotherProcessHoldingTheScanLock(): void
+    {
+        $path = tpFileIntegrityLockPath($this->root);
+        $holder = tpOpenRuntimeFile($path);
+        self::assertIsResource($holder);
+        try {
+            self::assertTrue(flock($holder, LOCK_EX | LOCK_NB));
+            self::assertSame(5, fwrite($holder, '12345'));
+            self::assertTrue(fflush($holder));
+            $probe = $this->runRuntimeProbe($path, <<<'PHP'
+$probeFailed = true;
+$running = tpFileIntegrityIsRunning(dirname(dirname(dirname($path))), $probeFailed);
+echo json_encode(['running' => $running, 'probe_failed' => $probeFailed]);
+PHP);
+            self::assertSame(['running' => true, 'probe_failed' => false], json_decode($probe->getOutput(), true));
+            rewind($holder);
+            self::assertSame('12345', stream_get_contents($holder));
+        } finally {
+            fclose($holder);
+        }
+        $probeFailed = true;
+        self::assertFalse(tpFileIntegrityIsRunning($this->root, $probeFailed));
+        self::assertFalse($probeFailed);
+        self::assertFileExists($path);
+    }
+
+    /** Simultaneous status readers are compatible and must not look like scanners. */
+    public function testStatusReadersDoNotReportEachOtherAsRunningScans(): void
+    {
+        $path = tpFileIntegrityLockPath($this->root);
+        self::assertSame(5, file_put_contents($path, '12345'));
+        $reader = fopen($path, 'rb');
+        self::assertIsResource($reader);
+        try {
+            self::assertTrue(flock($reader, LOCK_SH | LOCK_NB));
+            $probeFailed = true;
+            self::assertFalse(tpFileIntegrityIsRunning($this->root, $probeFailed));
+            self::assertFalse($probeFailed);
+            $writer = tpOpenRuntimeFile($path);
+            self::assertIsResource($writer);
+            try {
+                // Closing a probe must leave the original reader's lock intact.
+                self::assertFalse(flock($writer, LOCK_EX | LOCK_NB));
+            } finally {
+                fclose($writer);
+            }
+        } finally {
+            fclose($reader);
+        }
+        self::assertSame('12345', file_get_contents($path));
+    }
+
     /** The log appender follows the same policy and never rewrites history. */
     public function testAppendPreservesStrictModesAndExistingContents(): void
     {
@@ -443,7 +626,7 @@ PHP);
         $process = new Process(array_merge(
             [PHP_BINARY],
             $phpArguments,
-            ['-r', $bootstrap . $code, '--', __DIR__ . '/../../app/sources/runtime_files.functions.php', $path]
+            ['-r', $bootstrap . $code, '--', __DIR__ . '/../../app/sources/file_integrity.functions.php', $path]
         ));
         $process->setTimeout(5);
         $process->run();

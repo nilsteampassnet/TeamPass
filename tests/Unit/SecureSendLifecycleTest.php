@@ -2,6 +2,33 @@
 
 declare(strict_types=1);
 
+/**
+ * Teampass - a collaborative passwords manager.
+ * ---
+ * This file is part of the TeamPass project.
+ *
+ * TeamPass is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * TeamPass is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Certain components of this file may be under different licenses. For
+ * details, see the `licenses` directory or individual file headers.
+ * ---
+ * @file      SecureSendLifecycleTest.php
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2026 Teampass.net
+ * @license   GPL-3.0
+ * @see       https://www.teampass.net
+ */
+
 use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use PHPUnit\Framework\TestCase;
@@ -441,7 +468,7 @@ class SecureSendLifecycleTest extends TestCase
         $result = secureSendRedeem($parameters, '', $this->settings);
         self::assertSame('invalid_link', $result['error']);
         self::assertArrayNotHasKey('fields', $result);
-        self::assertSame(0, DB::$links[1]['views']);
+        self::assertSame([], DB::$links);
         self::assertSame(1, DB::$item['inactif']);
         self::assertGreaterThan(0, DB::$item['deleted_at']);
         self::assertSame($automatic, DB::$automatic);
