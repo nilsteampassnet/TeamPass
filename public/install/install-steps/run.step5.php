@@ -239,8 +239,9 @@ class DatabaseInstaller
     // Force UTF8
     private function utf8()
     {
+        // %c quotes the whole name; %b would split a dotted database name (e.g. "my.teampass") on '.'
         DB::query(
-            "ALTER DATABASE %b DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci", 
+            "ALTER DATABASE %c DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci",
             $this->inputData['dbName']
         );
         
