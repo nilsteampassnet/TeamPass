@@ -70,6 +70,12 @@ const LICENCE_DISCOVERY_TTL = 21600;    // 6 hours
 /** A trial expiring within this many days raises the no-grace-period warning. */
 const LICENCE_TRIAL_EXPIRY_WARNING_DAYS = 7;
 
+/** Days of seat history the dashboard widget asks info.php for (today included). */
+const LICENCE_SEATS_HISTORY_DAYS = 31;
+
+/** Points kept from an answer whatever the server sent; matches the server-side clamp. */
+const LICENCE_SEATS_HISTORY_MAX_POINTS = 62;
+
 /** Persisted trial states, per product. */
 const LICENCE_TRIAL_STATE_NONE = 'none';
 const LICENCE_TRIAL_STATE_PENDING = 'pending';
@@ -618,16 +624,21 @@ function licenceTrialNormalizeInfo(?array $json): array
             'expiration_date' => (string) ($json['expiration_date'] ?? ''),
             'max_users' => (int) ($json['max_users'] ?? 0),
             'consumed' => (int) ($json['consumed_this_month'] ?? 0),
+            'refused' => licenceTrialCount($json['refused_this_month'] ?? null) ?? 0,
             'trial' => (bool) ($json['trial'] ?? false),
             'allowed' => (bool) ($json['extension_allowed'] ?? false),
+            'history' => licenceTrialNormalizeHistory($json['history'] ?? null),
         ],
         'mobile_app' => [
             'status' => (string) ($json['status_mobile'] ?? ''),
             'expiration_date' => (string) ($json['expiration_date_mobile'] ?? ''),
             'max_users' => (int) ($json['max_users_mobile'] ?? 0),
             'consumed' => (int) ($json['consumed_this_month_mobile'] ?? 0),
+            'refused' => licenceTrialCount($json['refused_this_month_mobile'] ?? null) ?? 0,
             'trial' => (bool) ($json['trial_mobile'] ?? false),
             'allowed' => (bool) ($json['mobile_app_allowed'] ?? false),
+            // The server only sends the extension's history.
+            'history' => licenceTrialEmptyHistory(),
         ],
     ];
 }
@@ -644,9 +655,99 @@ function licenceTrialEmptyProductInfo(): array
         'expiration_date' => '',
         'max_users' => 0,
         'consumed' => 0,
+        'refused' => 0,
         'trial' => false,
         'allowed' => false,
+        'history' => licenceTrialEmptyHistory(),
     ];
+}
+
+/**
+ * Empty seat history, used when info.php sent none (older server, failure, untrusted body).
+ *
+ * @return array{days: int, today: string, first_snapshot: string, points: array}
+ */
+function licenceTrialEmptyHistory(): array
+{
+    return ['days' => 0, 'today' => '', 'first_snapshot' => '', 'points' => []];
+}
+
+/**
+ * Normalise the seat history info.php returns when history_days was sent.
+ *
+ * The body is already signature-verified; this guards the renderer against a malformed series.
+ * A series whose dates are invalid or not strictly increasing is dropped whole rather than
+ * drawn wrong. Only the last point may be live.
+ *
+ * @param mixed $history Raw `history` value of the info.php body.
+ *
+ * @return array{days: int, today: string, first_snapshot: string, points: array}
+ */
+function licenceTrialNormalizeHistory($history): array
+{
+    if (is_array($history) === false || is_array($history['points'] ?? null) === false) {
+        return licenceTrialEmptyHistory();
+    }
+
+    $rawPoints = array_slice(array_values($history['points']), -LICENCE_SEATS_HISTORY_MAX_POINTS);
+    $lastIndex = count($rawPoints) - 1;
+    $points = [];
+    $previous = '';
+    foreach ($rawPoints as $index => $point) {
+        if (is_array($point) === false) {
+            return licenceTrialEmptyHistory();
+        }
+        $date = is_string($point['date'] ?? null) === true ? $point['date'] : '';
+        if (licenceTrialIsServerDay($date) === false || strcmp($date, $previous) <= 0) {
+            return licenceTrialEmptyHistory();
+        }
+        $previous = $date;
+        $points[] = [
+            'date' => $date,
+            'seats_used' => licenceTrialCount($point['seats_used'] ?? null),
+            'seats_quota' => licenceTrialCount($point['seats_quota'] ?? null),
+            'active_users' => licenceTrialCount($point['active_users'] ?? null),
+            'live' => $index === $lastIndex && ($point['live'] ?? false) === true,
+        ];
+    }
+
+    $firstSnapshot = is_string($history['first_snapshot'] ?? null) === true ? $history['first_snapshot'] : '';
+
+    return [
+        'days' => count($points),
+        // Taken from the last point, so the two can never disagree.
+        'today' => $points === [] ? '' : $points[$lastIndex]['date'],
+        'first_snapshot' => licenceTrialIsServerDay($firstSnapshot) === true ? $firstSnapshot : '',
+        'points' => $points,
+    ];
+}
+
+/**
+ * Whether a value is a licence-server calendar day, "Y-m-d".
+ *
+ * @param string $value Candidate date.
+ *
+ * @return bool
+ */
+function licenceTrialIsServerDay(string $value): bool
+{
+    if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/D', $value, $m) !== 1) {
+        return false;
+    }
+
+    return checkdate((int) $m[2], (int) $m[3], (int) $m[1]);
+}
+
+/**
+ * A non-negative integer count, or null when the value is anything else.
+ *
+ * @param mixed $value Decoded JSON value.
+ *
+ * @return int|null
+ */
+function licenceTrialCount($value): ?int
+{
+    return is_int($value) === true && $value >= 0 ? $value : null;
 }
 
 /**

@@ -450,6 +450,204 @@ class LicenceTrialLogicTest extends TestCase
         self::assertFalse($info['has_licence']);
         self::assertSame(0, $info['extension']['max_users']);
         self::assertSame('', $info['extension']['status']);
+        self::assertSame(0, $info['extension']['refused']);
+        self::assertSame(licenceTrialEmptyHistory(), $info['extension']['history']);
+    }
+
+    /**
+     * info.php 1.2.4 counts the users refused by the monthly quota, per product.
+     */
+    public function testInfoNormalisationReadsRefusedCounters(): void
+    {
+        $info = licenceTrialNormalizeInfo([
+            'status' => 'VALID',
+            'max_users' => 20,
+            'consumed_this_month' => 20,
+            'refused_this_month' => 3,
+            'status_mobile' => 'VALID',
+            'refused_this_month_mobile' => 1,
+        ]);
+
+        self::assertSame(3, $info['extension']['refused']);
+        self::assertSame(1, $info['mobile_app']['refused']);
+    }
+
+    /**
+     * A 1.2.1 server sends neither key: no badge, no chart, nothing else changes.
+     */
+    public function testInfoNormalisationWithoutHistoryFromAnOlderServer(): void
+    {
+        $info = licenceTrialNormalizeInfo([
+            'status' => 'VALID',
+            'max_users' => 10,
+            'consumed_this_month' => 7,
+        ]);
+
+        self::assertSame(0, $info['extension']['refused']);
+        self::assertSame(licenceTrialEmptyHistory(), $info['extension']['history']);
+        self::assertSame(licenceTrialEmptyHistory(), $info['mobile_app']['history']);
+        self::assertSame(7, $info['extension']['consumed']);
+    }
+
+    /**
+     * The shape the licence server builds (keys sorted, first_snapshot null) is kept as sent.
+     */
+    public function testHistoryNormalisationKeepsAWellFormedSeries(): void
+    {
+        $info = licenceTrialNormalizeInfo([
+            'status' => 'VALID',
+            'history' => [
+                'days' => 3,
+                'first_snapshot' => '2026-10-15',
+                'points' => [
+                    ['active_users' => null, 'date' => '2026-10-14', 'live' => false, 'seats_quota' => null, 'seats_used' => null],
+                    ['active_users' => 5, 'date' => '2026-10-15', 'live' => false, 'seats_quota' => 20, 'seats_used' => 12],
+                    ['active_users' => 6, 'date' => '2026-10-16', 'live' => true, 'seats_quota' => 20, 'seats_used' => 14],
+                ],
+                'product' => 'extension',
+                'today' => '2026-10-16',
+            ],
+        ]);
+        $history = $info['extension']['history'];
+
+        self::assertSame(3, $history['days']);
+        self::assertSame('2026-10-16', $history['today']);
+        self::assertSame('2026-10-15', $history['first_snapshot']);
+        self::assertNull($history['points'][0]['seats_used']);
+        self::assertSame(12, $history['points'][1]['seats_used']);
+        self::assertSame(20, $history['points'][1]['seats_quota']);
+        self::assertSame(5, $history['points'][1]['active_users']);
+        self::assertSame([false, false, true], array_column($history['points'], 'live'));
+    }
+
+    /**
+     * A figure that is not a non-negative JSON integer is a gap, never a guessed number.
+     */
+    public function testHistoryNormalisationNullsInvalidFigures(): void
+    {
+        $history = licenceTrialNormalizeHistory([
+            'points' => [
+                ['date' => '2026-10-13', 'seats_used' => -1, 'seats_quota' => '5', 'active_users' => 5.0],
+                ['date' => '2026-10-14', 'seats_used' => true, 'seats_quota' => 0, 'active_users' => []],
+            ],
+        ]);
+
+        self::assertSame(2, $history['days']);
+        self::assertNull($history['points'][0]['seats_used']);
+        self::assertNull($history['points'][0]['seats_quota']);
+        self::assertNull($history['points'][0]['active_users']);
+        self::assertNull($history['points'][1]['seats_used']);
+        self::assertSame(0, $history['points'][1]['seats_quota']);
+        self::assertNull($history['points'][1]['active_users']);
+    }
+
+    /**
+     * A series out of order would be drawn wrong; it is dropped whole.
+     */
+    public function testHistoryNormalisationDropsAnUnorderedSeries(): void
+    {
+        foreach ([
+            ['2026-10-14', '2026-10-14'],
+            ['2026-10-15', '2026-10-14'],
+        ] as $dates) {
+            $history = licenceTrialNormalizeHistory([
+                'points' => array_map(static fn (string $date): array => ['date' => $date, 'seats_used' => 1], $dates),
+            ]);
+
+            self::assertSame(licenceTrialEmptyHistory(), $history, implode(',', $dates));
+        }
+    }
+
+    /**
+     * Only real "Y-m-d" calendar days are accepted.
+     */
+    public function testHistoryNormalisationDropsInvalidDates(): void
+    {
+        foreach (['2026-02-30', '16/10/2026', '', "2026-10-16\n", '2026-10-16 00:00:00', 20261016] as $date) {
+            $history = licenceTrialNormalizeHistory(['points' => [['date' => $date, 'seats_used' => 1]]]);
+
+            self::assertSame(licenceTrialEmptyHistory(), $history, var_export($date, true));
+        }
+
+        self::assertSame(
+            licenceTrialEmptyHistory(),
+            licenceTrialNormalizeHistory(['points' => [['date' => '2026-10-15'], 'not a point']])
+        );
+    }
+
+    /**
+     * Only today's point is computed live; a live flag elsewhere is ignored.
+     */
+    public function testHistoryNormalisationHonoursLiveOnTheLastPointOnly(): void
+    {
+        $history = licenceTrialNormalizeHistory([
+            'points' => [
+                ['date' => '2026-10-14', 'seats_used' => 1, 'live' => true],
+                ['date' => '2026-10-15', 'seats_used' => 2, 'live' => 1],
+                ['date' => '2026-10-16', 'seats_used' => 3, 'live' => 'true'],
+            ],
+        ]);
+
+        self::assertSame([false, false, false], array_column($history['points'], 'live'));
+    }
+
+    /**
+     * Whatever the server sends, at most 62 points (the most recent) reach the renderer.
+     */
+    public function testHistoryNormalisationCapsThePointCount(): void
+    {
+        $start = new DateTimeImmutable('2026-08-01', new DateTimeZone('UTC'));
+        $points = [];
+        for ($i = 0; $i < 70; $i++) {
+            $points[] = ['date' => $start->modify('+' . $i . ' day')->format('Y-m-d'), 'seats_used' => $i];
+        }
+
+        $history = licenceTrialNormalizeHistory(['points' => $points]);
+
+        self::assertSame(LICENCE_SEATS_HISTORY_MAX_POINTS, $history['days']);
+        self::assertCount(LICENCE_SEATS_HISTORY_MAX_POINTS, $history['points']);
+        self::assertSame(8, $history['points'][0]['seats_used']);
+        self::assertSame($points[69]['date'], $history['today']);
+    }
+
+    /**
+     * Anything but an object with a points list is no history at all.
+     */
+    public function testHistoryNormalisationRejectsNonArrays(): void
+    {
+        foreach ([null, 'x', 31, [], ['points' => 'x'], ['points' => null]] as $raw) {
+            self::assertSame(licenceTrialEmptyHistory(), licenceTrialNormalizeHistory($raw), var_export($raw, true));
+        }
+    }
+
+    /**
+     * first_snapshot is kept only when it is a calendar day; the server sends null when none exists.
+     */
+    public function testHistoryNormalisationKeepsFirstSnapshotOnlyWhenValid(): void
+    {
+        $point = [['date' => '2026-10-16', 'seats_used' => 1]];
+
+        self::assertSame('2026-10-15', licenceTrialNormalizeHistory(['first_snapshot' => '2026-10-15', 'points' => $point])['first_snapshot']);
+        self::assertSame('', licenceTrialNormalizeHistory(['first_snapshot' => 'yesterday', 'points' => $point])['first_snapshot']);
+        self::assertSame('', licenceTrialNormalizeHistory(['first_snapshot' => null, 'points' => $point])['first_snapshot']);
+    }
+
+    /**
+     * The widget handler normalises the cached history again; that must change nothing.
+     */
+    public function testHistoryNormalisationIsIdempotent(): void
+    {
+        $once = licenceTrialNormalizeHistory([
+            'first_snapshot' => '2026-10-15',
+            'points' => [
+                ['date' => '2026-10-14', 'seats_used' => null],
+                ['date' => '2026-10-15', 'seats_used' => 12, 'seats_quota' => 20, 'active_users' => 5],
+                ['date' => '2026-10-16', 'seats_used' => 14, 'seats_quota' => 20, 'active_users' => 6, 'live' => true],
+            ],
+        ]);
+
+        self::assertSame($once, licenceTrialNormalizeHistory($once));
+        self::assertSame(licenceTrialEmptyHistory(), licenceTrialNormalizeHistory(licenceTrialEmptyHistory()));
     }
 
     /**

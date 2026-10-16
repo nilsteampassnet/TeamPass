@@ -27,6 +27,7 @@ Lets an administrator request a 30-day evaluation licence for the browser extens
 | Tab markup | `app/pages/api.php` (`#licence` pane) |
 | Rendering + throttled buttons | `app/pages/api.js.php` |
 | Dashboard widget | `app/pages/admin.js.php` → `loadExtensionLicenceInfo()` |
+| Seat history + refused counter (dashboard widget) | `licenceTrialNormalizeHistory()` → `get_extension_licence_info` → `renderExtensionSeatsHistory()` |
 | Settings | `public/install/install-steps/run.step5.php`, `public/install/upgrade_run_3.2.2.php` |
 | Offline request page (licence server) | `_things/licence-server-api/trial-request.php` + `.selftest.php` + `TRIAL-REQUEST-PAGE-DEPLOYMENT.md` |
 | Tests | `tests/Unit/LicenceTrialLogicTest.php`, `tests/Unit/LicenceSignatureTest.php` |
@@ -86,6 +87,33 @@ interval (`LICENCE_INFO_TTL_OFFLINE`, 10 min) is what throttles those. Automatic
 **15 min while a confirmation is pending** (≤ 4/hour, leaving room for manual checks) and 60 min
 otherwise. When the budget is spent the stale cache is served with `budget_exhausted` and a
 `retry_after`, and **no request is made**.
+
+## Seat history (info.php 1.2.4)
+
+The dashboard widget charts the extension seats over 31 days and shows how many users the
+monthly quota turned away (`refused_this_month`, people, not calls). Design notes:
+`workReadmeFiles/extension-seats-history-plan.md`.
+
+**Rule: the history rides on the existing call.** `licenceFetchInfo()` sends `history_days: 31`
+on the `info.php` request it already makes — no extra call, no extra budget. An older server
+ignores the field; `trial.php` and its five fields are not concerned.
+
+**Rule: the bars are the month-to-date seat count, never a rolling count.** `max_users` is unique
+users per calendar month UTC, so the count drops to zero on the 1st; the chart marks that reset.
+A rolling 31-day unique count would show a number the licence server never enforces.
+
+**Rule: a cached info of the old shape is served as-is** (up to an hour online, longer while the
+server is unreachable), so the handler reads `refused` / `history` with `??` and normalises the
+history again — `licenceTrialNormalizeHistory()` is idempotent.
+
+**Rule: `null` is a gap, never `0`.** A day without a server snapshot (before the migration, a
+missed event) carries null figures; drawing it as zero would show a drop that never happened.
+
+**Rule: the chart box height is inline in `admin.php`, never only in a stylesheet.** Chart.js 2.9
+(`responsive`, `maintainAspectRatio: false`) sizes the canvas from its box; a box without a fixed
+height grows with the canvas forever (reproduced at 125 % display scale with a cached
+`teampass.css` that lacked the rule — the tab hangs). `drawExtensionSeatsChart()` refuses to draw
+when that inline height is missing.
 
 ## What must never be sent
 

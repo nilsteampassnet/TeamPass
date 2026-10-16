@@ -439,6 +439,8 @@ function licenceServerKeyFingerprintMatches(array $discovery): bool
  * consumes it, and a request that never reached the server does not either: the licence
  * server counts what it receives, and the offline interval is what throttles those.
  *
+ * Asks for the seat history at no cost: same call, same budget; an older server ignores the field.
+ *
  * @param array      $SETTINGS  TeamPass settings.
  * @param bool       $force     Bypass the freshness window (still subject to the budget).
  * @param array|null $discovery Already-resolved discovery, to avoid fetching GET / twice in
@@ -516,7 +518,7 @@ function licenceFetchInfo(array $SETTINGS, bool $force = false, ?array $discover
     $response = licenceHttpRequest(
         'POST',
         LICENCE_INFO_PATH,
-        ['instance_fqdn' => $fqdn, 'license_token' => $token],
+        ['instance_fqdn' => $fqdn, 'license_token' => $token, 'history_days' => LICENCE_SEATS_HISTORY_DAYS],
         $SETTINGS
     );
 
