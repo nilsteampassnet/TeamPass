@@ -20,7 +20,7 @@ class BackupRestoreFilePermissionsTest extends TestCase
     /** @return iterable<string,array{string,int}> */
     public static function restorationScenarios(): iterable
     {
-        foreach (['restore', 'all_wrong', 'blocked', 'zip', 'zip_existing', 'chmod'] as $scenario) {
+        foreach (['restore', 'all_wrong', 'blocked', 'zip', 'zip_existing', 'zip_document', 'chmod'] as $scenario) {
             foreach ([0000, 0022, 0077] as $mask) {
                 if ($scenario === 'chmod' && $mask === 0077) {
                     continue;
@@ -49,12 +49,13 @@ class BackupRestoreFilePermissionsTest extends TestCase
             $process->run();
             self::assertSame(0, $process->getExitCode(), $process->getErrorOutput());
             $result = json_decode($process->getOutput(), true, 512, JSON_THROW_ON_ERROR);
-            $success = in_array($scenario, ['restore', 'zip', 'zip_existing'], true);
+            $success = in_array($scenario, ['restore', 'zip', 'zip_existing', 'zip_document'], true);
             self::assertSame($success, $result['success']);
             if ($success) {
                 self::assertSame('SQL restore fixture content', $result['contents']);
                 if (PHP_OS_FAMILY !== 'Windows') {
-                    self::assertSame(0600, $result['mode']);
+                    $expectedMode = $scenario === 'zip_document' && $mask !== 0077 ? 0640 : 0600;
+                    self::assertSame($expectedMode, $result['mode']);
                 }
             } elseif ($scenario === 'blocked') {
                 self::assertTrue($result['is_directory']);

@@ -36,7 +36,7 @@ $destination = $root . '/restored.sql';
 if ($scenario === 'blocked') {
     mkdir($destination, 0700);
 }
-if ($scenario === 'zip' || $scenario === 'zip_existing') {
+if ($scenario === 'zip' || $scenario === 'zip_existing' || $scenario === 'zip_document') {
     if ($scenario === 'zip_existing') {
         file_put_contents($destination, 'old contents longer than the restored SQL fixture');
     }
@@ -45,7 +45,8 @@ if ($scenario === 'zip' || $scenario === 'zip_existing') {
     $zip->addFromString('database/dump.sql', $plaintext);
     $zip->close();
     $zip->open($root . '/fixture.zip');
-    $result = tpBackupExtractZipEntryToFile($zip, 'database/dump.sql', $destination);
+    // Documents (attachments, avatars) keep group read; SQL dumps stay owner-only.
+    $result = tpBackupExtractZipEntryToFile($zip, 'database/dump.sql', $destination, $scenario !== 'zip_document');
     $zip->close();
 } else {
     $result = tpDefuseDecryptWithCandidates($root . '/backup.sql', $destination,

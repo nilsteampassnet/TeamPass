@@ -5456,10 +5456,14 @@ function tpBackupZipEntrySha256($zip, string $entryPath): string
 /**
  * Extract a single ZIP entry to a destination file.
  *
+ * SQL dumps stay owner-only. Restored documents (attachments, avatars) use the
+ * runtime file posture (at most 0640): a web server reading avatars through
+ * the shared group must still be able to serve them.
+ *
  * @param \ZipArchive $zip
  * @return array<string, mixed>
  */
-function tpBackupExtractZipEntryToFile($zip, string $entryPath, string $destFile): array
+function tpBackupExtractZipEntryToFile($zip, string $entryPath, string $destFile, bool $ownerOnly = true): array
 {
         $entryPath = tpBackupNormalizePackageEntryPath($entryPath);
         if ($entryPath === '' || $destFile === '') {
@@ -5472,7 +5476,7 @@ function tpBackupExtractZipEntryToFile($zip, string $entryPath, string $destFile
         }
 
         clearstatcache(true, $destFile);
-        $out = tpBackupOpenProtectedFile($destFile, file_exists($destFile) ? 'c+b' : 'x+b', true);
+        $out = tpBackupOpenProtectedFile($destFile, file_exists($destFile) ? 'c+b' : 'x+b', $ownerOnly);
         if (is_resource($out) === false) {
             fclose($stream);
             return ['success' => false, 'message' => 'destination_not_writable'];
@@ -5864,7 +5868,7 @@ function tpBackupRestorePackageDocumentsFromZip(
                     $tmpTarget = $targetDir . DIRECTORY_SEPARATOR . '.tpbackup_restore_' . str_replace('.', '', uniqid('', true)) . '.tmp';
                 }
 
-                $extract = tpBackupExtractZipEntryToFile($zip, $packagePath, $tmpTarget);
+                $extract = tpBackupExtractZipEntryToFile($zip, $packagePath, $tmpTarget, false);
                 if (empty($extract['success'])) {
                     @unlink($tmpTarget);
                     $failed[] = [
