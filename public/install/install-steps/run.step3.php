@@ -42,6 +42,9 @@ require_once TEAMPASS_ROOT . '/app/sources/config_access_logic.php';
 
 $superGlobal = new SuperGlobal();
 
+// GHSA-8xp7-fh3p-5pcr: reject any request that is not a genuine, token-bearing installer step.
+installAssertStepAuthorized();
+
 // Initialize variables
 $keys = [
     'teampassAbsolutePath',

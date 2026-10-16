@@ -45,6 +45,9 @@ require_once __DIR__.'/install.functions.php';
 
 $superGlobal = new SuperGlobal();
 
+// GHSA-8xp7-fh3p-5pcr: reject any request that is not a genuine, token-bearing installer step.
+installAssertStepAuthorized();
+
 // Initialize variables
 $keys = [
     'action',
@@ -153,15 +156,18 @@ class teampassInstaller
     public function handleAction(): array
     {
         try {
-            if (method_exists($this, $this->inputData['action'])) {
+            // GHSA-8xp7-fh3p-5pcr: only dispatch actions on the explicit allow-list, never any
+            // method that merely exists on the class (which let an attacker pick settingsFile).
+            $action = (string) $this->inputData['action'];
+            if (installIsActionAllowed('step6', $action) && method_exists($this, $action)) {
                 // Dynamically call the method corresponding to the action
-                $result = call_user_func([$this, $this->inputData['action']]);
+                $result = call_user_func([$this, $action]);
                 // Propagate failure returned by the method
                 if (is_array($result) && isset($result['success']) && $result['success'] === false) {
                     return $result;
                 }
             } else {
-                throw new Exception('Action not recognized: ' . $this->inputData['action']);
+                throw new Exception('Action not recognized: ' . $action);
             }
 
             return [
@@ -383,6 +389,16 @@ class teampassInstaller
         include_once(__DIR__ . '/../tp.functions.php');
 
         try {
+            // GHSA-8xp7-fh3p-5pcr: the table prefix is written into settings.php and used to
+            // build table identifiers below. Reject anything outside a safe character set before
+            // it can reach either sink.
+            if (installIsValidTablePrefix((string) $this->inputData['tablePrefix']) === false) {
+                return [
+                    'success' => false,
+                    'message' => 'Invalid table prefix: only letters, digits and underscore are allowed.',
+                ];
+            }
+
             // TEAMPASS_ROOT is defined at the top of this file (project root, parent of public/)
             $rootPath = TEAMPASS_ROOT;
             // TEAMPASS_SECRETS is auto-derived in app/config/include.php as TEAMPASS_ROOT/secrets
@@ -422,15 +438,19 @@ class teampassInstaller
                 $encryptionKey
             )['string'];
     
-            // Create the settings file content
+            // Create the settings file content.
+            // GHSA-8xp7-fh3p-5pcr: every value interpolated into this PHP source must be escaped
+            // for a double-quoted string literal (installSanitizeSettingsValue escapes \ " $),
+            // otherwise a value such as ${...} / {${...}} would execute when settings.php is
+            // later included. The installer sanitizer is HTML/JS-only and does not cover this.
             $settingsContent = '<?php
 // DATABASE connexion parameters
-define("DB_HOST", "' . $this->inputData['dbHost'] . '");
-define("DB_USER", "' . $this->inputData['dbLogin'] . '");
-define("DB_PASSWD", "' . str_replace('$', '\$', $encryptedPassword) . '");
-define("DB_NAME", "' . $this->inputData['dbName'] . '");
-define("DB_PREFIX", "' . $this->inputData['tablePrefix'] . '");
-define("DB_PORT", "' . $this->inputData['dbPort'] . '");
+define("DB_HOST", "' . installSanitizeSettingsValue((string) $this->inputData['dbHost']) . '");
+define("DB_USER", "' . installSanitizeSettingsValue((string) $this->inputData['dbLogin']) . '");
+define("DB_PASSWD", "' . installSanitizeSettingsValue((string) $encryptedPassword) . '");
+define("DB_NAME", "' . installSanitizeSettingsValue((string) $this->inputData['dbName']) . '");
+define("DB_PREFIX", "' . installSanitizeSettingsValue((string) $this->inputData['tablePrefix']) . '");
+define("DB_PORT", "' . installSanitizeSettingsValue((string) $this->inputData['dbPort']) . '");
 define("DB_ENCODING", "utf8mb4");
 define("DB_SSL", false); // if DB over SSL then comment this line
 // if DB over SSL then uncomment the following lines
@@ -445,7 +465,7 @@ define("DB_CONNECT_OPTIONS", array(
     MYSQLI_OPT_CONNECT_TIMEOUT => 10
 ));
 // TEAMPASS_SECRETS is a constant defined in app/config/include.php (TEAMPASS_ROOT/secrets)
-define("SECUREFILE", "' . $this->installConfig['teampassSecureFile'] . '");
+define("SECUREFILE", "' . installSanitizeSettingsValue((string) $this->installConfig['teampassSecureFile']) . '");
 
 if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
     date_default_timezone_set($_SESSION[\'settings\'][\'timezone\']);
