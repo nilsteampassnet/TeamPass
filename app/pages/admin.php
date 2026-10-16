@@ -114,24 +114,22 @@ require_once __DIR__ . '/../sources/admin_activity_logic.php';
         
         <!-- Info Box for last update and GitHub link -->
         <div class="row mb-3">
-            <!-- d-flex + flex-fill: both blocks take the height of the taller one, so their edges line up -->
-            <div class="col-4 d-flex">
-                <!-- One small line per fact, like the extension block: at 1/3 width the block keeps its height -->
-                <div class="alert alert-info flex-fill">
-                    <h5 class="mb-1">
+            <div class="col-7">
+                <div class="alert alert-info alert-dismissible">
+                    <h5>
                         <i class="icon fas fa-info"></i> <?php echo $lang->get('admin_info_header'); ?>
                     </h5>
-                    <p class="mb-0 small">
-                        <span>
-                            <i class="fa-regular fa-eye mr-2"></i><?php echo $lang->get('currently_using_version')." <b>".TP_VERSION.".<i>".TP_VERSION_MINOR."</i></b>"; ?>
-                        </span>
-                        <br>
-                        <span id="admin-last-refresh"><i class="fa-regular fa-clock mr-2"></i><?php echo $lang->get('admin_last_refresh'); ?>: <span class="badge badge-light" id="last-refresh-time">--:--:--</span></span>
-                        <br>
-                        <span>
-                            <i class="fab fa-github mr-2"></i><a href="https://github.com/nilsteampassnet/TeamPass/releases" target="_blank" class="text-white"><?php echo $lang->get('admin_view_changelog_github'); ?></a>
-                        </span>
-                    </p>
+                    <span>
+                        <i class="fa-regular fa-eye mr-2"></i><?php echo $lang->get('currently_using_version')." <b>".TP_VERSION.".<i>".TP_VERSION_MINOR."</i></b>"; ?>
+                    </span> | 
+                    <span id="admin-last-refresh"><?php echo $lang->get('admin_last_refresh'); ?>: <span class="badge badge-light" id="last-refresh-time">--:--:--</span></span>
+                    <br>
+                    <span>
+                        <i class="fab fa-github"></i> 
+                        <a href="https://github.com/nilsteampassnet/TeamPass/releases" target="_blank" class="text-white">
+                            <?php echo $lang->get('admin_view_changelog_github'); ?>
+                        </a>
+                    </span>
                     <div id="tp-admin-version-alert" class="tp-admin-version-alert d-none" role="status" aria-live="polite">
                         <i class="fas fa-circle-up mr-2" aria-hidden="true"></i>
                         <span class="tp-admin-version-alert-text"></span>
@@ -139,13 +137,16 @@ require_once __DIR__ . '/../sources/admin_activity_logic.php';
                     </div>
                 </div>
             </div>
-            <div class="col-8 d-flex">
-                <div class="alert alert-primary border flex-fill">
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-puzzle-piece fa-2x text-alert mr-3"></i>
-                        <div style="min-width: 0;">
+            <div class="col-5">
+                <div class="alert alert-primary border">                                                                                
+                    <div class="d-flex align-items-center">                                                                           
+                        <i class="fas fa-puzzle-piece fa-2x text-alert mr-3"></i>                                                   
+                        <div>
                             <strong><?php echo $lang->get('browser_extension'); ?></strong>
                             <?php if ($extensionHasLicence): ?>
+                            <a href="index.php?page=statistics#tp-ops-licence" class="small text-white ml-2">
+                                <i class="fas fa-chart-bar mr-1"></i><?php echo $lang->get('extension_seats_history_link'); ?>
+                            </a>
                             <p class="mb-0 small" id="extension-licence-status">
                                 <i class="fas fa-spinner fa-spin mr-1"></i>
                                 <small class="text-muted"><?php echo $lang->get('loading'); ?></small>
@@ -159,38 +160,9 @@ require_once __DIR__ . '/../sources/admin_activity_logic.php';
                                 </a>
                             </p>
                             <?php endif; ?>
-                        </div>
-                        <?php if ($extensionHasLicence): ?>
-                        <!-- Second column, beside the figures so the block keeps its height.
-                             flex-basis 0 + fixed min-width: its width never depends on the canvas width. -->
-                        <div id="extension-seats-history" class="d-none ml-4" style="flex: 1 1 0%; min-width: 160px;">
-                            <!-- Height inline, never from a stylesheet: Chart.js sizes the canvas from this box,
-                                 and a box without a fixed height grows with the canvas forever (stale CSS cache). -->
-                            <div class="tp-ext-seats-chart" style="position: relative; height: 64px;">
-                                <canvas id="extension-seats-chart" role="img"></canvas>
-                            </div>
-                            <div class="tp-ext-seats-legend small">
-                                <span><span class="tp-ext-seats-key tp-ext-seats-key-bar" aria-hidden="true"></span><?php echo $lang->get('extension_seats_history_legend_seats'); ?></span>
-                                <span><span class="tp-ext-seats-key tp-ext-seats-key-quota" aria-hidden="true"></span><?php echo $lang->get('extension_seats_history_legend_quota'); ?></span>
-                                <span><span class="tp-ext-seats-key tp-ext-seats-key-reset" aria-hidden="true"></span><?php echo $lang->get('extension_seats_history_legend_reset'); ?></span>
-                                <span class="tp-ext-seats-since d-none" id="extension-seats-since"></span>
-                            </div>
-                            <!-- sr-only on the wrapper: a table ignores width and overflow, and would widen the page -->
-                            <div class="sr-only">
-                                <table id="extension-seats-table">
-                                    <thead><tr>
-                                        <th scope="col"><?php echo $lang->get('date'); ?></th>
-                                        <th scope="col"><?php echo $lang->get('extension_seats_history_legend_seats'); ?></th>
-                                        <th scope="col"><?php echo $lang->get('extension_seats_history_legend_quota'); ?></th>
-                                        <th scope="col"><?php echo $lang->get('extension_seats_history_active_header'); ?></th>
-                                    </tr></thead>
-                                    <tbody></tbody>
-                                </table>
-                            </div>
-                        </div>
-                        <?php endif; ?>
-                    </div>
-                </div>
+                        </div>                                                                                                        
+                    </div>                                                                                                            
+                </div> 
             </div>
         </div>
 

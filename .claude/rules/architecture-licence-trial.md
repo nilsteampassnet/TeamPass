@@ -27,7 +27,7 @@ Lets an administrator request a 30-day evaluation licence for the browser extens
 | Tab markup | `app/pages/api.php` (`#licence` pane) |
 | Rendering + throttled buttons | `app/pages/api.js.php` |
 | Dashboard widget | `app/pages/admin.js.php` → `loadExtensionLicenceInfo()` |
-| Seat history + refused counter (dashboard widget) | `licenceTrialNormalizeHistory()` → `get_extension_licence_info` → `renderExtensionSeatsHistory()` |
+| Seat history + refused counter (Statistics → Licence tab) | `licenceTrialNormalizeHistory()` → `get_extension_licence_info` → `renderLicenceStatistics()` (`app/pages/statistics.js.php`) |
 | Settings | `public/install/install-steps/run.step5.php`, `public/install/upgrade_run_3.2.2.php` |
 | Offline request page (licence server) | `_things/licence-server-api/trial-request.php` + `.selftest.php` + `TRIAL-REQUEST-PAGE-DEPLOYMENT.md` |
 | Tests | `tests/Unit/LicenceTrialLogicTest.php`, `tests/Unit/LicenceSignatureTest.php` |
@@ -80,8 +80,8 @@ No new table ⇒ **no `install.js` `checkNN` entry**.
 **Rule: never poll in the background.** No cron hook, no scheduler entry. The contract allows 10
 `info.php` calls per hour on this bucket and asks for 6.
 
-One shared counter covers every caller — the dashboard widget, the Licence tab and the manual
-button — because they all hit the same bucket. A cache hit never consumes it, and neither does a
+One shared counter covers every caller — the dashboard widget, the Licence tab, the Statistics →
+Licence tab and the manual button — because they all hit the same bucket. A cache hit never consumes it, and neither does a
 request that never reached the server: the licence server counts what it receives, and the offline
 interval (`LICENCE_INFO_TTL_OFFLINE`, 10 min) is what throttles those. Automatic refresh is every
 **15 min while a confirmation is pending** (≤ 4/hour, leaving room for manual checks) and 60 min
@@ -90,9 +90,10 @@ otherwise. When the budget is spent the stale cache is served with `budget_exhau
 
 ## Seat history (info.php 1.2.4)
 
-The dashboard widget charts the extension seats over 31 days and shows how many users the
-monthly quota turned away (`refused_this_month`, people, not calls). Design notes:
-`workReadmeFiles/extension-seats-history-plan.md`.
+**Statistics → Licence** (`#tp-ops-licence`) charts the extension seats over 31 days and shows how
+many users the monthly quota turned away (`refused_this_month`, people, not calls). The dashboard
+widget only links to it. Both read `get_extension_licence_info`, so the tab costs no budget on a
+cache hit. Design notes: `workReadmeFiles/extension-seats-history-plan.md`.
 
 **Rule: the history rides on the existing call.** `licenceFetchInfo()` sends `history_days: 31`
 on the `info.php` request it already makes — no extra call, no extra budget. An older server
@@ -109,11 +110,11 @@ history again — `licenceTrialNormalizeHistory()` is idempotent.
 **Rule: `null` is a gap, never `0`.** A day without a server snapshot (before the migration, a
 missed event) carries null figures; drawing it as zero would show a drop that never happened.
 
-**Rule: the chart box height is inline in `admin.php`, never only in a stylesheet.** Chart.js 2.9
+**Rule: the chart box height is inline in the markup, never only in a stylesheet.** Chart.js 2.9
 (`responsive`, `maintainAspectRatio: false`) sizes the canvas from its box; a box without a fixed
-height grows with the canvas forever (reproduced at 125 % display scale with a cached
-`teampass.css` that lacked the rule — the tab hangs). `drawExtensionSeatsChart()` refuses to draw
-when that inline height is missing.
+height grows with the canvas forever (reproduced at 125 % display scale with a cached stylesheet
+that lacked the rule — the tab hangs). `tpLicenceDrawChart()` refuses to draw when that inline
+height is missing.
 
 ## What must never be sent
 

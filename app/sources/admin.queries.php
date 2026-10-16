@@ -3481,7 +3481,7 @@ case 'get_system_health':
 
 case 'get_extension_licence_info':
     /**
-     * Licence state for the admin dashboard widget.
+     * Licence state for the admin dashboard widget and the Statistics → Licence tab.
      *
      * Kept for backward compatibility: the response keys the widget has always read are
      * unchanged, and the trial keys are additive. The transport, the caching and the

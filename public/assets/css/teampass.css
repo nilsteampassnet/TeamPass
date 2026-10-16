@@ -518,66 +518,6 @@
     text-decoration: underline;
 }
 
-/* Extension widget: 31-day seat chart (white marks pass 3:1 on #007bff and on #3f6791).
-   The chart box height is inline in admin.php on purpose: see the comment there. */
-.tp-ext-seats-legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0 0.6rem;
-    font-size: 0.7rem;
-    line-height: 1.3;
-    opacity: 0.9;
-}
-
-.tp-ext-seats-since {
-    opacity: 0.8;
-}
-
-.tp-ext-seats-key {
-    display: inline-block;
-    width: 10px;
-    margin-right: 0.25rem;
-    vertical-align: middle;
-}
-
-.tp-ext-seats-key-bar {
-    height: 8px;
-    background: rgba(255, 255, 255, 0.85);
-}
-
-.tp-ext-seats-key-quota {
-    height: 0;
-    border-top: 1px dashed rgba(255, 255, 255, 0.9);
-}
-
-.tp-ext-seats-key-reset {
-    width: 0;
-    height: 10px;
-    border-left: 1px dotted rgba(255, 255, 255, 0.8);
-}
-
-/* Drawn in HTML beside the hovered column: a canvas tooltip would be clipped by the short chart. */
-.tp-ext-seats-tooltip {
-    position: absolute;
-    top: 50%;
-    left: 0;
-    z-index: 10;
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    background: rgba(0, 0, 0, 0.85);
-    color: #fff;
-    font-size: 0.75rem;
-    line-height: 1.3;
-    white-space: nowrap;
-    pointer-events: none;
-    transform: translateY(-50%);
-    visibility: hidden;
-}
-
-.tp-ext-seats-tooltip.is-visible {
-    visibility: visible;
-}
-
 #sidebar-footer {
     display: flex;
     align-items: center;
