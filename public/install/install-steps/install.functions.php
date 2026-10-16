@@ -34,6 +34,85 @@ use Defuse\Crypto\Key;
 use Defuse\Crypto\Crypto;
 use Defuse\Crypto\Exception as CryptoException;
 
+// DB-free installer security logic (escaping, action allow-list, CSRF comparison).
+// Required here so every installer step that loads this file can reach the helpers below.
+if (defined('TEAMPASS_ROOT')) {
+    require_once TEAMPASS_ROOT . '/app/sources/install_security_logic.php';
+}
+
+/**
+ * Start the installer session (native PHP session, default cookie name).
+ *
+ * The installer runs before settings.php exists, so SessionManager is not available; a plain
+ * session is used, the same one cleanup_install.php relies on. Idempotent and header-safe.
+ *
+ * @return void
+ */
+function installStartSession(): void
+{
+    if (session_status() !== PHP_SESSION_ACTIVE && !headers_sent()) {
+        @session_start();
+    }
+}
+
+/**
+ * Create (once) and return the install CSRF token held in the session.
+ *
+ * Called by install.php to seed the token and mark the session as an authorised install flow.
+ * The token is emitted to the page as <meta name="csrf-token"> and sent back by install.js on
+ * every step as the X-CSRF-Token header.
+ *
+ * @return string The install CSRF token.
+ */
+function installIssueCsrfToken(): string
+{
+    installStartSession();
+    if (empty($_SESSION['install_csrf']) || !is_string($_SESSION['install_csrf'])) {
+        $_SESSION['install_csrf'] = bin2hex(random_bytes(32));
+    }
+    $_SESSION['install_granted'] = '1';
+
+    return $_SESSION['install_csrf'];
+}
+
+/**
+ * Guard an installer step endpoint.
+ *
+ * Refuses the request unless it carries a valid install-session grant and a matching CSRF token.
+ * An unauthenticated request (no session cookie, no token) is rejected with 403 before any POST
+ * input is processed — the primary fix for GHSA-8xp7-fh3p-5pcr (unauthenticated RCE via the
+ * re-runnable installer). On failure it emits a JSON body and terminates.
+ *
+ * @return void
+ */
+function installAssertStepAuthorized(): void
+{
+    installStartSession();
+
+    $granted = isset($_SESSION['install_granted']) && $_SESSION['install_granted'] === '1';
+    $sessionToken = isset($_SESSION['install_csrf']) && is_string($_SESSION['install_csrf'])
+        ? $_SESSION['install_csrf']
+        : null;
+    $providedToken = isset($_SERVER['HTTP_X_CSRF_TOKEN']) && is_string($_SERVER['HTTP_X_CSRF_TOKEN'])
+        ? $_SERVER['HTTP_X_CSRF_TOKEN']
+        : null;
+
+    if ($granted === true && installCsrfTokenMatches($sessionToken, $providedToken) === true) {
+        return;
+    }
+
+    if (!headers_sent()) {
+        http_response_code(403);
+        header('Content-type: application/json; charset=utf-8');
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+    }
+    echo json_encode([
+        'success' => false,
+        'message' => 'Installation request rejected: start the installer from install.php.',
+    ]);
+    exit;
+}
+
 // Check if function exists
 if (!function_exists('dataSanitizer')) {
     /**
