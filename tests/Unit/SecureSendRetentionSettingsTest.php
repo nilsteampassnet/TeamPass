@@ -24,6 +24,7 @@ use TeampassClasses\Encryption\Encryption;
 
 require_once __DIR__ . '/../../app/sources/secure_send_retention.php';
 require_once __DIR__ . '/../../app/sources/secret_settings_logic.php';
+require_once __DIR__ . '/../../app/sources/storage_folder_logic.php';
 
 /** Observe only persistence calls made by the real save_option_change handler. */
 final class DB

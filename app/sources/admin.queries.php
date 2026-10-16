@@ -43,6 +43,7 @@ use TeampassClasses\EmailService\EmailService;
 // Load functions
 require_once 'main.functions.php';
 require_once __DIR__ . '/licence.functions.php';
+require_once __DIR__ . '/storage_folder_logic.php';
 $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
 loadClasses('DB');
@@ -70,7 +71,13 @@ $checkUserAccess = new PerformChecks(
 );
 // Handle the case
 echo $checkUserAccess->caseHandler();
-if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('admin') === false) {
+// Most actions below carry no role check of their own and rely on this gate, so it also
+// requires an authenticated session explicitly instead of trusting the page check alone:
+// an empty identity must never reach them (GHSA-988j-pf6f-2m2r).
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('admin') === false
+    || (int) ($session->get('user-id') ?? 0) <= 0
+    || empty($session->get('key')) === true
+) {
     // Not allowed page
     $session->set('system-error_code', ERR_NOT_ALLOWED);
     include TEAMPASS_ROOT . '/public/error.php';
@@ -1578,6 +1585,21 @@ switch ($post_type) {
                 );
                 break;
             }
+        }
+        // Storage folders: uploads are written there, so they must stay out of the web root
+        // where the web server would serve and execute them (GHSA-988j-pf6f-2m2r).
+        if (in_array($post_field, storageFolderSettingNames(), true) === true
+            && storageFolderIsInsideWebRoot((string) $post_value, TEAMPASS_ROOT . '/public') === true
+        ) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    // Shown as text (escapeHtml in admin.js.php)
+                    'message' => $lang->get('admin_storage_folder_inside_web_root'),
+                ],
+                'encode'
+            );
+            break;
         }
 
         require_once 'main.functions.php';
