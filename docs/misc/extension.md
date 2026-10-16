@@ -1,68 +1,18 @@
 # TeamPass Browser Extension
 
-The official TeamPass extension for **Google Chrome**, **Microsoft Edge** and **Mozilla Firefox**. It finds the credentials for the site you are on, fills login forms, saves new logins to TeamPass and can keep your passkeys, without leaving the browser.
+The official TeamPass extension for **Google Chrome**, **Microsoft Edge** and **Mozilla Firefox** finds the credentials of the site you are on, fills login forms and saves new logins to TeamPass, without leaving the browser.
 
-The extension is published on the official store of each browser and is updated automatically through them.
+> 🎫 **A commercial licence is required.** An administrator can request a free 30-day trial from TeamPass: see [Free trial](#free-trial). For a subscription, write to `contact@teampass.net`.
 
-> 🎫 **A commercial licence is required.** An administrator can request a free 30-day trial directly from TeamPass: see [Requesting a free trial](#requesting-a-free-trial). For a subscription, write to `contact@teampass.net`.
-
----
-
-## Features
-
-**Setup**
-- One-click configuration from TeamPass, or from a configuration file, with no data entry. Your password is never sent to the extension; a revocable access token is used instead
-- A three-step setup wizard for manual configuration
-- Licence details fetched from TeamPass automatically
-
-**Finding and using credentials**
-- Credentials matching the current site shown as soon as the popup opens, with a counter on the toolbar icon
-- Search by label across every folder you can access
-- One-click copy of the login, password, e-mail or TOTP code; the clipboard is cleared 20 seconds after a password or code is copied
-- Login form autofill, including TOTP fields
-- Item details with the password hidden until you reveal it
-
-**Saving and editing**
-- Detects a successful login and offers to save it, or to update the existing item. The folder last used for the site is suggested
-- Create, edit and delete items: label, login, password, e-mail, URL, description, tags, icon and TOTP secret
-- Create, rename, move and delete folders, within your TeamPass rights
-- Password generator in the popup and inside sign-up forms on web pages: passwords or passphrases, with a history of the last generated values
-
-**Security**
-- Optional **vault lock**: a PIN, biometrics or a security key, with auto-lock after inactivity
-- **Passkeys** kept in TeamPass and used on the sites that support them (TeamPass 3.2.3 or later)
-- Secrets are never filled into, or captured from, `http://` pages unless you allow the site
-- Saved page addresses are stripped of their query string and embedded credentials, so one-time sign-in codes never end up in an item
-- Clear error messages that tell a certificate problem, a CORS problem and an unreachable server apart
-
-**Interface**
-- Dark mode
-- English, French, German and Spanish
-- A maintenance screen, retried automatically, while TeamPass is in maintenance mode
-
-### Current limitations
-
-- Custom fields are not displayed or edited by the extension.
-- Login forms inside frames (`iframe`) are not filled.
-- Passkeys are not offered in the browser's autofill suggestions, nor inside frames.
+This page has two parts: [connecting the extension](#connect-the-extension) for every user, and [enabling it](#enable-the-extension-administrators) for administrators. The [reference](#reference) at the end covers the details.
 
 ---
 
-## Requirements
+## Connect the extension
 
-| | |
-|---|---|
-| **TeamPass server** | 3.2.1.0 or later. Passkeys require 3.2.3 or later |
-| **API** | Enabled on the server, and API access enabled for each user of the extension |
-| **HTTPS** | Required, with a certificate the browser trusts and that matches the server name (see [Troubleshooting](#cannot-reach-the-teampass-server)) |
-| **Browser** | A current version of Chrome or Edge; Firefox 140 or later |
-| **Licence** | A subscription or a trial. Browsers must be able to reach `https://licence.teampass.net` |
+### 1. Install it
 
----
-
-## Installation
-
-Install the extension from the store of your browser:
+Install the extension from the store of your browser, then pin the TeamPass icon to the toolbar.
 
 | Browser | Store |
 |---|---|
@@ -70,344 +20,145 @@ Install the extension from the store of your browser:
 | Microsoft Edge | [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/teampass-password-manager/adgkighfbpgjgoldhcdjjjhceicdemem) |
 | Mozilla Firefox | [Firefox Add-ons](https://addons.mozilla.org/firefox/addon/teampass-password-manager/) |
 
-Click **Add to Chrome** (or **Get**, **Add to Firefox**) and confirm. Updates are installed automatically by the browser.
+Updates are installed automatically by the browser.
 
-Then pin the TeamPass icon to the toolbar: the extension is used from there.
+### 2. Configure it in one click
 
-### Deploying to a fleet
+1. Sign in to TeamPass **in the same browser**.
+2. TeamPass detects the extension and asks whether to configure it now. If it does not, open **Profile → Browser extension** and click **Configure my extension**.
+3. A window of the extension shows the server and your account. Check that you recognise the server, then click **Confirm & configure**.
 
-Managed browsers can install the extension through their usual policies, using the store identifiers:
+That's it: the server, your account and the licence are set up. Click the TeamPass icon to find your passwords.
 
-| Browser | Identifier | Policy |
-|---|---|---|
-| Chrome | `cnlomomlocpdfojipnpkhhndpdbcolfn` | `ExtensionInstallForcelist`: `cnlomomlocpdfojipnpkhhndpdbcolfn;https://clients2.google.com/service/update2/crx` |
-| Edge | `adgkighfbpgjgoldhcdjjjhceicdemem` | `ExtensionInstallForcelist`: `adgkighfbpgjgoldhcdjjjhceicdemem;https://edge.microsoft.com/extensionwebstorebase/v1/crx` |
-| Firefox | `contact@teampass.net` | `ExtensionSettings` in `policies.json`, with `installation_mode` set to `force_installed` and `install_url` set to `https://addons.mozilla.org/firefox/downloads/latest/teampass-password-manager/latest.xpi` |
+Your password is never sent to the extension. TeamPass gives it an access token instead, listed in **Profile → Browser extension → Access given to the extension**, where you can revoke it at any time.
 
-Each user then configures their own extension, ideally with the one-click setup described in [Setting up the extension](#setting-up-the-extension).
+> 💡 **Protect the extension with a PIN** if other people use this computer: right-click the TeamPass icon → **Options** → **Vault lock**.
 
-### Moving from a ZIP installation
+### If the one-click setup is not offered
 
-Earlier versions were distributed as ZIP files loaded in developer mode. These packages are no longer provided. Remove the manually loaded copy from the browser's extensions page, install the extension from the store, and configure it again: the store version is a separate extension and does not see the settings of the old copy.
+- **TeamPass does not detect the extension**: **Profile → Browser extension** shows a **Download configuration file** button. Click the TeamPass icon, choose **I have a setup file** and import the file, then confirm. **Delete the file afterwards**: it holds an access token, and can only be imported within 24 hours.
+- **Your administrator has not enabled the one-click setup**: click the TeamPass icon, choose **Set up manually**, and follow the three steps:
+  1. **Your server** — the address you open TeamPass with, for example `https://teampass.example.com`.
+  2. **Your account** — **Username and password** for a TeamPass or LDAP account, with the API key shown in **Profile → Help and advanced → API key**. **Company account** for an SSO account, with a token created in **Profile → Browser extension → Access given to the extension** (it is shown only once).
+  3. **Your licence** — usually automatic. Otherwise, enter the details given by your administrator and click **Verify my licence**.
+
+### Everyday use
+
+- **Find a credential**: click the TeamPass icon. The credentials of the current site are listed first; type three characters to search every folder you can access. Copy the login, password or TOTP code, or fill the form of the page.
+- **Save a login**: after you sign in to a site, the extension offers to save it, or to update the existing item.
+- **Generate a password**: from the popup, or from the button shown next to the password fields of sign-up forms.
+- **`http://` sites**: secrets are never filled on an unencrypted page. For an internal application you trust, click the TeamPass icon, then **Allow on this site**.
 
 ---
 
-## Server configuration (administrators)
+## Enable the extension (administrators)
 
 Everything happens in **Settings → API**.
 
-### 1. Enable the API
+1. **Enable the API** — on the main tab, turn **API access enabled** on. Keep **Require HTTPS for API requests** on, and leave **Allowed CORS origins** empty (see [CORS origins](#cors-origins)).
+2. **Give users access to the API** — on the **Users** tab, turn API access on for each user of the extension and choose what it may do on their behalf (create, read, update, delete). These rights never go beyond the user's TeamPass rights. **Build missing API keys for users** creates the keys that are missing.
+   > ⚠️ New accounts, LDAP and OAuth2 ones included, have **no API access by default**: it is the most common reason for a refused sign-in.
+3. **Identify the instance** — on the **Browser Extension** tab, enter the **FQDN** of the server (for example `teampass.example.com`) and generate the **Browser Extension Key** with the 🔄 button.
+   > ⚠️ **Never regenerate the key once a licence exists**: the licence server cannot update it, and every extension would lose its licence. The button disappears once the key exists. If the key has leaked, write to `contact@teampass.net`.
+4. **Turn on the one-click setup** — on the same tab, turn **Allow extension auto-configuration for all users** on. Users then configure the extension in one click, whatever their sign-in method, and their password is never sent. When it is off, only SSO users allowed by **Settings → OAuth2 → Allow OAuth2 users to access the API** get the one-click setup; the others use [manual setup](#if-the-one-click-setup-is-not-offered). SSO users need one of the two switches to use the extension at all.
+5. **Activate the licence** — the **Licence** tab shows the state of your licence, and requests a [free trial](#free-trial) when you have none.
 
-On the main part of the page:
+Optional: **Allow the browser extension to save passkeys** on the **Browser Extension** tab lets users keep the passkeys of other sites in TeamPass. Read [Passkeys](../features/passkeys.md) before turning it on.
 
-| Setting | Recommendation |
+**Follow the seats** in **Statistics → Licence**: seats used this month against the quota, users refused because the quota was reached, active users today, licence expiry, and the seats of the last 31 days. The **Seat history** link of the *Browser Extension* tile of the dashboard opens it. A seat is taken by each user who uses the extension during the calendar month (UTC), and the count restarts on the 1st.
+
+### Deploying to a fleet
+
+Managed browsers install the extension through their usual policies; each user then [configures it](#_2-configure-it-in-one-click).
+
+| Browser | Policy |
 |---|---|
-| **API access enabled** | On |
-| **JWT token expiration delay (in minutes)** | Default `60`. The extension renews its session in the background, so there is no need to raise it |
-| **Allowed CORS origins** | Leave empty (see [CORS](#cors-origins)) |
-| **Require HTTPS for API requests** | On |
-| **API rate limit (requests per minute)** | Default `120` |
-
-### 2. Give users access to the API
-
-Open the **Users** tab. For each user of the extension, turn API access on and choose the operations the extension may perform on their behalf: create, read, update, delete. These rights apply on top of the user's TeamPass rights, never beyond them.
-
-> ⚠️ New accounts, including those created from LDAP or OAuth2, have **no API access by default**. It is the most common reason for a refused sign-in.
-
-**Build missing API keys for users** creates an API key for every account that has none. Each user finds their key in **Profile → Help and advanced → API key**.
-
-### 3. Identify the instance for the licence
-
-Open the **Browser Extension** tab.
-
-- **FQDN** — the domain name of your TeamPass server, for example `teampass.example.com`. It identifies the owner of the licence.
-- **Browser Extension Key** — click the generate button (🔄) to create it, and the copy button to copy it. This key is the secret of your licence.
-
-> ⚠️ **Never regenerate the key once a licence is registered.** The licence server cannot update it, and a new key would leave every extension unable to validate the licence. For this reason the generate button is only shown while no key exists. If the key has leaked, write to `contact@teampass.net`. Never share it publicly.
-
-Users rarely need to type these two values: the extension fetches them from TeamPass once signed in.
-
-### 4. Allow the one-click setup
-
-The one-click setup uses a **Personal Access Token** instead of the user's password. Who can use it depends on two switches:
-
-| Switch | Effect |
-|---|---|
-| **Settings → API → Browser Extension → Allow extension auto-configuration for all users** | Every user (local, LDAP or SSO) can configure the extension in one click |
-| **Settings → OAuth2 → Allow OAuth2 users to access the API** | OAuth2/SSO users can generate tokens, even when the switch above is off |
-
-Both are off by default. OAuth2/SSO users have no password the API can check, so for them one of the two is **required** to use the extension at all. Local and LDAP users can always configure it manually with their password and API key.
-
-### 5. Licence
-
-The **Licence** tab shows the state of your licence and lets you request a free trial. See [Licence](#licence).
-
-### 6. Passkeys
-
-On the **Browser Extension** tab, **Allow the browser extension to save passkeys** lets the extension keep the passkeys of your users in TeamPass (TeamPass 3.2.3 or later). It is off by default. Read [Passkeys](../features/passkeys.md) before turning it on: a passkey saved in a shared folder can be used by every member of that folder.
-
-### CORS origins
-
-The extension calls the TeamPass API from the browser, so the API — and any reverse proxy in front of it — must return CORS headers that allow it.
-
-| Field value | Behaviour |
-|---|---|
-| **Empty** (recommended) | Every origin is accepted. The JWT token remains the security boundary of the API: CORS only stops other websites from calling it through a user's browser |
-| **Comma-separated list** | Only the listed origins are accepted |
-
-If you restrict the list, add the origin of each browser, without a trailing slash:
-
-- Chrome: `chrome-extension://cnlomomlocpdfojipnpkhhndpdbcolfn`
-- Edge: `chrome-extension://adgkighfbpgjgoldhcdjjjhceicdemem`
-- Firefox: `moz-extension://<Internal UUID>`, shown in `about:debugging#/runtime/this-firefox`
-
-> ⚠️ Firefox gives every installation a **different** internal UUID, which changes again when the extension is reinstalled or the profile reset. A restricted list therefore does not suit Firefox users: leave the field empty if you have any.
+| Chrome | `ExtensionInstallForcelist`: `cnlomomlocpdfojipnpkhhndpdbcolfn;https://clients2.google.com/service/update2/crx` |
+| Edge | `ExtensionInstallForcelist`: `adgkighfbpgjgoldhcdjjjhceicdemem;https://edge.microsoft.com/extensionwebstorebase/v1/crx` |
+| Firefox | `ExtensionSettings` in `policies.json` for `contact@teampass.net`: `installation_mode` `force_installed`, `install_url` `https://addons.mozilla.org/firefox/downloads/latest/teampass-password-manager/latest.xpi` |
 
 ---
 
-## Setting up the extension
+## Reference
 
-There are three ways to set up the extension. The first one is the fastest.
+### Requirements
 
-### One click from TeamPass (recommended)
+| | |
+|---|---|
+| **TeamPass server** | 3.2.1.0 or later; passkeys require 3.2.3 or later |
+| **HTTPS** | A certificate the browser trusts, issued for the server name |
+| **Browser** | A current Chrome or Edge; Firefox 140 or later |
+| **Licence** | A subscription or a trial; browsers must reach `https://licence.teampass.net` |
 
-Available when your administrator has allowed it (see [Allow the one-click setup](#_4-allow-the-one-click-setup)).
+Not supported yet: custom fields, login forms inside frames (`iframe`), and passkeys in the browser's autofill suggestions.
 
-1. Sign in to TeamPass in the browser where the extension is installed.
-2. When the extension is not configured yet, TeamPass offers to configure it. Otherwise open **Profile → Browser extension** and click **Configure my extension**.
-3. A window of the extension opens and shows the server and the account about to be configured. Click **Confirm**.
+### Extension settings
 
-The server, your account and the licence are set up. Your password is not transmitted: TeamPass creates a Personal Access Token, listed in **Profile → Browser extension → Access given to the extension**, where you can revoke it at any time.
-
-### Configuration file
-
-When TeamPass does not detect the extension, **Configure my extension** says so and shows a **Download configuration file** button.
-
-1. Download the file.
-2. Open the extension settings (right-click the TeamPass icon → **Options**). On first use, the setup wizard asks **Did you receive a configuration file?** — choose **Yes, I have a file** and drop the file. Once configured, use **Connection → Import configuration file** instead.
-3. Confirm in the window that opens.
-
-> ⚠️ The file contains an access token that can unlock your account in the extension. **Delete it** once imported. It can be imported within 24 hours of its creation; after that, download a new one.
-
-### Setup wizard
-
-Open the extension settings (right-click the TeamPass icon → **Options**) and choose **No, I'll enter the details**.
-
-1. **Your server** — the address you open TeamPass with, for example `https://teampass.example.com`.
-2. **Your account** — how you sign in to TeamPass:
-   - **Username and password** (TeamPass or LDAP account): your username, your password, and the API key shown in **Profile → Help and advanced → API key**.
-   - **Company account** (SSO): your username and an extension token, generated in **Profile → Browser extension → Access given to the extension**. The token is shown only once: copy it straight away.
-3. **Your licence** — usually automatic. If the extension could not fetch it from TeamPass, enter the licence e-mail, the server domain name and the licence key given by your administrator, then click **Verify my licence**.
-
-> 💡 LDAP users: after a password change in the directory, sign in once to the TeamPass web interface before using the extension. Until then, the extension is refused with the new password.
-
-The wizard then suggests protecting the vault with a PIN — recommended when other people use the computer.
-
----
-
-## The settings page
-
-Right-click the TeamPass icon → **Options**. Once the extension is configured, the page is organised in sections:
+Right-click the TeamPass icon → **Options**.
 
 | Section | Contents |
 |---|---|
-| **Overview** | Server, account and licence at a glance, with what needs attention and the common settings |
-| **Connection** | Server address and sign-in details, **Keep me signed in**, **Test Connection**, **Sign in again**, import of a configuration file |
-| **Licence** | Licence details and status, **Save and verify**, **Get it from TeamPass** |
+| **Overview** | Server, account and licence at a glance; **Keep the session open** (leave it on) |
+| **Connection** | Server and sign-in details, **Test Connection**, **Sign in again**, **Import configuration file** |
+| **Licence** | Licence details, **Save and verify**, **Get it from TeamPass** |
 | **Autofill and sites** | The `http://` sites where autofill is allowed |
 | **Passkeys** | **Use TeamPass for passkeys** |
 | **Vault lock** | PIN, quick unlock, auto-lock delay |
-| **Help and troubleshooting** | Diagnostic mode, technical information for support, reset of the extension |
+| **Help and troubleshooting** | Diagnostic mode, information for support, reset of the extension |
 
-The page uses the language chosen in the popup. **Keep the session open** (in the overview) lets the extension renew its connection in the background; leave it on.
+### Vault lock
 
----
+Stops someone else from opening your credentials on this computer, whatever your sign-in method.
 
-## Using the extension
+- **PIN**: at least 6 digits. After **5 wrong attempts**, the credentials stored by the extension are erased and you sign in again.
+- **Quick unlock**: Windows Hello, Touch ID or a FIDO2 security key, with the PIN as fallback. It needs an authenticator that supports the WebAuthn PRF extension.
+- **Auto-lock**: after 1, 5, 15 (default), 30 or 60 minutes of inactivity, or when the browser closes.
 
-### Finding a credential
+### Passkeys
 
-Click the TeamPass icon. The popup lists the items whose URL matches the current site, by domain name. Type at least three characters in the search field to search by label in every folder you can access.
+When your administrator allows it (TeamPass 3.2.3 or later), the extension keeps the passkeys of the sites you visit in TeamPass:
 
-From an item you can copy the login, password, e-mail or TOTP code, fill the form of the page, open the details or edit the item.
+- When a site offers to create a passkey, choose the item to store it in, then click **Save in TeamPass**.
+- When a site asks for a passkey TeamPass holds, choose the account and click **Sign in**.
+- Sites that require identity verification use the vault lock: set one up to use passkeys there.
 
-### Saving a new login
+Turn it off with **Use TeamPass for passkeys** in **Options → Passkeys**. Signing in to TeamPass itself with a passkey is a separate feature: see [Passkeys](../features/passkeys.md#signing-in-to-teampass-with-a-passkey).
 
-After a successful sign-in on a site, the extension offers to save the credentials:
+### Licence
 
-- **Quick save**: a name and a folder, directly in the page. The folder last used for the site is suggested.
-- **More options**: the full form, with tags and the other fields.
-- When the site already has an item for this login, the extension offers to **update** it instead, and shows what changed.
+The extension checks the licence with `licence.teampass.net` **from the browser**, at most every ten minutes, using the licence e-mail (your TeamPass e-mail), the server FQDN and the Browser Extension Key. They are filled in at sign-in; **Get it from TeamPass** fetches them again.
 
-The account screen of the popup also lets you define a **favourite folder**, offered first when creating items.
-
-### Generating a password
-
-Use the generator button in the popup, or the generator shown next to the password fields of sign-up forms. It produces passwords (length, character types, ambiguous characters excluded on demand) or passphrases (number of words, separator). The last generated values are kept in a history, encrypted when a valid licence is present.
-
-### Sites served over `http://`
-
-On an `http://` page the password travels in clear text, so the extension neither fills it nor offers to save it. For an internal application you trust, open it, click the TeamPass icon, then **Allow on this site**. The exceptions are listed, and can be removed, in **Settings → Autofill and sites**. Local addresses (`localhost`) are always allowed.
-
-A switch in the same section allows every `http://` site. It is not recommended: it also covers public sites.
-
----
-
-## Vault lock
-
-The vault lock stops someone else from opening your credentials on this computer. It works with every sign-in method, SSO included. Configure it in **Settings → Vault lock**; the popup only unlocks and locks.
-
-| | |
+| Status | What happens |
 |---|---|
-| **PIN** | At least 6 digits. Asked for to open the vault once it has locked. After **5 wrong attempts**, the credentials stored by the extension are erased and you sign in again |
-| **Quick unlock** | Windows Hello, Touch ID or a FIDO2 security key. The PIN always remains available as a fallback. Unlock the vault before turning it on |
-| **Auto-lock** | After 1, 5, 15 (default), 30 or 60 minutes of inactivity, or only when the browser closes |
+| **Valid** / **Trial** | The extension works |
+| **Expired** | A subscription keeps working 15 days after its end date; a trial stops on its end date |
+| **Invalid** | Check the three values in **Options → Licence** |
+| **User limit exceeded** | Contact the person who manages your subscription |
+| **Not verified yet** | Wait a few minutes, then click **Save and verify** |
+| **Too many verifications** | The licence server limits checks per hour; the extension waits, then checks again |
 
-Quick unlock requires an authenticator supporting the WebAuthn PRF extension. Some Windows Hello configurations do not: the extension says so, and the PIN or a compatible security key can be used instead.
+If the licence server cannot be reached, the extension keeps working for **5 days** after the last successful check.
 
-> A PIN is an unlock convenience, not strong protection against someone with full control of the computer. Prefer biometrics where available.
+### Free trial
 
-The vault lock is also what confirms your identity for [passkeys](#passkeys).
+An administrator requests it in **Settings → API → Licence**.
 
----
+- **Check the FQDN first**: it must be a public host name. A trial is granted **once per FQDN, forever**, and the FQDN and the key cannot be changed afterwards.
+- **The contact e-mail** must belong to the domain of the instance; otherwise, write to `contact@teampass.net`.
+- **Confirm by e-mail**: nothing is activated until you open the link of the confirmation message. The link works once, for 48 hours, and **asking for a new message invalidates the previous link**. Then click **"I have confirmed — check"**.
+- **A trial has no grace period**: it stops on its end date. TeamPass warns you from seven days before.
+- **No Internet access on the server?** The tab offers a request link to open from another machine, sent by e-mail, copied, or shown as a QR code. The link holds the licence key: do not forward it. The server keeps reporting the licence server as unreachable, which is expected — the extension checks the licence from the browser. A proxy is configured with the `proxy_ip` and `proxy_port` settings of the `teampass_misc` table.
 
-## Passkeys
+### CORS origins
 
-> Requires **TeamPass 3.2.3 or later**, with passkeys enabled by the administrator.
+Leave **Allowed CORS origins** empty: the API token remains the security boundary. If you restrict it, add each browser's origin without a trailing slash — `chrome-extension://cnlomomlocpdfojipnpkhhndpdbcolfn` (Chrome), `chrome-extension://adgkighfbpgjgoldhcdjjjhceicdemem` (Edge). Firefox gives every installation a different origin, so a restricted list does not suit Firefox users. A reverse proxy in front of the API must let the CORS headers through.
 
-A passkey replaces the password on the sites that support it. The extension can keep yours in TeamPass, so they follow you on every computer where the extension is installed.
+### Troubleshooting
 
-- **Creating a passkey**: when a site offers to create one, a TeamPass window opens. Choose the item to store it in, or create a new item in a folder of your choice, then click **Save in TeamPass**.
-- **Signing in**: when a site asks for a passkey that TeamPass holds, choose the account and click **Sign in**.
-- **Identity verification**: some sites require you to confirm your identity. The extension does it with the vault lock (PIN or biometrics). Without a vault lock, use another device for those sites.
-- **Everything else is left to the browser**: sites for which TeamPass holds no passkey, and **Use another device**, go to the browser or your security key as usual.
-
-The feature can be turned off with **Use TeamPass for passkeys** in **Settings → Passkeys**.
-
-> These are the passkeys of the sites you visit. Signing in to TeamPass itself with a passkey is a separate feature, set up by your administrator and used from the TeamPass login page — see [Passkeys](../features/passkeys.md#signing-in-to-teampass-with-a-passkey).
-
----
-
-## Licence
-
-### How the licence is checked
-
-The extension checks the licence with `licence.teampass.net`, **from the browser**, using three values:
-
-- **Licence e-mail** — the e-mail address of your TeamPass account. The licence counts its users by this address.
-- **Server domain name** — the FQDN defined in **Settings → API → Browser Extension**.
-- **Licence key** — the Browser Extension Key.
-
-They are filled in automatically when you sign in, and can be fetched again with **Get it from TeamPass** in **Settings → Licence**. Only these three values are sent; no usage data is collected. The answers of the licence server are signed and verified by the extension.
-
-The check runs in the background, at most once every ten minutes. **Save and verify** forces one.
-
-| Status | Meaning | What happens |
-|---|---|---|
-| **Valid** / **Trial** | The licence is active | The extension works |
-| **Expired** | The subscription has ended | A subscription keeps working for up to 15 days after its end date, to cover a renewal. A trial stops on its end date |
-| **Invalid** | The licence is not recognised | Check the three values in **Settings → Licence** |
-| **User limit exceeded** | More users than the licence allows | Contact the person who manages your subscription |
-| **Not verified yet** | No answer from the licence server so far | See below |
-| **Too many verifications** | The licence server limits the number of checks per hour | The extension waits, then checks again |
-
-If the licence server cannot be reached, the extension keeps working for **5 days** after the last successful check, then stops until the server answers again. Only a definite answer (expired, invalid, limit exceeded) blocks it straight away.
-
-### Requesting a free trial
-
-An administrator can request an evaluation licence directly from TeamPass, without contacting anyone.
-
-Go to **Settings → API → Licence**. The tab shows the identity this instance would be licensed under — its FQDN and its extension key — followed by the state of the licence.
-
-#### Before you request
-
-Two values are sent as the identity of your instance and cannot be changed afterwards:
-
-- **The FQDN** must be a public host name such as `teampass.example.com`. Values like `localhost`, an IP address, or a subfolder name are refused by TeamPass before anything is sent. A trial is granted **once per FQDN and per product, forever**, so an incorrect FQDN would spend the only trial this instance will ever get.
-- **The extension key** becomes the secret of the licence. Once a licence is registered it must never be regenerated: the licence server has no update route, and a new key would leave your instance unable to prove it owns its own licence.
-
-The contact e-mail must belong to the domain of the instance. If your mailboxes are hosted elsewhere, ask for the trial by writing to `contact@teampass.net`.
-
-#### The confirmation e-mail
-
-Requesting the trial sends a confirmation message to the address you provided. **Nothing is activated until you open the link it contains** — as long as you have not confirmed, your instance remains eligible for a trial.
-
-Two points cause most support requests:
-
-- **The link works only once**, and it expires after 48 hours. Past that, ask for a new message.
-- **Asking for a new message invalidates the previous link.** If you request a resend, open the most recent e-mail; clicking the link in the older one will report an invalid link.
-
-Once you have opened the link, click **"I have confirmed — check"** in the Licence tab. TeamPass then asks the licence server whether a licence now exists.
-
-#### After activation
-
-A trial licence is an ordinary licence: same endpoints, same rules. The one difference matters:
-
-> ⚠️ **A trial has no grace period.** Access stops on the day the trial expires. A subscription keeps 15 days of tolerance to cover a renewal in progress; a trial does not. TeamPass warns you in the Licence tab and on the dashboard from seven days before the deadline.
-
-#### If the licence server cannot be reached
-
-The trial request is made by the TeamPass server, not by your browser. If your network requires a proxy, set the `proxy_ip` and `proxy_port` settings in the `teampass_misc` table: they are honoured for every call to the licence server.
-
-On an instance with **no outbound Internet access at all**, the Licence tab reports that the licence server is unreachable and offers a request link instead. That link opens a page hosted on the licence server which, once you confirm it there, performs the request your server could not make. Open it from any machine that does have Internet access.
-
-Three ways to get the link out of an isolated server, pick whichever fits:
-
-| | |
-|---|---|
-| **Send me the link** | E-mails it, using this instance's own mail settings — those usually keep working without Internet access. You can change the destination address. |
-| **Copy the link** | Puts it in the clipboard. |
-| **Show a QR code** | Generated locally, nothing leaves the browser. Scan it with a phone when the console has neither mail nor clipboard. |
-
-> ⚠️ **The link contains the licence key of your instance.** Treat it as a secret and do not forward the e-mail: the page it opens is the only place that key should ever be pasted.
-
-From there the flow is the usual one — the page confirms the request, a confirmation message reaches the address you gave, and opening its link activates the trial.
-
-**Your TeamPass server will keep reporting the licence server as unreachable, and that is expected.** It has no way to observe the activation. It changes nothing: the extension checks the licence directly from the browser, so it picks up the trial on its own.
-
-That last point cuts both ways. Provisioning can happen without the TeamPass server ever reaching `licence.teampass.net` — but a *browser* that cannot reach it will not be able to use the extension at all, whatever your server can reach.
-
-#### Trials not offered
-
-If self-service trials are closed on the licence server, the Licence tab says so and offers no form. This is a server-side switch; write to `contact@teampass.net`.
-
----
-
-## Troubleshooting
-
-### Cannot reach the TeamPass server
-
-The extension tells the possible causes apart and names the one it found:
-
-- **Certificate** — the most common cause on an `https://` address. The browser refuses a self-signed or expired certificate, or one issued for another name, without showing any warning to the extension, and the request never reaches TeamPass (so nothing appears in its logs). Open the server address in a tab: if the browser warns about the certificate, install one it trusts, issued for the exact server name.
-- **CORS** — the server answered, but the API or a proxy in front of it does not send the CORS headers the extension needs. See [CORS origins](#cors-origins).
-- **Unreachable** — wrong address, DNS or network problem.
-
-### Sign-in refused
-
-The extension reports that TeamPass refused the credentials. TeamPass deliberately gives the same answer whatever the cause; administrators find the exact cause in **Logs**, filtered on the *Failed logins* type and the *API / Extension* channel. The most frequent are API access not enabled for the user, a wrong API key, and an LDAP password changed since the last web sign-in. The full list is in [Troubleshooting a refused authentication](../api/api-basic.md#authorize-troubleshooting).
-
-After a refusal, the extension stops retrying on its own for 30 minutes, so that repeated attempts do not lock the account. Fix the cause, then click **Sign in again** in **Settings → Connection**.
-
-### Autofill does nothing
-
-- On an `http://` page, autofill is blocked on purpose: use **Allow on this site** in the popup.
-- Login forms inside frames are not supported.
-- If the popup asks you to reload the page, do so: it happens on tabs opened before the extension was updated.
-
-### Licence problems
-
-- **Not verified yet**: wait a few minutes, then click **Save and verify** in **Settings → Licence**. Check that the browser can reach `https://licence.teampass.net`.
-- **Invalid**: check the licence e-mail, the server domain name and the licence key, or click **Get it from TeamPass**.
-- **Expired** or **User limit exceeded**: contact the person who manages your subscription.
-
-### Information for support
-
-In **Settings → Help and troubleshooting**:
-
-- **Enable diagnostic mode** only when support asks for it.
-- **Copy** the technical information and send it to support; it contains no password.
-- **Reset the extension** removes every setting and stored credential from this browser.
+- **Cannot reach the server** — the extension names the cause. **Certificate**: open the server address in a tab; if the browser warns, install a certificate it trusts for that exact name. **CORS**: see [CORS origins](#cors-origins). **Unreachable**: wrong address, DNS or network.
+- **Sign-in refused** — administrators find the exact cause in **Logs**, type *Failed logins*, channel *API / Extension*: usually API access not enabled for the user, a wrong API key, or an LDAP password changed since the last web sign-in (sign in once to TeamPass). The extension then waits 30 minutes before retrying; fix the cause and click **Sign in again** in **Options → Connection**. Full list: [Troubleshooting a refused authentication](../api/api-basic.md#authorize-troubleshooting).
+- **Autofill does nothing** — on an `http://` page, use **Allow on this site**; forms inside frames are not supported; reload tabs opened before an update of the extension.
+- **Information for support** — in **Options → Help and troubleshooting**, copy the technical information (it contains no password). **Reset the extension** removes every setting and stored credential from this browser.
 
 ---
 
