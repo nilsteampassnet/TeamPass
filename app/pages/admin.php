@@ -144,6 +144,9 @@ require_once __DIR__ . '/../sources/admin_activity_logic.php';
                         <div>
                             <strong><?php echo $lang->get('browser_extension'); ?></strong>
                             <?php if ($extensionHasLicence): ?>
+                            <a href="index.php?page=statistics#tp-ops-licence" class="small text-white ml-2">
+                                <i class="fas fa-chart-bar mr-1"></i><?php echo $lang->get('extension_seats_history_link'); ?>
+                            </a>
                             <p class="mb-0 small" id="extension-licence-status">
                                 <i class="fas fa-spinner fa-spin mr-1"></i>
                                 <small class="text-muted"><?php echo $lang->get('loading'); ?></small>

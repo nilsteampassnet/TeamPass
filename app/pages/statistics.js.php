@@ -85,7 +85,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     // Re-render charts when a tab becomes visible (Chart.js needs visible canvases)
     $(document).on('shown.bs.tab', '#tp-ops-tabs a[data-toggle="tab"]', function(event) {
-        $('.tp-ops-standard-filter').toggle($(event.target).attr('href') !== '#tp-ops-lapr');
+        var target = $(event.target).attr('href');
+        // The licence tab has its own data: the period, the filters and the refresh do not apply to it
+        $('.tp-ops-toolbar').toggle(target !== '#tp-ops-licence');
+        $('.tp-ops-standard-filter').toggle(target !== '#tp-ops-lapr');
+        if (target === '#tp-ops-licence') {
+            tpLicenceShow();
+            return;
+        }
         tpOpsRerenderFromCache();
     });
 
@@ -1316,5 +1323,365 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#039;');
+    }
+
+
+    // ----------------------------------------------------------------------------------
+    // Licence tab: browser extension seats, read from info.php through the shared licence
+    // cache (get_extension_licence_info). A cache hit never consumes the hourly budget.
+    // ----------------------------------------------------------------------------------
+
+    var tpLicenceText = <?php echo json_encode([
+        'loadError' => $lang->get('ops_stats_load_error'),
+        'noLicence' => $lang->get('licence_no_licence_registered'),
+        'unreachable' => $lang->get('licence_trial_error_unreachable'),
+        'quotaShare' => $lang->get('extension_seats_kpi_quota_share'),
+        'trial' => $lang->get('licence_trial_badge'),
+        'days' => $lang->get('days'),
+        'seats' => $lang->get('extension_seats_history_tooltip_seats'),
+        'active' => $lang->get('extension_seats_history_tooltip_active'),
+        'live' => $lang->get('extension_seats_history_tooltip_live'),
+        'noSnapshot' => $lang->get('extension_seats_history_no_snapshot'),
+        'since' => $lang->get('extension_seats_history_since'),
+        'aria' => $lang->get('extension_seats_history_aria'),
+    ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>;
+    var tpLicenceLoaded = false;
+    var tpLicenceChart = null;
+
+    /**
+     * Load the Licence tab on its first display; later displays only resize the chart.
+     *
+     * @return {void}
+     */
+    function tpLicenceShow() {
+        if (tpLicenceLoaded === false) {
+            tpLicenceLoaded = true;
+            loadLicenceStatistics();
+        } else if (tpLicenceChart) {
+            tpLicenceChart.resize();
+        }
+    }
+
+    /**
+     * Fetch the licence figures and the seat history.
+     *
+     * @return {void}
+     */
+    function loadLicenceStatistics() {
+        $('#tp-licence-content').hide();
+        $('#tp-licence-availability').removeClass('alert-info alert-warning alert-danger').addClass('alert-light border')
+            .html("<i class='fas fa-circle-notch fa-spin'></i>").show();
+
+        $.post(
+            "sources/admin.queries.php",
+            {
+                type: "get_extension_licence_info",
+                key: "<?php echo $session->get('key'); ?>"
+            },
+            function(data) {
+                try {
+                    data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                } catch (e) {
+                    tpLicenceLoaded = false;
+                    tpLicenceNotice(tpLicenceText.loadError, 'alert-danger');
+                    return;
+                }
+                renderLicenceStatistics(data);
+            }
+        ).fail(function() {
+            tpLicenceLoaded = false;
+            tpLicenceNotice(tpLicenceText.loadError, 'alert-danger');
+        });
+    }
+
+    /**
+     * Replace the tab content with a single message.
+     *
+     * @param {string} message
+     * @param {string} alertClass
+     * @return {void}
+     */
+    function tpLicenceNotice(message, alertClass) {
+        $('#tp-licence-content').hide();
+        $('#tp-licence-availability').removeClass('alert-light border alert-info alert-warning alert-danger')
+            .addClass(alertClass).text(message).show();
+    }
+
+    /**
+     * Render the KPIs and the seat chart of the Licence tab.
+     *
+     * @param {object} data - Decoded get_extension_licence_info answer
+     * @return {void}
+     */
+    function renderLicenceStatistics(data) {
+        if (!data || data.error === true) {
+            var noKey = data && data.message === 'no_licence_key';
+            tpLicenceNotice(noKey ? tpLicenceText.noLicence : tpLicenceText.loadError, noKey ? 'alert-info' : 'alert-danger');
+            return;
+        }
+        if (!data.server_online) {
+            tpLicenceNotice(tpLicenceText.unreachable, 'alert-warning');
+            return;
+        }
+        if (!data.licence_status && data.max_users === 0) {
+            tpLicenceNotice(tpLicenceText.noLicence, 'alert-info');
+            return;
+        }
+
+        $('#tp-licence-availability').hide();
+        $('#tp-licence-content').show();
+
+        var consumed = parseInt(data.consumed || 0, 10);
+        var maxUsers = parseInt(data.max_users || 0, 10);
+        var refused = parseInt(data.refused || 0, 10);
+        $('#tp-licence-kpi-seats').text(consumed + ' / ' + maxUsers);
+        $('#tp-licence-kpi-seats-detail').text(maxUsers > 0
+            ? tpLicenceText.quotaShare.replace('#percent#', function() { return String(tpOpsPercent(consumed, maxUsers)); })
+            : '');
+        $('#tp-licence-kpi-refused').text(refused);
+        $('#tp-licence-kpi-refused-box').toggleClass('bg-danger', refused > 0).toggleClass('bg-success', refused === 0);
+
+        var history = data.history || {};
+        var points = Array.isArray(history.points) ? history.points : [];
+        var today = points.length > 0 ? points[points.length - 1] : null;
+        $('#tp-licence-kpi-active').text(today && today.live === true && today.active_users !== null ? today.active_users : '—');
+
+        // A trial has no grace period: its end is flagged ahead of time, an expired licence in red
+        var expiryClass = data.licence_status === 'EXPIRED' ? 'bg-danger' : (data.trial_expiring_soon === true ? 'bg-warning' : 'bg-secondary');
+        var expiryDetail = [String(data.licence_status || '')];
+        if (data.trial === true) expiryDetail.push(tpLicenceText.trial);
+        if (data.trial_expiring_soon === true && data.days_left !== null) expiryDetail.push(data.days_left + ' ' + tpLicenceText.days);
+        $('#tp-licence-kpi-expiry').text(data.expiration_date ? String(data.expiration_date).substring(0, 10) : '—');
+        $('#tp-licence-kpi-expiry-detail').text(expiryDetail.filter(Boolean).join(' · '));
+        $('#tp-licence-kpi-expiry-box').removeClass('bg-secondary bg-warning bg-danger').addClass(expiryClass);
+
+        // An older licence server sends no history; a fresh one has only today's live point
+        var hasHistory = points.some(function(p) { return p.seats_used !== null; });
+        $('#tp-licence-history').toggle(hasHistory);
+        $('#tp-licence-history-unavailable').toggle(!hasHistory);
+        if (hasHistory) {
+            ensureChartJs(function() {
+                tpLicenceDrawChart(history, points);
+            });
+        }
+    }
+
+    /**
+     * Parse a licence-server day ("Y-m-d") as a LOCAL date.
+     * new Date('2026-10-16') would be UTC midnight and print the previous day west of Greenwich.
+     *
+     * @param {string} day
+     * @return {Date}
+     */
+    function tpLicenceDay(day) {
+        var parts = String(day).split('-').map(Number);
+        return new Date(parts[0], parts[1] - 1, parts[2]);
+    }
+
+    /**
+     * Format a nullable count for display.
+     *
+     * @param {number|null} value
+     * @return {string}
+     */
+    function tpLicenceFigure(value) {
+        return value === null || value === undefined ? '–' : String(value);
+    }
+
+    /**
+     * Chart colours for the current theme (3:1 against the card in both themes).
+     *
+     * @return {object}
+     */
+    function tpLicenceColors() {
+        var dark = $('body').hasClass('dark-mode');
+        return {
+            bar: dark ? '#4da3ff' : '#007bff',
+            barLive: dark ? 'rgba(77, 163, 255, 0.3)' : 'rgba(0, 123, 255, 0.25)',
+            quota: dark ? '#dee2e6' : '#343a40',
+            reset: dark ? '#adb5bd' : '#6c757d',
+            axis: dark ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 0.35)',
+            grid: dark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)',
+            text: dark ? '#ced4da' : '#6c757d'
+        };
+    }
+
+    /**
+     * Draw the 31-day seat chart, its accessible table and the "history since" note.
+     *
+     * The bars are the month-to-date seat count the licence server enforces: it drops to zero
+     * on the 1st, which the dotted marker shows. A day without a snapshot is a gap, never a zero.
+     *
+     * @param {object} history - Normalised history
+     * @param {Array<object>} points - history.points, oldest first, today last
+     * @return {void}
+     */
+    function tpLicenceDrawChart(history, points) {
+        var canvas = document.getElementById('tp-licence-seats-chart');
+        if (canvas === null) return;
+        // Chart.js sizes the canvas from its box: a box without a fixed height grows with it forever
+        if (canvas.parentElement === null || canvas.parentElement.style.height === '') return;
+
+        if (tpLicenceChart) {
+            tpLicenceChart.destroy();
+            tpLicenceChart = null;
+        }
+
+        var c = tpLicenceColors();
+        var figures = [];
+        points.forEach(function(p) {
+            if (p.seats_used !== null) figures.push(p.seats_used);
+            if (p.seats_quota !== null) figures.push(p.seats_quota);
+        });
+
+        tpLicenceChart = new Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: points.map(function(p) { return p.date; }),
+                datasets: [
+                    // Chart.js 2.9 draws the first dataset on top: the quota line goes first
+                    {
+                        type: 'line',
+                        data: points.map(function(p) { return p.seats_quota; }),
+                        borderColor: c.quota,
+                        borderWidth: 2,
+                        borderDash: [6, 4],
+                        pointRadius: 0,
+                        pointHoverRadius: 0,
+                        pointHitRadius: 0,
+                        fill: false,
+                        steppedLine: 'middle',
+                        spanGaps: false
+                    },
+                    {
+                        type: 'bar',
+                        data: points.map(function(p) { return p.seats_used; }),
+                        // Today's figure is live: a hollow bar
+                        backgroundColor: points.map(function(p) { return p.live ? c.barLive : c.bar; }),
+                        hoverBackgroundColor: points.map(function(p) { return p.live ? c.barLive : c.bar; }),
+                        borderColor: c.bar,
+                        borderWidth: points.map(function(p) { return p.live ? 2 : 0; }),
+                        barPercentage: 0.8,
+                        categoryPercentage: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 0 },
+                legend: { display: false },
+                scales: {
+                    xAxes: [{
+                        gridLines: { display: true, drawOnChartArea: false, color: c.axis },
+                        ticks: {
+                            fontColor: c.text,
+                            maxRotation: 0,
+                            autoSkip: true,
+                            autoSkipPadding: 12,
+                            callback: function(day) {
+                                return tpLicenceDay(day).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit' });
+                            }
+                        }
+                    }],
+                    yAxes: [{
+                        gridLines: { color: c.grid, zeroLineColor: c.axis, drawBorder: false },
+                        ticks: {
+                            fontColor: c.text,
+                            beginAtZero: true,
+                            precision: 0,
+                            suggestedMax: figures.length > 0 ? Math.max.apply(null, figures) : 1
+                        }
+                    }]
+                },
+                hover: { mode: 'index', intersect: false },
+                tooltips: {
+                    mode: 'index',
+                    intersect: false,
+                    // 'nearest' falls back to the pointer on a day without a snapshot (no bar to anchor on)
+                    position: 'nearest',
+                    displayColors: false,
+                    filter: function(item) { return item.datasetIndex === 1; },
+                    callbacks: {
+                        title: function(items) {
+                            var p = points[items[0].index];
+                            var title = tpLicenceDay(p.date).toLocaleDateString(undefined, { weekday: 'short', day: '2-digit', month: '2-digit' });
+                            return p.live ? title + ' ' + tpLicenceText.live : title;
+                        },
+                        label: function(item) {
+                            var p = points[item.index];
+                            if (p.seats_used === null) return tpLicenceText.noSnapshot;
+                            return [
+                                tpLicenceText.seats
+                                    .replace('#used#', function() { return tpLicenceFigure(p.seats_used); })
+                                    .replace('#quota#', function() { return tpLicenceFigure(p.seats_quota); }),
+                                tpLicenceText.active.replace('#count#', function() { return tpLicenceFigure(p.active_users); })
+                            ];
+                        }
+                    }
+                }
+            },
+            plugins: [{
+                afterDatasetsDraw: function(chart) {
+                    var area = chart.chartArea;
+                    var bars = chart.getDatasetMeta(1).data;
+                    var ctx = chart.ctx;
+
+                    // y axis line (the x axis line is the border of the x scale)
+                    var axisX = Math.round(area.left) + 0.5;
+                    ctx.save();
+                    ctx.strokeStyle = c.axis;
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(axisX, area.top);
+                    ctx.lineTo(axisX, area.bottom);
+                    ctx.stroke();
+                    ctx.restore();
+
+                    // Dotted marker between the last day of a month and the 1st
+                    points.forEach(function(p, i) {
+                        if (i === 0 || p.date.slice(-3) !== '-01' || !bars[i] || !bars[i - 1]) return;
+                        var x = (bars[i - 1]._model.x + bars[i]._model.x) / 2;
+                        ctx.save();
+                        ctx.strokeStyle = c.reset;
+                        ctx.lineWidth = 1;
+                        ctx.setLineDash([3, 3]);
+                        ctx.beginPath();
+                        ctx.moveTo(x, area.top);
+                        ctx.lineTo(x, area.bottom);
+                        ctx.stroke();
+                        ctx.restore();
+                    });
+                }
+            }]
+        });
+
+        // Accessible equivalent: aria-label for the figure, sr-only table for the series
+        var today = points[points.length - 1];
+        canvas.setAttribute('aria-label', tpLicenceText.aria
+            .replace('#used#', function() { return tpLicenceFigure(today.seats_used); })
+            .replace('#quota#', function() { return tpLicenceFigure(today.seats_quota); }));
+
+        var $tbody = $('#tp-licence-seats-table tbody').empty();
+        points.forEach(function(p) {
+            $('<tr>')
+                .append($('<td>').text(tpLicenceDay(p.date).toLocaleDateString()))
+                .append($('<td>').text(tpLicenceFigure(p.seats_used)))
+                .append($('<td>').text(tpLicenceFigure(p.seats_quota)))
+                .append($('<td>').text(tpLicenceFigure(p.active_users)))
+                .appendTo($tbody);
+        });
+
+        // The history only starts on the day the licence server began its daily snapshots
+        var since = history.first_snapshot || history.today || '';
+        $('#tp-licence-since').text(since !== '' && since > points[0].date
+            ? tpLicenceText.since.replace('#date#', function() { return tpLicenceDay(since).toLocaleDateString(); })
+            : '');
+    }
+
+    // Honour a #hash naming one of the tabs (the admin dashboard links to #tp-ops-licence).
+    // Last, so that every variable the tab handlers read is initialised.
+    if (/^#tp-ops-[a-z]+$/.test(window.location.hash)) {
+        $('#tp-ops-tabs a[href="' + window.location.hash + '"]').tab('show');
     }
 </script>

@@ -3481,7 +3481,7 @@ case 'get_system_health':
 
 case 'get_extension_licence_info':
     /**
-     * Licence state for the admin dashboard widget.
+     * Licence state for the admin dashboard widget and the Statistics → Licence tab.
      *
      * Kept for backward compatibility: the response keys the widget has always read are
      * unchanged, and the trial keys are additive. The transport, the caching and the
@@ -3491,7 +3491,8 @@ case 'get_extension_licence_info':
      * @return array {
      *   error: bool, server_online: bool, server_version: string,
      *   licence_status: string, expiration_date: string, consumed: int, max_users: int,
-     *   trial: bool, days_left: int|null, trial_expiring_soon: bool
+     *   trial: bool, days_left: int|null, trial_expiring_soon: bool,
+     *   refused: int, history: array{days: int, today: string, first_snapshot: string, points: array}
      * }
      */
     if ($post_key !== $session->get('key')) {
@@ -3511,6 +3512,9 @@ case 'get_extension_licence_info':
 
     $licenceExtension = $licenceInfo['info']['extension'];
     $licenceDaysLeft = licenceTrialDaysLeft((string) $licenceExtension['expiration_date'], time());
+    // A cache written before info.php 1.2.4 has neither key, and is served as-is.
+    $licenceRefused = (int) ($licenceExtension['refused'] ?? 0);
+    $licenceHistory = licenceTrialNormalizeHistory($licenceExtension['history'] ?? null);
 
     echo prepareExchangedData(
         [
@@ -3526,6 +3530,8 @@ case 'get_extension_licence_info':
             'trial_expiring_soon' => (bool) $licenceExtension['trial']
                 && $licenceDaysLeft !== null
                 && $licenceDaysLeft <= LICENCE_TRIAL_EXPIRY_WARNING_DAYS,
+            'refused' => $licenceRefused,
+            'history' => $licenceHistory,
         ],
         'encode'
     );
