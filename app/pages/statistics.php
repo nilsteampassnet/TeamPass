@@ -156,6 +156,11 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                             <i class='fas fa-sync-alt mr-1'></i><?php echo $lang->get('ops_tab_lapr'); ?>
                         </a>
                     </li>
+                    <li class='nav-item'>
+                        <a class='nav-link' id='tp-ops-licence-tab' data-toggle='tab' href='#tp-ops-licence' role='tab' aria-controls='tp-ops-licence' aria-selected='false'>
+                            <i class='fas fa-puzzle-piece mr-1'></i><?php echo $lang->get('licence_management'); ?>
+                        </a>
+                    </li>
                 </ul>
 
                 <div class='tab-content pt-3' id='tp-ops-tabs-content'>
@@ -861,6 +866,89 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             <tr><td colspan='5' class='text-center text-muted'>-</td></tr>
                                         </tbody>
                                     </table>
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+
+                    <div class='tab-pane fade' id='tp-ops-licence' role='tabpanel' aria-labelledby='tp-ops-licence-tab'>
+                        <div class='alert py-2' id='tp-licence-availability' style='display:none;'></div>
+                        <div id='tp-licence-content' style='display:none;'>
+                        <div class='row'>
+                            <div class='col-xl-3 col-md-6'>
+                                <div class='small-box bg-primary tp-ops-small-box'>
+                                    <div class='inner'>
+                                        <h3 id='tp-licence-kpi-seats'>-</h3>
+                                        <p><?php echo $lang->get('extension_seats_history_legend_seats'); ?></p>
+                                        <div class='small' id='tp-licence-kpi-seats-detail'></div>
+                                    </div>
+                                    <div class='icon'><i class='fas fa-users'></i></div>
+                                </div>
+                            </div>
+                            <div class='col-xl-3 col-md-6'>
+                                <div class='small-box bg-success tp-ops-small-box' id='tp-licence-kpi-refused-box' title='<?php echo htmlspecialchars($lang->get('extension_seats_refused_tip'), ENT_QUOTES, 'UTF-8'); ?>'>
+                                    <div class='inner'>
+                                        <h3 id='tp-licence-kpi-refused'>-</h3>
+                                        <p><?php echo $lang->get('extension_seats_kpi_refused'); ?></p>
+                                    </div>
+                                    <div class='icon'><i class='fas fa-user-slash'></i></div>
+                                </div>
+                            </div>
+                            <div class='col-xl-3 col-md-6'>
+                                <div class='small-box bg-info tp-ops-small-box'>
+                                    <div class='inner'>
+                                        <h3 id='tp-licence-kpi-active'>-</h3>
+                                        <p><?php echo $lang->get('extension_seats_kpi_active_today'); ?></p>
+                                    </div>
+                                    <div class='icon'><i class='fas fa-user-check'></i></div>
+                                </div>
+                            </div>
+                            <div class='col-xl-3 col-md-6'>
+                                <div class='small-box bg-secondary tp-ops-small-box' id='tp-licence-kpi-expiry-box'>
+                                    <div class='inner'>
+                                        <h3 id='tp-licence-kpi-expiry'>-</h3>
+                                        <p><?php echo $lang->get('valid_until'); ?></p>
+                                        <div class='small' id='tp-licence-kpi-expiry-detail'></div>
+                                    </div>
+                                    <div class='icon'><i class='fas fa-calendar-alt'></i></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class='card'>
+                            <div class='card-header'>
+                                <h3 class='card-title'><i class='fas fa-chart-bar mr-2'></i><?php echo $lang->get('extension_seats_history_title'); ?></h3>
+                            </div>
+                            <div class='card-body'>
+                                <p class='text-muted mb-0' id='tp-licence-history-unavailable' style='display:none;'><?php echo $lang->get('extension_seats_history_unavailable'); ?></p>
+                                <div id='tp-licence-history'>
+                                    <!-- Height inline, never from a stylesheet: Chart.js sizes the canvas from this box,
+                                         and a box without a fixed height grows with the canvas forever. -->
+                                    <div class='tp-ops-chart' style='height: 260px;'>
+                                        <canvas id='tp-licence-seats-chart' role='img'></canvas>
+                                    </div>
+                                    <div class='tp-licence-legend small mt-2'>
+                                        <span><span class='tp-licence-key tp-licence-key-bar' aria-hidden='true'></span><?php echo $lang->get('extension_seats_history_legend_seats'); ?></span>
+                                        <span><span class='tp-licence-key tp-licence-key-quota' aria-hidden='true'></span><?php echo $lang->get('extension_seats_history_legend_quota'); ?></span>
+                                        <span><span class='tp-licence-key tp-licence-key-reset' aria-hidden='true'></span><?php echo $lang->get('extension_seats_history_legend_reset'); ?></span>
+                                    </div>
+                                    <p class='small text-muted mt-2 mb-0'>
+                                        <?php echo $lang->get('extension_seats_history_help'); ?>
+                                        <span id='tp-licence-since'></span>
+                                    </p>
+                                    <!-- sr-only on the wrapper: a table ignores width and overflow, and would widen the page -->
+                                    <div class='sr-only'>
+                                        <table id='tp-licence-seats-table'>
+                                            <thead><tr>
+                                                <th scope='col'><?php echo $lang->get('date'); ?></th>
+                                                <th scope='col'><?php echo $lang->get('extension_seats_history_legend_seats'); ?></th>
+                                                <th scope='col'><?php echo $lang->get('extension_seats_history_legend_quota'); ?></th>
+                                                <th scope='col'><?php echo $lang->get('extension_seats_history_active_header'); ?></th>
+                                            </tr></thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         </div>

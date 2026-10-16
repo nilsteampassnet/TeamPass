@@ -718,25 +718,29 @@ if (isset($post_type)) {
                 }
             }
 
+            // Quote identifiers as a whole: a database name may contain a dot (e.g. "my.teampass")
+            $quotedDatabase = '`' . str_replace('`', '``', $database) . '`';
+
             //convert database
             mysqli_query(
                 $db_link,
-                'ALTER DATABASE `' . $database . '`
+                'ALTER DATABASE ' . $quotedDatabase . '
                 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
             );
 
             //convert tables
-            $res = mysqli_query($db_link, 'SHOW TABLES FROM `' . $database . '`');
+            $res = mysqli_query($db_link, 'SHOW TABLES FROM ' . $quotedDatabase);
             while ($table = mysqli_fetch_row($res)) {
                 if (substr($table[0], 0, 4) != 'old_') {
+                    $quotedTable = $quotedDatabase . '.`' . str_replace('`', '``', $table[0]) . '`';
                     mysqli_query(
                         $db_link,
-                        'ALTER TABLE ' . $database . '.`' . $table[0] . '`
+                        'ALTER TABLE ' . $quotedTable . '
                         CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
                     );
                     mysqli_query(
                         $db_link,
-                        'ALTER TABLE ' . $database . '.`' . $table[0] . '`
+                        'ALTER TABLE ' . $quotedTable . '
                         DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
                     );
                 }

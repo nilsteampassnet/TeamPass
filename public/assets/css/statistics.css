@@ -326,3 +326,46 @@
         padding-top: 0;
     }
 }
+
+/* Licence tab: keys of the seat chart legend, told apart by shape (bar, dashed line, dotted rule).
+   Same colours as tpLicenceColors() in statistics.js.php. */
+.tp-licence-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 1rem;
+}
+
+.tp-licence-key {
+    display: inline-block;
+    width: 14px;
+    margin-right: 0.35rem;
+    vertical-align: middle;
+}
+
+.tp-licence-key-bar {
+    height: 10px;
+    background: #007bff;
+}
+
+.tp-licence-key-quota {
+    height: 0;
+    border-top: 2px dashed #343a40;
+}
+
+.tp-licence-key-reset {
+    width: 0;
+    height: 12px;
+    border-left: 1px dotted #6c757d;
+}
+
+.dark-mode .tp-licence-key-bar {
+    background: #4da3ff;
+}
+
+.dark-mode .tp-licence-key-quota {
+    border-top-color: #dee2e6;
+}
+
+.dark-mode .tp-licence-key-reset {
+    border-left-color: #adb5bd;
+}

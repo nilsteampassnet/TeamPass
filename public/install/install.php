@@ -39,6 +39,20 @@ if (teampassConfigState(TEAMPASS_ROOT . '/app/config') === 'unreadable') {
     exit;
 }
 
+// GHSA-8xp7-fh3p-5pcr: an already-installed instance must never re-enter the wizard. The step
+// endpoints (run.step*.php) trust the install-session grant minted when this page renders, so
+// serving the wizard on a live instance would hand that grant to anyone who can reach this URL.
+// A readable settings.php == installed; reinstalling requires removing it first.
+if (teampassConfigState(TEAMPASS_ROOT . '/app/config') === 'installed') {
+    teampassSendErrorPage(teampassErrorPageShell(
+        'TeamPass is already installed',
+        '<p>TeamPass is already installed on this server, so the installation wizard is disabled.</p>'
+        . '<p>Open the application login page to use TeamPass. To reinstall from scratch, remove '
+        . '<code>app/config/settings.php</code> first, then reload this page.</p>'
+    ));
+    exit;
+}
+
 // Prepare autoloader
 require TEAMPASS_ROOT . '/app/vendor/autoload.php';
 use TeampassClasses\SuperGlobal\SuperGlobal;
@@ -80,20 +94,11 @@ $post_sk_path = getPostValue('sk_path', 'hid_sk_path');
 $post_sk_filename = getPostValue('sk_filename', 'hid_sk_filename');
 $post_sk_key = getPostValue('sk_key', 'hid_sk_key');
 
-// Reset session
-if (null !== $superGlobal->get('PHPSESSID', 'COOKIE')) {
-    setcookie('PHPSESSID', '', time() - 10, '/', '', false, true);
-}
-if (session_status() === PHP_SESSION_ACTIVE) {
-    session_unset();
-    session_destroy();
-}
-
-// CSRF token
-if (null === $superGlobal->get('csrf_token', 'SESSION')) {
-    $superGlobal->put('csrf_token', bin2hex(random_bytes(32)), 'SESSION');
-}
-$csrf_token = $superGlobal->get('csrf_token', 'SESSION');
+// GHSA-8xp7-fh3p-5pcr: start the installer session and issue the CSRF token that install.js
+// sends back on every step (X-CSRF-Token header). This is what makes run.step*.php reachable
+// only by a client that first loaded this page — previously no session was ever started, so the
+// token stashed here never survived to the steps and the protection was dead end to end.
+$csrf_token = installIssueCsrfToken();
 
 ?>
 
@@ -104,6 +109,7 @@ $csrf_token = $superGlobal->get('csrf_token', 'SESSION');
 	<title>TeamPass Installation</title>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<meta name="csrf-token" content="<?php echo htmlspecialchars($csrf_token); ?>" />
 
 	<link rel="stylesheet" href="../plugins/alertifyjs/css/alertify.min.css"/>
 	<link rel="stylesheet" href="../plugins/bootstrap/css/bootstrap.min.css" />

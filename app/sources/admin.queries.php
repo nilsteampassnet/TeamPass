@@ -43,6 +43,7 @@ use TeampassClasses\EmailService\EmailService;
 // Load functions
 require_once 'main.functions.php';
 require_once __DIR__ . '/licence.functions.php';
+require_once __DIR__ . '/storage_folder_logic.php';
 $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
 loadClasses('DB');
@@ -70,7 +71,13 @@ $checkUserAccess = new PerformChecks(
 );
 // Handle the case
 echo $checkUserAccess->caseHandler();
-if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('admin') === false) {
+// Most actions below carry no role check of their own and rely on this gate, so it also
+// requires an authenticated session explicitly instead of trusting the page check alone:
+// an empty identity must never reach them (GHSA-988j-pf6f-2m2r).
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('admin') === false
+    || (int) ($session->get('user-id') ?? 0) <= 0
+    || empty($session->get('key')) === true
+) {
     // Not allowed page
     $session->set('system-error_code', ERR_NOT_ALLOWED);
     include TEAMPASS_ROOT . '/public/error.php';
@@ -1578,6 +1585,21 @@ switch ($post_type) {
                 );
                 break;
             }
+        }
+        // Storage folders: uploads are written there, so they must stay out of the web root
+        // where the web server would serve and execute them (GHSA-988j-pf6f-2m2r).
+        if (in_array($post_field, storageFolderSettingNames(), true) === true
+            && storageFolderIsInsideWebRoot((string) $post_value, TEAMPASS_ROOT . '/public') === true
+        ) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    // Shown as text (escapeHtml in admin.js.php)
+                    'message' => $lang->get('admin_storage_folder_inside_web_root'),
+                ],
+                'encode'
+            );
+            break;
         }
 
         require_once 'main.functions.php';
@@ -3481,7 +3503,7 @@ case 'get_system_health':
 
 case 'get_extension_licence_info':
     /**
-     * Licence state for the admin dashboard widget.
+     * Licence state for the admin dashboard widget and the Statistics → Licence tab.
      *
      * Kept for backward compatibility: the response keys the widget has always read are
      * unchanged, and the trial keys are additive. The transport, the caching and the
@@ -3491,7 +3513,8 @@ case 'get_extension_licence_info':
      * @return array {
      *   error: bool, server_online: bool, server_version: string,
      *   licence_status: string, expiration_date: string, consumed: int, max_users: int,
-     *   trial: bool, days_left: int|null, trial_expiring_soon: bool
+     *   trial: bool, days_left: int|null, trial_expiring_soon: bool,
+     *   refused: int, history: array{days: int, today: string, first_snapshot: string, points: array}
      * }
      */
     if ($post_key !== $session->get('key')) {
@@ -3511,6 +3534,9 @@ case 'get_extension_licence_info':
 
     $licenceExtension = $licenceInfo['info']['extension'];
     $licenceDaysLeft = licenceTrialDaysLeft((string) $licenceExtension['expiration_date'], time());
+    // A cache written before info.php 1.2.4 has neither key, and is served as-is.
+    $licenceRefused = (int) ($licenceExtension['refused'] ?? 0);
+    $licenceHistory = licenceTrialNormalizeHistory($licenceExtension['history'] ?? null);
 
     echo prepareExchangedData(
         [
@@ -3526,6 +3552,8 @@ case 'get_extension_licence_info':
             'trial_expiring_soon' => (bool) $licenceExtension['trial']
                 && $licenceDaysLeft !== null
                 && $licenceDaysLeft <= LICENCE_TRIAL_EXPIRY_WARNING_DAYS,
+            'refused' => $licenceRefused,
+            'history' => $licenceHistory,
         ],
         'encode'
     );

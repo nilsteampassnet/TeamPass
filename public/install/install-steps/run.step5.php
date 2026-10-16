@@ -42,6 +42,9 @@ require_once __DIR__.'/install.functions.php';
 
 $superGlobal = new SuperGlobal();
 
+// GHSA-8xp7-fh3p-5pcr: reject any request that is not a genuine, token-bearing installer step.
+installAssertStepAuthorized();
+
 // Initialize variables
 $keys = [
     'action',
@@ -148,15 +151,18 @@ class DatabaseInstaller
     public function handleAction(): array
     {
         try {
-            if (method_exists($this, $this->inputData['action'])) {
+            // GHSA-8xp7-fh3p-5pcr: only dispatch actions on the explicit allow-list, never any
+            // method that merely exists on the class.
+            $action = (string) $this->inputData['action'];
+            if (installIsActionAllowed('step5', $action) && method_exists($this, $action)) {
                 // Dynamically call the method corresponding to the action
-                $result = call_user_func([$this, $this->inputData['action']]);
+                $result = call_user_func([$this, $action]);
                 // Propagate failure returned by the method
                 if (is_array($result) && isset($result['success']) && $result['success'] === false) {
                     return $result;
                 }
             } else {
-                throw new Exception('Action not recognized: ' . $this->inputData['action']);
+                throw new Exception('Action not recognized: ' . $action);
             }
 
             return [
@@ -239,8 +245,9 @@ class DatabaseInstaller
     // Force UTF8
     private function utf8()
     {
+        // %c quotes the whole name; %b would split a dotted database name (e.g. "my.teampass") on '.'
         DB::query(
-            "ALTER DATABASE %b DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci", 
+            "ALTER DATABASE %c DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci",
             $this->inputData['dbName']
         );
         

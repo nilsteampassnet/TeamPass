@@ -41,6 +41,9 @@ require_once __DIR__.'/install.functions.php';
 
 $superGlobal = new SuperGlobal();
 
+// GHSA-8xp7-fh3p-5pcr: reject any request that is not a genuine, token-bearing installer step.
+installAssertStepAuthorized();
+
 // Initialize variables
 $keys = [
     'absolutePath',

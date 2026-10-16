@@ -2698,17 +2698,21 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                 break;
             }
 
+            $metadataResult = ['success' => false];
             try {
                 if (function_exists('tpUpsertBackupMetadata') === true) {
-                    tpUpsertBackupMetadata($fullPath, ['comment' => $comment]);
+                    $metadataResult = tpUpsertBackupMetadata($fullPath, ['comment' => $comment]);
                 } else {
                     // Fallback: rewrite minimal metadata
                     if (function_exists('tpWriteBackupMetadata') === true) {
                         $extraMeta = ['source' => 'onthefly', 'comment' => $comment];
-                        tpWriteBackupMetadata($fullPath, '', '', $extraMeta);
+                        $metadataResult = tpWriteBackupMetadata($fullPath, '', '', $extraMeta);
                     }
                 }
             } catch (Throwable $e) {
+                $metadataResult = ['success' => false];
+            }
+            if ($metadataResult['success'] !== true) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,

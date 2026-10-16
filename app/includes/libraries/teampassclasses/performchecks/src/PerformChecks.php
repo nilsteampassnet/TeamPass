@@ -101,11 +101,13 @@ class PerformChecks
                     return false;
                 }
             }
-            // Other cases
-            if (isset($this->sessionVar['user_id']) === true && (is_null($this->sessionVar['user_id']) === true || empty($this->sessionVar['user_id']) === true)) {
+            // Other cases. An anonymous request carries both keys with a null value, and isset()
+            // is false for null: test the key's presence, or the empty identity passes unchecked
+            // (GHSA-988j-pf6f-2m2r).
+            if (array_key_exists('user_id', $this->sessionVar) === true && empty($this->sessionVar['user_id']) === true) {
                 return false;
             }
-            if (isset($this->sessionVar['user_key']) === true && (is_null($this->sessionVar['user_key']) === true || empty($this->sessionVar['user_key']) === true)) {
+            if (array_key_exists('user_key', $this->sessionVar) === true && empty($this->sessionVar['user_key']) === true) {
                 return false;
             }
         }
@@ -186,9 +188,11 @@ class PerformChecks
             return false;
         }
 
-        // Case not user logged in
-        if (empty($this->sessionVar['user_id']) === true && empty($this->sessionVar['user_key']) === true && empty($this->sessionVar['CPM']) === true && strpos($_SERVER['REQUEST_URI'] , "index.php") !== false) {
-            return true;
+        // The identity comes from the session only, never from the request: an anonymous caller
+        // is always refused. A former REQUEST_URI "index.php" substring test let any handler be
+        // opened anonymously by appending "?index.php" to its URL (GHSA-988j-pf6f-2m2r).
+        if (empty($this->sessionVar['user_id']) === true || empty($this->sessionVar['user_key']) === true) {
+            return false;
         }
         
         // Definition

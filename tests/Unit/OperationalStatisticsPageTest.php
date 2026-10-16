@@ -200,7 +200,9 @@ class OperationalStatisticsPageTest extends TestCase
         $javascript = $this->javascript();
 
         // Chart.js 2.9.4 is bundled: v3 option names would be silently ignored.
-        self::assertStringNotContainsString('plugins:', $javascript);
+        // v3 nests legend/tooltip under an `options.plugins` OBJECT; v2 per-chart inline plugins
+        // are an ARRAY in the chart config (the Licence tab draws its reset marker that way).
+        self::assertDoesNotMatchRegularExpression('/plugins:\s*\{/', $javascript);
         self::assertStringNotContainsString("indexAxis: 'y'", $javascript);
         self::assertStringNotContainsString('scales: { y:', $javascript);
         self::assertStringNotContainsString('scales: { x:', $javascript);

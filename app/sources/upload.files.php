@@ -70,9 +70,13 @@ $checkUserAccess = new PerformChecks(
 );
 // Handle the case
 echo $checkUserAccess->caseHandler();
+// The upload token below is not a reliable gate (an unknown token is not rejected), so
+// require an authenticated session explicitly (GHSA-988j-pf6f-2m2r).
 if (
     $checkUserAccess->userAccessPage('items') === false ||
-    $checkUserAccess->checkSession() === false
+    $checkUserAccess->checkSession() === false ||
+    (int) ($session->get('user-id') ?? 0) <= 0 ||
+    empty($session->get('key')) === true
 ) {
     // Not allowed page
     $session->set('system-error_code', ERR_NOT_ALLOWED);
@@ -95,6 +99,12 @@ error_reporting(E_ERROR);
 // user could stage import files while import is disabled for them, or drop a restore
 // archive on disk (GHSA-cgcj-f9rx-c8r4).
 $requestedUploadType = $request->request->filter('type_upload', '', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+// Only these types are processed below. Any other one left the raw file on disk under its
+// client-chosen name, with nothing to rename or remove it (GHSA-988j-pf6f-2m2r).
+if (in_array($requestedUploadType, ['upload_profile_photo', 'import_items_from_csv', 'import_items_from_keepass', 'restore_db'], true) === false) {
+    echo handleUploadError('Unknown upload type.');
+    return false;
+}
 if (in_array($requestedUploadType, ['import_items_from_csv', 'import_items_from_keepass'], true) === true) {
     if ((int) $session->get('user-admin') !== 1
         && ($checkUserAccess->userAccessPage('import') === false
