@@ -20,6 +20,9 @@ externalized backups without changing PHP's process-wide `umask`. Windows uses
 the existing filesystem ACLs. A refused or disabled `chmod()` blocks the write.
 If a filesystem accepts `chmod()` but reports unchanged permissions, Teampass
 logs a warning and continues; protection then depends on mount options and ACLs.
+Temporary decrypted restore files and SQL extracted from packages also request
+owner-only `0600` permissions before writing. Failed decryption attempts remove
+their temporary output before trying another key.
 
 Existing backup archives are not changed automatically. The System Health file
 integrity permission repair plan can restrict them; the CLI option

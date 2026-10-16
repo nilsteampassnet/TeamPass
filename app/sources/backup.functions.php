@@ -5365,15 +5365,26 @@ function tpDefuseDecryptWithCandidates(
             }
 
             // Ensure we start from a clean slate.
-            if (is_file($decryptedFile) && !unlink($decryptedFile)) {
-                // Nothing to do, try next key
+            if ((file_exists($decryptedFile) || is_link($decryptedFile)) && !@unlink($decryptedFile)) {
+                return ['success' => false, 'message' => 'Could not reset the temporary decrypted backup file.'];
             }
+
+            // Defuse opens with "wb": preserve owner-only permissions for every
+            // candidate, including retries after a wrong key.
+            $handle = tpBackupOpenProtectedFile($decryptedFile, 'x+b', true);
+            if ($handle === false) {
+                return ['success' => false, 'message' => 'Could not create or protect the temporary decrypted backup file.'];
+            }
+            fclose($handle);
 
             $r = tpPrepareFileWithDefuseNormalized('decrypt', $encryptedFile, $decryptedFile, $k);
             if (!empty($r['success'])) {
                 return ['success' => true, 'message' => '', 'key_used' => $k];
             }
             $lastMsg = tpSafeUtf8String((string)$r['message']);
+            if ((file_exists($decryptedFile) || is_link($decryptedFile)) && !@unlink($decryptedFile)) {
+                return ['success' => false, 'message' => 'Could not remove the failed temporary decrypted backup file.'];
+            }
         }
 
         return ['success' => false, 'message' => ($lastMsg !== '' ? $lastMsg : 'Unable to decrypt')];
@@ -5460,9 +5471,15 @@ function tpBackupExtractZipEntryToFile($zip, string $entryPath, string $destFile
             return ['success' => false, 'message' => 'entry_not_found'];
         }
 
-        $out = @fopen($destFile, 'wb');
+        clearstatcache(true, $destFile);
+        $out = tpBackupOpenProtectedFile($destFile, file_exists($destFile) ? 'c+b' : 'x+b', true);
         if (is_resource($out) === false) {
             fclose($stream);
+            return ['success' => false, 'message' => 'destination_not_writable'];
+        }
+        if (@ftruncate($out, 0) === false) {
+            fclose($stream);
+            fclose($out);
             return ['success' => false, 'message' => 'destination_not_writable'];
         }
 
