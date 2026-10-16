@@ -43,6 +43,8 @@ require_once __DIR__ . '/runtime_files.functions.php';
  * Preserve owner-only permissions; otherwise allow at most owner read/write and
  * group read. Plaintext dumps use owner-only access. Never change the process
  * umask. As with runtime files, the parent directory must be trusted.
+ * A filesystem accepting chmod without changing its reported mode is logged
+ * and remains usable; its mount options and ACLs must provide the protection.
  *
  * @return resource|false The caller owns the stream.
  */
@@ -64,43 +66,52 @@ function tpBackupOpenProtectedFile(string $path, string $mode = 'x+b', bool $own
     }
 
     $stat = @fstat($handle);
-    if ($stat === false || tpRuntimeFileMatchesPath($path, $stat) === false) {
-        fclose($handle);
-        return false;
-    }
-
-    // Windows uses ACLs; System Health audits POSIX permissions on Unix.
-    if (PHP_OS_FAMILY === 'Windows') {
-        return $handle;
-    }
-
-    $restrictedMode = $ownerOnly ? 0600 : (($stat['mode'] & 0640) | 0600);
-    if (
-        ($stat['mode'] & 07777) !== $restrictedMode
-        && (!function_exists('chmod') || @chmod($path, $restrictedMode) === false)
-    ) {
-        // Exclusive creation guarantees this is still empty. Do not remove an
-        // existing metadata file or a target replaced while opening it.
-        if ($mode === 'x+b' && tpRuntimeFileMatchesPath($path, $stat)) {
-            fclose($handle);
-            @unlink($path);
-        } else {
-            fclose($handle);
+    $accepted = false;
+    try {
+        if ($stat === false || tpRuntimeFileMatchesPath($path, $stat) === false) {
+            return false;
         }
-        return false;
-    }
 
-    $securedStat = @fstat($handle);
-    if (
-        $securedStat === false
-        || ($securedStat['mode'] & 07777) !== $restrictedMode
-        || tpRuntimeFileMatchesPath($path, $stat) === false
-    ) {
-        fclose($handle);
-        return false;
-    }
+        // Windows uses ACLs; System Health audits POSIX permissions on Unix.
+        if (PHP_OS_FAMILY === 'Windows') {
+            $accepted = true;
+            return $handle;
+        }
 
-    return $handle;
+        $currentMode = $stat['mode'] & 07777;
+        $restrictedMode = $ownerOnly ? 0600 : (($currentMode & 0640) | 0600);
+        if ($currentMode !== $restrictedMode
+            && (!function_exists('chmod') || @chmod($path, $restrictedMode) === false)) {
+            return false;
+        }
+
+        $securedStat = @fstat($handle);
+        if ($securedStat === false || tpRuntimeFileMatchesPath($path, $stat) === false) {
+            return false;
+        }
+        $securedMode = $securedStat['mode'] & 07777;
+        if ($securedMode !== $restrictedMode) {
+            if ($securedMode !== $currentMode) {
+                return false;
+            }
+            // CIFS and other mounts can accept chmod while exposing a fixed mode.
+            error_log('Teampass: filesystem accepted chmod for backup file "' . $path
+                . '" without changing its permissions. Continuing; restrict access through mount options and ACLs.');
+        }
+
+        $accepted = true;
+        return $handle;
+    } finally {
+        if (!$accepted) {
+            // No contents were written yet. Remove only our exclusively created
+            // empty file, never existing metadata or a replacement target.
+            $removeEmptyFile = $mode === 'x+b' && $stat !== false && tpRuntimeFileMatchesPath($path, $stat);
+            fclose($handle);
+            if ($removeEmptyFile) {
+                @unlink($path);
+            }
+        }
+    }
 }
 
 /**

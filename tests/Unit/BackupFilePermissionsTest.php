@@ -130,6 +130,41 @@ class BackupFilePermissionsTest extends TestCase
         self::assertFalse(tpBackupOpenProtectedFile('php://memory', 'c+b'));
     }
 
+    /** @return iterable<string,array{string,bool}> */
+    public static function filesystemResponses(): iterable
+    {
+        foreach (['noop', 'chmod_false', 'disabled', 'partial', 'stat_failure', 'replacement'] as $scenario) {
+            foreach ([false, true] as $existing) {
+                yield $scenario . ($existing ? '-existing' : '-new') => [$scenario, $existing];
+            }
+        }
+    }
+
+    #[DataProvider('filesystemResponses')]
+    public function testFilesystemCompatibilityAndFailureCleanup(string $scenario, bool $existing): void
+    {
+        $path = $this->root . '/probe.sql.part';
+        $process = new Process([
+            PHP_BINARY, __DIR__ . '/../Fixtures/backup_protection_probe.php',
+            $path, $scenario, $existing ? 'existing' : 'new',
+        ]);
+        $process->run();
+        self::assertSame(0, $process->getExitCode(), $process->getErrorOutput());
+        $result = json_decode($process->getOutput(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertSame($scenario === 'noop', $result['accepted']);
+        self::assertCount($scenario === 'noop' ? 1 : 0, $result['warnings']);
+        self::assertSame($scenario === 'disabled' ? 0 : 1, $result['chmod_calls']);
+        if ($scenario === 'replacement') {
+            self::assertTrue($result['exists']);
+            self::assertSame('replacement contents', $result['contents']);
+        } elseif ($existing) {
+            self::assertTrue($result['exists']);
+            self::assertSame('keep existing metadata', $result['contents']);
+        } else {
+            self::assertSame($scenario === 'noop', $result['exists']);
+        }
+    }
+
     public function testUnavailableChmodFailsBeforeWritingOrPublishingPlaintext(): void
     {
         if (PHP_OS_FAMILY === 'Windows') {

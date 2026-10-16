@@ -13,15 +13,19 @@ All backups are encrypted to ensure data security. On-the-fly backups use the en
 
 > ⚠️ Only administrators have access to the backup functionality.
 
-On Unix, newly generated local backups and their `.meta.json` files have at most
+On filesystems that enforce Unix modes, newly generated local backups and their `.meta.json` files have at most
 `0640` permissions. Owner-only `0600` permissions are preserved, and temporary
 plaintext SQL dumps use `0600`. This applies to on-the-fly, scheduled and local
 externalized backups without changing PHP's process-wide `umask`. Windows uses
-the existing filesystem ACLs.
+the existing filesystem ACLs. A refused or disabled `chmod()` blocks the write.
+If a filesystem accepts `chmod()` but reports unchanged permissions, Teampass
+logs a warning and continues; protection then depends on mount options and ACLs.
 
 Existing backup archives are not changed automatically. The System Health file
 integrity permission repair plan can restrict them; the CLI option
 `--deep-permissions` also checks the contents of `storage/backups`.
+The web Health scan checks the contents of `storage/onthefly`, but skips those
+of `storage/backups`; use the deep CLI scan to inspect scheduled backup files.
 
 
 ## On the fly backup
@@ -202,6 +206,11 @@ Navigate to the `Externalized` tab to configure the external destination:
 | SFTP | Host, port, username, authentication method, and writable remote path |
 | WebDAV | WebDAV URL, username, password, and writable remote path |
 | S3 | Endpoint, region, bucket, access key, secret key, path-style option, and optional object prefix |
+
+For SMB/CIFS shares without Unix permission support, configure restrictive mount
+options such as `file_mode=0600,dir_mode=0700`, with `uid`/`gid` matching the PHP
+worker account and appropriate server-side ACLs. Local externalized backups
+also stage their temporary plaintext SQL dump on that destination.
 
 For SFTP, the remote directory must already exist. For WebDAV, the remote path must already exist and be writable. For S3, the bucket must already exist and the credentials must allow listing, uploading, downloading, and deleting objects in the configured prefix.
 
