@@ -1401,6 +1401,7 @@ return array(
     'admin_path_to_files_folder' => 'Files folder (full path)',
     'admin_path_to_files_folder_tip' => 'The files folder is used to store both system files and some uploaded files. For highest security, it should not be located in your site\'s www folder - It should be created in a folder outside your website directory, and accessed via a rewrite or redirection rule.</span>',
     'admin_path_to_upload_folder_tip' => 'File attachments are stored in the upload folder with randomized names.  Contents of this folder should never be manually deleted. For highest security, it should not be located in your site\'s www folder - It should be created in a folder outside your website directory, and accessed via a rewrite or redirection rule.</span>',
+    'admin_storage_folder_inside_web_root' => 'This folder is inside the web root of TeamPass: the web server would serve, and could execute, the files uploaded there. Choose a folder outside the public directory.',
     'pdf_export' => 'PDF export',
     'pdf_password_warning' => 'You must provide an encryption key!',
     'admin_pwd_maximum_length' => 'Maximum password length',

@@ -193,6 +193,12 @@ server {
         return 403;
     }
 
+    # Never execute a script from the static directories (assets/ holds writable
+    # folders). Keep it before the PHP location: regex locations match in order.
+    location ~* ^/(assets|plugins)/.*\.php$ {
+        deny all;
+    }
+
     # API — route through the API front controller
     location /api/ {
         try_files $uri $uri/ /api/index.php?$query_string;
