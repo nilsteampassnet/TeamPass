@@ -157,7 +157,6 @@ RUN rm -rf \
     tests \
     .gitignore \
     .dockerignore \
-    .scrutinizer.yml \
     .codacy.yml \
     .eslintrc \
     teampass-docker-start.sh \

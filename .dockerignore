@@ -37,7 +37,6 @@ phpunit.xml.dist
 .phpunit.result.cache
 
 # CI/CD
-.scrutinizer.yml
 .codacy.yml
 .travis.yml
 .gitlab-ci.yml
