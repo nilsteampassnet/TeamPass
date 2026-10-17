@@ -94,6 +94,10 @@ if (
         kb_edit_entry: <?php echo json_encode($lang->get('kb_edit_entry')); ?>,
         kb_page_subtitle: <?php echo json_encode($lang->get('kb_page_subtitle')); ?>,
         kb_created_by: <?php echo json_encode($lang->get('kb_created_by')); ?>,
+        kb_created_on: <?php echo json_encode($lang->get('kb_created_on'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+        kb_modified_on: <?php echo json_encode($lang->get('kb_modified_on'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+        kb_date_unavailable: <?php echo json_encode($lang->get('kb_date_unavailable'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+        kb_creation_date_unavailable: <?php echo json_encode($lang->get('kb_creation_date_unavailable'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
         kb_empty_description: <?php echo json_encode($lang->get('kb_empty_description')); ?>,
         kb_allow_comments: <?php echo json_encode($lang->get('kb_allow_comments')); ?>,
         kb_comments: <?php echo json_encode($lang->get('kb_comments')); ?>,
@@ -948,6 +952,8 @@ if (
         $('#kb-viewer-title').text('');
         $('#kb-viewer-category').text('');
         $('#kb-viewer-author').text('');
+        $('#kb-viewer-created').empty();
+        $('#kb-viewer-updated').empty().addClass('hidden');
         $('#kb-viewer-comments-badge').addClass('hidden').text('');
         $('#kb-viewer-description').html('');
         $('#kb-viewer-comments-count').text('0');
@@ -1125,12 +1131,29 @@ if (
         }
     }
 
+    /** Render a known article date without interpreting a formatted label as HTML. */
+    function kbArticleDateHtml(entry, kind, compact) {
+        const timestamp = entry[kind + '_at'];
+        const label = entry[kind + (compact ? '_date_label' : '_at_label')];
+        if (!Number.isSafeInteger(timestamp) || timestamp <= 0 || !label) {
+            return '';
+        }
+        const template = kind === 'updated' ? kbTranslations.kb_modified_on : kbTranslations.kb_created_on;
+        const fullText = template.replace('%s', entry[kind + '_at_label'] || label);
+        return '<time datetime="' + kbEscapeHtml(entry[kind + '_at_iso']) + '" title="' + kbEscapeHtml(fullText) +
+            '" aria-label="' + kbEscapeHtml(fullText) + '">' +
+            kbEscapeHtml(template.replace('%s', label)) + '</time>';
+    }
+
     function kbRenderViewer(entry) {
         const commentsCount = parseInt(entry.comments_count || 0, 10) || 0;
         const entryId = parseInt(entry.id || 0, 10) || 0;
-        $('#kb-viewer-title').text(entry.label || '');
+        $('#kb-viewer-title').text(kbDecodeHtmlEntities(entry.label));
         $('#kb-viewer-category').text(entry.category || '');
         $('#kb-viewer-author').text(kbTranslations.kb_created_by + ' ' + (entry.author || ''));
+        $('#kb-viewer-created').html(kbArticleDateHtml(entry, 'created', false) || kbEscapeHtml(kbTranslations.kb_creation_date_unavailable));
+        const updatedDate = kbArticleDateHtml(entry, 'updated', false);
+        $('#kb-viewer-updated').html(updatedDate).toggleClass('hidden', updatedDate === '');
         $('#kb-viewer-description').html(entry.description_html || entry.description ? kbRenderRichContent(entry.description_html || '', entry.description || '') : DOMPurify.sanitize(kbTranslations.kb_empty_description));
         kbRenderAssociatedItems(entry.associated_items || []);
         kbRenderViewerAttachments(entry.attachments || []);
@@ -1488,6 +1511,38 @@ if (
         }
     }
 
+    /** Keep the displayed title/excerpt searchable and title sorting independent of date metadata. */
+    function kbBuildListEntry(entry) {
+        const label = kbDecodeHtmlEntities(entry.label);
+        const excerpt = entry.description_excerpt || '';
+        const commentsCount = parseInt(entry.comments_count || 0, 10) || 0;
+        const itemsCount = parseInt(entry.items_count || 0, 10) || 0;
+        const metaBadges = [];
+        const searchCounts = [];
+        if (commentsCount > 0 || parseInt(entry.allow_comments || 0, 10) === 1) {
+            metaBadges.push('<span class="badge badge-light border"><i class="fa-solid fa-comments mr-1"></i>' + commentsCount + '</span>');
+            searchCounts.push(commentsCount);
+        }
+        if (itemsCount > 0) {
+            metaBadges.push('<span class="badge badge-light border"><i class="fa-solid fa-link mr-1"></i>' + itemsCount + '</span>');
+            searchCounts.push(itemsCount);
+        }
+        const date = kbArticleDateHtml(entry, 'updated', true) || kbArticleDateHtml(entry, 'created', true) ||
+            kbEscapeHtml(kbTranslations.kb_date_unavailable);
+        return {
+            display: '<div class="tp-kb-list-entry" data-kb-id="' + entry.id + '">' +
+                '<a href="#" class="kb-action-view tp-kb-list-entry-title" data-id="' + entry.id + '">' + kbEscapeHtml(label) + '</a>' +
+                (excerpt !== '' ? '<div class="small tp-kb-list-entry-excerpt">' + kbEscapeHtml(excerpt) + '</div>' : '') +
+                '<div class="tp-kb-list-entry-meta">' + metaBadges.join('') +
+                    '<span class="tp-kb-list-entry-date">' + date + '</span>' +
+                '</div></div>',
+            sort: label,
+            // DataTables decodes HTML entities in its search cache. Escape once so literal
+            // angle brackets survive that decode and entity fragments never become keywords.
+            filter: kbEscapeHtml([label, excerpt].concat(searchCounts).join(' '))
+        };
+    }
+
     /** Render category navigation and reuse the existing table for the selected articles. */
     function kbRenderBrowser(resetTable) {
         const state = kbCategoryBrowser.getState();
@@ -1517,28 +1572,12 @@ if (
         const page = kbTable.page();
         kbTable.clear();
         kbCategoryBrowser.getEntries().forEach(function(entry) {
-            const safeLabel = kbEscapeHtml(entry.label);
-            const safeExcerpt = kbEscapeHtml(entry.description_excerpt);
             const safeCategory = kbEscapeHtml(entry.category || kbTranslations.kb_uncategorized);
             const safeAuthor = kbEscapeHtml(entry.author);
             const itemsCount = parseInt(entry.items_count || 0, 10) || 0;
-            const commentsCount = parseInt(entry.comments_count || 0, 10) || 0;
-            const metaBadges = [];
-
-            if (commentsCount > 0 || parseInt(entry.allow_comments || 0, 10) === 1) {
-                metaBadges.push('<span class="badge badge-light border"><i class="fa-solid fa-comments mr-1"></i>' + commentsCount + '</span>');
-            }
-
-            if (itemsCount > 0) {
-                metaBadges.push('<span class="badge badge-light border"><i class="fa-solid fa-link mr-1"></i>' + itemsCount + '</span>');
-            }
 
             kbTable.row.add([
-                '<div class="tp-kb-list-entry" data-kb-id="' + entry.id + '">' +
-                    '<a href="#" class="kb-action-view tp-kb-list-entry-title" data-id="' + entry.id + '">' + safeLabel + '</a>' +
-                    (safeExcerpt !== '' ? '<div class="small tp-kb-list-entry-excerpt">' + safeExcerpt + '</div>' : '') +
-                    (metaBadges.length > 0 ? '<div class="tp-kb-list-entry-meta">' + metaBadges.join('') + '</div>' : '') +
-                '</div>',
+                kbBuildListEntry(entry),
                 safeCategory !== '' ? '<span class="badge badge-info">' + safeCategory + '</span>' : '',
                 safeAuthor,
                 itemsCount,
@@ -1604,7 +1643,7 @@ if (
                 url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $session->get('user-language'); ?>.txt'
             },
             columnDefs: [
-                {targets: 0, className: 'kb-col-label'},
+                {targets: 0, className: 'kb-col-label', type: 'string', render: {_: 'display', sort: 'sort', filter: 'filter', type: 'sort'}},
                 {targets: 1, className: 'kb-col-category', width: '160px'},
                 {targets: 2, className: 'kb-col-author', width: '140px'},
                 {targets: 3, orderable: false, searchable: false, className: 'kb-col-items text-center text-nowrap', width: '80px'},

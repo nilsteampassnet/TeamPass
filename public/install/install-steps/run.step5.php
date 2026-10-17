@@ -1198,6 +1198,8 @@ class DatabaseInstaller
             `author_id` int(12) NOT NULL,
             `anyone_can_modify` tinyint(1) NOT null DEFAULT '0',
             `allow_comments` tinyint(1) NOT null DEFAULT '0',
+            `created_at` BIGINT UNSIGNED NULL DEFAULT NULL,
+            `updated_at` BIGINT UNSIGNED NULL DEFAULT NULL,
             `deleted_at` datetime NULL DEFAULT NULL,
             PRIMARY KEY (`id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
