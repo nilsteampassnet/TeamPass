@@ -195,6 +195,31 @@ class OperationalStatisticsPageTest extends TestCase
 
     // -------------------------------------------------------- chart.js contract
 
+    public function testLicenceDateFormatUsesTheInstanceSettingAndSafeJavascriptEncoding(): void
+    {
+        self::assertSame(1, preg_match('/var tpLicenceDateFormat = (<\?php[^\n]+\?>);/', $this->javascript(), $matches));
+        $fixture = tempnam(sys_get_temp_dir(), 'tp-licence-date-');
+        self::assertIsString($fixture);
+        $bufferLevel = ob_get_level();
+        try {
+            self::assertNotFalse(file_put_contents($fixture, $matches[1]));
+            foreach ([null, 'd/m/Y', 'm/d/Y', 'Y-m-d', '</script><img title="x"> & \''] as $format) {
+                $SETTINGS = $format === null ? [] : ['date_format' => $format];
+                ob_start();
+                require $fixture;
+                $rendered = (string) ob_get_clean();
+                self::assertSame($format ?? 'd/m/Y', json_decode($rendered, true, 512, JSON_THROW_ON_ERROR));
+                self::assertStringNotContainsString('</script', strtolower($rendered));
+                self::assertStringNotContainsString('<img', $rendered);
+            }
+        } finally {
+            while (ob_get_level() > $bufferLevel) {
+                ob_end_clean();
+            }
+            unlink($fixture);
+        }
+    }
+
     public function testChartConfigurationTargetsTheBundledChartJsVersion(): void
     {
         $javascript = $this->javascript();
