@@ -59,6 +59,13 @@ class EmailSettings
     public $dir;
     public $timeout;
 
+    /**
+     * Whether the TLS certificate of the SMTP server is verified (chain and host name).
+     *
+     * @var bool
+     */
+    public $verifyCertificate;
+
     // Constructeur pour initialiser les paramètres
     public function __construct(array $SETTINGS)
     {
@@ -76,5 +83,9 @@ class EmailSettings
         $this->debugLevel = $SETTINGS['email_debug_level'] ?? 0;
         $this->dir = defined('TEAMPASS_APP') ? TEAMPASS_APP : __DIR__;
         $this->timeout = self::DEFAULT_TIMEOUT;
+        // New installations store '1'. An instance upgraded from a version that never checked
+        // the certificate gets '0', and a missing value means the same: an upgrade must not
+        // break a relay that presents a self-signed or internal certificate.
+        $this->verifyCertificate = (string) ($SETTINGS['email_smtp_verify_certificate'] ?? '0') === '1';
     }
 }

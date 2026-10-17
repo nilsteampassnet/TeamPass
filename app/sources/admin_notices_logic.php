@@ -199,6 +199,29 @@ function adminNoticesMfaRecommendation(bool $imposedMethodEnabled, bool $passkey
 }
 
 /**
+ * Tells whether emails leave over a TLS session whose certificate nobody checks.
+ *
+ * Only an SSL or TLS security type opens a TLS session: with 'none' the verification
+ * setting has no effect, so recommending it would be pointless. A missing setting means
+ * no verification, as EmailSettings reads it.
+ *
+ * @param array $SETTINGS TeamPass settings.
+ *
+ * @return bool True when an SMTP relay is configured over SSL/TLS without verification.
+ */
+function adminNoticesSmtpCertificateUnverified(array $SETTINGS): bool
+{
+    if (trim((string) ($SETTINGS['email_smtp_server'] ?? '')) === '') {
+        return false;
+    }
+    if (in_array((string) ($SETTINGS['email_security'] ?? 'none'), ['ssl', 'tls'], true) === false) {
+        return false;
+    }
+
+    return (string) ($SETTINGS['email_smtp_verify_certificate'] ?? '0') !== '1';
+}
+
+/**
  * Resolves the Bootstrap columns of the "System health" / "Actions required" row.
  *
  * With no notice at all the second card is not rendered: an empty card is what made
