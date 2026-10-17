@@ -22,7 +22,11 @@ const renderer = section('tpOpsSecureSendText(', 'renderUserRanking(').replace(
   (_, key) => JSON.stringify('[' + key + ']')
 )
 assert.ok(!renderer.includes('<?php'))
-const encoder = source.slice(source.indexOf('    function escapeHtml('), source.indexOf('</script>'))
+// The following Licence block contains PHP; load only the escaping helper.
+const encoderMatch = source.match(/^    function escapeHtml\([^\n]*\) \{[\s\S]*?^    \}/m)
+assert.ok(encoderMatch, 'Missing production function: escapeHtml')
+const encoder = encoderMatch[0]
+assert.ok(!encoder.includes('<?php'))
 const loader = section('loadOperationalStatistics(', 'renderOperationalStatistics(')
   .replace(/<\?php[\s\S]*?\?>/g, 'inert-test-value')
 const loadError = 'Load failed: R&D, O\'Brien, "<img onerror=alert(1)>"'
