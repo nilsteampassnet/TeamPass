@@ -176,3 +176,9 @@ jobs:
           TEAMPASS_TEST_DB: teampass_test_secure_send
           TEAMPASS_TEST_PASSWORD: test-only-password
         run: php tests/Integration/admin_activity_database.php
+
+      - name: Check knowledge base date installation and migration
+        env:
+          TEAMPASS_TEST_DB: teampass_test_secure_send
+          TEAMPASS_TEST_PASSWORD: test-only-password
+        run: php tests/Integration/kb_dates_database.php
