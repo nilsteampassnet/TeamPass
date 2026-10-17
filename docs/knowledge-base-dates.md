@@ -19,11 +19,17 @@ was never edited. Replaying the migration does not overwrite dates already recor
 and purging the audit journal does not remove article dates.
 
 Date labels follow the instance's date format, time format and timezone.
+The detail view displays the known creation date and any recorded modification. The
+list displays the modification date when known, otherwise the creation date, or an
+unavailable label. Its full timestamp is available in the date's tooltip. Compact list
+dates sit below the excerpt, aligned right on desktop and left on small screens. Title
+sorting and text search do not include the date metadata.
 
 Regression checks:
 
 ```text
 php _tools/phpunit.phar --filter 'KbArticleDatesTest|KbArticleDatePersistenceTest|KbCategoryIdentityTest'
+node --test tests/JavaScript/kb-dates.test.cjs tests/JavaScript/kb-categories.test.cjs
 ```
 
 `tests/Integration/kb_dates_database.php` exercises the actual installer schema and
