@@ -68,16 +68,16 @@ final class KbCategoryIdentityTest extends TestCase
         DB::$connection->exec(<<<'SQL'
             CREATE TABLE kb_identity_fixture_kb (id INTEGER PRIMARY KEY, category_id INTEGER,
                 label TEXT, description TEXT, author_id INTEGER, anyone_can_modify INTEGER,
-                allow_comments INTEGER, deleted_at INTEGER);
+                allow_comments INTEGER, deleted_at INTEGER, created_at INTEGER, updated_at INTEGER);
             CREATE TABLE kb_identity_fixture_kb_categories (id INTEGER PRIMARY KEY, category TEXT);
             CREATE TABLE kb_identity_fixture_users (id INTEGER PRIMARY KEY, login TEXT);
             INSERT INTO kb_identity_fixture_kb_categories VALUES (7, 'Network');
             INSERT INTO kb_identity_fixture_users VALUES (1, 'alice');
             INSERT INTO kb_identity_fixture_kb VALUES
-                (1, 7, 'Valid', 'Body', 1, 0, 0, NULL),
-                (2, 99, 'Orphan', 'Body', 1, 0, 0, NULL),
-                (3, 0, 'Legacy', 'Body', 1, 0, 0, NULL),
-                (4, 7, 'Deleted', 'Body', 1, 0, 0, 123);
+                (1, 7, 'Valid', 'Body', 1, 0, 0, NULL, 100, 200),
+                (2, 99, 'Orphan', 'Body', 1, 0, 0, NULL, NULL, 200),
+                (3, 0, 'Legacy', 'Body', 1, 0, 0, NULL, NULL, NULL),
+                (4, 7, 'Deleted', 'Body', 1, 0, 0, 123, 100, NULL);
             SQL);
     }
 
@@ -106,6 +106,20 @@ final class KbCategoryIdentityTest extends TestCase
         self::assertSame(7, $detail['category_id']);
         self::assertSame('Network', $detail['category']);
         self::assertSame($this->listedArticle(1)['category_id'], $detail['category_id']);
+    }
+
+    /** Both actual SELECTs expose identical dates, including incomplete legacy history. */
+    public function testArticleDatesMatchInTheListAndDetail(): void
+    {
+        foreach ([1, 2, 3] as $id) {
+            $detail = kbLoadRow($id);
+            $listed = $this->listedArticle($id);
+            self::assertSame($listed['created_at'], $detail['created_at']);
+            self::assertSame($listed['updated_at'], $detail['updated_at']);
+        }
+        self::assertSame(100, kbLoadRow(1)['created_at']);
+        self::assertSame(200, kbLoadRow(1)['updated_at']);
+        self::assertNull(kbLoadRow(3)['created_at']);
     }
 
     /** Orphaned and legacy relations normalize to the same zero payload identity. */

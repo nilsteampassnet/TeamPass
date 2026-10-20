@@ -39,6 +39,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 
 require_once 'main.functions.php';
 require_once __DIR__ . '/logs_filter_logic.php';
+require_once __DIR__ . '/kb_dates.php';
 
 loadClasses('DB');
 DB::$encoding = 'utf8mb4';
@@ -164,7 +165,7 @@ function kbInsertMiscRow(string $type, string $intitulePrefix, array $payload, i
             return;
         } catch (Throwable $exception) {
             $attempt++;
-            if ($attempt >= 5 || strpos($exception->getMessage(), 'uniq_misc_type_intitule') === false) {
+            if ($attempt >= 5 || strpos($exception->getMessage(), 'uk_type_intitule') === false) {
                 throw $exception;
             }
             usleep(1000);
@@ -651,16 +652,6 @@ function kbNormalizeLegacyRichTextMarkers(string $text): string
     return $text;
 }
 
-function kbFormatTimestamp(int $timestamp): string
-{
-    global $SETTINGS;
-
-    $dateFormat = (string) ($SETTINGS['date_format'] ?? 'Y-m-d');
-    $timeFormat = (string) ($SETTINGS['time_format'] ?? 'H:i');
-
-    return date(trim($dateFormat . ' ' . $timeFormat), $timestamp);
-}
-
 function kbBuildDescriptionExcerpt(string $description, int $maxLength = 180): string
 {
     $description = kbDecodeEscapedRichHtml(kbNormalizeTextLineEndings($description));
@@ -870,6 +861,8 @@ function kbCountComments(int $kbId): int
 
 function kbLoadComments(int $kbId, array $kb, SessionInterface $session): array
 {
+    global $SETTINGS;
+
     $rows = DB::query(
         'SELECT c.id,
             c.kb_id,
@@ -897,7 +890,7 @@ function kbLoadComments(int $kbId, array $kb, SessionInterface $session): array
             'author' => kbBuildCommentAuthorLabel($row),
             'author_id' => (int) ($row['author_id'] ?? 0),
             'created_at' => (int) ($row['created_at'] ?? 0),
-            'created_at_label' => !empty($row['created_at']) ? kbFormatTimestamp((int) $row['created_at']) : '',
+            'created_at_label' => !empty($row['created_at']) ? kbFormatTimestamp((int) $row['created_at'], $SETTINGS) : '',
             'can_delete' => kbCanDeleteComment($row, $kb, $session),
         ];
     }
@@ -938,6 +931,8 @@ function kbLoadRow(int $kbId): ?array
             k.author_id,
             k.anyone_can_modify,
             k.allow_comments,
+            k.created_at,
+            k.updated_at,
             c.category AS category,
             u.login AS author_login
         FROM ' . prefixTable('kb') . ' AS k
@@ -986,6 +981,8 @@ function kbLoadAssociatedItems(int $kbId, SessionInterface $session, string $bas
 
 function kbBuildEntryPayload(array $kb, SessionInterface $session, string $baseUrl, bool $includeComments = true): array
 {
+    global $SETTINGS;
+
     $associatedItems = kbLoadAssociatedItems((int) $kb['id'], $session, $baseUrl);
     $comments = $includeComments === true ? kbLoadComments((int) $kb['id'], $kb, $session) : [];
     $commentsCount = $includeComments === true ? count($comments) : kbCountComments((int) $kb['id']);
@@ -1002,6 +999,7 @@ function kbBuildEntryPayload(array $kb, SessionInterface $session, string $baseU
         'author_id' => (int) ($kb['author_id'] ?? 0),
         'anyone_can_modify' => (int) ($kb['anyone_can_modify'] ?? 0),
         'allow_comments' => (int) ($kb['allow_comments'] ?? 0),
+        ...kbArticleDatePayload($kb, $SETTINGS),
         'items_count' => count($associatedItems),
         'associated_items' => $associatedItems,
         'attachments' => kbSerializeAttachments((int) $kb['id']),
@@ -1196,6 +1194,15 @@ function kbInsertLog(array $SETTINGS, SessionInterface $session, int $kbId, stri
     );
 }
 
+/** Record a successful attachment change without changing the article's creation date. */
+function kbMarkArticleUpdated(int $kbId): int
+{
+    $updatedAt = time();
+    DB::update(prefixTable('kb'), ['updated_at' => $updatedAt], 'id = %i', $kbId);
+
+    return $updatedAt;
+}
+
 function kbTrashEntry(array $kb, array $associatedItems, SessionInterface $session): void
 {
     $createdAt = time();
@@ -1210,6 +1217,7 @@ function kbTrashEntry(array $kb, array $associatedItems, SessionInterface $sessi
             'author_id' => (int) ($kb['author_id'] ?? 0),
             'anyone_can_modify' => (int) ($kb['anyone_can_modify'] ?? 0),
             'allow_comments' => (int) ($kb['allow_comments'] ?? 0),
+            ...kbArticleDates($kb),
             'associated_item_ids' => $associatedItems,
             'deleted_by' => (int) $session->get('user-id'),
             'deleted_at' => $createdAt,
@@ -1369,6 +1377,8 @@ switch ($type) {
                 k.author_id,
                 k.anyone_can_modify,
                 k.allow_comments,
+                k.created_at,
+                k.updated_at,
                 c.id AS category_id,
                 c.category AS category,
                 u.login AS author_login
@@ -1501,6 +1511,13 @@ switch ($type) {
 
         $oldKb = null;
         $oldAssociatedItems = [];
+        $articleValues = [
+            'category_id' => $categoryId,
+            'label' => $label,
+            'description' => $description,
+            'anyone_can_modify' => $anyoneCanModify,
+            'allow_comments' => $allowComments,
+        ];
         if ($kbId > 0) {
             $oldKb = kbLoadRow($kbId);
             if ($oldKb === null) {
@@ -1518,29 +1535,31 @@ switch ($type) {
             }
 
             $oldAssociatedItems = kbLoadAssociatedItemIds($kbId);
+            $associatedItemsToPersist = kbBuildPersistedAssociatedItemIds($kbId, $requestedAssociatedItems, $session);
+            $changes = kbArticleChangedFields(
+                $oldKb,
+                $articleValues + ['category' => $category],
+                $oldAssociatedItems,
+                $associatedItemsToPersist
+            );
+            if ($changes !== []) {
+                $articleValues['updated_at'] = time();
+            }
 
             DB::update(
                 prefixTable('kb'),
-                [
-                    'category_id' => $categoryId,
-                    'label' => $label,
-                    'description' => $description,
-                    'anyone_can_modify' => $anyoneCanModify,
-                    'allow_comments' => $allowComments,
-                ],
+                $articleValues,
                 'id = %i',
                 $kbId
             );
         } else {
+            $associatedItemsToPersist = kbBuildPersistedAssociatedItemIds(0, $requestedAssociatedItems, $session);
             DB::insert(
                 prefixTable('kb'),
-                [
-                    'category_id' => $categoryId,
-                    'label' => $label,
-                    'description' => $description,
+                $articleValues + [
                     'author_id' => (int) $session->get('user-id'),
-                    'anyone_can_modify' => $anyoneCanModify,
-                    'allow_comments' => $allowComments,
+                    'created_at' => time(),
+                    'updated_at' => null,
                 ]
             );
             $kbId = (int) DB::insertId();
@@ -1550,7 +1569,6 @@ switch ($type) {
             }
         }
 
-        $associatedItemsToPersist = kbBuildPersistedAssociatedItemIds($kbId, $requestedAssociatedItems, $session);
         DB::delete(prefixTable('kb_items'), 'kb_id = %i', $kbId);
         foreach ($associatedItemsToPersist as $itemId) {
             DB::insert(
@@ -1565,29 +1583,6 @@ switch ($type) {
         if ($oldKb === null) {
             kbInsertLog($SETTINGS, $session, $kbId, $label, 'at_creation');
         } else {
-            $changes = [];
-            if ((string) ($oldKb['label'] ?? '') !== $label) {
-                $changes[] = 'label';
-            }
-            if ((string) ($oldKb['category'] ?? '') !== $category) {
-                $changes[] = 'category';
-            }
-            if ((string) ($oldKb['description'] ?? '') !== $description) {
-                $changes[] = 'description';
-            }
-            if ((int) ($oldKb['anyone_can_modify'] ?? 0) !== $anyoneCanModify) {
-                $changes[] = 'anyone_can_modify';
-            }
-            if ((int) ($oldKb['allow_comments'] ?? 0) !== $allowComments) {
-                $changes[] = 'allow_comments';
-            }
-            sort($oldAssociatedItems);
-            $newAssociatedItems = $associatedItemsToPersist;
-            sort($newAssociatedItems);
-            if ($oldAssociatedItems !== $newAssociatedItems) {
-                $changes[] = 'associated_items';
-            }
-
             kbInsertLog(
                 $SETTINGS,
                 $session,
@@ -1802,80 +1797,88 @@ switch ($type) {
             break;
         }
 
-        foreach ($uploadedFiles as $uploadedFile) {
-            if ($uploadedFile === null) {
-                continue;
-            }
-
-            if ($uploadedFile->isValid() === false) {
-                echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_upload_runtime_not_found')], 'encode');
-                break 2;
-            }
-
-            $originalName = kbAttachmentSanitizeFilename((string) $uploadedFile->getClientOriginalName());
-            if (kbAttachmentExtensionIsAllowed($originalName, $SETTINGS) === false) {
-                echo (string) prepareExchangedData([
-                    'error' => true,
-                    'message' => str_replace('%s', kbBuildAllowedAttachmentExtensionsLabel($SETTINGS), (string) $lang->get('kb_attachment_extension_not_allowed')),
-                ], 'encode');
-                break 2;
-            }
-
-            $fileSize = 0;
-            try {
-                $fileSize = (int) $uploadedFile->getSize();
-            } catch (Throwable $exception) {
-                $fileSize = (int) ($uploadedFile->getClientSize() ?? 0);
-            }
-            if ($fileSize <= 0 && (int) ($SETTINGS['upload_zero_byte_file'] ?? 0) !== 1) {
-                echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('kb_attachment_zero_byte_not_allowed')], 'encode');
-                break 2;
-            }
-
-            $attachmentId = kbGenerateToken();
-            $storedName = $attachmentId . '_' . $originalName;
-            $uploadedAt = time();
-
-            $uploadedFile->move($directory, $storedName);
-
-            $storedPath = $directory . DIRECTORY_SEPARATOR . $storedName;
-            $mimeType = kbSanitizeMimeType($storedPath);
-
-            if ($fileSize <= 0) {
-                if (is_file($storedPath)) {
-                    $resolvedSize = filesize($storedPath);
-                    $fileSize = $resolvedSize === false ? 0 : (int) $resolvedSize;
+        $storedFiles = 0;
+        try {
+            foreach ($uploadedFiles as $uploadedFile) {
+                if ($uploadedFile === null) {
+                    continue;
                 }
+
+                if ($uploadedFile->isValid() === false) {
+                    echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_upload_runtime_not_found')], 'encode');
+                    break 2;
+                }
+
+                $originalName = kbAttachmentSanitizeFilename((string) $uploadedFile->getClientOriginalName());
+                if (kbAttachmentExtensionIsAllowed($originalName, $SETTINGS) === false) {
+                    echo (string) prepareExchangedData([
+                        'error' => true,
+                        'message' => str_replace('%s', kbBuildAllowedAttachmentExtensionsLabel($SETTINGS), (string) $lang->get('kb_attachment_extension_not_allowed')),
+                    ], 'encode');
+                    break 2;
+                }
+
+                $fileSize = 0;
+                try {
+                    $fileSize = (int) $uploadedFile->getSize();
+                } catch (Throwable $exception) {
+                    $fileSize = (int) ($uploadedFile->getClientSize() ?? 0);
+                }
+                if ($fileSize <= 0 && (int) ($SETTINGS['upload_zero_byte_file'] ?? 0) !== 1) {
+                    echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('kb_attachment_zero_byte_not_allowed')], 'encode');
+                    break 2;
+                }
+
+                $attachmentId = kbGenerateToken();
+                $storedName = $attachmentId . '_' . $originalName;
+                $uploadedAt = time();
+
+                $uploadedFile->move($directory, $storedName);
+
+                $storedPath = $directory . DIRECTORY_SEPARATOR . $storedName;
+                $mimeType = kbSanitizeMimeType($storedPath);
+
+                if ($fileSize <= 0) {
+                    if (is_file($storedPath)) {
+                        $resolvedSize = filesize($storedPath);
+                        $fileSize = $resolvedSize === false ? 0 : (int) $resolvedSize;
+                    }
+                }
+
+                DB::insert(
+                    prefixTable('misc'),
+                    [
+                        'type' => 'kb_attachment',
+                        'intitule' => kbAttachmentIntitule($kbId, $attachmentId),
+                        'valeur' => kbMiscEncode([
+                            'attachment_id' => $attachmentId,
+                            'kb_id' => $kbId,
+                            'original_name' => $originalName,
+                            'stored_name' => $storedName,
+                            'mime_type' => $mimeType,
+                            'size' => $fileSize,
+                            'uploaded_by' => (int) $session->get('user-id'),
+                            'uploaded_at' => $uploadedAt,
+                        ]),
+                        'created_at' => $uploadedAt,
+                    ]
+                );
+                $storedFiles++;
             }
-
-            DB::insert(
-                prefixTable('misc'),
-                [
-                    'type' => 'kb_attachment',
-                    'intitule' => kbAttachmentIntitule($kbId, $attachmentId),
-                    'valeur' => kbMiscEncode([
-                        'attachment_id' => $attachmentId,
-                        'kb_id' => $kbId,
-                        'original_name' => $originalName,
-                        'stored_name' => $storedName,
-                        'mime_type' => $mimeType,
-                        'size' => $fileSize,
-                        'uploaded_by' => (int) $session->get('user-id'),
-                        'uploaded_at' => $uploadedAt,
-                    ]),
-                    'created_at' => $uploadedAt,
-                ]
-            );
+        } finally {
+            // Persist one mutation even if a later file fails validation or storage.
+            if ($storedFiles > 0) {
+                $kb['updated_at'] = kbMarkArticleUpdated($kbId);
+                kbInsertLog($SETTINGS, $session, $kbId, (string) $kb['label'], 'at_modification', 'attachments_upload');
+                emitKbEvent(
+                    'updated',
+                    $kbId,
+                    (string) $kb['label'],
+                    (string) ($session->get('user-login') ?? ''),
+                    (int) $session->get('user-id')
+                );
+            }
         }
-
-        kbInsertLog($SETTINGS, $session, $kbId, (string) $kb['label'], 'at_modification', 'attachments_upload');
-        emitKbEvent(
-            'updated',
-            $kbId,
-            (string) $kb['label'],
-            (string) ($session->get('user-login') ?? ''),
-            (int) $session->get('user-id')
-        );
         $entry = kbBuildEntryPayload($kb, $session, (string) ($SETTINGS['cpassman_url'] ?? ''));
         echo (string) prepareExchangedData(['error' => false, 'message' => $lang->get('kb_attachment_uploaded'), 'entry' => $entry], 'encode');
         break;
@@ -2022,6 +2025,7 @@ switch ($type) {
         }
 
         kbDeleteAttachmentFileAndRow($attachmentRow, $SETTINGS);
+        $kb['updated_at'] = kbMarkArticleUpdated($kbId);
         kbInsertLog($SETTINGS, $session, $kbId, (string) $kb['label'], 'at_modification', 'attachments_delete');
         emitKbEvent(
             'updated',
@@ -2117,6 +2121,7 @@ switch ($type) {
         foreach ($rows as $row) {
             $trashId = (int) $row['increment_id'];
             $entry = kbMiscDecode((string) ($row['valeur'] ?? ''));
+            $articleDates = kbArticleDates($entry);
             $label = trim((string) ($entry['label'] ?? ''));
             $category = trim((string) ($entry['category'] ?? ''));
             $description = (string) ($entry['description'] ?? '');
@@ -2151,6 +2156,7 @@ switch ($type) {
                         'author_id' => (int) ($entry['author_id'] ?? 0),
                         'anyone_can_modify' => (int) ($entry['anyone_can_modify'] ?? 0),
                         'allow_comments' => (int) ($entry['allow_comments'] ?? 0),
+                        ...$articleDates,
                     ]
                 );
                 $newKbId = $requestedId;
@@ -2164,6 +2170,7 @@ switch ($type) {
                         'author_id' => (int) ($entry['author_id'] ?? 0),
                         'anyone_can_modify' => (int) ($entry['anyone_can_modify'] ?? 0),
                         'allow_comments' => (int) ($entry['allow_comments'] ?? 0),
+                        ...$articleDates,
                     ]
                 );
                 $newKbId = (int) DB::insertId();
