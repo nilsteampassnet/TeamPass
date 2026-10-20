@@ -262,6 +262,20 @@ try {
     exit();
 }
 
+// The upgrade runner replays this script on every upgrade, including 3.2.3.x installations.
+// Preserve existing PATs and keep device pairing opt-in. Schema readiness is published last.
+if (addColumnIfNotExist(prefixTable('api_tokens'), 'purpose', "VARCHAR(32) NOT NULL DEFAULT 'legacy'") === false
+    || addColumnIfNotExist(prefixTable('api_sessions'), 'source_token_id', 'INT(12) NULL DEFAULT NULL') === false
+    || checkIndexExist(prefixTable('api_sessions'), 'source_token_id', 'ADD INDEX `source_token_id` (`source_token_id`)') === false
+    || mysqli_query($db_link, "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`)
+        VALUES ('admin', 'device_pairing_enabled', '0'), ('admin', 'device_pairing_schema', '1')") === false
+) {
+    echo json_encode([['finish' => '1', 'error' => 'Error installing external device credentials']]);
+    mysqli_close($db_link);
+    exit();
+}
+ConfigManager::invalidateCache();
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,

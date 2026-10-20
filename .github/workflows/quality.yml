@@ -182,9 +182,14 @@ jobs:
           TEAMPASS_TEST_DB: teampass_test_secure_send
           TEAMPASS_TEST_PASSWORD: test-only-password
         run: php tests/Integration/kb_dates_database.php
-
       - name: Check the LAPR endpoint lifecycle
         env:
           TEAMPASS_TEST_DB: teampass_test_secure_send
           TEAMPASS_TEST_PASSWORD: test-only-password
         run: php tests/Integration/lapr_endpoint_lifecycle_database.php
+
+      - name: Exercise external device authentication and revocation races
+        env:
+          TEAMPASS_TEST_DB: teampass_test_secure_send
+          TEAMPASS_TEST_PASSWORD: test-only-password
+        run: php tests/Integration/api_device_credentials_database.php

@@ -244,6 +244,21 @@ if (isset($uri[0]) && ($uri[0] === 'authorize' || $uri[0] === 'authorizeToken'))
         }
     }
 
+    if (isset($userData['data']['source_token_id'])) {
+        require_once __DIR__ . '/../sources/api_device_credentials.php';
+        $sourceTokenId = (int) $userData['data']['source_token_id'];
+        $linkedSession = apiDeviceSchemaReady($SETTINGS) ? DB::queryFirstRow(
+            'SELECT source_token_id FROM ' . prefixTable('api_sessions') . ' WHERE jti = %s AND user_id = %i',
+            $jwtJti, $jwtUserId
+        ) : null;
+        if ($linkedSession === null || (int) $linkedSession['source_token_id'] !== $sourceTokenId
+            || apiDeviceSessionSourceAllowed($jwtUserId, $sourceTokenId, $SETTINGS) === false
+        ) {
+            errorHdl('HTTP/1.1 401 Unauthorized', json_encode(['error' => 'Invalid or expired token']));
+            exit;
+        }
+    }
+
     // Pin the cache before any permission read or filtering that may write it.
     $folderCacheBuild = beginUserFolderCacheBuild((int) ($userData['data']['id'] ?? 0));
 

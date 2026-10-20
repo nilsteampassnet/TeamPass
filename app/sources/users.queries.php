@@ -45,6 +45,7 @@ use TeampassClasses\LdapExtra\ActiveDirectoryExtra;
 
 // Load functions
 require_once 'main.functions.php';
+require_once __DIR__ . '/api_device_credentials.php';
 
 // init
 loadClasses('DB');
@@ -326,6 +327,10 @@ if (null !== $post_type) {
             if ($post_type === 'revoke_extension_token') {
                 $tokenId = (int) ($dataReceived['id'] ?? 0);
                 if ($tokenId > 0) {
+                    if (apiDeviceSchemaReady($SETTINGS) && apiDeviceRevokeCredential($userId, $tokenId)) {
+                        echo prepareExchangedData(array('error' => false), 'encode');
+                        break;
+                    }
                     DB::delete(prefixTable('api_tokens'), 'id = %i AND user_id = %i', $tokenId, $userId);
                     logEvents($SETTINGS, 'user_mngt', 'at_extension_token_revoked', (string) $userId, (string) $session->get('user-login'), (string) $tokenId);
                 }
@@ -336,7 +341,8 @@ if (null !== $post_type) {
             // list_extension_tokens — never returns the token value itself.
             $tokensList = DB::query(
                 'SELECT id, label, created_at, expires_at, last_used_at
-                 FROM ' . prefixTable('api_tokens') . ' WHERE user_id = %i ORDER BY created_at DESC',
+                 FROM ' . prefixTable('api_tokens') . ' WHERE user_id = %i'
+                    . (apiDeviceSchemaReady($SETTINGS) ? " AND purpose <> 'external_device'" : '') . ' ORDER BY created_at DESC',
                 $userId
             );
             echo prepareExchangedData(
