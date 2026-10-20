@@ -159,7 +159,7 @@ $directKbId = (int) $request->query->get('id', 0);
                         <span class="badge badge-info mr-2" id="kb-viewer-category"></span>
                         <span class="badge badge-light border hidden" id="kb-viewer-comments-badge"></span>
                         <span class="text-muted small" id="kb-viewer-author"></span>
-                        <span class="text-muted small" id="kb-viewer-created"></span>
+                        <span class="text-muted small hidden" id="kb-viewer-created"></span>
                         <span class="text-muted small hidden" id="kb-viewer-updated"></span>
                     </div>
                     <div class="tp-kb-article-surface">

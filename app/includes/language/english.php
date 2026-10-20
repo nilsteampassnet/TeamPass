@@ -2856,8 +2856,6 @@ return array(
     'kb_created_by' => 'Created by',
     'kb_created_on' => 'Created on %s',
     'kb_modified_on' => 'Modified on %s',
-    'kb_date_unavailable' => 'Date unavailable',
-    'kb_creation_date_unavailable' => 'Creation date unavailable',
     'kb_empty_description' => 'No description',
     'kb_associated_items' => 'Associated items',
     'kb_search_items_placeholder' => 'Search and link items',

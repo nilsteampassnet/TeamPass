@@ -1989,8 +1989,6 @@ return array(
     'kb_created_by' => 'Créé par',
     'kb_created_on' => 'Créé le %s',
     'kb_modified_on' => 'Modifié le %s',
-    'kb_date_unavailable' => 'Date indisponible',
-    'kb_creation_date_unavailable' => 'Date de création indisponible',
     'kb_empty_description' => 'Aucune description',
     'kb_associated_items' => 'Éléments associés',
     'kb_search_items_placeholder' => 'Rechercher et lier des éléments',

@@ -96,8 +96,6 @@ if (
         kb_created_by: <?php echo json_encode($lang->get('kb_created_by')); ?>,
         kb_created_on: <?php echo json_encode($lang->get('kb_created_on'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
         kb_modified_on: <?php echo json_encode($lang->get('kb_modified_on'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
-        kb_date_unavailable: <?php echo json_encode($lang->get('kb_date_unavailable'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
-        kb_creation_date_unavailable: <?php echo json_encode($lang->get('kb_creation_date_unavailable'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
         kb_empty_description: <?php echo json_encode($lang->get('kb_empty_description')); ?>,
         kb_allow_comments: <?php echo json_encode($lang->get('kb_allow_comments')); ?>,
         kb_comments: <?php echo json_encode($lang->get('kb_comments')); ?>,
@@ -952,7 +950,7 @@ if (
         $('#kb-viewer-title').text('');
         $('#kb-viewer-category').text('');
         $('#kb-viewer-author').text('');
-        $('#kb-viewer-created').empty();
+        $('#kb-viewer-created').empty().addClass('hidden');
         $('#kb-viewer-updated').empty().addClass('hidden');
         $('#kb-viewer-comments-badge').addClass('hidden').text('');
         $('#kb-viewer-description').html('');
@@ -1151,7 +1149,8 @@ if (
         $('#kb-viewer-title').text(kbDecodeHtmlEntities(entry.label));
         $('#kb-viewer-category').text(entry.category || '');
         $('#kb-viewer-author').text(kbTranslations.kb_created_by + ' ' + (entry.author || ''));
-        $('#kb-viewer-created').html(kbArticleDateHtml(entry, 'created', false) || kbEscapeHtml(kbTranslations.kb_creation_date_unavailable));
+        const createdDate = kbArticleDateHtml(entry, 'created', false);
+        $('#kb-viewer-created').html(createdDate).toggleClass('hidden', createdDate === '');
         const updatedDate = kbArticleDateHtml(entry, 'updated', false);
         $('#kb-viewer-updated').html(updatedDate).toggleClass('hidden', updatedDate === '');
         $('#kb-viewer-description').html(entry.description_html || entry.description ? kbRenderRichContent(entry.description_html || '', entry.description || '') : DOMPurify.sanitize(kbTranslations.kb_empty_description));
@@ -1527,15 +1526,16 @@ if (
             metaBadges.push('<span class="badge badge-light border"><i class="fa-solid fa-link mr-1"></i>' + itemsCount + '</span>');
             searchCounts.push(itemsCount);
         }
-        const date = kbArticleDateHtml(entry, 'updated', true) || kbArticleDateHtml(entry, 'created', true) ||
-            kbEscapeHtml(kbTranslations.kb_date_unavailable);
+        const date = kbArticleDateHtml(entry, 'updated', true) || kbArticleDateHtml(entry, 'created', true);
+        if (date !== '') {
+            metaBadges.push('<span class="tp-kb-list-entry-date">' + date + '</span>');
+        }
         return {
             display: '<div class="tp-kb-list-entry" data-kb-id="' + entry.id + '">' +
                 '<a href="#" class="kb-action-view tp-kb-list-entry-title" data-id="' + entry.id + '">' + kbEscapeHtml(label) + '</a>' +
                 (excerpt !== '' ? '<div class="small tp-kb-list-entry-excerpt">' + kbEscapeHtml(excerpt) + '</div>' : '') +
-                '<div class="tp-kb-list-entry-meta">' + metaBadges.join('') +
-                    '<span class="tp-kb-list-entry-date">' + date + '</span>' +
-                '</div></div>',
+                (metaBadges.length > 0 ? '<div class="tp-kb-list-entry-meta">' + metaBadges.join('') + '</div>' : '') +
+                '</div>',
             sort: label,
             // DataTables decodes HTML entities in its search cache. Escape once so literal
             // angle brackets survive that decode and entity fragments never become keywords.

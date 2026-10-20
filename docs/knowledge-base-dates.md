@@ -20,8 +20,8 @@ and purging the audit journal does not remove article dates.
 
 Date labels follow the instance's date format, time format and timezone.
 The detail view displays the known creation date and any recorded modification. The
-list displays the modification date when known, otherwise the creation date, or an
-unavailable label. Its full timestamp is available in the date's tooltip. Compact list
+list displays the modification date when known, otherwise the creation date. Unknown
+dates are omitted. The full timestamp is available in the date's tooltip. Compact list
 dates sit below the excerpt, aligned right on desktop and left on small screens. Title
 sorting and text search do not include the date metadata.
 

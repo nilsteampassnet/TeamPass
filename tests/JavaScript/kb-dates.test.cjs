@@ -56,7 +56,6 @@ function harness() {
     document: { createElement() { return { set innerHTML(value) { this.value = decode(value) } } } },
     DOMPurify: { sanitize: text => text },
     kbTranslations: { kb_created_on: 'Created on %s', kb_modified_on: 'Modified on %s',
-      kb_date_unavailable: 'Date unavailable', kb_creation_date_unavailable: 'Creation date unavailable',
       kb_created_by: 'Created by', kb_empty_description: 'Empty', kb_comments: 'Comments' },
     kbRenderAssociatedItems() {}, kbRenderViewerAttachments() {}, kbRenderComments() {}, kbStopConsultationPresence() {},
     kbResetForm() { $('#kb-associated-items').val([]) },
@@ -91,7 +90,7 @@ test('opening and saving an encoded title/category repeatedly preserves the stor
   }
 })
 
-test('list prefers the last modification, falls back to creation, and preserves unknown dates', () => {
+test('list prefers the last modification, falls back to creation, and hides unknown dates', () => {
   const h = harness()
   const updated = h.list({ id: 1, label: 'Article', ...dates }).display
   assert.match(updated, />Modified on 16\/10\/2026<\/time>/)
@@ -100,8 +99,11 @@ test('list prefers the last modification, falls back to creation, and preserves 
   assert.ok(!updated.includes('Created on'))
   const created = h.list({ id: 1, label: 'Article', ...dates, updated_at: null }).display
   assert.match(created, />Created on 10\/10\/2026<\/time>/)
-  assert.match(h.list({ id: 1 }).display, /Date unavailable/)
-  assert.match(h.list({ id: 1, created_at: 0, created_date_label: '1970-01-01' }).display, /Date unavailable/)
+  for (const entry of [{ id: 1 }, { id: 1, created_at: 0, created_date_label: '1970-01-01' }]) {
+    const html = h.list(entry).display
+    assert.ok(!html.includes('<time') && !html.includes('tp-kb-list-entry-date'))
+    assert.ok(!html.includes('tp-kb-list-entry-meta'))
+  }
 })
 
 test('viewer shows both known dates and clears the previous article modification', () => {
@@ -115,7 +117,8 @@ test('viewer shows both known dates and clears the previous article modification
   assert.equal(h.node('#kb-viewer-updated').value, '')
   assert.equal(h.node('#kb-viewer-updated').classes.has('hidden'), true)
   h.view({ id: 3 })
-  assert.equal(h.node('#kb-viewer-created').value, 'Creation date unavailable')
+  assert.equal(h.node('#kb-viewer-created').value, '')
+  assert.equal(h.node('#kb-viewer-created').classes.has('hidden'), true)
   h.context.kbHideViewer()
   assert.equal(h.node('#kb-viewer-created').value, '')
   assert.equal(h.node('#kb-viewer-updated').value, '')
@@ -126,7 +129,8 @@ test('same-second edits and edits with unknown creation dates remain visible', (
   h.view({ id: 1, ...dates, updated_at: dates.created_at })
   assert.equal(h.node('#kb-viewer-updated').classes.has('hidden'), false)
   h.view({ id: 2, ...dates, created_at: null })
-  assert.equal(h.node('#kb-viewer-created').value, 'Creation date unavailable')
+  assert.equal(h.node('#kb-viewer-created').value, '')
+  assert.equal(h.node('#kb-viewer-created').classes.has('hidden'), true)
   assert.equal(h.node('#kb-viewer-updated').classes.has('hidden'), false)
 })
 
