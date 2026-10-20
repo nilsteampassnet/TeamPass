@@ -165,7 +165,7 @@ function kbInsertMiscRow(string $type, string $intitulePrefix, array $payload, i
             return;
         } catch (Throwable $exception) {
             $attempt++;
-            if ($attempt >= 5 || strpos($exception->getMessage(), 'uniq_misc_type_intitule') === false) {
+            if ($attempt >= 5 || strpos($exception->getMessage(), 'uk_type_intitule') === false) {
                 throw $exception;
             }
             usleep(1000);
