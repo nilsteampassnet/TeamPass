@@ -652,16 +652,6 @@ function kbNormalizeLegacyRichTextMarkers(string $text): string
     return $text;
 }
 
-function kbFormatTimestamp(int $timestamp): string
-{
-    global $SETTINGS;
-
-    $dateFormat = (string) ($SETTINGS['date_format'] ?? 'Y-m-d');
-    $timeFormat = (string) ($SETTINGS['time_format'] ?? 'H:i');
-
-    return date(trim($dateFormat . ' ' . $timeFormat), $timestamp);
-}
-
 function kbBuildDescriptionExcerpt(string $description, int $maxLength = 180): string
 {
     $description = kbDecodeEscapedRichHtml(kbNormalizeTextLineEndings($description));
@@ -871,6 +861,8 @@ function kbCountComments(int $kbId): int
 
 function kbLoadComments(int $kbId, array $kb, SessionInterface $session): array
 {
+    global $SETTINGS;
+
     $rows = DB::query(
         'SELECT c.id,
             c.kb_id,
@@ -898,7 +890,7 @@ function kbLoadComments(int $kbId, array $kb, SessionInterface $session): array
             'author' => kbBuildCommentAuthorLabel($row),
             'author_id' => (int) ($row['author_id'] ?? 0),
             'created_at' => (int) ($row['created_at'] ?? 0),
-            'created_at_label' => !empty($row['created_at']) ? kbFormatTimestamp((int) $row['created_at']) : '',
+            'created_at_label' => !empty($row['created_at']) ? kbFormatTimestamp((int) $row['created_at'], $SETTINGS) : '',
             'can_delete' => kbCanDeleteComment($row, $kb, $session),
         ];
     }

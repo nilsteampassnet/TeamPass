@@ -55,15 +55,23 @@ function kbArticleChangedFields(array $before, array $after, array $oldItems, ar
     return $changes;
 }
 
+/** Format article and comment timestamps using the instance's date and time settings. */
+function kbFormatTimestamp(int $timestamp, array $settings): string
+{
+    $dateFormat = (string) ($settings['date_format'] ?? 'Y-m-d');
+    $timeFormat = (string) ($settings['time_format'] ?? 'H:i');
+
+    return date(trim($dateFormat . ' ' . $timeFormat), $timestamp);
+}
+
 /** Build full and compact date labels with the instance's configured formats. */
 function kbArticleDatePayload(array $article, array $settings): array
 {
     $dates = kbArticleDates($article);
     $dateFormat = (string) ($settings['date_format'] ?? 'Y-m-d');
-    $fullFormat = trim($dateFormat . ' ' . (string) ($settings['time_format'] ?? 'H:i'));
     foreach (['created', 'updated'] as $kind) {
         $timestamp = $dates[$kind . '_at'];
-        $dates[$kind . '_at_label'] = $timestamp === null ? '' : date($fullFormat, $timestamp);
+        $dates[$kind . '_at_label'] = $timestamp === null ? '' : kbFormatTimestamp($timestamp, $settings);
         $dates[$kind . '_date_label'] = $timestamp === null ? '' : date($dateFormat, $timestamp);
         $dates[$kind . '_at_iso'] = $timestamp === null ? '' : gmdate('Y-m-d\TH:i:s\Z', $timestamp);
     }

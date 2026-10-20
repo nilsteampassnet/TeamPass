@@ -42,11 +42,30 @@ final class KbArticleDatesTest extends TestCase
                 ['date_format' => 'd/m/Y', 'time_format' => 'H:i:s']);
             self::assertSame('17/10/2026', $dates['created_date_label']);
             self::assertSame('17/10/2026 00:30:00', $dates['created_at_label']);
+            self::assertSame($dates['created_at_label'], kbFormatTimestamp($timestamp,
+                ['date_format' => 'd/m/Y', 'time_format' => 'H:i:s']));
             self::assertSame('2026-10-16T22:30:00Z', $dates['created_at_iso']);
             self::assertSame('', $dates['updated_at_label']);
             self::assertSame('', $dates['updated_at_iso']);
             date_default_timezone_set('UTC');
             self::assertSame('2026-10-16', kbArticleDatePayload(['updated_at' => $timestamp], [])['updated_date_label']);
+        } finally {
+            date_default_timezone_set($previousZone);
+        }
+    }
+
+    /** The shared formatter preserves defaults, 12-hour clocks and date-only settings. */
+    public function testSharedTimestampFormatter(): void
+    {
+        $previousZone = date_default_timezone_get();
+        try {
+            date_default_timezone_set('UTC');
+            $timestamp = strtotime('2026-10-16T22:30:00Z');
+            self::assertSame('2026-10-16 22:30', kbFormatTimestamp($timestamp, []));
+            self::assertSame('10/16/2026 10:30 PM', kbFormatTimestamp($timestamp,
+                ['date_format' => 'm/d/Y', 'time_format' => 'g:i A']));
+            self::assertSame('16.10.2026', kbFormatTimestamp($timestamp,
+                ['date_format' => 'd.m.Y', 'time_format' => '']));
         } finally {
             date_default_timezone_set($previousZone);
         }
