@@ -151,6 +151,7 @@ final class KbArticleDatePersistenceTest extends TestCase
 {
     private static string $source;
     private ?UploadedFile $upload = null;
+    private array $uploads = [];
 
     /** Load the actual access and persistence helpers without booting the HTTP handler. */
     public static function setUpBeforeClass(): void
@@ -188,7 +189,8 @@ final class KbArticleDatePersistenceTest extends TestCase
             ['user-id' => $user, 'user-admin' => $admin ? 1 : 0, 'user-login' => 'alice', 'key' => 'session-key'][$key] ?? $default);
         $key = 'session-key';
         $data = $payload;
-        $request = new Request([], ['kb_id' => 1], [], [], ['attachments' => $this->upload === null ? [] : [$this->upload]]);
+        $request = new Request([], ['kb_id' => 1], [], [], ['attachments' =>
+            $this->uploads !== [] ? $this->uploads : ($this->upload === null ? [] : [$this->upload])]);
         $lang = new class {
             /** Translate error keys without loading a language catalog. */
             public function get(string $key): string { return $key; }
@@ -276,7 +278,7 @@ final class KbArticleDatePersistenceTest extends TestCase
         self::assertSame(1000, DB::$article['updated_at']);
     }
 
-    /** Only a successfully persisted upload advances the date, including creation with a file. */
+    /** Only a successfully persisted upload advances the date. */
     public function testUploadDatesAreWrittenOnlyAfterSuccess(): void
     {
         self::assertTrue($this->action('upload_attachment', [])['error']);
@@ -294,6 +296,54 @@ final class KbArticleDatePersistenceTest extends TestCase
         self::assertFalse($response['error']);
         self::assertSame(100, $response['entry']['created_at']);
         self::assertSame(1000, $response['entry']['updated_at']);
+    }
+
+    /** One request updates the article date once, including a batch that partially succeeds. */
+    public function testUploadBatchTouchesArticleOnlyOnce(): void
+    {
+        $valid = $this->createMock(UploadedFile::class);
+        $valid->method('isValid')->willReturn(true);
+        $valid->method('getClientOriginalName')->willReturn('article.txt');
+        $valid->method('getSize')->willReturn(3);
+        $valid->method('move')->willReturn(new File(__FILE__));
+        $invalid = $this->createMock(UploadedFile::class);
+        $invalid->method('isValid')->willReturn(false);
+        foreach ([[$valid, $valid], [$valid, $invalid], [$invalid, $valid]] as $files) {
+            DB::$writes = [];
+            DB::$article['updated_at'] = 200;
+            $this->uploads = $files;
+            $response = $this->action('upload_attachment', []);
+            $stored = array_filter(DB::$writes, static fn (array $write): bool => $write[0] === 'fixture_misc');
+            $touches = array_filter(DB::$writes, static fn (array $write): bool => $write[0] === 'fixture_kb');
+            self::assertSame(in_array($invalid, $files, true), $response['error']);
+            self::assertCount($stored === [] ? 0 : 1, $touches);
+            self::assertSame($stored === [] ? 200 : 1000, DB::$article['updated_at']);
+            self::assertSame(100, DB::$article['created_at']);
+        }
+    }
+
+    /** A later storage exception cannot leave already stored attachments without a dated edit. */
+    public function testPartialUploadStorageFailureStillRecordsOneEdit(): void
+    {
+        $valid = $this->createMock(UploadedFile::class);
+        $valid->method('isValid')->willReturn(true);
+        $valid->method('getClientOriginalName')->willReturn('first.txt');
+        $valid->method('getSize')->willReturn(3);
+        $valid->method('move')->willReturn(new File(__FILE__));
+        $failing = $this->createMock(UploadedFile::class);
+        $failing->method('isValid')->willReturn(true);
+        $failing->method('getClientOriginalName')->willReturn('second.txt');
+        $failing->method('getSize')->willReturn(3);
+        $failing->method('move')->willThrowException(new \RuntimeException('Test storage failure'));
+        $this->uploads = [$valid, $failing];
+        try {
+            $this->action('upload_attachment', []);
+            self::fail('The storage exception must propagate');
+        } catch (\RuntimeException $exception) {
+            self::assertSame('Test storage failure', $exception->getMessage());
+        }
+        self::assertCount(1, array_filter(DB::$writes, static fn (array $write): bool => $write[0] === 'fixture_kb'));
+        self::assertSame(1000, DB::$article['updated_at']);
     }
 
     /** Both restoration paths keep the recorded dates rather than using the restore time. */

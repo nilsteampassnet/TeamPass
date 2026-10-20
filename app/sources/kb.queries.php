@@ -1797,81 +1797,88 @@ switch ($type) {
             break;
         }
 
-        foreach ($uploadedFiles as $uploadedFile) {
-            if ($uploadedFile === null) {
-                continue;
-            }
-
-            if ($uploadedFile->isValid() === false) {
-                echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_upload_runtime_not_found')], 'encode');
-                break 2;
-            }
-
-            $originalName = kbAttachmentSanitizeFilename((string) $uploadedFile->getClientOriginalName());
-            if (kbAttachmentExtensionIsAllowed($originalName, $SETTINGS) === false) {
-                echo (string) prepareExchangedData([
-                    'error' => true,
-                    'message' => str_replace('%s', kbBuildAllowedAttachmentExtensionsLabel($SETTINGS), (string) $lang->get('kb_attachment_extension_not_allowed')),
-                ], 'encode');
-                break 2;
-            }
-
-            $fileSize = 0;
-            try {
-                $fileSize = (int) $uploadedFile->getSize();
-            } catch (Throwable $exception) {
-                $fileSize = (int) ($uploadedFile->getClientSize() ?? 0);
-            }
-            if ($fileSize <= 0 && (int) ($SETTINGS['upload_zero_byte_file'] ?? 0) !== 1) {
-                echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('kb_attachment_zero_byte_not_allowed')], 'encode');
-                break 2;
-            }
-
-            $attachmentId = kbGenerateToken();
-            $storedName = $attachmentId . '_' . $originalName;
-            $uploadedAt = time();
-
-            $uploadedFile->move($directory, $storedName);
-
-            $storedPath = $directory . DIRECTORY_SEPARATOR . $storedName;
-            $mimeType = kbSanitizeMimeType($storedPath);
-
-            if ($fileSize <= 0) {
-                if (is_file($storedPath)) {
-                    $resolvedSize = filesize($storedPath);
-                    $fileSize = $resolvedSize === false ? 0 : (int) $resolvedSize;
+        $storedFiles = 0;
+        try {
+            foreach ($uploadedFiles as $uploadedFile) {
+                if ($uploadedFile === null) {
+                    continue;
                 }
+
+                if ($uploadedFile->isValid() === false) {
+                    echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_upload_runtime_not_found')], 'encode');
+                    break 2;
+                }
+
+                $originalName = kbAttachmentSanitizeFilename((string) $uploadedFile->getClientOriginalName());
+                if (kbAttachmentExtensionIsAllowed($originalName, $SETTINGS) === false) {
+                    echo (string) prepareExchangedData([
+                        'error' => true,
+                        'message' => str_replace('%s', kbBuildAllowedAttachmentExtensionsLabel($SETTINGS), (string) $lang->get('kb_attachment_extension_not_allowed')),
+                    ], 'encode');
+                    break 2;
+                }
+
+                $fileSize = 0;
+                try {
+                    $fileSize = (int) $uploadedFile->getSize();
+                } catch (Throwable $exception) {
+                    $fileSize = (int) ($uploadedFile->getClientSize() ?? 0);
+                }
+                if ($fileSize <= 0 && (int) ($SETTINGS['upload_zero_byte_file'] ?? 0) !== 1) {
+                    echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('kb_attachment_zero_byte_not_allowed')], 'encode');
+                    break 2;
+                }
+
+                $attachmentId = kbGenerateToken();
+                $storedName = $attachmentId . '_' . $originalName;
+                $uploadedAt = time();
+
+                $uploadedFile->move($directory, $storedName);
+
+                $storedPath = $directory . DIRECTORY_SEPARATOR . $storedName;
+                $mimeType = kbSanitizeMimeType($storedPath);
+
+                if ($fileSize <= 0) {
+                    if (is_file($storedPath)) {
+                        $resolvedSize = filesize($storedPath);
+                        $fileSize = $resolvedSize === false ? 0 : (int) $resolvedSize;
+                    }
+                }
+
+                DB::insert(
+                    prefixTable('misc'),
+                    [
+                        'type' => 'kb_attachment',
+                        'intitule' => kbAttachmentIntitule($kbId, $attachmentId),
+                        'valeur' => kbMiscEncode([
+                            'attachment_id' => $attachmentId,
+                            'kb_id' => $kbId,
+                            'original_name' => $originalName,
+                            'stored_name' => $storedName,
+                            'mime_type' => $mimeType,
+                            'size' => $fileSize,
+                            'uploaded_by' => (int) $session->get('user-id'),
+                            'uploaded_at' => $uploadedAt,
+                        ]),
+                        'created_at' => $uploadedAt,
+                    ]
+                );
+                $storedFiles++;
             }
-
-            DB::insert(
-                prefixTable('misc'),
-                [
-                    'type' => 'kb_attachment',
-                    'intitule' => kbAttachmentIntitule($kbId, $attachmentId),
-                    'valeur' => kbMiscEncode([
-                        'attachment_id' => $attachmentId,
-                        'kb_id' => $kbId,
-                        'original_name' => $originalName,
-                        'stored_name' => $storedName,
-                        'mime_type' => $mimeType,
-                        'size' => $fileSize,
-                        'uploaded_by' => (int) $session->get('user-id'),
-                        'uploaded_at' => $uploadedAt,
-                    ]),
-                    'created_at' => $uploadedAt,
-                ]
-            );
-            $kb['updated_at'] = kbMarkArticleUpdated($kbId);
+        } finally {
+            // Persist one mutation even if a later file fails validation or storage.
+            if ($storedFiles > 0) {
+                $kb['updated_at'] = kbMarkArticleUpdated($kbId);
+                kbInsertLog($SETTINGS, $session, $kbId, (string) $kb['label'], 'at_modification', 'attachments_upload');
+                emitKbEvent(
+                    'updated',
+                    $kbId,
+                    (string) $kb['label'],
+                    (string) ($session->get('user-login') ?? ''),
+                    (int) $session->get('user-id')
+                );
+            }
         }
-
-        kbInsertLog($SETTINGS, $session, $kbId, (string) $kb['label'], 'at_modification', 'attachments_upload');
-        emitKbEvent(
-            'updated',
-            $kbId,
-            (string) $kb['label'],
-            (string) ($session->get('user-login') ?? ''),
-            (int) $session->get('user-id')
-        );
         $entry = kbBuildEntryPayload($kb, $session, (string) ($SETTINGS['cpassman_url'] ?? ''));
         echo (string) prepareExchangedData(['error' => false, 'message' => $lang->get('kb_attachment_uploaded'), 'entry' => $entry], 'encode');
         break;
