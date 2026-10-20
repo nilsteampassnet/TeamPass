@@ -193,3 +193,8 @@ jobs:
           TEAMPASS_TEST_DB: teampass_test_secure_send
           TEAMPASS_TEST_PASSWORD: test-only-password
         run: php tests/Integration/api_device_credentials_database.php
+      - name: Exercise external device pairing and concurrent handoffs
+        env:
+          TEAMPASS_TEST_DB: teampass_test_secure_send
+          TEAMPASS_TEST_PASSWORD: test-only-password
+        run: php tests/Integration/device_pairing_database.php

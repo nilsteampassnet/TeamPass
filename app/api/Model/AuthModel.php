@@ -197,6 +197,7 @@ class AuthModel
 
         loadClasses('DB');
         require_once __DIR__ . '/../../sources/api_device_credentials.php';
+        $SETTINGS = apiDeviceCurrentSettings($SETTINGS);
         $row = DB::queryFirstRow(
             'SELECT id, user_id, wrapped_private_key, salt, expires_at'
             . (apiDeviceSchemaReady($SETTINGS) ? ', purpose' : '') . '
@@ -215,6 +216,9 @@ class AuthModel
         }
 
         if (($row['purpose'] ?? '') === 'external_device') {
+            if (!apiDeviceIsHttps($_SERVER, $SETTINGS)) {
+                return $this->refuseApiAuth('api_invalid_token', $inputData['login'], $clientIp, $SETTINGS);
+            }
             $result = apiDeviceAuthenticate(
                 (int) $userInfo['id'], (int) $row['id'], $SETTINGS,
                 function (array $lockedToken, array $freshUser) use ($inputData, $clientIp, $SETTINGS): array {

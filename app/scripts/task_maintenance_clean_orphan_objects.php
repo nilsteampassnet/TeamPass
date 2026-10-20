@@ -31,6 +31,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 require_once __DIR__.'/../sources/secure_send_retention.php';
+require_once __DIR__.'/../sources/device_pairing.functions.php';
 
 // init
 loadClasses('DB');
@@ -66,6 +67,13 @@ $prunedRevisions = pruneItemRevisionsJournal(
     offlineSyncResolveWindowDays($SETTINGS['offline_sync_window_days'] ?? null)
 );
 $prunedIdempotencyRecords = pruneApiIdempotencyRecords();
+
+try {
+    devicePairingPurge($SETTINGS);
+} catch (Throwable $e) {
+    // Expiry is also enforced on every use; a failed batch cannot leave a usable handoff.
+    error_log('[Device pairing] Maintenance failed');
+}
 
 $prunedSecureSendEvents = 0;
 $secureSendRetentionFailed = false;

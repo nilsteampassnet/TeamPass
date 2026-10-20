@@ -8,7 +8,7 @@ The feature is experimental and disabled by default. The existing API and PAT
 authentication policies must also allow the account. Enabling pairing does not
 enable token authentication for additional account types.
 
-New PATs have `purpose = external_device`. Their JWTs carry `source_token_id`, and
+PATs issued by device pairing have `purpose = external_device`. Their JWTs carry `source_token_id`, and
 their API session records carry the same indexed identifier. Each request checks
 the credential's current existence, expiry, owner and policy. Deleting a credential
 therefore also stops its existing JWTs. Revocation marks the linked sessions revoked
@@ -28,3 +28,7 @@ columns. `device_pairing_schema` records successful schema installation;
 Pairing transaction lifetime, credential lifetime and JWT lifetime are separate.
 A short-lived invitation does not make a durable credential short-lived, and a
 server-side revocation does not immediately erase data cached by an offline client.
+
+The complete versioned protocol and its reference test client are described in
+[external device pairing](device-pairing.md). External device PATs and JWTs always
+require HTTPS, independently of the optional HTTPS setting for older API clients.

@@ -749,7 +749,7 @@ class DatabaseInstaller
             array('admin', 'oauth2_client_appname', 'Login with Azure'),
             array('admin', 'oauth2_api_enabled', '0'),
             array('admin', 'extension_token_all_auth_types', '0'),
-            array('admin', 'device_pairing_schema', '1'),
+            array('admin', 'device_pairing_schema', '2'),
             array('admin', 'device_pairing_enabled', '0'),
             array('admin', 'api_require_https', '1'),
             array('admin', 'api_rate_limit_per_minute', '120'),
@@ -1468,6 +1468,7 @@ class DatabaseInstaller
             `user_id` int(12) NOT NULL,
             `token_hash` varchar(64) NOT NULL,
             `purpose` varchar(32) NOT NULL DEFAULT 'legacy',
+            `pairing_id` char(32) NULL DEFAULT NULL,
             `wrapped_private_key` text NOT NULL,
             `salt` varchar(64) NOT NULL,
             `label` varchar(255) NULL DEFAULT NULL,
@@ -1505,6 +1506,8 @@ class DatabaseInstaller
             KEY `source_token_id` (`source_token_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;"
         );
+        require_once TEAMPASS_ROOT . '/app/sources/device_pairing_logic.php';
+        DB::query(devicePairingSchemaSql($this->inputData['tablePrefix'] . 'device_pairings'));
     }
 
     // Create table api_rate_limit (sliding-window counters per user and per IP)

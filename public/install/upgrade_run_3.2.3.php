@@ -262,15 +262,16 @@ try {
     exit();
 }
 
-// The upgrade runner replays this script on every upgrade, including 3.2.3.x installations.
-// Preserve existing PATs and keep device pairing opt-in. Schema readiness is published last.
-if (addColumnIfNotExist(prefixTable('api_tokens'), 'purpose', "VARCHAR(32) NOT NULL DEFAULT 'legacy'") === false
-    || addColumnIfNotExist(prefixTable('api_sessions'), 'source_token_id', 'INT(12) NULL DEFAULT NULL') === false
-    || checkIndexExist(prefixTable('api_sessions'), 'source_token_id', 'ADD INDEX `source_token_id` (`source_token_id`)') === false
-    || mysqli_query($db_link, "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`)
-        VALUES ('admin', 'device_pairing_enabled', '0'), ('admin', 'device_pairing_schema', '1')") === false
-) {
-    echo json_encode([['finish' => '1', 'error' => 'Error installing external device credentials']]);
+// Replayed on every upgrade, including 3.2.3.x. Preserve legacy tokens and explicit opt-in.
+require_once TEAMPASS_ROOT . '/app/sources/device_pairing_schema.php';
+try {
+    $pairingTables = [];
+    foreach (['users', 'api', 'api_tokens', 'api_sessions', 'api_rate_limit', 'log_system', 'misc', 'device_pairings'] as $table) {
+        $pairingTables[$table] = prefixTable($table);
+    }
+    devicePairingUpgradeSchema($db_link, $pairingTables);
+} catch (Throwable $e) {
+    echo json_encode([['finish' => '1', 'error' => 'Error installing external device pairing']]);
     mysqli_close($db_link);
     exit();
 }

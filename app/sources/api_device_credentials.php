@@ -48,6 +48,13 @@ function apiDeviceAuthenticate(int $userId, int $tokenId, array $settings, calla
             DB::rollback();
             return null;
         }
+        if (!empty($token['pairing_id'])) {
+            require_once __DIR__ . '/device_pairing.functions.php';
+            if (!devicePairingConfirmCredential($token, $account, $settings)) {
+                DB::rollback();
+                return null;
+            }
+        }
         $result = $issue($token, $account);
         if (isset($result['token']) === false) {
             DB::rollback();
