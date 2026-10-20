@@ -29,9 +29,11 @@ function kbUpgradeArticleDates(mysqli $connection, string $articleTable, string 
         }
     }
 
-    // Stream the journal, retaining only two timestamps per article in memory.
+    // The type/intitule index excludes view events before their JSON reaches PHP.
+    // Stream eligible events, retaining only two timestamps per article in memory.
     $logs = $connection->query('SELECT valeur, created_at FROM ' . $miscTable
-        . " WHERE type = 'kb_log'", MYSQLI_USE_RESULT);
+        . " WHERE type = 'kb_log' AND (intitule LIKE 'kb_log_at_creation%'
+            OR intitule LIKE 'kb_log_at_modification%')", MYSQLI_USE_RESULT);
     if ($logs === false) {
         throw new RuntimeException('Unable to read article date history');
     }

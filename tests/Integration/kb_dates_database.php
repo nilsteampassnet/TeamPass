@@ -52,21 +52,29 @@ try {
 
     // Upgrade a legacy table, using a non-default prefix and retained JSON journal rows.
     $connection->query('ALTER TABLE `' . $articleTable . '` DROP COLUMN created_at, DROP COLUMN updated_at');
-    $connection->query('CREATE TABLE `' . $miscTable . '` (type VARCHAR(100), valeur LONGTEXT, created_at BIGINT)');
-    foreach ([1, 2, 3, 4] as $id) {
+    $connection->query('CREATE TABLE `' . $miscTable . '` (type VARCHAR(100), intitule VARCHAR(250),
+        valeur LONGTEXT, created_at BIGINT, UNIQUE KEY uk_type_intitule (type, intitule))');
+    foreach ([1, 2, 3, 4, 5] as $id) {
         $connection->query('INSERT INTO `' . $articleTable . '` (id, category_id, label, description, author_id)
             VALUES (' . $id . ", 7, 'Article', 'Body', 2)");
     }
-    $statement = $connection->prepare('INSERT INTO `' . $miscTable . '` VALUES (?, ?, ?)');
+    $statement = $connection->prepare('INSERT INTO `' . $miscTable . '` VALUES (?, ?, ?, ?)');
     foreach ([[1, 'at_creation', 100, ''], [1, 'at_modification', 200, 'description'],
         [1, 'at_modification', 300, 'comment_add'], [1, 'at_modification', 400, ''],
         [2, 'at_modification', 500, 'comment_delete'], [3, 'at_modification', 250, 'attachments_upload'],
-        [4, 'at_creation', 300, ''], [4, 'at_modification', 300, 'label']] as [$id, $action, $timestamp, $reason]) {
+        [4, 'at_creation', 300, ''], [4, 'at_modification', 300, 'label'],
+        [1, 'at_shown', 900, '']] as [$id, $action, $timestamp, $reason]) {
         $type = 'kb_log';
+        $intitule = 'kb_log_' . $action . '_' . $id . '_' . $timestamp;
         $json = json_encode(['kb_id' => $id, 'action' => $action, 'date' => $timestamp, 'reason' => $reason]);
-        $statement->bind_param('ssi', $type, $json, $timestamp);
+        $statement->bind_param('sssi', $type, $intitule, $json, $timestamp);
         $statement->execute();
     }
+    // A view-prefixed row must not reach the decoder, even with a creation-shaped payload.
+    $intitule = 'kb_log_at_shown_5_999';
+    $timestamp = 999;
+    $json = json_encode(['kb_id' => 5, 'action' => 'at_creation', 'date' => $timestamp]);
+    $statement->execute();
     $statement->close();
     kbUpgradeArticleDates($connection, $articleTable, $miscTable);
     $rows = $connection->query('SELECT id, created_at, updated_at FROM `' . $articleTable . '` ORDER BY id')->fetch_all(MYSQLI_ASSOC);
@@ -74,6 +82,8 @@ try {
     kbDatesExpect($rows[1]['created_at'] === null && $rows[1]['updated_at'] === null, 'Comments must not invent dates');
     kbDatesExpect($rows[2]['created_at'] === null && (int) $rows[2]['updated_at'] === 250, 'Partial history must stay partial');
     kbDatesExpect((int) $rows[3]['created_at'] === 300 && (int) $rows[3]['updated_at'] === 300, 'Same-second edits must survive');
+    kbDatesExpect($rows[4]['created_at'] === null && $rows[4]['updated_at'] === null,
+        'View-prefixed history must be excluded before decoding');
 
     $connection->query('UPDATE `' . $articleTable . '` SET updated_at = 1000 WHERE id = 1');
     kbUpgradeArticleDates($connection, $articleTable, $miscTable);
