@@ -28,16 +28,20 @@ const decode = text => String(text).replace(/&(?:amp|lt|gt|quot|apos|#(?:x[\da-f
 
 function harness() {
   const nodes = new Map()
+  const requests = []
+  let editorContent = ''
   function $(selector) {
     if (selector === '<div>') {
       let text = ''
       return { text(value) { text = value; return this }, html() { return escape(text) } }
     }
     if (!nodes.has(selector)) {
-      const state = { value: '', classes: new Set(), data: {} }
+      const state = { value: '', classes: new Set(), data: {}, properties: {} }
       const adapter = {
         text(value) { state.value = value; return this }, html(value) { state.value = value; return this },
-        val(value) { state.value = value; return this },
+        val(value) { if (value === undefined) return state.value; state.value = value; return this },
+        prop(key, value) { state.properties[key] = value; return this },
+        is() { return state.properties.checked === true }, trigger() { return this },
         empty() { state.value = ''; return this },
         data(key, value) { if (value === undefined) return state.data[key]; state.data[key] = value; return this },
         addClass(name) { state.classes.add(name); return this }, removeClass(name) { state.classes.delete(name); return this },
@@ -47,21 +51,45 @@ function harness() {
     }
     return nodes.get(selector).adapter
   }
+  $.post = (url, payload) => { requests.push(payload); return { fail() {} } }
   const context = vm.createContext({ $, window: {},
     document: { createElement() { return { set innerHTML(value) { this.value = decode(value) } } } },
     DOMPurify: { sanitize: text => text },
     kbTranslations: { kb_created_on: 'Created on %s', kb_modified_on: 'Modified on %s',
       kb_date_unavailable: 'Date unavailable', kb_creation_date_unavailable: 'Creation date unavailable',
       kb_created_by: 'Created by', kb_empty_description: 'Empty', kb_comments: 'Comments' },
-    kbRenderAssociatedItems() {}, kbRenderViewerAttachments() {}, kbRenderComments() {}, kbStopConsultationPresence() {}
+    kbRenderAssociatedItems() {}, kbRenderViewerAttachments() {}, kbRenderComments() {}, kbStopConsultationPresence() {},
+    kbResetForm() { $('#kb-associated-items').val([]) },
+    kbInitDescriptionEditor(html) { editorContent = html }, kbGetEditorContent() { return editorContent },
+    kbRenderEditorAttachments() {}, kbFormatPlainText(text) { return text },
+    kbByteLength(text) { return Buffer.byteLength(text) }, kbHasPendingAttachments() { return false },
+    kbEditorOptions: { maxDescriptionBytes: 4194304 }, kbSessionKey: 'test-session', kbEncodePayload: value => value
   })
-  vm.runInContext(['kbEscapeHtml', 'kbDecodeHtmlEntities', 'kbArticleDateHtml', 'kbBuildListEntry', 'kbRenderViewer', 'kbHideViewer'].map(section).join('\n'), context)
-  return { context, node: selector => nodes.get(selector).state,
+  vm.runInContext(['kbEscapeHtml', 'kbDecodeHtmlEntities', 'kbArticleDateHtml', 'kbBuildListEntry', 'kbRenderViewer', 'kbHideViewer', 'kbFillEditor', 'kbSaveEntry'].map(section).join('\n'), context)
+  return { context, requests, node: selector => nodes.get(selector).state,
     list: entry => context.kbBuildListEntry(entry), view: entry => context.kbRenderViewer(entry) }
 }
 
 const dates = { created_at: 100, created_at_label: '10/10/2026 09:15', created_date_label: '10/10/2026', created_at_iso: '2026-10-10T07:15:00Z',
   updated_at: 200, updated_at_label: '16/10/2026 14:32', updated_date_label: '16/10/2026', updated_at_iso: '2026-10-16T12:32:00Z' }
+
+test('opening and saving an encoded title/category repeatedly preserves the stored values', () => {
+  const h = harness()
+  // Model the HTML text serialization used by the sanitizer at the transport boundary.
+  h.context.DOMPurify.sanitize = text => String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  const entry = { id: 1, label: 'R&amp;D O\'Brien "VPN" &lt; 5 &gt; 1', category: 'R&amp;D &lt; 5 &gt; 1',
+    description_html: '<p>Unchanged body</p>', associated_items: [] }
+  for (let round = 0; round < 3; round++) {
+    h.context.kbFillEditor(entry)
+    assert.equal(h.node('#kb-label').value, 'R&D O\'Brien "VPN" < 5 > 1')
+    assert.equal(h.node('#kb-category').value, 'R&D < 5 > 1')
+    h.context.kbSaveEntry()
+    const saved = h.requests.at(-1).data
+    assert.equal(saved.label, entry.label)
+    assert.equal(saved.category, entry.category)
+    assert.equal(saved.description, entry.description_html)
+  }
+})
 
 test('list prefers the last modification, falls back to creation, and preserves unknown dates', () => {
   const h = harness()

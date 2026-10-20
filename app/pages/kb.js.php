@@ -1229,8 +1229,8 @@ if (
     function kbFillEditor(entry) {
         kbResetForm();
         $('#kb-id').val(String(entry.id || 0));
-        $('#kb-label').val(entry.label || '');
-        $('#kb-category').val(entry.category || '');
+        $('#kb-label').val(kbDecodeHtmlEntities(entry.label));
+        $('#kb-category').val(kbDecodeHtmlEntities(entry.category));
         kbInitDescriptionEditor(entry.description_html || kbFormatPlainText(entry.description || ''));
         $('#kb-anyone-can-modify').prop('checked', parseInt(entry.anyone_can_modify || 0, 10) === 1);
         $('#kb-allow-comments').prop('checked', parseInt(entry.allow_comments || 0, 10) === 1);
