@@ -28,7 +28,7 @@ const shortFormats = {
   'd-m-y': '16-06', 'Y-m-d': '06-16'
 }
 
-function harness(format = 'd/m/Y') {
+function harness(format = 'd/m/Y', weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']) {
   const nodes = new Map()
   function element(selector) {
     const state = { text: '', children: [] }
@@ -50,7 +50,7 @@ function harness(format = 'd/m/Y') {
     $: selector => nodes.get(selector) || element(selector),
     document: { getElementById() { return canvas } },
     tpLicenceDateFormat: format, tpLicenceChart: null,
-    tpLicenceText: { since: 'History since #date#', live: '(live)', aria: '#used# / #quota#', quotaShare: '#percent#' },
+    tpLicenceText: { since: 'History since #date#', live: '(live)', aria: '#used# / #quota#', quotaShare: '#percent#', weekdays },
     tpOpsPercent: (used, quota) => used / quota * 100,
     ensureChartJs: callback => callback(),
     Chart: function (_, config) { this.config = config; this.destroy = () => {} }
@@ -89,7 +89,7 @@ for (const [format, expected] of Object.entries(formats)) {
     assert.equal(h.node('#tp-licence-kpi-expiry').text, expected)
     const chart = h.context.tpLicenceChart.config
     assert.equal(chart.options.scales.xAxes[0].ticks.callback('2027-06-16'), shortFormats[format])
-    assert.equal(chart.options.tooltips.callbacks.title([{ index: 1 }]), expected + ' (live)')
+    assert.equal(chart.options.tooltips.callbacks.title([{ index: 1 }]), 'Wednesday ' + expected + ' (live)')
     assert.equal(h.node('#tp-licence-seats-table tbody').children[1].children[0].text, expected)
     assert.equal(h.node('#tp-licence-since').text, 'History since ' + expected)
     assert.equal(JSON.stringify(data), original, 'Display formatting must preserve raw server dates')
@@ -107,12 +107,28 @@ test('missing or invalid expiry dates render an unavailable value', () => {
   }
 })
 
+test('tooltip weekdays follow TeamPass translations in Sunday-first order', () => {
+  const weekdays = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
+  const h = harness('d/m/Y', weekdays)
+  for (let index = 0; index < 7; index++) {
+    const data = payload()
+    const date = '2027-06-' + (13 + index)
+    data.history.points = [{ ...data.history.points[1], date, live: false }]
+    data.history.first_snapshot = date
+    data.history.today = date
+    h.context.renderLicenceStatistics(data)
+    const title = h.context.tpLicenceChart.config.options.tooltips.callbacks.title([{ index: 0 }])
+    assert.equal(title, weekdays[index] + ' ' + (13 + index) + '/06/2027')
+  }
+})
+
 test('date-only and timestamp expiries retain their calendar day across browser timezones and DST', () => {
   const previous = process.env.TZ
   try {
     for (const zone of ['Europe/Paris', 'America/Los_Angeles', 'Pacific/Kiritimati', 'UTC']) {
       process.env.TZ = zone
       const h = harness()
+      assert.equal(h.context.tpLicenceFormatDate('2027-06-16', 'l d/m/Y'), 'Wednesday 16/06/2027', zone)
       for (const [value, expected] of [
         ['2027-06-16', '16/06/2027'], ['2027-06-16 23:59:59', '16/06/2027'],
         ['2027-06-16T23:59:59Z', '16/06/2027'], ['2028-02-29', '29/02/2028'],

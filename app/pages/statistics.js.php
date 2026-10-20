@@ -1344,6 +1344,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         'noSnapshot' => $lang->get('extension_seats_history_no_snapshot'),
         'since' => $lang->get('extension_seats_history_since'),
         'aria' => $lang->get('extension_seats_history_aria'),
+        'weekdays' => [
+            $lang->get('sunday'), $lang->get('monday'), $lang->get('tuesday'),
+            $lang->get('wednesday'), $lang->get('thursday'), $lang->get('friday'), $lang->get('saturday'),
+        ],
     ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>;
     var tpLicenceLoaded = false;
     var tpLicenceChart = null;
@@ -1471,9 +1475,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
      * Format a licence-server calendar day with the instance's PHP date format.
      * Keep the supplied day: these labels must not shift with the browser's timezone.
      * The tokens cover every date format offered in Settings, including PHP's English M.
+     * The l token uses TeamPass weekday translations for the tooltip.
      *
      * @param {string|null|undefined} value - Y-m-d, optionally followed by the expiry time
-     * @param {string} [format] - Optional PHP date format for compact chart ticks
+     * @param {string} [format] - Optional PHP date format for chart labels
      * @return {string}
      */
     function tpLicenceFormatDate(value, format) {
@@ -1488,9 +1493,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             m: parts[2],
             Y: parts[1],
             y: parts[1].slice(-2),
-            M: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][Number(parts[2]) - 1]
+            M: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][Number(parts[2]) - 1],
+            l: tpLicenceText.weekdays[date.getUTCDay()]
         };
-        return (format || tpLicenceDateFormat).replace(/[dmYyM]/g, function(token) { return tokens[token]; });
+        return (format || tpLicenceDateFormat).replace(/[dmYyMl]/g, function(token) { return tokens[token]; });
     }
 
     /**
@@ -1621,7 +1627,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     callbacks: {
                         title: function(items) {
                             var p = points[items[0].index];
-                            var title = tpLicenceFormatDate(p.date);
+                            var title = tpLicenceFormatDate(p.date, 'l ' + tpLicenceDateFormat);
                             return p.live ? title + ' ' + tpLicenceText.live : title;
                         },
                         label: function(item) {

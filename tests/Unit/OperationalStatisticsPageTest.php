@@ -220,6 +220,55 @@ class OperationalStatisticsPageTest extends TestCase
         }
     }
 
+    /** Weekdays use shipped translations and remain safe inside the script element. */
+    public function testLicenceWeekdayTranslationsAreSundayFirstAndSafelyEncoded(): void
+    {
+        self::assertSame(1, preg_match('/var tpLicenceText = (<\?php[\s\S]*?\?>);/', $this->javascript(), $matches));
+        $fixture = tempnam(sys_get_temp_dir(), 'tp-licence-weekdays-');
+        self::assertIsString($fixture);
+        $bufferLevel = ob_get_level();
+        $hostile = "</script><img title=\"x\"> & O'Brien 中文";
+        $keys = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        try {
+            self::assertNotFalse(file_put_contents($fixture, $matches[1]));
+            foreach ([
+                'english' => ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+                'french' => ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'],
+            ] as $language => $expectedDays) {
+                $messages = include __DIR__ . '/../../app/includes/language/' . $language . '.php';
+                foreach ([false, true] as $override) {
+                    if ($override) {
+                        foreach ($keys as $key) {
+                            $messages[$key] = $hostile;
+                        }
+                    }
+                    $lang = new class($messages) {
+                        public function __construct(private array $messages)
+                        {
+                        }
+
+                        /** Return a shipped test catalog message. */
+                        public function get(string $key): string
+                        {
+                            return $this->messages[$key];
+                        }
+                    };
+                    ob_start();
+                    require $fixture;
+                    $rendered = (string) ob_get_clean();
+                    $decoded = json_decode($rendered, true, 512, JSON_THROW_ON_ERROR);
+                    self::assertSame($override ? array_fill(0, 7, $hostile) : $expectedDays, $decoded['weekdays']);
+                    self::assertStringNotContainsString('</script', strtolower($rendered));
+                }
+            }
+        } finally {
+            while (ob_get_level() > $bufferLevel) {
+                ob_end_clean();
+            }
+            unlink($fixture);
+        }
+    }
+
     public function testChartConfigurationTargetsTheBundledChartJsVersion(): void
     {
         $javascript = $this->javascript();
