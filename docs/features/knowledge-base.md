@@ -67,6 +67,24 @@ The article title is the page's main heading, so Markdown headings are shifted t
 
 Click the view icon on an article row to open its detail view. The detail view displays the article category, author, description, associated items, attachments, and comments.
 
+### Article dates
+
+The detail view shows the article's creation date and its last modification date when
+known. The article list shows the last modification date, or the creation date when
+no modification date is recorded. Hover over a list date for the full timestamp.
+Unknown dates are omitted. Dates and times follow the instance's configured formats
+and timezone.
+
+Changes to the article, its associated items or its attachments update the modification
+date. Reading an article, adding or deleting a comment, and saving without changes do
+not. Deleting and restoring an article preserves its recorded dates.
+
+During the normal upgrade, TeamPass recovers creation and modification dates from
+retained article history where possible. Missing dates stay unknown; the upgrade time
+is never substituted for them. On older articles, an absent modification date does not
+prove the article was never edited. Once recorded, dates remain available after the
+activity logs are purged.
+
 When WebSocket support is enabled, other users can see that the article is currently being viewed. The current user's own consultation is filtered from their own UI.
 
 ---
