@@ -910,6 +910,29 @@ class LicenceTrialLogicTest extends TestCase
         self::assertSame(0, licenceTrialParseServerDate('not a date'));
     }
 
+    /** Server calendar days must not shift with the instance timezone. */
+    public function testServerDayFormattingIgnoresTheInstanceTimezone(): void
+    {
+        $originalTimezone = date_default_timezone_get();
+        try {
+            foreach (['UTC', 'Europe/Paris', 'Asia/Tokyo', 'America/Los_Angeles'] as $timezone) {
+                date_default_timezone_set($timezone);
+                foreach (['d/m/Y' => '16/06/2027', 'm/d/Y' => '06/16/2027', 'd-M-Y' => '16-Jun-2027',
+                    'd/m/y' => '16/06/27', 'm/d/y' => '06/16/27', 'd-M-y' => '16-Jun-27',
+                    'd-m-y' => '16-06-27', 'Y-m-d' => '2027-06-16'] as $format => $expected) {
+                    self::assertSame($expected, licenceTrialFormatServerDay('2027-06-16 23:59:59', $format), $timezone);
+                    self::assertSame($expected, licenceTrialFormatServerDay('2027-06-16', $format), $timezone);
+                }
+                self::assertSame('29/02/2028', licenceTrialFormatServerDay('2028-02-29 23:59:59', 'd/m/Y'));
+                foreach (['', '   ', 'not a date'] as $invalid) {
+                    self::assertSame('', licenceTrialFormatServerDay($invalid, 'd/m/Y'));
+                }
+            }
+        } finally {
+            date_default_timezone_set($originalTimezone);
+        }
+    }
+
     /**
      * Remaining days must be null when there is no date, and negative once past.
      */

@@ -1031,12 +1031,12 @@ function loadExtensionLicenceInfo() {
                     + data.consumed + ' / ' + data.max_users + ' <?php echo $lang->get('users'); ?>'
 
                 // Expiration date
-                if (data.expiration_date) {
+                if (data.expiration_display) {
                     const expiryClass = data.trial_expiring_soon === true ? ' class="text-warning"' : ''
                     html += '<br><span' + expiryClass + '>'
                         + '<i class="fas fa-calendar-alt mr-1"></i>'
                         + '<?php echo $lang->get('valid_until'); ?>: <strong>'
-                        + $('<span>').text(data.expiration_date).html()
+                        + $('<span>').text(data.expiration_display).html()
                         + '</strong>'
                     if (data.trial_expiring_soon === true && data.days_left !== null) {
                         html += ' (' + $('<span>').text(data.days_left).html()

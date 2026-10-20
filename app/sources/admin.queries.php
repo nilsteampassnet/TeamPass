@@ -3512,7 +3512,8 @@ case 'get_extension_licence_info':
      *
      * @return array {
      *   error: bool, server_online: bool, server_version: string,
-     *   licence_status: string, expiration_date: string, consumed: int, max_users: int,
+     *   licence_status: string, expiration_date: string, expiration_display: string,
+     *   consumed: int, max_users: int,
      *   trial: bool, days_left: int|null, trial_expiring_soon: bool,
      *   refused: int, history: array{days: int, today: string, first_snapshot: string, points: array}
      * }
@@ -3545,6 +3546,10 @@ case 'get_extension_licence_info':
             'server_version' => (string) $licenceInfo['server_version'],
             'licence_status' => (string) $licenceExtension['status'],
             'expiration_date' => (string) $licenceExtension['expiration_date'],
+            'expiration_display' => licenceTrialFormatServerDay(
+                (string) $licenceExtension['expiration_date'],
+                (string) ($SETTINGS['date_format'] ?? 'd/m/Y')
+            ),
             'consumed' => (int) $licenceExtension['consumed'],
             'max_users' => (int) $licenceExtension['max_users'],
             'trial' => (bool) $licenceExtension['trial'],

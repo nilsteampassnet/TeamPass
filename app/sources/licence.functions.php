@@ -769,10 +769,10 @@ function licenceBuildPanelViewModel(
     $vm['offline_link_sent_display'] = $vm['offline_link_sent_at'] > 0
         ? date($dateFormat, $vm['offline_link_sent_at'])
         : '';
-    $expiration = licenceTrialParseServerDate((string) $vm['licence']['expiration_date']);
-    $vm['licence']['expiration_display'] = $expiration > 0
-        ? date((string) ($SETTINGS['date_format'] ?? 'd/m/Y'), $expiration)
-        : '';
+    $vm['licence']['expiration_display'] = licenceTrialFormatServerDay(
+        (string) $vm['licence']['expiration_date'],
+        (string) ($SETTINGS['date_format'] ?? 'd/m/Y')
+    );
 
     return $vm;
 }
