@@ -26,6 +26,27 @@ require_once dirname(__DIR__, 2) . '/app/sources/install_security_logic.php';
  */
 final class InstallSecurityLogicTest extends TestCase
 {
+    /** The actual fresh-install schedule must be executable through the secure dispatcher. */
+    public function testEveryScheduledSchemaActionIsExplicitlyAllowed(): void
+    {
+        $javascript = (string) file_get_contents(__DIR__ . '/../../public/install/install-steps/install.js');
+        preg_match_all('/const checks = \[([\s\S]*?)\];/', $javascript, $blocks);
+        $checked = false;
+        foreach ($blocks[1] as $block) {
+            if (strpos($block, "action: 'api_tokens'") === false) {
+                continue;
+            }
+            preg_match_all("/action: '([A-Za-z0-9_]+)'/", $block, $actions);
+            foreach ($actions[1] as $action) {
+                self::assertTrue(installIsActionAllowed('step5', $action), 'Scheduled schema action is rejected: ' . $action);
+            }
+            $checked = true;
+        }
+        self::assertTrue($checked, 'Schema schedule not found');
+        self::assertFalse(installIsActionAllowed('step5', 'settingsFile'));
+        self::assertFalse(installIsActionAllowed('step5', '__construct'));
+    }
+
     /**
      * The actual code-execution primitive the advisory reported: a value escaped for settings.php
      * must round-trip as a plain literal with no PHP evaluated, even for the exact PoC payloads.
