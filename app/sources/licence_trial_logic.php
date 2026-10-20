@@ -446,6 +446,21 @@ function licenceTrialParseServerDate(string $value): int
 }
 
 /**
+ * Format a licence server calendar day without applying the instance timezone.
+ *
+ * @param string $serverDate Raw UTC date supplied by the licence server.
+ * @param string $format     Configured PHP date format.
+ *
+ * @return string Formatted day, or an empty string when the date is unusable.
+ */
+function licenceTrialFormatServerDay(string $serverDate, string $format): string
+{
+    $timestamp = licenceTrialParseServerDate($serverDate);
+
+    return $timestamp === 0 ? '' : gmdate($format, $timestamp);
+}
+
+/**
  * Return the stored state of one product, with every key present.
  *
  * @param array  $state   Whole decoded licence_trial_state.

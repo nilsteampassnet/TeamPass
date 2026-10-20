@@ -1344,9 +1344,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         'noSnapshot' => $lang->get('extension_seats_history_no_snapshot'),
         'since' => $lang->get('extension_seats_history_since'),
         'aria' => $lang->get('extension_seats_history_aria'),
+        'weekdays' => [
+            $lang->get('sunday'), $lang->get('monday'), $lang->get('tuesday'),
+            $lang->get('wednesday'), $lang->get('thursday'), $lang->get('friday'), $lang->get('saturday'),
+        ],
     ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>;
     var tpLicenceLoaded = false;
     var tpLicenceChart = null;
+    var tpLicenceDateFormat = <?php echo json_encode($SETTINGS['date_format'] ?? 'd/m/Y', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 
     /**
      * Load the Licence tab on its first display; later displays only resize the chart.
@@ -1451,7 +1456,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         var expiryDetail = [String(data.licence_status || '')];
         if (data.trial === true) expiryDetail.push(tpLicenceText.trial);
         if (data.trial_expiring_soon === true && data.days_left !== null) expiryDetail.push(data.days_left + ' ' + tpLicenceText.days);
-        $('#tp-licence-kpi-expiry').text(data.expiration_date ? String(data.expiration_date).substring(0, 10) : '—');
+        $('#tp-licence-kpi-expiry').text(tpLicenceFormatDate(data.expiration_date));
         $('#tp-licence-kpi-expiry-detail').text(expiryDetail.filter(Boolean).join(' · '));
         $('#tp-licence-kpi-expiry-box').removeClass('bg-secondary bg-warning bg-danger').addClass(expiryClass);
 
@@ -1467,15 +1472,31 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     }
 
     /**
-     * Parse a licence-server day ("Y-m-d") as a LOCAL date.
-     * new Date('2026-10-16') would be UTC midnight and print the previous day west of Greenwich.
+     * Format a licence-server calendar day with the instance's PHP date format.
+     * Keep the supplied day: these labels must not shift with the browser's timezone.
+     * The tokens cover every date format offered in Settings, including PHP's English M.
+     * The l token uses TeamPass weekday translations for the tooltip.
      *
-     * @param {string} day
-     * @return {Date}
+     * @param {string|null|undefined} value - Y-m-d, optionally followed by the expiry time
+     * @param {string} [format] - Optional PHP date format for chart labels
+     * @return {string}
      */
-    function tpLicenceDay(day) {
-        var parts = String(day).split('-').map(Number);
-        return new Date(parts[0], parts[1] - 1, parts[2]);
+    function tpLicenceFormatDate(value, format) {
+        var parts = /^(\d{4})-(\d{2})-(\d{2})(?:$|[ T])/.exec(String(value || ''));
+        if (!parts) return '—';
+        var date = new Date(Date.UTC(Number(parts[1]), Number(parts[2]) - 1, Number(parts[3])));
+        if (date.getUTCFullYear() !== Number(parts[1]) || date.getUTCMonth() + 1 !== Number(parts[2])
+            || date.getUTCDate() !== Number(parts[3])) return '—';
+
+        var tokens = {
+            d: parts[3],
+            m: parts[2],
+            Y: parts[1],
+            y: parts[1].slice(-2),
+            M: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][Number(parts[2]) - 1],
+            l: tpLicenceText.weekdays[date.getUTCDay()]
+        };
+        return (format || tpLicenceDateFormat).replace(/[dmYyMl]/g, function(token) { return tokens[token]; });
     }
 
     /**
@@ -1580,7 +1601,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             autoSkip: true,
                             autoSkipPadding: 12,
                             callback: function(day) {
-                                return tpLicenceDay(day).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit' });
+                                var shortFormat = tpLicenceDateFormat.replace(/^[Yy][^dmM]?|[^dmM]?[Yy]$/, '');
+                                return tpLicenceFormatDate(day, shortFormat);
                             }
                         }
                     }],
@@ -1605,7 +1627,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     callbacks: {
                         title: function(items) {
                             var p = points[items[0].index];
-                            var title = tpLicenceDay(p.date).toLocaleDateString(undefined, { weekday: 'short', day: '2-digit', month: '2-digit' });
+                            var title = tpLicenceFormatDate(p.date, 'l ' + tpLicenceDateFormat);
                             return p.live ? title + ' ' + tpLicenceText.live : title;
                         },
                         label: function(item) {
@@ -1665,7 +1687,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         var $tbody = $('#tp-licence-seats-table tbody').empty();
         points.forEach(function(p) {
             $('<tr>')
-                .append($('<td>').text(tpLicenceDay(p.date).toLocaleDateString()))
+                .append($('<td>').text(tpLicenceFormatDate(p.date)))
                 .append($('<td>').text(tpLicenceFigure(p.seats_used)))
                 .append($('<td>').text(tpLicenceFigure(p.seats_quota)))
                 .append($('<td>').text(tpLicenceFigure(p.active_users)))
@@ -1675,7 +1697,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         // The history only starts on the day the licence server began its daily snapshots
         var since = history.first_snapshot || history.today || '';
         $('#tp-licence-since').text(since !== '' && since > points[0].date
-            ? tpLicenceText.since.replace('#date#', function() { return tpLicenceDay(since).toLocaleDateString(); })
+            ? tpLicenceText.since.replace('#date#', function() { return tpLicenceFormatDate(since); })
             : '');
     }
 
