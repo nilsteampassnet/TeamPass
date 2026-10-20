@@ -22,6 +22,11 @@ const formats = {
   'd/m/y': '16/06/27', 'm/d/y': '06/16/27', 'd-M-y': '16-Jun-27',
   'd-m-y': '16-06-27', 'Y-m-d': '2027-06-16'
 }
+const shortFormats = {
+  'd/m/Y': '16/06', 'm/d/Y': '06/16', 'd-M-Y': '16-Jun',
+  'd/m/y': '16/06', 'm/d/y': '06/16', 'd-M-y': '16-Jun',
+  'd-m-y': '16-06', 'Y-m-d': '06-16'
+}
 
 function harness(format = 'd/m/Y') {
   const nodes = new Map()
@@ -76,14 +81,14 @@ test('every date format offered in Settings is covered', () => {
 })
 
 for (const [format, expected] of Object.entries(formats)) {
-  test(format + ' applies to the expiry tile, chart, tooltip, accessible table and history note', () => {
+  test(format + ' applies to full-date labels and compact chart ticks', () => {
     const h = harness(format)
     const data = payload()
     const original = JSON.stringify(data)
     h.context.renderLicenceStatistics(data)
     assert.equal(h.node('#tp-licence-kpi-expiry').text, expected)
     const chart = h.context.tpLicenceChart.config
-    assert.equal(chart.options.scales.xAxes[0].ticks.callback('2027-06-16'), expected)
+    assert.equal(chart.options.scales.xAxes[0].ticks.callback('2027-06-16'), shortFormats[format])
     assert.equal(chart.options.tooltips.callbacks.title([{ index: 1 }]), expected + ' (live)')
     assert.equal(h.node('#tp-licence-seats-table tbody').children[1].children[0].text, expected)
     assert.equal(h.node('#tp-licence-since').text, 'History since ' + expected)

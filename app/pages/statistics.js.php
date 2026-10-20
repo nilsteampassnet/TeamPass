@@ -1473,9 +1473,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
      * The tokens cover every date format offered in Settings, including PHP's English M.
      *
      * @param {string|null|undefined} value - Y-m-d, optionally followed by the expiry time
+     * @param {string} [format] - Optional PHP date format for compact chart ticks
      * @return {string}
      */
-    function tpLicenceFormatDate(value) {
+    function tpLicenceFormatDate(value, format) {
         var parts = /^(\d{4})-(\d{2})-(\d{2})(?:$|[ T])/.exec(String(value || ''));
         if (!parts) return '—';
         var date = new Date(Date.UTC(Number(parts[1]), Number(parts[2]) - 1, Number(parts[3])));
@@ -1489,7 +1490,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             y: parts[1].slice(-2),
             M: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][Number(parts[2]) - 1]
         };
-        return tpLicenceDateFormat.replace(/[dmYyM]/g, function(token) { return tokens[token]; });
+        return (format || tpLicenceDateFormat).replace(/[dmYyM]/g, function(token) { return tokens[token]; });
     }
 
     /**
@@ -1594,7 +1595,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             autoSkip: true,
                             autoSkipPadding: 12,
                             callback: function(day) {
-                                return tpLicenceFormatDate(day);
+                                var shortFormat = tpLicenceDateFormat.replace(/^[Yy][^dmM]?|[^dmM]?[Yy]$/, '');
+                                return tpLicenceFormatDate(day, shortFormat);
                             }
                         }
                     }],
