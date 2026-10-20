@@ -37,6 +37,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
+require_once __DIR__ . '/../sources/device_pairing.functions.php';
 
 // init
 loadClasses('DB');
@@ -224,9 +225,38 @@ $extensionTokensAllowed = $apiFeatureEnabled === true
 $extensionTokensOwned = $apiFeatureEnabled === true
     && $extensionTokensAllowed === false
     && (int) DB::queryFirstField(
-        'SELECT COUNT(*) FROM ' . prefixTable('api_tokens') . ' WHERE user_id = %i',
+        'SELECT COUNT(*) FROM ' . prefixTable('api_tokens') . ' WHERE user_id = %i'
+            . (apiDeviceSchemaReady($SETTINGS) ? " AND purpose <> 'external_device'" : ''),
         (int) $session->get('user-id')
     ) > 0;
+
+$devicePairingReady = (int) ($SETTINGS['device_pairing_schema'] ?? 0) >= 2;
+$devicePairingOwned = $devicePairingReady && (int) DB::queryFirstField(
+    'SELECT COUNT(*) FROM ' . prefixTable('api_tokens') . ' WHERE user_id = %i AND purpose = %s AND pairing_id IS NULL',
+    (int) $session->get('user-id'), 'external_device'
+) > 0;
+$devicePairingShown = $devicePairingReady && ((int) ($SETTINGS['device_pairing_enabled'] ?? 0) === 1 || $devicePairingOwned);
+$devicePairingAllowed = false;
+$devicePairingServer = '';
+$devicePairingUnavailableReason = $lang->get('device_pairing_error_unavailable');
+if ($devicePairingShown) {
+    $deviceAccount = devicePairingAccount((int) $session->get('user-id'));
+    $devicePairingAllowed = apiDeviceAccountAllowed($SETTINGS, $deviceAccount);
+    $devicePrivateKey = (string) $session->get('user-private_key');
+    if ($devicePairingAllowed && ((int) ($deviceAccount['is_ready_for_usage'] ?? 0) !== 1 || $devicePrivateKey === '' || $devicePrivateKey === 'none')) {
+        $devicePairingAllowed = false;
+        $devicePairingUnavailableReason = $lang->get('device_pairing_error_keys_unavailable');
+    }
+    try {
+        $devicePairingServer = devicePairingServerUrl($SETTINGS);
+        if ($devicePairingAllowed && !apiDeviceIsHttps($_SERVER, $SETTINGS)) {
+            throw new DevicePairingException('https_required', 403);
+        }
+    } catch (DevicePairingException $e) {
+        $devicePairingAllowed = false;
+        $devicePairingUnavailableReason = $lang->get('device_pairing_error_https_required');
+    }
+}
 
 // Personal items encryption keys — self-repair. A personal object
 // only ever has keys for its owner and the internal account, so
@@ -240,6 +270,7 @@ $profileSections = [
     'overview' => true,
     'security' => $passwordManagedHere === true || $webauthnLoginShown === true,
     'extension' => $extensionTokensAllowed === true || $extensionTokensOwned === true,
+    'devices' => $devicePairingShown,
     'settings' => true,
     'timeline' => true,
     'advanced' => true,
@@ -249,6 +280,7 @@ $profileMenu = [
     'overview' => ['fa-solid fa-table-cells-large', $lang->get('profile_section_overview'), $lang->get('profile_section_overview_tip')],
     'security' => ['fa-solid fa-shield-halved', $lang->get('profile_section_security'), $lang->get('profile_section_security_tip')],
     'extension' => ['fa-solid fa-puzzle-piece', $lang->get('profile_section_extension'), $lang->get('profile_section_extension_tip')],
+    'devices' => ['fa-solid fa-laptop', $lang->get('device_pairing_title'), $lang->get('device_pairing_section_tip')],
     'settings' => ['fa-solid fa-sliders', $lang->get('profile_section_preferences'), $lang->get('profile_section_preferences_tip')],
     'timeline' => ['fa-solid fa-clock-rotate-left', $lang->get('profile_section_activity'), $lang->get('profile_section_activity_tip')],
     'advanced' => ['fa-solid fa-screwdriver-wrench', $lang->get('profile_section_advanced'), $lang->get('profile_section_advanced_tip')],
@@ -517,6 +549,12 @@ $activeTab = is_string($get['tab']) === true && ($profileSections[$get['tab']] ?
                         </div>
                     </div>
                     <?php } ?>
+
+                    <?php if ($devicePairingShown) : ?>
+                    <div class="tab-pane<?php echo $activeTab === 'devices' ? ' active' : ''; ?>" id="tab_devices">
+                        <?php require __DIR__ . '/partials/device_pairing.php'; ?>
+                    </div>
+                    <?php endif; ?>
 
                     <!-- PREFERENCES -->
                     <div class="tab-pane<?php echo $activeTab === 'settings' ? ' active' : ''; ?>" id="tab_settings">

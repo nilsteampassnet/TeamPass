@@ -207,6 +207,22 @@ function getDomainFromSettingsUrl(string $url): string
 
                         <div class='row mb-3'>
                             <div class='col-10'>
+                                <?php echo htmlspecialchars($lang->get('device_pairing_admin_title'), ENT_QUOTES, 'UTF-8'); ?>
+                                <span class="badge badge-info ml-1"><?php echo htmlspecialchars($lang->get('device_pairing_experimental'), ENT_QUOTES, 'UTF-8'); ?></span>
+                                <small class="form-text text-muted"><?php echo htmlspecialchars($lang->get('device_pairing_admin_tip'), ENT_QUOTES, 'UTF-8'); ?></small>
+                            </div>
+                            <div class='col-2'>
+                                <?php if ((int) ($SETTINGS['device_pairing_schema'] ?? 0) >= 2) : ?>
+                                <div class="toggle toggle-modern" id="device_pairing_enabled" data-toggle-on="<?php echo (int) ($SETTINGS['device_pairing_enabled'] ?? 0) === 1 ? 'true' : 'false'; ?>"></div>
+                                <input type="hidden" id="device_pairing_enabled_input" value="<?php echo (int) ($SETTINGS['device_pairing_enabled'] ?? 0) === 1 ? '1' : '0'; ?>">
+                                <?php else : ?>
+                                <small class="text-warning"><?php echo htmlspecialchars($lang->get('device_pairing_upgrade_needed'), ENT_QUOTES, 'UTF-8'); ?></small>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+
+                        <div class='row mb-3'>
+                            <div class='col-10'>
                                 <?php echo $lang->get('settings_api_rate_limit'); ?>
                                 <small class='form-text text-muted'>
                                     <?php echo $lang->get('settings_api_rate_limit_tip'); ?>

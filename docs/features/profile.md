@@ -11,11 +11,22 @@ The left column shows your picture, name, email and role, followed by a menu. Ea
 | **Overview** | Your account at a glance |
 | **Sign-in and security** | Your password and your sign-in passkeys |
 | **Browser extension** | One-click set-up of the extension and the access it was given |
+| **External devices** | Experimental QR pairing and individually revocable device access |
 | **Preferences** | Name, email, picture, language and display options |
 | **Activity** | Your recent actions |
 | **Help and advanced** | Repair tool, API key and technical details |
 
 A section with nothing to show for your account is left out of the menu. **Browser extension**, for instance, only appears when your administrator allowed extension tokens for your account.
+
+**External devices** appears when experimental device pairing is enabled or you
+already have an associated device. Pairing requires a compatible client, HTTPS
+and your existing API/token permissions. Its short-lived QR only starts a request:
+compare the code on both screens and approve the displayed device. The profile
+confirms completion after the device's first successful authentication.
+
+The device list remains available for revocation if pairing or API access is
+later disabled. Revocation stops the device's API sessions; it does not erase
+offline data. See [the pairing protocol and test recipe](../api/device-pairing.md).
 
 > 🔔 Some fields may be locked by the administrator (e.g. name, timezone, language). When an option is grayed out or absent, it means the administrator has disabled self-editing for that field.
 
