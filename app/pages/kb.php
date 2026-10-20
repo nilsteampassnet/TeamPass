@@ -159,6 +159,8 @@ $directKbId = (int) $request->query->get('id', 0);
                         <span class="badge badge-info mr-2" id="kb-viewer-category"></span>
                         <span class="badge badge-light border hidden" id="kb-viewer-comments-badge"></span>
                         <span class="text-muted small" id="kb-viewer-author"></span>
+                        <span class="text-muted small hidden" id="kb-viewer-created"></span>
+                        <span class="text-muted small hidden" id="kb-viewer-updated"></span>
                     </div>
                     <div class="tp-kb-article-surface">
                         <div id="kb-viewer-description" class="tp-kb-content"></div>
@@ -589,6 +591,19 @@ $directKbId = (int) $request->query->get('id', 0);
         display: flex;
         flex-wrap: wrap;
         gap: 0.35rem;
+        align-items: center;
+        white-space: normal;
+    }
+
+    #kb-browser-card .tp-kb-list-entry-date {
+        margin-left: auto;
+        text-align: right;
+        color: #6c757d;
+        font-size: 0.875rem;
+    }
+
+    .dark-mode #kb-browser-card .tp-kb-list-entry-date {
+        color: #adb5bd;
     }
 
     .tp-kb-list-entry-meta .badge {
@@ -660,6 +675,12 @@ $directKbId = (int) $request->query->get('id', 0);
     }
 
     @media (max-width: 767.98px) {
+        #kb-browser-card .tp-kb-list-entry-date {
+            flex-basis: 100%;
+            margin-left: 0;
+            text-align: left;
+        }
+
         .tp-kb-article-surface {
             padding: 1rem;
         }

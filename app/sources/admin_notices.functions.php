@@ -343,6 +343,19 @@ function adminNoticesCollectChecklist(array $SETTINGS, Language $lang): array
         ]);
     }
 
+    // Emails, and the SMTP credentials, sent to a relay whose certificate nobody checks.
+    if (adminNoticesSmtpCertificateUnverified($SETTINGS) === true) {
+        $notices[] = adminNoticeBuild([
+            'id' => 'checklist_smtp_certificate',
+            'severity' => 'info',
+            'icon' => 'fa-solid fa-envelope-circle-check',
+            'title' => $lang->get('admin_checklist_smtp_certificate'),
+            'description' => $lang->get('admin_checklist_smtp_certificate_desc'),
+            'action' => adminNoticeActionLink('index.php?page=emails', $lang->get('open')),
+            'dismissible' => true,
+        ]);
+    }
+
     // Nothing can be shared yet.
     $sharedFolders = (int) DB::queryFirstField(
         'SELECT COUNT(*) FROM ' . prefixTable('nested_tree') . '

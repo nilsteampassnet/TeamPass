@@ -190,6 +190,19 @@ $localPasswordRecoveryEnabled = isset($SETTINGS['enable_local_password_recovery'
                             </div>
                         </div>
 
+                        <?php $emailVerifyCertificate = (string) ($SETTINGS['email_smtp_verify_certificate'] ?? '0') === '1'; ?>
+                        <div class="row mb-2">
+                            <div class="col-5">
+                                <?php echo $lang->get('admin_email_verify_certificate'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('admin_email_verify_certificate_tip'); ?>
+                                </small>
+                            </div>
+                            <div class="col-7 mb-0">
+                                <div class='toggle toggle-modern' id='email_smtp_verify_certificate' data-toggle-on='<?php echo $emailVerifyCertificate === true ? 'true' : 'false'; ?>'></div><input type='hidden' id='email_smtp_verify_certificate_input' value='<?php echo $emailVerifyCertificate === true ? '1' : '0'; ?>' />
+                            </div>
+                        </div>
+
                         <div class="row mb-2">
                             <div class="col-5">
                                 <?php echo $lang->get('admin_email_from'); ?>

@@ -143,7 +143,7 @@ jobs:
         run: php app/vendor/bin/phpstan analyse --memory-limit=2G --no-progress --error-format=github
 
   secure-send-concurrency:
-    name: Concurrent recipient requests (MariaDB)
+    name: Database integration tests (MariaDB)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     services:
@@ -176,3 +176,9 @@ jobs:
           TEAMPASS_TEST_DB: teampass_test_secure_send
           TEAMPASS_TEST_PASSWORD: test-only-password
         run: php tests/Integration/admin_activity_database.php
+
+      - name: Check knowledge base date installation and migration
+        env:
+          TEAMPASS_TEST_DB: teampass_test_secure_send
+          TEAMPASS_TEST_PASSWORD: test-only-password
+        run: php tests/Integration/kb_dates_database.php

@@ -242,6 +242,26 @@ if (checkIndexExist(
 ConfigManager::invalidateCache();
 // End Secure Send retention migration.
 
+// SMTP certificate verification. Earlier versions never checked the certificate of the mail
+// server: an upgraded instance keeps that behaviour until the admin opts in, so a relay with a
+// self-signed or internal certificate keeps working. New installations seed '1' (run.step5.php).
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`)
+     VALUES ('admin', 'email_smtp_verify_certificate', '0')"
+);
+ConfigManager::invalidateCache();
+
+// Article dates survive journal purges. Replaying the migration preserves recorded dates.
+require_once __DIR__ . '/kb_dates_migration.php';
+try {
+    kbUpgradeArticleDates($db_link, prefixTable('kb'), prefixTable('misc'));
+} catch (Throwable $exception) {
+    echo json_encode([['finish' => '1', 'error' => 'Error installing knowledge base article dates']]);
+    mysqli_close($db_link);
+    exit();
+}
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,

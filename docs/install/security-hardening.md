@@ -16,7 +16,7 @@ This page is a **checklist for putting a TeamPass instance into production**, an
 | 2 | `public/install/` is blocked once the installation or upgrade is finished | [Web server and TLS](#web-server-and-tls) |
 | 3 | File permissions follow least privilege; the encryption key sits outside the webroot | [File system](#file-system) |
 | 4 | MFA is enabled and the anti-bruteforce thresholds are set | [Authentication](#authentication) |
-| 5 | The real client IP is detected correctly; network ACLs restrict access if possible | [Network](#network) |
+| 5 | The real client IP is detected correctly; network ACLs restrict access if possible; the mail server certificate is verified | [Network](#network) |
 | 6 | The API requires HTTPS and is rate-limited — or is disabled | [API](#api) |
 | 7 | New data is written with authenticated encryption (AES-256-GCM) | [Encryption at rest](#encryption-at-rest) |
 | 8 | Logs leave the server and the health checks are green | [Monitoring and audit](#monitoring-and-audit) |
@@ -35,6 +35,7 @@ These settings came with a secure default for new installations. When an upgrade
 | **Authenticated encryption (AES-256-GCM) for new data** (`aes_v2_write_enabled`) | Enabled | Disabled — enable it, see [Encryption at rest](#encryption-at-rest) |
 | **Require HTTPS for API requests** (`api_require_https`) | Enabled | Disabled |
 | **API rate limit (requests per minute)** (`api_rate_limit_per_minute`) | 120 | 0 (no limit) |
+| **Verify the SMTP server certificate** (`email_smtp_verify_certificate`) | Enabled | Disabled — enable it, see [Network](#network) |
 
 Check one more value on an instance installed with an older version: **Maximum login attempts before account lockout** (`nb_bad_authentication`) used to be `0` on a new installation, which disables the per-account lockout. New installations now start at 10, and the administrator dashboard warns while it is `0`. See [Authentication](#authentication).
 
@@ -81,6 +82,7 @@ The anti-bruteforce settings are in **Settings → Options → Security & authen
 
 - **Declare your reverse proxy.** When a proxy, load balancer or WAF sits in front of TeamPass, set **IP detection mode** to *Reverse proxy / WAF* and list the proxy addresses in **Trusted proxies** (**Settings → Options → Networks**). The client address is then read from the proxy header only when the request comes from a trusted proxy. This is the address recorded in the audit log and locked by the per-IP anti-bruteforce counter. Leave *Direct access* when no proxy sits in front of TeamPass.
 - **Restrict access with the network ACL** when TeamPass is only used from known networks: a whitelist limits access to listed addresses and ranges, a blacklist blocks known attackers. Add your own address before enabling the whitelist. See [Network ACL](../manage/network-acl.md).
+- **Verify the certificate of the mail server.** With **SMTP security type** set to SSL or TLS, enable **Verify the SMTP server certificate** (**Admin → Emails**). Without it the connection to the relay is encrypted but not authenticated: anyone on the network path can impersonate the relay and read the SMTP credentials and every email TeamPass sends. Enabled on new installations, disabled when an upgrade adds it, and the administrator dashboard recommends it while it is off. A relay with an internal certificate authority works once that authority is added to the trust store of the TeamPass server; keep the verification off only for a relay with a self-signed certificate. Use **Send a test email** after enabling it.
 
 ---
 

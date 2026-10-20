@@ -615,6 +615,9 @@ class DatabaseInstaller
             array('admin', 'email_auth_pwd', '', '1'),
             array('admin', 'email_port', ''),
             array('admin', 'email_security', ''),
+            // Fresh installs verify the SMTP server certificate. Upgraded installs keep '0'
+            // (seeded by upgrade_run_3.2.3.php) until the admin opts in.
+            array('admin', 'email_smtp_verify_certificate', '1'),
             array('admin', 'email_server_url', ''),
             array('admin', 'email_from', ''),
             array('admin', 'email_from_name', ''),
@@ -1198,6 +1201,8 @@ class DatabaseInstaller
             `author_id` int(12) NOT NULL,
             `anyone_can_modify` tinyint(1) NOT null DEFAULT '0',
             `allow_comments` tinyint(1) NOT null DEFAULT '0',
+            `created_at` BIGINT UNSIGNED NULL DEFAULT NULL,
+            `updated_at` BIGINT UNSIGNED NULL DEFAULT NULL,
             `deleted_at` datetime NULL DEFAULT NULL,
             PRIMARY KEY (`id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
