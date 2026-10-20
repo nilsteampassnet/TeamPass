@@ -215,26 +215,31 @@ class AuthModel
             return $this->refuseApiAuth('api_invalid_token', $inputData['login'], $clientIp, $SETTINGS);
         }
 
-        if (($row['purpose'] ?? '') === 'external_device') {
-            if (!apiDeviceIsHttps($_SERVER, $SETTINGS)) {
-                return $this->refuseApiAuth('api_invalid_token', $inputData['login'], $clientIp, $SETTINGS);
-            }
-            $result = apiDeviceAuthenticate(
-                (int) $userInfo['id'], (int) $row['id'], $SETTINGS,
-                function (array $lockedToken, array $freshUser) use ($inputData, $clientIp, $SETTINGS): array {
-                    return $this->authenticateTokenRow($lockedToken, $freshUser, $inputData['token'], $inputData['login'], $clientIp, $SETTINGS, (int) $lockedToken['id']);
+        try {
+            if (($row['purpose'] ?? '') === 'external_device') {
+                if (!apiDeviceIsHttps($_SERVER, $SETTINGS)) {
+                    return $this->refuseApiAuth('api_invalid_token', $inputData['login'], $clientIp, $SETTINGS);
                 }
-            );
-            return $result ?? $this->refuseApiAuth('api_invalid_token', $inputData['login'], $clientIp, $SETTINGS);
+                $result = apiDeviceAuthenticate(
+                    (int) $userInfo['id'], (int) $row['id'], $SETTINGS,
+                    function (array $lockedToken, array $freshUser) use ($inputData, $SETTINGS): array {
+                        return $this->authenticateTokenRow($lockedToken, $freshUser, $inputData['token'], $SETTINGS, (int) $lockedToken['id']);
+                    }
+                );
+                return $result ?? $this->refuseApiAuth('api_invalid_token', $inputData['login'], $clientIp, $SETTINGS);
+            }
+            return $this->authenticateTokenRow($row, $userInfo, $inputData['token'], $SETTINGS);
+        } catch (ApiTokenKeyException $e) {
+            // The source transaction has rolled back. Counting/logging inside it would be undone.
+            return $this->refuseApiAuth($e->getMessage(), $inputData['login'], $clientIp, $SETTINGS);
         }
-        return $this->authenticateTokenRow($row, $userInfo, $inputData['token'], $inputData['login'], $clientIp, $SETTINGS);
     }
 
     /**
      * Unwrap an already-validated PAT and issue a source-linked JWT for external devices.
      * @return array{token:string,teampass_version:string,teampass_version_major:string,teampass_version_minor:string}|array{error:string,info:string}
      */
-    private function authenticateTokenRow(array $row, array $userInfo, string $token, string $login, string $clientIp, array $SETTINGS, ?int $sourceTokenId = null): array
+    private function authenticateTokenRow(array $row, array $userInfo, string $token, array $SETTINGS, ?int $sourceTokenId = null): array
     {
         // Derive the wrapping key from the token and unwrap the private key.
         require_once API_ROOT_PATH . '/inc/encryption_utils.php';
@@ -242,14 +247,14 @@ class AuthModel
         $privateKeyClear = decrypt_with_session_key((string) $row['wrapped_private_key'], $wrappingKey);
 
         if ($privateKeyClear === false || $privateKeyClear === '') {
-            return $this->refuseApiAuth('api_token_decrypt_failed', $login, $clientIp, $SETTINGS);
+            throw new ApiTokenKeyException('api_token_decrypt_failed');
         }
 
         // The token carries the private key it was issued with. After the user's keys were
         // regenerated it unwraps an obsolete key: refuse it rather than issue a JWT that can
         // decrypt nothing.
         if ($this->privateKeyMatchesPublicKey($privateKeyClear, (string) ($userInfo['public_key'] ?? '')) === false) {
-            return $this->refuseApiAuth('api_token_key_outdated', $login, $clientIp, $SETTINGS);
+            throw new ApiTokenKeyException('api_token_key_outdated');
         }
 
         DB::update(prefixTable('api_tokens'), ['last_used_at' => time()], 'id = %i', (int) $row['id']);

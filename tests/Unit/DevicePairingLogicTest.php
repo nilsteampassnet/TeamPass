@@ -56,6 +56,9 @@ class DevicePairingLogicTest extends TestCase
     /** A forwarded scheme from an arbitrary peer cannot authorize credential transport. */
     public function testTransportRequiresDirectTlsOrATrustedProxy(): void
     {
+        foreach (['off', 'OFF', 'false', '0', ''] as $insecure) {
+            self::assertFalse(apiDeviceIsHttps(['HTTPS' => $insecure], []));
+        }
         devicePairingRequireHttps(['HTTPS' => 'on'], []);
         devicePairingRequireHttps(['REMOTE_ADDR' => '192.0.2.2', 'HTTP_X_FORWARDED_PROTO' => 'https'],
             ['network_security_mode' => 'reverse_proxy', 'network_trusted_proxies' => '192.0.2.0/24']);

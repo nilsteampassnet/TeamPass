@@ -205,6 +205,26 @@ try {
     $row = DB::queryFirstRow('SELECT * FROM ' . prefixTable('device_pairings') . ' WHERE id = %s', $created['pairing_id']);
     pairingCheck(strpos(json_encode($row), $pat) === false && strpos(json_encode($row), $userKeys['privatekey']) === false, 'Handoff table contains a plaintext secret');
     $tokenId = (int) $row['credential_id'];
+    // Run the real AuthModel key validation after provisional confirmation. A failed unwrap
+    // must roll the confirmation back before the caller records its failed-auth audit.
+    require_once __DIR__ . '/../../app/api/Model/AuthModel.php';
+    if (!defined('API_ROOT_PATH')) {
+        define('API_ROOT_PATH', dirname(__DIR__, 2) . '/app/api');
+    }
+    $authMethod = new ReflectionMethod(AuthModel::class, 'authenticateTokenRow');
+    try {
+        apiDeviceAuthenticate(42, $tokenId, $settings, static function (array $token, array $user) use ($authMethod, $settings): array {
+            return $authMethod->invoke(new AuthModel(), $token, $user, str_repeat('0', 64), $settings, (int) $token['id']);
+        });
+        throw new RuntimeException('Invalid wrapped key authenticated');
+    } catch (ApiTokenKeyException $e) {
+        pairingCheck($e->getMessage() === 'api_token_decrypt_failed', 'Invalid key refusal reason changed');
+        DB::insert(prefixTable('log_system'), ['type' => 'failed_auth', 'date' => time(), 'label' => $e->getMessage(), 'qui' => '42']);
+    }
+    $afterFailure = DB::queryFirstRow('SELECT * FROM ' . prefixTable('device_pairings') . ' WHERE id = %s', $created['pairing_id']);
+    pairingCheck($afterFailure['state'] === 'delivered' && $afterFailure['encrypted_token'] !== null, 'Failed auth consumed the handoff');
+    pairingCheck(DB::queryFirstField('SELECT pairing_id FROM ' . prefixTable('api_tokens') . ' WHERE id = %i', $tokenId) === $created['pairing_id'], 'Failed auth confirmed the credential');
+    pairingCheck((int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('log_system') . ' WHERE label = %s', 'api_token_decrypt_failed') === 1, 'Failed-auth audit was rolled back');
     $one = pairingFixtureAuthenticate($tokenId, $pat, $settings);
     $two = pairingFixtureAuthenticate($tokenId, $pat, $settings);
     pairingCheck($one !== null && $two !== null && $one['token'] !== $two['token'], 'Durable PAT could not renew the session');

@@ -15,6 +15,9 @@ installation. The script manager replays `upgrade_run_3.2.3.php`, which installs
 the additive columns and shared `device_pairings` DDL and publishes schema
 version 2 only after success. Fresh installs create the same tables. The feature
 uses InnoDB transactions and row locks, as do its integration tests.
+The upgrade verifies InnoDB on the account, credential, session, pairing,
+rate-limit, settings and audit tables before publishing readiness. It refuses
+nontransactional storage without silently converting existing tables.
 
 Enable external device pairing in Settings > API. API access must be enabled
 both globally and for the account. Existing PAT policy still applies:

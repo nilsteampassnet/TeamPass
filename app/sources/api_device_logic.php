@@ -15,6 +15,11 @@ use TeampassClasses\SessionManager\SessionManager;
 require_once __DIR__ . '/../api/inc/encryption_utils.php';
 require_once __DIR__ . '/api_auth_logic.php';
 
+/** A fixed PAT key-validation reason, reported only after the authentication transaction rolls back. */
+final class ApiTokenKeyException extends RuntimeException
+{
+}
+
 /** Tell whether the schema supporting external device credentials has been installed. */
 function apiDeviceSchemaReady(array $settings): bool
 {
@@ -24,7 +29,7 @@ function apiDeviceSchemaReady(array $settings): bool
 /** Accept forwarded HTTPS only from the explicitly configured trusted proxy network. */
 function apiDeviceIsHttps(array $server, array $settings): bool
 {
-    return (!empty($server['HTTPS']) && $server['HTTPS'] !== 'off')
+    return in_array(strtolower((string) ($server['HTTPS'] ?? '')), ['on', '1'], true)
         || SessionManager::isTrustedForwardedHttps(
             (string) ($server['REMOTE_ADDR'] ?? ''), (string) ($server['HTTP_X_FORWARDED_PROTO'] ?? ''),
             (string) ($settings['network_security_mode'] ?? 'direct'), (string) ($settings['network_trusted_proxies'] ?? '')
