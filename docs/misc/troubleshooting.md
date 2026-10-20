@@ -107,7 +107,7 @@ If a setting change is not reflected, restart PHP-FPM to clear the 60-second APC
 ### Checklist
 
 1. **Verify email settings** — Go to **Admin → Emails** and confirm the SMTP host, port, and credentials are correct. The **Mail server password** field always looks empty once a password is stored (*Leave empty to keep the existing value*): it is stored encrypted and never sent back to the page. Type the password again only to replace it. A password containing `&`, `'`, `"`, `<` or `>` saved before 3.2.2.7 was stored HTML-encoded and fails to authenticate: type it again once.
-2. **Test sending** — Use the **Send test email** button on the Emails page.
+2. **Test sending** — Use the **Send test email** button on the Emails page. If it fails with `certificate verify failed`, the certificate of the mail server is not trusted while **Verify the SMTP server certificate** is enabled: add the certificate authority of the relay to the trust store of the TeamPass server, or turn the verification off for a relay with a self-signed certificate. See [Security hardening](../install/security-hardening.md#network).
 3. **Check the task queue** — Email sending is handled by background tasks. Go to **Tasks** and verify the email task is not stuck or in error.
 4. **PHP mail function** — If using `mail()` instead of SMTP, verify that the server's mail transfer agent (Postfix, Sendmail, etc.) is running.
 5. **Firewall** — Verify outbound connections on port 25, 465, or 587 are not blocked.

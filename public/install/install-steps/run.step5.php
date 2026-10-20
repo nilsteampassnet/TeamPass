@@ -615,6 +615,9 @@ class DatabaseInstaller
             array('admin', 'email_auth_pwd', '', '1'),
             array('admin', 'email_port', ''),
             array('admin', 'email_security', ''),
+            // Fresh installs verify the SMTP server certificate. Upgraded installs keep '0'
+            // (seeded by upgrade_run_3.2.3.php) until the admin opts in.
+            array('admin', 'email_smtp_verify_certificate', '1'),
             array('admin', 'email_server_url', ''),
             array('admin', 'email_from', ''),
             array('admin', 'email_from_name', ''),

@@ -86,6 +86,30 @@ class EmailService
         return implode("\n", $this->debugOutput);
     }
 
+    /**
+     * Returns the stream context options of the TLS session opened with the SMTP server.
+     *
+     * Without verification the connection is still encrypted but no longer authenticated:
+     * anyone on the network path can present their own certificate and read the SMTP
+     * credentials and every email. Only an administrator whose relay presents a self-signed
+     * or internal certificate should turn it off.
+     *
+     * @param bool $verifyCertificate True to check the certificate chain against the system
+     *                                CA store and the certificate name against the SMTP host.
+     *
+     * @return array<string, array<string, bool>> Value for PHPMailer::$SMTPOptions.
+     */
+    public static function tlsOptions(bool $verifyCertificate): array
+    {
+        return [
+            'ssl' => [
+                'verify_peer' => $verifyCertificate,
+                'verify_peer_name' => $verifyCertificate,
+                'allow_self_signed' => $verifyCertificate === false,
+            ],
+        ];
+    }
+
     // Fonction pour configurer PHPMailer avec les paramètres de l'application
     public function configureMailer(EmailSettings $emailSettings, $silent, $cron)
     {
@@ -112,13 +136,7 @@ class EmailService
         $this->mailer->SMTPSecure = $emailSettings->security !== 'none' ? $emailSettings->security : '';
         $this->mailer->SMTPAutoTLS = $emailSettings->security !== 'none';
         $this->mailer->CharSet = 'utf-8';
-        $this->mailer->SMTPOptions = [
-            'ssl' => [
-                'verify_peer' => false,
-                'verify_peer_name' => false,
-                'allow_self_signed' => true,
-            ],
-        ];
+        $this->mailer->SMTPOptions = self::tlsOptions($emailSettings->verifyCertificate === true);
         $this->mailer->From = $emailSettings->from;
         $this->mailer->FromName = $emailSettings->fromName;
     }
