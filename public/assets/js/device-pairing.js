@@ -36,7 +36,7 @@
   const matchesLabel = (label, query) => String(label || '').toLocaleLowerCase().includes(String(query || '').trim().toLocaleLowerCase())
   const remainingSeconds = (deadline, now) => Math.max(0, Math.ceil((deadline - now) / 1000))
 
-  // Responses from a closed or replaced invitation can never update its successor's controls.
+  // Responses from a closed or replaced attempt can never update its successor's controls.
   function createAttemptGuard () {
     let generation = 0
     let id = null
@@ -264,8 +264,9 @@
     const m = options.messages
     let offset = 0
     let hasMore = false
-    let generation = 0
-    const owner = () => Number($('#device-admin-owner').val())
+    let searchTimer = null
+    const guard = createAttemptGuard()
+    const search = () => String($('#device-admin-search').val() || '').trim()
     const request = (type, data) => $.ajax({
       url: 'sources/device_pairing.queries.php', type: 'POST', dataType: 'json', timeout: 15000,
       data: { type, key: options.key, data: root.prepareExchangedData(JSON.stringify(data), 'encode', options.key) }
@@ -275,25 +276,33 @@
       $('#device-admin-next').prop('disabled', busy || !hasMore)
     }
     function load () {
-      const version = ++generation
-      const selectedOwner = owner()
+      clearTimeout(searchTimer)
+      const version = guard.next()
+      const query = search()
+      guard.bind(version, query)
       hasMore = false
       buttons(true)
       $('#device-admin-list').empty().append($('<p>').addClass('text-muted').text(m.loading))
-      request('admin_list', { user_id: selectedOwner, offset }).done(result => {
-        if (version !== generation || selectedOwner !== owner()) return
+      $('#device-admin-table').addClass('d-none')
+      $('#device-admin-rows').empty()
+      request('admin_list', { search: query, offset }).done(result => {
+        if (!guard.current(version, search())) return
         if (result.error) { root.toastr.error(result.message || m.network); return }
         hasMore = Boolean(result.has_more)
-        const list = $('#device-admin-list').empty()
+        const status = $('#device-admin-list').empty()
+        const rows = $('#device-admin-rows')
         const date = value => value ? new Date(value * 1000).toLocaleString() : m.never
         const entries = result.devices || []
-        if (!entries.length) $('<p>').addClass('text-muted').text(m.no_devices).appendTo(list)
+        if (!entries.length) $('<p>').addClass('text-muted').text(query ? m.no_results : m.no_devices).appendTo(status)
+        $('#device-admin-table').toggleClass('d-none', !entries.length)
         entries.forEach(device => {
-          const row = $('<div>').addClass('d-sm-flex align-items-center justify-content-between border rounded p-3 mb-2')
-          const text = $('<div>').addClass('mr-sm-3 mb-2 mb-sm-0 text-break').css('min-width', 0).appendTo(row)
-          $('<div>').addClass('font-weight-bold').text(device.login + ' · ' + (device.label || m.unnamed)).appendTo(text)
-          $('<div>').addClass('small text-muted').text(m.created + ': ' + date(device.created_at) + ' · ' + m.last_used + ': ' + date(device.last_used_at)).appendTo(text)
-          $('<div>').addClass('small text-muted').text(m.valid_until + ': ' + date(device.expires_at)).appendTo(text)
+          const row = $('<tr>')
+          $('<td>').addClass('text-break').text(device.login).appendTo(row)
+          $('<td>').addClass('text-break').text(device.label || m.unnamed).appendTo(row)
+          for (const value of [device.created_at, device.last_used_at, device.expires_at]) {
+            $('<td>').addClass('text-nowrap').text(date(value)).appendTo(row)
+          }
+          const action = $('<td>').addClass('text-nowrap').appendTo(row)
           $('<button>').attr('type', 'button').addClass('btn btn-sm btn-outline-danger').text(m.revoke).on('click', function () {
             const button = $(this).prop('disabled', true)
             const confirmation = $('<div>').append(
@@ -305,18 +314,22 @@
                 if (!result.error) load()
               }).fail(xhr => root.toastr.error((xhr.responseJSON && xhr.responseJSON.message) || m.network)).always(() => button.prop('disabled', false))
             }, function () { button.prop('disabled', false) }).set('labels', { ok: m.revoke, cancel: m.cancel })
-          }).appendTo(row)
-          list.append(row)
+          }).appendTo(action)
+          rows.append(row)
         })
       }).fail(xhr => {
-        if (version === generation) $('#device-admin-list').empty().append($('<p>').addClass('text-warning').text((xhr.responseJSON && xhr.responseJSON.message) || m.network))
-      }).always(() => { if (version === generation) buttons(false) })
+        if (guard.current(version, search())) $('#device-admin-list').empty().append($('<p>').addClass('text-warning').text((xhr.responseJSON && xhr.responseJSON.message) || m.network))
+      }).always(() => { if (guard.current(version, search())) buttons(false) })
     }
-    $('#device-admin-owner, #device-admin-refresh').on('change click', function (event) {
-      if (this.id === 'device-admin-owner' && event.type !== 'change') return
+    $('#device-admin-search').on('input search', () => {
+      clearTimeout(searchTimer)
+      guard.next()
       offset = 0
-      load()
+      hasMore = false
+      buttons(true)
+      searchTimer = setTimeout(load, 250)
     })
+    $('#device-admin-refresh').on('click', () => { offset = 0; load() })
     $('#device-admin-previous').on('click', () => { offset = Math.max(0, offset - 30); load() })
     $('#device-admin-next').on('click', () => { if (hasMore) { offset += 30; load() } })
     load()

@@ -128,16 +128,19 @@ function apiDeviceRevokeCredential(int $userId, int $tokenId, ?int $actorId = nu
 }
 
 /** Return a bounded metadata page to a freshly verified administrator; never select credential material. */
-function apiDeviceAdminList(int $actorId, int $ownerId = 0, int $offset = 0): array
+function apiDeviceAdminList(int $actorId, int $ownerId = 0, int $offset = 0, string $search = ''): array
 {
     require_once __DIR__ . '/device_pairing_logic.php';
     $actor = DB::queryFirstRow('SELECT id, admin, disabled, deleted_at FROM ' . prefixTable('users') . ' WHERE id = %i', $actorId);
     if ($actor === null || (int) $actor['admin'] !== 1 || (int) $actor['disabled'] !== 0 || $actor['deleted_at'] !== null) {
         throw new DevicePairingException('forbidden', 403);
     }
-    if ($ownerId < 0 || $offset < 0 || $offset > 1000000) {
+    if ($ownerId < 0 || $offset < 0 || $offset > 1000000
+        || !mb_check_encoding($search, 'UTF-8') || mb_strlen($search, 'UTF-8') > 200
+    ) {
         throw new DevicePairingException('invalid_request');
     }
+    $search = trim($search);
     $query = 'SELECT t.id, t.user_id, t.label, t.created_at, t.last_used_at, t.expires_at, u.login
         FROM ' . prefixTable('api_tokens') . ' t INNER JOIN ' . prefixTable('users') . ' u ON u.id = t.user_id
         WHERE t.purpose = %s AND t.pairing_id IS NULL AND t.revoked_at IS NULL';
@@ -145,6 +148,23 @@ function apiDeviceAdminList(int $actorId, int $ownerId = 0, int $offset = 0): ar
     if ($ownerId > 0) {
         $query .= ' AND t.user_id = %i';
         $parameters[] = $ownerId;
+    }
+    if ($search !== '') {
+        $matchingOwners = [];
+        foreach (DB::query('SELECT id, login FROM ' . prefixTable('users')) as $owner) {
+            $login = html_entity_decode((string) $owner['login'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            if (mb_stripos($login, $search, 0, 'UTF-8') !== false) {
+                $matchingOwners[] = (int) $owner['id'];
+            }
+        }
+        // Labels are stored as raw text; LOCATE keeps percent and underscore literal.
+        $query .= ' AND (LOCATE(LOWER(%s), LOWER(t.label)) > 0';
+        $parameters[] = $search;
+        if ($matchingOwners !== []) {
+            $query .= ' OR t.user_id IN %li';
+            $parameters[] = $matchingOwners;
+        }
+        $query .= ')';
     }
     $query .= ' ORDER BY t.created_at DESC, t.id DESC LIMIT 31 OFFSET %i';
     $parameters[] = $offset;

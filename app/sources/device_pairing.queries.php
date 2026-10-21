@@ -81,10 +81,11 @@ try {
         }
         if ($action === 'admin_list') {
             $offset = filter_var($input['offset'] ?? 0, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 1000000]]);
-            if ($offset === false) {
+            $search = $input['search'] ?? '';
+            if ($offset === false || !is_string($search)) {
                 throw new DevicePairingException('invalid_request');
             }
-            $result = apiDeviceAdminList($userId, $ownerId, $offset);
+            $result = apiDeviceAdminList($userId, $ownerId, $offset, $search);
         } else {
             $id = filter_var($input['id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
             if ($id === false || $ownerId <= 0) {

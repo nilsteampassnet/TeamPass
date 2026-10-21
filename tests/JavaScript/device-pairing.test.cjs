@@ -54,6 +54,19 @@ test('late polling cannot undo approval, delivery or a terminal outcome', () => 
   assert.equal(pairing.canAdvance('awaiting_scan', 'invented-state'), false)
 })
 
+test('repeating an inventory search cannot accept a response from its earlier occurrence', () => {
+  const guard = pairing.createAttemptGuard()
+  const original = guard.next()
+  guard.bind(original, 'R&D')
+  guard.next() // Typing invalidates the in-flight request before the debounce expires.
+  assert.equal(guard.current(original, 'R&D'), false)
+  const repeated = guard.next()
+  guard.bind(repeated, 'R&D')
+  assert.equal(guard.current(original, 'R&D'), false)
+  assert.equal(guard.current(repeated, 'R&D'), true)
+  assert.equal(guard.current(repeated, 'different search'), false)
+})
+
 test('device search compares the raw label actually rendered with text(), including punctuation', () => {
   for (const [label, query] of [['R&D', 'r&d'], ["O'Brien", "o'brien"], ['A "quoted" <device>', '"quoted"'], ['A "quoted" <device>', '<device>']]) {
     assert.equal(pairing.matchesLabel(label, query), true)

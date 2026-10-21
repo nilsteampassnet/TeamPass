@@ -323,6 +323,28 @@ try {
         }
     }
     pairingCheck(count(apiDeviceAdminList(45, 46, 30)['devices']) === 1, 'Admin next page is incomplete');
+    foreach (['R&D', "O'Brien", '"', '<account>'] as $search) {
+        $matches = apiDeviceAdminList(45, 0, 0, $search);
+        pairingCheck(count($matches['devices']) === 30 && $matches['has_more'], 'Search did not match the decoded account name');
+        pairingCheck(count(apiDeviceAdminList(45, 0, 30, $search)['devices']) === 1, 'Filtered next page is incomplete');
+    }
+    foreach (['amp', 'quot', '039', 'no matching account or device', "' OR 1=1 --"] as $search) {
+        $matches = apiDeviceAdminList(45, 0, 0, $search);
+        pairingCheck($matches['devices'] === [] && !$matches['has_more'], 'Search matched stored entities or treated literal text as a query');
+    }
+    DB::update(prefixTable('api_tokens'), ['label' => 'Literal 100%_ device'], 'id = %i', $adminIds[0]);
+    pairingCheck(!in_array($adminIds[0], array_column(apiDeviceAdminList(45)['devices'], 'id')), 'Search fixture unexpectedly occurs on the first page');
+    foreach (['%', '_', '100%_', 'LITERAL'] as $search) {
+        $matches = apiDeviceAdminList(45, 0, 0, $search);
+        pairingCheck(count($matches['devices']) === 1 && (int) $matches['devices'][0]['id'] === $adminIds[0]
+            && !$matches['has_more'], 'Search did not find a literal label beyond the first page');
+    }
+    pairingCheck(apiDeviceAdminList(45, 43, 0, '<account>')['devices'] === [], 'Search widened the requested account scope');
+    pairingCheck(count(apiDeviceAdminList(45, 46, 0, '  <ACCOUNT>  ')['devices']) === 30, 'Search did not trim or ignore account-name case');
+    pairingCheck(count(apiDeviceAdminList(45, 0, 0, '  ')['devices']) === 30, 'An empty search did not retain the unfiltered inventory');
+    pairingCheck(apiDeviceAdminList(45, 0, 0, str_repeat('é', 200))['devices'] === [], 'Search length was counted in bytes instead of UTF-8 characters');
+    pairingRefuses(static fn () => apiDeviceAdminList(45, 0, 0, str_repeat('a', 201)), 'invalid_request');
+    pairingRefuses(static fn () => apiDeviceAdminList(45, 0, 0, "\xff"), 'invalid_request');
     DB::update(prefixTable('users'), ['admin' => 0], 'id = %i', 45);
     pairingRefuses(static fn () => apiDeviceAdminList(45), 'forbidden');
     pairingCheck(!apiDeviceRevokeCredential(46, $adminIds[0], 45), 'A stale admin role allowed revocation');
@@ -334,7 +356,7 @@ try {
     pairingCheck(json_decode($adminAudit['field_1'], true)['user_id'] === 46, 'Admin revocation audit lost the target owner');
     DB::delete(prefixTable('api_tokens'), 'user_id = %i', 46);
     DB::delete(prefixTable('users'), 'id IN %li', [43, 45, 46]);
-    echo "OK: administrator metadata pagination, fresh permissions, owner scope and actor/target audit\n";
+    echo "OK: administrator metadata search, pagination, fresh permissions, owner scope and actor/target audit\n";
     echo "OK: real installer schema, immutable claims, explicit approval, concurrent consumption, protected retry and PAT renewal/revocation\n";
 
     foreach (['cancel', 'reject', 'expiry', 'logout', 'policy', 'key_change', 'delivery_timeout'] as $scenario) {

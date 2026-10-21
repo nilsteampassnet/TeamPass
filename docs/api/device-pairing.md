@@ -53,8 +53,11 @@ initiating user's valid session and synchronizer CSRF key. Approval also uses
 the existing sign-in passkey step-up policy: password confirmation where
 applicable or a recent sign-in for accounts whose password TeamPass cannot check.
 There is no local password requirement invented for an SSO account.
-Settings > API > Mobile application also provides an administrator-only, paginated device inventory
-filtered by account. Its POST actions `admin_list` and `admin_revoke` use the
+Settings > API > Mobile application also provides an administrator-only device
+table, searchable by account or device name across all paginated results.
+The search matches displayed account names (including decoded HTML entities)
+and literal device labels; percent and underscore are not wildcards.
+Its POST actions `admin_list` and `admin_revoke` use the
 same session/CSRF protections and fresh server-side administrator checks;
 managers cannot manage another account's devices. Only labels, account names,
 creation/last-use/expiry dates and IDs are returned. No credential material or

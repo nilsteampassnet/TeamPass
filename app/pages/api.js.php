@@ -81,12 +81,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 <script>
 <?php
 $deviceAdminMessages = [];
-foreach (['loading', 'network', 'unnamed', 'no_devices', 'revoke', 'revoke_title', 'revoke_confirm', 'cancel', 'valid_until'] as $deviceMessage) {
+foreach (['network', 'unnamed', 'no_devices', 'no_results', 'revoke', 'revoke_title', 'revoke_confirm', 'cancel'] as $deviceMessage) {
     $deviceAdminMessages[$deviceMessage] = $lang->get('device_pairing_' . $deviceMessage);
 }
-$deviceAdminMessages['created'] = $lang->get('extension_token_created');
-$deviceAdminMessages['last_used'] = $lang->get('extension_token_last_used');
 $deviceAdminMessages['never'] = $lang->get('extension_token_never_used');
+$deviceAdminMessages['loading'] = $lang->get('device_pairing_inventory_loading');
 ?>
 if (window.tpDevicePairing) window.tpDevicePairing.mountAdmin({
     key: <?php echo json_encode((string) $session->get('key'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
