@@ -182,8 +182,10 @@ an external-device record. The body contains `credential_id`, `state`, `reason`,
 reasons are `revoked`, `expired` or `keys_changed`; pending uses `not_confirmed`.
 Suspension blocks access without claiming irreversible credential revocation:
 lock local access and revalidate after policy restoration, without treating a
-temporary administrative switch as a purge instruction. Unknown, legacy or malformed
-proofs receive the same 401 and never enumerate an account.
+temporary administrative switch as a purge instruction. Unknown or legacy proofs
+with the expected format receive the same 401 and never enumerate an account.
+Malformed proof fields are rejected as invalid requests (400) before lookup;
+neither response proves that a credential was invalidated.
 
 Revocation retains the credential hash and minimal metadata as a proof record,
 revokes linked JWTs transactionally, and wipes its wrapped private key, wrapping

@@ -193,7 +193,7 @@ credential ID and instance identity:
 | `pending` / `not_confirmed` | Finish the captured pairing attempt or restart it; never invalidate another profile. |
 | `suspended` / `access_removed` | Lock local access and suspend renewal. Account/API/pairing policy can be restored; do not treat a temporary switch as terminal revocation or automatically destroy local work. Revalidate before unlocking. |
 | `invalidated` with `revoked`, `expired`, `keys_changed` | Stop automatic renewal and invalidate server-derived local access for this exact established profile. Require re-pairing/reauthorization. |
-| Unknown proof, 401/403, 404/unsupported endpoint, 429, 5xx, malformed response, identity mismatch or network failure | No proven invalidation. Lock or request reauthentication as appropriate; never erase solely because of this response. |
+| Unknown proof, 400/invalid request, 401/403, 404/unsupported endpoint, 429, 5xx, malformed response, identity mismatch or network failure | No proven invalidation. Lock or request reauthentication as appropriate; never erase solely because of this response. |
 
 Define the client invalidation operation before shipping: invalidate JWT/PAT
 use, server-derived snapshots, associated keys, memory caches and Autofill
