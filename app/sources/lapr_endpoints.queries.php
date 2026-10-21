@@ -155,8 +155,14 @@ switch ($post_type) {
 function laprListEndpoints(SessionInterface $session, Language $lang, array $settings): void
 {
     // The hostname and SSH username of an endpoint are infrastructure details:
-    // only disclose them to operators who can read its SSH credential.
-    $endpointIds = laprGetUserAccessibleEndpointIds($session);
+    // only disclose them to operators who can read its SSH credential. An
+    // endpoint whose credential became unusable stays listed for them, flagged,
+    // so that they can delete it.
+    $unusableCredentialIds = laprGetUserEndpointIdsWithUnusableCredential($session);
+    $endpointIds = array_values(array_unique(array_merge(
+        laprGetUserAccessibleEndpointIds($session),
+        $unusableCredentialIds
+    )));
     if ($endpointIds === []) {
         echo prepareExchangedData(['error' => false, 'data' => []], 'encode');
         return;
@@ -195,6 +201,7 @@ function laprListEndpoints(SessionInterface $session, Language $lang, array $set
             'has_sudo' => (bool) ($caps['has_sudo'] ?? false),
             'is_root' => (bool) ($os['is_root'] ?? false),
             'last_error' => (string) ($r['last_error'] ?? ''),
+            'credential_missing' => in_array((int) $r['id'], $unusableCredentialIds, true),
         ];
     }
 
@@ -299,8 +306,12 @@ function laprStartTest(array $data, $session, array $SETTINGS, int $userId, Lang
         return;
     }
 
-    if (laprEndpointTargetExists($hostname, $port) === true) {
-        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_endpoint_already_enrolled')], 'encode');
+    // An endpoint whose SSH credential is gone does not block the test: saving
+    // the endpoint replaces it.
+    $targets = laprFindEndpointTargets($hostname, $port, $session);
+    $targetConflict = laprEndpointTargetConflictMessage($targets);
+    if ($targetConflict !== '') {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get($targetConflict)], 'encode');
         return;
     }
 
@@ -335,7 +346,11 @@ function laprStartTest(array $data, $session, array $SETTINGS, int $userId, Lang
         return;
     }
 
-    $credentialConflict = laprEndpointCredentialConflict($credentialItemId, $authMethod);
+    $credentialConflict = laprEndpointCredentialConflict(
+        $credentialItemId,
+        $authMethod,
+        laprReplaceableEndpointIds($targets)
+    );
     if ($credentialConflict === 'managed_item') {
         echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_managed_item_cannot_be_credential')], 'encode');
         return;
@@ -699,8 +714,10 @@ function laprAddEndpoint(array $data, SessionInterface $session, int $userId, ar
         return;
     }
 
-    if (laprEndpointTargetExists($hostname, $port) === true) {
-        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_endpoint_already_enrolled')], 'encode');
+    $targets = laprFindEndpointTargets($hostname, $port, $session);
+    $targetConflict = laprEndpointTargetConflictMessage($targets);
+    if ($targetConflict !== '') {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get($targetConflict)], 'encode');
         return;
     }
 
@@ -716,7 +733,11 @@ function laprAddEndpoint(array $data, SessionInterface $session, int $userId, ar
         }
     }
 
-    $credentialConflict = laprEndpointCredentialConflict($credentialItemId, $authMethod);
+    $credentialConflict = laprEndpointCredentialConflict(
+        $credentialItemId,
+        $authMethod,
+        laprReplaceableEndpointIds($targets)
+    );
     if ($credentialConflict === 'managed_item') {
         echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_managed_item_cannot_be_credential')], 'encode');
         return;
@@ -763,6 +784,23 @@ function laprAddEndpoint(array $data, SessionInterface $session, int $userId, ar
             return;
         }
 
+        // Replace the endpoints of this host whose SSH credential is gone, then
+        // make sure no usable one took the target meanwhile.
+        $replacedEndpointIds = laprRetireUnusableEndpointTargets($hostname, $port, $userId);
+        foreach ($replacedEndpointIds as $replacedEndpointId) {
+            laprCancelPendingEndpointRotations($replacedEndpointId, 'ERR_ENDPOINT_DELETED', 'ENDPOINT_REMOVED');
+            $releasedAccounts = laprReleaseEndpointAccounts($replacedEndpointId, $userId, 'endpoint_replaced');
+            laprAuditLog('endpoint_delete', $replacedEndpointId, $userId, [
+                'reason' => 'credential_unavailable',
+                'released_accounts' => $releasedAccounts,
+            ], 'success');
+        }
+        if (laprEndpointTargetExists($hostname, $port) === true) {
+            DB::rollback();
+            echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_endpoint_already_enrolled')], 'encode');
+            return;
+        }
+
         DB::insert(prefixTable('lapr_endpoints'), [
             'label' => $label,
             'hostname' => $hostname,
@@ -790,6 +828,7 @@ function laprAddEndpoint(array $data, SessionInterface $session, int $userId, ar
             'hostkey_verified' => $skipHostkey === 1 ? 0 : 1,
             'self_target' => $selfTarget['is_self'],
             'self_target_confidence' => $selfTarget['confidence'],
+            'replaced_endpoints' => count($replacedEndpointIds),
         ], 'success', null);
         DB::commit();
     } catch (Throwable $exception) {
@@ -799,13 +838,39 @@ function laprAddEndpoint(array $data, SessionInterface $session, int $userId, ar
 
     echo prepareExchangedData([
         'error' => false,
-        'message' => $lang->get('lapr_endpoint_saved'),
+        'message' => $lang->get($replacedEndpointIds === [] ? 'lapr_endpoint_saved' : 'lapr_endpoint_saved_replaced'),
         'id' => $endpointId,
     ], 'encode');
 }
 
 /**
- * Soft-delete an endpoint and pause its managed accounts.
+ * Language key refusing an enrollment of a host:port already held by an
+ * endpoint with a usable SSH credential, or '' when the enrollment may go on
+ * (free target, or only endpoints whose credential is gone, which the save
+ * replaces).
+ *
+ * @param array<int, array{id: int, credential_usable: bool, credential_readable: bool}> $targets
+ *        Result of laprFindEndpointTargets() for the caller
+ * @return string
+ */
+function laprEndpointTargetConflictMessage(array $targets): string
+{
+    $state = laprResolveEndpointTargetState($targets);
+    if ($state === 'enrolled') {
+        return 'lapr_endpoint_already_enrolled';
+    }
+    if ($state === 'enrolled_inaccessible') {
+        return 'lapr_endpoint_already_enrolled_inaccessible';
+    }
+
+    return '';
+}
+
+/**
+ * Soft-delete an endpoint and release its managed accounts.
+ *
+ * Also reachable for an endpoint whose SSH credential became unusable, from
+ * the operators who can read the folder holding that credential.
  *
  * @param array            $data    Decoded client payload
  * @param SessionInterface $session Current session
@@ -821,7 +886,7 @@ function laprDeleteEndpoint(array $data, SessionInterface $session, int $userId,
         return;
     }
 
-    if (laprUserCanUseEndpoint($endpointId, $session) === false) {
+    if (laprUserCanDeleteEndpoint($endpointId, $session) === false) {
         echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
         return;
     }
@@ -843,15 +908,16 @@ function laprDeleteEndpoint(array $data, SessionInterface $session, int $userId,
 
     laprCancelPendingEndpointRotations($endpointId, 'ERR_ENDPOINT_DELETED', 'ENDPOINT_REMOVED');
 
-    // Pause managed accounts on this endpoint (no cascade — soft-delete/pause, C6)
-    DB::update(prefixTable('lapr_accounts'), [
-        'status' => 'paused',
-        'updated_by' => $userId,
-    ], 'endpoint_id = %i AND status = %s', $endpointId, 'active');
+    // Release the managed accounts (soft deletion, no cascade — C6). Pausing
+    // them left items locked by accounts nobody could see or remove.
+    $releasedAccounts = laprReleaseEndpointAccounts($endpointId, $userId, 'endpoint_deleted');
 
-    laprAuditLog('endpoint_delete', $endpointId, $userId, [], 'success');
+    laprAuditLog('endpoint_delete', $endpointId, $userId, ['released_accounts' => $releasedAccounts], 'success');
 
-    echo prepareExchangedData(['error' => false, 'message' => $lang->get('lapr_endpoint_deleted')], 'encode');
+    echo prepareExchangedData([
+        'error' => false,
+        'message' => $lang->get('lapr_endpoint_deleted_accounts_released'),
+    ], 'encode');
 }
 
 /**
@@ -978,7 +1044,8 @@ function laprCancelPendingEndpointRotations(int $endpointId, string $errorCode, 
 }
 
 /**
- * Restore a soft-deleted endpoint (accounts stay paused until manually resumed).
+ * Restore a soft-deleted endpoint. Its managed accounts were released by the
+ * deletion and must be added again.
  *
  * @param array            $data    Decoded client payload
  * @param SessionInterface $session Current session

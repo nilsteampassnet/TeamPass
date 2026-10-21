@@ -2634,7 +2634,6 @@ return array(
     'lapr_skip_hostkey_verification' => 'Wyłącz weryfikację klucza hosta dla tego serwera',
     'lapr_skip_hostkey_warning' => 'NIEBEZPIECZEŃSTWO: bez weryfikacji klucza hosta osoba przeprowadzająca atak man-in-the-middle może przechwycić dane logowania SSH oraz każde hasło poddawane rotacji. Wyłącznie dla odizolowanych sieci laboratoryjnych.',
     'lapr_endpoint_saved' => 'Serwer zarejestrowany',
-    'lapr_endpoint_deleted' => 'Serwer usunięty (zarządzanie kontami wstrzymane)',
     'lapr_endpoint_restored' => 'Serwer przywrócony',
     'lapr_os_info' => 'Informacje o systemie',
     'lapr_capabilities' => 'Możliwości',

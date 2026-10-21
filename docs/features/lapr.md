@@ -65,7 +65,9 @@ Once enabled, an **LAPR** section appears directly below **Passwords** for non-a
    - checks that the account can actually change passwords — it must be **root** or have **passwordless sudo**. If neither, enrollment is refused (every future rotation would fail).
 4. On success, click **Save**. The tested parameters are protected by a signed snapshot so the saved endpoint always matches what was tested.
 
-The same normalized hostname/IP and SSH port can be enrolled only once. Credential relationships are also checked server-side both before the SSH test and again before saving:
+The same normalized hostname/IP and SSH port can be enrolled only once. An endpoint whose SSH credential item is no longer usable — deleted, inactive, or moved into a personal folder, for example while the LAPR module was disabled — does not hold its host: enrolling that host again replaces it. The old endpoint is soft-deleted and its managed accounts are released, as if it had been deleted, and the confirmation asks you to add those accounts again. The item of the managed SSH login, which holds its current password, can serve as the credential of the new endpoint. An endpoint whose credential is still usable keeps refusing the enrollment; when you cannot open that credential, the message says so and an operator who can must delete the endpoint first.
+
+Credential relationships are also checked server-side both before the SSH test and again before saving:
 
 - a password-based SSH credential item belongs to one endpoint only because synchronizing a rotated connection password would invalidate every other endpoint still using the old value;
 - a private-key credential item may be shared by several key-authenticated endpoints;
@@ -101,6 +103,14 @@ The endpoint list can pause **automatic rotations** without changing the state, 
 The pause reason is selected from a fixed, secret-free list and recorded with the operator in the LAPR audit log. Availability, OS and privilege checks remain available. A manual rotation is still possible as an explicit break-glass action after an additional confirmation; the override is audited separately and never resumes automatic rotations.
 
 **Resume automatic rotations** first queues a background SSH and privilege check while the endpoint remains paused. Only a successful check with valid rotation privileges changes the endpoint back to active. Existing due dates are preserved, so accounts already overdue become eligible at the next scheduler pass.
+
+### Deleting an endpoint
+
+Deleting an endpoint is a soft deletion: its audit history is kept. Rotations that have not started are cancelled, and its managed accounts are removed from LAPR exactly as if each had been removed one by one: their items become ordinary items again, and adding an item back later reactivates its LAPR row. The host and port are free again for a new enrollment.
+
+An endpoint whose SSH credential item is no longer usable can no longer authenticate, so every operation on it is refused. It remains listed, with an **SSH credential unavailable** badge, for the operators who can read the folder holding that credential, and **Delete** is its only action.
+
+> ℹ️ Earlier releases paused the managed accounts of a deleted endpoint instead. Those accounts disappeared from the Accounts page but kept their items locked (login and password read-only, deletion refused) and prevented managing them again. The background handler now releases them automatically on its next maintenance pass.
 
 ---
 
@@ -218,7 +228,9 @@ Each rotation:
 1. reads the current item password (proving the key chain works and capturing the previous value for password history);
 2. generates the new password per policy;
 3. pushes it with `chpasswd` (via `sudo -n` when the SSH account is not root);
-4. re-encrypts the item and refreshes every sharekey, logs the change (with history), and emits a real-time update event.
+4. re-encrypts the item, stores the strength of the new password, refreshes every sharekey, logs the change (with history), and emits a real-time update event.
+
+The item's strength rating (item card, list, Security Posture) therefore describes the generated password from the first rotation on. Earlier releases kept the rating of the password that was replaced, so an item rotated by them can still show the old rating: its next rotation corrects it.
 
 When the managed Linux login is also the endpoint's password-authenticated SSH login, LAPR synchronizes the dedicated SSH credential item after the managed item. This synchronization is never performed for key authentication, so a private-key item cannot be overwritten with the generated Linux password.
 

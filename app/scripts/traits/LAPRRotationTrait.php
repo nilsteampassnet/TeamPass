@@ -465,10 +465,18 @@ trait LAPRRotationTrait
             // Encrypt the new password with a fresh objectKey.
             $crypted = doDataEncryption($newPassword);
 
+            // The item card only re-assesses strength when pw_len changes, and the
+            // new length is written below: store the new password's level here or
+            // the item keeps reporting the strength of the password it replaced.
+            $passwordStrength = evaluatePasswordStrengthSafely($newPassword);
+
             DB::update(prefixTable('items'), [
                 'pw' => $crypted['encrypted'],
                 'pw_iv' => $crypted['meta'],
                 'pw_len' => strlen($newPassword),
+                'complexity_level' => $passwordStrength['success'] === true
+                    ? convertPasswordStrength((int) $passwordStrength['score'])
+                    : TP_PW_COMPLEXITY_UNASSESSABLE,
                 'encryption_type' => TP_ENCRYPTION_NAME,
                 'updated_at' => time(),
                 // Password changed — the previous HIBP verdict no longer applies.

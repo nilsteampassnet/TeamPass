@@ -390,20 +390,269 @@ function laprEndpointTargetExists(string $hostname, int $port, int $excludeEndpo
 }
 
 /**
+ * Non-deleted endpoints enrolled on a host:port, with the state of their SSH
+ * credential item.
+ *
+ * A credential is usable while its item exists, is active, not deleted and not
+ * personal: only then can TP_USER read it to authenticate. "Readable" adds the
+ * caller's read access to the credential folder, the same scope that decides
+ * whether the caller sees the endpoint at all.
+ *
+ * @param string                $hostname Hostname or IP to look for
+ * @param int                   $port     SSH port
+ * @param SessionInterface|null $session  Caller, or null when readability is irrelevant
+ *
+ * @return array<int, array{id: int, credential_usable: bool, credential_readable: bool}>
+ */
+function laprFindEndpointTargets(string $hostname, int $port, ?SessionInterface $session = null): array
+{
+    $target = laprNormalizeHostname($hostname);
+    if ($target === '') {
+        return [];
+    }
+
+    $rows = DB::query(
+        'SELECT e.id, e.hostname, i.id_tree,
+                (i.id IS NOT NULL AND i.perso = 0 AND i.inactif = 0 AND i.deleted_at IS NULL) AS credential_usable
+         FROM ' . prefixTable('lapr_endpoints') . ' AS e
+         LEFT JOIN ' . prefixTable('items') . ' AS i ON i.id = e.ssh_credential_source
+         WHERE e.port = %i AND e.status != %s',
+        $port,
+        'deleted'
+    );
+
+    $targets = [];
+    foreach ($rows as $row) {
+        if (laprNormalizeHostname((string) $row['hostname']) !== $target) {
+            continue;
+        }
+        $usable = (int) $row['credential_usable'] === 1;
+        $targets[] = [
+            'id' => (int) $row['id'],
+            'credential_usable' => $usable,
+            'credential_readable' => $usable === true
+                && $session !== null
+                && laprUserCanReadFolder((int) $row['id_tree'], $session),
+        ];
+    }
+
+    return $targets;
+}
+
+/**
+ * Decide how a new enrollment relates to the endpoints already holding its
+ * host:port.
+ *
+ * An endpoint whose SSH credential is no longer usable can never authenticate
+ * again, and the endpoint list hides it. Left in place it held its target for
+ * ever, so the host could not be enrolled again ("already enrolled") while no
+ * operator could see or delete the blocking endpoint. Such endpoints are
+ * replaceable. An endpoint with a usable credential keeps its target, and the
+ * caller learns whether it can see that endpoint or must ask someone who can.
+ *
+ * @param array<int, array{credential_usable: bool, credential_readable: bool}> $targets
+ *        Result of laprFindEndpointTargets()
+ *
+ * @return string 'free' | 'replaceable' | 'enrolled' | 'enrolled_inaccessible'
+ */
+function laprResolveEndpointTargetState(array $targets): string
+{
+    $state = 'free';
+    foreach ($targets as $target) {
+        if ($target['credential_usable'] === false) {
+            if ($state === 'free') {
+                $state = 'replaceable';
+            }
+            continue;
+        }
+        if ($target['credential_readable'] === true) {
+            return 'enrolled';
+        }
+        $state = 'enrolled_inaccessible';
+    }
+
+    return $state;
+}
+
+/**
+ * Ids of the endpoints an enrollment would replace: those whose SSH
+ * credential is no longer usable.
+ *
+ * @param array<int, array{id: int, credential_usable: bool}> $targets Result of laprFindEndpointTargets()
+ *
+ * @return array<int, int>
+ */
+function laprReplaceableEndpointIds(array $targets): array
+{
+    $ids = [];
+    foreach ($targets as $target) {
+        if ($target['credential_usable'] === false) {
+            $ids[] = $target['id'];
+        }
+    }
+
+    return $ids;
+}
+
+/**
+ * Soft-delete the endpoints holding a host:port whose SSH credential is no
+ * longer usable, so the host can be enrolled again.
+ *
+ * Runs inside the enrollment transaction. The UPDATE re-checks the credential
+ * at write time: an endpoint whose credential came back in the meantime is
+ * left alone, and the caller's duplicate check then refuses the enrollment.
+ * The caller closes the relationships of every endpoint returned.
+ *
+ * @param string $hostname Hostname or IP being enrolled
+ * @param int    $port     SSH port
+ * @param int    $userId   Acting user id
+ *
+ * @return array<int, int> Ids of the endpoints soft-deleted
+ */
+function laprRetireUnusableEndpointTargets(string $hostname, int $port, int $userId): array
+{
+    $retired = [];
+    foreach (laprFindEndpointTargets($hostname, $port) as $target) {
+        if ($target['credential_usable'] === false
+            && laprRetireEndpointWithUnusableCredential($target['id'], $userId) === true
+        ) {
+            $retired[] = $target['id'];
+        }
+    }
+
+    return $retired;
+}
+
+/**
+ * Soft-delete one endpoint, provided its SSH credential is still unusable when
+ * the row is written.
+ *
+ * @param int $endpointId Endpoint id
+ * @param int $userId     Acting user id
+ *
+ * @return bool Whether the endpoint was soft-deleted
+ */
+function laprRetireEndpointWithUnusableCredential(int $endpointId, int $userId): bool
+{
+    DB::query(
+        'UPDATE ' . prefixTable('lapr_endpoints') . ' AS e
+         LEFT JOIN ' . prefixTable('items') . ' AS i ON i.id = e.ssh_credential_source
+         SET e.status = %s, e.updated_by = %i
+         WHERE e.id = %i AND e.status != %s
+           AND (i.id IS NULL OR i.perso != 0 OR i.inactif != 0 OR i.deleted_at IS NOT NULL)',
+        'deleted',
+        $userId,
+        $endpointId,
+        'deleted'
+    );
+
+    return (int) DB::affectedRows() > 0;
+}
+
+/**
+ * Remove from LAPR the managed accounts of an endpoint that is being deleted.
+ *
+ * Endpoint deletion used to pause them instead. A paused account on a deleted
+ * endpoint is hidden from the Accounts page and refused by every account
+ * handler, yet it still counts as a managed relationship: its item stayed
+ * locked (login/password read-only, deletion refused) and could not be managed
+ * again once the host was re-enrolled. The soft deletion keeps the rows and
+ * their audit history; adding the item again reactivates its row.
+ *
+ * Cancel the endpoint's pending rotations first: that lookup only sees
+ * accounts that are not deleted yet.
+ *
+ * @param int    $endpointId Deleted endpoint id
+ * @param int    $userId     Acting user id (TP_USER_ID for maintenance)
+ * @param string $reason     Secret-free audit reason
+ *
+ * @return int Number of accounts released
+ */
+function laprReleaseEndpointAccounts(int $endpointId, int $userId, string $reason): int
+{
+    $accountIds = array_map('intval', (array) DB::queryFirstColumn(
+        'SELECT id FROM ' . prefixTable('lapr_accounts') . '
+         WHERE endpoint_id = %i AND status != %s',
+        $endpointId,
+        'deleted'
+    ));
+    if ($accountIds === []) {
+        return 0;
+    }
+
+    DB::update(prefixTable('lapr_accounts'), [
+        'status' => 'deleted',
+        'updated_by' => $userId,
+    ], 'id IN %li AND status != %s', $accountIds, 'deleted');
+
+    foreach ($accountIds as $accountId) {
+        laprAuditLog('account_add', $endpointId, $userId, [
+            'deleted' => true,
+            'reason' => $reason,
+        ], 'success', $accountId);
+    }
+
+    return count($accountIds);
+}
+
+/**
+ * Release the managed accounts left behind by endpoints deleted before
+ * endpoint deletion released them (see laprReleaseEndpointAccounts()).
+ * Idempotent: a no-op once every deleted endpoint is clean.
+ *
+ * @param int $userId Acting user id (TP_USER_ID from the background handler)
+ *
+ * @return int Number of accounts released
+ */
+function laprReleaseAccountsOfDeletedEndpoints(int $userId): int
+{
+    $endpointIds = array_map('intval', (array) DB::queryFirstColumn(
+        'SELECT DISTINCT a.endpoint_id
+         FROM ' . prefixTable('lapr_accounts') . ' AS a
+         INNER JOIN ' . prefixTable('lapr_endpoints') . ' AS e ON e.id = a.endpoint_id
+         WHERE e.status = %s AND a.status != %s',
+        'deleted',
+        'deleted'
+    ));
+
+    $released = 0;
+    foreach ($endpointIds as $endpointId) {
+        $released += laprReleaseEndpointAccounts($endpointId, $userId, 'endpoint_deleted');
+    }
+
+    return $released;
+}
+
+/**
  * Return the unsafe relationship preventing an item from becoming a new
  * endpoint credential, or an empty string when the relationship is safe.
  *
  * Private keys may intentionally be shared by a fleet. Password credentials
  * may not: synchronizing one rotated SSH password would invalidate access to
  * every other endpoint still holding the old password.
+ *
+ * Endpoints the enrollment replaces (laprRetireUnusableEndpointTargets()) are
+ * ignored, together with their managed accounts: saving releases them. This
+ * lets the item of the managed SSH login, which holds its current password,
+ * become the credential of the endpoint that replaces a dead one.
+ *
+ * @param int             $itemId              Candidate credential item id
+ * @param string          $authMethod          'password' | 'key'
+ * @param array<int, int> $replacedEndpointIds Endpoints the enrollment replaces
+ *
+ * @return string
  */
-function laprEndpointCredentialConflict(int $itemId, string $authMethod): string
+function laprEndpointCredentialConflict(int $itemId, string $authMethod, array $replacedEndpointIds = []): string
 {
+    // MeekroDB rejects an empty %li list; endpoint ids start at 1.
+    $ignoredEndpointIds = $replacedEndpointIds === [] ? [0] : array_map('intval', $replacedEndpointIds);
+
     $managed = (int) DB::queryFirstField(
         'SELECT COUNT(*) FROM ' . prefixTable('lapr_accounts') . '
-         WHERE item_id = %i AND status != %s',
+         WHERE item_id = %i AND status != %s AND endpoint_id NOT IN %li',
         $itemId,
-        'deleted'
+        'deleted',
+        $ignoredEndpointIds
     );
     if ($managed > 0) {
         return 'managed_item';
@@ -411,9 +660,10 @@ function laprEndpointCredentialConflict(int $itemId, string $authMethod): string
 
     $credentialEndpoints = DB::query(
         'SELECT ssh_auth_method FROM ' . prefixTable('lapr_endpoints') . '
-         WHERE ssh_credential_source = %i AND status != %s',
+         WHERE ssh_credential_source = %i AND status != %s AND id NOT IN %li',
         $itemId,
-        'deleted'
+        'deleted',
+        $ignoredEndpointIds
     );
     if ($authMethod === 'password' && count($credentialEndpoints) > 0) {
         return 'shared_password';
@@ -1069,6 +1319,68 @@ function laprUserCanUseEndpoint(int $endpointId, SessionInterface $session): boo
     }
 
     return laprUserCanReadFolder((int) $credentialFolderId, $session);
+}
+
+/**
+ * Endpoint ids whose SSH credential item is no longer usable (deleted,
+ * inactive, or moved into a personal folder) but still sits in a folder the
+ * user can read.
+ *
+ * laprGetUserAccessibleEndpointIds() fails closed on such an endpoint, which
+ * is right for every operation: it cannot authenticate any more. Hiding it
+ * completely, though, left it enrolled with nobody able to remove it: its
+ * managed items stayed locked and its host could not be enrolled again. The
+ * operators who could read its credential keep it in view, flagged, and may
+ * delete it - nothing else.
+ *
+ * @param SessionInterface $session Current session
+ *
+ * @return array<int, int> Endpoint ids
+ */
+function laprGetUserEndpointIdsWithUnusableCredential(SessionInterface $session): array
+{
+    if ((int) $session->get('user-admin') === 1) {
+        return [];
+    }
+
+    $accessible = array_values(array_unique(array_map(
+        'intval',
+        (array) ($session->get('user-accessible_folders') ?? [])
+    )));
+    if ($accessible === []) {
+        return [];
+    }
+
+    $rows = DB::query(
+        'SELECT e.id
+         FROM ' . prefixTable('lapr_endpoints') . ' AS e
+         INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = e.ssh_credential_source
+         WHERE e.status != %s
+           AND (i.perso != 0 OR i.inactif != 0 OR i.deleted_at IS NOT NULL)
+           AND i.id_tree IN %li',
+        'deleted',
+        $accessible
+    );
+
+    return array_map(static fn (array $row): int => (int) $row['id'], $rows);
+}
+
+/**
+ * Whether the user may delete an endpoint: any endpoint it may use, plus the
+ * ones whose credential became unusable in a folder it can read.
+ *
+ * @param int              $endpointId Endpoint id
+ * @param SessionInterface $session    Current session
+ *
+ * @return bool
+ */
+function laprUserCanDeleteEndpoint(int $endpointId, SessionInterface $session): bool
+{
+    if (laprUserCanUseEndpoint($endpointId, $session) === true) {
+        return true;
+    }
+
+    return in_array($endpointId, laprGetUserEndpointIdsWithUnusableCredential($session), true);
 }
 
 /**

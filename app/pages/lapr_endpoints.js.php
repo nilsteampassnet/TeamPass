@@ -45,7 +45,7 @@ $laprEndpointTranslations = [
     'testFailed' => $lang->get('lapr_test_failed'),
     'testRequired' => $lang->get('lapr_test_required_before_save'),
     'cannotRotate' => $lang->get('lapr_endpoint_cannot_rotate'),
-    'confirmDelete' => $lang->get('please_confirm_deletion'),
+    'confirmDelete' => $lang->get('lapr_endpoint_delete_confirm'),
     'caution' => $lang->get('caution'),
     'deleteLabel' => $lang->get('delete'),
     'closeLabel' => $lang->get('close'),
@@ -84,6 +84,8 @@ $laprEndpointTranslations = [
     'resumeFailed' => $lang->get('lapr_resume_endpoint_failed'),
     'resumeDueAccounts' => $lang->get('lapr_resume_due_accounts'),
     'statusPaused' => $lang->get('lapr_endpoint_status_paused'),
+    'credentialMissing' => $lang->get('lapr_endpoint_credential_missing'),
+    'credentialMissingHint' => $lang->get('lapr_endpoint_credential_missing_hint'),
 ];
 ?>
 <script>
@@ -233,6 +235,9 @@ function laprLoadEndpoints() {
         DOMPurify.sanitize(ep.os_name || '') + (ep.is_root ? ' <span class="badge badge-secondary">root</span>' : (ep.has_sudo ? ' <span class="badge badge-secondary">sudo</span>' : '')),
         laprStatusBadge(ep.status) + (ep.hostkey_verified === 0
           ? ' <span class="badge badge-warning">' + DOMPurify.sanitize(laprLang.hostkeyUnchecked) + '</span>'
+          : '') + (ep.credential_missing === true
+          ? ' <span class="badge badge-danger">' + laprHtml(laprLang.credentialMissing) + '</span>' +
+            '<div class="small text-danger mt-1">' + laprHtml(laprLang.credentialMissingHint) + '</div>'
           : '') + (ep.last_error
           ? '<div class="small ' + (ep.status === 'disabled' ? 'text-muted' : 'text-danger') + ' mt-1">' + laprHtml(laprLang.lastError) + ': <code>' + laprHtml(ep.last_error) + '</code></div>'
           : ''),
@@ -277,13 +282,18 @@ function laprStatusBadge(status) {
 }
 
 function laprEndpointActions(ep) {
+  const deleteAction = '<button class="btn btn-xs btn-danger lapr-delete-ep" data-id="' + ep.id + '" title="' + laprHtml(laprLang.deleteLabel) + '"><i class="fas fa-trash"></i></button>'
+  // Without a usable SSH credential the endpoint can only be removed.
+  if (ep.credential_missing === true) {
+    return '<div class="btn-group btn-group-sm" role="group">' + deleteAction + '</div>'
+  }
   const pauseAction = ep.status === 'disabled'
     ? '<button class="btn btn-xs btn-success lapr-resume-ep" data-id="' + ep.id + '" title="' + laprHtml(laprLang.resumeEndpoint) + '"><i class="fas fa-play"></i></button>'
     : '<button class="btn btn-xs btn-warning lapr-pause-ep" data-id="' + ep.id + '" title="' + laprHtml(laprLang.pauseEndpoint) + '"><i class="fas fa-pause"></i></button>'
   return '<div class="btn-group btn-group-sm" role="group">' +
     '<button class="btn btn-xs btn-info lapr-check-ep" data-id="' + ep.id + '" title="' + laprHtml(laprLang.checkEndpoint) + '"><i class="fas fa-sync-alt"></i></button>' +
     pauseAction +
-    '<button class="btn btn-xs btn-danger lapr-delete-ep" data-id="' + ep.id + '" title="' + laprHtml(laprLang.deleteLabel) + '"><i class="fas fa-trash"></i></button>' +
+    deleteAction +
     '</div>'
 }
 

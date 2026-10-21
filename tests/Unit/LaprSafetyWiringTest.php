@@ -537,6 +537,143 @@ class LaprSafetyWiringTest extends TestCase
         );
     }
 
+    private function functionBody(string $source, string $function, string $nextFunction): string
+    {
+        $start = strpos($source, 'function ' . $function . '(');
+        self::assertIsInt($start, $function);
+        $end = strpos($source, 'function ' . $nextFunction . '(', $start);
+        self::assertIsInt($end, $nextFunction);
+
+        return substr($source, $start, $end - $start);
+    }
+
+    public function testRotationStoresTheStrengthOfTheNewPassword(): void
+    {
+        $update = $this->functionBody(
+            $this->source('app/scripts/traits/LAPRRotationTrait.php'),
+            'laprUpdateItemPassword',
+            'laprGeneratePasswordForAccount'
+        );
+
+        // pw_len is written with the new length, so nothing else would ever
+        // re-assess the password: the item kept the previous password's level.
+        $assessment = strpos($update, 'evaluatePasswordStrengthSafely($newPassword)');
+        $write = strpos($update, "DB::update(prefixTable('items')");
+        self::assertIsInt($assessment);
+        self::assertIsInt($write);
+        self::assertLessThan($write, $assessment);
+        self::assertStringContainsString("'complexity_level' => \$passwordStrength['success'] === true", $update);
+        self::assertStringContainsString("convertPasswordStrength((int) \$passwordStrength['score'])", $update);
+        self::assertStringContainsString('TP_PW_COMPLEXITY_UNASSESSABLE', $update);
+    }
+
+    public function testDeletingAnEndpointReleasesItsManagedAccounts(): void
+    {
+        $delete = $this->functionBody(
+            $this->source('app/sources/lapr_endpoints.queries.php'),
+            'laprDeleteEndpoint',
+            'laprPauseEndpoint'
+        );
+
+        self::assertStringContainsString('laprUserCanDeleteEndpoint($endpointId, $session)', $delete);
+        self::assertStringNotContainsString("'status' => 'paused'", $delete);
+        // The pending-rotation lookup only sees accounts that are not deleted yet.
+        $cancel = strpos($delete, 'laprCancelPendingEndpointRotations(');
+        $release = strpos($delete, 'laprReleaseEndpointAccounts($endpointId');
+        self::assertIsInt($cancel);
+        self::assertIsInt($release);
+        self::assertLessThan($release, $cancel);
+        self::assertStringContainsString("get('lapr_endpoint_deleted_accounts_released')", $delete);
+
+        $release = $this->functionBody(
+            $this->source('app/sources/lapr.functions.php'),
+            'laprReleaseEndpointAccounts',
+            'laprReleaseAccountsOfDeletedEndpoints'
+        );
+        self::assertStringContainsString("'status' => 'deleted'", $release);
+        self::assertStringContainsString("laprAuditLog('account_add'", $release);
+    }
+
+    public function testMaintenanceReleasesAccountsLeftByDeletedEndpoints(): void
+    {
+        $maintenance = $this->functionBody(
+            $this->source('app/scripts/background_tasks___handler.php'),
+            'cleanLAPRMaintenance',
+            'cleanMultipleItemsEdition'
+        );
+
+        self::assertStringContainsString('laprReleaseAccountsOfDeletedEndpoints(TP_USER_ID)', $maintenance);
+        self::assertStringContainsString('catch (Throwable $e)', $maintenance);
+    }
+
+    public function testEnrollmentReplacesEndpointsWhoseCredentialIsGone(): void
+    {
+        $endpoints = $this->source('app/sources/lapr_endpoints.queries.php');
+        $test = $this->functionBody($endpoints, 'laprStartTest', 'laprTestStatus');
+        $add = $this->functionBody($endpoints, 'laprAddEndpoint', 'laprEndpointTargetConflictMessage');
+
+        foreach (['laprStartTest' => $test, 'laprAddEndpoint' => $add] as $handler => $body) {
+            self::assertStringContainsString('laprFindEndpointTargets($hostname, $port, $session)', $body, $handler);
+            self::assertStringContainsString('laprEndpointTargetConflictMessage($targets)', $body, $handler);
+            self::assertStringContainsString('laprReplaceableEndpointIds($targets)', $body, $handler);
+        }
+        self::assertStringNotContainsString('laprEndpointTargetExists(', $test);
+
+        // Replacement happens at the final write boundary, inside the transaction,
+        // and a usable endpoint that took the target meanwhile still wins.
+        $transaction = strpos($add, 'DB::startTransaction();');
+        $credentialLock = strpos($add, 'FOR UPDATE', (int) $transaction);
+        $retire = strpos($add, 'laprRetireUnusableEndpointTargets($hostname, $port, $userId)');
+        $cancel = strpos($add, 'laprCancelPendingEndpointRotations($replacedEndpointId', (int) $retire);
+        $release = strpos($add, 'laprReleaseEndpointAccounts($replacedEndpointId', (int) $retire);
+        $recheck = strpos($add, 'laprEndpointTargetExists($hostname, $port)', (int) $retire);
+        $insert = strpos($add, "DB::insert(prefixTable('lapr_endpoints')");
+        foreach ([$transaction, $credentialLock, $retire, $cancel, $release, $recheck, $insert] as $position) {
+            self::assertIsInt($position);
+        }
+        self::assertLessThan($credentialLock, $transaction);
+        self::assertLessThan($retire, $credentialLock);
+        self::assertLessThan($release, $cancel);
+        self::assertLessThan($recheck, $release);
+        self::assertLessThan($insert, $recheck);
+        self::assertStringContainsString("'lapr_endpoint_saved_replaced'", $add);
+
+        $conflict = $this->functionBody($endpoints, 'laprEndpointTargetConflictMessage', 'laprDeleteEndpoint');
+        self::assertStringContainsString("'lapr_endpoint_already_enrolled'", $conflict);
+        self::assertStringContainsString("'lapr_endpoint_already_enrolled_inaccessible'", $conflict);
+    }
+
+    public function testEndpointWithUnusableCredentialStaysVisibleButCanOnlyBeDeleted(): void
+    {
+        $list = $this->functionBody(
+            $this->source('app/sources/lapr_endpoints.queries.php'),
+            'laprListEndpoints',
+            'laprSearchCredentialItems'
+        );
+        self::assertStringContainsString('laprGetUserEndpointIdsWithUnusableCredential($session)', $list);
+        self::assertStringContainsString("'credential_missing' => in_array(", $list);
+
+        // Every operation keeps the strict scope; only deletion is widened.
+        $functions = $this->source('app/sources/lapr.functions.php');
+        $canDelete = $this->functionBody($functions, 'laprUserCanDeleteEndpoint', 'laprGetItemRelations');
+        self::assertStringContainsString('laprUserCanUseEndpoint($endpointId, $session)', $canDelete);
+        self::assertStringContainsString('laprGetUserEndpointIdsWithUnusableCredential($session)', $canDelete);
+        self::assertSame(
+            1,
+            substr_count($this->source('app/sources/lapr_endpoints.queries.php'), 'laprUserCanDeleteEndpoint(')
+        );
+
+        $js = $this->source('app/pages/lapr_endpoints.js.php');
+        $actions = $this->functionBody($js, 'laprEndpointActions', 'laprStartEndpointCheck');
+        $missingBranch = strpos($actions, 'if (ep.credential_missing === true) {');
+        $checkButton = strpos($actions, 'lapr-check-ep');
+        self::assertIsInt($missingBranch);
+        self::assertIsInt($checkButton);
+        self::assertLessThan($checkButton, $missingBranch);
+        self::assertStringContainsString("'confirmDelete' => \$lang->get('lapr_endpoint_delete_confirm')", $js);
+        self::assertStringContainsString('laprLang.credentialMissingHint', $js);
+    }
+
     public function testLaprInterfaceNeverUsesNativeBrowserDialogs(): void
     {
         $source = '';
