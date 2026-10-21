@@ -2634,7 +2634,6 @@ return array(
     'lapr_skip_hostkey_verification' => 'Deshabilitar la verificación de la clave del host para este endpoint',
     'lapr_skip_hostkey_warning' => 'PELIGRO: sin la verificación de la clave del host, un atacante intermediario (MITM) puede capturar la credencial SSH y cada contraseña rotada. Solo para redes de laboratorio aisladas.',
     'lapr_endpoint_saved' => 'Endpoint inscrito',
-    'lapr_endpoint_deleted' => 'Endpoint eliminado (cuentas administradas pausadas)',
     'lapr_endpoint_restored' => 'Endpoint restaurado',
     'lapr_os_info' => 'Información del sistema',
     'lapr_capabilities' => 'Capacidades',

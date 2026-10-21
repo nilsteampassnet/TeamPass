@@ -119,3 +119,11 @@ Before release, also verify these flows in a configured browser environment:
 
 This is a client-side duplicate-submission guard. Server-side authentication and
 brute-force controls remain necessary.
+
+## LAPR endpoints
+
+`lapr-endpoints.test.cjs` runs the shipped endpoint list renderer and its action buttons.
+An endpoint whose SSH credential is unusable shows an escaped explanation and only the
+Delete action; usable endpoints keep check, pause/resume and delete. The server side of
+the same lifecycle (account release, replacement on re-enrollment) is exercised against
+MariaDB by `tests/Integration/lapr_endpoint_lifecycle_database.php`.

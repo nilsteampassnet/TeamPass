@@ -2634,7 +2634,6 @@ return array(
     'lapr_skip_hostkey_verification' => 'Disable host key verification for this endpoint',
     'lapr_skip_hostkey_warning' => 'DANGER: without host key verification a man-in-the-middle can capture the SSH credential and every rotated password. Only for isolated lab networks.',
     'lapr_endpoint_saved' => 'Endpoint enrolled',
-    'lapr_endpoint_deleted' => 'Endpoint deleted (managed accounts paused)',
     'lapr_endpoint_restored' => 'Endpoint restored',
     'lapr_os_info' => 'System information',
     'lapr_capabilities' => 'Capabilities',

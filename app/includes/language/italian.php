@@ -2634,7 +2634,6 @@ return array(
     'lapr_skip_hostkey_verification' => 'Disabilita la verifica della chiave host per questo endpoint',
     'lapr_skip_hostkey_warning' => 'PERICOLO: senza la verifica della chiave host, un attacco man-in-the-middle può intercettare le credenziali SSH e ogni password ruotata. Solo per reti di laboratorio isolate.',
     'lapr_endpoint_saved' => 'Endpoint registrato',
-    'lapr_endpoint_deleted' => 'Endpoint eliminato (account gestiti sospesi)',
     'lapr_endpoint_restored' => 'Endpoint ripristinato',
     'lapr_os_info' => 'Informazioni sistema',
     'lapr_capabilities' => 'Capacità',

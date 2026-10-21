@@ -1561,12 +1561,26 @@ class BackgroundTasksHandler {
     /**
      * LAPR maintenance (Point 5/7): purge audit-log rows past the retention
      * window (lapr_audit_retention_days; 0 = keep forever) and stale rate-limit
-     * rows (window expired and not currently blocked).
+     * rows (window expired and not currently blocked), and release the managed
+     * accounts that endpoint deletion left paused in earlier releases.
      *
      * @return void
      */
     private function cleanLAPRMaintenance(): void
     {
+        // Those accounts kept their items locked with no way to remove them.
+        // Idempotent: nothing to do once every deleted endpoint is clean.
+        try {
+            $releasedAccounts = laprReleaseAccountsOfDeletedEndpoints(TP_USER_ID);
+            if ($releasedAccounts > 0 && LOG_TASKS === true) {
+                $this->logger->log('LAPR: released ' . $releasedAccounts . ' account(s) of deleted endpoints', 'INFO');
+            }
+        } catch (Throwable $e) {
+            if (LOG_TASKS === true) {
+                $this->logger->log('LAPR account release skipped: ' . $e->getMessage(), 'INFO');
+            }
+        }
+
         $retentionDays = (int) $this->getSettingValue('lapr_audit_retention_days', '365', 'admin');
         if ($retentionDays > 0) {
             $cutoff = date('Y-m-d H:i:s', time() - $retentionDays * 86400);

@@ -2634,7 +2634,6 @@ return array(
     'lapr_skip_hostkey_verification' => '对此端点禁用主机密钥验证',
     'lapr_skip_hostkey_warning' => '危险：不验证主机密钥时，中间人攻击可截获 SSH 凭据及每次轮换的密码。仅限隔离的实验网络使用。',
     'lapr_endpoint_saved' => '端点已注册',
-    'lapr_endpoint_deleted' => '端点已删除（已管理账户已暂停）',
     'lapr_endpoint_restored' => '端点已还原',
     'lapr_os_info' => '系统信息',
     'lapr_capabilities' => '能力',

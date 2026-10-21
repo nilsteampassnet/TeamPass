@@ -35,7 +35,7 @@ background-task pipeline, and phpseclib3. No parallel secret store, no new crypt
 | Session flag | `app/sources/identify.php` → `user-can_manage_lapr` |
 | Item integration | `app/sources/lapr.functions.php` (`laprGetItemRelations()`), `app/sources/items.queries.php`, `app/sources/find.queries.php`, `app/pages/items.{php,js.php}`, `app/api/Model/ItemModel.php` |
 | Language | `app/includes/language/{english,french}.php` (`lapr_*` keys) |
-| Tests | `tests/Unit/LaprFunctionsTest.php` (DB-free helpers + fingerprint) |
+| Tests | `tests/Unit/LaprFunctionsTest.php` (DB-free helpers + fingerprint), `tests/Unit/LaprSafetyWiringTest.php`, `tests/Integration/lapr_endpoint_lifecycle_database.php` (MariaDB), `tests/JavaScript/lapr-endpoints.test.cjs` |
 
 ## Database (no FK constraints — TeamPass convention, correction C6)
 
@@ -99,6 +99,12 @@ Mass paths skip the blocked items and report the count through `lapr_mass_operat
 The item detail panel can enqueue the existing `lapr_rotation` background task through `lapr_accounts.queries.php`; it does not implement a second rotation path. Direct item edits never perform SSH work.
 
 Managed-account deletion remains logical (`status=deleted`) for history retention. Because `lapr_accounts.item_id` is unique across all states, adding the item again reactivates and resets the existing row instead of issuing a duplicate insert.
+
+**Rule: deleting an endpoint releases its accounts — never leave a live account on a deleted endpoint.** `laprDeleteEndpoint()` cancels pending rotations **then** calls `laprReleaseEndpointAccounts()` (accounts → `deleted`, one `account_add`/`deleted` audit row each; the cancel lookup only sees non-deleted accounts, hence the order). It used to pause them: a paused account on a deleted endpoint is hidden from the Accounts page (the list joins accessible endpoints), refused by every account handler (`laprUserCanUseEndpoint()` excludes deleted endpoints), yet `laprGetItemRelations()` still reports it as managed — the item stayed locked and could not be managed again. `cleanLAPRMaintenance()` releases the leftovers of earlier releases through `laprReleaseAccountsOfDeletedEndpoints()` (idempotent). `restore_endpoint` has no UI and is unreachable (`laprUserCanUseEndpoint()` refuses deleted endpoints).
+
+**Rule: an endpoint whose SSH credential is unusable never holds its host:port.** Unusable = item missing, `inactif`, `deleted_at` set, or `perso` (reachable only while `lapr_enabled = 0`, when the item guards are released). Such an endpoint is out of `laprGetUserAccessibleEndpointIds()` (fails closed for every operation) but `laprGetUserEndpointIdsWithUnusableCredential()` keeps it listed, flagged `credential_missing`, for operators who can read the credential's folder; `laprUserCanDeleteEndpoint()` widens **deletion only**. Enrollment classifies the target with `laprFindEndpointTargets()` + `laprResolveEndpointTargetState()` (`free | replaceable | enrolled | enrolled_inaccessible`): `start_test` and `add_endpoint` refuse only a usable holder (`lapr_endpoint_already_enrolled[_inaccessible]`); `add_endpoint` retires replaceable holders inside its transaction, after the credential lock (`laprRetireUnusableEndpointTargets()` → conditional UPDATE re-checking the credential at write time, then cancel + release + `endpoint_delete` audit), and re-runs `laprEndpointTargetExists()` before the insert. `laprEndpointCredentialConflict()` ignores replaced endpoints and their accounts, so the managed SSH login's item can become the new credential. `laprEndpointTargetExists()` itself stays strict (rotation and restore use it).
+
+**Rule: a rotation stores the strength of the new password.** `laprUpdateItemPassword()` writes `complexity_level` (`evaluatePasswordStrengthSafely()` + `convertPasswordStrength()`, `TP_PW_COMPLEXITY_UNASSESSABLE` on failure) with `pw_len`. The item card only re-assesses when `pw_len` changes, and the Security Posture computes `weak` live from `complexity_level`, so without it a rotated item kept the previous password's rating.
 
 ## Background flow
 
