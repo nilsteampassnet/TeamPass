@@ -159,14 +159,6 @@ class AuthModel
         $configManager = new ConfigManager();
         $SETTINGS = $configManager->getAllSettings();
 
-        // Feature must be explicitly enabled by the administrator: either OAuth2-for-API
-        // (OAuth2 settings page) or extension tokens for all auth types (API settings page).
-        $oauth2ApiEnabled = (int) ($SETTINGS['oauth2_api_enabled'] ?? 0) === 1;
-        $tokenAllAuthTypes = (int) ($SETTINGS['extension_token_all_auth_types'] ?? 0) === 1;
-        if ($oauth2ApiEnabled === false && $tokenAllAuthTypes === false) {
-            return ["error" => "Login failed.", "info" => "OAuth2 API access is disabled"];
-        }
-
         if (empty($inputData['login']) === true || empty($inputData['token']) === true) {
             return ["error" => "Login failed.", "info" => "Missing credentials"];
         }
@@ -187,14 +179,6 @@ class AuthModel
 
         $userInfo = getUserCompleteData($inputData['login']);
 
-        // User must exist, be active and have API access enabled. The user must be OAuth2,
-        // unless the administrator allows extension tokens for all auth types.
-        // Uniform message — prevents user enumeration and auth_type probing.
-        $refusalReason = apiAuthAccountRefusalReason($userInfo, true, $tokenAllAuthTypes);
-        if ($refusalReason !== '') {
-            return $this->refuseApiAuth($refusalReason, $inputData['login'], $clientIp, $SETTINGS);
-        }
-
         loadClasses('DB');
         require_once __DIR__ . '/../../sources/api_device_credentials.php';
         $SETTINGS = apiDeviceCurrentSettings($SETTINGS);
@@ -204,6 +188,21 @@ class AuthModel
              FROM ' . prefixTable('api_tokens') . ' WHERE token_hash = %s',
             hash('sha256', $inputData['token'])
         );
+
+        // Classify only from server-owned credential metadata. External devices use their
+        // own opt-in; legacy extension PATs retain their existing authentication policy.
+        $deviceToken = ($row['purpose'] ?? '') === 'external_device';
+        $oauth2ApiEnabled = (int) ($SETTINGS['oauth2_api_enabled'] ?? 0) === 1;
+        $tokenAllAuthTypes = (int) ($SETTINGS['extension_token_all_auth_types'] ?? 0) === 1;
+        if (!$deviceToken && !$oauth2ApiEnabled && !$tokenAllAuthTypes) {
+            return ["error" => "Login failed.", "info" => "OAuth2 API access is disabled"];
+        }
+        $refusalReason = $deviceToken
+            ? apiAuthAccountRefusalReason($userInfo, false, false)
+            : apiAuthAccountRefusalReason($userInfo, true, $tokenAllAuthTypes);
+        if ($refusalReason !== '') {
+            return $this->refuseApiAuth($refusalReason, $inputData['login'], $clientIp, $SETTINGS);
+        }
 
         $tokenValid = (
             $row !== null

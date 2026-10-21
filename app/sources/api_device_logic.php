@@ -56,17 +56,15 @@ function apiDeviceIsHttps(array $server, array $settings): bool
         );
 }
 
-/** Evaluate the existing PAT policy as well as the explicit external-device opt-in. */
+/** Evaluate the dedicated device policy without enabling or depending on extension credentials. */
 function apiDeviceAccountAllowed(array $settings, ?array $user): bool
 {
     return apiDeviceSchemaReady($settings)
         && (int) ($settings['api'] ?? 0) === 1
         && (int) ($settings['device_pairing_enabled'] ?? 0) === 1
-        && ((int) ($settings['oauth2_api_enabled'] ?? 0) === 1
-            || (int) ($settings['extension_token_all_auth_types'] ?? 0) === 1)
         && $user !== null
         && ($user['deleted_at'] ?? null) === null
-        && apiAuthAccountRefusalReason($user, true, (int) ($settings['extension_token_all_auth_types'] ?? 0) === 1) === '';
+        && apiAuthAccountRefusalReason($user, false, false) === '';
 }
 
 /** Validate that the session's cleartext private key belongs to the current account key pair. */

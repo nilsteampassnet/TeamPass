@@ -36,19 +36,19 @@ require_once __DIR__ . '/../../app/sources/api_device_logic.php';
 
 class ApiDeviceLogicTest extends TestCase
 {
-    /** The new opt-in never relaxes the existing API/PAT gates. */
+    /** Device pairing has its own opt-in; API/account rights remain mandatory for every auth type. */
     public function testAccountPolicy(): void
     {
-        $settings = ['device_pairing_schema' => 1, 'api' => 1, 'device_pairing_enabled' => 1, 'oauth2_api_enabled' => 1];
+        $settings = ['device_pairing_schema' => 1, 'api' => 1, 'device_pairing_enabled' => 1,
+            'oauth2_api_enabled' => 0, 'extension_token_all_auth_types' => 0];
         $user = ['id' => 42, 'api_enabled' => 1, 'disabled' => 0, 'auth_type' => 'oauth2'];
         self::assertTrue(apiDeviceAccountAllowed($settings, $user));
-        foreach (['device_pairing_schema', 'api', 'device_pairing_enabled', 'oauth2_api_enabled'] as $gate) {
+        foreach (['device_pairing_schema', 'api', 'device_pairing_enabled'] as $gate) {
             self::assertFalse(apiDeviceAccountAllowed(array_replace($settings, [$gate => 0]), $user));
         }
         foreach (['local', 'ldap'] as $type) {
             $account = array_replace($user, ['auth_type' => $type]);
-            self::assertFalse(apiDeviceAccountAllowed($settings, $account));
-            self::assertTrue(apiDeviceAccountAllowed($settings + ['extension_token_all_auth_types' => 1], $account));
+            self::assertTrue(apiDeviceAccountAllowed($settings, $account));
         }
         self::assertFalse(apiDeviceAccountAllowed($settings, null));
         foreach (['disabled' => 1, 'api_enabled' => 0, 'deleted_at' => 123] as $field => $value) {

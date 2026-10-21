@@ -20,9 +20,11 @@ rate-limit, settings and audit tables before publishing readiness. It refuses
 nontransactional storage without silently converting existing tables.
 
 Enable external device pairing in Settings > API. API access must be enabled
-both globally and for the account. Existing PAT policy still applies:
-`oauth2_api_enabled` for OAuth2 accounts, or the administrator's explicit
-`extension_token_all_auth_types` permission. No setting is enabled automatically.
+both globally and for the account. The pairing opt-in is its own policy for
+locally authenticated, directory and SSO accounts with a usable web-session key.
+It does not require or enable `oauth2_api_enabled` or
+`extension_token_all_auth_types`; those retain their existing meaning for legacy
+credentials. No setting is enabled automatically.
 Disabling pairing blocks new claims, handoffs, device PAT authentication and the
 JWTs issued from those credentials. The profile keeps device revocation available.
 

@@ -129,6 +129,9 @@ try {
     DB::insert(prefixTable('api_tokens'), ['user_id' => 42, 'purpose' => 'external_device']);
     $id = (int) DB::insertId();
     deviceCheck(apiDeviceAuthenticate(42, $id, $settings, 'deviceFixtureIssue') !== null, 'Allowed credential refused');
+    DB::update(prefixTable('misc'), ['valeur' => '0'], 'intitule = %s', 'extension_token_all_auth_types');
+    deviceCheck(apiDeviceAuthenticate(42, $id, $settings, 'deviceFixtureIssue') !== null, 'Local device depended on the extension policy');
+    DB::update(prefixTable('misc'), ['valeur' => '1'], 'intitule = %s', 'extension_token_all_auth_types');
     deviceCheck(apiDeviceSessionSourceAllowed(42, $id, $settings), 'Live source refused');
     DB::update(prefixTable('misc'), ['valeur' => '0'], 'intitule = %s', 'device_pairing_enabled');
     deviceCheck(apiDeviceAuthenticate(42, $id, $settings, 'deviceFixtureIssue') === null, 'Cached opt-in survived its revocation');

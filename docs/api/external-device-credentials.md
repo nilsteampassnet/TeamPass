@@ -4,9 +4,10 @@ External device pairing uses a dedicated Personal Access Token (PAT), with the s
 HKDF-SHA256 and AES-256-GCM private-key wrapping format as existing tokens. The
 user's private key remains on the server. Account and API permissions remain authoritative.
 
-The feature is experimental and disabled by default. The existing API and PAT
-authentication policies must also allow the account. Enabling pairing does not
-enable token authentication for additional account types.
+The feature is experimental and disabled by default. The dedicated pairing
+policy requires global and per-account API access, independently of the
+extension/OAuth2 PAT toggles. Enabling pairing does not enable legacy token
+authentication for additional account types.
 
 PATs issued by device pairing have `purpose = external_device`. Their JWTs carry `source_token_id`, and
 their API session records carry the same indexed identifier. Each request checks

@@ -4012,7 +4012,7 @@ return array(
     'device_pairing_state_cancelled' => 'Association annulée. Générez un nouveau QR code pour recommencer.',
     'device_pairing_state_expired' => 'L’invitation a expiré. Générez un nouveau QR code pour recommencer.',
     'device_pairing_admin_title' => 'Association d’appareils externes',
-    'device_pairing_admin_tip' => 'Autoriser les utilisateurs disposant d’un accès API et par jeton à associer un appareil externe compatible. HTTPS requis ; configurez le mode réseau reverse proxy et les adresses des proxies de confiance si le proxy termine TLS. Désactivé par défaut.',
+    'device_pairing_admin_tip' => 'Autoriser les comptes locaux, annuaire et SSO disposant d’un accès API à associer un appareil externe compatible, indépendamment des paramètres de jeton de l’extension navigateur. HTTPS requis ; configurez le mode réseau reverse proxy et les proxies de confiance si le proxy termine TLS. Désactivé par défaut.',
     'device_pairing_stepup_failed' => 'Échec de confirmation du mot de passe pour l’association d’un appareil externe',
     'device_pairing_upgrade_needed' => 'Exécutez l’assistant de mise à niveau avant d’activer cette fonction.',
 

@@ -4028,7 +4028,7 @@ return array(
     'device_pairing_state_cancelled' => 'Pairing cancelled. Generate a new QR code to restart.',
     'device_pairing_state_expired' => 'The invitation expired. Generate a new QR code to restart.',
     'device_pairing_admin_title' => 'External device pairing',
-    'device_pairing_admin_tip' => 'Allow users with API and token access to pair a compatible external device. Requires HTTPS; TLS reverse proxies must be configured in reverse proxy network mode with trusted proxy addresses. Disabled by default.',
+    'device_pairing_admin_tip' => 'Allow API-enabled local, directory and SSO accounts to pair a compatible external device, independently of browser-extension token settings. Requires HTTPS; TLS reverse proxies must use reverse proxy network mode and trusted proxy addresses. Disabled by default.',
     'device_pairing_stepup_failed' => 'External device pairing password confirmation failed',
     'device_pairing_upgrade_needed' => 'Run the upgrade wizard before enabling this feature.',
 
