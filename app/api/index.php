@@ -151,8 +151,22 @@ if (isset($uri[0]) && $uri[0] === 'openapi.json') {
     exit;
 }
 
-// Authorization handler
-if (isset($uri[0]) && ($uri[0] === 'authorize' || $uri[0] === 'authorizeToken')) {
+// Device pairing has its own short-lived proofs and never accepts a web cookie as authorization.
+if (($uri[0] ?? '') === 'devicePairing') {
+    header('Cache-Control: no-store');
+    header_remove('Access-Control-Allow-Origin');
+    // A proven invalidation check must still work when the administrator disables API access.
+    if ($apiStatus['error'] !== false && ($uri[1] ?? '') !== 'credentialStatus') {
+        errorHdl($apiStatus['error_header'], json_encode(['error' => $apiStatus['error_message']]));
+    } elseif (count($uri) !== 2 || !in_array($uri[1], ['capabilities', 'claim', 'status', 'consume', 'credentialStatus'], true)) {
+        errorHdl('HTTP/1.1 404 Not Found', json_encode(['error' => 'Unknown route']));
+    } else {
+        require_once API_ROOT_PATH . '/Controller/Api/DevicePairingController.php';
+        $controller = new DevicePairingController();
+        $method = $uri[1] . 'Action';
+        $controller->{$method}();
+    }
+} elseif (isset($uri[0]) && ($uri[0] === 'authorize' || $uri[0] === 'authorizeToken')) {
     // Is API enabled in Teampass settings
     if ($apiStatus['error'] === false) {
         require API_ROOT_PATH . "/Controller/Api/AuthController.php";
@@ -240,6 +254,23 @@ if (isset($uri[0]) && ($uri[0] === 'authorize' || $uri[0] === 'authorizeToken'))
                 'HTTP/1.1 401 Unauthorized',
                 json_encode(['error' => 'Invalid or expired token'])
             );
+            exit;
+        }
+    }
+
+    if (isset($userData['data']['source_token_id'])) {
+        require_once __DIR__ . '/../sources/api_device_credentials.php';
+        $SETTINGS = apiDeviceCurrentSettings($SETTINGS);
+        $sourceTokenId = (int) $userData['data']['source_token_id'];
+        $linkedSession = apiDeviceSchemaReady($SETTINGS) ? DB::queryFirstRow(
+            'SELECT source_token_id FROM ' . prefixTable('api_sessions') . ' WHERE jti = %s AND user_id = %i',
+            $jwtJti, $jwtUserId
+        ) : null;
+        if (!apiDeviceIsHttps($_SERVER, $SETTINGS)
+            || $linkedSession === null || (int) $linkedSession['source_token_id'] !== $sourceTokenId
+            || apiDeviceSessionSourceAllowed($jwtUserId, $sourceTokenId, $SETTINGS) === false
+        ) {
+            errorHdl('HTTP/1.1 401 Unauthorized', json_encode(['error' => 'Invalid or expired token']));
             exit;
         }
     }

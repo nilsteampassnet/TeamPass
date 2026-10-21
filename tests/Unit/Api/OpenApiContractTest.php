@@ -33,6 +33,7 @@ class OpenApiContractTest extends TestCase
         'user' => 'UserController.php',
         'misc' => 'MiscController.php',
         'webauthn' => 'WebauthnController.php',
+        'devicePairing' => 'DevicePairingController.php',
     ];
 
     private static ?array $spec = null;

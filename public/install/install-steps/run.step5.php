@@ -749,6 +749,9 @@ class DatabaseInstaller
             array('admin', 'oauth2_client_appname', 'Login with Azure'),
             array('admin', 'oauth2_api_enabled', '0'),
             array('admin', 'extension_token_all_auth_types', '0'),
+            array('admin', 'device_pairing_schema', '3'),
+            array('admin', 'device_pairing_enabled', '0'),
+            array('admin', 'device_pairing_token_lifetime_days', '90'),
             array('admin', 'api_require_https', '1'),
             array('admin', 'api_rate_limit_per_minute', '120'),
             array('admin', 'show_item_data', '0'),
@@ -1465,6 +1468,9 @@ class DatabaseInstaller
             `id` int(12) NOT NULL AUTO_INCREMENT,
             `user_id` int(12) NOT NULL,
             `token_hash` varchar(64) NOT NULL,
+            `purpose` varchar(32) NOT NULL DEFAULT 'legacy',
+            `pairing_id` char(32) NULL DEFAULT NULL,
+            `revoked_at` int(12) NULL DEFAULT NULL,
             `wrapped_private_key` text NOT NULL,
             `salt` varchar(64) NOT NULL,
             `label` varchar(255) NULL DEFAULT NULL,
@@ -1494,12 +1500,21 @@ class DatabaseInstaller
             `expires_at` int(12) NOT NULL,
             `last_used_at` int(12) NULL DEFAULT NULL,
             `revoked_at` int(12) NULL DEFAULT NULL,
+            `source_token_id` int(12) NULL DEFAULT NULL,
             PRIMARY KEY (`id`),
             UNIQUE KEY `jti` (`jti`),
             KEY `user_id` (`user_id`),
-            KEY `expires_at` (`expires_at`)
+            KEY `expires_at` (`expires_at`),
+            KEY `source_token_id` (`source_token_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;"
         );
+    }
+
+    /** Create pairing transactions independently from the API session table. */
+    private function device_pairings(): void
+    {
+        require_once TEAMPASS_ROOT . '/app/sources/device_pairing_logic.php';
+        DB::query(devicePairingSchemaSql($this->inputData['tablePrefix'] . 'device_pairings'));
     }
 
     // Create table api_rate_limit (sliding-window counters per user and per IP)

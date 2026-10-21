@@ -77,6 +77,21 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 }
 ?>
 
+<script src="./assets/js/device-pairing.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+<script>
+<?php
+$deviceAdminMessages = [];
+foreach (['network', 'unnamed', 'no_devices', 'no_results', 'revoke', 'revoke_title', 'revoke_confirm', 'cancel'] as $deviceMessage) {
+    $deviceAdminMessages[$deviceMessage] = $lang->get('device_pairing_' . $deviceMessage);
+}
+$deviceAdminMessages['never'] = $lang->get('extension_token_never_used');
+$deviceAdminMessages['loading'] = $lang->get('device_pairing_inventory_loading');
+?>
+if (window.tpDevicePairing) window.tpDevicePairing.mountAdmin({
+    key: <?php echo json_encode((string) $session->get('key'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+    messages: <?php echo json_encode($deviceAdminMessages, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>
+});
+</script>
 
 <script type='text/javascript'>
     //<![CDATA[
