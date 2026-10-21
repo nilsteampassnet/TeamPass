@@ -33,6 +33,25 @@ use PHPUnit\Framework\TestCase;
 
 class DevicePairingProfileTest extends TestCase
 {
+    /** The actual AJAX handler constructor must not emit text ahead of its JSON response. */
+    public function testQueryChecksConstructorDoesNotEmitWarnings(): void
+    {
+        $source = (string) file_get_contents(__DIR__ . '/../../app/sources/device_pairing.queries.php');
+        self::assertSame(1, preg_match('/\$check = new PerformChecks\(([^;]+)\);/', $source, $matches));
+        $session = new class {
+            public function get(string $key): mixed { return $key === 'user-id' ? 42 : 'synthetic-key'; }
+        };
+        set_error_handler(static function (int $severity, string $message): never {
+            throw new ErrorException($message, 0, $severity);
+        });
+        try {
+            $check = eval('return new \\TeampassClasses\\PerformChecks\\PerformChecks(' . $matches[1] . ');');
+            self::assertInstanceOf(\TeampassClasses\PerformChecks\PerformChecks::class, $check);
+        } finally {
+            restore_error_handler();
+        }
+    }
+
     /** Actual view output must escape its server URL, messages and translated attributes. */
     public function testViewEscapesDynamicContentInBothAvailabilityModes(): void
     {

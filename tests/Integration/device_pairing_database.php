@@ -151,10 +151,9 @@ try {
     preg_match('/class DatabaseInstaller\s*\{[\s\S]*\z/', $installerSource, $class);
     eval($class[0]);
     $installer = new DatabaseInstaller(['tablePrefix' => $GLOBALS['pairing_test_prefix']], []);
-    foreach (['api', 'api_tokens', 'api_sessions', 'api_rate_limit'] as $method) {
+    foreach (['api', 'api_tokens', 'api_sessions', 'api_rate_limit', 'device_pairings'] as $method) {
         (new ReflectionMethod($installer, $method))->invoke($installer);
     }
-    DB::query(devicePairingSchemaSql(prefixTable('device_pairings')));
     DB::query('CREATE TABLE ' . prefixTable('users') . ' (id INT PRIMARY KEY, login VARCHAR(255), auth_type VARCHAR(32),
         disabled INT DEFAULT 0, deleted_at INT NULL, is_ready_for_usage INT DEFAULT 1, public_key TEXT,
         key_tempo VARCHAR(64), session_end BIGINT) ENGINE=InnoDB');

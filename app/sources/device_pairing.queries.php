@@ -45,7 +45,7 @@ header('Cache-Control: no-store');
 header('Referrer-Policy: no-referrer');
 
 try {
-    $check = new PerformChecks([], ['user_id' => $session->get('user-id'), 'user_key' => $session->get('key')]);
+    $check = new PerformChecks(['type' => ''], ['user_id' => $session->get('user-id'), 'user_key' => $session->get('key')]);
     $key = $_POST['key'] ?? null;
     // The unpredictable session key is the established synchronizer CSRF token for AJAX.
     if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST' || !$check->checkSession() || !$check->userAccessPage('profile')
@@ -87,7 +87,7 @@ try {
         $binding = hash('sha256', $session->getId() . ':' . $session->get('device-pairing-nonce'));
         if ($action === 'approve') {
             require_once __DIR__ . '/webauthn_login.functions.php';
-            $stepUp = webauthnLoginCheckStepUp($userId, $input, $settings, $lang);
+            $stepUp = webauthnLoginCheckStepUp($userId, $input, $settings, $lang, 'device_pairing');
             if ($stepUp !== null) {
                 echo json_encode($stepUp, JSON_THROW_ON_ERROR);
                 exit;

@@ -602,7 +602,7 @@ function webauthnLoginSessionCanWrap(array $SETTINGS): bool
  * @return array<string, mixed>|null Error response, with stepup = password|signin when the
  *                                   caller has to act; null when the caller may go on
  */
-function webauthnLoginCheckStepUp(int $userId, array $data, array $SETTINGS, Language $lang): ?array
+function webauthnLoginCheckStepUp(int $userId, array $data, array $SETTINGS, Language $lang, string $context = 'webauthn_login'): ?array
 {
     $session = SessionManager::getSession();
     $now = time();
@@ -629,7 +629,8 @@ function webauthnLoginCheckStepUp(int $userId, array $data, array $SETTINGS, Lan
     }
     $hash = (string) DB::queryFirstField('SELECT pw FROM ' . prefixTable('users') . ' WHERE id = %i', $userId);
     if (webauthnLoginPasswordMatches($hash, $password) === false) {
-        logEvents($SETTINGS, 'failed_auth', 'webauthn_login_stepup_failed', '', $login, $login);
+        $failureLabel = $context === 'device_pairing' ? 'device_pairing_stepup_failed' : 'webauthn_login_stepup_failed';
+        logEvents($SETTINGS, 'failed_auth', $failureLabel, '', $login, $login);
         addFailedAuthentication($login, getClientIpServer(), $SETTINGS);
         return webauthnLoginError($lang->get('password_is_not_correct')) + ['stepup' => 'password'];
     }

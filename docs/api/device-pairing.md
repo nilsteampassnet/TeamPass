@@ -31,6 +31,9 @@ TLS must be trusted by the client; private networks and private CAs are supporte
 when trust is installed correctly. Scheme headers count only from configured
 trusted proxies. Never disable certificate validation or follow an inter-origin
 redirect to complete pairing.
+When TLS terminates at a reverse proxy (including Docker), select the reverse
+proxy network security mode and configure the trusted proxy addresses. An
+untrusted `X-Forwarded-Proto` header does not satisfy this requirement.
 
 ## Actors and routes
 
@@ -126,6 +129,9 @@ PAT is generated. First successful `/authorizeToken` use confirms delivery in th
 authentication transaction, clears the provisional envelope and disconnects the
 durable credential from the initiating web session. JWT creation and revocation
 serialize on the account/credential locks.
+Device JWTs use independent API-session markers, so their issuance does not
+rotate the initiating browser's `key_tempo`, even when its sign-in is older than
+one hour. Existing browser session expiry and administrator kicks still apply.
 
 An unconfirmed published credential is unusable after its delivery window or
 initiating session ends. Maintenance and request-time expiry revoke it and wipe

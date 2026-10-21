@@ -3977,7 +3977,7 @@ return array(
     'device_pairing_error_invalid_proof' => 'This pairing request is no longer available. Generate a new QR code.',
     'device_pairing_error_unavailable' => 'Device pairing or API token access is not enabled for this account.',
     'device_pairing_error_keys_unavailable' => 'Your current encryption keys are unavailable. Sign in again before pairing a device.',
-    'device_pairing_error_https_required' => 'Pairing requires HTTPS and a valid HTTPS address in the instance settings.',
+    'device_pairing_error_https_required' => 'Pairing requires HTTPS and a valid HTTPS instance address. Behind a TLS reverse proxy, select reverse proxy network mode and configure the trusted proxy addresses.',
     'device_pairing_error_rate_limited' => 'Too many pairing requests. Wait a moment before trying again.',
     'device_pairing_error_claim_conflict' => 'The request has changed or was already processed. Check its current state or generate a new QR code.',
     'device_pairing_error_server' => 'The pairing request could not be completed. Please try again.',
@@ -4028,7 +4028,8 @@ return array(
     'device_pairing_state_cancelled' => 'Pairing cancelled. Generate a new QR code to restart.',
     'device_pairing_state_expired' => 'The invitation expired. Generate a new QR code to restart.',
     'device_pairing_admin_title' => 'External device pairing',
-    'device_pairing_admin_tip' => 'Allow users with API and token access to pair a compatible external device. Requires HTTPS. Disabled by default.',
+    'device_pairing_admin_tip' => 'Allow users with API and token access to pair a compatible external device. Requires HTTPS; TLS reverse proxies must be configured in reverse proxy network mode with trusted proxy addresses. Disabled by default.',
+    'device_pairing_stepup_failed' => 'External device pairing password confirmation failed',
     'device_pairing_upgrade_needed' => 'Run the upgrade wizard before enabling this feature.',
 
 );

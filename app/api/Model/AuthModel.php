@@ -279,8 +279,11 @@ class AuthModel
      */
     private function issueJwtForUser(array $userInfo, string $privateKeyClear, string $loginForJwt, array $SETTINGS, ?int $sourceTokenId = null): array
     {
-        // Update user's key_tempo
-        $keyTempo = getOrRotateKeyTempo($userInfo['id'], 3600);
+        // Device JWTs own their API session key. Rotating the user's web key here would
+        // disconnect the browser that is waiting for pairing completion after an hour.
+        $keyTempo = $sourceTokenId === null
+            ? getOrRotateKeyTempo($userInfo['id'], 3600)
+            : bin2hex(random_bytes(16));
 
         // Generate a unique session key for this API session (256 bits / 32 bytes).
         $sessionKey = random_bytes(32);

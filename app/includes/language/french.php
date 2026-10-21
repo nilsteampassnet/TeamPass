@@ -3961,7 +3961,7 @@ return array(
     'device_pairing_error_invalid_proof' => 'Cette demande d’association n’est plus disponible. Générez un nouveau QR code.',
     'device_pairing_error_unavailable' => 'L’association d’appareils ou l’accès API par jeton n’est pas autorisé pour ce compte.',
     'device_pairing_error_keys_unavailable' => 'Vos clés de chiffrement actuelles ne sont pas disponibles. Reconnectez-vous avant d’associer un appareil.',
-    'device_pairing_error_https_required' => 'L’association nécessite HTTPS et une adresse HTTPS valide dans les paramètres de l’instance.',
+    'device_pairing_error_https_required' => 'L’association nécessite HTTPS et une adresse HTTPS valide pour l’instance. Derrière un reverse proxy TLS, sélectionnez le mode réseau reverse proxy et configurez les adresses des proxies de confiance.',
     'device_pairing_error_rate_limited' => 'Trop de demandes d’association. Patientez un instant avant de réessayer.',
     'device_pairing_error_claim_conflict' => 'La demande a changé ou a déjà été traitée. Vérifiez son état ou générez un nouveau QR code.',
     'device_pairing_error_server' => 'La demande d’association n’a pas pu aboutir. Veuillez réessayer.',
@@ -4012,7 +4012,8 @@ return array(
     'device_pairing_state_cancelled' => 'Association annulée. Générez un nouveau QR code pour recommencer.',
     'device_pairing_state_expired' => 'L’invitation a expiré. Générez un nouveau QR code pour recommencer.',
     'device_pairing_admin_title' => 'Association d’appareils externes',
-    'device_pairing_admin_tip' => 'Autoriser les utilisateurs disposant d’un accès API et par jeton à associer un appareil externe compatible. HTTPS requis. Désactivé par défaut.',
+    'device_pairing_admin_tip' => 'Autoriser les utilisateurs disposant d’un accès API et par jeton à associer un appareil externe compatible. HTTPS requis ; configurez le mode réseau reverse proxy et les adresses des proxies de confiance si le proxy termine TLS. Désactivé par défaut.',
+    'device_pairing_stepup_failed' => 'Échec de confirmation du mot de passe pour l’association d’un appareil externe',
     'device_pairing_upgrade_needed' => 'Exécutez l’assistant de mise à niveau avant d’activer cette fonction.',
 
 );

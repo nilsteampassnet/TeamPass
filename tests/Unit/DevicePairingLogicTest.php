@@ -36,6 +36,21 @@ require_once __DIR__ . '/../../app/sources/device_pairing.functions.php';
 
 class DevicePairingLogicTest extends TestCase
 {
+    /** Execute the real issuer's allocation: a device must never call the web-key rotation path. */
+    public function testDeviceJwtAllocatesItsOwnSessionKey(): void
+    {
+        $source = (string) file_get_contents(__DIR__ . '/../../app/api/Model/AuthModel.php');
+        $start = strpos($source, 'private function issueJwtForUser(');
+        self::assertNotFalse($start);
+        self::assertSame(1, preg_match('/\$keyTempo = ([\s\S]*?);/', substr($source, $start), $match));
+        $sourceTokenId = 42;
+        $userInfo = ['id' => 42];
+        $first = eval('return ' . $match[1] . ';');
+        $second = eval('return ' . $match[1] . ';');
+        self::assertMatchesRegularExpression('/^[a-f0-9]{32}$/', $first);
+        self::assertNotSame($first, $second);
+    }
+
     /** Server deadlines, session invalidation and policy changes always win over client polling. */
     public function testExpiryDoesNotDependOnMaintenance(): void
     {

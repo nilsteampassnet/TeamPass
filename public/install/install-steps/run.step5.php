@@ -1506,6 +1506,11 @@ class DatabaseInstaller
             KEY `source_token_id` (`source_token_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;"
         );
+    }
+
+    /** Create pairing transactions independently from the API session table. */
+    private function device_pairings(): void
+    {
         require_once TEAMPASS_ROOT . '/app/sources/device_pairing_logic.php';
         DB::query(devicePairingSchemaSql($this->inputData['tablePrefix'] . 'device_pairings'));
     }

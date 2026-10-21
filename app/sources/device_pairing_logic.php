@@ -84,7 +84,7 @@ function devicePairingServerUrl(array $settings): string
     }
     if (strlen($url) > 2048 || preg_match('/[\x00-\x20\x7f\\\\]/', $url)
         || $parts === false || ($parts['scheme'] ?? '') !== 'https'
-        || empty($parts['host']) || isset($parts['user'], $parts['pass']) || isset($parts['user'])
+        || empty($parts['host']) || isset($parts['user'])
         || isset($parts['query']) || isset($parts['fragment']) || filter_var($url, FILTER_VALIDATE_URL) === false
         || preg_match('#(?:^|/)\.{1,2}(?:/|$)#', rawurldecode($parts['path'] ?? ''))
     ) {

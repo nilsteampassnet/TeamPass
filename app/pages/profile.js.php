@@ -79,7 +79,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 ?>
 
 
-<script src="./js/device-pairing.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+<script src="./assets/js/device-pairing.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
 <script type='text/javascript'>
     <?php
     $devicePairingMessages = [];

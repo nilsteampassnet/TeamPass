@@ -28,7 +28,7 @@
 
 const test = require('node:test')
 const assert = require('node:assert/strict')
-const pairing = require('../../public/js/device-pairing.js')
+const pairing = require('../../public/assets/js/device-pairing.js')
 
 test('a response from a replaced or closed invitation cannot update the current device controls', () => {
   const guard = pairing.createAttemptGuard()
