@@ -216,16 +216,17 @@
         $('<div>').addClass('text-muted small').text(m.valid_until + ': ' + date(device.expires_at)).appendTo(text)
         $('<button>').attr('type', 'button').addClass('btn btn-sm btn-outline-danger').text(m.revoke).on('click', function () {
           const button = $(this)
-          button.prop('disabled', true)
           const confirmation = $('<div>').append(
             $('<p>').addClass('font-weight-bold text-break').text(device.label || m.unnamed),
             $('<p>').text(m.revoke_confirm)
           ).prop('outerHTML')
-          root.alertify.confirm(m.revoke_title, confirmation, function () {
+          root.launchConfirmDialog(m.revoke_title, confirmation, function () {
+            if (button.prop('disabled')) return
+            button.prop('disabled', true)
             request('revoke', { id: Number(device.id) }).done(result => {
               if (!result.error) loadDevices()
             }).fail(() => root.toastr.error(m.network)).always(() => button.prop('disabled', false))
-          }, function () { button.prop('disabled', false) }).set('labels', { ok: m.revoke, cancel: m.cancel })
+          }, m.revoke, m.cancel)
         }).appendTo(row)
         list.append(row)
       })
@@ -304,16 +305,18 @@
           }
           const action = $('<td>').addClass('text-nowrap').appendTo(row)
           $('<button>').attr('type', 'button').addClass('btn btn-sm btn-outline-danger').text(m.revoke).on('click', function () {
-            const button = $(this).prop('disabled', true)
+            const button = $(this)
             const confirmation = $('<div>').append(
               $('<p>').addClass('font-weight-bold text-break').text(device.login + ' · ' + (device.label || m.unnamed)),
               $('<p>').text(m.revoke_confirm)
             ).prop('outerHTML')
-            root.alertify.confirm(m.revoke_title, confirmation, function () {
+            root.launchConfirmDialog(m.revoke_title, confirmation, function () {
+              if (button.prop('disabled')) return
+              button.prop('disabled', true)
               request('admin_revoke', { user_id: Number(device.user_id), id: Number(device.id) }).done(result => {
                 if (!result.error) load()
               }).fail(xhr => root.toastr.error((xhr.responseJSON && xhr.responseJSON.message) || m.network)).always(() => button.prop('disabled', false))
-            }, function () { button.prop('disabled', false) }).set('labels', { ok: m.revoke, cancel: m.cancel })
+            }, m.revoke, m.cancel)
           }).appendTo(action)
           rows.append(row)
         })
