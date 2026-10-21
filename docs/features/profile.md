@@ -27,7 +27,8 @@ confirms completion after the device's first successful authentication.
 The device list shows each credential's expiry and remains available for
 revocation if pairing or API access is later disabled. New credentials expire
 after the administrator's configured duration (90 days by default).
-Administrators can also inspect and revoke device credentials in Settings > API.
+Administrators can also inspect and revoke device credentials in Settings > API >
+Mobile application.
 Revocation stops the device's API sessions; it does not erase offline data.
 See [the pairing protocol and test recipe](../api/device-pairing.md).
 

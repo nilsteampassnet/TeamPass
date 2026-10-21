@@ -23,7 +23,7 @@ The upgrade verifies InnoDB on the account, credential, session, pairing,
 rate-limit, settings and audit tables before publishing readiness. It refuses
 nontransactional storage without silently converting existing tables.
 
-Enable external device pairing in Settings > API. API access must be enabled
+Enable mobile app pairing in Settings > API > Mobile application. API access must be enabled
 both globally and for the account. The pairing opt-in is its own policy for
 locally authenticated, directory and SSO accounts with a usable web-session key.
 It does not require or enable `oauth2_api_enabled` or
@@ -53,7 +53,7 @@ initiating user's valid session and synchronizer CSRF key. Approval also uses
 the existing sign-in passkey step-up policy: password confirmation where
 applicable or a recent sign-in for accounts whose password TeamPass cannot check.
 There is no local password requirement invented for an SSO account.
-Settings > API also provides an administrator-only, paginated device inventory
+Settings > API > Mobile application also provides an administrator-only, paginated device inventory
 filtered by account. Its POST actions `admin_list` and `admin_revoke` use the
 same session/CSRF protections and fresh server-side administrator checks;
 managers cannot manage another account's devices. Only labels, account names,
