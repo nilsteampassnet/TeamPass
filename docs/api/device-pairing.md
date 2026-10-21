@@ -13,7 +13,7 @@ It does not configure offline access or change the account's API or vault rights
 Run the normal upgrade wizard, including when upgrading an existing 3.2.3.x
 installation. The script manager replays `upgrade_run_3.2.3.php`, which installs
 the additive columns and shared `device_pairings` DDL and publishes schema
-version 2 only after success. Fresh installs create the same tables. The feature
+version 3 only after success. Fresh installs create the same tables. The feature
 uses InnoDB transactions and row locks, as do its integration tests.
 The upgrade verifies InnoDB on the account, credential, session, pairing,
 rate-limit, settings and audit tables before publishing readiness. It refuses
@@ -27,6 +27,10 @@ It does not require or enable `oauth2_api_enabled` or
 credentials. No setting is enabled automatically.
 Disabling pairing blocks new claims, handoffs, device PAT authentication and the
 JWTs issued from those credentials. The profile keeps device revocation available.
+New credentials expire after the configured `device_pairing_token_lifetime_days`
+(90 days by default, 1–3650 days). Changing this value affects new pairings only.
+Existing experimental credentials without an expiry receive one migration grace
+period of the configured duration; replaying the upgrade never extends it.
 
 The canonical `cpassman_url` must use HTTPS, retaining its port and subdirectory.
 TLS must be trusted by the client; private networks and private CAs are supported
@@ -55,11 +59,15 @@ They remain behind API enablement, network ACLs and mandatory HTTPS.
 | `/devicePairing/claim` | POST | Invitation ID and scanned secret |
 | `/devicePairing/status` | POST | Claim ID and its verifier |
 | `/devicePairing/consume` | POST | Same verifier and precisely approved claim |
+| `/devicePairing/credentialStatus` | POST | Exact device PAT; no JWT required |
 | `/authorizeToken` | POST | Existing login/PAT authentication after delivery |
 
 Device requests are JSON objects, at most 8 KiB. No query string is accepted.
 Sensitive responses use `Cache-Control: no-store`. These routes do not advertise
 open CORS access and do not rely on a web cookie for device authorization.
+The proof-based credential status route remains available when the API or
+pairing toggle is disabled, while still enforcing trusted HTTPS and network
+ACLs. It accepts only `{ "token": "<64 lowercase hex characters>" }` in the body.
 
 ## QR and claim
 
@@ -118,6 +126,7 @@ The `handoff` response contains:
 - `version: 1`, `algorithm: "RSA-OAEP-256"`;
 - `key_fingerprint`, `ciphertext`, `delivery_until`;
 - `server_url`, `username` from the authorized account/instance, never from the claimant.
+- `credential_id`, `credential_expires_at` for binding and displaying the durable authorization.
 
 Ciphertext is base64url of RSA-OAEP encryption of the PAT's 64 ASCII hex characters.
 Both OAEP hash and MGF1 use SHA-256, with an empty label. Its decoded length is
@@ -141,11 +150,42 @@ the handoff. Maintenance delay does not extend authorization. Finished transacti
 metadata is pruned after 24 hours in bounded batches; the ordinary audit retains
 only lifecycle labels, user ID, transaction ID and credential ID.
 
-A completed credential has the existing durable PAT lifetime (no implicit
-expiration); it is individually revocable. Its JWTs carry `source_token_id` and
+A completed credential has a finite expiry and is individually revocable.
+Its JWTs carry `source_token_id` and
 require a live matching source and API session on every request. See
 [external device credentials](external-device-credentials.md). Offline client
 data retention and licensing remain separate policies.
+
+## Credential invalidation and offline clients
+
+`credentialStatus` returns HTTP 200 only after matching the exact PAT's hash to
+an external-device record. The body contains `credential_id`, `state`, `reason`,
+`expires_at`, `server_time` and canonical `server_url`. States are `active`,
+`pending` (a handoff not yet confirmed by successful authentication), or
+`invalidated`. Terminal reasons are `revoked`, `expired`, `access_removed` or
+`keys_changed`; pending uses `not_confirmed`. Unknown, legacy or malformed
+proofs receive the same 401 and never enumerate an account.
+
+Revocation retains the credential hash and minimal metadata as a proof record,
+revokes linked JWTs transactionally, and wipes its wrapped private key, wrapping
+salt and handoff association. No raw PAT is retained or returned. These records
+remain until account deletion; they cannot authorize another JWT.
+
+On a rejected JWT, try renewal once. A generic 401, 403, timeout, 5xx, invalid
+JSON or unavailable endpoint is **not** a command to erase local data. A client
+can verify definitive invalidation using its original PAT against the already
+bound HTTPS instance, validating the response state, credential ID and server
+identity. Only apply the resulting cache/key invalidation to that established
+profile. A pending pairing must never erase an existing profile's vault.
+
+The client must define removal of server-derived caches and keys, invalidate
+in-memory/Autofill projections, and explicitly handle encrypted unsynchronized
+local edits without silently discarding them. The server cannot notify a fully
+offline device: its pre-existing offline lease and local locking policy remain
+independent limits. No immediate offline erasure or hardware attestation is
+claimed. Capabilities advertise `credential_status: true` and the configured
+`credential_lifetime_days`; the feature remains experimental pending validation
+with an actual compatible client.
 
 ## Throttling and failures
 

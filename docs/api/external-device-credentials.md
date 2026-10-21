@@ -11,9 +11,11 @@ authentication for additional account types.
 
 PATs issued by device pairing have `purpose = external_device`. Their JWTs carry `source_token_id`, and
 their API session records carry the same indexed identifier. Each request checks
-the credential's current existence, expiry, owner and policy. Deleting a credential
-therefore also stops its existing JWTs. Revocation marks the linked sessions revoked
-before deleting the credential, in one transaction. Source-bound JWTs require their
+the credential's current existence, revocation, expiry, owner and policy.
+Revocation marks the linked sessions revoked and wipes the credential's wrapped
+key and salt, retaining its hash as a possession-proof record, in one transaction.
+New device credentials have a configurable finite lifetime (default 90 days).
+Source-bound JWTs require their
 session record and never use the historical single-row fallback.
 
 Device authentication and revocation lock the user before the credential, so a

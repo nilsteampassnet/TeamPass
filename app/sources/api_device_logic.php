@@ -59,7 +59,7 @@ function apiDeviceIsHttps(array $server, array $settings): bool
 /** Evaluate the dedicated device policy without enabling or depending on extension credentials. */
 function apiDeviceAccountAllowed(array $settings, ?array $user): bool
 {
-    return apiDeviceSchemaReady($settings)
+    return (int) ($settings['device_pairing_schema'] ?? 0) >= 3
         && (int) ($settings['api'] ?? 0) === 1
         && (int) ($settings['device_pairing_enabled'] ?? 0) === 1
         && $user !== null
@@ -109,6 +109,28 @@ function apiDeviceSourceIsValid(array $settings, ?array $source, int $userId, in
     return $source !== null
         && (int) ($source['user_id'] ?? 0) === $userId
         && ($source['purpose'] ?? '') === 'external_device'
+        && ($source['revoked_at'] ?? null) === null
         && ($source['expires_at'] === null || (int) $source['expires_at'] > $now)
         && apiDeviceAccountAllowed($settings, $source);
+}
+
+/** Validate an explicitly configured device lifetime, without boolean/float coercion. */
+function apiDeviceValidateLifetime(mixed $value): int
+{
+    if ((!is_int($value) && !is_string($value)) || preg_match('/^[0-9]{1,4}$/', (string) $value) !== 1
+        || (int) $value < 1 || (int) $value > 3650
+    ) {
+        throw new InvalidArgumentException('Device lifetime must be between 1 and 3650 days');
+    }
+    return (int) $value;
+}
+
+/** Corrupt or absent configuration must not create an unlimited credential. */
+function apiDeviceLifetimeDays(array $settings): int
+{
+    try {
+        return apiDeviceValidateLifetime($settings['device_pairing_token_lifetime_days'] ?? 90);
+    } catch (InvalidArgumentException $e) {
+        return 90;
+    }
 }

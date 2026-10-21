@@ -34,12 +34,13 @@ require_once __DIR__ . '/api_device_logic.php';
 /** Read decisive policy without the shared configuration cache. */
 function apiDeviceCurrentSettings(array $settings): array
 {
+    $settings['device_pairing_token_lifetime_days'] = 90;
     $settings = array_replace($settings, array_fill_keys(
         ['api', 'device_pairing_enabled', 'device_pairing_schema', 'oauth2_api_enabled', 'extension_token_all_auth_types'], 0
     ));
     foreach (DB::query(
         'SELECT intitule, valeur FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule IN %ls',
-        'admin', ['api', 'device_pairing_enabled', 'device_pairing_schema', 'oauth2_api_enabled', 'extension_token_all_auth_types', 'cpassman_url']
+        'admin', ['api', 'device_pairing_enabled', 'device_pairing_schema', 'oauth2_api_enabled', 'extension_token_all_auth_types', 'cpassman_url', 'device_pairing_token_lifetime_days']
     ) as $row) {
         $settings[(string) $row['intitule']] = $row['valeur'];
     }
@@ -62,6 +63,7 @@ function apiDeviceAuthenticate(int $userId, int $tokenId, array $settings, calla
         $account = $user === null ? null : getUserCompleteData((string) $user['login']);
         $settings = apiDeviceCurrentSettings($settings);
         if ($token === null || ($token['purpose'] ?? '') !== 'external_device'
+            || ($token['revoked_at'] ?? null) !== null
             || ($token['expires_at'] !== null && (int) $token['expires_at'] <= time())
             || apiDeviceAccountAllowed($settings, $account) === false
         ) {
@@ -98,7 +100,7 @@ function apiDeviceRevokeCredential(int $userId, int $tokenId): bool
     try {
         DB::queryFirstRow('SELECT id FROM ' . prefixTable('users') . ' WHERE id = %i FOR UPDATE', $userId);
         $token = DB::queryFirstRow(
-            'SELECT id FROM ' . prefixTable('api_tokens') . ' WHERE id = %i AND user_id = %i AND purpose = %s FOR UPDATE',
+            'SELECT id FROM ' . prefixTable('api_tokens') . ' WHERE id = %i AND user_id = %i AND purpose = %s AND revoked_at IS NULL FOR UPDATE',
             $tokenId, $userId, 'external_device'
         );
         if ($token === null) {
@@ -123,19 +125,80 @@ function apiDeviceRevokeLockedCredential(int $userId, int $tokenId): void
 {
     DB::update(prefixTable('api_sessions'), ['revoked_at' => time()],
         'user_id = %i AND source_token_id = %i AND revoked_at IS NULL', $userId, $tokenId);
-    DB::delete(prefixTable('api_tokens'), 'id = %i AND user_id = %i AND purpose = %s', $tokenId, $userId, 'external_device');
+    // Keep the hash as a possession-proof tombstone, while destroying provisioning material.
+    DB::update(prefixTable('api_tokens'), ['revoked_at' => time(), 'wrapped_private_key' => '', 'salt' => '', 'pairing_id' => null],
+        'id = %i AND user_id = %i AND purpose = %s AND revoked_at IS NULL', $tokenId, $userId, 'external_device');
 }
 
 /** Revalidate an external-device JWT's source, independently of the encrypted-key read path. */
 function apiDeviceSessionSourceAllowed(int $userId, int $tokenId, array $settings): bool
 {
     $settings = apiDeviceCurrentSettings($settings);
+    if ((int) ($settings['device_pairing_schema'] ?? 0) < 3) {
+        return false;
+    }
     $source = DB::queryFirstRow(
-        'SELECT t.user_id, t.purpose, t.expires_at, u.disabled, u.deleted_at, u.auth_type, a.enabled AS api_enabled
+        'SELECT t.user_id, t.purpose, t.expires_at, t.revoked_at, u.disabled, u.deleted_at, u.auth_type, a.enabled AS api_enabled
          FROM ' . prefixTable('api_tokens') . ' t
          INNER JOIN ' . prefixTable('users') . ' u ON u.id = t.user_id
          LEFT JOIN ' . prefixTable('api') . ' a ON a.user_id = u.id
          WHERE t.id = %i AND t.user_id = %i', $tokenId, $userId
     );
     return apiDeviceSourceIsValid($settings, $source, $userId, time());
+}
+
+/**
+ * Return credential state only to the holder of its exact high-entropy PAT, including after revocation.
+ * Unknown proofs remain indistinguishable. This is independent of API/pairing enablement so a
+ * client can learn a definitive loss of authorization without treating a generic 401 as a wipe signal.
+ */
+function apiDeviceCredentialStatus(string $proof, array $settings): ?array
+{
+    require_once __DIR__ . '/device_pairing.functions.php';
+    if (preg_match('/^[a-f0-9]{64}$/', $proof) !== 1) {
+        return null;
+    }
+    $identity = DB::queryFirstRow('SELECT id, user_id FROM ' . prefixTable('api_tokens')
+        . ' WHERE token_hash = %s AND purpose = %s', hash('sha256', $proof), 'external_device');
+    if ($identity === null) {
+        return null;
+    }
+    DB::startTransaction();
+    try {
+        $user = devicePairingAccount((int) $identity['user_id'], true);
+        $token = DB::queryFirstRow('SELECT * FROM ' . prefixTable('api_tokens') . ' WHERE id = %i FOR UPDATE', (int) $identity['id']);
+        if ($token === null || !hash_equals((string) $token['token_hash'], hash('sha256', $proof))) {
+            DB::rollback();
+            return null;
+        }
+        $settings = apiDeviceCurrentSettings($settings);
+        $reason = null;
+        if ($token['revoked_at'] !== null) {
+            $reason = 'revoked';
+        } elseif ($token['expires_at'] !== null && (int) $token['expires_at'] <= time()) {
+            $reason = 'expired';
+        } elseif (!apiDeviceAccountAllowed($settings, $user)) {
+            $reason = 'access_removed';
+        } elseif (!empty($token['pairing_id'])) {
+            // An unconfirmed handoff is not an established offline authorization.
+            $reason = 'not_confirmed';
+        } else {
+            $salt = (string) $token['salt'];
+            $key = preg_match('/^[a-f0-9]{32}$/', $salt) === 1
+                ? hash_hkdf('sha256', $proof, 32, 'teampass-extension-token-v1', (string) hex2bin($salt)) : '';
+            $privateKey = $key === '' ? false : decrypt_with_session_key((string) $token['wrapped_private_key'], $key);
+            if (!is_string($privateKey) || !apiDevicePrivateKeyMatches($privateKey, (string) ($user['public_key'] ?? ''))) {
+                $reason = 'keys_changed';
+            }
+        }
+        $state = $reason === 'not_confirmed' ? 'pending' : ($reason === null ? 'active' : 'invalidated');
+        $result = ['credential_id' => (int) $token['id'], 'state' => $state,
+            'reason' => $reason, 'expires_at' => $token['expires_at'] === null ? null : (int) $token['expires_at'],
+            'server_time' => time(), 'server_url' => devicePairingServerUrl($settings)];
+        DB::commit();
+        return $result;
+    } catch (Throwable $e) {
+        DB::rollback();
+        throw $e;
+    }
 }

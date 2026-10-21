@@ -54,7 +54,7 @@ class DevicePairingLogicTest extends TestCase
     /** Server deadlines, session invalidation and policy changes always win over client polling. */
     public function testExpiryDoesNotDependOnMaintenance(): void
     {
-        $settings = ['device_pairing_schema' => 2, 'device_pairing_enabled' => 1, 'api' => 1,
+        $settings = ['device_pairing_schema' => 3, 'device_pairing_enabled' => 1, 'api' => 1,
             'extension_token_all_auth_types' => 1, 'cpassman_url' => 'https://vault.test/team'];
         $user = ['api_enabled' => 1, 'auth_type' => 'local', 'public_key' => 'key', 'key_tempo' => 'session',
             'session_end' => 200, 'is_ready_for_usage' => 1];

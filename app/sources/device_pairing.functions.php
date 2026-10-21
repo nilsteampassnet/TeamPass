@@ -68,7 +68,7 @@ function devicePairingAccount(int $userId, bool $lock = false): ?array
 /** Require the installed protocol and the existing account/PAT policy. */
 function devicePairingRequireAccount(array $settings, ?array $user): void
 {
-    if ((int) ($settings['device_pairing_schema'] ?? 0) < 2 || !apiDeviceAccountAllowed($settings, $user)) {
+    if ((int) ($settings['device_pairing_schema'] ?? 0) < 3 || !apiDeviceAccountAllowed($settings, $user)) {
         throw new DevicePairingException('unavailable', 403);
     }
     if ((int) ($user['is_ready_for_usage'] ?? 0) !== 1 || empty($user['public_key'])) {
@@ -282,7 +282,8 @@ function devicePairingDeviceAction(string $action, array $input, array $settings
         if ($row['state'] === 'approved') {
             DB::insert(prefixTable('api_tokens'), ['user_id' => (int) $row['user_id'], 'purpose' => 'external_device',
                 'pairing_id' => $row['id'], 'token_hash' => $row['token_hash'], 'wrapped_private_key' => $row['wrapped_private_key'],
-                'salt' => $row['salt'], 'label' => $row['device_label'], 'created_at' => time(), 'expires_at' => null]);
+                'salt' => $row['salt'], 'label' => $row['device_label'], 'created_at' => time(),
+                'expires_at' => time() + apiDeviceLifetimeDays($settings) * 86400]);
             $changes = ['state' => 'delivered', 'credential_id' => (int) DB::insertId(),
                 'delivery_until' => min((int) $row['expires_at'], time() + TP_DEVICE_PAIRING_DELIVERY_TTL),
                 'token_hash' => null, 'wrapped_private_key' => null, 'salt' => null, 'updated_at' => time()];
@@ -295,7 +296,9 @@ function devicePairingDeviceAction(string $action, array $input, array $settings
             $result['handoff'] = ['version' => 1, 'algorithm' => 'RSA-OAEP-256', 'key_fingerprint' => $row['key_fingerprint'],
                 'ciphertext' => $row['encrypted_token'], 'delivery_until' => (int) $row['delivery_until'],
                 'server_url' => devicePairingServerUrl($settings),
-                'username' => html_entity_decode((string) $user['login'], ENT_QUOTES | ENT_HTML5, 'UTF-8')];
+                'username' => html_entity_decode((string) $user['login'], ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+                'credential_id' => (int) $row['credential_id'], 'credential_expires_at' => (int) DB::queryFirstField(
+                    'SELECT expires_at FROM ' . prefixTable('api_tokens') . ' WHERE id = %i', (int) $row['credential_id'])];
         }
         return $result;
     });
@@ -321,7 +324,7 @@ function devicePairingConfirmCredential(array $token, array $user, array $settin
 /** Expire and wipe bounded batches; authorization checks never depend on this job running. */
 function devicePairingPurge(array $settings): int
 {
-    if ((int) ($settings['device_pairing_schema'] ?? 0) < 2) {
+    if ((int) ($settings['device_pairing_schema'] ?? 0) < 3) {
         return 0;
     }
     $count = 0;

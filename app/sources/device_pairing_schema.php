@@ -43,7 +43,7 @@ function devicePairingUpgradeSchema(mysqli $connection, array $tables): void
             throw new InvalidArgumentException('Invalid device pairing migration table');
         }
     }
-    $columns = ['api_tokens' => ['purpose' => "VARCHAR(32) NOT NULL DEFAULT 'legacy'", 'pairing_id' => 'CHAR(32) NULL DEFAULT NULL'],
+    $columns = ['api_tokens' => ['purpose' => "VARCHAR(32) NOT NULL DEFAULT 'legacy'", 'pairing_id' => 'CHAR(32) NULL DEFAULT NULL', 'revoked_at' => 'INT(12) NULL DEFAULT NULL'],
         'api_sessions' => ['source_token_id' => 'INT(12) NULL DEFAULT NULL']];
     foreach ($columns as $name => $definitions) {
         $existing = [];
@@ -80,8 +80,17 @@ function devicePairingUpgradeSchema(mysqli $connection, array $tables): void
         }
     }
     if (!$connection->query('INSERT IGNORE INTO `' . $tables['misc'] . "` (type, intitule, valeur)
-        VALUES ('admin', 'device_pairing_enabled', '0'), ('admin', 'device_pairing_schema', '2')")
-        || !$connection->query('UPDATE `' . $tables['misc'] . "` SET valeur = '2' WHERE type = 'admin' AND intitule = 'device_pairing_schema'")
+        VALUES ('admin', 'device_pairing_enabled', '0'), ('admin', 'device_pairing_schema', '2'),
+            ('admin', 'device_pairing_token_lifetime_days', '90')")
+    ) {
+        throw new RuntimeException('Could not install device policy settings');
+    }
+    $policy = $connection->query('SELECT valeur FROM `' . $tables['misc'] . "` WHERE type = 'admin' AND intitule = 'device_pairing_token_lifetime_days'");
+    $days = apiDeviceLifetimeDays(['device_pairing_token_lifetime_days' => $policy === false ? 90 : ($policy->fetch_assoc()['valeur'] ?? 90)]);
+    // Give existing experimental credentials a bounded migration grace period exactly once.
+    if (!$connection->query('UPDATE `' . $tables['api_tokens'] . '` SET expires_at = ' . (time() + $days * 86400)
+        . " WHERE purpose = 'external_device' AND expires_at IS NULL AND revoked_at IS NULL")
+        || !$connection->query('UPDATE `' . $tables['misc'] . "` SET valeur = '3' WHERE type = 'admin' AND intitule = 'device_pairing_schema'")
     ) {
         throw new RuntimeException('Could not publish the pairing schema version');
     }

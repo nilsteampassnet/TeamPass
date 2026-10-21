@@ -57,6 +57,12 @@ class DevicePairingController extends BaseController
         $this->execute('consume');
     }
 
+    /** Prove a credential's terminal status without relying on an expired JWT or a web cookie. */
+    public function credentialStatusAction(): void
+    {
+        $this->execute('credentialStatus');
+    }
+
     /** Bounded, body-only transport common to the unauthenticated device endpoints. */
     private function execute(string $action): void
     {
@@ -73,8 +79,9 @@ class DevicePairingController extends BaseController
                 $this->sendProblem(405, 'Method not allowed', ['Allow: ' . $expected]);
                 return;
             }
-            if ((int) ($settings['device_pairing_schema'] ?? 0) < 2 || (int) ($settings['device_pairing_enabled'] ?? 0) !== 1
-                || (int) ($settings['api'] ?? 0) !== 1
+            if ((int) ($settings['device_pairing_schema'] ?? 0) < 3
+                || ($action !== 'credentialStatus' && ((int) ($settings['device_pairing_enabled'] ?? 0) !== 1
+                    || (int) ($settings['api'] ?? 0) !== 1))
             ) {
                 throw new DevicePairingException('unavailable', 503);
             }
@@ -86,6 +93,7 @@ class DevicePairingController extends BaseController
             if ($action === 'capabilities') {
                 $result = ['type' => 'teampass.device-pairing', 'version' => 1, 'experimental' => true,
                     'algorithm' => 'RSA-OAEP-256', 'key_bits' => 3072, 'ttl' => TP_DEVICE_PAIRING_TTL,
+                    'credential_status' => true, 'credential_lifetime_days' => apiDeviceLifetimeDays($settings),
                     'poll_interval' => TP_DEVICE_PAIRING_POLL_INTERVAL];
             } else {
                 $contentType = strtolower(trim(explode(';', (string) ($_SERVER['CONTENT_TYPE'] ?? ''))[0]));
@@ -104,7 +112,16 @@ class DevicePairingController extends BaseController
                 if (!is_array($input) || array_is_list($input)) {
                     throw new DevicePairingException('invalid_request');
                 }
-                $result = $action === 'claim' ? devicePairingClaim($input, $settings) : devicePairingDeviceAction($action, $input, $settings);
+                if ($action === 'credentialStatus') {
+                    $proof = devicePairingInput($input, 'token', '/^[a-f0-9]{64}$/');
+                    devicePairingThrottle('credential:' . hash('sha256', $proof), 30);
+                    $result = apiDeviceCredentialStatus($proof, $settings);
+                    if ($result === null) {
+                        throw new DevicePairingException('invalid_proof', 401);
+                    }
+                } else {
+                    $result = $action === 'claim' ? devicePairingClaim($input, $settings) : devicePairingDeviceAction($action, $input, $settings);
+                }
             }
             $this->sendOutput(json_encode($result, JSON_THROW_ON_ERROR), ['Content-Type: application/json; charset=UTF-8', 'HTTP/1.1 200 OK']);
         } catch (DevicePairingException $e) {

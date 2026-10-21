@@ -66,13 +66,13 @@ try {
         throw new DevicePairingException('invalid_request');
     }
     $userId = (int) $session->get('user-id');
-    if ((int) ($settings['device_pairing_schema'] ?? 0) < 2) {
+    if ((int) ($settings['device_pairing_schema'] ?? 0) < 3) {
         throw new DevicePairingException('unavailable', 503);
     }
     devicePairingThrottle('profile:' . $userId, 120);
     if ($action === 'list') {
-        $result = ['devices' => DB::query('SELECT id, label, created_at, last_used_at FROM ' . prefixTable('api_tokens') . '
-            WHERE user_id = %i AND purpose = %s AND pairing_id IS NULL ORDER BY created_at DESC', $userId, 'external_device')];
+        $result = ['devices' => DB::query('SELECT id, label, created_at, last_used_at, expires_at FROM ' . prefixTable('api_tokens') . '
+            WHERE user_id = %i AND purpose = %s AND pairing_id IS NULL AND revoked_at IS NULL ORDER BY created_at DESC', $userId, 'external_device')];
     } elseif ($action === 'revoke') {
         $id = filter_var($input['id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
         if ($id === false) {

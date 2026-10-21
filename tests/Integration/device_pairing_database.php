@@ -140,7 +140,7 @@ if (($argv[1] ?? '') === 'worker') {
     exit;
 }
 
-$settings = ['api' => 1, 'device_pairing_enabled' => 1, 'device_pairing_schema' => 2,
+$settings = ['api' => 1, 'device_pairing_enabled' => 1, 'device_pairing_schema' => 3,
     'extension_token_all_auth_types' => 1, 'cpassman_url' => 'https://vault.example.test:8443/team'];
 $userKeys = CryptoManager::generateRSAKeyPair(2048);
 $deviceKeys = CryptoManager::generateRSAKeyPair(3072);
@@ -165,7 +165,7 @@ try {
         DB::insert(prefixTable('misc'), ['type' => 'admin', 'intitule' => $key, 'valeur' => (string) $value]);
     }
     // Simulate a populated pre-feature installation and execute the exact upgrade helper twice.
-    DB::query('ALTER TABLE ' . prefixTable('api_tokens') . ' DROP COLUMN purpose, DROP COLUMN pairing_id');
+    DB::query('ALTER TABLE ' . prefixTable('api_tokens') . ' DROP COLUMN purpose, DROP COLUMN pairing_id, DROP COLUMN revoked_at');
     DB::query('ALTER TABLE ' . prefixTable('api_sessions') . ' DROP COLUMN source_token_id');
     DB::query('DROP TABLE ' . prefixTable('device_pairings'));
     DB::insert(prefixTable('api_tokens'), ['user_id' => 42, 'token_hash' => str_repeat('f', 64),
@@ -180,6 +180,17 @@ try {
     devicePairingUpgradeSchema(DB::get(), $migrationTables);
     $legacy = DB::queryFirstRow('SELECT * FROM ' . prefixTable('api_tokens') . ' WHERE id = %i', $legacyId);
     pairingCheck($legacy['purpose'] === 'legacy' && $legacy['wrapped_private_key'] === 'synthetic-existing-wrap', 'Upgrade changed a legacy credential');
+    pairingCheck($legacy['expires_at'] === null, 'Upgrade assigned a device lifetime to a legacy credential');
+    DB::insert(prefixTable('api_tokens'), ['user_id' => 42, 'purpose' => 'external_device', 'token_hash' => str_repeat('e', 64),
+        'wrapped_private_key' => 'synthetic-experimental-wrap', 'salt' => str_repeat('a', 32), 'created_at' => 1]);
+    $experimentalId = (int) DB::insertId();
+    devicePairingUpgradeSchema(DB::get(), $migrationTables);
+    $grace = (int) DB::queryFirstField('SELECT expires_at FROM ' . prefixTable('api_tokens') . ' WHERE id = %i', $experimentalId);
+    pairingCheck($grace > time() + 89 * 86400, 'Old experimental device lacks its migration grace period');
+    DB::update(prefixTable('api_tokens'), ['expires_at' => $grace - 86400], 'id = %i', $experimentalId);
+    devicePairingUpgradeSchema(DB::get(), $migrationTables);
+    pairingCheck((int) DB::queryFirstField('SELECT expires_at FROM ' . prefixTable('api_tokens') . ' WHERE id = %i', $experimentalId) === $grace - 86400, 'Replayed upgrade extended an existing deadline');
+    DB::delete(prefixTable('api_tokens'), 'id = %i', $experimentalId);
     pairingCheck((string) DB::queryFirstField('SELECT valeur FROM ' . prefixTable('misc') . ' WHERE intitule = %s', 'device_pairing_enabled') === '1', 'Upgrade reset explicit administrator opt-in');
     DB::delete(prefixTable('api_tokens'), 'id = %i', $legacyId);
     DB::query('ALTER TABLE ' . prefixTable('log_system') . ' ENGINE=MyISAM');
@@ -215,15 +226,18 @@ try {
     pairingCheck(!isset(devicePairingDeviceAction('consume', $proof, $settings)['handoff']), 'Scan authorized a credential before web approval');
     $approvals = pairingConcurrent('approve', [$approval, $approval], $settings, $userKeys['privatekey']);
     pairingCheck(count(array_filter($approvals, static fn (array $r): bool => ($r['state'] ?? '') === 'approved')) === 1, 'Approval emitted twice');
-    pairingCheck((int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('api_tokens')) === 0, 'Approval published a usable PAT');
+    pairingCheck((int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('api_tokens') . ' WHERE revoked_at IS NULL') === 0, 'Approval published a usable PAT');
     $deliveries = pairingConcurrent('consume', [$proof, $proof, $proof], $settings);
     pairingCheck($deliveries[0]['handoff'] === $deliveries[1]['handoff'] && $deliveries[1]['handoff'] === $deliveries[2]['handoff'], 'Retry did not replay the same protected result');
-    pairingCheck((int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('api_tokens')) === 1, 'Concurrent consumption created multiple credentials');
+    pairingCheck((int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('api_tokens') . ' WHERE revoked_at IS NULL') === 1, 'Concurrent consumption created multiple credentials');
     $pat = CryptoManager::rsaDecryptWithVersion(base64_decode(strtr($deliveries[0]['handoff']['ciphertext'], '-_', '+/')), $deviceKeys['privatekey'], 3);
     pairingCheck(preg_match('/^[a-f0-9]{64}$/', $pat) === 1, 'Device could not decrypt the PAT');
     $row = DB::queryFirstRow('SELECT * FROM ' . prefixTable('device_pairings') . ' WHERE id = %s', $created['pairing_id']);
     pairingCheck(strpos(json_encode($row), $pat) === false && strpos(json_encode($row), $userKeys['privatekey']) === false, 'Handoff table contains a plaintext secret');
     $tokenId = (int) $row['credential_id'];
+    $deadline = (int) $deliveries[0]['handoff']['credential_expires_at'];
+    pairingCheck($deadline > time() + 89 * 86400 && $deadline <= time() + 90 * 86400, 'Device credential lacks its configured finite expiry');
+    pairingCheck(apiDeviceCredentialStatus($pat, $settings)['reason'] === 'not_confirmed', 'Unconfirmed credential reported durable access');
     // Run the real AuthModel key validation after provisional confirmation. A failed unwrap
     // must roll the confirmation back before the caller records its failed-auth audit.
     require_once __DIR__ . '/../../app/api/Model/AuthModel.php';
@@ -249,8 +263,29 @@ try {
     pairingCheck($one !== null && $two !== null && $one['token'] !== $two['token'], 'Durable PAT could not renew the session');
     $row = DB::queryFirstRow('SELECT * FROM ' . prefixTable('device_pairings') . ' WHERE id = %s', $created['pairing_id']);
     pairingCheck($row['state'] === 'completed' && $row['encrypted_token'] === null && $row['public_key'] === null, 'Successful auth left a recoverable handoff');
+    pairingCheck(apiDeviceCredentialStatus($pat, $settings)['state'] === 'active', 'Valid PAT proof was refused');
+    pairingCheck(apiDeviceCredentialStatus(str_repeat('0', 64), $settings) === null, 'Unknown proof exposed credential state');
+    foreach (['api', 'device_pairing_enabled'] as $policyName) {
+        DB::update(prefixTable('misc'), ['valeur' => '0'], 'intitule = %s', $policyName);
+        pairingCheck(apiDeviceCredentialStatus($pat, $settings)['reason'] === 'access_removed', 'Policy removal was not provable');
+        pairingCheck(pairingFixtureAuthenticate($tokenId, $pat, $settings) === null, 'Disabled policy allowed authentication');
+        DB::update(prefixTable('misc'), ['valeur' => '1'], 'intitule = %s', $policyName);
+    }
+    DB::update(prefixTable('api_tokens'), ['expires_at' => time() - 1], 'id = %i', $tokenId);
+    pairingCheck(apiDeviceCredentialStatus($pat, $settings)['reason'] === 'expired', 'Expiry was not provable with the original PAT');
+    pairingCheck(pairingFixtureAuthenticate($tokenId, $pat, $settings) === null, 'Expired credential renewed a JWT');
+    pairingCheck(!apiDeviceSessionSourceAllowed(42, $tokenId, $settings), 'Expired credential left JWT access active');
+    DB::update(prefixTable('api_tokens'), ['expires_at' => $deadline], 'id = %i', $tokenId);
+    DB::update(prefixTable('users'), ['public_key' => $deviceKeys['publickey']], 'id = %i', 42);
+    pairingCheck(apiDeviceCredentialStatus($pat, $settings)['reason'] === 'keys_changed', 'Changed account key was not identified');
+    DB::update(prefixTable('users'), ['public_key' => $userKeys['publickey']], 'id = %i', 42);
     apiDeviceRevokeCredential(42, $tokenId);
     pairingCheck(!apiDeviceSessionSourceAllowed(42, $tokenId, $settings), 'Revoked PAT left its JWT source authorized');
+    pairingCheck(pairingFixtureAuthenticate($tokenId, $pat, $settings) === null, 'Revoked PAT authenticated again');
+    pairingCheck(apiDeviceCredentialStatus($pat, $settings)['reason'] === 'revoked', 'Original PAT cannot prove its revocation');
+    $revoked = DB::queryFirstRow('SELECT * FROM ' . prefixTable('api_tokens') . ' WHERE id = %i', $tokenId);
+    pairingCheck($revoked['wrapped_private_key'] === '' && $revoked['salt'] === '' && $revoked['pairing_id'] === null, 'Revocation retained provisioning material');
+    pairingCheck($revoked['token_hash'] === hash('sha256', $pat), 'Revocation lost the possession-proof tombstone');
     echo "OK: real installer schema, immutable claims, explicit approval, concurrent consumption, protected retry and PAT renewal/revocation\n";
 
     foreach (['cancel', 'reject', 'expiry', 'logout', 'policy', 'key_change', 'delivery_timeout'] as $scenario) {
@@ -281,7 +316,7 @@ try {
         }
         $result = devicePairingDeviceAction('consume', $proof, $settings);
         pairingCheck(!isset($result['handoff']), 'Terminal transaction returned a credential');
-        pairingCheck((int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('api_tokens')) === 0, 'Abandoned delivery left an orphan PAT');
+        pairingCheck((int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('api_tokens') . ' WHERE revoked_at IS NULL') === 0, 'Abandoned delivery left an orphan PAT');
         DB::update(prefixTable('users'), ['key_tempo' => 'fixture-session-key', 'public_key' => $userKeys['publickey']], 'id = %i', 42);
         DB::update(prefixTable('misc'), ['valeur' => '1'], 'intitule = %s', 'device_pairing_enabled');
     }
@@ -305,7 +340,7 @@ try {
             DB::query('RENAME TABLE ' . prefixTable('log_system_unavailable') . ' TO ' . prefixTable('log_system'));
         }
         pairingCheck($failed, 'Audit failure did not roll back ' . $phase);
-        pairingCheck((int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('api_tokens')) === 0, 'Failed phase published a credential');
+        pairingCheck((int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('api_tokens') . ' WHERE revoked_at IS NULL') === 0, 'Failed phase published a credential');
         $state = DB::queryFirstField('SELECT state FROM ' . prefixTable('device_pairings') . ' WHERE id = %s', $created['pairing_id']);
         pairingCheck($state === ($phase === 'approve' ? 'awaiting_approval' : 'approved'), 'Failed phase partially changed state');
         if ($phase === 'approve') {
@@ -315,7 +350,7 @@ try {
     devicePairingDeviceAction('consume', $proof, $settings);
     DB::update(prefixTable('device_pairings'), ['delivery_until' => time() - 1], 'id = %s', $created['pairing_id']);
     pairingCheck(devicePairingPurge($settings) >= 1, 'Maintenance did not expire an abandoned delivery');
-    pairingCheck((int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('api_tokens')) === 0, 'Maintenance retained an orphan credential');
+    pairingCheck((int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('api_tokens') . ' WHERE revoked_at IS NULL') === 0, 'Maintenance retained an orphan credential');
     echo "OK: approval/consumption rollback and real maintenance cleanup\n";
 } finally {
     foreach ($tables as $table) {

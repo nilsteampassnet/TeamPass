@@ -4014,6 +4014,10 @@ return array(
     'device_pairing_admin_title' => 'Association d’appareils externes',
     'device_pairing_admin_tip' => 'Autoriser les comptes locaux, annuaire et SSO disposant d’un accès API à associer un appareil externe compatible, indépendamment des paramètres de jeton de l’extension navigateur. HTTPS requis ; configurez le mode réseau reverse proxy et les proxies de confiance si le proxy termine TLS. Désactivé par défaut.',
     'device_pairing_stepup_failed' => 'Échec de confirmation du mot de passe pour l’association d’un appareil externe',
+    'device_pairing_lifetime' => 'Durée de validité du jeton d’appareil (jours)',
+    'device_pairing_lifetime_tip' => 'S’applique aux nouveaux appareils associés. Par défaut : 90 jours ; valeurs admises : 1–3650. Les échéances existantes sont conservées. Associez à nouveau l’appareil après expiration.',
+    'device_pairing_lifetime_invalid' => 'Saisissez un nombre entier de jours entre 1 et 3650.',
+    'device_pairing_valid_until' => 'Valide jusqu’au',
     'device_pairing_upgrade_needed' => 'Exécutez l’assistant de mise à niveau avant d’activer cette fonction.',
 
 );

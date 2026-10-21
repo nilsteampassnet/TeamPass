@@ -112,12 +112,12 @@ if (($argv[1] ?? '') === 'worker') {
     exit;
 }
 
-$settings = ['device_pairing_schema' => 1, 'device_pairing_enabled' => 1, 'api' => 1, 'extension_token_all_auth_types' => 1];
+$settings = ['device_pairing_schema' => 3, 'device_pairing_enabled' => 1, 'api' => 1, 'extension_token_all_auth_types' => 1];
 $tables = ['api_sessions', 'api_tokens', 'api', 'users', 'misc', 'log_system'];
 try {
     DB::query('CREATE TABLE ' . prefixTable('users') . ' (id INT PRIMARY KEY, login VARCHAR(255), auth_type VARCHAR(32), disabled INT DEFAULT 0, deleted_at INT NULL) ENGINE=InnoDB');
     DB::query('CREATE TABLE ' . prefixTable('api') . ' (user_id INT PRIMARY KEY, enabled INT) ENGINE=InnoDB');
-    DB::query('CREATE TABLE ' . prefixTable('api_tokens') . ' (id INT PRIMARY KEY AUTO_INCREMENT, user_id INT, purpose VARCHAR(32), expires_at INT NULL) ENGINE=InnoDB');
+    DB::query('CREATE TABLE ' . prefixTable('api_tokens') . ' (id INT PRIMARY KEY AUTO_INCREMENT, user_id INT, purpose VARCHAR(32), expires_at INT NULL, revoked_at INT NULL, pairing_id CHAR(32), wrapped_private_key TEXT, salt VARCHAR(64)) ENGINE=InnoDB');
     DB::query('CREATE TABLE ' . prefixTable('api_sessions') . ' (id INT PRIMARY KEY AUTO_INCREMENT, user_id INT, jti VARCHAR(32), source_token_id INT NULL, revoked_at INT NULL, KEY source_token_id(source_token_id)) ENGINE=InnoDB');
     DB::query('CREATE TABLE ' . prefixTable('misc') . ' (type VARCHAR(32), intitule VARCHAR(64), valeur TEXT) ENGINE=InnoDB');
     DB::query('CREATE TABLE ' . prefixTable('log_system') . ' (type VARCHAR(32), date INT, label VARCHAR(64), qui VARCHAR(32), field_1 TEXT) ENGINE=InnoDB');
@@ -157,7 +157,7 @@ try {
         DB::insert(prefixTable('api_tokens'), ['user_id' => 42, 'purpose' => 'external_device']);
         $id = (int) DB::insertId();
         deviceConcurrent(['authenticate', 'authenticate', 'revoke', 'authenticate'], $id, $settings);
-        deviceCheck((int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('api_tokens') . ' WHERE id = %i', $id) === 0, 'Revoked credential remained active');
+        deviceCheck((int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('api_tokens') . ' WHERE id = %i AND revoked_at IS NULL', $id) === 0, 'Revoked credential remained active');
         deviceCheck((int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('api_sessions') . ' WHERE source_token_id = %i AND revoked_at IS NULL', $id) === 0, 'Authentication published an unrevoked session after revocation');
     }
     echo "OK: source validation, fresh policy, disabled-feature revocation, audit rollback and five authentication/revocation races\n";

@@ -230,9 +230,9 @@ $extensionTokensOwned = $apiFeatureEnabled === true
         (int) $session->get('user-id')
     ) > 0;
 
-$devicePairingReady = (int) ($SETTINGS['device_pairing_schema'] ?? 0) >= 2;
+$devicePairingReady = (int) ($SETTINGS['device_pairing_schema'] ?? 0) >= 3;
 $devicePairingOwned = $devicePairingReady && (int) DB::queryFirstField(
-    'SELECT COUNT(*) FROM ' . prefixTable('api_tokens') . ' WHERE user_id = %i AND purpose = %s AND pairing_id IS NULL',
+    'SELECT COUNT(*) FROM ' . prefixTable('api_tokens') . ' WHERE user_id = %i AND purpose = %s AND pairing_id IS NULL AND revoked_at IS NULL',
     (int) $session->get('user-id'), 'external_device'
 ) > 0;
 $devicePairingShown = $devicePairingReady && ((int) ($SETTINGS['device_pairing_enabled'] ?? 0) === 1 || $devicePairingOwned);

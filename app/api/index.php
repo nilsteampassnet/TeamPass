@@ -155,9 +155,10 @@ if (isset($uri[0]) && $uri[0] === 'openapi.json') {
 if (($uri[0] ?? '') === 'devicePairing') {
     header('Cache-Control: no-store');
     header_remove('Access-Control-Allow-Origin');
-    if ($apiStatus['error'] !== false) {
+    // A proven invalidation check must still work when the administrator disables API access.
+    if ($apiStatus['error'] !== false && ($uri[1] ?? '') !== 'credentialStatus') {
         errorHdl($apiStatus['error_header'], json_encode(['error' => $apiStatus['error_message']]));
-    } elseif (count($uri) !== 2 || !in_array($uri[1], ['capabilities', 'claim', 'status', 'consume'], true)) {
+    } elseif (count($uri) !== 2 || !in_array($uri[1], ['capabilities', 'claim', 'status', 'consume', 'credentialStatus'], true)) {
         errorHdl('HTTP/1.1 404 Not Found', json_encode(['error' => 'Unknown route']));
     } else {
         require_once API_ROOT_PATH . '/Controller/Api/DevicePairingController.php';

@@ -84,7 +84,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     <?php
     $devicePairingMessages = [];
     foreach (['loading', 'network', 'qr_error', 'session_ended', 'expires', 'close', 'cancel', 'unnamed',
-        'no_results', 'no_devices', 'revoke', 'revoke_title', 'revoke_confirm'] as $deviceMessage) {
+        'no_results', 'no_devices', 'revoke', 'revoke_title', 'revoke_confirm', 'valid_until'] as $deviceMessage) {
         $devicePairingMessages[$deviceMessage] = $lang->get('device_pairing_' . $deviceMessage);
     }
     foreach (['awaiting_scan', 'awaiting_approval', 'approved', 'delivered', 'completed', 'rejected', 'cancelled', 'expired'] as $deviceState) {

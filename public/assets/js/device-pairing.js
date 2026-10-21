@@ -213,6 +213,7 @@
         const text = $('<div>').addClass('mr-sm-3 mb-2 mb-sm-0').css('min-width', 0).appendTo(row)
         $('<div>').addClass('device-entry-name font-weight-bold').text(device.label || m.unnamed).appendTo(text)
         $('<div>').addClass('text-muted small').text(m.created + ': ' + date(device.created_at) + ' · ' + m.last_used + ': ' + date(device.last_used_at)).appendTo(text)
+        $('<div>').addClass('text-muted small').text(m.valid_until + ': ' + date(device.expires_at)).appendTo(text)
         $('<button>').attr('type', 'button').addClass('btn btn-sm btn-outline-danger').text(m.revoke).on('click', function () {
           const button = $(this)
           button.prop('disabled', true)

@@ -38,6 +38,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
+require_once __DIR__ . '/../sources/api_device_logic.php';
 
 // init
 loadClasses('DB');
@@ -212,7 +213,7 @@ function getDomainFromSettingsUrl(string $url): string
                                 <small class="form-text text-muted"><?php echo htmlspecialchars($lang->get('device_pairing_admin_tip'), ENT_QUOTES, 'UTF-8'); ?></small>
                             </div>
                             <div class='col-2'>
-                                <?php if ((int) ($SETTINGS['device_pairing_schema'] ?? 0) >= 2) : ?>
+                                <?php if ((int) ($SETTINGS['device_pairing_schema'] ?? 0) >= 3) : ?>
                                 <div class="toggle toggle-modern" id="device_pairing_enabled" data-toggle-on="<?php echo (int) ($SETTINGS['device_pairing_enabled'] ?? 0) === 1 ? 'true' : 'false'; ?>"></div>
                                 <input type="hidden" id="device_pairing_enabled_input" value="<?php echo (int) ($SETTINGS['device_pairing_enabled'] ?? 0) === 1 ? '1' : '0'; ?>">
                                 <?php else : ?>
@@ -220,6 +221,18 @@ function getDomainFromSettingsUrl(string $url): string
                                 <?php endif; ?>
                             </div>
                         </div>
+
+                        <?php if ((int) ($SETTINGS['device_pairing_schema'] ?? 0) >= 3) : ?>
+                        <div class="row mb-3">
+                            <div class="col-10">
+                                <label for="device_pairing_token_lifetime_days"><?php echo htmlspecialchars($lang->get('device_pairing_lifetime'), ENT_QUOTES, 'UTF-8'); ?></label>
+                                <small class="form-text text-muted"><?php echo htmlspecialchars($lang->get('device_pairing_lifetime_tip'), ENT_QUOTES, 'UTF-8'); ?></small>
+                            </div>
+                            <div class="col-2">
+                                <input type="number" class="form-control form-control-sm" id="device_pairing_token_lifetime_days" min="1" max="3650" value="<?php echo apiDeviceLifetimeDays($SETTINGS); ?>">
+                            </div>
+                        </div>
+                        <?php endif; ?>
 
                         <div class='row mb-3'>
                             <div class='col-10'>

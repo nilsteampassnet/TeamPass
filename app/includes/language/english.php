@@ -4030,6 +4030,10 @@ return array(
     'device_pairing_admin_title' => 'External device pairing',
     'device_pairing_admin_tip' => 'Allow API-enabled local, directory and SSO accounts to pair a compatible external device, independently of browser-extension token settings. Requires HTTPS; TLS reverse proxies must use reverse proxy network mode and trusted proxy addresses. Disabled by default.',
     'device_pairing_stepup_failed' => 'External device pairing password confirmation failed',
+    'device_pairing_lifetime' => 'Device credential lifetime (days)',
+    'device_pairing_lifetime_tip' => 'Applies to newly paired devices. Default: 90 days; allowed range: 1–3650. Existing expiry dates are unchanged. Pair the device again after expiry.',
+    'device_pairing_lifetime_invalid' => 'Enter a whole number of days between 1 and 3650.',
+    'device_pairing_valid_until' => 'Valid until',
     'device_pairing_upgrade_needed' => 'Run the upgrade wizard before enabling this feature.',
 
 );

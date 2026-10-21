@@ -39,7 +39,7 @@ class ApiDeviceLogicTest extends TestCase
     /** Device pairing has its own opt-in; API/account rights remain mandatory for every auth type. */
     public function testAccountPolicy(): void
     {
-        $settings = ['device_pairing_schema' => 1, 'api' => 1, 'device_pairing_enabled' => 1,
+        $settings = ['device_pairing_schema' => 3, 'api' => 1, 'device_pairing_enabled' => 1,
             'oauth2_api_enabled' => 0, 'extension_token_all_auth_types' => 0];
         $user = ['id' => 42, 'api_enabled' => 1, 'disabled' => 0, 'auth_type' => 'oauth2'];
         self::assertTrue(apiDeviceAccountAllowed($settings, $user));
@@ -76,7 +76,7 @@ class ApiDeviceLogicTest extends TestCase
     /** A deleted, expired or cross-user source must never authorize an existing JWT. */
     public function testSourceValidity(): void
     {
-        $settings = ['device_pairing_schema' => 1, 'api' => 1, 'device_pairing_enabled' => 1, 'extension_token_all_auth_types' => 1];
+        $settings = ['device_pairing_schema' => 3, 'api' => 1, 'device_pairing_enabled' => 1, 'extension_token_all_auth_types' => 1];
         $source = ['user_id' => 42, 'purpose' => 'external_device', 'expires_at' => null, 'api_enabled' => 1, 'auth_type' => 'local'];
         self::assertTrue(apiDeviceSourceIsValid($settings, $source, 42, 100));
         self::assertFalse(apiDeviceSourceIsValid($settings, null, 42, 100));
@@ -84,5 +84,24 @@ class ApiDeviceLogicTest extends TestCase
         self::assertFalse(apiDeviceSourceIsValid($settings, array_replace($source, ['expires_at' => 100]), 42, 100));
         self::assertTrue(apiDeviceSourceIsValid($settings, array_replace($source, ['expires_at' => 101]), 42, 100));
         self::assertFalse(apiDeviceSourceIsValid($settings, array_replace($source, ['purpose' => 'legacy']), 42, 100));
+        self::assertFalse(apiDeviceSourceIsValid($settings, array_replace($source, ['revoked_at' => 99]), 42, 100));
+    }
+
+    /** Invalid values cannot silently create an unbounded or coerced credential lifetime. */
+    public function testDeviceLifetimePolicy(): void
+    {
+        self::assertSame(90, apiDeviceLifetimeDays([]));
+        foreach ([1, '90', 3650] as $days) {
+            self::assertSame((int) $days, apiDeviceValidateLifetime($days));
+        }
+        foreach ([0, -1, 3651, true, false, 1.5, [], '1.0', '90 days', null] as $invalid) {
+            self::assertSame(90, apiDeviceLifetimeDays(['device_pairing_token_lifetime_days' => $invalid]));
+            try {
+                apiDeviceValidateLifetime($invalid);
+                self::fail('Invalid lifetime accepted');
+            } catch (InvalidArgumentException $e) {
+                self::assertNotSame('', $e->getMessage());
+            }
+        }
     }
 }
