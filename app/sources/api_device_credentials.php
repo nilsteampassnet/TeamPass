@@ -94,11 +94,17 @@ function apiDeviceAuthenticate(int $userId, int $tokenId, array $settings, calla
  * Revoke an owned device credential and all its JWTs, retaining session tombstones.
  * Available even when the API or pairing feature has subsequently been disabled.
  */
-function apiDeviceRevokeCredential(int $userId, int $tokenId): bool
+function apiDeviceRevokeCredential(int $userId, int $tokenId, ?int $actorId = null): bool
 {
+    $actorId ??= $userId;
     DB::startTransaction();
     try {
         DB::queryFirstRow('SELECT id FROM ' . prefixTable('users') . ' WHERE id = %i FOR UPDATE', $userId);
+        $actor = DB::queryFirstRow('SELECT id, admin, disabled, deleted_at FROM ' . prefixTable('users') . ' WHERE id = %i', $actorId);
+        if (!apiDeviceCanManageCredentials($actor, $userId)) {
+            DB::rollback();
+            return false;
+        }
         $token = DB::queryFirstRow(
             'SELECT id FROM ' . prefixTable('api_tokens') . ' WHERE id = %i AND user_id = %i AND purpose = %s AND revoked_at IS NULL FOR UPDATE',
             $tokenId, $userId, 'external_device'
@@ -110,7 +116,8 @@ function apiDeviceRevokeCredential(int $userId, int $tokenId): bool
         apiDeviceRevokeLockedCredential($userId, $tokenId);
         DB::insert(prefixTable('log_system'), [
             'type' => 'user_mngt', 'date' => time(), 'label' => 'at_device_credential_revoked',
-            'qui' => (string) $userId, 'field_1' => (string) $tokenId,
+            'qui' => (string) $actorId,
+            'field_1' => json_encode(['credential_id' => $tokenId, 'user_id' => $userId], JSON_THROW_ON_ERROR),
         ]);
         DB::commit();
         return true;
@@ -118,6 +125,39 @@ function apiDeviceRevokeCredential(int $userId, int $tokenId): bool
         DB::rollback();
         throw $e;
     }
+}
+
+/** Return a bounded metadata page to a freshly verified administrator; never select credential material. */
+function apiDeviceAdminList(int $actorId, int $ownerId = 0, int $offset = 0): array
+{
+    require_once __DIR__ . '/device_pairing_logic.php';
+    $actor = DB::queryFirstRow('SELECT id, admin, disabled, deleted_at FROM ' . prefixTable('users') . ' WHERE id = %i', $actorId);
+    if ($actor === null || (int) $actor['admin'] !== 1 || (int) $actor['disabled'] !== 0 || $actor['deleted_at'] !== null) {
+        throw new DevicePairingException('forbidden', 403);
+    }
+    if ($ownerId < 0 || $offset < 0 || $offset > 1000000) {
+        throw new DevicePairingException('invalid_request');
+    }
+    $query = 'SELECT t.id, t.user_id, t.label, t.created_at, t.last_used_at, t.expires_at, u.login
+        FROM ' . prefixTable('api_tokens') . ' t INNER JOIN ' . prefixTable('users') . ' u ON u.id = t.user_id
+        WHERE t.purpose = %s AND t.pairing_id IS NULL AND t.revoked_at IS NULL';
+    $parameters = ['external_device'];
+    if ($ownerId > 0) {
+        $query .= ' AND t.user_id = %i';
+        $parameters[] = $ownerId;
+    }
+    $query .= ' ORDER BY t.created_at DESC, t.id DESC LIMIT 31 OFFSET %i';
+    $parameters[] = $offset;
+    $rows = DB::query($query, ...$parameters);
+    $hasMore = count($rows) > 30;
+    if ($hasMore) {
+        array_pop($rows);
+    }
+    foreach ($rows as &$row) {
+        $row['login'] = html_entity_decode((string) $row['login'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    }
+    unset($row);
+    return ['devices' => $rows, 'has_more' => $hasMore];
 }
 
 /** Revoke inside the caller's transaction, after locking the user and credential. */

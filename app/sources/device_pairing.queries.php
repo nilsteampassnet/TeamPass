@@ -56,7 +56,7 @@ try {
     }
     $action = $_POST['type'] ?? '';
     $raw = $_POST['data'] ?? '';
-    if (!is_string($action) || !in_array($action, ['create', 'status', 'approve', 'reject', 'cancel', 'list', 'revoke'], true)
+    if (!is_string($action) || !in_array($action, ['create', 'status', 'approve', 'reject', 'cancel', 'list', 'revoke', 'admin_list', 'admin_revoke'], true)
         || !is_string($raw) || strlen($raw) > 8192
     ) {
         throw new DevicePairingException('invalid_request');
@@ -70,7 +70,29 @@ try {
         throw new DevicePairingException('unavailable', 503);
     }
     devicePairingThrottle('profile:' . $userId, 120);
-    if ($action === 'list') {
+    if ($action === 'admin_list' || $action === 'admin_revoke') {
+        $actor = DB::queryFirstRow('SELECT admin, disabled, deleted_at FROM ' . prefixTable('users') . ' WHERE id = %i', $userId);
+        if ($actor === null || (int) $actor['admin'] !== 1 || (int) $actor['disabled'] !== 0 || $actor['deleted_at'] !== null) {
+            throw new DevicePairingException('forbidden', 403);
+        }
+        $ownerId = filter_var($input['user_id'] ?? 0, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+        if ($ownerId === false) {
+            throw new DevicePairingException('invalid_request');
+        }
+        if ($action === 'admin_list') {
+            $offset = filter_var($input['offset'] ?? 0, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 1000000]]);
+            if ($offset === false) {
+                throw new DevicePairingException('invalid_request');
+            }
+            $result = apiDeviceAdminList($userId, $ownerId, $offset);
+        } else {
+            $id = filter_var($input['id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+            if ($id === false || $ownerId <= 0) {
+                throw new DevicePairingException('invalid_request');
+            }
+            $result = ['revoked' => apiDeviceRevokeCredential($ownerId, $id, $userId)];
+        }
+    } elseif ($action === 'list') {
         $result = ['devices' => DB::query('SELECT id, label, created_at, last_used_at, expires_at FROM ' . prefixTable('api_tokens') . '
             WHERE user_id = %i AND purpose = %s AND pairing_id IS NULL AND revoked_at IS NULL ORDER BY created_at DESC', $userId, 'external_device')];
     } elseif ($action === 'revoke') {

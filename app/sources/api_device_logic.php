@@ -134,3 +134,11 @@ function apiDeviceLifetimeDays(array $settings): int
         return 90;
     }
 }
+
+/** Owners manage their own credentials; only a currently active administrator manages another account. */
+function apiDeviceCanManageCredentials(?array $actor, int $ownerId): bool
+{
+    return $actor !== null && (int) ($actor['id'] ?? 0) > 0 && $ownerId > 0
+        && ((int) $actor['id'] === $ownerId || ((int) ($actor['admin'] ?? 0) === 1
+            && (int) ($actor['disabled'] ?? 0) === 0 && ($actor['deleted_at'] ?? null) === null));
+}

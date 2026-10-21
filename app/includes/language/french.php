@@ -4018,6 +4018,12 @@ return array(
     'device_pairing_lifetime_tip' => 'S’applique aux nouveaux appareils associés. Par défaut : 90 jours ; valeurs admises : 1–3650. Les échéances existantes sont conservées. Associez à nouveau l’appareil après expiration.',
     'device_pairing_lifetime_invalid' => 'Saisissez un nombre entier de jours entre 1 et 3650.',
     'device_pairing_valid_until' => 'Valide jusqu’au',
+    'device_pairing_error_forbidden' => 'Vous n’êtes pas autorisé à gérer les appareils de ce compte.',
+    'device_pairing_admin_devices' => 'Appareils associés',
+    'device_pairing_admin_devices_tip' => 'Lister et révoquer les jetons d’appareil par compte. La révocation bloque aussi leurs sessions API. Seules les métadonnées du compte et de l’appareil sont affichées, sans accéder au contenu des coffres.',
+    'device_pairing_all_accounts' => 'Tous les comptes',
+    'device_pairing_previous' => 'Précédent',
+    'device_pairing_next' => 'Suivant',
     'device_pairing_upgrade_needed' => 'Exécutez l’assistant de mise à niveau avant d’activer cette fonction.',
 
 );

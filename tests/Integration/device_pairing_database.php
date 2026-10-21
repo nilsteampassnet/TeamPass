@@ -155,7 +155,7 @@ try {
         (new ReflectionMethod($installer, $method))->invoke($installer);
     }
     DB::query('CREATE TABLE ' . prefixTable('users') . ' (id INT PRIMARY KEY, login VARCHAR(255), auth_type VARCHAR(32),
-        disabled INT DEFAULT 0, deleted_at INT NULL, is_ready_for_usage INT DEFAULT 1, public_key TEXT,
+        disabled INT DEFAULT 0, admin INT DEFAULT 0, deleted_at INT NULL, is_ready_for_usage INT DEFAULT 1, public_key TEXT,
         key_tempo VARCHAR(64), session_end BIGINT) ENGINE=InnoDB');
     DB::query('CREATE TABLE ' . prefixTable('misc') . ' (type VARCHAR(32), intitule VARCHAR(64), valeur TEXT, UNIQUE KEY setting(type,intitule)) ENGINE=InnoDB');
     DB::query('CREATE TABLE ' . prefixTable('log_system') . ' (type VARCHAR(32), date INT, label VARCHAR(64), qui VARCHAR(32), field_1 TEXT) ENGINE=InnoDB');
@@ -286,6 +286,40 @@ try {
     $revoked = DB::queryFirstRow('SELECT * FROM ' . prefixTable('api_tokens') . ' WHERE id = %i', $tokenId);
     pairingCheck($revoked['wrapped_private_key'] === '' && $revoked['salt'] === '' && $revoked['pairing_id'] === null, 'Revocation retained provisioning material');
     pairingCheck($revoked['token_hash'] === hash('sha256', $pat), 'Revocation lost the possession-proof tombstone');
+    foreach ([43 => 0, 45 => 1, 46 => 0] as $actorId => $admin) {
+        DB::insert(prefixTable('users'), ['id' => $actorId, 'login' => $actorId === 46 ? 'R&amp;D O&#039;Brien &quot;&lt;account&gt;' : 'actor-' . $actorId, 'admin' => $admin]);
+    }
+    $adminIds = [];
+    for ($deviceIndex = 0; $deviceIndex < 31; ++$deviceIndex) {
+        DB::insert(prefixTable('api_tokens'), ['user_id' => 46, 'purpose' => 'external_device', 'token_hash' => hash('sha256', 'admin-fixture-' . $deviceIndex),
+            'wrapped_private_key' => 'synthetic-wrapped-key', 'salt' => str_repeat('a', 32), 'label' => "R&D O'Brien <device> " . $deviceIndex,
+            'created_at' => time(), 'expires_at' => time() + 86400]);
+        $adminIds[] = (int) DB::insertId();
+    }
+    pairingRefuses(static fn () => apiDeviceAdminList(43), 'forbidden');
+    pairingCheck(!apiDeviceRevokeCredential(46, $adminIds[0], 43), 'Ordinary account revoked another account device');
+    pairingCheck(!apiDeviceRevokeCredential(42, $adminIds[0], 45), 'Admin revocation accepted a mismatched owner');
+    $page = apiDeviceAdminList(45, 46);
+    pairingCheck(count($page['devices']) === 30 && $page['has_more'], 'Admin inventory is not bounded and paged');
+    pairingCheck($page['devices'][0]['login'] === 'R&D O\'Brien "<account>', 'Admin metadata did not decode the displayed account name');
+    foreach ($page['devices'] as $metadata) {
+        foreach (['token_hash', 'salt', 'wrapped_private_key', 'public_key'] as $forbidden) {
+            pairingCheck(!array_key_exists($forbidden, $metadata), 'Admin inventory exposed credential material');
+        }
+    }
+    pairingCheck(count(apiDeviceAdminList(45, 46, 30)['devices']) === 1, 'Admin next page is incomplete');
+    DB::update(prefixTable('users'), ['admin' => 0], 'id = %i', 45);
+    pairingRefuses(static fn () => apiDeviceAdminList(45), 'forbidden');
+    pairingCheck(!apiDeviceRevokeCredential(46, $adminIds[0], 45), 'A stale admin role allowed revocation');
+    DB::update(prefixTable('users'), ['admin' => 1], 'id = %i', 45);
+    DB::update(prefixTable('misc'), ['valeur' => '0'], 'intitule = %s', 'api');
+    pairingCheck(apiDeviceRevokeCredential(46, $adminIds[0], 45), 'Admin could not revoke with the API disabled');
+    DB::update(prefixTable('misc'), ['valeur' => '1'], 'intitule = %s', 'api');
+    $adminAudit = DB::queryFirstRow('SELECT * FROM ' . prefixTable('log_system') . ' WHERE label = %s AND qui = %s', 'at_device_credential_revoked', '45');
+    pairingCheck(json_decode($adminAudit['field_1'], true)['user_id'] === 46, 'Admin revocation audit lost the target owner');
+    DB::delete(prefixTable('api_tokens'), 'user_id = %i', 46);
+    DB::delete(prefixTable('users'), 'id IN %li', [43, 45, 46]);
+    echo "OK: administrator metadata pagination, fresh permissions, owner scope and actor/target audit\n";
     echo "OK: real installer schema, immutable claims, explicit approval, concurrent consumption, protected retry and PAT renewal/revocation\n";
 
     foreach (['cancel', 'reject', 'expiry', 'logout', 'policy', 'key_change', 'delivery_timeout'] as $scenario) {

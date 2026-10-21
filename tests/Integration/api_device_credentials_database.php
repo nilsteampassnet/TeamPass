@@ -115,7 +115,7 @@ if (($argv[1] ?? '') === 'worker') {
 $settings = ['device_pairing_schema' => 3, 'device_pairing_enabled' => 1, 'api' => 1, 'extension_token_all_auth_types' => 1];
 $tables = ['api_sessions', 'api_tokens', 'api', 'users', 'misc', 'log_system'];
 try {
-    DB::query('CREATE TABLE ' . prefixTable('users') . ' (id INT PRIMARY KEY, login VARCHAR(255), auth_type VARCHAR(32), disabled INT DEFAULT 0, deleted_at INT NULL) ENGINE=InnoDB');
+    DB::query('CREATE TABLE ' . prefixTable('users') . ' (id INT PRIMARY KEY, login VARCHAR(255), auth_type VARCHAR(32), disabled INT DEFAULT 0, admin INT DEFAULT 0, deleted_at INT NULL) ENGINE=InnoDB');
     DB::query('CREATE TABLE ' . prefixTable('api') . ' (user_id INT PRIMARY KEY, enabled INT) ENGINE=InnoDB');
     DB::query('CREATE TABLE ' . prefixTable('api_tokens') . ' (id INT PRIMARY KEY AUTO_INCREMENT, user_id INT, purpose VARCHAR(32), expires_at INT NULL, revoked_at INT NULL, pairing_id CHAR(32), wrapped_private_key TEXT, salt VARCHAR(64)) ENGINE=InnoDB');
     DB::query('CREATE TABLE ' . prefixTable('api_sessions') . ' (id INT PRIMARY KEY AUTO_INCREMENT, user_id INT, jti VARCHAR(32), source_token_id INT NULL, revoked_at INT NULL, KEY source_token_id(source_token_id)) ENGINE=InnoDB');

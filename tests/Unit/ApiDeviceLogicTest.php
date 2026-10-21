@@ -104,4 +104,17 @@ class ApiDeviceLogicTest extends TestCase
             }
         }
     }
+
+    /** An administrator's role never grants vault access; this decision scopes credential metadata only. */
+    public function testCredentialManagementScope(): void
+    {
+        self::assertTrue(apiDeviceCanManageCredentials(['id' => 42, 'read_only' => 1], 42));
+        self::assertFalse(apiDeviceCanManageCredentials(['id' => 43, 'gestionnaire' => 1], 42));
+        self::assertFalse(apiDeviceCanManageCredentials(null, 42));
+        self::assertFalse(apiDeviceCanManageCredentials(['id' => 0, 'admin' => 1], 42));
+        self::assertFalse(apiDeviceCanManageCredentials(['id' => 45, 'admin' => 1], 0));
+        self::assertTrue(apiDeviceCanManageCredentials(['id' => 45, 'admin' => 1], 42));
+        self::assertFalse(apiDeviceCanManageCredentials(['id' => 45, 'admin' => 1, 'disabled' => 1], 42));
+        self::assertFalse(apiDeviceCanManageCredentials(['id' => 45, 'admin' => 1, 'deleted_at' => 123], 42));
+    }
 }

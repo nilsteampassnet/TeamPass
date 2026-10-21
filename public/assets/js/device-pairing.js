@@ -257,5 +257,69 @@
     $('#device-pairing-search').on('input search', renderDevices)
     loadDevices()
   }
-  return { mount, createAttemptGuard, canAdvance, matchesLabel, remainingSeconds }
+  /** Manage a bounded metadata inventory without exposing credentials or decrypted vault data. */
+  function mountAdmin (options) {
+    const $ = root.jQuery
+    if (!$ || !$('#external-device-admin').length) return
+    const m = options.messages
+    let offset = 0
+    let hasMore = false
+    let generation = 0
+    const owner = () => Number($('#device-admin-owner').val())
+    const request = (type, data) => $.ajax({
+      url: 'sources/device_pairing.queries.php', type: 'POST', dataType: 'json', timeout: 15000,
+      data: { type, key: options.key, data: root.prepareExchangedData(JSON.stringify(data), 'encode', options.key) }
+    })
+    const buttons = busy => {
+      $('#device-admin-previous').prop('disabled', busy || !offset)
+      $('#device-admin-next').prop('disabled', busy || !hasMore)
+    }
+    function load () {
+      const version = ++generation
+      const selectedOwner = owner()
+      hasMore = false
+      buttons(true)
+      $('#device-admin-list').empty().append($('<p>').addClass('text-muted').text(m.loading))
+      request('admin_list', { user_id: selectedOwner, offset }).done(result => {
+        if (version !== generation || selectedOwner !== owner()) return
+        if (result.error) { root.toastr.error(result.message || m.network); return }
+        hasMore = Boolean(result.has_more)
+        const list = $('#device-admin-list').empty()
+        const date = value => value ? new Date(value * 1000).toLocaleString() : m.never
+        const entries = result.devices || []
+        if (!entries.length) $('<p>').addClass('text-muted').text(m.no_devices).appendTo(list)
+        entries.forEach(device => {
+          const row = $('<div>').addClass('d-sm-flex align-items-center justify-content-between border rounded p-3 mb-2')
+          const text = $('<div>').addClass('mr-sm-3 mb-2 mb-sm-0 text-break').css('min-width', 0).appendTo(row)
+          $('<div>').addClass('font-weight-bold').text(device.login + ' · ' + (device.label || m.unnamed)).appendTo(text)
+          $('<div>').addClass('small text-muted').text(m.created + ': ' + date(device.created_at) + ' · ' + m.last_used + ': ' + date(device.last_used_at)).appendTo(text)
+          $('<div>').addClass('small text-muted').text(m.valid_until + ': ' + date(device.expires_at)).appendTo(text)
+          $('<button>').attr('type', 'button').addClass('btn btn-sm btn-outline-danger').text(m.revoke).on('click', function () {
+            const button = $(this).prop('disabled', true)
+            const confirmation = $('<div>').append(
+              $('<p>').addClass('font-weight-bold text-break').text(device.login + ' · ' + (device.label || m.unnamed)),
+              $('<p>').text(m.revoke_confirm)
+            ).prop('outerHTML')
+            root.alertify.confirm(m.revoke_title, confirmation, function () {
+              request('admin_revoke', { user_id: Number(device.user_id), id: Number(device.id) }).done(result => {
+                if (!result.error) load()
+              }).fail(xhr => root.toastr.error((xhr.responseJSON && xhr.responseJSON.message) || m.network)).always(() => button.prop('disabled', false))
+            }, function () { button.prop('disabled', false) }).set('labels', { ok: m.revoke, cancel: m.cancel })
+          }).appendTo(row)
+          list.append(row)
+        })
+      }).fail(xhr => {
+        if (version === generation) $('#device-admin-list').empty().append($('<p>').addClass('text-warning').text((xhr.responseJSON && xhr.responseJSON.message) || m.network))
+      }).always(() => { if (version === generation) buttons(false) })
+    }
+    $('#device-admin-owner, #device-admin-refresh').on('change click', function (event) {
+      if (this.id === 'device-admin-owner' && event.type !== 'change') return
+      offset = 0
+      load()
+    })
+    $('#device-admin-previous').on('click', () => { offset = Math.max(0, offset - 30); load() })
+    $('#device-admin-next').on('click', () => { if (hasMore) { offset += 30; load() } })
+    load()
+  }
+  return { mount, mountAdmin, createAttemptGuard, canAdvance, matchesLabel, remainingSeconds }
 })

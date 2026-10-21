@@ -4034,6 +4034,12 @@ return array(
     'device_pairing_lifetime_tip' => 'Applies to newly paired devices. Default: 90 days; allowed range: 1–3650. Existing expiry dates are unchanged. Pair the device again after expiry.',
     'device_pairing_lifetime_invalid' => 'Enter a whole number of days between 1 and 3650.',
     'device_pairing_valid_until' => 'Valid until',
+    'device_pairing_error_forbidden' => 'You are not allowed to manage this account’s devices.',
+    'device_pairing_admin_devices' => 'Paired devices',
+    'device_pairing_admin_devices_tip' => 'List and revoke device credentials by account. Revocation also blocks their API sessions. Only account and device metadata are shown; vault contents are not accessed.',
+    'device_pairing_all_accounts' => 'All accounts',
+    'device_pairing_previous' => 'Previous',
+    'device_pairing_next' => 'Next',
     'device_pairing_upgrade_needed' => 'Run the upgrade wizard before enabling this feature.',
 
 );
