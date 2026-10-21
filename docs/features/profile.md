@@ -24,9 +24,12 @@ and your existing API/token permissions. Its short-lived QR only starts a reques
 compare the code on both screens and approve the displayed device. The profile
 confirms completion after the device's first successful authentication.
 
-The device list remains available for revocation if pairing or API access is
-later disabled. Revocation stops the device's API sessions; it does not erase
-offline data. See [the pairing protocol and test recipe](../api/device-pairing.md).
+The device list shows each credential's expiry and remains available for
+revocation if pairing or API access is later disabled. New credentials expire
+after the administrator's configured duration (90 days by default).
+Administrators can also inspect and revoke device credentials in Settings > API.
+Revocation stops the device's API sessions; it does not erase offline data.
+See [the pairing protocol and test recipe](../api/device-pairing.md).
 
 > 🔔 Some fields may be locked by the administrator (e.g. name, timezone, language). When an option is grayed out or absent, it means the administrator has disabled self-editing for that field.
 

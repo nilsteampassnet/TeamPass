@@ -7,6 +7,10 @@ by PKCE's verifier binding, not an implementation of OAuth Device Authorization.
 
 The feature is disabled by default. A compatible external client is required.
 It does not configure offline access or change the account's API or vault rights.
+For the Android implementation handoff, see the
+[Android client guide](device-pairing-android.md). The current scope is Android;
+an Android scanner and end-to-end prototype still need to be implemented and
+validated before the experimental contract is frozen. No iOS support is claimed.
 
 ## Installation and policy
 
@@ -49,9 +53,21 @@ initiating user's valid session and synchronizer CSRF key. Approval also uses
 the existing sign-in passkey step-up policy: password confirmation where
 applicable or a recent sign-in for accounts whose password TeamPass cannot check.
 There is no local password requirement invented for an SSO account.
+Settings > API also provides an administrator-only, paginated device inventory
+filtered by account. Its POST actions `admin_list` and `admin_revoke` use the
+same session/CSRF protections and fresh server-side administrator checks;
+managers cannot manage another account's devices. Only labels, account names,
+creation/last-use/expiry dates and IDs are returned. No credential material or
+vault contents are selected. Revocation checks the supplied owner against the
+credential, audits both acting administrator and target owner, and remains
+available when API or pairing is disabled.
+
+The last-use timestamp records successful PAT authentication, rather than every
+JWT-authenticated request. It is informational; no inactivity timeout is applied.
 
 The device routes below accept no JWT as a substitute for their pairing proof.
-They remain behind API enablement, network ACLs and mandatory HTTPS.
+They enforce network ACLs and mandatory HTTPS; API enablement is also required
+except for the possession-proven credential status check described below.
 
 | Route under `/api/v1` | Method | Authorization |
 | --- | --- | --- |
@@ -161,9 +177,12 @@ data retention and licensing remain separate policies.
 `credentialStatus` returns HTTP 200 only after matching the exact PAT's hash to
 an external-device record. The body contains `credential_id`, `state`, `reason`,
 `expires_at`, `server_time` and canonical `server_url`. States are `active`,
-`pending` (a handoff not yet confirmed by successful authentication), or
-`invalidated`. Terminal reasons are `revoked`, `expired`, `access_removed` or
-`keys_changed`; pending uses `not_confirmed`. Unknown, legacy or malformed
+`pending` (a handoff not yet confirmed by successful authentication), `suspended`
+(`access_removed`, for account/API/pairing policy), or `invalidated`. Terminal
+reasons are `revoked`, `expired` or `keys_changed`; pending uses `not_confirmed`.
+Suspension blocks access without claiming irreversible credential revocation:
+lock local access and revalidate after policy restoration, without treating a
+temporary administrative switch as a purge instruction. Unknown, legacy or malformed
 proofs receive the same 401 and never enumerate an account.
 
 Revocation retains the credential hash and minimal metadata as a proof record,
@@ -175,7 +194,7 @@ On a rejected JWT, try renewal once. A generic 401, 403, timeout, 5xx, invalid
 JSON or unavailable endpoint is **not** a command to erase local data. A client
 can verify definitive invalidation using its original PAT against the already
 bound HTTPS instance, validating the response state, credential ID and server
-identity. Only apply the resulting cache/key invalidation to that established
+identity. Only apply terminal cache/key invalidation to that established
 profile. A pending pairing must never erase an existing profile's vault.
 
 The client must define removal of server-derived caches and keys, invalidate

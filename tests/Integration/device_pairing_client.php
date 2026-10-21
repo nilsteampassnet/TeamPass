@@ -148,11 +148,19 @@ try {
     if (!is_string($first['token'] ?? null) || !is_string($second['token'] ?? null) || $first['token'] === $second['token']) {
         throw new RuntimeException('The dedicated credential did not issue two independent JWTs');
     }
+    $credentialState = pairingClientRequest($server . '/api/v1/devicePairing/credentialStatus', ['token' => $pat]);
+    if (($credentialState['state'] ?? '') !== 'active'
+        || (int) ($credentialState['credential_id'] ?? 0) !== (int) ($handoff['credential_id'] ?? -1)
+        || ($credentialState['server_url'] ?? '') !== $server
+        || (int) ($credentialState['expires_at'] ?? 0) !== (int) ($handoff['credential_expires_at'] ?? -1)
+    ) {
+        throw new RuntimeException('The proven credential status does not match the paired identity');
+    }
     // Fetch a permission-protected endpoint, without printing or saving the returned data.
     pairingClientRequest($server . '/api/v1/folder/listFolders', null, $second['token']);
     pairingClientRequest($server . '/api/v1/auth/logout', [], $first['token']);
     pairingClientRequest($server . '/api/v1/auth/logout', [], $second['token']);
-    unset($pat, $keys, $handoff, $first, $second);
+    unset($pat, $keys, $handoff, $first, $second, $credentialState);
     fwrite(STDOUT, "OK: approved pairing, protected handoff, two JWTs, authenticated request and session logout.\nRevoke 'Reference test client' in the profile after testing. No credential was saved or printed.\n");
 } catch (Throwable $e) {
     // Fixed local messages only: JSON/crypto exceptions could contain supplied data.

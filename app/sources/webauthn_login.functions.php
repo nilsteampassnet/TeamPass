@@ -598,6 +598,7 @@ function webauthnLoginSessionCanWrap(array $SETTINGS): bool
  * @param array<string, mixed> $data     current_password
  * @param array<string, mixed> $SETTINGS Settings
  * @param Language             $lang     Language
+ * @param string               $context  Server-owned operation context for the failed-auth audit
  *
  * @return array<string, mixed>|null Error response, with stepup = password|signin when the
  *                                   caller has to act; null when the caller may go on

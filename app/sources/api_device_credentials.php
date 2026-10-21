@@ -231,7 +231,12 @@ function apiDeviceCredentialStatus(string $proof, array $settings): ?array
                 $reason = 'keys_changed';
             }
         }
-        $state = $reason === 'not_confirmed' ? 'pending' : ($reason === null ? 'active' : 'invalidated');
+        $state = match ($reason) {
+            null => 'active',
+            'not_confirmed' => 'pending',
+            'access_removed' => 'suspended',
+            default => 'invalidated',
+        };
         $result = ['credential_id' => (int) $token['id'], 'state' => $state,
             'reason' => $reason, 'expires_at' => $token['expires_at'] === null ? null : (int) $token['expires_at'],
             'server_time' => time(), 'server_url' => devicePairingServerUrl($settings)];

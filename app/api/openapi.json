@@ -1512,7 +1512,7 @@
                                     "required": ["credential_id", "state", "reason", "expires_at", "server_time", "server_url"],
                                     "properties": {
                                         "credential_id": {"type": "integer"},
-                                        "state": {"type": "string", "enum": ["active", "pending", "invalidated"]},
+                                        "state": {"type": "string", "enum": ["active", "pending", "suspended", "invalidated"]},
                                         "reason": {"type": ["string", "null"], "enum": [null, "revoked", "expired", "access_removed", "keys_changed", "not_confirmed"]},
                                         "expires_at": {"type": ["integer", "null"]},
                                         "server_time": {"type": "integer"},

@@ -83,15 +83,21 @@ function pairingRefuses(callable $operation, string $reason): void
     }
 }
 
-/** Minimal session issuer; validates the real PAT wrapping before inserting an actual session. */
+/** Minimal session issuer; uses real PAT validation and the production JWT issuer's key allocation. */
 function pairingFixtureAuthenticate(int $tokenId, string $pat, array $settings): ?array
 {
     return apiDeviceAuthenticate(42, $tokenId, $settings, static function (array $token, array $user) use ($pat): array {
         $wrapKey = hash_hkdf('sha256', $pat, 32, 'teampass-extension-token-v1', hex2bin($token['salt']));
         $privateKey = decrypt_with_session_key($token['wrapped_private_key'], $wrapKey);
         pairingCheck(is_string($privateKey) && apiDevicePrivateKeyMatches($privateKey, $user['public_key']), 'PAT cannot unlock the current user key');
+        $issuer = (string) file_get_contents(__DIR__ . '/../../app/api/Model/AuthModel.php');
+        $issuer = substr($issuer, (int) strpos($issuer, 'private function issueJwtForUser('));
+        pairingCheck(preg_match('/\$keyTempo = ([\s\S]*?);/', $issuer, $allocation) === 1, 'Cannot inspect production API session key allocation');
+        $sourceTokenId = (int) $token['id'];
+        $userInfo = $user;
+        $apiKeyTempo = eval('return ' . $allocation[1] . ';');
         $jti = bin2hex(random_bytes(16));
-        DB::insert(prefixTable('api_sessions'), ['user_id' => 42, 'jti' => $jti, 'key_tempo' => $user['key_tempo'],
+        DB::insert(prefixTable('api_sessions'), ['user_id' => 42, 'jti' => $jti, 'key_tempo' => $apiKeyTempo,
             'source_token_id' => $token['id'], 'created_at' => time(), 'expires_at' => time() + 60]);
         return ['token' => $jti, 'teampass_version' => 'fixture', 'teampass_version_major' => 'fixture', 'teampass_version_minor' => 'fixture'];
     });
@@ -156,7 +162,7 @@ try {
     }
     DB::query('CREATE TABLE ' . prefixTable('users') . ' (id INT PRIMARY KEY, login VARCHAR(255), auth_type VARCHAR(32),
         disabled INT DEFAULT 0, admin INT DEFAULT 0, deleted_at INT NULL, is_ready_for_usage INT DEFAULT 1, public_key TEXT,
-        key_tempo VARCHAR(64), session_end BIGINT) ENGINE=InnoDB');
+        key_tempo VARCHAR(64), key_tempo_created_at INT DEFAULT 0, session_end BIGINT) ENGINE=InnoDB');
     DB::query('CREATE TABLE ' . prefixTable('misc') . ' (type VARCHAR(32), intitule VARCHAR(64), valeur TEXT, UNIQUE KEY setting(type,intitule)) ENGINE=InnoDB');
     DB::query('CREATE TABLE ' . prefixTable('log_system') . ' (type VARCHAR(32), date INT, label VARCHAR(64), qui VARCHAR(32), field_1 TEXT) ENGINE=InnoDB');
     DB::insert(prefixTable('users'), ['id' => 42, 'login' => 'fixture', 'auth_type' => 'local', 'public_key' => $userKeys['publickey'], 'key_tempo' => 'fixture-session-key', 'session_end' => time() + 3600]);
@@ -258,9 +264,16 @@ try {
     pairingCheck($afterFailure['state'] === 'delivered' && $afterFailure['encrypted_token'] !== null, 'Failed auth consumed the handoff');
     pairingCheck(DB::queryFirstField('SELECT pairing_id FROM ' . prefixTable('api_tokens') . ' WHERE id = %i', $tokenId) === $created['pairing_id'], 'Failed auth confirmed the credential');
     pairingCheck((int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('log_system') . ' WHERE label = %s', 'api_token_decrypt_failed') === 1, 'Failed-auth audit was rolled back');
+    DB::update(prefixTable('users'), ['key_tempo_created_at' => time() - 7200], 'id = %i', 42);
+    $browserSession = \TeampassClasses\SessionManager\SessionManager::getSession();
+    $browserSession->set('user-session_duration', time() + 3600);
+    $browserChecks = new \TeampassClasses\PerformChecks\PerformChecks(['type' => ''], ['user_id' => 42, 'user_key' => 'fixture-session-key']);
+    pairingCheck($browserChecks->checkSession(), 'Aged browser session is invalid before pairing');
     $one = pairingFixtureAuthenticate($tokenId, $pat, $settings);
     $two = pairingFixtureAuthenticate($tokenId, $pat, $settings);
     pairingCheck($one !== null && $two !== null && $one['token'] !== $two['token'], 'Durable PAT could not renew the session');
+    pairingCheck($browserChecks->checkSession(), 'Device authentication disconnected a browser signed in over one hour ago');
+    pairingCheck(DB::queryFirstField('SELECT key_tempo FROM ' . prefixTable('users') . ' WHERE id = %i', 42) === 'fixture-session-key', 'Device authentication rotated the browser key');
     $row = DB::queryFirstRow('SELECT * FROM ' . prefixTable('device_pairings') . ' WHERE id = %s', $created['pairing_id']);
     pairingCheck($row['state'] === 'completed' && $row['encrypted_token'] === null && $row['public_key'] === null, 'Successful auth left a recoverable handoff');
     pairingCheck(apiDeviceCredentialStatus($pat, $settings)['state'] === 'active', 'Valid PAT proof was refused');
@@ -268,8 +281,10 @@ try {
     foreach (['api', 'device_pairing_enabled'] as $policyName) {
         DB::update(prefixTable('misc'), ['valeur' => '0'], 'intitule = %s', $policyName);
         pairingCheck(apiDeviceCredentialStatus($pat, $settings)['reason'] === 'access_removed', 'Policy removal was not provable');
+        pairingCheck(apiDeviceCredentialStatus($pat, $settings)['state'] === 'suspended', 'Temporary policy removal commanded terminal invalidation');
         pairingCheck(pairingFixtureAuthenticate($tokenId, $pat, $settings) === null, 'Disabled policy allowed authentication');
         DB::update(prefixTable('misc'), ['valeur' => '1'], 'intitule = %s', $policyName);
+        pairingCheck(apiDeviceCredentialStatus($pat, $settings)['state'] === 'active', 'Restored policy left an irreversible device revocation');
     }
     DB::update(prefixTable('api_tokens'), ['expires_at' => time() - 1], 'id = %i', $tokenId);
     pairingCheck(apiDeviceCredentialStatus($pat, $settings)['reason'] === 'expired', 'Expiry was not provable with the original PAT');
