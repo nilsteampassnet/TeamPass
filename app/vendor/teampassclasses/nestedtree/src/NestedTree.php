@@ -73,6 +73,31 @@ class NestedTree
     }
 
     /**
+     * Run a read query, failing with the database error when it is rejected.
+     *
+     * A rejected query (typically a column missing because the database upgrade has not
+     * run) would otherwise surface as a TypeError in mysqli_fetch_object(), which hides
+     * the SQL error the administrator needs to see in the logs.
+     *
+     * @param string $query SQL query
+     *
+     * @return \mysqli_result
+     *
+     * @throws \RuntimeException When the database rejects the query
+     */
+    private function runQuery(string $query): \mysqli_result
+    {
+        $result = mysqli_query($this->link, $query);
+        if ($result instanceof \mysqli_result === false) {
+            throw new \RuntimeException(
+                'NestedTree query on ' . $this->table . ' failed: ' . mysqli_error($this->link)
+            );
+        }
+
+        return $result;
+    }
+
+    /**
      * Fetch the node data for the node identified by $folder_id.
      *
      * @param int $folder_id The ID of the node to fetch
@@ -176,7 +201,7 @@ class NestedTree
             }
         }
 
-        $result = mysqli_query($this->link, $query);
+        $result = $this->runQuery($query);
 
         $arr = array();
         while ($row = mysqli_fetch_object($result)) {
@@ -271,7 +296,7 @@ class NestedTree
             );
         }
 
-        $result = mysqli_query($this->link, $query);
+        $result = $this->runQuery($query);
 
         $idField = $this->fields['id'];
         $arr = array();
@@ -311,7 +336,7 @@ class NestedTree
             $node->nright
         );
 
-        $result = mysqli_query($this->link, $query);
+        $result = $this->runQuery($query);
 
         if ($row = mysqli_fetch_object($result)) {
             return $row->is_descendant > 0;
@@ -340,7 +365,7 @@ class NestedTree
             mysqli_real_escape_string($this->link, $parent_id)
         );
 
-        $result = mysqli_query($this->link, $query);
+        $result = $this->runQuery($query);
 
         if ($row = mysqli_fetch_object($result)) {
             return $row->is_child > 0;
@@ -360,7 +385,7 @@ class NestedTree
     {
         if ($folder_id == 0) {
             $query = sprintf('select count(*) as num_descendants from %s', $this->table);
-            $result = mysqli_query($this->link, $query);
+            $result = $this->runQuery($query);
             if ($row = mysqli_fetch_object($result)) {
                 return (int) $row->num_descendants;
             }
@@ -389,7 +414,7 @@ class NestedTree
             $this->fields['parent'],
             mysqli_real_escape_string($this->link, $folder_id)
         );
-        $result = mysqli_query($this->link, $query);
+        $result = $this->runQuery($query);
         if ($row = mysqli_fetch_object($result)) {
             return (int) $row->num_children;
         }
@@ -572,7 +597,7 @@ class NestedTree
             );
         }
 
-        $result = mysqli_query($this->link, $query);
+        $result = $this->runQuery($query);
 
         $arr = array();
         while ($row = mysqli_fetch_object($result)) {
