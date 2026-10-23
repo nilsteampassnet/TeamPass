@@ -504,7 +504,7 @@ if (null !== $post_step) {
                         mysqli_query(
                             $db_link,
                             'INSERT INTO `' . $pre . 'sharekeys_logs`(`increment_id`, `object_id`, `user_id`, `share_key`)
-                            VALUES (NULL,' . (int) $item['id'] . ',' . (int) $userInfo['id'] . ",'" . $share_key_for_item . "')"
+                            VALUES (NULL,' . (int) $item['increment_id'] . ',' . (int) $userInfo['id'] . ",'" . $share_key_for_item . "')"
                         );
                     }
                 }
