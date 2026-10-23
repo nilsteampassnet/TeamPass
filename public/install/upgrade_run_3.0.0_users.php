@@ -466,7 +466,7 @@ if (null !== $post_step) {
             $db_count = mysqli_fetch_row(
                 mysqli_query(
                     $db_link,
-                    'SELECT increment_id
+                    'SELECT count(*)
                     FROM ' . $pre . "log_items
                     WHERE raison LIKE 'at_pw :%' AND encryption_type = 'teampass_aes'"
                 )
@@ -548,7 +548,7 @@ if (null !== $post_step) {
             $db_count = mysqli_fetch_row(
                 mysqli_query(
                     $db_link,
-                    'SELECT id
+                    'SELECT count(*)
                     FROM ' . $pre . 'categories_items'
                 )
             );
@@ -629,7 +629,7 @@ if (null !== $post_step) {
             $db_count = mysqli_fetch_row(
                 mysqli_query(
                     $db_link,
-                    'SELECT id
+                    'SELECT count(*)
                     FROM ' . $pre . 'suggestion'
                 )
             );
@@ -711,7 +711,7 @@ if (null !== $post_step) {
             $db_count = mysqli_fetch_row(
                 mysqli_query(
                     $db_link,
-                    'SELECT id
+                    'SELECT count(*)
                     FROM ' . $pre . 'files'
                 )
             );
