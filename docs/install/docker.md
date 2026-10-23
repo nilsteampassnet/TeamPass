@@ -122,6 +122,27 @@ The container applies the database migrations itself when it starts, then remove
 
 If the log says **`TeamPass is not configured yet`** on an instance that was already installed, its configuration was lost: follow [Recovering a lost configuration](#recovering-a-lost-configuration) and **do not run the installer**.
 
+### Incomplete schema after a jump from 3.2.2.6 or earlier to 3.2.3.x
+
+The 3.2.3.0 to 3.2.3.2 images applied only the 3.2.3 migration to a database recorded at `3.2.2`, and skipped what the 3.2.2.4 to 3.2.2.8 releases had added to the 3.2.2 one. The log then reports `Database is up to date (3.2.3)`, but signing in as a non-administrator fails with an HTTP 500, and the PHP log shows `mysqli_fetch_object(): Argument #1 ($result) must be of type mysqli_result, false given` in `NestedTree.php`. You are affected when this query returns no row (adapt the `teampass_` prefix):
+
+```sql
+SHOW COLUMNS FROM teampass_nested_tree LIKE 'deletion_protected';
+```
+
+Back up the database, record an older version so that the container replays the 3.2.2 and 3.2.3 migrations, then **recreate** the container (a plain restart no longer has the install directory):
+
+```sql
+UPDATE teampass_misc SET valeur = '3.2.1' WHERE type = 'admin' AND intitule = 'teampass_version';
+```
+
+```bash
+docker compose up -d --force-recreate teampass
+docker compose logs teampass | head -60   # expect "Applying 3.2.2..." then "Applying 3.2.3..."
+```
+
+The migrations are idempotent: replaying them on a complete schema changes nothing. Later images replay the migration of the recorded version themselves.
+
 ### Access logs
 
 Since 3.2.2.7, the Nginx access logs of the container (`/var/log/nginx/access.log` and `/var/log/nginx/teampass-access.log`) record the request path **without its query string** and without the `Referer` header, because both carry secrets such as Secure Send link credentials. Each line holds the client address, the time, the method, the path, the status, the size, the user agent and `X-Forwarded-For`: adapt any tool that parsed the previous `combined` format. A custom `/etc/nginx/http.d/default.conf` that removed the query strings, as advised for 3.2.2.6 by the [Secure Send guide](secure-send.md), is no longer needed.

@@ -422,7 +422,15 @@ auto_upgrade() {
         _candidate_number=$(version_to_number "$_candidate")
 
         # Already applied, or newer than the code shipped in this image.
-        if [ "$_candidate_number" -le "$_db_number" ] || [ "$_candidate_number" -gt "$_image_number" ]; then
+        #
+        # The step of the recorded version itself is replayed, not skipped: its
+        # patch releases keep appending to that script, and teampass_version
+        # stores TP_VERSION only. A database recorded at "3.2.2" by 3.2.2.3
+        # lacked everything 3.2.2.4-3.2.2.8 added (nested_tree.deletion_protected
+        # among them), and moving it to a 3.2.3 image applied 3.2.3 alone - which
+        # also refreshed upgrade_timestamp, so the schema floor could no longer
+        # see the gap.
+        if [ "$_candidate_number" -lt "$_db_number" ] || [ "$_candidate_number" -gt "$_image_number" ]; then
             continue
         fi
 
