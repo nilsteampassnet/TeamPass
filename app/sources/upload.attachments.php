@@ -224,13 +224,25 @@ header('Cache-Control: post-check=0, pre-check=0', false);
 
 $targetDir = $SETTINGS['path_to_upload_folder'];
 
-// Permission check for existing items — done here, before the temp file is deleted below.
-if (
-    $post_type_upload === 'item_attachments'
-    && (int) ($post_isNewItem ?? 1) === 0
-    && !empty($post_itemId)
-) {
-    if (!userCanEditItem((int) $session->get('user-id'), (int) $post_itemId)) {
+// Permission check — done here, before the temp file is deleted below.
+// An attachment targets either an item the caller may edit, or the staging id of an
+// item they are creating, which must not designate an existing item (GHSA-r6r4-5mr3-rppm).
+if ($post_type_upload === 'item_attachments') {
+    if ((int) ($post_isNewItem ?? 0) === 1) {
+        if (empty($post_randomId) === true) {
+            handleAttachmentError('Not allowed to modify this item.', 403, 403);
+        }
+        DB::queryFirstRow(
+            'SELECT id FROM ' . prefixTable('items') . ' WHERE id = %i',
+            (int) $post_randomId
+        );
+        if (DB::count() > 0) {
+            handleAttachmentError('Not allowed to modify this item.', 403, 403);
+        }
+    } elseif (
+        empty($post_itemId) === true
+        || !userCanEditItem((int) $session->get('user-id'), (int) $post_itemId)
+    ) {
         handleAttachmentError('Not allowed to modify this item.', 403, 403);
     }
 }
@@ -436,6 +448,16 @@ if (null !== $post_type_upload && $post_type_upload === 'item_attachments') {
         )
     );
     $newID = DB::insertId();
+
+    // Only this session may attach the file to its item (GHSA-r6r4-5mr3-rppm)
+    $session->set(
+        'user-pending_attachments',
+        attachmentPendingRecord(
+            (array) ($session->get('user-pending_attachments') ?? []),
+            (int) $newID,
+            (int) $post_itemId
+        )
+    );
 
     // Store the key for users
     // Is this item a personal one?
