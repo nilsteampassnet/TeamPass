@@ -549,7 +549,8 @@ if (null !== $post_step) {
                 mysqli_query(
                     $db_link,
                     'SELECT count(*)
-                    FROM ' . $pre . 'categories_items'
+                    FROM ' . $pre . 'categories_items
+                    WHERE encryption_type = "' . TP_ENCRYPTION_NAME . '"'
                 )
             );
 
@@ -712,7 +713,8 @@ if (null !== $post_step) {
                 mysqli_query(
                     $db_link,
                     'SELECT count(*)
-                    FROM ' . $pre . 'files'
+                    FROM ' . $pre . 'files
+                    WHERE status = "' . TP_ENCRYPTION_NAME . '"'
                 )
             );
 
