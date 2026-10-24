@@ -21,6 +21,19 @@ final class TeamPassRecoveryException extends RuntimeException
     }
 }
 
+/** Validate the destination before writing it into the restored configuration. */
+function tpRecoveryTargetUrl(mixed $input): string
+{
+    $url = is_string($input) ? rtrim(trim($input), '/') : '';
+    $parts = parse_url($url);
+    if ($url === '' || strlen($url) > 2048 || filter_var($url, FILTER_VALIDATE_URL) === false
+        || !is_array($parts) || ($parts['scheme'] ?? '') !== 'https' || empty($parts['host'])
+        || isset($parts['user']) || isset($parts['pass']) || isset($parts['query']) || isset($parts['fragment'])) {
+        throw new TeamPassRecoveryException('TARGET_HTTPS_URL_REQUIRED');
+    }
+    return $url;
+}
+
 /** Reject unsupported versions, downgrades and unknown schema levels before import. */
 function tpRecoveryPlanUpgrade(array $manifest, string $targetVersion, string $targetSchema): array
 {
