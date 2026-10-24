@@ -76,15 +76,18 @@ require_once __DIR__ . '/private_key_backup_logic.php';
 // Owner resolution rules for personal objects, shared with the remediation tooling and its tests.
 require_once __DIR__ . '/../scripts/personal_sharekeys_logic.php';
 
-header('Content-type: text/html; charset=utf-8');
-header('Cache-Control: no-cache, must-revalidate');
+// The recovery CLI needs the existing encryption/migration helpers before an
+// installation exists. Only that CLI bootstrap may opt out of the web runtime.
+if (PHP_SAPI !== 'cli' || !defined('TEAMPASS_FUNCTIONS_ONLY') || TEAMPASS_FUNCTIONS_ONLY !== true) {
+    header('Content-type: text/html; charset=utf-8');
+    header('Cache-Control: no-cache, must-revalidate');
 
-loadClasses('DB');
-$session = SessionManager::getSession();
+    loadClasses('DB');
+    $session = SessionManager::getSession();
 
-// Load config if $SETTINGS not defined
-$configManager = new ConfigManager();
-$SETTINGS = $configManager->getAllSettings();
+    $configManager = new ConfigManager();
+    $SETTINGS = $configManager->getAllSettings();
+}
 
 /**
  * Checks if a string is hex encoded
