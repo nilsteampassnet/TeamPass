@@ -248,12 +248,7 @@ function tpRecoveryPrepare(array $input): array
         throw new TeamPassRecoveryException('RECOVERY_ALREADY_PREPARED');
     }
     $connection = tpRecoveryConnectionOptions((array) ($input['connection'] ?? []));
-    $url = $input['url'] ?? '';
-    $parts = is_string($url) ? parse_url($url) : false;
-    if (!is_array($parts) || ($parts['scheme'] ?? '') !== 'https' || empty($parts['host'])
-        || isset($parts['user']) || isset($parts['pass']) || isset($parts['query']) || isset($parts['fragment'])) {
-        throw new TeamPassRecoveryException('TARGET_HTTPS_URL_REQUIRED');
-    }
+    $url = tpRecoveryTargetUrl($input['url'] ?? null);
     $id = bin2hex(random_bytes(16));
     $directory = tpRecoveryJobDirectory($id);
     if (!mkdir($directory, 0700)) {

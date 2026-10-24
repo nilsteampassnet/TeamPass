@@ -17,6 +17,21 @@ require_once __DIR__ . '/../../app/sources/recovery_logic.php';
 
 final class RecoveryLogicTest extends TestCase
 {
+    public function testValidatesDestinationUrlBeforePublication(): void
+    {
+        self::assertSame('https://restore.example.test:8443/team', tpRecoveryTargetUrl(' https://restore.example.test:8443/team/ '));
+        foreach ([null, [], '', 'http://restore.example.test', 'https://user:secret@restore.example.test',
+            'https://restore.example.test/path with spaces', 'https://restore.example.test/?token=secret',
+            'https://restore.example.test/#fragment'] as $invalid) {
+            try {
+                tpRecoveryTargetUrl($invalid);
+                self::fail('An invalid destination URL was accepted');
+            } catch (TeamPassRecoveryException $exception) {
+                self::assertSame('TARGET_HTTPS_URL_REQUIRED', $exception->reason);
+            }
+        }
+    }
+
     public function testPlansAnUpgradeAndAcceptsAnUnchangedSchema(): void
     {
         $manifest = ['teampass' => ['files_version' => '3.2.2.7', 'schema_level' => '100']];
