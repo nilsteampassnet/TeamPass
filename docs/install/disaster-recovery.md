@@ -140,6 +140,11 @@ needed, and checks item decryption with the restored system key chain. It checks
 the complete document references against the imported database. A successful job
 reaches `verified`; the web assistant can refresh its progress.
 
+Copy the complete command shown by the assistant, including its service-account
+prefix and absolute PHP/script paths. Run only the command for the current step,
+wait for it to finish in the server terminal, then click **Refresh progress** to
+show the next command. The account reminder remains visible after preparation.
+
 Then publish the restored documents, original master key and new configuration:
 
 ```bash

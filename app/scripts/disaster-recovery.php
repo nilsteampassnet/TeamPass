@@ -14,6 +14,10 @@ if (PHP_SAPI !== 'cli') {
     http_response_code(404);
     exit;
 }
+if (!is_readable(__DIR__ . '/../config/include.php')) {
+    fwrite(STDERR, "Recovery stopped: RECOVERY_BOOTSTRAP_UNREADABLE. Check file permissions and copy the complete PHP service account command from /install/recovery.php. Do not replace sudo -u with sudo php.\n");
+    exit(1);
+}
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../config/include.php';
 require_once __DIR__ . '/../sources/recovery.functions.php';

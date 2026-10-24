@@ -21,11 +21,11 @@
       : (verified ? data.verified : (prepared ? data.ready : (result.status === 'failed' ? data.failed : data.running)))
     const run = document.getElementById('recovery-command')
     run.hidden = !prepared
-    run.textContent = `${data.command} --run=${result.id}`
+    run.textContent = prepared ? `${data.command} --run=${result.id}` : ''
     document.getElementById('recovery-activate-hint').hidden = !prepared
     const activate = document.getElementById('recovery-activate')
-    activate.hidden = !(prepared || verified || completed)
-    activate.textContent = `${data.command} --${completed ? 'resume' : 'activate'}=${result.id}`
+    activate.hidden = !(verified || completed)
+    activate.textContent = verified || completed ? `${data.command} --${completed ? 'resume' : 'activate'}=${result.id}` : ''
   }
   document.querySelectorAll('#recovery-unlock, #recovery-prepare').forEach((form) => {
     form.addEventListener('submit', async (event) => {
