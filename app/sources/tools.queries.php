@@ -592,12 +592,20 @@ case 'perform_fix_pf_items-step3':
             ];
         }
 
+        // Every repair goes through the internal account: say up front when its key is unusable,
+        // and why, rather than at the first click on Repair.
+        $tpKeyStatus = tpUserKeyDiagnosis($SETTINGS)['status'];
+
         echo prepareExchangedData(
             array(
                 'error' => false,
                 'eligible_users' => $eligibleUsersCount,
                 'analysis' => $analysis,
                 'personal_analysis' => $personalAnalysis,
+                'tp_key_status' => $tpKeyStatus,
+                'tp_key_message' => $tpKeyStatus === 'ok'
+                    ? ''
+                    : $lang->get('restore_missing_sharekeys_tp_key_unusable') . ' ' . $lang->get(tpUserKeyStatusMessageKey($tpKeyStatus)),
             ),
             'encode'
         );
@@ -811,12 +819,12 @@ case 'perform_fix_pf_items-step3':
 
         // Every check opens objects through the internal account: without its key nothing can be
         // verified, and the background task would stop on its first object.
-        $tpKeys = getTpUserKeyPair($SETTINGS);
-        if ($tpKeys['private_key'] === '') {
+        $tpKeyStatus = tpUserKeyDiagnosis($SETTINGS)['status'];
+        if ($tpKeyStatus !== 'ok') {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('restore_missing_sharekeys_tp_key_unavailable'),
+                    'message' => $lang->get('restore_missing_sharekeys_tp_key_unusable') . ' ' . $lang->get(tpUserKeyStatusMessageKey($tpKeyStatus)),
                 ),
                 'encode'
             );
@@ -925,12 +933,12 @@ case 'perform_fix_pf_items-step3':
         $def = $scopeDefs[$scopeName];
         $batchSize = 25;
 
-        $tpKeys = getTpUserKeyPair($SETTINGS);
-        if ($tpKeys['private_key'] === '') {
+        $tpKeys = tpUserKeyDiagnosis($SETTINGS);
+        if ($tpKeys['status'] !== 'ok') {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('restore_missing_sharekeys_tp_key_unavailable'),
+                    'message' => $lang->get('restore_missing_sharekeys_tp_key_unusable') . ' ' . $lang->get(tpUserKeyStatusMessageKey($tpKeys['status'])),
                 ),
                 'encode'
             );
@@ -1047,6 +1055,93 @@ case 'perform_fix_pf_items-step3':
                 'failed' => $failed,
                 'lastId' => $lastId,
                 'finished' => count($rows) < $batchSize,
+            ),
+            'encode'
+        );
+        break;
+
+    /*
+    * RESTORE MISSING SHAREKEYS - Rebuild the key pair of the internal TP account
+    * Only once its current key cannot be opened. Its previous sharekeys are deleted with it; the
+    * repair then recreates the reference key of every shared object the chosen user can open.
+    */
+    case 'restore_missing_sharekeys-rebuild_tp_keys':
+        // Check KEY
+        if (!hash_equals((string) $session->get('key'), (string) $post_key)) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ((int) $session->get('user-admin') !== 1) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // A key that still opens is never thrown away: it may be the only one left on some objects
+        $tpKeyStatus = tpUserKeyDiagnosis($SETTINGS)['status'];
+        if ($tpKeyStatus === 'ok') {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('restore_missing_sharekeys_tp_key_ok'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // The repair task reads the internal account keys while it runs
+        DB::query(
+            'SELECT increment_id FROM ' . prefixTable('background_tasks') . '
+            WHERE process_type = %s AND (finished_at IS NULL OR finished_at = "")',
+            'restore_missing_sharekeys'
+        );
+        if (DB::count() > 0) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('restore_missing_sharekeys_task_exists'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        try {
+            $deletedSharekeys = rebuildTpUserKeyPair($SETTINGS);
+        } catch (Throwable $e) {
+            error_log('TEAMPASS Error - restore_missing_sharekeys-rebuild_tp_keys: ' . $e->getMessage());
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_unknown'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // A repair session prepared before the rebuild has nothing left to work on
+        $session->remove('restore_missing_sharekeys-state');
+
+        logEvents($SETTINGS, 'admin_action', 'restore_missing_sharekeys_tp_keys_rebuilt', (string) $session->get('user-id'), $session->get('user-login'), $tpKeyStatus);
+
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => $lang->get('restore_missing_sharekeys_tp_rebuild_done'),
+                'deleted' => $deletedSharekeys,
             ),
             'encode'
         );

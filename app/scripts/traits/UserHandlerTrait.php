@@ -318,9 +318,10 @@ trait UserHandlerTrait {
      */
     private function generateNewUserStep20(array $taskData, array $arguments): void {
         // get user private key
-        $ownerInfo = isset($arguments['owner_id']) && isset($arguments['creator_pwd']) 
-            ? $this->getOwnerInfos($arguments['owner_id'], $arguments['creator_pwd']) 
+        $ownerInfo = isset($arguments['owner_id']) && isset($arguments['creator_pwd'])
+            ? $this->getOwnerInfos($arguments['owner_id'], $arguments['creator_pwd'])
             : null;
+        $this->assertOwnerPrivateKeyOpens($ownerInfo);
         $userInfo = $this->getOwnerInfos(
             $arguments['new_user_id'],
             empty($arguments['new_user_pwd']) === false ? $arguments['new_user_pwd'] : $arguments['new_user_code'],
@@ -421,9 +422,10 @@ trait UserHandlerTrait {
      */
     private function generateNewUserStep30(array $taskData, array $arguments): void {
         // get user private key
-        $ownerInfo = isset($arguments['owner_id']) && isset($arguments['creator_pwd']) 
-            ? $this->getOwnerInfos($arguments['owner_id'], $arguments['creator_pwd']) 
+        $ownerInfo = isset($arguments['owner_id']) && isset($arguments['creator_pwd'])
+            ? $this->getOwnerInfos($arguments['owner_id'], $arguments['creator_pwd'])
             : null;
+        $this->assertOwnerPrivateKeyOpens($ownerInfo);
         $userInfo = $this->getOwnerInfos(
             $arguments['new_user_id'],
             $arguments['new_user_pwd'],
@@ -514,9 +516,10 @@ trait UserHandlerTrait {
      */
     private function generateNewUserStep40(array $taskData, array $arguments): void {
         // get user private key
-        $ownerInfo = isset($arguments['owner_id']) && isset($arguments['creator_pwd']) 
-            ? $this->getOwnerInfos($arguments['owner_id'], $arguments['creator_pwd']) 
+        $ownerInfo = isset($arguments['owner_id']) && isset($arguments['creator_pwd'])
+            ? $this->getOwnerInfos($arguments['owner_id'], $arguments['creator_pwd'])
             : null;
+        $this->assertOwnerPrivateKeyOpens($ownerInfo);
         $userInfo = $this->getOwnerInfos(
             $arguments['new_user_id'],
             $arguments['new_user_pwd'],
@@ -614,9 +617,10 @@ trait UserHandlerTrait {
         }
 
         // get user private key
-        $ownerInfo = isset($arguments['owner_id']) && isset($arguments['creator_pwd']) 
-            ? $this->getOwnerInfos($arguments['owner_id'], $arguments['creator_pwd']) 
+        $ownerInfo = isset($arguments['owner_id']) && isset($arguments['creator_pwd'])
+            ? $this->getOwnerInfos($arguments['owner_id'], $arguments['creator_pwd'])
             : null;
+        $this->assertOwnerPrivateKeyOpens($ownerInfo);
         $userInfo = $this->getOwnerInfos(
             $arguments['new_user_id'],
             $arguments['new_user_pwd'],
@@ -693,9 +697,10 @@ trait UserHandlerTrait {
      */
     private function generateNewUserStep60(array $taskData, array $arguments): void {
         // get user private key
-        $ownerInfo = isset($arguments['owner_id']) && isset($arguments['creator_pwd']) 
-            ? $this->getOwnerInfos($arguments['owner_id'], $arguments['creator_pwd']) 
+        $ownerInfo = isset($arguments['owner_id']) && isset($arguments['creator_pwd'])
+            ? $this->getOwnerInfos($arguments['owner_id'], $arguments['creator_pwd'])
             : null;
+        $this->assertOwnerPrivateKeyOpens($ownerInfo);
         $userInfo = $this->getOwnerInfos(
             $arguments['new_user_id'],
             $arguments['new_user_pwd'],
@@ -1111,6 +1116,22 @@ trait UserHandlerTrait {
                 'login' => $userInfo['login'],
                 'name' => $userInfo['name'],
             ];
+        }
+    }
+
+
+    /**
+     * Refuse to re-key a batch through an owner whose private key cannot be opened.
+     * Every object key would decrypt to an empty string, and the batch would write sharekeys that
+     * open nothing - over the user's own ones when the key pair is kept - while the task reports
+     * success. Failing the batch writes nothing and records why on the subtask.
+     * @param array|null $ownerInfo getOwnerInfos() result, null when the task has no owner
+     * @return void
+     * @throws Exception When the owner's private key is empty
+     */
+    private function assertOwnerPrivateKeyOpens(?array $ownerInfo): void {
+        if ($ownerInfo !== null && (string) ($ownerInfo['private_key'] ?? '') === '') {
+            throw new Exception('The private key of the internal TP account cannot be opened, so no sharekey can be created. Repair it from Tools > Restore missing sharekeys, then generate the keys of this user again.');
         }
     }
 

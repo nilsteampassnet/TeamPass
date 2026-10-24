@@ -3698,7 +3698,6 @@ return array(
     'restore_missing_sharekeys_source_tip' => 'La reparación abre cada objeto con estas claves para verificar y reconstruir, cuando sea necesario, la clave de referencia de la cuenta interna de TP. Elija un usuario que aún pueda abrir los objetos que su propia cuenta no puede e ingrese su contraseña: solo se utiliza en el servidor para abrir sus claves para esta reparación, y no se almacena ni se devuelve.',
     'restore_missing_sharekeys_source_pwd_required' => 'Ingrese la contraseña del usuario seleccionado.',
     'restore_missing_sharekeys_source_refused' => 'Esta contraseña no abre las claves del usuario seleccionado, o esta cuenta no se puede utilizar para la reparación.',
-    'restore_missing_sharekeys_tp_key_unavailable' => 'La clave de la cuenta interna de TP no se puede abrir en este servidor, por lo que no se puede verificar ni reparar ningún objeto. Verifique que la clave de la instancia (TEAMPASS_SECRETS) sea con la que se creó esta base de datos.',
     'restore_missing_sharekeys_state_expired' => 'La sesión de reparación ha caducado. Haga clic en Reparar de nuevo.',
     'restore_missing_sharekeys_seed_progress' => 'Comprobando las claves de referencia (#scope#): #checked# objeto(s) comprobado(s)...',
     'restore_missing_sharekeys_seed_replaced' => '#replaced# objeto(s) tenían una clave de referencia que ya no los abría, dejada por una distribución de claves que nunca se completó. Fue reemplazada, y las claves de los demás usuarios en estos objetos están siendo recreadas por la tarea en segundo plano.',

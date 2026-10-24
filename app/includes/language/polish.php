@@ -3698,7 +3698,6 @@ return array(
     'restore_missing_sharekeys_source_tip' => 'Podczas naprawy każdy obiekt jest otwierany za pomocą tych kluczy, aby sprawdzić i w razie potrzeby odbudować klucz referencyjny wewnętrznego konta TP. Wybierz użytkownika, który nadal może otworzyć obiekty niedostępne dla Twojego konta, i podaj jego hasło. Jest ono używane wyłącznie na serwerze do odblokowania jego kluczy na potrzeby tej naprawy. Nie jest zapisywane ani odsyłane.',
     'restore_missing_sharekeys_source_pwd_required' => 'Wprowadź hasło wybranego użytkownika.',
     'restore_missing_sharekeys_source_refused' => 'To hasło nie odblokowuje kluczy wybranego użytkownika lub tego konta nie można użyć do naprawy.',
-    'restore_missing_sharekeys_tp_key_unavailable' => 'Nie można odblokować klucza wewnętrznego konta TP na tym serwerze, dlatego nie można sprawdzić ani naprawić żadnego obiektu. Sprawdź, czy klucz instancji (TEAMPASS_SECRETS) jest tym samym kluczem, z którym utworzono tę bazę danych.',
     'restore_missing_sharekeys_state_expired' => 'Sesja naprawy wygasła. Kliknij ponownie Napraw.',
     'restore_missing_sharekeys_seed_progress' => 'Sprawdzanie kluczy referencyjnych (#scope#). Sprawdzone obiekty: #checked#...',
     'restore_missing_sharekeys_seed_replaced' => 'Liczba obiektów z niedziałającym kluczem referencyjnym: #replaced#. Klucze te pozostały po niedokończonej dystrybucji kluczy. Zostały wymienione, a zadanie w tle odtwarza klucze pozostałych użytkowników dla tych obiektów.',

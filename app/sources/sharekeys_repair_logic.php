@@ -127,3 +127,72 @@ function sharekeyRepairReferenceAction(
 
     return $sourceKeyOpens === true ? 'create' : 'source_unusable';
 }
+
+/**
+ * Name why the private key of the internal TP account cannot be opened, from the first link of
+ * the chain that breaks: users row -> users.pw (Defuse, instance key) -> current row of
+ * user_private_keys -> private key opened with that password.
+ *
+ * Each cause calls for a different repair, so they are never reported as one.
+ *
+ * @param bool $accountFound      The TP account row exists
+ * @param bool $passwordDecrypted Its password decrypts with the instance key of this server
+ * @param bool $privateKeyStored  It has a non-empty current private key
+ * @param bool $privateKeyOpens   That private key opens with the password
+ *
+ * @return string One of 'ok', 'account_missing', 'password_unreadable', 'private_key_missing',
+ *                'private_key_unreadable'
+ */
+function tpUserKeyStatus(bool $accountFound, bool $passwordDecrypted, bool $privateKeyStored, bool $privateKeyOpens): string
+{
+    if ($accountFound === false) {
+        return 'account_missing';
+    }
+    if ($passwordDecrypted === false) {
+        return 'password_unreadable';
+    }
+    if ($privateKeyStored === false) {
+        return 'private_key_missing';
+    }
+
+    return $privateKeyOpens === true ? 'ok' : 'private_key_unreadable';
+}
+
+/**
+ * Language key explaining a tpUserKeyStatus() result to an administrator.
+ *
+ * @param string $status tpUserKeyStatus() result
+ *
+ * @return string Language key, '' for 'ok'
+ */
+function tpUserKeyStatusMessageKey(string $status): string
+{
+    $keys = [
+        'account_missing' => 'tp_key_status_account_missing',
+        'password_unreadable' => 'tp_key_status_password_unreadable',
+        'private_key_missing' => 'tp_key_status_private_key_missing',
+        'private_key_unreadable' => 'tp_key_status_private_key_unreadable',
+    ];
+
+    return $status === 'ok' ? '' : ($keys[$status] ?? 'tp_key_status_private_key_unreadable');
+}
+
+/**
+ * Tell whether a user's keys must not be generated again while the TP account key is broken.
+ *
+ * The generation re-keys every object the user can read through the TP account. Without its key
+ * the user gets a key pair that opens nothing, and the old pair, which still opened everything,
+ * is gone. That loss is refused. A user with nothing to lose (a new account, or one whose keys
+ * are already gone) is let through, and so is a change that keeps the key pair: the background
+ * task then writes nothing, so the existing sharekeys stay valid.
+ *
+ * @param string $tpKeyStatus    tpUserKeyStatus() result
+ * @param bool   $keepsKeyPair   The generation re-encrypts the current key pair instead of replacing it
+ * @param bool   $holdsSharekeys The user holds at least one non-empty sharekey
+ *
+ * @return bool
+ */
+function userKeysGenerationBlockedByTpKey(string $tpKeyStatus, bool $keepsKeyPair, bool $holdsSharekeys): bool
+{
+    return $tpKeyStatus !== 'ok' && $keepsKeyPair === false && $holdsSharekeys === true;
+}

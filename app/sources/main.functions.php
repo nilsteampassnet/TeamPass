@@ -343,11 +343,25 @@ function teampassGetSystemHealthOverview(array $SETTINGS, Language $lang): array
         }
     }
 
+    // A readable instance key is not enough: nothing else reports a TP account key that no longer
+    // opens, while it silently leaves every user whose keys are generated without access.
+    $encryptionStatus = (string) $secureFile['status'];
+    $encryptionText = $lang->get($secureFileTextKey);
+    $encryptionReason = (string) $secureFile['reason'];
+    if ($encryptionStatus === 'success') {
+        $tpKeyStatus = tpUserKeyDiagnosis($SETTINGS)['status'];
+        if ($tpKeyStatus !== 'ok') {
+            $encryptionStatus = 'danger';
+            $encryptionText = $lang->get('health_tp_key_unusable');
+            $encryptionReason = 'tp_key_' . $tpKeyStatus;
+        }
+    }
+
     return array(
         'encryption' => array(
-            'status' => (string) $secureFile['status'],
-            'text' => $lang->get($secureFileTextKey),
-            'reason' => (string) $secureFile['reason'],
+            'status' => $encryptionStatus,
+            'text' => $encryptionText,
+            'reason' => $encryptionReason,
         ),
         'sessions' => array('count' => $sessionsCount),
         'cron' => array(
@@ -1189,13 +1203,19 @@ function restoreSharekeysCheckObjectKey(string $objectKey, string $ciphertext, s
 
 /**
  * Open the key pair of the internal TP account, which needs no human password: its password is
- * stored encrypted with the instance key.
+ * stored encrypted with the instance key. When that fails, say which link of the chain broke
+ * (tpUserKeyStatus()).
+ *
+ * The rest of the instance can keep working for years without this key - a new item reaches every
+ * user through their public keys alone - while every key generation for a user, and every repair,
+ * depends on it.
  *
  * @param array $SETTINGS Teampass settings
  *
- * @return array{private_key: string, public_key: string} private_key is empty when it cannot be opened
+ * @return array{status: string, private_key: string, public_key: string} private_key is empty
+ *                                                                          unless status is 'ok'
  */
-function getTpUserKeyPair(array $SETTINGS): array
+function tpUserKeyDiagnosis(array $SETTINGS): array
 {
     $userTpInfo = DB::queryFirstRow(
         'SELECT u.pw, u.public_key, pk.private_key
@@ -1205,16 +1225,126 @@ function getTpUserKeyPair(array $SETTINGS): array
         TP_USER_ID
     );
     if ($userTpInfo === null) {
-        return ['private_key' => '', 'public_key' => ''];
+        return ['status' => tpUserKeyStatus(false, false, false, false), 'private_key' => '', 'public_key' => ''];
     }
 
-    $decryptedData = cryption((string) ($userTpInfo['pw'] ?? ''), '', 'decrypt', $SETTINGS);
-    $privateKey = decryptPrivateKey((string) ($decryptedData['string'] ?? ''), (string) ($userTpInfo['private_key'] ?? ''));
+    // A wrong or unreadable instance key throws before cryption() can report it
+    try {
+        $decryptedData = cryption((string) ($userTpInfo['pw'] ?? ''), '', 'decrypt', $SETTINGS);
+        $password = $decryptedData['error'] === false ? (string) $decryptedData['string'] : '';
+    } catch (Throwable $e) {
+        $password = '';
+    }
+    $storedPrivateKey = (string) ($userTpInfo['private_key'] ?? '');
+    $privateKey = $password !== '' && $storedPrivateKey !== ''
+        ? (string) decryptPrivateKey($password, $storedPrivateKey)
+        : '';
 
     return [
+        'status' => tpUserKeyStatus(true, $password !== '', $storedPrivateKey !== '', $privateKey !== ''),
         'private_key' => $privateKey,
         'public_key' => (string) ($userTpInfo['public_key'] ?? ''),
     ];
+}
+
+/**
+ * Give the internal TP account a new key pair, once its current one can no longer be opened.
+ *
+ * Every sharekey the account holds was encrypted for the previous pair, so none of them opens
+ * anything any more. They are deleted: the objects then count as missing their reference key
+ * wherever that matters - the Tools analysis, its reference-key pass, which recreates the key of
+ * every shared object a chosen user can open, and each owner's own repair of their personal
+ * items, which only fills a missing key. The previous private key stays in the history of
+ * user_private_keys (is_current = 0); the account's key recovery columns are left alone.
+ *
+ * @param array $SETTINGS Teampass settings
+ *
+ * @return int Number of sharekeys deleted
+ *
+ * @throws RuntimeException When the instance key cannot encrypt the new password
+ */
+function rebuildTpUserKeyPair(array $SETTINGS): int
+{
+    $password = GenerateCryptKey(25, true, true, true, true);
+    $encryptedPassword = cryption($password, '', 'encrypt', $SETTINGS);
+    if ($encryptedPassword['error'] !== false || (string) $encryptedPassword['string'] === '') {
+        throw new RuntimeException('The instance key cannot encrypt the password of the internal TP account.');
+    }
+    $userKeys = generateUserKeys($password, $SETTINGS);
+
+    $accountData = [
+        'pw' => (string) $encryptedPassword['string'],
+        'public_key' => $userKeys['public_key'],
+        'private_key' => $userKeys['private_key'],
+        'encryption_version' => 3,
+        'phpseclibv3_migration_completed' => 1,
+    ];
+
+    $deleted = 0;
+    DB::startTransaction();
+    try {
+        $accountExists = (int) DB::queryFirstField(
+            'SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE id = %i',
+            TP_USER_ID
+        ) > 0;
+        if ($accountExists === true) {
+            DB::update(prefixTable('users'), $accountData, 'id = %i', TP_USER_ID);
+        } else {
+            // Same row as the installer creates
+            DB::insert(
+                prefixTable('users'),
+                array_merge(
+                    [
+                        'id' => TP_USER_ID,
+                        'login' => 'TP',
+                        'derniers' => '',
+                        'key_tempo' => '',
+                        'last_pw_change' => '',
+                        'last_pw' => '',
+                        'admin' => 1,
+                        'last_connexion' => '',
+                        'gestionnaire' => 0,
+                        'email' => 'none',
+                        'user_ip' => 'none',
+                        'personal_folder' => 0,
+                        'is_ready_for_usage' => 1,
+                        'otp_provided' => 0,
+                        'created_at' => time(),
+                    ],
+                    $accountData
+                )
+            );
+        }
+
+        // Inline rather than insertPrivateKeyWithCurrentFlag(), which opens its own transaction
+        DB::update(
+            prefixTable('user_private_keys'),
+            ['is_current' => false],
+            'user_id = %i AND is_current = %i',
+            TP_USER_ID,
+            true
+        );
+        DB::insert(
+            prefixTable('user_private_keys'),
+            [
+                'user_id' => TP_USER_ID,
+                'private_key' => $userKeys['private_key'],
+                'is_current' => true,
+            ]
+        );
+
+        foreach (['sharekeys_items', 'sharekeys_fields', 'sharekeys_files', 'sharekeys_logs', 'sharekeys_suggestions', 'sharekeys_webauthn'] as $table) {
+            DB::delete(prefixTable($table), 'user_id = %i', TP_USER_ID);
+            $deleted += DB::affectedRows();
+        }
+
+        DB::commit();
+    } catch (Throwable $e) {
+        DB::rollback();
+        throw $e;
+    }
+
+    return $deleted;
 }
 
 /**
@@ -9193,6 +9323,27 @@ function handleUserKeys(
             array(
                 'error' => true,
                 'message' => 'User not exists',
+            ),
+            'encode'
+        );
+    }
+
+    // Every object the user can read is re-keyed through the TP account: without its key the user
+    // would trade a key pair that opens everything for one that opens nothing.
+    $tpKeyStatus = tpUserKeyDiagnosis((new ConfigManager())->getAllSettings())['status'];
+    if (userKeysGenerationBlockedByTpKey(
+        $tpKeyStatus,
+        $user_self_change === true && empty($recovery_public_key) === false && empty($recovery_private_key) === false,
+        DB::queryFirstField(
+            'SELECT 1 FROM ' . prefixTable('sharekeys_items') . ' WHERE user_id = %i AND share_key != "" LIMIT 1',
+            $userId
+        ) !== null
+    ) === true) {
+        error_log('TEAMPASS - Keys of user ' . $userId . ' not generated: the internal TP account key cannot be opened (' . $tpKeyStatus . ')');
+        return prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => $lang->get('user_keys_tp_key_unusable') . ' ' . $lang->get(tpUserKeyStatusMessageKey($tpKeyStatus)),
             ),
             'encode'
         );
