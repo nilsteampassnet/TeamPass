@@ -97,7 +97,10 @@ function installAssertStepAuthorized(): void
         ? $_SERVER['HTTP_X_CSRF_TOKEN']
         : null;
 
-    if ($granted === true && installCsrfTokenMatches($sessionToken, $providedToken) === true) {
+    if ($granted === true && installCsrfTokenMatches($sessionToken, $providedToken) === true
+        && !is_file(TEAMPASS_ROOT . '/storage/recovery/pending.json')
+        && (!in_array(basename((string) ($_SERVER['SCRIPT_FILENAME'] ?? '')), ['run.step4.php', 'run.step5.php', 'run.step6.php'], true)
+            || installAcquireWriteLock())) {
         return;
     }
 

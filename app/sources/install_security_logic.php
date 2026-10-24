@@ -202,6 +202,39 @@ function installAllowedActions(string $step): array
     return $map[$step] ?? [];
 }
 
+/** Hold a shared setup lock for a write step so disaster recovery cannot run concurrently. */
+function installAcquireWriteLock(): bool
+{
+    static $handle = null;
+    if (is_resource($handle)) {
+        return true;
+    }
+    $storage = TEAMPASS_ROOT . '/storage';
+    $directory = $storage . '/recovery';
+    if (is_link($storage) || is_link($directory)
+        || (!is_dir($directory) && !@mkdir($directory, 0700))) {
+        return false;
+    }
+    $path = $directory . '/operation.lock';
+    if (is_link($path)) {
+        return false;
+    }
+    $candidate = @fopen($path, 'c+b');
+    if (!is_resource($candidate) || !@chmod($path, 0600) || !flock($candidate, LOCK_SH | LOCK_NB)) {
+        if (is_resource($candidate)) {
+            fclose($candidate);
+        }
+        return false;
+    }
+    if (is_file($directory . '/pending.json')) {
+        flock($candidate, LOCK_UN);
+        fclose($candidate);
+        return false;
+    }
+    $handle = $candidate;
+    return true;
+}
+
 /**
  * Tell whether an action is allow-listed for a given installer step.
  *

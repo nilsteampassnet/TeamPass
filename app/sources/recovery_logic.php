@@ -24,8 +24,9 @@ final class TeamPassRecoveryException extends RuntimeException
 /** Reject unsupported versions, downgrades and unknown schema levels before import. */
 function tpRecoveryPlanUpgrade(array $manifest, string $targetVersion, string $targetSchema): array
 {
-    $sourceVersion = (string) ($manifest['teampass']['files_version'] ?? '');
-    $sourceSchema = (string) ($manifest['teampass']['schema_level'] ?? '');
+    $metadata = $manifest['teampass'] ?? null;
+    $sourceVersion = is_array($metadata) && is_string($metadata['files_version'] ?? null) ? $metadata['files_version'] : '';
+    $sourceSchema = is_array($metadata) && is_scalar($metadata['schema_level'] ?? null) ? (string) $metadata['schema_level'] : '';
     foreach ([$sourceVersion, $targetVersion] as $version) {
         if (preg_match('/^3\.\d+\.\d+\.\d+$/D', $version) !== 1) {
             throw new TeamPassRecoveryException('VERSION_UNKNOWN');

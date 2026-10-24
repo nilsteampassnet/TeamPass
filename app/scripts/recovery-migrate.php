@@ -22,7 +22,7 @@ try {
     $options = getopt('', ['job:', 'release:']);
     $jobId = (string) ($options['job'] ?? '');
     $release = (string) ($options['release'] ?? '');
-    if (preg_match('/^[a-f0-9]{32}$/D', $jobId) !== 1 || !in_array($release, ['3.2.2', '3.2.3'], true)) {
+    if (preg_match('/^[a-f0-9]{32}$/D', $jobId) !== 1 || !in_array($release, ['3.2.2', '3.2.3', 'verify'], true)) {
         throw new TeamPassRecoveryException('UPGRADE_REQUEST_INVALID');
     }
     $root = dirname(__DIR__, 2);
@@ -61,14 +61,31 @@ try {
     $db_link = new mysqli(DB_HOST, DB_USER, $connection['password'], DB_NAME, DB_PORT);
     $db_link->set_charset('utf8mb4');
     $pre = (string) DB_PREFIX;
+    $database = (string) DB_NAME;
+    $server = (string) DB_HOST;
+    $port = (int) DB_PORT;
+    $user = (string) DB_USER;
+    $pass = $connection['password'];
     $SETTINGS = [];
     foreach (DB::query('SELECT intitule, valeur FROM ' . prefixTable('misc') . ' WHERE type=%s', 'admin') as $setting) {
         $SETTINGS[$setting['intitule']] = $setting['valeur'];
     }
-    // Script names come exclusively from the shipped allowlist above.
-    require $root . '/public/install/upgrade_run_' . $release . '.php';
+    if ($release === 'verify') {
+        require_once $root . '/app/sources/recovery_verification.php';
+        tpRecoveryVerifyEncryption($SETTINGS);
+        tpRecoveryInvalidateSharedLinks();
+        echo '[{"finish":"1","error":""}]';
+    } else {
+        // Script names come exclusively from the shipped allowlist above.
+        require $root . '/public/install/upgrade_run_' . $release . '.php';
+    }
 } catch (Throwable $exception) {
     // SQL driver messages may contain a secret value from an INSERT. Never emit them.
-    fwrite(STDERR, "Recovery database migration failed.\n");
+    $diagnostic = $exception instanceof TeamPassRecoveryException ? $exception->reason : 'UPGRADE_RUNTIME_FAILED';
+    if (!$exception instanceof TeamPassRecoveryException) {
+        $diagnostic .= ' ' . get_class($exception) . ':' . $exception->getCode() . ' '
+            . basename($exception->getFile()) . ':' . $exception->getLine();
+    }
+    fwrite(STDERR, $diagnostic . "\n");
     exit(1);
 }
