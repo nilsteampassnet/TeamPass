@@ -9,7 +9,7 @@ const source = fs.readFileSync(path.join(__dirname, '../../public/install/recove
 const job = (status) => ({ id: 'a'.repeat(32), status, error: '', tables: 80, documents: 3,
   plan: { source_version: '3.2.2.7', target_version: '3.2.3.2' } })
 
-function app(initial = null) {
+function app(initial = null, command = "sudo -u 'www-data' -- '/usr/bin/php8.5' '/srv/TeamPass Lab/app/scripts/disaster-recovery.php'") {
   const elements = new Map()
   const element = (id) => {
     if (!elements.has(id)) elements.set(id, { textContent: '', hidden: true, disabled: false,
@@ -26,7 +26,7 @@ function app(initial = null) {
   element('recovery-data').textContent = JSON.stringify({ csrf: 'fixture-csrf', initial,
     ready: 'PREPARED', verified: 'VERIFIED', complete: 'COMPLETE', running: 'RUNNING',
     failed: 'FAILED', counts: '%s tables, %s documents', preparing: 'WAIT', error: 'ERROR',
-    command: "sudo -u 'www-data' -- '/usr/bin/php8.5' '/srv/TeamPass Lab/app/scripts/disaster-recovery.php'",
+    command,
     errors: { OPERATOR_CODE_UNREADABLE: 'Use the PHP service account' } })
   const queue = []
   const requests = []
@@ -56,14 +56,27 @@ test('Recovery progresses from import to activation and operational resume witho
   assert.match(ui.element('recovery-command').textContent, /--run=/)
   assert.match(ui.element('recovery-command').textContent, /^sudo -u 'www-data' -- '\/usr\/bin\/php8\.5' '\/srv\/TeamPass Lab\//)
   assert.equal(ui.element('recovery-command').hidden, false)
+  assert.equal(ui.element('recovery-activate').hidden, true)
+  assert.equal(ui.element('recovery-activate').textContent, '')
   await ui.refresh()
   assert.equal(ui.element('recovery-command').hidden, true)
   assert.equal(ui.element('recovery-instruction').textContent, 'VERIFIED')
   assert.match(ui.element('recovery-activate').textContent, /--activate=/)
+  assert.match(ui.element('recovery-activate').textContent, /^sudo -u 'www-data'/)
   await ui.refresh()
   assert.equal(ui.element('recovery-instruction').textContent, 'COMPLETE')
   assert.match(ui.element('recovery-activate').textContent, /--resume=/)
   assert.match(ui.element('recovery-activate').textContent, /^sudo -u 'www-data'/)
+})
+
+test('Each stage preserves the complete server-provided PowerShell command', () => {
+  const command = "& 'C:/PHP/php.exe' 'C:/TeamPass Lab/app/scripts/disaster-recovery.php'"
+  for (const [status, action] of [['prepared', 'run'], ['verified', 'activate'], ['complete', 'resume']]) {
+    const ui = app(job(status), command)
+    const element = ui.element(status === 'prepared' ? 'recovery-command' : 'recovery-activate')
+    assert.equal(element.hidden, false)
+    assert.equal(element.textContent, `${command} --${action}=${'a'.repeat(32)}`)
+  }
 })
 
 test('An unreadable operator file reports the service account remediation', async () => {

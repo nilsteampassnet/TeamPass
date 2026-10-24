@@ -135,6 +135,7 @@ if (teampassConfigState(TEAMPASS_ROOT . '/app/config') !== 'not_installed' && $i
     echo teampassErrorPageShell($texts['drp_title'], '<p>TeamPass is already configured. Use the application login page.</p>');
     exit;
 }
+$scriptVersion = substr((string) hash_file('sha256', __DIR__ . '/recovery.js'), 0, 16);
 ?>
 <!doctype html>
 <html lang="en">
@@ -206,6 +207,13 @@ if (teampassConfigState(TEAMPASS_ROOT . '/app/config') !== 'not_installed' && $i
     <div id="recovery-message" class="mt-3" role="status" aria-live="polite"></div>
     <section id="recovery-result" class="card card-body mt-3" hidden>
         <p id="recovery-instruction"><?= $escape('drp_ready') ?></p>
+        <?php if (PHP_OS_FAMILY !== 'Windows'): ?>
+        <p class="small text-muted">Run the complete command below in a terminal on this server as
+            <strong><?= htmlspecialchars($serviceAccount ?? 'the configured PHP service account', ENT_QUOTES, 'UTF-8') ?></strong>.
+            Keep the <code>sudo -u</code> prefix shown in the command; <code>sudo php</code> runs as root.</p>
+        <?php else: ?>
+        <p class="small text-muted">Run the complete command below in PowerShell under the Windows identity configured for PHP in Apache or IIS.</p>
+        <?php endif; ?>
         <pre id="recovery-plan" class="p-3 bg-light"></pre>
         <pre id="recovery-command" class="p-3 bg-light"></pre>
         <p id="recovery-activate-hint"><?= $escape('drp_activate_hint') ?></p>
@@ -220,6 +228,6 @@ if (teampassConfigState(TEAMPASS_ROOT . '/app/config') !== 'not_installed' && $i
     'command' => $commandBase,
     'errors' => ['OPERATOR_CODE_UNREADABLE' => 'The operator file was created by another account and PHP cannot read it. Have its ownership repaired, then use the PHP service account command shown above.'],
 ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR) ?></script>
-<script src="recovery.js" defer></script>
+<script src="recovery.js?v=<?= htmlspecialchars($scriptVersion, ENT_QUOTES, 'UTF-8') ?>" defer></script>
 </body>
 </html>

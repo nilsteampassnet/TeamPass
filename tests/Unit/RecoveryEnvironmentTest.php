@@ -47,4 +47,28 @@ final class RecoveryEnvironmentTest extends TestCase
     {
         self::assertDoesNotMatchRegularExpression('/php-(?:fpm|cgi)/i', tpRecoveryPhpCliBinary());
     }
+
+    /** Fail clearly before attempting to load an inaccessible configuration bootstrap. */
+    public function testUnreadableBootstrapStopsBeforeAnUncaughtRequireFailure(): void
+    {
+        $directory = sys_get_temp_dir() . '/tp-recovery-cli-' . bin2hex(random_bytes(8));
+        mkdir($directory . '/app/scripts', 0700, true);
+        $script = $directory . '/app/scripts/disaster-recovery.php';
+        copy(__DIR__ . '/../../app/scripts/disaster-recovery.php', $script);
+        try {
+            $process = new \Symfony\Component\Process\Process([PHP_BINARY, $script, '--help']);
+            $process->setTimeout(10);
+            $process->run();
+            self::assertSame(1, $process->getExitCode());
+            self::assertStringContainsString('RECOVERY_BOOTSTRAP_UNREADABLE', $process->getErrorOutput());
+            self::assertStringContainsString('complete PHP service account command', $process->getErrorOutput());
+            self::assertStringNotContainsString('Fatal error', $process->getErrorOutput() . $process->getOutput());
+            self::assertSame('', $process->getOutput());
+        } finally {
+            unlink($script);
+            rmdir($directory . '/app/scripts');
+            rmdir($directory . '/app');
+            rmdir($directory);
+        }
+    }
 }

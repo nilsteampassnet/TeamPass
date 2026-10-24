@@ -62,6 +62,27 @@ try {
     if (PHP_OS_FAMILY === 'Windows' && !str_contains($html, 'Run this PowerShell command')) {
         throw new RuntimeException('The Windows service identity instructions are missing');
     }
+    if (preg_match('/src="recovery\.js\?v=([a-f0-9]{16})"/', $html, $assetMatch) !== 1) {
+        throw new RuntimeException('The recovery script must have a content version to replace cached commands');
+    }
+    $originalVersion = $assetMatch[1];
+    $scriptPath = $root . '/public/install/recovery.js';
+    $originalScript = file_get_contents($scriptPath);
+    $originalTime = filemtime($scriptPath);
+    try {
+        // Release archives can preserve timestamps: content changes must still
+        // produce a different URL, even when Last-Modified does not change.
+        file_put_contents($scriptPath, $originalScript . "\n/* asset cache regression fixture */\n");
+        touch($scriptPath, $originalTime);
+        [$assetStatus, $assetHtml] = $request();
+        if ($assetStatus !== 200 || preg_match('/src="recovery\.js\?v=([a-f0-9]{16})"/', $assetHtml, $changedAsset) !== 1
+            || $changedAsset[1] === $originalVersion) {
+            throw new RuntimeException('Changed commands retained the old asset URL');
+        }
+    } finally {
+        file_put_contents($scriptPath, $originalScript);
+        touch($scriptPath, $originalTime);
+    }
     preg_match('/<script id="recovery-data" type="application\/json">(.*?)<\/script>/s', $html, $match);
     $csrf = json_decode($match[1], true)['csrf'];
     [$status, $body] = $request(['action' => 'unlock', 'operator' => $operator]);
@@ -121,7 +142,7 @@ try {
         }
         echo 'PREPARED_JOB:' . $id . "\n";
     }
-    echo "OK: real HTTP form rendering, operator authorization, CSRF and path traversal checks\n";
+    echo "OK: real HTTP form rendering, asset cache invalidation, operator authorization, CSRF and path traversal checks\n";
 } catch (Throwable $exception) {
     fwrite(STDERR, $exception->getMessage() . "\n");
     $exitCode = 1;
