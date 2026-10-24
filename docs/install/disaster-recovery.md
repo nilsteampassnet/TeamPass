@@ -91,6 +91,15 @@ these capture guarantees and still require a complete restore rehearsal.
    data and the generated configuration remain readable by the web application.
    The examples below use Debian/Ubuntu's `www-data`; adapt it to your deployment.
 
+The assistant detects the Unix PHP worker account and shows commands with that
+account and absolute PHP/script paths for enable, restore, activation and resume.
+Do not use `sudo php`: it creates owner-only files as root, which the web worker
+cannot read. Mutating recovery CLI commands refuse Unix root execution. Common
+accounts are `www-data` on Debian/Ubuntu, `apache` on RHEL-family installations,
+and `wwwrun` on SUSE; a custom FPM pool may use another identity. On Windows the
+page shows a PowerShell command; use the service identity configured in Apache
+or IIS, not an unrelated administrator account.
+
 The first implementation uses a local or otherwise protected SQL connection.
 It does not import external TLS private-key files from a recovery kit or configure
 the web server, DNS or an identity provider.

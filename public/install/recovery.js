@@ -7,7 +7,7 @@
     form.set('csrf', data.csrf)
     const response = await fetch(window.location.href, { method: 'POST', body: form, credentials: 'same-origin' })
     const result = await response.json()
-    if (!response.ok || !result.success) throw new Error(result.error || 'RECOVERY_REQUEST_FAILED')
+    if (!response.ok || !result.success) throw new Error((data.errors || {})[result.error] || result.error || 'RECOVERY_REQUEST_FAILED')
     return result.result
   }
   const show = (result) => {
@@ -21,11 +21,11 @@
       : (verified ? data.verified : (prepared ? data.ready : (result.status === 'failed' ? data.failed : data.running)))
     const run = document.getElementById('recovery-command')
     run.hidden = !prepared
-    run.textContent = `php app/scripts/disaster-recovery.php --run=${result.id}`
+    run.textContent = `${data.command} --run=${result.id}`
     document.getElementById('recovery-activate-hint').hidden = !prepared
     const activate = document.getElementById('recovery-activate')
     activate.hidden = !(prepared || verified || completed)
-    activate.textContent = `php app/scripts/disaster-recovery.php --${completed ? 'resume' : 'activate'}=${result.id}`
+    activate.textContent = `${data.command} --${completed ? 'resume' : 'activate'}=${result.id}`
   }
   document.querySelectorAll('#recovery-unlock, #recovery-prepare').forEach((form) => {
     form.addEventListener('submit', async (event) => {

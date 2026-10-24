@@ -25,7 +25,9 @@ function app(initial = null) {
   form.querySelectorAll = () => [password]
   element('recovery-data').textContent = JSON.stringify({ csrf: 'fixture-csrf', initial,
     ready: 'PREPARED', verified: 'VERIFIED', complete: 'COMPLETE', running: 'RUNNING',
-    failed: 'FAILED', counts: '%s tables, %s documents', preparing: 'WAIT', error: 'ERROR' })
+    failed: 'FAILED', counts: '%s tables, %s documents', preparing: 'WAIT', error: 'ERROR',
+    command: "sudo -u 'www-data' -- '/usr/bin/php8.5' '/srv/TeamPass Lab/app/scripts/disaster-recovery.php'",
+    errors: { OPERATOR_CODE_UNREADABLE: 'Use the PHP service account' } })
   const queue = []
   const requests = []
   const context = { document: { getElementById: element, querySelectorAll: () => [form] },
@@ -35,6 +37,7 @@ function app(initial = null) {
       requests.push(options)
       const response = queue.shift()
       if (response instanceof Error) throw response
+      if (response && response.httpError) return { ok: false, json: async () => ({ success: false, error: response.httpError }) }
       return { ok: true, json: async () => ({ success: true, result: response }) }
     } }
   vm.runInNewContext(source, context)
@@ -51,6 +54,7 @@ test('Recovery progresses from import to activation and operational resume witho
   assert.equal(ui.password.value, '')
   assert.equal(ui.form.hidden, true)
   assert.match(ui.element('recovery-command').textContent, /--run=/)
+  assert.match(ui.element('recovery-command').textContent, /^sudo -u 'www-data' -- '\/usr\/bin\/php8\.5' '\/srv\/TeamPass Lab\//)
   assert.equal(ui.element('recovery-command').hidden, false)
   await ui.refresh()
   assert.equal(ui.element('recovery-command').hidden, true)
@@ -59,6 +63,15 @@ test('Recovery progresses from import to activation and operational resume witho
   await ui.refresh()
   assert.equal(ui.element('recovery-instruction').textContent, 'COMPLETE')
   assert.match(ui.element('recovery-activate').textContent, /--resume=/)
+  assert.match(ui.element('recovery-activate').textContent, /^sudo -u 'www-data'/)
+})
+
+test('An unreadable operator file reports the service account remediation', async () => {
+  const ui = app()
+  ui.queue.push({ httpError: 'OPERATOR_CODE_UNREADABLE' })
+  await ui.submit()
+  assert.equal(ui.element('recovery-message').textContent, 'ERROR Use the PHP service account')
+  assert.equal(ui.button.disabled, false)
 })
 
 test('Reloading a prepared job restores its session-bound progress', () => {

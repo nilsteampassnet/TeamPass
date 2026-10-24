@@ -20,6 +20,12 @@ require_once __DIR__ . '/../sources/recovery.functions.php';
 
 $options = getopt('', ['enable', 'prepare:', 'run:', 'activate:', 'resume:', 'status:', 'discard:', 'help']);
 try {
+    foreach (['enable', 'prepare', 'run', 'activate', 'resume', 'discard'] as $writeOperation) {
+        if (isset($options[$writeOperation])) {
+            tpRecoveryAssertServiceAccount();
+            break;
+        }
+    }
     if (isset($options['enable'])) {
         tpRecoveryAssertFreshTarget();
         $token = bin2hex(random_bytes(32));
@@ -41,7 +47,7 @@ try {
         }
         $result = tpRecoveryPrepare($input);
         fwrite(STDOUT, json_encode($result, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR) . "\n");
-        fwrite(STDOUT, 'Next: php app/scripts/disaster-recovery.php --run=' . $result['id'] . "\n");
+        fwrite(STDOUT, 'Next: ' . tpRecoveryCommandBase() . ' --run=' . $result['id'] . "\n");
         exit(0);
     }
     if (isset($options['run'])) {
@@ -49,7 +55,7 @@ try {
         fwrite(STDOUT, "Importing and verifying the dedicated recovery database...\n");
         $result = tpRecoveryRun($id);
         fwrite(STDOUT, json_encode($result, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR) . "\n");
-        fwrite(STDOUT, "Database verified. Publish the files and configuration with:\nphp app/scripts/disaster-recovery.php --activate=" . $id . "\n");
+        fwrite(STDOUT, "Database verified. Publish the files and configuration with:\n" . tpRecoveryCommandBase() . ' --activate=' . $id . "\n");
         exit(0);
     }
     if (isset($options['activate'])) {
@@ -107,6 +113,9 @@ try {
     exit(isset($options['help']) ? 0 : 2);
 } catch (Throwable $exception) {
     $reason = $exception instanceof TeamPassRecoveryException ? $exception->reason : 'RECOVERY_OPERATION_FAILED';
+    if ($reason === 'RECOVERY_SERVICE_ACCOUNT_REQUIRED') {
+        fwrite(STDERR, "Do not run recovery with sudo php or as root. Open /install/recovery.php for the exact sudo -u command using the PHP service account.\n");
+    }
     fwrite(STDERR, 'Recovery stopped: ' . $reason . ". No automatic cleanup of the destination database was attempted.\n");
     exit(1);
 }
