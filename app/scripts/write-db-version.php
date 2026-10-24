@@ -37,6 +37,8 @@ declare(strict_types=1);
  * resumable when a later step fails.
  *
  * Usage: php write-db-version.php <X.Y.Z>
+ * When <X.Y.Z> is the version of these files, the complete release (such as
+ * 3.2.3.2) is recorded as teampass_version_full as well.
  * Exit code 0 on success, 1 otherwise (the caller keeps the install directory).
  */
 
@@ -153,6 +155,23 @@ if ($hasCurrentKey === true) {
             $version
         );
     }
+}
+
+// Once the chain reaches the version of these files, record the complete release too:
+// teampass_version holds TP_VERSION only, so 3.2.2.3 and 3.2.2.8 both read "3.2.2".
+if ($ok === true && $version === TP_VERSION && defined('TP_VERSION_MINOR') === true) {
+    $existingFull = @mysqli_query(
+        $link,
+        'SELECT COUNT(*) FROM `' . $table . "` WHERE type = 'admin' AND intitule = 'teampass_version_full'"
+    );
+    $hasFullKey = $existingFull !== false && (int) (mysqli_fetch_row($existingFull)[0] ?? 0) > 0;
+    $ok = wdvExecute(
+        $link,
+        $hasFullKey === true
+            ? 'UPDATE `' . $table . "` SET valeur = ? WHERE type = 'admin' AND intitule = 'teampass_version_full'"
+            : 'INSERT INTO `' . $table . "` (type, intitule, valeur) VALUES ('admin', 'teampass_version_full', ?)",
+        TP_VERSION . '.' . TP_VERSION_MINOR
+    );
 }
 
 if ($ok === false) {

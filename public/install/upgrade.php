@@ -98,6 +98,7 @@ if (file_exists($filename)) {
 // Pre-flight: read the DB version to detect whether migrate_3.2.x.php needs to run.
 // Only attempted when DB credentials are available (settings.php was loaded).
 $dbVersion = null;
+$dbVersionFull = null;
 $needsMigration320 = false;
 if (defined('DB_HOST') && defined('DB_USER') && defined('DB_PASSWD') && defined('DB_NAME') && defined('DB_PORT')) {
     try {
@@ -113,11 +114,28 @@ if (defined('DB_HOST') && defined('DB_USER') && defined('DB_PASSWD') && defined(
             if (is_array($versionRow) && isset($versionRow[0])) {
                 $dbVersion = $versionRow[0];
             }
+            // teampass_version holds TP_VERSION only; the complete release that recorded it
+            // is kept apart, and only by releases that know about it.
+            $fullVersionRow = mysqli_fetch_row(
+                mysqli_query(
+                    $dbLinkCheck,
+                    "SELECT valeur FROM `" . DB_PREFIX . "misc` WHERE type='admin' AND intitule='teampass_version_full'"
+                )
+            );
+            if (is_array($fullVersionRow) && isset($fullVersionRow[0])) {
+                $dbVersionFull = $fullVersionRow[0];
+            }
             mysqli_close($dbLinkCheck);
         }
     } catch (Throwable $e) {
         // DB not yet configured or unreachable — silently skip
     }
+}
+// Starting version shown to the administrator: the complete release when it belongs to the
+// recorded version (a stopped upgrade can leave an older release behind).
+$dbVersionLabel = $dbVersion === null ? null : (string) $dbVersion;
+if ($dbVersionFull !== null && $dbVersion !== null && str_starts_with((string) $dbVersionFull, $dbVersion . '.')) {
+    $dbVersionLabel = (string) $dbVersionFull;
 }
 if ($dbVersion !== null
     && version_compare(TP_VERSION, '3.2.0', '>=')
@@ -234,7 +252,9 @@ if (!isset($_GET['step']) && !isset($post_step)) {
                     <div class="callout callout-warning col-12">
                         <h5><i class="fas fa-info-circle mr-2"></i>Before you start</h5>
                         <p>
-                            This wizard will upgrade your Teampass installation to version
+                            This wizard will upgrade your Teampass installation' . ($dbVersionLabel !== null
+                                ? ' from version <code>' . htmlspecialchars($dbVersionLabel) . '</code>'
+                                : '') . ' to version
                             <code>' . TP_VERSION . '.' . TP_VERSION_MINOR . '</code>.
                             The process may take several minutes depending on your data volume and server performance.
                         </p>
