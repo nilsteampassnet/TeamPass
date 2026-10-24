@@ -1031,6 +1031,22 @@ if (isset($post_type)) {
                     WHERE intitule = 'teampass_version' AND type = 'admin';"
                 );
             }
+            // teampass_version holds TP_VERSION only: record the complete release as well
+            $data = mysqli_fetch_row(mysqli_query($db_link, "SELECT COUNT(*) FROM ".$pre . "misc WHERE type = 'admin' AND intitule = 'teampass_version_full';"));
+            if ((int) $data[0] === 0) {
+                mysqli_query(
+                    $db_link,
+                    "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`)
+                    VALUES ('admin', 'teampass_version_full', '".TP_VERSION.".".TP_VERSION_MINOR."');"
+                );
+            } else {
+                mysqli_query(
+                    $db_link,
+                    "UPDATE `" . $pre . "misc`
+                    SET `valeur` = '".TP_VERSION.".".TP_VERSION_MINOR."'
+                    WHERE intitule = 'teampass_version_full' AND type = 'admin';"
+                );
+            }
             // Flush APCu cache so that index.php reads the new version from DB
             // instead of a stale cached value that would re-trigger the upgrade redirect.
             ConfigManager::invalidateCache();
