@@ -58,7 +58,7 @@ function recoveryVisibleJob(string $id): array
     }
     $directory = tpRecoveryJobDirectory($id);
     if (is_file($directory . '/receipt.json') && !is_link($directory . '/receipt.json')) {
-        return json_decode((string) file_get_contents($directory . '/receipt.json'), true, 32, JSON_THROW_ON_ERROR);
+        return tpRecoveryLoadReceipt($id);
     }
     return tpRecoveryPublicJob(tpRecoveryLoadJob($id));
 }
@@ -153,6 +153,11 @@ $scriptVersion = substr((string) hash_file('sha256', __DIR__ . '/recovery.js'), 
     <h1 class="h3"><i class="fas fa-life-ring mr-2" aria-hidden="true"></i><?= $escape('drp_title') ?></h1>
     <p><?= $escape('drp_intro') ?></p>
     <p class="alert alert-info"><?= $escape('drp_scope') ?></p>
+    <ol class="row list-unstyled mb-4" aria-label="Recovery steps">
+        <?php foreach (['Restore database', 'Publish instance', 'Secure permissions', 'Administrator checks', 'Resume service', 'Final checks and cleanup'] as $index => $step): ?>
+        <li class="col-6 col-md-4 mb-2"><span id="recovery-step-<?= $index + 1 ?>" class="badge badge-light d-block p-2"><?= $index + 1 ?>. <?= htmlspecialchars($step, ENT_QUOTES, 'UTF-8') ?></span></li>
+        <?php endforeach; ?>
+    </ol>
     <?php if (!$https && !$local): ?><p class="alert alert-danger"><?= $escape('drp_transport') ?></p><?php endif; ?>
     <?php if ($initialJob === null && !$authorized): ?>
     <section class="card card-body mb-4">
@@ -218,6 +223,43 @@ $scriptVersion = substr((string) hash_file('sha256', __DIR__ . '/recovery.js'), 
         <pre id="recovery-command" class="p-3 bg-light"></pre>
         <p id="recovery-activate-hint"><?= $escape('drp_activate_hint') ?></p>
         <pre id="recovery-activate" class="p-3 bg-light"></pre>
+        <section id="recovery-permissions" class="border-top pt-3 mt-3" hidden>
+            <h2 class="h5">3. Secure file permissions</h2>
+            <p>Run this audit as the PHP service account. It uses the File integrity permission rules and does not apply changes automatically.</p>
+            <pre id="recovery-permissions-command" class="p-3 bg-light"></pre>
+            <p id="recovery-permissions-status" role="status"></p>
+            <div id="recovery-permissions-plan" hidden>
+                <p>Review and run the following commands as an <strong>administrator in your server terminal</strong>.
+                    These commands protect code, configuration and the original master key, while keeping runtime data writable by PHP.</p>
+                <pre id="recovery-permissions-commands" class="p-3 bg-light"></pre>
+                <p>Then run the audit command again and click <strong>Refresh progress</strong>. Exit code 2 means permission findings remain.</p>
+            </div>
+            <p id="recovery-permissions-manual" hidden>Automatic remediation is unavailable for this platform or layout.
+                Review the OS permissions/ACLs manually: PHP needs read access to code, configuration and keys, and write access only to runtime directories.
+                See the <a href="https://documentation.teampass.net/#/install/file-permissions" target="_blank" rel="noopener">permission documentation</a>.</p>
+        </section>
+        <section id="recovery-admin-checks" class="border-top pt-3 mt-3" hidden>
+            <h2 class="h5">4. Check administrator access</h2>
+            <p>Open the restored instance in a separate tab and verify administrator sign-in, HTTPS, the site URL, MFA and external authentication configuration.</p>
+            <p>Standard users cannot sign in while maintenance is enabled. Their decryption and permission checks follow after service resume.</p>
+            <a class="btn btn-outline-primary mb-3" href="../index.php" target="_blank" rel="noopener">Open administrator login</a>
+        </section>
+        <section id="recovery-resume" class="border-top pt-3 mt-3" hidden>
+            <h2 class="h5">5. Resume service</h2>
+            <p>After the permission review and administrator checks, run this complete command, wait for it to finish, then click <strong>Refresh progress</strong>.</p>
+            <pre id="recovery-resume-command" class="p-3 bg-light"></pre>
+            <p>Backup schedules and LAPR stay disabled until you review and enable them deliberately.</p>
+        </section>
+        <section id="recovery-finished" class="border-top pt-3 mt-3" hidden>
+            <h2 class="h5">6. Final checks and remove the installer</h2>
+            <p id="recovery-finished-status" class="alert alert-success"></p>
+            <p>Verify a standard user's decryption, personal folders, manager/read-only permissions, documents and MFA.
+                Reconcile external integrations and offline clients, then review backup schedules and LAPR before enabling them.</p>
+            <p>As the final cleanup, run this command as an administrator to remove <code>public/install</code>.
+                It removes this assistant too: do not refresh it afterwards.</p>
+            <pre id="recovery-cleanup-command" class="p-3 bg-light"></pre>
+            <a class="btn btn-primary" href="../index.php" target="_blank" rel="noopener">Continue to TeamPass login</a>
+        </section>
         <button id="recovery-refresh" type="button" class="btn btn-secondary align-self-start"><?= $escape('drp_status') ?></button>
     </section>
 </main>
@@ -226,6 +268,11 @@ $scriptVersion = substr((string) hash_file('sha256', __DIR__ . '/recovery.js'), 
     'ready' => $texts['drp_ready'], 'verified' => $texts['drp_verified'], 'complete' => $texts['drp_complete'], 'counts' => $texts['drp_counts'],
     'running' => $texts['drp_running'], 'failed' => $texts['drp_failed'], 'initial' => $initialJob,
     'command' => $commandBase,
+    'cleanup' => tpRecoveryInstallerCleanupCommand(TEAMPASS_ROOT, PHP_OS_FAMILY),
+    'resumed' => $texts['drp_resumed'], 'resumedMaintenance' => $texts['drp_resumed_maintenance'],
+    'permissionsNotChecked' => $texts['drp_permissions_not_checked'], 'permissionsPassed' => $texts['drp_permissions_passed'],
+    'permissionsIssues' => $texts['drp_permissions_issues'], 'permissionsManual' => $texts['drp_permissions_manual'],
+    'cleanupManual' => $texts['drp_cleanup_manual'],
     'errors' => ['OPERATOR_CODE_UNREADABLE' => 'The operator file was created by another account and PHP cannot read it. Have its ownership repaired, then use the PHP service account command shown above.'],
 ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR) ?></script>
 <script src="recovery.js?v=<?= htmlspecialchars($scriptVersion, ENT_QUOTES, 'UTF-8') ?>" defer></script>

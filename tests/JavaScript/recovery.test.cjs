@@ -6,7 +6,7 @@ const vm = require('node:vm')
 const path = require('node:path')
 
 const source = fs.readFileSync(path.join(__dirname, '../../public/install/recovery.js'), 'utf8')
-const job = (status) => ({ id: 'a'.repeat(32), status, error: '', tables: 80, documents: 3,
+const job = (status, permissions) => ({ id: 'a'.repeat(32), status, permissions, error: '', tables: 80, documents: 3,
   plan: { source_version: '3.2.2.7', target_version: '3.2.3.2' } })
 
 function app(initial = null, command = "sudo -u 'www-data' -- '/usr/bin/php8.5' '/srv/TeamPass Lab/app/scripts/disaster-recovery.php'") {
@@ -14,6 +14,8 @@ function app(initial = null, command = "sudo -u 'www-data' -- '/usr/bin/php8.5' 
   const element = (id) => {
     if (!elements.has(id)) elements.set(id, { textContent: '', hidden: true, disabled: false,
       handlers: {}, addEventListener(name, handler) { this.handlers[name] = handler },
+      attributes: {}, setAttribute(name, value) { this.attributes[name] = value },
+      removeAttribute(name) { delete this.attributes[name] },
       set innerHTML(value) { throw new Error('Unsafe HTML assignment') } })
     return elements.get(id)
   }
@@ -27,6 +29,10 @@ function app(initial = null, command = "sudo -u 'www-data' -- '/usr/bin/php8.5' 
     ready: 'PREPARED', verified: 'VERIFIED', complete: 'COMPLETE', running: 'RUNNING',
     failed: 'FAILED', counts: '%s tables, %s documents', preparing: 'WAIT', error: 'ERROR',
     command,
+    cleanup: "sudo rm -rf -- '/srv/TeamPass Lab/public/install'",
+    resumed: 'RESUMED', resumedMaintenance: 'MAINTENANCE', permissionsNotChecked: 'AUDIT FIRST',
+    permissionsPassed: 'PERMISSIONS PASS', permissionsIssues: '%s findings', permissionsManual: 'MANUAL ACL REVIEW',
+    cleanupManual: 'MANUAL CLEANUP',
     errors: { OPERATOR_CODE_UNREADABLE: 'Use the PHP service account' } })
   const queue = []
   const requests = []
@@ -48,7 +54,7 @@ function app(initial = null, command = "sudo -u 'www-data' -- '/usr/bin/php8.5' 
 
 test('Recovery progresses from import to activation and operational resume without offering a second import', async () => {
   const ui = app()
-  ui.queue.push(job('prepared'), job('verified'), job('complete'))
+  ui.queue.push(job('prepared'), job('verified'), job('complete', { status: 'passed' }), job('resumed', { status: 'passed' }))
   await ui.submit()
   assert.equal(ui.requests[0].body.fields.csrf, 'fixture-csrf')
   assert.equal(ui.password.value, '')
@@ -65,18 +71,59 @@ test('Recovery progresses from import to activation and operational resume witho
   assert.match(ui.element('recovery-activate').textContent, /^sudo -u 'www-data'/)
   await ui.refresh()
   assert.equal(ui.element('recovery-instruction').textContent, 'COMPLETE')
-  assert.match(ui.element('recovery-activate').textContent, /--resume=/)
-  assert.match(ui.element('recovery-activate').textContent, /^sudo -u 'www-data'/)
+  assert.match(ui.element('recovery-resume-command').textContent, /--resume=/)
+  assert.match(ui.element('recovery-resume-command').textContent, /^sudo -u 'www-data'/)
+  assert.equal(ui.element('recovery-finished').hidden, true)
+  await ui.refresh()
+  assert.equal(ui.element('recovery-finished').hidden, false)
+  assert.equal(ui.element('recovery-resume').hidden, true)
+  assert.equal(ui.element('recovery-refresh').hidden, true)
+  assert.equal(ui.element('recovery-step-6').attributes['aria-current'], 'step')
+  assert.equal(ui.element('recovery-cleanup-command').textContent, "sudo rm -rf -- '/srv/TeamPass Lab/public/install'")
 })
 
 test('Each stage preserves the complete server-provided PowerShell command', () => {
   const command = "& 'C:/PHP/php.exe' 'C:/TeamPass Lab/app/scripts/disaster-recovery.php'"
   for (const [status, action] of [['prepared', 'run'], ['verified', 'activate'], ['complete', 'resume']]) {
-    const ui = app(job(status), command)
-    const element = ui.element(status === 'prepared' ? 'recovery-command' : 'recovery-activate')
-    assert.equal(element.hidden, false)
+    const ui = app(job(status, { status: 'passed' }), command)
+    const element = ui.element(status === 'prepared' ? 'recovery-command' : (status === 'complete' ? 'recovery-resume-command' : 'recovery-activate'))
+    if (status !== 'complete') assert.equal(element.hidden, false)
     assert.equal(element.textContent, `${command} --${action}=${'a'.repeat(32)}`)
   }
+})
+
+test('Published legacy receipts require a permission review before offering resume or cleanup', () => {
+  const ui = app(job('complete'))
+  assert.equal(ui.element('recovery-permissions').hidden, false)
+  assert.match(ui.element('recovery-permissions-command').textContent, /^sudo -u 'www-data'.*--check-permissions=/)
+  assert.equal(ui.element('recovery-permissions-status').textContent, 'AUDIT FIRST')
+  assert.equal(ui.element('recovery-resume').hidden, true)
+  assert.equal(ui.element('recovery-finished').hidden, true)
+})
+
+test('Permission findings show administrator commands as text and require another audit', () => {
+  const command = 'sudo chown root:www-data "<untrusted>"'
+  const ui = app(job('complete', { status: 'issues', issues: 3, commands: [command] }))
+  assert.equal(ui.element('recovery-permissions-commands').textContent, command)
+  assert.equal(ui.element('recovery-permissions-status').textContent, '3 findings')
+  assert.equal(ui.element('recovery-permissions-plan').hidden, false)
+  assert.equal(ui.element('recovery-resume').hidden, true)
+})
+
+test('Unsupported permission platforms require manual review without claiming an audit pass', () => {
+  const ui = app(job('complete', { status: 'manual' }))
+  assert.equal(ui.element('recovery-permissions-status').textContent, 'MANUAL ACL REVIEW')
+  assert.equal(ui.element('recovery-permissions-manual').hidden, false)
+  assert.equal(ui.element('recovery-admin-checks').hidden, false)
+  assert.equal(ui.element('recovery-resume').hidden, false)
+  assert.equal(ui.element('recovery-finished').hidden, true)
+})
+
+test('An already resumed legacy instance still offers the missing permission review', () => {
+  const ui = app(job('resumed'))
+  assert.equal(ui.element('recovery-permissions').hidden, false)
+  assert.equal(ui.element('recovery-resume').hidden, true)
+  assert.equal(ui.element('recovery-finished').hidden, true)
 })
 
 test('An unreadable operator file reports the service account remediation', async () => {

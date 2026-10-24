@@ -231,6 +231,21 @@ try {
         if (is_file($root . '/storage/recovery/' . $jobId . '/job.json')) {
             throw new RuntimeException('Sensitive staging survived successful activation');
         }
+        $receiptPath = $root . '/storage/recovery/' . $jobId . '/receipt.json';
+        $keyMode = fileperms($root . '/secrets/fixture.key');
+        $process = new \Symfony\Component\Process\Process([PHP_BINARY, 'app/scripts/disaster-recovery.php', '--check-permissions=' . $jobId], $root);
+        $process->setTimeout(120);
+        $process->run();
+        if (!in_array($process->getExitCode(), [0, 2], true)) {
+            throw new RuntimeException($process->getErrorOutput());
+        }
+        $receipt = json_decode((string) file_get_contents($receiptPath), true, 32, JSON_THROW_ON_ERROR);
+        clearstatcache();
+        if (!isset($receipt['permissions']['status']) || $receipt['status'] !== 'complete'
+            || fileperms($root . '/secrets/fixture.key') !== $keyMode
+            || file_get_contents($root . '/secrets/fixture.key') !== $master->saveToAsciiSafeString()) {
+            throw new RuntimeException('Permission audit changed restored keys or did not persist its review');
+        }
         $process = new \Symfony\Component\Process\Process([PHP_BINARY, 'app/scripts/disaster-recovery.php', '--resume=' . $jobId], $root);
         $process->setTimeout(120);
         $process->run();
@@ -240,7 +255,28 @@ try {
         if ($targetDb->query("SELECT valeur FROM recovery_misc WHERE type='admin' AND intitule='recovery_pending_checks'")->fetch_row()[0] !== '0') {
             throw new RuntimeException('Operational hold was not released');
         }
-        echo "OK: isolated publication, original master key, private staging cleanup and service resume\n";
+        $receipt = json_decode((string) file_get_contents($receiptPath), true, 32, JSON_THROW_ON_ERROR);
+        if ($receipt['status'] !== 'resumed' || !isset($receipt['resumed_at']) || $receipt['maintenance_enabled']) {
+            throw new RuntimeException('Service resume was not recorded for the final cleanup step');
+        }
+        // A repeated acknowledgement must not rewrite separately enabled maintenance.
+        $targetDb->query("UPDATE recovery_misc SET valeur='1' WHERE type='admin' AND intitule='maintenance_mode'");
+        $process->run();
+        $repeated = json_decode((string) file_get_contents($receiptPath), true, 32, JSON_THROW_ON_ERROR);
+        if (!$process->isSuccessful() || $repeated['resumed_at'] !== $receipt['resumed_at'] || !$repeated['maintenance_enabled']) {
+            throw new RuntimeException('Repeated resume changed the acknowledgement or separately enabled maintenance');
+        }
+        $legacy = $receipt;
+        $legacy['status'] = 'complete';
+        unset($legacy['resumed_at']);
+        file_put_contents($receiptPath, json_encode($legacy, JSON_THROW_ON_ERROR));
+        $process->run();
+        $repaired = json_decode((string) file_get_contents($receiptPath), true, 32, JSON_THROW_ON_ERROR);
+        if (!$process->isSuccessful() || $repaired['status'] !== 'resumed' || !isset($repaired['resumed_at'])
+            || !$repaired['maintenance_enabled']) {
+            throw new RuntimeException('Legacy complete receipt was not repaired after prior service resume');
+        }
+        echo "OK: isolated publication, original master key, private staging cleanup, permission audit and idempotent service resume\n";
     }
     echo "OK: real encrypted backup, kit, SQL import, original keys and cryptographic verification\n";
 } catch (Throwable $exception) {

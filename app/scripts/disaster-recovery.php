@@ -22,9 +22,9 @@ require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../config/include.php';
 require_once __DIR__ . '/../sources/recovery.functions.php';
 
-$options = getopt('', ['enable', 'prepare:', 'run:', 'activate:', 'resume:', 'status:', 'discard:', 'help']);
+$options = getopt('', ['enable', 'prepare:', 'run:', 'activate:', 'check-permissions:', 'resume:', 'status:', 'discard:', 'help']);
 try {
-    foreach (['enable', 'prepare', 'run', 'activate', 'resume', 'discard'] as $writeOperation) {
+    foreach (['enable', 'prepare', 'run', 'activate', 'check-permissions', 'resume', 'discard'] as $writeOperation) {
         if (isset($options[$writeOperation])) {
             tpRecoveryAssertServiceAccount();
             break;
@@ -72,32 +72,70 @@ try {
         $id = (string) $options['status'];
         $directory = tpRecoveryJobDirectory($id);
         if (is_file($directory . '/receipt.json') && !is_link($directory . '/receipt.json')) {
-            $result = json_decode((string) file_get_contents($directory . '/receipt.json'), true, 32, JSON_THROW_ON_ERROR);
+            $result = tpRecoveryLoadReceipt($id);
         } else {
             $result = tpRecoveryPublicJob(tpRecoveryLoadJob($id));
         }
         fwrite(STDOUT, json_encode($result, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR) . "\n");
         exit(0);
     }
+    if (isset($options['check-permissions'])) {
+        $receipt = tpRecoveryCheckPermissions((string) $options['check-permissions']);
+        $review = $receipt['permissions'];
+        fwrite(STDOUT, 'Permission review: ' . $review['status'] . "\n");
+        if ($review['issues'] !== null) { fwrite(STDOUT, 'Permission findings: ' . $review['issues'] . "\n"); }
+        if ($review['commands'] !== []) {
+            fwrite(STDOUT, "Review and run these commands as an administrator, then repeat the permission check:\n"
+                . implode("\n", $review['commands']) . "\n");
+        } elseif ($review['status'] === 'manual') {
+            fwrite(STDOUT, "Automatic POSIX permission auditing is unavailable. Review the platform's ACLs manually.\n");
+        } elseif ($review['status'] === 'issues') {
+            fwrite(STDOUT, "No automatic remediation plan is available for this layout. Correct the findings manually, then repeat this audit.\n");
+        }
+        fwrite(STDOUT, "Refresh the recovery assistant to continue. No permissions were changed by this command.\n");
+        exit($review['status'] === 'issues' ? 2 : 0);
+    }
     if (isset($options['resume'])) {
         $id = (string) $options['resume'];
-        tpRecoveryJobDirectory($id);
-        require_once __DIR__ . '/../sources/main.functions.php';
-        if (($SETTINGS['recovery_job_id'] ?? '') !== $id || (int) ($SETTINGS['recovery_pending_checks'] ?? 0) !== 1) {
-            throw new TeamPassRecoveryException('RECOVERY_RESUME_INVALID');
-        }
-        DB::startTransaction();
+        $lock = tpRecoveryFinalizationLock();
         try {
-            foreach (['recovery_pending_checks', 'maintenance_mode'] as $name) {
-                DB::update(prefixTable('misc'), ['valeur' => '0'], 'type=%s AND intitule=%s', 'admin', $name);
+            $receipt = tpRecoveryLoadReceipt($id);
+            require_once __DIR__ . '/../sources/main.functions.php';
+            if (($SETTINGS['recovery_job_id'] ?? '') !== $id) {
+                throw new TeamPassRecoveryException('RECOVERY_RESUME_INVALID');
             }
-            DB::commit();
-        } catch (Throwable $exception) {
-            DB::rollback();
-            throw $exception;
+            $pendingChecks = (string) ($SETTINGS['recovery_pending_checks'] ?? '');
+            if (!in_array($pendingChecks, ['0', '1'], true)) {
+                throw new TeamPassRecoveryException('RECOVERY_RESUME_INVALID');
+            }
+            if ($pendingChecks === '1') {
+                DB::startTransaction();
+                try {
+                    foreach (['recovery_pending_checks', 'maintenance_mode'] as $name) {
+                        DB::update(prefixTable('misc'), ['valeur' => '0'], 'type=%s AND intitule=%s', 'admin', $name);
+                    }
+                    DB::commit();
+                } catch (Throwable $exception) {
+                    DB::rollback();
+                    throw $exception;
+                }
+            }
+            // Publish completion only after the database transaction succeeds.
+            // Repeating this command repairs a receipt left behind by an interruption.
+            $receipt['status'] = 'resumed';
+            $receipt['resumed_at'] ??= time();
+            $receipt['maintenance_enabled'] = $pendingChecks === '0' && (int) ($SETTINGS['maintenance_mode'] ?? 0) === 1;
+            tpRecoverySaveReceipt($receipt);
+        } finally {
+            flock($lock, LOCK_UN);
+            fclose($lock);
         }
         \TeampassClasses\ConfigManager\ConfigManager::invalidateCache();
-        fwrite(STDOUT, "Recovery checks acknowledged. Maintenance and the recovery task hold are released.\nBackup schedules and LAPR remain disabled until reconfigured.\n");
+        fwrite(STDOUT, $receipt['maintenance_enabled']
+            ? "Recovery was already resumed. Separately enabled maintenance was left unchanged.\n"
+            : "Recovery checks acknowledged. Maintenance and the recovery task hold are released.\n");
+        fwrite(STDOUT, "Backup schedules and LAPR remain disabled until reconfigured.\n");
+        fwrite(STDOUT, "Refresh the assistant for the final installer-directory cleanup instructions.\n");
         exit(0);
     }
     if (isset($options['discard'])) {
@@ -110,6 +148,7 @@ try {
         . "  --prepare=FILE|-      Validate a private JSON request (or read standard input)\n"
         . "  --run=JOB             Restore and upgrade an empty dedicated database\n"
         . "  --activate=JOB        Publish verified data and configuration in maintenance\n"
+        . "  --check-permissions=JOB  Audit runtime permissions and propose administrator commands\n"
         . "  --resume=JOB          Release maintenance after operational checks\n"
         . "  --status=JOB          Print non-sensitive progress\n"
         . "  --discard=JOB         Remove private staging of a prepared or failed job\n"
