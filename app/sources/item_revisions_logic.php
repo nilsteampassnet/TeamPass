@@ -186,20 +186,32 @@ function itemRevisionNormalizeLimit(?int $limit): int
 /**
  * Tell whether a client must rebuild its whole cache instead of applying a delta.
  *
- * Three situations lead there, and they collapse into one rule:
+ * Situations requiring a rebuild:
  *   - a first synchronization (cursor 0): items untouched since tracking was installed still
  *     sit at revision 0 and have no journal entry, so a delta would silently miss them;
  *   - a cursor older than the retained window: the entries proving what changed are pruned;
  *   - an empty journal asked from cursor 0, same reason as the first case.
+ *   - a cursor beyond the current journal after a database rollback;
+ *   - a recovery generation missing or different from the server's generation.
  *
  * @param int      $since              Client cursor
  * @param int|null $minRetainedRevision Lowest revision still in the journal, null when empty
+ * @param int|null $maxRevision         Highest current revision, when known
+ * @param string|null $clientGeneration Generation adopted by the client after a full sync
+ * @param string|null $serverGeneration Generation issued by disaster recovery
  *
  * @return bool True when a full resynchronization is required
  */
-function itemRevisionNeedsFullSync(int $since, ?int $minRetainedRevision): bool
+function itemRevisionNeedsFullSync(
+    int $since,
+    ?int $minRetainedRevision,
+    ?int $maxRevision = null,
+    ?string $clientGeneration = null,
+    ?string $serverGeneration = null
+): bool
 {
-    if ($since <= 0) {
+    if ($since <= 0 || ($maxRevision !== null && $since > $maxRevision)
+        || ($serverGeneration !== null && $serverGeneration !== '' && $clientGeneration !== $serverGeneration)) {
         return true;
     }
 
