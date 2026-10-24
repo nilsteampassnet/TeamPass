@@ -14,6 +14,39 @@ reused, including replayable changes in the source release. A missing upgrade
 path, a newer source schema, or a newer source version stops recovery. Historical
 SQL-only backups and pre-3.2.2 migrations require a separate recovery procedure.
 
+### Operating systems and validation scope
+
+The recovery engine uses PHP and MySQL/MariaDB, without a Bash, `sudo`, systemd
+or Docker dependency. Use 64-bit PHP 8.2 or later with the normal TeamPass
+extensions, plus `zip`. The CLI must have the required extensions too, and
+`proc_open` must be available for the isolated migration and verification
+processes. The Linux commands below are deployment examples, not an OS check.
+
+| Platform | DRP validation status |
+| --- | --- |
+| Ubuntu 26.04, native installation | Complete recovery, upgrade, HTTP assistant, publication and service resume tested with PHP 8.5 and MariaDB. |
+| Native Windows, local filesystem | The same complete scenarios tested with PHP 8.2 and MariaDB, including paths containing spaces. These desktop tests do not certify Windows Server or IIS. |
+| Other Debian/Ubuntu releases | Compatibility target with the required PHP/database versions; each deployment still needs a restore rehearsal. |
+| RHEL, Rocky Linux and AlmaLinux | Compatibility target; validate the service identity, writable directories and SELinux policy. No end-to-end distribution-specific qualification yet. |
+| SLES/openSUSE | Compatibility target; no end-to-end distribution-specific qualification yet. |
+| Windows Server | Compatibility target; server/service-account and NTFS ACL acceptance tests remain required. IIS/FastCGI integration is not yet qualified. |
+
+The application's PHP requirements matter more than the distribution name:
+an otherwise supported OS with an older PHP installation is not sufficient.
+These statements cover DRP; optional TeamPass services such as the WebSocket
+daemon have their own platform requirements.
+
+On Linux, adapt the PHP account/group to the deployment and preserve its
+SELinux/AppArmor protections. On Windows, use local NTFS storage and restrict
+ACLs on `storage/recovery/`, `secrets/` and `app/config/` to the intended
+administrators and PHP/CLI service identities. POSIX `chmod` values do not
+establish those ACLs. The staging area requires reliable file locking, atomic
+same-directory replacement and hard-link creation; network shares and FAT
+filesystems have not been qualified. Validate both web and CLI access under
+the actual production identities, not only an administrator's interactive
+account. HTTPS, web-server configuration and task scheduling remain part of
+the destination infrastructure runbook.
+
 ### Material to preserve before a disaster
 
 - A complete `.tpbackup`, with **Include documents** enabled. Missing attachments,
