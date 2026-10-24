@@ -55,6 +55,12 @@ try {
     if ($status !== 200 || !str_contains($html, 'Restaurer une instance TeamPass')) {
         throw new RuntimeException('French recovery form did not render');
     }
+    if (PHP_OS_FAMILY !== 'Windows' && (!str_contains($html, 'sudo -u') || !str_contains($html, 'Common Linux service accounts'))) {
+        throw new RuntimeException('The service account command is missing from the recovery form');
+    }
+    if (PHP_OS_FAMILY === 'Windows' && !str_contains($html, 'Run this PowerShell command')) {
+        throw new RuntimeException('The Windows service identity instructions are missing');
+    }
     preg_match('/<script id="recovery-data" type="application\/json">(.*?)<\/script>/s', $html, $match);
     $csrf = json_decode($match[1], true)['csrf'];
     [$status, $body] = $request(['action' => 'unlock', 'operator' => $operator]);
@@ -69,7 +75,7 @@ try {
     if ($status !== 400 || json_decode($body, true)['error'] !== 'OPERATOR_CODE_INVALID') {
         throw new RuntimeException('Invalid operator code was accepted');
     }
-    [$status, $body] = $request(['action' => 'unlock', 'operator' => $operator, 'csrf' => $csrf]);
+    [$status, $body] = $request(['action' => 'unlock', 'operator' => "  " . $operator . "\n", 'csrf' => $csrf]);
     if ($status !== 200 || empty(json_decode($body, true)['result']['unlocked'])) {
         throw new RuntimeException('Valid operator code was rejected');
     }

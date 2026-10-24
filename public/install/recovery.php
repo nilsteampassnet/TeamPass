@@ -29,6 +29,8 @@ if (empty($_SESSION['recovery_csrf'])) {
 $local = in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1', '::1'], true);
 $https = !empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off';
 $authorized = (int) ($_SESSION['recovery_operator_until'] ?? 0) > time();
+$serviceAccount = tpRecoveryServiceAccount();
+$commandBase = tpRecoveryCommandBase();
 
 /** Resolve an uploaded archive or an operator-staged file in the fixed incoming directory. */
 function recoveryRequestArchive(string $field, string $extension): string
@@ -79,8 +81,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         } else {
             tpRecoveryAssertFreshTarget();
             $operatorPath = tpRecoveryJobDirectory() . '/operator.json';
-            if (is_link($operatorPath) || !is_readable($operatorPath)) {
+            if (is_link($operatorPath) || !is_file($operatorPath)) {
                 throw new TeamPassRecoveryException('OPERATOR_CODE_REQUIRED');
+            }
+            if (!is_readable($operatorPath)) {
+                throw new TeamPassRecoveryException('OPERATOR_CODE_UNREADABLE');
             }
             $operator = json_decode((string) file_get_contents($operatorPath), true, 8, JSON_THROW_ON_ERROR);
             if (($operator['expires_at'] ?? 0) <= time()) {
@@ -88,7 +93,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             }
             if ($action === 'unlock') {
                 $provided = $_POST['operator'] ?? '';
-                if (!is_string($provided) || !hash_equals($operator['token_hash'], hash('sha256', $provided))) {
+                if (!is_string($provided) || !hash_equals($operator['token_hash'], hash('sha256', trim($provided)))) {
                     throw new TeamPassRecoveryException('OPERATOR_CODE_INVALID');
                 }
                 session_regenerate_id(true);
@@ -153,7 +158,22 @@ if (teampassConfigState(TEAMPASS_ROOT . '/app/config') !== 'not_installed' && $i
     <?php if ($initialJob === null && !$authorized): ?>
     <section class="card card-body mb-4">
         <p><?= $escape('drp_enable_hint') ?></p>
-        <pre class="bg-light p-3"><code>php app/scripts/disaster-recovery.php --enable</code></pre>
+        <?php if (PHP_OS_FAMILY !== 'Windows'): ?>
+        <p>PHP process account: <strong><?= htmlspecialchars($serviceAccount ?? 'not detected', ENT_QUOTES, 'UTF-8') ?></strong>.
+            Run this command on the server. Use <code>sudo -u</code>; <code>sudo php</code> runs as root and creates files PHP cannot read.</p>
+        <?php if ($serviceAccount === null): ?><p>Replace <code>PHP_SERVICE_ACCOUNT</code> below with the configured PHP-FPM/Apache account.</p><?php endif; ?>
+        <?php else: ?>
+        <p>Run this PowerShell command under the Windows identity configured for PHP.
+            Find it in the Apache service's Log On settings or IIS Application Pools → Advanced Settings → Identity.
+            An IIS virtual pool identity needs an administrator-managed execution context; do not substitute an unrelated administrator account.</p>
+        <?php endif; ?>
+        <pre class="bg-light p-3"><code><?= htmlspecialchars($commandBase . ' --enable', ENT_QUOTES, 'UTF-8') ?></code></pre>
+        <?php if (PHP_OS_FAMILY !== 'Windows'): ?>
+        <details class="mb-3"><summary>Common Linux service accounts</summary>
+            <p>Debian/Ubuntu: <code>www-data</code>; RHEL/Rocky/AlmaLinux: usually <code>apache</code>;
+                SUSE/openSUSE: usually <code>wwwrun</code>. A custom PHP-FPM pool can use another account; prefer the detected account above.</p>
+        </details>
+        <?php endif; ?>
         <form id="recovery-unlock" autocomplete="off">
             <label for="operator"><?= $escape('drp_operator') ?></label>
             <input class="form-control mb-3" id="operator" name="operator" type="password" required autocomplete="off">
@@ -199,6 +219,8 @@ if (teampassConfigState(TEAMPASS_ROOT . '/app/config') !== 'not_installed' && $i
     'csrf' => $_SESSION['recovery_csrf'], 'preparing' => $texts['drp_preparing'], 'error' => $texts['drp_error'],
     'ready' => $texts['drp_ready'], 'verified' => $texts['drp_verified'], 'complete' => $texts['drp_complete'], 'counts' => $texts['drp_counts'],
     'running' => $texts['drp_running'], 'failed' => $texts['drp_failed'], 'initial' => $initialJob,
+    'command' => $commandBase,
+    'errors' => ['OPERATOR_CODE_UNREADABLE' => 'The operator file was created by another account and PHP cannot read it. Have its ownership repaired, then use the PHP service account command shown above.'],
 ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR) ?></script>
 <script src="recovery.js" defer></script>
 </body>

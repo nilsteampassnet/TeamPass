@@ -15,6 +15,7 @@ require_once __DIR__ . '/recovery_sql.php';
 require_once __DIR__ . '/backup.functions.php';
 require_once __DIR__ . '/config_access_logic.php';
 require_once __DIR__ . '/install_security_logic.php';
+require_once __DIR__ . '/recovery_environment.php';
 
 /** Resolve a job inside the private recovery directory, refusing links in its ancestry. */
 function tpRecoveryJobDirectory(string $id = ''): string
