@@ -124,6 +124,13 @@ This releases maintenance and the recovery background-task hold. Reconfigure
 and enable the backup schedules and LAPR deliberately. Restoring a backup does
 not roll back passwords on remote servers; reconcile rotations since the backup.
 Force a full refresh of external clients holding an offline cache after recovery.
+The item changes API returns a new `generation` after every recovery and requires
+a full sync when the client's generation is absent/different or its cursor is
+ahead of the restored journal. Clients must adopt both cursor and generation
+after rebuilding their cache, then send `generation` on subsequent delta calls.
+Older clients that do not support generations continue receiving full-sync
+requests after recovery; upgrade or refresh them explicitly.
+
 ### CLI preparation and failures
 
 `--prepare=FILE` reads a private JSON request; `--prepare=-` reads standard input.
