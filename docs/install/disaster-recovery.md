@@ -92,7 +92,8 @@ these capture guarantees and still require a complete restore rehearsal.
    The examples below use Debian/Ubuntu's `www-data`; adapt it to your deployment.
 
 The assistant detects the Unix PHP worker account and shows commands with that
-account and absolute PHP/script paths for enable, restore, activation and resume.
+account and absolute PHP/script paths for enable, restore, activation, permission
+review and resume.
 Do not use `sudo php`: it creates owner-only files as root, which the web worker
 cannot read. Mutating recovery CLI commands refuse Unix root execution. Common
 accounts are `www-data` on Debian/Ubuntu, `apache` on RHEL-family installations,
@@ -155,23 +156,57 @@ The archived `settings.php` is never executed. New destination credentials are
 encrypted with the original master key. `settings.php` is published last.
 Private staging is removed after success; a non-sensitive receipt remains.
 
-### Operational checks and resuming service
+### Finalization: permissions, checks and cleanup
 
 The restored instance stays in maintenance, and background processing is held.
 Backup schedules and LAPR are disabled. Sessions, API authorizations, temporary
 tokens, pending background tasks and idempotency results are invalidated.
 Restored Secure Send links are invalidated with a transactional lifecycle audit.
 
-Before reopening, check administrator access, a standard user's decryption and
-permissions, personal folders, read-only/manager roles, documents, MFA/passkeys,
-HTTPS, the URL and the external authentication services actually used.
+The assistant distinguishes six steps: **restore database**, **publish instance**,
+**secure permissions**, **administrator checks**, **resume service**, then
+**final checks and installer cleanup**. Run only the complete command shown for
+the current step. Wait for it to finish, then click **Refresh progress**.
+
+After publication, run the permission audit as the PHP service account:
+
+```bash
+sudo -u www-data php app/scripts/disaster-recovery.php --check-permissions=JOB_ID
+```
+
+This performs the same deep permission scan and generates the same remediation
+commands as **File integrity**, without checking release hashes or changing any
+permissions. The terminal and assistant display the proposed commands. Review
+and run them separately as a server administrator, then repeat the audit and
+refresh the assistant. Exit code `2` means permission findings remain.
+
+The normal runtime profile makes code/configuration read-only for PHP, protects
+the original master key and leaves runtime directories writable. It replaces the
+temporary installation write access; it never regenerates a key. On supported
+Debian/Ubuntu and RHEL-family layouts the generated commands use the detected
+PHP identity and actual root path. Other layouts may require manual corrections.
+Windows requires an explicit manual NTFS ACL review: an unsupported audit is
+shown as **manual**, never as a pass, and no POSIX remediation is offered.
+See [file permissions](file-permissions.md) before applying a plan.
+
+Check administrator sign-in, HTTPS, the URL, MFA/passkeys and the external
+authentication configuration in another tab. **Standard users cannot sign in
+while maintenance is enabled**; test their decryption and roles after resume.
+Once the permission review and administrator checks are complete:
 
 ```bash
 sudo -u www-data php app/scripts/disaster-recovery.php --resume=JOB_ID
 ```
 
-This releases maintenance and the recovery background-task hold. Reconfigure
-and enable the backup schedules and LAPR deliberately. Restoring a backup does
+This releases maintenance and the recovery background-task hold, and records
+`resumed` in the non-sensitive receipt so the assistant can show the final step.
+Repeating the command is safe if a prior acknowledgement was interrupted. An
+older receipt left at `complete` can be acknowledged again; maintenance enabled
+separately after recovery is preserved.
+
+Refresh the assistant, then verify a standard user's decryption, personal folders,
+read-only/manager permissions and documents. Reconfigure and enable the backup
+schedules and LAPR deliberately. Restoring a backup does
 not roll back passwords on remote servers; reconcile rotations since the backup.
 Force a full refresh of external clients holding an offline cache after recovery.
 The item changes API returns a new `generation` after every recovery and requires
@@ -180,6 +215,19 @@ ahead of the restored journal. Clients must adopt both cursor and generation
 after rebuilding their cache, then send `generation` on subsequent delta calls.
 Older clients that do not support generations continue receiving full-sync
 requests after recovery; upgrade or refresh them explicitly.
+
+**Remove `public/install` last**, after these operational checks. The assistant
+proposes an administrator command with the validated absolute installer path:
+
+```bash
+sudo rm -rf -- '/var/www/teampass/public/install'
+```
+
+On Windows it proposes `Remove-Item -LiteralPath '…\public\install' -Recurse -Force`
+instead. These commands are displayed only; TeamPass does not execute them.
+They remove this assistant too. Continue through the **TeamPass login** link
+instead of refreshing the removed page. Preserve the encrypted backup and kit
+outside the deployment, and record the rehearsal results in the runbook.
 
 ### CLI preparation and failures
 
