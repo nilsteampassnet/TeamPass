@@ -31,6 +31,9 @@ declare(strict_types=1);
 use TeampassClasses\ConfigManager\ConfigManager;
 use TeampassClasses\Language\Language;
 require_once __DIR__.'/../sources/main.functions.php';
+if ((int) ($SETTINGS['recovery_pending_checks'] ?? 0) === 1) {
+    exit(0);
+}
 require_once __DIR__ . '/../sources/backup.functions.php';
 require_once __DIR__ . '/../sources/users_purge.functions.php';
 require_once __DIR__.'/background_tasks___functions.php';

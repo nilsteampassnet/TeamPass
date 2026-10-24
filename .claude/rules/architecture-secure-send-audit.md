@@ -64,6 +64,7 @@ longer exists (for example, LEFT JOIN and an identifier fallback).
 | `invalidated` | `item_access_lost` | Item missing/inactive or sender no longer allowed to read it |
 | `invalidated` | `attempts_exhausted` | Fifth credential failure, alongside its `reveal_failed` row |
 | `invalidated` | `item_auto_deleted` | Elapsed/exhausted source-item auto-deletion policy observed before reveal |
+| `invalidated` | `disaster_recovery` | Restored links invalidated before a recovered instance is activated |
 | `expired` | `deadline_elapsed` | Expired ciphertext removed by opportunistic cleanup |
 
 The journal INSERT and affected operation share an InnoDB transaction. An audit
