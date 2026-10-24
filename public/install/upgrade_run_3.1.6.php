@@ -499,7 +499,7 @@ if ($res === false) {
 mysqli_close($db_link);
 
 // Finished
-echo '[{"finish":"1" , "next":"", "error":"'.(count($error) > 0 ? json_encode($error) : '').'"}]';
+echo json_encode([['finish' => '1', 'next' => '', 'error' => implode(' | ', $error)]]);
 
 
 //---< FUNCTIONS

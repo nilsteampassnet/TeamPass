@@ -276,6 +276,13 @@ foreach ($indexes_to_add as $index_config) {
     );
     
     if ($result && mysqli_num_rows($result) === 0) {
+        // A database migrated from 2.x can hold duplicate sharekeys, which the unique index rejects
+        if ($is_unique === true && str_starts_with($index_config['table'], 'sharekeys_') === true
+            && removeDuplicateSharekeys($db_link, $table) === false
+        ) {
+            $error[] = "Failed to remove duplicate sharekeys from {$table}: " . mysqli_error($db_link);
+        }
+
         // Create index (unique or standard)
         $index_type = $is_unique ? 'UNIQUE INDEX' : 'INDEX';
         $query = "CREATE {$index_type} `{$index_name}` ON `{$table}` ({$columns})";
@@ -576,7 +583,33 @@ mysqli_query(
 mysqli_close($db_link);
 
 // Finished
-echo '[{"finish":"1" , "next":"", "error":"'.(count($error) > 0 ? json_encode($error) : '').'"}]';
+echo json_encode([['finish' => '1', 'next' => '', 'error' => implode(' | ', $error)]]);
 
 
 //---< FUNCTIONS
+
+/**
+ * Delete the duplicate (object_id, user_id) rows of a sharekeys table, keeping the most recent one.
+ *
+ * Before 3.1.5 nothing prevented them: the v3 user migration, for instance, wrote every
+ * user's log sharekeys with object_id 0.
+ *
+ * @param mysqli $db_link Database link
+ * @param string $table   Prefixed table name
+ *
+ * @return bool False when the query failed
+ */
+function removeDuplicateSharekeys(mysqli $db_link, string $table): bool
+{
+    return mysqli_query(
+        $db_link,
+        "DELETE k FROM `{$table}` AS k
+        INNER JOIN (
+            SELECT object_id, user_id, MAX(increment_id) AS keep_id
+            FROM `{$table}`
+            GROUP BY object_id, user_id
+            HAVING COUNT(*) > 1
+        ) AS d ON k.object_id = d.object_id AND k.user_id = d.user_id
+        WHERE k.increment_id <> d.keep_id"
+    ) !== false;
+}
