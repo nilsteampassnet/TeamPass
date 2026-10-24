@@ -88,7 +88,7 @@ function secureSendAuditRecord(array $link, string $event, string $reason = '', 
         'revealed' => [''],
         'reveal_failed' => ['wrong_credentials'],
         'revoked' => ['sender_revoked'],
-        'invalidated' => ['sender_unavailable', 'item_access_lost', 'attempts_exhausted', 'item_auto_deleted'],
+        'invalidated' => ['sender_unavailable', 'item_access_lost', 'attempts_exhausted', 'item_auto_deleted', 'disaster_recovery'],
         'expired' => ['deadline_elapsed'],
     ];
     if (!isset($reasons[$event]) || !in_array($reason, $reasons[$event], true)) {

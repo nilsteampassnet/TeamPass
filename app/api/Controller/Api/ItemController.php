@@ -26,6 +26,7 @@ declare(strict_types=1);
  */
 
 use Symfony\Component\HttpFoundation\Request AS symfonyRequest;
+use TeampassClasses\ConfigManager\ConfigManager;
 
 class ItemController extends BaseController
 {
@@ -641,6 +642,12 @@ class ItemController extends BaseController
             return;
         }
         $since = max(0, (int) $arrQueryStringParams['since']);
+        $clientGeneration = $arrQueryStringParams['generation'] ?? null;
+        if ($clientGeneration !== null && (!is_string($clientGeneration)
+            || preg_match('/^[a-f0-9]{32}$/D', $clientGeneration) !== 1)) {
+            $this->sendProblem(400, 'Invalid synchronization generation');
+            return;
+        }
         $limit = itemRevisionNormalizeLimit(
             isset($arrQueryStringParams['limit']) ? (int) $arrQueryStringParams['limit'] : null
         );
@@ -658,15 +665,18 @@ class ItemController extends BaseController
             }
 
             $bounds = $itemModel->getRevisionBounds();
+            $syncSettings = (new ConfigManager())->getAllSettings();
+            $generation = (string) ($syncSettings['recovery_generation'] ?? '');
 
             // A cursor of 0, or one older than the retained journal, cannot be served by a
             // delta: the client rebuilds its cache and adopts the cursor returned here.
-            if (itemRevisionNeedsFullSync($since, $bounds['min']) === true) {
+            if (itemRevisionNeedsFullSync($since, $bounds['min'], $bounds['max'], $clientGeneration, $generation) === true) {
                 $this->sendOutput(
                     json_encode([
                         'cursor' => $bounds['max'],
                         'has_more' => false,
                         'full_sync_required' => true,
+                        'generation' => $generation,
                         'changed' => [],
                         'removed' => [],
                     ]),
@@ -696,6 +706,7 @@ class ItemController extends BaseController
                         'cursor' => $bounds['max'],
                         'has_more' => false,
                         'full_sync_required' => false,
+                        'generation' => $generation,
                         'changed' => [],
                         'removed' => [],
                     ]),
@@ -742,6 +753,7 @@ class ItemController extends BaseController
                     'cursor' => $changes['cursor'],
                     'has_more' => $changes['has_more'],
                     'full_sync_required' => false,
+                    'generation' => $generation,
                     'changed' => $changes['changed'],
                     'removed' => $changes['removed'],
                 ]),
