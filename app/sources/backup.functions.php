@@ -36,6 +36,7 @@ declare(strict_types=1);
  */
 
 require_once __DIR__ . '/runtime_files.functions.php';
+require_once __DIR__ . '/backup_capture.php';
 
 /**
  * Open a local backup file without truncating it, and protect it before writing.
@@ -425,67 +426,12 @@ function tpBackupPurgeStaleDatabasePartFiles(string $dir, int $olderThanSeconds 
  */
 function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', array $options = []): array
 {
-        // Enable maintenance mode for the whole backup operation, then restore previous value at the end.
-        // This is best-effort: a failure to toggle maintenance must not break the backup itself.
-        /** @scrutinizer ignore-unused */
-        $__tpMaintenanceGuard = new class() {
-            private $prev = null;
-            private $changed = false;
-
-            public function __construct()
-            {
-                try {
-                    $row = DB::queryFirstRow(
-                        'SELECT valeur FROM ' . prefixTable('misc') . ' WHERE intitule=%s AND type=%s',
-                        'maintenance_mode',
-                        'admin'
-                    );
-
-                    if (is_array($row) && array_key_exists('valeur', $row)) {
-                        $this->prev = (string) $row['valeur'];
-                    }
-
-                    // Only toggle if it was not already enabled
-                    if ($this->prev !== '1') {
-                        DB::update(
-                            prefixTable('misc'),
-                            array(
-                                'valeur' => '1',
-                                'updated_at' => time(),
-                            ),
-                            'intitule = %s AND type= %s',
-                            'maintenance_mode',
-                            'admin'
-                        );
-                        $this->changed = true;
-                    }
-                } catch (Throwable $ignored) {
-                    // ignore
-                }
-            }
-
-            public function __destruct()
-            {
-                if ($this->changed !== true) {
-                    return;
-                }
-
-                try {
-                    DB::update(
-                        prefixTable('misc'),
-                        array(
-                            'valeur' => (string) ($this->prev ?? '0'),
-                            'updated_at' => time(),
-                        ),
-                        'intitule = %s AND type= %s',
-                        'maintenance_mode',
-                        'admin'
-                    );
-                } catch (Throwable $ignored) {
-                    // ignore
-                }
-            }
-        };
+        try {
+            $__tpCapture = new TeamPassBackupCapture();
+        } catch (Throwable $exception) {
+            return ['success' => false, 'filename' => '', 'filepath' => '', 'encrypted' => false,
+                'size_bytes' => 0, 'message' => 'Could not acquire the database backup capture.'];
+        }
 
         $outputDir = $options['output_dir'] ?? ($SETTINGS['path_to_files_folder'] ?? '');
         $prefix = (string)($options['filename_prefix'] ?? '');
@@ -586,6 +532,10 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
                     // Skip table if structure cannot be fetched
                     $write($handle, "\n");
                     continue;
+                }
+
+                if (preg_match('/\bENGINE\s*=\s*InnoDB\b/i', $row2['Create Table']) !== 1) {
+                    throw new RuntimeException('Consistent backups require InnoDB tables.');
                 }
 
                 $write($handle, $row2['Create Table'] . ";\n\n");
@@ -4627,6 +4577,9 @@ function tpCreateBackupPackage(array $SETTINGS, string $encryptionKey, array $op
     }
 
     try {
+        // Retain maintenance and the same SQL snapshot while collecting and
+        // archiving documents, rather than releasing them after the inner dump.
+        $__tpCapture = new TeamPassBackupCapture();
         $dbOptions = [
             'output_dir' => $workDir,
             'filename_prefix' => 'database-',
@@ -4685,6 +4638,8 @@ function tpCreateBackupPackage(array $SETTINGS, string $encryptionKey, array $op
             'created_at' => gmdate('c'),
             'source' => ($source !== '') ? $source : 'manual',
             'backup_type' => $includeDocuments ? 'db_documents' : 'database_only',
+            'capture' => ['database' => 'innodb_repeatable_read', 'maintenance' => true,
+                'files_require_quiescence' => true],
             'teampass' => [
                 'files_version' => (($v = tpGetTpFilesVersion()) !== '') ? $v : null,
                 'schema_level' => (($sl = tpGetSchemaLevel()) !== '') ? $sl : null,
@@ -4811,6 +4766,9 @@ function tpCreateBackupPackage(array $SETTINGS, string $encryptionKey, array $op
             'backup_format' => tpBackupGetPackageFormatId(),
             'backup_format_version' => tpBackupGetPackageFormatVersion(),
         ];
+    } catch (Throwable $exception) {
+        return ['success' => false, 'filename' => '', 'filepath' => '', 'encrypted' => false,
+            'size_bytes' => 0, 'message' => 'Could not complete the database and documents backup capture.'];
     } finally {
         tpBackupRemoveTemporaryDirectory($workDir);
     }

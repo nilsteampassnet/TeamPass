@@ -22,6 +22,18 @@ class DB
     public static string $failure;
     public static array $plaintextModes = [];
 
+    /** Supply only the connection metadata consumed by the capture guard. */
+    public static function getMDB(): object
+    {
+        return (object) ['nested_transactions_count' => 0, 'dbName' => 'fixture'];
+    }
+
+    /** Simulate successful connection-scoped capture lock acquisition/release. */
+    public static function queryFirstField(string $query, ...$arguments): int
+    {
+        return 1;
+    }
+
     /** Inspect the dump before the first SQL bytes are written. */
     public static function query(string $query): array
     {
@@ -35,7 +47,7 @@ class DB
     public static function queryFirstRow(string $query, ...$arguments): array
     {
         return str_starts_with($query, 'SHOW CREATE TABLE')
-            ? ['Create Table' => 'CREATE TABLE `fixture_records` (`value` TEXT)']
+            ? ['Create Table' => 'CREATE TABLE `fixture_records` (`value` TEXT) ENGINE=InnoDB']
             : ['valeur' => '0'];
     }
 
