@@ -33,6 +33,15 @@ SQL-only backups and pre-3.2.2 migrations require a separate recovery procedure.
 Preserve the master key exactly. A newly generated `SECUREFILE` cannot replace
 the original one. Do not run a fresh installation over restored data.
 
+New backups use a single read-only InnoDB repeatable-read snapshot for the dump
+and document inventory. Concurrent backups are rejected, and maintenance stays
+enabled until the complete package has been published. Non-InnoDB tables stop
+the backup. This does not freeze filesystem writers or requests already running:
+drain active writes and stop background/rotation jobs before a recovery-grade
+capture, and prevent concurrent schema upgrades. The manifest describes the
+database capture without claiming a filesystem snapshot. Older archives lack
+these capture guarantees and still require a complete restore rehearsal.
+
 ### Prepare the destination
 
 1. Deploy the code with `public/` as the web root. Do not run the installer yet.
@@ -115,7 +124,6 @@ This releases maintenance and the recovery background-task hold. Reconfigure
 and enable the backup schedules and LAPR deliberately. Restoring a backup does
 not roll back passwords on remote servers; reconcile rotations since the backup.
 Force a full refresh of external clients holding an offline cache after recovery.
-
 ### CLI preparation and failures
 
 `--prepare=FILE` reads a private JSON request; `--prepare=-` reads standard input.

@@ -436,12 +436,16 @@ function tpRecoveryRun(string $id): array
                 throw new TeamPassRecoveryException('TARGET_SCHEMA_INCOMPLETE');
             }
         }
+        // Reuse the installer rules so URLs derived from the old host follow
+        // the destination, while explicitly customized URLs stay untouched.
+        require_once TEAMPASS_ROOT . '/public/install/tp.functions.php';
+        refreshStoredSiteUrl($db, $prefix, $job['url']);
         // Do not replay stale jobs, consumed links or revoked sessions after a time rollback.
         foreach (['maintenance_mode' => '1', 'lapr_enabled' => '0', 'bck_scheduled_enabled' => '0',
             'bck_externalized_enabled' => '0', 'cpassman_url' => $job['url'],
             'cpassman_dir' => TEAMPASS_ROOT, 'path_to_upload_folder' => TEAMPASS_ROOT . '/storage/upload',
             'path_to_files_folder' => TEAMPASS_ROOT . '/storage/files',
-            'teampass_version' => TP_VERSION . '.' . TP_VERSION_MINOR,
+            'teampass_version' => TP_VERSION,
             'upgrade_timestamp' => (string) UPGRADE_MIN_DATE, 'recovery_pending_checks' => '1', 'recovery_job_id' => $job['id'],
             'recovery_generation' => bin2hex(random_bytes(16))] as $name => $value) {
             tpRecoverySetSetting($db, $prefix, $name, $value);

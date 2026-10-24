@@ -91,6 +91,12 @@ try {
         'pw' => base64_encode($encrypted['ciphertext']), 'pw_iv' => base64_encode($encrypted['meta'])]);
     DB::insert(prefixTable('sharekeys_items'), ['object_id' => 1, 'user_id' => TP_USER_ID,
         'share_key' => encryptUserObjectKey(base64_encode($objectKey), base64_encode($pair['publickey'])), 'encryption_version' => 3]);
+    $previousMaintenance = $scenario === 'upgrade' ? '1' : '0';
+    foreach (['maintenance_mode' => $previousMaintenance, 'cpassman_url' => 'https://old.example.test/team',
+        'favicon' => 'https://old.example.test/team/favicon.ico',
+        'url_to_files_folder' => 'https://custom.example.test/files'] as $name => $value) {
+        DB::update(prefixTable('misc'), ['valeur' => $value], 'type=%s AND intitule=%s', 'admin', $name);
+    }
     $settings = ['path_to_files_folder' => $fixture, 'path_to_upload_folder' => $fixture . '/upload'];
     foreach (DB::query('SELECT intitule,valeur FROM ' . prefixTable('misc') . ' WHERE type=%s', 'admin') as $row) {
         $settings[$row['intitule']] = $row['valeur'];
@@ -102,7 +108,51 @@ try {
         DB::update(prefixTable('misc'), ['valeur' => '3.2.2'], 'type=%s AND intitule=%s', 'admin', 'teampass_version');
     }
     // Produce real encrypted packages using the shipped backup functions.
-    $backup = tpCreateBackupPackage($settings, 'synthetic-backup-password', ['output_dir' => $fixture, 'include_documents' => true]);
+    DB::startTransaction();
+    DB::update(prefixTable('items'), ['label' => 'uncommitted caller change'], 'id=1');
+    $refused = tpCreateDatabaseBackup($settings, '', ['output_dir' => $fixture]);
+    if ($refused['success'] || DB::getMDB()->nested_transactions_count !== 1
+        || $admin->query('SELECT label FROM `' . $source . '`.`recovery_items` WHERE id=1')->fetch_row()[0] === 'uncommitted caller change') {
+        throw new RuntimeException('Backup committed or replaced a caller transaction');
+    }
+    DB::rollback();
+    DB::query('CREATE TABLE ' . prefixTable('nontransactional_fixture') . ' (id INT) ENGINE=MyISAM');
+    $refused = tpCreateDatabaseBackup($settings, '', ['output_dir' => $fixture, 'include_tables' => [prefixTable('nontransactional_fixture')]]);
+    DB::query('DROP TABLE ' . prefixTable('nontransactional_fixture'));
+    if ($refused['success'] || DB::queryFirstField('SELECT valeur FROM ' . prefixTable('misc') . ' WHERE intitule=%s AND type=%s', 'maintenance_mode', 'admin') !== $previousMaintenance) {
+        throw new RuntimeException('A failed nontransactional capture was accepted or retained maintenance');
+    }
+    // A real second connection changes the live row immediately after snapshot
+    // creation. The entire package must still contain the preceding state.
+    $snapshots = 0;
+    $rollbacks = 0;
+    $hook = DB::addHook('post_run', static function (array $query) use ($admin, $source, &$snapshots, &$rollbacks): void {
+        if ($query['query'] === 'START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY') {
+            $snapshots++;
+            $admin->query('UPDATE `' . $source . "`.`recovery_items` SET label='changed after snapshot' WHERE id=1");
+        }
+        if ($query['query'] === 'ROLLBACK') {
+            $rollbacks++;
+        }
+        if (str_starts_with($query['query'], 'SHOW CREATE TABLE')) {
+            $maintenance = $admin->query('SELECT valeur FROM `' . $source . "`.`recovery_misc` WHERE intitule='maintenance_mode' AND type='admin'")->fetch_row()[0];
+            $lock = 'tp-backup-' . substr(hash('sha256', $source . ':recovery_misc'), 0, 48);
+            $locked = $admin->query("SELECT GET_LOCK('" . $lock . "',0)")->fetch_row()[0];
+            if ($maintenance !== '1' || (int) $locked !== 0) {
+                throw new RuntimeException('Backup did not retain maintenance and its exclusive capture lock');
+            }
+        }
+    });
+    try {
+        $backup = tpCreateBackupPackage($settings, 'synthetic-backup-password', ['output_dir' => $fixture, 'include_documents' => true]);
+    } finally {
+        DB::removeHook('post_run', $hook);
+    }
+    if ($snapshots !== 1 || $rollbacks !== 1
+        || DB::queryFirstField('SELECT valeur FROM ' . prefixTable('misc') . ' WHERE intitule=%s AND type=%s', 'maintenance_mode', 'admin') !== $previousMaintenance
+        || DB::queryFirstField('SELECT label FROM ' . prefixTable('items') . ' WHERE id=1') !== 'changed after snapshot') {
+        throw new RuntimeException('Capture nesting, snapshot or maintenance cleanup failed');
+    }
     $kit = tpCreateRecoveryPackage($settings, 'synthetic-recovery-password', ['output_dir' => $fixture]);
     if (!$backup['success'] || !$kit['success']) {
         throw new RuntimeException('Fixture package creation failed');
@@ -147,7 +197,7 @@ try {
     if ($scenario === 'upgrade') {
         $targetDb->query('SELECT * FROM recovery_webauthn_credentials LIMIT 1');
         $targetDb->query('SELECT * FROM recovery_secure_send_audit LIMIT 1');
-        if ($targetDb->query("SELECT valeur FROM recovery_misc WHERE type='admin' AND intitule='teampass_version'")->fetch_row()[0] !== TP_VERSION . '.' . TP_VERSION_MINOR) {
+        if ($targetDb->query("SELECT valeur FROM recovery_misc WHERE type='admin' AND intitule='teampass_version'")->fetch_row()[0] !== TP_VERSION) {
             throw new RuntimeException('Upgraded version was not recorded');
         }
     }
@@ -157,6 +207,11 @@ try {
     }
     if ($restoredItem['label'] !== 'R&amp;D O&#039;Brien &quot;&lt;&gt;') {
         throw new RuntimeException('Stored label encoding changed');
+    }
+    $restoredSettings = array_column($targetDb->query("SELECT intitule,valeur FROM recovery_misc WHERE type='admin'")->fetch_all(MYSQLI_ASSOC), 'valeur', 'intitule');
+    if ($restoredSettings['favicon'] !== $restoredSettings['cpassman_url'] . '/favicon.ico'
+        || $restoredSettings['url_to_files_folder'] !== 'https://custom.example.test/files') {
+        throw new RuntimeException('Recovery did not rebase derived URLs or changed a custom URL');
     }
     if (in_array($scenario, ['publish', 'http-publish'], true)) {
         // Publication is opt-in and must only run in a disposable copy of the code.
