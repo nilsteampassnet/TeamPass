@@ -53,26 +53,49 @@ The first implementation uses a local or otherwise protected SQL connection.
 It does not import external TLS private-key files from a recovery kit or configure
 the web server, DNS or an identity provider.
 
-### Prepare and restore from the command line
+### Installation assistant
 
-Prepare a private JSON request containing `kit_path`, `kit_password`,
-`backup_path`, `backup_password`, `url`, and `connection` (`host`, `port`,
-`database`, `user`, `password`). Use `--prepare=-` to read it from standard input,
-or protect a request file with owner-only permissions:
+From the project root:
 
 ```bash
-sudo -u www-data php app/scripts/disaster-recovery.php --prepare=/private/request.json
+sudo -u www-data php app/scripts/disaster-recovery.php --enable
+```
+
+Open `/install/install.php` and choose **Restore from a backup and Recovery
+Package**, or open `/install/recovery.php` directly. Enter the one-hour operator
+code printed by the command. It is submitted through the form, never in a URL.
+HTTPS is required except over a local loopback/SSH-tunnel connection.
+
+Upload both archives, enter their passphrases, and supply the **destination** SQL
+credentials and HTTPS address. For large archives, place them owner-only in
+`storage/recovery/incoming/` and enter their bare filenames instead of uploading.
+Align PHP and web-server upload/time limits with the archive sizes. The CLI
+preparation described below avoids an HTTP upload or request timeout.
+
+The assistant authenticates/decrypts the archives, validates their paths and
+checksums, checks the SQL scope and required tables, and confirms the destination
+is empty. It shows the source/target versions and prints a command containing
+only a random job identifier:
+
+```bash
 sudo -u www-data php app/scripts/disaster-recovery.php --run=JOB_ID
+```
+
+This imports and validates the database, applies the supported migrations when
+needed, and checks item decryption with the restored system key chain. It checks
+the complete document references against the imported database. A successful job
+reaches `verified`; the web assistant can refresh its progress.
+
+Then publish the restored documents, original master key and new configuration:
+
+```bash
 sudo -u www-data php app/scripts/disaster-recovery.php --activate=JOB_ID
 ```
 
-The preparation command prints a random job identifier. The `--run` command
-imports and verifies the dedicated database and applies supported upgrades.
-`--activate` publishes verified documents and configuration, leaving the service
-in maintenance. The archived `settings.php` is never executed. New destination
-credentials are encrypted with the original master key. `settings.php` is
-published last. Successful activation removes private staging and leaves a
-non-sensitive receipt. Remove the private request file after preparation.
+The archived `settings.php` is never executed. New destination credentials are
+encrypted with the original master key. `settings.php` is published last.
+Private staging is removed after success; a non-sensitive receipt remains.
+
 ### Operational checks and resuming service
 
 The restored instance stays in maintenance, and background processing is held.

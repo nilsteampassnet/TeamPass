@@ -1,0 +1,47 @@
+/* TeamPass - GPL-3.0-or-later. Copyright 2009-2026 Teampass.net. */
+.recovery-wizard pre {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+@media (prefers-color-scheme: dark) {
+  .recovery-page.bg-light {
+    background-color: #1b2027 !important;
+    color: #e9ecef;
+  }
+
+  .recovery-wizard .card {
+    background-color: #252b34;
+    border-color: #46505d;
+  }
+
+  .recovery-wizard .form-control {
+    background-color: #1c222a;
+    border-color: #64748b;
+    color: #f1f5f9;
+  }
+
+  .recovery-wizard .text-muted {
+    color: #bac5d2 !important;
+  }
+
+  .recovery-wizard pre.bg-light {
+    background-color: #151a21 !important;
+    color: #e9ecef;
+  }
+
+  .recovery-wizard a {
+    color: #8bc6ff;
+  }
+
+  .recovery-wizard .alert-info {
+    background-color: #173c50;
+    border-color: #2a6d8c;
+    color: #e2f5ff;
+  }
+
+  .recovery-wizard .alert-danger {
+    background-color: #4b2630;
+    color: #ffdfdf;
+  }
+}

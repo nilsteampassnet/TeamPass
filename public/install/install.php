@@ -34,6 +34,11 @@ if (!defined('TEAMPASS_ROOT')) {
 // An installed instance whose app/config/ is unreadable must never reach the
 // wizard: a new installation would replace its encryption key.
 require_once TEAMPASS_ROOT . '/app/sources/config_access_logic.php';
+if (is_file(TEAMPASS_ROOT . '/storage/recovery/pending.json')) {
+    http_response_code(409);
+    echo teampassErrorPageShell('Recovery in progress', '<p>A recovery is prepared or running. Continue through the <a href="recovery.php">recovery assistant</a>.</p>');
+    exit;
+}
 if (teampassConfigState(TEAMPASS_ROOT . '/app/config') === 'unreadable') {
     teampassSendConfigAccessError(TEAMPASS_ROOT . '/app/config');
     exit;
@@ -161,6 +166,8 @@ $csrf_token = installIssueCsrfToken();
 								<h5 class="card-title"><i class="fa-solid fa-info-circle text-info"></i>&nbsp;Welcome to Teampass installation</h5>
 								<p class="card-text">This seems to be the 1st time Teampass will be installed on this server.<br>
 								It will proceed with installation of release <b><?php echo TP_VERSION;?></b>.</p>
+
+                                <a href="recovery.php" class="btn btn-outline-primary mt-2"><i class="fas fa-life-ring mr-2" aria-hidden="true"></i>Restore from a backup and Recovery Package</a>
 							</div>
 						</div>
 					</div>

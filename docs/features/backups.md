@@ -269,6 +269,10 @@ For remote destinations, Teampass temporarily stages the selected backup locally
 
 ## Recovery Package
 
+For a fresh-server recovery, see [Disaster recovery](../install/disaster-recovery.md).
+The installation assistant accepts a complete `.tpbackup` and the original kit,
+checks them together, and applies supported database upgrades before activation.
+
 The `Recovery Package` tab generates an encrypted emergency package containing sensitive recovery material such as the secret file, minimal configuration data, and the backup instance key.
 
 1. Navigate to the `Recovery Package` tab

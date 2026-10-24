@@ -4,6 +4,7 @@
 - **Get Started**
 - [Installation](install/installation.md)
 - [Upgrade](install/upgrade.md)
+- [Disaster recovery](install/disaster-recovery.md)
 - [Docker](install/docker.md)
 - [File permissions](install/file-permissions.md)
 - [Information](install/encryption.md)

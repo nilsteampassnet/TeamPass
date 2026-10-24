@@ -119,12 +119,25 @@ try {
         $backup['filepath'] = $fixture . '/old.tpbackup';
         \Defuse\Crypto\File::encryptFileWithPassword($fixture . '/old.zip', $backup['filepath'], 'synthetic-backup-password');
     }
-    $prepared = tpRecoveryPrepare([
+    $prepareInput = [
         'kit_path' => $kit['filepath'], 'kit_password' => 'synthetic-recovery-password',
         'backup_path' => $backup['filepath'], 'backup_password' => 'synthetic-backup-password',
         'connection' => ['host' => '127.0.0.1', 'user' => $dbUser, 'password' => $dbPassword, 'database' => $target, 'port' => $port],
         'url' => 'https://restored.example.test',
-    ]);
+    ];
+    if (str_starts_with($scenario, 'http')) {
+        tpRecoveryWritePrivate($fixture . '/request.json', json_encode($prepareInput, JSON_THROW_ON_ERROR));
+        $process = new \Symfony\Component\Process\Process([PHP_BINARY, 'tests/Integration/recovery_http.php', $fixture . '/request.json'], $root);
+        $process->setTimeout(120);
+        $process->run();
+        unlink($fixture . '/request.json');
+        if (!$process->isSuccessful() || preg_match('/PREPARED_JOB:([a-f0-9]{32})/', $process->getOutput(), $preparedMatch) !== 1) {
+            throw new RuntimeException($process->getErrorOutput());
+        }
+        $prepared = ['id' => $preparedMatch[1]];
+    } else {
+        $prepared = tpRecoveryPrepare($prepareInput);
+    }
     $jobId = $prepared['id'];
     $restored = tpRecoveryRun($jobId);
     if ($restored['status'] !== 'verified') {
@@ -145,7 +158,7 @@ try {
     if ($restoredItem['label'] !== 'R&amp;D O&#039;Brien &quot;&lt;&gt;') {
         throw new RuntimeException('Stored label encoding changed');
     }
-    if ($scenario === 'publish') {
+    if (in_array($scenario, ['publish', 'http-publish'], true)) {
         // Publication is opt-in and must only run in a disposable copy of the code.
         if (!is_file($root . '/_tools/drp-lab-allow-activation')) {
             throw new RuntimeException('Publication test requires an explicitly disposable checkout');
