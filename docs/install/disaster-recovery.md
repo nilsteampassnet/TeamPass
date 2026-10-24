@@ -192,6 +192,10 @@ See [file permissions](file-permissions.md) before applying a plan.
 Check administrator sign-in, HTTPS, the URL, MFA/passkeys and the external
 authentication configuration in another tab. **Standard users cannot sign in
 while maintenance is enabled**; test their decryption and roles after resume.
+The assistant uses a separate operator session, so application sign-in and logout
+do not replace its session-bound recovery progress. Keep the assistant tab open.
+On a fresh deployment it expires the plain installation-session cookie before
+the restored application uses its encrypted session handler.
 Once the permission review and administrator checks are complete:
 
 ```bash

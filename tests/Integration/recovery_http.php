@@ -51,7 +51,13 @@ try {
         throw new RuntimeException('Could not enable recovery form');
     }
     $operator = $match[1];
+    // Emulate entry through install.php, which uses a plain PHPSESSID session.
+    curl_setopt($handle, CURLOPT_COOKIELIST, "127.0.0.1\tFALSE\t/\tFALSE\t0\tPHPSESSID\tplain-installer-session");
     [$status, $html] = $request();
+    $cookies = curl_getinfo($handle, CURLINFO_COOKIELIST);
+    if (!is_array($cookies) || array_filter($cookies, static fn (string $cookie): bool => str_contains($cookie, "\tPHPSESSID\t"))) {
+        throw new RuntimeException('A fresh recovery must retire the plain installer cookie before encrypted application sign-in');
+    }
     if ($status !== 200 || !str_contains($html, 'Restore a TeamPass instance') || !str_contains($html, '<html lang="en">')
         || str_contains($html, 'href="?lang=')) {
         throw new RuntimeException('Recovery must remain in English without a language selector, including with a legacy lang=french URL');
@@ -105,6 +111,17 @@ try {
     if ($status !== 200 || !str_contains($html, 'id="recovery-prepare"')) {
         throw new RuntimeException('Authorized recovery form did not render');
     }
+    $cookies = curl_getinfo($handle, CURLINFO_COOKIELIST);
+    if (!is_array($cookies) || !array_filter($cookies, static fn (string $cookie): bool => str_contains($cookie, "\tTEAMPASS_RECOVERY\t"))) {
+        throw new RuntimeException('Recovery must use its own session cookie');
+    }
+    // Application sign-in rotates PHPSESSID and uses an encrypted session handler.
+    // Its cookie must not replace the operator's session-bound recovery progress.
+    curl_setopt($handle, CURLOPT_COOKIELIST, "127.0.0.1\tFALSE\t/\tFALSE\t0\tPHPSESSID\tindependent-application-session");
+    [$status, $html] = $request();
+    if ($status !== 200 || !str_contains($html, 'id="recovery-prepare"')) {
+        throw new RuntimeException('Application sign-in cookie changes lost the recovery session');
+    }
     if (getenv('TEAMPASS_RECOVERY_RENDER_PREVIEW') === '1') {
         // A rendered-form artifact for visual QA contains no usable authorization token.
         $preview = str_replace($csrf, 'nonfunctional-visual-preview', $html);
@@ -142,7 +159,7 @@ try {
         }
         echo 'PREPARED_JOB:' . $id . "\n";
     }
-    echo "OK: real HTTP form rendering, asset cache invalidation, operator authorization, CSRF and path traversal checks\n";
+    echo "OK: real HTTP form rendering, isolated session, asset cache invalidation, operator authorization, CSRF and path traversal checks\n";
 } catch (Throwable $exception) {
     fwrite(STDERR, $exception->getMessage() . "\n");
     $exitCode = 1;

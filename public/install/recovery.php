@@ -14,8 +14,27 @@ define('TEAMPASS_ROOT', dirname(__DIR__, 2));
 require TEAMPASS_ROOT . '/app/vendor/autoload.php';
 require TEAMPASS_ROOT . '/app/config/include.php';
 require TEAMPASS_ROOT . '/app/sources/recovery.functions.php';
+$https = !empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off';
 if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_start();
+    // The installation landing page can leave a plain PHPSESSID cookie. On a
+    // fresh deployment, retire it before the restored encrypted handler is used.
+    if (isset($_COOKIE[session_name()]) && teampassConfigState(TEAMPASS_ROOT . '/app/config') === 'not_installed') {
+        $cookie = session_get_cookie_params();
+        setcookie(session_name(), '', ['expires' => time() - 3600, 'path' => $cookie['path'],
+            'domain' => $cookie['domain'], 'secure' => $https, 'httponly' => true, 'samesite' => 'Lax']);
+    }
+    // Application sessions use an encrypted handler. Keep this DB-free operator
+    // session separate so administrator/user sign-in cannot replace its progress.
+    session_name('TEAMPASS_RECOVERY');
+    $sessionPath = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/install/recovery.php'));
+    session_start([
+        'use_strict_mode' => true,
+        'use_only_cookies' => true,
+        'cookie_secure' => $https,
+        'cookie_path' => rtrim($sessionPath, '/') . '/',
+        'cookie_httponly' => true,
+        'cookie_samesite' => 'Strict',
+    ]);
 }
 header('Cache-Control: no-store');
 header('X-Content-Type-Options: nosniff');
@@ -26,7 +45,6 @@ if (empty($_SESSION['recovery_csrf'])) {
     $_SESSION['recovery_csrf'] = bin2hex(random_bytes(32));
 }
 $local = in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1', '::1'], true);
-$https = !empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off';
 $authorized = (int) ($_SESSION['recovery_operator_until'] ?? 0) > time();
 $serviceAccount = tpRecoveryServiceAccount();
 $commandBase = tpRecoveryCommandBase();
