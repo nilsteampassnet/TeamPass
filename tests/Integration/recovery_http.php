@@ -52,8 +52,9 @@ try {
     }
     $operator = $match[1];
     [$status, $html] = $request();
-    if ($status !== 200 || !str_contains($html, 'Restaurer une instance TeamPass')) {
-        throw new RuntimeException('French recovery form did not render');
+    if ($status !== 200 || !str_contains($html, 'Restore a TeamPass instance') || !str_contains($html, '<html lang="en">')
+        || str_contains($html, 'href="?lang=')) {
+        throw new RuntimeException('Recovery must remain in English without a language selector, including with a legacy lang=french URL');
     }
     if (PHP_OS_FAMILY !== 'Windows' && (!str_contains($html, 'sudo -u') || !str_contains($html, 'Common Linux service accounts'))) {
         throw new RuntimeException('The service account command is missing from the recovery form');

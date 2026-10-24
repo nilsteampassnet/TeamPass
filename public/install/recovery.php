@@ -20,8 +20,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 header('Cache-Control: no-store');
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: no-referrer');
-$language = ($_GET['lang'] ?? '') === 'french' ? 'french' : 'english';
-$texts = require TEAMPASS_ROOT . '/app/includes/language/' . $language . '.php';
+$texts = require __DIR__ . '/recovery.texts.php';
 $escape = static fn (string $key): string => htmlspecialchars($texts[$key], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 if (empty($_SESSION['recovery_csrf'])) {
     $_SESSION['recovery_csrf'] = bin2hex(random_bytes(32));
@@ -138,7 +137,7 @@ if (teampassConfigState(TEAMPASS_ROOT . '/app/config') !== 'not_installed' && $i
 }
 ?>
 <!doctype html>
-<html lang="<?= $language === 'french' ? 'fr' : 'en' ?>">
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -149,8 +148,7 @@ if (teampassConfigState(TEAMPASS_ROOT . '/app/config') !== 'not_installed' && $i
 </head>
 <body class="bg-light recovery-page">
 <main class="container py-4 recovery-wizard" style="max-width: 900px">
-    <nav class="d-flex justify-content-between mb-4"><a href="install.php"><?= $escape('drp_back') ?></a>
-        <span><a href="?lang=english" lang="en">English</a> · <a href="?lang=french" lang="fr">Français</a></span></nav>
+    <nav class="mb-4"><a href="install.php"><?= $escape('drp_back') ?></a></nav>
     <h1 class="h3"><i class="fas fa-life-ring mr-2" aria-hidden="true"></i><?= $escape('drp_title') ?></h1>
     <p><?= $escape('drp_intro') ?></p>
     <p class="alert alert-info"><?= $escape('drp_scope') ?></p>
