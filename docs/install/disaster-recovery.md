@@ -106,6 +106,9 @@ the web server, DNS or an identity provider.
 
 ### Installation assistant
 
+Like the installation and upgrade wizards, the recovery assistant is in English
+and does not use the configured application language or a language selector.
+
 From the project root:
 
 ```bash
