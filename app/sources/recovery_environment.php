@@ -12,6 +12,34 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/recovery_logic.php';
 
+/**
+ * Read the current server-side operator grant; a browser deadline alone is not authorization.
+ * @return array{token_hash:string,expires_at:int}
+ */
+function tpRecoveryReadOperator(string $path, ?int $now = null): array
+{
+    if (is_link($path) || !is_file($path)) { throw new TeamPassRecoveryException('OPERATOR_CODE_REQUIRED'); }
+    if (!is_readable($path)) { throw new TeamPassRecoveryException('OPERATOR_CODE_UNREADABLE'); }
+    $contents = @file_get_contents($path, false, null, 0, 4097);
+    if (!is_string($contents) || strlen($contents) > 4096) {
+        throw new TeamPassRecoveryException('OPERATOR_CODE_REQUIRED');
+    }
+    try {
+        $operator = json_decode($contents, true, 8, JSON_THROW_ON_ERROR);
+    } catch (JsonException $exception) {
+        throw new TeamPassRecoveryException('OPERATOR_CODE_REQUIRED');
+    }
+    if (!is_array($operator) || !is_string($operator['token_hash'] ?? null)
+        || preg_match('/^[a-f0-9]{64}$/D', $operator['token_hash']) !== 1
+        || !is_int($operator['expires_at'] ?? null)) {
+        throw new TeamPassRecoveryException('OPERATOR_CODE_REQUIRED');
+    }
+    if ($operator['expires_at'] <= ($now ?? time())) {
+        throw new TeamPassRecoveryException('OPERATOR_CODE_EXPIRED');
+    }
+    return ['token_hash' => $operator['token_hash'], 'expires_at' => $operator['expires_at']];
+}
+
 /** Resolve the process identity, never the owner of the PHP script. */
 function tpRecoveryServiceAccount(): ?string
 {

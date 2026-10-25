@@ -38,7 +38,7 @@ function app(initial = null, command = "sudo -u 'www-data' -- '/usr/bin/php8.5' 
     permissionsPassed: 'PERMISSIONS PASS', permissionsIssues: '%s findings', permissionsManual: 'MANUAL ACL REVIEW',
     cleanupManual: 'MANUAL CLEANUP',
     fields: { kit: 'Recovery Package', backup: 'Complete backup', database: 'Database name', port: 'Port', url: 'Restored HTTPS address' },
-    errors: { OPERATOR_CODE_UNREADABLE: 'Use the PHP service account' } })
+    errors: { OPERATOR_CODE_UNREADABLE: 'Use the PHP service account', OPERATOR_CODE_REQUIRED: 'Enable recovery first' } })
   const queue = []
   const requests = []
   const clipboard = []
@@ -228,6 +228,27 @@ test('An unreadable operator file reports the service account remediation', asyn
   await ui.submit()
   assert.equal(ui.element('recovery-message').textContent, 'ERROR Use the PHP service account')
   assert.equal(ui.button.disabled, false)
+})
+
+test('An open prepare form returns to enable instructions after server authorization is removed or changed', async () => {
+  for (const code of ['OPERATOR_CODE_REQUIRED', 'OPERATOR_CODE_EXPIRED', 'OPERATOR_AUTHORIZATION_REQUIRED']) {
+    const ui = app()
+    ui.queue.push({ httpError: code })
+    await ui.submit()
+    assert.equal(ui.form.hidden, true)
+    assert.equal(ui.element('recovery-authorization-help').hidden, false)
+    assert.equal(ui.button.disabled, false)
+    assert.match(ui.element('recovery-message').className, /alert-danger/)
+    if (code === 'OPERATOR_CODE_REQUIRED') assert.equal(ui.element('recovery-message').textContent, 'ERROR Enable recovery first')
+  }
+})
+
+test('Wrong archive diagnostics leave the prepare form available for correction', async () => {
+  const ui = app()
+  ui.queue.push({ httpError: 'ARCHIVE_AUTHENTICATION_FAILED' })
+  await ui.submit()
+  assert.equal(ui.form.hidden, false)
+  assert.equal(ui.element('recovery-authorization-help').hidden, true)
 })
 
 test('Reloading a prepared job restores its session-bound progress', () => {

@@ -17,6 +17,53 @@ require_once __DIR__ . '/../../app/sources/recovery_environment.php';
 
 final class RecoveryEnvironmentTest extends TestCase
 {
+    public function testReadsTheCurrentOperatorGrantWithoutChangingIt(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'tp-operator-');
+        $operator = ['token_hash' => str_repeat('a', 64), 'expires_at' => 200];
+        $contents = json_encode($operator, JSON_THROW_ON_ERROR);
+        file_put_contents($path, $contents);
+        try {
+            self::assertSame($operator, tpRecoveryReadOperator($path, 100));
+            self::assertSame($contents, file_get_contents($path));
+        } finally { unlink($path); }
+    }
+
+    public function testMissingMalformedAndExpiredOperatorStateRequiresAuthorization(): void
+    {
+        $path = sys_get_temp_dir() . '/tp-operator-' . bin2hex(random_bytes(8));
+        $cases = [[null, 'OPERATOR_CODE_REQUIRED'], ['invalid json', 'OPERATOR_CODE_REQUIRED'],
+            ['[]', 'OPERATOR_CODE_REQUIRED'], [str_repeat('x', 4097), 'OPERATOR_CODE_REQUIRED'],
+            [json_encode(['token_hash' => 'bad', 'expires_at' => 200]), 'OPERATOR_CODE_REQUIRED'],
+            [json_encode(['token_hash' => str_repeat('a', 64), 'expires_at' => '200']), 'OPERATOR_CODE_REQUIRED'],
+            [json_encode(['token_hash' => str_repeat('a', 64), 'expires_at' => 100]), 'OPERATOR_CODE_EXPIRED']];
+        try {
+            foreach ($cases as [$contents, $reason]) {
+                if ($contents !== null) { file_put_contents($path, $contents); }
+                clearstatcache();
+                try {
+                    tpRecoveryReadOperator($path, 100);
+                    self::fail('Invalid operator state was accepted');
+                } catch (TeamPassRecoveryException $exception) {
+                    self::assertSame($reason, $exception->reason);
+                }
+            }
+        } finally { if (is_file($path)) { unlink($path); } }
+    }
+
+    public function testRefusesASymlinkedOperatorFile(): void
+    {
+        if (PHP_OS_FAMILY === 'Windows') { self::markTestSkipped('Symlink creation requires additional Windows privileges'); }
+        $path = tempnam(sys_get_temp_dir(), 'tp-operator-');
+        $link = $path . '.link';
+        file_put_contents($path, json_encode(['token_hash' => str_repeat('a', 64), 'expires_at' => 200]));
+        symlink($path, $link);
+        try {
+            $this->expectExceptionMessage('OPERATOR_CODE_REQUIRED');
+            tpRecoveryReadOperator($link, 100);
+        } finally { unlink($link); unlink($path); }
+    }
+
     public function testUnixCommandsUseTheActualServiceAccountAndAbsoluteCli(): void
     {
         self::assertSame("sudo -u 'apache' -- '/usr/bin/php8.3' '/srv/TeamPass Lab/app/scripts/disaster-recovery.php'",

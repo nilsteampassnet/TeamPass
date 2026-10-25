@@ -124,6 +124,14 @@ Package**, or open `/install/recovery.php` directly. Enter the one-hour operator
 code printed by the command. It is submitted through the form, never in a URL.
 HTTPS is required except over a local loopback/SSH-tunnel connection.
 
+The enable command comes **before** entering backup files and database details.
+After a reset, the assistant checks the current server-side authorization even
+when the browser still has an earlier session. A missing, expired or rotated
+operator grant returns to the enable/code screen. If an already open form loses
+its authorization, it displays the complete enable command and a button to
+return to that screen. Existing session-bound job progress remains observable
+after successful publication removes the operator file.
+
 Upload both archives, enter their passphrases, and supply the **destination** SQL
 credentials and HTTPS address. For large archives, place them owner-only in
 `storage/recovery/incoming/` and enter their bare filenames instead of uploading.

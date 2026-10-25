@@ -45,7 +45,18 @@ if (empty($_SESSION['recovery_csrf'])) {
     $_SESSION['recovery_csrf'] = bin2hex(random_bytes(32));
 }
 $local = in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1', '::1'], true);
-$authorized = (int) ($_SESSION['recovery_operator_until'] ?? 0) > time();
+$authorized = false;
+try {
+    $operator = tpRecoveryReadOperator(tpRecoveryJobDirectory() . '/operator.json');
+    $authorized = (int) ($_SESSION['recovery_operator_until'] ?? 0) > time()
+        && is_string($_SESSION['recovery_operator_hash'] ?? null)
+        && hash_equals($operator['token_hash'], $_SESSION['recovery_operator_hash']);
+} catch (TeamPassRecoveryException $exception) {
+    // Reset, expiry and code rotation must return a stale browser to authorization.
+}
+if (!$authorized) {
+    unset($_SESSION['recovery_operator_until'], $_SESSION['recovery_operator_hash']);
+}
 $serviceAccount = tpRecoveryServiceAccount();
 $commandBase = tpRecoveryCommandBase();
 
@@ -97,17 +108,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             $result = recoveryVisibleJob($id);
         } else {
             tpRecoveryAssertFreshTarget();
-            $operatorPath = tpRecoveryJobDirectory() . '/operator.json';
-            if (is_link($operatorPath) || !is_file($operatorPath)) {
-                throw new TeamPassRecoveryException('OPERATOR_CODE_REQUIRED');
-            }
-            if (!is_readable($operatorPath)) {
-                throw new TeamPassRecoveryException('OPERATOR_CODE_UNREADABLE');
-            }
-            $operator = json_decode((string) file_get_contents($operatorPath), true, 8, JSON_THROW_ON_ERROR);
-            if (($operator['expires_at'] ?? 0) <= time()) {
-                throw new TeamPassRecoveryException('OPERATOR_CODE_EXPIRED');
-            }
+            $operator = tpRecoveryReadOperator(tpRecoveryJobDirectory() . '/operator.json');
             if ($action === 'unlock') {
                 $provided = $_POST['operator'] ?? '';
                 if (!is_string($provided) || !hash_equals($operator['token_hash'], hash('sha256', trim($provided)))) {
@@ -117,8 +118,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 $_SESSION['recovery_operator_until'] = $operator['expires_at'];
                 $_SESSION['recovery_operator_hash'] = $operator['token_hash'];
                 $result = ['unlocked' => true];
-            } elseif ($action === 'prepare' && $authorized
-                && hash_equals($operator['token_hash'], (string) ($_SESSION['recovery_operator_hash'] ?? ''))) {
+            } elseif ($action === 'prepare') {
+                if (!$authorized || !hash_equals($operator['token_hash'], (string) ($_SESSION['recovery_operator_hash'] ?? ''))) {
+                    throw new TeamPassRecoveryException('OPERATOR_AUTHORIZATION_REQUIRED');
+                }
                 $result = tpRecoveryPrepare([
                     'kit_path' => recoveryRequestArchive('kit', 'tprecovery'),
                     'backup_path' => recoveryRequestArchive('backup', 'tpbackup'),
@@ -181,6 +184,11 @@ $cronServiceCommand = tpRecoveryCronServiceCommand(PHP_OS_FAMILY);
     </ol>
     <?php if (!$https && !$local): ?><p class="alert alert-danger"><?= $escape('drp_transport') ?></p><?php endif; ?>
     <div id="recovery-message" class="mt-3" role="alert" aria-live="assertive" aria-atomic="true" tabindex="-1"></div>
+    <section id="recovery-authorization-help" class="card card-body mb-4" hidden>
+        <p>Enable recovery on this server, then return to the operator-code screen before preparing restoration.</p>
+        <pre id="recovery-reauthorize-command" data-recovery-command class="bg-light p-3"><?= htmlspecialchars($commandBase . ' --enable', ENT_QUOTES, 'UTF-8') ?></pre>
+        <button id="recovery-reauthorize" class="btn btn-primary align-self-start" type="button">Enter operator code</button>
+    </section>
     <?php if ($initialJob === null && !$authorized): ?>
     <section class="card card-body mb-4">
         <p><?= $escape('drp_enable_hint') ?></p>
@@ -325,7 +333,13 @@ $cronServiceCommand = tpRecoveryCronServiceCommand(PHP_OS_FAMILY);
     'fields' => ['operator' => $texts['drp_operator'], 'kit' => $texts['drp_kit'], 'backup' => $texts['drp_backup'],
         'kit_password' => $texts['drp_kit_password'], 'host' => $texts['drp_host'], 'port' => $texts['drp_port'],
         'database' => $texts['drp_database'], 'user' => $texts['drp_user'], 'url' => $texts['drp_url']],
-    'errors' => ['OPERATOR_CODE_UNREADABLE' => 'The operator file was created by another account and PHP cannot read it. Have its ownership repaired, then use the PHP service account command shown above.'],
+    'errors' => [
+        'OPERATOR_CODE_REQUIRED' => 'Recovery has not been enabled on this deployment. Run the enable command below, then enter the new operator code.',
+        'OPERATOR_CODE_EXPIRED' => 'Recovery authorization has expired. Run the enable command again, then enter the new operator code.',
+        'OPERATOR_AUTHORIZATION_REQUIRED' => 'This browser authorization no longer matches the server. Enable recovery again and enter the new operator code.',
+        'OPERATOR_CODE_INVALID' => 'The operator code is incorrect. Check the pasted code or generate a new one with the enable command.',
+        'OPERATOR_CODE_UNREADABLE' => 'The operator file was created by another account and PHP cannot read it. Have its ownership repaired, then use the PHP service account command shown above.',
+    ],
 ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR) ?></script>
 <script src="recovery.js?v=<?= htmlspecialchars($scriptVersion, ENT_QUOTES, 'UTF-8') ?>" defer></script>
 </body>

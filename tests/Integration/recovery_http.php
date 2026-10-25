@@ -96,7 +96,7 @@ try {
         throw new RuntimeException('Missing CSRF was accepted');
     }
     [$status, $body] = $request(['action' => 'prepare', 'csrf' => $csrf]);
-    if ($status !== 400 || json_decode($body, true)['error'] !== 'RECOVERY_REQUEST_REJECTED') {
+    if ($status !== 400 || json_decode($body, true)['error'] !== 'OPERATOR_AUTHORIZATION_REQUIRED') {
         throw new RuntimeException('Preparation without operator authorization was accepted');
     }
     [$status, $body] = $request(['action' => 'unlock', 'operator' => 'incorrect', 'csrf' => $csrf]);
@@ -135,6 +135,60 @@ try {
     if ($status !== 200 || !str_contains($html, 'Restore a TeamPass instance')) {
         throw new RuntimeException('English recovery form did not render');
     }
+    // A deployment reset removes the operator file, but not the browser's PHP
+    // session. The old grant must never skip the enable/code screen afterwards.
+    $operatorPath = $root . '/storage/recovery/operator.json';
+    unlink($operatorPath);
+    [$status, $body] = $request(['action' => 'prepare', 'csrf' => $csrf]);
+    if ($status !== 400 || json_decode($body, true)['error'] !== 'OPERATOR_CODE_REQUIRED') {
+        throw new RuntimeException('A stale open form did not reject missing server authorization');
+    }
+    [$status, $html] = $request();
+    if ($status !== 200 || !str_contains($html, 'id="recovery-unlock"')
+        || !str_contains($html, 'id="recovery-enable-command"') || str_contains($html, 'id="recovery-prepare"')) {
+        throw new RuntimeException('A reset with the same browser session skipped the enable/operator-code screen');
+    }
+    $authorizeAgain = static function () use ($enable, $request, $csrf): string {
+        $enable->run();
+        if (!$enable->isSuccessful() || preg_match('/([a-f0-9]{64})\s*$/', $enable->getOutput(), $token) !== 1) {
+            throw new RuntimeException('Could not renew operator authorization');
+        }
+        [$status, $body] = $request(['action' => 'unlock', 'operator' => $token[1], 'csrf' => $csrf]);
+        if ($status !== 200 || empty(json_decode($body, true)['result']['unlocked'])) {
+            throw new RuntimeException('The newly issued operator code was not accepted');
+        }
+        return $token[1];
+    };
+    $operator = $authorizeAgain();
+    $enable->run();
+    if (!$enable->isSuccessful() || preg_match('/([a-f0-9]{64})\s*$/', $enable->getOutput(), $token) !== 1) {
+        throw new RuntimeException('Could not rotate the operator code');
+    }
+    [$status, $body] = $request(['action' => 'prepare', 'csrf' => $csrf]);
+    if ($status !== 400 || json_decode($body, true)['error'] !== 'OPERATOR_AUTHORIZATION_REQUIRED') {
+        throw new RuntimeException('A rotated code did not invalidate the previously unlocked browser');
+    }
+    [$status, $html] = $request();
+    if ($status !== 200 || !str_contains($html, 'id="recovery-unlock"') || str_contains($html, 'id="recovery-prepare"')) {
+        throw new RuntimeException('A rotated operator code did not return to authorization');
+    }
+    [$status, $body] = $request(['action' => 'unlock', 'operator' => $operator, 'csrf' => $csrf]);
+    if ($status !== 400 || json_decode($body, true)['error'] !== 'OPERATOR_CODE_INVALID') {
+        throw new RuntimeException('An old operator code was accepted after rotation');
+    }
+    $operator = $authorizeAgain();
+    $expired = json_decode((string) file_get_contents($operatorPath), true, 8, JSON_THROW_ON_ERROR);
+    $expired['expires_at'] = time() - 1;
+    file_put_contents($operatorPath, json_encode($expired, JSON_THROW_ON_ERROR));
+    [$status, $html] = $request();
+    if ($status !== 200 || !str_contains($html, 'id="recovery-unlock"') || str_contains($html, 'id="recovery-prepare"')) {
+        throw new RuntimeException('Expired server authorization left the prepare form unlocked');
+    }
+    [$status, $body] = $request(['action' => 'prepare', 'csrf' => $csrf]);
+    if ($status !== 400 || json_decode($body, true)['error'] !== 'OPERATOR_CODE_EXPIRED') {
+        throw new RuntimeException('Expired server authorization was not rejected');
+    }
+    $operator = $authorizeAgain();
     if (isset($argv[1])) {
         // Optional real-package scenario used by the end-to-end database fixture.
         $input = json_decode((string) file_get_contents($argv[1]), true, 32, JSON_THROW_ON_ERROR);
@@ -153,6 +207,11 @@ try {
             throw new RuntimeException('HTTP package preparation failed: ' . ($response['error'] ?? 'unknown'));
         }
         $id = $response['result']['id'];
+        unlink($operatorPath);
+        [$status, $body] = $request(['action' => 'status', 'csrf' => $csrf]);
+        if ($status !== 200 || (json_decode($body, true)['result']['id'] ?? '') !== $id) {
+            throw new RuntimeException('Removing the operator file prevented observation of the session-bound job');
+        }
         [$status, $html] = $request();
         if ($status !== 200 || str_contains($html, 'id="recovery-prepare"') || !str_contains($html, $id)) {
             throw new RuntimeException('Reload did not resume the session-bound recovery job');

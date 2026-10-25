@@ -73,7 +73,11 @@
     form.set('csrf', data.csrf)
     const response = await fetch(window.location.href, { method: 'POST', body: form, credentials: 'same-origin' })
     const result = await response.json()
-    if (!response.ok || !result.success) throw new Error((data.errors || {})[result.error] || result.error || 'RECOVERY_REQUEST_FAILED')
+    if (!response.ok || !result.success) {
+      const error = new Error((data.errors || {})[result.error] || result.error || 'RECOVERY_REQUEST_FAILED')
+      error.code = result.error
+      throw error
+    }
     return result.result
   }
   const show = (result) => {
@@ -147,10 +151,16 @@
           show(result)
         }
       } catch (error) {
+        if (form.id === 'recovery-prepare'
+          && ['OPERATOR_CODE_REQUIRED', 'OPERATOR_CODE_EXPIRED', 'OPERATOR_AUTHORIZATION_REQUIRED'].includes(error.code)) {
+          form.hidden = true
+          document.getElementById('recovery-authorization-help').hidden = false
+        }
         showError(`${data.error} ${error.message}`)
       } finally { button.disabled = false }
     })
   })
+  document.getElementById('recovery-reauthorize').addEventListener('click', () => window.location.reload())
   document.getElementById('recovery-refresh').addEventListener('click', async () => {
     try {
       const form = new FormData()
