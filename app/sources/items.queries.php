@@ -5601,24 +5601,6 @@ switch ($inputData['type']) {
 
     /*
      * CASE
-     * Icons offered by the icon picker of the item form
-     */
-    case 'get_icon_catalog':
-        if ($inputData['key'] !== $session->get('key')) {
-            echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('key_is_not_correct')], 'encode');
-            break;
-        }
-        require_once __DIR__ . '/item_icon_catalog_logic.php';
-        $iconCatalog = itemIconCatalogLoad(TEAMPASS_ROOT . '/public/plugins/fontawesome-free/metadata/icons.json');
-        if ($iconCatalog === null) {
-            echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_unknown')], 'encode');
-            break;
-        }
-        echo (string) prepareExchangedData(['error' => false] + $iconCatalog, 'encode');
-        break;
-
-    /*
-     * CASE
      * Preview renewal without modifying an item or its password history
      */
     case 'get_renewal_preview':
@@ -8848,17 +8830,19 @@ if (isset($inputData['getType'])) {
         * Autocomplet for TAGS
         */
         case 'autocomplete_tags':
-            // Get a list off all existing TAGS
-            $listOfTags = '';
-            $rows = DB::query('SELECT tag FROM ' . prefixTable('tags') . ' WHERE tag LIKE %ss GROUP BY tag', $inputData['getTerm']);
-            foreach ($rows as $record) {
-                if (empty($listOfTags)) {
-                    $listOfTags = '"' . strval($record['tag']) . '"';
-                } else {
-                    $listOfTags .= ', "' . strval($record['tag']) . '"';
-                }
-            }
-            echo '[' . $listOfTags . ']';
+            // Tags of the items the user can read: the tags of other folders must not leak
+            $rows = DB::query(
+                'SELECT DISTINCT t.tag
+                FROM ' . prefixTable('tags') . ' AS t
+                INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = t.item_id
+                WHERE t.tag LIKE %ss AND i.inactif = %i AND i.deleted_at IS NULL
+                    AND ' . securityPostureItemAccessSql((int) $session->get('user-id')) . '
+                ORDER BY t.tag
+                LIMIT 20',
+                $inputData['getTerm'],
+                0
+            );
+            echo json_encode(array_column($rows, 'tag'));
             break;
     }
 }

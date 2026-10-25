@@ -265,6 +265,7 @@ test('Parent searches finish with empty results for a previous edited folder wit
 test('Sidebar preserves an unlisted parent path and closes the parent picker on folder switches and close', () => {
   let selected
   let closed = 0
+  let iconRefreshes = 0
   const controls = {
     val() { return this }, data() { return this }, text() { return this },
     fadeIn() { return this }, fadeOut() { return this },
@@ -278,6 +279,8 @@ test('Sidebar preserves an unlisted parent path and closes the parent picker on 
     _folderTree: { byId: new Map([[2, { path: ['Unlisted', 'Parent'] }], [3, { path: [] }]]) },
     _sidebarFolderId: null, store: { get: () => ({ complexityOptions: '' }) },
     initializeParentPicker() {},
+    // The icon buttons must show the icons of the folder just opened
+    tpIconPicker: { refresh() { iconRefreshes++ } },
     Option: function(text, value) { this.text = text; this.value = value }
   })
   vm.runInContext(section('    function openSidebar', '    /**\n     * Open sidebar on row click'), context)
@@ -289,6 +292,7 @@ test('Sidebar preserves an unlisted parent path and closes the parent picker on 
   assert.equal(selected.text, 'Unlisted / Parent')
   assert.equal(selected.value, '99')
   assert.equal(closed, 1)
+  assert.equal(iconRefreshes, 1)
   context.openSidebar(row(3, 0))
   assert.equal(selected.text, 'Translated')
   assert.equal(selected.value, '0')

@@ -4,22 +4,22 @@ declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 
-require_once dirname(__DIR__, 2) . '/app/sources/item_icon_catalog_logic.php';
+require_once dirname(__DIR__, 2) . '/app/sources/icon_catalog_logic.php';
 
 /**
- * Catalogue of the item icon picker.
+ * Catalogue of the icon picker (item and folder icons).
  *
  * The picker can only offer what the shipped Font Awesome Free renders: the rows keep the free
  * styles alone, and the suggestions must survive a Font Awesome upgrade that renames an icon,
  * which the last test checks against the metadata actually shipped.
  */
-class ItemIconCatalogLogicTest extends TestCase
+class IconCatalogLogicTest extends TestCase
 {
     private const SHIPPED_METADATA = __DIR__ . '/../../public/plugins/fontawesome-free/metadata/icons.json';
 
     public function testRowsListFreeStylesInPickerOrder(): void
     {
-        $rows = itemIconCatalogFromMetadata([
+        $rows = iconCatalogFromMetadata([
             'envelope' => ['free' => ['regular', 'solid'], 'search' => ['terms' => []]],
             'github' => ['free' => ['brands'], 'search' => ['terms' => []]],
         ]);
@@ -29,7 +29,7 @@ class ItemIconCatalogLogicTest extends TestCase
 
     public function testIconsWithoutFreeStyleAreDropped(): void
     {
-        $rows = itemIconCatalogFromMetadata([
+        $rows = iconCatalogFromMetadata([
             'pro-only' => ['free' => [], 'styles' => ['solid']],
             'no-free-key' => ['styles' => ['solid']],
             'key' => ['free' => ['solid']],
@@ -40,7 +40,7 @@ class ItemIconCatalogLogicTest extends TestCase
 
     public function testTermsLeaveOutNameWordsAndDuplicates(): void
     {
-        $rows = itemIconCatalogFromMetadata([
+        $rows = iconCatalogFromMetadata([
             'credit-card' => [
                 'free' => ['solid'],
                 'search' => ['terms' => ['Credit', 'card', 'credit-card', 'buy', 'BUY', ' payment ', '']],
@@ -52,7 +52,7 @@ class ItemIconCatalogLogicTest extends TestCase
 
     public function testNamesThatCouldBreakAClassAttributeAreDropped(): void
     {
-        $rows = itemIconCatalogFromMetadata([
+        $rows = iconCatalogFromMetadata([
             'key" onmouseover="x' => ['free' => ['solid']],
             'Key' => ['free' => ['solid']],
             'lock' => ['free' => ['solid']],
@@ -63,12 +63,12 @@ class ItemIconCatalogLogicTest extends TestCase
 
     public function testLoadReturnsNullWithoutMetadataFile(): void
     {
-        $this->assertNull(itemIconCatalogLoad(__DIR__ . '/missing-icons.json'));
+        $this->assertNull(iconCatalogLoad(__DIR__ . '/missing-icons.json'));
     }
 
     public function testSuggestedIconsExistInShippedFontAwesome(): void
     {
-        $catalog = itemIconCatalogLoad(self::SHIPPED_METADATA);
+        $catalog = iconCatalogLoad(self::SHIPPED_METADATA);
         $this->assertIsArray($catalog);
 
         $available = [];
@@ -79,8 +79,11 @@ class ItemIconCatalogLogicTest extends TestCase
             }
         }
 
-        foreach ($catalog['suggested'] as $classes) {
-            $this->assertArrayHasKey($classes, $available, $classes . ' is not a Font Awesome Free icon any more');
+        $this->assertSame(['item', 'folder'], array_keys($catalog['suggested']));
+        foreach ($catalog['suggested'] as $kind => $suggested) {
+            foreach ($suggested as $classes) {
+                $this->assertArrayHasKey($classes, $available, $kind . ': ' . $classes . ' is not a Font Awesome Free icon any more');
+            }
         }
     }
 }

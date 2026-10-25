@@ -1843,6 +1843,39 @@ body.tp-navigating .dropdown-item {
     border-color: #6c757d;
     color: #e9ecef;
 }
+/* Icon fields of the folder forms: a button showing the icon before the text field, the picker
+   unfolding below it (a dropdown would be cut by the scrolling folder sidebar) */
+.tp-icon-picker-toggle {
+    justify-content: center;
+    min-width: 2.75rem;
+    color: #495057;
+    font-size: 1.125rem;
+    cursor: pointer;
+}
+.tp-icon-picker-toggle:hover,
+.tp-icon-picker-toggle:focus {
+    color: #0062cc;
+}
+.tp-icon-picker-preview:not(:empty) + .tp-icon-picker-placeholder {
+    display: none;
+}
+.tp-icon-picker-placeholder {
+    color: #6c757d;
+}
+.tp-icon-picker-inline {
+    margin-top: .5rem;
+    padding: .75rem;
+    border: 1px solid #dee2e6;
+    border-radius: .25rem;
+    background-color: #fff;
+}
+.dark-mode .tp-icon-picker-toggle {
+    color: #e9ecef;
+}
+.dark-mode .tp-icon-picker-inline {
+    border-color: #6c757d;
+    background-color: #343a40;
+}
 .dark-mode .tp-icon-picker-title,
 .dark-mode .tp-icon-picker-empty,
 .dark-mode .tp-icon-picker-value {
@@ -1857,6 +1890,82 @@ body.tp-navigating .dropdown-item {
     border-color: #3f9cff;
     background-color: rgba(0, 123, 255, .2);
     color: #8fc1ff;
+}
+/* Item renewal: one status line under the setting, the explanations behind its info icon */
+.tp-renewal-help {
+    cursor: help;
+}
+/* Item tags: chips followed by the entry, inside a field that grows with them */
+.tp-tags-field {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .25rem;
+    height: auto;
+    min-height: calc(2.25rem + 2px);
+    padding: .25rem .5rem;
+    cursor: text;
+}
+.tp-tags-field:focus-within {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 .2rem rgba(0, 123, 255, .25);
+}
+.tp-tags-list {
+    display: contents;
+}
+.tp-tag {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    padding: .125rem .25rem .125rem .5rem;
+    border-radius: 1rem;
+    background-color: #d4edda;
+    color: #155724;
+    font-size: .875rem;
+    line-height: 1.25rem;
+}
+.tp-tag-text {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+/* No .btn class: the legacy bootstrap-buttons.css would shrink an icon-only .btn */
+.tp-tag-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-left: .125rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background-color: transparent;
+    color: inherit;
+    font-size: .75rem;
+    cursor: pointer;
+}
+.tp-tag-remove:hover,
+.tp-tag-remove:focus {
+    background-color: rgba(21, 87, 36, .15);
+    outline: 0;
+}
+.tp-tags-entry {
+    flex: 1 1 8rem;
+    min-width: 8rem;
+    padding: .125rem 0;
+    border: 0;
+    background-color: transparent;
+    color: inherit;
+    outline: 0;
+}
+.dark-mode .tp-tag {
+    background-color: rgba(40, 167, 69, .25);
+    color: #b8e6c4;
+}
+.dark-mode .tp-tag-remove:hover,
+.dark-mode .tp-tag-remove:focus {
+    background-color: rgba(255, 255, 255, .15);
 }
 /* Item form sections: the former tabs, one after the other on the same page */
 .tp-item-form-jumps {

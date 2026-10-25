@@ -1175,6 +1175,17 @@ function utilsHandler(string $post_type, array $dataReceived, array $SETTINGS): 
                 (string) filter_var($dataReceived['secret_key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
             );
 
+        /*
+         * Icons offered by the icon picker (item and folder icons)
+         */
+        case 'get_icon_catalog'://action_utils
+            require_once __DIR__ . '/icon_catalog_logic.php';
+            $iconCatalog = iconCatalogLoad(TEAMPASS_ROOT . '/public/plugins/fontawesome-free/metadata/icons.json');
+            return prepareExchangedData(
+                $iconCatalog === null ? ['error' => true] : ['error' => false] + $iconCatalog,
+                'encode'
+            );
+
 
         /*
          * Default case

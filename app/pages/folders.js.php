@@ -74,6 +74,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     include TEAMPASS_ROOT . '/public/error.php';
     exit;
 }
+
+require __DIR__ . '/icon.picker.js.php';
 ?>
 
 
@@ -113,6 +115,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     $('input[type="checkbox"].form-check-red-input').iCheck({
         checkboxClass: 'icheckbox_flat-red',
     });
+
+    // Folder icons are picked from the Font Awesome Free icons (assets/js/icon-picker.js)
+    const folderIconFields = ['#new-folder-add-icon', '#new-folder-add-icon-selected', '#folder-edit-icon', '#folder-edit-icon-selected']
+    folderIconFields.forEach(field => tpIconPicker.attachField(field, 'folder'))
 
     // Prepare buttons
     var deletionList = []
@@ -613,6 +619,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         $('#folder-edit-renewal').val(folderRenewal)
         $('#folder-edit-icon').val(folderIcon)
         $('#folder-edit-icon-selected').val(folderIconSel)
+        tpIconPicker.refresh()
 
         // Slide in first so Select2 initializes inside a visible container
         $('#folder-edit-overlay').fadeIn(150)
