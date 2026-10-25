@@ -21,13 +21,18 @@ final class RecoveryFinalizationTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->root = sys_get_temp_dir() . '/tp-finalization-' . bin2hex(random_bytes(8));
+        $this->root = sys_get_temp_dir() . "/tp-finalization O'Brien " . bin2hex(random_bytes(8));
         mkdir($this->root . '/public/install', 0700, true);
+        mkdir($this->root . '/app/sources', 0700, true);
+        file_put_contents($this->root . '/app/sources/scheduler.php', '<?php // synthetic scheduler; never executed');
         $this->root = (string) realpath($this->root);
     }
 
     protected function tearDown(): void
     {
+        unlink($this->root . '/app/sources/scheduler.php');
+        rmdir($this->root . '/app/sources');
+        rmdir($this->root . '/app');
         rmdir($this->root . '/public/install');
         rmdir($this->root . '/public');
         rmdir($this->root);
@@ -110,5 +115,50 @@ final class RecoveryFinalizationTest extends TestCase
             unlink($this->root . '/public/install');
             mkdir($this->root . '/public/install', 0700);
         }
+    }
+
+    public function testCronInstructionsUseTheRealServiceIdentityAndQuotedAbsolutePaths(): void
+    {
+        $result = tpRecoverySchedulerInstructions($this->root, 'Linux', '/usr/local/PHP 8.5/php%', 'www-data');
+        self::assertSame("sudo crontab -u 'www-data' -e", $result['edit']);
+        self::assertStringStartsWith("* * * * * '/usr/local/PHP 8.5/php\\%' ", $result['entry']);
+        self::assertStringContainsString(tpRecoveryCommandArgument($this->root . DIRECTORY_SEPARATOR . 'app'
+            . DIRECTORY_SEPARATOR . 'sources' . DIRECTORY_SEPARATOR . 'scheduler.php', 'Linux'), $result['entry']);
+        self::assertStringEndsWith(' #Teampass scheduler', $result['entry']);
+        self::assertArrayNotHasKey('program', $result);
+    }
+
+    public function testCronInstructionsDoNotInventAnAccountOrAllowLineInjection(): void
+    {
+        self::assertSame([], tpRecoverySchedulerInstructions($this->root, 'Linux', '/usr/bin/php', null));
+        self::assertSame([], tpRecoverySchedulerInstructions($this->root, 'Linux', '/usr/bin/php', 'user;id'));
+        self::assertSame([], tpRecoverySchedulerInstructions($this->root, 'Linux', "/usr/bin/php\nother job", 'www-data'));
+        self::assertSame([], tpRecoverySchedulerInstructions($this->root . '/missing', 'Linux', '/usr/bin/php', 'www-data'));
+    }
+
+    public function testWindowsTaskSchedulerUsesProgramAndDoubleQuotedArgumentsWithoutCron(): void
+    {
+        $result = tpRecoverySchedulerInstructions($this->root, 'Windows', 'C:\\PHP 8.2\\php.exe', null);
+        self::assertSame('C:\\PHP 8.2\\php.exe', $result['program']);
+        self::assertSame('"' . $this->root . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR
+            . 'sources' . DIRECTORY_SEPARATOR . 'scheduler.php"', $result['arguments']);
+        self::assertArrayNotHasKey('entry', $result);
+        self::assertArrayNotHasKey('edit', $result);
+    }
+
+    public function testCronServiceCommandsRequireAnExistingKnownUnitAndNeverTargetWindows(): void
+    {
+        self::assertNull(tpRecoveryCronServiceCommand('Linux', [$this->root]));
+        file_put_contents($this->root . '/crond.service', '# synthetic unit; never activated');
+        try {
+            self::assertSame("sudo systemctl enable --now crond.service\nsudo systemctl status crond.service --no-pager",
+                tpRecoveryCronServiceCommand('Linux', [$this->root]));
+            self::assertNull(tpRecoveryCronServiceCommand('Windows', [$this->root]));
+        } finally { unlink($this->root . '/crond.service'); }
+        file_put_contents($this->root . '/cron.service', '# synthetic unit; never activated');
+        try {
+            self::assertSame("sudo systemctl enable --now cron.service\nsudo systemctl status cron.service --no-pager",
+                tpRecoveryCronServiceCommand('Linux', [$this->root]));
+        } finally { unlink($this->root . '/cron.service'); }
     }
 }

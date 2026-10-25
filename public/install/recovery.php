@@ -154,8 +154,8 @@ if (teampassConfigState(TEAMPASS_ROOT . '/app/config') !== 'not_installed' && $i
     exit;
 }
 $scriptVersion = substr((string) hash_file('sha256', __DIR__ . '/recovery.js'), 0, 16);
-
-
+$scheduler = tpRecoverySchedulerInstructions(TEAMPASS_ROOT, PHP_OS_FAMILY, tpRecoveryPhpCliBinary(), $serviceAccount);
+$cronServiceCommand = tpRecoveryCronServiceCommand(PHP_OS_FAMILY);
 ?>
 <!doctype html>
 <html lang="en">
@@ -174,7 +174,7 @@ $scriptVersion = substr((string) hash_file('sha256', __DIR__ . '/recovery.js'), 
     <p><?= $escape('drp_intro') ?></p>
     <p class="alert alert-info"><?= $escape('drp_scope') ?></p>
     <ol class="row list-unstyled mb-4" aria-label="Recovery steps">
-        <?php foreach (['Restore database', 'Publish instance', 'Secure permissions', 'Finalize restoration', 'Cleanup and access'] as $index => $step): ?>
+        <?php foreach (['Restore database', 'Publish instance', 'Secure permissions', 'Finalize restoration', 'Cleanup, access and cron'] as $index => $step): ?>
         <li class="col-6 col-md-4 mb-2"><span id="recovery-step-<?= $index + 1 ?>" class="badge badge-light d-block p-2"><?= $index + 1 ?>. <?= htmlspecialchars($step, ENT_QUOTES, 'UTF-8') ?></span></li>
         <?php endforeach; ?>
     </ol>
@@ -271,7 +271,7 @@ $scriptVersion = substr((string) hash_file('sha256', __DIR__ . '/recovery.js'), 
             <p>Backup schedules and LAPR stay disabled until you review and enable them deliberately.</p>
         </section>
         <section id="recovery-finished" class="border-top pt-3 mt-3" hidden>
-            <h2 class="h5">5. Cleanup and access checks</h2>
+            <h2 class="h5">5. Cleanup, access checks and cron</h2>
             <p id="recovery-finished-status" class="alert alert-success"></p>
             <h3 class="h6">5.1 Remove the installer</h3>
             <p>Run this command as an administrator to remove <code>public/install</code> and allow application sign-in.
@@ -282,6 +282,31 @@ $scriptVersion = substr((string) hash_file('sha256', __DIR__ . '/recovery.js'), 
                 personal folders, manager/read-only permissions, documents, MFA and external authentication.
                 Reconcile external integrations and offline clients.</p>
             <a class="btn btn-primary mb-3" href="../index.php" target="_blank" rel="noopener">Open TeamPass login</a>
+            <h3 class="h6">5.3 Restore scheduled processing (cron)</h3>
+            <p>After the access checks, restore the host scheduler. The recovery hold is released, but restoring a database does not recreate a host cron entry.
+                Review enabled tasks first; backup schedules and LAPR require separate review before enabling them.</p>
+            <?php if (isset($scheduler['entry'])): ?>
+            <p>Open the crontab for the PHP service account. Preserve other jobs and keep exactly one active TeamPass scheduler entry.</p>
+            <pre data-recovery-command id="recovery-cron-edit" class="p-3 bg-light"><?= htmlspecialchars($scheduler['edit'], ENT_QUOTES, 'UTF-8') ?></pre>
+            <p>Insert or uncomment this line in the crontab editor, then save. This is a cron entry, not a shell command:</p>
+            <pre data-recovery-command data-copy-label="Copy cron entry" id="recovery-cron-entry" class="p-3 bg-light"><?= htmlspecialchars($scheduler['entry'], ENT_QUOTES, 'UTF-8') ?></pre>
+            <?php if ($cronServiceCommand !== null): ?>
+            <p>For this server's systemd cron service, enable/start it and check its status:</p>
+            <pre data-recovery-command id="recovery-cron-service" class="p-3 bg-light"><?= htmlspecialchars($cronServiceCommand, ENT_QUOTES, 'UTF-8') ?></pre>
+            <?php else: ?>
+            <p>Restore the cron daemon or equivalent scheduler with your server's service manager/runbook.</p>
+            <?php endif; ?>
+            <?php elseif (isset($scheduler['program'])): ?>
+            <p>In Windows Task Scheduler, restore or create one task running every minute under the intended PHP service identity.
+                Program/script:</p>
+            <pre data-recovery-command data-copy-label="Copy program" id="recovery-task-program" class="p-3 bg-light"><?= htmlspecialchars($scheduler['program'], ENT_QUOTES, 'UTF-8') ?></pre>
+            <p>Add arguments:</p>
+            <pre data-recovery-command data-copy-label="Copy arguments" id="recovery-task-arguments" class="p-3 bg-light"><?= htmlspecialchars($scheduler['arguments'], ENT_QUOTES, 'UTF-8') ?></pre>
+            <?php else: ?>
+            <p>Have an administrator restore a once-per-minute task for <code>app/sources/scheduler.php</code> under the PHP service identity.</p>
+            <?php endif; ?>
+            <p>After a minute, check the last cron execution and task results in TeamPass administration.
+                See the <a href="https://documentation.teampass.net/#/manage/tasks" target="_blank" rel="noopener">scheduled tasks documentation</a>.</p>
         </section>
         <button id="recovery-refresh" type="button" class="btn btn-secondary align-self-start"><?= $escape('drp_status') ?></button>
     </section>

@@ -97,3 +97,36 @@ function tpRecoveryInstallerCleanupCommand(string $root, string $os): ?string
     return $os === 'Windows' ? 'Remove-Item -LiteralPath ' . $quoted . ' -Recurse -Force'
         : 'sudo rm -rf -- ' . $quoted;
 }
+
+/** Propose service activation only when a known systemd cron unit is installed. */
+function tpRecoveryCronServiceCommand(string $os, array $unitDirectories = ['/etc/systemd/system', '/usr/lib/systemd/system', '/lib/systemd/system']): ?string
+{
+    if ($os !== 'Linux') { return null; }
+    foreach (['cron.service', 'crond.service'] as $unit) {
+        foreach ($unitDirectories as $directory) {
+            if (is_file($directory . '/' . $unit)) {
+                return 'sudo systemctl enable --now ' . $unit . "\n"
+                    . 'sudo systemctl status ' . $unit . ' --no-pager';
+            }
+        }
+    }
+    return null;
+}
+
+/** Generate scheduler instructions for cron or Windows Task Scheduler, without changing either. */
+function tpRecoverySchedulerInstructions(string $root, string $os, string $php, ?string $account): array
+{
+    $realRoot = realpath($root);
+    if ($realRoot === false || preg_match('/[\r\n\x00]/', $realRoot . $php . ($account ?? ''))) { return []; }
+    $script = $realRoot . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'sources' . DIRECTORY_SEPARATOR . 'scheduler.php';
+    if (!is_file($script) || is_link($script)) { return []; }
+    if ($os === 'Windows') {
+        if (str_contains($script . $php, '"')) { return []; }
+        return ['program' => $php, 'arguments' => '"' . $script . '"'];
+    }
+    if ($account === null || preg_match('/^[A-Za-z_][A-Za-z0-9_.-]*$/D', $account) !== 1) { return []; }
+    // Cron interprets percent signs even inside shell quotes.
+    $command = str_replace('%', '\\%', tpRecoveryCommandArgument($php, $os) . ' ' . tpRecoveryCommandArgument($script, $os));
+    return ['edit' => 'sudo crontab -u ' . tpRecoveryCommandArgument($account, $os) . ' -e',
+        'entry' => '* * * * * ' . $command . ' #Teampass scheduler'];
+}

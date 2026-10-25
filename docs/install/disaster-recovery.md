@@ -167,7 +167,7 @@ tokens, pending background tasks and idempotency results are invalidated.
 Restored Secure Send links are invalidated with a transactional lifecycle audit.
 
 The assistant distinguishes five steps: **restore database**, **publish instance**,
-**secure permissions**, **finalize restoration**, then **cleanup and access**.
+**secure permissions**, **finalize restoration**, then **cleanup, access and cron**.
 Run only the complete command shown for
 the current step. Wait for it to finish, then click **Refresh progress**.
 
@@ -221,7 +221,7 @@ separately after recovery is preserved.
 
 Refresh the assistant to display the final instructions, then **remove
 `public/install` before checking access**. Keep the current assistant page open
-without refreshing it, so its copied commands remain
+without refreshing it, so its copied commands and cron instructions remain
 available after the directory is gone. Open TeamPass in another tab and verify
 administrator and standard-user sign-in, HTTPS, the URL, decryption, personal
 folders, read-only/manager permissions, documents, MFA/passkeys and external
@@ -247,6 +247,28 @@ instead. These commands are displayed only; TeamPass does not execute them.
 They remove this assistant too. Continue through the **Open TeamPass login** link
 in another tab instead of refreshing the removed page. Preserve the encrypted backup and kit
 outside the deployment, and record the rehearsal results in the runbook.
+
+### Restore cron and scheduled processing
+
+After access checks, review enabled tasks and restore the host scheduler. The
+recovery hold has been released, but the database restore does not reinstall a
+host cron entry. The assistant provides an editor command for the detected PHP
+account and a once-per-minute entry using absolute PHP and scheduler paths:
+
+```cron
+* * * * * '/usr/bin/php8.5' '/var/www/teampass/app/sources/scheduler.php' #Teampass scheduler
+```
+
+Insert or uncomment the entry in that account's crontab; preserve other jobs and
+avoid duplicates. On a systemd host with an installed `cron.service` or
+`crond.service`, the assistant also proposes the matching enable/start and status
+commands. It does not run them. Other service managers require the server runbook.
+Under Windows, it provides program/argument fields for one Task Scheduler task
+running every minute under the intended service identity, without POSIX commands.
+
+After about a minute, check the last cron execution and job results in TeamPass
+administration. Backup schedules and LAPR remain disabled until separately
+reviewed and enabled. See [scheduled tasks](../manage/tasks.md).
 
 ### CLI preparation and failures
 
