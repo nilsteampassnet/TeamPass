@@ -123,6 +123,11 @@ Open `/install/install.php` and choose **Restore from a backup and Recovery
 Package**, or open `/install/recovery.php` directly. Enter the one-hour operator
 code printed by the command. It is submitted through the form, never in a URL.
 HTTPS is required except over a local loopback/SSH-tunnel connection.
+The loopback exception checks the server's immediate peer, not the user's browser.
+A reverse proxy on the same host can therefore make a remote HTTP request appear
+local. Enforce HTTPS at that proxy and restrict its backend listener; do not expose
+the assistant through a plain HTTP proxy route. Forwarded headers alone do not
+enable HTTPS in this assistant.
 
 The enable command comes **before** entering backup files and database details.
 After a reset, the assistant checks the current server-side authorization even
@@ -291,6 +296,16 @@ private staging of a prepared/failed job; it does not delete or reset the SQL
 destination. A failed import may leave a partial database. Use a new empty
 database after investigating the diagnostic rather than treating DDL as globally
 rollbackable. Preserve the original encrypted archives separately.
+
+After a failure, the private job can retain `job.json` with the destination SQL
+password in clear, the original key under `keys/` and decrypted archives until
+it is discarded. Keep these owner-only while investigating; remove abandoned
+staging with `--discard=JOB_ID`. This command does not remove files already
+published. Files staged manually in `storage/recovery/incoming/` and private
+CLI request files are never automatically deleted, including after success.
+Preserve encrypted backups and Recovery Packages securely outside the deployment,
+then remove their staged copies and any request containing credentials. The
+assistant reminds the operator after a stopped operation and at final cleanup.
 
 Useful diagnostics include `ARCHIVE_AUTHENTICATION_FAILED` (incorrect key or
 modified archive), `MASTER_KEY_DATABASE_MISMATCH`, `DOCUMENTS_DATABASE_MISMATCH`,

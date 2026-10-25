@@ -253,6 +253,17 @@ $cronServiceCommand = tpRecoveryCronServiceCommand(PHP_OS_FAMILY);
         <pre id="recovery-command" data-recovery-command class="p-3 bg-light"></pre>
         <p id="recovery-activate-hint"><?= $escape('drp_activate_hint') ?></p>
         <pre id="recovery-activate" data-recovery-command class="p-3 bg-light"></pre>
+        <section id="recovery-sensitive-staging" class="alert alert-warning" hidden>
+            <p>A stopped recovery can retain the database password in <code>job.json</code>,
+                the original key and decrypted staging files in its private job directory.
+                Keep them restricted to the PHP service account while investigating.
+                If you abandon this job, remove its staging with the command below.
+                This does not reset the destination database or remove files already published.</p>
+            <pre id="recovery-discard-command" data-recovery-command class="p-3 bg-light"></pre>
+            <p class="mb-0">Files you placed in <code>storage/recovery/incoming/</code> and private CLI request files
+                are not removed automatically. Preserve the encrypted backup and Recovery Package securely outside
+                the deployment, then remove their staged copies and any request containing credentials.</p>
+        </section>
         <section id="recovery-permissions" class="border-top pt-3 mt-3" hidden>
             <h2 class="h5">3. Secure file permissions</h2>
             <p>Publication automatically audits permissions using the File integrity rules.</p>
@@ -282,6 +293,10 @@ $cronServiceCommand = tpRecoveryCronServiceCommand(PHP_OS_FAMILY);
         <section id="recovery-finished" class="border-top pt-3 mt-3" hidden>
             <h2 class="h5">5. Cleanup, access checks and cron</h2>
             <p id="recovery-finished-status" class="alert alert-success"></p>
+            <p class="alert alert-warning">Successful publication removes the job's sensitive staging and keeps a non-sensitive receipt.
+                Files you placed in <code>storage/recovery/incoming/</code> and private CLI request files are retained.
+                Preserve the encrypted backup and Recovery Package securely outside the deployment,
+                then remove their staged copies and any request containing credentials.</p>
             <h3 class="h6">5.1 Remove the installer</h3>
             <p>Run this command as an administrator to remove <code>public/install</code> and allow application sign-in.
                 <strong>Keep this page open for the instructions below; do not refresh it after removal.</strong></p>

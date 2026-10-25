@@ -43,7 +43,7 @@ function app(initial = null, command = "sudo -u 'www-data' -- '/usr/bin/php8.5' 
   const requests = []
   const clipboard = []
   const commands = ['recovery-enable-command', 'recovery-command', 'recovery-activate', 'recovery-permissions-command',
-    'recovery-permissions-commands', 'recovery-resume-command', 'recovery-cleanup-command'].map(element)
+    'recovery-permissions-commands', 'recovery-resume-command', 'recovery-cleanup-command', 'recovery-discard-command'].map(element)
   const context = { document: { getElementById: element,
     querySelectorAll: (selector) => selector === '[data-recovery-command]' ? commands : [form],
     createElement: (tag) => element(`${tag}-${elements.size}`), body: { appendChild() {} }, execCommand: () => true },
@@ -105,6 +105,17 @@ test('Copy buttons preserve complete commands and follow the visible phase', asy
   await ui.refresh()
   assert.equal(run.copyButton.hidden, true)
   assert.equal(ui.element('recovery-activate').copyButton.hidden, false)
+})
+
+test('Stopped jobs explain sensitive staging and offer the complete discard command', async () => {
+  const ui = app(job('failed'))
+  assert.equal(ui.element('recovery-sensitive-staging').hidden, false)
+  assert.match(ui.element('recovery-discard-command').textContent, /^sudo -u 'www-data'.*--discard=a{32}$/)
+  await ui.element('recovery-discard-command').copyButton.handlers.click()
+  assert.equal(ui.clipboard[0], ui.element('recovery-discard-command').textContent)
+  ui.queue.push(job('complete', { status: 'passed' }))
+  await ui.refresh()
+  assert.equal(ui.element('recovery-sensitive-staging').hidden, true)
 })
 
 test('Multiline copy preserves administrator commands without interpreting their content', async () => {

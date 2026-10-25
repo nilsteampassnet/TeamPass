@@ -118,6 +118,9 @@
     const activate = document.getElementById('recovery-activate')
     activate.hidden = !verified
     activate.textContent = verified ? `${data.command} --activate=${result.id}` : ''
+    document.getElementById('recovery-sensitive-staging').hidden = result.status !== 'failed'
+      && !(result.status === 'activating' && result.error)
+    document.getElementById('recovery-discard-command').textContent = `${data.command} --discard=${result.id}`
     document.getElementById('recovery-permissions').hidden = !published || finalStep
     document.getElementById('recovery-permissions-audit').hidden = review.status !== 'not_checked'
     document.getElementById('recovery-permissions-command').textContent = `${data.command} --check-permissions=${result.id}`
