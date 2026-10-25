@@ -1,0 +1,58 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Teampass - a collaborative passwords manager.
+ * English installer/recovery text, independent from application language settings.
+ * This file is part of TeamPass, licensed under the GNU GPL version 3 or later.
+ * @file recovery.texts.php
+ * @copyright 2009-2026 Teampass.net
+ * @license GPL-3.0
+ */
+
+return [
+    'drp_title' => 'Restore a TeamPass instance',
+    'drp_intro' => 'Restore a backup and its Recovery Package on a fresh deployment. Compatible database upgrades are applied before activation.',
+    'drp_operator' => 'Operator code',
+    'drp_enable_hint' => 'On this server, run the following command as the PHP service account, then enter the one-hour code here.',
+    'drp_unlock' => 'Open the recovery assistant',
+    'drp_kit' => 'Recovery Package (.tprecovery)',
+    'drp_kit_password' => 'Recovery Package passphrase',
+    'drp_backup' => 'Complete backup (.tpbackup)',
+    'drp_backup_password' => 'Backup encryption key (leave empty to use the key in the Recovery Package)',
+    'drp_server_file' => 'Or enter a filename already placed in storage/recovery/incoming/',
+    'drp_target' => 'Empty destination database',
+    'drp_host' => 'Database host',
+    'drp_port' => 'Port',
+    'drp_database' => 'Database name',
+    'drp_user' => 'Database user',
+    'drp_password' => 'Database password',
+    'drp_url' => 'Restored HTTPS address',
+    'drp_prepare' => 'Check and prepare restoration',
+    'drp_preparing' => 'Checking the archives and destination…',
+    'drp_ready' => 'Step 1 — Preliminary checks passed. Run the complete command below on the server to restore, upgrade and verify the database. Wait for it to finish, then click Refresh progress.',
+    'drp_verified' => 'Step 2 — Database checks are complete. Review the encryption diagnostic below, then run the publication command and click Refresh progress.',
+    'drp_activating' => 'Step 2 — Publication has started. If the previous command stopped, correct the diagnostic and run the same activation command again. The database does not need to be imported again.',
+    'drp_cleanup_pending' => 'Step 2 — The instance is published. Run activation again to finish private staging cleanup, then refresh progress.',
+    'drp_verification_paused' => 'Encryption verification stopped and its last completed batch was saved. Run the command below again to continue without importing the database again. If a batch timed out, append --verification-timeout=3600 to allow more time per batch.',
+    'drp_complete' => 'The restored files and configuration are published. Review the permission result below, then finalize restoration before removing the installer and checking access.',
+    'drp_resumed' => 'Restoration is finalized and the recovery hold is released. Remove the installer, check the restored instance, then restore scheduled processing below.',
+    'drp_resumed_maintenance' => 'Recovery was already resumed. Separately enabled maintenance was kept unchanged; review it in the administration settings.',
+    'drp_permissions_not_checked' => 'Run the permission audit above, wait for it to finish, then click Refresh progress. No permissions have been verified yet.',
+    'drp_permissions_passed' => 'The permission audit passed. Continue with finalization.',
+    'drp_permissions_issues' => '%s permission findings remain. Copy and run the correction block below; verification is included.',
+    'drp_permissions_manual' => 'Automatic permission auditing is unavailable. Complete the platform ACL review manually before continuing.',
+    'drp_cleanup_manual' => 'The installer path could not be validated for an automatic command. Ask an administrator to inspect and remove public/install manually.',
+    'drp_counts' => '%s database tables · %s documents',
+    'drp_running' => 'Restoration is in progress. Refresh the status before continuing.',
+    'drp_failed' => 'Restoration stopped. Check the diagnostic and recovery documentation before preparing another empty destination.',
+    'drp_activate_hint' => 'After the terminal reports that the database is verified, click Refresh progress to display the activation command. TeamPass stays in maintenance until the final operational checks are acknowledged.',
+    'drp_status' => 'Refresh progress',
+    'drp_error' => 'The recovery operation stopped. Diagnostic:',
+    'drp_transport' => 'Use HTTPS or a local SSH tunnel to submit recovery secrets.',
+    'drp_scope' => 'Requires a fresh deployment, an empty dedicated database, the original Recovery Package and a complete backup. Database credentials are for the destination.',
+    'drp_back' => 'Back to installation',
+    'drp_restore_choice' => 'Recover an existing instance from a backup and Recovery Package',
+    'drp_pending' => 'A recovery is prepared or running. Continue through the recovery assistant instead of starting a new installation.',
+];

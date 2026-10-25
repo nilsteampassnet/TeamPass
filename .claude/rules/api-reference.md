@@ -227,7 +227,18 @@ Delta feed for offline clients (mobile vault). Answers "what must I apply since 
 
 **Params:** `since` (int, **required**, exclusive; `0` on a first sync), `limit` (default 200, max 1000).
 
-**Response:** `{ cursor, has_more, full_sync_required, changed[], removed[] }`. `changed` carries full item payloads (same shape and same code path as `item/get`); `removed` is `{ id, revision, revision_changed_at, reason }` with `reason` in `deleted` | `purged` | `out_of_scope`. The revision/date pair comes from the winning journal row after deduplication.
+**Generation support is required for every offline client.** Send `generation`
+(32 lowercase hexadecimal characters after recovery, empty before the first recovery)
+adopted from the full-sync response on every delta request. Every response includes the current generation
+(empty before the first recovery). A missing/mismatched generation or a cursor
+beyond the current journal forces a full sync, including when the restored
+sequence has subsequently caught up with an old client's cursor. Persist cursor
+and generation together only after rebuilding the cache. A client that does not
+persist and resend this value receives `full_sync_required` on every request after
+recovery and cannot resume delta synchronization; repeatedly rebuilding the cache
+without adopting the generation does not resolve that loop.
+
+**Response:** `{ cursor, generation, has_more, full_sync_required, changed[], removed[] }`. `changed` carries full item payloads (same shape and same code path as `item/get`); `removed` is `{ id, revision, revision_changed_at, reason }` with `reason` in `deleted` | `purged` | `out_of_scope`. The revision/date pair comes from the winning journal row after deduplication.
 
 **Cursor-based, not offset-based** — a change feed has no stable total, so no `X-Total-Count`. Store `cursor`, resend it as `since`, repeat while `has_more`.
 

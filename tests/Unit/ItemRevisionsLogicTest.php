@@ -188,6 +188,22 @@ class ItemRevisionsLogicTest extends TestCase
         self::assertFalse(itemRevisionNeedsFullSync(42, null));
     }
 
+    public function testDatabaseRollbackForcesAFullSync(): void
+    {
+        self::assertTrue(itemRevisionNeedsFullSync(500, 1, 100));
+        self::assertTrue(itemRevisionNeedsFullSync(42, null, 0));
+        self::assertFalse(itemRevisionNeedsFullSync(100, 1, 100));
+    }
+
+    public function testRecoveryGenerationDetectsRollbackEvenWhenTheCursorHasCaughtUp(): void
+    {
+        $generation = str_repeat('a', 32);
+        self::assertTrue(itemRevisionNeedsFullSync(50, 1, 100, null, $generation));
+        self::assertTrue(itemRevisionNeedsFullSync(50, 1, 100, str_repeat('b', 32), $generation));
+        self::assertFalse(itemRevisionNeedsFullSync(50, 1, 100, $generation, $generation));
+        self::assertFalse(itemRevisionNeedsFullSync(50, 1, 100, null, ''));
+    }
+
     /**
      * An item modified three times since the cursor is one download, not three.
      */

@@ -143,6 +143,12 @@ logic modules) holds every decision: `itemRevisionShouldBump()`, `itemRevisionJo
 
 ## Known gaps
 
+Disaster recovery assigns a new `misc.recovery_generation`. The changes endpoint
+returns it and requires a full rebuild for missing/mismatched generations or a
+cursor beyond the restored maximum. Clients adopt the generation after a full
+sync and send it with subsequent delta requests. Clients without generation
+support receive full-sync requests after recovery.
+
 1. **Rights revocation emits no journal entry** — nothing changed on the items. Clients must also
    reconcile against `folder/writableFolders` and drop items whose folder disappeared.
 2. **Attachments are not in the delta payload** — `getItems()` does not return files.

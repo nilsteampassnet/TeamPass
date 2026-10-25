@@ -48,6 +48,8 @@ app/includes/libraries/csrfp/libs/csrfp.config.php.*
 !/storage/logs/.gitkeep
 /storage/onthefly/*
 !/storage/onthefly/.gitkeep
+/storage/recovery/*
+!/storage/recovery/.gitkeep
 
 # Avatars are user data — never commit
 /public/assets/avatars/*

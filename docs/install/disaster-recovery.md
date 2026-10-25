@@ -1,0 +1,390 @@
+<!-- docs/install/disaster-recovery.md -->
+
+## Disaster recovery on a fresh server
+
+The recovery assistant restores a complete encrypted `.tpbackup` and the original
+`.tprecovery` Recovery Package without first running a normal installation.
+It imports into an empty dedicated database, checks the original encryption key,
+applies supported database migrations, verifies item decryption, and only then
+publishes the files and a newly generated destination configuration.
+
+The initial supported source releases are **3.2.2.x and 3.2.3.x**. The target must
+be at least as recent as the backup. The shipped 3.2.2 and 3.2.3 migrations are
+reused, including replayable changes in the source release. A missing upgrade
+path, a newer source schema, or a newer source version stops recovery. Historical
+SQL-only backups and pre-3.2.2 migrations require a separate recovery procedure.
+
+### Operating systems and validation scope
+
+The recovery engine uses PHP and MySQL/MariaDB, without a Bash, `sudo`, systemd
+or Docker dependency. Use 64-bit PHP 8.2 or later with the normal TeamPass
+extensions, plus `zip`. The CLI must have the required extensions too, and
+`proc_open` must be available for the isolated migration and verification
+processes. The Linux commands below are deployment examples, not an OS check.
+
+| Platform | DRP validation status |
+| --- | --- |
+| Ubuntu 26.04, native installation | Complete recovery, upgrade, HTTP assistant, publication and service resume tested with PHP 8.5 and MariaDB. |
+| Native Windows, local filesystem | The same complete scenarios tested with PHP 8.2 and MariaDB, including paths containing spaces. These desktop tests do not certify Windows Server or IIS. |
+| Other Debian/Ubuntu releases | Compatibility target with the required PHP/database versions; each deployment still needs a restore rehearsal. |
+| RHEL, Rocky Linux and AlmaLinux | Compatibility target; validate the service identity, writable directories and SELinux policy. No end-to-end distribution-specific qualification yet. |
+| SLES/openSUSE | Compatibility target; no end-to-end distribution-specific qualification yet. |
+| Windows Server | Compatibility target; server/service-account and NTFS ACL acceptance tests remain required. IIS/FastCGI integration is not yet qualified. |
+
+The application's PHP requirements matter more than the distribution name:
+an otherwise supported OS with an older PHP installation is not sufficient.
+These statements cover DRP; optional TeamPass services such as the WebSocket
+daemon have their own platform requirements.
+
+On Linux, adapt the PHP account/group to the deployment and preserve its
+SELinux/AppArmor protections. On Windows, use local NTFS storage and restrict
+ACLs on `storage/recovery/`, `secrets/` and `app/config/` to the intended
+administrators and PHP/CLI service identities. POSIX `chmod` values do not
+establish those ACLs. The staging area requires reliable file locking, atomic
+same-directory replacement and hard-link creation; network shares and FAT
+filesystems have not been qualified. Validate both web and CLI access under
+the actual production identities, not only an administrator's interactive
+account. HTTPS, web-server configuration and task scheduling remain part of
+the destination infrastructure runbook.
+
+### Material to preserve before a disaster
+
+- A complete `.tpbackup`, with **Include documents** enabled. Missing attachments,
+  KB attachments, avatars or scan warnings prevent a complete recovery.
+- The original Recovery Package and its passphrase, kept separately from backups.
+- The encryption key of a manual backup, or the matching scheduled-backup key.
+  A kit contains the scheduled key current when it was generated; an older backup
+  may require its original key to be entered explicitly.
+- A known compatible TeamPass distribution with its production dependencies.
+- Access to the destination server and to a working administrator authentication
+  method. Recovering the database does not recreate an unavailable LDAP/OAuth2
+  provider or a lost hardware authenticator.
+- An infrastructure runbook: HTTPS, DNS, web-server/PHP configuration, scheduled
+  tasks, external certificate files and any custom persistent paths or branding.
+  The application packages do not replace a server configuration backup.
+
+Preserve the master key exactly. A newly generated `SECUREFILE` cannot replace
+the original one. Do not run a fresh installation over restored data.
+
+New backups use a single read-only InnoDB repeatable-read snapshot for the dump
+and document inventory. Concurrent backups are rejected, and maintenance stays
+enabled until the complete package has been published. Non-InnoDB tables stop
+the backup. This does not freeze filesystem writers or requests already running:
+drain active writes and stop background/rotation jobs before a recovery-grade
+capture, and prevent concurrent schema upgrades. The manifest describes the
+database capture without claiming a filesystem snapshot. Older archives lack
+these capture guarantees and still require a complete restore rehearsal.
+
+### Prepare the destination
+
+1. Deploy the code with `public/` as the web root. Do not run the installer yet.
+2. Provide a new empty database and a SQL account restricted to that database.
+   It needs the schema/data privileges used by the installer and migrations;
+   it does not need global `FILE`, user-management or administrator privileges.
+3. Make the configuration, secrets and persistent data directories writable by
+   the PHP service account during recovery. Preparation checks effective write
+   access to the configuration, secrets, upload, KB attachment and avatar
+   directories before importing data. Unexpected links are refused. Existing
+   configuration, key material or application documents cause the fresh-server
+   checks to stop.
+4. Configure HTTPS. A new valid certificate is acceptable. Keeping the original
+   domain avoids changing the origin/RP ID of sign-in passkeys and integration
+   addresses. A database restored under another domain needs separate checks.
+5. Run recovery commands **as the PHP service account**, so owner-only temporary
+   data and the generated configuration remain readable by the web application.
+   The examples below use Debian/Ubuntu's `www-data`; adapt it to your deployment.
+
+The assistant detects the Unix PHP worker account and shows commands with that
+account and absolute PHP/script paths for enable, restore, activation, permission
+review and resume.
+Do not use `sudo php`: it creates owner-only files as root, which the web worker
+cannot read. Mutating recovery CLI commands refuse Unix root execution. Common
+accounts are `www-data` on Debian/Ubuntu, `apache` on RHEL-family installations,
+and `wwwrun` on SUSE; a custom FPM pool may use another identity. On Windows the
+page shows a PowerShell command; use the service identity configured in Apache
+or IIS, not an unrelated administrator account.
+
+The first implementation uses a local or otherwise protected SQL connection.
+It does not import external TLS private-key files from a recovery kit or configure
+the web server, DNS or an identity provider.
+
+### Installation assistant
+
+Like the installation and upgrade wizards, the recovery assistant is in English
+and does not use the configured application language or a language selector.
+Missing or invalid fields are listed in a red English summary above the form;
+the browser's translated validation bubbles are not used. Every command has a
+copy button, with a local fallback when clipboard access is unavailable.
+
+From the project root:
+
+```bash
+sudo -u www-data php app/scripts/disaster-recovery.php --enable
+```
+
+Open `/install/install.php` and choose **Restore from a backup and Recovery
+Package**, or open `/install/recovery.php` directly. Enter the one-hour operator
+code printed by the command. It is submitted through the form, never in a URL.
+HTTPS is required except over a local loopback/SSH-tunnel connection.
+The loopback exception checks the server's immediate peer, not the user's browser.
+A reverse proxy on the same host can therefore make a remote HTTP request appear
+local. Enforce HTTPS at that proxy and restrict its backend listener; do not expose
+the assistant through a plain HTTP proxy route. Forwarded headers alone do not
+enable HTTPS in this assistant.
+
+The enable command comes **before** entering backup files and database details.
+After a reset, the assistant checks the current server-side authorization even
+when the browser still has an earlier session. A missing, expired or rotated
+operator grant returns to the enable/code screen. If an already open form loses
+its authorization, it displays the complete enable command and a button to
+return to that screen. Existing session-bound job progress remains observable
+after successful publication removes the operator file.
+
+Upload both archives, enter their passphrases, and supply the **destination** SQL
+credentials and HTTPS address. For large archives, place them owner-only in
+`storage/recovery/incoming/` and enter their bare filenames instead of uploading.
+Align PHP and web-server upload/time limits with the archive sizes. The CLI
+preparation described below avoids an HTTP upload or request timeout.
+
+The assistant authenticates/decrypts the archives, validates their paths and
+checksums, checks the SQL scope and required tables, and confirms the destination
+is empty. It shows the source/target versions and prints a command containing
+only a random job identifier:
+
+```bash
+sudo -u www-data php app/scripts/disaster-recovery.php --run=JOB_ID
+```
+
+This imports and validates the database, applies the supported migrations when
+needed, and checks item decryption with the restored system key chain. It checks
+the complete document references against the imported database. The full target
+release is recorded in `teampass_version_full`. A successful job reaches
+`verified`; the web assistant can refresh its progress.
+
+Encryption verification runs exhaustively in batches of 100 encrypted items,
+with progress saved after each batch and printed in the terminal. There is no
+timeout on the complete vault. The default timeout is 1,800 seconds **per batch**;
+`--run=JOB_ID --verification-timeout=3600` allows more time per batch (1–86,400
+seconds). An interrupted or timed-out job in `verifying` can use the same `--run`
+command to continue from the last completed batch without importing again.
+
+An item without a TP system sharekey is counted and reported in the assistant
+and final receipt; it does not block restoration. This occurs with historical
+personal items and after rebuilding the TP key pair. Existing user sharekeys
+are preserved. A TP sharekey row that exists but cannot decrypt its item still
+stops recovery with `ITEM_DECRYPTION_FAILED`.
+
+An unusable TP system private key is reported instead of discarding otherwise
+recoverable user data. The assistant explains that system-key item verification
+was unavailable and requires an explicit acknowledgement before showing the
+publication command. For CLI recovery, review the diagnostic and explicitly add
+`--acknowledge-unusable-tp-key` to `--activate=JOB_ID` to accept this limitation.
+The acknowledgement is recorded in the receipt. Plan shared reference-key repair
+through Tools and personal-item repair with each owner after restoring access.
+This does **not** waive the original master-key/database match: a mismatch remains
+fatal, including with that flag. Recovery does not regenerate or repair keys.
+
+Copy the complete command shown by the assistant, including its service-account
+prefix and absolute PHP/script paths. Run only the command for the current step,
+wait for it to finish in the server terminal, then click **Refresh progress** to
+show the next command. The account reminder remains visible after preparation.
+
+Then publish the restored documents, original master key and new configuration:
+
+```bash
+sudo -u www-data php app/scripts/disaster-recovery.php --activate=JOB_ID
+```
+
+The archived `settings.php` is never executed. New destination credentials are
+encrypted with the original master key. `settings.php` is published last.
+Private staging is removed after success; a non-sensitive receipt remains.
+Publication records a stable set of configuration contents before writing any
+destination data. If `--activate` stops, correct the reported permission or
+storage problem and run the same command again. Jobs in `activating` accept only
+already-published files with the expected hashes; a different file is a conflict,
+never an instruction to overwrite it. Retrying does not import the database again.
+The completion receipt is saved before sensitive staging is removed, so cleanup
+can also be retried after an interruption. The receipt records `cleanup_pending`
+until that purge succeeds; the assistant proposes activation again and service
+finalization is refused while cleanup remains pending.
+
+### Official Docker image
+
+The official image runs PHP as `nginx`. Use `docker compose exec -u nginx`
+instead of host `sudo -u www-data`. Recovery preserves the entrypoint's exact
+`settings.php` and `csrfp.config.php` links into `/var/www/html/storage/config/`
+and publishes to those persistent targets. Other configuration links and link
+chains are rejected. Start with fresh, empty application data volumes and an
+empty destination database; do not run a normal installation first.
+
+For a container serving HTTP behind a TLS proxy, use CLI preparation to avoid
+passing recovery secrets through an unqualified HTTP backend. Stage the two
+encrypted archives owner-only inside the container, and prepare a private JSON
+request using those container paths and the destination credentials described
+below. From the Compose project directory:
+
+```bash
+docker compose exec -T -u nginx teampass php /var/www/html/app/scripts/disaster-recovery.php --prepare=- < private-recovery.json
+docker compose exec -T -u nginx teampass php /var/www/html/app/scripts/disaster-recovery.php --run=JOB_ID
+docker compose exec -T -u nginx teampass php /var/www/html/app/scripts/disaster-recovery.php --activate=JOB_ID
+docker compose exec -T -u nginx teampass php /var/www/html/app/scripts/disaster-recovery.php --status=JOB_ID
+```
+
+`JOB_ID` is printed by preparation. Remove the private request after use and
+follow the same diagnostic/acknowledgement, permission, finalization, installer
+cleanup and access checks as a native deployment. Adapt the Compose service
+name if it is not `teampass`. Keep scheduled processing stopped during these
+checks. Do not apply a Debian/RHEL permission repair plan to the Alpine image;
+use the Docker permission profile and deployment runbook. The assistant still
+requires directly signalled HTTPS or a protected loopback connection; it does
+not trust arbitrary `X-Forwarded-Proto` headers.
+The persistent-link layout is exercised by Linux CLI integration fixtures.
+A full rehearsal of the official container lifecycle and a production proxy
+configuration remains part of deployment qualification.
+
+### Finalization: permissions, checks and cleanup
+
+The restored instance stays in maintenance, and background processing is held.
+Backup schedules and LAPR are disabled. Sessions, API authorizations, temporary
+tokens, paired-device requests/approvals, pending background tasks and idempotency
+results are invalidated. Browser extension tokens must be issued again and
+devices must be paired again; neither active credentials nor revocation
+tombstones from the old timeline are retained.
+Restored Secure Send links are invalidated with a transactional lifecycle audit.
+
+The assistant distinguishes five steps: **restore database**, **publish instance**,
+**secure permissions**, **finalize restoration**, then **cleanup, access and cron**.
+Run only the complete command shown for
+the current step. Wait for it to finish, then click **Refresh progress**.
+
+Publication automatically runs the permission audit as the PHP service account.
+If corrections are needed, the assistant shows one copyable shell block with the
+File integrity remediation commands followed by another service-account audit.
+Review the block, paste it once in the administrator terminal, wait for it to
+finish, then click **Refresh progress**. The block runs in a subshell and stops
+on a failed correction; it does not change the interactive shell's options.
+
+For an older receipt or an unavailable initial audit, a fallback command remains:
+
+```bash
+sudo -u www-data php app/scripts/disaster-recovery.php --check-permissions=JOB_ID
+```
+
+This performs the same deep permission scan and generates the same remediation
+commands as **File integrity**, without checking release hashes or changing any
+permissions. TeamPass never applies the administrator commands itself. The
+verification at the end of the copied block updates the receipt; exit code `2`
+means permission findings remain.
+
+The normal runtime profile makes code/configuration read-only for PHP, protects
+the original master key and leaves runtime directories writable. It replaces the
+temporary installation write access; it never regenerates a key. On supported
+Debian/Ubuntu and RHEL-family layouts the generated commands use the detected
+PHP identity and actual root path. Other layouts may require manual corrections.
+Windows requires an explicit manual NTFS ACL review: an unsupported audit is
+shown as **manual**, never as a pass, and no POSIX remediation is offered.
+See [file permissions](file-permissions.md) before applying a plan.
+
+After reviewing permissions, finalize the restoration. Keep the host cron job
+stopped until cleanup and access checks are complete. Sign-in checks come after
+removing the installer: the application rejects sign-in while `public/install`
+is still present. There is no administrator sign-in step before finalization.
+The assistant uses a separate operator session, so application sign-in and logout
+do not replace its session-bound recovery progress. Keep the assistant tab open.
+On a fresh deployment it expires the plain installation-session cookie before
+the restored application uses its encrypted session handler.
+Run the finalization command:
+
+```bash
+sudo -u www-data php app/scripts/disaster-recovery.php --resume=JOB_ID
+```
+
+This releases maintenance and the recovery background-task hold, and records
+`resumed` in the non-sensitive receipt so the assistant can show the final step.
+Repeating the command is safe if a prior acknowledgement was interrupted. An
+older receipt left at `complete` can be acknowledged again; maintenance enabled
+separately after recovery is preserved.
+
+Refresh the assistant to display the final instructions, then **remove
+`public/install` before checking access**. Keep the current assistant page open
+without refreshing it, so its copied commands and cron instructions remain
+available after the directory is gone. Open TeamPass in another tab and verify
+administrator and standard-user sign-in, HTTPS, the URL, decryption, personal
+folders, read-only/manager permissions, documents, MFA/passkeys and external
+authentication. Reconfigure and enable the backup schedules and LAPR deliberately.
+Restoring a backup does
+not roll back passwords on remote servers; reconcile rotations since the backup.
+Force a full refresh of external clients holding an offline cache after recovery.
+The item changes API returns a new `generation` after every recovery and requires
+a full sync when the client's generation is absent/different or its cursor is
+ahead of the restored journal. Clients must adopt both cursor and generation
+after rebuilding their cache, then send `generation` on subsequent delta calls.
+Generation support is required for every offline client. Older clients that do
+not persist and resend it continue receiving full-sync requests after recovery;
+upgrade them before resuming offline synchronization. Rebuilding their cache
+alone does not resolve the repeated full-sync loop.
+
+The installer cleanup command uses the validated absolute installer path:
+
+```bash
+sudo rm -rf -- '/var/www/teampass/public/install'
+```
+
+On Windows it proposes `Remove-Item -LiteralPath '…\public\install' -Recurse -Force`
+instead. These commands are displayed only; TeamPass does not execute them.
+They remove this assistant too. Continue through the **Open TeamPass login** link
+in another tab instead of refreshing the removed page. Preserve the encrypted backup and kit
+outside the deployment, and record the rehearsal results in the runbook.
+
+### Restore cron and scheduled processing
+
+After access checks, review enabled tasks and restore the host scheduler. The
+recovery hold has been released, but the database restore does not reinstall a
+host cron entry. The assistant provides an editor command for the detected PHP
+account and a once-per-minute entry using absolute PHP and scheduler paths:
+
+```cron
+* * * * * '/usr/bin/php8.5' '/var/www/teampass/app/sources/scheduler.php' #Teampass scheduler
+```
+
+Insert or uncomment the entry in that account's crontab; preserve other jobs and
+avoid duplicates. On a systemd host with an installed `cron.service` or
+`crond.service`, the assistant also proposes the matching enable/start and status
+commands. It does not run them. Other service managers require the server runbook.
+Under Windows, it provides program/argument fields for one Task Scheduler task
+running every minute under the intended service identity, without POSIX commands.
+
+After about a minute, check the last cron execution and job results in TeamPass
+administration. Backup schedules and LAPR remain disabled until separately
+reviewed and enabled. See [scheduled tasks](../manage/tasks.md).
+
+### CLI preparation and failures
+
+`--prepare=FILE` reads a private JSON request; `--prepare=-` reads standard input.
+The request has `kit_path`, `kit_password`, `backup_path`, `backup_password`,
+`url`, and `connection` (`host`, `port`, `database`, `user`, `password`). Passwords
+must not be placed in command-line arguments. Protect and remove any request
+file containing them after preparation.
+
+`--status=JOB_ID` prints non-sensitive progress. `--discard=JOB_ID` removes the
+private staging of a prepared/failed job; it does not delete or reset the SQL
+destination. A failed import may leave a partial database. Use a new empty
+database after investigating the diagnostic rather than treating DDL as globally
+rollbackable. Preserve the original encrypted archives separately.
+
+After a failure, the private job can retain `job.json` with the destination SQL
+password in clear, the original key under `keys/` and decrypted archives until
+it is discarded. Keep these owner-only while investigating; remove abandoned
+staging with `--discard=JOB_ID`. This command does not remove files already
+published. Files staged manually in `storage/recovery/incoming/` and private
+CLI request files are never automatically deleted, including after success.
+Preserve encrypted backups and Recovery Packages securely outside the deployment,
+then remove their staged copies and any request containing credentials. The
+assistant reminds the operator after a stopped operation and at final cleanup.
+
+Useful diagnostics include `ARCHIVE_AUTHENTICATION_FAILED` (incorrect key or
+modified archive), `MASTER_KEY_DATABASE_MISMATCH`, `DOCUMENTS_DATABASE_MISMATCH`,
+`TARGET_DATABASE_NOT_EMPTY`, `DOWNGRADE_NOT_SUPPORTED`, `UPGRADE_FAILED` and
+`TARGET_SCHEMA_INCOMPLETE`. A successful archive integrity check alone is not a
+proof that the source database and files were captured consistently: regularly
+exercise the complete disaster-recovery process and measure the actual RPO/RTO.

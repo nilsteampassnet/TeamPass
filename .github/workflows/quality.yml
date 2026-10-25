@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  PHP_EXTENSIONS: openssl, mysqli, mbstring, bcmath, iconv, xml, gd, curl, gmp, ldap, sqlite3
+  PHP_EXTENSIONS: openssl, mysqli, mbstring, bcmath, iconv, xml, gd, curl, gmp, ldap, sqlite3, zip
 
 jobs:
   autoloader-guard:
@@ -164,7 +164,7 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: openssl, mysqli, mbstring
+          extensions: openssl, mysqli, mbstring, curl, zip, gmp
           coverage: none
       - name: Exercise real transactions and concurrent recipients
         env:
@@ -198,3 +198,26 @@ jobs:
           TEAMPASS_TEST_DB: teampass_test_secure_send
           TEAMPASS_TEST_PASSWORD: test-only-password
         run: php tests/Integration/device_pairing_database.php
+
+      - name: Restore, upgrade and activate encrypted disaster recovery packages
+        env:
+          TEAMPASS_RECOVERY_TEST_PORT: '3306'
+          TEAMPASS_RECOVERY_TEST_USER: root
+          TEAMPASS_RECOVERY_TEST_PASSWORD: test-only-password
+        run: |
+          set -euo pipefail
+          # Activation writes a real configuration: use an explicitly disposable
+          # checkout, never the checkout used by the remaining quality checks.
+          drp_checkout=$(mktemp -d)
+          trap 'rm -rf -- "$drp_checkout"' EXIT
+          git archive HEAD | tar -x -C "$drp_checkout"
+          mkdir -p "$drp_checkout/_tools"
+          touch "$drp_checkout/_tools/drp-lab-allow-activation"
+          cd "$drp_checkout"
+          php tests/Fixtures/recovery_database.php current
+          php tests/Fixtures/recovery_database.php upgrade
+          php tests/Integration/recovery_http.php
+          php tests/Fixtures/recovery_database.php http-publish
+          php tests/Fixtures/recovery_database.php publish-unusable
+          php tests/Fixtures/recovery_database.php publish-retry
+          php tests/Fixtures/recovery_database.php publish-docker

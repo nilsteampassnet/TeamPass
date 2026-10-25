@@ -30,6 +30,8 @@ use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\Language\Language;
 use TeampassClasses\ConfigManager\ConfigManager;
 
+// The recovery CLI supplies an isolated DB connection and the original instance key.
+if (PHP_SAPI !== 'cli' || !defined('TEAMPASS_RECOVERY_MIGRATION') || TEAMPASS_RECOVERY_MIGRATION !== true) {
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 
@@ -72,6 +74,8 @@ if ($db_link) {
 } else {
     echo '[{"finish":"1", "msg":"", "error":"Impossible to get connected to server. Error is: ' . addslashes(mysqli_connect_error()) . '!"}]';
     exit();
+}
+
 }
 
 //---------------------------------------------------------------------
