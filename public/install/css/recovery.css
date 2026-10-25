@@ -40,8 +40,19 @@
     color: #e9ecef;
   }
 
-  .recovery-wizard a {
+  .recovery-wizard a:not(.btn) {
     color: #8bc6ff;
+  }
+
+  .recovery-wizard .btn-outline-secondary {
+    color: #dbe6f2;
+    border-color: #b4c4d5;
+  }
+
+  .recovery-wizard .btn-outline-secondary:hover,
+  .recovery-wizard .btn-outline-secondary:focus {
+    background-color: #39495c;
+    color: #fff;
   }
 
   .recovery-wizard .alert-info {

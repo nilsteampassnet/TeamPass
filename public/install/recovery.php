@@ -154,6 +154,7 @@ if (teampassConfigState(TEAMPASS_ROOT . '/app/config') !== 'not_installed' && $i
     exit;
 }
 $scriptVersion = substr((string) hash_file('sha256', __DIR__ . '/recovery.js'), 0, 16);
+$styleVersion = substr((string) hash_file('sha256', __DIR__ . '/css/recovery.css'), 0, 16);
 $scheduler = tpRecoverySchedulerInstructions(TEAMPASS_ROOT, PHP_OS_FAMILY, tpRecoveryPhpCliBinary(), $serviceAccount);
 $cronServiceCommand = tpRecoveryCronServiceCommand(PHP_OS_FAMILY);
 ?>
@@ -165,7 +166,7 @@ $cronServiceCommand = tpRecoveryCronServiceCommand(PHP_OS_FAMILY);
     <title><?= $escape('drp_title') ?></title>
     <link rel="stylesheet" href="../plugins/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="../plugins/fontawesome-free/css/all.min.css">
-    <link rel="stylesheet" href="css/recovery.css">
+    <link rel="stylesheet" href="css/recovery.css?v=<?= htmlspecialchars($styleVersion, ENT_QUOTES, 'UTF-8') ?>">
 </head>
 <body class="bg-light recovery-page">
 <main class="container py-4 recovery-wizard" style="max-width: 900px">
