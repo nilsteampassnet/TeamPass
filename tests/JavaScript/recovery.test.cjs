@@ -16,15 +16,18 @@ function app(initial = null, command = "sudo -u 'www-data' -- '/usr/bin/php8.5' 
       handlers: {}, addEventListener(name, handler) { this.handlers[name] = handler },
       attributes: {}, setAttribute(name, value) { this.attributes[name] = value },
       removeAttribute(name) { delete this.attributes[name] },
+      focus() { this.focused = true }, scrollIntoView() { this.scrolled = true },
+      classList: { add() {}, remove() {} },
       set innerHTML(value) { throw new Error('Unsafe HTML assignment') } })
     return elements.get(id)
   }
   const button = { disabled: false }
-  const password = { value: 'synthetic-only' }
+  const password = { ...element('password-input'), name: 'kit_password', type: 'password', value: 'synthetic-only', validity: { valid: true } }
+  const inputs = [password]
   const form = element('recovery-prepare')
   form.hidden = false
   form.querySelector = () => button
-  form.querySelectorAll = () => [password]
+  form.querySelectorAll = (selector) => selector === 'input[type=password]' ? [password] : inputs
   element('recovery-data').textContent = JSON.stringify({ csrf: 'fixture-csrf', initial,
     ready: 'PREPARED', verified: 'VERIFIED', complete: 'COMPLETE', running: 'RUNNING',
     failed: 'FAILED', counts: '%s tables, %s documents', preparing: 'WAIT', error: 'ERROR',
@@ -33,6 +36,7 @@ function app(initial = null, command = "sudo -u 'www-data' -- '/usr/bin/php8.5' 
     resumed: 'RESUMED', resumedMaintenance: 'MAINTENANCE', permissionsNotChecked: 'AUDIT FIRST',
     permissionsPassed: 'PERMISSIONS PASS', permissionsIssues: '%s findings', permissionsManual: 'MANUAL ACL REVIEW',
     cleanupManual: 'MANUAL CLEANUP',
+    fields: { kit: 'Recovery Package', backup: 'Complete backup', database: 'Database name', port: 'Port', url: 'Restored HTTPS address' },
     errors: { OPERATOR_CODE_UNREADABLE: 'Use the PHP service account' } })
   const queue = []
   const requests = []
@@ -47,7 +51,7 @@ function app(initial = null, command = "sudo -u 'www-data' -- '/usr/bin/php8.5' 
       return { ok: true, json: async () => ({ success: true, result: response }) }
     } }
   vm.runInNewContext(source, context)
-  return { element, form, button, password, queue, requests,
+  return { element, form, button, password, inputs, queue, requests,
     submit: () => form.handlers.submit({ preventDefault() {} }),
     refresh: () => element('recovery-refresh').handlers.click() }
 }
@@ -80,6 +84,44 @@ test('Recovery progresses from import to activation and operational resume witho
   assert.equal(ui.element('recovery-refresh').hidden, true)
   assert.equal(ui.element('recovery-step-6').attributes['aria-current'], 'step')
   assert.equal(ui.element('recovery-cleanup-command').textContent, "sudo rm -rf -- '/srv/TeamPass Lab/public/install'")
+})
+
+test('Missing fields produce an English red summary before any request', async () => {
+  const ui = app()
+  const input = { ...ui.element('database'), name: 'database', value: '', required: true, validity: { valid: false, valueMissing: true } }
+  ui.inputs.push(input)
+  await ui.submit()
+  assert.equal(ui.requests.length, 0)
+  assert.match(ui.element('recovery-message').className, /alert-danger/)
+  assert.match(ui.element('recovery-message').textContent, /Database name is required/)
+  assert.equal(ui.element('recovery-message').focused, true)
+  assert.equal(input.attributes['aria-invalid'], 'true')
+  assert.equal(ui.password.value, 'synthetic-only')
+})
+
+test('Archive selection accepts either upload or private incoming filename', async () => {
+  const ui = app()
+  const file = { ...ui.element('kit'), name: 'kit', type: 'file', value: '', files: [], validity: { valid: true } }
+  const server = { ...ui.element('kit-server'), name: 'kit_server', value: '', validity: { valid: true } }
+  ui.inputs.push(file, server)
+  await ui.submit()
+  assert.equal(ui.requests.length, 0)
+  assert.match(ui.element('recovery-message').textContent, /select a file or enter its filename/)
+  server.value = 'fixture.tprecovery'
+  ui.queue.push(job('prepared'))
+  await ui.submit()
+  assert.equal(ui.requests.length, 1)
+  assert.equal(file.attributes['aria-invalid'], undefined)
+})
+
+test('Invalid port and non-HTTPS addresses use English validation messages', async () => {
+  const ui = app()
+  ui.inputs.push({ ...ui.element('port'), name: 'port', value: '65536', validity: { valid: false, rangeOverflow: true } },
+    { ...ui.element('url'), name: 'url', value: 'http://fixture.test', validity: { valid: true } })
+  await ui.submit()
+  assert.equal(ui.requests.length, 0)
+  assert.match(ui.element('recovery-message').textContent, /between 1 and 65535/)
+  assert.match(ui.element('recovery-message').textContent, /must start with https:\/\//)
 })
 
 test('Each stage preserves the complete server-provided PowerShell command', () => {

@@ -3,6 +3,42 @@
 ;(() => {
   const data = JSON.parse(document.getElementById('recovery-data').textContent)
   const message = document.getElementById('recovery-message')
+  const showError = (text) => {
+    message.className = 'alert alert-danger mt-3'
+    message.textContent = text
+    message.focus()
+    message.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  }
+  const validate = (form) => {
+    const inputs = Array.from(form.querySelectorAll('input'))
+    const errors = []
+    const invalid = (input, text) => {
+      input.classList.add('is-invalid')
+      input.setAttribute('aria-invalid', 'true')
+      errors.push(text)
+    }
+    inputs.forEach((input) => {
+      input.classList.remove('is-invalid')
+      input.removeAttribute('aria-invalid')
+      const label = (data.fields || {})[input.name] || input.name
+      const blank = input.required && input.type !== 'password' && input.type !== 'file' && !input.value.trim()
+      if (input.validity?.valueMissing || blank) invalid(input, `${label} is required.`)
+      else if (input.validity && !input.validity.valid) {
+        invalid(input, input.name === 'port' ? 'Port must be a whole number between 1 and 65535.' : `${label}: enter a valid value.`)
+      } else if (input.name === 'url' && input.value && !/^https:\/\//i.test(input.value.trim())) {
+        invalid(input, 'Restored HTTPS address must start with https://.')
+      }
+    })
+    for (const name of ['kit', 'backup']) {
+      const file = inputs.find((input) => input.name === name)
+      const server = inputs.find((input) => input.name === `${name}_server`)
+      if (file && !file.files.length && !server?.value.trim()) {
+        invalid(file, `${data.fields[name]}: select a file or enter its filename in storage/recovery/incoming/.`)
+      }
+    }
+    if (errors.length) showError(`Please complete or correct the following fields:\n${errors.join('\n')}`)
+    return errors.length === 0
+  }
   const request = async (form) => {
     form.set('csrf', data.csrf)
     const response = await fetch(window.location.href, { method: 'POST', body: form, credentials: 'same-origin' })
@@ -62,6 +98,7 @@
   document.querySelectorAll('#recovery-unlock, #recovery-prepare').forEach((form) => {
     form.addEventListener('submit', async (event) => {
       event.preventDefault()
+      if (!validate(form)) return
       const button = form.querySelector('button[type=submit]')
       button.disabled = true
       message.className = 'alert alert-info mt-3'
@@ -77,8 +114,7 @@
           show(result)
         }
       } catch (error) {
-        message.className = 'alert alert-danger mt-3'
-        message.textContent = `${data.error} ${error.message}`
+        showError(`${data.error} ${error.message}`)
       } finally { button.disabled = false }
     })
   })
@@ -87,7 +123,7 @@
       const form = new FormData()
       form.set('action', 'status')
       show(await request(form))
-    } catch (error) { message.textContent = `${data.error} ${error.message}` }
+    } catch (error) { showError(`${data.error} ${error.message}`) }
   })
   if (data.initial) show(data.initial)
 })()

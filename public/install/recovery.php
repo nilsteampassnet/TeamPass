@@ -177,6 +177,7 @@ $scriptVersion = substr((string) hash_file('sha256', __DIR__ . '/recovery.js'), 
         <?php endforeach; ?>
     </ol>
     <?php if (!$https && !$local): ?><p class="alert alert-danger"><?= $escape('drp_transport') ?></p><?php endif; ?>
+    <div id="recovery-message" class="mt-3" role="alert" aria-live="assertive" aria-atomic="true" tabindex="-1"></div>
     <?php if ($initialJob === null && !$authorized): ?>
     <section class="card card-body mb-4">
         <p><?= $escape('drp_enable_hint') ?></p>
@@ -196,7 +197,7 @@ $scriptVersion = substr((string) hash_file('sha256', __DIR__ . '/recovery.js'), 
                 SUSE/openSUSE: usually <code>wwwrun</code>. A custom PHP-FPM pool can use another account; prefer the detected account above.</p>
         </details>
         <?php endif; ?>
-        <form id="recovery-unlock" autocomplete="off">
+        <form id="recovery-unlock" method="post" autocomplete="off" novalidate>
             <label for="operator"><?= $escape('drp_operator') ?></label>
             <input class="form-control mb-3" id="operator" name="operator" type="password" required autocomplete="off">
             <input type="hidden" name="action" value="unlock">
@@ -204,7 +205,7 @@ $scriptVersion = substr((string) hash_file('sha256', __DIR__ . '/recovery.js'), 
         </form>
     </section>
     <?php elseif ($initialJob === null): ?>
-    <form id="recovery-prepare" class="card card-body" autocomplete="off" enctype="multipart/form-data">
+    <form id="recovery-prepare" method="post" class="card card-body" autocomplete="off" enctype="multipart/form-data" novalidate>
         <?php foreach (['kit' => ['drp_kit', 'tprecovery'], 'backup' => ['drp_backup', 'tpbackup']] as $field => $description): ?>
         <label for="<?= $field ?>"><?= $escape($description[0]) ?></label>
         <input class="form-control-file mb-2" type="file" id="<?= $field ?>" name="<?= $field ?>" accept=".<?= $description[1] ?>">
@@ -219,6 +220,7 @@ $scriptVersion = substr((string) hash_file('sha256', __DIR__ . '/recovery.js'), 
             <div class="col-md-6 mb-3">
                 <label for="<?= $field ?>"><?= $escape('drp_' . $field) ?></label>
                 <input class="form-control" id="<?= $field ?>" name="<?= $field ?>" type="<?= $field === 'password' ? 'password' : ($field === 'port' ? 'number' : ($field === 'url' ? 'url' : 'text')) ?>"
+                    <?= $field === 'port' ? 'min="1" max="65535" step="1"' : '' ?>
                     <?= $field === 'password' ? '' : 'required' ?> autocomplete="off" value="<?= $field === 'port' ? '3306' : '' ?>">
             </div>
         <?php endforeach; ?>
@@ -227,7 +229,6 @@ $scriptVersion = substr((string) hash_file('sha256', __DIR__ . '/recovery.js'), 
         <button class="btn btn-primary align-self-start" type="submit"><?= $escape('drp_prepare') ?></button>
     </form>
     <?php endif; ?>
-    <div id="recovery-message" class="mt-3" role="status" aria-live="polite"></div>
     <section id="recovery-result" class="card card-body mt-3" hidden>
         <p id="recovery-instruction"><?= $escape('drp_ready') ?></p>
         <?php if (PHP_OS_FAMILY !== 'Windows'): ?>
@@ -291,6 +292,9 @@ $scriptVersion = substr((string) hash_file('sha256', __DIR__ . '/recovery.js'), 
     'permissionsNotChecked' => $texts['drp_permissions_not_checked'], 'permissionsPassed' => $texts['drp_permissions_passed'],
     'permissionsIssues' => $texts['drp_permissions_issues'], 'permissionsManual' => $texts['drp_permissions_manual'],
     'cleanupManual' => $texts['drp_cleanup_manual'],
+    'fields' => ['operator' => $texts['drp_operator'], 'kit' => $texts['drp_kit'], 'backup' => $texts['drp_backup'],
+        'kit_password' => $texts['drp_kit_password'], 'host' => $texts['drp_host'], 'port' => $texts['drp_port'],
+        'database' => $texts['drp_database'], 'user' => $texts['drp_user'], 'url' => $texts['drp_url']],
     'errors' => ['OPERATOR_CODE_UNREADABLE' => 'The operator file was created by another account and PHP cannot read it. Have its ownership repaired, then use the PHP service account command shown above.'],
 ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR) ?></script>
 <script src="recovery.js?v=<?= htmlspecialchars($scriptVersion, ENT_QUOTES, 'UTF-8') ?>" defer></script>

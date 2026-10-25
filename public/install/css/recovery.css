@@ -4,6 +4,10 @@
   overflow-x: auto;
 }
 
+#recovery-message {
+  white-space: pre-line;
+}
+
 @media (prefers-color-scheme: dark) {
   .recovery-page.bg-light {
     background-color: #1b2027 !important;
