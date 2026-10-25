@@ -162,6 +162,9 @@ final class RecoveryPublicationTest extends TestCase
 
     public function testDocumentPublicationResumesPartialTemporaryWritesAndKeepsIdenticalDocuments(): void
     {
+        if (!class_exists(ZipArchive::class)) {
+            self::markTestSkipped('ZIP extension required');
+        }
         tpRecoveryPublicationPreflight($this->root);
         $id = str_repeat('c', 32);
         $path = $this->root . '/storage/upload/synthetic.bin';
