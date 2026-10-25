@@ -221,6 +221,23 @@ function adminNoticesSmtpCertificateUnverified(array $SETTINGS): bool
     return (string) ($SETTINGS['email_smtp_verify_certificate'] ?? '0') !== '1';
 }
 
+/** Return the recovery notice message keys, or no notice for a current kit. */
+function adminNoticesRecoveryPackageMessages(string $state): array
+{
+    switch ($state) {
+        case 'current':
+            return [];
+        case 'missing':
+            return ['title' => 'admin_notice_recovery_package_missing', 'description' => 'admin_notice_recovery_package_missing_desc'];
+        case 'material_changed':
+            return ['title' => 'admin_notice_recovery_package_renew', 'description' => 'admin_notice_recovery_package_renew_desc'];
+        case 'configuration_changed':
+            return ['title' => 'admin_notice_recovery_package_update', 'description' => 'admin_notice_recovery_package_update_desc'];
+        default:
+            return ['title' => 'admin_notice_recovery_package_check', 'description' => 'admin_notice_recovery_package_check_desc'];
+    }
+}
+
 /**
  * Resolves the Bootstrap columns of the "System health" / "Actions required" row.
  *

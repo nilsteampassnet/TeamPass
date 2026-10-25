@@ -44,6 +44,7 @@ use TeampassClasses\Language\Language;
 
 require_once __DIR__ . '/admin_notices_logic.php';
 require_once __DIR__ . '/webauthn_login_logic.php';
+require_once __DIR__ . '/recovery_package.functions.php';
 
 /**
  * TeamPass system accounts, excluded from every user-based maintenance check.
@@ -101,6 +102,18 @@ function adminNoticeActionLink(string $url, string $label): string
 function adminNoticesCollectMaintenance(array $SETTINGS, Language $lang): array
 {
     $notices = [];
+
+    $recoveryMessages = adminNoticesRecoveryPackageMessages(tpRecoveryPackageGetStatus());
+    if ($recoveryMessages !== []) {
+        $notices[] = adminNoticeBuild([
+            'id' => 'recovery_package',
+            'severity' => 'warning',
+            'icon' => 'fa-solid fa-key',
+            'title' => htmlspecialchars($lang->get($recoveryMessages['title']), ENT_QUOTES, 'UTF-8'),
+            'description' => htmlspecialchars($lang->get($recoveryMessages['description']), ENT_QUOTES, 'UTF-8'),
+            'action' => adminNoticeActionLink('index.php?page=backups#recovery-package', $lang->get('open')),
+        ]);
+    }
 
     // Tasks manager has been mandatory since 3.0.0.23.
     if (isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 0) {

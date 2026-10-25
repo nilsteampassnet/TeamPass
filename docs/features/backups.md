@@ -281,6 +281,39 @@ The `Recovery Package` tab generates an encrypted emergency package containing s
 
 > ⚠️ The Recovery Package is not a database backup. Store it offline, protect its passphrase, and do not send it to an automatic externalized destination.
 
+The administrator dashboard shows a non-dismissible notice in **Actions required**
+until a download of the current kit is recorded. The action opens the Recovery
+Package tab directly. One administrator's download covers the whole instance.
+Existing installations initially show "no download recorded": downloads made
+before this tracking was introduced cannot be identified.
+
+Generating a kit alone does not clear the notice. TeamPass records the administrator,
+time and protected fingerprints after the server sends the complete file, and adds
+**Recovery Package downloaded** to the administration log. The receipt and audit
+are written in one transaction; a failed audit leaves the notice pending. This
+records a server-side transfer, not proof that the browser saved the file or that
+the administrator retained it offline. Check the saved file and keep its passphrase
+separately. Expired, unauthorized and incomplete transfers do not acknowledge a kit.
+An entirely sent older kit is audited but cannot clear the renewal notice.
+
+Generate another kit after changing the scheduled-backup key, master/legacy recovery
+material, or the kit format. Deployment changes (database connection, instance URL
+or storage paths) produce a separate recommendation to update its configuration
+snapshot; they do not necessarily make earlier kits unusable. A disaster recovery
+generation, when provided by the recovery engine, also invalidates the imported
+receipt, even when the destination reuses the same URL and paths. Keep previous
+kits and their passphrases with the corresponding historical backups.
+
+Ordinary item/user changes, user password changes, scheduled-backup timing and the
+application version alone do not require a new kit. Re-encrypting the same scheduled
+backup key does not require one either. The dashboard check is read-only and never
+generates a replacement key. Unreadable or invalid recovery material raises a check
+notice; downloading a new kit cannot repair a broken encryption chain.
+
+The receipt is created lazily in the existing configuration table. No database
+schema migration or recovery archive format change is needed. No secret,
+passphrase, download token, or archive payload is stored in the receipt or audit.
+
 
 ## Storage usage
 

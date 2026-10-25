@@ -81,6 +81,15 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 <script type='text/javascript'>
     //<![CDATA[
 
+    /** Open the Recovery Package tab when arriving from the admin notice. */
+    function openRecoveryPackageTab() {
+        if (window.location.hash === '#recovery-package') {
+            $('#recovery-package-tab').tab('show')
+        }
+    }
+
+    $(document).ready(openRecoveryPackageTab)
+
     // Common toastr options for this page (prevents sticky toasts and keeps UI consistent)
     function tpToast(type, message, title, options) {
         if (typeof toastr === 'undefined') return null;
