@@ -1758,3 +1758,320 @@ body.tp-navigating .dropdown-item {
     max-width: calc(100vw - 2rem);
     padding: .75rem;
 }
+/* Item form sections: the former tabs, one after the other on the same page */
+.tp-item-form-jumps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .25rem;
+}
+.tp-item-form-jump {
+    display: inline-flex;
+    align-items: center;
+    padding: .25rem .75rem;
+    border-radius: 1rem;
+    color: #495057;
+    font-size: .875rem;
+}
+.tp-item-form-jump:hover,
+.tp-item-form-jump:focus {
+    background-color: #e9ecef;
+    color: #212529;
+    text-decoration: none;
+}
+.dark-mode .tp-item-form-jump {
+    color: #ced4da;
+}
+.dark-mode .tp-item-form-jump:hover,
+.dark-mode .tp-item-form-jump:focus {
+    background-color: #3f474e;
+    color: #fff;
+}
+.tp-item-form-section {
+    /* Clears the fixed navbar and the sticky action bar when a shortcut scrolls to it */
+    scroll-margin-top: 8rem;
+}
+.tp-item-form-section + .tp-item-form-section {
+    margin-top: 1.25rem;
+}
+/* Section head: a band whose whole width folds the section, tools on its right */
+.tp-item-form-section-head {
+    display: flex;
+    align-items: center;
+    gap: .25rem;
+    margin-bottom: .75rem;
+    border-radius: .375rem;
+    background-color: #e2e6ea;
+}
+.dark-mode .tp-item-form-section-head {
+    background-color: #23272b;
+}
+.tp-item-form-section.is-collapsed .tp-item-form-section-head {
+    margin-bottom: 0;
+}
+.tp-item-form-section.is-collapsed .tp-item-form-section-body {
+    display: none;
+}
+.tp-item-form-section-heading {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+.tp-item-form-section-toggle {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: .5rem .75rem;
+    border: 0;
+    border-radius: .375rem;
+    background-color: transparent;
+    color: #1f2d3d;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.tp-item-form-section-toggle:focus {
+    outline: none;
+}
+.tp-item-form-section-toggle:focus-visible {
+    box-shadow: 0 0 0 .2rem rgba(0, 123, 255, .35);
+}
+.dark-mode .tp-item-form-section-toggle {
+    color: #fff;
+}
+.tp-item-form-section-chevron {
+    margin-right: .375rem;
+    color: #495057;
+    font-size: .8rem;
+    transition: transform .15s ease-in-out;
+}
+.tp-item-form-section.is-collapsed .tp-item-form-section-chevron {
+    transform: rotate(-90deg);
+}
+.dark-mode .tp-item-form-section-chevron {
+    color: #ced4da;
+}
+.tp-item-form-section-tools {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: .25rem;
+    padding-right: .375rem;
+}
+.tp-item-form-section-switch {
+    display: inline-flex;
+    padding: .125rem;
+    border-radius: .375rem;
+    background-color: rgba(0, 0, 0, .07);
+}
+.dark-mode .tp-item-form-section-switch {
+    background-color: rgba(255, 255, 255, .08);
+}
+/* The layout switch has no effect below the two-column breakpoint */
+@media (max-width: 991.98px) {
+    .tp-item-form-section-switch {
+        display: none;
+    }
+}
+/* No .btn class: the legacy bootstrap-buttons.css would shrink an icon-only .btn */
+.tp-item-form-section-tool {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.875rem;
+    height: 1.875rem;
+    padding: 0;
+    border: 0;
+    border-radius: .25rem;
+    background-color: transparent;
+    color: #495057;
+}
+.tp-item-form-section-tool:hover,
+.tp-item-form-section-tool:focus {
+    background-color: rgba(0, 0, 0, .08);
+    color: #212529;
+    outline: none;
+}
+.tp-item-form-section-tool[aria-pressed="true"] {
+    background-color: #fff;
+    color: #0062cc;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .2);
+}
+.dark-mode .tp-item-form-section-tool {
+    color: #ced4da;
+}
+.dark-mode .tp-item-form-section-tool:hover,
+.dark-mode .tp-item-form-section-tool:focus {
+    background-color: rgba(255, 255, 255, .1);
+    color: #fff;
+}
+.dark-mode .tp-item-form-section-tool[aria-pressed="true"] {
+    background-color: #454d55;
+    color: #8fc1ff;
+}
+/* Custom fields: one column, or two from the lg breakpoint when chosen */
+.tp-item-form-fields-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    column-gap: 1rem;
+}
+@media (min-width: 992px) {
+    .tp-item-form-section.is-two-columns .tp-item-form-fields-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .tp-item-form-section.is-two-columns .tp-item-form-field-cell.is-wide,
+    .tp-item-form-section.is-two-columns .tp-item-form-field-cell:only-child {
+        grid-column: 1 / -1;
+    }
+}
+/* Attachments: files as cards, uploads with their own progress bar */
+.tp-item-files {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+    gap: .5rem;
+    margin-bottom: .75rem;
+}
+.tp-item-files:empty {
+    display: none;
+}
+.tp-item-files-uploads {
+    margin-top: .75rem;
+    margin-bottom: 0;
+}
+.tp-item-file {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    min-width: 0;
+    padding: .5rem .5rem .5rem .75rem;
+    border: 1px solid #dee2e6;
+    border-radius: .375rem;
+    background-color: #fff;
+}
+.dark-mode .tp-item-file {
+    border-color: #6c757d;
+    background-color: #3f474e;
+}
+.tp-item-file.is-failed,
+.dark-mode .tp-item-file.is-failed {
+    border-color: #dc3545;
+}
+.tp-item-file-icon {
+    display: inline-flex;
+    flex: 0 0 2.25rem;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: .375rem;
+    background-color: #e7f1ff;
+    color: #0062cc;
+    font-size: 1.125rem;
+}
+.dark-mode .tp-item-file-icon {
+    background-color: rgba(0, 123, 255, .2);
+    color: #8fc1ff;
+}
+.tp-item-file-body {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.tp-item-file-name {
+    overflow: hidden;
+    font-weight: 600;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+.tp-item-file-meta {
+    color: #6c757d;
+    font-size: .8125rem;
+}
+.dark-mode .tp-item-file-meta {
+    color: #adb5bd;
+}
+.tp-item-file-progress {
+    height: .25rem;
+    margin: .25rem 0;
+}
+.tp-item-file-actions {
+    display: flex;
+    flex: 0 0 auto;
+    gap: .125rem;
+}
+/* No .btn class: the legacy bootstrap-buttons.css would shrink an icon-only .btn */
+.tp-item-file-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: .25rem;
+    background-color: transparent;
+    color: #6c757d;
+}
+.tp-item-file-action:hover,
+.tp-item-file-action:focus {
+    border-color: #ced4da;
+    color: #0062cc;
+    text-decoration: none;
+}
+.tp-item-file-action-danger:hover,
+.tp-item-file-action-danger:focus {
+    border-color: #f1aeb5;
+    color: #dc3545;
+}
+.dark-mode .tp-item-file-action {
+    color: #ced4da;
+}
+.tp-item-file-status {
+    flex: 0 0 auto;
+    padding-right: .25rem;
+}
+.tp-item-dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: .25rem;
+    padding: 1.25rem 1rem;
+    border: 2px dashed #ced4da;
+    border-radius: .5rem;
+    color: #495057;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s ease-in-out, background-color .15s ease-in-out;
+}
+.tp-item-dropzone:hover,
+.tp-item-dropzone:focus,
+.tp-item-dropzone.is-dragover {
+    border-color: #007bff;
+    background-color: #f1f7ff;
+    outline: none;
+}
+.tp-item-dropzone:focus-visible {
+    box-shadow: 0 0 0 .2rem rgba(0, 123, 255, .25);
+}
+/* Children would fire dragleave on the zone while the files hover over them */
+.tp-item-dropzone.is-dragover * {
+    pointer-events: none;
+}
+.tp-item-dropzone-icon {
+    color: #007bff;
+    font-size: 1.75rem;
+}
+.dark-mode .tp-item-dropzone {
+    border-color: #6c757d;
+    color: #e9ecef;
+}
+.dark-mode .tp-item-dropzone:hover,
+.dark-mode .tp-item-dropzone:focus,
+.dark-mode .tp-item-dropzone.is-dragover {
+    border-color: #3f9cff;
+    background-color: rgba(0, 123, 255, .12);
+}
+.dark-mode .tp-item-dropzone-icon {
+    color: #3f9cff;
+}

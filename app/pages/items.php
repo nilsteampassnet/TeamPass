@@ -172,15 +172,16 @@ if ((int) $session_user_admin === 1) {
                     </button>
                 </div>
                 <div class="card-header d-flex flex-wrap align-items-center tp-item-form-subheader">
-                    <ul class="nav nav-pills" id="form-item-nav-pills">
-                        <li class="nav-item"><a class="nav-link active" href="#tab_1" data-toggle="tab"><i class="fa-solid fa-home mr-2"></i><?php echo $lang->get('main'); ?></a></li>
-                        <li class="nav-item"><a class="nav-link" href="#tab_2" data-toggle="tab"><i class="fa-solid fa-list mr-2"></i><?php echo $lang->get('details'); ?></a></li>
-                        <li class="nav-item"><a class="nav-link" href="#tab_3" data-toggle="tab"><i class="fa-solid fa-archive mr-2"></i><?php echo $lang->get('attachments'); ?></a></li>
+                    <!-- Section shortcuts: every section of the item sits on this page -->
+                    <nav class="tp-item-form-jumps" id="form-item-jumps">
+                        <a class="tp-item-form-jump" href="#form-item-section-main"><i class="fa-solid fa-home fa-fw mr-1" aria-hidden="true"></i><?php echo $lang->get('main'); ?></a>
                         <?php
                         echo isset($SETTINGS['item_extra_fields']) === true && (int) $SETTINGS['item_extra_fields'] === 1 ? '
-                            <li class="nav-item"><a class="nav-link" href="#tab_4" data-toggle="tab"><i class="fa-solid fa-cubes mr-2"></i>' . $lang->get('fields') . '</a></li>' : '';
+                        <a class="tp-item-form-jump hidden" href="#form-item-section-fields" id="form-item-jump-fields"><i class="fa-solid fa-cubes fa-fw mr-1" aria-hidden="true"></i>' . $lang->get('fields') . '</a>' : '';
                         ?>
-                    </ul>
+                        <a class="tp-item-form-jump" href="#form-item-section-attachments"><i class="fa-solid fa-paperclip fa-fw mr-1" aria-hidden="true"></i><?php echo $lang->get('attachments'); ?><span class="badge badge-pill badge-info ml-1 form-item-attachments-count hidden"></span></a>
+                        <a class="tp-item-form-jump" href="#form-item-section-details"><i class="fa-solid fa-list fa-fw mr-1" aria-hidden="true"></i><?php echo $lang->get('details'); ?></a>
+                    </nav>
                     <div class="tp-item-form-rules small">
                         <span><i class="fa-solid fa-users mr-1" aria-hidden="true"></i><?php echo $lang->get('visible_by'); ?>
                             <span id="card-item-visibility" class="text-info font-weight-bold ml-1">
@@ -196,8 +197,9 @@ if ((int) $session_user_admin === 1) {
                 </div><!-- /.card-header -->
                 <div class="card-body">
                     <div id="form-item-lapr-notice" class="alert hidden text-left"></div>
-                        <div class="tab-content">
-                            <div class="tab-pane active" id="tab_1">
+                        <div class="tp-item-form-sections">
+                            <!-- MAIN -->
+                            <div class="tp-item-form-section" id="form-item-section-main">
                                 <div class="row">
                                     <div class="col-lg-6">
                                         <!-- LOGIN -->
@@ -400,62 +402,195 @@ if ((int) $session_user_admin === 1) {
                                     <div id="form-item-description" class="form-item-control w-100 clear-me-html purify purifyHtml" data-field-name="description" data-change-ongoing="" aria-labelledby="form-item-description-label"></div>
                                 </div>
                             </div>
-                            <div class="tab-pane" id="tab_2">
-                                <!-- RESTRICTED TO -->
-                                <div class="input-group mb-3">
-                                    <div class="input-group">
-                                        <div class="input-group-prepend input-group-text"><?php echo $lang->get('restricted_to'); ?></div>
-                                        <select id="form-item-restrictedto" class="form-control form-item-control select2-hidden-accessible select2" multiple="multiple" data-change-ongoing=""></select>
-                                        <input type="hidden" id="form-item-restrictedToUsers" class="form-item-control">
-                                        <input type="hidden" id="form-item-restrictedToRoles" class="form-item-control">
+
+                            <!-- CUSTOM FIELDS: shown while the folder holds field categories (observer in items.js.php) -->
+                            <div class="tp-item-form-section tp-item-form-section-collapsible is-two-columns hidden" data-section="fields" id="form-item-section-fields">
+                                <div class="tp-item-form-section-head">
+                                    <h3 class="tp-item-form-section-heading">
+                                        <button type="button" class="tp-item-form-section-toggle" aria-expanded="true" aria-controls="form-item-section-fields-body">
+                                            <i class="fa-solid fa-chevron-down fa-fw tp-item-form-section-chevron" aria-hidden="true"></i>
+                                            <i class="fa-solid fa-cubes fa-fw mr-2" aria-hidden="true"></i><?php echo $lang->get('fields'); ?>
+                                        </button>
+                                    </h3>
+                                    <div class="tp-item-form-section-tools">
+                                        <div class="tp-item-form-section-switch" role="group" aria-label="<?php echo $lang->get('fields'); ?>">
+                                            <button type="button" class="tp-item-form-section-tool tp-item-form-fields-columns infotip" data-columns="1" aria-pressed="false" title="<?php echo $lang->get('item_form_fields_one_column'); ?>" aria-label="<?php echo $lang->get('item_form_fields_one_column'); ?>"><i class="fa-solid fa-grip-lines" aria-hidden="true"></i></button>
+                                            <button type="button" class="tp-item-form-section-tool tp-item-form-fields-columns infotip" data-columns="2" aria-pressed="true" title="<?php echo $lang->get('item_form_fields_two_columns'); ?>" aria-label="<?php echo $lang->get('item_form_fields_two_columns'); ?>"><i class="fa-solid fa-table-columns" aria-hidden="true"></i></button>
+                                        </div>
+                                        <button type="button" class="tp-item-form-section-tool tp-item-form-to-top infotip" title="<?php echo $lang->get('item_form_back_to_top'); ?>" aria-label="<?php echo $lang->get('item_form_back_to_top'); ?>"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button>
                                     </div>
                                 </div>
-                                <!-- ANYONE CAN MODIFY -->
-                                <?php
-                                if (
-                                    isset($SETTINGS['anyone_can_modify']) === true
-                                    && (int) $SETTINGS['anyone_can_modify'] === 1
-                                ) {
-                                    ?>
-                                    <div class="form-check mb-3 icheck-blue">
-                                        <input type="checkbox" class="form-check-input form-item-control flat-blue" id="form-item-anyoneCanModify" <?php
-                                            echo isset($SETTINGS['anyone_can_modify_bydefault']) === true
-                                            && (int) $SETTINGS['anyone_can_modify_bydefault'] === 1 ? ' checked' : ''; ?> data-change-ongoing="">
-                                        <label class="form-check-label ml-3" for="form-item-anyoneCanModify"><?php echo $lang->get('anyone_can_modify'); ?></label>
+                                <div class="tp-item-form-section-body" id="form-item-section-fields-body">
+                                    <div id="form-item-field" class="hidden">
+                                        <?php
+                                            $session_item_fields = $session->get('system-item_fields');//print_r($session_item_fields);
+                                            if (isset($session_item_fields) === true) {
+                                                foreach ($session_item_fields as $category) {
+                                                    //print_r($category);
+                                                    echo '
+                                                <div class="callout callout-info form-item-category hidden" id="form-item-category-' . $category['id'] . '">
+                                                    <h5>' . $category['title'] . '</h5>
+                                                    <div class="tp-item-form-fields-grid">';
+                                                    foreach ($category['fields'] as $field) {
+                                                        // One grid cell per field, its regex hint included; a textarea spans both columns
+                                                        echo '
+                                                        <div class="tp-item-form-field-cell' . ($field['type'] === 'textarea' ? ' is-wide' : '') . '">';
+                                                        if ($field['type'] === 'textarea') {
+                                                            echo '
+                                                        <div class="form-group mb-3 form-item-field" id="form-item-field-' . $field['id'] . '" data-field-id="' . $field['id'] . '">
+                                                            <label>' . $field['title'],
+                                                                $field['is_mandatory'] === '1' ?
+                                                                    '<span class="fa-solid fa-fire text-danger ml-1 infotip" title="' . $lang->get('is_mandatory') . '"></span>' : '',
+                                                                '</label>
+                                                            <textarea class="form-control form-item-control form-item-field-custom" rows="2" data-field-name="' . $field['id'] . '" data-field-mandatory="' . $field['is_mandatory'] . '" data-field-regex="' . $field['regex'] . '" data-change-ongoing="0"></textarea>
+                                                        </div>';
+                                                        } else {
+                                                            echo '
+                                                        <div class="input-group mb-3 form-item-field" id="form-item-field-' . $field['id'] . '" data-field-id="' . $field['id'] . '">
+                                                            <div class="input-group-prepend">
+                                                                <span class="input-group-text">' . $field['title'],
+                                                                $field['is_mandatory'] === '1' ?
+                                                                    '<span class="fa-solid fa-fire text-danger ml-1 infotip" title="' . $lang->get('is_mandatory') . '"></span>' : '',
+                                                                '</span>
+                                                            </div>
+                                                            <input type="' . $field['type'] . '" class="form-control form-item-control form-item-field-custom" data-field-name="' . $field['id'] . '" data-field-mandatory="' . $field['is_mandatory'] . '" data-field-regex="' . $field['regex'] . '" data-change-ongoing="0">
+                                                        </div>';
+                                                        }
+                                                        if (!empty($field['regex'])) {
+                                                            echo '
+                                                        <div class="small text-muted mb-2">Regex: '. $field['regex'] .'</div>
+                                                            ';
+                                                        }
+                                                        echo '
+                                                        </div>';
+                                                    }
+                                                    echo '
+                                                    </div>';
+                                                    // Manage template
+                                                    if (
+                                                        isset($SETTINGS['item_creation_templates']) === true
+                                                        && $SETTINGS['item_creation_templates'] === '1'
+                                                    ) {
+                                                        echo '
+                                                        <div class="form-check icheck-blue">
+                                                            <input type="checkbox" class="form-check-input form-check-input-template form-item-control flat-blue" data-category-id="' . $category['id'] . '" data-change-ongoing="0" data-field-name="template" id="template_' . $category['id'] . '">
+                                                            <label class="form-check-label ml-3" for="template_' . $category['id'] . '">' . $lang->get('main_template') . '</label>
+                                                        </div>';
+                                                    }
+                                                    echo '
+                                                </div>';
+                                                }
+                                            } else {
+                                                echo
+                                                '<div class="alert alert-info">
+                                                    <h5><i class="icon fa fa-info mr-3"></i>' . $lang->get('information') . '</h5>
+                                                    ' . $lang->get('no_fields') . '
+                                                </div>';
+                                            } ?>
                                     </div>
-                                <?php
-                                }
-                                ?>
+                                </div>
+                            </div>
 
-                                <!-- DELETE AFTER CONSULTATION -->
-                                <?php
-                                if (
-                                    isset($SETTINGS['enable_delete_after_consultation']) === true
-                                    && (int) $SETTINGS['enable_delete_after_consultation'] === 1
-                                ) {
-                                    ?>
-                                    <div class="callout callout-primary mb-3">
-                                        <div class="card-header">
-                                            <h3 class="card-title">
-                                                <i class="fa-solid fa-eraser"></i>
-                                                <?php echo $lang->get('allow_item_to_be_deleted'); ?>
-                                            </h3>
+                            <!-- ATTACHMENTS -->
+                            <div class="tp-item-form-section tp-item-form-section-collapsible" data-section="attachments" id="form-item-section-attachments">
+                                <div class="tp-item-form-section-head">
+                                    <h3 class="tp-item-form-section-heading">
+                                        <button type="button" class="tp-item-form-section-toggle" aria-expanded="true" aria-controls="form-item-section-attachments-body">
+                                            <i class="fa-solid fa-chevron-down fa-fw tp-item-form-section-chevron" aria-hidden="true"></i>
+                                            <i class="fa-solid fa-paperclip fa-fw mr-2" aria-hidden="true"></i><?php echo $lang->get('attachments'); ?>
+                                            <span class="badge badge-pill badge-info ml-2 form-item-attachments-count hidden"></span>
+                                        </button>
+                                    </h3>
+                                    <div class="tp-item-form-section-tools">
+                                        <button type="button" class="tp-item-form-section-tool tp-item-form-to-top infotip" title="<?php echo $lang->get('item_form_back_to_top'); ?>" aria-label="<?php echo $lang->get('item_form_back_to_top'); ?>"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button>
+                                    </div>
+                                </div>
+                                <div class="tp-item-form-section-body" id="form-item-section-attachments-body">
+                                    <!-- Files already attached to the item -->
+                                    <div class="hidden" id="form-item-attachments-zone">
+                                        <div class="tp-item-files clear-me-html" id="form-item-attachments"></div>
+                                    </div>
+                                    <!-- Drop zone: plupload browse button and drop target, files upload as soon as they are added -->
+                                    <div id="form-item-upload-zone">
+                                        <div class="tp-item-dropzone" id="form-item-attach-pickfiles" role="button" tabindex="0" aria-describedby="form-item-dropzone-hint">
+                                            <i class="fa-solid fa-cloud-arrow-up tp-item-dropzone-icon" aria-hidden="true"></i>
+                                            <span class="font-weight-bold"><?php echo $lang->get('item_attachments_drop_hint'); ?></span>
+                                            <small class="text-muted" id="form-item-dropzone-hint"><?php
+                                                $attachmentMaxSize = (int) ($SETTINGS['upload_maxfilesize'] ?? 0);
+                                                echo $attachmentMaxSize > 0 ? sprintf($lang->get('item_attachments_max_size'), $attachmentMaxSize . ' MB') : '';
+                                            ?></small>
                                         </div>
-                                        <!-- /.card-header -->
-                                        <div class="card-body">
-                                            <div class="row">
-                                                <div class="d-inline p-2 col-4">
-                                                    <?php echo $lang->get('item_deleted_after_being_viewed_x_times'); ?>
+                                        <input type="hidden" id="form-item-hidden-pickFilesNumber" value="0" />
+                                        <div class="tp-item-files tp-item-files-uploads hidden clear-me-html" id="form-item-upload-pickfilesList"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- DETAILS -->
+                            <div class="tp-item-form-section tp-item-form-section-collapsible" data-section="details" id="form-item-section-details">
+                                <div class="tp-item-form-section-head">
+                                    <h3 class="tp-item-form-section-heading">
+                                        <button type="button" class="tp-item-form-section-toggle" aria-expanded="true" aria-controls="form-item-section-details-body">
+                                            <i class="fa-solid fa-chevron-down fa-fw tp-item-form-section-chevron" aria-hidden="true"></i>
+                                            <i class="fa-solid fa-list fa-fw mr-2" aria-hidden="true"></i><?php echo $lang->get('details'); ?>
+                                        </button>
+                                    </h3>
+                                    <div class="tp-item-form-section-tools">
+                                        <button type="button" class="tp-item-form-section-tool tp-item-form-to-top infotip" title="<?php echo $lang->get('item_form_back_to_top'); ?>" aria-label="<?php echo $lang->get('item_form_back_to_top'); ?>"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button>
+                                    </div>
+                                </div>
+                                <div class="tp-item-form-section-body" id="form-item-section-details-body">
+                                    <div class="row">
+                                        <div class="col-lg-6">
+                                            <!-- RESTRICTED TO -->
+                                            <div class="form-group">
+                                                <label for="form-item-restrictedto" class="mb-1"><i class="fa-solid fa-user-lock fa-fw mr-1 text-muted" aria-hidden="true"></i><?php echo $lang->get('restricted_to'); ?></label>
+                                                <select id="form-item-restrictedto" class="form-control form-item-control select2-hidden-accessible select2" style="width:100%;" multiple="multiple" data-change-ongoing=""></select>
+                                                <input type="hidden" id="form-item-restrictedToUsers" class="form-item-control">
+                                                <input type="hidden" id="form-item-restrictedToRoles" class="form-item-control">
+                                            </div>
+                                            <!-- ANYONE CAN MODIFY -->
+                                            <?php
+                                            if (
+                                                isset($SETTINGS['anyone_can_modify']) === true
+                                                && (int) $SETTINGS['anyone_can_modify'] === 1
+                                            ) {
+                                                ?>
+                                                <div class="form-check mb-3 icheck-blue">
+                                                    <input type="checkbox" class="form-check-input form-item-control flat-blue" id="form-item-anyoneCanModify" <?php
+                                                        echo isset($SETTINGS['anyone_can_modify_bydefault']) === true
+                                                        && (int) $SETTINGS['anyone_can_modify_bydefault'] === 1 ? ' checked' : ''; ?> data-change-ongoing="">
+                                                    <label class="form-check-label ml-3" for="form-item-anyoneCanModify"><?php echo $lang->get('anyone_can_modify'); ?></label>
                                                 </div>
-                                                <div class="d-inline p-2 col-8">
+                                            <?php
+                                            }
+                                            ?>
+                                        </div>
+                                        <div class="col-lg-6">
+                                            <!-- ANNOUNCE BY EMAIL -->
+                                            <div class="form-group">
+                                                <label for="form-item-anounce" class="mb-1"><i class="fa-solid fa-bullhorn fa-fw mr-1 text-muted" aria-hidden="true"></i><?php echo $lang->get('anounce_item_by_email'); ?></label>
+                                                <select id="form-item-anounce" class="form-control form-item-control select2" style="width:100%;" multiple="multiple" data-placeholder="<?php echo $lang->get('select_users_if_needed'); ?>" data-change-ongoing=""></select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- DELETE AFTER CONSULTATION -->
+                                    <?php
+                                    if (
+                                        isset($SETTINGS['enable_delete_after_consultation']) === true
+                                        && (int) $SETTINGS['enable_delete_after_consultation'] === 1
+                                    ) {
+                                        ?>
+                                        <div class="tp-item-form-panel" role="group" aria-labelledby="form-item-delete-after-title">
+                                            <div class="tp-item-form-label" id="form-item-delete-after-title"><i class="fa-solid fa-eraser fa-fw mr-1 text-muted" aria-hidden="true"></i><?php echo $lang->get('allow_item_to_be_deleted'); ?></div>
+                                            <div class="form-row">
+                                                <div class="form-group col-sm-6 mb-2">
+                                                    <label for="form-item-deleteAfterShown" class="mb-1 font-weight-normal"><?php echo $lang->get('item_deleted_after_being_viewed_x_times'); ?></label>
                                                     <input type="number" class="form-control form-item-control purify" data-field-name="deleteAfterShown" id="form-item-deleteAfterShown" data-change-ongoing="">
                                                 </div>
-                                            </div>
-                                            <div class="row">
-                                                <div class="d-inline p-2 col-4">
-                                                    <?php echo $lang->get('item_deleted_after_date'); ?>
-                                                </div>
-                                                <div class="d-inline p-2 col-8">
+                                                <div class="form-group col-sm-6 mb-2">
+                                                    <label for="form-item-deleteAfterDate" class="mb-1 font-weight-normal"><?php echo $lang->get('item_deleted_after_date'); ?></label>
                                                     <div class="input-group date inline">
                                                         <div class="input-group-prepend">
                                                             <span class="input-group-text">
@@ -467,134 +602,9 @@ if ((int) $session_user_admin === 1) {
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                <?php
-                                }
-                                ?>
-
-                                <div class="callout callout-primary mb-3">
-                                    <div class="card-header">
-                                        <h3 class="card-title">
-                                            <i class="fa-solid fa-bullhorn"></i>
-                                            <?php echo $lang->get('anounce_item_by_email'); ?>
-                                        </h3>
-                                    </div>
-                                    <!-- /.card-header -->
-                                    <div class="card-body">
-                                        <select id="form-item-anounce" class="form-control form-item-control select2" style="width:100%;" multiple="multiple" data-placeholder="<?php echo $lang->get('select_users_if_needed'); ?>" data-change-ongoing=""></select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- ATTACHMENTS -->
-                            <div class="tab-pane" id="tab_3">
-                                <div class="callout callout-primary mb-3 hidden" id="form-item-attachments-zone">
-                                    <div class="card-header">
-                                        <h3 class="card-title">
-                                            <i class="fa-solid fa-paperclip mr-3"></i>
-                                            <?php echo $lang->get('attached_files'); ?>
-                                        </h3>
-                                    </div>
-                                    <!-- /.card-header -->
-                                    <div class="card-body clear-me-html" id="form-item-attachments">
-                                    </div>
-                                </div>
-                                <div class="callout callout-primary mb-3">
-                                    <div class="card-header">
-                                        <h3 class="card-title">
-                                            <i class="fa-solid fa-plus mr-3"></i>
-                                            <?php echo $lang->get('select_files'); ?>
-                                        </h3>
-                                    </div>
-                                    <!-- /.card-header -->
-                                    <div class="card-body">
-                                        <div class="row" id="form-item-upload-zone">
-                                            <div class="col-6">
-                                                <a class="btn btn-app text-capitalize" id="form-item-attach-pickfiles">
-                                                    <i class="fa-solid fa-search mr-1"></i><?php echo $lang->get('select'); ?>
-                                                </a>
-                                                <a class="btn btn-app" id="form-item-upload-pickfiles">
-                                                    <i class="fa-solid fa-upload mr-1"></i><?php echo $lang->get('start_upload'); ?>
-                                                </a>
-                                                <input type="hidden" id="form-item-hidden-pickFilesNumber" value="0" />
-                                                <small class="form-text text-muted">
-                                                    <?php echo $lang->get('add_files_and_click_start'); ?>
-                                                </small>
-                                            </div>
-                                            <div class="col-6">
-                                                <div class="callout callout-info hidden clear-me-html" id="form-item-upload-pickfilesList"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- CUSTOM FIELDS -->
-                            <div class="tab-pane" id="tab_4">
-                                <div id="form-item-field" class="hidden">
                                     <?php
-                                        $session_item_fields = $session->get('system-item_fields');//print_r($session_item_fields);
-                                        if (isset($session_item_fields) === true) {
-                                            foreach ($session_item_fields as $category) {
-                                                //print_r($category);
-                                                echo '
-                                            <div class="callout callout-info form-item-category hidden" id="form-item-category-' . $category['id'] . '">
-                                                <h5>' . $category['title'] . '</h5>
-                                                <p>';
-                                                foreach ($category['fields'] as $field) {
-                                                    if ($field['type'] === 'textarea') {
-                                                        echo '
-                                                    <div class="form-group mb-3 form-item-field" id="form-item-field-' . $field['id'] . '" data-field-id="' . $field['id'] . '">
-                                                        <label>' . $field['title'],
-                                                            $field['is_mandatory'] === '1' ?
-                                                                '<span class="fa-solid fa-fire text-danger ml-1 infotip" title="' . $lang->get('is_mandatory') . '"></span>' : '',
-                                                            '</label>
-                                                        <textarea class="form-control form-item-control form-item-field-custom" rows="2" data-field-name="' . $field['id'] . '" data-field-mandatory="' . $field['is_mandatory'] . '" data-field-regex="' . $field['regex'] . '" data-change-ongoing="0"></textarea>
-                                                    </div>';
-                                                    } else {
-                                                        echo '
-                                                    <div class="input-group mb-3 form-item-field" id="form-item-field-' . $field['id'] . '" data-field-id="' . $field['id'] . '">
-                                                        <div class="input-group-prepend">
-                                                            <span class="input-group-text">' . $field['title'],
-                                                            $field['is_mandatory'] === '1' ?
-                                                                '<span class="fa-solid fa-fire text-danger ml-1 infotip" title="' . $lang->get('is_mandatory') . '"></span>' : '',
-                                                            '</span>
-                                                        </div>
-                                                        <input type="' . $field['type'] . '" class="form-control form-item-control form-item-field-custom" data-field-name="' . $field['id'] . '" data-field-mandatory="' . $field['is_mandatory'] . '" data-field-regex="' . $field['regex'] . '" data-change-ongoing="0">
-                                                    </div>';
-                                                    }
-                                                    if (!empty($field['regex'])) {
-                                                        echo '
-                                                    <div>Regex: '. $field['regex'] .'</div>
-                                                        ';
-                                                    }
-                                                }
-                                                // Manage template
-                                                if (
-                                                    isset($SETTINGS['item_creation_templates']) === true
-                                                    && $SETTINGS['item_creation_templates'] === '1'
-                                                ) {
-                                                    echo '
-                                                    <div class="form-check icheck-blue">
-                                                        <input type="checkbox" class="form-check-input form-check-input-template form-item-control flat-blue" data-category-id="' . $category['id'] . '" data-change-ongoing="0" data-field-name="template" id="template_' . $category['id'] . '">
-                                                        <label class="form-check-label ml-3" for="template_' . $category['id'] . '">' . $lang->get('main_template') . '</label>
-                                                    </div>';
-                                                }
-                                                echo '
-                                                </p>
-                                            </div>';
-                                            }
-                                        } else {
-                                            echo
-                                            '<div class="alert alert-info">
-                                                <h5><i class="icon fa fa-info mr-3"></i>' . $lang->get('information') . '</h5>
-                                                ' . $lang->get('no_fields') . '
-                                            </div>';
-                                        } ?>
-                                </div>
-                                <div class="alert alert-info hidden no-item-fields">
-                                    <h5><i class="icon fa fa-info mr-3"></i><?php echo $lang->get('information'); ?></h5>
-                                    <?php echo $lang->get('no_fields'); ?>
+                                    }
+                                    ?>
                                 </div>
                             </div>
 

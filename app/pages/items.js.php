@@ -1575,8 +1575,6 @@ require __DIR__ . '/renewal.preview.js.php';
 
                 // Set folder
                 $('#form-item-folder').val(selectedFolderId).change();
-                // Select tab#1
-                $('#form-item-nav-pills li:first-child a').tab('show');
                 // Preselect
                 $('#pwd-definition-size').val(20);
                 // Set type of action
@@ -2148,8 +2146,9 @@ require __DIR__ . '/renewal.preview.js.php';
                 }
             }
 
-            // Clear pickfiles div
+            // Clear pickfiles div and the upload queue behind it
             $('#form-item-upload-pickfilesList').html('');
+            resetItemAttachmentsUpload();
 
             // Hide all
             $('.form-item, .form-item-action, .form-folder-action, #folders-tree-card, .columns-position, #form-item-upload-pickfilesList')
@@ -2210,6 +2209,116 @@ require __DIR__ . '/renewal.preview.js.php';
     $('#form-item').on('change click keyup ifToggled summernote.change', function() {
         setTimeout(refreshItemFormUnsavedBadge, 0);
     });
+
+    // Folded sections and fields layout of the item form, remembered per browser
+    const itemFormCollapsedKey = 'teampassItemFormCollapsed';
+    const itemFormFieldsColumnsKey = 'teampassItemFormFieldsColumns';
+
+    /**
+     * Fold or unfold a section of the item form.
+     *
+     * @param {jQuery} section The .tp-item-form-section-collapsible element
+     * @param {boolean} collapsed True to fold it
+     * @param {boolean} remember True to store the folded sections in the browser
+     * @return {void}
+     */
+    function setItemFormSectionCollapsed(section, collapsed, remember) {
+        section.toggleClass('is-collapsed', collapsed)
+            .find('.tp-item-form-section-toggle')
+            .attr('aria-expanded', collapsed === true ? 'false' : 'true');
+        if (remember !== true) {
+            return;
+        }
+        const folded = $('.tp-item-form-section-collapsible.is-collapsed').map(function() {
+            return $(this).data('section');
+        }).get();
+        try { localStorage.setItem(itemFormCollapsedKey, JSON.stringify(folded)); } catch (error) { /* Optional storage. */ }
+    }
+
+    /**
+     * Show the custom fields of the item form on one or two columns.
+     *
+     * @param {string} columns '1' or '2'
+     * @param {boolean} remember True to store the choice in the browser
+     * @return {void}
+     */
+    function setItemFormFieldsColumns(columns, remember) {
+        const twoColumns = columns !== '1';
+        $('#form-item-section-fields').toggleClass('is-two-columns', twoColumns);
+        $('.tp-item-form-fields-columns').each(function() {
+            $(this).attr('aria-pressed', String($(this).data('columns')) === (twoColumns ? '2' : '1') ? 'true' : 'false');
+        });
+        if (remember === true) {
+            try { localStorage.setItem(itemFormFieldsColumnsKey, twoColumns ? '2' : '1'); } catch (error) { /* Optional storage. */ }
+        }
+    }
+
+    // Restore the last choices
+    (function() {
+        let folded = [];
+        let columns = '2';
+        try {
+            folded = JSON.parse(localStorage.getItem(itemFormCollapsedKey) || '[]');
+            columns = localStorage.getItem(itemFormFieldsColumnsKey) || '2';
+        } catch (error) {
+            folded = [];
+        }
+        if (Array.isArray(folded) === true) {
+            $('.tp-item-form-section-collapsible').each(function() {
+                if (folded.indexOf($(this).data('section')) !== -1) {
+                    setItemFormSectionCollapsed($(this), true, false);
+                }
+            });
+        }
+        setItemFormFieldsColumns(columns, false);
+    })();
+
+    // The whole head line folds its section; its tools do not
+    $('.tp-item-form-section-toggle').on('click', function() {
+        const section = $(this).closest('.tp-item-form-section-collapsible');
+        setItemFormSectionCollapsed(section, section.hasClass('is-collapsed') === false, true);
+    });
+
+    $('.tp-item-form-to-top').on('click', function() {
+        $(this).tooltip('hide');
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    });
+
+    $('.tp-item-form-fields-columns').on('click', function() {
+        setItemFormFieldsColumns(String($(this).data('columns')), true);
+    });
+
+    // Section shortcuts of the item form; scroll-margin-top keeps the section title clear of the bars
+    $('#form-item-jumps').on('click', '.tp-item-form-jump', function(event) {
+        event.preventDefault();
+        const section = document.querySelector($(this).attr('href'));
+        if (section !== null) {
+            // Reaching a folded section means the user wants to see it
+            if (section.classList.contains('is-collapsed') === true) {
+                setItemFormSectionCollapsed($(section), false, true);
+            }
+            section.scrollIntoView({behavior: 'smooth', block: 'start'});
+        }
+    });
+
+    // The item loaders show or hide #form-item-field from the folder's categories, and rewrite
+    // the attachments list: the fields section and the attachment counters follow them
+    (function() {
+        const fieldsBlock = document.getElementById('form-item-field');
+        const filesList = document.getElementById('form-item-attachments');
+        if (fieldsBlock !== null) {
+            new MutationObserver(function() {
+                $('#form-item-section-fields, #form-item-jump-fields')
+                    .toggleClass('hidden', fieldsBlock.classList.contains('hidden'));
+            }).observe(fieldsBlock, {attributes: true, attributeFilter: ['class']});
+        }
+        if (filesList !== null) {
+            new MutationObserver(function() {
+                const count = filesList.querySelectorAll('.edit-attachment-div').length;
+                $('.form-item-attachments-count').text(count).toggleClass('hidden', count === 0);
+            }).observe(filesList, {childList: true});
+        }
+    })();
 
     /**
      * Click on perform IMPORT
@@ -4030,7 +4139,7 @@ require __DIR__ . '/renewal.preview.js.php';
             showStatus: true,
             showErrors: false,
             showVerdictsInsideProgressBar: true,
-            container: "#tab_1",
+            container: "#form-item-section-main",
             viewports: {
                 progress: "#form-item-password-strength",
                 score: "#form-item-password-strength"
@@ -4177,14 +4286,14 @@ require __DIR__ . '/renewal.preview.js.php';
     var mime_types = <?php echo json_encode($mime_types); ?>;
     var prevent_empty = <?php echo json_encode($prevent_empty); ?>;
     var resize = <?php echo json_encode($resize); ?>;
-    let toastrElement;
     let fileId;
-    let globalUploadToast = null;
-    let filesUploadedCount = 0;
+    // True from the token request of a batch until plupload reports the batch complete
+    let attachmentsUploadRunning = false;
 
     var uploader_attachments = new plupload.Uploader({
         runtimes: 'html5,flash,silverlight,html4',
         browse_button: 'form-item-attach-pickfiles',
+        drop_element: 'form-item-attach-pickfiles',
         container: 'form-item-upload-zone',
         max_file_size: max_file_size,
         chunk_size: '1mb',
@@ -4200,26 +4309,6 @@ require __DIR__ . '/renewal.preview.js.php';
         init: {
             BeforeUpload: function(up, file) {
                 fileId = file.id;
-
-                // Create the global toastr once for the whole upload batch
-                if (globalUploadToast === null) {
-                    filesUploadedCount = 0;
-                    toastr.remove();
-                    globalUploadToast = toastrElement = toastr.info(
-                        '<?php echo $lang->get('loading_item'); ?> ... ' +
-                        '(<span id="upload-global-counter">0/' + up.files.length + '</span>) ' +
-                        '<i class="fas fa-cloud-arrow-up fa-bounce fa-2x ml-2"></i>',
-                        '', { timeOut: 0 }
-                    );
-                }
-
-                // Show individual file with its own progress percentage
-                $('#upload-file_' + file.id).html(
-                    '<i class="fa-solid fa-file fa-sm mr-2"></i>' +
-                    htmlEncode(file.name) +
-                    ' <span id="filePercent_' + file.id + '" class="text-muted small mr-1">0%</span>' +
-                    '<span id="fileStatus_' + file.id + '"><i class="fa-solid fa-circle-notch fa-spin ml-2"></i></span>'
-                );
 
                 // Get random number
                 if (store.get('teampassApplication').uploadedFileId === '') {
@@ -4245,14 +4334,13 @@ require __DIR__ . '/renewal.preview.js.php';
                 });
             },
             UploadProgress: function(up, file) {
-                // Update the per-file percentage in the upload list
+                // Update the per-file progress in the upload list
+                $('#fileProgress_' + file.id).css('width', file.percent + '%');
                 $('#filePercent_' + file.id).text(file.percent + '%');
             },
             UploadComplete: function(up, files) {
-                // Remove the global toastr once all files are done
-                toastr.remove();
-                globalUploadToast = null;
-                filesUploadedCount = 0;
+                attachmentsUploadRunning = false;
+                up.disableBrowse(false);
             },
             Error: function(up, args) {
                 console.log("ERROR arguments:");
@@ -4261,18 +4349,116 @@ require __DIR__ . '/renewal.preview.js.php';
         }
     });
 
-    uploader_attachments.bind('FileUploaded', function(up, file) {
-        filesUploadedCount++;
-        $('#filePercent_' + file.id).text('100%');
-        $('#fileStatus_' + file.id).html('<i class="fa-solid fa-circle-check text-success ml-2 fa-1x"></i>');
-        $('#upload-global-counter').text(filesUploadedCount + '/' + up.files.length);
+    /**
+     * Show an upload row of the attachments section as failed.
+     *
+     * @param {string} id plupload file id
+     * @return {void}
+     */
+    function markItemAttachmentUploadFailed(id) {
+        $('#upload-file_' + id).addClass('is-failed');
+        $('#fileProgress_' + id).addClass('bg-danger');
+        $('#fileStatus_' + id).html('<i class="fa-solid fa-circle-xmark text-danger"></i>');
+    }
+
+    /**
+     * Upload the batch of files just added. The server counts the files of a batch
+     * against its token (files_number), so each batch asks for its own token.
+     *
+     * @param {number} filesCount Number of files in the batch
+     * @return {void}
+     */
+    function startItemAttachmentsUpload(filesCount) {
+        attachmentsUploadRunning = true;
+        uploader_attachments.disableBrowse(true);
+        $('#form-item-hidden-pickFilesNumber').val(filesCount);
+
+        $.post(
+            "sources/main.queries.php", {
+                type: "save_token",
+                type_category: 'action_system',
+                size: 25,
+                capital: true,
+                numeric: true,
+                ambiguous: true,
+                reason: "item_attachments",
+                duration: 10,
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(data) {
+                store.update(
+                    'teampassApplication',
+                    function(teampassApplication) {
+                        teampassApplication.attachmentToken = data[0].token;
+                    }
+                );
+                uploader_attachments.start();
+            },
+            "json"
+        ).fail(function() {
+            // No token, nothing can be sent: drop the batch so it does not ride on the next one
+            $.each(uploader_attachments.files.slice(), function(i, queued) {
+                if (queued.state === plupload.QUEUED) {
+                    markItemAttachmentUploadFailed(queued.id);
+                    uploader_attachments.removeFile(queued);
+                }
+            });
+            attachmentsUploadRunning = false;
+            uploader_attachments.disableBrowse(false);
+            toastr.remove();
+            toastr.error(
+                <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+                '', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
+        });
+    }
+
+    /**
+     * Forget the upload queue of the item form: stops a running batch and drops every
+     * file plupload still holds, so nothing left over is sent with the next item.
+     *
+     * @return {void}
+     */
+    function resetItemAttachmentsUpload() {
+        const queued = uploader_attachments.files.length;
+        if (queued > 0) {
+            uploader_attachments.splice(0, queued);
+        }
+        $('#form-item-hidden-pickFilesNumber').val(0);
+    }
+
+    uploader_attachments.bind('FileUploaded', function(up, file, result) {
+        // A few server errors answer HTTP 200 with a JSON-RPC error
+        let serverError = null;
+        try {
+            serverError = JSON.parse(result.response).error || null;
+        } catch (e) {
+            serverError = null;
+        }
+        if (serverError !== null) {
+            markItemAttachmentUploadFailed(file.id);
+            toastr.remove();
+            toastr.error(
+                htmlEncode(serverError.message || '') + ' ' + htmlEncode(file.name),
+                '', {
+                    timeOut: 10000,
+                    progressBar: true
+                }
+            );
+            return;
+        }
+
+        $('#fileProgress_' + file.id).css('width', '100%').addClass('bg-success');
+        $('#filePercent_' + file.id).text(<?php echo json_encode($lang->get('item_attachments_uploaded_pending_save'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>);
+        $('#fileStatus_' + file.id).html('<i class="fa-solid fa-circle-check text-success"></i>');
         userUploadedFile = true;
         userDidAChange = true;
         refreshItemFormUnsavedBadge();
-        // Do not remove the global toastr here — UploadComplete handles it
     });
     uploader_attachments.bind('Error', function(up, err) {
-        toastr.remove();
         // Extraire le message d'erreur
         let errorMessage = '<?php echo addslashes($lang->get('error_unknown')); ?>';
         if (err.response) {
@@ -4291,80 +4477,76 @@ require __DIR__ . '/renewal.preview.js.php';
             // Arrêter l'upload des chunks
             up.stop();
             errorMessage += ' - Upload stopped.';
-            globalUploadToast = null;
-            filesUploadedCount = 0;
 
             // Affiche l'erreur dans l'interface utilisateur
+            toastr.remove();
             toastr.error(
-                errorMessage + (err.file ? ', File: ' + htmlEncode(err.file.name) : ''),
+                htmlEncode(errorMessage) + (err.file ? ', File: ' + htmlEncode(err.file.name) : ''),
                 '', {
                     timeOut: 10000,
                     progressBar: true
                 }
             );
 
-            $('#fileStatus_'+fileId).html('<i class="fa-solid fa-circle-xmark text-danger ml-2 fa-1x"></i>');
+            markItemAttachmentUploadFailed(err.file ? err.file.id : fileId);
             return false;
+        } else if (err.file && $('#upload-file_' + err.file.id).length === 0) {
+            // Rejected by the filters (size, type, empty file) before reaching the queue
+            toastr.remove();
+            toastr.warning(
+                htmlEncode(err.file.name) + ': ' + htmlEncode(err.message || errorMessage),
+                '', {
+                    timeOut: 8000,
+                    progressBar: true
+                }
+            );
         } else {
             up.refresh(); // Reposition Flash/Silverlight
         }
     });
 
-    $("#form-item-upload-pickfiles").click(function(e) {
-        if ($('#form-item-upload-pickfilesList').text() !== '') {
-            // generate and save token
-            $.post(
-                "sources/main.queries.php", {
-                    type: "save_token",
-                    type_category: 'action_system',
-                    size: 25,
-                    capital: true,
-                    numeric: true,
-                    ambiguous: true,
-                    reason: "item_attachments",
-                    duration: 10,
-                    key: '<?php echo $session->get('key'); ?>'
-                },
-                function(data) {
-                    store.update(
-                        'teampassApplication',
-                        function(teampassApplication) {
-                            teampassApplication.attachmentToken = data[0].token;
-                        }
-                    );
-                    console.log('start upload')
-                    uploader_attachments.start();
-                },
-                "json"
-            );
-            e.preventDefault();
-        } else {
-            toastr.remove();
-            toastr.warning(
-                '<?php echo $lang->get('no_file_to_upload'); ?>',
-                '', {
-                    timeOut: 5000,
-                    progressBar: true
-                }
-            );
-        }
-    });
     uploader_attachments.init();
     uploader_attachments.bind('FilesAdded', function(up, files) {
         if (debugJavascript === true) {
             console.log('uploader_attachments.FilesAdded')
         }
+        // The token of the running batch only covers its own files
+        if (attachmentsUploadRunning === true) {
+            $.each(files, function(i, file) {
+                up.removeFile(file);
+            });
+            toastr.remove();
+            toastr.warning(
+                <?php echo json_encode($lang->get('item_attachments_upload_running'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+                '', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
+            return;
+        }
+        // Files an interrupted batch left queued would ride on this batch's token
+        $.each(up.files.slice(), function(i, queued) {
+            if (files.indexOf(queued) === -1 && queued.state === plupload.QUEUED) {
+                markItemAttachmentUploadFailed(queued.id);
+                up.removeFile(queued);
+            }
+        });
+
         $('#form-item-upload-pickfilesList').removeClass('hidden');
-        var addedFiles = '';
         $.each(files, function(i, file) {
             $('#form-item-upload-pickfilesList').append(
-                '<div id="upload-file_' + file.id + '">' +
-                '<span id="upload-file-remove_' + file.id +
-                '><a href="#" onclick="$(this).closest(\'div\').remove();"><i class=" fa fa-trash mr-2 pointer"></i></a></span> ' +
-                htmlEncode(file.name) + ' (' + plupload.formatSize(file.size) + ')' +
-                '</div>');
-            $("#form-item-hidden-pickFilesNumber").val(
-                parseInt($("#form-item-hidden-pickFilesNumber").val()) + 1
+                '<div class="tp-item-file" id="upload-file_' + file.id + '">' +
+                '<span class="tp-item-file-icon"><i class="fa-solid fa-file" aria-hidden="true"></i></span>' +
+                '<div class="tp-item-file-body">' +
+                '<div class="tp-item-file-name" title="' + htmlEncode(file.name) + '">' + htmlEncode(file.name) + '</div>' +
+                '<div class="progress tp-item-file-progress">' +
+                '<div class="progress-bar" id="fileProgress_' + file.id + '" role="progressbar" style="width: 0%"></div>' +
+                '</div>' +
+                '<div class="tp-item-file-meta">' + plupload.formatSize(file.size) + ' · <span id="filePercent_' + file.id + '">0%</span></div>' +
+                '</div>' +
+                '<span class="tp-item-file-status" id="fileStatus_' + file.id + '"><i class="fa-solid fa-circle-notch fa-spin text-muted"></i></span>' +
+                '</div>'
             );
             if (debugJavascript === true) {
                 console.info('Info du fichier :');
@@ -4372,6 +4554,30 @@ require __DIR__ . '/renewal.preview.js.php';
             }
         });
         up.refresh(); // Reposition Flash/Silverlight
+        startItemAttachmentsUpload(files.length);
+    });
+
+    // Drop zone: keyboard access to the file dialog and a highlight while files hover it
+    $('#form-item-attach-pickfiles')
+        .on('keydown', function(event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                this.click();
+            }
+        })
+        .on('dragenter dragover', function() {
+            $(this).addClass('is-dragover');
+        })
+        .on('dragleave drop', function() {
+            $(this).removeClass('is-dragover');
+        });
+
+    // A file dropped beside the zone would make the browser open it and leave the form
+    $('#form-item').on('dragover drop', function(event) {
+        const transfer = event.originalEvent.dataTransfer;
+        if (transfer && Array.prototype.indexOf.call(transfer.types || [], 'Files') !== -1) {
+            event.preventDefault();
+        }
     });
     //->
 
@@ -4584,7 +4790,7 @@ require __DIR__ . '/renewal.preview.js.php';
                     // Mandatory?
                     if (parseInt($(this).data('field-mandatory')) === 1 &&
                         $(this).val() === '' &&
-                        $('#form-item-field-' + $(this).data('field-name')).parent().hasClass('hidden') === false
+                        $('#form-item-field-' + $(this).data('field-name')).closest('.form-item-category').hasClass('hidden') === false
                     ) {
                         //if (debugJavascript === true) console.log($(this))
                         errorExit = true;
@@ -4600,6 +4806,8 @@ require __DIR__ . '/renewal.preview.js.php';
                     }
                 });
                 if (errorExit === true) {
+                    // The faulty field must be visible
+                    setItemFormSectionCollapsed($('#form-item-section-fields'), false, false);
                     toastr.remove();
                     if (reason === 'regex') {
                         toastr.error(
@@ -6770,9 +6978,6 @@ require __DIR__ . '/renewal.preview.js.php';
             userDidAChange = false;
             refreshItemFormUnsavedBadge();
 
-            // Select tab#1
-            $('#form-item-nav-pills li:first-child a').tab('show');
-
             // Don't show details
             if (itemDisplay === 'no_display') {
                 // Inform user
@@ -7753,7 +7958,6 @@ require __DIR__ . '/renewal.preview.js.php';
                         $.each(data.attachments, function(i, value) {
                             // Manage new row
                             if (counter === 1) {
-                                htmlFull += '<div class="row">';
                                 html += '<div class="row">';
                             }
 
@@ -7789,19 +7993,26 @@ require __DIR__ . '/renewal.preview.js.php';
                                 '<span class="font-italic">' + value.size + '</span>' +
                                 '</div></div>';
 
-                            htmlFull += '<div class="col-6 edit-attachment-div"><div class="info-box bg-secondary-gradient">' +
-                                '<span class="info-box-icon bg-info"><i class="' + value.icon + '"></i></span>' +
-                                '<div class="info-box-content">' +
-                                '<span class="info-box-text">' + filename + '.' + value.extension + '</span>' +
-                                '<span class="info-box-text">' +
-                                '<a class="text-info infotip mr-3" href="sources/downloadFile.php?name=' + encodeURI(value.filename) + '&key=<?php echo $session->get('key'); ?>&key_tmp=' + value.key + '&fileid=' + value.id + '" title="<?php echo $lang->get('download'); ?>">' +
+                            // Edition form: one card per file in the attachments grid
+                            const fileLabel = htmlEncode(filename + '.' + value.extension);
+                            htmlFull += '<div class="tp-item-file edit-attachment-div">' +
+                                '<span class="tp-item-file-icon"><i class="' + value.icon + '" aria-hidden="true"></i></span>' +
+                                '<div class="tp-item-file-body">' +
+                                '<div class="tp-item-file-name" title="' + fileLabel + '">' + fileLabel + '</div>' +
+                                '<div class="tp-item-file-meta">' + htmlEncode(String(value.extension).toUpperCase()) + ' · ' + htmlEncode(value.size) + '</div>' +
+                                '</div>' +
+                                '<div class="tp-item-file-actions">' +
+                                (value.is_image === 1 ?
+                                    '<button type="button" class="tp-item-file-action preview-image infotip" data-file-id="' + value.id + '" title="<?php echo $lang->get('see'); ?>" aria-label="<?php echo $lang->get('see'); ?>">' +
+                                    '<i class="fa-solid fa-eye"></i></button>' : '') +
+                                '<a class="tp-item-file-action infotip" href="sources/downloadFile.php?name=' + encodeURI(value.filename) + '&key=<?php echo $session->get('key'); ?>&key_tmp=' + value.key + '&fileid=' + value.id + '" title="<?php echo $lang->get('download'); ?>" aria-label="<?php echo $lang->get('download'); ?>">' +
                                 '<i class="fa-solid fa-file-download"></i></a>' +
-                                '<i class="fa-solid fa-trash pointer delete-file infotip text-danger" data-file-id="' + value.id + '" title="<?php echo $lang->get('delete'); ?>"></i>' +
-                                '</span></div>' +
-                                '</div></div>';
+                                '<button type="button" class="tp-item-file-action tp-item-file-action-danger delete-file infotip" data-file-id="' + value.id + '" data-file-name="' + fileLabel + '" title="<?php echo $lang->get('delete'); ?>" aria-label="<?php echo $lang->get('delete'); ?>">' +
+                                '<i class="fa-solid fa-trash"></i></button>' +
+                                '</div>' +
+                                '</div>';
 
                             if (counter === 2) {
-                                htmlFull += '</div>';
                                 html += '</div>';
                                 counter = 1;
                             } else {
@@ -8144,14 +8355,6 @@ require __DIR__ . '/renewal.preview.js.php';
                     );
                 }
             );
-        })
-        .on('click', '.nav-link', function() {
-            if ($(this).attr('href') === '#tab_5') {
-                $('#form-item-buttons').addClass('hidden');
-            } else {
-                $('#form-item-buttons').removeClass('hidden');
-            }
-
         });
 
     // When click on Trash attachment icon
@@ -8159,50 +8362,61 @@ require __DIR__ . '/renewal.preview.js.php';
         var thisButton = $(this),
             thisFileId = thisButton.data('file-id');
 
-        if (thisFileId !== undefined && thisFileId !== '') {
-            // Delete the file
-            var data = {
-                'file_id': thisFileId,
-            };
-
-            $.post(
-                'sources/items.queries.php', {
-                    type: 'delete_attached_file',
-                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
-                    key: '<?php echo $session->get('key'); ?>'
-                },
-                function(data) {
-                    //decrypt data
-                    data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'delete_attached_file');
-                    if (debugJavascript === true) console.log(data);
-
-                    //check if format error
-                    if (data.error === true) {
-                        // ERROR
-                        toastr.remove();
-                        toastr.error(
-                            data.message,
-                            '', {
-                                timeOut: 5000,
-                                progressBar: true
-                            }
-                        );
-                    } else {
-                        // Remove the file in UI
-                        thisButton.closest('.edit-attachment-div').remove();
-
-                        // Inform user
-                        toastr.remove();
-                        toastr.info(
-                            '<?php echo $lang->get('done'); ?>',
-                            '', {
-                                timeOut: 1000
-                            }
-                        );
-                    }
-                }
-            );
+        if (thisFileId === undefined || thisFileId === '') {
+            return;
         }
+
+        // The file is deleted at once, not when the item is saved: ask first
+        launchConfirmDialog(
+            <?php echo json_encode($lang->get('please_confirm_deletion'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+            '<i class="fa-solid fa-trash text-danger mr-2"></i><strong>' + htmlEncode(thisButton.data('file-name') || '') + '</strong>',
+            function() {
+                // Delete the file
+                var data = {
+                    'file_id': thisFileId,
+                };
+
+                $.post(
+                    'sources/items.queries.php', {
+                        type: 'delete_attached_file',
+                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                        key: '<?php echo $session->get('key'); ?>'
+                    },
+                    function(data) {
+                        //decrypt data
+                        data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'delete_attached_file');
+                        if (debugJavascript === true) console.log(data);
+
+                        //check if format error
+                        if (data.error === true) {
+                            // ERROR
+                            toastr.remove();
+                            toastr.error(
+                                data.message,
+                                '', {
+                                    timeOut: 5000,
+                                    progressBar: true
+                                }
+                            );
+                        } else {
+                            // Remove the file in UI
+                            thisButton.tooltip('dispose');
+                            thisButton.closest('.edit-attachment-div').remove();
+
+                            // Inform user
+                            toastr.remove();
+                            toastr.info(
+                                '<?php echo $lang->get('done'); ?>',
+                                '', {
+                                    timeOut: 1000
+                                }
+                            );
+                        }
+                    }
+                );
+            },
+            <?php echo json_encode($lang->get('delete'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>
+        );
     });
 
     // Password line of a passkey item: open the passkeys card it points to
