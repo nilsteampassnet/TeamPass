@@ -78,12 +78,10 @@ function tpRecoveryPackageStatus(array $current, array $receipt): string
     if (tpRecoveryPackageSnapshotIsValid($current) === false) {
         return 'unavailable';
     }
-    $saved = $receipt['snapshot'] ?? null;
-    if (!is_array($saved) || tpRecoveryPackageSnapshotIsValid($saved) === false
-        || !is_int($receipt['downloaded_at'] ?? null) || $receipt['downloaded_at'] <= 0
-        || !is_int($receipt['downloaded_by'] ?? null) || $receipt['downloaded_by'] <= 0) {
+    if (tpRecoveryPackageReceiptIsValid($receipt) === false) {
         return 'missing';
     }
+    $saved = $receipt['snapshot'];
     if (hash_equals($current['material'], $saved['material']) === false) {
         return 'material_changed';
     }
@@ -92,6 +90,15 @@ function tpRecoveryPackageStatus(array $current, array $receipt): string
     }
 
     return 'current';
+}
+
+/** Validate the receipt before displaying its date or acknowledging a download. */
+function tpRecoveryPackageReceiptIsValid(array $receipt): bool
+{
+    return is_array($receipt['snapshot'] ?? null)
+        && tpRecoveryPackageSnapshotIsValid($receipt['snapshot'])
+        && is_int($receipt['downloaded_at'] ?? null) && $receipt['downloaded_at'] > 0
+        && is_int($receipt['downloaded_by'] ?? null) && $receipt['downloaded_by'] > 0;
 }
 
 /** An attempted or partial transfer must never acknowledge a kit. */

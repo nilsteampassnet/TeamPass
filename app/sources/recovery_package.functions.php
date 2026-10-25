@@ -12,6 +12,7 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\ConfigManager\ConfigManager;
+use TeampassClasses\Language\Language;
 
 require_once __DIR__ . '/backup.functions.php';
 
@@ -80,6 +81,35 @@ function tpRecoveryPackageGetStatus(): string
     } catch (Throwable $exception) {
         return 'unavailable';
     }
+}
+
+/** Return only the date and status labels needed by the administrator's kit tab. */
+function tpRecoveryPackageGetDisplayInformation(array $SETTINGS, Language $lang): array
+{
+    $receipt = [];
+    $state = 'unavailable';
+    try {
+        $receipt = tpRecoveryPackageReadReceipt();
+        $state = tpRecoveryPackageStatus(tpRecoveryPackageCurrentSnapshot(), $receipt);
+    } catch (Throwable $exception) {
+        // A known last download may still be shown, without claiming the kit is current.
+    }
+    $downloadedAt = tpRecoveryPackageReceiptIsValid($receipt) ? $receipt['downloaded_at'] : 0;
+    $downloadLabel = $downloadedAt > 0
+        ? sprintf($lang->get('bck_recovery_package_last_download'), date(
+            (string) ($SETTINGS['date_format'] ?? 'Y-m-d') . ' ' . (string) ($SETTINGS['time_format'] ?? 'H:i'),
+            $downloadedAt
+        ))
+        : $lang->get('bck_recovery_package_no_download');
+    $statusKey = match ($state) {
+        'current' => 'bck_recovery_package_current',
+        'material_changed', 'configuration_changed' => 'bck_recovery_package_outdated',
+        'unavailable' => 'bck_recovery_package_status_unavailable',
+        default => '',
+    };
+
+    return ['downloaded_at' => $downloadedAt, 'state' => $state,
+        'download_label' => $downloadLabel, 'status_label' => $statusKey !== '' ? $lang->get($statusKey) : ''];
 }
 
 /**

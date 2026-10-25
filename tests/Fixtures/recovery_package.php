@@ -104,6 +104,9 @@ function cryption(string $value, string $key, string $action, array $settings = 
 /** Generate temporary names without the application bootstrap. */
 function GenerateCryptKey(...$arguments): string { return bin2hex(random_bytes(10)); }
 
+/** Preserve the controller's exchange shape without loading a real encrypted session. */
+function prepareExchangedData(array $data, string $action): string { return json_encode($data, JSON_THROW_ON_ERROR); }
+
 /** Encrypt the real ZIP and optionally replace the source after it was captured. */
 function prepareFileWithDefuse(string $mode, string $source, string $destination, string $password): bool
 {
@@ -132,7 +135,36 @@ DB::$settings = ['bck_script_passkey' => 'sealed:' . str_repeat('a', 40),
 $snapshot = tpRecoveryPackageCurrentSnapshot();
 $result = [];
 
-if (str_starts_with($scenario, 'download_')) {
+if (str_starts_with($scenario, 'info_')) {
+    date_default_timezone_set('Europe/Paris');
+    DB::$receipt = json_encode(['snapshot' => $snapshot, 'downloaded_at' => 1700000000, 'downloaded_by' => 7]);
+    if ($scenario === 'info_missing') {
+        DB::$receipt = '';
+    } elseif ($scenario === 'info_malformed') {
+        DB::$receipt = '{not json';
+    } elseif ($scenario === 'info_changed') {
+        DB::$settings['bck_script_passkey'] = 'sealed:' . str_repeat('b', 40);
+    } elseif ($scenario === 'info_unavailable') {
+        unlink($directory . '/' . SECUREFILE);
+    }
+    $lang = new \TeampassClasses\Language\Language('french');
+    $SETTINGS = ['date_format' => 'd/m/Y', 'time_format' => 'H:i'];
+    if (in_array($scenario, ['info_bad_key', 'info_non_admin', 'info_endpoint'], true)) {
+        $session = new class($scenario) {
+            /** Retain only the status endpoint's authentication fields. */
+            public function __construct(private string $scenario) {}
+            /** Return the synthetic key and administrator flag. */
+            public function get(string $key): mixed { return $key === 'key' ? 'fixture-key' : ($this->scenario === 'info_non_admin' ? 0 : 1); }
+        };
+        $post_key = $scenario === 'info_bad_key' ? 'wrong' : 'fixture-key';
+        $source = file_get_contents(__DIR__ . '/../../app/sources/backups.queries.php');
+        $start = strpos($source, "case 'recovery_package_status':");
+        $end = strpos($source, "case 'recovery_package_create':", $start);
+        eval("switch ('recovery_package_status') {" . substr($source, $start, $end - $start) . '}');
+        exit;
+    }
+    $result = tpRecoveryPackageGetDisplayInformation($SETTINGS, $lang) + ['writes' => DB::$writes];
+} elseif (str_starts_with($scenario, 'download_')) {
     $path = $directory . '/recovery-fixture.tprecovery';
     file_put_contents($path, $scenario === 'download_empty' ? '' : 'fixture encrypted package');
     $download = ['path' => $path, 'filename' => basename($path), 'token' => 'fixture-token',

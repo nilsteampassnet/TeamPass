@@ -2146,6 +2146,14 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
             echo prepareExchangedData(['error' => false], 'encode');
             break;
 
+        case 'recovery_package_status':
+            if ($post_key !== $session->get('key') || (int) $session->get('user-admin') !== 1) {
+                echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+                break;
+            }
+            echo prepareExchangedData(['error' => false] + tpRecoveryPackageGetDisplayInformation($SETTINGS, $lang), 'encode');
+            break;
+
         case 'recovery_package_create':
             if ($post_key !== $session->get('key') || (int)$session->get('user-admin') !== 1) {
                 echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
@@ -2191,7 +2199,8 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
             }
 
             $downloadToken = GenerateCryptKey(32, false, true, true, false, true);
-            $expiresAt = time() + 600;
+            $createdAt = time();
+            $expiresAt = $createdAt + 600;
             $session->set(
                 'recovery-package-download',
                 [
@@ -2199,6 +2208,7 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                     'path' => (string) $package['filepath'],
                     'filename' => (string) $package['filename'],
                     'expires_at' => $expiresAt,
+                    'created_at' => $createdAt,
                     'size_bytes' => (int) $package['size_bytes'],
                     'snapshot' => $package['snapshot'] ?? [],
                 ]
@@ -2211,6 +2221,7 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                     'filename' => (string) $package['filename'],
                     'size_bytes' => (int) $package['size_bytes'],
                     'expires_at' => $expiresAt,
+                    'created_at' => $createdAt,
                     'warnings' => is_array($package['warnings'] ?? null) ? $package['warnings'] : [],
                     'download' => 'sources/backups.queries.php?type=recovery_package_download'
                         . '&token=' . urlencode($downloadToken)

@@ -287,6 +287,11 @@ Package tab directly. One administrator's download covers the whole instance.
 Existing installations initially show "no download recorded": downloads made
 before this tracking was introduced cannot be identified.
 
+The Recovery Package tab shows the last recorded kit download date/time using the
+instance timezone and configured display formats. It also indicates whether that
+kit is current or needs updating. This information refreshes briefly after starting
+a download; generating a kit or opening the tab does not fabricate a download date.
+
 Generating a kit alone does not clear the notice. TeamPass records the administrator,
 time and protected fingerprints after the server sends the complete file, and adds
 **Recovery Package downloaded** to the administration log. The receipt and audit
