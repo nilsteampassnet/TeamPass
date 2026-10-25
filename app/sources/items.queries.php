@@ -5601,6 +5601,24 @@ switch ($inputData['type']) {
 
     /*
      * CASE
+     * Icons offered by the icon picker of the item form
+     */
+    case 'get_icon_catalog':
+        if ($inputData['key'] !== $session->get('key')) {
+            echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('key_is_not_correct')], 'encode');
+            break;
+        }
+        require_once __DIR__ . '/item_icon_catalog_logic.php';
+        $iconCatalog = itemIconCatalogLoad(TEAMPASS_ROOT . '/public/plugins/fontawesome-free/metadata/icons.json');
+        if ($iconCatalog === null) {
+            echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_unknown')], 'encode');
+            break;
+        }
+        echo (string) prepareExchangedData(['error' => false] + $iconCatalog, 'encode');
+        break;
+
+    /*
+     * CASE
      * Preview renewal without modifying an item or its password history
      */
     case 'get_renewal_preview':

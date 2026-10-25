@@ -141,17 +141,21 @@ if ((int) $session_user_admin === 1) {
                     <button type="button" class="btn btn-secondary but-back" id="but_back_top_left">
                         <i class="fa-solid fa-arrow-left"></i>
                     </button>
-                    <!-- ICON: shown in the title, its field opens on click -->
+                    <!-- ICON: shown in the title, picked from the Font Awesome Free icons on click -->
                     <div class="dropdown tp-item-form-icon">
                         <button type="button" class="tp-item-form-icon-button" id="form-item-icon-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="<?php echo $lang->get('icon'); ?>" aria-label="<?php echo $lang->get('icon'); ?>">
                             <span id="form-item-icon-show" class="clear-me-html"></span><i class="fa-solid fa-icons tp-item-form-icon-default" aria-hidden="true"></i>
                         </button>
                         <div class="dropdown-menu tp-item-form-icon-menu" aria-labelledby="form-item-icon-toggle">
-                            <label for="form-item-icon" class="mb-1"><?php echo $lang->get('icon'); ?></label>
-                            <input id="form-item-icon" type="text" class="form-control form-item-control purify" data-field-name="icon" data-change-ongoing="">
-                            <small class="form-text text-muted">
-                                <?php echo $lang->get('fontawesome_icon_tip'); ?><a href="<?php echo FONTAWESOME_URL;?>" target="_blank"><i class="fa-solid fa-external-link-alt ml-1"></i></a>
-                            </small>
+                            <input id="form-item-icon" type="hidden" class="form-item-control purify" data-field-name="icon">
+                            <label for="form-item-icon-search" class="sr-only"><?php echo $lang->get('item_icon_search'); ?></label>
+                            <input id="form-item-icon-search" type="search" class="form-control form-control-sm" placeholder="<?php echo $lang->get('item_icon_search_placeholder'); ?>" autocomplete="off" spellcheck="false">
+                            <!-- Filled by the picker once the catalogue is loaded -->
+                            <div class="tp-icon-picker" id="form-item-icon-picker"></div>
+                            <div class="tp-icon-picker-foot">
+                                <code class="tp-icon-picker-value" id="form-item-icon-value"></code>
+                                <button type="button" class="tp-icon-picker-reset" id="form-item-icon-reset"><?php echo $lang->get('item_icon_default'); ?></button>
+                            </div>
                         </div>
                     </div>
                     <!-- LABEL: edited in place as the form title -->

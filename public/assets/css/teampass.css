@@ -1758,6 +1758,106 @@ body.tp-navigating .dropdown-item {
     max-width: calc(100vw - 2rem);
     padding: .75rem;
 }
+/* Icon picker: a scrolling grid of Font Awesome Free icons under its search field */
+.tp-icon-picker {
+    position: relative;
+    height: 16rem;
+    margin: .5rem 0;
+    overflow-y: auto;
+}
+.tp-icon-picker-title {
+    margin: .5rem 0 .25rem;
+    color: #6c757d;
+    font-size: .75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.tp-icon-picker-title:first-child {
+    margin-top: 0;
+}
+.tp-icon-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(2.25rem, 1fr));
+    gap: .25rem;
+}
+/* No .btn class: the legacy bootstrap-buttons.css would shrink an icon-only .btn */
+.tp-icon-picker-tile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 2.25rem;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: .25rem;
+    background-color: transparent;
+    color: #495057;
+    font-size: 1.125rem;
+}
+.tp-icon-picker-tile:hover,
+.tp-icon-picker-tile:focus {
+    border-color: #80bdff;
+    color: #0062cc;
+    outline: 0;
+}
+.tp-icon-picker-tile.is-selected {
+    border-color: #007bff;
+    background-color: #e7f1ff;
+    color: #0062cc;
+}
+.tp-icon-picker-empty {
+    padding: 1rem .5rem;
+    color: #6c757d;
+    text-align: center;
+}
+.tp-icon-picker-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+}
+.tp-icon-picker-value {
+    overflow: hidden;
+    color: #6c757d;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+/* No .btn class: the legacy bootstrap-buttons.css repaints it white in dark mode */
+.tp-icon-picker-reset {
+    flex: 0 0 auto;
+    padding: .25rem .5rem;
+    border: 1px solid #ced4da;
+    border-radius: .25rem;
+    background-color: transparent;
+    color: #495057;
+    font-size: .875rem;
+}
+.tp-icon-picker-reset:hover:not(:disabled),
+.tp-icon-picker-reset:focus {
+    border-color: #80bdff;
+    color: #0062cc;
+}
+.tp-icon-picker-reset:disabled {
+    opacity: .5;
+}
+.dark-mode .tp-icon-picker-reset {
+    border-color: #6c757d;
+    color: #e9ecef;
+}
+.dark-mode .tp-icon-picker-title,
+.dark-mode .tp-icon-picker-empty,
+.dark-mode .tp-icon-picker-value {
+    color: #adb5bd;
+}
+.dark-mode .tp-icon-picker-tile {
+    color: #e9ecef;
+}
+.dark-mode .tp-icon-picker-tile:hover,
+.dark-mode .tp-icon-picker-tile:focus,
+.dark-mode .tp-icon-picker-tile.is-selected {
+    border-color: #3f9cff;
+    background-color: rgba(0, 123, 255, .2);
+    color: #8fc1ff;
+}
 /* Item form sections: the former tabs, one after the other on the same page */
 .tp-item-form-jumps {
     display: flex;
