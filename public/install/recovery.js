@@ -31,7 +31,7 @@
   })
   const syncCopyButtons = () => copyButtons.forEach(({ button, command }) => {
     button.hidden = command.hidden || !command.textContent.trim() || command.dataset.copyDisabled === 'true'
-    button.textContent = command.textContent.includes('\n') ? 'Copy commands' : 'Copy command'
+    button.textContent = command.dataset.copyLabel || (command.textContent.includes('\n') ? 'Copy commands' : 'Copy command')
   })
   const showError = (text) => {
     message.className = 'alert alert-danger mt-3'
@@ -87,8 +87,8 @@
     const permissionCommands = Array.isArray(review.commands) ? review.commands : []
     const permissionReady = review.status === 'passed' || review.status === 'manual'
     const finalStep = resumed && permissionReady
-    const currentStep = finalStep ? 6 : (published ? (permissionReady ? 4 : 3) : (verified || result.status === 'activating' ? 2 : 1))
-    for (let step = 1; step <= 6; step++) {
+    const currentStep = finalStep ? 5 : (published ? (permissionReady ? 4 : 3) : (verified || result.status === 'activating' ? 2 : 1))
+    for (let step = 1; step <= 5; step++) {
       const marker = document.getElementById(`recovery-step-${step}`)
       marker.className = `badge d-block p-2 ${step === currentStep ? 'badge-primary' : (step < currentStep ? 'badge-success' : 'badge-light')}`
       if (step === currentStep) marker.setAttribute('aria-current', 'step')
@@ -106,6 +106,7 @@
     activate.hidden = !verified
     activate.textContent = verified ? `${data.command} --activate=${result.id}` : ''
     document.getElementById('recovery-permissions').hidden = !published || finalStep
+    document.getElementById('recovery-permissions-audit').hidden = review.status !== 'not_checked'
     document.getElementById('recovery-permissions-command').textContent = `${data.command} --check-permissions=${result.id}`
     const permissionStatus = document.getElementById('recovery-permissions-status')
     permissionStatus.className = `alert ${review.status === 'passed' ? 'alert-success' : 'alert-info'}`
@@ -113,10 +114,10 @@
       : (review.status === 'issues' ? data.permissionsIssues.replace('%s', String(review.issues))
         : (review.status === 'manual' ? data.permissionsManual : data.permissionsNotChecked))
     document.getElementById('recovery-permissions-plan').hidden = review.status !== 'issues' || permissionCommands.length === 0
-    document.getElementById('recovery-permissions-commands').textContent = permissionCommands.join('\n')
+    document.getElementById('recovery-permissions-commands').textContent = permissionCommands.length
+      ? ['(', 'set -e', ...permissionCommands, `${data.command} --check-permissions=${result.id}`, ')'].join('\n') : ''
     document.getElementById('recovery-permissions-manual').hidden = review.status !== 'manual'
       && !(review.status === 'issues' && permissionCommands.length === 0)
-    document.getElementById('recovery-admin-checks').hidden = !completed || !permissionReady
     document.getElementById('recovery-resume').hidden = !completed || !permissionReady
     document.getElementById('recovery-resume-command').textContent = `${data.command} --resume=${result.id}`
     document.getElementById('recovery-finished').hidden = !finalStep

@@ -154,6 +154,8 @@ if (teampassConfigState(TEAMPASS_ROOT . '/app/config') !== 'not_installed' && $i
     exit;
 }
 $scriptVersion = substr((string) hash_file('sha256', __DIR__ . '/recovery.js'), 0, 16);
+
+
 ?>
 <!doctype html>
 <html lang="en">
@@ -172,7 +174,7 @@ $scriptVersion = substr((string) hash_file('sha256', __DIR__ . '/recovery.js'), 
     <p><?= $escape('drp_intro') ?></p>
     <p class="alert alert-info"><?= $escape('drp_scope') ?></p>
     <ol class="row list-unstyled mb-4" aria-label="Recovery steps">
-        <?php foreach (['Restore database', 'Publish instance', 'Secure permissions', 'Administrator checks', 'Resume service', 'Final checks and cleanup'] as $index => $step): ?>
+        <?php foreach (['Restore database', 'Publish instance', 'Secure permissions', 'Finalize restoration', 'Cleanup and access'] as $index => $step): ?>
         <li class="col-6 col-md-4 mb-2"><span id="recovery-step-<?= $index + 1 ?>" class="badge badge-light d-block p-2"><?= $index + 1 ?>. <?= htmlspecialchars($step, ENT_QUOTES, 'UTF-8') ?></span></li>
         <?php endforeach; ?>
     </ol>
@@ -244,40 +246,42 @@ $scriptVersion = substr((string) hash_file('sha256', __DIR__ . '/recovery.js'), 
         <pre id="recovery-activate" data-recovery-command class="p-3 bg-light"></pre>
         <section id="recovery-permissions" class="border-top pt-3 mt-3" hidden>
             <h2 class="h5">3. Secure file permissions</h2>
-            <p>Run this audit as the PHP service account. It uses the File integrity permission rules and does not apply changes automatically.</p>
-            <pre id="recovery-permissions-command" data-recovery-command class="p-3 bg-light"></pre>
+            <p>Publication automatically audits permissions using the File integrity rules.</p>
+            <div id="recovery-permissions-audit" hidden>
+                <p>No audit result is available yet. Run this fallback command, then click <strong>Refresh progress</strong>.</p>
+                <pre id="recovery-permissions-command" data-recovery-command class="p-3 bg-light"></pre>
+            </div>
             <p id="recovery-permissions-status" role="status"></p>
             <div id="recovery-permissions-plan" hidden>
-                <p>Review and run the following commands as an <strong>administrator in your server terminal</strong>.
-                    These commands protect code, configuration and the original master key, while keeping runtime data writable by PHP.</p>
+                <p>Review and copy this <strong>single block</strong> into your server terminal as an administrator.
+                    It applies the proposed rights and automatically runs the audit again as the PHP service account.
+                    Code, configuration and the original master key are protected; runtime data stays writable by PHP.</p>
                 <pre id="recovery-permissions-commands" data-recovery-command class="p-3 bg-light"></pre>
-                <p>Then run the audit command again and click <strong>Refresh progress</strong>. Exit code 2 means permission findings remain.</p>
+                <p>Wait for the block to finish, then click <strong>Refresh progress</strong>. Exit code 2 means permission findings remain.</p>
             </div>
             <p id="recovery-permissions-manual" hidden>Automatic remediation is unavailable for this platform or layout.
                 Review the OS permissions/ACLs manually: PHP needs read access to code, configuration and keys, and write access only to runtime directories.
                 See the <a href="https://documentation.teampass.net/#/install/file-permissions" target="_blank" rel="noopener">permission documentation</a>.</p>
         </section>
-        <section id="recovery-admin-checks" class="border-top pt-3 mt-3" hidden>
-            <h2 class="h5">4. Check administrator access</h2>
-            <p>Open the restored instance in a separate tab and verify administrator sign-in, HTTPS, the site URL, MFA and external authentication configuration.</p>
-            <p>Standard users cannot sign in while maintenance is enabled. Their decryption and permission checks follow after service resume.</p>
-            <a class="btn btn-outline-primary mb-3" href="../index.php" target="_blank" rel="noopener">Open administrator login</a>
-        </section>
         <section id="recovery-resume" class="border-top pt-3 mt-3" hidden>
-            <h2 class="h5">5. Resume service</h2>
-            <p>After the permission review and administrator checks, run this complete command, wait for it to finish, then click <strong>Refresh progress</strong>.</p>
+            <h2 class="h5">4. Finalize restoration</h2>
+            <p>After reviewing permissions, run this command, wait for it to finish, then click <strong>Refresh progress</strong>.</p>
+            <p>Keep cron stopped until the installer is removed and access checks are complete in the next step.</p>
             <pre id="recovery-resume-command" data-recovery-command class="p-3 bg-light"></pre>
             <p>Backup schedules and LAPR stay disabled until you review and enable them deliberately.</p>
         </section>
         <section id="recovery-finished" class="border-top pt-3 mt-3" hidden>
-            <h2 class="h5">6. Final checks and remove the installer</h2>
+            <h2 class="h5">5. Cleanup and access checks</h2>
             <p id="recovery-finished-status" class="alert alert-success"></p>
-            <p>Verify a standard user's decryption, personal folders, manager/read-only permissions, documents and MFA.
-                Reconcile external integrations and offline clients, then review backup schedules and LAPR before enabling them.</p>
-            <p>As the final cleanup, run this command as an administrator to remove <code>public/install</code>.
-                It removes this assistant too: do not refresh it afterwards.</p>
+            <h3 class="h6">5.1 Remove the installer</h3>
+            <p>Run this command as an administrator to remove <code>public/install</code> and allow application sign-in.
+                <strong>Keep this page open for the instructions below; do not refresh it after removal.</strong></p>
             <pre id="recovery-cleanup-command" data-recovery-command class="p-3 bg-light"></pre>
-            <a class="btn btn-primary" href="../index.php" target="_blank" rel="noopener">Continue to TeamPass login</a>
+            <h3 class="h6">5.2 Check the restored instance</h3>
+            <p>Open TeamPass in another tab. Verify administrator and standard-user sign-in, HTTPS, the URL, decryption,
+                personal folders, manager/read-only permissions, documents, MFA and external authentication.
+                Reconcile external integrations and offline clients.</p>
+            <a class="btn btn-primary mb-3" href="../index.php" target="_blank" rel="noopener">Open TeamPass login</a>
         </section>
         <button id="recovery-refresh" type="button" class="btn btn-secondary align-self-start"><?= $escape('drp_status') ?></button>
     </section>

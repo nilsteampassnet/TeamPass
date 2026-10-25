@@ -109,6 +109,9 @@ the web server, DNS or an identity provider.
 
 Like the installation and upgrade wizards, the recovery assistant is in English
 and does not use the configured application language or a language selector.
+Missing or invalid fields are listed in a red English summary above the form;
+the browser's translated validation bubbles are not used. Every command has a
+copy button, with a local fallback when clipboard access is unavailable.
 
 From the project root:
 
@@ -163,12 +166,19 @@ Backup schedules and LAPR are disabled. Sessions, API authorizations, temporary
 tokens, pending background tasks and idempotency results are invalidated.
 Restored Secure Send links are invalidated with a transactional lifecycle audit.
 
-The assistant distinguishes six steps: **restore database**, **publish instance**,
-**secure permissions**, **administrator checks**, **resume service**, then
-**final checks and installer cleanup**. Run only the complete command shown for
+The assistant distinguishes five steps: **restore database**, **publish instance**,
+**secure permissions**, **finalize restoration**, then **cleanup and access**.
+Run only the complete command shown for
 the current step. Wait for it to finish, then click **Refresh progress**.
 
-After publication, run the permission audit as the PHP service account:
+Publication automatically runs the permission audit as the PHP service account.
+If corrections are needed, the assistant shows one copyable shell block with the
+File integrity remediation commands followed by another service-account audit.
+Review the block, paste it once in the administrator terminal, wait for it to
+finish, then click **Refresh progress**. The block runs in a subshell and stops
+on a failed correction; it does not change the interactive shell's options.
+
+For an older receipt or an unavailable initial audit, a fallback command remains:
 
 ```bash
 sudo -u www-data php app/scripts/disaster-recovery.php --check-permissions=JOB_ID
@@ -176,9 +186,9 @@ sudo -u www-data php app/scripts/disaster-recovery.php --check-permissions=JOB_I
 
 This performs the same deep permission scan and generates the same remediation
 commands as **File integrity**, without checking release hashes or changing any
-permissions. The terminal and assistant display the proposed commands. Review
-and run them separately as a server administrator, then repeat the audit and
-refresh the assistant. Exit code `2` means permission findings remain.
+permissions. TeamPass never applies the administrator commands itself. The
+verification at the end of the copied block updates the receipt; exit code `2`
+means permission findings remain.
 
 The normal runtime profile makes code/configuration read-only for PHP, protects
 the original master key and leaves runtime directories writable. It replaces the
@@ -189,14 +199,15 @@ Windows requires an explicit manual NTFS ACL review: an unsupported audit is
 shown as **manual**, never as a pass, and no POSIX remediation is offered.
 See [file permissions](file-permissions.md) before applying a plan.
 
-Check administrator sign-in, HTTPS, the URL, MFA/passkeys and the external
-authentication configuration in another tab. **Standard users cannot sign in
-while maintenance is enabled**; test their decryption and roles after resume.
+After reviewing permissions, finalize the restoration. Keep the host cron job
+stopped until cleanup and access checks are complete. Sign-in checks come after
+removing the installer: the application rejects sign-in while `public/install`
+is still present. There is no administrator sign-in step before finalization.
 The assistant uses a separate operator session, so application sign-in and logout
 do not replace its session-bound recovery progress. Keep the assistant tab open.
 On a fresh deployment it expires the plain installation-session cookie before
 the restored application uses its encrypted session handler.
-Once the permission review and administrator checks are complete:
+Run the finalization command:
 
 ```bash
 sudo -u www-data php app/scripts/disaster-recovery.php --resume=JOB_ID
@@ -208,9 +219,14 @@ Repeating the command is safe if a prior acknowledgement was interrupted. An
 older receipt left at `complete` can be acknowledged again; maintenance enabled
 separately after recovery is preserved.
 
-Refresh the assistant, then verify a standard user's decryption, personal folders,
-read-only/manager permissions and documents. Reconfigure and enable the backup
-schedules and LAPR deliberately. Restoring a backup does
+Refresh the assistant to display the final instructions, then **remove
+`public/install` before checking access**. Keep the current assistant page open
+without refreshing it, so its copied commands remain
+available after the directory is gone. Open TeamPass in another tab and verify
+administrator and standard-user sign-in, HTTPS, the URL, decryption, personal
+folders, read-only/manager permissions, documents, MFA/passkeys and external
+authentication. Reconfigure and enable the backup schedules and LAPR deliberately.
+Restoring a backup does
 not roll back passwords on remote servers; reconcile rotations since the backup.
 Force a full refresh of external clients holding an offline cache after recovery.
 The item changes API returns a new `generation` after every recovery and requires
@@ -220,8 +236,7 @@ after rebuilding their cache, then send `generation` on subsequent delta calls.
 Older clients that do not support generations continue receiving full-sync
 requests after recovery; upgrade or refresh them explicitly.
 
-**Remove `public/install` last**, after these operational checks. The assistant
-proposes an administrator command with the validated absolute installer path:
+The installer cleanup command uses the validated absolute installer path:
 
 ```bash
 sudo rm -rf -- '/var/www/teampass/public/install'
@@ -229,8 +244,8 @@ sudo rm -rf -- '/var/www/teampass/public/install'
 
 On Windows it proposes `Remove-Item -LiteralPath '…\public\install' -Recurse -Force`
 instead. These commands are displayed only; TeamPass does not execute them.
-They remove this assistant too. Continue through the **TeamPass login** link
-instead of refreshing the removed page. Preserve the encrypted backup and kit
+They remove this assistant too. Continue through the **Open TeamPass login** link
+in another tab instead of refreshing the removed page. Preserve the encrypted backup and kit
 outside the deployment, and record the rehearsal results in the runbook.
 
 ### CLI preparation and failures

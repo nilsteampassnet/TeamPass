@@ -232,6 +232,10 @@ try {
             throw new RuntimeException('Sensitive staging survived successful activation');
         }
         $receiptPath = $root . '/storage/recovery/' . $jobId . '/receipt.json';
+        $receipt = json_decode((string) file_get_contents($receiptPath), true, 32, JSON_THROW_ON_ERROR);
+        if (!isset($receipt['permissions']['status'])) {
+            throw new RuntimeException('Publication did not automatically audit permissions');
+        }
         $keyMode = fileperms($root . '/secrets/fixture.key');
         $process = new \Symfony\Component\Process\Process([PHP_BINARY, 'app/scripts/disaster-recovery.php', '--check-permissions=' . $jobId], $root);
         $process->setTimeout(120);

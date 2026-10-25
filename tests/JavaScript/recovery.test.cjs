@@ -89,7 +89,7 @@ test('Recovery progresses from import to activation and operational resume witho
   assert.equal(ui.element('recovery-finished').hidden, false)
   assert.equal(ui.element('recovery-resume').hidden, true)
   assert.equal(ui.element('recovery-refresh').hidden, true)
-  assert.equal(ui.element('recovery-step-6').attributes['aria-current'], 'step')
+  assert.equal(ui.element('recovery-step-5').attributes['aria-current'], 'step')
   assert.equal(ui.element('recovery-cleanup-command').textContent, "sudo rm -rf -- '/srv/TeamPass Lab/public/install'")
 })
 
@@ -113,7 +113,10 @@ test('Multiline copy preserves administrator commands without interpreting their
   const block = ui.element('recovery-permissions-commands')
   assert.equal(block.copyButton.textContent, 'Copy commands')
   await block.copyButton.handlers.click()
-  assert.equal(ui.clipboard[0], command)
+  assert.equal(ui.clipboard[0], block.textContent)
+  assert.ok(block.textContent.startsWith('(\nset -e\n'))
+  assert.ok(block.textContent.includes(command))
+  assert.match(block.textContent, /sudo -u 'www-data'.*--check-permissions=[a-f0-9]+\n\)$/)
 })
 
 test('Unavailable clipboard access falls back locally and reports failure without claiming success', async () => {
@@ -184,10 +187,12 @@ test('Published legacy receipts require a permission review before offering resu
   assert.equal(ui.element('recovery-finished').hidden, true)
 })
 
-test('Permission findings show administrator commands as text and require another audit', () => {
+test('Permission findings combine administrator corrections and the service account audit in one block', () => {
   const command = 'sudo chown root:www-data "<untrusted>"'
   const ui = app(job('complete', { status: 'issues', issues: 3, commands: [command] }))
-  assert.equal(ui.element('recovery-permissions-commands').textContent, command)
+  assert.ok(ui.element('recovery-permissions-commands').textContent.includes(command))
+  assert.match(ui.element('recovery-permissions-commands').textContent, /--check-permissions=/)
+  assert.equal(ui.element('recovery-permissions-audit').hidden, true)
   assert.equal(ui.element('recovery-permissions-status').textContent, '3 findings')
   assert.equal(ui.element('recovery-permissions-plan').hidden, false)
   assert.equal(ui.element('recovery-resume').hidden, true)
@@ -197,7 +202,6 @@ test('Unsupported permission platforms require manual review without claiming an
   const ui = app(job('complete', { status: 'manual' }))
   assert.equal(ui.element('recovery-permissions-status').textContent, 'MANUAL ACL REVIEW')
   assert.equal(ui.element('recovery-permissions-manual').hidden, false)
-  assert.equal(ui.element('recovery-admin-checks').hidden, false)
   assert.equal(ui.element('recovery-resume').hidden, false)
   assert.equal(ui.element('recovery-finished').hidden, true)
 })
@@ -207,6 +211,15 @@ test('An already resumed legacy instance still offers the missing permission rev
   assert.equal(ui.element('recovery-permissions').hidden, false)
   assert.equal(ui.element('recovery-resume').hidden, true)
   assert.equal(ui.element('recovery-finished').hidden, true)
+})
+
+test('A correction failure stops the combined block before its verification command', { skip: process.platform !== 'linux' }, () => {
+  const { spawnSync } = require('node:child_process')
+  const ui = app(job('complete', { status: 'issues', issues: 1, commands: ['false'] }), 'audit')
+  const block = ui.element('recovery-permissions-commands').textContent
+  const result = spawnSync('sh', ['-c', 'audit() { echo verification-ran; };\n' + block], { encoding: 'utf8' })
+  assert.equal(result.status, 1)
+  assert.equal(result.stdout, '')
 })
 
 test('An unreadable operator file reports the service account remediation', async () => {

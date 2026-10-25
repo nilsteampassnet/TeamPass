@@ -64,8 +64,15 @@ try {
     }
     if (isset($options['activate'])) {
         $result = tpRecoveryActivate((string) $options['activate']);
+        try {
+            // Publication has released its lock. Audit once here, so operators
+            // can go straight to a single correction-and-verification block.
+            $result = tpRecoveryCheckPermissions($result['id']);
+        } catch (Throwable $exception) {
+            fwrite(STDERR, "Publication succeeded; the permission audit needs to be run from the assistant's fallback command.\n");
+        }
         fwrite(STDOUT, json_encode($result, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR) . "\n");
-        fwrite(STDOUT, "Instance restored in maintenance. Check administrator access, user decryption, MFA and HTTPS before resuming.\n");
+        fwrite(STDOUT, "Instance published in maintenance. Refresh the assistant for permission corrections and finalization. Keep cron stopped until cleanup and access checks are complete.\n");
         exit(0);
     }
     if (isset($options['status'])) {
@@ -133,9 +140,9 @@ try {
         \TeampassClasses\ConfigManager\ConfigManager::invalidateCache();
         fwrite(STDOUT, $receipt['maintenance_enabled']
             ? "Recovery was already resumed. Separately enabled maintenance was left unchanged.\n"
-            : "Recovery checks acknowledged. Maintenance and the recovery task hold are released.\n");
+            : "Recovery finalized. Maintenance and the recovery task hold are released.\n");
         fwrite(STDOUT, "Backup schedules and LAPR remain disabled until reconfigured.\n");
-        fwrite(STDOUT, "Refresh the assistant for the final installer-directory cleanup instructions.\n");
+        fwrite(STDOUT, "Refresh the assistant, remove the installer, check application access, then restore the host cron job.\n");
         exit(0);
     }
     if (isset($options['discard'])) {
@@ -149,7 +156,7 @@ try {
         . "  --run=JOB             Restore and upgrade an empty dedicated database\n"
         . "  --activate=JOB        Publish verified data and configuration in maintenance\n"
         . "  --check-permissions=JOB  Audit runtime permissions and propose administrator commands\n"
-        . "  --resume=JOB          Release maintenance after operational checks\n"
+        . "  --resume=JOB          Finalize publication and release the recovery hold\n"
         . "  --status=JOB          Print non-sensitive progress\n"
         . "  --discard=JOB         Remove private staging of a prepared or failed job\n"
         . "See docs/install/disaster-recovery.md. Secrets are never accepted as command arguments.\n");
