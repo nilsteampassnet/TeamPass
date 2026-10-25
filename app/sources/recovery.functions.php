@@ -442,13 +442,13 @@ function tpRecoveryRun(string $id): array
             'bck_externalized_enabled' => '0', 'cpassman_url' => $job['url'],
             'cpassman_dir' => TEAMPASS_ROOT, 'path_to_upload_folder' => TEAMPASS_ROOT . '/storage/upload',
             'path_to_files_folder' => TEAMPASS_ROOT . '/storage/files',
-            'teampass_version' => TP_VERSION,
+            'teampass_version' => TP_VERSION, 'teampass_version_full' => TP_VERSION . '.' . TP_VERSION_MINOR,
             'upgrade_timestamp' => (string) UPGRADE_MIN_DATE, 'recovery_pending_checks' => '1', 'recovery_job_id' => $job['id'],
             'recovery_generation' => bin2hex(random_bytes(16))] as $name => $value) {
             tpRecoverySetSetting($db, $prefix, $name, $value);
         }
         $tables = array_column($db->query('SHOW TABLES')->fetch_all(MYSQLI_NUM), 0);
-        foreach (['api_sessions', 'api_tokens', 'tokens', 'websocket_tokens', 'websocket_connections',
+        foreach (['api_sessions', 'api_tokens', 'device_pairings', 'tokens', 'websocket_tokens', 'websocket_connections',
             'background_subtasks', 'background_tasks', 'api_idempotency'] as $ephemeral) {
             if (in_array($prefix . $ephemeral, $tables, true)) {
                 $db->query('DELETE FROM `' . $prefix . $ephemeral . '`');

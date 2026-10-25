@@ -91,6 +91,17 @@ try {
         'pw' => base64_encode($encrypted['ciphertext']), 'pw_iv' => base64_encode($encrypted['meta'])]);
     DB::insert(prefixTable('sharekeys_items'), ['object_id' => 1, 'user_id' => TP_USER_ID,
         'share_key' => encryptUserObjectKey(base64_encode($objectKey), base64_encode($pair['publickey'])), 'encryption_version' => 3]);
+    foreach (['active' => null, 'revoked' => 1] as $state => $revokedAt) {
+        DB::insert(prefixTable('api_tokens'), ['user_id' => TP_USER_ID, 'token_hash' => hash('sha256', $state),
+            'purpose' => 'external_device', 'wrapped_private_key' => 'synthetic', 'salt' => 'synthetic',
+            'created_at' => 1, 'revoked_at' => $revokedAt]);
+    }
+    DB::insert(prefixTable('device_pairings'), ['id' => str_repeat('a', 32), 'user_id' => TP_USER_ID,
+        'server_url' => 'https://old.example.test', 'owner_binding' => str_repeat('b', 64),
+        'session_marker' => str_repeat('c', 64), 'user_key_fingerprint' => str_repeat('d', 64),
+        'web_expires_at' => 999999999, 'state' => 'approved', 'created_at' => 1,
+        'expires_at' => 999999999, 'updated_at' => 1]);
+    DB::update(prefixTable('misc'), ['valeur' => '3.2.2.7'], 'type=%s AND intitule=%s', 'admin', 'teampass_version_full');
     $previousMaintenance = $scenario === 'upgrade' ? '1' : '0';
     foreach (['maintenance_mode' => $previousMaintenance, 'cpassman_url' => 'https://old.example.test/team',
         'favicon' => 'https://old.example.test/team/favicon.ico',
@@ -102,9 +113,11 @@ try {
         $settings[$row['intitule']] = $row['valeur'];
     }
     if ($scenario === 'upgrade') {
-        foreach (['webauthn_credentials', 'sharekeys_webauthn', 'user_webauthn_credentials', 'secure_send_audit'] as $table) {
+        foreach (['webauthn_credentials', 'sharekeys_webauthn', 'user_webauthn_credentials', 'secure_send_audit', 'device_pairings'] as $table) {
             DB::query('DROP TABLE ' . prefixTable($table));
         }
+        DB::query('ALTER TABLE ' . prefixTable('api_tokens') . ' DROP COLUMN purpose, DROP COLUMN pairing_id, DROP COLUMN revoked_at');
+        DB::query('ALTER TABLE ' . prefixTable('api_sessions') . ' DROP COLUMN source_token_id');
         DB::update(prefixTable('misc'), ['valeur' => '3.2.2'], 'type=%s AND intitule=%s', 'admin', 'teampass_version');
     }
     // Produce real encrypted packages using the shipped backup functions.
@@ -197,6 +210,11 @@ try {
     if ($scenario === 'upgrade') {
         $targetDb->query('SELECT * FROM recovery_webauthn_credentials LIMIT 1');
         $targetDb->query('SELECT * FROM recovery_secure_send_audit LIMIT 1');
+        $targetDb->query('SELECT source_token_id FROM recovery_api_sessions LIMIT 1');
+        $targetDb->query('SELECT purpose,pairing_id,revoked_at FROM recovery_api_tokens LIMIT 1');
+        if ($targetDb->query("SELECT valeur FROM recovery_misc WHERE type='admin' AND intitule='device_pairing_schema'")->fetch_row()[0] !== '3') {
+            throw new RuntimeException('Device pairing migration did not run during recovery');
+        }
         if ($targetDb->query("SELECT valeur FROM recovery_misc WHERE type='admin' AND intitule='teampass_version'")->fetch_row()[0] !== TP_VERSION) {
             throw new RuntimeException('Upgraded version was not recorded');
         }
@@ -209,6 +227,11 @@ try {
         throw new RuntimeException('Stored label encoding changed');
     }
     $restoredSettings = array_column($targetDb->query("SELECT intitule,valeur FROM recovery_misc WHERE type='admin'")->fetch_all(MYSQLI_ASSOC), 'valeur', 'intitule');
+    if ($restoredSettings['teampass_version_full'] !== TP_VERSION . '.' . TP_VERSION_MINOR
+        || (int) $targetDb->query('SELECT COUNT(*) FROM recovery_api_tokens')->fetch_row()[0] !== 0
+        || (int) $targetDb->query('SELECT COUNT(*) FROM recovery_device_pairings')->fetch_row()[0] !== 0) {
+        throw new RuntimeException('Restored release metadata or device credential invalidation was incorrect');
+    }
     if ($restoredSettings['favicon'] !== $restoredSettings['cpassman_url'] . '/favicon.ico'
         || $restoredSettings['url_to_files_folder'] !== 'https://custom.example.test/files') {
         throw new RuntimeException('Recovery did not rebase derived URLs or changed a custom URL');
