@@ -41,6 +41,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 // Load functions
 require_once 'main.functions.php';
 require_once __DIR__ . '/backup.functions.php';
+require_once __DIR__ . '/recovery_package.functions.php';
 $session = SessionManager::getSession();
 
 
@@ -580,26 +581,6 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_UNSAFE_RAW);
         }
 
         return [];
-    }
-
-    /**
-     * Clear any pending recovery package reference from the current session.
-     *
-     * @param object $session
-     * @return void
-     */
-    function tpRecoveryForgetSessionPackage($session): void
-    {
-        $current = $session->get('recovery-package-download');
-        if (is_array($current) === true && !empty($current['path']) && is_scalar($current['path'])) {
-            tpRecoverySafeDeletePackage((string) $current['path']);
-        }
-
-        if (method_exists($session, 'remove') === true) {
-            $session->remove('recovery-package-download');
-        } else {
-            $session->set('recovery-package-download', null);
-        }
     }
 
     /**
@@ -1369,8 +1350,17 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                 ignore_user_abort(true);
             }
 
-            readfile($fpReal);
-            tpRecoveryForgetSessionPackage($session);
+            try {
+                $sent = readfile($fpReal);
+                if (tpRecoveryPackageTransferComplete($sent, $size, connection_status())) {
+                    tpRecoveryPackageRecordDownload(
+                        is_array($download['snapshot'] ?? null) ? $download['snapshot'] : [],
+                        (int) $session->get('user-id')
+                    );
+                }
+            } finally {
+                tpRecoveryForgetSessionPackage($session);
+            }
             exit;
 
         //CASE adding a new function
@@ -2210,6 +2200,7 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                     'filename' => (string) $package['filename'],
                     'expires_at' => $expiresAt,
                     'size_bytes' => (int) $package['size_bytes'],
+                    'snapshot' => $package['snapshot'] ?? [],
                 ]
             );
 
