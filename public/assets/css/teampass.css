@@ -1612,3 +1612,149 @@ body.tp-navigating .dropdown-item {
         transition: none;
     }
 }
+
+/* ============================================================
+   Item edit form (app/pages/items.php, .form-item)
+   Action bar kept below the fixed navbar while the form scrolls,
+   the label edited in place as the form title.
+   ============================================================ */
+.tp-item-form-bar {
+    position: sticky;
+    top: calc(3.5rem + 1px);
+    z-index: 1020;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem;
+    background-color: #fff;
+}
+.tp-item-form-bar::after {
+    content: none;
+}
+.dark-mode .tp-item-form-bar {
+    background-color: #343a40;
+}
+.tp-item-form-title {
+    position: relative;
+    flex: 1 1 16rem;
+    min-width: 0;
+}
+.tp-item-form-title-icon {
+    position: absolute;
+    top: 50%;
+    left: .75rem;
+    transform: translateY(-50%);
+    color: #6c757d;
+    pointer-events: none;
+}
+.tp-item-form-title .form-control {
+    padding-left: 2.25rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+    background-color: transparent;
+    border-color: transparent;
+    border-bottom: 1px dashed #adb5bd;
+    box-shadow: none;
+}
+.tp-item-form-title .form-control:hover {
+    border-color: #ced4da;
+}
+.tp-item-form-title .form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 .2rem rgba(0, 123, 255, .25);
+}
+/* Outweighs AdminLTE's .dark-mode .form-control:not(...):not(...) border and background */
+.dark-mode .tp-item-form-title .form-control.form-item-control:not(:hover):not(:focus) {
+    background-color: transparent;
+    border-color: transparent;
+    border-bottom-color: #6c757d;
+}
+.tp-item-form-buttons {
+    display: flex;
+    gap: .5rem;
+}
+.tp-item-form-unsaved {
+    display: inline-flex;
+    align-items: center;
+    font-size: .875rem;
+    font-weight: 600;
+    color: #8a4b00;
+}
+.tp-item-form-unsaved-dot {
+    width: .5rem;
+    height: .5rem;
+    margin-right: .375rem;
+    border-radius: 50%;
+    background-color: #c2410c;
+}
+.dark-mode .tp-item-form-unsaved {
+    color: #ffc107;
+}
+.tp-item-form-subheader {
+    gap: .5rem 1rem;
+}
+.tp-item-form-rules {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .25rem 1rem;
+    margin-left: auto;
+}
+.tp-item-form-coach {
+    min-height: 1.3rem;
+}
+.tp-item-form-panel {
+    margin-top: .5rem;
+    padding: .5rem .75rem;
+    border: 1px solid #dee2e6;
+    border-radius: .25rem;
+    background-color: #f8f9fa;
+}
+.dark-mode .tp-item-form-panel {
+    border-color: #6c757d;
+    background-color: #3f474e;
+}
+.tp-item-form-renewal-period {
+    width: 8.5rem;
+}
+.tp-item-form-label {
+    margin-bottom: .5rem;
+    font-weight: 700;
+}
+/* Item icon: a square button in the title, its field in a dropdown.
+   No .btn class: the legacy bootstrap-buttons.css would shrink an icon-only .btn */
+.tp-item-form-icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    border: 1px solid #ced4da;
+    border-radius: .25rem;
+    background-color: transparent;
+    color: #495057;
+    font-size: 1.25rem;
+}
+.tp-item-form-icon-button:hover,
+.tp-item-form-icon-button:focus {
+    border-color: #80bdff;
+    color: #0062cc;
+}
+.dark-mode .tp-item-form-icon-button {
+    border-color: #6c757d;
+    color: #e9ecef;
+}
+#form-item-icon-show i {
+    margin-right: 0 !important;
+}
+#form-item-icon-show:not(:empty) + .tp-item-form-icon-default {
+    display: none;
+}
+.tp-item-form-icon-default {
+    color: #6c757d;
+}
+.tp-item-form-icon-menu {
+    width: 22rem;
+    max-width: calc(100vw - 2rem);
+    padding: .75rem;
+}

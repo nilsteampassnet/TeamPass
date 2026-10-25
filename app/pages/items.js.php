@@ -142,7 +142,25 @@ require __DIR__ . '/renewal.preview.js.php';
     }
   }
 
-  $(document).on('change', '#form-item-otpSecret', applyItemTotpProvisioningUri)
+  /**
+   * Show the TOTP profile (algorithm, digits, period) on the button that unfolds it,
+   * so a folded profile can still be read. Call it after any programmatic change.
+   *
+   * @returns {void}
+   */
+  function refreshItemOtpSummary() {
+    $('#form-item-otp-summary').text(
+      $('#form-item-otpAlgorithm option:selected').text() + ' · ' +
+      $('#form-item-otpDigits').val() + ' · ' +
+      $('#form-item-otpPeriod').val() + ' s'
+    )
+  }
+
+  $(document).on('change', '#form-item-otpSecret', function() {
+    applyItemTotpProvisioningUri()
+    refreshItemOtpSummary()
+  })
+  $(document).on('change input', '#form-item-otpAlgorithm, #form-item-otpDigits, #form-item-otpPeriod', refreshItemOtpSummary)
 
     // BIP-39 wordlist for the passphrase generator (language depends on the user's profile).
     const TP_BIP39_WORDLIST = <?php echo json_encode($bip39Wordlist, JSON_UNESCAPED_UNICODE); ?>;
@@ -1071,8 +1089,17 @@ require __DIR__ . '/renewal.preview.js.php';
     $('#limited-search').prop('checked', <?php echo (int) $SETTINGS['limited_search_default'] === 1 ? true : false; ?>);
     $('#table_teampass_items_list').toggleClass('tp-show-corrupted-items', showCorruptedItemsInList === true);
 
-    $(document).on('blur', '#form-item-icon', function() {
-        $('#form-item-icon-show').html('<i class="fas '+$(this).val()+'"></i>');
+    // Live preview of the item icon in the form title; an empty value shows the default icon
+    $(document).on('input blur', '#form-item-icon', function() {
+        const icon = String($(this).val() || '').trim();
+        $('#form-item-icon-show').html(icon === '' ? '' : '<i class="fas ' + htmlEncode(icon) + '"></i>');
+    });
+    // The icon field lives in a dropdown: keep it open while the user works in it
+    $('.tp-item-form-icon-menu').on('click', function(event) {
+        event.stopPropagation();
+    });
+    $('.tp-item-form-icon').on('shown.bs.dropdown', function() {
+        $('#form-item-icon').trigger('focus');
     });
 
     // Manage the password show button
@@ -1516,6 +1543,11 @@ require __DIR__ . '/renewal.preview.js.php';
                 $('.item-details-card').find('.form-control').val('');
                 $('.clear-me-html').html('');
                 $('.form-item-control').val('');
+                // The blanket reset above also empties the TOTP profile: restore its defaults
+                $('#form-item-otpAlgorithm').val('sha1');
+                $('#form-item-otpDigits').val('6');
+                $('#form-item-otpPeriod').val('30');
+                refreshItemOtpSummary();
                 setItemRenewalPeriod(0);
                 // Show edition form
                 $('.form-item').removeClass('hidden');
@@ -1579,6 +1611,7 @@ require __DIR__ . '/renewal.preview.js.php';
 
                 // Update variable
                 userDidAChange = false;
+                refreshItemFormUnsavedBadge();
 
                 toastr.remove();
             });
@@ -2163,6 +2196,20 @@ require __DIR__ . '/renewal.preview.js.php';
                 //$(this).attr('data-change-ongoing', true);
             }
         });
+
+    /**
+     * Mirror userDidAChange / userUploadedFile in the action bar of the item form.
+     * Called after every user interaction inside the form, and wherever the flags
+     * are reset or set outside such an interaction (form opening, async generators, uploads).
+     */
+    function refreshItemFormUnsavedBadge() {
+        $('#form-item-unsaved').toggleClass('hidden', userDidAChange !== true && userUploadedFile !== true);
+    }
+
+    // Deferred so it reads the flag after the handlers above (and summernote's onChange) ran
+    $('#form-item').on('change click keyup ifToggled summernote.change', function() {
+        setTimeout(refreshItemFormUnsavedBadge, 0);
+    });
 
     /**
      * Click on perform IMPORT
@@ -3408,6 +3455,7 @@ require __DIR__ . '/renewal.preview.js.php';
                 $('#form-item-otpAlgorithm').val('sha1')
                 $('#form-item-otpDigits').val('6')
                 $('#form-item-otpPeriod').val('30')
+                refreshItemOtpSummary()
 
                 // Move back fields
                 $('.fields-to-move')
@@ -3518,9 +3566,7 @@ require __DIR__ . '/renewal.preview.js.php';
         laprSetManagedFieldsLocked(false);
         $('#form-item-lapr-notice').addClass('hidden').empty();
         if (clearFields) {
-            // Title placeholder in card header
-            $('#form-item-title').html('<span class="skeleton-line skeleton-title"></span>');
-            // Skeleton shimmer on main input fields
+            // Skeleton shimmer on main input fields (the label input is the form title)
             $('#form-item-label, #form-item-login, #form-item-email, #form-item-url')
                 .val('').addClass('skeleton-input');
             // Description: show a tall skeleton block while editor initialises
@@ -3533,6 +3579,7 @@ require __DIR__ . '/renewal.preview.js.php';
         $('#form-item-password-loader').removeClass('hidden');
         // Reset form-level state
         userDidAChange = false;
+        refreshItemFormUnsavedBadge();
         $('#form-item').removeClass('was-validated');
         // Show the form immediately (same show/hide logic as showItemEditForm)
         $('.form-item, #form-item-attachments-zone').removeClass('hidden');
@@ -3644,7 +3691,6 @@ require __DIR__ . '/renewal.preview.js.php';
             // which item is being edited — AJAX response will overwrite it.
             const rowLabel = unescape($(this).closest('tr').data('label') || '')
             if (rowLabel) {
-                $('#form-item-title').text(rowLabel)
                 $('#form-item-label').val(rowLabel).removeClass('skeleton-input')
             }
 
@@ -3735,10 +3781,6 @@ require __DIR__ . '/renewal.preview.js.php';
             if ($(this).hasClass('warn-user')) $(this).removeClass('text-danger');
             else $(this).removeClass('text-info');
         });
-
-    $('#form-item-label').change(function() {
-        $('#form-item-title').text($(this).val());
-    });
 
     /**
      * Make the item favourite by clicking on icon
@@ -4226,6 +4268,7 @@ require __DIR__ . '/renewal.preview.js.php';
         $('#upload-global-counter').text(filesUploadedCount + '/' + up.files.length);
         userUploadedFile = true;
         userDidAChange = true;
+        refreshItemFormUnsavedBadge();
         // Do not remove the global toastr here — UploadComplete handles it
     });
     uploader_attachments.bind('Error', function(up, err) {
@@ -5025,6 +5068,7 @@ require __DIR__ . '/renewal.preview.js.php';
 
             // Initial 'user did a change'
             userDidAChange = false;
+            refreshItemFormUnsavedBadge();
 
             $('#form-item-label').focus();
 
@@ -6724,6 +6768,7 @@ require __DIR__ . '/renewal.preview.js.php';
             // Store status query running
             requestRunning = true;
             userDidAChange = false;
+            refreshItemFormUnsavedBadge();
 
             // Select tab#1
             $('#form-item-nav-pills li:first-child a').tab('show');
@@ -7066,7 +7111,7 @@ require __DIR__ . '/renewal.preview.js.php';
                     // break out of the attribute. Entities are decoded back by the HTML parser,
                     // so legitimate Font Awesome classes keep working.
                     const itemIcon = (data.fa_icon !== "") ? '<i class="'+htmlEncode(data.fa_icon)+' mr-1"></i>' : '';
-                    $('#card-item-label, #form-item-title').html(itemIcon + htmlEncode(data.label));
+                    $('#card-item-label').html(itemIcon + htmlEncode(data.label));
                     data.can_delete = canDelete;
                     laprRenderItemIntegration(data, actionType);
 
@@ -7918,6 +7963,7 @@ require __DIR__ . '/renewal.preview.js.php';
                 $('#form-item-otpAlgorithm').val(data.otp_algorithm || 'sha1')
                 $('#form-item-otpDigits').val(String(data.otp_digits || '6'))
                 $('#form-item-otpPeriod').val(String(data.otp_period || '30'))
+                refreshItemOtpSummary()
 
                 // Delete inputs related files uploaded but not confirmed
                 var data = {
@@ -9122,6 +9168,7 @@ require __DIR__ . '/renewal.preview.js.php';
 
             // Form has changed
             userDidAChange = true;
+            refreshItemFormUnsavedBadge();
             if (debugJavascript === true) console.log('User did a change during generate_smart_password > ' + userDidAChange);
 
             // SHow button in sticky footer
@@ -9450,6 +9497,7 @@ require __DIR__ . '/renewal.preview.js.php';
         passphraseCoaching(result.wordCount, result.hasSuffix)
 
         userDidAChange = true
+        refreshItemFormUnsavedBadge()
         if (debugJavascript === true) console.log('Passphrase generated: ' + result.passphrase)
     }
 
@@ -9864,18 +9912,43 @@ require __DIR__ . '/renewal.preview.js.php';
         // Hide/show list of subfolders
         //$('#table_teampass_subfolders_list').toggleClass('hidden', store.get('teampassUser').show_subfolders !== 1);
 
+        /**
+         * Save the item form once, committing the field being typed in first: its native
+         * 'change' only fires on blur, and userDidAChange depends on it.
+         */
+        function saveItemFormFromKeyboard() {
+            if (saveInProgress) {
+                return;
+            }
+            saveInProgress = true;
+            if (document.activeElement && $(document.activeElement).closest('#form-item').length > 0) {
+                document.activeElement.blur();
+            }
+            $('#form-item-button-save').click();
+            setTimeout(() => { saveInProgress = false; }, 1000);
+        }
+
         // Prevent Enter key from propagating in label and password fields and do single save
         // Enter triggers save in these:
         $('#form-item-label, #form-item-password').on('keydown keyup keypress', function(e) {
             if ((e.key === 'Enter' || e.which === 13)) {
                 e.preventDefault();
                 e.stopPropagation();
-                if (!saveInProgress) {
-                    saveInProgress = true;
-                    $('#form-item-button-save').click();
-                    setTimeout(() => { saveInProgress = false; }, 1000);
+                if (e.type === 'keydown') {
+                    saveItemFormFromKeyboard();
                 }
                 return false;
+            }
+        });
+
+        // Ctrl+S (Cmd+S on macOS) saves the item form while it is open
+        $(document).on('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey
+                && (e.key === 's' || e.key === 'S')
+                && $('.form-item').hasClass('hidden') === false
+            ) {
+                e.preventDefault();
+                saveItemFormFromKeyboard();
             }
         });
 

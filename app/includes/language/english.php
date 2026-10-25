@@ -1115,6 +1115,7 @@ return array(
     'item_renewal_enable' => 'Set a renewal period for this item',
     'item_renewal_period' => 'Item renewal period (days)',
     'item_renewal_help' => 'Available for personal and shared items, even when folder expiration is disabled. The shortest active period applies. Disabling this option preserves any active folder policy.',
+    'item_form_unsaved_changes' => 'Unsaved changes',
     'renewal_period_invalid' => 'Enter a whole number from 1 to 36500 days, or disable the individual renewal option.',
     'at_renewal_period' => 'Item renewal period changed (days; 0 = disabled)',
     'renewal_notice_effective' => 'Effective renewal period: #days# days.',

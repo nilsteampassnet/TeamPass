@@ -132,42 +132,46 @@ if ((int) $session_user_admin === 1) {
     <div class="row hidden form-item">
         <div class="col-12">
 
-            <div class="card text-center">
-                <div class="card-header">
-                    <div class="card-tools-left">
-                        <button type="button" class="btn btn-secondary but-back" id="but_back_top_left">
-                            <i class="fa-solid fa-arrow-left"></i>
-                        </button>
-                    </div>
-
-                    <h5 id="form-item-title" class="clear-me-html" style="min-height:23px;"></h5>
-
-                    <div class="card-tools">
-                        <button type="button" class="btn btn-secondary btn-sm but-back" id="but_back_top_right">
-                            <i class="fa-solid fa-times"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div>
-                        <label><i class="fa-solid fa-users mr-2"></i><?php echo $lang->get('visible_by'); ?></label>
-                        <span id="card-item-visibility" class="text-info font-weight-bold ml-2">
-                            <i class="fa-solid fa-ellipsis mr-2 fa-fade"></i>
-                        </span>
-                    </div>
-                    <div>
-                        <label><i class="fa-solid fa-key mr-2"></i><?php echo $lang->get('complex_asked'); ?></label>
-                        <span id="card-item-minimum-complexity" class="text-info font-weight-bold ml-2">
-                            <i class="fa-solid fa-ellipsis mr-2 fa-fade"></i>
-                        </span>
-                    </div>
-                </div>
-            </div>
-
             <div id="form-item-renewal-notice" class="alert alert-info hidden" role="status" aria-live="polite"></div>
 
+            <form id="form-item" class="needs-validation" novalidate onsubmit="return false;">
             <div class="card">
-                <div class="card-header d-flex">
+                <!-- Action bar: stays below the fixed navbar while the form scrolls -->
+                <div class="card-header tp-item-form-bar">
+                    <button type="button" class="btn btn-secondary but-back" id="but_back_top_left">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <!-- ICON: shown in the title, its field opens on click -->
+                    <div class="dropdown tp-item-form-icon">
+                        <button type="button" class="tp-item-form-icon-button" id="form-item-icon-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="<?php echo $lang->get('icon'); ?>" aria-label="<?php echo $lang->get('icon'); ?>">
+                            <span id="form-item-icon-show" class="clear-me-html"></span><i class="fa-solid fa-icons tp-item-form-icon-default" aria-hidden="true"></i>
+                        </button>
+                        <div class="dropdown-menu tp-item-form-icon-menu" aria-labelledby="form-item-icon-toggle">
+                            <label for="form-item-icon" class="mb-1"><?php echo $lang->get('icon'); ?></label>
+                            <input id="form-item-icon" type="text" class="form-control form-item-control purify" data-field-name="icon" data-change-ongoing="">
+                            <small class="form-text text-muted">
+                                <?php echo $lang->get('fontawesome_icon_tip'); ?><a href="<?php echo FONTAWESOME_URL;?>" target="_blank"><i class="fa-solid fa-external-link-alt ml-1"></i></a>
+                            </small>
+                        </div>
+                    </div>
+                    <!-- LABEL: edited in place as the form title -->
+                    <div class="tp-item-form-title">
+                        <i class="fa-solid fa-pen tp-item-form-title-icon" aria-hidden="true"></i>
+                        <label for="form-item-label" class="sr-only"><?php echo $lang->get('label'); ?></label>
+                        <input id="form-item-label" type="text" class="form-control form-item-control purify" placeholder="<?php echo $lang->get('label'); ?>" data-change-ongoing="" data-field-name="label">
+                    </div>
+                    <span id="form-item-unsaved" class="tp-item-form-unsaved hidden" role="status">
+                        <span class="tp-item-form-unsaved-dot" aria-hidden="true"></span><?php echo $lang->get('item_form_unsaved_changes'); ?>
+                    </span>
+                    <div class="tp-item-form-buttons" id="form-item-buttons">
+                        <button type="button" class="btn btn-default but-back item-edit"><?php echo $lang->get('cancel'); ?></button>
+                        <button type="button" class="btn btn-info" id="form-item-button-save" data-action="" title="Ctrl+S" aria-keyshortcuts="Control+S"><i class="fa-solid fa-floppy-disk mr-1" aria-hidden="true"></i><?php echo $lang->get('save'); ?></button>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-sm but-back" id="but_back_top_right">
+                        <i class="fa-solid fa-times"></i>
+                    </button>
+                </div>
+                <div class="card-header d-flex flex-wrap align-items-center tp-item-form-subheader">
                     <ul class="nav nav-pills" id="form-item-nav-pills">
                         <li class="nav-item"><a class="nav-link active" href="#tab_1" data-toggle="tab"><i class="fa-solid fa-home mr-2"></i><?php echo $lang->get('main'); ?></a></li>
                         <li class="nav-item"><a class="nav-link" href="#tab_2" data-toggle="tab"><i class="fa-solid fa-list mr-2"></i><?php echo $lang->get('details'); ?></a></li>
@@ -177,177 +181,226 @@ if ((int) $session_user_admin === 1) {
                             <li class="nav-item"><a class="nav-link" href="#tab_4" data-toggle="tab"><i class="fa-solid fa-cubes mr-2"></i>' . $lang->get('fields') . '</a></li>' : '';
                         ?>
                     </ul>
+                    <div class="tp-item-form-rules small">
+                        <span><i class="fa-solid fa-users mr-1" aria-hidden="true"></i><?php echo $lang->get('visible_by'); ?>
+                            <span id="card-item-visibility" class="text-info font-weight-bold ml-1">
+                                <i class="fa-solid fa-ellipsis mr-2 fa-fade"></i>
+                            </span>
+                        </span>
+                        <span><i class="fa-solid fa-key mr-1" aria-hidden="true"></i><?php echo $lang->get('complex_asked'); ?>
+                            <span id="card-item-minimum-complexity" class="text-info font-weight-bold ml-1">
+                                <i class="fa-solid fa-ellipsis mr-2 fa-fade"></i>
+                            </span>
+                        </span>
+                    </div>
                 </div><!-- /.card-header -->
                 <div class="card-body">
                     <div id="form-item-lapr-notice" class="alert hidden text-left"></div>
-                    <form id="form-item" class="needs-validation" novalidate onsubmit="return false;">
                         <div class="tab-content">
                             <div class="tab-pane active" id="tab_1">
-                                <!-- LABEL -->
-                                <div class="input-group mb-3">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text"><?php echo $lang->get('label'); ?></span>
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <!-- LOGIN -->
+                                        <div class="form-group">
+                                            <label for="form-item-login" class="mb-1"><i class="fa-solid fa-user fa-fw mr-1 text-muted" aria-hidden="true"></i><?php echo $lang->get('login'); ?></label>
+                                            <input id="form-item-login" type="text" class="form-control form-item-control purify" data-field-name="login" data-change-ongoing="">
+                                        </div>
+                                        <!-- PASSWORD -->
+                                        <div class="form-group mb-2">
+                                            <label for="form-item-password" class="mb-1"><i class="fa-solid fa-key fa-fw mr-1 text-muted" aria-hidden="true"></i><?php echo $lang->get('password'); ?></label>
+                                            <div class="input-group">
+                                                <!-- No spellcheck nor autocorrect: the field turns into a text input when revealed -->
+                                                <input id="form-item-password" type="password" class="form-control form-item-control" placeholder="<?php echo $lang->get('password'); ?>" data-field-name="pwd" data-change-ongoing="" spellcheck="false" autocapitalize="off" autocorrect="off">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text hidden" id="form-item-password-loader"><i class="fa-solid fa-circle-notch fa-spin"></i></span>
+                                                    <!-- Show/hide password -->
+                                                    <button type="button" class="btn btn-secondary btn-no-click infotip" id="item-button-password-show" title="<?php echo $lang->get('mask_pw'); ?>" aria-label="<?php echo $lang->get('mask_pw'); ?>" aria-pressed="false"><i class="fa-regular fa-eye"></i></button>
+                                                    <!-- Single generate button: dispatches to the mode chosen in the generator options -->
+                                                    <button type="button" class="btn btn-primary" id="item-button-generate" data-id="form-item-password"><i class="fa-solid fa-rotate mr-1"></i><?php echo $lang->get('pw_generate'); ?></button>
+                                                    <button type="button" class="btn btn-primary infotip" id="form-item-generator-options-toggle" data-toggle="collapse" data-target="#form-item-generator-panel" aria-controls="form-item-generator-panel" aria-expanded="false" title="<?php echo $lang->get('options'); ?>" aria-label="<?php echo $lang->get('options'); ?>"><i class="fa-solid fa-sliders"></i></button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="form-item-password-strength"></div>
+                                        <div id="form-item-password-coach" class="small text-muted mt-1 tp-item-form-coach"></div>
+                                        <input type="hidden" id="form-item-password-complex" value="0">
+                                        <!-- Generator options: mode selector (drives which options show), folded by default -->
+                                        <div class="collapse" id="form-item-generator-panel">
+                                            <div class="tp-item-form-panel">
+                                                <div class="btn-group btn-group-sm btn-group-toggle mb-2" id="form-item-generator-mode">
+                                                    <label class="btn btn-primary active" data-mode="random">
+                                                        <input type="radio" name="generator-mode" autocomplete="off" checked><i class="fa-solid fa-random mr-1"></i><?php echo $lang->get('generator_mode_random'); ?>
+                                                    </label>
+                                                    <label class="btn btn-outline-secondary" data-mode="passphrase">
+                                                        <input type="radio" name="generator-mode" autocomplete="off"><i class="fa-solid fa-comment-dots mr-1"></i><?php echo $lang->get('generator_mode_passphrase'); ?>
+                                                    </label>
+                                                </div>
+                                                <div id="form-item-password-options">
+                                                    <div class="btn-toolbar" role="toolbar" aria-label="Toolbar with button groups">
+                                                        <div class="btn-group btn-group-sm btn-group-toggle mr-2 mb-1" data-toggle="buttons">
+                                                            <label class="btn btn-secondary btn-sm">
+                                                                <input type="checkbox" class="password-definition" id="pwd-definition-lcl">abc</label>
+                                                            <label class="btn btn-secondary btn-sm">
+                                                                <input type="checkbox" class="password-definition" id="pwd-definition-ucl">ABC</label>
+                                                            <label class="btn btn-secondary btn-sm">
+                                                                <input type="checkbox" class="password-definition" id="pwd-definition-numeric">123</label>
+                                                            <label class="btn btn-secondary btn-sm">
+                                                                <input type="checkbox" class="password-definition" id="pwd-definition-symbols">@#&amp;</label>
+                                                            <label class="btn btn-secondary btn-sm">
+                                                                <input type="checkbox" class="password-definition" id="pwd-definition-secure"><?php echo $lang->get('secure'); ?></label>
+                                                        </div>
+
+                                                        <div class="input-group input-group-sm mb-1">
+                                                            <div class="input-group-prepend">
+                                                                <div class="input-group-text"><?php echo $lang->get('size'); ?></div>
+                                                            </div>
+                                                            <?php
+                                                            $defaultPasswordLength = max(4, min((int) ($SETTINGS['pwd_default_length'] ?? 14), (int) $SETTINGS['pwd_maximum_length']));
+                                                            ?>
+                                                            <select class="form-control form-control-sm w-10" id="pwd-definition-size">
+                                                                <?php
+                                                                for ($i = 4; $i <= $SETTINGS['pwd_maximum_length']; ++$i) {
+                                                                    echo '
+                                                                <option' . ($i === $defaultPasswordLength ? ' selected' : '') . '>' . $i . '</option>';
+                                                                }
+                                                                ?>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="hidden" id="form-item-passphrase-options">
+                                                    <div class="btn-toolbar" role="toolbar" aria-label="Passphrase options">
+                                                        <div class="input-group input-group-sm mr-2 mb-1">
+                                                            <div class="input-group-prepend">
+                                                                <div class="input-group-text"><?php echo $lang->get('passphrase_words'); ?></div>
+                                                            </div>
+                                                            <select class="form-control form-control-sm" id="passphrase-word-count">
+                                                                <option value="3">3</option>
+                                                                <option value="4" selected>4</option>
+                                                                <option value="5">5</option>
+                                                                <option value="6">6</option>
+                                                                <option value="7">7</option>
+                                                                <option value="8">8</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="input-group input-group-sm mr-2 mb-1">
+                                                            <div class="input-group-prepend">
+                                                                <div class="input-group-text"><?php echo $lang->get('passphrase_separator'); ?></div>
+                                                            </div>
+                                                            <select class="form-control form-control-sm" id="passphrase-separator">
+                                                                <option value="-" selected>-</option>
+                                                                <option value=" "><?php echo $lang->get('passphrase_separator_space'); ?></option>
+                                                                <option value="_">_</option>
+                                                                <option value=".">.</option>
+                                                                <option value=""><?php echo $lang->get('passphrase_separator_none'); ?></option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="btn-group btn-group-sm btn-group-toggle mb-1" data-toggle="buttons">
+                                                            <label class="btn btn-secondary btn-sm active">
+                                                                <input type="checkbox" id="passphrase-capitalize" checked><?php echo $lang->get('passphrase_capitalize'); ?>
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!-- RENEWAL: one line, the period input is enabled with the checkbox -->
+                                        <div class="form-group mt-2" id="form-item-renewal-settings">
+                                            <div class="d-flex flex-wrap align-items-center">
+                                                <div class="custom-control custom-checkbox mr-2">
+                                                    <input type="checkbox" class="custom-control-input form-item-control" id="form-item-renewal-enabled">
+                                                    <label class="custom-control-label font-weight-normal" for="form-item-renewal-enabled"><?php echo $lang->get('item_renewal_enable'); ?></label>
+                                                </div>
+                                                <div class="input-group input-group-sm tp-item-form-renewal-period">
+                                                    <input type="number" class="form-control form-item-control" id="form-item-renewal-period" min="1" max="36500" step="1" value="90" disabled aria-label="<?php echo $lang->get('item_renewal_period'); ?>">
+                                                    <div class="input-group-append">
+                                                        <span class="input-group-text"><?php echo $lang->get('days'); ?></span>
+                                                    </div>
+                                                </div>
+                                                <i class="fa-solid fa-circle-question text-muted ml-2 infotip" title="<?php echo $lang->get('item_renewal_help'); ?>" aria-label="<?php echo $lang->get('item_renewal_help'); ?>" role="img"></i>
+                                            </div>
+                                        </div>
+                                        <!-- OTP FOR ITEM: secret first, TOTP profile folded behind its summary -->
+                                        <div class="form-group" role="group" aria-labelledby="form-item-otp-title">
+                                            <div class="d-flex flex-wrap align-items-center justify-content-between mb-1">
+                                                <label for="form-item-otpSecret" class="mb-0" id="form-item-otp-title"><i class="fa-solid fa-qrcode fa-fw mr-1 text-muted" aria-hidden="true"></i><?php echo $lang->get('otp_secret_or_uri'); ?></label>
+                                                <div class="form-check icheck-blue mb-0">
+                                                    <input type="checkbox" class="form-check-input form-item-control flat-blue ml-0" id="form-item-otp" data-change-ongoing="">
+                                                    <label class="form-check-label ml-3" for="form-item-otp"><?php echo $lang->get('enabled_otp_for_item'); ?></label>
+                                                </div>
+                                            </div>
+                                            <div class="input-group">
+                                                <input type="text" class="form-control form-item-control purify" data-field-name="otpSecret" id="form-item-otpSecret" data-change-ongoing="">
+                                                <div class="input-group-append">
+                                                    <button type="button" class="btn btn-secondary" id="form-item-otp-settings-toggle" data-toggle="collapse" data-target="#form-item-otp-settings" aria-controls="form-item-otp-settings" aria-expanded="false" title="<?php echo $lang->get('settings'); ?>">
+                                                        <i class="fa-solid fa-sliders mr-1" aria-hidden="true"></i><span class="sr-only"><?php echo $lang->get('settings'); ?> </span><span id="form-item-otp-summary">SHA-1 · 6 · 30 s</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <small class="form-text text-muted"><?php echo $lang->get('otp_uri_help'); ?></small>
+                                            <div class="collapse" id="form-item-otp-settings">
+                                                <div class="tp-item-form-panel">
+                                                    <div class="form-row">
+                                                        <div class="form-group col-sm-4 mb-2">
+                                                            <label for="form-item-otpAlgorithm" class="mb-1"><?php echo $lang->get('otp_algorithm'); ?></label>
+                                                            <select class="form-control form-item-control purify" data-field-name="otpAlgorithm" id="form-item-otpAlgorithm" data-change-ongoing="">
+                                                                <option value="sha1">SHA-1</option>
+                                                                <option value="sha256">SHA-256</option>
+                                                                <option value="sha512">SHA-512</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="form-group col-sm-4 mb-2">
+                                                            <label for="form-item-otpDigits" class="mb-1"><?php echo $lang->get('otp_digits'); ?></label>
+                                                            <select class="form-control form-item-control purify" data-field-name="otpDigits" id="form-item-otpDigits" data-change-ongoing="">
+                                                                <option value="6">6</option>
+                                                                <option value="8">8</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="form-group col-sm-4 mb-2">
+                                                            <label for="form-item-otpPeriod" class="mb-1"><?php echo $lang->get('otp_period'); ?></label>
+                                                            <input type="number" min="1" max="<?php echo ITEM_TOTP_MAX_PERIOD; ?>" class="form-control form-item-control purify" data-field-name="otpPeriod" id="form-item-otpPeriod" value="30" data-change-ongoing="">
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group mb-0">
+                                                        <label for="form-item-otpPhoneNumber" class="mb-1"><?php echo $lang->get('phone_number'); ?></label>
+                                                        <input type="phone" class="form-control form-item-control purify" data-field-name="otpPhoneNumber" id="form-item-otpPhoneNumber" data-change-ongoing="">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <input id="form-item-label" type="text" class="form-control form-item-control purify" data-change-ongoing="" data-field-name="label">
+
+                                    <div class="col-lg-6">
+                                        <!-- URL -->
+                                        <div class="form-group">
+                                            <label for="form-item-url" class="mb-1"><i class="fa-solid fa-link fa-fw mr-1 text-muted" aria-hidden="true"></i><?php echo $lang->get('url'); ?></label>
+                                            <input id="form-item-url" type="url" class="form-control form-item-control purify" data-field-name="url" data-change-ongoing="">
+                                        </div>
+                                        <!-- EMAIL -->
+                                        <div class="form-group">
+                                            <label for="form-item-email" class="mb-1"><i class="fa-solid fa-envelope fa-fw mr-1 text-muted" aria-hidden="true"></i><?php echo $lang->get('email'); ?></label>
+                                            <input id="form-item-email" type="email" class="form-control form-item-control purify" data-field-name="email" data-change-ongoing="">
+                                        </div>
+                                        <!-- FOLDERS -->
+                                        <div class="form-group">
+                                            <label for="form-item-folder" class="mb-1"><i class="fa-solid fa-folder fa-fw mr-1 text-muted" aria-hidden="true"></i><?php echo $lang->get('folder'); ?></label>
+                                            <select id="form-item-folder" class="form-control form-item-control select2-hidden-accessible select2 no-root" style="width:100%;" data-change-ongoing=""></select>
+                                        </div>
+                                        <!-- TAGS -->
+                                        <div class="form-group">
+                                            <label for="form-item-tags" class="mb-1"><i class="fa-solid fa-tags fa-fw mr-1 text-muted" aria-hidden="true"></i><?php echo $lang->get('tags'); ?></label>
+                                            <input id="form-item-tags" type="text" class="form-control form-item-control autocomplete purify" data-change-ongoing="" data-field-name="tags">
+                                        </div>
+                                    </div>
                                 </div>
+
                                 <!-- DESCRIPTION -->
-                                <div class="mb-3">
-                                    <div id="form-item-description" class="form-item-control w-100 clear-me-html purify purifyHtml" data-field-name="description" data-change-ongoing=""></div>
+                                <div class="mb-0">
+                                    <div class="tp-item-form-label" id="form-item-description-label"><i class="fa-solid fa-align-left fa-fw mr-1 text-muted" aria-hidden="true"></i><?php echo $lang->get('description'); ?></div>
+                                    <div id="form-item-description" class="form-item-control w-100 clear-me-html purify purifyHtml" data-field-name="description" data-change-ongoing="" aria-labelledby="form-item-description-label"></div>
                                 </div>
-                                <!-- LOGIN -->
-                                <div class="input-group mb-3">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text"><?php echo $lang->get('login'); ?></span>
-                                    </div>
-                                    <input id="form-item-login" type="text" class="form-control form-item-control purify" data-field-name="login" data-change-ongoing="">
-                                </div>
-                                <!-- PASSWORD -->
-                                <div class="input-group mb-2">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text"><?php echo $lang->get('password'); ?></span>
-                                    </div>
-                                    <!-- No spellcheck nor autocorrect: the field turns into a text input when revealed -->
-                                    <input id="form-item-password" type="password" class="form-control form-item-control" placeholder="<?php echo $lang->get('password'); ?>" data-field-name="pwd" data-change-ongoing="" spellcheck="false" autocapitalize="off" autocorrect="off">
-                                    <div class="input-group-append">
-                                        <span class="input-group-text hidden" id="form-item-password-loader"><i class="fa-solid fa-circle-notch fa-spin"></i></span>
-                                        <!-- Show/hide password -->
-                                        <button type="button" class="btn btn-secondary btn-no-click infotip" id="item-button-password-show" title="<?php echo $lang->get('mask_pw'); ?>" aria-label="<?php echo $lang->get('mask_pw'); ?>" aria-pressed="false"><i class="fa-regular fa-eye"></i></button>
-                                    </div>
-                                </div>
-                                <div class="container-fluid mb-0">
-                                    <div class="row">
-                                        <div class="col-md-12 justify-content-center">
-                                            <div id="form-item-password-strength" class="justify-content-center"></div>
-                                            <div id="form-item-password-coach" class="small text-muted text-center mt-1" style="min-height:2.6rem;"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <input type="hidden" id="form-item-password-complex" value="0">
-                                <!-- Generator: mode selector (drives which options show) + single generate button -->
-                                <div class="d-flex justify-content-center align-items-center mt-2 mb-1">
-                                    <div class="btn-group btn-group-sm btn-group-toggle mr-2" id="form-item-generator-mode">
-                                        <label class="btn btn-primary active" data-mode="random">
-                                            <input type="radio" name="generator-mode" autocomplete="off" checked><i class="fa-solid fa-random mr-1"></i><?php echo $lang->get('generator_mode_random'); ?>
-                                        </label>
-                                        <label class="btn btn-outline-secondary" data-mode="passphrase">
-                                            <input type="radio" name="generator-mode" autocomplete="off"><i class="fa-solid fa-comment-dots mr-1"></i><?php echo $lang->get('generator_mode_passphrase'); ?>
-                                        </label>
-                                    </div>
-                                    <button type="button" class="btn btn-primary btn-sm" id="item-button-generate" data-id="form-item-password"><i class="fa-solid fa-rotate mr-1"></i><?php echo $lang->get('pw_generate'); ?></button>
-                                </div>
-                                <div class="mt-1" id="form-item-password-options">
-                                    <div class="btn-toolbar justify-content-center" role="toolbar" aria-label="Toolbar with button groups">
-                                        <div class="btn-group btn-group-sm btn-group-toggle mr-2" data-toggle="buttons">
-                                            <label class="btn btn-secondary btn-sm">
-                                                <input type="checkbox" class="password-definition" id="pwd-definition-lcl">abc</label>
-                                            <label class="btn btn-secondary btn-sm">
-                                                <input type="checkbox" class="password-definition" id="pwd-definition-ucl">ABC</label>
-                                            <label class="btn btn-secondary btn-sm">
-                                                <input type="checkbox" class="password-definition" id="pwd-definition-numeric">123</label>
-                                            <label class="btn btn-secondary btn-sm">
-                                                <input type="checkbox" class="password-definition" id="pwd-definition-symbols">@#&amp;</label>
-                                            <label class="btn btn-secondary btn-sm">
-                                                <input type="checkbox" class="password-definition" id="pwd-definition-secure"><?php echo $lang->get('secure'); ?></label>
-                                        </div>
-
-                                        <div class="input-group input-group-sm">
-                                            <div class="input-group-prepend">
-                                                <div class="input-group-text"><?php echo $lang->get('size'); ?></div>
-                                            </div>
-                                            <?php
-                                            $defaultPasswordLength = max(4, min((int) ($SETTINGS['pwd_default_length'] ?? 14), (int) $SETTINGS['pwd_maximum_length']));
-                                            ?>
-                                            <select class="form-control form-control-sm w-10" id="pwd-definition-size">
-                                                <?php
-                                                for ($i = 4; $i <= $SETTINGS['pwd_maximum_length']; ++$i) {
-                                                    echo '
-                                                <option' . ($i === $defaultPasswordLength ? ' selected' : '') . '>' . $i . '</option>';
-                                                }
-                                                ?>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="mt-1 hidden" id="form-item-passphrase-options">
-                                    <div class="btn-toolbar justify-content-center" role="toolbar" aria-label="Passphrase options">
-                                        <div class="input-group input-group-sm mr-2">
-                                            <div class="input-group-prepend">
-                                                <div class="input-group-text"><?php echo $lang->get('passphrase_words'); ?></div>
-                                            </div>
-                                            <select class="form-control form-control-sm" id="passphrase-word-count">
-                                                <option value="3">3</option>
-                                                <option value="4" selected>4</option>
-                                                <option value="5">5</option>
-                                                <option value="6">6</option>
-                                                <option value="7">7</option>
-                                                <option value="8">8</option>
-                                            </select>
-                                        </div>
-                                        <div class="input-group input-group-sm mr-2">
-                                            <div class="input-group-prepend">
-                                                <div class="input-group-text"><?php echo $lang->get('passphrase_separator'); ?></div>
-                                            </div>
-                                            <select class="form-control form-control-sm" id="passphrase-separator">
-                                                <option value="-" selected>-</option>
-                                                <option value=" "><?php echo $lang->get('passphrase_separator_space'); ?></option>
-                                                <option value="_">_</option>
-                                                <option value=".">.</option>
-                                                <option value=""><?php echo $lang->get('passphrase_separator_none'); ?></option>
-                                            </select>
-                                        </div>
-                                        <div class="btn-group btn-group-sm btn-group-toggle" data-toggle="buttons">
-                                            <label class="btn btn-secondary btn-sm active">
-                                                <input type="checkbox" id="passphrase-capitalize" checked><?php echo $lang->get('passphrase_capitalize'); ?>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="form-group mt-3" id="form-item-renewal-settings">
-                                    <div class="custom-control custom-checkbox">
-                                        <input type="checkbox" class="custom-control-input form-item-control" id="form-item-renewal-enabled">
-                                        <label class="custom-control-label" for="form-item-renewal-enabled"><?php echo $lang->get('item_renewal_enable'); ?></label>
-                                    </div>
-                                    <label class="mt-2" for="form-item-renewal-period"><?php echo $lang->get('item_renewal_period'); ?></label>
-                                    <input type="number" class="form-control form-item-control" id="form-item-renewal-period" min="1" max="36500" step="1" value="90" disabled>
-                                    <small class="form-text text-muted"><?php echo $lang->get('item_renewal_help'); ?></small>
-                                </div>
-
-                                <!-- EMAIL -->
-                                <div class="input-group mb-3 mt-3">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text"><?php echo $lang->get('email'); ?></span>
-                                    </div>
-                                    <input id="form-item-email" type="email" class="form-control form-item-control purify" data-field-name="email" data-change-ongoing="">
-                                </div>
-                                <!-- URL -->
-                                <div class="input-group mb-3">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text"><?php echo $lang->get('url'); ?></span>
-                                    </div>
-                                    <input id="form-item-url" type="url" class="form-control form-item-control purify" data-field-name="url" data-change-ongoing="">
-                                </div>
-                                <!-- ICON -->
-                                <div class="input-group mb-3">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text"><?php echo $lang->get('icon'); ?></span>
-                                    </div>
-                                    <input id="form-item-icon" type="text" class="form-control form-item-control purify" data-field-name="icon" data-change-ongoing="">
-                                    <span class="ml-2 col-md-1 clear-me-html" id="form-item-icon-show"></span>
-                                </div>
-                                <small class='form-text text-muted'>
-                                    <?php echo $lang->get('fontawesome_icon_tip'); ?><a href="<?php echo FONTAWESOME_URL;?>" target="_blank"><i class="fa-solid fa-external-link-alt ml-1"></i></a>
-                                </small>
                             </div>
-
                             <div class="tab-pane" id="tab_2">
-                                <!-- FOLDERS -->
-                                <div class="form-group mb-3">
-                                    <div class="input-group">
-                                        <div class="input-group-prepend input-group-text"><?php echo $lang->get('folder'); ?></div>
-                                        <select id="form-item-folder" class="form-control form-item-control select2-hidden-accessible select2 no-root" data-change-ongoing=""></select>
-                                    </div>
-                                </div>
-
                                 <!-- RESTRICTED TO -->
                                 <div class="input-group mb-3">
                                     <div class="input-group">
@@ -356,14 +409,6 @@ if ((int) $session_user_admin === 1) {
                                         <input type="hidden" id="form-item-restrictedToUsers" class="form-item-control">
                                         <input type="hidden" id="form-item-restrictedToRoles" class="form-item-control">
                                     </div>
-                                </div>
-                                <!-- TAGS -->
-                                <div class="input-group mb-3">
-                                    <div class="input-group">
-                                        <div class="input-group-prepend input-group-text"><?php echo $lang->get('tags'); ?></div>
-                                        <input id="form-item-tags" type="text" class="form-control form-item-control autocomplete purify" data-change-ongoing="" data-field-name="tags">
-                                    </div>
-                                    <!---->
                                 </div>
                                 <!-- ANYONE CAN MODIFY -->
                                 <?php
@@ -381,73 +426,6 @@ if ((int) $session_user_admin === 1) {
                                 <?php
                                 }
                                 ?>
-
-                                <!-- OTP FOR ITEM -->
-                                <div class="callout callout-primary mb-3">
-                                    <div class="card-header">
-                                        <h3 class="card-title">
-                                            <i class="fa-solid fa-qrcode"></i>
-                                            <?php echo $lang->get('otp'); ?>
-                                        </h3>
-                                    </div>
-                                    <!-- /.card-header -->
-                                    <div class="card-body">
-                                        <div class="row">
-                                            <div class="d-inline p-2 col-4">
-                                                <?php echo $lang->get('phone_number'); ?>
-                                            </div>
-                                            <div class="d-inline p-2 col-4">
-                                                <input type="phone" class="form-control form-item-control purify" data-field-name="otpPhoneNumber" id="form-item-otpPhoneNumber" data-change-ongoing="">
-                                            </div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="d-inline p-2 col-4">
-                                                <?php echo $lang->get('otp_secret_or_uri'); ?>
-                                            </div>
-                                            <div class="d-inline p-2 col-8">
-                                                <input type="text" class="form-control form-item-control purify" data-field-name="otpSecret" id="form-item-otpSecret" data-change-ongoing="">
-                                                <small class="form-text text-muted"><?php echo $lang->get('otp_uri_help'); ?></small>
-                                            </div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="d-inline p-2 col-4">
-                                                <?php echo $lang->get('otp_algorithm'); ?>
-                                            </div>
-                                            <div class="d-inline p-2 col-4">
-                                                <select class="form-control form-item-control purify" data-field-name="otpAlgorithm" id="form-item-otpAlgorithm" data-change-ongoing="">
-                                                    <option value="sha1">SHA-1</option>
-                                                    <option value="sha256">SHA-256</option>
-                                                    <option value="sha512">SHA-512</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="d-inline p-2 col-4">
-                                                <?php echo $lang->get('otp_digits'); ?>
-                                            </div>
-                                            <div class="d-inline p-2 col-4">
-                                                <select class="form-control form-item-control purify" data-field-name="otpDigits" id="form-item-otpDigits" data-change-ongoing="">
-                                                    <option value="6">6</option>
-                                                    <option value="8">8</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="d-inline p-2 col-4">
-                                                <?php echo $lang->get('otp_period'); ?>
-                                            </div>
-                                            <div class="d-inline p-2 col-4">
-                                                <input type="number" min="1" max="<?php echo ITEM_TOTP_MAX_PERIOD; ?>" class="form-control form-item-control purify" data-field-name="otpPeriod" id="form-item-otpPeriod" value="30" data-change-ongoing="">
-                                            </div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="form-check mb-3 icheck-blue">
-                                                <input type="checkbox" class="form-check-input form-item-control flat-blue ml-0" id="form-item-otp" data-change-ongoing="">
-                                                <label class="form-check-label ml-3" for="form-item-otp"><?php echo $lang->get('enabled_otp_for_item'); ?></label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
 
                                 <!-- DELETE AFTER CONSULTATION -->
                                 <?php
@@ -621,14 +599,9 @@ if ((int) $session_user_admin === 1) {
                             </div>
 
                         </div>
-                    </form>
                 </div>
-                <div class="card-footer" id="form-item-buttons">
-                    <button type="button" class="btn btn-info mr-2" id="form-item-button-save" data-action=""><?php echo $lang->get('save'); ?></button>
-                    <button type="button" class="btn btn-default but-back item-edit"><?php echo $lang->get('cancel'); ?></button>
-                </div>
-                <!-- /.card-footer -->
             </div>
+            </form>
         </div>
     </div>
 

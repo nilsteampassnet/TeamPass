@@ -3546,6 +3546,7 @@ return array(
     'item_renewal_enable' => 'Définir un délai de renouvellement pour cet élément',
     'item_renewal_period' => 'Délai de renouvellement de l’élément (jours)',
     'item_renewal_help' => 'Disponible pour les éléments personnels et partagés, même si l’expiration des dossiers est désactivée. Le délai actif le plus court s’applique. Désactiver cette option conserve toute règle active du dossier.',
+    'item_form_unsaved_changes' => 'Modifications non enregistrées',
     'renewal_period_invalid' => 'Saisissez un nombre entier de 1 à 36500 jours, ou désactivez le renouvellement individuel.',
     'at_renewal_period' => 'Délai de renouvellement de l’élément modifié (jours ; 0 = désactivé)',
     'renewal_notice_effective' => 'Délai de renouvellement effectif : #days# jours.',
