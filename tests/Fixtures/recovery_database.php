@@ -45,6 +45,7 @@ $jobId = '';
 $scenario = $argv[1] ?? 'current';
 $exitCode = 0;
 $published = false;
+$dockerPaths = [];
 try {
     $admin->query('CREATE DATABASE `' . $source . '` CHARACTER SET utf8mb4');
     $admin->query('CREATE DATABASE `' . $target . '` CHARACTER SET utf8mb4');
@@ -209,7 +210,10 @@ try {
         'connection' => ['host' => '127.0.0.1', 'user' => $dbUser, 'password' => $dbPassword, 'database' => $target, 'port' => $port],
         'url' => 'https://restored.example.test',
     ];
-    if (str_starts_with($scenario, 'http')) {
+    if ($scenario === 'publish-docker') {
+        require_once __DIR__ . '/recovery_publication.php';
+        $prepared = tpRecoveryTestDockerPrepare($root, $prepareInput, $dockerPaths);
+    } elseif (str_starts_with($scenario, 'http')) {
         tpRecoveryWritePrivate($fixture . '/request.json', json_encode($prepareInput, JSON_THROW_ON_ERROR));
         $process = new \Symfony\Component\Process\Process([PHP_BINARY, 'tests/Integration/recovery_http.php', $fixture . '/request.json'], $root);
         $process->setTimeout(120);
@@ -223,7 +227,7 @@ try {
         $prepared = tpRecoveryPrepare($prepareInput);
     }
     $jobId = $prepared['id'];
-    $restored = tpRecoveryRun($jobId);
+    $restored = $scenario === 'publish-docker' ? tpRecoveryTestDockerRun($root, $jobId) : tpRecoveryRun($jobId);
     if ($restored['status'] !== 'verified') {
         throw new RuntimeException('Restore did not reach verification');
     }
@@ -272,7 +276,11 @@ try {
         require_once __DIR__ . '/recovery_crypto.php';
         tpTestRecoveryCrypto($root, $source, $jobId, $targetDb);
     }
-    if (in_array($scenario, ['publish', 'http-publish', 'publish-unusable'], true)) {
+    if ($scenario === 'publish-retry') {
+        require_once __DIR__ . '/recovery_publication.php';
+        tpRecoveryTestPublicationRetry($root, $jobId);
+    }
+    if (in_array($scenario, ['publish', 'http-publish', 'publish-retry', 'publish-unusable', 'publish-docker'], true)) {
         // Publication is opt-in and must only run in a disposable copy of the code.
         if (!is_file($root . '/_tools/drp-lab-allow-activation')) {
             throw new RuntimeException('Publication test requires an explicitly disposable checkout');
@@ -286,6 +294,8 @@ try {
             throw new RuntimeException($process->getErrorOutput());
         }
         $published = true;
+        if ($scenario === 'publish-docker') { tpRecoveryTestDockerPublication($root); }
+        if ($scenario === 'publish-retry') { tpRecoveryTestPublicationReceiptRetry($root, $jobId); }
         if (file_get_contents($root . '/secrets/fixture.key') !== $master->saveToAsciiSafeString()) {
             throw new RuntimeException('Publication changed the original master key');
         }
@@ -328,6 +338,7 @@ try {
         if ($receipt['status'] !== 'resumed' || !isset($receipt['resumed_at']) || $receipt['maintenance_enabled']) {
             throw new RuntimeException('Service resume was not recorded for the final cleanup step');
         }
+        if ($scenario === 'publish-retry') { tpRecoveryTestPublicationReceiptRetry($root, $jobId); }
         // A repeated acknowledgement must not rewrite separately enabled maintenance.
         $targetDb->query("UPDATE recovery_misc SET valeur='1' WHERE type='admin' AND intitule='maintenance_mode'");
         $process->run();
@@ -357,6 +368,9 @@ try {
         foreach (['app/config/settings.php', 'secrets/fixture.key', 'app/includes/libraries/csrfp/libs/csrfp.config.php'] as $relative) {
             unlink($root . '/' . $relative);
         }
+    }
+    foreach ($dockerPaths as $path) {
+        if (is_link($path) || is_file($path)) { unlink($path); }
     }
     if ($jobId !== '') {
         tpRecoveryRemoveJobFiles($jobId);

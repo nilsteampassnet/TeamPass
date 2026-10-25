@@ -269,6 +269,9 @@ $cronServiceCommand = tpRecoveryCronServiceCommand(PHP_OS_FAMILY);
         <pre id="recovery-command" data-recovery-command class="p-3 bg-light"></pre>
         <p id="recovery-activate-hint"><?= $escape('drp_activate_hint') ?></p>
         <pre id="recovery-activate" data-recovery-command class="p-3 bg-light"></pre>
+        <p id="recovery-publication-cleanup" class="alert alert-warning" hidden>The instance is published,
+            but private staging cleanup has not been confirmed. Correct the terminal diagnostic and run
+            the activation command again to finish cleanup before continuing. Do not discard this completed publication.</p>
         <section id="recovery-sensitive-staging" class="alert alert-warning" hidden>
             <p>A stopped recovery can retain the database password in <code>job.json</code>,
                 the original key and decrypted staging files in its private job directory.
@@ -354,7 +357,8 @@ $cronServiceCommand = tpRecoveryCronServiceCommand(PHP_OS_FAMILY);
 <script id="recovery-data" type="application/json"><?= json_encode([
     'csrf' => $_SESSION['recovery_csrf'], 'preparing' => $texts['drp_preparing'], 'error' => $texts['drp_error'],
     'ready' => $texts['drp_ready'], 'verified' => $texts['drp_verified'], 'complete' => $texts['drp_complete'], 'counts' => $texts['drp_counts'],
-    'verificationPaused' => $texts['drp_verification_paused'],
+    'activating' => $texts['drp_activating'], 'verificationPaused' => $texts['drp_verification_paused'],
+    'cleanupPending' => $texts['drp_cleanup_pending'],
     'running' => $texts['drp_running'], 'failed' => $texts['drp_failed'], 'initial' => $initialJob,
     'command' => $commandBase,
     'cleanup' => tpRecoveryInstallerCleanupCommand(TEAMPASS_ROOT, PHP_OS_FAMILY),
@@ -371,6 +375,9 @@ $cronServiceCommand = tpRecoveryCronServiceCommand(PHP_OS_FAMILY);
         'OPERATOR_AUTHORIZATION_REQUIRED' => 'This browser authorization no longer matches the server. Enable recovery again and enter the new operator code.',
         'OPERATOR_CODE_INVALID' => 'The operator code is incorrect. Check the pasted code or generate a new one with the enable command.',
         'OPERATOR_CODE_UNREADABLE' => 'The operator file was created by another account and PHP cannot read it. Have its ownership repaired, then use the PHP service account command shown above.',
+        'RECOVERY_DESTINATION_UNWRITABLE' => 'The PHP service account cannot write to a destination directory. Check temporary recovery permissions on configuration, secrets, upload, KB attachments and avatars, then prepare again.',
+        'RECOVERY_DIRECTORY_UNWRITABLE' => 'A required recovery directory cannot be created or accessed. Check its parent permissions under the PHP service account.',
+        'RECOVERY_PATH_INVALID' => 'A recovery path contains an unexpected link or file type. Inspect the deployment layout; only the official Docker configuration links are supported.',
     ],
 ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR) ?></script>
 <script src="recovery.js?v=<?= htmlspecialchars($scriptVersion, ENT_QUOTES, 'UTF-8') ?>" defer></script>

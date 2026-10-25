@@ -17,6 +17,7 @@ require_once __DIR__ . '/config_access_logic.php';
 require_once __DIR__ . '/install_security_logic.php';
 require_once __DIR__ . '/recovery_environment.php';
 require_once __DIR__ . '/recovery_finalization.php';
+require_once __DIR__ . '/recovery_publication.php';
 
 /** Resolve a job inside the private recovery directory, refusing links in its ancestry. */
 function tpRecoveryJobDirectory(string $id = ''): string
@@ -40,12 +41,16 @@ function tpRecoveryJobDirectory(string $id = ''): string
 }
 
 /** Write sensitive data owner-only and replace it atomically within a trusted directory. */
-function tpRecoveryWritePrivate(string $path, string $contents, bool $exclusive = false): void
+function tpRecoveryWritePrivate(string $path, string $contents, bool $exclusive = false, ?string $temporaryPath = null): void
 {
     if (is_link($path)) {
         throw new TeamPassRecoveryException('RECOVERY_PATH_INVALID');
     }
-    $temporary = dirname($path) . '/.recovery-' . bin2hex(random_bytes(16));
+    if ($temporaryPath !== null && (dirname($temporaryPath) !== dirname($path)
+        || preg_match('/^\.recovery-[a-f0-9]{32}-[a-f0-9]{16}$/D', basename($temporaryPath)) !== 1)) {
+        throw new TeamPassRecoveryException('RECOVERY_PATH_INVALID');
+    }
+    $temporary = $temporaryPath ?? dirname($path) . '/.recovery-' . bin2hex(random_bytes(16));
     $handle = tpBackupOpenProtectedFile($temporary, 'x+b', true);
     if (!is_resource($handle)) {
         throw new TeamPassRecoveryException('RECOVERY_WRITE_FAILED');
@@ -62,15 +67,19 @@ function tpRecoveryWritePrivate(string $path, string $contents, bool $exclusive 
         if (!fflush($handle)) {
             throw new TeamPassRecoveryException('RECOVERY_WRITE_FAILED');
         }
-    } finally {
+    } catch (Throwable $exception) {
         fclose($handle);
+        @unlink($temporary);
+        throw $exception;
+    } finally {
+        if (is_resource($handle)) { fclose($handle); }
     }
     if (!($exclusive ? @link($temporary, $path) : rename($temporary, $path))) {
         @unlink($temporary);
         throw new TeamPassRecoveryException('RECOVERY_WRITE_FAILED');
     }
     if ($exclusive) {
-        unlink($temporary);
+        if (!unlink($temporary)) { throw new TeamPassRecoveryException('RECOVERY_WRITE_FAILED'); }
     }
 }
 
@@ -97,14 +106,18 @@ function tpRecoveryLoadJob(string $id): array
 /** Require a fresh deployment. Existing key material is evidence of an existing installation. */
 function tpRecoveryAssertFreshTarget(): void
 {
+    // Validate dangling Docker links as well: file_exists() alone cannot distinguish them.
+    tpRecoveryConfigDestination(TEAMPASS_ROOT, 'settings.php');
+    tpRecoveryConfigDestination(TEAMPASS_ROOT, 'csrfp.config.php');
     if (teampassConfigState(TEAMPASS_ROOT . '/app/config') !== 'not_installed') {
         throw new TeamPassRecoveryException('TARGET_ALREADY_INSTALLED');
     }
     foreach (['secrets', 'storage/upload', 'storage/files/kb_attachments', 'public/assets/avatars'] as $relative) {
         $directory = TEAMPASS_ROOT . '/' . $relative;
-        if (is_link($directory)) {
-            throw new TeamPassRecoveryException('RECOVERY_PATH_INVALID');
-        }
+        // Check every parent too; a link at storage/files must not hide its child.
+        $parent = dirname($relative);
+        if ($parent !== '.') { tpRecoveryDestinationDirectory(TEAMPASS_ROOT, $parent); }
+        if (is_link($directory)) { throw new TeamPassRecoveryException('RECOVERY_PATH_INVALID'); }
         if (!is_dir($directory)) {
             continue;
         }
@@ -240,6 +253,7 @@ function tpRecoveryValidateBackup(string $zipPath, string $sqlPath, int $maximum
 function tpRecoveryPrepare(array $input): array
 {
     tpRecoveryAssertFreshTarget();
+    tpRecoveryPublicationPreflight(TEAMPASS_ROOT);
     $lock = tpBackupOpenProtectedFile(tpRecoveryJobDirectory() . '/operation.lock', 'c+b', true);
     if (!is_resource($lock) || !flock($lock, LOCK_EX | LOCK_NB)) {
         throw new TeamPassRecoveryException('RECOVERY_ALREADY_RUNNING');
@@ -554,20 +568,23 @@ function tpRecoveryCheckDocuments(mysqli $db, array $job): void
 }
 
 /** Remove only a validated private job tree; symlinks are unlinked, never followed. */
-function tpRecoveryRemoveJobFiles(string $id): void
+function tpRecoveryRemoveJobFiles(string $id, bool $keepReceipt = false): void
 {
     $directory = tpRecoveryJobDirectory($id);
     if (!is_dir($directory)) {
         return;
     }
     // scandir closes the directory handle before deletion, including on Windows.
-    $remove = static function (string $path) use (&$remove): void {
+    $remove = static function (string $path) use (&$remove, $directory, $keepReceipt): void {
         $entries = scandir($path);
         if ($entries === false) {
             throw new TeamPassRecoveryException('RECOVERY_CLEANUP_FAILED');
         }
         foreach ($entries as $entry) {
             if ($entry === '.' || $entry === '..') {
+                continue;
+            }
+            if ($keepReceipt && $path === $directory && $entry === 'receipt.json' && !is_link($path . '/' . $entry)) {
                 continue;
             }
             $child = $path . '/' . $entry;
@@ -577,7 +594,7 @@ function tpRecoveryRemoveJobFiles(string $id): void
                 throw new TeamPassRecoveryException('RECOVERY_CLEANUP_FAILED');
             }
         }
-        if (!rmdir($path)) {
+        if (!($keepReceipt && $path === $directory) && !rmdir($path)) {
             throw new TeamPassRecoveryException('RECOVERY_CLEANUP_FAILED');
         }
     };
@@ -622,64 +639,111 @@ function tpRecoveryActivate(string $id, bool $acknowledgeUnusableTpKey = false):
     if (PHP_SAPI !== 'cli') {
         throw new TeamPassRecoveryException('RECOVERY_CLI_REQUIRED');
     }
-    tpRecoveryAssertFreshTarget();
     $lock = tpBackupOpenProtectedFile(tpRecoveryJobDirectory() . '/operation.lock', 'c+b', true);
     if (!is_resource($lock) || !flock($lock, LOCK_EX | LOCK_NB)) {
         throw new TeamPassRecoveryException('RECOVERY_ALREADY_RUNNING');
     }
     try {
-        $job = tpRecoveryLoadJob($id);
         $directory = tpRecoveryJobDirectory($id);
-        if ($job['status'] !== 'verified'
+        // The receipt is committed before private staging is purged. A retry after
+        // interruption during cleanup can finish without replaying publication.
+        if (is_file($directory . '/receipt.json')) {
+            $result = tpRecoveryLoadReceipt($id);
+            $result['cleanup_pending'] = true;
+            tpRecoverySaveReceipt($result);
+            tpRecoveryRemoveJobFiles($id, true);
+            $result['cleanup_pending'] = false;
+            tpRecoverySaveReceipt($result);
+            @unlink(tpRecoveryJobDirectory() . '/operator.json');
+            return $result;
+        }
+        $job = tpRecoveryLoadJob($id);
+        if (!in_array($job['status'], ['verified', 'activating'], true)
             || !hash_equals($job['zip_sha256'], (string) hash_file('sha256', $directory . '/backup.zip'))) {
             throw new TeamPassRecoveryException('RECOVERY_JOB_NOT_VERIFIED');
         }
+        if ($job['plan']['target_version'] !== TP_VERSION . '.' . TP_VERSION_MINOR
+            || $job['plan']['target_schema'] !== (string) UPGRADE_MIN_DATE) {
+            throw new TeamPassRecoveryException('RECOVERY_INPUT_CHANGED');
+        }
         if (($job['encryption']['tp_key_status'] ?? '') === 'unusable') {
-            if (!$acknowledgeUnusableTpKey) {
+            if (!$acknowledgeUnusableTpKey && empty($job['unusable_tp_key_acknowledged_at'])) {
                 throw new TeamPassRecoveryException('RECOVERY_TP_KEY_ACKNOWLEDGEMENT_REQUIRED');
             }
-            $job['unusable_tp_key_acknowledged_at'] = time();
+            $job['unusable_tp_key_acknowledged_at'] = $job['unusable_tp_key_acknowledged_at'] ?? time();
         }
+        tpRecoveryPublicationPreflight(TEAMPASS_ROOT);
         $db = tpRecoveryConnect($job['connection']);
         try {
             tpRecoveryVerifyMaster($db, $job);
+            $statement = $db->prepare('SELECT intitule,valeur FROM `' . $job['kit']['prefix']
+                . "misc` WHERE type='admin' AND intitule IN ('recovery_job_id','recovery_pending_checks')");
+            $statement->execute();
+            $hold = array_column($statement->get_result()->fetch_all(MYSQLI_ASSOC), 'valeur', 'intitule');
+            $statement->close();
+            if (($hold['recovery_job_id'] ?? '') !== $id || ($hold['recovery_pending_checks'] ?? '') !== '1') {
+                throw new TeamPassRecoveryException('RECOVERY_PUBLICATION_CONFLICT');
+            }
         } finally {
             $db->close();
         }
+        if ($job['status'] === 'verified') {
+            tpRecoveryAssertFreshTarget();
+            $master = (string) file_get_contents($directory . '/keys/' . $job['kit']['secure_name']);
+            $config = tpRecoverySettingsPhp($job, $master);
+            $csrf = require TEAMPASS_ROOT . '/app/includes/libraries/csrfp/libs/csrfp.config.sample.php';
+            $csrf['CSRFP_TOKEN'] = bin2hex(random_bytes(25));
+            $csrf['jsUrl'] = './assets/lib/csrfp/csrfprotector.js';
+            $csrfContents = "<?php\nreturn " . var_export($csrf, true) . ";\n";
+            if (is_link($directory . '/publication')) {
+                throw new TeamPassRecoveryException('RECOVERY_PATH_INVALID');
+            }
+            if (!is_dir($directory . '/publication') && !mkdir($directory . '/publication', 0700)) {
+                throw new TeamPassRecoveryException('RECOVERY_DIRECTORY_UNWRITABLE');
+            }
+            tpRecoveryWritePrivate($directory . '/publication/settings.php', $config);
+            tpRecoveryWritePrivate($directory . '/publication/csrfp.config.php', $csrfContents);
+            $csrfPath = tpRecoveryConfigDestination(TEAMPASS_ROOT, 'csrfp.config.php');
+            $job['publication'] = ['settings_sha256' => hash('sha256', $config),
+                'csrf_sha256' => hash('sha256', $csrfContents), 'master_sha256' => hash('sha256', $master),
+                'previous_csrf_sha256' => is_file($csrfPath) ? hash_file('sha256', $csrfPath) : null];
+        }
+        $master = (string) file_get_contents($directory . '/keys/' . $job['kit']['secure_name']);
+        $config = (string) file_get_contents($directory . '/publication/settings.php');
+        $csrfContents = (string) file_get_contents($directory . '/publication/csrfp.config.php');
+        foreach (['master' => $master, 'settings' => $config, 'csrf' => $csrfContents] as $name => $contents) {
+            if (!is_string($job['publication'][$name . '_sha256'] ?? null)
+                || !hash_equals($job['publication'][$name . '_sha256'], hash('sha256', $contents))) {
+                throw new TeamPassRecoveryException('RECOVERY_INPUT_CHANGED');
+            }
+        }
+        tpRecoveryAssertPublicationData(TEAMPASS_ROOT, $job);
         $job['status'] = 'activating';
+        $job['error'] = '';
         tpRecoverySaveJob($job);
         $settings = ['path_to_upload_folder' => TEAMPASS_ROOT . '/storage/upload',
             'path_to_files_folder' => TEAMPASS_ROOT . '/storage/files'];
-        $documents = tpBackupRestorePackageDocumentsFromZip($directory . '/backup.zip', $job['manifest'], $settings, false);
-        if (empty($documents['success'])) {
-            throw new TeamPassRecoveryException('DOCUMENT_PUBLICATION_FAILED');
-        }
-        $master = (string) file_get_contents($directory . '/keys/' . $job['kit']['secure_name']);
-        $config = tpRecoverySettingsPhp($job, $master);
-        $csrf = require TEAMPASS_ROOT . '/app/includes/libraries/csrfp/libs/csrfp.config.sample.php';
-        $csrf['CSRFP_TOKEN'] = bin2hex(random_bytes(25));
-        $csrf['jsUrl'] = './assets/lib/csrfp/csrfprotector.js';
-        tpRecoveryWritePrivate(TEAMPASS_ROOT . '/app/includes/libraries/csrfp/libs/csrfp.config.php', "<?php\nreturn " . var_export($csrf, true) . ";\n");
-        tpRecoveryWritePrivate(TEAMPASS_ROOT . '/secrets/' . $job['kit']['secure_name'], $master, true);
+        tpRecoveryPublishDocuments($directory . '/backup.zip', $job, $settings);
+        tpRecoveryPublishFile(tpRecoveryConfigDestination(TEAMPASS_ROOT, 'csrfp.config.php'), $csrfContents,
+            $job['publication']['previous_csrf_sha256'], $id);
+        tpRecoveryPublishFile(TEAMPASS_ROOT . '/secrets/' . $job['kit']['secure_name'], $master, null, $id);
         // settings.php is the commit marker: no login or normal bootstrap is possible before it exists.
-        tpRecoveryWritePrivate(TEAMPASS_ROOT . '/app/config/settings.php', $config, true);
+        tpRecoveryPublishFile(tpRecoveryConfigDestination(TEAMPASS_ROOT, 'settings.php'), $config, null, $id);
         \TeampassClasses\ConfigManager\ConfigManager::invalidateCache();
-        $job['status'] = 'complete';
         $result = tpRecoveryPublicJob($job);
+        $result['status'] = 'complete';
         $result['activated_at'] = time();
-        // Keep only a non-sensitive receipt. Decrypted dumps, keys and credentials are removed.
-        tpRecoveryRemoveJobFiles($id);
-        mkdir($directory, 0700);
-        tpRecoveryWritePrivate($directory . '/receipt.json', json_encode($result, JSON_THROW_ON_ERROR));
+        $result['cleanup_pending'] = true;
+        // Persist the commit record first: cleanup can be safely retried after interruption.
+        tpRecoverySaveReceipt($result);
+        tpRecoveryRemoveJobFiles($id, true);
+        $result['cleanup_pending'] = false;
+        tpRecoverySaveReceipt($result);
         @unlink(tpRecoveryJobDirectory() . '/operator.json');
         return $result;
     } catch (Throwable $exception) {
-        // A missing acknowledgement does not consume this verified recovery.
-        if ($exception instanceof TeamPassRecoveryException && $exception->reason === 'RECOVERY_TP_KEY_ACKNOWLEDGEMENT_REQUIRED') {
-            throw $exception;
-        }
         if (isset($job) && is_file(tpRecoveryJobDirectory($id) . '/job.json')) {
-            $job['status'] = 'failed';
+            // Never erase the retryable publication phase on a transient filesystem failure.
             $job['error'] = $exception instanceof TeamPassRecoveryException ? $exception->reason : 'RECOVERY_ACTIVATION_FAILED';
             tpRecoverySaveJob($job);
         }
@@ -698,8 +762,12 @@ function tpRecoveryDiscard(string $id): void
         throw new TeamPassRecoveryException('RECOVERY_ALREADY_RUNNING');
     }
     try {
+        $receiptPath = tpRecoveryJobDirectory($id) . '/receipt.json';
+        if (file_exists($receiptPath) || is_link($receiptPath)) {
+            throw new TeamPassRecoveryException('RECOVERY_CLEANUP_REQUIRED');
+        }
         $job = tpRecoveryLoadJob($id);
-        if (!in_array($job['status'], ['prepared', 'failed', 'importing', 'upgrading', 'verifying', 'verified'], true)) {
+        if (!in_array($job['status'], ['prepared', 'failed', 'importing', 'upgrading', 'verifying', 'verified', 'activating'], true)) {
             throw new TeamPassRecoveryException('RECOVERY_JOB_BUSY');
         }
         tpRecoveryRemoveJobFiles($id);

@@ -33,6 +33,8 @@ return [
     'drp_preparing' => 'Checking the archives and destination…',
     'drp_ready' => 'Step 1 — Preliminary checks passed. Run the complete command below on the server to restore, upgrade and verify the database. Wait for it to finish, then click Refresh progress.',
     'drp_verified' => 'Step 2 — Database checks are complete. Review the encryption diagnostic below, then run the publication command and click Refresh progress.',
+    'drp_activating' => 'Step 2 — Publication has started. If the previous command stopped, correct the diagnostic and run the same activation command again. The database does not need to be imported again.',
+    'drp_cleanup_pending' => 'Step 2 — The instance is published. Run activation again to finish private staging cleanup, then refresh progress.',
     'drp_verification_paused' => 'Encryption verification stopped and its last completed batch was saved. Run the command below again to continue without importing the database again. If a batch timed out, append --verification-timeout=3600 to allow more time per batch.',
     'drp_complete' => 'The restored files and configuration are published. Review the permission result below, then finalize restoration before removing the installer and checking access.',
     'drp_resumed' => 'Restoration is finalized and the recovery hold is released. Remove the installer, check the restored instance, then restore scheduled processing below.',

@@ -218,3 +218,6 @@ jobs:
           php tests/Fixtures/recovery_database.php upgrade
           php tests/Integration/recovery_http.php
           php tests/Fixtures/recovery_database.php http-publish
+          php tests/Fixtures/recovery_database.php publish-unusable
+          php tests/Fixtures/recovery_database.php publish-retry
+          php tests/Fixtures/recovery_database.php publish-docker

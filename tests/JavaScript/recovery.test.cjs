@@ -31,7 +31,7 @@ function app(initial = null, command = "sudo -u 'www-data' -- '/usr/bin/php8.5' 
   form.querySelectorAll = (selector) => selector === 'input[type=password]' ? [password] : inputs
   element('recovery-data').textContent = JSON.stringify({ csrf: 'fixture-csrf', initial,
     ready: 'PREPARED', verified: 'VERIFIED', complete: 'COMPLETE', running: 'RUNNING',
-    failed: 'FAILED', verificationPaused: 'RESUME VERIFICATION',
+    failed: 'FAILED', activating: 'RETRY PUBLICATION', verificationPaused: 'RESUME VERIFICATION', cleanupPending: 'FINISH CLEANUP',
     counts: '%s tables, %s documents', preparing: 'WAIT', error: 'ERROR',
     command,
     cleanup: "sudo rm -rf -- '/srv/TeamPass Lab/public/install'",
@@ -126,7 +126,7 @@ test('Missing TP sharekeys are visible without blocking healthy-key publication'
   assert.equal(ui.element('recovery-encryption').hidden, false)
   assert.match(ui.element('recovery-encryption-progress').textContent, /100 items decrypted/)
   assert.equal(ui.element('recovery-missing-sharekeys').hidden, false)
-  assert.match(ui.element('recovery-missing-sharekeys').textContent, /1 items have no TP system sharekey/)
+  assert.match(ui.element('recovery-missing-sharekeys').textContent, /Items without a TP system sharekey: 1\./)
   assert.equal(ui.element('recovery-unusable-tp-key').hidden, true)
   assert.equal(ui.element('recovery-activate').hidden, false)
   assert.doesNotMatch(ui.element('recovery-activate').textContent, /--acknowledge/)
@@ -169,7 +169,7 @@ test('Encryption diagnostics remain visible in the final receipt and offer no ne
   assert.equal(ui.element('recovery-finished').hidden, false)
 })
 
-test('A timed-out verification offers batch continuation without reimporting the database', () => {
+test('A timed-out verification offers batch continuation and an interrupted publication offers activation retry', async () => {
   const ui = app({ ...job('verifying'), error: 'RECOVERY_VERIFICATION_TIMEOUT', encryption: {
     tp_key_status: 'ok', total_items: 201, checked_items: 100, missing_tp_sharekeys: 0,
     skipped_items: 0, complete: false } })
@@ -177,6 +177,28 @@ test('A timed-out verification offers batch continuation without reimporting the
   assert.equal(ui.element('recovery-command').hidden, false)
   assert.equal(ui.element('recovery-activate').hidden, true)
   assert.match(ui.element('recovery-encryption-progress').textContent, /Verification progress: 100 items decrypted/)
+  ui.queue.push({ ...job('activating'), error: 'RECOVERY_WRITE_FAILED' })
+  await ui.refresh()
+  assert.equal(ui.element('recovery-instruction').textContent, 'RETRY PUBLICATION')
+  assert.equal(ui.element('recovery-command').hidden, true)
+  assert.equal(ui.element('recovery-activate').hidden, false)
+  assert.equal(ui.element('recovery-sensitive-staging').hidden, false)
+})
+
+test('A committed publication with pending private cleanup offers activation retry before finalization', async () => {
+  const ui = app({ ...job('complete', { status: 'passed' }), cleanup_pending: true })
+  assert.equal(ui.element('recovery-instruction').textContent, 'FINISH CLEANUP')
+  assert.equal(ui.element('recovery-publication-cleanup').hidden, false)
+  assert.equal(ui.element('recovery-sensitive-staging').hidden, true)
+  assert.equal(ui.element('recovery-activate').hidden, false)
+  assert.match(ui.element('recovery-activate').textContent, /--activate=a{32}$/)
+  assert.equal(ui.element('recovery-step-2').attributes['aria-current'], 'step')
+  assert.equal(ui.element('recovery-resume').hidden, true)
+  ui.queue.push({ ...job('complete', { status: 'passed' }), cleanup_pending: false })
+  await ui.refresh()
+  assert.equal(ui.element('recovery-publication-cleanup').hidden, true)
+  assert.equal(ui.element('recovery-activate').hidden, true)
+  assert.equal(ui.element('recovery-resume').hidden, false)
 })
 
 test('Multiline copy preserves administrator commands without interpreting their content', async () => {

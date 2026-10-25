@@ -82,8 +82,11 @@ these capture guarantees and still require a complete restore rehearsal.
    It needs the schema/data privileges used by the installer and migrations;
    it does not need global `FILE`, user-management or administrator privileges.
 3. Make the configuration, secrets and persistent data directories writable by
-   the PHP service account during recovery. Existing configuration, key material
-   or application documents cause the fresh-server checks to stop.
+   the PHP service account during recovery. Preparation checks effective write
+   access to the configuration, secrets, upload, KB attachment and avatar
+   directories before importing data. Unexpected links are refused. Existing
+   configuration, key material or application documents cause the fresh-server
+   checks to stop.
 4. Configure HTTPS. A new valid certificate is acceptable. Keeping the original
    domain avoids changing the origin/RP ID of sign-in passkeys and integration
    addresses. A database restored under another domain needs separate checks.
@@ -154,8 +157,32 @@ sudo -u www-data php app/scripts/disaster-recovery.php --run=JOB_ID
 
 This imports and validates the database, applies the supported migrations when
 needed, and checks item decryption with the restored system key chain. It checks
-the complete document references against the imported database. A successful job
-reaches `verified`; the web assistant can refresh its progress.
+the complete document references against the imported database. The full target
+release is recorded in `teampass_version_full`. A successful job reaches
+`verified`; the web assistant can refresh its progress.
+
+Encryption verification runs exhaustively in batches of 100 encrypted items,
+with progress saved after each batch and printed in the terminal. There is no
+timeout on the complete vault. The default timeout is 1,800 seconds **per batch**;
+`--run=JOB_ID --verification-timeout=3600` allows more time per batch (1–86,400
+seconds). An interrupted or timed-out job in `verifying` can use the same `--run`
+command to continue from the last completed batch without importing again.
+
+An item without a TP system sharekey is counted and reported in the assistant
+and final receipt; it does not block restoration. This occurs with historical
+personal items and after rebuilding the TP key pair. Existing user sharekeys
+are preserved. A TP sharekey row that exists but cannot decrypt its item still
+stops recovery with `ITEM_DECRYPTION_FAILED`.
+
+An unusable TP system private key is reported instead of discarding otherwise
+recoverable user data. The assistant explains that system-key item verification
+was unavailable and requires an explicit acknowledgement before showing the
+publication command. For CLI recovery, review the diagnostic and explicitly add
+`--acknowledge-unusable-tp-key` to `--activate=JOB_ID` to accept this limitation.
+The acknowledgement is recorded in the receipt. Plan shared reference-key repair
+through Tools and personal-item repair with each owner after restoring access.
+This does **not** waive the original master-key/database match: a mismatch remains
+fatal, including with that flag. Recovery does not regenerate or repair keys.
 
 Copy the complete command shown by the assistant, including its service-account
 prefix and absolute PHP/script paths. Run only the command for the current step,
@@ -171,12 +198,58 @@ sudo -u www-data php app/scripts/disaster-recovery.php --activate=JOB_ID
 The archived `settings.php` is never executed. New destination credentials are
 encrypted with the original master key. `settings.php` is published last.
 Private staging is removed after success; a non-sensitive receipt remains.
+Publication records a stable set of configuration contents before writing any
+destination data. If `--activate` stops, correct the reported permission or
+storage problem and run the same command again. Jobs in `activating` accept only
+already-published files with the expected hashes; a different file is a conflict,
+never an instruction to overwrite it. Retrying does not import the database again.
+The completion receipt is saved before sensitive staging is removed, so cleanup
+can also be retried after an interruption. The receipt records `cleanup_pending`
+until that purge succeeds; the assistant proposes activation again and service
+finalization is refused while cleanup remains pending.
+
+### Official Docker image
+
+The official image runs PHP as `nginx`. Use `docker compose exec -u nginx`
+instead of host `sudo -u www-data`. Recovery preserves the entrypoint's exact
+`settings.php` and `csrfp.config.php` links into `/var/www/html/storage/config/`
+and publishes to those persistent targets. Other configuration links and link
+chains are rejected. Start with fresh, empty application data volumes and an
+empty destination database; do not run a normal installation first.
+
+For a container serving HTTP behind a TLS proxy, use CLI preparation to avoid
+passing recovery secrets through an unqualified HTTP backend. Stage the two
+encrypted archives owner-only inside the container, and prepare a private JSON
+request using those container paths and the destination credentials described
+below. From the Compose project directory:
+
+```bash
+docker compose exec -T -u nginx teampass php /var/www/html/app/scripts/disaster-recovery.php --prepare=- < private-recovery.json
+docker compose exec -T -u nginx teampass php /var/www/html/app/scripts/disaster-recovery.php --run=JOB_ID
+docker compose exec -T -u nginx teampass php /var/www/html/app/scripts/disaster-recovery.php --activate=JOB_ID
+docker compose exec -T -u nginx teampass php /var/www/html/app/scripts/disaster-recovery.php --status=JOB_ID
+```
+
+`JOB_ID` is printed by preparation. Remove the private request after use and
+follow the same diagnostic/acknowledgement, permission, finalization, installer
+cleanup and access checks as a native deployment. Adapt the Compose service
+name if it is not `teampass`. Keep scheduled processing stopped during these
+checks. Do not apply a Debian/RHEL permission repair plan to the Alpine image;
+use the Docker permission profile and deployment runbook. The assistant still
+requires directly signalled HTTPS or a protected loopback connection; it does
+not trust arbitrary `X-Forwarded-Proto` headers.
+The persistent-link layout is exercised by Linux CLI integration fixtures.
+A full rehearsal of the official container lifecycle and a production proxy
+configuration remains part of deployment qualification.
 
 ### Finalization: permissions, checks and cleanup
 
 The restored instance stays in maintenance, and background processing is held.
 Backup schedules and LAPR are disabled. Sessions, API authorizations, temporary
-tokens, pending background tasks and idempotency results are invalidated.
+tokens, paired-device requests/approvals, pending background tasks and idempotency
+results are invalidated. Browser extension tokens must be issued again and
+devices must be paired again; neither active credentials nor revocation
+tombstones from the old timeline are retained.
 Restored Secure Send links are invalidated with a transactional lifecycle audit.
 
 The assistant distinguishes five steps: **restore database**, **publish instance**,
@@ -246,8 +319,10 @@ The item changes API returns a new `generation` after every recovery and require
 a full sync when the client's generation is absent/different or its cursor is
 ahead of the restored journal. Clients must adopt both cursor and generation
 after rebuilding their cache, then send `generation` on subsequent delta calls.
-Older clients that do not support generations continue receiving full-sync
-requests after recovery; upgrade or refresh them explicitly.
+Generation support is required for every offline client. Older clients that do
+not persist and resend it continue receiving full-sync requests after recovery;
+upgrade them before resuming offline synchronization. Rebuilding their cache
+alone does not resolve the repeated full-sync loop.
 
 The installer cleanup command uses the validated absolute installer path:
 

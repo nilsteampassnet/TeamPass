@@ -118,6 +118,9 @@ try {
         $lock = tpRecoveryFinalizationLock();
         try {
             $receipt = tpRecoveryLoadReceipt($id);
+            if (!empty($receipt['cleanup_pending'])) {
+                throw new TeamPassRecoveryException('RECOVERY_CLEANUP_REQUIRED');
+            }
             require_once __DIR__ . '/../sources/main.functions.php';
             if (($SETTINGS['recovery_job_id'] ?? '') !== $id) {
                 throw new TeamPassRecoveryException('RECOVERY_RESUME_INVALID');

@@ -24,7 +24,7 @@ function tpRecoveryReceiptFields(array $receipt): array
     return array_intersect_key($receipt, array_flip([
         'id', 'status', 'error', 'plan', 'tables', 'documents', 'created_at',
         'activated_at', 'resumed_at', 'permissions', 'maintenance_enabled',
-        'encryption', 'unusable_tp_key_acknowledged_at',
+        'encryption', 'unusable_tp_key_acknowledged_at', 'cleanup_pending',
     ]));
 }
 
