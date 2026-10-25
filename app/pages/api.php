@@ -38,6 +38,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
+require_once __DIR__ . '/../sources/api_device_logic.php';
 
 // init
 loadClasses('DB');
@@ -237,6 +238,9 @@ function getDomainFromSettingsUrl(string $url): string
                                 <a class="nav-link" data-toggle="tab" href="#extension" role="tab" aria-controls="extension"><?php echo $lang->get('browser_extension'); ?></a>
                             </li>
                             <li class="nav-item">
+                                <a class="nav-link" id="mobile-application-tab" data-toggle="tab" href="#mobile-application" role="tab" aria-controls="mobile-application"><?php echo htmlspecialchars($lang->get('device_pairing_mobile_application'), ENT_QUOTES, 'UTF-8'); ?></a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link" data-toggle="tab" href="#licence" role="tab" aria-controls="licence"><?php echo $lang->get('licence_management'); ?></a>
                             </li>
                         </ul>
@@ -392,6 +396,79 @@ function getDomainFromSettingsUrl(string $url): string
                                     </div>
                                 </div>
 
+                            </div>
+
+                            <div class="tab-pane fade" id="mobile-application" role="tabpanel" aria-labelledby="mobile-application-tab">
+                                <div class='row mt-4 mb-3'>
+                                    <div class='col-10'>
+                                        <?php echo htmlspecialchars($lang->get('device_pairing_admin_title'), ENT_QUOTES, 'UTF-8'); ?>
+                                        <span class="badge badge-info ml-1"><?php echo htmlspecialchars($lang->get('device_pairing_experimental'), ENT_QUOTES, 'UTF-8'); ?></span>
+                                        <small class="form-text text-muted"><?php echo htmlspecialchars($lang->get('device_pairing_admin_tip'), ENT_QUOTES, 'UTF-8'); ?></small>
+                                    </div>
+                                    <div class='col-2'>
+                                        <?php if ((int) ($SETTINGS['device_pairing_schema'] ?? 0) >= 3) : ?>
+                                        <div class="toggle toggle-modern" id="device_pairing_enabled" data-toggle-on="<?php echo (int) ($SETTINGS['device_pairing_enabled'] ?? 0) === 1 ? 'true' : 'false'; ?>"></div>
+                                        <input type="hidden" id="device_pairing_enabled_input" value="<?php echo (int) ($SETTINGS['device_pairing_enabled'] ?? 0) === 1 ? '1' : '0'; ?>">
+                                        <?php else : ?>
+                                        <small class="text-warning"><?php echo htmlspecialchars($lang->get('device_pairing_upgrade_needed'), ENT_QUOTES, 'UTF-8'); ?></small>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+
+                                <?php if ((int) ($SETTINGS['device_pairing_schema'] ?? 0) >= 3) : ?>
+                                <div class="row mb-3">
+                                    <div class="col-10">
+                                        <label for="device_pairing_token_lifetime_days"><?php echo htmlspecialchars($lang->get('device_pairing_lifetime'), ENT_QUOTES, 'UTF-8'); ?></label>
+                                        <small class="form-text text-muted"><?php echo htmlspecialchars($lang->get('device_pairing_lifetime_tip'), ENT_QUOTES, 'UTF-8'); ?></small>
+                                    </div>
+                                    <div class="col-2">
+                                        <input type="number" class="form-control form-control-sm" id="device_pairing_token_lifetime_days" min="1" max="3650" value="<?php echo apiDeviceLifetimeDays($SETTINGS); ?>">
+                                    </div>
+                                </div>
+                                <?php endif; ?>
+
+                                <?php if ((int) ($SETTINGS['device_pairing_schema'] ?? 0) >= 3
+                                    && (int) DB::queryFirstField('SELECT admin FROM ' . prefixTable('users') . ' WHERE id = %i AND disabled = 0 AND deleted_at IS NULL', (int) $session->get('user-id')) === 1) : ?>
+                                <div class="mt-4" id="external-device-admin">
+                                    <h5><?php echo htmlspecialchars($lang->get('device_pairing_admin_devices'), ENT_QUOTES, 'UTF-8'); ?></h5>
+                                    <div class="row mb-4 mt-4">
+                                        <div class="col-12 col-lg-8 text-muted mb-2 mb-lg-0">
+                                            <?php echo htmlspecialchars($lang->get('device_pairing_admin_devices_tip'), ENT_QUOTES, 'UTF-8'); ?>
+                                        </div>
+                                        <div class="col-12 col-lg-4 text-lg-right">
+                                            <button type="button" class="btn btn-default" id="device-admin-refresh" title="<?php echo htmlspecialchars($lang->get('device_pairing_refresh'), ENT_QUOTES, 'UTF-8'); ?>" aria-label="<?php echo htmlspecialchars($lang->get('device_pairing_refresh'), ENT_QUOTES, 'UTF-8'); ?>">
+                                                <i class="fas fa-sync-alt" aria-hidden="true"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-12 col-lg-6">
+                                            <div class="input-group input-group-sm">
+                                                <div class="input-group-prepend"><div class="input-group-text"><i class="fas fa-search" aria-hidden="true"></i></div></div>
+                                                <input type="search" class="form-control no-save" id="device-admin-search" maxlength="200" placeholder="<?php echo htmlspecialchars($lang->get('device_pairing_admin_search'), ENT_QUOTES, 'UTF-8'); ?>" aria-label="<?php echo htmlspecialchars($lang->get('device_pairing_admin_search'), ENT_QUOTES, 'UTF-8'); ?>">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="device-admin-list" role="status" aria-live="polite"></div>
+                                    <div class="table-responsive mt-4">
+                                        <table class="table table-hover table-striped d-none" id="device-admin-table">
+                                            <thead><tr>
+                                                <th scope="col"><?php echo htmlspecialchars($lang->get('user'), ENT_QUOTES, 'UTF-8'); ?></th>
+                                                <th scope="col"><?php echo htmlspecialchars($lang->get('device_pairing_device'), ENT_QUOTES, 'UTF-8'); ?></th>
+                                                <th scope="col"><?php echo htmlspecialchars($lang->get('extension_token_created'), ENT_QUOTES, 'UTF-8'); ?></th>
+                                                <th scope="col"><?php echo htmlspecialchars($lang->get('extension_token_last_used'), ENT_QUOTES, 'UTF-8'); ?></th>
+                                                <th scope="col"><?php echo htmlspecialchars($lang->get('device_pairing_valid_until'), ENT_QUOTES, 'UTF-8'); ?></th>
+                                                <th scope="col"><span class="sr-only"><?php echo htmlspecialchars($lang->get('device_pairing_revoke'), ENT_QUOTES, 'UTF-8'); ?></span></th>
+                                            </tr></thead>
+                                            <tbody id="device-admin-rows"></tbody>
+                                        </table>
+                                    </div>
+                                    <div class="d-flex justify-content-between mt-3">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" id="device-admin-previous" disabled><?php echo htmlspecialchars($lang->get('device_pairing_previous'), ENT_QUOTES, 'UTF-8'); ?></button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" id="device-admin-next" disabled><?php echo htmlspecialchars($lang->get('device_pairing_next'), ENT_QUOTES, 'UTF-8'); ?></button>
+                                    </div>
+                                </div>
+                                <?php endif; ?>
                             </div>
 
                             <div class="tab-pane fade" id="licence" role="tabpanel" aria-labelledby="licence-tab">

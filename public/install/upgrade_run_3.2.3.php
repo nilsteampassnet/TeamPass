@@ -262,6 +262,21 @@ try {
     exit();
 }
 
+// Replayed on every upgrade, including 3.2.3.x. Preserve legacy tokens and explicit opt-in.
+require_once TEAMPASS_ROOT . '/app/sources/device_pairing_schema.php';
+try {
+    $pairingTables = [];
+    foreach (['users', 'api', 'api_tokens', 'api_sessions', 'api_rate_limit', 'log_system', 'misc', 'device_pairings'] as $table) {
+        $pairingTables[$table] = prefixTable($table);
+    }
+    devicePairingUpgradeSchema($db_link, $pairingTables);
+} catch (Throwable $e) {
+    echo json_encode([['finish' => '1', 'error' => 'Error installing external device pairing']]);
+    mysqli_close($db_link);
+    exit();
+}
+ConfigManager::invalidateCache();
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,

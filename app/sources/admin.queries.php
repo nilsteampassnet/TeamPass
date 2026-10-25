@@ -1501,6 +1501,16 @@ switch ($post_type) {
             'decode'
         );
         
+        if (($dataReceived['field'] ?? null) === 'device_pairing_token_lifetime_days') {
+            require_once __DIR__ . '/api_device_logic.php';
+            try {
+                $dataReceived['value'] = (string) apiDeviceValidateLifetime($dataReceived['value'] ?? null);
+            } catch (InvalidArgumentException $e) {
+                echo prepareExchangedData(['error' => true, 'message' => $lang->get('device_pairing_lifetime_invalid')], 'encode');
+                break;
+            }
+        }
+
         // Validate destructive retention policy before generic HTML sanitization
         // can coerce arrays, booleans or floats into a different value.
         if (($dataReceived['field'] ?? null) === 'secure_send_audit_retention_days') {

@@ -1435,6 +1435,272 @@
                     }
                 }
             }
+        },
+        "/devicePairing/capabilities": {
+            "get": {
+                "operationId": "devicePairingCapabilities",
+                "summary": "Detect experimental external device pairing",
+                "tags": [
+                    "External devices"
+                ],
+                "security": [],
+                "description": "Experimental, disabled by default. Requires API enablement, strict HTTPS and network ACLs. No web session authorizes a device endpoint. Secrets are body-only. Responses are no-store. See docs/api/device-pairing.md.",
+                "responses": {
+                    "200": {
+                        "description": "Current state. Terminal states return no credential. Only an approved, proven claim receives a protected handoff.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DevicePairingCapabilities"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/ApiDisabled"
+                    }
+                }
+            }
+        },
+        "/devicePairing/credentialStatus": {
+            "post": {
+                "operationId": "devicePairingCredentialStatus",
+                "tags": ["Device pairing"],
+                "summary": "Prove whether a device credential remains authorized",
+                "description": "Experimental. Requires the exact PAT in a JSON body, trusted HTTPS and network ACL compliance. Available even when API or pairing is disabled. Known revoked credentials retain a hash-only proof record; unknown proofs receive a uniform 401. A generic 401 is never a local-vault wipe instruction.",
+                "security": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["token"],
+                                "properties": {"token": {"type": "string", "pattern": "^[a-f0-9]{64}$"}}
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Possession-proven credential state; no PAT or private key is returned.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": ["credential_id", "state", "reason", "expires_at", "server_time", "server_url"],
+                                    "properties": {
+                                        "credential_id": {"type": "integer"},
+                                        "state": {"type": "string", "enum": ["active", "pending", "suspended", "invalidated"]},
+                                        "reason": {"type": ["string", "null"], "enum": [null, "revoked", "expired", "access_removed", "keys_changed", "not_confirmed"]},
+                                        "expires_at": {"type": ["integer", "null"]},
+                                        "server_time": {"type": "integer"},
+                                        "server_url": {"type": "string", "format": "uri"}
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {"$ref": "#/components/responses/BadRequest"},
+                    "401": {"$ref": "#/components/responses/Unauthorized"},
+                    "403": {"$ref": "#/components/responses/Forbidden"},
+                    "429": {"$ref": "#/components/responses/RateLimited"},
+                    "500": {"$ref": "#/components/responses/InternalError"},
+                    "503": {"$ref": "#/components/responses/ApiDisabled"}
+                }
+            }
+        },
+        "/devicePairing/claim": {
+            "post": {
+                "operationId": "devicePairingClaim",
+                "summary": "Reserve an immutable external device claim",
+                "tags": [
+                    "External devices"
+                ],
+                "security": [],
+                "description": "Experimental, disabled by default. Requires API enablement, strict HTTPS and network ACLs. No web session authorizes a device endpoint. Secrets are body-only. Responses are no-store. See docs/api/device-pairing.md.",
+                "responses": {
+                    "200": {
+                        "description": "Current state. Terminal states return no credential. Only an approved, proven claim receives a protected handoff.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DevicePairingState"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/ApiDisabled"
+                    }
+                },
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DevicePairingClaim"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/devicePairing/status": {
+            "post": {
+                "operationId": "devicePairingStatus",
+                "summary": "Poll a claim using its verifier",
+                "tags": [
+                    "External devices"
+                ],
+                "security": [],
+                "description": "Experimental, disabled by default. Requires API enablement, strict HTTPS and network ACLs. No web session authorizes a device endpoint. Secrets are body-only. Responses are no-store. See docs/api/device-pairing.md.",
+                "responses": {
+                    "200": {
+                        "description": "Current state. Terminal states return no credential. Only an approved, proven claim receives a protected handoff.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DevicePairingState"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/ApiDisabled"
+                    }
+                },
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DevicePairingProof"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/devicePairing/consume": {
+            "post": {
+                "operationId": "devicePairingConsume",
+                "summary": "Receive the approved protected credential",
+                "tags": [
+                    "External devices"
+                ],
+                "security": [],
+                "description": "Experimental, disabled by default. Requires API enablement, strict HTTPS and network ACLs. No web session authorizes a device endpoint. Secrets are body-only. Responses are no-store. See docs/api/device-pairing.md.",
+                "responses": {
+                    "200": {
+                        "description": "Current state. Terminal states return no credential. Only an approved, proven claim receives a protected handoff.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DevicePairingState"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/ApiDisabled"
+                    }
+                },
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DevicePairingProof"
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -2574,6 +2840,211 @@
                         "type": "string",
                         "pattern": "^[A-Za-z0-9_-]+$",
                         "description": "Relying party user id"
+                    }
+                }
+            },
+            "DevicePairingClaim": {
+                "type": "object",
+                "required": [
+                    "pairing_id",
+                    "pairing_secret",
+                    "challenge",
+                    "public_key",
+                    "device_label"
+                ],
+                "properties": {
+                    "pairing_id": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{32}$"
+                    },
+                    "pairing_secret": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9_-]{43}$"
+                    },
+                    "challenge": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9_-]{43}$"
+                    },
+                    "public_key": {
+                        "type": "string",
+                        "maxLength": 2048,
+                        "description": "Ephemeral RSA-3072 public PEM, exponent 65537; private keys are refused."
+                    },
+                    "device_label": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128
+                    }
+                }
+            },
+            "DevicePairingProof": {
+                "type": "object",
+                "required": [
+                    "pairing_id",
+                    "claim_id",
+                    "verifier"
+                ],
+                "properties": {
+                    "pairing_id": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{32}$"
+                    },
+                    "claim_id": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{32}$"
+                    },
+                    "verifier": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9_-]{43}$"
+                    }
+                }
+            },
+            "DevicePairingState": {
+                "type": "object",
+                "required": [
+                    "pairing_id",
+                    "state",
+                    "expires_at",
+                    "server_time",
+                    "poll_interval"
+                ],
+                "properties": {
+                    "pairing_id": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{32}$"
+                    },
+                    "state": {
+                        "type": "string",
+                        "enum": [
+                            "awaiting_scan",
+                            "awaiting_approval",
+                            "approved",
+                            "delivered",
+                            "completed",
+                            "rejected",
+                            "cancelled",
+                            "expired"
+                        ]
+                    },
+                    "expires_at": {
+                        "type": "integer"
+                    },
+                    "server_time": {
+                        "type": "integer"
+                    },
+                    "poll_interval": {
+                        "type": "integer",
+                        "const": 2
+                    },
+                    "claim_id": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{32}$"
+                    },
+                    "comparison_code": {
+                        "type": "string",
+                        "pattern": "^[0-9]{6}$"
+                    },
+                    "key_fingerprint": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "handoff": {
+                        "type": "object",
+                        "required": [
+                            "version",
+                            "algorithm",
+                            "key_fingerprint",
+                            "ciphertext",
+                            "server_url",
+                            "username",
+                            "delivery_until",
+                            "credential_id",
+                            "credential_expires_at"
+                        ],
+                        "properties": {
+                            "version": {
+                                "type": "integer",
+                                "const": 1
+                            },
+                            "algorithm": {
+                                "type": "string",
+                                "const": "RSA-OAEP-256"
+                            },
+                            "key_fingerprint": {
+                                "type": "string"
+                            },
+                            "ciphertext": {
+                                "type": "string",
+                                "description": "Base64url OAEP ciphertext of the 64 ASCII PAT characters. SHA-256, MGF1-SHA256, empty label."
+                            },
+                            "server_url": {
+                                "type": "string",
+                                "format": "uri"
+                            },
+                            "username": {
+                                "type": "string"
+                            },
+                            "delivery_until": {
+                                "type": "integer"
+                            },
+                            "credential_id": {
+                                "type": "integer"
+                            },
+                            "credential_expires_at": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                }
+            },
+            "DevicePairingCapabilities": {
+                "type": "object",
+                "required": [
+                    "type",
+                    "version",
+                    "experimental",
+                    "algorithm",
+                    "key_bits",
+                    "ttl",
+                    "poll_interval"
+                ],
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "const": "teampass.device-pairing"
+                    },
+                    "version": {
+                        "type": "integer",
+                        "const": 1
+                    },
+                    "experimental": {
+                        "type": "boolean",
+                        "const": true
+                    },
+                    "algorithm": {
+                        "type": "string",
+                        "const": "RSA-OAEP-256"
+                    },
+                    "key_bits": {
+                        "type": "integer",
+                        "const": 3072
+                    },
+                    "credential_status": {
+                        "type": "boolean",
+                        "const": true
+                    },
+                    "credential_lifetime_days": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 3650
+                    },
+                    "ttl": {
+                        "type": "integer",
+                        "const": 180
+                    },
+                    "poll_interval": {
+                        "type": "integer",
+                        "const": 2
                     }
                 }
             }

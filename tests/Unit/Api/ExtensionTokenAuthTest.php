@@ -255,7 +255,7 @@ class ExtensionTokenAuthTest extends TestCase
     {
         $model = $this->readSource('/app/api/Model/AuthModel.php');
         self::assertStringContainsString('private function privateKeyMatchesPublicKey(', $model);
-        self::assertStringContainsString("refuseApiAuth('api_token_key_outdated'", $model);
+        self::assertStringContainsString("throw new ApiTokenKeyException('api_token_key_outdated'", $model);
 
         $mainFunctions = $this->readSource('/app/sources/main.functions.php');
         self::assertStringContainsString('if ($previousPublicKey !== (string) $userKeys[\'public_key\']) {', $mainFunctions);

@@ -165,6 +165,7 @@ function installAllowedActions(string $step): array
             'items_corruption',
             'api_tokens',
             'api_sessions',
+            'device_pairings',
             'api_rate_limit',
             'import_tracking',
             'item_health',
