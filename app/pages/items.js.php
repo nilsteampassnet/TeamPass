@@ -1542,6 +1542,7 @@ require __DIR__ . '/renewal.preview.js.php';
                 $('.clear-me-val').val('');
                 $('.item-details-card').find('.form-control').val('');
                 $('.clear-me-html').html('');
+                resetItemAttachmentsUpload();
                 $('.form-item-control').val('');
                 // The blanket reset above also empties the TOTP profile: restore its defaults
                 $('#form-item-otpAlgorithm').val('sha1');
@@ -2146,8 +2147,7 @@ require __DIR__ . '/renewal.preview.js.php';
                 }
             }
 
-            // Clear pickfiles div and the upload queue behind it
-            $('#form-item-upload-pickfilesList').html('');
+            // Clear the upload rows and the upload queue behind them
             resetItemAttachmentsUpload();
 
             // Hide all
@@ -2314,7 +2314,8 @@ require __DIR__ . '/renewal.preview.js.php';
         }
         if (filesList !== null) {
             new MutationObserver(function() {
-                const count = filesList.querySelectorAll('.edit-attachment-div').length;
+                // Saved files and files uploaded for the next save
+                const count = filesList.querySelectorAll('.tp-item-file').length;
                 $('.form-item-attachments-count').text(count).toggleClass('hidden', count === 0);
             }).observe(filesList, {childList: true});
         }
@@ -3690,6 +3691,8 @@ require __DIR__ . '/renewal.preview.js.php';
         userDidAChange = false;
         refreshItemFormUnsavedBadge();
         $('#form-item').removeClass('was-validated');
+        // The save paths only hide the form: drop the uploads of the previous edition
+        resetItemAttachmentsUpload();
         // Show the form immediately (same show/hide logic as showItemEditForm)
         $('.form-item, #form-item-attachments-zone').removeClass('hidden');
         $('.form-item-copy, .form-item-action, #folders-tree-card, .columns-position')
@@ -4417,8 +4420,9 @@ require __DIR__ . '/renewal.preview.js.php';
     }
 
     /**
-     * Forget the upload queue of the item form: stops a running batch and drops every
-     * file plupload still holds, so nothing left over is sent with the next item.
+     * Forget the uploads of the item form: stops a running batch, drops every file plupload
+     * still holds and removes the upload rows and the uploaded cards not saved yet, so
+     * nothing left over is shown or sent with the next item.
      *
      * @return {void}
      */
@@ -4427,7 +4431,12 @@ require __DIR__ . '/renewal.preview.js.php';
         if (queued > 0) {
             uploader_attachments.splice(0, queued);
         }
+        // A stopped batch never reports UploadComplete
+        attachmentsUploadRunning = false;
+        uploader_attachments.disableBrowse(false);
         $('#form-item-hidden-pickFilesNumber').val(0);
+        $('#form-item-upload-pickfilesList').html('');
+        $('#form-item-attachments .tp-item-file.is-pending').remove();
     }
 
     uploader_attachments.bind('FileUploaded', function(up, file, result) {
@@ -4451,9 +4460,13 @@ require __DIR__ . '/renewal.preview.js.php';
             return;
         }
 
-        $('#fileProgress_' + file.id).css('width', '100%').addClass('bg-success');
+        // Uploaded: the row leaves the upload list and joins the item's files, above the drop zone
+        const uploadedCard = $('#upload-file_' + file.id);
+        uploadedCard.addClass('is-pending').find('.tp-item-file-progress').remove();
         $('#filePercent_' + file.id).text(<?php echo json_encode($lang->get('item_attachments_uploaded_pending_save'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>);
         $('#fileStatus_' + file.id).html('<i class="fa-solid fa-circle-check text-success"></i>');
+        uploadedCard.appendTo('#form-item-attachments');
+        $('#form-item-attachments-zone').removeClass('hidden');
         userUploadedFile = true;
         userDidAChange = true;
         refreshItemFormUnsavedBadge();
@@ -7945,6 +7958,8 @@ require __DIR__ . '/renewal.preview.js.php';
                 // Attachments
                 if (data !== false) {
                     if (data.attachments.length === 0) {
+                        // Otherwise the edition form keeps the files of the item shown before
+                        $('#form-item-attachments').html('');
                         $('#card-item-attachments-badge').html('<?php echo $lang->get('none'); ?>');
                         $('#card-item-attachments')
                             .html('<?php echo $lang->get('no_attachment'); ?>')

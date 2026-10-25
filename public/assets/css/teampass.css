@@ -1957,6 +1957,10 @@ body.tp-navigating .dropdown-item {
 .dark-mode .tp-item-file.is-failed {
     border-color: #dc3545;
 }
+/* Uploaded, attached to the item at the next save */
+.tp-item-file.is-pending {
+    border-style: dashed;
+}
 .tp-item-file-icon {
     display: inline-flex;
     flex: 0 0 2.25rem;
