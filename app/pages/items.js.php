@@ -166,6 +166,20 @@ require __DIR__ . '/renewal.preview.js.php';
     const TP_BIP39_WORDLIST = <?php echo json_encode($bip39Wordlist, JSON_UNESCAPED_UNICODE); ?>;
     const TP_NOTIFICATION_ENGAGED = <?php echo json_encode($lang->get('notification_engaged'), JSON_UNESCAPED_UNICODE); ?>;
     const TP_NOTIFICATION_NOT_ENGAGED = <?php echo json_encode($lang->get('notification_not_engaged'), JSON_UNESCAPED_UNICODE); ?>;
+    const TP_ITEM_VIEW_LANG = <?php echo json_encode([
+        'previousItem' => $lang->get('item_view_previous_item'),
+        'nextItem' => $lang->get('item_view_next_item'),
+        'viewedTimes' => $lang->get('item_view_viewed_times'),
+        'secureSendLinks' => $lang->get('item_view_secure_send_links'),
+        'lastActivity' => $lang->get('item_view_last_activity'),
+        'showMore' => $lang->get('item_view_show_more'),
+        'showLess' => $lang->get('item_view_show_less'),
+        'showOlder' => $lang->get('item_view_show_older'),
+        'autoUpdate' => $lang->get('auto_update_enabled'),
+        'autoDeletion' => $lang->get('automatic_deletion_engaged'),
+        'noAttachment' => $lang->get('no_attachment'),
+        'copy' => $lang->get('copy_to_clipboard'),
+    ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG); ?>;
     const TP_LAPR_ITEM_LANG = <?php echo json_encode([
         'badgeManaged' => $lang->get('lapr_badge_managed'),
         'badgeCredential' => $lang->get('lapr_badge_credential'),
@@ -377,9 +391,9 @@ require __DIR__ . '/renewal.preview.js.php';
         // Folder permissions own the normal visibility state; LAPR may add another
         // restriction but must never reveal an action hidden by ACLs.
         const canDelete = data.can_delete === true || data.can_delete === 1;
-        $('.tp-action[data-item-action="delete"]').closest('.nav-item')
+        $('.tp-action[data-item-action="delete"], .tp-item-view-delete-divider')
             .toggleClass('hidden', !canDelete || isManaged || isCredential);
-        $('.tp-action[data-item-action="server"]').closest('.nav-item').toggleClass('hidden', isManaged);
+        $('.tp-action[data-item-action="server"]').toggleClass('hidden', isManaged);
 
         if (isManaged) {
             const account = lapr.managed_account || {};
@@ -597,34 +611,85 @@ require __DIR__ . '/renewal.preview.js.php';
         });
     }
 
-    function itemNotificationIconHtml(isEnabled) {
-        const title = tpEscapeHtmlAttribute(isEnabled === true ? TP_NOTIFICATION_ENGAGED : TP_NOTIFICATION_NOT_ENGAGED);
-
-        if (isEnabled === true) {
-            return '<span class="fa-solid fa-bell infotip text-success" title="' + title + '"></span>';
-        }
-
-        return '<span class="fa-regular fa-bell-slash infotip text-warning" title="' + title + '"></span>';
+    /**
+     * One status line of the item view: an icon and a sentence.
+     *
+     * @param {string} icon Font Awesome classes
+     * @param {string} text Plain text, encoded here
+     * @return {string} HTML of the line content
+     */
+    function itemViewStatusLineHtml(icon, text) {
+        return '<i class="' + icon + ' fa-fw" aria-hidden="true"></i><span>' + tpEscapeHtmlAttribute(text) + '</span>';
     }
 
     function updateItemNotificationStatusVisual(isEnabled) {
         const enabled = isEnabled === true;
         const title = enabled === true ? TP_NOTIFICATION_ENGAGED : TP_NOTIFICATION_NOT_ENGAGED;
 
+        // The action still opens the notification modal; it only shows the current state
         $('#item-action-notify')
-            .toggleClass('text-success', enabled)
-            .toggleClass('text-navy', enabled === false)
+            .toggleClass('is-active', enabled)
+            .attr('aria-pressed', enabled === true ? 'true' : 'false')
             .attr('title', title);
 
         $('#item-action-notify-icon')
             .removeClass('fa-regular fa-solid fa-bell fa-bell-slash text-success text-warning')
-            .addClass(enabled === true ? 'fa-solid fa-bell text-success' : 'fa-regular fa-bell-slash text-warning');
+            .addClass(enabled === true ? 'fa-solid fa-bell' : 'fa-regular fa-bell');
 
         if ($('#card-item-misc-notification').length > 0) {
-            $('#card-item-misc-notification').html(itemNotificationIconHtml(enabled));
+            $('#card-item-misc-notification').html(
+                itemViewStatusLineHtml(enabled === true ? 'fa-solid fa-bell' : 'fa-regular fa-bell-slash', title)
+            );
         }
+    }
 
-        $('.infotip').tooltip();
+    /**
+     * Show on a copy button, for a moment, that its value reached the clipboard.
+     *
+     * @param {Element} button The copy button
+     * @return {void}
+     */
+    function markItemViewCopied(button) {
+        const $button = $(button);
+        const $icon = $button.find('i').first();
+        if ($button.data('copiedTimer') === undefined) {
+            $button.data('copiedIcon', $icon.attr('class'));
+        } else {
+            clearTimeout($button.data('copiedTimer'));
+        }
+        $icon.attr('class', 'fa-solid fa-check');
+        $button.addClass('is-copied').data('copiedTimer', setTimeout(function() {
+            $icon.attr('class', $button.data('copiedIcon'));
+            $button.removeClass('is-copied').removeData('copiedTimer');
+        }, 1500));
+    }
+
+    /**
+     * Card of an attached file, shared by the item view and the edit form so they never drift.
+     *
+     * @param {object} value Attachment as returned by showDetailsStep2
+     * @param {boolean} withDelete True in the edit form: adds the delete action
+     * @return {string} HTML of the card
+     */
+    function itemAttachmentCardHtml(value, withDelete) {
+        const fileLabel = htmlEncode(decodeFilename(value.filename) + '.' + value.extension);
+        return '<div class="tp-item-file' + (withDelete === true ? ' edit-attachment-div' : '') + '">' +
+            '<span class="tp-item-file-icon"><i class="' + value.icon + '" aria-hidden="true"></i></span>' +
+            '<div class="tp-item-file-body">' +
+            '<div class="tp-item-file-name" title="' + fileLabel + '">' + fileLabel + '</div>' +
+            '<div class="tp-item-file-meta">' + htmlEncode(String(value.extension).toUpperCase()) + ' · ' + htmlEncode(value.size) + '</div>' +
+            '</div>' +
+            '<div class="tp-item-file-actions">' +
+            (value.is_image === 1 ?
+                '<button type="button" class="tp-item-file-action preview-image infotip" data-file-id="' + value.id + '" title="<?php echo $lang->get('see'); ?>" aria-label="<?php echo $lang->get('see'); ?>">' +
+                '<i class="fa-solid fa-eye"></i></button>' : '') +
+            '<a class="tp-item-file-action infotip" href="sources/downloadFile.php?name=' + encodeURI(value.filename) + '&key=<?php echo $session->get('key'); ?>&key_tmp=' + value.key + '&fileid=' + value.id + '" title="<?php echo $lang->get('download'); ?>" aria-label="<?php echo $lang->get('download'); ?>">' +
+            '<i class="fa-solid fa-file-download"></i></a>' +
+            (withDelete === true ?
+                '<button type="button" class="tp-item-file-action tp-item-file-action-danger delete-file infotip" data-file-id="' + value.id + '" data-file-name="' + fileLabel + '" title="<?php echo $lang->get('delete'); ?>" aria-label="<?php echo $lang->get('delete'); ?>">' +
+                '<i class="fa-solid fa-trash"></i></button>' : '') +
+            '</div>' +
+            '</div>';
     }
 
     /**
@@ -1100,6 +1165,58 @@ require __DIR__ . '/renewal.preview.js.php';
     });
     $('.tp-item-form-icon').on('shown.bs.dropdown', function() {
         $('#form-item-icon').trigger('focus');
+    });
+
+    // Copy buttons of the item view (login, email, url, custom fields). Bound once: the former
+    // per-item binding added one more listener, hence one more copy, at every item shown.
+    $(document).on('click', '.btn-copy-clipboard-clear', async function() {
+        try {
+            // Retrieve the target defined by data-clipboard-target
+            const targetId = this.getAttribute('data-clipboard-target');
+
+            if (!targetId) return;
+
+            // Grab the node (login => <span>, url => <span> ou <a>, email => <span>, etc.)
+            const $el = $('#'+targetId);
+            if ($el.length === 0) throw new Error('target-not-found');
+
+            // Compute text to copy depending on element type
+            let textToCopy = '';
+            if ($el.is('input, textarea')) {
+                textToCopy = $el.val() || '';
+            } else if ($el.is('a')) {
+                // For links, prefer href; fallback to visible text
+                textToCopy = $el.attr('href') || ($el.text() || '').trim();
+            } else {
+                // span/div/etc.
+                textToCopy = ($el.text() || '').trim();
+            }
+            if (!textToCopy) throw new Error('empty');
+
+            // Copy to clipboard
+            await copyToClipboard(textToCopy);
+            markItemViewCopied(this);
+
+            // Success toast
+            toastr.remove();
+            toastr.info(
+                '<?php echo $lang->get("copy_to_clipboard"); ?>',
+                '', {
+                    timeOut: 2000,
+                    progressBar: true,
+                    positionClass: 'toast-bottom-right'
+                }
+            );
+        } catch (error) {
+            toastr.error(
+                '<?php echo $lang->get("clipboard_error"); ?>',
+                '', {
+                    timeOut: 3000,
+                    progressBar: true,
+                    positionClass: 'toast-bottom-right'
+                }
+            );
+        }
     });
 
     // Manage the password show button
@@ -2166,7 +2283,7 @@ require __DIR__ . '/renewal.preview.js.php';
         }
         // Only hide navigation buttons when no item details panel is open
         if ($('#items-details-container').hasClass('hidden')) {
-            $('.but-prev-item, .but-next-item').addClass('hidden').text('');
+            $('.but-prev-item, .but-next-item').addClass('hidden');
         }
     });
 
@@ -2274,7 +2391,7 @@ require __DIR__ . '/renewal.preview.js.php';
     })();
 
     // The whole head line folds its section; its tools do not
-    $('.tp-item-form-section-toggle').on('click', function() {
+    $('#form-item .tp-item-form-section-toggle').on('click', function() {
         const section = $(this).closest('.tp-item-form-section-collapsible');
         setItemFormSectionCollapsed(section, section.hasClass('is-collapsed') === false, true);
     });
@@ -2320,6 +2437,160 @@ require __DIR__ . '/renewal.preview.js.php';
             }).observe(filesList, {childList: true});
         }
     })();
+
+    // Folded sections of the item view, remembered per browser; passkeys and history start folded
+    const itemViewCollapsedKey = 'teampassItemViewCollapsed';
+
+    /**
+     * Fold or unfold a section of the item view.
+     *
+     * @param {jQuery} section The .tp-item-view-collapsible element
+     * @param {boolean} collapsed True to fold it
+     * @param {boolean} remember True to store the folded sections in the browser
+     * @return {void}
+     */
+    function setItemViewSectionCollapsed(section, collapsed, remember) {
+        section.toggleClass('is-collapsed', collapsed)
+            .find('.tp-item-view-section-toggle')
+            .attr('aria-expanded', collapsed === true ? 'false' : 'true');
+        if (remember !== true) {
+            return;
+        }
+        const folded = $('.tp-item-view-collapsible.is-collapsed').map(function() {
+            return $(this).data('section');
+        }).get();
+        try { localStorage.setItem(itemViewCollapsedKey, JSON.stringify(folded)); } catch (error) { /* Optional storage. */ }
+    }
+
+    // Restore the last choice
+    (function() {
+        let folded = ['webauthn', 'history'];
+        try {
+            const stored = localStorage.getItem(itemViewCollapsedKey);
+            if (stored !== null) {
+                folded = JSON.parse(stored);
+            }
+        } catch (error) {
+            folded = ['webauthn', 'history'];
+        }
+        if (Array.isArray(folded) === false) {
+            folded = [];
+        }
+        $('.tp-item-view-collapsible').each(function() {
+            setItemViewSectionCollapsed($(this), folded.indexOf($(this).data('section')) !== -1, false);
+        });
+    })();
+
+    $('.tp-item-view-section-toggle').on('click', function() {
+        const section = $(this).closest('.tp-item-view-collapsible');
+        setItemViewSectionCollapsed(section, section.hasClass('is-collapsed') === false, true);
+        refreshItemViewDescriptionClamp();
+    });
+
+    /**
+     * Scroll the item view, which is its own scroll box, to show an element below the action bar.
+     *
+     * @param {Element|null} element Element to reach, null for the top of the item
+     * @return {void}
+     */
+    function scrollItemView(element) {
+        const panel = document.getElementById('items-details-container');
+        if (panel === null) {
+            return;
+        }
+        let top = 0;
+        if (element !== null) {
+            const bar = panel.querySelector('.tp-item-view-bar');
+            top = element.getBoundingClientRect().top - panel.getBoundingClientRect().top + panel.scrollTop -
+                (bar !== null ? bar.offsetHeight : 0) - 8;
+        }
+        panel.scrollTo({top: Math.max(0, top), behavior: 'smooth'});
+    }
+
+    $('.tp-item-view-to-top').on('click', function() {
+        $(this).tooltip('hide');
+        scrollItemView(null);
+    });
+
+    $('#card-item-jumps').on('click', '.tp-item-form-jump', function(event) {
+        event.preventDefault();
+        const target = document.querySelector($(this).attr('href'));
+        if (target === null) {
+            return;
+        }
+        // Reaching a folded section means the user wants to see it
+        if (target.classList.contains('is-collapsed') === true) {
+            setItemViewSectionCollapsed($(target), false, true);
+            refreshItemViewDescriptionClamp();
+        }
+        scrollItemView(target);
+    });
+
+    /**
+     * Show a section shortcut of the item view only when its section is shown, with its count.
+     *
+     * @return {void}
+     */
+    function refreshItemViewJumps() {
+        $('#card-item-jumps .tp-item-form-jump[data-section]').each(function() {
+            const target = $($(this).attr('href'));
+            $(this).toggleClass('hidden', target.length === 0 || target.hasClass('hidden'));
+            const countSource = $(this).data('count');
+            if (countSource !== undefined) {
+                const count = parseInt($(countSource).text(), 10);
+                $(this).find('.badge')
+                    .text(count > 0 ? count : '')
+                    .toggleClass('hidden', (count > 0) === false);
+            }
+        });
+    }
+
+    // The item loaders show or hide the sections and rewrite their counters: the shortcuts follow them
+    (function() {
+        const observer = new MutationObserver(refreshItemViewJumps);
+        $('#card-item-jumps .tp-item-form-jump[data-section]').each(function() {
+            const target = document.querySelector($(this).attr('href'));
+            if (target !== null) {
+                observer.observe(target, {attributes: true, attributeFilter: ['class']});
+            }
+            const countSource = $(this).data('count');
+            const counter = countSource !== undefined ? document.querySelector(countSource) : null;
+            if (counter !== null) {
+                observer.observe(counter, {childList: true, characterData: true, subtree: true});
+            }
+        });
+    })();
+
+    /**
+     * Cut a long description after a few lines, with a toggle to read the rest. It needs the
+     * description on screen to measure it: a folded section is measured when it opens.
+     *
+     * @return {void}
+     */
+    function refreshItemViewDescriptionClamp() {
+        const description = document.getElementById('card-item-description');
+        if (description === null || description.offsetParent === null || $(description).data('clampChecked') === true) {
+            return;
+        }
+        $(description).data('clampChecked', true).addClass('is-clamped');
+        const overflows = description.scrollHeight > description.clientHeight + 1;
+        $(description).toggleClass('is-clamped', overflows);
+        $('#card-item-description-more').toggleClass('hidden', overflows === false);
+    }
+
+    // A long description is cut after a few lines
+    $('#card-item-description-more').on('click', function() {
+        const clamped = $('#card-item-description').toggleClass('is-clamped').hasClass('is-clamped');
+        $(this)
+            .text(clamped === true ? TP_ITEM_VIEW_LANG.showMore : TP_ITEM_VIEW_LANG.showLess)
+            .attr('aria-expanded', clamped === true ? 'false' : 'true');
+    });
+
+    // Older history events are shown on demand
+    $('#card-item-history-older').on('click', function() {
+        $('#card-item-history').addClass('is-expanded');
+        $(this).addClass('hidden');
+    });
 
     /**
      * Click on perform IMPORT
@@ -3559,7 +3830,10 @@ require __DIR__ . '/renewal.preview.js.php';
                 $('.collapse').removeClass('show');
                 $('.to_be_deleted').remove();
                 $('#card-item-attachments, #card-item-history').html('');
-                $('#card-item-attachments-badge').html('<?php echo $lang->get('none'); ?>');
+                $('#card-item-attachments-badge').html('');
+                $('#card-item-history').removeClass('is-expanded');
+                $('#card-item-history-older').addClass('hidden');
+                $('#card-item-last-change').addClass('hidden').text('');
                 renderItemWebauthn([]);
                 $('#form-item-otp').iCheck('uncheck');
                 $('#form-item-otpAlgorithm').val('sha1')
@@ -3638,6 +3912,18 @@ require __DIR__ . '/renewal.preview.js.php';
     function resetItemDetailSkeleton() {
         // Skeleton placeholders for main fields
         $('#card-item-label').html('<span class="skeleton-line skeleton-title"></span>');
+        $('#card-item-icon').attr('class', 'fa-solid fa-key');
+        $('#card-item-row-login, #card-item-row-email, #card-item-row-url').removeClass('hidden');
+        $('#card-item-row-otp').addClass('hidden');
+        $('#card-item-otp-tools').empty();
+        $('#card-item-folder, #card-item-folder-label').addClass('hidden');
+        $('#card-item-folder').empty();
+        $('#card-item-fields-count').text('');
+        $('#card-item-description').removeClass('is-clamped');
+        $('#card-item-description-more').addClass('hidden');
+        $('#card-item-history').removeClass('is-expanded');
+        $('#card-item-history-older').addClass('hidden');
+        $('#card-item-last-change').addClass('hidden').text('');
         $('#card-item-pwd').html('<span class="skeleton-line skeleton-md"></span>');
         $('#card-item-login').html('<span class="skeleton-line skeleton-sm"></span>');
         $('#card-item-email').html('<span class="skeleton-line skeleton-sm"></span>');
@@ -3655,9 +3941,8 @@ require __DIR__ . '/renewal.preview.js.php';
         $('#card-item-lapr-badges, #card-item-lapr-info').addClass('hidden').empty();
         $('#card-item-renewal-badge').addClass('hidden').empty();
         $('#card-item-misc').html(
-            '<span class="skeleton-line skeleton-sm d-inline-block mr-3" style="width:22px;"></span>' +
-            '<span class="skeleton-line skeleton-sm d-inline-block mr-3" style="width:22px;"></span>' +
-            '<span class="skeleton-line skeleton-sm d-inline-block" style="width:22px;"></span>'
+            '<li><span class="skeleton-line skeleton-md"></span></li>' +
+            '<li><span class="skeleton-line skeleton-sm"></span></li>'
         );
         $('#item-hibp-badge').addClass('hidden');
         $('#card-item-pwd-security-badge').addClass('hidden').removeClass('badge-success badge-danger badge-warning');
@@ -6847,7 +7132,7 @@ require __DIR__ . '/renewal.preview.js.php';
         if (actionType === 'show') {
             $('#card-item-readonly-badge').addClass('hidden');
             $('[data-item-action="edit"]').removeClass('hidden');
-            $('[data-item-action="delete"]').closest('.nav-item').removeClass('hidden');
+            $('[data-item-action="delete"], .tp-item-view-delete-divider').removeClass('hidden');
         }
 
         // Init
@@ -6973,9 +7258,9 @@ require __DIR__ . '/renewal.preview.js.php';
                 }
 
                 if (!canDelete) {
-                    $('[data-item-action="delete"]').closest('.nav-item').addClass('hidden');
+                    $('[data-item-action="delete"], .tp-item-view-delete-divider').addClass('hidden');
                 } else {
-                    $('[data-item-action="delete"]').closest('.nav-item').removeClass('hidden');
+                    $('[data-item-action="delete"], .tp-item-view-delete-divider').removeClass('hidden');
                 }
             }
 
@@ -7247,6 +7532,13 @@ require __DIR__ . '/renewal.preview.js.php';
                         }
                     );
 
+                    // Manual history entries: for who can modify the item, when the setting allows it
+                    $('#card-item-section-history .add-button').toggleClass(
+                        'hidden',
+                        parseInt(data.user_can_modify) !== 1 ||
+                            parseInt((store.get('teampassSettings') || {}).insert_manual_entry_item_history) !== 1
+                    );
+
                     if (actionType === 'show') {
                         // Prepare Views
                         $('.item-details-card, #item-details-card-categories').removeClass('hidden');
@@ -7298,16 +7590,6 @@ require __DIR__ . '/renewal.preview.js.php';
                         $('#items-details-container').removeClass('hidden');
 
                         $('#form-item-suggestion-password').focus();
-                        // If Description empty then remove it
-                        if (data.description === '<p>&nbsp;</p>') {
-                            $('#card-item-description')
-                                .parents('.item-details-card')
-                                .addClass('hidden');
-                        } else {
-                            $('#card-item-description')
-                                .parents('.item-details-card')
-                                .removeClass('hidden');
-                        }
                     } else {
                         $('.form-item').removeClass('hidden');
                         $('#folders-tree-card').addClass('hidden');
@@ -7329,7 +7611,9 @@ require __DIR__ . '/renewal.preview.js.php';
                     // break out of the attribute. Entities are decoded back by the HTML parser,
                     // so legitimate Font Awesome classes keep working.
                     const itemIcon = (data.fa_icon !== "") ? '<i class="'+htmlEncode(data.fa_icon)+' mr-1"></i>' : '';
-                    $('#card-item-label').html(itemIcon + htmlEncode(data.label));
+                    $('#card-item-label').html(htmlEncode(data.label));
+                    // .attr() stores the classes as a value: nothing can break out of it
+                    $('#card-item-icon').attr('class', data.fa_icon !== '' ? data.fa_icon : 'fa-solid fa-key');
                     data.can_delete = canDelete;
                     laprRenderItemIntegration(data, actionType);
 
@@ -7341,6 +7625,13 @@ require __DIR__ . '/renewal.preview.js.php';
                         });
                         $('#form-folder-path').html(breadcrumbHtml);
                     }
+                    const folderPath = $('#form-folder-path .breadcrumb-item').map(function() {
+                        return $(this).text().trim();
+                    }).get().filter(function(part) {
+                        return part !== '';
+                    }).join(' › ');
+                    $('#card-item-folder').text(folderPath);
+                    $('#card-item-folder, #card-item-folder-label').toggleClass('hidden', folderPath === '');
 
                     // HIBP badge — show cached status and trigger async re-check if needed
                     const hibpApp = store.get('teampassApplication') || {}
@@ -7377,11 +7668,16 @@ require __DIR__ . '/renewal.preview.js.php';
                             {USE_PROFILES: {html: true}}
                         )
                     );
-                    if (data.description === '') {
-                        $('#card-item-description').addClass('hidden');
-                    } else {
-                        $('#card-item-description').removeClass('hidden');
-                    }
+                    // An empty description hides its section
+                    $('#card-item-section-description').toggleClass(
+                        'hidden',
+                        data.description === '' || data.description === '<p>&nbsp;</p>'
+                    );
+                    $('#card-item-description').removeData('clampChecked');
+                    $('#card-item-description-more')
+                        .attr('aria-expanded', 'false')
+                        .text(TP_ITEM_VIEW_LANG.showMore);
+                    refreshItemViewDescriptionClamp();
                     $('#card-item-pwd').html('<?php echo $var['hidden_asterisk']; ?>');
 
                     // Password health marker (replaces the old binary secure/not-secure shield):
@@ -7507,7 +7803,7 @@ require __DIR__ . '/renewal.preview.js.php';
                         html_kbs = '';
 
                     $(data.tags).each(function(index, value) {
-                        html_tags += '<span class="badge badge-success pointer tip mr-2" title="<?php echo $lang->get('list_items_with_tag'); ?>" onclick="searchItemsWithTags(\'' + value + '\')"><i class="fa-solid fa-hashtag fa-sm"></i>&nbsp;<span class="item_tag">' + value + '</span></span>';
+                        html_tags += '<span class="tp-item-view-chip is-success pointer tip" title="<?php echo $lang->get('list_items_with_tag'); ?>" onclick="searchItemsWithTags(\'' + value + '\')"><i class="fa-solid fa-hashtag fa-sm" aria-hidden="true"></i><span class="item_tag">' + value + '</span></span>';
                     });
                     if (html_tags === '') {
                         $('#card-item-tags').html('<?php echo $lang->get('none'); ?>');
@@ -7516,7 +7812,7 @@ require __DIR__ . '/renewal.preview.js.php';
                     }
 
                     $(data.links_to_kbs || []).each(function(index, value) {
-                        html_kbs += '<a class="badge badge-primary pointer tip mr-2" href="<?php echo $SETTINGS['cpassman_url']; ?>/index.php?page=kb&id=' + value['id'] + '"><i class="fa-solid fa-map-pin fa-sm"></i>&nbsp;' + value['label'] + '</a>';
+                        html_kbs += '<a class="tp-item-view-chip is-info pointer tip" href="<?php echo $SETTINGS['cpassman_url']; ?>/index.php?page=kb&id=' + value['id'] + '"><i class="fa-solid fa-map-pin fa-sm"></i>&nbsp;' + value['label'] + '</a>';
 
                     });
                     if ($('#card-item-kbs').length === 0) {
@@ -7646,6 +7942,9 @@ require __DIR__ . '/renewal.preview.js.php';
                             }
                         }
                     }
+                    const shownFields = $('#card-item-fields .card-item-category').not('.hidden')
+                        .find('.card-item-field').not('.hidden').length;
+                    $('#card-item-fields-count').text(shownFields > 0 ? shownFields : '');
 
 
                     // Handle the fact that KEYS may not yet be ready for this user
@@ -7669,66 +7968,10 @@ require __DIR__ . '/renewal.preview.js.php';
                     // Waiting
                     $('#card-item-attachments').html("<?php echo $lang->get('please_wait'); ?>");
 
-                    // Manage clipboard button
-                    // Select all buttons with the class .btn-copy-clipboard-clear
-                    document.querySelectorAll('.btn-copy-clipboard-clear').forEach(element => {
-                        element.addEventListener('click', async function() {
-                            try {
-                                // Retrieve the target defined by data-clipboard-target
-                                const targetId = this.getAttribute('data-clipboard-target');
-                                
-                                if (!targetId) return;
-
-                                // Grab the node (login => <span>, url => <span> ou <a>, email => <span>, etc.)
-                                const $el = $('#'+targetId);
-                                if ($el.length === 0) throw new Error('target-not-found');
-
-                                // Compute text to copy depending on element type
-                                let textToCopy = '';
-                                if ($el.is('input, textarea')) {
-                                    textToCopy = $el.val() || '';
-                                } else if ($el.is('a')) {
-                                // For links, prefer href; fallback to visible text
-                                textToCopy = $el.attr('href') || ($el.text() || '').trim();
-                                } else {
-                                    // span/div/etc.
-                                    textToCopy = ($el.text() || '').trim();
-                                }	
-                                if (!textToCopy) throw new Error('empty');
-
-                                // Copy to clipboard
-                                await copyToClipboard(textToCopy);
-
-                                // Success toast
-                                toastr.remove();
-                                toastr.info(
-                                    '<?php echo $lang->get("copy_to_clipboard"); ?>',
-                                    '', {
-                                        timeOut: 2000,
-                                        progressBar: true,
-                                        positionClass: 'toast-bottom-right'
-                                    }
-                                );
-                            } catch (error) {
-                                toastr.error(
-                                    '<?php echo $lang->get("clipboard_error"); ?>',
-                                    '', {
-                                        timeOut: 3000,
-                                        progressBar: true,
-                                        positionClass: 'toast-bottom-right'
-                                    }
-                                );
-                            }
-                        });
-                    });
-
-
-                    // Prepare clipboard - COPY LOGIN
-                    if (data.login !== '') {
-                        $('#card-item-login-btn').removeClass('hidden');
-                    } else {
-                        $('#card-item-login-btn').addClass('hidden');
-                    }
+                    // Empty rows are not shown; the OTP row waits for its first code (showOTPCode)
+                    $('#card-item-row-login').toggleClass('hidden', data.login === '');
+                    $('#card-item-row-otp').addClass('hidden');
+                    $('#card-item-otp-tools').empty();
                     $('#pwd_empty_igloo').remove();
 
                     // A passkey item has no password to reveal: its line points to the passkeys instead
@@ -7760,6 +8003,7 @@ require __DIR__ . '/renewal.preview.js.php';
 
                                 // Copy to clipboard
                                 await copyToClipboard(password);
+                                markItemViewCopied(this);
 
                                 // Notification for the user
                                 const clipboardDuration = parseInt(store.get('teampassSettings').clipboard_life_duration) || 0;
@@ -7821,37 +8065,28 @@ require __DIR__ . '/renewal.preview.js.php';
                         }
                     }
 
-                    // Prepare clipboard - COPY EMAIL
-                    if (data.email !== '') {
-                        $('#card-item-email-btn').removeClass('hidden');
-                    } else {
-                        $('#card-item-email-btn').addClass('hidden');
-                    }
+                    $('#card-item-row-email').toggleClass('hidden', data.email === '');
+                    $('#card-item-row-url').toggleClass('hidden', data.url === '');
 
-                    // Copy and open URL buttons
-                    if (data.url !== '') {
-                        $('#card-item-url-text-btn').removeClass('hidden');
-                        $('#card-item-url').removeClass('hidden');
-                    } else {
-                        $('#card-item-url-text-btn').addClass('hidden');
-                        $('#card-item-url').addClass('hidden');
-                    }
-
-                    // Prepare auto_update info
+                    // Status of the item, one readable line each
                     $('#card-item-misc').html('');
-                    if (parseInt(data.auto_update_pwd_frequency) !== '0') {
-                        $('#card-item-misc')
-                            .append('<span class="fa-solid fa-shield infotip mr-4" title="<?php echo $lang->get('auto_update_enabled'); ?>&nbsp;' + data.auto_update_pwd_frequency + '"></span>');
+                    // A number: it used to be compared with the string '0', which showed it on every item
+                    if (parseInt(data.auto_update_pwd_frequency, 10) > 0) {
+                        $('#card-item-misc').append($('<li>').html(itemViewStatusLineHtml(
+                            'fa-solid fa-shield-halved',
+                            TP_ITEM_VIEW_LANG.autoUpdate + ' ' + data.auto_update_pwd_frequency
+                        )));
                     }
 
                     // Show Notification engaged
-                    $('#card-item-misc')
-                        .append('<span class="mr-4 icon-badge" id="card-item-misc-notification"></span>');
+                    $('#card-item-misc').append('<li id="card-item-misc-notification"></li>');
                     updateItemNotificationStatusVisual(data.notification_status === true);
 
                     // Prepare counter
-                    $('#card-item-misc')
-                        .append('<span class="icon-badge mr-4"><span class="fa-regular fa-eye infotip" title="<?php echo $lang->get('viewed_number'); ?>"></span><span class="badge badge-info icon-badge-text icon-badge-far">' + data.viewed_no + '</span></span>');
+                    $('#card-item-misc').append($('<li>').html(itemViewStatusLineHtml(
+                        'fa-regular fa-eye',
+                        TP_ITEM_VIEW_LANG.viewedTimes.replace('%s', parseInt(data.viewed_no, 10) || 0)
+                    )));
 
                     // Delete after X views
                     if (data.to_be_deleted !== '') {
@@ -7862,9 +8097,14 @@ require __DIR__ . '/renewal.preview.js.php';
                             $('#form-item-deleteAfterShown').val('');
                             $('#form-item-deleteAfterDate').val(data.to_be_deleted);
                         }
-                        // Show icon
-                        $('#card-item-misc')
-                            .append('<span class="icon-badge mr-5"><span class="fa-regular fa-trash-alt infotip" title="<?php echo $lang->get('automatic_deletion_engaged'); ?>"></span><span class="badge badge-danger icon-badge-text-bottom-right">' + data.to_be_deleted + '</span></span>');
+                        // Status line, only for an item that has a deletion rule (to_be_deleted
+                        // holds the word "No" when the feature is disabled)
+                        if (data.to_be_deleted_type !== undefined) {
+                            $('#card-item-misc').append($('<li>').html(itemViewStatusLineHtml(
+                                'fa-regular fa-trash-alt',
+                                TP_ITEM_VIEW_LANG.autoDeletion + ': ' + data.to_be_deleted
+                            )));
+                        }
                     }
 
                     // reset password shown info
@@ -7900,17 +8140,25 @@ require __DIR__ . '/renewal.preview.js.php';
                         $('#div_loading').addClass('hidden');
                     }
 
-                    // Prepare bottom buttons
+                    // Previous / next items of the list, their label in the button title
                     if ($('#list-item-row_'+data.id).prev('.list-item-row').attr('data-item-id') !== undefined) {
+                        const prevLabel = TP_ITEM_VIEW_LANG.previousItem + ' ' + unescape($('#list-item-row_'+data.id).prev('.list-item-row').attr('data-label'));
                         $('.but-prev-item')
-                            .html('<i class="fa-solid fa-arrow-left mr-2"></i>' + unescape($('#list-item-row_'+data.id).prev('.list-item-row').attr('data-label')))
-                            .attr('data-prev-item-id', $('#list-item-row_'+data.id).prev('.list-item-row').attr('data-item-id'))
+                            .attr({
+                                'title': prevLabel,
+                                'aria-label': prevLabel,
+                                'data-prev-item-id': $('#list-item-row_'+data.id).prev('.list-item-row').attr('data-item-id')
+                            })
                             .removeClass('hidden');
                     }
                     if ($('#list-item-row_'+data.id).next('.list-item-row').attr('data-item-id') !== undefined) {
+                        const nextLabel = TP_ITEM_VIEW_LANG.nextItem + ' ' + unescape($('#list-item-row_'+data.id).next('.list-item-row').attr('data-label'));
                         $('.but-next-item')
-                            .html('<i class="fa-solid fa-arrow-right mr-2"></i>' + unescape($('#list-item-row_'+data.id).next('.list-item-row').attr('data-label')))
-                            .attr('data-next-item-id', $('#list-item-row_'+data.id).next('.list-item-row').attr('data-item-id'))
+                            .attr({
+                                'title': nextLabel,
+                                'aria-label': nextLabel,
+                                'data-next-item-id': $('#list-item-row_'+data.id).next('.list-item-row').attr('data-item-id')
+                            })
                             .removeClass('hidden');
                     }
 
@@ -7955,88 +8203,23 @@ require __DIR__ . '/renewal.preview.js.php';
                     console.log(data);
                 }
 
-                // Attachments
+                // Attachments: the same cards in the view and in the edit form
                 if (data !== false) {
                     if (data.attachments.length === 0) {
                         // Otherwise the edition form keeps the files of the item shown before
                         $('#form-item-attachments').html('');
-                        $('#card-item-attachments-badge').html('<?php echo $lang->get('none'); ?>');
+                        $('#card-item-attachments-badge').html('');
                         $('#card-item-attachments')
-                            .html('<?php echo $lang->get('no_attachment'); ?>')
-                            .parent()
-                            .addClass('collapsed');
+                            .html('<div class="tp-item-view-empty text-muted">' + htmlEncode(TP_ITEM_VIEW_LANG.noAttachment) + '</div>');
                     } else {
-                        var html = '',
-                            htmlFull = '',
-                            counter = 1,
-                            nbFiles = 0;
+                        let html = '',
+                            htmlFull = '';
                         $.each(data.attachments, function(i, value) {
-                            // Manage new row
-                            if (counter === 1) {
-                                html += '<div class="row">';
-                            }
-
-                            html += '<div class="col-6">' +
-                                '<div class="callout callout-info">' +
-                                '<i class="' + value.icon + ' mr-2 text-info"></i>';
-
-                            // Show VIEW image icon
-                            if (value.is_image === 1) {
-                                // Prepare filename
-                                let filename = decodeFilename(value.filename);
-
-                                html +=
-                                    '<i class="fa-solid fa-eye infotip preview-image pointer mr-2" ' +
-                                    'title="<?php echo $lang->get('see'); ?>" ' +
-                                    'data-file-id="' + value.id + '" data-file-title="' +
-                                    (isBase64(value.filename) === true ? atob(value.filename) : value.filename) + '"></i>';
-                            }
-
-                            // Show DOWNLOAD icon
-                            downloadIcon =
-                                '<a class="text-secondary infotip mr-2" href="sources/downloadFile.php?name=' + encodeURI(value.filename) + '&key=<?php echo $session->get('key'); ?>&key_tmp=' + value.key + '&fileid=' + value.id + '" title="<?php echo $lang->get('download'); ?>">' +
-                                '<i class="fa-solid fa-file-download"></i></a>';
-                            html += downloadIcon;
-
-                            // Prepare filename
-                            let filename = decodeFilename(value.filename);
-
-                            // Show other info
-                            html +=
-                                '<span class="font-weight-bold mr-3">' + filename + '</span>' +
-                                '<span class="mr-2 font-weight-light">(' + value.extension + ')</span>' +
-                                '<span class="font-italic">' + value.size + '</span>' +
-                                '</div></div>';
-
-                            // Edition form: one card per file in the attachments grid
-                            const fileLabel = htmlEncode(filename + '.' + value.extension);
-                            htmlFull += '<div class="tp-item-file edit-attachment-div">' +
-                                '<span class="tp-item-file-icon"><i class="' + value.icon + '" aria-hidden="true"></i></span>' +
-                                '<div class="tp-item-file-body">' +
-                                '<div class="tp-item-file-name" title="' + fileLabel + '">' + fileLabel + '</div>' +
-                                '<div class="tp-item-file-meta">' + htmlEncode(String(value.extension).toUpperCase()) + ' · ' + htmlEncode(value.size) + '</div>' +
-                                '</div>' +
-                                '<div class="tp-item-file-actions">' +
-                                (value.is_image === 1 ?
-                                    '<button type="button" class="tp-item-file-action preview-image infotip" data-file-id="' + value.id + '" title="<?php echo $lang->get('see'); ?>" aria-label="<?php echo $lang->get('see'); ?>">' +
-                                    '<i class="fa-solid fa-eye"></i></button>' : '') +
-                                '<a class="tp-item-file-action infotip" href="sources/downloadFile.php?name=' + encodeURI(value.filename) + '&key=<?php echo $session->get('key'); ?>&key_tmp=' + value.key + '&fileid=' + value.id + '" title="<?php echo $lang->get('download'); ?>" aria-label="<?php echo $lang->get('download'); ?>">' +
-                                '<i class="fa-solid fa-file-download"></i></a>' +
-                                '<button type="button" class="tp-item-file-action tp-item-file-action-danger delete-file infotip" data-file-id="' + value.id + '" data-file-name="' + fileLabel + '" title="<?php echo $lang->get('delete'); ?>" aria-label="<?php echo $lang->get('delete'); ?>">' +
-                                '<i class="fa-solid fa-trash"></i></button>' +
-                                '</div>' +
-                                '</div>';
-
-                            if (counter === 2) {
-                                html += '</div>';
-                                counter = 1;
-                            } else {
-                                counter += 1;
-                            }
-                            nbFiles += 1;
+                            html += itemAttachmentCardHtml(value, false);
+                            htmlFull += itemAttachmentCardHtml(value, true);
                         });
                         $('#card-item-attachments').html(html);
-                        $('#card-item-attachments-badge').html(nbFiles);
+                        $('#card-item-attachments-badge').html(data.attachments.length);
                         $('#form-item-attachments').html(htmlFull);
                         $('#form-item-attachments-zone').removeClass('hidden');
                     }
@@ -8050,13 +8233,13 @@ require __DIR__ . '/renewal.preview.js.php';
                 // Show restrictions with Badges
                 var html_restrictions = '';
                 $.each(store.get('teampassItem').id_restricted_to, function(i, value) {
-                    html_restrictions +='<span class="badge badge-info mr-2 mb-1"><i class="fa-solid fa-group fa-sm mr-1"></i>' +
+                    html_restrictions +='<span class="tp-item-view-chip is-info"><i class="fa-solid fa-user fa-sm" aria-hidden="true"></i>' +
                         htmlEncode(data.users_list.find(x => x.id === parseInt(value)).name) + '</span>';
                 });
 
                 $.each(store.get('teampassItem').id_restricted_to_roles, function(i, value) {
                     const role = data.roles_list.find(x => x.id === parseInt(value));
-                    html_restrictions += (role ? '<span class="badge badge-info mr-2 mb-1"><i class="fa-solid fa-group fa-sm mr-1"></i>' + htmlEncode(role.title) + '</span>' : '');
+                    html_restrictions += (role ? '<span class="tp-item-view-chip is-info"><i class="fa-solid fa-users fa-sm" aria-hidden="true"></i>' + htmlEncode(role.title) + '</span>' : '');
                 });     
                         
                 if (html_restrictions === '') {
@@ -8174,8 +8357,10 @@ require __DIR__ . '/renewal.preview.js.php';
 
                 // Valid OTV links
                 if (data.otv_links !== undefined && data.otv_links > 0) {
-                    $('#card-item-misc')
-                        .append('<span class="icon-badge mr-4"><span class="fa-regular fa-handshake infotip" title="<?php echo $lang->get('existing_valid_otv_links'); ?>"></span><span class="badge badge-info icon-badge-text icon-badge-far">' + data.otv_links + '</span></span>');
+                    $('#card-item-misc').append($('<li>').html(itemViewStatusLineHtml(
+                        'fa-solid fa-paper-plane',
+                        TP_ITEM_VIEW_LANG.secureSendLinks.replace('%s', parseInt(data.otv_links, 10))
+                    )));
                 }
 
                 // Manage if OTP is enabled for item
@@ -8244,7 +8429,21 @@ require __DIR__ . '/renewal.preview.js.php';
                     data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'showDetailsStep3');
 
                     if (data.otp_code !== '' && data.otp_expires_in !== '' && parseInt(data.otp_enabled) === 1 && data.message === '') {
-                        $('#card-item-opt_code').html(data.otp_code+'</span><i class="fa-regular fa-copy ml-2 text-secondary pointer" id="clipboard_otpcode"></i><span class="ml-2">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span id="countdown_otp" style="position: absolute;right:0px;"></span><span>');   
+                        // Digits shown in two groups, copied as one string
+                        const otpDigits = String(data.otp_code);
+                        const otpShown = /^(\d{6}|\d{8})$/.test(otpDigits) ?
+                            otpDigits.slice(0, otpDigits.length / 2) + ' ' + otpDigits.slice(otpDigits.length / 2) :
+                            otpDigits;
+                        $('#card-item-opt_code').html(
+                            '<span class="tp-item-view-secret tp-item-view-otp">' + htmlEncode(otpShown) + '</span>' +
+                            '<span class="tp-item-view-otp-timer" id="countdown_otp"></span>'
+                        );
+                        $('#card-item-opt_code_error').html('');
+                        $('#card-item-otp-tools').html(
+                            '<button type="button" class="tp-item-view-btn" id="clipboard_otpcode" title="' + tpEscapeHtmlAttribute(TP_ITEM_VIEW_LANG.copy) + '" aria-label="' + tpEscapeHtmlAttribute(TP_ITEM_VIEW_LANG.copy) + '">' +
+                            '<i class="fa-regular fa-copy" aria-hidden="true"></i></button>'
+                        );
+                        $('#card-item-row-otp').removeClass('hidden');
                         
                         // show countdown
                         $("#countdown_otp").countdown360({
@@ -8270,6 +8469,7 @@ require __DIR__ . '/renewal.preview.js.php';
 
                                 // Copy to clipboard
                                 await copyToClipboard(otpCode);
+                                markItemViewCopied(this);
 
                                 // Send success notification
                                 toastr.info(
@@ -8305,11 +8505,15 @@ require __DIR__ . '/renewal.preview.js.php';
 
                         resolve(replayDelayInMilliseconds);
                     } else {
+                        $('#card-item-otp-tools').empty();
                         if (data.error === false) {
-                            $('#card-item-opt_code').html('<?php echo $lang->get('none'); ?>');
+                            // No OTP on this item: no row
+                            $('#card-item-opt_code').html('');
+                            $('#card-item-row-otp').addClass('hidden');
                         } else {
                             $('#card-item-opt_code').html('');
                             $('#card-item-opt_code_error').html('<span class="text-warning pointer infotip" title="<?php echo $lang->get('error_otp_secret'); ?>"><i class="fa-solid fa-triangle-exclamation mr-1"></i><?php echo $lang->get('error'); ?></span>');
+                            $('#card-item-row-otp').removeClass('hidden');
                             $('.infotip').tooltip();
                         }
                     }
@@ -8509,18 +8713,7 @@ require __DIR__ . '/renewal.preview.js.php';
             $(this).next().addClass('hidden');
         }
     });*/
-    $(document).on('click', '#add-item-history', function() {
-        if ($(this).next().hasClass('hidden') === true && store.get('teampassItem').user_can_modify === 1) {
-            if (parseInt(store.get('teampassSettings').insert_manual_entry_item_history) === 1) {
-                $(this).next().removeClass('hidden');
-            }
-        } else {
-            if (parseInt(store.get('teampassSettings').insert_manual_entry_item_history) === 1) {
-                $(this).next().addClass('hidden');
-            }
-        }
-    });
-    
+
     // Handle the icon + is clicked
     $(document).on('click', '.add-button', function() {
         if ($(this).data('add-type') === 'history') {
@@ -8707,21 +8900,32 @@ require __DIR__ . '/renewal.preview.js.php';
                     var html = '',
                         nbHistoryEvents = 0,
                         previousPasswords = '<h6 class="mb-3"><?php echo $lang->get('next_passwords_were_valid_until_date'); ?></h6>';
+                    // Newest first: the latest events are shown, the older ones on demand
+                    const historyShownFirst = 5;
                     $.each(data.history, function(i, value) {
                         const sourceBadge = value.is_api === true ? '<span class="badge badge-info ml-2 align-middle">API</span>' : ''
-                        html += '<div class="direct-chat-msg"><div class="direct-chat-info clearfix">' +
-                            '<span class="direct-chat-name float-left">' + htmlEncode(value.name) + sourceBadge + '</span>' +
-                            '<span class="direct-chat-timestamp float-right">' + value.date + '</span>' +
+                        html += '<li class="tp-item-view-history-row' + (nbHistoryEvents >= historyShownFirst ? ' is-older' : '') + '">' +
+                            '<img class="tp-item-view-history-avatar" src="' + value.avatar + '" alt="">' +
+                            '<div class="tp-item-view-history-what">' +
+                            '<span class="tp-item-view-history-who">' + htmlEncode(value.name) + sourceBadge + '</span> ' +
+                            '<span class="text-capitalize">' + (value.action === '' ? '' : (value.action)) + '</span>' +
+                            (value.detail === '' ? '' : (' | ' + htmlEncode(value.detail))) +
                             '</div>' +
-                            '<img class="direct-chat-img" src="' + value.avatar + '" alt="Message User Image">' +
-                            '<div class="direct-chat-text"><span class="text-capitalize">' +
-                            (value.action === '' ? '' : (value.action)) + '</span> ' +
-                            (value.detail === '' ? '' : (' | ' + htmlEncode(value.detail))) + '</div></div>';
+                            '<span class="tp-item-view-history-when">' + htmlEncode(value.date) + '</span>' +
+                            '</li>';
+                        if (nbHistoryEvents === 0) {
+                            $('#card-item-last-change')
+                                .text(TP_ITEM_VIEW_LANG.lastActivity.replace('%1$s', value.date).replace('%2$s', value.name))
+                                .removeClass('hidden');
+                        }
                         nbHistoryEvents += 1;
                     });
                     // Display
-                    $('#card-item-history').html(html);
+                    $('#card-item-history').html(html).removeClass('is-expanded');
                     $('#card-item-history-badge').html(nbHistoryEvents);
+                    $('#card-item-history-older')
+                        .text(TP_ITEM_VIEW_LANG.showOlder.replace('%s', nbHistoryEvents - historyShownFirst))
+                        .toggleClass('hidden', nbHistoryEvents <= historyShownFirst);
                 }
 
                 // Collapse History

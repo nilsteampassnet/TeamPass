@@ -1278,183 +1278,204 @@ if ((int) $session_user_admin === 1) {
         </div>
 
         <div id="items-details-container" class="col-md-5 overflow-auto hidden">
-            <!-- ITEM DETAILS -->
-            <div class="row item-details-card item-details-card-menu">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <span class="mr-3 align-middle">
-                                <button type="button" class="btn btn-secondary but-back-to-list">
-                                    <i class="fa-solid fa-arrow-left"></i>
-                                </button>
-                            </span>
-                            <h3 class="d-inline align-middle" id="card-item-label"><span class="skeleton-line skeleton-title"></span></h3>
-                            <span id="card-item-webauthn-title-badge" class="badge badge-info ml-2 infotip hidden" title="<?php echo $lang->get('webauthn_list_marker'); ?>">
-                                <i class="fa-solid fa-fingerprint"></i>
-                            </span>
-                            <span id="card-item-readonly-badge" class="badge badge-warning ml-2 hidden" title="<?php echo $lang->get('read_only'); ?>">
-                                <i class="fa-solid fa-lock mr-1"></i><small><?php echo $lang->get('read_only'); ?></small>
-                            </span>
-                            <span id="card-item-lapr-badges" class="ml-2 hidden"></span>
-                            <span id="card-item-renewal-badge" class="hidden"></span>
-                            <div class="card-tools">
-                                <button type="button" class="btn btn-secondary btn-sm but-back-to-list mt-2">
-                                    <i class="fa-solid fa-times"></i>
-                                </button>
+            <!-- ITEM DETAILS: one sheet made of .item-details-card blocks, which items.js.php toggles as a group.
+                 The wrapper must not carry .item-details-card: the description block hides its own parent. -->
+            <div class="tp-item-view">
+            <!-- Action bar: stays at the top of the panel while it scrolls -->
+            <div class="item-details-card item-details-card-menu tp-item-view-block tp-item-view-bar">
+                <button type="button" class="tp-item-view-btn but-back-to-list" title="<?php echo $lang->get('item_view_back_to_list'); ?>" aria-label="<?php echo $lang->get('item_view_back_to_list'); ?>">
+                    <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+                </button>
+                <span class="tp-item-view-icon" aria-hidden="true"><i id="card-item-icon" class="fa-solid fa-key"></i></span>
+                <!-- Title, then status chips; badges inserted after the label (lock, viewers, classification) join the chips -->
+                <div class="tp-item-view-title">
+                    <h3 id="card-item-label"><span class="skeleton-line skeleton-title"></span></h3>
+                    <span id="card-item-webauthn-title-badge" class="tp-item-view-chip is-info hidden" title="<?php echo $lang->get('webauthn_list_marker'); ?>">
+                        <i class="fa-solid fa-fingerprint" aria-hidden="true"></i><?php echo $lang->get('webauthn_list_marker'); ?>
+                    </span>
+                    <span id="card-item-readonly-badge" class="tp-item-view-chip is-warning hidden" title="<?php echo $lang->get('read_only'); ?>">
+                        <i class="fa-solid fa-lock" aria-hidden="true"></i><?php echo $lang->get('read_only'); ?>
+                    </span>
+                    <span id="card-item-lapr-badges" class="hidden"></span>
+                    <span id="card-item-renewal-badge" class="hidden"></span>
+                </div>
+                <div class="tp-item-view-nav" role="group">
+                    <button type="button" class="tp-item-view-btn but-navigate-item but-prev-item hidden" data-prev-item-id="">
+                        <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" class="tp-item-view-btn but-navigate-item but-next-item hidden" data-next-item-id="">
+                        <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <div class="tp-item-view-actions">
+                    <a class="tp-item-view-btn tp-item-view-action tp-action" href="#" data-item-action="link" id="get_item_link" title="<?php echo $lang->get('link'); ?>">
+                        <i class="fa-solid fa-link" aria-hidden="true"></i><span class="tp-item-view-btn-text"><?php echo $lang->get('link'); ?></span>
+                    </a>
+                    <?php
+                    if (
+                        isset($SETTINGS['otv_is_enabled']) === true
+                        && (int) $SETTINGS['otv_is_enabled'] === 1
+                    ) {
+                        ?>
+                    <a class="tp-item-view-btn tp-item-view-action tp-action" href="#" data-item-action="otv" title="<?php echo $lang->get('secure_send'); ?>">
+                        <i class="fa-solid fa-paper-plane" aria-hidden="true"></i><span class="tp-item-view-btn-text"><?php echo $lang->get('secure_send'); ?></span>
+                    </a>
+                    <?php
+                    }
+                    ?>
+                    <a class="tp-item-view-btn tp-item-view-action tp-action" href="#" data-item-action="notify" id="item-action-notify" aria-pressed="false">
+                        <i class="fa-regular fa-bell" id="item-action-notify-icon" aria-hidden="true"></i><span class="tp-item-view-btn-text"><?php echo $lang->get('notify'); ?></span>
+                    </a>
+                    <div class="dropdown tp-item-view-more">
+                        <button type="button" class="tp-item-view-btn" id="card-item-more" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="<?php echo $lang->get('item_view_more_actions'); ?>">
+                            <i class="fa-solid fa-ellipsis" aria-hidden="true"></i><span class="tp-item-view-btn-text"><?php echo $lang->get('item_view_more_actions'); ?></span>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="card-item-more">
+                            <a class="dropdown-item tp-item-view-action tp-action" href="#" data-item-action="new" id="item-form-new-button"><i class="fa-regular fa-plus-square fa-fw mr-2" aria-hidden="true"></i><?php echo $lang->get('new'); ?></a>
+                            <a class="dropdown-item tp-item-view-action tp-action" href="#" data-item-action="copy"><i class="fa-regular fa-copy fa-fw mr-2" aria-hidden="true"></i><?php echo $lang->get('copy'); ?></a>
+                            <a class="dropdown-item tp-item-view-action tp-action" href="#" data-item-action="share"><i class="fa-regular fa-share-square fa-fw mr-2" aria-hidden="true"></i><?php echo $lang->get('share'); ?></a>
+                            <?php
+                            if (
+                                isset($SETTINGS['enable_server_password_change']) === true
+                                && (int) $SETTINGS['enable_server_password_change'] === 1
+                            ) {
+                                ?>
+                            <a class="dropdown-item tp-item-view-action tp-action" href="#" data-item-action="server"><i class="fa-solid fa-server fa-fw mr-2" aria-hidden="true"></i><?php echo $lang->get('server'); ?></a>
+                            <?php
+                            }
+                            ?>
+                            <a class="dropdown-item tp-item-view-action tp-action" href="#" data-item-action="reload"><i class="fa-solid fa-rotate fa-fw mr-2" aria-hidden="true"></i><?php echo $lang->get('refresh'); ?></a>
+                            <div class="dropdown-divider tp-item-view-action tp-item-view-delete-divider"></div>
+                            <a class="dropdown-item text-danger tp-item-view-action tp-action" href="#" data-item-action="delete"><i class="fa-regular fa-trash-alt fa-fw mr-2" aria-hidden="true"></i><?php echo $lang->get('delete'); ?></a>
+                        </div>
+                    </div>
+                    <!-- Same place as Save in the edit form bar -->
+                    <a class="btn btn-info tp-item-view-action tp-item-view-edit tp-action" href="#" data-item-action="edit">
+                        <i class="fa-solid fa-pen mr-1" aria-hidden="true"></i><?php echo $lang->get('edit'); ?>
+                    </a>
+                </div>
+                <button type="button" class="tp-item-view-btn but-back-to-list" title="<?php echo $lang->get('close'); ?>" aria-label="<?php echo $lang->get('close'); ?>">
+                    <i class="fa-solid fa-times" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <!-- Section shortcuts and last change -->
+            <div class="item-details-card tp-item-view-block tp-item-view-subheader">
+                <nav class="tp-item-form-jumps" id="card-item-jumps">
+                    <a class="tp-item-form-jump" href="#card-item-section-main"><i class="fa-solid fa-home fa-fw mr-1" aria-hidden="true"></i><?php echo $lang->get('main'); ?></a>
+                    <a class="tp-item-form-jump hidden" href="#card-item-section-description" data-section="description"><i class="fa-solid fa-align-left fa-fw mr-1" aria-hidden="true"></i><?php echo $lang->get('description'); ?></a>
+                    <?php
+                    echo isset($SETTINGS['item_extra_fields']) === true && (int) $SETTINGS['item_extra_fields'] === 1 ? '
+                    <a class="tp-item-form-jump hidden" href="#item-details-card-categories" data-section="fields" data-count="#card-item-fields-count"><i class="fa-solid fa-cubes fa-fw mr-1" aria-hidden="true"></i>' . $lang->get('fields') . '<span class="badge badge-pill badge-info ml-1 hidden"></span></a>' : '';
+                    ?>
+                    <a class="tp-item-form-jump" href="#card-item-section-attachments" data-section="attachments" data-count="#card-item-attachments-badge"><i class="fa-solid fa-paperclip fa-fw mr-1" aria-hidden="true"></i><?php echo $lang->get('attachments'); ?><span class="badge badge-pill badge-info ml-1 hidden"></span></a>
+                    <a class="tp-item-form-jump hidden" href="#item-card-webauthn" data-section="webauthn" data-count="#card-item-webauthn-badge"><i class="fa-solid fa-fingerprint fa-fw mr-1" aria-hidden="true"></i><?php echo $lang->get('webauthn_passkeys'); ?><span class="badge badge-pill badge-info ml-1 hidden"></span></a>
+                    <a class="tp-item-form-jump" href="#card-item-section-history" data-section="history" data-count="#card-item-history-badge"><i class="fa-solid fa-history fa-fw mr-1" aria-hidden="true"></i><?php echo $lang->get('history'); ?><span class="badge badge-pill badge-info ml-1 hidden"></span></a>
+                </nav>
+                <span class="tp-item-view-last-change small hidden" id="card-item-last-change"></span>
+            </div>
+
+            <!-- MAIN: credentials and what the item is about -->
+            <div class="item-details-card tp-item-view-block tp-item-view-section" id="card-item-section-main">
+                <div class="tp-item-view-main">
+                    <!-- In template mode the template category replaces the .list-group below -->
+                    <div class="tp-item-view-credentials" id="list-group-item-main">
+                        <div class="list-group tp-item-view-rows">
+                            <div class="tp-item-view-row" id="card-item-row-login">
+                                <span class="tp-item-view-key"><?php echo $lang->get('index_login'); ?></span>
+                                <span class="tp-item-view-value"><span id="card-item-login"><span class="skeleton-line skeleton-sm"></span></span></span>
+                                <span class="tp-item-view-tools">
+                                    <button type="button" class="tp-item-view-btn btn-copy-clipboard-clear" data-clipboard-target="card-item-login" id="card-item-login-btn" title="<?php echo $lang->get('copy_to_clipboard'); ?>" aria-label="<?php echo $lang->get('copy_to_clipboard'); ?>">
+                                        <i class="fa-regular fa-copy" aria-hidden="true"></i>
+                                    </button>
+                                </span>
+                            </div>
+                            <div class="tp-item-view-row" id="card-item-row-pwd">
+                                <span class="tp-item-view-key"><?php echo $lang->get('pw'); ?></span>
+                                <span class="tp-item-view-value">
+                                    <span id="card-item-pwd" class="tp-item-view-secret pointer"><span class="skeleton-line skeleton-md"></span></span>
+                                    <span id="item-hibp-badge" class="d-inline-block hidden"></span>
+                                    <span id="card-item-pwd-security-badge" class="badge hidden"></span>
+                                </span>
+                                <span class="tp-item-view-tools">
+                                    <button type="button" class="tp-item-view-btn" id="card-item-pwd-toggle-button" title="<?php echo $lang->get('mask_pw'); ?>" aria-label="<?php echo $lang->get('mask_pw'); ?>">
+                                        <i class="fa-regular fa-eye pwd-toggle-icon" aria-hidden="true"></i>
+                                    </button>
+                                    <button type="button" class="tp-item-view-btn hidden" id="card-item-password-history-button" title="<?php echo $lang->get('previously_used_passwords'); ?>" aria-label="<?php echo $lang->get('previously_used_passwords'); ?>">
+                                        <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+                                    </button>
+                                    <button type="button" class="tp-item-view-btn btn-copy-clipboard" id="card-item-pwd-button" title="<?php echo $lang->get('copy_to_clipboard'); ?>" aria-label="<?php echo $lang->get('copy_to_clipboard'); ?>">
+                                        <i class="fa-regular fa-copy" aria-hidden="true"></i>
+                                    </button>
+                                </span>
+                                <input id="hidden-item-pwd" type="hidden">
+                            </div>
+                            <div class="tp-item-view-row hidden" id="card-item-row-otp">
+                                <span class="tp-item-view-key"><?php echo $lang->get('otp_code'); ?></span>
+                                <span class="tp-item-view-value">
+                                    <span id="card-item-opt_code"><span class="skeleton-line skeleton-sm"></span></span>
+                                    <span id="card-item-opt_code_error"></span>
+                                </span>
+                                <span class="tp-item-view-tools" id="card-item-otp-tools"></span>
+                            </div>
+                            <div class="tp-item-view-row" id="card-item-row-email">
+                                <span class="tp-item-view-key"><?php echo $lang->get('email'); ?></span>
+                                <span class="tp-item-view-value"><span id="card-item-email"><span class="skeleton-line skeleton-sm"></span></span></span>
+                                <span class="tp-item-view-tools">
+                                    <button type="button" class="tp-item-view-btn btn-copy-clipboard-clear" data-clipboard-target="card-item-email" id="card-item-email-btn" title="<?php echo $lang->get('copy_to_clipboard'); ?>" aria-label="<?php echo $lang->get('copy_to_clipboard'); ?>">
+                                        <i class="fa-regular fa-copy" aria-hidden="true"></i>
+                                    </button>
+                                </span>
+                            </div>
+                            <div class="tp-item-view-row" id="card-item-row-url">
+                                <span class="tp-item-view-key"><?php echo $lang->get('url'); ?></span>
+                                <span class="tp-item-view-value"><span id="card-item-url-text"><span class="skeleton-line skeleton-lg"></span></span></span>
+                                <span class="tp-item-view-tools">
+                                    <a id="card-item-url" class="tp-item-view-btn" href="#" target="_blank" rel="noopener noreferrer" title="<?php echo $lang->get('open_url_link'); ?>" aria-label="<?php echo $lang->get('open_url_link'); ?>">
+                                        <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                                    </a>
+                                    <button type="button" class="tp-item-view-btn btn-copy-clipboard-clear" data-clipboard-target="card-item-url-text" id="card-item-url-text-btn" title="<?php echo $lang->get('copy_to_clipboard'); ?>" aria-label="<?php echo $lang->get('copy_to_clipboard'); ?>">
+                                        <i class="fa-regular fa-copy" aria-hidden="true"></i>
+                                    </button>
+                                </span>
                             </div>
                         </div>
-
-                        <div class="card-body p-0">
-                            <nav class="navbar navbar-expand-lg navbar-light bg-light">
-                                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                                    <span class="navbar-toggler-icon"></span>
-                                </button>
-                                <div class="collapse navbar-collapse" id="navbarNav">
-                                    <ul class="navbar-nav">
-                                        <li class="nav-item" id="item-form-new-button">
-                                            <a class="text-navy tp-action ml-3" href="#" data-item-action="new"><i class="fa-regular fa-plus-square mr-1"></i><small><?php echo $lang->get('new'); ?></small></a>
-                                        </li>
-                                        <li class="nav-item">
-                                            <a class="text-navy tp-action ml-3" href="#" data-item-action="edit"><i class="fa-regular fa-edit mr-1"></i><small><?php echo $lang->get('edit'); ?></small></a>
-                                        </li>
-                                        <li class="nav-item">
-                                            <a class="text-navy tp-action ml-3" href="#" data-item-action="delete"><i class="fa-regular fa-trash-alt mr-1"></i><small><?php echo $lang->get('delete'); ?></small></a>
-                                        </li>
-                                        <li class="nav-item">
-                                            <a class="text-navy tp-action ml-3" href="#" data-item-action="copy"><i class="fa-regular fa-copy mr-1"></i><small><?php echo $lang->get('copy'); ?></small></a>
-                                        </li>
-                                        <li class="nav-item">
-                                            <a class="text-navy tp-action ml-3" href="#" data-item-action="link" id="get_item_link"><i class="fa-solid fa-link mr-1"></i><small><?php echo $lang->get('link'); ?></small></a>
-                                        </li>
-                                        <li class="nav-item">
-                                            <a class="text-navy tp-action ml-3" href="#" data-item-action="share"><i class="fa-regular fa-share-square mr-1"></i><small><?php echo $lang->get('share'); ?></small></a>
-                                        </li>
-                                        <li class="nav-item">
-                                            <a class="text-navy tp-action ml-3" href="#" data-item-action="notify" id="item-action-notify"><i class="fa-regular fa-bell mr-1" id="item-action-notify-icon"></i><small><?php echo $lang->get('notify'); ?></small></a>
-                                        </li>
-                                        <?php
-                                        if (
-                                            isset($SETTINGS['enable_server_password_change']) === true
-                                            && (int) $SETTINGS['enable_server_password_change'] === 1
-                                        ) {
-                                            ?>
-                                            <li class="nav-item">
-                                                <a class="text-navy tp-action ml-3" href="#" data-item-action="server"><i class="fa-solid fa-server mr-1"></i><small><?php echo $lang->get('server'); ?></small></a>
-                                            </li>
-                                        <?php
-                                        }
-                                        if (
-                                            isset($SETTINGS['otv_is_enabled']) === true
-                                            && (int) $SETTINGS['otv_is_enabled'] === 1
-                                        ) {
-                                            ?>
-                                            <li class="nav-item">
-                                                <a class="text-navy tp-action ml-3" href="#" data-item-action="otv"><i class="fa-solid fa-paper-plane mr-1"></i><small><?php echo $lang->get('secure_send'); ?></small></a>
-                                            </li>
-                                        <?php
-                                        }
-                                        ?>
-                                        <li class="nav-item">
-                                            <a class="text-navy tp-action ml-3" href="#" data-item-action="reload"><i class="fa-solid fa-rotate mr-1"></i><small><?php echo $lang->get('refresh'); ?></small></a>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </nav>
-                        </div>
+                        <div id="card-item-corrupted-warning" class="alert mt-3 mb-0 hidden"></div>
+                        <div id="card-item-lapr-info" class="alert alert-info mt-3 mb-0 hidden"></div>
                     </div>
+                    <aside class="tp-item-view-about" aria-label="<?php echo $lang->get('item_view_about'); ?>">
+                        <dl class="tp-item-view-about-list">
+                            <dt class="hidden" id="card-item-folder-label"><?php echo $lang->get('folder'); ?></dt>
+                            <dd class="hidden" id="card-item-folder"></dd>
+                            <dt><?php echo $lang->get('restricted_to'); ?></dt>
+                            <dd id="card-item-restrictedto"><span class="skeleton-line skeleton-md"></span></dd>
+                            <dt><?php echo $lang->get('tags'); ?></dt>
+                            <dd id="card-item-tags"><span class="skeleton-line skeleton-sm"></span></dd>
+                            <?php if (isset($SETTINGS['enable_kb']) && (int) $SETTINGS['enable_kb'] === 1 && (int) $session->get('user-admin') !== 1) : ?>
+                            <dt><?php echo $lang->get('kb_menu'); ?></dt>
+                            <dd id="card-item-kbs"><span class="skeleton-line skeleton-sm"></span></dd>
+                            <?php endif; ?>
+                        </dl>
+                        <ul class="tp-item-view-status" id="card-item-misc"></ul>
+                    </aside>
                 </div>
             </div>
 
-            <div id="card-item-preview" class="hidden"></div>
-
-            <div class="row item-details-card">
-                <div class="col-md-7">
-                    <div class="card card-primary card-outline">
-                        <div class="card-body" id="list-group-item-main">
-                            <ul class="list-group list-group-unbordered mb-3">
-                                <li class="list-group-item">
-                                    <b><?php echo $lang->get('pw'); ?></b>
-                                    <span id="item-hibp-badge" class="ml-2 d-inline-block align-middle hidden"></span>
-                                    <span id="card-item-pwd-security-badge" class="badge ml-2 hidden"></span>
-                                    <button type="button" class="float-right btn btn-secondary btn-sm btn-copy-clipboard" id="card-item-pwd-button">
-                                        <i class="fa-regular fa-copy"></i>
-                                    </button>
-                                    <button type="button" class="float-right btn btn-secondary btn-sm mr-1 hidden" id="card-item-password-history-button">
-                                    <i class="fa-solid fa-clock-rotate-left"></i>
-                                    </button>
-                                    <button type="button" class="float-right btn btn-secondary btn-sm mr-1" id="card-item-pwd-toggle-button">
-                                        <i class="fa-regular fa-eye pwd-toggle-icon"></i>
-                                    </button>
-                                    <span id="card-item-pwd" class="float-right pointer mr-2"><span class="skeleton-line skeleton-md"></span></span>
-                                    <input id="hidden-item-pwd" type="hidden">
-                                </li>
-                                <li class="list-group-item">
-                                    <b><?php echo $lang->get('index_login'); ?></b>
-                                    <button type="button" class="float-right btn btn-secondary btn-sm ml-1 btn-copy-clipboard-clear" data-clipboard-target="card-item-login" id="card-item-login-btn">
-                                        <i class="fa-regular fa-copy"></i>
-                                    </button>
-                                    <span id="card-item-login" class="float-right"><span class="skeleton-line skeleton-sm"></span></span>
-                                </li>
-                                <li class="list-group-item">
-                                    <b><?php echo $lang->get('email'); ?></b>
-                                    <button type="button" class="float-right btn btn-secondary btn-sm ml-1 btn-copy-clipboard-clear" data-clipboard-target="card-item-email" id="card-item-email-btn">
-                                        <i class="fa-regular fa-copy"></i>
-                                    </button>
-                                    <span id="card-item-email" class="float-right ml-1"><span class="skeleton-line skeleton-sm"></span></span>
-                                </li>
-                                <li class="list-group-item item-url-row">
-                                    <b><?php echo $lang->get('url'); ?></b>
-                                    <button type="button" class="float-right btn btn-secondary btn-sm ml-1 btn-copy-clipboard-clear" data-clipboard-target="card-item-url-text" id="card-item-url-text-btn">
-                                        <i class="fa-regular fa-copy"></i>
-                                    </button>
-                                    <a id="card-item-url" class="float-right ml-1 btn btn-secondary btn-sm" href="#" target="_blank">
-                                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                                    </a>
-                                    <span id="card-item-url-text" class="float-right ml-1"><span class="skeleton-line skeleton-lg"></span></span>
-                                </li>
-                            </ul>
-                            <div id="card-item-corrupted-warning" class="alert mt-3 mb-0 hidden"></div>
-                            <div id="card-item-lapr-info" class="alert alert-info mt-3 mb-0 hidden"></div>
-                        </div>
+            <div class="item-details-card tp-item-view-block tp-item-view-section tp-item-view-collapsible" id="card-item-section-description" data-section="description">
+                <div class="tp-item-form-section-head">
+                    <button type="button" class="tp-item-form-section-toggle tp-item-view-section-toggle" aria-expanded="true">
+                        <i class="fa-solid fa-chevron-down tp-item-form-section-chevron" aria-hidden="true"></i>
+                        <h2 class="tp-item-form-section-heading"><i class="fa-solid fa-align-left mr-2" aria-hidden="true"></i><?php echo $lang->get('description'); ?></h2>
+                    </button>
+                    <div class="tp-item-form-section-tools">
+                        <button type="button" class="tp-item-form-section-tool tp-item-view-to-top infotip" title="<?php echo $lang->get('item_form_back_to_top'); ?>" aria-label="<?php echo $lang->get('item_form_back_to_top'); ?>"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button>
                     </div>
                 </div>
-                <div class="col-md-5">
-                    <div class="card">
-                        <div class="card-body">
-                            <ul class="list-group list-group-unbordered mb-3">
-                                <li class="list-group-item">
-                                    <b><?php echo $lang->get('restricted_to'); ?></b>
-                                    <a id="card-item-restrictedto" class="float-right ml-1"><span class="skeleton-line skeleton-md"></span></a>
-                                </li>
-                                <li class="list-group-item">
-                                    <b><?php echo $lang->get('tags'); ?></b>
-                                    <a id="card-item-tags" class="float-right ml-1"><span class="skeleton-line skeleton-sm"></span></a>
-                                </li>
-                                <?php if (isset($SETTINGS['enable_kb']) && (int) $SETTINGS['enable_kb'] === 1 && (int) $session->get('user-admin') !== 1) : ?>
-                                <li class="list-group-item">
-                                    <b><?php echo $lang->get('kb_menu'); ?></b>
-                                    <span id="card-item-kbs" class="float-right ml-1"><span class="skeleton-line skeleton-sm"></span></span>
-                                </li>
-                                <?php endif; ?>
-                                <li class="list-group-item">
-                                    <b><?php echo $lang->get('otp_code'); ?></b>
-                                    <a id="card-item-opt_code" class="float-right ml-1"><span class="skeleton-line skeleton-sm"></span></a>
-                                    <span id="card-item-opt_code_error" class="float-right"></span>
-                                </li>
-                                <li class="list-group-item" id="card-item-misc">
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
+                <div class="tp-item-form-section-body">
+                    <div class="tp-item-view-description" id="card-item-description"><span class="skeleton-line skeleton-xl"></span></div>
+                    <button type="button" class="tp-item-view-more-toggle hidden" id="card-item-description-more" aria-controls="card-item-description" aria-expanded="false"><?php echo $lang->get('item_view_show_more'); ?></button>
                 </div>
             </div>
-
-            <div class="row item-details-card">
-                <div class="col-12">
-                    <div class="callout callout-info visible" id="card-item-description"><span class="skeleton-line skeleton-xl"></span></div>
-                </div>
-            </div>
-
 
             <?php
             if (
@@ -1462,114 +1483,99 @@ if ((int) $session_user_admin === 1) {
                 && (int) $SETTINGS['item_extra_fields'] === 1
             ) {
                 ?>
-                <div class="row hidden item-details-card" id="item-details-card-categories">
-                    <div class="col-12">
-                        <div class="card card-default">
-                            <div class="card-header bg-gray-dark">
-                                <h3 class="card-title pointer" data-toggle="collapse" data-target="#card-item-fields">
-                                    <i class="fa-solid fa-random mr-2"></i><?php echo $lang->get('categories'); ?>
-                                </h3>
-                                <!-- /.card-tools -->
-                            </div>
-                            <!-- /.card-header -->
-                            <div class="card-body collapse show" id="card-item-fields">
-                                <?php
-                                    foreach ($session_item_fields as $elem) {
-                                        echo '
-                                <div class="callout callout-info card-item-category hidden" id="card-item-category-' . $elem['id'] . '">
-                                    <h5>' . $elem['title'] . '</h5>
-                                    <p>
-                                        <ul class="list-group list-group-unbordered mb-3">';
-                                        foreach ($elem['fields'] as $field) {
-                                            echo '
-                                            <li class="list-group-item card-item-field hidden" id="card-item-field-' . $field['id'] . '">
-                                                <span id="card-item-field-title-' . $field['id'] . '"><b>' . $field['title'] . '</b></span>
-                                                <button type="button" class="float-right btn btn-secondary btn-sm ml-1 btn-copy-clipboard-clear"  data-clipboard-target="card-item-field-value-' . $field['id'] . '">
-                                                    <i class="fa-solid fa-copy"></i>
-                                                </button>
-                                                <button type="button" class="float-right btn btn-secondary btn-sm ml-1 btn-reveal-field hidden" data-field-id="' . $field['id'] . '">
-                                                    <i class="fa-regular fa-eye"></i>
-                                                </button>
-                                                <span class="card-item-field-value float-right ml-1" id="card-item-field-value-' . $field['id'] . '"></span>
-                                            </li>';
-                                        }
-                                        echo '
-                                        </ul>
-                                    </p>
-                                </div>';
-                                    } ?>
-                                <div class="hidden no-item-fields"><?php echo $lang->get('no_custom_fields'); ?></div>
-                            </div>
-                            <!-- /.card-body -->
+                <div class="item-details-card tp-item-view-block tp-item-view-section tp-item-view-collapsible hidden" id="item-details-card-categories" data-section="fields">
+                    <div class="tp-item-form-section-head">
+                        <button type="button" class="tp-item-form-section-toggle tp-item-view-section-toggle" aria-expanded="true">
+                            <i class="fa-solid fa-chevron-down tp-item-form-section-chevron" aria-hidden="true"></i>
+                            <h2 class="tp-item-form-section-heading"><i class="fa-solid fa-cubes mr-2" aria-hidden="true"></i><?php echo $lang->get('fields'); ?><span class="badge badge-pill badge-light ml-2" id="card-item-fields-count"></span></h2>
+                        </button>
+                        <div class="tp-item-form-section-tools">
+                            <button type="button" class="tp-item-form-section-tool tp-item-view-to-top infotip" title="<?php echo $lang->get('item_form_back_to_top'); ?>" aria-label="<?php echo $lang->get('item_form_back_to_top'); ?>"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button>
                         </div>
+                    </div>
+                    <div class="tp-item-form-section-body" id="card-item-fields">
+                        <?php
+                            foreach ($session_item_fields as $elem) {
+                                echo '
+                        <div class="card-item-category tp-item-view-category hidden" id="card-item-category-' . $elem['id'] . '">
+                            <h3 class="tp-item-view-category-title">' . $elem['title'] . '</h3>
+                            <div class="list-group tp-item-view-fields-grid">';
+                                foreach ($elem['fields'] as $field) {
+                                    echo '
+                                <div class="card-item-field tp-item-view-field hidden" id="card-item-field-' . $field['id'] . '">
+                                    <span class="tp-item-view-key" id="card-item-field-title-' . $field['id'] . '">' . $field['title'] . '</span>
+                                    <button type="button" class="tp-item-view-btn btn-copy-clipboard-clear" data-clipboard-target="card-item-field-value-' . $field['id'] . '" title="' . $lang->get('copy_to_clipboard') . '" aria-label="' . $lang->get('copy_to_clipboard') . '">
+                                        <i class="fa-regular fa-copy" aria-hidden="true"></i>
+                                    </button>
+                                    <button type="button" class="tp-item-view-btn btn-reveal-field hidden" data-field-id="' . $field['id'] . '" title="' . $lang->get('mask_pw') . '" aria-label="' . $lang->get('mask_pw') . '">
+                                        <i class="fa-regular fa-eye" aria-hidden="true"></i>
+                                    </button>
+                                    <span class="card-item-field-value tp-item-view-value" id="card-item-field-value-' . $field['id'] . '"></span>
+                                </div>';
+                                }
+                                echo '
+                            </div>
+                        </div>';
+                            } ?>
+                        <div class="hidden no-item-fields text-muted"><?php echo $lang->get('no_custom_fields'); ?></div>
                     </div>
                 </div>
             <?php
             }
             ?>
 
-            <div class="row item-details-card item-card-attachments">
-                <div class="col-12">
-                    <div class="card card-default collapsed">
-                        <div class="card-header bg-gray-dark">
-                            <h3 class="card-title pointer" id="add-item-attachment" data-toggle="collapse" data-target="#card-item-attachments">
-                                <i class="fa-solid fa-paperclip mr-2"></i><?php echo $lang->get('attachments'); ?>
-                                <span class="badge badge-secondary ml-2" id="card-item-attachments-badge"></span>
-                            </h3>
-                            <i class="fa-solid fa-square-plus fa-2x float-right text-info pointer infotip hidden add-button" title="<?php echo $lang->get('add_new_file'); ?>" data-add-type="attachment"></i>
+            <div class="item-details-card tp-item-view-block tp-item-view-section tp-item-view-collapsible item-card-attachments" id="card-item-section-attachments" data-section="attachments">
+                <div class="tp-item-form-section-head">
+                    <button type="button" class="tp-item-form-section-toggle tp-item-view-section-toggle" aria-expanded="true">
+                        <i class="fa-solid fa-chevron-down tp-item-form-section-chevron" aria-hidden="true"></i>
+                        <h2 class="tp-item-form-section-heading"><i class="fa-solid fa-paperclip mr-2" aria-hidden="true"></i><?php echo $lang->get('attachments'); ?><span class="badge badge-pill badge-light ml-2" id="card-item-attachments-badge"></span></h2>
+                    </button>
+                    <div class="tp-item-form-section-tools">
+                        <button type="button" class="tp-item-form-section-tool tp-item-view-to-top infotip" title="<?php echo $lang->get('item_form_back_to_top'); ?>" aria-label="<?php echo $lang->get('item_form_back_to_top'); ?>"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button>
+                    </div>
+                </div>
+                <div class="tp-item-form-section-body">
+                    <div class="tp-item-files clear-me-html" id="card-item-attachments"></div>
+                </div>
+            </div>
+
+            <!-- Passkeys: the block is toggled with the others, the section only by the passkey list -->
+            <div class="item-details-card tp-item-view-block">
+                <div class="tp-item-view-section tp-item-view-collapsible hidden" id="item-card-webauthn" data-section="webauthn">
+                    <div class="tp-item-form-section-head">
+                        <button type="button" class="tp-item-form-section-toggle tp-item-view-section-toggle" aria-expanded="true">
+                            <i class="fa-solid fa-chevron-down tp-item-form-section-chevron" aria-hidden="true"></i>
+                            <h2 class="tp-item-form-section-heading"><i class="fa-solid fa-fingerprint mr-2" aria-hidden="true"></i><?php echo $lang->get('webauthn_passkeys'); ?><span class="badge badge-pill badge-light ml-2" id="card-item-webauthn-badge"></span></h2>
+                        </button>
+                        <div class="tp-item-form-section-tools">
+                            <button type="button" class="tp-item-form-section-tool tp-item-view-to-top infotip" title="<?php echo $lang->get('item_form_back_to_top'); ?>" aria-label="<?php echo $lang->get('item_form_back_to_top'); ?>"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button>
                         </div>
-                        <!-- /.card-header -->
-                        <div class="card-body collapse clear-me-html" id="card-item-attachments">
-                        </div>
-                        <!-- /.card-body -->
-                        <div class="overlay">
-                            <i class="fa-solid fa-refresh fa-spin"></i>
-                        </div>
+                    </div>
+                    <div class="tp-item-form-section-body" id="card-item-webauthn">
+                        <p class="text-muted small mb-2"><?php echo $lang->get('webauthn_card_info'); ?></p>
+                        <ul class="list-group list-group-unbordered" id="card-item-webauthn-list"></ul>
                     </div>
                 </div>
             </div>
 
-            <div class="row item-details-card">
-                <!-- Visibility driven by the passkey list only: .item-details-card is toggled globally -->
-                <div class="col-12 hidden" id="item-card-webauthn">
-                    <div class="card card-default collapsed">
-                        <div class="card-header bg-gray-dark">
-                            <h3 class="card-title pointer" data-toggle="collapse" data-target="#card-item-webauthn">
-                                <i class="fa-solid fa-fingerprint mr-2"></i><?php echo $lang->get('webauthn_passkeys'); ?>
-                                <span class="badge badge-secondary ml-2" id="card-item-webauthn-badge"></span>
-                            </h3>
-                        </div>
-                        <!-- /.card-header -->
-                        <div class="card-body collapse" id="card-item-webauthn">
-                            <p class="text-muted small mb-2"><?php echo $lang->get('webauthn_card_info'); ?></p>
-                            <ul class="list-group list-group-unbordered" id="card-item-webauthn-list"></ul>
-                        </div>
-                        <!-- /.card-body -->
+            <div class="item-details-card tp-item-view-block tp-item-view-section tp-item-view-collapsible tp-item-view-block-last" id="card-item-section-history" data-section="history">
+                <div class="tp-item-form-section-head">
+                    <button type="button" class="tp-item-form-section-toggle tp-item-view-section-toggle" aria-expanded="true">
+                        <i class="fa-solid fa-chevron-down tp-item-form-section-chevron" aria-hidden="true"></i>
+                        <h2 class="tp-item-form-section-heading"><i class="fa-solid fa-history mr-2" aria-hidden="true"></i><?php echo $lang->get('history'); ?><span class="badge badge-pill badge-light ml-2" id="card-item-history-badge"></span></h2>
+                    </button>
+                    <div class="tp-item-form-section-tools">
+                        <button type="button" class="tp-item-form-section-tool add-button hidden" data-add-type="history" title="<?php echo $lang->get('history_insert_entry'); ?>" aria-label="<?php echo $lang->get('history_insert_entry'); ?>"><i class="fa-solid fa-plus" aria-hidden="true"></i></button>
+                        <button type="button" class="tp-item-form-section-tool tp-item-view-to-top infotip" title="<?php echo $lang->get('item_form_back_to_top'); ?>" aria-label="<?php echo $lang->get('item_form_back_to_top'); ?>"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button>
                     </div>
                 </div>
-            </div>
-
-            <div class="row item-details-card">
-                <div class="col-12">
-                    <div class="card card-default collapsed">
-                        <div class="card-header bg-gray-dark">
-                            <h3 class="card-title pointer" id="add-item-history" data-toggle="collapse" data-target="#card-item-history">
-                                <i class="fa-solid fa-history mr-2"></i><?php echo $lang->get('history'); ?>
-                                <span class="badge badge-secondary ml-2" id="card-item-history-badge"></span>
-                            </h3>
-                            <i class="fa-solid fa-square-plus fa-2x float-right text-info pointer infotip hidden add-button" title="<?php echo $lang->get('history_insert_entry'); ?>" data-add-type="history"></i>
-                            <!-- /.card-tools -->
-                        </div>
-                        <!-- /.card-header -->
-                        <div class="card-body collapse" id="card-item-history">
-                        </div>
-                        <!-- /.card-body -->
-                        <div class="overlay">
-                            <i class="fa-solid fa-refresh fa-spin"></i>
-                        </div>
-                    </div>
+                <div class="tp-item-form-section-body">
+                    <ol class="tp-item-view-history" id="card-item-history"></ol>
+                    <button type="button" class="tp-item-view-more-toggle hidden" id="card-item-history-older"></button>
                 </div>
             </div>
+            </div>
+            <!-- /.tp-item-view -->
 
             <!-- SERVER UPDATE --><?php
                                     if (DEBUG === true) {
@@ -1654,18 +1660,6 @@ if ((int) $session_user_admin === 1) {
                 }
             ?>
 
-            <!-- Bottom bar -->
-            <div class="row item-details-card">
-                <div class="col-12">
-                    <div class="card">
-                            <div class="card-footer">
-                                <button type="button" class="btn btn-secondary but-navigate-item but-prev-item hidden" data-prev-item-id=""></button>
-                                <button type="button" class="btn btn-secondary but-navigate-item but-next-item hidden" data-next-item-id=""></button>
-                                <button type="button" class="btn btn-info float-right but-back-to-list"><?php echo $lang->get('close'); ?></button>
-                            </div>
-                    </div>
-                </div>
-            </div>
         </div>
         <!-- /#items-details-container -->
 

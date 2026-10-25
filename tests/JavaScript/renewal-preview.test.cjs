@@ -184,7 +184,8 @@ test('Opening another item clears the previous renewal badge while its details l
   field.removeClass('hidden').text('Old deadline')
   const $ = selector => selector === '#card-item-renewal-badge' ? field : {
     html() { return this }, addClass() { return this }, removeClass() { return this },
-    removeAttr() { return this }, remove() { return this }, empty() { return this }
+    removeAttr() { return this }, remove() { return this }, empty() { return this },
+    attr() { return this }, text() { return this }
   }
   const context = { $ }
   vm.runInNewContext(template.slice(start, end), context)
@@ -250,7 +251,7 @@ test('Move modal waits for acceptance or dismissal and prevents overlapping conf
 test('Expired cards continue loading authorized details and preserve the denial branch', () => {
   const template = readFileSync(join(__dirname, '../../app/pages/items.js.php'), 'utf8')
   const start = template.indexOf('                    if (parseInt(data.show_details) === 1) {')
-  const end = template.indexOf('                    // Prepare bottom buttons', start)
+  const end = template.indexOf('                    // Previous / next items of the list', start)
   assert.ok(start >= 0 && end > start)
   assert.equal(template.includes('item_details_expired_full'), false)
   const block = template.slice(start, end).replace(/<\?php[\s\S]*?\?>/g, 'translated')
