@@ -3,6 +3,36 @@
 ;(() => {
   const data = JSON.parse(document.getElementById('recovery-data').textContent)
   const message = document.getElementById('recovery-message')
+  const copyButtons = Array.from(document.querySelectorAll('[data-recovery-command]'), (command) => {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.className = 'btn btn-sm btn-outline-secondary align-self-start mb-2'
+    button.setAttribute('aria-controls', command.id)
+    button.setAttribute('aria-live', 'polite')
+    command.before(button)
+    button.addEventListener('click', async () => {
+      const text = command.textContent
+      let copied = false
+      if (navigator.clipboard?.writeText) {
+        try { await navigator.clipboard.writeText(text); copied = true } catch { /* Try the local fallback. */ }
+      }
+      if (!copied) {
+        const textarea = document.createElement('textarea')
+        textarea.value = text
+        textarea.setAttribute('readonly', '')
+        textarea.className = 'recovery-copy-buffer'
+        document.body.appendChild(textarea)
+        try { textarea.select(); copied = document.execCommand('copy') } catch { /* Offer manual selection below. */ }
+        finally { textarea.remove(); button.focus() }
+      }
+      button.textContent = copied ? 'Copied' : 'Copy unavailable — select the command and press Ctrl+C'
+    })
+    return { button, command }
+  })
+  const syncCopyButtons = () => copyButtons.forEach(({ button, command }) => {
+    button.hidden = command.hidden || !command.textContent.trim() || command.dataset.copyDisabled === 'true'
+    button.textContent = command.textContent.includes('\n') ? 'Copy commands' : 'Copy command'
+  })
   const showError = (text) => {
     message.className = 'alert alert-danger mt-3'
     message.textContent = text
@@ -93,7 +123,9 @@
     document.getElementById('recovery-finished-status').textContent = result.maintenance_enabled
       ? data.resumedMaintenance : data.resumed
     document.getElementById('recovery-cleanup-command').textContent = data.cleanup || data.cleanupManual
+    document.getElementById('recovery-cleanup-command').dataset.copyDisabled = data.cleanup ? 'false' : 'true'
     document.getElementById('recovery-refresh').hidden = finalStep
+    syncCopyButtons()
   }
   document.querySelectorAll('#recovery-unlock, #recovery-prepare').forEach((form) => {
     form.addEventListener('submit', async (event) => {
@@ -126,4 +158,5 @@
     } catch (error) { showError(`${data.error} ${error.message}`) }
   })
   if (data.initial) show(data.initial)
+  else syncCopyButtons()
 })()

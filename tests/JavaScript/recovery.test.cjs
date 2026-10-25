@@ -12,12 +12,13 @@ const job = (status, permissions) => ({ id: 'a'.repeat(32), status, permissions,
 function app(initial = null, command = "sudo -u 'www-data' -- '/usr/bin/php8.5' '/srv/TeamPass Lab/app/scripts/disaster-recovery.php'") {
   const elements = new Map()
   const element = (id) => {
-    if (!elements.has(id)) elements.set(id, { textContent: '', hidden: true, disabled: false,
+    if (!elements.has(id)) elements.set(id, { id, dataset: {}, textContent: '', hidden: true, disabled: false,
       handlers: {}, addEventListener(name, handler) { this.handlers[name] = handler },
       attributes: {}, setAttribute(name, value) { this.attributes[name] = value },
       removeAttribute(name) { delete this.attributes[name] },
       focus() { this.focused = true }, scrollIntoView() { this.scrolled = true },
       classList: { add() {}, remove() {} },
+      before(button) { this.copyButton = button }, select() {}, remove() { this.removed = true },
       set innerHTML(value) { throw new Error('Unsafe HTML assignment') } })
     return elements.get(id)
   }
@@ -40,7 +41,13 @@ function app(initial = null, command = "sudo -u 'www-data' -- '/usr/bin/php8.5' 
     errors: { OPERATOR_CODE_UNREADABLE: 'Use the PHP service account' } })
   const queue = []
   const requests = []
-  const context = { document: { getElementById: element, querySelectorAll: () => [form] },
+  const clipboard = []
+  const commands = ['recovery-enable-command', 'recovery-command', 'recovery-activate', 'recovery-permissions-command',
+    'recovery-permissions-commands', 'recovery-resume-command', 'recovery-cleanup-command'].map(element)
+  const context = { document: { getElementById: element,
+    querySelectorAll: (selector) => selector === '[data-recovery-command]' ? commands : [form],
+    createElement: (tag) => element(`${tag}-${elements.size}`), body: { appendChild() {} }, execCommand: () => true },
+    navigator: { clipboard: { async writeText(text) { clipboard.push(text) } } },
     FormData: class { constructor() { this.fields = {} } set(name, value) { this.fields[name] = value } },
     window: { location: { href: 'https://fixture.test/install/recovery.php', reload() {} } },
     fetch: async (url, options) => {
@@ -51,7 +58,7 @@ function app(initial = null, command = "sudo -u 'www-data' -- '/usr/bin/php8.5' 
       return { ok: true, json: async () => ({ success: true, result: response }) }
     } }
   vm.runInNewContext(source, context)
-  return { element, form, button, password, inputs, queue, requests,
+  return { element, form, button, password, inputs, queue, requests, clipboard, context,
     submit: () => form.handlers.submit({ preventDefault() {} }),
     refresh: () => element('recovery-refresh').handlers.click() }
 }
@@ -84,6 +91,40 @@ test('Recovery progresses from import to activation and operational resume witho
   assert.equal(ui.element('recovery-refresh').hidden, true)
   assert.equal(ui.element('recovery-step-6').attributes['aria-current'], 'step')
   assert.equal(ui.element('recovery-cleanup-command').textContent, "sudo rm -rf -- '/srv/TeamPass Lab/public/install'")
+})
+
+test('Copy buttons preserve complete commands and follow the visible phase', async () => {
+  const ui = app(job('prepared'))
+  const run = ui.element('recovery-command')
+  assert.equal(run.copyButton.hidden, false)
+  assert.equal(ui.element('recovery-activate').copyButton.hidden, true)
+  await run.copyButton.handlers.click()
+  assert.equal(ui.clipboard[0], run.textContent)
+  assert.equal(run.copyButton.textContent, 'Copied')
+  ui.queue.push(job('verified'))
+  await ui.refresh()
+  assert.equal(run.copyButton.hidden, true)
+  assert.equal(ui.element('recovery-activate').copyButton.hidden, false)
+})
+
+test('Multiline copy preserves administrator commands without interpreting their content', async () => {
+  const command = "sudo chown 'root:www-data' '/srv/O\\'Brien'\nsudo chmod 640 '<untrusted>'"
+  const ui = app(job('complete', { status: 'issues', issues: 2, commands: [command] }))
+  const block = ui.element('recovery-permissions-commands')
+  assert.equal(block.copyButton.textContent, 'Copy commands')
+  await block.copyButton.handlers.click()
+  assert.equal(ui.clipboard[0], command)
+})
+
+test('Unavailable clipboard access falls back locally and reports failure without claiming success', async () => {
+  const ui = app(job('prepared'))
+  delete ui.context.navigator.clipboard
+  const button = ui.element('recovery-command').copyButton
+  await button.handlers.click()
+  assert.equal(button.textContent, 'Copied')
+  ui.context.document.execCommand = () => false
+  await button.handlers.click()
+  assert.match(button.textContent, /Copy unavailable/)
 })
 
 test('Missing fields produce an English red summary before any request', async () => {

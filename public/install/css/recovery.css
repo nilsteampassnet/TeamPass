@@ -8,6 +8,12 @@
   white-space: pre-line;
 }
 
+.recovery-copy-buffer {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+}
+
 @media (prefers-color-scheme: dark) {
   .recovery-page.bg-light {
     background-color: #1b2027 !important;
