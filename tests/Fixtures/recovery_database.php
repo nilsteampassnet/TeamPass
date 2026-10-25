@@ -91,6 +91,24 @@ try {
         'pw' => base64_encode($encrypted['ciphertext']), 'pw_iv' => base64_encode($encrypted['meta'])]);
     DB::insert(prefixTable('sharekeys_items'), ['object_id' => 1, 'user_id' => TP_USER_ID,
         'share_key' => encryptUserObjectKey(base64_encode($objectKey), base64_encode($pair['publickey'])), 'encryption_version' => 3]);
+    // More than one verification batch, with discontinuous identifiers and a
+    // historical personal item whose owner's key exists but its TP key does not.
+    $itemKey = DB::queryFirstField('SELECT share_key FROM ' . prefixTable('sharekeys_items') . ' WHERE object_id=1');
+    for ($index = 0; $index < 101; $index++) {
+        $itemId = 10 + $index * 2;
+        DB::insert(prefixTable('items'), ['id' => $itemId, 'label' => 'Synthetic batch item',
+            'pw' => base64_encode($encrypted['ciphertext']), 'pw_iv' => base64_encode($encrypted['meta'])]);
+        DB::insert(prefixTable('sharekeys_items'), ['object_id' => $itemId, 'user_id' => TP_USER_ID,
+            'share_key' => $itemKey, 'encryption_version' => 3]);
+    }
+    DB::insert(prefixTable('items'), ['id' => 2, 'label' => 'Synthetic historical personal item', 'perso' => 1,
+        'pw' => base64_encode($encrypted['ciphertext']), 'pw_iv' => base64_encode($encrypted['meta'])]);
+    $ownerPair = CryptoManager::generateRSAKeyPair(2048);
+    DB::update(prefixTable('users'), ['public_key' => base64_encode($ownerPair['publickey'])], 'id=1');
+    DB::insert(prefixTable('user_private_keys'), ['user_id' => 1, 'is_current' => 1,
+        'private_key' => encryptPrivateKey('Synthetic-only-Password!', base64_encode($ownerPair['privatekey']))]);
+    DB::insert(prefixTable('sharekeys_items'), ['object_id' => 2, 'user_id' => 1,
+        'share_key' => encryptUserObjectKey(base64_encode($objectKey), base64_encode($ownerPair['publickey'])), 'encryption_version' => 3]);
     foreach (['active' => null, 'revoked' => 1] as $state => $revokedAt) {
         DB::insert(prefixTable('api_tokens'), ['user_id' => TP_USER_ID, 'token_hash' => hash('sha256', $state),
             'purpose' => 'external_device', 'wrapped_private_key' => 'synthetic', 'salt' => 'synthetic',
@@ -101,6 +119,9 @@ try {
         'session_marker' => str_repeat('c', 64), 'user_key_fingerprint' => str_repeat('d', 64),
         'web_expires_at' => 999999999, 'state' => 'approved', 'created_at' => 1,
         'expires_at' => 999999999, 'updated_at' => 1]);
+    if ($scenario === 'publish-unusable') {
+        DB::update(prefixTable('user_private_keys'), ['private_key' => ''], 'user_id=%i', TP_USER_ID);
+    }
     DB::update(prefixTable('misc'), ['valeur' => '3.2.2.7'], 'type=%s AND intitule=%s', 'admin', 'teampass_version_full');
     $previousMaintenance = $scenario === 'upgrade' ? '1' : '0';
     foreach (['maintenance_mode' => $previousMaintenance, 'cpassman_url' => 'https://old.example.test/team',
@@ -206,6 +227,11 @@ try {
     if ($restored['status'] !== 'verified') {
         throw new RuntimeException('Restore did not reach verification');
     }
+    if ($restored['encryption']['total_items'] !== 103 || $restored['encryption']['missing_tp_sharekeys'] !== 1
+        || !$restored['encryption']['complete'] || isset($restored['encryption']['last_id'])
+        || $restored['encryption']['checked_items'] !== ($scenario === 'publish-unusable' ? 0 : 102)) {
+        throw new RuntimeException('Batched encryption diagnostics were incomplete or disclosed an item identifier');
+    }
     $targetDb = new mysqli('127.0.0.1', $dbUser, $dbPassword, $target, $port);
     if ($scenario === 'upgrade') {
         $targetDb->query('SELECT * FROM recovery_webauthn_credentials LIMIT 1');
@@ -226,6 +252,12 @@ try {
     if ($restoredItem['label'] !== 'R&amp;D O&#039;Brien &quot;&lt;&gt;') {
         throw new RuntimeException('Stored label encoding changed');
     }
+    $personalKey = $targetDb->query('SELECT increment_id,share_key FROM recovery_sharekeys_items WHERE object_id=2 AND user_id=1')->fetch_assoc();
+    $ownerObjectKey = decryptUserObjectKeyWithMigration($personalKey['share_key'], base64_encode($ownerPair['privatekey']),
+        base64_encode($ownerPair['publickey']), (int) $personalKey['increment_id'], 'sharekeys_items');
+    if ($ownerObjectKey !== base64_encode($objectKey)) {
+        throw new RuntimeException('The personal owner sharekey was changed despite the missing TP sharekey');
+    }
     $restoredSettings = array_column($targetDb->query("SELECT intitule,valeur FROM recovery_misc WHERE type='admin'")->fetch_all(MYSQLI_ASSOC), 'valeur', 'intitule');
     if ($restoredSettings['teampass_version_full'] !== TP_VERSION . '.' . TP_VERSION_MINOR
         || (int) $targetDb->query('SELECT COUNT(*) FROM recovery_api_tokens')->fetch_row()[0] !== 0
@@ -236,12 +268,18 @@ try {
         || $restoredSettings['url_to_files_folder'] !== 'https://custom.example.test/files') {
         throw new RuntimeException('Recovery did not rebase derived URLs or changed a custom URL');
     }
-    if (in_array($scenario, ['publish', 'http-publish'], true)) {
+    if ($scenario === 'current') {
+        require_once __DIR__ . '/recovery_crypto.php';
+        tpTestRecoveryCrypto($root, $source, $jobId, $targetDb);
+    }
+    if (in_array($scenario, ['publish', 'http-publish', 'publish-unusable'], true)) {
         // Publication is opt-in and must only run in a disposable copy of the code.
         if (!is_file($root . '/_tools/drp-lab-allow-activation')) {
             throw new RuntimeException('Publication test requires an explicitly disposable checkout');
         }
-        $process = new \Symfony\Component\Process\Process([PHP_BINARY, 'app/scripts/disaster-recovery.php', '--activate=' . $jobId], $root);
+        $arguments = [PHP_BINARY, 'app/scripts/disaster-recovery.php', '--activate=' . $jobId];
+        if ($scenario === 'publish-unusable') { $arguments[] = '--acknowledge-unusable-tp-key'; }
+        $process = new \Symfony\Component\Process\Process($arguments, $root);
         $process->setTimeout(120);
         $process->run();
         if (!$process->isSuccessful()) {
@@ -258,6 +296,10 @@ try {
         $receipt = json_decode((string) file_get_contents($receiptPath), true, 32, JSON_THROW_ON_ERROR);
         if (!isset($receipt['permissions']['status'])) {
             throw new RuntimeException('Publication did not automatically audit permissions');
+        }
+        if (($receipt['encryption']['missing_tp_sharekeys'] ?? null) !== 1
+            || ($scenario === 'publish-unusable' && !isset($receipt['unusable_tp_key_acknowledged_at']))) {
+            throw new RuntimeException('Publication lost the encryption diagnostic or explicit acknowledgement');
         }
         $keyMode = fileperms($root . '/secrets/fixture.key');
         $process = new \Symfony\Component\Process\Process([PHP_BINARY, 'app/scripts/disaster-recovery.php', '--check-permissions=' . $jobId], $root);

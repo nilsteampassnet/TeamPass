@@ -31,7 +31,8 @@ function app(initial = null, command = "sudo -u 'www-data' -- '/usr/bin/php8.5' 
   form.querySelectorAll = (selector) => selector === 'input[type=password]' ? [password] : inputs
   element('recovery-data').textContent = JSON.stringify({ csrf: 'fixture-csrf', initial,
     ready: 'PREPARED', verified: 'VERIFIED', complete: 'COMPLETE', running: 'RUNNING',
-    failed: 'FAILED', counts: '%s tables, %s documents', preparing: 'WAIT', error: 'ERROR',
+    failed: 'FAILED', verificationPaused: 'RESUME VERIFICATION',
+    counts: '%s tables, %s documents', preparing: 'WAIT', error: 'ERROR',
     command,
     cleanup: "sudo rm -rf -- '/srv/TeamPass Lab/public/install'",
     resumed: 'RESUMED', resumedMaintenance: 'MAINTENANCE', permissionsNotChecked: 'AUDIT FIRST',
@@ -116,6 +117,66 @@ test('Stopped jobs explain sensitive staging and offer the complete discard comm
   ui.queue.push(job('complete', { status: 'passed' }))
   await ui.refresh()
   assert.equal(ui.element('recovery-sensitive-staging').hidden, true)
+})
+
+test('Missing TP sharekeys are visible without blocking healthy-key publication', () => {
+  const result = { ...job('verified'), encryption: { tp_key_status: 'ok', total_items: 101,
+    checked_items: 100, missing_tp_sharekeys: 1, skipped_items: 0, complete: true } }
+  const ui = app(result)
+  assert.equal(ui.element('recovery-encryption').hidden, false)
+  assert.match(ui.element('recovery-encryption-progress').textContent, /100 items decrypted/)
+  assert.equal(ui.element('recovery-missing-sharekeys').hidden, false)
+  assert.match(ui.element('recovery-missing-sharekeys').textContent, /1 items have no TP system sharekey/)
+  assert.equal(ui.element('recovery-unusable-tp-key').hidden, true)
+  assert.equal(ui.element('recovery-activate').hidden, false)
+  assert.doesNotMatch(ui.element('recovery-activate').textContent, /--acknowledge/)
+})
+
+test('An unusable TP key requires an explicit choice before exposing the acknowledgement command', async () => {
+  const result = { ...job('verified'), encryption: { tp_key_status: 'unusable', total_items: 101,
+    checked_items: 0, missing_tp_sharekeys: 0, skipped_items: 101, complete: true } }
+  const ui = app(result)
+  const activate = ui.element('recovery-activate')
+  const acknowledge = ui.element('recovery-acknowledge-tp-key')
+  assert.equal(ui.element('recovery-unusable-tp-key').hidden, false)
+  assert.equal(ui.element('recovery-key-acknowledgement').hidden, false)
+  assert.equal(activate.hidden, true)
+  assert.equal(activate.textContent, '')
+  assert.equal(activate.copyButton.hidden, true)
+  acknowledge.checked = true
+  acknowledge.handlers.change()
+  assert.equal(activate.hidden, false)
+  assert.match(activate.textContent, /--activate=a{32} --acknowledge-unusable-tp-key$/)
+  await activate.copyButton.handlers.click()
+  assert.equal(ui.clipboard[0], activate.textContent)
+  acknowledge.checked = false
+  acknowledge.handlers.change()
+  assert.equal(activate.hidden, true)
+  ui.queue.push({ ...result, id: 'b'.repeat(32) })
+  acknowledge.checked = true
+  await ui.refresh()
+  assert.equal(acknowledge.checked, false)
+  assert.equal(activate.hidden, true)
+})
+
+test('Encryption diagnostics remain visible in the final receipt and offer no new acknowledgement', () => {
+  const ui = app({ ...job('resumed', { status: 'passed' }), encryption: { tp_key_status: 'unusable',
+    total_items: 101, checked_items: 0, missing_tp_sharekeys: 1, skipped_items: 100, complete: true },
+  unusable_tp_key_acknowledged_at: 123456 })
+  assert.equal(ui.element('recovery-unusable-tp-key').hidden, false)
+  assert.equal(ui.element('recovery-key-acknowledgement').hidden, true)
+  assert.equal(ui.element('recovery-activate').hidden, true)
+  assert.equal(ui.element('recovery-finished').hidden, false)
+})
+
+test('A timed-out verification offers batch continuation without reimporting the database', () => {
+  const ui = app({ ...job('verifying'), error: 'RECOVERY_VERIFICATION_TIMEOUT', encryption: {
+    tp_key_status: 'ok', total_items: 201, checked_items: 100, missing_tp_sharekeys: 0,
+    skipped_items: 0, complete: false } })
+  assert.equal(ui.element('recovery-instruction').textContent, 'RESUME VERIFICATION')
+  assert.equal(ui.element('recovery-command').hidden, false)
+  assert.equal(ui.element('recovery-activate').hidden, true)
+  assert.match(ui.element('recovery-encryption-progress').textContent, /Verification progress: 100 items decrypted/)
 })
 
 test('Multiline copy preserves administrator commands without interpreting their content', async () => {

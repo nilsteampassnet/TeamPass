@@ -319,7 +319,12 @@ function tpRecoveryPublicJob(array $job): array
     return ['id' => $job['id'], 'status' => $job['status'], 'error' => $job['error'],
         'plan' => $job['plan'], 'tables' => count($job['sql']['tables']),
         'documents' => count($job['manifest']['document_entries'] ?? []),
-        'created_at' => $job['created_at']];
+        'created_at' => $job['created_at'],
+        'unusable_tp_key_acknowledged_at' => $job['unusable_tp_key_acknowledged_at'] ?? null,
+        'encryption' => array_intersect_key($job['encryption'] ?? [], array_flip([
+            'tp_key_status', 'diagnostic', 'total_items', 'checked_items',
+            'missing_tp_sharekeys', 'skipped_items', 'complete',
+        ]))];
 }
 
 /** Store an admin setting using prepared statements against the original validated prefix. */
@@ -373,10 +378,13 @@ function tpRecoveryUpgradeJob(array &$job): void
 }
 
 /** Restore into an empty database, validate it, and leave it ready for explicit activation. */
-function tpRecoveryRun(string $id): array
+function tpRecoveryRun(string $id, int $verificationTimeout = 1800): array
 {
     if (PHP_SAPI !== 'cli') {
         throw new TeamPassRecoveryException('RECOVERY_CLI_REQUIRED');
+    }
+    if ($verificationTimeout < 1 || $verificationTimeout > 86400) {
+        throw new TeamPassRecoveryException('RECOVERY_VERIFICATION_TIMEOUT_INVALID');
     }
     tpRecoveryAssertFreshTarget();
     $directory = tpRecoveryJobDirectory($id);
@@ -387,7 +395,7 @@ function tpRecoveryRun(string $id): array
     $job = tpRecoveryLoadJob($id);
     $db = null;
     try {
-        if ($job['status'] !== 'prepared') {
+        if (!in_array($job['status'], ['prepared', 'verifying'], true)) {
             throw new TeamPassRecoveryException('RECOVERY_JOB_NOT_PREPARED');
         }
         if (!hash_equals($job['sql_sha256'], (string) hash_file('sha256', $directory . '/database.sql'))
@@ -397,81 +405,105 @@ function tpRecoveryRun(string $id): array
             throw new TeamPassRecoveryException('RECOVERY_INPUT_CHANGED');
         }
         $db = tpRecoveryConnect($job['connection']);
-        if ($db->query('SHOW FULL TABLES')->num_rows !== 0) {
-            throw new TeamPassRecoveryException('TARGET_DATABASE_NOT_EMPTY');
-        }
-        $job['status'] = 'importing';
-        tpRecoverySaveJob($job);
-        $db->query("SET SESSION sql_mode='NO_AUTO_VALUE_ON_ZERO,STRICT_ALL_TABLES'");
-        $db->query('SET SESSION FOREIGN_KEY_CHECKS=0');
-        foreach (tpRecoverySqlStatements($directory . '/database.sql') as $statement) {
-            tpRecoverySqlStatementInfo($statement, $job['kit']['prefix']);
-            $db->query($statement);
-        }
-        $db->query('SET SESSION FOREIGN_KEY_CHECKS=1');
-        foreach ($job['sql']['rows'] as $table => $expected) {
-            $actual = (int) $db->query('SELECT COUNT(*) FROM `' . $table . '`')->fetch_row()[0];
-            if ($actual !== $expected) {
-                throw new TeamPassRecoveryException('DATABASE_ROW_COUNT_MISMATCH');
+        if ($job['status'] === 'prepared') {
+            if ($db->query('SHOW FULL TABLES')->num_rows !== 0) {
+                throw new TeamPassRecoveryException('TARGET_DATABASE_NOT_EMPTY');
             }
+            $job['status'] = 'importing';
+            tpRecoverySaveJob($job);
+            $db->query("SET SESSION sql_mode='NO_AUTO_VALUE_ON_ZERO,STRICT_ALL_TABLES'");
+            $db->query('SET SESSION FOREIGN_KEY_CHECKS=0');
+            foreach (tpRecoverySqlStatements($directory . '/database.sql') as $statement) {
+                tpRecoverySqlStatementInfo($statement, $job['kit']['prefix']);
+                $db->query($statement);
+            }
+            $db->query('SET SESSION FOREIGN_KEY_CHECKS=1');
+            foreach ($job['sql']['rows'] as $table => $expected) {
+                $actual = (int) $db->query('SELECT COUNT(*) FROM `' . $table . '`')->fetch_row()[0];
+                if ($actual !== $expected) {
+                    throw new TeamPassRecoveryException('DATABASE_ROW_COUNT_MISMATCH');
+                }
+            }
+            tpRecoveryVerifyMaster($db, $job);
+            tpRecoveryCheckDocuments($db, $job);
+            $storedVersion = $db->query('SELECT valeur FROM `' . $job['kit']['prefix'] . "misc` WHERE type='admin' AND intitule='teampass_version'")->fetch_row();
+            $sourceRelease = implode('.', array_slice(explode('.', $job['plan']['source_version']), 0, 3));
+            $storedRelease = implode('.', array_slice(explode('.', (string) ($storedVersion[0] ?? '')), 0, 3));
+            if ($sourceRelease !== $storedRelease) {
+                throw new TeamPassRecoveryException('DATABASE_VERSION_METADATA_MISMATCH');
+            }
+            tpRecoveryUpgradeJob($job);
+            tpRecoveryVerifyMaster($db, $job);
+            $prefix = $job['kit']['prefix'];
+            $presentTables = array_column($db->query('SHOW TABLES')->fetch_all(MYSQLI_NUM), 0);
+            foreach (installAllowedActions('step5') as $table) {
+                if (!in_array($table, ['utf8', 'migrateToUtf8mb4', 'checkAndSetInnoDBEngine'], true)
+                    && !in_array($prefix . $table, $presentTables, true)) {
+                    throw new TeamPassRecoveryException('TARGET_SCHEMA_INCOMPLETE');
+                }
+            }
+            // Reuse the installer rules so URLs derived from the old host follow
+            // the destination, while explicitly customized URLs stay untouched.
+            require_once TEAMPASS_ROOT . '/public/install/tp.functions.php';
+            refreshStoredSiteUrl($db, $prefix, $job['url']);
+            // Do not replay stale jobs, consumed links or revoked sessions after a time rollback.
+            foreach (['maintenance_mode' => '1', 'lapr_enabled' => '0', 'bck_scheduled_enabled' => '0',
+                'bck_externalized_enabled' => '0', 'cpassman_url' => $job['url'],
+                'cpassman_dir' => TEAMPASS_ROOT, 'path_to_upload_folder' => TEAMPASS_ROOT . '/storage/upload',
+                'path_to_files_folder' => TEAMPASS_ROOT . '/storage/files',
+                'teampass_version' => TP_VERSION, 'teampass_version_full' => TP_VERSION . '.' . TP_VERSION_MINOR,
+                'upgrade_timestamp' => (string) UPGRADE_MIN_DATE, 'recovery_pending_checks' => '1', 'recovery_job_id' => $job['id'],
+                'recovery_generation' => bin2hex(random_bytes(16))] as $name => $value) {
+                tpRecoverySetSetting($db, $prefix, $name, $value);
+            }
+            $tables = array_column($db->query('SHOW TABLES')->fetch_all(MYSQLI_NUM), 0);
+            foreach (['api_sessions', 'api_tokens', 'device_pairings', 'tokens', 'websocket_tokens', 'websocket_connections',
+                'background_subtasks', 'background_tasks', 'api_idempotency'] as $ephemeral) {
+                if (in_array($prefix . $ephemeral, $tables, true)) {
+                    $db->query('DELETE FROM `' . $prefix . $ephemeral . '`');
+                }
+            }
+            $db->query('UPDATE `' . $prefix . "users` SET key_tempo='', session_end='0'");
+            $job['status'] = 'verifying';
+            tpRecoverySaveJob($job);
         }
         tpRecoveryVerifyMaster($db, $job);
-        tpRecoveryCheckDocuments($db, $job);
-        $storedVersion = $db->query('SELECT valeur FROM `' . $job['kit']['prefix'] . "misc` WHERE type='admin' AND intitule='teampass_version'")->fetch_row();
-        $sourceRelease = implode('.', array_slice(explode('.', $job['plan']['source_version']), 0, 3));
-        $storedRelease = implode('.', array_slice(explode('.', (string) ($storedVersion[0] ?? '')), 0, 3));
-        if ($sourceRelease !== $storedRelease) {
-            throw new TeamPassRecoveryException('DATABASE_VERSION_METADATA_MISMATCH');
-        }
-        tpRecoveryUpgradeJob($job);
-        tpRecoveryVerifyMaster($db, $job);
-        $prefix = $job['kit']['prefix'];
-        $presentTables = array_column($db->query('SHOW TABLES')->fetch_all(MYSQLI_NUM), 0);
-        foreach (installAllowedActions('step5') as $table) {
-            if (!in_array($table, ['utf8', 'migrateToUtf8mb4', 'checkAndSetInnoDBEngine'], true)
-                && !in_array($prefix . $table, $presentTables, true)) {
-                throw new TeamPassRecoveryException('TARGET_SCHEMA_INCOMPLETE');
+        $job['error'] = '';
+        do {
+            // Each worker has a bounded RSA workload. There is no timeout on
+            // the whole vault, and a stopped run resumes its last saved batch.
+            $process = new \Symfony\Component\Process\Process([
+                PHP_BINARY, TEAMPASS_ROOT . '/app/scripts/recovery-migrate.php', '--job=' . $job['id'], '--release=verify',
+            ], TEAMPASS_ROOT . '/public/install');
+            $process->setTimeout($verificationTimeout);
+            try {
+                $process->run();
+            } catch (\Symfony\Component\Process\Exception\ProcessTimedOutException $exception) {
+                throw new TeamPassRecoveryException('RECOVERY_CRYPTO_VERIFICATION_TIMEOUT');
             }
-        }
-        // Reuse the installer rules so URLs derived from the old host follow
-        // the destination, while explicitly customized URLs stay untouched.
-        require_once TEAMPASS_ROOT . '/public/install/tp.functions.php';
-        refreshStoredSiteUrl($db, $prefix, $job['url']);
-        // Do not replay stale jobs, consumed links or revoked sessions after a time rollback.
-        foreach (['maintenance_mode' => '1', 'lapr_enabled' => '0', 'bck_scheduled_enabled' => '0',
-            'bck_externalized_enabled' => '0', 'cpassman_url' => $job['url'],
-            'cpassman_dir' => TEAMPASS_ROOT, 'path_to_upload_folder' => TEAMPASS_ROOT . '/storage/upload',
-            'path_to_files_folder' => TEAMPASS_ROOT . '/storage/files',
-            'teampass_version' => TP_VERSION, 'teampass_version_full' => TP_VERSION . '.' . TP_VERSION_MINOR,
-            'upgrade_timestamp' => (string) UPGRADE_MIN_DATE, 'recovery_pending_checks' => '1', 'recovery_job_id' => $job['id'],
-            'recovery_generation' => bin2hex(random_bytes(16))] as $name => $value) {
-            tpRecoverySetSetting($db, $prefix, $name, $value);
-        }
-        $tables = array_column($db->query('SHOW TABLES')->fetch_all(MYSQLI_NUM), 0);
-        foreach (['api_sessions', 'api_tokens', 'device_pairings', 'tokens', 'websocket_tokens', 'websocket_connections',
-            'background_subtasks', 'background_tasks', 'api_idempotency'] as $ephemeral) {
-            if (in_array($prefix . $ephemeral, $tables, true)) {
-                $db->query('DELETE FROM `' . $prefix . $ephemeral . '`');
+            if (!$process->isSuccessful()) {
+                $reason = trim($process->getErrorOutput());
+                throw new TeamPassRecoveryException(in_array($reason, ['ITEM_DECRYPTION_FAILED', 'RECOVERY_INPUT_CHANGED',
+                    'RECOVERY_LINK_INVALIDATION_FAILED'], true) ? $reason : 'RECOVERY_CRYPTO_VERIFICATION_FAILED');
             }
-        }
-        $db->query('UPDATE `' . $prefix . "users` SET key_tempo='', session_end='0'");
-        $process = new \Symfony\Component\Process\Process([
-            PHP_BINARY, TEAMPASS_ROOT . '/app/scripts/recovery-migrate.php', '--job=' . $job['id'], '--release=verify',
-        ], TEAMPASS_ROOT . '/public/install');
-        $process->setTimeout(1800);
-        $process->run();
-        if (!$process->isSuccessful()) {
-            $reason = trim($process->getErrorOutput());
-            throw new TeamPassRecoveryException(in_array($reason, ['SYSTEM_PRIVATE_KEY_INVALID', 'ITEM_DECRYPTION_FAILED',
-                'RECOVERY_LINK_INVALIDATION_FAILED'], true) ? $reason : 'RECOVERY_CRYPTO_VERIFICATION_FAILED');
-        }
-        tpRecoveryCheckMigrationResult($process->getOutput());
+            tpRecoveryCheckMigrationResult($process->getOutput());
+            $response = json_decode(trim($process->getOutput()), true, 32, JSON_THROW_ON_ERROR);
+            if (!is_array($response[0]['encryption'] ?? null)) {
+                throw new TeamPassRecoveryException('RECOVERY_CRYPTO_VERIFICATION_FAILED');
+            }
+            $job['encryption'] = $response[0]['encryption'];
+            tpRecoverySaveJob($job);
+            $reviewed = $job['encryption']['checked_items'] + $job['encryption']['missing_tp_sharekeys'] + $job['encryption']['skipped_items'];
+            fwrite(STDOUT, 'Encryption verification: ' . $reviewed . '/' . $job['encryption']['total_items']
+                . ' encrypted items; ' . $job['encryption']['missing_tp_sharekeys'] . " without a TP sharekey.\n");
+        } while (!$job['encryption']['complete']);
         $job['status'] = 'verified';
         tpRecoverySaveJob($job);
         return tpRecoveryPublicJob($job);
     } catch (Throwable $exception) {
-        $job['status'] = 'failed';
         $job['error'] = $exception instanceof TeamPassRecoveryException ? $exception->reason : 'RECOVERY_DATABASE_OPERATION_FAILED';
+        $job['status'] = $job['status'] === 'verifying' && $job['error'] === 'RECOVERY_CRYPTO_VERIFICATION_TIMEOUT'
+            ? 'verifying' : 'failed';
         tpRecoverySaveJob($job);
         throw new TeamPassRecoveryException($job['error']);
     } finally {
@@ -585,7 +617,7 @@ function tpRecoverySettingsPhp(array $job, string $masterKey): string
 }
 
 /** Publish validated documents and configuration last, keeping the restored service in maintenance. */
-function tpRecoveryActivate(string $id): array
+function tpRecoveryActivate(string $id, bool $acknowledgeUnusableTpKey = false): array
 {
     if (PHP_SAPI !== 'cli') {
         throw new TeamPassRecoveryException('RECOVERY_CLI_REQUIRED');
@@ -601,6 +633,12 @@ function tpRecoveryActivate(string $id): array
         if ($job['status'] !== 'verified'
             || !hash_equals($job['zip_sha256'], (string) hash_file('sha256', $directory . '/backup.zip'))) {
             throw new TeamPassRecoveryException('RECOVERY_JOB_NOT_VERIFIED');
+        }
+        if (($job['encryption']['tp_key_status'] ?? '') === 'unusable') {
+            if (!$acknowledgeUnusableTpKey) {
+                throw new TeamPassRecoveryException('RECOVERY_TP_KEY_ACKNOWLEDGEMENT_REQUIRED');
+            }
+            $job['unusable_tp_key_acknowledged_at'] = time();
         }
         $db = tpRecoveryConnect($job['connection']);
         try {
@@ -636,6 +674,10 @@ function tpRecoveryActivate(string $id): array
         @unlink(tpRecoveryJobDirectory() . '/operator.json');
         return $result;
     } catch (Throwable $exception) {
+        // A missing acknowledgement does not consume this verified recovery.
+        if ($exception instanceof TeamPassRecoveryException && $exception->reason === 'RECOVERY_TP_KEY_ACKNOWLEDGEMENT_REQUIRED') {
+            throw $exception;
+        }
         if (isset($job) && is_file(tpRecoveryJobDirectory($id) . '/job.json')) {
             $job['status'] = 'failed';
             $job['error'] = $exception instanceof TeamPassRecoveryException ? $exception->reason : 'RECOVERY_ACTIVATION_FAILED';
@@ -657,7 +699,7 @@ function tpRecoveryDiscard(string $id): void
     }
     try {
         $job = tpRecoveryLoadJob($id);
-        if (!in_array($job['status'], ['prepared', 'failed', 'importing', 'upgrading', 'verified'], true)) {
+        if (!in_array($job['status'], ['prepared', 'failed', 'importing', 'upgrading', 'verifying', 'verified'], true)) {
             throw new TeamPassRecoveryException('RECOVERY_JOB_BUSY');
         }
         tpRecoveryRemoveJobFiles($id);

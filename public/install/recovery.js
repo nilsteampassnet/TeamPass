@@ -89,13 +89,21 @@
     }
     return result.result
   }
+  let visibleJob = null
   const show = (result) => {
+    const acknowledge = document.getElementById('recovery-acknowledge-tp-key')
+    if (visibleJob?.id !== result.id) acknowledge.checked = false
+    visibleJob = result
     document.getElementById('recovery-result').hidden = false
     const resumed = result.status === 'resumed'
     const completed = result.status === 'complete'
     const published = completed || resumed
     const verified = result.status === 'verified'
     const prepared = result.status === 'prepared'
+    const verifying = result.status === 'verifying'
+    const encryption = result.encryption && typeof result.encryption.tp_key_status === 'string' ? result.encryption : null
+    const unusableTpKey = encryption?.tp_key_status === 'unusable'
+    const needsAcknowledgement = unusableTpKey && !result.unusable_tp_key_acknowledged_at
     const review = result.permissions || { status: 'not_checked', commands: [] }
     const permissionCommands = Array.isArray(review.commands) ? review.commands : []
     const permissionReady = review.status === 'passed' || review.status === 'manual'
@@ -110,14 +118,24 @@
     const counts = data.counts.replace('%s', String(result.tables)).replace('%s', String(result.documents))
     document.getElementById('recovery-plan').textContent = `${result.plan.source_version} → ${result.plan.target_version}\n${counts}\n${result.status}${result.error ? `: ${result.error}` : ''}`
     document.getElementById('recovery-instruction').textContent = resumed ? data.resumed : (completed ? data.complete
-      : (verified ? data.verified : (prepared ? data.ready : (result.status === 'failed' ? data.failed : data.running))))
+      : (verified ? data.verified : (prepared ? data.ready
+        : (verifying && result.error ? data.verificationPaused : (result.status === 'failed' ? data.failed : data.running)))))
+    document.getElementById('recovery-encryption').hidden = !encryption
+    document.getElementById('recovery-encryption-progress').textContent = encryption
+      ? `${encryption.complete ? 'Verification complete' : 'Verification progress'}: ${encryption.checked_items} items decrypted; ${encryption.missing_tp_sharekeys} without a TP sharekey; ${encryption.skipped_items} not checked; ${encryption.total_items} items in total.` : ''
+    document.getElementById('recovery-missing-sharekeys').hidden = !encryption?.missing_tp_sharekeys
+    document.getElementById('recovery-missing-sharekeys').textContent = encryption?.missing_tp_sharekeys
+      ? `${encryption.missing_tp_sharekeys} items have no TP system sharekey and were not checked with it. This can occur after a TP key rebuild or on older personal items. Users' existing sharekeys are preserved. Review shared-key repair in Tools and personal-item repair with each owner after restoring access.` : ''
+    document.getElementById('recovery-unusable-tp-key').hidden = !unusableTpKey
+    document.getElementById('recovery-key-acknowledgement').hidden = !needsAcknowledgement || !verified
     const run = document.getElementById('recovery-command')
-    run.hidden = !prepared
-    run.textContent = prepared ? `${data.command} --run=${result.id}` : ''
+    run.hidden = !prepared && !verifying
+    run.textContent = prepared || verifying ? `${data.command} --run=${result.id}` : ''
     document.getElementById('recovery-activate-hint').hidden = !prepared
     const activate = document.getElementById('recovery-activate')
-    activate.hidden = !verified
-    activate.textContent = verified ? `${data.command} --activate=${result.id}` : ''
+    activate.hidden = !verified || (needsAcknowledgement && !acknowledge.checked)
+    activate.textContent = !activate.hidden
+      ? `${data.command} --activate=${result.id}${unusableTpKey ? ' --acknowledge-unusable-tp-key' : ''}` : ''
     document.getElementById('recovery-sensitive-staging').hidden = result.status !== 'failed'
       && !(result.status === 'activating' && result.error)
     document.getElementById('recovery-discard-command').textContent = `${data.command} --discard=${result.id}`
@@ -144,6 +162,9 @@
     document.getElementById('recovery-refresh').hidden = finalStep
     syncCopyButtons()
   }
+  document.getElementById('recovery-acknowledge-tp-key').addEventListener('change', () => {
+    if (visibleJob) show(visibleJob)
+  })
   document.querySelectorAll('#recovery-unlock, #recovery-prepare').forEach((form) => {
     form.addEventListener('submit', async (event) => {
       event.preventDefault()

@@ -250,6 +250,22 @@ $cronServiceCommand = tpRecoveryCronServiceCommand(PHP_OS_FAMILY);
         <p class="small text-muted">Run the complete command below in PowerShell under the Windows identity configured for PHP in Apache or IIS.</p>
         <?php endif; ?>
         <pre id="recovery-plan" class="p-3 bg-light"></pre>
+        <section id="recovery-encryption" class="border-top pt-3 mb-3" hidden>
+            <h2 class="h5">Encryption verification</h2>
+            <p id="recovery-encryption-progress" role="status"></p>
+            <p id="recovery-missing-sharekeys" class="alert alert-warning" hidden></p>
+            <div id="recovery-unusable-tp-key" class="alert alert-warning" hidden>
+                <p>The restored TP system private key cannot be used. The original master key matches the database,
+                    but item decryption could not be verified with the system key.
+                    Users' existing sharekeys are preserved and may still provide access.
+                    After restoring access, review the TP key repair in Tools and each owner's personal-item repair.</p>
+                <div id="recovery-key-acknowledgement" class="form-check" hidden>
+                    <input id="recovery-acknowledge-tp-key" class="form-check-input" type="checkbox">
+                    <label class="form-check-label" for="recovery-acknowledge-tp-key">I understand that item decryption could not be verified
+                        and choose to publish this recovery with the unusable TP system key diagnostic.</label>
+                </div>
+            </div>
+        </section>
         <pre id="recovery-command" data-recovery-command class="p-3 bg-light"></pre>
         <p id="recovery-activate-hint"><?= $escape('drp_activate_hint') ?></p>
         <pre id="recovery-activate" data-recovery-command class="p-3 bg-light"></pre>
@@ -338,6 +354,7 @@ $cronServiceCommand = tpRecoveryCronServiceCommand(PHP_OS_FAMILY);
 <script id="recovery-data" type="application/json"><?= json_encode([
     'csrf' => $_SESSION['recovery_csrf'], 'preparing' => $texts['drp_preparing'], 'error' => $texts['drp_error'],
     'ready' => $texts['drp_ready'], 'verified' => $texts['drp_verified'], 'complete' => $texts['drp_complete'], 'counts' => $texts['drp_counts'],
+    'verificationPaused' => $texts['drp_verification_paused'],
     'running' => $texts['drp_running'], 'failed' => $texts['drp_failed'], 'initial' => $initialJob,
     'command' => $commandBase,
     'cleanup' => tpRecoveryInstallerCleanupCommand(TEAMPASS_ROOT, PHP_OS_FAMILY),

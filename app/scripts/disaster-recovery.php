@@ -22,7 +22,8 @@ require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../config/include.php';
 require_once __DIR__ . '/../sources/recovery.functions.php';
 
-$options = getopt('', ['enable', 'prepare:', 'run:', 'activate:', 'check-permissions:', 'resume:', 'status:', 'discard:', 'help']);
+$options = getopt('', ['enable', 'prepare:', 'run:', 'verification-timeout:', 'activate:',
+    'acknowledge-unusable-tp-key', 'check-permissions:', 'resume:', 'status:', 'discard:', 'help']);
 try {
     foreach (['enable', 'prepare', 'run', 'activate', 'check-permissions', 'resume', 'discard'] as $writeOperation) {
         if (isset($options[$writeOperation])) {
@@ -56,14 +57,24 @@ try {
     }
     if (isset($options['run'])) {
         $id = (string) $options['run'];
+        $verificationTimeout = filter_var($options['verification-timeout'] ?? 1800, FILTER_VALIDATE_INT,
+            ['options' => ['min_range' => 1, 'max_range' => 86400]]);
+        if ($verificationTimeout === false) {
+            throw new TeamPassRecoveryException('RECOVERY_VERIFICATION_TIMEOUT_INVALID');
+        }
         fwrite(STDOUT, "Importing and verifying the dedicated recovery database...\n");
-        $result = tpRecoveryRun($id);
+        $result = tpRecoveryRun($id, $verificationTimeout);
         fwrite(STDOUT, json_encode($result, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR) . "\n");
-        fwrite(STDOUT, "Database verified. Publish the files and configuration with:\n" . tpRecoveryCommandBase() . ' --activate=' . $id . "\n");
+        $acknowledgement = ($result['encryption']['tp_key_status'] ?? '') === 'unusable';
+        if ($acknowledgement) {
+            fwrite(STDOUT, "The internal TP private key cannot be opened. User sharekeys have been preserved, but their item decryption could not be verified. Review the diagnostic and repair the TP reference keys after recovery. Publication requires your explicit acknowledgement.\n");
+        }
+        fwrite(STDOUT, "Database verified. Publish the files and configuration with:\n" . tpRecoveryCommandBase()
+            . ' --activate=' . $id . ($acknowledgement ? ' --acknowledge-unusable-tp-key' : '') . "\n");
         exit(0);
     }
     if (isset($options['activate'])) {
-        $result = tpRecoveryActivate((string) $options['activate']);
+        $result = tpRecoveryActivate((string) $options['activate'], isset($options['acknowledge-unusable-tp-key']));
         try {
             // Publication has released its lock. Audit once here, so operators
             // can go straight to a single correction-and-verification block.
@@ -154,7 +165,9 @@ try {
         . "  --enable              Enable the installation recovery form for one hour\n"
         . "  --prepare=FILE|-      Validate a private JSON request (or read standard input)\n"
         . "  --run=JOB             Restore and upgrade an empty dedicated database\n"
+        . "  --verification-timeout=SECONDS  Timeout per 100-item verification batch (1-86400; default 1800)\n"
         . "  --activate=JOB        Publish verified data and configuration in maintenance\n"
+        . "  --acknowledge-unusable-tp-key  Explicitly accept the reported TP key diagnostic at activation\n"
         . "  --check-permissions=JOB  Audit runtime permissions and propose administrator commands\n"
         . "  --resume=JOB          Finalize publication and release the recovery hold\n"
         . "  --status=JOB          Print non-sensitive progress\n"
@@ -167,5 +180,9 @@ try {
         fwrite(STDERR, "Do not run recovery with sudo php or as root. Open /install/recovery.php for the exact sudo -u command using the PHP service account.\n");
     }
     fwrite(STDERR, 'Recovery stopped: ' . $reason . ". No automatic cleanup of the destination database was attempted.\n");
+    if ($reason === 'RECOVERY_CRYPTO_VERIFICATION_TIMEOUT') {
+        fwrite(STDERR, "Retry --run=JOB with a larger --verification-timeout=SECONDS. Completed verification batches are preserved; the database is not imported again.\n");
+    }
+    fwrite(STDERR, "A failed or interrupted job retains private job.json database credentials and keys until --discard=JOB. Retry publication first when applicable. Discard removes staging only, not the database or files already published. Private request files and storage/recovery/incoming/ archives are not automatically removed; protect or move them to approved storage outside the web root.\n");
     exit(1);
 }

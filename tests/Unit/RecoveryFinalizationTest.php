@@ -47,6 +47,18 @@ final class RecoveryFinalizationTest extends TestCase
             'permissions' => ['status' => 'passed']], tpRecoveryReceiptFields($receipt));
     }
 
+    public function testReceiptsKeepEncryptionCountersAndAcknowledgementWithoutPrivateCheckpointData(): void
+    {
+        $diagnostic = ['tp_key_status' => 'unusable', 'diagnostic' => 'private_key_missing',
+            'total_items' => 103, 'checked_items' => 0, 'missing_tp_sharekeys' => 1,
+            'skipped_items' => 102, 'complete' => true];
+        $receipt = ['id' => 'job', 'status' => 'complete', 'unusable_tp_key_acknowledged_at' => 123,
+            'encryption' => $diagnostic + ['last_id' => 204, 'private_key' => 'synthetic secret'],
+            'connection' => ['password' => 'synthetic secret']];
+        self::assertSame(['id' => 'job', 'status' => 'complete', 'unusable_tp_key_acknowledged_at' => 123,
+            'encryption' => $diagnostic], tpRecoveryReceiptFields($receipt));
+    }
+
     public function testPermissionFindingsReuseTheCentralIntegrityPlanWithoutApplyingIt(): void
     {
         $report = ['scan_supported' => true, 'has_result' => true, 'remediation_supported' => true,

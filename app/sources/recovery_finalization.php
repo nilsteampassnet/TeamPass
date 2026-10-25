@@ -15,9 +15,16 @@ require_once __DIR__ . '/file_permissions.functions.php';
 /** Keep only non-sensitive receipt fields when persisting or exposing finalization. */
 function tpRecoveryReceiptFields(array $receipt): array
 {
+    if (isset($receipt['encryption']) && is_array($receipt['encryption'])) {
+        $receipt['encryption'] = array_intersect_key($receipt['encryption'], array_flip([
+            'tp_key_status', 'diagnostic', 'total_items', 'checked_items',
+            'missing_tp_sharekeys', 'skipped_items', 'complete',
+        ]));
+    }
     return array_intersect_key($receipt, array_flip([
         'id', 'status', 'error', 'plan', 'tables', 'documents', 'created_at',
         'activated_at', 'resumed_at', 'permissions', 'maintenance_enabled',
+        'encryption', 'unusable_tp_key_acknowledged_at',
     ]));
 }
 

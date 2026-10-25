@@ -10,37 +10,57 @@ declare(strict_types=1);
  * @license GPL-3.0
  */
 
-/** Exercise the actual master key -> system private key -> item sharekey chain. */
-function tpRecoveryVerifyEncryption(array $settings): void
+/** Verify one bounded batch, preserving diagnostics without disclosing keys or item identifiers. */
+function tpRecoveryVerifyEncryption(array $settings, array $previous = []): array
 {
-    $system = DB::queryFirstRow(
-        'SELECT u.pw,u.public_key,k.private_key FROM ' . prefixTable('users') . ' u
-         LEFT JOIN ' . prefixTable('user_private_keys') . ' k ON k.user_id=u.id AND k.is_current=1 WHERE u.id=%i', TP_USER_ID
-    );
-    $password = cryption((string) ($system['pw'] ?? ''), '', 'decrypt', $settings);
-    $private = decryptPrivateKey((string) ($password['string'] ?? ''), (string) ($system['private_key'] ?? ''));
-    if ($private === '') {
-        throw new TeamPassRecoveryException('SYSTEM_PRIVATE_KEY_INVALID');
+    $system = tpUserKeyDiagnosis($settings);
+    $status = $system['status'] === 'ok' ? 'ok' : 'unusable';
+    if ($previous !== [] && ($previous['tp_key_status'] !== $status || $previous['diagnostic'] !== $system['status'])) {
+        throw new TeamPassRecoveryException('RECOVERY_INPUT_CHANGED');
     }
-    $lastId = 0;
-    do {
-        $items = DB::query(
-            'SELECT i.id,i.pw,i.pw_iv,k.increment_id,k.share_key FROM ' . prefixTable('items') . ' i
+    $report = $previous ?: [
+        'tp_key_status' => $status, 'diagnostic' => $system['status'],
+        'total_items' => (int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('items') . ' WHERE pw<>%s', ''),
+        'checked_items' => 0, 'missing_tp_sharekeys' => 0, 'skipped_items' => 0,
+        'last_id' => 0, 'complete' => false,
+    ];
+    if ($status === 'unusable') {
+        // User sharekeys can still be intact. Publication requires an explicit
+        // acknowledgement; never replace their keys or try to repair them here.
+        $report['missing_tp_sharekeys'] = (int) DB::queryFirstField(
+            'SELECT COUNT(*) FROM ' . prefixTable('items') . ' i
              LEFT JOIN ' . prefixTable('sharekeys_items') . ' k ON k.object_id=i.id AND k.user_id=%i
-             WHERE i.id>%i ORDER BY i.id LIMIT 100', TP_USER_ID, $lastId
+             WHERE i.pw<>%s AND k.increment_id IS NULL', TP_USER_ID, ''
         );
-        foreach ($items as $item) {
-            $lastId = (int) $item['id'];
-            if ((string) $item['pw'] === '') {
-                continue;
-            }
-            $key = decryptUserObjectKeyWithMigration((string) ($item['share_key'] ?? ''), $private,
-                (string) $system['public_key'], (int) ($item['increment_id'] ?? 0), 'sharekeys_items');
-            if ($key === '' || doDataDecryptionWithStatus($item['pw'], $key, (string) ($item['pw_iv'] ?? ''))['success'] !== true) {
-                throw new TeamPassRecoveryException('ITEM_DECRYPTION_FAILED');
-            }
+        $report['skipped_items'] = $report['total_items'] - $report['missing_tp_sharekeys'];
+        $report['complete'] = true;
+        return $report;
+    }
+    $items = DB::query(
+        'SELECT i.id,i.pw,i.pw_iv,k.increment_id,k.share_key FROM ' . prefixTable('items') . ' i
+         LEFT JOIN ' . prefixTable('sharekeys_items') . ' k ON k.object_id=i.id AND k.user_id=%i
+         WHERE i.id>%i AND i.pw<>%s ORDER BY i.id LIMIT 100', TP_USER_ID, $report['last_id'], ''
+    );
+    foreach ($items as $item) {
+        $report['last_id'] = (int) $item['id'];
+        if ($item['increment_id'] === null) {
+            // Historical personal items and a rebuilt TP account legitimately
+            // have no TP row. An existing but unreadable row remains fatal.
+            $report['missing_tp_sharekeys']++;
+            continue;
         }
-    } while (count($items) === 100);
+        $key = decryptUserObjectKeyWithMigration((string) $item['share_key'], $system['private_key'],
+            $system['public_key'], (int) $item['increment_id'], 'sharekeys_items');
+        if ($key === '' || doDataDecryptionWithStatus($item['pw'], $key, (string) ($item['pw_iv'] ?? ''))['success'] !== true) {
+            throw new TeamPassRecoveryException('ITEM_DECRYPTION_FAILED');
+        }
+        $report['checked_items']++;
+    }
+    $report['complete'] = count($items) < 100;
+    if ($report['complete'] && $report['checked_items'] + $report['missing_tp_sharekeys'] !== $report['total_items']) {
+        throw new TeamPassRecoveryException('RECOVERY_INPUT_CHANGED');
+    }
+    return $report;
 }
 
 /** Invalidate restored links with their lifecycle audit in the same transaction. */

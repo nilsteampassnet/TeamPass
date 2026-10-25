@@ -31,7 +31,7 @@ try {
         throw new TeamPassRecoveryException('RECOVERY_PATH_INVALID');
     }
     $job = json_decode((string) file_get_contents($jobDir . '/job.json'), true, 32, JSON_THROW_ON_ERROR);
-    if (!is_array($job) || ($job['status'] ?? '') !== 'upgrading') {
+    if (!is_array($job) || ($job['status'] ?? '') !== ($release === 'verify' ? 'verifying' : 'upgrading')) {
         throw new TeamPassRecoveryException('UPGRADE_REQUEST_INVALID');
     }
     define('TEAMPASS_SECRETS', $jobDir . '/keys');
@@ -72,9 +72,11 @@ try {
     }
     if ($release === 'verify') {
         require_once $root . '/app/sources/recovery_verification.php';
-        tpRecoveryVerifyEncryption($SETTINGS);
-        tpRecoveryInvalidateSharedLinks();
-        echo '[{"finish":"1","error":""}]';
+        $encryption = tpRecoveryVerifyEncryption($SETTINGS, $job['encryption'] ?? []);
+        if ($encryption['complete']) {
+            tpRecoveryInvalidateSharedLinks();
+        }
+        echo json_encode([['finish' => '1', 'error' => '', 'encryption' => $encryption]], JSON_THROW_ON_ERROR);
     } else {
         // Script names come exclusively from the shipped allowlist above.
         require $root . '/public/install/upgrade_run_' . $release . '.php';
