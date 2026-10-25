@@ -1,6 +1,6 @@
 /* TeamPass - GPL-3.0-or-later. Copyright 2009-2026 Teampass.net. */
-'use strict'
-;(() => {
+(() => {
+  'use strict'
   const data = JSON.parse(document.getElementById('recovery-data').textContent)
   const message = document.getElementById('recovery-message')
   const copyButtons = Array.from(document.querySelectorAll('[data-recovery-command]'), (command) => {
@@ -14,7 +14,10 @@
       const text = command.textContent
       let copied = false
       if (navigator.clipboard?.writeText) {
-        try { await navigator.clipboard.writeText(text); copied = true } catch { /* Try the local fallback. */ }
+        try {
+          await navigator.clipboard.writeText(text)
+          copied = true
+        } catch { /* Try the local fallback. */ }
       }
       if (!copied) {
         const textarea = document.createElement('textarea')
@@ -22,8 +25,14 @@
         textarea.setAttribute('readonly', '')
         textarea.className = 'recovery-copy-buffer'
         document.body.appendChild(textarea)
-        try { textarea.select(); copied = document.execCommand('copy') } catch { /* Offer manual selection below. */ }
-        finally { textarea.remove(); button.focus() }
+        try {
+          textarea.select()
+          copied = document.execCommand('copy')
+        } catch { /* Offer manual selection below. */ }
+        finally {
+          textarea.remove()
+          button.focus()
+        }
       }
       button.textContent = copied ? 'Copied' : 'Copy unavailable — select the command and press Ctrl+C'
     })
