@@ -177,7 +177,6 @@ require __DIR__ . '/renewal.preview.js.php';
         'showOlder' => $lang->get('item_view_show_older'),
         'autoUpdate' => $lang->get('auto_update_enabled'),
         'autoDeletion' => $lang->get('automatic_deletion_engaged'),
-        'noAttachment' => $lang->get('no_attachment'),
         'copy' => $lang->get('copy_to_clipboard'),
     ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG); ?>;
     const TP_LAPR_ITEM_LANG = <?php echo json_encode([
@@ -1223,6 +1222,7 @@ require __DIR__ . '/renewal.preview.js.php';
     // including autohide after a couple of seconds
     let isPasswordVisible = false;
     let passwordTimeout = null;
+    const passwordOverviewDelay = <?php echo isset($SETTINGS['password_overview_delay']) && (int) $SETTINGS['password_overview_delay'] > 0 ? (int) $SETTINGS['password_overview_delay'] * 1000 : 4000; ?>;
     $(document).on('click', '#card-item-pwd-toggle-button', function () {
         const $icon = $('.pwd-toggle-icon');
         const $button = $(this);
@@ -1252,7 +1252,8 @@ require __DIR__ . '/renewal.preview.js.php';
                     clearTimeout(passwordTimeout);
                     passwordTimeout = setTimeout(() => {
                         hidePassword($icon, $pwdField);
-                    }, <?php echo isset($SETTINGS['password_overview_delay']) && (int) $SETTINGS['password_overview_delay'] > 0 ? $SETTINGS['password_overview_delay'] * 1000 : 4000; ?>);
+                    }, passwordOverviewDelay);
+                    startPasswordCountdown(passwordOverviewDelay);
                 }
             });
         } else {
@@ -1264,6 +1265,7 @@ require __DIR__ . '/renewal.preview.js.php';
 
     function hidePassword($icon, $pwdField) {
         isPasswordVisible = false;
+        stopPasswordCountdown();
         $icon
             .removeClass('fa-solid fa-eye-slash text-warning')
             .addClass('fa-regular fa-eye');
@@ -1278,6 +1280,7 @@ require __DIR__ . '/renewal.preview.js.php';
 
         isPasswordVisible = false;
         clearTimeout(passwordTimeout);
+        stopPasswordCountdown();
 
         $icon
             .removeClass('fa-solid fa-eye-slash text-warning')
@@ -1288,6 +1291,33 @@ require __DIR__ . '/renewal.preview.js.php';
             .removeClass('pointer_none');
 
         $('#card-item-pwd-security-badge').addClass('hidden').removeClass('badge-success badge-danger badge-warning');
+    }
+
+    /**
+     * Empty the bar under the password row over the time the password stays shown.
+     *
+     * @param {number} duration - Milliseconds before the password is masked again
+     * @return {void}
+     */
+    function startPasswordCountdown(duration) {
+        const bar = document.getElementById('card-item-pwd-countdown');
+        if (bar === null) {
+            return;
+        }
+        bar.classList.remove('is-running');
+        bar.style.animationDuration = duration + 'ms';
+        // Reading the layout restarts the animation when the password is shown again
+        void bar.offsetWidth;
+        bar.classList.add('is-running');
+    }
+
+    /**
+     * Remove the countdown bar of the password row.
+     *
+     * @return {void}
+     */
+    function stopPasswordCountdown() {
+        $('#card-item-pwd-countdown').removeClass('is-running');
     }
 
 
@@ -3916,8 +3946,6 @@ require __DIR__ . '/renewal.preview.js.php';
         $('#card-item-row-login, #card-item-row-email, #card-item-row-url').removeClass('hidden');
         $('#card-item-row-otp').addClass('hidden');
         $('#card-item-otp-tools').empty();
-        $('#card-item-folder, #card-item-folder-label').addClass('hidden');
-        $('#card-item-folder').empty();
         $('#card-item-fields-count').text('');
         $('#card-item-description').removeClass('is-clamped');
         $('#card-item-description-more').addClass('hidden');
@@ -7625,13 +7653,6 @@ require __DIR__ . '/renewal.preview.js.php';
                         });
                         $('#form-folder-path').html(breadcrumbHtml);
                     }
-                    const folderPath = $('#form-folder-path .breadcrumb-item').map(function() {
-                        return $(this).text().trim();
-                    }).get().filter(function(part) {
-                        return part !== '';
-                    }).join(' › ');
-                    $('#card-item-folder').text(folderPath);
-                    $('#card-item-folder, #card-item-folder-label').toggleClass('hidden', folderPath === '');
 
                     // HIBP badge — show cached status and trigger async re-check if needed
                     const hibpApp = store.get('teampassApplication') || {}
@@ -7965,8 +7986,8 @@ require __DIR__ . '/renewal.preview.js.php';
                         );
                     }
 
-                    // Waiting
-                    $('#card-item-attachments').html("<?php echo $lang->get('please_wait'); ?>");
+                    // The attachments section shows once step 2 has found files
+                    $('#card-item-section-attachments').addClass('hidden');
 
                     // Empty rows are not shown; the OTP row waits for its first code (showOTPCode)
                     $('#card-item-row-login').toggleClass('hidden', data.login === '');
@@ -8203,14 +8224,14 @@ require __DIR__ . '/renewal.preview.js.php';
                     console.log(data);
                 }
 
-                // Attachments: the same cards in the view and in the edit form
+                // Attachments: the same cards in the view and in the edit form; no file, no section
+                $('#card-item-section-attachments').toggleClass('hidden', data === false || data.attachments.length === 0);
                 if (data !== false) {
                     if (data.attachments.length === 0) {
                         // Otherwise the edition form keeps the files of the item shown before
                         $('#form-item-attachments').html('');
                         $('#card-item-attachments-badge').html('');
-                        $('#card-item-attachments')
-                            .html('<div class="tp-item-view-empty text-muted">' + htmlEncode(TP_ITEM_VIEW_LANG.noAttachment) + '</div>');
+                        $('#card-item-attachments').html('');
                     } else {
                         let html = '',
                             htmlFull = '';

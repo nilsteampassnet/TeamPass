@@ -1368,7 +1368,7 @@ if ((int) $session_user_admin === 1) {
                     echo isset($SETTINGS['item_extra_fields']) === true && (int) $SETTINGS['item_extra_fields'] === 1 ? '
                     <a class="tp-item-form-jump hidden" href="#item-details-card-categories" data-section="fields" data-count="#card-item-fields-count"><i class="fa-solid fa-cubes fa-fw mr-1" aria-hidden="true"></i>' . $lang->get('fields') . '<span class="badge badge-pill badge-info ml-1 hidden"></span></a>' : '';
                     ?>
-                    <a class="tp-item-form-jump" href="#card-item-section-attachments" data-section="attachments" data-count="#card-item-attachments-badge"><i class="fa-solid fa-paperclip fa-fw mr-1" aria-hidden="true"></i><?php echo $lang->get('attachments'); ?><span class="badge badge-pill badge-info ml-1 hidden"></span></a>
+                    <a class="tp-item-form-jump hidden" href="#card-item-section-attachments" data-section="attachments" data-count="#card-item-attachments-badge"><i class="fa-solid fa-paperclip fa-fw mr-1" aria-hidden="true"></i><?php echo $lang->get('attachments'); ?><span class="badge badge-pill badge-info ml-1 hidden"></span></a>
                     <a class="tp-item-form-jump hidden" href="#item-card-webauthn" data-section="webauthn" data-count="#card-item-webauthn-badge"><i class="fa-solid fa-fingerprint fa-fw mr-1" aria-hidden="true"></i><?php echo $lang->get('webauthn_passkeys'); ?><span class="badge badge-pill badge-info ml-1 hidden"></span></a>
                     <a class="tp-item-form-jump" href="#card-item-section-history" data-section="history" data-count="#card-item-history-badge"><i class="fa-solid fa-history fa-fw mr-1" aria-hidden="true"></i><?php echo $lang->get('history'); ?><span class="badge badge-pill badge-info ml-1 hidden"></span></a>
                 </nav>
@@ -1409,6 +1409,8 @@ if ((int) $session_user_admin === 1) {
                                     </button>
                                 </span>
                                 <input id="hidden-item-pwd" type="hidden">
+                                <!-- Empties while the password is shown, until it is masked again -->
+                                <span class="tp-item-view-countdown" id="card-item-pwd-countdown" aria-hidden="true"></span>
                             </div>
                             <div class="tp-item-view-row hidden" id="card-item-row-otp">
                                 <span class="tp-item-view-key"><?php echo $lang->get('otp_code'); ?></span>
@@ -1445,8 +1447,6 @@ if ((int) $session_user_admin === 1) {
                     </div>
                     <aside class="tp-item-view-about" aria-label="<?php echo $lang->get('item_view_about'); ?>">
                         <dl class="tp-item-view-about-list">
-                            <dt class="hidden" id="card-item-folder-label"><?php echo $lang->get('folder'); ?></dt>
-                            <dd class="hidden" id="card-item-folder"></dd>
                             <dt><?php echo $lang->get('restricted_to'); ?></dt>
                             <dd id="card-item-restrictedto"><span class="skeleton-line skeleton-md"></span></dd>
                             <dt><?php echo $lang->get('tags'); ?></dt>
@@ -1461,19 +1461,22 @@ if ((int) $session_user_admin === 1) {
                 </div>
             </div>
 
-            <div class="item-details-card tp-item-view-block tp-item-view-section tp-item-view-collapsible" id="card-item-section-description" data-section="description">
-                <div class="tp-item-form-section-head">
-                    <button type="button" class="tp-item-form-section-toggle tp-item-view-section-toggle" aria-expanded="true">
-                        <i class="fa-solid fa-chevron-down tp-item-form-section-chevron" aria-hidden="true"></i>
-                        <h2 class="tp-item-form-section-heading"><i class="fa-solid fa-align-left mr-2" aria-hidden="true"></i><?php echo $lang->get('description'); ?></h2>
-                    </button>
-                    <div class="tp-item-form-section-tools">
-                        <button type="button" class="tp-item-form-section-tool tp-item-view-to-top infotip" title="<?php echo $lang->get('item_form_back_to_top'); ?>" aria-label="<?php echo $lang->get('item_form_back_to_top'); ?>"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button>
+            <!-- Description, attachments and passkeys: the block is toggled with the others, the section only by its content -->
+            <div class="item-details-card tp-item-view-block">
+                <div class="tp-item-view-section tp-item-view-collapsible" id="card-item-section-description" data-section="description">
+                    <div class="tp-item-form-section-head">
+                        <button type="button" class="tp-item-form-section-toggle tp-item-view-section-toggle" aria-expanded="true">
+                            <i class="fa-solid fa-chevron-down tp-item-form-section-chevron" aria-hidden="true"></i>
+                            <h2 class="tp-item-form-section-heading"><i class="fa-solid fa-align-left mr-2" aria-hidden="true"></i><?php echo $lang->get('description'); ?></h2>
+                        </button>
+                        <div class="tp-item-form-section-tools">
+                            <button type="button" class="tp-item-form-section-tool tp-item-view-to-top infotip" title="<?php echo $lang->get('item_form_back_to_top'); ?>" aria-label="<?php echo $lang->get('item_form_back_to_top'); ?>"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button>
+                        </div>
                     </div>
-                </div>
-                <div class="tp-item-form-section-body">
-                    <div class="tp-item-view-description" id="card-item-description"><span class="skeleton-line skeleton-xl"></span></div>
-                    <button type="button" class="tp-item-view-more-toggle hidden" id="card-item-description-more" aria-controls="card-item-description" aria-expanded="false"><?php echo $lang->get('item_view_show_more'); ?></button>
+                    <div class="tp-item-form-section-body">
+                        <div class="tp-item-view-description" id="card-item-description"><span class="skeleton-line skeleton-xl"></span></div>
+                        <button type="button" class="tp-item-view-more-toggle hidden" id="card-item-description-more" aria-controls="card-item-description" aria-expanded="false"><?php echo $lang->get('item_view_show_more'); ?></button>
+                    </div>
                 </div>
             </div>
 
@@ -1524,22 +1527,23 @@ if ((int) $session_user_admin === 1) {
             }
             ?>
 
-            <div class="item-details-card tp-item-view-block tp-item-view-section tp-item-view-collapsible item-card-attachments" id="card-item-section-attachments" data-section="attachments">
-                <div class="tp-item-form-section-head">
-                    <button type="button" class="tp-item-form-section-toggle tp-item-view-section-toggle" aria-expanded="true">
-                        <i class="fa-solid fa-chevron-down tp-item-form-section-chevron" aria-hidden="true"></i>
-                        <h2 class="tp-item-form-section-heading"><i class="fa-solid fa-paperclip mr-2" aria-hidden="true"></i><?php echo $lang->get('attachments'); ?><span class="badge badge-pill badge-light ml-2" id="card-item-attachments-badge"></span></h2>
-                    </button>
-                    <div class="tp-item-form-section-tools">
-                        <button type="button" class="tp-item-form-section-tool tp-item-view-to-top infotip" title="<?php echo $lang->get('item_form_back_to_top'); ?>" aria-label="<?php echo $lang->get('item_form_back_to_top'); ?>"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button>
+            <div class="item-details-card tp-item-view-block">
+                <div class="tp-item-view-section tp-item-view-collapsible item-card-attachments hidden" id="card-item-section-attachments" data-section="attachments">
+                    <div class="tp-item-form-section-head">
+                        <button type="button" class="tp-item-form-section-toggle tp-item-view-section-toggle" aria-expanded="true">
+                            <i class="fa-solid fa-chevron-down tp-item-form-section-chevron" aria-hidden="true"></i>
+                            <h2 class="tp-item-form-section-heading"><i class="fa-solid fa-paperclip mr-2" aria-hidden="true"></i><?php echo $lang->get('attachments'); ?><span class="badge badge-pill badge-light ml-2" id="card-item-attachments-badge"></span></h2>
+                        </button>
+                        <div class="tp-item-form-section-tools">
+                            <button type="button" class="tp-item-form-section-tool tp-item-view-to-top infotip" title="<?php echo $lang->get('item_form_back_to_top'); ?>" aria-label="<?php echo $lang->get('item_form_back_to_top'); ?>"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button>
+                        </div>
                     </div>
-                </div>
-                <div class="tp-item-form-section-body">
-                    <div class="tp-item-files clear-me-html" id="card-item-attachments"></div>
+                    <div class="tp-item-form-section-body">
+                        <div class="tp-item-files clear-me-html" id="card-item-attachments"></div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Passkeys: the block is toggled with the others, the section only by the passkey list -->
             <div class="item-details-card tp-item-view-block">
                 <div class="tp-item-view-section tp-item-view-collapsible hidden" id="item-card-webauthn" data-section="webauthn">
                     <div class="tp-item-form-section-head">

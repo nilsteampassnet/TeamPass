@@ -399,9 +399,9 @@ git show <VERSION>:app/config/include.php | grep TP_VERSION
 
 **STOP — ask the user before pushing.** Every one of the three pushes below triggers the Docker
 build workflow: `.github/workflows/docker-publish.yml` fires on `push` to `master` **and**
-`develop`, on tags matching `*.*.*.*` / `v*.*.*`, on `release: published`, and on
-`workflow_dispatch`. Each run publishes to Docker Hub and GHCR (`push:` is true for every event
-except `pull_request`), so this is not a dry run.
+`develop`, on tags matching `*.*.*.*` / `v*.*.*`, on the weekly `schedule`, and on
+`workflow_dispatch` — no longer on `release: published`. Each run publishes to Docker Hub and GHCR
+(`push:` is true for every event except `pull_request`), so this is not a dry run.
 
 ```bash
 git push origin master
@@ -451,9 +451,10 @@ gh release create <VERSION> \
 
 ## 9. After publishing
 
-- `docker-publish.yml` (push to `master`/`develop`, tags, release, manual dispatch) builds and
-  pushes the images, to Docker Hub and GHCR. A release fires it twice, once on the tag push and
-  once on `release: published`. Check the runs:
+- `docker-publish.yml` (push to `master`/`develop`, tags, weekly schedule, manual dispatch)
+  builds and pushes the images, to Docker Hub and GHCR. Publishing the GitHub release fires
+  nothing: the `release` trigger was removed because the tag push already builds that commit, so
+  the release's image is the tag-push run. Check the runs:
   `gh run list --repo nilsteampassnet/TeamPass --limit 5`.
 - Confirm the release is visible and correctly flagged:
   `gh release view <VERSION> --repo nilsteampassnet/TeamPass --json name,isPrerelease`.
