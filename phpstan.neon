@@ -33,6 +33,7 @@ parameters:
         - app/includes/libraries/bip39/loader.php
         - app/vendor/tecnickcom/tcpdf/tcpdf_autoconfig.php
         - app/includes/libraries/teampassclasses/lapr/src/LAPRSshService.php
+        - public/install/tp.functions.php
 
     ignoreErrors:
         - '#Call to an undefined static method DB::count#'
@@ -66,6 +67,8 @@ parameters:
         - UPGRADE_SEND_EMAILS
         - TP_VERSION
         - DB_ENCODING
+        - TEAMPASS_FUNCTIONS_ONLY
+        - TEAMPASS_RECOVERY_MIGRATION
 
     # Activation des vérifications avancées
     checkExplicitMixed: false

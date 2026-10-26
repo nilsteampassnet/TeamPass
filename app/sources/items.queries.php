@@ -773,12 +773,21 @@ switch ($inputData['type']) {
                 }
 
                 // Check if any files have been added
+                // Only the files this session staged are attached: the staging id comes from
+                // the client and may designate any other item (GHSA-r6r4-5mr3-rppm)
                 if (empty($post_uploaded_file_id) === false) {
-                    $rows = DB::query(
+                    $pendingAttachments = (array) ($session->get('user-pending_attachments') ?? []);
+                    $stagedFileIds = attachmentPendingFileIds($pendingAttachments, (int) $post_uploaded_file_id);
+                    $rows = empty($stagedFileIds) === true ? [] : DB::query(
                         'SELECT id
                         FROM ' . prefixTable('files') . '
-                        WHERE id_item = %s',
-                        $post_uploaded_file_id
+                        WHERE id IN %li AND id_item = %i AND confirmed = 0',
+                        $stagedFileIds,
+                        (int) $post_uploaded_file_id
+                    );
+                    $session->set(
+                        'user-pending_attachments',
+                        attachmentPendingForget($pendingAttachments, (int) $post_uploaded_file_id)
                     );
                     foreach ($rows as $record) {
                         // update item_id in files table
@@ -5970,19 +5979,35 @@ switch ($inputData['type']) {
         );
 
         // Load item data
-        $data_item = DB::queryFirstRow(
+        $data_item = empty($data) === true ? null : DB::queryFirstRow(
             'SELECT id_tree, label
             FROM ' . prefixTable('items') . '
             WHERE id = %i',
             $data['id_item']
         );
-
-        // Check that user can access this folder
-        if (in_array($data_item['id_tree'], $session->get('user-accessible_folders')) === false) {
+        if (empty($data_item) === true) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
                     'message' => $lang->get('error_not_allowed_to_access_this_folder'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // Removing an attachment modifies the item: the edit right is required, as for adding
+        // one. Folder visibility alone also admits read-only folders (GHSA-r6r4-5mr3-rppm).
+        $deleteFileRights = getCurrentAccessRights(
+            (int) $session->get('user-id'),
+            (int) $data['id_item'],
+            (int) $data_item['id_tree']
+        );
+        if ($deleteFileRights['error'] || $deleteFileRights['edit'] !== true) {
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_no_edit_right'),
                 ),
                 'encode'
             );
@@ -8344,12 +8369,14 @@ switch ($inputData['type']) {
         $inputData['itemId'] = (int) filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
 
         // For existing items, enforce edit permission before deleting pending files
+        $itemExists = false;
         if ($inputData['itemId'] > 0) {
             $itemRowDelete = DB::queryFirstRow(
                 'SELECT id_tree FROM ' . prefixTable('items') . ' WHERE id = %i',
                 $inputData['itemId']
             );
             if (DB::count() > 0) {
+                $itemExists = true;
                 $deleteAccessRights = getCurrentAccessRights(
                     (int) $session->get('user-id'),
                     $inputData['itemId'],
@@ -8367,12 +8394,32 @@ switch ($inputData['type']) {
 
         // Delete non confirmed files for this item
         // And related logs
-        $rows = DB::query(
-            'SELECT id, file AS filename
-            FROM ' . prefixTable('files') . '
-            WHERE id_item = %i AND confirmed = %i',
-            $inputData['itemId'],
-            0
+        // An editor clears every upload left unsaved on the item. Any other id can only be the
+        // staging id of an item being created, whose files belong to the session that staged
+        // them (GHSA-r6r4-5mr3-rppm)
+        $pendingAttachments = (array) ($session->get('user-pending_attachments') ?? []);
+        if ($itemExists === true) {
+            $rows = DB::query(
+                'SELECT id, file AS filename
+                FROM ' . prefixTable('files') . '
+                WHERE id_item = %i AND confirmed = %i',
+                $inputData['itemId'],
+                0
+            );
+        } else {
+            $stagedFileIds = attachmentPendingFileIds($pendingAttachments, $inputData['itemId']);
+            $rows = empty($stagedFileIds) === true ? [] : DB::query(
+                'SELECT id, file AS filename
+                FROM ' . prefixTable('files') . '
+                WHERE id IN %li AND id_item = %i AND confirmed = %i',
+                $stagedFileIds,
+                $inputData['itemId'],
+                0
+            );
+        }
+        $session->set(
+            'user-pending_attachments',
+            attachmentPendingForget($pendingAttachments, $inputData['itemId'])
         );
         foreach ($rows as $file) {
             // Delete file in DB
@@ -8470,20 +8517,22 @@ switch ($inputData['type']) {
         }
 
         // Confirm attachments
-        $rows = DB::query(
-            'SELECT id, file AS filename
-            FROM ' . prefixTable('files') . '
-            WHERE id_item = %i AND confirmed = %i',
-            $inputData['itemId'],
-            0
-        );
-        $fileIdsToConfirm = array_column($rows, 'id');
+        // Only those this session uploaded for the item: any other unconfirmed row was not
+        // chosen by this editor (GHSA-r6r4-5mr3-rppm)
+        $pendingAttachments = (array) ($session->get('user-pending_attachments') ?? []);
+        $fileIdsToConfirm = attachmentPendingFileIds($pendingAttachments, $inputData['itemId']);
         if (!empty($fileIdsToConfirm)) {
             DB::query(
-                'UPDATE ' . prefixTable('files') . ' SET confirmed=1 WHERE id IN %ls',
-                $fileIdsToConfirm
+                'UPDATE ' . prefixTable('files') . ' SET confirmed=1
+                WHERE id IN %li AND id_item = %i AND confirmed = 0',
+                $fileIdsToConfirm,
+                $inputData['itemId']
             );
         }
+        $session->set(
+            'user-pending_attachments',
+            attachmentPendingForget($pendingAttachments, $inputData['itemId'])
+        );
 
         $data = array(
             'error' => false,

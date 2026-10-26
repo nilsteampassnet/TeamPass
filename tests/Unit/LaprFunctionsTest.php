@@ -564,6 +564,67 @@ class LaprFunctionsTest extends TestCase
     }
 
     // =========================================================================
+    // laprResolveEndpointTargetState (re-enrolling a host)
+    // =========================================================================
+
+    public function testFreeTargetCanBeEnrolled(): void
+    {
+        $this->assertSame('free', laprResolveEndpointTargetState([]));
+    }
+
+    public function testEndpointWithUnusableCredentialDoesNotHoldItsTarget(): void
+    {
+        $targets = [
+            ['id' => 4, 'credential_usable' => false, 'credential_readable' => false],
+            ['id' => 9, 'credential_usable' => false, 'credential_readable' => false],
+        ];
+
+        $this->assertSame('replaceable', laprResolveEndpointTargetState($targets));
+        $this->assertSame([4, 9], laprReplaceableEndpointIds($targets));
+    }
+
+    public function testUsableEndpointKeepsItsTargetWhateverTheDeadOnesAround(): void
+    {
+        $dead = ['id' => 4, 'credential_usable' => false, 'credential_readable' => false];
+        $visible = ['id' => 5, 'credential_usable' => true, 'credential_readable' => true];
+        $hidden = ['id' => 6, 'credential_usable' => true, 'credential_readable' => false];
+
+        $this->assertSame('enrolled', laprResolveEndpointTargetState([$dead, $visible]));
+        $this->assertSame('enrolled_inaccessible', laprResolveEndpointTargetState([$dead, $hidden]));
+        // The holder the caller can see is the actionable answer.
+        $this->assertSame('enrolled', laprResolveEndpointTargetState([$hidden, $dead, $visible]));
+        $this->assertSame([4], laprReplaceableEndpointIds([$hidden, $dead, $visible]));
+    }
+
+    // =========================================================================
+    // Strength of a rotated password
+    // =========================================================================
+
+    /**
+     * A rotated password must be rated at its real strength: the rotation stores
+     * this score as the item's complexity level. A random 20-character
+     * Linux-safe password of four character classes is what the reporter saw
+     * flagged as weak.
+     */
+    public function testRandomLinuxSafePasswordsReachTheTopStrengthScore(): void
+    {
+        require_once __DIR__ . '/../../app/sources/password_strength.functions.php';
+
+        $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!#$%&*+-=?@^_';
+        foreach ([20, LAPR_DEFAULT_PASSWORD_LENGTH] as $length) {
+            $password = '';
+            for ($i = 0; $i < $length; $i++) {
+                $password .= $alphabet[random_int(0, strlen($alphabet) - 1)];
+            }
+            $this->assertTrue(laprIsPasswordSafeForLinux($password), $password);
+
+            $strength = evaluatePasswordStrengthSafely($password);
+            $this->assertTrue($strength['success'], 'length ' . $length);
+            $this->assertSame(4, $strength['score'], 'length ' . $length);
+        }
+    }
+
+    // =========================================================================
     // LAPRSshService::computeFingerprint (TOFU)
     // =========================================================================
 

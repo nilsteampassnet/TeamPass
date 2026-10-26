@@ -33,6 +33,10 @@ declare(strict_types=1);
  *
  * Prints the version string on success, nothing otherwise (empty output makes
  * the caller keep the install directory rather than assume "up to date").
+ *
+ * Usage: php read-db-version.php [--full]
+ * With --full, prints teampass_version_full instead (the complete release, such as
+ * 3.2.3.2, that recorded the version); nothing when no release recorded it yet.
  */
 
 use Defuse\Crypto\Key;
@@ -89,7 +93,11 @@ if ($link === false) {
 
 // Try the current key first, then the legacy key used by TeamPass 3.1.5.x and
 // earlier, so a database migrated from an older on-premise install is detected.
-foreach (['teampass_version', 'cpassman_version'] as $settingKey) {
+$settingKeys = ['teampass_version', 'cpassman_version'];
+if (in_array('--full', $argv ?? [], true) === true) {
+    $settingKeys = ['teampass_version_full'];
+}
+foreach ($settingKeys as $settingKey) {
     $stmt = mysqli_prepare(
         $link,
         'SELECT valeur FROM `' . $table . "` WHERE type = 'admin' AND intitule = ? LIMIT 1"

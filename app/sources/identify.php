@@ -3247,6 +3247,21 @@ function identifyDoInitialChecks(
     $oauth2Enabled = $SETTINGS['oauth2_enabled'] ?? false;
     $lang = new Language($session->get('user-language') ?? 'english');
 
+    // Pending database upgrade: refuse every sign-in path (form, OAuth2, passkey) before
+    // anything reads tables whose schema may not match the code yet. The login page only
+    // disables its own button, which the OAuth2 callback and the passkey button never use.
+    if (upgradeRequired() === true) {
+        return [
+            'error' => true,
+            'skip_anti_bruteforce' => true,
+            'array' => [
+                'value' => '',
+                'error' => true,
+                'message' => $lang->get('upgrade_requested') . ' ' . $lang->get('upgrade_requested_more'),
+            ]
+        ];
+    }
+
     // Brute force management
     try {
         $checks->isTooManyPasswordAttempts($username, getClientIpServer());

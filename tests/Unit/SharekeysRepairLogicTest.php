@@ -135,4 +135,94 @@ class SharekeysRepairLogicTest extends TestCase
             $source
         );
     }
+
+    /**
+     * The TP key status names the first broken link of the chain, so each cause gets its own repair.
+     */
+    public function testTpUserKeyStatusNamesTheFirstBrokenLink(): void
+    {
+        self::assertSame('ok', tpUserKeyStatus(true, true, true, true));
+        self::assertSame('account_missing', tpUserKeyStatus(false, false, false, false));
+        self::assertSame('account_missing', tpUserKeyStatus(false, true, true, true));
+        self::assertSame('password_unreadable', tpUserKeyStatus(true, false, true, false));
+        self::assertSame('password_unreadable', tpUserKeyStatus(true, false, false, false));
+        self::assertSame('private_key_missing', tpUserKeyStatus(true, true, false, false));
+        self::assertSame('private_key_unreadable', tpUserKeyStatus(true, true, true, false));
+    }
+
+    /**
+     * Every broken status is explained by a string that exists, and "ok" by none.
+     */
+    public function testEveryTpUserKeyStatusHasAMessage(): void
+    {
+        $english = (string) file_get_contents(__DIR__ . '/../../app/includes/language/english.php');
+
+        self::assertSame('', tpUserKeyStatusMessageKey('ok'));
+        foreach (['account_missing', 'password_unreadable', 'private_key_missing', 'private_key_unreadable', 'unexpected'] as $status) {
+            $key = tpUserKeyStatusMessageKey($status);
+            self::assertNotSame('', $key, $status);
+            self::assertStringContainsString("'" . $key . "' =>", $english, $status);
+        }
+    }
+
+    /**
+     * A broken TP key blocks only the key generations that would cost the user their access.
+     */
+    public function testUserKeysGenerationIsBlockedOnlyWhenAccessWouldBeLost(): void
+    {
+        // Something to lose: refused
+        self::assertTrue(userKeysGenerationBlockedByTpKey('password_unreadable', false, true));
+        self::assertTrue(userKeysGenerationBlockedByTpKey('private_key_unreadable', false, true));
+        // Usable key: never refused
+        self::assertFalse(userKeysGenerationBlockedByTpKey('ok', false, true));
+        // New account or keys already gone: nothing to lose
+        self::assertFalse(userKeysGenerationBlockedByTpKey('password_unreadable', false, false));
+        // Key pair kept: the task writes nothing over the existing sharekeys
+        self::assertFalse(userKeysGenerationBlockedByTpKey('password_unreadable', true, true));
+    }
+
+    /**
+     * The key generation must check the TP key before replacing the user's key pair, and every
+     * batch that re-keys through the owner must stop instead of writing keys that open nothing.
+     */
+    public function testKeyGenerationNeverRunsOnABrokenTpKey(): void
+    {
+        $functions = (string) file_get_contents(__DIR__ . '/../../app/sources/main.functions.php');
+        $start = strpos($functions, 'function handleUserKeys(');
+        self::assertNotFalse($start);
+        $body = substr($functions, $start, (int) strpos($functions, "\nfunction ", $start + 1) - $start);
+        $guard = strpos($body, 'userKeysGenerationBlockedByTpKey(');
+        self::assertNotFalse($guard);
+        self::assertLessThan(strpos($body, 'generateUserKeys('), $guard);
+
+        $trait = (string) file_get_contents(__DIR__ . '/../../app/scripts/traits/UserHandlerTrait.php');
+        foreach (['20', '30', '40', '50', '60'] as $step) {
+            $stepStart = strpos($trait, 'private function generateNewUserStep' . $step . '(');
+            self::assertNotFalse($stepStart, $step);
+            $stepBody = substr($trait, $stepStart, (int) strpos($trait, 'private function ', $stepStart + 1) - $stepStart);
+            self::assertStringContainsString('$this->assertOwnerPrivateKeyOpens($ownerInfo);', $stepBody, 'step' . $step);
+        }
+    }
+
+    /**
+     * The rebuild discards the TP key pair: it must refuse while that pair still opens, and drop
+     * the account's sharekeys in every table, or the old ones would pass for valid reference keys.
+     */
+    public function testTpKeyRebuildIsGuardedAndComplete(): void
+    {
+        $tools = (string) file_get_contents(__DIR__ . '/../../app/sources/tools.queries.php');
+        $start = strpos($tools, "case 'restore_missing_sharekeys-rebuild_tp_keys':");
+        self::assertNotFalse($start);
+        $case = substr($tools, $start, (int) strpos($tools, "\n    case '", $start + 1) - $start);
+        self::assertStringContainsString("if (\$tpKeyStatus === 'ok') {", $case);
+        self::assertLessThan(strpos($case, 'rebuildTpUserKeyPair('), strpos($case, "if (\$tpKeyStatus === 'ok') {"));
+
+        $functions = (string) file_get_contents(__DIR__ . '/../../app/sources/main.functions.php');
+        $start = strpos($functions, 'function rebuildTpUserKeyPair(');
+        self::assertNotFalse($start);
+        $body = substr($functions, $start, (int) strpos($functions, "\nfunction ", $start + 1) - $start);
+        foreach (['sharekeys_items', 'sharekeys_fields', 'sharekeys_files', 'sharekeys_logs', 'sharekeys_suggestions', 'sharekeys_webauthn'] as $table) {
+            self::assertStringContainsString("'" . $table . "'", $body, $table);
+        }
+    }
 }

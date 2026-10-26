@@ -200,6 +200,17 @@ user's own one (it is on the replaced key pair). A personal object **without** a
   the missing TP_USER sharekey. A sharekey the previous key cannot open is **never overwritten**.
 - "I no longer remember my previous password" blanks the stranded sharekeys only.
 
+**The TP account key (#5424):** its password sits in `users.pw` encrypted with the instance key, its
+private key in the current `user_private_keys` row. An instance runs for years without noticing it
+no longer opens - item fan-out only needs public keys - while every key generation and every repair
+depends on it. **Rule: read it through `tpUserKeyDiagnosis()`**, which names the broken link
+(`tpUserKeyStatus()`: account / password / private key missing / private key unreadable).
+`handleUserKeys()` refuses a generation that would replace the key pair of a user still holding
+sharekeys (`userKeysGenerationBlockedByTpKey()`), and the `create_user_keys` steps 20-60 throw
+(`assertOwnerPrivateKeyOpens()`) instead of writing sharekeys that open nothing. The Tools rebuild
+(`rebuildTpUserKeyPair()`) is refused while the key opens, and deletes every TP sharekey: a stale
+one would pass for a valid reference key in the analysis and the owners' personal-items repair.
+
 **Rule: in `sharekeys_files`/`_fields`/`_logs`, `object_id` is a files / categories_items / log_items
 id, never an items id** — join through that table to reach `items.perso`.
 

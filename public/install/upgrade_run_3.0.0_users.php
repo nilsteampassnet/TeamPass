@@ -466,7 +466,7 @@ if (null !== $post_step) {
             $db_count = mysqli_fetch_row(
                 mysqli_query(
                     $db_link,
-                    'SELECT increment_id
+                    'SELECT count(*)
                     FROM ' . $pre . "log_items
                     WHERE raison LIKE 'at_pw :%' AND encryption_type = 'teampass_aes'"
                 )
@@ -504,7 +504,7 @@ if (null !== $post_step) {
                         mysqli_query(
                             $db_link,
                             'INSERT INTO `' . $pre . 'sharekeys_logs`(`increment_id`, `object_id`, `user_id`, `share_key`)
-                            VALUES (NULL,' . (int) $item['id'] . ',' . (int) $userInfo['id'] . ",'" . $share_key_for_item . "')"
+                            VALUES (NULL,' . (int) $item['increment_id'] . ',' . (int) $userInfo['id'] . ",'" . $share_key_for_item . "')"
                         );
                     }
                 }
@@ -548,8 +548,9 @@ if (null !== $post_step) {
             $db_count = mysqli_fetch_row(
                 mysqli_query(
                     $db_link,
-                    'SELECT id
-                    FROM ' . $pre . 'categories_items'
+                    'SELECT count(*)
+                    FROM ' . $pre . 'categories_items
+                    WHERE encryption_type = "' . TP_ENCRYPTION_NAME . '"'
                 )
             );
 
@@ -629,7 +630,7 @@ if (null !== $post_step) {
             $db_count = mysqli_fetch_row(
                 mysqli_query(
                     $db_link,
-                    'SELECT id
+                    'SELECT count(*)
                     FROM ' . $pre . 'suggestion'
                 )
             );
@@ -711,8 +712,9 @@ if (null !== $post_step) {
             $db_count = mysqli_fetch_row(
                 mysqli_query(
                     $db_link,
-                    'SELECT id
-                    FROM ' . $pre . 'files'
+                    'SELECT count(*)
+                    FROM ' . $pre . 'files
+                    WHERE status = "' . TP_ENCRYPTION_NAME . '"'
                 )
             );
 

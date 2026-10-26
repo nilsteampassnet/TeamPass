@@ -24,7 +24,7 @@ Missing sharekeys can appear after an interrupted background task, a failure dur
    * the number of objects for which the internal `TP` account has no reference key,
    * the number of objects that cannot be repaired automatically.
 
-   When objects without a `TP` reference key are found, a **Show details** button lists them (first 100 per type) with, for each one, the users still holding a valid sharekey. This tells you exactly who to ask to re-save an object that the tool cannot repair automatically; an object with no key holder at all is highlighted — its content cannot be recovered.
+   When objects without a `TP` reference key are found, a **Show details** button lists them (first 100 per type) with, for each one, the users still holding a valid sharekey. This tells you whose keys can still open an object that the selected keys cannot repair; an object with no key holder at all is highlighted — its content cannot be recovered.
 
 2. **Repair** — a two-phase operation:
    * First, every shared object that the selected keys can open is checked, and the reference key of the internal `TP` account is rebuilt where it is missing or does not open the object. By default the selected keys are **your own account's**. When your account cannot open the objects, select in **Open the objects with the keys of** a user who can, and enter that user's password: it is sent to the server only, which opens the user's keys there for the duration of the repair. Neither the password nor any private key is stored or sent back to the browser, and the use of another user's keys is recorded in the system logs.
@@ -38,7 +38,7 @@ Missing sharekeys can appear after an interrupted background task, a failure dur
 
 * **Admin only** — the tool is on the Tools page, restricted to administrators.
 * **Idempotent** — only missing, empty or legacy sharekeys are created. An existing key is modified or deleted only when its object was proven to be encrypted with another key (see above). The tool can be relaunched safely.
-* **The internal `TP` account key must be usable** — every check goes through it. When it cannot be opened (typically an instance key in `TEAMPASS_SECRETS` that does not match the database), the repair stops before doing anything and says so.
+* **The internal `TP` account key must be usable** — every check goes through it. When it cannot be opened, the analysis says so and why, and the repair is refused (see [The internal TP account key](#the-internal-tp-account-key)).
 * **Personal items are never redistributed** — a personal object only carries a key for its owner and for the internal `TP` account. The repair gives the owner their key back when it is missing, and removes the keys other users may still hold on it (see [Personal objects](#personal-objects)).
 * **Eligible users** — keys are created for the same population as during a normal item save: all users owning a public key, excluding the internal OTV/SSH/API accounts.
 * **Single instance** — a new repair task is refused while a previous one is still pending or running.
@@ -46,9 +46,36 @@ Missing sharekeys can appear after an interrupted background task, a failure dur
 
 ### Objects that cannot be repaired automatically
 
-If neither the `TP` internal account nor the selected account own a valid sharekey for an object, its encryption key cannot be recovered by the tool. **Show details** lists the users still holding a key on each such object: select one of them as the source of the repair and run it again, or ask that user to **re-save** the object, which redistributes fresh sharekeys to all users.
+If neither the `TP` internal account nor the selected account own a valid sharekey for an object, its encryption key cannot be recovered by the tool. **Show details** lists the users still holding a key on each such object: select one of them as the source of the repair and run it again. Saving the object again does not help on its own: only a changed value is encrypted again for every user.
 
 Objects whose content decrypts to binary data with every key are stored corrupted: no key can repair them. They are listed by the *Corrupted items* scan of the Health page.
+
+### The internal TP account key
+
+The internal `TP` account holds a reference sharekey on every object. Its password is stored encrypted with the instance key (`TEAMPASS_SECRETS`), so the server opens its private key without any human password. Every key generation for a user goes through it: a new account, a password reset, **Generate new keys**. So does every repair.
+
+An instance can run for years without noticing that this key no longer opens: a new item reaches every user through their public keys alone. Meanwhile, every user whose keys are generated gets an account that cannot open anything created before. TeamPass now reports and contains this:
+
+* the encryption status of the dashboard and of the Health page turns red; the dashboard reads *TP account key unusable*;
+* the analysis of this tool says so, with the cause;
+* generating the keys of a user who can still read items is refused, so that the user keeps the keys they have;
+* the key generation of a new user writes no key that opens nothing: each of its batches fails with the reason, visible in the task details.
+
+| Cause given by the analysis | Meaning |
+|---|---|
+| The password does not decrypt with the instance key | The `TP` password was encrypted with another instance key, typically when the database was imported into a new installation that generated its own `TEAMPASS_SECRETS`. |
+| No current private key | `user_private_keys` holds no current row for the account. |
+| The private key does not open with its password | The stored private key was replaced or damaged. |
+| The account does not exist | The `TP` row is missing from `users`. |
+
+In that case the analysis offers **Rebuild the internal account keys**. It gives the account a new key pair, and deletes the sharekeys the account held, which nothing can open any more. Then:
+
+1. Click **Analyze**: every object now lacks its `TP` reference key.
+2. Click **Repair** with the keys of a user who can open the shared objects (yours by default). The reference key is recreated on every shared object these keys open, then the background task gives every user their missing keys, including the users whose keys were generated while the `TP` key was broken.
+3. **Show details** lists the objects the selected keys could not open, with the users who can: run the repair again with one of them.
+4. Personal objects show as **Needs the owner**: each owner rebuilds their own reference keys from their profile (see [Personal objects](#personal-objects)).
+
+⚠️ Back up the database first: the previous keys of the account are deleted for good. The rebuild is refused while the key still opens, and while a repair task is pending or running.
 
 ### Personal objects
 

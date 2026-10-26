@@ -96,6 +96,7 @@ class PasswordStrengthSafetyTest extends TestCase
             $root . '/app/sources/items.queries.php',
             $root . '/app/scripts/background_tasks___do_calculation.php',
             $root . '/app/api/Model/ItemModel.php',
+            $root . '/app/scripts/traits/LAPRRotationTrait.php',
         ];
 
         foreach ($callers as $caller) {
@@ -108,7 +109,7 @@ class PasswordStrengthSafetyTest extends TestCase
     /**
      * Repo-wide guard: a new server-side caller must not reach zxcvbn directly.
      *
-     * The list above only pins the four known call sites; this sweep is what keeps a future
+     * The list above only pins the known call sites; this sweep is what keeps a future
      * file from reintroducing the fatal error. Instantiating Zxcvbn is allowed — callers may
      * build the object once and hand it over as the adapter's evaluator — but only the adapter
      * may actually invoke passwordStrength(), because that is the call that must be guarded.

@@ -34,6 +34,46 @@ use Exception;
 class CryptoManager
 {
     /**
+     * Validate a bounded, public-only RSA-3072 key for a version 1 device handoff.
+     * @return array{pem:string,fingerprint:string} Canonical SPKI PEM and SHA-256 of its DER
+     */
+    public static function devicePairingPublicKey(string $pem): array
+    {
+        if (strlen($pem) > 2048 || strpos($pem, 'PRIVATE KEY') !== false) {
+            throw new Exception('Invalid device public key');
+        }
+        $key = self::loadRSAKey($pem);
+        if (!$key instanceof PublicKey || $key->getLength() !== 3072) {
+            throw new Exception('Invalid device public key');
+        }
+        $raw = $key->toString('Raw');
+        if ((string) $raw['e'] !== '65537') {
+            throw new Exception('Invalid device public key exponent');
+        }
+        $canonical = $key->toString('PKCS8');
+        $encoded = preg_replace('/-----BEGIN PUBLIC KEY-----|-----END PUBLIC KEY-----|\s+/', '', $canonical);
+        $der = base64_decode($encoded, true);
+        if ($der === false) {
+            throw new Exception('Invalid device public key encoding');
+        }
+        return ['pem' => $canonical, 'fingerprint' => hash('sha256', $der)];
+    }
+
+    /** Encrypt exactly one PAT using OAEP/SHA-256/MGF1-SHA256; never use a legacy fallback. */
+    public static function encryptDevicePairingToken(string $token, string $publicKey): string
+    {
+        if (preg_match('/^[a-f0-9]{64}$/', $token) !== 1) {
+            throw new Exception('Invalid device credential format');
+        }
+        $validated = self::devicePairingPublicKey($publicKey);
+        $key = self::loadRSAKey($validated['pem']);
+        if (!$key instanceof PublicKey) {
+            throw new Exception('Invalid device public key');
+        }
+        return $key->withPadding(RSA::ENCRYPTION_OAEP)->withHash('sha256')->withMGFHash('sha256')->withLabel('')->encrypt($token);
+    }
+
+    /**
      * AES v2 (authenticated GCM) format constants.
      *
      * Format: meta = version[1] | nonce[12] | salt[32] ; payload = GCM_ciphertext || tag[16].

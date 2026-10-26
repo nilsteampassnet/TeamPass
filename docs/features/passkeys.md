@@ -130,7 +130,7 @@ New users receive the keys of the passkeys they can reach while their encryption
 
 | Symptom | Cause and solution |
 |---|---|
-| The browser's own passkey window opens instead of TeamPass | Passkeys are disabled on the server, the extension setting is off, or — when signing in — TeamPass holds no passkey for this site. The extension silently hands the request to the browser in all these cases |
+| The browser's own passkey window, or another passkey manager, opens instead of TeamPass | Passkeys are disabled on the server, the extension setting is off, the user lacks the API right, or — when signing in — TeamPass holds no passkey for this site. The extension hands the request on without a word to the site, but **Options → Passkeys → Last request from a site** in the extension says why and what to do. When that card is empty, the request never reached TeamPass: reload the tab of the site (tabs opened before the extension was installed or updated are not covered), or the request came from a frame |
 | *The passkey cannot be decrypted with your keys yet* | The keys of the passkey have not reached the user yet — typically just after the item was created or moved by someone else, while the background task distributes the keys. Retry after a moment; if it persists, run **Monitoring → Tools → Restore missing sharekeys** |
 | A user cannot save a passkey | They need the **Update** API right and the right to edit the item in its folder |
 

@@ -520,11 +520,26 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         }
                     }
 
+                    // Nothing can be repaired through an internal account whose key does not open:
+                    // say why first, and offer the one way out.
+                    var tpKeyUsable = data.tp_key_status === 'ok';
+                    if (tpKeyUsable === false) {
+                        html = '<div class="alert alert-danger"><i class="fas fa-triangle-exclamation mr-2"></i>' +
+                            htmlEncode(data.tp_key_message) +
+                            '<p class="mt-2 mb-2">' +
+                            htmlEncode(<?php echo json_encode($lang->get('restore_missing_sharekeys_tp_rebuild_intro'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>) +
+                            '</p>' +
+                            '<button type="button" class="btn btn-light btn-sm tp-action" id="restore_missing_sharekeys_rebuild_tp_but" data-action="restore_missing_sharekeys_rebuild_tp_but">' +
+                            '<i class="fas fa-key mr-2"></i>' +
+                            htmlEncode(<?php echo json_encode($lang->get('restore_missing_sharekeys_tp_rebuild_button'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>) +
+                            '</button></div>' + html;
+                    }
+
                     if (totalMissing === 0 && totalSeedable === 0 && totalPersonalToFix === 0) {
                         html += '<div class="alert alert-success"><i class="fas fa-check mr-2"></i><?php echo $lang->get('restore_missing_sharekeys_no_missing'); ?></div>';
                     } else {
                         html += '<div class="alert alert-info"><i class="fas fa-info-circle mr-2"></i><?php echo $lang->get('restore_missing_sharekeys_found'); ?></div>';
-                        $('#restore_missing_sharekeys_repair_but').prop('disabled', false);
+                        $('#restore_missing_sharekeys_repair_but').prop('disabled', tpKeyUsable === false);
                     }
                     if (totalUnrecoverable > 0) {
                         html += '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle mr-2"></i><?php echo $lang->get('restore_missing_sharekeys_unrecoverable_tip'); ?></div>';
@@ -633,6 +648,54 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     }
                     $('#restore_missing_sharekeys_details').html(html);
                 }
+            );
+        }
+
+        /**
+         * Restore missing sharekeys -> REBUILD THE TP ACCOUNT KEYS
+         * Offered only while its key cannot be opened. Every object then lacks its reference key,
+         * which the next analysis shows and the repair recreates from the selected user's keys.
+         */
+        else if ($(this).data('action') === 'restore_missing_sharekeys_rebuild_tp_but') {
+            var $rebuildTpButton = $(this);
+            launchConfirmDialog(
+                <?php echo json_encode($lang->get('restore_missing_sharekeys_tp_rebuild_button'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+                <?php echo json_encode($lang->get('restore_missing_sharekeys_tp_rebuild_confirm'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+                function() {
+                    $rebuildTpButton.prop('disabled', true);
+                    toastr.remove();
+                    toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+
+                    $.post(
+                        'sources/tools.queries.php', {
+                            type: 'restore_missing_sharekeys-rebuild_tp_keys',
+                            key: '<?php echo $session->get('key'); ?>'
+                        },
+                        function(ret) {
+                            ret = prepareExchangedData(ret, 'decode', '<?php echo $session->get('key'); ?>');
+                            toastr.remove();
+
+                            if (ret.error === true) {
+                                $rebuildTpButton.prop('disabled', false);
+                                toastr.error(
+                                    ret.message,
+                                    '<?php echo $lang->get('caution'); ?>', {
+                                        progressBar: true
+                                    }
+                                );
+                                return;
+                            }
+
+                            // The figures shown were counted against the previous key pair
+                            $('#restore_missing_sharekeys_repair_but').prop('disabled', true);
+                            $('#restore_missing_sharekeys_results').html(
+                                '<div class="alert alert-success"><i class="fas fa-check mr-2"></i>' + htmlEncode(ret.message) + '</div>'
+                            );
+                        }
+                    );
+                },
+                <?php echo json_encode($lang->get('restore_missing_sharekeys_tp_rebuild_button'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+                <?php echo json_encode($lang->get('cancel'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>
             );
         }
 

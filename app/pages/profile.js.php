@@ -79,7 +79,25 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 ?>
 
 
+<script src="./assets/js/device-pairing.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
 <script type='text/javascript'>
+    <?php
+    $devicePairingMessages = [];
+    foreach (['loading', 'network', 'qr_error', 'session_ended', 'expires', 'close', 'cancel', 'unnamed',
+        'no_results', 'no_devices', 'revoke', 'revoke_title', 'revoke_confirm', 'valid_until'] as $deviceMessage) {
+        $devicePairingMessages[$deviceMessage] = $lang->get('device_pairing_' . $deviceMessage);
+    }
+    foreach (['awaiting_scan', 'awaiting_approval', 'approved', 'delivered', 'completed', 'rejected', 'cancelled', 'expired'] as $deviceState) {
+        $devicePairingMessages[$deviceState] = $lang->get('device_pairing_state_' . $deviceState);
+    }
+    $devicePairingMessages['created'] = $lang->get('extension_token_created');
+    $devicePairingMessages['last_used'] = $lang->get('extension_token_last_used');
+    $devicePairingMessages['never'] = $lang->get('extension_token_never_used');
+    ?>
+    if (window.tpDevicePairing) window.tpDevicePairing.mount({
+        key: <?php echo json_encode((string) $session->get('key'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+        messages: <?php echo json_encode($devicePairingMessages, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>
+    });
     <?php if (isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1) : ?>
         // If user api is empty then generate one
         if ($('#profile-user-api-token').text() === '') {

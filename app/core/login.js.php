@@ -346,7 +346,8 @@ declare(strict_types=1);
     $(function() {
         // Do we have to upgrade first
         <?php
-        if (upgradeRequired() === true) {
+        $upgradePending = upgradeRequired();
+        if ($upgradePending === true) {
             ?>
             toastr.error(
                 '<?php echo $lang->get('upgrade_requested_more'); ?>',
@@ -358,7 +359,7 @@ declare(strict_types=1);
                 }
             );
 
-            $('#but_identify_user').prop('disabled', true);
+            $('#but_identify_user, #but_login_with_oauth2, #but_login_with_passkey').prop('disabled', true);
             <?php
         }
         ?>
@@ -426,6 +427,7 @@ declare(strict_types=1);
         var userOauth2Info = <?php echo empty($userOauth2InfoJson) ? 'null' : $userOauth2InfoJson; ?>;
         var autoLogin = parseInt(<?php echo $SETTINGS['oauth2_auto_login'] ?? 0; ?>);
         var loginForm = parseInt(<?php echo str_contains($session->get('user-initial_url') ?? '', 'loginForm') ? 1 : 0; ?>);
+        var upgradePending = <?php echo $upgradePending === true ? 'true' : 'false'; ?>;
         // Case of oauth2 login
         if (userOauth2Info !== null && userOauth2Info['oauth2TokenUsed'] === false) {
             // disable token
@@ -459,8 +461,8 @@ declare(strict_types=1);
                 'userOauth2Info', ''
             );
 
-            // Auto login with OAuth2 provider
-            if (autoLogin === 1 && loginForm === 0) {
+            // Auto login with OAuth2 provider, unless the server would refuse the sign-in anyway
+            if (autoLogin === 1 && loginForm === 0 && upgradePending === false) {
                 launchIdentify(false, '<?php echo isset($nextUrl) === true ? $nextUrl : ''; ?>', false, true);
             }
         }

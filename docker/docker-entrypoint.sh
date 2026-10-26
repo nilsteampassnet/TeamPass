@@ -209,6 +209,25 @@ read_db_version() {
     fi
 }
 
+# Name the version recorded in the database for the log. teampass_version only
+# holds TP_VERSION ("3.2.2"), so the complete release that recorded it
+# (teampass_version_full, "3.2.2.3") is shown instead whenever it belongs to that
+# version. A chain stopped halfway records a newer teampass_version than the
+# release left by the previous run: the short form is kept then, as it is for a
+# database no release has stamped yet.
+db_version_label() {
+    _short="$1"
+    _full=""
+    _helper="/var/www/html/app/scripts/read-db-version.php"
+    if [ -f "$_helper" ]; then
+        _full=$(php "$_helper" --full 2>/dev/null || true)
+    fi
+    case "$_full" in
+        "$_short".*) echo "$_full" ;;
+        *) echo "$_short" ;;
+    esac
+}
+
 # Read the schema level recorded in the database (teampass_misc.upgrade_timestamp).
 #
 # This is the value the application itself tests in upgradeRequired()
@@ -402,7 +421,7 @@ auto_upgrade() {
                 return 0
             fi
 
-            echo -e "${BLUE}🔄 Schema level below ${TP_UPGRADE_MIN_DATE}; replaying the ${IMAGE_VERSION} migration...${NC}"
+            echo -e "${BLUE}🔄 Schema level below ${TP_UPGRADE_MIN_DATE}; replaying the ${IMAGE_VERSION} migration of ${TEAMPASS_VERSION}...${NC}"
 
             if ! run_upgrade_step "$IMAGE_VERSION"; then
                 echo -e "${YELLOW}⚠️  Replay failed - finish it through /install/upgrade.php${NC}"
@@ -411,18 +430,26 @@ auto_upgrade() {
             return 0
         fi
 
-        echo -e "${GREEN}✅ Database is up to date (${DB_VERSION})${NC}"
+        echo -e "${GREEN}✅ Database is up to date ($(db_version_label "$DB_VERSION"))${NC}"
         return 0
     fi
 
-    echo -e "${BLUE}🔄 Upgrading database from ${DB_VERSION} to ${IMAGE_VERSION}...${NC}"
+    echo -e "${BLUE}🔄 Upgrading database from $(db_version_label "$DB_VERSION") to ${TEAMPASS_VERSION}...${NC}"
 
     _steps_applied=0
     for _candidate in $(upgrade_chain); do
         _candidate_number=$(version_to_number "$_candidate")
 
         # Already applied, or newer than the code shipped in this image.
-        if [ "$_candidate_number" -le "$_db_number" ] || [ "$_candidate_number" -gt "$_image_number" ]; then
+        #
+        # The step of the recorded version itself is replayed, not skipped: its
+        # patch releases keep appending to that script, and teampass_version
+        # stores TP_VERSION only. A database recorded at "3.2.2" by 3.2.2.3
+        # lacked everything 3.2.2.4-3.2.2.8 added (nested_tree.deletion_protected
+        # among them), and moving it to a 3.2.3 image applied 3.2.3 alone - which
+        # also refreshed upgrade_timestamp, so the schema floor could no longer
+        # see the gap.
+        if [ "$_candidate_number" -lt "$_db_number" ] || [ "$_candidate_number" -gt "$_image_number" ]; then
             continue
         fi
 
@@ -445,7 +472,7 @@ auto_upgrade() {
         return 0
     fi
 
-    echo -e "${GREEN}✅ Database upgraded to ${IMAGE_VERSION} (${_steps_applied} step(s) applied)${NC}"
+    echo -e "${GREEN}✅ Database upgraded to ${TEAMPASS_VERSION} (${_steps_applied} step(s) applied)${NC}"
 }
 
 # Function to show manual installation instructions
@@ -519,7 +546,7 @@ main() {
             if [ -z "$CURRENT_DB_VERSION" ]; then
                 echo -e "${YELLOW}⚠️  Could not read DB version; keeping install directory so /install/upgrade.php stays reachable${NC}"
             elif [ "$CURRENT_DB_VERSION" != "${TP_VERSION:-${TEAMPASS_VERSION}}" ]; then
-                echo -e "${YELLOW}⏳ Upgrade pending (DB ${CURRENT_DB_VERSION} → ${TP_VERSION:-${TEAMPASS_VERSION}}); keeping install directory for /install/upgrade.php${NC}"
+                echo -e "${YELLOW}⏳ Upgrade pending (DB $(db_version_label "$CURRENT_DB_VERSION") → ${TEAMPASS_VERSION}); keeping install directory for /install/upgrade.php${NC}"
             elif schema_is_stale; then
                 # The versions match but the schema floor does not: this is exactly the
                 # case the version test is blind to. Deleting the install directory here

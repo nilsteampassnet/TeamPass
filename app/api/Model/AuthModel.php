@@ -144,7 +144,7 @@ class AuthModel
      *
      * @param string $login Username
      * @param string $token Extension token (64 hex chars) generated in the web profile
-     * @return array{token:string}|array{error:string,info:string}
+     * @return array{token:string,teampass_version:string,teampass_version_major:string,teampass_version_minor:string}|array{error:string,info:string}
      */
     public function getUserAuthByToken(string $login, string $token): array
     {
@@ -158,14 +158,6 @@ class AuthModel
         // Load config early — needed for the feature gate, bruteforce settings and logging.
         $configManager = new ConfigManager();
         $SETTINGS = $configManager->getAllSettings();
-
-        // Feature must be explicitly enabled by the administrator: either OAuth2-for-API
-        // (OAuth2 settings page) or extension tokens for all auth types (API settings page).
-        $oauth2ApiEnabled = (int) ($SETTINGS['oauth2_api_enabled'] ?? 0) === 1;
-        $tokenAllAuthTypes = (int) ($SETTINGS['extension_token_all_auth_types'] ?? 0) === 1;
-        if ($oauth2ApiEnabled === false && $tokenAllAuthTypes === false) {
-            return ["error" => "Login failed.", "info" => "OAuth2 API access is disabled"];
-        }
 
         if (empty($inputData['login']) === true || empty($inputData['token']) === true) {
             return ["error" => "Login failed.", "info" => "Missing credentials"];
@@ -187,20 +179,30 @@ class AuthModel
 
         $userInfo = getUserCompleteData($inputData['login']);
 
-        // User must exist, be active and have API access enabled. The user must be OAuth2,
-        // unless the administrator allows extension tokens for all auth types.
-        // Uniform message — prevents user enumeration and auth_type probing.
-        $refusalReason = apiAuthAccountRefusalReason($userInfo, true, $tokenAllAuthTypes);
-        if ($refusalReason !== '') {
-            return $this->refuseApiAuth($refusalReason, $inputData['login'], $clientIp, $SETTINGS);
-        }
-
         loadClasses('DB');
+        require_once __DIR__ . '/../../sources/api_device_credentials.php';
+        $SETTINGS = apiDeviceCurrentSettings($SETTINGS);
         $row = DB::queryFirstRow(
-            'SELECT id, user_id, wrapped_private_key, salt, expires_at
+            'SELECT id, user_id, wrapped_private_key, salt, expires_at'
+            . (apiDeviceSchemaReady($SETTINGS) ? ', purpose' : '') . '
              FROM ' . prefixTable('api_tokens') . ' WHERE token_hash = %s',
             hash('sha256', $inputData['token'])
         );
+
+        // Classify only from server-owned credential metadata. External devices use their
+        // own opt-in; legacy extension PATs retain their existing authentication policy.
+        $deviceToken = ($row['purpose'] ?? '') === 'external_device';
+        $oauth2ApiEnabled = (int) ($SETTINGS['oauth2_api_enabled'] ?? 0) === 1;
+        $tokenAllAuthTypes = (int) ($SETTINGS['extension_token_all_auth_types'] ?? 0) === 1;
+        if (!$deviceToken && !$oauth2ApiEnabled && !$tokenAllAuthTypes) {
+            return ["error" => "Login failed.", "info" => "OAuth2 API access is disabled"];
+        }
+        $refusalReason = $deviceToken
+            ? apiAuthAccountRefusalReason($userInfo, false, false)
+            : apiAuthAccountRefusalReason($userInfo, true, $tokenAllAuthTypes);
+        if ($refusalReason !== '') {
+            return $this->refuseApiAuth($refusalReason, $inputData['login'], $clientIp, $SETTINGS);
+        }
 
         $tokenValid = (
             $row !== null
@@ -212,25 +214,51 @@ class AuthModel
             return $this->refuseApiAuth('api_invalid_token', $inputData['login'], $clientIp, $SETTINGS);
         }
 
+        try {
+            if (($row['purpose'] ?? '') === 'external_device') {
+                if (!apiDeviceIsHttps($_SERVER, $SETTINGS)) {
+                    return $this->refuseApiAuth('api_invalid_token', $inputData['login'], $clientIp, $SETTINGS);
+                }
+                $result = apiDeviceAuthenticate(
+                    (int) $userInfo['id'], (int) $row['id'], $SETTINGS,
+                    function (array $lockedToken, array $freshUser) use ($inputData, $SETTINGS): array {
+                        return $this->authenticateTokenRow($lockedToken, $freshUser, $inputData['token'], $SETTINGS, (int) $lockedToken['id']);
+                    }
+                );
+                return $result ?? $this->refuseApiAuth('api_invalid_token', $inputData['login'], $clientIp, $SETTINGS);
+            }
+            return $this->authenticateTokenRow($row, $userInfo, $inputData['token'], $SETTINGS);
+        } catch (ApiTokenKeyException $e) {
+            // The source transaction has rolled back. Counting/logging inside it would be undone.
+            return $this->refuseApiAuth($e->getMessage(), $inputData['login'], $clientIp, $SETTINGS);
+        }
+    }
+
+    /**
+     * Unwrap an already-validated PAT and issue a source-linked JWT for external devices.
+     * @return array{token:string,teampass_version:string,teampass_version_major:string,teampass_version_minor:string}|array{error:string,info:string}
+     */
+    private function authenticateTokenRow(array $row, array $userInfo, string $token, array $SETTINGS, ?int $sourceTokenId = null): array
+    {
         // Derive the wrapping key from the token and unwrap the private key.
         require_once API_ROOT_PATH . '/inc/encryption_utils.php';
-        $wrappingKey = hash_hkdf('sha256', $inputData['token'], 32, 'teampass-extension-token-v1', (string) hex2bin((string) $row['salt']));
+        $wrappingKey = hash_hkdf('sha256', $token, 32, 'teampass-extension-token-v1', (string) hex2bin((string) $row['salt']));
         $privateKeyClear = decrypt_with_session_key((string) $row['wrapped_private_key'], $wrappingKey);
 
         if ($privateKeyClear === false || $privateKeyClear === '') {
-            return $this->refuseApiAuth('api_token_decrypt_failed', $inputData['login'], $clientIp, $SETTINGS);
+            throw new ApiTokenKeyException('api_token_decrypt_failed');
         }
 
         // The token carries the private key it was issued with. After the user's keys were
         // regenerated it unwraps an obsolete key: refuse it rather than issue a JWT that can
         // decrypt nothing.
         if ($this->privateKeyMatchesPublicKey($privateKeyClear, (string) ($userInfo['public_key'] ?? '')) === false) {
-            return $this->refuseApiAuth('api_token_key_outdated', $inputData['login'], $clientIp, $SETTINGS);
+            throw new ApiTokenKeyException('api_token_key_outdated');
         }
 
         DB::update(prefixTable('api_tokens'), ['last_used_at' => time()], 'id = %i', (int) $row['id']);
 
-        return $this->issueJwtForUser($userInfo, $privateKeyClear, (string) $userInfo['login'], $SETTINGS);
+        return $this->issueJwtForUser($userInfo, $privateKeyClear, (string) $userInfo['login'], $SETTINGS, $sourceTokenId);
     }
     //end getUserAuthByToken
 
@@ -248,10 +276,13 @@ class AuthModel
      * @param array<string,mixed> $SETTINGS        Application settings
      * @return array{token:string,teampass_version:string,teampass_version_major:string,teampass_version_minor:string}|array{error:string,info:string}
      */
-    private function issueJwtForUser(array $userInfo, string $privateKeyClear, string $loginForJwt, array $SETTINGS): array
+    private function issueJwtForUser(array $userInfo, string $privateKeyClear, string $loginForJwt, array $SETTINGS, ?int $sourceTokenId = null): array
     {
-        // Update user's key_tempo
-        $keyTempo = getOrRotateKeyTempo($userInfo['id'], 3600);
+        // Device JWTs own their API session key. Rotating the user's web key here would
+        // disconnect the browser that is waiting for pairing completion after an hour.
+        $keyTempo = $sourceTokenId === null
+            ? getOrRotateKeyTempo($userInfo['id'], 3600)
+            : bin2hex(random_bytes(16));
 
         // Generate a unique session key for this API session (256 bits / 32 bytes).
         $sessionKey = random_bytes(32);
@@ -290,7 +321,7 @@ class AuthModel
         $issuedAt = time();
         $jti = bin2hex(random_bytes(16));
         $expiresAt = $issuedAt + min(max((int) ($SETTINGS['api_token_duration'] ?? 60), 1), 1440) * 60;
-        DB::insert(prefixTable('api_sessions'), [
+        $apiSession = [
             'user_id' => (int) $userInfo['id'],
             'jti' => $jti,
             'key_tempo' => (string) $keyTempo,
@@ -299,7 +330,11 @@ class AuthModel
             'user_agent' => mb_substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255),
             'created_at' => $issuedAt,
             'expires_at' => $expiresAt,
-        ]);
+        ];
+        if ($sourceTokenId !== null) {
+            $apiSession['source_token_id'] = $sourceTokenId;
+        }
+        DB::insert(prefixTable('api_sessions'), $apiSession);
 
         // Opportunistic cleanup: drop sessions expired for more than 24 hours
         DB::delete(prefixTable('api_sessions'), 'expires_at < %i', $issuedAt - 86400);
@@ -376,6 +411,7 @@ class AuthModel
             (int) ($SETTINGS['api_token_duration'] ?? 60),
             (int) ($SETTINGS['pwd_maximum_length'] ?? 60),
             (int) ($SETTINGS['maintenance_mode'] ?? 0),
+            $sourceTokenId,
         );
 
         // Expose the server version to API clients (the browser extension forwards it
@@ -603,7 +639,8 @@ class AuthModel
         int $allowed_to_delete,
         int $api_token_duration,
         int $pwd_maximum_length,
-        int $maintenance_mode
+        int $maintenance_mode,
+        ?int $sourceTokenId = null
     ): array
     {
         // Load config
@@ -644,6 +681,11 @@ class AuthModel
             'pwd_maximum_length' => $pwd_maximum_length,
             'maintenance_mode' => $maintenance_mode,
         ];
+
+        if ($sourceTokenId !== null) {
+            // A source-bound JWT must never fall back to a historical single-row session.
+            $payload['source_token_id'] = $sourceTokenId;
+        }
 
         include_once API_ROOT_PATH . '/inc/jwt_utils.php';
         return ['token' => JWT::encode($payload, getApiJwtSigningKey(), 'HS256')];
