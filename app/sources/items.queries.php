@@ -4560,15 +4560,18 @@ switch ($inputData['type']) {
                 );
                 $otpCode = $otp->now();
                 $otpExpiresIn = $otp->expiresIn();
+                $otpPeriod = $otp->getPeriod();
             } catch (Throwable $e) {
                 $error = true;
                 $otpCode = '';
                 $otpExpiresIn = '';
+                $otpPeriod = '';
                 $message = $e->getMessage();
             }
         } else {
             $otpCode = '';
             $otpExpiresIn = '';
+            $otpPeriod = '';
         }
         
         // deepcode ignore ServerLeak: Data is encrypted before being sent
@@ -4578,6 +4581,7 @@ switch ($inputData['type']) {
                 'message' => isset($message) === true ? $message : '',
                 'otp_code' => $otpCode,
                 'otp_expires_in' => $otpExpiresIn,
+                'otp_period' => $otpPeriod,
                 'otp_enabled' => (int) ($dataItem['enabled'] ?? 0),
             ),
             'encode'

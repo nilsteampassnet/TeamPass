@@ -2378,35 +2378,52 @@ a.tp-item-view-chip:focus {
     letter-spacing: .03em;
     word-break: break-all;
 }
-/* Shown password: a bar along the bottom of the row empties until it is masked again
-   (its duration is set by items.js.php from the password_overview_delay setting) */
-#card-item-row-pwd {
-    position: relative;
+/* Countdown ring: how long a shown password stays visible, how long an OTP code stays valid.
+   items.js.php sets the period and the time already gone; the ring turns red on its last fifth. */
+.tp-item-view-timer {
+    --tp-item-view-timer-color: #007bff;
+    --tp-item-view-timer-ending: #dc3545;
+    --tp-item-view-timer-track: #e3e7eb;
+    flex: 0 0 auto;
+    width: 1.125rem;
+    height: 1.125rem;
+    transform: rotate(-90deg);
 }
-.tp-item-view-countdown {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    height: 3px;
-    background-color: #ffc107;
-    opacity: 0;
-    transform: scaleX(0);
-    transform-origin: left center;
-    pointer-events: none;
+.dark-mode .tp-item-view-timer {
+    --tp-item-view-timer-color: #3f9cff;
+    --tp-item-view-timer-ending: #ff6b78;
+    --tp-item-view-timer-track: #4b545c;
 }
-.tp-item-view-countdown.is-running {
-    opacity: 1;
-    animation-name: tp-item-view-countdown;
-    animation-timing-function: linear;
-    animation-fill-mode: forwards;
+.tp-item-view-timer-track,
+.tp-item-view-timer-arc {
+    fill: none;
+    stroke-width: 2.5;
 }
-@keyframes tp-item-view-countdown {
-    from {
-        transform: scaleX(1);
+.tp-item-view-timer-track {
+    stroke: var(--tp-item-view-timer-track);
+}
+.tp-item-view-timer-arc {
+    stroke: var(--tp-item-view-timer-color);
+    stroke-dasharray: 100;
+    stroke-linecap: round;
+}
+.tp-item-view-timer.is-running .tp-item-view-timer-arc {
+    animation: tp-item-view-timer var(--tp-item-view-timer-period, 1s) linear var(--tp-item-view-timer-elapsed, 0s) forwards;
+}
+@keyframes tp-item-view-timer {
+    0% {
+        stroke: var(--tp-item-view-timer-color);
+        stroke-dashoffset: 0;
     }
-    to {
-        transform: scaleX(0);
+    78% {
+        stroke: var(--tp-item-view-timer-color);
+    }
+    82% {
+        stroke: var(--tp-item-view-timer-ending);
+    }
+    100% {
+        stroke: var(--tp-item-view-timer-ending);
+        stroke-dashoffset: 100;
     }
 }
 #card-item-opt_code {
@@ -2416,14 +2433,6 @@ a.tp-item-view-chip:focus {
 }
 .tp-item-view-otp {
     font-size: 1.0625rem;
-}
-.tp-item-view-otp-timer {
-    display: inline-flex;
-    align-items: center;
-}
-/* countdown360 draws an inline canvas, which would sit on the text baseline */
-.tp-item-view-otp-timer > canvas {
-    display: block;
 }
 .tp-item-view-tools {
     display: flex;

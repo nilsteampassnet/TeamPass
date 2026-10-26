@@ -1253,7 +1253,7 @@ require __DIR__ . '/renewal.preview.js.php';
                     passwordTimeout = setTimeout(() => {
                         hidePassword($icon, $pwdField);
                     }, passwordOverviewDelay);
-                    startPasswordCountdown(passwordOverviewDelay);
+                    startItemViewTimer(document.getElementById('card-item-pwd-timer'), passwordOverviewDelay / 1000, 0);
                 }
             });
         } else {
@@ -1265,7 +1265,7 @@ require __DIR__ . '/renewal.preview.js.php';
 
     function hidePassword($icon, $pwdField) {
         isPasswordVisible = false;
-        stopPasswordCountdown();
+        stopItemViewTimer(document.getElementById('card-item-pwd-timer'));
         $icon
             .removeClass('fa-solid fa-eye-slash text-warning')
             .addClass('fa-regular fa-eye');
@@ -1280,7 +1280,7 @@ require __DIR__ . '/renewal.preview.js.php';
 
         isPasswordVisible = false;
         clearTimeout(passwordTimeout);
-        stopPasswordCountdown();
+        stopItemViewTimer(document.getElementById('card-item-pwd-timer'));
 
         $icon
             .removeClass('fa-solid fa-eye-slash text-warning')
@@ -1294,30 +1294,48 @@ require __DIR__ . '/renewal.preview.js.php';
     }
 
     /**
-     * Empty the bar under the password row over the time the password stays shown.
+     * Markup of a countdown ring of the item view (shown password, OTP code).
      *
-     * @param {number} duration - Milliseconds before the password is masked again
-     * @return {void}
+     * @param {string} id - Id of the ring
+     * @return {string}
      */
-    function startPasswordCountdown(duration) {
-        const bar = document.getElementById('card-item-pwd-countdown');
-        if (bar === null) {
-            return;
-        }
-        bar.classList.remove('is-running');
-        bar.style.animationDuration = duration + 'ms';
-        // Reading the layout restarts the animation when the password is shown again
-        void bar.offsetWidth;
-        bar.classList.add('is-running');
+    function itemViewTimerHtml(id) {
+        return '<svg class="tp-item-view-timer hidden" id="' + id + '" viewBox="0 0 18 18" aria-hidden="true">' +
+            '<circle class="tp-item-view-timer-track" cx="9" cy="9" r="7"></circle>' +
+            '<circle class="tp-item-view-timer-arc" cx="9" cy="9" r="7" pathLength="100"></circle></svg>';
     }
 
     /**
-     * Remove the countdown bar of the password row.
+     * Show a countdown ring and empty it over a whole period, starting from the time already gone.
      *
+     * @param {Element|null} ring    - The .tp-item-view-timer element
+     * @param {number}       period  - Seconds for the ring to empty completely
+     * @param {number}       elapsed - Seconds of the period already gone
      * @return {void}
      */
-    function stopPasswordCountdown() {
-        $('#card-item-pwd-countdown').removeClass('is-running');
+    function startItemViewTimer(ring, period, elapsed) {
+        if (ring === null || period <= 0) {
+            return;
+        }
+        ring.classList.remove('is-running', 'hidden');
+        ring.style.setProperty('--tp-item-view-timer-period', period + 's');
+        ring.style.setProperty('--tp-item-view-timer-elapsed', '-' + Math.min(Math.max(elapsed, 0), period) + 's');
+        // Reading the layout restarts the animation when the ring is reused
+        void ring.getBoundingClientRect();
+        ring.classList.add('is-running');
+    }
+
+    /**
+     * Hide a countdown ring of the item view.
+     *
+     * @param {Element|null} ring - The .tp-item-view-timer element
+     * @return {void}
+     */
+    function stopItemViewTimer(ring) {
+        if (ring !== null) {
+            ring.classList.remove('is-running');
+            ring.classList.add('hidden');
+        }
     }
 
 
@@ -8457,7 +8475,7 @@ require __DIR__ . '/renewal.preview.js.php';
                             otpDigits;
                         $('#card-item-opt_code').html(
                             '<span class="tp-item-view-secret tp-item-view-otp">' + htmlEncode(otpShown) + '</span>' +
-                            '<span class="tp-item-view-otp-timer" id="countdown_otp"></span>'
+                            itemViewTimerHtml('countdown_otp')
                         );
                         $('#card-item-opt_code_error').html('');
                         $('#card-item-otp-tools').html(
@@ -8466,18 +8484,10 @@ require __DIR__ . '/renewal.preview.js.php';
                         );
                         $('#card-item-row-otp').removeClass('hidden');
                         
-                        // show countdown
-                        $("#countdown_otp").countdown360({
-                            radius      : 10,
-                            seconds     : data.otp_expires_in,
-                            fillStyle   : '#56bbd9',
-                            strokeStyle : '#007bff',
-                            fontSize    : 11,
-                            fontColor   : '#FFFFFF',
-                            label: false,
-                            autostart: false,
-                        }).start();
-                        
+                        // Same ring as the shown password: a full turn is the code period
+                        const otpExpiresIn = parseInt(data.otp_expires_in, 10);
+                        const otpPeriod = parseInt(data.otp_period, 10) > 0 ? parseInt(data.otp_period, 10) : otpExpiresIn;
+                        startItemViewTimer(document.getElementById('countdown_otp'), otpPeriod, otpPeriod - otpExpiresIn);
 
                         // Prepare Clipboard for OTP Code                        
                         document.getElementById('clipboard_otpcode').addEventListener('click', async function() {

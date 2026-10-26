@@ -1394,6 +1394,8 @@ if ((int) $session_user_admin === 1) {
                                 <span class="tp-item-view-key"><?php echo $lang->get('pw'); ?></span>
                                 <span class="tp-item-view-value">
                                     <span id="card-item-pwd" class="tp-item-view-secret pointer"><span class="skeleton-line skeleton-md"></span></span>
+                                    <!-- Empties while the password is shown, until it is masked again -->
+                                    <svg class="tp-item-view-timer hidden" id="card-item-pwd-timer" viewBox="0 0 18 18" aria-hidden="true"><circle class="tp-item-view-timer-track" cx="9" cy="9" r="7"></circle><circle class="tp-item-view-timer-arc" cx="9" cy="9" r="7" pathLength="100"></circle></svg>
                                     <span id="item-hibp-badge" class="d-inline-block hidden"></span>
                                     <span id="card-item-pwd-security-badge" class="badge hidden"></span>
                                 </span>
@@ -1409,8 +1411,6 @@ if ((int) $session_user_admin === 1) {
                                     </button>
                                 </span>
                                 <input id="hidden-item-pwd" type="hidden">
-                                <!-- Empties while the password is shown, until it is masked again -->
-                                <span class="tp-item-view-countdown" id="card-item-pwd-countdown" aria-hidden="true"></span>
                             </div>
                             <div class="tp-item-view-row hidden" id="card-item-row-otp">
                                 <span class="tp-item-view-key"><?php echo $lang->get('otp_code'); ?></span>
