@@ -66,6 +66,7 @@ require_once __DIR__ . '/user_keys_task_logic.php';
 require_once __DIR__ . '/secret_settings_logic.php';
 require_once __DIR__ . '/sharekeys_repair_logic.php';
 require_once __DIR__ . '/main_queries_logic.php';
+require_once __DIR__ . '/attachment_pending_logic.php';
 // Directory access shared by the login and by the LDAP settings page test.
 require_once __DIR__ . '/ldap.functions.php';
 require_once __DIR__ . '/password_strength.functions.php';
