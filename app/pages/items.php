@@ -132,8 +132,6 @@ if ((int) $session_user_admin === 1) {
     <div class="row hidden form-item">
         <div class="col-12">
 
-            <div id="form-item-renewal-notice" class="alert alert-info hidden" role="status" aria-live="polite"></div>
-
             <form id="form-item" class="needs-validation" novalidate onsubmit="return false;">
             <div class="card">
                 <!-- Action bar: stays below the fixed navbar while the form scrolls -->
@@ -141,18 +139,14 @@ if ((int) $session_user_admin === 1) {
                     <button type="button" class="btn btn-secondary but-back" id="but_back_top_left">
                         <i class="fa-solid fa-arrow-left"></i>
                     </button>
-                    <!-- ICON: shown in the title, its field opens on click -->
+                    <!-- ICON: shown in the title, picked from the Font Awesome Free icons on click -->
                     <div class="dropdown tp-item-form-icon">
                         <button type="button" class="tp-item-form-icon-button" id="form-item-icon-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="<?php echo $lang->get('icon'); ?>" aria-label="<?php echo $lang->get('icon'); ?>">
                             <span id="form-item-icon-show" class="clear-me-html"></span><i class="fa-solid fa-icons tp-item-form-icon-default" aria-hidden="true"></i>
                         </button>
-                        <div class="dropdown-menu tp-item-form-icon-menu" aria-labelledby="form-item-icon-toggle">
-                            <label for="form-item-icon" class="mb-1"><?php echo $lang->get('icon'); ?></label>
-                            <input id="form-item-icon" type="text" class="form-control form-item-control purify" data-field-name="icon" data-change-ongoing="">
-                            <small class="form-text text-muted">
-                                <?php echo $lang->get('fontawesome_icon_tip'); ?><a href="<?php echo FONTAWESOME_URL;?>" target="_blank"><i class="fa-solid fa-external-link-alt ml-1"></i></a>
-                            </small>
-                        </div>
+                        <input id="form-item-icon" type="hidden" class="form-item-control purify" data-field-name="icon">
+                        <!-- The icon picker (assets/js/icon-picker.js) moves in when the menu opens -->
+                        <div class="dropdown-menu tp-item-form-icon-menu" aria-labelledby="form-item-icon-toggle"></div>
                     </div>
                     <!-- LABEL: edited in place as the form title -->
                     <div class="tp-item-form-title">
@@ -321,6 +315,8 @@ if ((int) $session_user_admin === 1) {
                                                 </div>
                                                 <i class="fa-solid fa-circle-question text-muted ml-2 infotip" title="<?php echo $lang->get('item_renewal_help'); ?>" aria-label="<?php echo $lang->get('item_renewal_help'); ?>" role="img"></i>
                                             </div>
+                                            <!-- Deadline that applies to this item (folder or own policy), filled by assets/js/renewal-preview.js -->
+                                            <div id="form-item-renewal-notice" class="tp-renewal-compact small hidden mt-1" role="status" aria-live="polite"></div>
                                         </div>
                                         <!-- OTP FOR ITEM: secret first, TOTP profile folded behind its summary -->
                                         <div class="form-group" role="group" aria-labelledby="form-item-otp-title">
@@ -388,10 +384,14 @@ if ((int) $session_user_admin === 1) {
                                             <label for="form-item-folder" class="mb-1"><i class="fa-solid fa-folder fa-fw mr-1 text-muted" aria-hidden="true"></i><?php echo $lang->get('folder'); ?></label>
                                             <select id="form-item-folder" class="form-control form-item-control select2-hidden-accessible select2 no-root" style="width:100%;" data-change-ongoing=""></select>
                                         </div>
-                                        <!-- TAGS -->
+                                        <!-- TAGS: one chip per tag; the hidden field keeps the space separated list the server stores -->
                                         <div class="form-group">
-                                            <label for="form-item-tags" class="mb-1"><i class="fa-solid fa-tags fa-fw mr-1 text-muted" aria-hidden="true"></i><?php echo $lang->get('tags'); ?></label>
-                                            <input id="form-item-tags" type="text" class="form-control form-item-control autocomplete purify" data-change-ongoing="" data-field-name="tags">
+                                            <label for="form-item-tags-entry" class="mb-1"><i class="fa-solid fa-tags fa-fw mr-1 text-muted" aria-hidden="true"></i><?php echo $lang->get('tags'); ?></label>
+                                            <div class="form-control tp-tags-field" id="form-item-tags-field">
+                                                <span class="tp-tags-list" id="form-item-tags-list"></span>
+                                                <input id="form-item-tags-entry" type="text" class="tp-tags-entry" maxlength="30" autocomplete="off" spellcheck="false" placeholder="<?php echo $lang->get('item_tags_placeholder'); ?>">
+                                            </div>
+                                            <input id="form-item-tags" type="hidden" class="form-item-control purify" data-field-name="tags">
                                         </div>
                                     </div>
                                 </div>
@@ -969,19 +969,14 @@ if ((int) $session_user_admin === 1) {
                             </select>
                         </div>
                             -->
+                        <!-- Folder icons: the icon picker adds its button and area around each field -->
                         <div class="form-group">
-                            <label><?php echo $lang->get('icon'); ?></label>
+                            <label for="form-folder-add-icon"><?php echo $lang->get('icon'); ?></label>
                             <input type="text" class="form-control form-folder-control" id="form-folder-add-icon">
-                            <small class='form-text text-muted'>
-                                <?php echo $lang->get('fontawesome_icon_tip'); ?><a href="<?php echo FONTAWESOME_URL;?>" target="_blank"><i class="fa-solid fa-external-link-alt ml-1"></i></a>
-                            </small>
                         </div>
                         <div class="form-group">
-                            <label><?php echo $lang->get('icon_on_selection'); ?></label>
+                            <label for="form-folder-add-icon-selected"><?php echo $lang->get('icon_on_selection'); ?></label>
                             <input type="text" class="form-control form-folder-control" id="form-folder-add-icon-selected">
-                            <small class='form-text text-muted'>
-                                <?php echo $lang->get('fontawesome_icon_tip'); ?><a href="<?php echo FONTAWESOME_URL;?>" target="_blank"><i class="fa-solid fa-external-link-alt ml-1"></i></a>
-                            </small>
                         </div>
                     </div>
                     <div class="card-footer">

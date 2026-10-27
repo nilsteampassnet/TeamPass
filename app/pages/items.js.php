@@ -93,6 +93,7 @@ require_once __DIR__ . '/../includes/libraries/bip39/loader.php';
 $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
 require __DIR__ . '/renewal.preview.js.php';
+require __DIR__ . '/icon.picker.js.php';
 ?>
 
 
@@ -1153,18 +1154,17 @@ require __DIR__ . '/renewal.preview.js.php';
     $('#limited-search').prop('checked', <?php echo (int) $SETTINGS['limited_search_default'] === 1 ? true : false; ?>);
     $('#table_teampass_items_list').toggleClass('tp-show-corrupted-items', showCorruptedItemsInList === true);
 
-    // Live preview of the item icon in the form title; an empty value shows the default icon
-    $(document).on('input blur', '#form-item-icon', function() {
-        const icon = String($(this).val() || '').trim();
-        $('#form-item-icon-show').html(icon === '' ? '' : '<i class="fas ' + htmlEncode(icon) + '"></i>');
+    // Icon pickers (assets/js/icon-picker.js): the item icon in the form title, the folder icons
+    tpIconPicker.attach({
+        input: '#form-item-icon',
+        toggle: '#form-item-icon-toggle',
+        host: '.tp-item-form-icon-menu',
+        preview: '#form-item-icon-show',
+        suggestions: 'item',
+        onChange: refreshItemFormUnsavedBadge
     });
-    // The icon field lives in a dropdown: keep it open while the user works in it
-    $('.tp-item-form-icon-menu').on('click', function(event) {
-        event.stopPropagation();
-    });
-    $('.tp-item-form-icon').on('shown.bs.dropdown', function() {
-        $('#form-item-icon').trigger('focus');
-    });
+    tpIconPicker.attachField('#form-folder-add-icon', 'folder');
+    tpIconPicker.attachField('#form-folder-add-icon-selected', 'folder');
 
     // Copy buttons of the item view (login, email, url, custom fields). Bound once: the former
     // per-item binding added one more listener, hence one more copy, at every item shown.
@@ -1479,6 +1479,7 @@ require __DIR__ . '/renewal.preview.js.php';
                 .val('')
                 .focus();
             $('#form-folder-add-icon-selected, #form-folder-add-icon').val('');
+            tpIconPicker.refresh();
             // Preset complexity to the parent folder's minimal level
             // (the server rejects a lower value)
             if (isNaN(parseInt(store.get('teampassItem').folderComplexity)) === false) {
@@ -1535,6 +1536,7 @@ require __DIR__ . '/renewal.preview.js.php';
                 .val(store.get('teampassApplication').selectedFolderIcon);
             $('#form-folder-add-icon-selected')
                 .val(store.get('teampassApplication').selectedFolderIconSelected);
+            tpIconPicker.refresh();
             // Set type of action for the form
             $('#form-folder-add').data('action', 'update');
 
@@ -1708,7 +1710,8 @@ require __DIR__ . '/renewal.preview.js.php';
                 $('.item-details-card').find('.form-control').val('');
                 $('.clear-me-html').html('');
                 resetItemAttachmentsUpload();
-                $('.form-item-control').val('');
+                $('.form-item-control, #form-item-tags-entry').val('');
+                renderItemFormTags();
                 // The blanket reset above also empties the TOTP profile: restore its defaults
                 $('#form-item-otpAlgorithm').val('sha1');
                 $('#form-item-otpDigits').val('6');
@@ -4931,6 +4934,8 @@ require __DIR__ . '/renewal.preview.js.php';
      * Save item changes
      */
     $('#form-item-button-save').click(function() {
+        // A tag still being typed (Ctrl+S keeps the focus in the entry) belongs to the save
+        commitItemFormTagsEntry();
         var arrayQuery = [],
             originalFolderId = $('#form-item-folder').val(),
             itemsList = [],
@@ -5029,7 +5034,7 @@ require __DIR__ . '/renewal.preview.js.php';
 
         // Do checks
         if (arrayQuery.length > 0 || userDidAChange === true) {
-            var reg = new RegExp("[.|,|;|:|!|=|+|-|*|/|#|\"|'|&]");
+            var reg = itemTagForbiddenCharacters;
 
             // Sanitize text fields
             purifyRes = fieldDomPurifierLoop('#form-item .purify');
@@ -5492,41 +5497,148 @@ require __DIR__ . '/renewal.preview.js.php';
     //->
 
 
-    //autocomplete for TAGS
-    $("#form-item-tags")
-        //.focus()
-        .bind("keydown", function(event) {
-            if (event.keyCode === $.ui.keyCode.TAB &&
-                $(this).data("autocomplete").menu.active) {
+    // TAGS of the item form, one chip per tag. #form-item-tags keeps the space separated, lower
+    // case list the server stores (30 characters per tag, see the tags table).
+    // Characters refused in a tag, also checked when the item is saved
+    const itemTagForbiddenCharacters = new RegExp("[.|,|;|:|!|=|+|-|*|/|#|\"|'|&]");
+
+    /**
+     * Tags currently held by the item form.
+     *
+     * @return {Array<string>}
+     */
+    function itemFormTags() {
+        return String($('#form-item-tags').val() || '').split(/\s+/).filter(tag => tag !== '');
+    }
+
+    /**
+     * Show the tags of the item form as chips, each with its remove button.
+     *
+     * @return {void}
+     */
+    function renderItemFormTags() {
+        const list = $('#form-item-tags-list').empty();
+        itemFormTags().forEach(function(tag) {
+            $('<span class="tp-tag"></span>')
+                .append($('<span class="tp-tag-text"></span>').text(tag))
+                .append(
+                    $('<button type="button" class="tp-tag-remove"></button>')
+                        .attr({
+                            'data-tag': tag,
+                            'title': <?php echo json_encode($lang->get('delete'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+                            'aria-label': <?php echo json_encode($lang->get('delete'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?> + ' ' + tag
+                        })
+                        .append('<i class="fa-solid fa-xmark" aria-hidden="true"></i>')
+                )
+                .appendTo(list);
+        });
+    }
+
+    /**
+     * Store the tags of the item form and flag the change.
+     *
+     * @param {Array<string>} tags
+     * @return {void}
+     */
+    function setItemFormTags(tags) {
+        $('#form-item-tags').val(tags.join(' ')).trigger('change');
+        renderItemFormTags();
+        refreshItemFormUnsavedBadge();
+    }
+
+    /**
+     * Turn what was typed in the tag entry into chips. Spaces, commas and semicolons separate
+     * tags; a tag holding a refused character stays in the entry with a warning.
+     *
+     * @return {void}
+     */
+    function commitItemFormTagsEntry() {
+        const entry = $('#form-item-tags-entry');
+        const tags = itemFormTags();
+        const refused = [];
+        String(entry.val() || '').toLowerCase().split(/[\s,;]+/).forEach(function(tag) {
+            tag = tag.substring(0, 30);
+            if (tag === '') {
+                return;
+            }
+            if (itemTagForbiddenCharacters.test(tag) === true) {
+                refused.push(tag);
+            } else if (tags.indexOf(tag) === -1) {
+                tags.push(tag);
+            }
+        });
+        entry.val(refused.join(' '));
+        if (tags.join(' ') !== itemFormTags().join(' ')) {
+            setItemFormTags(tags);
+        }
+        if (refused.length > 0) {
+            toastr.remove();
+            toastr.warning(
+                <?php echo json_encode($lang->get('error_tags'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+                '', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
+        }
+    }
+
+    $('#form-item-tags-entry')
+        .on('keydown', function(event) {
+            if (event.key === 'Enter' || event.key === ' ' || event.key === ',' || event.key === ';') {
+                // Enter on a highlighted suggestion is the autocomplete's own select
+                if (event.key === 'Enter' && $(this).autocomplete('widget').find('.ui-state-active').is(':visible')) {
+                    return;
+                }
                 event.preventDefault();
+                commitItemFormTagsEntry();
+                $(this).autocomplete('close');
+            } else if (event.key === 'Backspace' && $(this).val() === '') {
+                // Backspace in an empty entry takes back the last tag
+                const tags = itemFormTags();
+                if (tags.length > 0) {
+                    tags.pop();
+                    setItemFormTags(tags);
+                }
             }
         })
+        .on('blur', function() {
+            commitItemFormTagsEntry();
+        })
         .autocomplete({
+            minLength: 1,
             source: function(request, response) {
-                $.getJSON("sources/items.queries.php?type=autocomplete_tags&t=1", {
-                    term: extractLast(request.term)
-                }, response);
+                $.getJSON('sources/items.queries.php?type=autocomplete_tags&t=1', {
+                    term: request.term
+                }, function(data) {
+                    // Suggest only the tags the item does not hold yet
+                    const current = itemFormTags();
+                    response((Array.isArray(data) ? data : [])
+                        .map(tag => htmlDecode(String(tag)))
+                        .filter(tag => current.indexOf(tag) === -1));
+                });
             },
             focus: function() {
                 // prevent value inserted on focus
                 return false;
             },
-            search: function() {
-                var term = extractLast(this.value);
-            },
             select: function(event, ui) {
-                var terms = split(this.value);
-                // remove the current input
-                terms.pop();
-                // add the selected item
-                terms.push(ui.item.value);
-                // add placeholder to get the comma-and-space at the end
-                terms.push("");
-                this.value = terms.join(" ");
-
+                $(this).val(ui.item.value);
+                commitItemFormTagsEntry();
                 return false;
             }
         });
+    $('#form-item-tags-list').on('click', '.tp-tag-remove', function() {
+        const removed = this.getAttribute('data-tag');
+        setItemFormTags(itemFormTags().filter(tag => tag !== removed));
+        $('#form-item-tags-entry').trigger('focus');
+    });
+    // A click in the field, beside the chips, goes to the entry
+    $('#form-item-tags-field').on('click', function(event) {
+        if (event.target === this || event.target.id === 'form-item-tags-list') {
+            $('#form-item-tags-entry').trigger('focus');
+        }
+    });
 
     // Warn in case of limited search
     $(document).on('click', '#limited-search', function() {
@@ -7758,8 +7870,10 @@ require __DIR__ . '/renewal.preview.js.php';
                     setItemRenewalPeriod(data.renewal_period || 0);
                     refreshItemRenewalNotice(data.folder);
                     $('#form-item-tags').val(htmlDecode(data.tags.join(' ')));
+                    $('#form-item-tags-entry').val('');
+                    renderItemFormTags();
                     $('#form-item-icon').val(data.fa_icon);
-                    $('#form-item-icon-show').html(itemIcon);
+                    tpIconPicker.refresh('#form-item-icon');
 
                     syncItemPasswordComplexity('');
 
@@ -7838,16 +7952,21 @@ require __DIR__ . '/renewal.preview.js.php';
                     //prepare nice list of users / groups
                     var html_users = '',
                         html_groups = '',
-                        html_tags = '',
                         html_kbs = '';
 
+                    // Tags come back decoded by the purifier: text sinks only, and no inline handler
+                    // (a tag such as "');alert(1);//" used to run in the onclick attribute)
+                    const tagsContainer = $('#card-item-tags').empty();
                     $(data.tags).each(function(index, value) {
-                        html_tags += '<span class="tp-item-view-chip is-success pointer tip" title="<?php echo $lang->get('list_items_with_tag'); ?>" onclick="searchItemsWithTags(\'' + value + '\')"><i class="fa-solid fa-hashtag fa-sm" aria-hidden="true"></i><span class="item_tag">' + value + '</span></span>';
+                        const tag = htmlDecode(String(value));
+                        $('<span class="tp-item-view-chip is-success pointer tip card-item-tag"></span>')
+                            .attr({'title': <?php echo json_encode($lang->get('list_items_with_tag'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>, 'data-tag': tag})
+                            .append('<i class="fa-solid fa-hashtag fa-sm" aria-hidden="true"></i>')
+                            .append($('<span class="item_tag"></span>').text(tag))
+                            .appendTo(tagsContainer);
                     });
-                    if (html_tags === '') {
-                        $('#card-item-tags').html('<?php echo $lang->get('none'); ?>');
-                    } else {
-                        $('#card-item-tags').html(html_tags);
+                    if (tagsContainer.children().length === 0) {
+                        tagsContainer.text(<?php echo json_encode($lang->get('none'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>);
                     }
 
                     $(data.links_to_kbs || []).each(function(index, value) {
@@ -10143,6 +10262,9 @@ require __DIR__ . '/renewal.preview.js.php';
             searchItems(criteria);
         }
     }
+    $(document).on('click', '#card-item-tags .card-item-tag', function() {
+        searchItemsWithTags(this.getAttribute('data-tag') || '');
+    });
 
     /**
      * Checks if string is base64 encoded
@@ -10417,7 +10539,7 @@ require __DIR__ . '/renewal.preview.js.php';
         });
 
         // Enter does nothing in these:
-        $('#form-item-login, #form-item-email, #form-item-url, #form-item-icon').on('keydown keyup keypress', function(e) {
+        $('#form-item-login, #form-item-email, #form-item-url').on('keydown keyup keypress', function(e) {
             if ((e.key === 'Enter' || e.which === 13)) {
                 e.preventDefault();
                 e.stopPropagation();

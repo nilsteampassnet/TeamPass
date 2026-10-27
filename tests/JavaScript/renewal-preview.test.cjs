@@ -77,9 +77,11 @@ function harness(enabled = true) {
   let answer = true
   function element() {
     return {
-      classes: new Set(['hidden']), children: [], value: '',
+      classes: new Set(['hidden']), children: [], value: '', attributes: {},
       empty() { this.children = []; this.value = ''; return this },
       text(value) { this.value = String(value); return this },
+      hasClass(name) { return this.classes.has(name) },
+      attr(name, value) { Object.assign(this.attributes, typeof name === 'object' ? name : { [name]: value }); return this },
       addClass(names) { names.split(' ').forEach(name => this.classes.add(name)); return this },
       removeClass(names) { names.split(' ').forEach(name => this.classes.delete(name)); return this },
       toggleClass(name, on) { if (on) this.classes.add(name); else this.classes.delete(name); return this },
@@ -102,7 +104,7 @@ function harness(enabled = true) {
     }
   }
   const $ = selector => {
-    if (selector === '<div>') return element()
+    if (/^<[a-z]+>$/.test(selector)) return element()
     if (!elements.has(selector)) elements.set(selector, element())
     return elements.get(selector)
   }
@@ -209,6 +211,44 @@ test('Folder notices reuse list metadata without requests, hide inactive policie
   third(30)
   assert.ok(ui.field('#folder').classes.has('hidden'))
   assert.equal(ui.pending.length, 0)
+})
+
+test('The item form shows one line under its renewal setting, explanations behind the info icon', async () => {
+  const ui = harness()
+  const line = ui.field('#form-item-renewal-notice').addClass('tp-renewal-compact')
+  const texts = () => line.children.map(child => child.value).filter(value => value !== '')
+
+  // No deadline: nothing at all, not even the "no renewal in this folder" sentence
+  let request = ui.preview.update('#form-item-renewal-notice', 11, [1])
+  assert.ok(line.classes.has('hidden'), 'No loading text appears in the form')
+  ui.pending[0].resolve(response(0, [{ id: 1, due_date: '', expired: false }]))
+  await request
+  assert.ok(line.classes.has('hidden'))
+  assert.deepEqual(line.children, [])
+
+  request = ui.preview.update('#form-item-renewal-notice', 11, [1], false, 30)
+  ui.pending[1].resolve(response(0, [{ id: 1, days: 30, source: 'item', due_date: '2026-12-01', expired: false }]))
+  await request
+  assert.equal(line.classes.has('hidden'), false)
+  assert.equal(line.classes.has('alert'), false)
+  assert.ok(line.classes.has('text-muted'))
+  assert.deepEqual(texts(), ['Effective 30 days Individual policy Due 2026-12-01'])
+  assert.equal(line.children.at(-1).attributes.title, 'No deletion Password age preserved')
+
+  // A new answer replaces the line without blanking it while the request runs
+  request = ui.preview.update('#form-item-renewal-notice', 11, [1], false, 10)
+  assert.deepEqual(texts(), ['Effective 30 days Individual policy Due 2026-12-01'])
+  ui.pending[2].resolve(response(90, [{ id: 1, days: 10, source: 'item', due_date: '2020-01-01', expired: true }]))
+  await request
+  assert.ok(line.classes.has('text-danger'))
+  assert.equal(line.classes.has('text-muted'), false)
+  assert.deepEqual(texts(), ['Effective 10 days Individual policy Due 2020-01-01 Already expired'])
+
+  request = ui.preview.update('#form-item-renewal-notice', 11, [1])
+  ui.pending[3].resolve(response(90, [{ id: 1, days: 0, source: 'lapr', due_date: '', expired: false }]))
+  await request
+  assert.deepEqual(texts(), ['Linked to LAPR: ordinary expiration does not apply'])
+  assert.equal(line.children.some(child => child.attributes.title !== undefined), false)
 })
 
 test('Individual policy previews still work when folder expiration is off', async () => {
