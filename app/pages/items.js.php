@@ -7951,8 +7951,7 @@ require __DIR__ . '/icon.picker.js.php';
 
                     //prepare nice list of users / groups
                     var html_users = '',
-                        html_groups = '',
-                        html_kbs = '';
+                        html_groups = '';
 
                     // Tags come back decoded by the purifier: text sinks only, and no inline handler
                     // (a tag such as "');alert(1);//" used to run in the onclick attribute)
@@ -7969,16 +7968,18 @@ require __DIR__ . '/icon.picker.js.php';
                         tagsContainer.text(<?php echo json_encode($lang->get('none'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>);
                     }
 
+                    // Same for the Knowledge Base labels: a double-encoded label comes back from the
+                    // purifier as live markup. The container is absent when the KB is not available.
+                    const kbsContainer = $('#card-item-kbs').empty();
                     $(data.links_to_kbs || []).each(function(index, value) {
-                        html_kbs += '<a class="tp-item-view-chip is-info pointer tip" href="<?php echo $SETTINGS['cpassman_url']; ?>/index.php?page=kb&id=' + value['id'] + '"><i class="fa-solid fa-map-pin fa-sm"></i>&nbsp;' + value['label'] + '</a>';
-
+                        $('<a class="tp-item-view-chip is-info pointer tip"></a>')
+                            .attr('href', '<?php echo $SETTINGS['cpassman_url']; ?>/index.php?page=kb&id=' + parseInt(value.id, 10))
+                            .append('<i class="fa-solid fa-map-pin fa-sm" aria-hidden="true"></i>')
+                            .append($('<span></span>').text(htmlDecode(String(value.label))))
+                            .appendTo(kbsContainer);
                     });
-                    if ($('#card-item-kbs').length === 0) {
-                        // Knowledge Base is disabled or not available for this user.
-                    } else if (html_kbs === '') {
-                        $('#card-item-kbs').html('<?php echo $lang->get('none'); ?>');
-                    } else {
-                        $('#card-item-kbs').html(html_kbs);
+                    if (kbsContainer.length > 0 && kbsContainer.children().length === 0) {
+                        kbsContainer.text(<?php echo json_encode($lang->get('none'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>);
                     }
 
 
