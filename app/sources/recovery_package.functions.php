@@ -31,7 +31,7 @@ function tpRecoveryForgetSessionPackage(object $session): void
 }
 
 /** Read fresh kit inputs without generating files or repairing keys; return inputs for state markers. */
-function tpRecoveryPackageCurrentSnapshot(bool $lock = false, ?array &$inputs = null): array
+function tpRecoveryPackageCurrentSnapshot(bool $lock = false, array &$inputs = []): array
 {
     $settings = [];
     foreach (DB::query(
