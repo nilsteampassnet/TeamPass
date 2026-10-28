@@ -81,6 +81,21 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 <script type='text/javascript'>
     //<![CDATA[
 
+    /** Open the Recovery Package tab when arriving from the admin notice. */
+    function openRecoveryPackageTab() {
+        if (window.location.hash === '#recovery-package') {
+            $('#recovery-package-tab').tab('show')
+        }
+    }
+
+    $(document).ready(openRecoveryPackageTab)
+
+    /** Treat server-formatted dates and status labels as text, including translated content. */
+    function renderRecoveryPackageInformation(info) {
+        $('#recovery-package-download-date').text(info.download_label || '')
+        $('#recovery-package-download-state').text(info.status_label || '')
+    }
+
     // Common toastr options for this page (prevents sticky toasts and keeps UI consistent)
     function tpToast(type, message, title, options) {
         if (typeof toastr === 'undefined') return null;
@@ -2573,6 +2588,27 @@ var tpExternalized = {
     );
   },
 
+  refreshRecoveryPackageInformation: function(expectedAt, remaining) {
+    $.post('sources/backups.queries.php', {
+      type: 'recovery_package_status',
+      key: <?php echo json_encode((string) $session->get('key'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>
+    }, (response) => {
+      let info = tpSafePrepareDecode((response || '').toString())
+      if (typeof info === 'string') {
+        try { info = JSON.parse(info) } catch (e) { return }
+      }
+      if (!info || info.error) return
+      renderRecoveryPackageInformation(info)
+      // A binary navigation has no browser completion callback. Poll only briefly
+      // after this administrator starts a download, until its receipt is visible.
+      if (remaining > 0 && Number(info.downloaded_at || 0) < expectedAt) {
+        setTimeout(() => {
+          tpExternalized.refreshRecoveryPackageInformation(expectedAt, remaining - 1)
+        }, 1000)
+      }
+    })
+  },
+
   createRecoveryPackage: function() {
     tpExternalized.hideRecoveryAlert();
 
@@ -2620,6 +2656,9 @@ var tpExternalized = {
         tpExternalized.showRecoveryAlert('success', r.message || '<?php echo addslashes($lang->get('bck_recovery_package_created')); ?>');
         if (r.download) {
           window.location.href = r.download;
+          setTimeout(function() {
+            tpExternalized.refreshRecoveryPackageInformation(Number(r.created_at || 0), 10)
+          }, 1000)
         }
       }
     ).fail(function() {

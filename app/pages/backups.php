@@ -39,6 +39,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 require_once __DIR__.'/../sources/backup.functions.php';
+require_once __DIR__.'/../sources/recovery_package.functions.php';
 
 // init
 $session = SessionManager::getSession();
@@ -89,6 +90,7 @@ $resolvedBackupScriptPasskey = tpResolveBackupScriptPasskey($SETTINGS, true);
 if (!empty($resolvedBackupScriptPasskey['success']) && !empty($resolvedBackupScriptPasskey['clear_key'])) {
     $localEncryptionKey = (string) $resolvedBackupScriptPasskey['clear_key'];
 }
+$recoveryPackageInformation = tpRecoveryPackageGetDisplayInformation($SETTINGS, $lang);
 ?>
 
 <!-- Content Header (Page header) -->
@@ -906,6 +908,11 @@ if (!empty($resolvedBackupScriptPasskey['success']) && !empty($resolvedBackupScr
                                             </div>
                                             <div class="card-body">
                                                 <div id="recovery-package-alert" class="alert d-none" role="alert"></div>
+                                                <div class="small text-muted mb-3" role="status" aria-live="polite">
+                                                    <i class="far fa-clock mr-1" aria-hidden="true"></i>
+                                                    <span id="recovery-package-download-date"><?php echo htmlspecialchars($recoveryPackageInformation['download_label'], ENT_QUOTES, 'UTF-8'); ?></span>
+                                                    <span id="recovery-package-download-state" class="d-block"><?php echo htmlspecialchars($recoveryPackageInformation['status_label'], ENT_QUOTES, 'UTF-8'); ?></span>
+                                                </div>
                                                 <div class="alert alert-warning">
                                                     <?php echo $lang->get('bck_recovery_package_warning'); ?>
                                                 </div>

@@ -37,6 +37,8 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/runtime_files.functions.php';
 require_once __DIR__ . '/backup_capture.php';
+require_once __DIR__ . '/recovery_package_logic.php';
+require_once __DIR__ . '/recovery_package_state.functions.php';
 
 /**
  * Open a local backup file without truncating it, and protect it before writing.
@@ -990,7 +992,7 @@ function tpRecoverySafeDeletePackage(string $path): bool
  * This package is intentionally separate from .tpbackup backup lists and must
  * only be downloaded manually by an administrator.
  *
- * @return array{success: bool, filename: string, filepath: string, encrypted: bool, size_bytes: int, message: string, recovery_format?: string, recovery_format_version?: int, warnings?: array<int,string>}
+ * @return array{success: bool, filename: string, filepath: string, encrypted: bool, size_bytes: int, message: string, recovery_format?: string, recovery_format_version?: int, warnings?: array<int,string>, snapshot?: array}
  */
 function tpCreateRecoveryPackage(array &$SETTINGS, string $passphrase, array $options = []): array
 {
@@ -1079,6 +1081,14 @@ function tpCreateRecoveryPackage(array &$SETTINGS, string $passphrase, array $op
 
     try {
         $warnings = [];
+        // Capture once: the receipt must describe the bytes packaged, even if a file
+        // changes while the archive is being encrypted or downloaded.
+        $masterContents = @file_get_contents($secureFilePath);
+        $settingsContents = @file_get_contents($settingsFilePath);
+        if (!is_string($masterContents) || $masterContents === '' || !is_string($settingsContents)) {
+            return ['success' => false, 'filename' => '', 'filepath' => '', 'encrypted' => false,
+                'size_bytes' => 0, 'message' => 'Unable to read recovery package inputs.'];
+        }
         $resolvedBackupScriptPasskey = tpResolveBackupScriptPasskey($SETTINGS, true);
         $backupInstanceKey = !empty($resolvedBackupScriptPasskey['success'])
             ? (string) $resolvedBackupScriptPasskey['clear_key']
@@ -1118,8 +1128,10 @@ function tpCreateRecoveryPackage(array &$SETTINGS, string $passphrase, array $op
         }
 
         $manifestJson = tpBackupCanonicalJson($manifest);
-        $constantsJson = tpBackupCanonicalJson(tpRecoveryCaptureConfigConstants());
-        $settingsSummaryJson = tpBackupCanonicalJson(tpRecoveryBuildSettingsSummary($SETTINGS));
+        $constants = tpRecoveryCaptureConfigConstants();
+        $settingsSummary = tpRecoveryBuildSettingsSummary($SETTINGS);
+        $constantsJson = tpBackupCanonicalJson($constants);
+        $settingsSummaryJson = tpBackupCanonicalJson($settingsSummary);
         if ($manifestJson === '' || $constantsJson === '' || $settingsSummaryJson === '') {
             return [
                 'success' => false,
@@ -1152,10 +1164,10 @@ function tpCreateRecoveryPackage(array &$SETTINGS, string $passphrase, array $op
 
         $zipOk = $zip->addFromString('manifest.json', $manifestJson)
             && $zip->addFromString('README.txt', $readme)
-            && $zip->addFile($settingsFilePath, 'config/settings.php')
+            && $zip->addFromString('config/settings.php', $settingsContents)
             && $zip->addFromString('config/constants.json', $constantsJson)
             && $zip->addFromString('config/admin_settings_summary.json', $settingsSummaryJson)
-            && $zip->addFile($secureFilePath, 'secrets/' . $secureFileName);
+            && $zip->addFromString('secrets/' . $secureFileName, $masterContents);
 
         if ($zipOk === true && $backupInstanceKey !== '') {
             $zipOk = $zip->addFromString('backup/instance_key.txt', $backupInstanceKey . "\n");
@@ -1210,6 +1222,10 @@ function tpCreateRecoveryPackage(array &$SETTINGS, string $passphrase, array $op
             'recovery_format' => tpRecoveryGetPackageFormatId(),
             'recovery_format_version' => tpRecoveryGetPackageFormatVersion(),
             'warnings' => $warnings,
+            'snapshot' => tpRecoveryPackageFingerprint(
+                $masterContents, $backupInstanceKey, $constants, $settingsSummary,
+                (string) ($SETTINGS['recovery_generation'] ?? ''), tpRecoveryGetPackageFormatVersion()
+            ),
         ];
     } finally {
         tpBackupRemoveTemporaryDirectory($workDir);
@@ -5013,6 +5029,8 @@ function tpStoreBackupScriptPasskey(string $clearKey, array &$SETTINGS, bool $ar
             ];
         }
 
+        $previousSettings = $SETTINGS;
+        $currentResolved = tpResolveBackupScriptPasskey($SETTINGS, false);
         $enc = cryption($clearKey, '', 'encrypt', $SETTINGS);
         $encryptedKey = isset($enc['string']) ? (string) $enc['string'] : '';
         if ($encryptedKey === '') {
@@ -5030,7 +5048,6 @@ function tpStoreBackupScriptPasskey(string $clearKey, array &$SETTINGS, bool $ar
                 tpArchiveBackupScriptPasskeyCandidate($currentStoredValue, $SETTINGS);
             }
 
-            $currentResolved = tpResolveBackupScriptPasskey($SETTINGS, false);
             if (!empty($currentResolved['success']) && !empty($currentResolved['clear_key'])) {
                 $currentClearKey = (string) $currentResolved['clear_key'];
                 if ($currentClearKey !== $clearKey) {
@@ -5103,6 +5120,9 @@ function tpStoreBackupScriptPasskey(string $clearKey, array &$SETTINGS, bool $ar
         }
 
         $SETTINGS['bck_script_passkey'] = $encryptedKey;
+        $sameKey = !empty($currentResolved['success'])
+            && hash_equals((string) $currentResolved['clear_key'], $clearKey);
+        tpRecoveryPackageSettingsChanged($SETTINGS, $sameKey ? $previousSettings : null);
 
         if (class_exists('\TeampassClasses\ConfigManager\ConfigManager')) {
             \TeampassClasses\ConfigManager\ConfigManager::invalidateCache();

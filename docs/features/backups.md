@@ -281,6 +281,53 @@ The `Recovery Package` tab generates an encrypted emergency package containing s
 
 > ⚠️ The Recovery Package is not a database backup. Store it offline, protect its passphrase, and do not send it to an automatic externalized destination.
 
+The administrator dashboard shows a non-dismissible notice in **Actions required**
+until a download of the current kit is recorded. The action opens the Recovery
+Package tab directly. One administrator's download covers the whole instance.
+Existing installations initially show "no download recorded": downloads made
+before this tracking was introduced cannot be identified.
+
+The Recovery Package tab shows the last recorded kit download date/time using the
+instance timezone and configured display formats. It also indicates whether that
+kit is current or needs updating. This information refreshes briefly after starting
+a download; generating a kit or opening the tab does not fabricate a download date.
+
+Generating a kit alone does not clear the notice. TeamPass records the administrator,
+time and protected fingerprints after the server sends the complete file, and adds
+**Recovery Package downloaded** to the administration log. The receipt and audit
+are written in one transaction; a failed audit leaves the notice pending. This
+records a server-side transfer, not proof that the browser saved the file or that
+the administrator retained it offline. Check the saved file and keep its passphrase
+separately. Expired, unauthorized and incomplete transfers do not acknowledge a kit.
+An entirely sent older kit is audited but cannot clear the renewal notice.
+
+Generate another kit after changing the scheduled-backup key, master/legacy recovery
+material, or the kit format. Deployment changes (database connection, instance URL
+or storage paths) produce a separate recommendation to update its configuration
+snapshot; they do not necessarily make earlier kits unusable. A disaster recovery
+generation, when provided by the recovery engine, also invalidates the imported
+receipt, even when the destination reuses the same URL and paths. Keep previous
+kits and their passphrases with the corresponding historical backups.
+
+Ordinary item/user changes, user password changes, scheduled-backup timing and the
+application version alone do not require a new kit. Re-encrypting the same scheduled
+backup key does not require one either. The dashboard only reads a stored status
+and compares inexpensive markers for the backup-key setting, recovery generation
+and deployment settings. It does not read recovery files or decrypt keys.
+The complete check runs on the Backups page, its status refresh endpoint, and after
+a completed download (inside the receipt/audit transaction). Application changes
+to the backup key or deployment settings invalidate the stored status. A missing
+backup key reports a missing kit; unreadable or invalid recovery material raises a check
+notice; downloading a new kit cannot repair a broken encryption chain.
+
+Changes outside TeamPass, such as editing `settings.php` by hand or replacing
+`SECUREFILE`, are detected on the next visit to the Backups page, not immediately
+on the dashboard. No download date is created by refreshing the stored status.
+
+The receipt is created lazily in the existing configuration table. No database
+schema migration or recovery archive format change is needed. No secret,
+passphrase, download token, or archive payload is stored in the receipt or audit.
+
 
 ## Storage usage
 
