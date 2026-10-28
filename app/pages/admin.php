@@ -91,6 +91,16 @@ require_once __DIR__ . '/../sources/admin_notices.functions.php';
 $adminNotices = adminNoticesCollect($SETTINGS, $lang);
 $adminNoticesColumns = adminNoticesLayoutColumns($adminNotices);
 
+// Public listing pages where a star, a like or a review makes TeamPass easier to find.
+// Plain links: TeamPass sends and counts nothing; rel="noreferrer" keeps the instance
+// URL out of the target site's referrer.
+$communityPlatforms = [
+    ['id' => 'github', 'name' => 'GitHub', 'icon' => 'fas fa-star', 'url' => 'https://github.com/nilsteampassnet/TeamPass'],
+    ['id' => 'alternativeto', 'name' => 'AlternativeTo', 'icon' => 'fas fa-thumbs-up', 'url' => 'https://alternativeto.net/software/teampass/about/'],
+    ['id' => 'sourceforge', 'name' => 'SourceForge', 'icon' => 'fas fa-comment-dots', 'url' => 'https://sourceforge.net/projects/communitypasswo/reviews/'],
+    ['id' => 'stackshare', 'name' => 'StackShare', 'icon' => 'fas fa-layer-group', 'url' => 'https://stackshare.io/teampass'],
+];
+
 require_once __DIR__ . '/../sources/admin_activity_logic.php';
 
 ?>
@@ -641,39 +651,75 @@ $serverTime = date('H:i:s');
                             </div>
                         </div>
 
-                        <!-- Sponsoring Row -->
+                        <!-- Support TeamPass: free visibility actions + funding -->
                         <div class="row">
                             <div class="col-lg-12">
-                                <div class="card card-outline card-primary">
+                                <div class="card card-outline card-primary" id="tp-community-card">
                                     <div class="card-header">
                                         <h3 class="card-title">
-                                            <i class="fas fa-heart text-danger"></i> 
+                                            <i class="fas fa-heart text-danger mr-1"></i>
                                             <?php echo $lang->get('admin_support_teampass'); ?>
                                         </h3>
+                                        <div class="card-tools">
+                                            <button type="button" class="btn btn-tool" id="tp-community-hide">
+                                                <i class="far fa-clock mr-1"></i><?php echo $lang->get('community_hide_6_months'); ?>
+                                            </button>
+                                        </div>
                                     </div>
                                     <div class="card-body">
-                                        <div class="row align-items-center">
-                                            <div class="col-md-8">
-                                                <p class="mb-2">
-                                                    <strong><?php echo $lang->get('admin_support_message'); ?></strong>
-                                                </p>
-                                                <p class="text-muted mb-3">
-                                                    <?php echo $lang->get('admin_support_description'); ?>
+                                        <div class="row">
+                                            <div class="col-lg-8">
+                                                <h5 class="mb-1"><?php echo $lang->get('community_visibility_heading'); ?></h5>
+                                                <p class="text-muted"><?php echo $lang->get('community_visibility_intro'); ?></p>
+                                                <div class="small text-uppercase font-weight-bold text-muted mb-2">
+                                                    <?php echo $lang->get('community_visibility_free_label'); ?>
+                                                </div>
+                                                <ul class="list-group" id="tp-community-platforms">
+                                                    <?php foreach ($communityPlatforms as $platform) {
+                                                        $platformKey = 'community_' . $platform['id']; ?>
+                                                    <li class="list-group-item d-flex flex-wrap align-items-center" data-platform="<?php echo $platform['id']; ?>">
+                                                        <span class="tp-community-icon mr-3"><i class="<?php echo $platform['icon']; ?>" aria-hidden="true"></i></span>
+                                                        <div class="flex-grow-1 mr-3">
+                                                            <strong><?php echo $lang->get($platformKey . '_action'); ?></strong>
+                                                            <span class="text-muted"><?php echo sprintf($lang->get('community_on_platform'), $platform['name']); ?></span>
+                                                            <div class="small text-muted"><?php echo $lang->get($platformKey . '_desc'); ?></div>
+                                                        </div>
+                                                        <a href="<?php echo $platform['url']; ?>" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary tp-community-go">
+                                                            <?php echo $lang->get($platformKey . '_cta'); ?><i class="fas fa-external-link-alt fa-xs ml-2" aria-hidden="true"></i>
+                                                        </a>
+                                                        <button type="button" class="btn btn-link text-success font-weight-bold tp-community-undo d-none"
+                                                            title="<?php echo htmlspecialchars($lang->get('community_undo_title'), ENT_QUOTES, 'UTF-8'); ?>">
+                                                            <i class="fas fa-check mr-1"></i><?php echo $lang->get('community_done'); ?>
+                                                        </button>
+                                                    </li>
+                                                    <?php } ?>
+                                                </ul>
+                                                <p class="text-success font-weight-bold mt-2 mb-0 d-none" id="tp-community-all-done">
+                                                    <?php echo $lang->get('community_all_done'); ?>
                                                 </p>
                                             </div>
-                                            <div class="col-md-4 text-center">
-                                                <a href="https://github.com/sponsors/nilsteampassnet" target="_blank" class="btn btn-danger btn-lg">
-                                                    <i class="fab fa-github"></i> <?php echo $lang->get('admin_support_github_sponsors'); ?>
-                                                </a>
-                                                <br>
-                                                <a href="https://www.paypal.com/donate/?hosted_button_id=XUVWYJ7J92X6L" target="_blank" class="btn btn-primary btn-lg mt-2">
-                                                    <i class="fab fa-paypal"></i> <?php echo $lang->get('admin_support_paypal'); ?>
-                                                </a>
-                                                <p class="text-muted mt-3 small">
-                                                    <i class="fas fa-users"></i> <?php echo $lang->get('admin_support_thank_you'); ?>
-                                                </p>
+                                            <div class="col-lg-4 mt-3 mt-lg-0">
+                                                <div class="tp-community-fund rounded p-3">
+                                                    <h5><?php echo $lang->get('community_fund_heading'); ?></h5>
+                                                    <p class="text-muted"><?php echo $lang->get('community_fund_text'); ?></p>
+                                                    <a href="https://github.com/sponsors/nilsteampassnet" target="_blank" rel="noopener noreferrer" class="btn btn-danger btn-block">
+                                                        <i class="fab fa-github mr-1"></i><?php echo $lang->get('admin_support_github_sponsors'); ?>
+                                                    </a>
+                                                    <a href="https://www.paypal.com/donate/?hosted_button_id=XUVWYJ7J92X6L" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-block">
+                                                        <i class="fab fa-paypal mr-1"></i><?php echo $lang->get('admin_support_paypal'); ?>
+                                                    </a>
+                                                </div>
                                             </div>
                                         </div>
+                                    </div>
+                                    <div class="card-footer small text-muted">
+                                        <i class="fas fa-lock mr-1"></i><?php echo $lang->get('community_privacy_note'); ?>
+                                    </div>
+                                </div>
+                                <div class="card d-none" id="tp-community-hidden">
+                                    <div class="card-body py-2 small text-muted">
+                                        <?php echo $lang->get('community_hidden_notice'); ?>
+                                        <button type="button" class="btn btn-link btn-sm" id="tp-community-show"><?php echo $lang->get('community_show_again'); ?></button>
                                     </div>
                                 </div>
                             </div>

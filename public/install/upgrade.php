@@ -767,6 +767,19 @@ if (!isset($_GET['step']) && !isset($post_step)) {
                 For news, help and information, visit <a href="https://teampass.net" target="_blank" class="text-info">TeamPass website</a>
             </div>
         </div>
+        <div class="card card-outline card-warning mt-4">
+            <div class="card-body d-flex flex-wrap align-items-center">
+                <i class="fas fa-star text-warning fa-2x mr-3" aria-hidden="true"></i>
+                <div class="flex-grow-1 mr-3">
+                    <strong>Enjoying TeamPass ' . TP_VERSION . '.' . TP_VERSION_MINOR . '?</strong><br>
+                    <span class="text-muted">If it serves your team well, a GitHub star takes a few seconds and helps other administrators find it.</span>
+                </div>
+                <a href="https://github.com/nilsteampassnet/TeamPass" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary mr-3">
+                    <i class="fas fa-star mr-1"></i>Star on GitHub
+                </a>
+                <a href="https://alternativeto.net/software/teampass/about/" target="_blank" rel="noopener noreferrer">Like it on AlternativeTo</a>
+            </div>
+        </div>
         <div class="alert alert-primary mt-4">
             <i class="far fa-lightbulb text-warning mr-2 fa-lg"></i>It is recommended to clean the cache of your Web Browser before trying to log in.
         </div>

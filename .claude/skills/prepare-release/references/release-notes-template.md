@@ -74,6 +74,10 @@ Follow instructions from [Documentation](https://documentation.teampass.net/#/in
 
 Are welcome ... please use [Discussions](https://github.com/nilsteampassnet/TeamPass/discussions).
 
+## Help others find TeamPass
+
+If TeamPass serves your team well, a ⭐ on this repository, a like on [AlternativeTo](https://alternativeto.net/software/teampass/about/) or a short review on [SourceForge](https://sourceforge.net/projects/communitypasswo/reviews/) helps other administrators find it.
+
 
 [![Download TeamPass](https://a.fsdn.com/con/app/sf-download-button)](https://sourceforge.net/projects/communitypasswo/files/<VERSION>/<VERSION>%20source%20code.zip/download)
 ```

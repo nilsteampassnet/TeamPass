@@ -2137,13 +2137,125 @@ function initAdminNotices() {
     })
 }
 
-$(document).ready(function() {    
+/**
+ * Per-administrator state of the "Support TeamPass" card: the platforms already
+ * visited and the end of a "hide for 6 months" period. Kept in the browser for the
+ * same reason as the dismissed recommendations: advisory only.
+ */
+const COMMUNITY_STATE_KEY = 'tp_admin_community_<?php echo (int) $session->get('user-id'); ?>'
+const COMMUNITY_HIDE_MS = 182 * 24 * 3600 * 1000
+
+/**
+ * Reads the state of the "Support TeamPass" card.
+ *
+ * @return {Object} {done: {platformId: timestamp}, hiddenUntil: timestamp}
+ */
+function getCommunityState() {
+    try {
+        const stored = JSON.parse(localStorage.getItem(COMMUNITY_STATE_KEY) || '{}')
+        if (stored === null || typeof stored !== 'object') {
+            return {done: {}, hiddenUntil: 0}
+        }
+        return {
+            done: typeof stored.done === 'object' && stored.done !== null ? stored.done : {},
+            hiddenUntil: parseInt(stored.hiddenUntil, 10) || 0,
+        }
+    } catch (e) {
+        return {done: {}, hiddenUntil: 0}
+    }
+}
+
+/**
+ * Stores the state of the "Support TeamPass" card.
+ *
+ * @param {Object} state State to store
+ *
+ * @return {void}
+ */
+function setCommunityState(state) {
+    try {
+        localStorage.setItem(COMMUNITY_STATE_KEY, JSON.stringify(state))
+    } catch (e) {
+        // Storage unavailable (private browsing, quota): the card simply shows again.
+    }
+}
+
+/**
+ * Renders the "Support TeamPass" card from its state.
+ *
+ * @return {void}
+ */
+function applyCommunityState() {
+    const state = getCommunityState()
+    const hidden = state.hiddenUntil > Date.now()
+    const rows = $('#tp-community-platforms [data-platform]')
+    let doneCount = 0
+
+    $('#tp-community-card').toggleClass('d-none', hidden)
+    $('#tp-community-hidden').toggleClass('d-none', hidden === false)
+    rows.each(function() {
+        const done = state.done[String($(this).data('platform'))] !== undefined
+        doneCount += done === true ? 1 : 0
+        $(this).toggleClass('tp-community-is-done', done)
+        $(this).find('.tp-community-go').toggleClass('d-none', done)
+        $(this).find('.tp-community-undo').toggleClass('d-none', done === false)
+    })
+    $('#tp-community-all-done').toggleClass('d-none', doneCount < rows.length)
+}
+
+/**
+ * Wires the "Support TeamPass" card. The links open normally: the handlers only
+ * remember the visit, TeamPass itself sends nothing.
+ *
+ * @return {void}
+ */
+function initCommunityCard() {
+    if ($('#tp-community-card').length === 0) {
+        return
+    }
+
+    applyCommunityState()
+
+    const markPlatform = (element, done) => {
+        const state = getCommunityState()
+        const id = String($(element).closest('[data-platform]').data('platform'))
+        if (done === true) {
+            state.done[id] = Date.now()
+        } else {
+            delete state.done[id]
+        }
+        setCommunityState(state)
+        applyCommunityState()
+    }
+
+    const setHiddenUntil = (timestamp) => {
+        const state = getCommunityState()
+        state.hiddenUntil = timestamp
+        setCommunityState(state)
+        applyCommunityState()
+    }
+
+    $('#tp-community-platforms')
+        .on('click', '.tp-community-go', function() {
+            markPlatform(this, true)
+        })
+        .on('click', '.tp-community-undo', function() {
+            markPlatform(this, false)
+        })
+    $('#tp-community-hide').on('click', () => setHiddenUntil(Date.now() + COMMUNITY_HIDE_MS))
+    $('#tp-community-show').on('click', () => setHiddenUntil(0))
+}
+
+$(document).ready(function() {
     // Initialize refresh manager
     AdminRefreshManager.init()
 
     // Apply the dismissed recommendations on the notices card
     initAdminNotices()
-    
+
+    // Apply the per-administrator state of the "Support TeamPass" card
+    initCommunityCard()
+
     // Initialize dashboard (active tab)
     initDashboardTab()
     

@@ -63,3 +63,5 @@ Teampass is free software distributed under the [GNU GPL-3.0](https://github.com
 ## Support the project
 
 Teampass is maintained by one person and funded by its community. If it is useful to you, consider [sponsoring the work](https://github.com/sponsors/nilsteampassnet).
+
+Helping other teams find it costs nothing and takes a few seconds: [star the repository](https://github.com/nilsteampassnet/TeamPass), [like Teampass on AlternativeTo](https://alternativeto.net/software/teampass/about/), [write a short review on SourceForge](https://sourceforge.net/projects/communitypasswo/reviews/) or [add it to your stack on StackShare](https://stackshare.io/teampass).

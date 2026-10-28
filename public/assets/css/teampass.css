@@ -518,6 +518,44 @@
     text-decoration: underline;
 }
 
+/* Admin dashboard: "Support TeamPass" card */
+.tp-community-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #eef4fb;
+    color: #0062cc;
+}
+
+#tp-community-platforms .list-group-item {
+    row-gap: 0.5rem;
+}
+
+#tp-community-platforms .tp-community-is-done {
+    background: #f6fbf7;
+}
+
+.tp-community-fund {
+    background: #f8f9fa;
+}
+
+.dark-mode .tp-community-icon {
+    background: rgba(255, 255, 255, 0.08);
+    color: #8ab4f8;
+}
+
+.dark-mode #tp-community-platforms .tp-community-is-done {
+    background: rgba(40, 167, 69, 0.12);
+}
+
+.dark-mode .tp-community-fund {
+    background: rgba(255, 255, 255, 0.05);
+}
+
 #sidebar-footer {
     display: flex;
     align-items: center;
