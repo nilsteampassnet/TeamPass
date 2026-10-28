@@ -93,6 +93,7 @@ require_once __DIR__ . '/../includes/libraries/bip39/loader.php';
 $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
 require __DIR__ . '/renewal.preview.js.php';
+require __DIR__ . '/icon.picker.js.php';
 ?>
 
 
@@ -142,12 +143,43 @@ require __DIR__ . '/renewal.preview.js.php';
     }
   }
 
-  $(document).on('change', '#form-item-otpSecret', applyItemTotpProvisioningUri)
+  /**
+   * Show the TOTP profile (algorithm, digits, period) on the button that unfolds it,
+   * so a folded profile can still be read. Call it after any programmatic change.
+   *
+   * @returns {void}
+   */
+  function refreshItemOtpSummary() {
+    $('#form-item-otp-summary').text(
+      $('#form-item-otpAlgorithm option:selected').text() + ' · ' +
+      $('#form-item-otpDigits').val() + ' · ' +
+      $('#form-item-otpPeriod').val() + ' s'
+    )
+  }
+
+  $(document).on('change', '#form-item-otpSecret', function() {
+    applyItemTotpProvisioningUri()
+    refreshItemOtpSummary()
+  })
+  $(document).on('change input', '#form-item-otpAlgorithm, #form-item-otpDigits, #form-item-otpPeriod', refreshItemOtpSummary)
 
     // BIP-39 wordlist for the passphrase generator (language depends on the user's profile).
     const TP_BIP39_WORDLIST = <?php echo json_encode($bip39Wordlist, JSON_UNESCAPED_UNICODE); ?>;
     const TP_NOTIFICATION_ENGAGED = <?php echo json_encode($lang->get('notification_engaged'), JSON_UNESCAPED_UNICODE); ?>;
     const TP_NOTIFICATION_NOT_ENGAGED = <?php echo json_encode($lang->get('notification_not_engaged'), JSON_UNESCAPED_UNICODE); ?>;
+    const TP_ITEM_VIEW_LANG = <?php echo json_encode([
+        'previousItem' => $lang->get('item_view_previous_item'),
+        'nextItem' => $lang->get('item_view_next_item'),
+        'viewedTimes' => $lang->get('item_view_viewed_times'),
+        'secureSendLinks' => $lang->get('item_view_secure_send_links'),
+        'lastActivity' => $lang->get('item_view_last_activity'),
+        'showMore' => $lang->get('item_view_show_more'),
+        'showLess' => $lang->get('item_view_show_less'),
+        'showOlder' => $lang->get('item_view_show_older'),
+        'autoUpdate' => $lang->get('auto_update_enabled'),
+        'autoDeletion' => $lang->get('automatic_deletion_engaged'),
+        'copy' => $lang->get('copy_to_clipboard'),
+    ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG); ?>;
     const TP_LAPR_ITEM_LANG = <?php echo json_encode([
         'badgeManaged' => $lang->get('lapr_badge_managed'),
         'badgeCredential' => $lang->get('lapr_badge_credential'),
@@ -359,9 +391,9 @@ require __DIR__ . '/renewal.preview.js.php';
         // Folder permissions own the normal visibility state; LAPR may add another
         // restriction but must never reveal an action hidden by ACLs.
         const canDelete = data.can_delete === true || data.can_delete === 1;
-        $('.tp-action[data-item-action="delete"]').closest('.nav-item')
+        $('.tp-action[data-item-action="delete"], .tp-item-view-delete-divider')
             .toggleClass('hidden', !canDelete || isManaged || isCredential);
-        $('.tp-action[data-item-action="server"]').closest('.nav-item').toggleClass('hidden', isManaged);
+        $('.tp-action[data-item-action="server"]').toggleClass('hidden', isManaged);
 
         if (isManaged) {
             const account = lapr.managed_account || {};
@@ -579,34 +611,85 @@ require __DIR__ . '/renewal.preview.js.php';
         });
     }
 
-    function itemNotificationIconHtml(isEnabled) {
-        const title = tpEscapeHtmlAttribute(isEnabled === true ? TP_NOTIFICATION_ENGAGED : TP_NOTIFICATION_NOT_ENGAGED);
-
-        if (isEnabled === true) {
-            return '<span class="fa-solid fa-bell infotip text-success" title="' + title + '"></span>';
-        }
-
-        return '<span class="fa-regular fa-bell-slash infotip text-warning" title="' + title + '"></span>';
+    /**
+     * One status line of the item view: an icon and a sentence.
+     *
+     * @param {string} icon Font Awesome classes
+     * @param {string} text Plain text, encoded here
+     * @return {string} HTML of the line content
+     */
+    function itemViewStatusLineHtml(icon, text) {
+        return '<i class="' + icon + ' fa-fw" aria-hidden="true"></i><span>' + tpEscapeHtmlAttribute(text) + '</span>';
     }
 
     function updateItemNotificationStatusVisual(isEnabled) {
         const enabled = isEnabled === true;
         const title = enabled === true ? TP_NOTIFICATION_ENGAGED : TP_NOTIFICATION_NOT_ENGAGED;
 
+        // The action still opens the notification modal; it only shows the current state
         $('#item-action-notify')
-            .toggleClass('text-success', enabled)
-            .toggleClass('text-navy', enabled === false)
+            .toggleClass('is-active', enabled)
+            .attr('aria-pressed', enabled === true ? 'true' : 'false')
             .attr('title', title);
 
         $('#item-action-notify-icon')
             .removeClass('fa-regular fa-solid fa-bell fa-bell-slash text-success text-warning')
-            .addClass(enabled === true ? 'fa-solid fa-bell text-success' : 'fa-regular fa-bell-slash text-warning');
+            .addClass(enabled === true ? 'fa-solid fa-bell' : 'fa-regular fa-bell');
 
         if ($('#card-item-misc-notification').length > 0) {
-            $('#card-item-misc-notification').html(itemNotificationIconHtml(enabled));
+            $('#card-item-misc-notification').html(
+                itemViewStatusLineHtml(enabled === true ? 'fa-solid fa-bell' : 'fa-regular fa-bell-slash', title)
+            );
         }
+    }
 
-        $('.infotip').tooltip();
+    /**
+     * Show on a copy button, for a moment, that its value reached the clipboard.
+     *
+     * @param {Element} button The copy button
+     * @return {void}
+     */
+    function markItemViewCopied(button) {
+        const $button = $(button);
+        const $icon = $button.find('i').first();
+        if ($button.data('copiedTimer') === undefined) {
+            $button.data('copiedIcon', $icon.attr('class'));
+        } else {
+            clearTimeout($button.data('copiedTimer'));
+        }
+        $icon.attr('class', 'fa-solid fa-check');
+        $button.addClass('is-copied').data('copiedTimer', setTimeout(function() {
+            $icon.attr('class', $button.data('copiedIcon'));
+            $button.removeClass('is-copied').removeData('copiedTimer');
+        }, 1500));
+    }
+
+    /**
+     * Card of an attached file, shared by the item view and the edit form so they never drift.
+     *
+     * @param {object} value Attachment as returned by showDetailsStep2
+     * @param {boolean} withDelete True in the edit form: adds the delete action
+     * @return {string} HTML of the card
+     */
+    function itemAttachmentCardHtml(value, withDelete) {
+        const fileLabel = htmlEncode(decodeFilename(value.filename) + '.' + value.extension);
+        return '<div class="tp-item-file' + (withDelete === true ? ' edit-attachment-div' : '') + '">' +
+            '<span class="tp-item-file-icon"><i class="' + value.icon + '" aria-hidden="true"></i></span>' +
+            '<div class="tp-item-file-body">' +
+            '<div class="tp-item-file-name" title="' + fileLabel + '">' + fileLabel + '</div>' +
+            '<div class="tp-item-file-meta">' + htmlEncode(String(value.extension).toUpperCase()) + ' · ' + htmlEncode(value.size) + '</div>' +
+            '</div>' +
+            '<div class="tp-item-file-actions">' +
+            (value.is_image === 1 ?
+                '<button type="button" class="tp-item-file-action preview-image infotip" data-file-id="' + value.id + '" title="<?php echo $lang->get('see'); ?>" aria-label="<?php echo $lang->get('see'); ?>">' +
+                '<i class="fa-solid fa-eye"></i></button>' : '') +
+            '<a class="tp-item-file-action infotip" href="sources/downloadFile.php?name=' + encodeURI(value.filename) + '&key=<?php echo $session->get('key'); ?>&key_tmp=' + value.key + '&fileid=' + value.id + '" title="<?php echo $lang->get('download'); ?>" aria-label="<?php echo $lang->get('download'); ?>">' +
+            '<i class="fa-solid fa-file-download"></i></a>' +
+            (withDelete === true ?
+                '<button type="button" class="tp-item-file-action tp-item-file-action-danger delete-file infotip" data-file-id="' + value.id + '" data-file-name="' + fileLabel + '" title="<?php echo $lang->get('delete'); ?>" aria-label="<?php echo $lang->get('delete'); ?>">' +
+                '<i class="fa-solid fa-trash"></i></button>' : '') +
+            '</div>' +
+            '</div>';
     }
 
     /**
@@ -1071,14 +1154,75 @@ require __DIR__ . '/renewal.preview.js.php';
     $('#limited-search').prop('checked', <?php echo (int) $SETTINGS['limited_search_default'] === 1 ? true : false; ?>);
     $('#table_teampass_items_list').toggleClass('tp-show-corrupted-items', showCorruptedItemsInList === true);
 
-    $(document).on('blur', '#form-item-icon', function() {
-        $('#form-item-icon-show').html('<i class="fas '+$(this).val()+'"></i>');
+    // Icon pickers (assets/js/icon-picker.js): the item icon in the form title, the folder icons
+    tpIconPicker.attach({
+        input: '#form-item-icon',
+        toggle: '#form-item-icon-toggle',
+        host: '.tp-item-form-icon-menu',
+        preview: '#form-item-icon-show',
+        suggestions: 'item',
+        onChange: refreshItemFormUnsavedBadge
+    });
+    tpIconPicker.attachField('#form-folder-add-icon', 'folder');
+    tpIconPicker.attachField('#form-folder-add-icon-selected', 'folder');
+
+    // Copy buttons of the item view (login, email, url, custom fields). Bound once: the former
+    // per-item binding added one more listener, hence one more copy, at every item shown.
+    $(document).on('click', '.btn-copy-clipboard-clear', async function() {
+        try {
+            // Retrieve the target defined by data-clipboard-target
+            const targetId = this.getAttribute('data-clipboard-target');
+
+            if (!targetId) return;
+
+            // Grab the node (login => <span>, url => <span> ou <a>, email => <span>, etc.)
+            const $el = $('#'+targetId);
+            if ($el.length === 0) throw new Error('target-not-found');
+
+            // Compute text to copy depending on element type
+            let textToCopy = '';
+            if ($el.is('input, textarea')) {
+                textToCopy = $el.val() || '';
+            } else if ($el.is('a')) {
+                // For links, prefer href; fallback to visible text
+                textToCopy = $el.attr('href') || ($el.text() || '').trim();
+            } else {
+                // span/div/etc.
+                textToCopy = ($el.text() || '').trim();
+            }
+            if (!textToCopy) throw new Error('empty');
+
+            // Copy to clipboard
+            await copyToClipboard(textToCopy);
+            markItemViewCopied(this);
+
+            // Success toast
+            toastr.remove();
+            toastr.info(
+                '<?php echo $lang->get("copy_to_clipboard"); ?>',
+                '', {
+                    timeOut: 2000,
+                    progressBar: true,
+                    positionClass: 'toast-bottom-right'
+                }
+            );
+        } catch (error) {
+            toastr.error(
+                '<?php echo $lang->get("clipboard_error"); ?>',
+                '', {
+                    timeOut: 3000,
+                    progressBar: true,
+                    positionClass: 'toast-bottom-right'
+                }
+            );
+        }
     });
 
     // Manage the password show button
     // including autohide after a couple of seconds
     let isPasswordVisible = false;
     let passwordTimeout = null;
+    const passwordOverviewDelay = <?php echo isset($SETTINGS['password_overview_delay']) && (int) $SETTINGS['password_overview_delay'] > 0 ? (int) $SETTINGS['password_overview_delay'] * 1000 : 4000; ?>;
     $(document).on('click', '#card-item-pwd-toggle-button', function () {
         const $icon = $('.pwd-toggle-icon');
         const $button = $(this);
@@ -1108,7 +1252,8 @@ require __DIR__ . '/renewal.preview.js.php';
                     clearTimeout(passwordTimeout);
                     passwordTimeout = setTimeout(() => {
                         hidePassword($icon, $pwdField);
-                    }, <?php echo isset($SETTINGS['password_overview_delay']) && (int) $SETTINGS['password_overview_delay'] > 0 ? $SETTINGS['password_overview_delay'] * 1000 : 4000; ?>);
+                    }, passwordOverviewDelay);
+                    startItemViewTimer(document.getElementById('card-item-pwd-timer'), passwordOverviewDelay / 1000, 0);
                 }
             });
         } else {
@@ -1120,6 +1265,7 @@ require __DIR__ . '/renewal.preview.js.php';
 
     function hidePassword($icon, $pwdField) {
         isPasswordVisible = false;
+        stopItemViewTimer(document.getElementById('card-item-pwd-timer'));
         $icon
             .removeClass('fa-solid fa-eye-slash text-warning')
             .addClass('fa-regular fa-eye');
@@ -1134,6 +1280,7 @@ require __DIR__ . '/renewal.preview.js.php';
 
         isPasswordVisible = false;
         clearTimeout(passwordTimeout);
+        stopItemViewTimer(document.getElementById('card-item-pwd-timer'));
 
         $icon
             .removeClass('fa-solid fa-eye-slash text-warning')
@@ -1144,6 +1291,51 @@ require __DIR__ . '/renewal.preview.js.php';
             .removeClass('pointer_none');
 
         $('#card-item-pwd-security-badge').addClass('hidden').removeClass('badge-success badge-danger badge-warning');
+    }
+
+    /**
+     * Markup of a countdown ring of the item view (shown password, OTP code).
+     *
+     * @param {string} id - Id of the ring
+     * @return {string}
+     */
+    function itemViewTimerHtml(id) {
+        return '<svg class="tp-item-view-timer hidden" id="' + id + '" viewBox="0 0 18 18" aria-hidden="true">' +
+            '<circle class="tp-item-view-timer-track" cx="9" cy="9" r="7"></circle>' +
+            '<circle class="tp-item-view-timer-arc" cx="9" cy="9" r="7" pathLength="100"></circle></svg>';
+    }
+
+    /**
+     * Show a countdown ring and empty it over a whole period, starting from the time already gone.
+     *
+     * @param {Element|null} ring    - The .tp-item-view-timer element
+     * @param {number}       period  - Seconds for the ring to empty completely
+     * @param {number}       elapsed - Seconds of the period already gone
+     * @return {void}
+     */
+    function startItemViewTimer(ring, period, elapsed) {
+        if (ring === null || period <= 0) {
+            return;
+        }
+        ring.classList.remove('is-running', 'hidden');
+        ring.style.setProperty('--tp-item-view-timer-period', period + 's');
+        ring.style.setProperty('--tp-item-view-timer-elapsed', '-' + Math.min(Math.max(elapsed, 0), period) + 's');
+        // Reading the layout restarts the animation when the ring is reused
+        void ring.getBoundingClientRect();
+        ring.classList.add('is-running');
+    }
+
+    /**
+     * Hide a countdown ring of the item view.
+     *
+     * @param {Element|null} ring - The .tp-item-view-timer element
+     * @return {void}
+     */
+    function stopItemViewTimer(ring) {
+        if (ring !== null) {
+            ring.classList.remove('is-running');
+            ring.classList.add('hidden');
+        }
     }
 
 
@@ -1287,6 +1479,7 @@ require __DIR__ . '/renewal.preview.js.php';
                 .val('')
                 .focus();
             $('#form-folder-add-icon-selected, #form-folder-add-icon').val('');
+            tpIconPicker.refresh();
             // Preset complexity to the parent folder's minimal level
             // (the server rejects a lower value)
             if (isNaN(parseInt(store.get('teampassItem').folderComplexity)) === false) {
@@ -1343,6 +1536,7 @@ require __DIR__ . '/renewal.preview.js.php';
                 .val(store.get('teampassApplication').selectedFolderIcon);
             $('#form-folder-add-icon-selected')
                 .val(store.get('teampassApplication').selectedFolderIconSelected);
+            tpIconPicker.refresh();
             // Set type of action for the form
             $('#form-folder-add').data('action', 'update');
 
@@ -1515,7 +1709,14 @@ require __DIR__ . '/renewal.preview.js.php';
                 $('.clear-me-val').val('');
                 $('.item-details-card').find('.form-control').val('');
                 $('.clear-me-html').html('');
-                $('.form-item-control').val('');
+                resetItemAttachmentsUpload();
+                $('.form-item-control, #form-item-tags-entry').val('');
+                renderItemFormTags();
+                // The blanket reset above also empties the TOTP profile: restore its defaults
+                $('#form-item-otpAlgorithm').val('sha1');
+                $('#form-item-otpDigits').val('6');
+                $('#form-item-otpPeriod').val('30');
+                refreshItemOtpSummary();
                 setItemRenewalPeriod(0);
                 // Show edition form
                 $('.form-item').removeClass('hidden');
@@ -1543,8 +1744,6 @@ require __DIR__ . '/renewal.preview.js.php';
 
                 // Set folder
                 $('#form-item-folder').val(selectedFolderId).change();
-                // Select tab#1
-                $('#form-item-nav-pills li:first-child a').tab('show');
                 // Preselect
                 $('#pwd-definition-size').val(20);
                 // Set type of action
@@ -1579,6 +1778,7 @@ require __DIR__ . '/renewal.preview.js.php';
 
                 // Update variable
                 userDidAChange = false;
+                refreshItemFormUnsavedBadge();
 
                 toastr.remove();
             });
@@ -2115,8 +2315,8 @@ require __DIR__ . '/renewal.preview.js.php';
                 }
             }
 
-            // Clear pickfiles div
-            $('#form-item-upload-pickfilesList').html('');
+            // Clear the upload rows and the upload queue behind them
+            resetItemAttachmentsUpload();
 
             // Hide all
             $('.form-item, .form-item-action, .form-folder-action, #folders-tree-card, .columns-position, #form-item-upload-pickfilesList')
@@ -2134,7 +2334,7 @@ require __DIR__ . '/renewal.preview.js.php';
         }
         // Only hide navigation buttons when no item details panel is open
         if ($('#items-details-container').hasClass('hidden')) {
-            $('.but-prev-item, .but-next-item').addClass('hidden').text('');
+            $('.but-prev-item, .but-next-item').addClass('hidden');
         }
     });
 
@@ -2163,6 +2363,285 @@ require __DIR__ . '/renewal.preview.js.php';
                 //$(this).attr('data-change-ongoing', true);
             }
         });
+
+    /**
+     * Mirror userDidAChange / userUploadedFile in the action bar of the item form.
+     * Called after every user interaction inside the form, and wherever the flags
+     * are reset or set outside such an interaction (form opening, async generators, uploads).
+     */
+    function refreshItemFormUnsavedBadge() {
+        $('#form-item-unsaved').toggleClass('hidden', userDidAChange !== true && userUploadedFile !== true);
+    }
+
+    // Deferred so it reads the flag after the handlers above (and summernote's onChange) ran
+    $('#form-item').on('change click keyup ifToggled summernote.change', function() {
+        setTimeout(refreshItemFormUnsavedBadge, 0);
+    });
+
+    // Folded sections and fields layout of the item form, remembered per browser
+    const itemFormCollapsedKey = 'teampassItemFormCollapsed';
+    const itemFormFieldsColumnsKey = 'teampassItemFormFieldsColumns';
+
+    /**
+     * Fold or unfold a section of the item form.
+     *
+     * @param {jQuery} section The .tp-item-form-section-collapsible element
+     * @param {boolean} collapsed True to fold it
+     * @param {boolean} remember True to store the folded sections in the browser
+     * @return {void}
+     */
+    function setItemFormSectionCollapsed(section, collapsed, remember) {
+        section.toggleClass('is-collapsed', collapsed)
+            .find('.tp-item-form-section-toggle')
+            .attr('aria-expanded', collapsed === true ? 'false' : 'true');
+        if (remember !== true) {
+            return;
+        }
+        const folded = $('.tp-item-form-section-collapsible.is-collapsed').map(function() {
+            return $(this).data('section');
+        }).get();
+        try { localStorage.setItem(itemFormCollapsedKey, JSON.stringify(folded)); } catch (error) { /* Optional storage. */ }
+    }
+
+    /**
+     * Show the custom fields of the item form on one or two columns.
+     *
+     * @param {string} columns '1' or '2'
+     * @param {boolean} remember True to store the choice in the browser
+     * @return {void}
+     */
+    function setItemFormFieldsColumns(columns, remember) {
+        const twoColumns = columns !== '1';
+        $('#form-item-section-fields').toggleClass('is-two-columns', twoColumns);
+        $('.tp-item-form-fields-columns').each(function() {
+            $(this).attr('aria-pressed', String($(this).data('columns')) === (twoColumns ? '2' : '1') ? 'true' : 'false');
+        });
+        if (remember === true) {
+            try { localStorage.setItem(itemFormFieldsColumnsKey, twoColumns ? '2' : '1'); } catch (error) { /* Optional storage. */ }
+        }
+    }
+
+    // Restore the last choices
+    (function() {
+        let folded = [];
+        let columns = '2';
+        try {
+            folded = JSON.parse(localStorage.getItem(itemFormCollapsedKey) || '[]');
+            columns = localStorage.getItem(itemFormFieldsColumnsKey) || '2';
+        } catch (error) {
+            folded = [];
+        }
+        if (Array.isArray(folded) === true) {
+            $('.tp-item-form-section-collapsible').each(function() {
+                if (folded.indexOf($(this).data('section')) !== -1) {
+                    setItemFormSectionCollapsed($(this), true, false);
+                }
+            });
+        }
+        setItemFormFieldsColumns(columns, false);
+    })();
+
+    // The whole head line folds its section; its tools do not
+    $('#form-item .tp-item-form-section-toggle').on('click', function() {
+        const section = $(this).closest('.tp-item-form-section-collapsible');
+        setItemFormSectionCollapsed(section, section.hasClass('is-collapsed') === false, true);
+    });
+
+    $('.tp-item-form-to-top').on('click', function() {
+        $(this).tooltip('hide');
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    });
+
+    $('.tp-item-form-fields-columns').on('click', function() {
+        setItemFormFieldsColumns(String($(this).data('columns')), true);
+    });
+
+    // Section shortcuts of the item form; scroll-margin-top keeps the section title clear of the bars
+    $('#form-item-jumps').on('click', '.tp-item-form-jump', function(event) {
+        event.preventDefault();
+        const section = document.querySelector($(this).attr('href'));
+        if (section !== null) {
+            // Reaching a folded section means the user wants to see it
+            if (section.classList.contains('is-collapsed') === true) {
+                setItemFormSectionCollapsed($(section), false, true);
+            }
+            section.scrollIntoView({behavior: 'smooth', block: 'start'});
+        }
+    });
+
+    // The item loaders show or hide #form-item-field from the folder's categories, and rewrite
+    // the attachments list: the fields section and the attachment counters follow them
+    (function() {
+        const fieldsBlock = document.getElementById('form-item-field');
+        const filesList = document.getElementById('form-item-attachments');
+        if (fieldsBlock !== null) {
+            new MutationObserver(function() {
+                $('#form-item-section-fields, #form-item-jump-fields')
+                    .toggleClass('hidden', fieldsBlock.classList.contains('hidden'));
+            }).observe(fieldsBlock, {attributes: true, attributeFilter: ['class']});
+        }
+        if (filesList !== null) {
+            new MutationObserver(function() {
+                // Saved files and files uploaded for the next save
+                const count = filesList.querySelectorAll('.tp-item-file').length;
+                $('.form-item-attachments-count').text(count).toggleClass('hidden', count === 0);
+            }).observe(filesList, {childList: true});
+        }
+    })();
+
+    // Folded sections of the item view, remembered per browser; passkeys and history start folded
+    const itemViewCollapsedKey = 'teampassItemViewCollapsed';
+
+    /**
+     * Fold or unfold a section of the item view.
+     *
+     * @param {jQuery} section The .tp-item-view-collapsible element
+     * @param {boolean} collapsed True to fold it
+     * @param {boolean} remember True to store the folded sections in the browser
+     * @return {void}
+     */
+    function setItemViewSectionCollapsed(section, collapsed, remember) {
+        section.toggleClass('is-collapsed', collapsed)
+            .find('.tp-item-view-section-toggle')
+            .attr('aria-expanded', collapsed === true ? 'false' : 'true');
+        if (remember !== true) {
+            return;
+        }
+        const folded = $('.tp-item-view-collapsible.is-collapsed').map(function() {
+            return $(this).data('section');
+        }).get();
+        try { localStorage.setItem(itemViewCollapsedKey, JSON.stringify(folded)); } catch (error) { /* Optional storage. */ }
+    }
+
+    // Restore the last choice
+    (function() {
+        let folded = ['webauthn', 'history'];
+        try {
+            const stored = localStorage.getItem(itemViewCollapsedKey);
+            if (stored !== null) {
+                folded = JSON.parse(stored);
+            }
+        } catch (error) {
+            folded = ['webauthn', 'history'];
+        }
+        if (Array.isArray(folded) === false) {
+            folded = [];
+        }
+        $('.tp-item-view-collapsible').each(function() {
+            setItemViewSectionCollapsed($(this), folded.indexOf($(this).data('section')) !== -1, false);
+        });
+    })();
+
+    $('.tp-item-view-section-toggle').on('click', function() {
+        const section = $(this).closest('.tp-item-view-collapsible');
+        setItemViewSectionCollapsed(section, section.hasClass('is-collapsed') === false, true);
+        refreshItemViewDescriptionClamp();
+    });
+
+    /**
+     * Scroll the item view, which is its own scroll box, to show an element below the action bar.
+     *
+     * @param {Element|null} element Element to reach, null for the top of the item
+     * @return {void}
+     */
+    function scrollItemView(element) {
+        const panel = document.getElementById('items-details-container');
+        if (panel === null) {
+            return;
+        }
+        let top = 0;
+        if (element !== null) {
+            const bar = panel.querySelector('.tp-item-view-bar');
+            top = element.getBoundingClientRect().top - panel.getBoundingClientRect().top + panel.scrollTop -
+                (bar !== null ? bar.offsetHeight : 0) - 8;
+        }
+        panel.scrollTo({top: Math.max(0, top), behavior: 'smooth'});
+    }
+
+    $('.tp-item-view-to-top').on('click', function() {
+        $(this).tooltip('hide');
+        scrollItemView(null);
+    });
+
+    $('#card-item-jumps').on('click', '.tp-item-form-jump', function(event) {
+        event.preventDefault();
+        const target = document.querySelector($(this).attr('href'));
+        if (target === null) {
+            return;
+        }
+        // Reaching a folded section means the user wants to see it
+        if (target.classList.contains('is-collapsed') === true) {
+            setItemViewSectionCollapsed($(target), false, true);
+            refreshItemViewDescriptionClamp();
+        }
+        scrollItemView(target);
+    });
+
+    /**
+     * Show a section shortcut of the item view only when its section is shown, with its count.
+     *
+     * @return {void}
+     */
+    function refreshItemViewJumps() {
+        $('#card-item-jumps .tp-item-form-jump[data-section]').each(function() {
+            const target = $($(this).attr('href'));
+            $(this).toggleClass('hidden', target.length === 0 || target.hasClass('hidden'));
+            const countSource = $(this).data('count');
+            if (countSource !== undefined) {
+                const count = parseInt($(countSource).text(), 10);
+                $(this).find('.badge')
+                    .text(count > 0 ? count : '')
+                    .toggleClass('hidden', (count > 0) === false);
+            }
+        });
+    }
+
+    // The item loaders show or hide the sections and rewrite their counters: the shortcuts follow them
+    (function() {
+        const observer = new MutationObserver(refreshItemViewJumps);
+        $('#card-item-jumps .tp-item-form-jump[data-section]').each(function() {
+            const target = document.querySelector($(this).attr('href'));
+            if (target !== null) {
+                observer.observe(target, {attributes: true, attributeFilter: ['class']});
+            }
+            const countSource = $(this).data('count');
+            const counter = countSource !== undefined ? document.querySelector(countSource) : null;
+            if (counter !== null) {
+                observer.observe(counter, {childList: true, characterData: true, subtree: true});
+            }
+        });
+    })();
+
+    /**
+     * Cut a long description after a few lines, with a toggle to read the rest. It needs the
+     * description on screen to measure it: a folded section is measured when it opens.
+     *
+     * @return {void}
+     */
+    function refreshItemViewDescriptionClamp() {
+        const description = document.getElementById('card-item-description');
+        if (description === null || description.offsetParent === null || $(description).data('clampChecked') === true) {
+            return;
+        }
+        $(description).data('clampChecked', true).addClass('is-clamped');
+        const overflows = description.scrollHeight > description.clientHeight + 1;
+        $(description).toggleClass('is-clamped', overflows);
+        $('#card-item-description-more').toggleClass('hidden', overflows === false);
+    }
+
+    // A long description is cut after a few lines
+    $('#card-item-description-more').on('click', function() {
+        const clamped = $('#card-item-description').toggleClass('is-clamped').hasClass('is-clamped');
+        $(this)
+            .text(clamped === true ? TP_ITEM_VIEW_LANG.showMore : TP_ITEM_VIEW_LANG.showLess)
+            .attr('aria-expanded', clamped === true ? 'false' : 'true');
+    });
+
+    // Older history events are shown on demand
+    $('#card-item-history-older').on('click', function() {
+        $('#card-item-history').addClass('is-expanded');
+        $(this).addClass('hidden');
+    });
 
     /**
      * Click on perform IMPORT
@@ -3402,12 +3881,16 @@ require __DIR__ . '/renewal.preview.js.php';
                 $('.collapse').removeClass('show');
                 $('.to_be_deleted').remove();
                 $('#card-item-attachments, #card-item-history').html('');
-                $('#card-item-attachments-badge').html('<?php echo $lang->get('none'); ?>');
+                $('#card-item-attachments-badge').html('');
+                $('#card-item-history').removeClass('is-expanded');
+                $('#card-item-history-older').addClass('hidden');
+                $('#card-item-last-change').addClass('hidden').text('');
                 renderItemWebauthn([]);
                 $('#form-item-otp').iCheck('uncheck');
                 $('#form-item-otpAlgorithm').val('sha1')
                 $('#form-item-otpDigits').val('6')
                 $('#form-item-otpPeriod').val('30')
+                refreshItemOtpSummary()
 
                 // Move back fields
                 $('.fields-to-move')
@@ -3480,6 +3963,16 @@ require __DIR__ . '/renewal.preview.js.php';
     function resetItemDetailSkeleton() {
         // Skeleton placeholders for main fields
         $('#card-item-label').html('<span class="skeleton-line skeleton-title"></span>');
+        $('#card-item-icon').attr('class', 'fa-solid fa-key');
+        $('#card-item-row-login, #card-item-row-email, #card-item-row-url').removeClass('hidden');
+        $('#card-item-row-otp').addClass('hidden');
+        $('#card-item-otp-tools').empty();
+        $('#card-item-fields-count').text('');
+        $('#card-item-description').removeClass('is-clamped');
+        $('#card-item-description-more').addClass('hidden');
+        $('#card-item-history').removeClass('is-expanded');
+        $('#card-item-history-older').addClass('hidden');
+        $('#card-item-last-change').addClass('hidden').text('');
         $('#card-item-pwd').html('<span class="skeleton-line skeleton-md"></span>');
         $('#card-item-login').html('<span class="skeleton-line skeleton-sm"></span>');
         $('#card-item-email').html('<span class="skeleton-line skeleton-sm"></span>');
@@ -3497,9 +3990,8 @@ require __DIR__ . '/renewal.preview.js.php';
         $('#card-item-lapr-badges, #card-item-lapr-info').addClass('hidden').empty();
         $('#card-item-renewal-badge').addClass('hidden').empty();
         $('#card-item-misc').html(
-            '<span class="skeleton-line skeleton-sm d-inline-block mr-3" style="width:22px;"></span>' +
-            '<span class="skeleton-line skeleton-sm d-inline-block mr-3" style="width:22px;"></span>' +
-            '<span class="skeleton-line skeleton-sm d-inline-block" style="width:22px;"></span>'
+            '<li><span class="skeleton-line skeleton-md"></span></li>' +
+            '<li><span class="skeleton-line skeleton-sm"></span></li>'
         );
         $('#item-hibp-badge').addClass('hidden');
         $('#card-item-pwd-security-badge').addClass('hidden').removeClass('badge-success badge-danger badge-warning');
@@ -3518,9 +4010,7 @@ require __DIR__ . '/renewal.preview.js.php';
         laprSetManagedFieldsLocked(false);
         $('#form-item-lapr-notice').addClass('hidden').empty();
         if (clearFields) {
-            // Title placeholder in card header
-            $('#form-item-title').html('<span class="skeleton-line skeleton-title"></span>');
-            // Skeleton shimmer on main input fields
+            // Skeleton shimmer on main input fields (the label input is the form title)
             $('#form-item-label, #form-item-login, #form-item-email, #form-item-url')
                 .val('').addClass('skeleton-input');
             // Description: show a tall skeleton block while editor initialises
@@ -3533,7 +4023,10 @@ require __DIR__ . '/renewal.preview.js.php';
         $('#form-item-password-loader').removeClass('hidden');
         // Reset form-level state
         userDidAChange = false;
+        refreshItemFormUnsavedBadge();
         $('#form-item').removeClass('was-validated');
+        // The save paths only hide the form: drop the uploads of the previous edition
+        resetItemAttachmentsUpload();
         // Show the form immediately (same show/hide logic as showItemEditForm)
         $('.form-item, #form-item-attachments-zone').removeClass('hidden');
         $('.form-item-copy, .form-item-action, #folders-tree-card, .columns-position')
@@ -3644,7 +4137,6 @@ require __DIR__ . '/renewal.preview.js.php';
             // which item is being edited — AJAX response will overwrite it.
             const rowLabel = unescape($(this).closest('tr').data('label') || '')
             if (rowLabel) {
-                $('#form-item-title').text(rowLabel)
                 $('#form-item-label').val(rowLabel).removeClass('skeleton-input')
             }
 
@@ -3735,10 +4227,6 @@ require __DIR__ . '/renewal.preview.js.php';
             if ($(this).hasClass('warn-user')) $(this).removeClass('text-danger');
             else $(this).removeClass('text-info');
         });
-
-    $('#form-item-label').change(function() {
-        $('#form-item-title').text($(this).val());
-    });
 
     /**
      * Make the item favourite by clicking on icon
@@ -3988,7 +4476,7 @@ require __DIR__ . '/renewal.preview.js.php';
             showStatus: true,
             showErrors: false,
             showVerdictsInsideProgressBar: true,
-            container: "#tab_1",
+            container: "#form-item-section-main",
             viewports: {
                 progress: "#form-item-password-strength",
                 score: "#form-item-password-strength"
@@ -4135,14 +4623,14 @@ require __DIR__ . '/renewal.preview.js.php';
     var mime_types = <?php echo json_encode($mime_types); ?>;
     var prevent_empty = <?php echo json_encode($prevent_empty); ?>;
     var resize = <?php echo json_encode($resize); ?>;
-    let toastrElement;
     let fileId;
-    let globalUploadToast = null;
-    let filesUploadedCount = 0;
+    // True from the token request of a batch until plupload reports the batch complete
+    let attachmentsUploadRunning = false;
 
     var uploader_attachments = new plupload.Uploader({
         runtimes: 'html5,flash,silverlight,html4',
         browse_button: 'form-item-attach-pickfiles',
+        drop_element: 'form-item-attach-pickfiles',
         container: 'form-item-upload-zone',
         max_file_size: max_file_size,
         chunk_size: '1mb',
@@ -4158,26 +4646,6 @@ require __DIR__ . '/renewal.preview.js.php';
         init: {
             BeforeUpload: function(up, file) {
                 fileId = file.id;
-
-                // Create the global toastr once for the whole upload batch
-                if (globalUploadToast === null) {
-                    filesUploadedCount = 0;
-                    toastr.remove();
-                    globalUploadToast = toastrElement = toastr.info(
-                        '<?php echo $lang->get('loading_item'); ?> ... ' +
-                        '(<span id="upload-global-counter">0/' + up.files.length + '</span>) ' +
-                        '<i class="fas fa-cloud-arrow-up fa-bounce fa-2x ml-2"></i>',
-                        '', { timeOut: 0 }
-                    );
-                }
-
-                // Show individual file with its own progress percentage
-                $('#upload-file_' + file.id).html(
-                    '<i class="fa-solid fa-file fa-sm mr-2"></i>' +
-                    htmlEncode(file.name) +
-                    ' <span id="filePercent_' + file.id + '" class="text-muted small mr-1">0%</span>' +
-                    '<span id="fileStatus_' + file.id + '"><i class="fa-solid fa-circle-notch fa-spin ml-2"></i></span>'
-                );
 
                 // Get random number
                 if (store.get('teampassApplication').uploadedFileId === '') {
@@ -4203,14 +4671,13 @@ require __DIR__ . '/renewal.preview.js.php';
                 });
             },
             UploadProgress: function(up, file) {
-                // Update the per-file percentage in the upload list
+                // Update the per-file progress in the upload list
+                $('#fileProgress_' + file.id).css('width', file.percent + '%');
                 $('#filePercent_' + file.id).text(file.percent + '%');
             },
             UploadComplete: function(up, files) {
-                // Remove the global toastr once all files are done
-                toastr.remove();
-                globalUploadToast = null;
-                filesUploadedCount = 0;
+                attachmentsUploadRunning = false;
+                up.disableBrowse(false);
             },
             Error: function(up, args) {
                 console.log("ERROR arguments:");
@@ -4219,17 +4686,126 @@ require __DIR__ . '/renewal.preview.js.php';
         }
     });
 
-    uploader_attachments.bind('FileUploaded', function(up, file) {
-        filesUploadedCount++;
-        $('#filePercent_' + file.id).text('100%');
-        $('#fileStatus_' + file.id).html('<i class="fa-solid fa-circle-check text-success ml-2 fa-1x"></i>');
-        $('#upload-global-counter').text(filesUploadedCount + '/' + up.files.length);
+    /**
+     * Show an upload row of the attachments section as failed.
+     *
+     * @param {string} id plupload file id
+     * @return {void}
+     */
+    function markItemAttachmentUploadFailed(id) {
+        $('#upload-file_' + id).addClass('is-failed');
+        $('#fileProgress_' + id).addClass('bg-danger');
+        $('#fileStatus_' + id).html('<i class="fa-solid fa-circle-xmark text-danger"></i>');
+    }
+
+    /**
+     * Upload the batch of files just added. The server counts the files of a batch
+     * against its token (files_number), so each batch asks for its own token.
+     *
+     * @param {number} filesCount Number of files in the batch
+     * @return {void}
+     */
+    function startItemAttachmentsUpload(filesCount) {
+        attachmentsUploadRunning = true;
+        uploader_attachments.disableBrowse(true);
+        $('#form-item-hidden-pickFilesNumber').val(filesCount);
+
+        $.post(
+            "sources/main.queries.php", {
+                type: "save_token",
+                type_category: 'action_system',
+                size: 25,
+                capital: true,
+                numeric: true,
+                ambiguous: true,
+                reason: "item_attachments",
+                duration: 10,
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(data) {
+                store.update(
+                    'teampassApplication',
+                    function(teampassApplication) {
+                        teampassApplication.attachmentToken = data[0].token;
+                    }
+                );
+                uploader_attachments.start();
+            },
+            "json"
+        ).fail(function() {
+            // No token, nothing can be sent: drop the batch so it does not ride on the next one
+            $.each(uploader_attachments.files.slice(), function(i, queued) {
+                if (queued.state === plupload.QUEUED) {
+                    markItemAttachmentUploadFailed(queued.id);
+                    uploader_attachments.removeFile(queued);
+                }
+            });
+            attachmentsUploadRunning = false;
+            uploader_attachments.disableBrowse(false);
+            toastr.remove();
+            toastr.error(
+                <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+                '', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
+        });
+    }
+
+    /**
+     * Forget the uploads of the item form: stops a running batch, drops every file plupload
+     * still holds and removes the upload rows and the uploaded cards not saved yet, so
+     * nothing left over is shown or sent with the next item.
+     *
+     * @return {void}
+     */
+    function resetItemAttachmentsUpload() {
+        const queued = uploader_attachments.files.length;
+        if (queued > 0) {
+            uploader_attachments.splice(0, queued);
+        }
+        // A stopped batch never reports UploadComplete
+        attachmentsUploadRunning = false;
+        uploader_attachments.disableBrowse(false);
+        $('#form-item-hidden-pickFilesNumber').val(0);
+        $('#form-item-upload-pickfilesList').html('');
+        $('#form-item-attachments .tp-item-file.is-pending').remove();
+    }
+
+    uploader_attachments.bind('FileUploaded', function(up, file, result) {
+        // A few server errors answer HTTP 200 with a JSON-RPC error
+        let serverError = null;
+        try {
+            serverError = JSON.parse(result.response).error || null;
+        } catch (e) {
+            serverError = null;
+        }
+        if (serverError !== null) {
+            markItemAttachmentUploadFailed(file.id);
+            toastr.remove();
+            toastr.error(
+                htmlEncode(serverError.message || '') + ' ' + htmlEncode(file.name),
+                '', {
+                    timeOut: 10000,
+                    progressBar: true
+                }
+            );
+            return;
+        }
+
+        // Uploaded: the row leaves the upload list and joins the item's files, above the drop zone
+        const uploadedCard = $('#upload-file_' + file.id);
+        uploadedCard.addClass('is-pending').find('.tp-item-file-progress').remove();
+        $('#filePercent_' + file.id).text(<?php echo json_encode($lang->get('item_attachments_uploaded_pending_save'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>);
+        $('#fileStatus_' + file.id).html('<i class="fa-solid fa-circle-check text-success"></i>');
+        uploadedCard.appendTo('#form-item-attachments');
+        $('#form-item-attachments-zone').removeClass('hidden');
         userUploadedFile = true;
         userDidAChange = true;
-        // Do not remove the global toastr here — UploadComplete handles it
+        refreshItemFormUnsavedBadge();
     });
     uploader_attachments.bind('Error', function(up, err) {
-        toastr.remove();
         // Extraire le message d'erreur
         let errorMessage = '<?php echo addslashes($lang->get('error_unknown')); ?>';
         if (err.response) {
@@ -4248,80 +4824,76 @@ require __DIR__ . '/renewal.preview.js.php';
             // Arrêter l'upload des chunks
             up.stop();
             errorMessage += ' - Upload stopped.';
-            globalUploadToast = null;
-            filesUploadedCount = 0;
 
             // Affiche l'erreur dans l'interface utilisateur
+            toastr.remove();
             toastr.error(
-                errorMessage + (err.file ? ', File: ' + htmlEncode(err.file.name) : ''),
+                htmlEncode(errorMessage) + (err.file ? ', File: ' + htmlEncode(err.file.name) : ''),
                 '', {
                     timeOut: 10000,
                     progressBar: true
                 }
             );
 
-            $('#fileStatus_'+fileId).html('<i class="fa-solid fa-circle-xmark text-danger ml-2 fa-1x"></i>');
+            markItemAttachmentUploadFailed(err.file ? err.file.id : fileId);
             return false;
+        } else if (err.file && $('#upload-file_' + err.file.id).length === 0) {
+            // Rejected by the filters (size, type, empty file) before reaching the queue
+            toastr.remove();
+            toastr.warning(
+                htmlEncode(err.file.name) + ': ' + htmlEncode(err.message || errorMessage),
+                '', {
+                    timeOut: 8000,
+                    progressBar: true
+                }
+            );
         } else {
             up.refresh(); // Reposition Flash/Silverlight
         }
     });
 
-    $("#form-item-upload-pickfiles").click(function(e) {
-        if ($('#form-item-upload-pickfilesList').text() !== '') {
-            // generate and save token
-            $.post(
-                "sources/main.queries.php", {
-                    type: "save_token",
-                    type_category: 'action_system',
-                    size: 25,
-                    capital: true,
-                    numeric: true,
-                    ambiguous: true,
-                    reason: "item_attachments",
-                    duration: 10,
-                    key: '<?php echo $session->get('key'); ?>'
-                },
-                function(data) {
-                    store.update(
-                        'teampassApplication',
-                        function(teampassApplication) {
-                            teampassApplication.attachmentToken = data[0].token;
-                        }
-                    );
-                    console.log('start upload')
-                    uploader_attachments.start();
-                },
-                "json"
-            );
-            e.preventDefault();
-        } else {
-            toastr.remove();
-            toastr.warning(
-                '<?php echo $lang->get('no_file_to_upload'); ?>',
-                '', {
-                    timeOut: 5000,
-                    progressBar: true
-                }
-            );
-        }
-    });
     uploader_attachments.init();
     uploader_attachments.bind('FilesAdded', function(up, files) {
         if (debugJavascript === true) {
             console.log('uploader_attachments.FilesAdded')
         }
+        // The token of the running batch only covers its own files
+        if (attachmentsUploadRunning === true) {
+            $.each(files, function(i, file) {
+                up.removeFile(file);
+            });
+            toastr.remove();
+            toastr.warning(
+                <?php echo json_encode($lang->get('item_attachments_upload_running'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+                '', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
+            return;
+        }
+        // Files an interrupted batch left queued would ride on this batch's token
+        $.each(up.files.slice(), function(i, queued) {
+            if (files.indexOf(queued) === -1 && queued.state === plupload.QUEUED) {
+                markItemAttachmentUploadFailed(queued.id);
+                up.removeFile(queued);
+            }
+        });
+
         $('#form-item-upload-pickfilesList').removeClass('hidden');
-        var addedFiles = '';
         $.each(files, function(i, file) {
             $('#form-item-upload-pickfilesList').append(
-                '<div id="upload-file_' + file.id + '">' +
-                '<span id="upload-file-remove_' + file.id +
-                '><a href="#" onclick="$(this).closest(\'div\').remove();"><i class=" fa fa-trash mr-2 pointer"></i></a></span> ' +
-                htmlEncode(file.name) + ' (' + plupload.formatSize(file.size) + ')' +
-                '</div>');
-            $("#form-item-hidden-pickFilesNumber").val(
-                parseInt($("#form-item-hidden-pickFilesNumber").val()) + 1
+                '<div class="tp-item-file" id="upload-file_' + file.id + '">' +
+                '<span class="tp-item-file-icon"><i class="fa-solid fa-file" aria-hidden="true"></i></span>' +
+                '<div class="tp-item-file-body">' +
+                '<div class="tp-item-file-name" title="' + htmlEncode(file.name) + '">' + htmlEncode(file.name) + '</div>' +
+                '<div class="progress tp-item-file-progress">' +
+                '<div class="progress-bar" id="fileProgress_' + file.id + '" role="progressbar" style="width: 0%"></div>' +
+                '</div>' +
+                '<div class="tp-item-file-meta">' + plupload.formatSize(file.size) + ' · <span id="filePercent_' + file.id + '">0%</span></div>' +
+                '</div>' +
+                '<span class="tp-item-file-status" id="fileStatus_' + file.id + '"><i class="fa-solid fa-circle-notch fa-spin text-muted"></i></span>' +
+                '</div>'
             );
             if (debugJavascript === true) {
                 console.info('Info du fichier :');
@@ -4329,6 +4901,30 @@ require __DIR__ . '/renewal.preview.js.php';
             }
         });
         up.refresh(); // Reposition Flash/Silverlight
+        startItemAttachmentsUpload(files.length);
+    });
+
+    // Drop zone: keyboard access to the file dialog and a highlight while files hover it
+    $('#form-item-attach-pickfiles')
+        .on('keydown', function(event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                this.click();
+            }
+        })
+        .on('dragenter dragover', function() {
+            $(this).addClass('is-dragover');
+        })
+        .on('dragleave drop', function() {
+            $(this).removeClass('is-dragover');
+        });
+
+    // A file dropped beside the zone would make the browser open it and leave the form
+    $('#form-item').on('dragover drop', function(event) {
+        const transfer = event.originalEvent.dataTransfer;
+        if (transfer && Array.prototype.indexOf.call(transfer.types || [], 'Files') !== -1) {
+            event.preventDefault();
+        }
     });
     //->
 
@@ -4338,6 +4934,8 @@ require __DIR__ . '/renewal.preview.js.php';
      * Save item changes
      */
     $('#form-item-button-save').click(function() {
+        // A tag still being typed (Ctrl+S keeps the focus in the entry) belongs to the save
+        commitItemFormTagsEntry();
         var arrayQuery = [],
             originalFolderId = $('#form-item-folder').val(),
             itemsList = [],
@@ -4436,7 +5034,7 @@ require __DIR__ . '/renewal.preview.js.php';
 
         // Do checks
         if (arrayQuery.length > 0 || userDidAChange === true) {
-            var reg = new RegExp("[.|,|;|:|!|=|+|-|*|/|#|\"|'|&]");
+            var reg = itemTagForbiddenCharacters;
 
             // Sanitize text fields
             purifyRes = fieldDomPurifierLoop('#form-item .purify');
@@ -4541,7 +5139,7 @@ require __DIR__ . '/renewal.preview.js.php';
                     // Mandatory?
                     if (parseInt($(this).data('field-mandatory')) === 1 &&
                         $(this).val() === '' &&
-                        $('#form-item-field-' + $(this).data('field-name')).parent().hasClass('hidden') === false
+                        $('#form-item-field-' + $(this).data('field-name')).closest('.form-item-category').hasClass('hidden') === false
                     ) {
                         //if (debugJavascript === true) console.log($(this))
                         errorExit = true;
@@ -4557,6 +5155,8 @@ require __DIR__ . '/renewal.preview.js.php';
                     }
                 });
                 if (errorExit === true) {
+                    // The faulty field must be visible
+                    setItemFormSectionCollapsed($('#form-item-section-fields'), false, false);
                     toastr.remove();
                     if (reason === 'regex') {
                         toastr.error(
@@ -4897,41 +5497,148 @@ require __DIR__ . '/renewal.preview.js.php';
     //->
 
 
-    //autocomplete for TAGS
-    $("#form-item-tags")
-        //.focus()
-        .bind("keydown", function(event) {
-            if (event.keyCode === $.ui.keyCode.TAB &&
-                $(this).data("autocomplete").menu.active) {
+    // TAGS of the item form, one chip per tag. #form-item-tags keeps the space separated, lower
+    // case list the server stores (30 characters per tag, see the tags table).
+    // Characters refused in a tag, also checked when the item is saved
+    const itemTagForbiddenCharacters = new RegExp("[.|,|;|:|!|=|+|-|*|/|#|\"|'|&]");
+
+    /**
+     * Tags currently held by the item form.
+     *
+     * @return {Array<string>}
+     */
+    function itemFormTags() {
+        return String($('#form-item-tags').val() || '').split(/\s+/).filter(tag => tag !== '');
+    }
+
+    /**
+     * Show the tags of the item form as chips, each with its remove button.
+     *
+     * @return {void}
+     */
+    function renderItemFormTags() {
+        const list = $('#form-item-tags-list').empty();
+        itemFormTags().forEach(function(tag) {
+            $('<span class="tp-tag"></span>')
+                .append($('<span class="tp-tag-text"></span>').text(tag))
+                .append(
+                    $('<button type="button" class="tp-tag-remove"></button>')
+                        .attr({
+                            'data-tag': tag,
+                            'title': <?php echo json_encode($lang->get('delete'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+                            'aria-label': <?php echo json_encode($lang->get('delete'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?> + ' ' + tag
+                        })
+                        .append('<i class="fa-solid fa-xmark" aria-hidden="true"></i>')
+                )
+                .appendTo(list);
+        });
+    }
+
+    /**
+     * Store the tags of the item form and flag the change.
+     *
+     * @param {Array<string>} tags
+     * @return {void}
+     */
+    function setItemFormTags(tags) {
+        $('#form-item-tags').val(tags.join(' ')).trigger('change');
+        renderItemFormTags();
+        refreshItemFormUnsavedBadge();
+    }
+
+    /**
+     * Turn what was typed in the tag entry into chips. Spaces, commas and semicolons separate
+     * tags; a tag holding a refused character stays in the entry with a warning.
+     *
+     * @return {void}
+     */
+    function commitItemFormTagsEntry() {
+        const entry = $('#form-item-tags-entry');
+        const tags = itemFormTags();
+        const refused = [];
+        String(entry.val() || '').toLowerCase().split(/[\s,;]+/).forEach(function(tag) {
+            tag = tag.substring(0, 30);
+            if (tag === '') {
+                return;
+            }
+            if (itemTagForbiddenCharacters.test(tag) === true) {
+                refused.push(tag);
+            } else if (tags.indexOf(tag) === -1) {
+                tags.push(tag);
+            }
+        });
+        entry.val(refused.join(' '));
+        if (tags.join(' ') !== itemFormTags().join(' ')) {
+            setItemFormTags(tags);
+        }
+        if (refused.length > 0) {
+            toastr.remove();
+            toastr.warning(
+                <?php echo json_encode($lang->get('error_tags'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+                '', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
+        }
+    }
+
+    $('#form-item-tags-entry')
+        .on('keydown', function(event) {
+            if (event.key === 'Enter' || event.key === ' ' || event.key === ',' || event.key === ';') {
+                // Enter on a highlighted suggestion is the autocomplete's own select
+                if (event.key === 'Enter' && $(this).autocomplete('widget').find('.ui-state-active').is(':visible')) {
+                    return;
+                }
                 event.preventDefault();
+                commitItemFormTagsEntry();
+                $(this).autocomplete('close');
+            } else if (event.key === 'Backspace' && $(this).val() === '') {
+                // Backspace in an empty entry takes back the last tag
+                const tags = itemFormTags();
+                if (tags.length > 0) {
+                    tags.pop();
+                    setItemFormTags(tags);
+                }
             }
         })
+        .on('blur', function() {
+            commitItemFormTagsEntry();
+        })
         .autocomplete({
+            minLength: 1,
             source: function(request, response) {
-                $.getJSON("sources/items.queries.php?type=autocomplete_tags&t=1", {
-                    term: extractLast(request.term)
-                }, response);
+                $.getJSON('sources/items.queries.php?type=autocomplete_tags&t=1', {
+                    term: request.term
+                }, function(data) {
+                    // Suggest only the tags the item does not hold yet
+                    const current = itemFormTags();
+                    response((Array.isArray(data) ? data : [])
+                        .map(tag => htmlDecode(String(tag)))
+                        .filter(tag => current.indexOf(tag) === -1));
+                });
             },
             focus: function() {
                 // prevent value inserted on focus
                 return false;
             },
-            search: function() {
-                var term = extractLast(this.value);
-            },
             select: function(event, ui) {
-                var terms = split(this.value);
-                // remove the current input
-                terms.pop();
-                // add the selected item
-                terms.push(ui.item.value);
-                // add placeholder to get the comma-and-space at the end
-                terms.push("");
-                this.value = terms.join(" ");
-
+                $(this).val(ui.item.value);
+                commitItemFormTagsEntry();
                 return false;
             }
         });
+    $('#form-item-tags-list').on('click', '.tp-tag-remove', function() {
+        const removed = this.getAttribute('data-tag');
+        setItemFormTags(itemFormTags().filter(tag => tag !== removed));
+        $('#form-item-tags-entry').trigger('focus');
+    });
+    // A click in the field, beside the chips, goes to the entry
+    $('#form-item-tags-field').on('click', function(event) {
+        if (event.target === this || event.target.id === 'form-item-tags-list') {
+            $('#form-item-tags-entry').trigger('focus');
+        }
+    });
 
     // Warn in case of limited search
     $(document).on('click', '#limited-search', function() {
@@ -5025,6 +5732,7 @@ require __DIR__ . '/renewal.preview.js.php';
 
             // Initial 'user did a change'
             userDidAChange = false;
+            refreshItemFormUnsavedBadge();
 
             $('#form-item-label').focus();
 
@@ -6582,7 +7290,7 @@ require __DIR__ . '/renewal.preview.js.php';
         if (actionType === 'show') {
             $('#card-item-readonly-badge').addClass('hidden');
             $('[data-item-action="edit"]').removeClass('hidden');
-            $('[data-item-action="delete"]').closest('.nav-item').removeClass('hidden');
+            $('[data-item-action="delete"], .tp-item-view-delete-divider').removeClass('hidden');
         }
 
         // Init
@@ -6708,9 +7416,9 @@ require __DIR__ . '/renewal.preview.js.php';
                 }
 
                 if (!canDelete) {
-                    $('[data-item-action="delete"]').closest('.nav-item').addClass('hidden');
+                    $('[data-item-action="delete"], .tp-item-view-delete-divider').addClass('hidden');
                 } else {
-                    $('[data-item-action="delete"]').closest('.nav-item').removeClass('hidden');
+                    $('[data-item-action="delete"], .tp-item-view-delete-divider').removeClass('hidden');
                 }
             }
 
@@ -6724,9 +7432,7 @@ require __DIR__ . '/renewal.preview.js.php';
             // Store status query running
             requestRunning = true;
             userDidAChange = false;
-
-            // Select tab#1
-            $('#form-item-nav-pills li:first-child a').tab('show');
+            refreshItemFormUnsavedBadge();
 
             // Don't show details
             if (itemDisplay === 'no_display') {
@@ -6984,6 +7690,13 @@ require __DIR__ . '/renewal.preview.js.php';
                         }
                     );
 
+                    // Manual history entries: for who can modify the item, when the setting allows it
+                    $('#card-item-section-history .add-button').toggleClass(
+                        'hidden',
+                        parseInt(data.user_can_modify) !== 1 ||
+                            parseInt((store.get('teampassSettings') || {}).insert_manual_entry_item_history) !== 1
+                    );
+
                     if (actionType === 'show') {
                         // Prepare Views
                         $('.item-details-card, #item-details-card-categories').removeClass('hidden');
@@ -7035,16 +7748,6 @@ require __DIR__ . '/renewal.preview.js.php';
                         $('#items-details-container').removeClass('hidden');
 
                         $('#form-item-suggestion-password').focus();
-                        // If Description empty then remove it
-                        if (data.description === '<p>&nbsp;</p>') {
-                            $('#card-item-description')
-                                .parents('.item-details-card')
-                                .addClass('hidden');
-                        } else {
-                            $('#card-item-description')
-                                .parents('.item-details-card')
-                                .removeClass('hidden');
-                        }
                     } else {
                         $('.form-item').removeClass('hidden');
                         $('#folders-tree-card').addClass('hidden');
@@ -7066,7 +7769,9 @@ require __DIR__ . '/renewal.preview.js.php';
                     // break out of the attribute. Entities are decoded back by the HTML parser,
                     // so legitimate Font Awesome classes keep working.
                     const itemIcon = (data.fa_icon !== "") ? '<i class="'+htmlEncode(data.fa_icon)+' mr-1"></i>' : '';
-                    $('#card-item-label, #form-item-title').html(itemIcon + htmlEncode(data.label));
+                    $('#card-item-label').html(htmlEncode(data.label));
+                    // .attr() stores the classes as a value: nothing can break out of it
+                    $('#card-item-icon').attr('class', data.fa_icon !== '' ? data.fa_icon : 'fa-solid fa-key');
                     data.can_delete = canDelete;
                     laprRenderItemIntegration(data, actionType);
 
@@ -7114,11 +7819,16 @@ require __DIR__ . '/renewal.preview.js.php';
                             {USE_PROFILES: {html: true}}
                         )
                     );
-                    if (data.description === '') {
-                        $('#card-item-description').addClass('hidden');
-                    } else {
-                        $('#card-item-description').removeClass('hidden');
-                    }
+                    // An empty description hides its section
+                    $('#card-item-section-description').toggleClass(
+                        'hidden',
+                        data.description === '' || data.description === '<p>&nbsp;</p>'
+                    );
+                    $('#card-item-description').removeData('clampChecked');
+                    $('#card-item-description-more')
+                        .attr('aria-expanded', 'false')
+                        .text(TP_ITEM_VIEW_LANG.showMore);
+                    refreshItemViewDescriptionClamp();
                     $('#card-item-pwd').html('<?php echo $var['hidden_asterisk']; ?>');
 
                     // Password health marker (replaces the old binary secure/not-secure shield):
@@ -7160,8 +7870,10 @@ require __DIR__ . '/renewal.preview.js.php';
                     setItemRenewalPeriod(data.renewal_period || 0);
                     refreshItemRenewalNotice(data.folder);
                     $('#form-item-tags').val(htmlDecode(data.tags.join(' ')));
+                    $('#form-item-tags-entry').val('');
+                    renderItemFormTags();
                     $('#form-item-icon').val(data.fa_icon);
-                    $('#form-item-icon-show').html(itemIcon);
+                    tpIconPicker.refresh('#form-item-icon');
 
                     syncItemPasswordComplexity('');
 
@@ -7239,29 +7951,35 @@ require __DIR__ . '/renewal.preview.js.php';
 
                     //prepare nice list of users / groups
                     var html_users = '',
-                        html_groups = '',
-                        html_tags = '',
-                        html_kbs = '';
+                        html_groups = '';
 
+                    // Tags come back decoded by the purifier: text sinks only, and no inline handler
+                    // (a tag such as "');alert(1);//" used to run in the onclick attribute)
+                    const tagsContainer = $('#card-item-tags').empty();
                     $(data.tags).each(function(index, value) {
-                        html_tags += '<span class="badge badge-success pointer tip mr-2" title="<?php echo $lang->get('list_items_with_tag'); ?>" onclick="searchItemsWithTags(\'' + value + '\')"><i class="fa-solid fa-hashtag fa-sm"></i>&nbsp;<span class="item_tag">' + value + '</span></span>';
+                        const tag = htmlDecode(String(value));
+                        $('<span class="tp-item-view-chip is-success pointer tip card-item-tag"></span>')
+                            .attr({'title': <?php echo json_encode($lang->get('list_items_with_tag'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>, 'data-tag': tag})
+                            .append('<i class="fa-solid fa-hashtag fa-sm" aria-hidden="true"></i>')
+                            .append($('<span class="item_tag"></span>').text(tag))
+                            .appendTo(tagsContainer);
                     });
-                    if (html_tags === '') {
-                        $('#card-item-tags').html('<?php echo $lang->get('none'); ?>');
-                    } else {
-                        $('#card-item-tags').html(html_tags);
+                    if (tagsContainer.children().length === 0) {
+                        tagsContainer.text(<?php echo json_encode($lang->get('none'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>);
                     }
 
+                    // Same for the Knowledge Base labels: a double-encoded label comes back from the
+                    // purifier as live markup. The container is absent when the KB is not available.
+                    const kbsContainer = $('#card-item-kbs').empty();
                     $(data.links_to_kbs || []).each(function(index, value) {
-                        html_kbs += '<a class="badge badge-primary pointer tip mr-2" href="<?php echo $SETTINGS['cpassman_url']; ?>/index.php?page=kb&id=' + value['id'] + '"><i class="fa-solid fa-map-pin fa-sm"></i>&nbsp;' + value['label'] + '</a>';
-
+                        $('<a class="tp-item-view-chip is-info pointer tip"></a>')
+                            .attr('href', '<?php echo $SETTINGS['cpassman_url']; ?>/index.php?page=kb&id=' + parseInt(value.id, 10))
+                            .append('<i class="fa-solid fa-map-pin fa-sm" aria-hidden="true"></i>')
+                            .append($('<span></span>').text(htmlDecode(String(value.label))))
+                            .appendTo(kbsContainer);
                     });
-                    if ($('#card-item-kbs').length === 0) {
-                        // Knowledge Base is disabled or not available for this user.
-                    } else if (html_kbs === '') {
-                        $('#card-item-kbs').html('<?php echo $lang->get('none'); ?>');
-                    } else {
-                        $('#card-item-kbs').html(html_kbs);
+                    if (kbsContainer.length > 0 && kbsContainer.children().length === 0) {
+                        kbsContainer.text(<?php echo json_encode($lang->get('none'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>);
                     }
 
 
@@ -7383,6 +8101,9 @@ require __DIR__ . '/renewal.preview.js.php';
                             }
                         }
                     }
+                    const shownFields = $('#card-item-fields .card-item-category').not('.hidden')
+                        .find('.card-item-field').not('.hidden').length;
+                    $('#card-item-fields-count').text(shownFields > 0 ? shownFields : '');
 
 
                     // Handle the fact that KEYS may not yet be ready for this user
@@ -7403,69 +8124,13 @@ require __DIR__ . '/renewal.preview.js.php';
                         );
                     }
 
-                    // Waiting
-                    $('#card-item-attachments').html("<?php echo $lang->get('please_wait'); ?>");
+                    // The attachments section shows once step 2 has found files
+                    $('#card-item-section-attachments').addClass('hidden');
 
-                    // Manage clipboard button
-                    // Select all buttons with the class .btn-copy-clipboard-clear
-                    document.querySelectorAll('.btn-copy-clipboard-clear').forEach(element => {
-                        element.addEventListener('click', async function() {
-                            try {
-                                // Retrieve the target defined by data-clipboard-target
-                                const targetId = this.getAttribute('data-clipboard-target');
-                                
-                                if (!targetId) return;
-
-                                // Grab the node (login => <span>, url => <span> ou <a>, email => <span>, etc.)
-                                const $el = $('#'+targetId);
-                                if ($el.length === 0) throw new Error('target-not-found');
-
-                                // Compute text to copy depending on element type
-                                let textToCopy = '';
-                                if ($el.is('input, textarea')) {
-                                    textToCopy = $el.val() || '';
-                                } else if ($el.is('a')) {
-                                // For links, prefer href; fallback to visible text
-                                textToCopy = $el.attr('href') || ($el.text() || '').trim();
-                                } else {
-                                    // span/div/etc.
-                                    textToCopy = ($el.text() || '').trim();
-                                }	
-                                if (!textToCopy) throw new Error('empty');
-
-                                // Copy to clipboard
-                                await copyToClipboard(textToCopy);
-
-                                // Success toast
-                                toastr.remove();
-                                toastr.info(
-                                    '<?php echo $lang->get("copy_to_clipboard"); ?>',
-                                    '', {
-                                        timeOut: 2000,
-                                        progressBar: true,
-                                        positionClass: 'toast-bottom-right'
-                                    }
-                                );
-                            } catch (error) {
-                                toastr.error(
-                                    '<?php echo $lang->get("clipboard_error"); ?>',
-                                    '', {
-                                        timeOut: 3000,
-                                        progressBar: true,
-                                        positionClass: 'toast-bottom-right'
-                                    }
-                                );
-                            }
-                        });
-                    });
-
-
-                    // Prepare clipboard - COPY LOGIN
-                    if (data.login !== '') {
-                        $('#card-item-login-btn').removeClass('hidden');
-                    } else {
-                        $('#card-item-login-btn').addClass('hidden');
-                    }
+                    // Empty rows are not shown; the OTP row waits for its first code (showOTPCode)
+                    $('#card-item-row-login').toggleClass('hidden', data.login === '');
+                    $('#card-item-row-otp').addClass('hidden');
+                    $('#card-item-otp-tools').empty();
                     $('#pwd_empty_igloo').remove();
 
                     // A passkey item has no password to reveal: its line points to the passkeys instead
@@ -7497,6 +8162,7 @@ require __DIR__ . '/renewal.preview.js.php';
 
                                 // Copy to clipboard
                                 await copyToClipboard(password);
+                                markItemViewCopied(this);
 
                                 // Notification for the user
                                 const clipboardDuration = parseInt(store.get('teampassSettings').clipboard_life_duration) || 0;
@@ -7558,37 +8224,28 @@ require __DIR__ . '/renewal.preview.js.php';
                         }
                     }
 
-                    // Prepare clipboard - COPY EMAIL
-                    if (data.email !== '') {
-                        $('#card-item-email-btn').removeClass('hidden');
-                    } else {
-                        $('#card-item-email-btn').addClass('hidden');
-                    }
+                    $('#card-item-row-email').toggleClass('hidden', data.email === '');
+                    $('#card-item-row-url').toggleClass('hidden', data.url === '');
 
-                    // Copy and open URL buttons
-                    if (data.url !== '') {
-                        $('#card-item-url-text-btn').removeClass('hidden');
-                        $('#card-item-url').removeClass('hidden');
-                    } else {
-                        $('#card-item-url-text-btn').addClass('hidden');
-                        $('#card-item-url').addClass('hidden');
-                    }
-
-                    // Prepare auto_update info
+                    // Status of the item, one readable line each
                     $('#card-item-misc').html('');
-                    if (parseInt(data.auto_update_pwd_frequency) !== '0') {
-                        $('#card-item-misc')
-                            .append('<span class="fa-solid fa-shield infotip mr-4" title="<?php echo $lang->get('auto_update_enabled'); ?>&nbsp;' + data.auto_update_pwd_frequency + '"></span>');
+                    // A number: it used to be compared with the string '0', which showed it on every item
+                    if (parseInt(data.auto_update_pwd_frequency, 10) > 0) {
+                        $('#card-item-misc').append($('<li>').html(itemViewStatusLineHtml(
+                            'fa-solid fa-shield-halved',
+                            TP_ITEM_VIEW_LANG.autoUpdate + ' ' + data.auto_update_pwd_frequency
+                        )));
                     }
 
                     // Show Notification engaged
-                    $('#card-item-misc')
-                        .append('<span class="mr-4 icon-badge" id="card-item-misc-notification"></span>');
+                    $('#card-item-misc').append('<li id="card-item-misc-notification"></li>');
                     updateItemNotificationStatusVisual(data.notification_status === true);
 
                     // Prepare counter
-                    $('#card-item-misc')
-                        .append('<span class="icon-badge mr-4"><span class="fa-regular fa-eye infotip" title="<?php echo $lang->get('viewed_number'); ?>"></span><span class="badge badge-info icon-badge-text icon-badge-far">' + data.viewed_no + '</span></span>');
+                    $('#card-item-misc').append($('<li>').html(itemViewStatusLineHtml(
+                        'fa-regular fa-eye',
+                        TP_ITEM_VIEW_LANG.viewedTimes.replace('%s', parseInt(data.viewed_no, 10) || 0)
+                    )));
 
                     // Delete after X views
                     if (data.to_be_deleted !== '') {
@@ -7599,9 +8256,14 @@ require __DIR__ . '/renewal.preview.js.php';
                             $('#form-item-deleteAfterShown').val('');
                             $('#form-item-deleteAfterDate').val(data.to_be_deleted);
                         }
-                        // Show icon
-                        $('#card-item-misc')
-                            .append('<span class="icon-badge mr-5"><span class="fa-regular fa-trash-alt infotip" title="<?php echo $lang->get('automatic_deletion_engaged'); ?>"></span><span class="badge badge-danger icon-badge-text-bottom-right">' + data.to_be_deleted + '</span></span>');
+                        // Status line, only for an item that has a deletion rule (to_be_deleted
+                        // holds the word "No" when the feature is disabled)
+                        if (data.to_be_deleted_type !== undefined) {
+                            $('#card-item-misc').append($('<li>').html(itemViewStatusLineHtml(
+                                'fa-regular fa-trash-alt',
+                                TP_ITEM_VIEW_LANG.autoDeletion + ': ' + data.to_be_deleted
+                            )));
+                        }
                     }
 
                     // reset password shown info
@@ -7637,17 +8299,25 @@ require __DIR__ . '/renewal.preview.js.php';
                         $('#div_loading').addClass('hidden');
                     }
 
-                    // Prepare bottom buttons
+                    // Previous / next items of the list, their label in the button title
                     if ($('#list-item-row_'+data.id).prev('.list-item-row').attr('data-item-id') !== undefined) {
+                        const prevLabel = TP_ITEM_VIEW_LANG.previousItem + ' ' + unescape($('#list-item-row_'+data.id).prev('.list-item-row').attr('data-label'));
                         $('.but-prev-item')
-                            .html('<i class="fa-solid fa-arrow-left mr-2"></i>' + unescape($('#list-item-row_'+data.id).prev('.list-item-row').attr('data-label')))
-                            .attr('data-prev-item-id', $('#list-item-row_'+data.id).prev('.list-item-row').attr('data-item-id'))
+                            .attr({
+                                'title': prevLabel,
+                                'aria-label': prevLabel,
+                                'data-prev-item-id': $('#list-item-row_'+data.id).prev('.list-item-row').attr('data-item-id')
+                            })
                             .removeClass('hidden');
                     }
                     if ($('#list-item-row_'+data.id).next('.list-item-row').attr('data-item-id') !== undefined) {
+                        const nextLabel = TP_ITEM_VIEW_LANG.nextItem + ' ' + unescape($('#list-item-row_'+data.id).next('.list-item-row').attr('data-label'));
                         $('.but-next-item')
-                            .html('<i class="fa-solid fa-arrow-right mr-2"></i>' + unescape($('#list-item-row_'+data.id).next('.list-item-row').attr('data-label')))
-                            .attr('data-next-item-id', $('#list-item-row_'+data.id).next('.list-item-row').attr('data-item-id'))
+                            .attr({
+                                'title': nextLabel,
+                                'aria-label': nextLabel,
+                                'data-next-item-id': $('#list-item-row_'+data.id).next('.list-item-row').attr('data-item-id')
+                            })
                             .removeClass('hidden');
                     }
 
@@ -7692,80 +8362,23 @@ require __DIR__ . '/renewal.preview.js.php';
                     console.log(data);
                 }
 
-                // Attachments
+                // Attachments: the same cards in the view and in the edit form; no file, no section
+                $('#card-item-section-attachments').toggleClass('hidden', data === false || data.attachments.length === 0);
                 if (data !== false) {
                     if (data.attachments.length === 0) {
-                        $('#card-item-attachments-badge').html('<?php echo $lang->get('none'); ?>');
-                        $('#card-item-attachments')
-                            .html('<?php echo $lang->get('no_attachment'); ?>')
-                            .parent()
-                            .addClass('collapsed');
+                        // Otherwise the edition form keeps the files of the item shown before
+                        $('#form-item-attachments').html('');
+                        $('#card-item-attachments-badge').html('');
+                        $('#card-item-attachments').html('');
                     } else {
-                        var html = '',
-                            htmlFull = '',
-                            counter = 1,
-                            nbFiles = 0;
+                        let html = '',
+                            htmlFull = '';
                         $.each(data.attachments, function(i, value) {
-                            // Manage new row
-                            if (counter === 1) {
-                                htmlFull += '<div class="row">';
-                                html += '<div class="row">';
-                            }
-
-                            html += '<div class="col-6">' +
-                                '<div class="callout callout-info">' +
-                                '<i class="' + value.icon + ' mr-2 text-info"></i>';
-
-                            // Show VIEW image icon
-                            if (value.is_image === 1) {
-                                // Prepare filename
-                                let filename = decodeFilename(value.filename);
-
-                                html +=
-                                    '<i class="fa-solid fa-eye infotip preview-image pointer mr-2" ' +
-                                    'title="<?php echo $lang->get('see'); ?>" ' +
-                                    'data-file-id="' + value.id + '" data-file-title="' +
-                                    (isBase64(value.filename) === true ? atob(value.filename) : value.filename) + '"></i>';
-                            }
-
-                            // Show DOWNLOAD icon
-                            downloadIcon =
-                                '<a class="text-secondary infotip mr-2" href="sources/downloadFile.php?name=' + encodeURI(value.filename) + '&key=<?php echo $session->get('key'); ?>&key_tmp=' + value.key + '&fileid=' + value.id + '" title="<?php echo $lang->get('download'); ?>">' +
-                                '<i class="fa-solid fa-file-download"></i></a>';
-                            html += downloadIcon;
-
-                            // Prepare filename
-                            let filename = decodeFilename(value.filename);
-
-                            // Show other info
-                            html +=
-                                '<span class="font-weight-bold mr-3">' + filename + '</span>' +
-                                '<span class="mr-2 font-weight-light">(' + value.extension + ')</span>' +
-                                '<span class="font-italic">' + value.size + '</span>' +
-                                '</div></div>';
-
-                            htmlFull += '<div class="col-6 edit-attachment-div"><div class="info-box bg-secondary-gradient">' +
-                                '<span class="info-box-icon bg-info"><i class="' + value.icon + '"></i></span>' +
-                                '<div class="info-box-content">' +
-                                '<span class="info-box-text">' + filename + '.' + value.extension + '</span>' +
-                                '<span class="info-box-text">' +
-                                '<a class="text-info infotip mr-3" href="sources/downloadFile.php?name=' + encodeURI(value.filename) + '&key=<?php echo $session->get('key'); ?>&key_tmp=' + value.key + '&fileid=' + value.id + '" title="<?php echo $lang->get('download'); ?>">' +
-                                '<i class="fa-solid fa-file-download"></i></a>' +
-                                '<i class="fa-solid fa-trash pointer delete-file infotip text-danger" data-file-id="' + value.id + '" title="<?php echo $lang->get('delete'); ?>"></i>' +
-                                '</span></div>' +
-                                '</div></div>';
-
-                            if (counter === 2) {
-                                htmlFull += '</div>';
-                                html += '</div>';
-                                counter = 1;
-                            } else {
-                                counter += 1;
-                            }
-                            nbFiles += 1;
+                            html += itemAttachmentCardHtml(value, false);
+                            htmlFull += itemAttachmentCardHtml(value, true);
                         });
                         $('#card-item-attachments').html(html);
-                        $('#card-item-attachments-badge').html(nbFiles);
+                        $('#card-item-attachments-badge').html(data.attachments.length);
                         $('#form-item-attachments').html(htmlFull);
                         $('#form-item-attachments-zone').removeClass('hidden');
                     }
@@ -7779,13 +8392,13 @@ require __DIR__ . '/renewal.preview.js.php';
                 // Show restrictions with Badges
                 var html_restrictions = '';
                 $.each(store.get('teampassItem').id_restricted_to, function(i, value) {
-                    html_restrictions +='<span class="badge badge-info mr-2 mb-1"><i class="fa-solid fa-group fa-sm mr-1"></i>' +
+                    html_restrictions +='<span class="tp-item-view-chip is-info"><i class="fa-solid fa-user fa-sm" aria-hidden="true"></i>' +
                         htmlEncode(data.users_list.find(x => x.id === parseInt(value)).name) + '</span>';
                 });
 
                 $.each(store.get('teampassItem').id_restricted_to_roles, function(i, value) {
                     const role = data.roles_list.find(x => x.id === parseInt(value));
-                    html_restrictions += (role ? '<span class="badge badge-info mr-2 mb-1"><i class="fa-solid fa-group fa-sm mr-1"></i>' + htmlEncode(role.title) + '</span>' : '');
+                    html_restrictions += (role ? '<span class="tp-item-view-chip is-info"><i class="fa-solid fa-users fa-sm" aria-hidden="true"></i>' + htmlEncode(role.title) + '</span>' : '');
                 });     
                         
                 if (html_restrictions === '') {
@@ -7903,8 +8516,10 @@ require __DIR__ . '/renewal.preview.js.php';
 
                 // Valid OTV links
                 if (data.otv_links !== undefined && data.otv_links > 0) {
-                    $('#card-item-misc')
-                        .append('<span class="icon-badge mr-4"><span class="fa-regular fa-handshake infotip" title="<?php echo $lang->get('existing_valid_otv_links'); ?>"></span><span class="badge badge-info icon-badge-text icon-badge-far">' + data.otv_links + '</span></span>');
+                    $('#card-item-misc').append($('<li>').html(itemViewStatusLineHtml(
+                        'fa-solid fa-paper-plane',
+                        TP_ITEM_VIEW_LANG.secureSendLinks.replace('%s', parseInt(data.otv_links, 10))
+                    )));
                 }
 
                 // Manage if OTP is enabled for item
@@ -7918,6 +8533,7 @@ require __DIR__ . '/renewal.preview.js.php';
                 $('#form-item-otpAlgorithm').val(data.otp_algorithm || 'sha1')
                 $('#form-item-otpDigits').val(String(data.otp_digits || '6'))
                 $('#form-item-otpPeriod').val(String(data.otp_period || '30'))
+                refreshItemOtpSummary()
 
                 // Delete inputs related files uploaded but not confirmed
                 var data = {
@@ -7972,20 +8588,26 @@ require __DIR__ . '/renewal.preview.js.php';
                     data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'showDetailsStep3');
 
                     if (data.otp_code !== '' && data.otp_expires_in !== '' && parseInt(data.otp_enabled) === 1 && data.message === '') {
-                        $('#card-item-opt_code').html(data.otp_code+'</span><i class="fa-regular fa-copy ml-2 text-secondary pointer" id="clipboard_otpcode"></i><span class="ml-2">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span id="countdown_otp" style="position: absolute;right:0px;"></span><span>');   
+                        // Digits shown in two groups, copied as one string
+                        const otpDigits = String(data.otp_code);
+                        const otpShown = /^(\d{6}|\d{8})$/.test(otpDigits) ?
+                            otpDigits.slice(0, otpDigits.length / 2) + ' ' + otpDigits.slice(otpDigits.length / 2) :
+                            otpDigits;
+                        $('#card-item-opt_code').html(
+                            '<span class="tp-item-view-secret tp-item-view-otp">' + htmlEncode(otpShown) + '</span>' +
+                            itemViewTimerHtml('countdown_otp')
+                        );
+                        $('#card-item-opt_code_error').html('');
+                        $('#card-item-otp-tools').html(
+                            '<button type="button" class="tp-item-view-btn" id="clipboard_otpcode" title="' + tpEscapeHtmlAttribute(TP_ITEM_VIEW_LANG.copy) + '" aria-label="' + tpEscapeHtmlAttribute(TP_ITEM_VIEW_LANG.copy) + '">' +
+                            '<i class="fa-regular fa-copy" aria-hidden="true"></i></button>'
+                        );
+                        $('#card-item-row-otp').removeClass('hidden');
                         
-                        // show countdown
-                        $("#countdown_otp").countdown360({
-                            radius      : 10,
-                            seconds     : data.otp_expires_in,
-                            fillStyle   : '#56bbd9',
-                            strokeStyle : '#007bff',
-                            fontSize    : 11,
-                            fontColor   : '#FFFFFF',
-                            label: false,
-                            autostart: false,
-                        }).start();
-                        
+                        // Same ring as the shown password: a full turn is the code period
+                        const otpExpiresIn = parseInt(data.otp_expires_in, 10);
+                        const otpPeriod = parseInt(data.otp_period, 10) > 0 ? parseInt(data.otp_period, 10) : otpExpiresIn;
+                        startItemViewTimer(document.getElementById('countdown_otp'), otpPeriod, otpPeriod - otpExpiresIn);
 
                         // Prepare Clipboard for OTP Code                        
                         document.getElementById('clipboard_otpcode').addEventListener('click', async function() {
@@ -7998,6 +8620,7 @@ require __DIR__ . '/renewal.preview.js.php';
 
                                 // Copy to clipboard
                                 await copyToClipboard(otpCode);
+                                markItemViewCopied(this);
 
                                 // Send success notification
                                 toastr.info(
@@ -8033,11 +8656,15 @@ require __DIR__ . '/renewal.preview.js.php';
 
                         resolve(replayDelayInMilliseconds);
                     } else {
+                        $('#card-item-otp-tools').empty();
                         if (data.error === false) {
-                            $('#card-item-opt_code').html('<?php echo $lang->get('none'); ?>');
+                            // No OTP on this item: no row
+                            $('#card-item-opt_code').html('');
+                            $('#card-item-row-otp').addClass('hidden');
                         } else {
                             $('#card-item-opt_code').html('');
                             $('#card-item-opt_code_error').html('<span class="text-warning pointer infotip" title="<?php echo $lang->get('error_otp_secret'); ?>"><i class="fa-solid fa-triangle-exclamation mr-1"></i><?php echo $lang->get('error'); ?></span>');
+                            $('#card-item-row-otp').removeClass('hidden');
                             $('.infotip').tooltip();
                         }
                     }
@@ -8098,14 +8725,6 @@ require __DIR__ . '/renewal.preview.js.php';
                     );
                 }
             );
-        })
-        .on('click', '.nav-link', function() {
-            if ($(this).attr('href') === '#tab_5') {
-                $('#form-item-buttons').addClass('hidden');
-            } else {
-                $('#form-item-buttons').removeClass('hidden');
-            }
-
         });
 
     // When click on Trash attachment icon
@@ -8113,50 +8732,61 @@ require __DIR__ . '/renewal.preview.js.php';
         var thisButton = $(this),
             thisFileId = thisButton.data('file-id');
 
-        if (thisFileId !== undefined && thisFileId !== '') {
-            // Delete the file
-            var data = {
-                'file_id': thisFileId,
-            };
-
-            $.post(
-                'sources/items.queries.php', {
-                    type: 'delete_attached_file',
-                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
-                    key: '<?php echo $session->get('key'); ?>'
-                },
-                function(data) {
-                    //decrypt data
-                    data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'delete_attached_file');
-                    if (debugJavascript === true) console.log(data);
-
-                    //check if format error
-                    if (data.error === true) {
-                        // ERROR
-                        toastr.remove();
-                        toastr.error(
-                            data.message,
-                            '', {
-                                timeOut: 5000,
-                                progressBar: true
-                            }
-                        );
-                    } else {
-                        // Remove the file in UI
-                        thisButton.closest('.edit-attachment-div').remove();
-
-                        // Inform user
-                        toastr.remove();
-                        toastr.info(
-                            '<?php echo $lang->get('done'); ?>',
-                            '', {
-                                timeOut: 1000
-                            }
-                        );
-                    }
-                }
-            );
+        if (thisFileId === undefined || thisFileId === '') {
+            return;
         }
+
+        // The file is deleted at once, not when the item is saved: ask first
+        launchConfirmDialog(
+            <?php echo json_encode($lang->get('please_confirm_deletion'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+            '<i class="fa-solid fa-trash text-danger mr-2"></i><strong>' + htmlEncode(thisButton.data('file-name') || '') + '</strong>',
+            function() {
+                // Delete the file
+                var data = {
+                    'file_id': thisFileId,
+                };
+
+                $.post(
+                    'sources/items.queries.php', {
+                        type: 'delete_attached_file',
+                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                        key: '<?php echo $session->get('key'); ?>'
+                    },
+                    function(data) {
+                        //decrypt data
+                        data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'delete_attached_file');
+                        if (debugJavascript === true) console.log(data);
+
+                        //check if format error
+                        if (data.error === true) {
+                            // ERROR
+                            toastr.remove();
+                            toastr.error(
+                                data.message,
+                                '', {
+                                    timeOut: 5000,
+                                    progressBar: true
+                                }
+                            );
+                        } else {
+                            // Remove the file in UI
+                            thisButton.tooltip('dispose');
+                            thisButton.closest('.edit-attachment-div').remove();
+
+                            // Inform user
+                            toastr.remove();
+                            toastr.info(
+                                '<?php echo $lang->get('done'); ?>',
+                                '', {
+                                    timeOut: 1000
+                                }
+                            );
+                        }
+                    }
+                );
+            },
+            <?php echo json_encode($lang->get('delete'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>
+        );
     });
 
     // Password line of a passkey item: open the passkeys card it points to
@@ -8234,18 +8864,7 @@ require __DIR__ . '/renewal.preview.js.php';
             $(this).next().addClass('hidden');
         }
     });*/
-    $(document).on('click', '#add-item-history', function() {
-        if ($(this).next().hasClass('hidden') === true && store.get('teampassItem').user_can_modify === 1) {
-            if (parseInt(store.get('teampassSettings').insert_manual_entry_item_history) === 1) {
-                $(this).next().removeClass('hidden');
-            }
-        } else {
-            if (parseInt(store.get('teampassSettings').insert_manual_entry_item_history) === 1) {
-                $(this).next().addClass('hidden');
-            }
-        }
-    });
-    
+
     // Handle the icon + is clicked
     $(document).on('click', '.add-button', function() {
         if ($(this).data('add-type') === 'history') {
@@ -8432,21 +9051,32 @@ require __DIR__ . '/renewal.preview.js.php';
                     var html = '',
                         nbHistoryEvents = 0,
                         previousPasswords = '<h6 class="mb-3"><?php echo $lang->get('next_passwords_were_valid_until_date'); ?></h6>';
+                    // Newest first: the latest events are shown, the older ones on demand
+                    const historyShownFirst = 5;
                     $.each(data.history, function(i, value) {
                         const sourceBadge = value.is_api === true ? '<span class="badge badge-info ml-2 align-middle">API</span>' : ''
-                        html += '<div class="direct-chat-msg"><div class="direct-chat-info clearfix">' +
-                            '<span class="direct-chat-name float-left">' + htmlEncode(value.name) + sourceBadge + '</span>' +
-                            '<span class="direct-chat-timestamp float-right">' + value.date + '</span>' +
+                        html += '<li class="tp-item-view-history-row' + (nbHistoryEvents >= historyShownFirst ? ' is-older' : '') + '">' +
+                            '<img class="tp-item-view-history-avatar" src="' + value.avatar + '" alt="">' +
+                            '<div class="tp-item-view-history-what">' +
+                            '<span class="tp-item-view-history-who">' + htmlEncode(value.name) + sourceBadge + '</span> ' +
+                            '<span class="text-capitalize">' + (value.action === '' ? '' : (value.action)) + '</span>' +
+                            (value.detail === '' ? '' : (' | ' + htmlEncode(value.detail))) +
                             '</div>' +
-                            '<img class="direct-chat-img" src="' + value.avatar + '" alt="Message User Image">' +
-                            '<div class="direct-chat-text"><span class="text-capitalize">' +
-                            (value.action === '' ? '' : (value.action)) + '</span> ' +
-                            (value.detail === '' ? '' : (' | ' + htmlEncode(value.detail))) + '</div></div>';
+                            '<span class="tp-item-view-history-when">' + htmlEncode(value.date) + '</span>' +
+                            '</li>';
+                        if (nbHistoryEvents === 0) {
+                            $('#card-item-last-change')
+                                .text(TP_ITEM_VIEW_LANG.lastActivity.replace('%1$s', value.date).replace('%2$s', value.name))
+                                .removeClass('hidden');
+                        }
                         nbHistoryEvents += 1;
                     });
                     // Display
-                    $('#card-item-history').html(html);
+                    $('#card-item-history').html(html).removeClass('is-expanded');
                     $('#card-item-history-badge').html(nbHistoryEvents);
+                    $('#card-item-history-older')
+                        .text(TP_ITEM_VIEW_LANG.showOlder.replace('%s', nbHistoryEvents - historyShownFirst))
+                        .toggleClass('hidden', nbHistoryEvents <= historyShownFirst);
                 }
 
                 // Collapse History
@@ -9122,6 +9752,7 @@ require __DIR__ . '/renewal.preview.js.php';
 
             // Form has changed
             userDidAChange = true;
+            refreshItemFormUnsavedBadge();
             if (debugJavascript === true) console.log('User did a change during generate_smart_password > ' + userDidAChange);
 
             // SHow button in sticky footer
@@ -9450,6 +10081,7 @@ require __DIR__ . '/renewal.preview.js.php';
         passphraseCoaching(result.wordCount, result.hasSuffix)
 
         userDidAChange = true
+        refreshItemFormUnsavedBadge()
         if (debugJavascript === true) console.log('Passphrase generated: ' + result.passphrase)
     }
 
@@ -9631,6 +10263,9 @@ require __DIR__ . '/renewal.preview.js.php';
             searchItems(criteria);
         }
     }
+    $(document).on('click', '#card-item-tags .card-item-tag', function() {
+        searchItemsWithTags(this.getAttribute('data-tag') || '');
+    });
 
     /**
      * Checks if string is base64 encoded
@@ -9864,23 +10499,48 @@ require __DIR__ . '/renewal.preview.js.php';
         // Hide/show list of subfolders
         //$('#table_teampass_subfolders_list').toggleClass('hidden', store.get('teampassUser').show_subfolders !== 1);
 
+        /**
+         * Save the item form once, committing the field being typed in first: its native
+         * 'change' only fires on blur, and userDidAChange depends on it.
+         */
+        function saveItemFormFromKeyboard() {
+            if (saveInProgress) {
+                return;
+            }
+            saveInProgress = true;
+            if (document.activeElement && $(document.activeElement).closest('#form-item').length > 0) {
+                document.activeElement.blur();
+            }
+            $('#form-item-button-save').click();
+            setTimeout(() => { saveInProgress = false; }, 1000);
+        }
+
         // Prevent Enter key from propagating in label and password fields and do single save
         // Enter triggers save in these:
         $('#form-item-label, #form-item-password').on('keydown keyup keypress', function(e) {
             if ((e.key === 'Enter' || e.which === 13)) {
                 e.preventDefault();
                 e.stopPropagation();
-                if (!saveInProgress) {
-                    saveInProgress = true;
-                    $('#form-item-button-save').click();
-                    setTimeout(() => { saveInProgress = false; }, 1000);
+                if (e.type === 'keydown') {
+                    saveItemFormFromKeyboard();
                 }
                 return false;
             }
         });
 
+        // Ctrl+S (Cmd+S on macOS) saves the item form while it is open
+        $(document).on('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey
+                && (e.key === 's' || e.key === 'S')
+                && $('.form-item').hasClass('hidden') === false
+            ) {
+                e.preventDefault();
+                saveItemFormFromKeyboard();
+            }
+        });
+
         // Enter does nothing in these:
-        $('#form-item-login, #form-item-email, #form-item-url, #form-item-icon').on('keydown keyup keypress', function(e) {
+        $('#form-item-login, #form-item-email, #form-item-url').on('keydown keyup keypress', function(e) {
             if ((e.key === 'Enter' || e.which === 13)) {
                 e.preventDefault();
                 e.stopPropagation();

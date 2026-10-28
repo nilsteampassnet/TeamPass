@@ -890,39 +890,6 @@
     border-radius: 3px;
 }
 
-/* ****
-* ITEM detail - URL row
-* A long URL used to overflow its row and push the action buttons away.
-* The row is laid out as a flex line so the value takes exactly the space
-* left by the label and the buttons, and is truncated with an ellipsis.
-* Only the rendering is truncated: the full URL stays in the DOM, so the
-* copy button and the "open" link keep using the complete value.
-* *****/
-.item-url-row {
-    display: flex;
-    align-items: center;
-}
-.item-url-row > b {
-    flex: 0 0 auto;
-    margin-right: auto;
-    padding-right: 0.5rem;
-}
-.item-url-row #card-item-url-text {
-    order: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-.item-url-row #card-item-url {
-    order: 2;
-    flex: 0 0 auto;
-}
-.item-url-row #card-item-url-text-btn {
-    order: 3;
-    flex: 0 0 auto;
-}
-
 /* Persistent highlight on the currently selected item row */
 #teampass_items_list tr.item-selected td {
     background-color: rgba(0, 123, 255, 0.07) !important;
@@ -1610,5 +1577,1329 @@ body.tp-navigating .dropdown-item {
 @media (prefers-reduced-motion: reduce) {
     #tp-page-progress-bar {
         transition: none;
+    }
+}
+
+/* ============================================================
+   Item edit form (app/pages/items.php, .form-item)
+   Action bar kept below the fixed navbar while the form scrolls,
+   the label edited in place as the form title.
+   ============================================================ */
+.tp-item-form-bar {
+    position: sticky;
+    top: calc(3.5rem + 1px);
+    z-index: 1020;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem;
+    background-color: #fff;
+}
+.tp-item-form-bar::after {
+    content: none;
+}
+.dark-mode .tp-item-form-bar {
+    background-color: #343a40;
+}
+.tp-item-form-title {
+    position: relative;
+    flex: 1 1 16rem;
+    min-width: 0;
+}
+.tp-item-form-title-icon {
+    position: absolute;
+    top: 50%;
+    left: .75rem;
+    transform: translateY(-50%);
+    color: #6c757d;
+    pointer-events: none;
+}
+.tp-item-form-title .form-control {
+    padding-left: 2.25rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+    background-color: transparent;
+    border-color: transparent;
+    border-bottom: 1px dashed #adb5bd;
+    box-shadow: none;
+}
+.tp-item-form-title .form-control:hover {
+    border-color: #ced4da;
+}
+.tp-item-form-title .form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 .2rem rgba(0, 123, 255, .25);
+}
+/* Outweighs AdminLTE's .dark-mode .form-control:not(...):not(...) border and background */
+.dark-mode .tp-item-form-title .form-control.form-item-control:not(:hover):not(:focus) {
+    background-color: transparent;
+    border-color: transparent;
+    border-bottom-color: #6c757d;
+}
+.tp-item-form-buttons {
+    display: flex;
+    gap: .5rem;
+}
+.tp-item-form-unsaved {
+    display: inline-flex;
+    align-items: center;
+    font-size: .875rem;
+    font-weight: 600;
+    color: #8a4b00;
+}
+.tp-item-form-unsaved-dot {
+    width: .5rem;
+    height: .5rem;
+    margin-right: .375rem;
+    border-radius: 50%;
+    background-color: #c2410c;
+}
+.dark-mode .tp-item-form-unsaved {
+    color: #ffc107;
+}
+.tp-item-form-subheader {
+    gap: .5rem 1rem;
+}
+.tp-item-form-rules {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .25rem 1rem;
+    margin-left: auto;
+}
+.tp-item-form-coach {
+    min-height: 1.3rem;
+}
+.tp-item-form-panel {
+    margin-top: .5rem;
+    padding: .5rem .75rem;
+    border: 1px solid #dee2e6;
+    border-radius: .25rem;
+    background-color: #f8f9fa;
+}
+.dark-mode .tp-item-form-panel {
+    border-color: #6c757d;
+    background-color: #3f474e;
+}
+.tp-item-form-renewal-period {
+    width: 8.5rem;
+}
+.tp-item-form-label {
+    margin-bottom: .5rem;
+    font-weight: 700;
+}
+/* Item icon: a square button in the title, its field in a dropdown.
+   No .btn class: the legacy bootstrap-buttons.css would shrink an icon-only .btn */
+.tp-item-form-icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    border: 1px solid #ced4da;
+    border-radius: .25rem;
+    background-color: transparent;
+    color: #495057;
+    font-size: 1.25rem;
+}
+.tp-item-form-icon-button:hover,
+.tp-item-form-icon-button:focus {
+    border-color: #80bdff;
+    color: #0062cc;
+}
+.dark-mode .tp-item-form-icon-button {
+    border-color: #6c757d;
+    color: #e9ecef;
+}
+#form-item-icon-show i {
+    margin-right: 0 !important;
+}
+#form-item-icon-show:not(:empty) + .tp-item-form-icon-default {
+    display: none;
+}
+.tp-item-form-icon-default {
+    color: #6c757d;
+}
+.tp-item-form-icon-menu {
+    width: 22rem;
+    max-width: calc(100vw - 2rem);
+    padding: .75rem;
+}
+/* Icon picker: a scrolling grid of Font Awesome Free icons under its search field */
+.tp-icon-picker {
+    position: relative;
+    height: 16rem;
+    margin: .5rem 0;
+    overflow-y: auto;
+}
+.tp-icon-picker-title {
+    margin: .5rem 0 .25rem;
+    color: #6c757d;
+    font-size: .75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.tp-icon-picker-title:first-child {
+    margin-top: 0;
+}
+.tp-icon-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(2.25rem, 1fr));
+    gap: .25rem;
+}
+/* No .btn class: the legacy bootstrap-buttons.css would shrink an icon-only .btn */
+.tp-icon-picker-tile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 2.25rem;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: .25rem;
+    background-color: transparent;
+    color: #495057;
+    font-size: 1.125rem;
+}
+.tp-icon-picker-tile:hover,
+.tp-icon-picker-tile:focus {
+    border-color: #80bdff;
+    color: #0062cc;
+    outline: 0;
+}
+.tp-icon-picker-tile.is-selected {
+    border-color: #007bff;
+    background-color: #e7f1ff;
+    color: #0062cc;
+}
+.tp-icon-picker-empty {
+    padding: 1rem .5rem;
+    color: #6c757d;
+    text-align: center;
+}
+.tp-icon-picker-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+}
+.tp-icon-picker-value {
+    overflow: hidden;
+    color: #6c757d;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+/* No .btn class: the legacy bootstrap-buttons.css repaints it white in dark mode */
+.tp-icon-picker-reset {
+    flex: 0 0 auto;
+    padding: .25rem .5rem;
+    border: 1px solid #ced4da;
+    border-radius: .25rem;
+    background-color: transparent;
+    color: #495057;
+    font-size: .875rem;
+}
+.tp-icon-picker-reset:hover:not(:disabled),
+.tp-icon-picker-reset:focus {
+    border-color: #80bdff;
+    color: #0062cc;
+}
+.tp-icon-picker-reset:disabled {
+    opacity: .5;
+}
+.dark-mode .tp-icon-picker-reset {
+    border-color: #6c757d;
+    color: #e9ecef;
+}
+/* Icon fields of the folder forms: a button showing the icon before the text field, the picker
+   unfolding below it (a dropdown would be cut by the scrolling folder sidebar) */
+.tp-icon-picker-toggle {
+    justify-content: center;
+    min-width: 2.75rem;
+    color: #495057;
+    font-size: 1.125rem;
+    cursor: pointer;
+}
+.tp-icon-picker-toggle:hover,
+.tp-icon-picker-toggle:focus {
+    color: #0062cc;
+}
+.tp-icon-picker-preview:not(:empty) + .tp-icon-picker-placeholder {
+    display: none;
+}
+.tp-icon-picker-placeholder {
+    color: #6c757d;
+}
+.tp-icon-picker-inline {
+    margin-top: .5rem;
+    padding: .75rem;
+    border: 1px solid #dee2e6;
+    border-radius: .25rem;
+    background-color: #fff;
+}
+.dark-mode .tp-icon-picker-toggle {
+    color: #e9ecef;
+}
+.dark-mode .tp-icon-picker-inline {
+    border-color: #6c757d;
+    background-color: #343a40;
+}
+.dark-mode .tp-icon-picker-title,
+.dark-mode .tp-icon-picker-empty,
+.dark-mode .tp-icon-picker-value {
+    color: #adb5bd;
+}
+.dark-mode .tp-icon-picker-tile {
+    color: #e9ecef;
+}
+.dark-mode .tp-icon-picker-tile:hover,
+.dark-mode .tp-icon-picker-tile:focus,
+.dark-mode .tp-icon-picker-tile.is-selected {
+    border-color: #3f9cff;
+    background-color: rgba(0, 123, 255, .2);
+    color: #8fc1ff;
+}
+/* Item renewal: one status line under the setting, the explanations behind its info icon */
+.tp-renewal-help {
+    cursor: help;
+}
+/* Item tags: chips followed by the entry, inside a field that grows with them */
+.tp-tags-field {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .25rem;
+    height: auto;
+    min-height: calc(2.25rem + 2px);
+    padding: .25rem .5rem;
+    cursor: text;
+}
+.tp-tags-field:focus-within {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 .2rem rgba(0, 123, 255, .25);
+}
+.tp-tags-list {
+    display: contents;
+}
+.tp-tag {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    padding: .125rem .25rem .125rem .5rem;
+    border-radius: 1rem;
+    background-color: #d4edda;
+    color: #155724;
+    font-size: .875rem;
+    line-height: 1.25rem;
+}
+.tp-tag-text {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+/* No .btn class: the legacy bootstrap-buttons.css would shrink an icon-only .btn */
+.tp-tag-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-left: .125rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background-color: transparent;
+    color: inherit;
+    font-size: .75rem;
+    cursor: pointer;
+}
+.tp-tag-remove:hover,
+.tp-tag-remove:focus {
+    background-color: rgba(21, 87, 36, .15);
+    outline: 0;
+}
+.tp-tags-entry {
+    flex: 1 1 8rem;
+    min-width: 8rem;
+    padding: .125rem 0;
+    border: 0;
+    background-color: transparent;
+    color: inherit;
+    outline: 0;
+}
+.dark-mode .tp-tag {
+    background-color: rgba(40, 167, 69, .25);
+    color: #b8e6c4;
+}
+.dark-mode .tp-tag-remove:hover,
+.dark-mode .tp-tag-remove:focus {
+    background-color: rgba(255, 255, 255, .15);
+}
+/* Item form sections: the former tabs, one after the other on the same page */
+.tp-item-form-jumps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .25rem;
+}
+.tp-item-form-jump {
+    display: inline-flex;
+    align-items: center;
+    padding: .25rem .75rem;
+    border-radius: 1rem;
+    color: #495057;
+    font-size: .875rem;
+}
+.tp-item-form-jump:hover,
+.tp-item-form-jump:focus {
+    background-color: #e9ecef;
+    color: #212529;
+    text-decoration: none;
+}
+.dark-mode .tp-item-form-jump {
+    color: #ced4da;
+}
+.dark-mode .tp-item-form-jump:hover,
+.dark-mode .tp-item-form-jump:focus {
+    background-color: #3f474e;
+    color: #fff;
+}
+.tp-item-form-section {
+    /* Clears the fixed navbar and the sticky action bar when a shortcut scrolls to it */
+    scroll-margin-top: 8rem;
+}
+.tp-item-form-section + .tp-item-form-section {
+    margin-top: 1.25rem;
+}
+/* Section head: a band whose whole width folds the section, tools on its right */
+.tp-item-form-section-head {
+    display: flex;
+    align-items: center;
+    gap: .25rem;
+    margin-bottom: .75rem;
+    border-radius: .375rem;
+    background-color: #e2e6ea;
+}
+.dark-mode .tp-item-form-section-head {
+    background-color: #23272b;
+}
+.tp-item-form-section.is-collapsed .tp-item-form-section-head {
+    margin-bottom: 0;
+}
+.tp-item-form-section.is-collapsed .tp-item-form-section-body {
+    display: none;
+}
+.tp-item-form-section-heading {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+.tp-item-form-section-toggle {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: .5rem .75rem;
+    border: 0;
+    border-radius: .375rem;
+    background-color: transparent;
+    color: #1f2d3d;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.tp-item-form-section-toggle:focus {
+    outline: none;
+}
+.tp-item-form-section-toggle:focus-visible {
+    box-shadow: 0 0 0 .2rem rgba(0, 123, 255, .35);
+}
+.dark-mode .tp-item-form-section-toggle {
+    color: #fff;
+}
+.tp-item-form-section-chevron {
+    margin-right: .375rem;
+    color: #495057;
+    font-size: .8rem;
+    transition: transform .15s ease-in-out;
+}
+.tp-item-form-section.is-collapsed .tp-item-form-section-chevron {
+    transform: rotate(-90deg);
+}
+.dark-mode .tp-item-form-section-chevron {
+    color: #ced4da;
+}
+.tp-item-form-section-tools {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: .25rem;
+    padding-right: .375rem;
+}
+.tp-item-form-section-switch {
+    display: inline-flex;
+    padding: .125rem;
+    border-radius: .375rem;
+    background-color: rgba(0, 0, 0, .07);
+}
+.dark-mode .tp-item-form-section-switch {
+    background-color: rgba(255, 255, 255, .08);
+}
+/* The layout switch has no effect below the two-column breakpoint */
+@media (max-width: 991.98px) {
+    .tp-item-form-section-switch {
+        display: none;
+    }
+}
+/* No .btn class: the legacy bootstrap-buttons.css would shrink an icon-only .btn */
+.tp-item-form-section-tool {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.875rem;
+    height: 1.875rem;
+    padding: 0;
+    border: 0;
+    border-radius: .25rem;
+    background-color: transparent;
+    color: #495057;
+}
+.tp-item-form-section-tool:hover,
+.tp-item-form-section-tool:focus {
+    background-color: rgba(0, 0, 0, .08);
+    color: #212529;
+    outline: none;
+}
+.tp-item-form-section-tool[aria-pressed="true"] {
+    background-color: #fff;
+    color: #0062cc;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .2);
+}
+.dark-mode .tp-item-form-section-tool {
+    color: #ced4da;
+}
+.dark-mode .tp-item-form-section-tool:hover,
+.dark-mode .tp-item-form-section-tool:focus {
+    background-color: rgba(255, 255, 255, .1);
+    color: #fff;
+}
+.dark-mode .tp-item-form-section-tool[aria-pressed="true"] {
+    background-color: #454d55;
+    color: #8fc1ff;
+}
+/* Custom fields: one column, or two from the lg breakpoint when chosen */
+.tp-item-form-fields-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    column-gap: 1rem;
+}
+@media (min-width: 992px) {
+    .tp-item-form-section.is-two-columns .tp-item-form-fields-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .tp-item-form-section.is-two-columns .tp-item-form-field-cell.is-wide,
+    .tp-item-form-section.is-two-columns .tp-item-form-field-cell:only-child {
+        grid-column: 1 / -1;
+    }
+}
+/* Attachments: files as cards, uploads with their own progress bar */
+.tp-item-files {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+    gap: .5rem;
+    margin-bottom: .75rem;
+}
+.tp-item-files:empty {
+    display: none;
+}
+.tp-item-files-uploads {
+    margin-top: .75rem;
+    margin-bottom: 0;
+}
+.tp-item-file {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    min-width: 0;
+    padding: .5rem .5rem .5rem .75rem;
+    border: 1px solid #dee2e6;
+    border-radius: .375rem;
+    background-color: #fff;
+}
+.dark-mode .tp-item-file {
+    border-color: #6c757d;
+    background-color: #3f474e;
+}
+.tp-item-file.is-failed,
+.dark-mode .tp-item-file.is-failed {
+    border-color: #dc3545;
+}
+/* Uploaded, attached to the item at the next save */
+.tp-item-file.is-pending {
+    border-style: dashed;
+}
+.tp-item-file-icon {
+    display: inline-flex;
+    flex: 0 0 2.25rem;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: .375rem;
+    background-color: #e7f1ff;
+    color: #0062cc;
+    font-size: 1.125rem;
+}
+.dark-mode .tp-item-file-icon {
+    background-color: rgba(0, 123, 255, .2);
+    color: #8fc1ff;
+}
+.tp-item-file-body {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.tp-item-file-name {
+    overflow: hidden;
+    font-weight: 600;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+.tp-item-file-meta {
+    color: #6c757d;
+    font-size: .8125rem;
+}
+.dark-mode .tp-item-file-meta {
+    color: #adb5bd;
+}
+.tp-item-file-progress {
+    height: .25rem;
+    margin: .25rem 0;
+}
+.tp-item-file-actions {
+    display: flex;
+    flex: 0 0 auto;
+    gap: .125rem;
+}
+/* No .btn class: the legacy bootstrap-buttons.css would shrink an icon-only .btn */
+.tp-item-file-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: .25rem;
+    background-color: transparent;
+    color: #6c757d;
+}
+.tp-item-file-action:hover,
+.tp-item-file-action:focus {
+    border-color: #ced4da;
+    color: #0062cc;
+    text-decoration: none;
+}
+.tp-item-file-action-danger:hover,
+.tp-item-file-action-danger:focus {
+    border-color: #f1aeb5;
+    color: #dc3545;
+}
+.dark-mode .tp-item-file-action {
+    color: #ced4da;
+}
+.tp-item-file-status {
+    flex: 0 0 auto;
+    padding-right: .25rem;
+}
+.tp-item-dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: .25rem;
+    padding: 1.25rem 1rem;
+    border: 2px dashed #ced4da;
+    border-radius: .5rem;
+    color: #495057;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s ease-in-out, background-color .15s ease-in-out;
+}
+.tp-item-dropzone:hover,
+.tp-item-dropzone:focus,
+.tp-item-dropzone.is-dragover {
+    border-color: #007bff;
+    background-color: #f1f7ff;
+    outline: none;
+}
+.tp-item-dropzone:focus-visible {
+    box-shadow: 0 0 0 .2rem rgba(0, 123, 255, .25);
+}
+/* Children would fire dragleave on the zone while the files hover over them */
+.tp-item-dropzone.is-dragover * {
+    pointer-events: none;
+}
+.tp-item-dropzone-icon {
+    color: #007bff;
+    font-size: 1.75rem;
+}
+.dark-mode .tp-item-dropzone {
+    border-color: #6c757d;
+    color: #e9ecef;
+}
+.dark-mode .tp-item-dropzone:hover,
+.dark-mode .tp-item-dropzone:focus,
+.dark-mode .tp-item-dropzone.is-dragover {
+    border-color: #3f9cff;
+    background-color: rgba(0, 123, 255, .12);
+}
+.dark-mode .tp-item-dropzone-icon {
+    color: #3f9cff;
+}
+
+/* ============================================================
+   Item view (app/pages/items.php, #items-details-container)
+   Same language as the item form: an action bar kept at the top,
+   bands that fold their section. The panel is its own scroll box
+   (fixed height) and its width depends on the split view, so the
+   layout follows the panel width (container queries), not the
+   screen width.
+   ============================================================ */
+#items-details-container {
+    container-type: inline-size;
+}
+/* One sheet; it disappears with its blocks (the server form path shows the bar alone) */
+.tp-item-view {
+    margin-bottom: 1rem;
+    border-radius: .375rem;
+    background-color: #fff;
+    box-shadow: 0 0 1px rgba(0, 0, 0, .125), 0 1px 3px rgba(0, 0, 0, .2);
+}
+.tp-item-view:not(:has(> .item-details-card:not(.hidden))) {
+    display: none;
+}
+.dark-mode .tp-item-view {
+    background-color: #343a40;
+}
+.tp-item-view-block {
+    padding-right: 1rem;
+    padding-left: 1rem;
+}
+.tp-item-view-block-last {
+    padding-bottom: 1rem;
+}
+/* Action bar */
+.tp-item-view-bar {
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem;
+    padding-top: .625rem;
+    padding-bottom: .625rem;
+    border-bottom: 1px solid #dee2e6;
+    border-radius: .375rem .375rem 0 0;
+    background-color: #fff;
+}
+.dark-mode .tp-item-view-bar {
+    border-bottom-color: #4b545c;
+    background-color: #343a40;
+}
+.tp-item-view-icon {
+    display: inline-flex;
+    flex: 0 0 2.5rem;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: .5rem;
+    background-color: #e7f1ff;
+    color: #0062cc;
+    font-size: 1.125rem;
+}
+.dark-mode .tp-item-view-icon {
+    background-color: rgba(0, 123, 255, .2);
+    color: #8fc1ff;
+}
+/* The label on its own line, the chips below it */
+.tp-item-view-title {
+    display: flex;
+    flex: 1 1 14rem;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .25rem .375rem;
+    min-width: 0;
+}
+.tp-item-view-title > h3 {
+    flex: 1 0 100%;
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+/* Badges inserted after the label by other scripts (edition lock, viewers, classification,
+   warnings) carry Bootstrap spacing utilities, which are !important */
+.tp-item-view-title > :not(h3) {
+    margin: 0 !important;
+}
+.tp-item-view-title > .alert {
+    padding: .0625rem .5rem !important;
+    border-radius: 1rem;
+    font-size: .75rem;
+}
+.tp-item-view-title .badge {
+    margin: 0 !important;
+    padding: .25em .6em;
+    border-radius: 1rem;
+    font-size: .75rem;
+}
+.tp-item-view-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+    max-width: 100%;
+    padding: .0625rem .5rem;
+    border-radius: 1rem;
+    background-color: #f1f3f5;
+    color: #343a40;
+    font-size: .75rem;
+    font-weight: 600;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+a.tp-item-view-chip:hover,
+a.tp-item-view-chip:focus {
+    text-decoration: none;
+    filter: brightness(.95);
+}
+.tp-item-view-chip.is-info {
+    background-color: #e7f1ff;
+    color: #0b4a8f;
+}
+.tp-item-view-chip.is-success {
+    background-color: #e6f4ea;
+    color: #1e6b34;
+}
+.tp-item-view-chip.is-warning {
+    background-color: #fff3cd;
+    color: #6b4500;
+}
+.dark-mode .tp-item-view-chip {
+    background-color: #454d55;
+    color: #e9ecef;
+}
+.dark-mode .tp-item-view-chip.is-info {
+    background-color: rgba(0, 123, 255, .25);
+    color: #cfe2ff;
+}
+.dark-mode .tp-item-view-chip.is-success {
+    background-color: rgba(40, 167, 69, .25);
+    color: #c3e6cb;
+}
+.dark-mode .tp-item-view-chip.is-warning {
+    background-color: rgba(255, 193, 7, .2);
+    color: #ffe08a;
+}
+.tp-item-view-nav,
+.tp-item-view-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .375rem;
+}
+/* No .btn class: the legacy bootstrap-buttons.css would shrink an icon-only .btn */
+.tp-item-view-btn {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    gap: .375rem;
+    min-width: 2.375rem;
+    height: 2.375rem;
+    padding: 0 .625rem;
+    border: 1px solid #ced4da;
+    border-radius: .375rem;
+    background-color: #fff;
+    color: #343a40;
+    font-size: .875rem;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    vertical-align: middle;
+    cursor: pointer;
+}
+.tp-item-view-btn:hover,
+.tp-item-view-btn:focus {
+    background-color: #e9ecef;
+    color: #212529;
+    text-decoration: none;
+    outline: none;
+}
+.tp-item-view-btn:focus-visible {
+    box-shadow: 0 0 0 .2rem rgba(0, 123, 255, .35);
+}
+.tp-item-view-btn.is-active {
+    border-color: #9ec5fe;
+    background-color: #e7f1ff;
+    color: #0b4a8f;
+}
+.tp-item-view-btn.is-copied {
+    border-color: #1e7e34;
+    background-color: #e6f4ea;
+    color: #1e6b34;
+}
+.dark-mode .tp-item-view-btn {
+    border-color: #6c757d;
+    background-color: #3f474e;
+    color: #e9ecef;
+}
+.dark-mode .tp-item-view-btn:hover,
+.dark-mode .tp-item-view-btn:focus {
+    background-color: #4b545c;
+    color: #fff;
+}
+.dark-mode .tp-item-view-btn.is-active {
+    border-color: #3f9cff;
+    background-color: rgba(0, 123, 255, .25);
+    color: #cfe2ff;
+}
+.dark-mode .tp-item-view-btn.is-copied {
+    border-color: #28a745;
+    background-color: rgba(40, 167, 69, .25);
+    color: #c3e6cb;
+}
+/* Outweighs the legacy .btn rules, loaded after this file */
+.tp-item-view-actions .tp-item-view-edit {
+    display: inline-flex;
+    align-items: center;
+    height: 2.375rem;
+    padding: 0 .875rem;
+    font-size: .9375rem;
+    font-weight: 600;
+    line-height: 1;
+}
+/* Section shortcuts and latest activity */
+.tp-item-view-subheader {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .25rem 1rem;
+    padding-top: .5rem;
+    padding-bottom: .5rem;
+    border-bottom: 1px solid #dee2e6;
+}
+.dark-mode .tp-item-view-subheader {
+    border-bottom-color: #4b545c;
+}
+.tp-item-view-last-change {
+    margin-left: auto;
+    color: #5f6870;
+}
+.dark-mode .tp-item-view-last-change {
+    color: #ced4da;
+}
+/* Sections: the item form bands, folded with .is-collapsed */
+.tp-item-view-section {
+    padding-top: 1rem;
+}
+.tp-item-view-section.is-collapsed .tp-item-form-section-head {
+    margin-bottom: 0;
+}
+.tp-item-view-section.is-collapsed .tp-item-form-section-body {
+    display: none;
+}
+.tp-item-view-section.is-collapsed .tp-item-form-section-chevron {
+    transform: rotate(-90deg);
+}
+/* Main: credentials, then what the item is about (side by side when the panel is wide) */
+.tp-item-view-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
+}
+@container (min-width: 50rem) {
+    .tp-item-view-main {
+        grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    }
+}
+.tp-item-view-rows {
+    overflow: hidden;
+    border: 1px solid #e3e7eb;
+    border-radius: .5rem;
+}
+.dark-mode .tp-item-view-rows {
+    border-color: #4b545c;
+}
+/* Rows draw their top border over the box border: no double line whichever row is hidden */
+.tp-item-view-row {
+    display: grid;
+    grid-template-columns: 7rem minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: .75rem;
+    min-height: 3.25rem;
+    margin-top: -1px;
+    padding: .375rem .75rem;
+    border-top: 1px solid #edf0f2;
+}
+.tp-item-view-row:hover {
+    background-color: #f8f9fa;
+}
+.dark-mode .tp-item-view-row {
+    border-top-color: #4b545c;
+}
+.dark-mode .tp-item-view-row:hover {
+    background-color: #3f474e;
+}
+.tp-item-view-key {
+    color: #5f6870;
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+.dark-mode .tp-item-view-key {
+    color: #adb5bd;
+}
+.tp-item-view-value {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .25rem .5rem;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+/* The full URL stays in the DOM: the copy button and the open link use it */
+#card-item-url-text {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.tp-item-view-secret {
+    font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    letter-spacing: .03em;
+    word-break: break-all;
+}
+/* Countdown ring: how long a shown password stays visible, how long an OTP code stays valid.
+   items.js.php sets the period and the time already gone; the ring turns red on its last fifth. */
+.tp-item-view-timer {
+    --tp-item-view-timer-color: #007bff;
+    --tp-item-view-timer-ending: #dc3545;
+    --tp-item-view-timer-track: #e3e7eb;
+    flex: 0 0 auto;
+    width: 1.125rem;
+    height: 1.125rem;
+    transform: rotate(-90deg);
+}
+.dark-mode .tp-item-view-timer {
+    --tp-item-view-timer-color: #3f9cff;
+    --tp-item-view-timer-ending: #ff6b78;
+    --tp-item-view-timer-track: #4b545c;
+}
+.tp-item-view-timer-track,
+.tp-item-view-timer-arc {
+    fill: none;
+    stroke-width: 2.5;
+}
+.tp-item-view-timer-track {
+    stroke: var(--tp-item-view-timer-track);
+}
+.tp-item-view-timer-arc {
+    stroke: var(--tp-item-view-timer-color);
+    stroke-dasharray: 100;
+    stroke-linecap: round;
+}
+.tp-item-view-timer.is-running .tp-item-view-timer-arc {
+    animation: tp-item-view-timer var(--tp-item-view-timer-period, 1s) linear var(--tp-item-view-timer-elapsed, 0s) forwards;
+}
+@keyframes tp-item-view-timer {
+    0% {
+        stroke: var(--tp-item-view-timer-color);
+        stroke-dashoffset: 0;
+    }
+    78% {
+        stroke: var(--tp-item-view-timer-color);
+    }
+    82% {
+        stroke: var(--tp-item-view-timer-ending);
+    }
+    100% {
+        stroke: var(--tp-item-view-timer-ending);
+        stroke-dashoffset: 100;
+    }
+}
+#card-item-opt_code {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+}
+.tp-item-view-otp {
+    font-size: 1.0625rem;
+}
+.tp-item-view-tools {
+    display: flex;
+    align-items: center;
+    gap: .25rem;
+}
+.tp-item-view-tools .tp-item-view-btn,
+.tp-item-view-field > .tp-item-view-btn {
+    width: 2.125rem;
+    min-width: 2.125rem;
+    height: 2.125rem;
+    padding: 0;
+}
+/* About this item */
+.tp-item-view-about {
+    padding: .25rem 1rem .75rem;
+    border: 1px solid #e3e7eb;
+    border-radius: .5rem;
+    background-color: #f8f9fa;
+}
+.dark-mode .tp-item-view-about {
+    border-color: #4b545c;
+    background-color: #3f474e;
+}
+.tp-item-view-about-list {
+    display: grid;
+    grid-template-columns: 8rem minmax(0, 1fr);
+    align-items: baseline;
+    column-gap: .75rem;
+    margin: 0;
+}
+.tp-item-view-about-list > dt {
+    padding: .5rem 0;
+    color: #5f6870;
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+.dark-mode .tp-item-view-about-list > dt {
+    color: #adb5bd;
+}
+.tp-item-view-about-list > dd {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .25rem;
+    min-width: 0;
+    margin: 0;
+    padding: .375rem 0;
+    overflow-wrap: anywhere;
+}
+.tp-item-view-status {
+    display: flex;
+    flex-direction: column;
+    gap: .375rem;
+    margin: .375rem 0 0;
+    padding: .625rem 0 0;
+    border-top: 1px solid #e3e7eb;
+    font-size: .875rem;
+    list-style: none;
+}
+.tp-item-view-status:empty {
+    display: none;
+}
+.tp-item-view-status > li {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+.tp-item-view-status > li > i:first-child {
+    color: #5f6870;
+}
+.dark-mode .tp-item-view-status {
+    border-top-color: #4b545c;
+}
+.dark-mode .tp-item-view-status > li > i:first-child {
+    color: #adb5bd;
+}
+/* Description: a long one is cut, "Show more" reads the rest */
+.tp-item-view-description {
+    padding: 0 .25rem;
+    overflow-wrap: anywhere;
+}
+.tp-item-view-description > :last-child {
+    margin-bottom: 0;
+}
+.tp-item-view-description.is-clamped {
+    max-height: 9rem;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(#000 65%, transparent);
+    mask-image: linear-gradient(#000 65%, transparent);
+}
+.tp-item-view-more-toggle {
+    margin: .375rem .25rem 0;
+    padding: 0;
+    border: 0;
+    background-color: transparent;
+    color: #0062cc;
+    font-size: .875rem;
+    font-weight: 600;
+}
+.tp-item-view-more-toggle:hover,
+.tp-item-view-more-toggle:focus {
+    text-decoration: underline;
+    outline: none;
+}
+.dark-mode .tp-item-view-more-toggle {
+    color: #8fc1ff;
+}
+/* Custom fields: flat rows (the loaders read the children directly), ordered by CSS */
+.tp-item-view-category + .tp-item-view-category {
+    margin-top: .75rem;
+}
+.tp-item-view-category-title {
+    margin: 0 .25rem .25rem;
+    color: #5f6870;
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+.dark-mode .tp-item-view-category-title {
+    color: #adb5bd;
+}
+.list-group.tp-item-view-fields-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    column-gap: 1.25rem;
+}
+@container (min-width: 50rem) {
+    .list-group.tp-item-view-fields-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+.tp-item-view-field {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    min-height: 3rem;
+    padding: .375rem .75rem;
+    border-bottom: 1px solid #edf0f2;
+}
+.dark-mode .tp-item-view-field {
+    border-bottom-color: #4b545c;
+}
+.tp-item-view-field > .tp-item-view-key {
+    flex: 0 0 9rem;
+    min-width: 0;
+    color: #343a40;
+    font-size: .875rem;
+    letter-spacing: 0;
+    text-transform: none;
+    overflow-wrap: anywhere;
+}
+.dark-mode .tp-item-view-field > .tp-item-view-key {
+    color: #e9ecef;
+}
+.tp-item-view-field > .card-item-field-value {
+    flex: 1 1 auto;
+    order: 2;
+}
+.tp-item-view-field > .btn-reveal-field {
+    order: 3;
+}
+.tp-item-view-field > .btn-copy-clipboard-clear {
+    order: 4;
+}
+/* History: newest first, the older events on demand */
+.tp-item-view-history {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.tp-item-view-history-row {
+    display: grid;
+    grid-template-columns: 1.75rem minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: .625rem;
+    padding: .5rem .75rem;
+    border-bottom: 1px solid #edf0f2;
+}
+.tp-item-view-history-row.is-older {
+    display: none;
+}
+.tp-item-view-history.is-expanded .tp-item-view-history-row.is-older {
+    display: grid;
+}
+.dark-mode .tp-item-view-history-row {
+    border-bottom-color: #4b545c;
+}
+.tp-item-view-history-avatar {
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+    object-fit: cover;
+}
+.tp-item-view-history-what {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.tp-item-view-history-who {
+    font-weight: 600;
+}
+.tp-item-view-history-when {
+    color: #5f6870;
+    font-size: .8125rem;
+    white-space: nowrap;
+}
+.dark-mode .tp-item-view-history-when {
+    color: #adb5bd;
+}
+/* Narrow panel (split view, phone): two-line bar, icon-only actions, stacked rows */
+@container (max-width: 40rem) {
+    .tp-item-view-title {
+        flex-basis: calc(100% - 10rem);
+    }
+    .tp-item-view-bar > .but-back-to-list:last-child {
+        order: 1;
+    }
+    .tp-item-view-nav {
+        order: 2;
+    }
+    .tp-item-view-actions {
+        order: 3;
+        margin-left: auto;
+    }
+    .tp-item-view-btn-text {
+        display: none;
+    }
+    .tp-item-view-last-change {
+        margin-left: 0;
+    }
+}
+@container (max-width: 30rem) {
+    .tp-item-view-row {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+    .tp-item-view-row > .tp-item-view-key {
+        grid-column: 1 / -1;
+        padding-top: .25rem;
+    }
+    .tp-item-view-about-list {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .tp-item-view-about-list > dt {
+        padding-bottom: 0;
+    }
+    .tp-item-view-field {
+        flex-wrap: wrap;
+    }
+    .tp-item-view-field > .tp-item-view-key {
+        flex-basis: 100%;
+    }
+    .tp-item-view-history-row {
+        grid-template-columns: 1.75rem minmax(0, 1fr);
+    }
+    .tp-item-view-history-when {
+        grid-column: 2;
     }
 }

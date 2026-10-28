@@ -7599,7 +7599,6 @@ public/plugins/chart.js/Chart.css 28dc89b92b7e59392029cfd2769027ab
 public/plugins/chart.js/Chart.js 640002642ef124a9a1a2ffdc88dfcc23
 public/plugins/chart.js/Chart.min.css 7d8693e997109f2aeac04066301679d6
 public/plugins/chart.js/Chart.min.js 9b1ae20c4c7048d6e4a1b2e1aee7fb31
-public/plugins/countdownTimer/countdownTimer.min.js 0b4e112778fd6a1dcfdb0a9f33eddbc6
 public/plugins/datatables/css/dataTables.bootstrap.css 3d97a50cd14dd0e9c685f5bd19d5a7a4
 public/plugins/datatables/css/dataTables.bootstrap.min.css cfb70e19d0dcb5a064968a91c9d8f8e3
 public/plugins/datatables/css/dataTables.bootstrap4.css 1758e9d3c2304ff1d0d80fba50573527
@@ -13785,7 +13784,6 @@ public/plugins/jquery-validation/localization/methods_nl.js 2d1cbd7bea463619baed
 public/plugins/jquery-validation/localization/methods_nl.min.js e8e67a9014bf4893a27c301ed1f9bd94
 public/plugins/jquery-validation/localization/methods_pt.js ce69bf087f89c5d8ff074b849b5e536e
 public/plugins/jquery-validation/localization/methods_pt.min.js 70aebbaf50d321398fd156e27c3063e9
-public/plugins/jquery.countdown360/jquery.countdown360.js 94a254e4c58a759350745fa7c3bbc824
 public/plugins/jquery.pwstrength/i18next.js 1753055d9a3c832130363dca5154aa9e
 public/plugins/jquery.pwstrength/locales/ar.json 896e968a50182d56393ec8ab05eb8f3b
 public/plugins/jquery.pwstrength/locales/cs.json 9c19e0b1aaa67dcc440c01b5cebe780e

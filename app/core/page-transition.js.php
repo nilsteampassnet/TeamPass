@@ -78,6 +78,9 @@ $tpPageTransitionLang = new Language($tpPageTransitionSession->get('user-languag
         // A hand-over older than this is not the page we just left: the tab went
         // somewhere else and came back. Start from scratch instead.
         var HANDOVER_MAX_AGE_MS = 60000
+        // How long after a click on a link that leaves no page (a file served
+        // for download) the beforeunload it fires is still attributed to it.
+        var STAYING_CLICK_MS = 1000
 
         // FontAwesome family classes, FA5 short form and FA6 long form alike:
         // an icon that already declares one keeps it.
@@ -100,6 +103,7 @@ $tpPageTransitionLang = new Language($tpPageTransitionSession->get('user-languag
         var active = false
         var navigating = false
         var busyElement = null
+        var stayingClickAt = 0
 
         /**
          * Resolves the bar nodes once.
@@ -369,6 +373,35 @@ $tpPageTransitionLang = new Language($tpPageTransitionSession->get('user-languag
         }
 
         /**
+         * Tells whether a click on an anchor leaves the page in place although
+         * the browser fires beforeunload for it: a file served for download
+         * (the response is an attachment, the document never unloads) or a
+         * mailto:/tel: link handed over to another application.
+         *
+         * @param {Element} element
+         *
+         * @return {boolean}
+         */
+        function isStayingLink(element) {
+            if (element.tagName !== 'A' || isPageLink(element) === true) {
+                return false
+            }
+            var href = element.getAttribute('href')
+            if (href === null || href === '' || href.charAt(0) === '#') {
+                return false
+            }
+            var target = element.getAttribute('target')
+            if (target !== null && target !== '' && target !== '_self') {
+                return false
+            }
+            if (/^(mailto|tel):/i.test(href) === true) {
+                return true
+            }
+
+            return element.href.indexOf(window.location.origin) === 0
+        }
+
+        /**
          * Resolves the control to decorate, or null when the click does not
          * lead to a page change.
          *
@@ -413,6 +446,9 @@ $tpPageTransitionLang = new Language($tpPageTransitionSession->get('user-languag
             }
             var trigger = navigationTrigger(element)
             if (trigger === null) {
+                if (isStayingLink(element) === true) {
+                    stayingClickAt = Date.now()
+                }
                 return
             }
             if (navigating === true) {
@@ -434,6 +470,16 @@ $tpPageTransitionLang = new Language($tpPageTransitionSession->get('user-languag
         // Catch-all for the navigations triggered from JS (location.href = ...)
         // or by a form submit: no busy control to decorate, but the bar shows.
         window.addEventListener('beforeunload', function () {
+            if (Date.now() - stayingClickAt < STAYING_CLICK_MS) {
+                // Fired by a download link: the page stays and nothing would
+                // ever close the bar.
+                stayingClickAt = 0
+                return
+            }
+            // Same hard stop as a click: a JS-triggered download never unloads.
+            if (safetyTimer === null) {
+                safetyTimer = window.setTimeout(done, SAFETY_MS)
+            }
             start()
             // Written last: by now the creep has advanced past what
             // startNavigation() recorded at click time.

@@ -1669,8 +1669,6 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
             <link rel="stylesheet" href="./plugins/jstree/themes/default/style.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" />
             <link rel="stylesheet" href="./plugins/jstree/themes/default-dark/style.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" />
             <script src="./plugins/jstree/jstree.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" type="text/javascript"></script>
-            <!-- countdownTimer -->
-            <script src="./plugins/jquery.countdown360/jquery.countdown360.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
             <!-- SUMMERNOTE -->
             <link rel="stylesheet" href="./plugins/summernote/summernote-bs4.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
             <script src="./plugins/summernote/summernote-bs4.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
