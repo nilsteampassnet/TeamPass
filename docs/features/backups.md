@@ -311,9 +311,18 @@ kits and their passphrases with the corresponding historical backups.
 
 Ordinary item/user changes, user password changes, scheduled-backup timing and the
 application version alone do not require a new kit. Re-encrypting the same scheduled
-backup key does not require one either. The dashboard check is read-only and never
-generates a replacement key. Unreadable or invalid recovery material raises a check
+backup key does not require one either. The dashboard only reads a stored status
+and compares inexpensive markers for the backup-key setting, recovery generation
+and deployment settings. It does not read recovery files or decrypt keys.
+The complete check runs on the Backups page, its status refresh endpoint, and after
+a completed download (inside the receipt/audit transaction). Application changes
+to the backup key or deployment settings invalidate the stored status. A missing
+backup key reports a missing kit; unreadable or invalid recovery material raises a check
 notice; downloading a new kit cannot repair a broken encryption chain.
+
+Changes outside TeamPass, such as editing `settings.php` by hand or replacing
+`SECUREFILE`, are detected on the next visit to the Backups page, not immediately
+on the dashboard. No download date is created by refreshing the stored status.
 
 The receipt is created lazily in the existing configuration table. No database
 schema migration or recovery archive format change is needed. No secret,

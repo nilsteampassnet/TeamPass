@@ -25,6 +25,7 @@ final class RecoveryPackageTrackingTest extends TestCase
         yield 'key changed before download' => ['rotated', false, 'missing'];
         yield 'restored before download' => ['restored', false, 'missing'];
         yield 'audit failure rolls back receipt' => ['audit_failure', false, 'missing'];
+        yield 'state failure rolls back receipt' => ['state_failure', false, 'missing'];
         yield 'caller transaction preserved' => ['caller_transaction', false, 'missing'];
         yield 'malformed historical metadata' => ['bad_history', false, 'missing'];
         yield 'older download cannot overwrite new receipt' => ['older_download', false, 'current'];
@@ -51,6 +52,21 @@ final class RecoveryPackageTrackingTest extends TestCase
         $json = json_encode($result['receipt']);
         self::assertStringNotContainsString('fixture-master', $json);
         self::assertStringNotContainsString(str_repeat('a', 40), $json);
+        if (in_array($scenario, ['audit_failure', 'state_failure', 'caller_transaction', 'bad_history'], true)) {
+            self::assertNull($result['cached_state']);
+        } else {
+            self::assertSame($state, $result['cached_state']['state']);
+        }
+    }
+
+    public function testSettingChangesInvalidateTheCacheWithoutCreatingDownloadHistory(): void
+    {
+        foreach (['setting_same_key' => 'current', 'setting_rotated_key' => 'material_changed',
+            'setting_deployment' => 'configuration_changed'] as $scenario => $state) {
+            $result = $this->probe($scenario);
+            self::assertSame($state, $result['state']);
+            self::assertTrue($result['receipt_unchanged']);
+        }
     }
 
     public function testGenerationDoesNotRecordADownloadAndFingerprintsTheActualCapturedMaterial(): void

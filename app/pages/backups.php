@@ -77,7 +77,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
 // Define Timezone
 date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
-$recoveryPackageInformation = tpRecoveryPackageGetDisplayInformation($SETTINGS, $lang);
 
 // Set header properties
 header('Content-type: text/html; charset=utf-8');
@@ -91,6 +90,7 @@ $resolvedBackupScriptPasskey = tpResolveBackupScriptPasskey($SETTINGS, true);
 if (!empty($resolvedBackupScriptPasskey['success']) && !empty($resolvedBackupScriptPasskey['clear_key'])) {
     $localEncryptionKey = (string) $resolvedBackupScriptPasskey['clear_key'];
 }
+$recoveryPackageInformation = tpRecoveryPackageGetDisplayInformation($SETTINGS, $lang);
 ?>
 
 <!-- Content Header (Page header) -->

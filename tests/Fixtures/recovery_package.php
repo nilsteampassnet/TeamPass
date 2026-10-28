@@ -19,10 +19,12 @@ final class DB
 {
     public static array $settings = [];
     public static string $receipt = '';
+    public static string $cached = '';
     public static array $audit = [];
     public static int $depth = 0;
     public static int $writes = 0;
     public static bool $failAudit = false;
+    public static bool $failState = false;
     private static bool $ownsTransaction = false;
     private static array $before = [];
 
@@ -43,17 +45,37 @@ final class DB
     /** Read the singleton receipt. */
     public static function queryFirstField(string $sql, ...$arguments): string
     {
-        return self::$receipt;
+        return in_array('recovery_package_status', $arguments, true) ? self::$cached : self::$receipt;
     }
 
     /** No historical key candidates are installed in this fixture. */
-    public static function queryFirstRow(string $sql, ...$arguments): array { return []; }
+    public static function queryFirstRow(string $sql, ...$arguments): array
+    {
+        return in_array('bck_script_passkey', $arguments, true) ? ['increment_id' => 1] : [];
+    }
 
     /** Persist the non-sensitive receipt. */
     public static function update(string $table, array $values, ...$arguments): void
     {
         ++self::$writes;
-        self::$receipt = $values['valeur'];
+        if (($arguments[0] ?? '') === 'increment_id=%i') {
+            self::$settings['bck_script_passkey'] = $values['valeur'];
+        } else {
+            self::$receipt = $values['valeur'];
+        }
+    }
+
+    /** Persist the derived status independently from the download receipt. */
+    public static function insertUpdate(string $table, array $values, array $updates): void
+    {
+        if (self::$failState) {
+            throw new RuntimeException('Synthetic state failure');
+        }
+        if ($values['intitule'] !== 'recovery_package_status') {
+            throw new RuntimeException('Unexpected derived setting.');
+        }
+        ++self::$writes;
+        self::$cached = $updates['valeur'];
     }
 
     /** Persist the audit, or exercise an atomic rollback. */
@@ -74,7 +96,7 @@ final class DB
     /** Begin the isolated receipt transaction. */
     public static function startTransaction(): void
     {
-        self::$before = [self::$receipt, self::$audit];
+        self::$before = [self::$receipt, self::$audit, self::$cached];
         self::$ownsTransaction = true;
         ++self::$depth;
     }
@@ -85,7 +107,7 @@ final class DB
     /** Restore the receipt and audit together. */
     public static function rollback(): void
     {
-        [self::$receipt, self::$audit] = self::$before;
+        [self::$receipt, self::$audit, self::$cached] = self::$before;
         --self::$depth;
         self::$ownsTransaction = false;
     }
@@ -97,12 +119,17 @@ function prefixTable(string $name): string { return 'fixture_' . $name; }
 /** Simulate randomized storage encryption while resolving the same clear key. */
 function cryption(string $value, string $key, string $action, array $settings = []): array
 {
-    return ['string' => $action === 'encrypt' ? 'sealed:' . $value
-        : (str_starts_with($value, 'sealed:') ? substr($value, 7) : '')];
+    if (!empty($GLOBALS['fixtureThrowDecrypt']) && $action === 'decrypt') {
+        throw new RuntimeException('Synthetic key read failure.');
+    }
+    return ['string' => $action === 'encrypt'
+        ? (!empty($GLOBALS['fixtureReencrypt']) ? 'resealed:' : 'sealed:') . $value
+        : (str_starts_with($value, 'resealed:') ? substr($value, 9)
+            : (str_starts_with($value, 'sealed:') ? substr($value, 7) : ''))];
 }
 
 /** Generate temporary names without the application bootstrap. */
-function GenerateCryptKey(...$arguments): string { return bin2hex(random_bytes(10)); }
+function GenerateCryptKey(...$arguments): string { return substr(bin2hex(random_bytes(40)), 0, (int) ($arguments[0] ?? 20)); }
 
 /** Preserve the controller's exchange shape without loading a real encrypted session. */
 function prepareExchangedData(array $data, string $action): string { return json_encode($data, JSON_THROW_ON_ERROR); }
@@ -146,9 +173,17 @@ if (str_starts_with($scenario, 'info_')) {
         DB::$settings['bck_script_passkey'] = 'sealed:' . str_repeat('b', 40);
     } elseif ($scenario === 'info_unavailable') {
         unlink($directory . '/' . SECUREFILE);
+    } elseif ($scenario === 'info_empty_key' || $scenario === 'info_first_visit') {
+        DB::$settings['bck_script_passkey'] = '';
+        DB::$receipt = '';
+    } elseif ($scenario === 'info_invalid_key') {
+        DB::$settings['bck_script_passkey'] = 'invalid';
+    } elseif ($scenario === 'info_decrypt_error') {
+        tpRecoveryPackageSaveState('current', DB::$settings);
+        $GLOBALS['fixtureThrowDecrypt'] = true;
     }
     $lang = new \TeampassClasses\Language\Language('french');
-    $SETTINGS = ['date_format' => 'd/m/Y', 'time_format' => 'H:i'];
+    $SETTINGS = DB::$settings + ['date_format' => 'd/m/Y', 'time_format' => 'H:i'];
     if (in_array($scenario, ['info_bad_key', 'info_non_admin', 'info_endpoint'], true)) {
         $session = new class($scenario) {
             /** Retain only the status endpoint's authentication fields. */
@@ -163,7 +198,35 @@ if (str_starts_with($scenario, 'info_')) {
         eval("switch ('recovery_package_status') {" . substr($source, $start, $end - $start) . '}');
         exit;
     }
-    $result = tpRecoveryPackageGetDisplayInformation($SETTINGS, $lang) + ['writes' => DB::$writes];
+    if ($scenario === 'info_first_visit') {
+        $source = file_get_contents(__DIR__ . '/../../app/pages/backups.php');
+        $start = strpos($source, '// Define Timezone');
+        $end = strpos($source, '?>', $start);
+        eval(str_replace('__DIR__', var_export(dirname(__DIR__, 2) . '/app/sources', true), substr($source, $start, $end - $start)));
+        $info = $recoveryPackageInformation;
+    } else {
+        $info = tpRecoveryPackageGetDisplayInformation($SETTINGS, $lang);
+    }
+    $result = $info + ['writes' => DB::$writes, 'cached_state' => json_decode(DB::$cached, true),
+        'receipt' => DB::$receipt, 'backup_key_generated' => DB::$settings['bck_script_passkey'] !== ''];
+} elseif (str_starts_with($scenario, 'setting_')) {
+    tpRecoveryPackageSaveState('current', DB::$settings);
+    $receiptBefore = DB::$receipt;
+    if ($scenario === 'setting_same_key' || $scenario === 'setting_rotated_key') {
+        $GLOBALS['fixtureReencrypt'] = true;
+        $result['stored'] = tpStoreBackupScriptPasskey(str_repeat($scenario === 'setting_same_key' ? 'a' : 'b', 40), DB::$settings, false)['success'];
+    } else {
+        DB::$settings['cpassman_url'] = 'https://new.example';
+        $SETTINGS = DB::$settings;
+        $post_field = 'cpassman_url';
+        $post_value = DB::$settings['cpassman_url'];
+        $source = file_get_contents(__DIR__ . '/../../app/sources/admin.queries.php');
+        $start = strpos($source, '// Keep local settings array aligned');
+        $end = strpos($source, "if (\$post_field === 'enable_local_password_recovery')", $start);
+        eval(str_replace('__DIR__', var_export(dirname(__DIR__, 2) . '/app/sources', true), substr($source, $start, $end - $start)));
+    }
+    $result += ['state' => tpRecoveryPackageGetStoredStatus(DB::$settings),
+        'receipt_unchanged' => $receiptBefore === DB::$receipt];
 } elseif (str_starts_with($scenario, 'download_')) {
     $path = $directory . '/recovery-fixture.tprecovery';
     file_put_contents($path, $scenario === 'download_empty' ? '' : 'fixture encrypted package');
@@ -200,6 +263,7 @@ if (str_starts_with($scenario, 'info_')) {
         file_put_contents($directory . '/result.json', json_encode([
             'status' => http_response_code() ?: 200, 'receipt' => json_decode(DB::$receipt, true),
             'audit' => DB::$audit, 'file_exists' => is_file($path),
+            'cached_state' => json_decode(DB::$cached, true),
             'session_exists' => $session->get('recovery-package-download') !== null,
         ], JSON_THROW_ON_ERROR));
     });
@@ -237,6 +301,8 @@ if (str_starts_with($scenario, 'info_')) {
         DB::$settings['recovery_generation'] = 'new-deployment';
     } elseif ($scenario === 'audit_failure') {
         DB::$failAudit = true;
+    } elseif ($scenario === 'state_failure') {
+        DB::$failState = true;
     } elseif ($scenario === 'caller_transaction') {
         DB::$depth = 1;
     } elseif ($scenario === 'bad_history') {
@@ -256,6 +322,7 @@ if (str_starts_with($scenario, 'info_')) {
     }
     $result += ['recorded' => $recorded, 'state_before' => $beforeState,
         'state' => tpRecoveryPackageGetStatus(), 'read_only' => $readOnly,
-        'receipt' => json_decode(DB::$receipt, true), 'audit' => DB::$audit, 'depth' => DB::$depth];
+        'receipt' => json_decode(DB::$receipt, true), 'audit' => DB::$audit, 'depth' => DB::$depth,
+        'cached_state' => json_decode(DB::$cached, true)];
 }
 echo json_encode($result, JSON_THROW_ON_ERROR);

@@ -30,8 +30,8 @@ function tpRecoveryForgetSessionPackage(object $session): void
     }
 }
 
-/** Read the current kit inputs without generating files, repairing keys or using cached settings. */
-function tpRecoveryPackageCurrentSnapshot(bool $lock = false): array
+/** Read fresh kit inputs without generating files or repairing keys; return inputs for state markers. */
+function tpRecoveryPackageCurrentSnapshot(bool $lock = false, ?array &$inputs = null): array
 {
     $settings = [];
     foreach (DB::query(
@@ -43,9 +43,13 @@ function tpRecoveryPackageCurrentSnapshot(bool $lock = false): array
     ) as $row) {
         $settings[(string) $row['intitule']] = (string) $row['valeur'];
     }
+    $inputs = $settings;
+    $backup = tpResolveBackupScriptPasskey($settings, false);
+    if ($backup['source'] === 'empty') {
+        return [];
+    }
     $path = tpRecoveryGetSecureFilePath();
     $master = $path !== '' && is_readable($path) ? @file_get_contents($path) : false;
-    $backup = tpResolveBackupScriptPasskey($settings, false);
     if (!is_string($master) || empty($backup['success']) || !is_readable(tpRecoveryGetSettingsFilePath())) {
         return [];
     }
@@ -73,11 +77,13 @@ function tpRecoveryPackageReadReceipt(): array
     return is_array($receipt) ? $receipt : [];
 }
 
-/** Read a dashboard-safe status. A failed check must never claim the kit is current. */
+/** Run a read-only full check outside the dashboard, without updating the stored state. */
 function tpRecoveryPackageGetStatus(): string
 {
     try {
-        return tpRecoveryPackageStatus(tpRecoveryPackageCurrentSnapshot(), tpRecoveryPackageReadReceipt());
+        $inputs = [];
+        $snapshot = tpRecoveryPackageCurrentSnapshot(false, $inputs);
+        return tpRecoveryPackageStatusForInputs($snapshot, tpRecoveryPackageReadReceipt(), $inputs);
     } catch (Throwable $exception) {
         return 'unavailable';
     }
@@ -88,11 +94,19 @@ function tpRecoveryPackageGetDisplayInformation(array $SETTINGS, Language $lang)
 {
     $receipt = [];
     $state = 'unavailable';
+    $inputs = $SETTINGS;
     try {
         $receipt = tpRecoveryPackageReadReceipt();
-        $state = tpRecoveryPackageStatus(tpRecoveryPackageCurrentSnapshot(), $receipt);
+        $snapshot = tpRecoveryPackageCurrentSnapshot(false, $inputs);
+        $state = tpRecoveryPackageStatusForInputs($snapshot, $receipt, $inputs);
     } catch (Throwable $exception) {
         // A known last download may still be shown, without claiming the kit is current.
+    }
+    try {
+        tpRecoveryPackageSaveState($state, $inputs);
+    } catch (Throwable $exception) {
+        $state = 'unavailable';
+        error_log('TeamPass: unable to store the Recovery Package status.');
     }
     $downloadedAt = tpRecoveryPackageReceiptIsValid($receipt) ? $receipt['downloaded_at'] : 0;
     $downloadLabel = $downloadedAt > 0
@@ -133,17 +147,21 @@ function tpRecoveryPackageRecordDownload(array $snapshot, int $userId): bool
         $started = true;
         $now = time();
         $current = false;
+        DB::query(
+            'INSERT IGNORE INTO ' . prefixTable('misc') . ' (type, intitule, valeur) VALUES (%s, %s, %s)',
+            'settings', 'recovery_package_download', ''
+        );
+        $stored = DB::queryFirstField(
+            'SELECT valeur FROM ' . prefixTable('misc') . ' WHERE type=%s AND intitule=%s FOR UPDATE',
+            'settings', 'recovery_package_download'
+        );
+        $savedReceipt = is_string($stored) ? json_decode($stored, true) : null;
+        $savedReceipt = is_array($savedReceipt) ? $savedReceipt : [];
+        $inputs = [];
+        $currentSnapshot = tpRecoveryPackageCurrentSnapshot(true, $inputs);
         if (tpRecoveryPackageSnapshotIsValid($snapshot)) {
-            DB::query(
-                'INSERT IGNORE INTO ' . prefixTable('misc') . ' (type, intitule, valeur) VALUES (%s, %s, %s)',
-                'settings', 'recovery_package_download', ''
-            );
-            DB::queryFirstField(
-                'SELECT valeur FROM ' . prefixTable('misc') . ' WHERE type=%s AND intitule=%s FOR UPDATE',
-                'settings', 'recovery_package_download'
-            );
             $receipt = ['snapshot' => $snapshot, 'downloaded_at' => $now, 'downloaded_by' => $userId];
-            $current = tpRecoveryPackageStatus(tpRecoveryPackageCurrentSnapshot(true), $receipt) === 'current';
+            $current = tpRecoveryPackageStatusForInputs($currentSnapshot, $receipt, $inputs) === 'current';
             if ($current) {
                 DB::update(
                     prefixTable('misc'),
@@ -151,8 +169,10 @@ function tpRecoveryPackageRecordDownload(array $snapshot, int $userId): bool
                     'type=%s AND intitule=%s',
                     'settings', 'recovery_package_download'
                 );
+                $savedReceipt = $receipt;
             }
         }
+        tpRecoveryPackageSaveState(tpRecoveryPackageStatusForInputs($currentSnapshot, $savedReceipt, $inputs), $inputs);
         DB::insert(prefixTable('log_system'), [
             'type' => 'admin_action', 'date' => $now, 'label' => 'Recovery Package downloaded',
             'qui' => (string) $userId, 'field_1' => '',

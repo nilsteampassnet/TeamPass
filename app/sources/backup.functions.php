@@ -38,6 +38,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/runtime_files.functions.php';
 require_once __DIR__ . '/backup_capture.php';
 require_once __DIR__ . '/recovery_package_logic.php';
+require_once __DIR__ . '/recovery_package_state.functions.php';
 
 /**
  * Open a local backup file without truncating it, and protect it before writing.
@@ -5028,6 +5029,8 @@ function tpStoreBackupScriptPasskey(string $clearKey, array &$SETTINGS, bool $ar
             ];
         }
 
+        $previousSettings = $SETTINGS;
+        $currentResolved = tpResolveBackupScriptPasskey($SETTINGS, false);
         $enc = cryption($clearKey, '', 'encrypt', $SETTINGS);
         $encryptedKey = isset($enc['string']) ? (string) $enc['string'] : '';
         if ($encryptedKey === '') {
@@ -5045,7 +5048,6 @@ function tpStoreBackupScriptPasskey(string $clearKey, array &$SETTINGS, bool $ar
                 tpArchiveBackupScriptPasskeyCandidate($currentStoredValue, $SETTINGS);
             }
 
-            $currentResolved = tpResolveBackupScriptPasskey($SETTINGS, false);
             if (!empty($currentResolved['success']) && !empty($currentResolved['clear_key'])) {
                 $currentClearKey = (string) $currentResolved['clear_key'];
                 if ($currentClearKey !== $clearKey) {
@@ -5118,6 +5120,9 @@ function tpStoreBackupScriptPasskey(string $clearKey, array &$SETTINGS, bool $ar
         }
 
         $SETTINGS['bck_script_passkey'] = $encryptedKey;
+        $sameKey = !empty($currentResolved['success'])
+            && hash_equals((string) $currentResolved['clear_key'], $clearKey);
+        tpRecoveryPackageSettingsChanged($SETTINGS, $sameKey ? $previousSettings : null);
 
         if (class_exists('\TeampassClasses\ConfigManager\ConfigManager')) {
             \TeampassClasses\ConfigManager\ConfigManager::invalidateCache();

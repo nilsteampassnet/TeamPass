@@ -1852,6 +1852,10 @@ switch ($post_type) {
 
         // Keep local settings array aligned with the saved value
         $SETTINGS[$post_field] = $post_value;
+        if (in_array($post_field, ['cpassman_url', 'cpassman_dir', 'path_to_files_folder', 'path_to_upload_folder'], true)) {
+            require_once __DIR__ . '/recovery_package_state.functions.php';
+            tpRecoveryPackageSettingsChanged($SETTINGS);
+        }
         if ($post_field === 'enable_local_password_recovery') {
             $SETTINGS['disable_show_forgot_pwd_link'] = (string) ((int) $post_value === 1 ? 0 : 1);
         }

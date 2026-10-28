@@ -44,7 +44,7 @@ use TeampassClasses\Language\Language;
 
 require_once __DIR__ . '/admin_notices_logic.php';
 require_once __DIR__ . '/webauthn_login_logic.php';
-require_once __DIR__ . '/recovery_package.functions.php';
+require_once __DIR__ . '/recovery_package_state.functions.php';
 
 /**
  * TeamPass system accounts, excluded from every user-based maintenance check.
@@ -103,7 +103,7 @@ function adminNoticesCollectMaintenance(array $SETTINGS, Language $lang): array
 {
     $notices = [];
 
-    $recoveryMessages = adminNoticesRecoveryPackageMessages(tpRecoveryPackageGetStatus());
+    $recoveryMessages = adminNoticesRecoveryPackageMessages(tpRecoveryPackageGetStoredStatus($SETTINGS));
     if ($recoveryMessages !== []) {
         $notices[] = adminNoticeBuild([
             'id' => 'recovery_package',

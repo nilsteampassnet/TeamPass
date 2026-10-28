@@ -92,6 +92,54 @@ function tpRecoveryPackageStatus(array $current, array $receipt): string
     return 'current';
 }
 
+/** Distinguish an uninitialized backup key from unreadable recovery material. */
+function tpRecoveryPackageStatusForInputs(array $current, array $receipt, array $settings): string
+{
+    return (string) ($settings['bck_script_passkey'] ?? '') === ''
+        ? 'missing' : tpRecoveryPackageStatus($current, $receipt);
+}
+
+/** Build inexpensive change markers without copying a stored or legacy clear key. */
+function tpRecoveryPackageStateInputs(array $settings): array
+{
+    $deployment = [];
+    foreach (['cpassman_url', 'cpassman_dir', 'path_to_files_folder', 'path_to_upload_folder'] as $name) {
+        $deployment[$name] = (string) ($settings[$name] ?? '');
+    }
+
+    return ['backup_key' => hash('sha256', (string) ($settings['bck_script_passkey'] ?? '')),
+        'generation' => (string) ($settings['recovery_generation'] ?? ''), 'deployment' => $deployment];
+}
+
+/** Resolve the dashboard state using settings alone, without opening or decrypting keys. */
+function tpRecoveryPackageStoredStatus(array $cached, array $settings): string
+{
+    if ($cached === []) {
+        return 'missing';
+    }
+    if (($cached['version'] ?? null) !== 1
+        || !in_array($cached['state'] ?? null, ['missing', 'material_changed', 'configuration_changed', 'unavailable', 'current'], true)
+        || !is_array($cached['inputs'] ?? null)) {
+        return 'unavailable';
+    }
+    if ((string) ($settings['bck_script_passkey'] ?? '') === '' || $cached['state'] === 'missing') {
+        return 'missing';
+    }
+    if (in_array($cached['state'], ['unavailable', 'material_changed'], true)) {
+        return $cached['state'];
+    }
+    $inputs = tpRecoveryPackageStateInputs($settings);
+    if (($cached['inputs']['backup_key'] ?? null) !== $inputs['backup_key']) {
+        return 'material_changed';
+    }
+    if (($cached['inputs']['generation'] ?? null) !== $inputs['generation']
+        || ($cached['inputs']['deployment'] ?? null) !== $inputs['deployment']) {
+        return 'configuration_changed';
+    }
+
+    return $cached['state'];
+}
+
 /** Validate the receipt before displaying its date or acknowledging a download. */
 function tpRecoveryPackageReceiptIsValid(array $receipt): bool
 {

@@ -24,7 +24,8 @@ final class RecoveryPackageInformationTest extends TestCase
             self::assertSame(1700000000, $info['downloaded_at']);
             self::assertStringContainsString('14/11/2023 23:13', $info['download_label']);
             self::assertNotEmpty($info['status_label']);
-            self::assertSame(0, $info['writes']);
+            self::assertSame(1, $info['writes']);
+            self::assertSame($state, $info['cached_state']['state']);
             self::assertArrayNotHasKey('snapshot', $info);
         }
     }
@@ -50,6 +51,26 @@ final class RecoveryPackageInformationTest extends TestCase
         self::assertFalse($info['error']);
         self::assertSame(1700000000, $info['downloaded_at']);
         self::assertArrayNotHasKey('snapshot', $info);
+    }
+
+    public function testEmptyKeysAreMissingWhileUnreadableOrInvalidKeysRemainUnavailable(): void
+    {
+        foreach (['info_empty_key' => 'missing', 'info_invalid_key' => 'unavailable',
+            'info_decrypt_error' => 'unavailable'] as $scenario => $state) {
+            $info = $this->probe($scenario);
+            self::assertSame($state, $info['state']);
+            self::assertSame($state, $info['cached_state']['state']);
+        }
+    }
+
+    public function testFirstVisitCalculatesInformationAfterGeneratingAnEmptyKey(): void
+    {
+        $info = $this->probe('info_first_visit');
+        self::assertTrue($info['backup_key_generated']);
+        self::assertSame('missing', $info['state']);
+        self::assertSame('', $info['status_label']);
+        self::assertSame(0, $info['downloaded_at']);
+        self::assertSame('', $info['receipt']);
     }
 
     /** Exercise the real adapter with isolated fixture data and no installation. */
