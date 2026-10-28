@@ -55,6 +55,9 @@ final class RecoveryPackageTrackingTest extends TestCase
 
     public function testGenerationDoesNotRecordADownloadAndFingerprintsTheActualCapturedMaterial(): void
     {
+        if (!class_exists('ZipArchive')) {
+            self::markTestSkipped('ZipArchive is required.');
+        }
         foreach (['create', 'source_changed'] as $scenario) {
             $result = $this->probe($scenario);
             self::assertSame('fixture-master', $result['packaged_master']);
