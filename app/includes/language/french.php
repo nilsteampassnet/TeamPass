@@ -2185,6 +2185,7 @@ return array(
     'bck_recovery_package_current' => 'Ce kit correspond aux éléments de récupération et à la configuration actuels de l’instance.',
     'bck_recovery_package_outdated' => 'Générez un nouveau kit pour l’instance actuelle. Conservez les précédents avec les sauvegardes correspondantes.',
     'bck_recovery_package_status_unavailable' => 'Le statut actuel du kit n’a pas pu être vérifié.',
+    'recovery_package_downloaded' => 'Kit de récupération téléchargé',
     'bck_restore_legacy_no_metadata' => 'Sauvegarde ancienne sans métadonnées : certaines vérifications ne sont pas disponibles.',
     'bck_restore_tpbackup_invalid' => 'Le package .tpbackup est invalide ou son intégrité n’a pas pu être vérifiée.',
     'bck_restore_tpbackup_zip_missing' => 'L’extension PHP ZipArchive est requise pour restaurer un package .tpbackup.',

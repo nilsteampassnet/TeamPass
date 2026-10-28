@@ -52,6 +52,10 @@ final class RecoveryPackageTrackingTest extends TestCase
         $json = json_encode($result['receipt']);
         self::assertStringNotContainsString('fixture-master', $json);
         self::assertStringNotContainsString(str_repeat('a', 40), $json);
+        foreach ($result['audit'] as $event) {
+            self::assertSame('recovery_package_downloaded', $event['label']);
+            self::assertSame('', $event['field_1']);
+        }
         if (in_array($scenario, ['audit_failure', 'state_failure', 'caller_transaction', 'bad_history'], true)) {
             self::assertNull($result['cached_state']);
         } else {

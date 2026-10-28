@@ -2063,6 +2063,7 @@ return array(
     'bck_recovery_package_current' => 'This kit matches the current recovery material and deployment configuration.',
     'bck_recovery_package_outdated' => 'Generate a new kit for the current instance. Keep previous kits with their matching backups.',
     'bck_recovery_package_status_unavailable' => 'The current kit status could not be verified.',
+    'recovery_package_downloaded' => 'Recovery Package downloaded',
     'bck_onthefly_server_backups' => 'Backups on server',
     'bck_onthefly_refresh_list' => 'Refresh list',
     'bck_onthefly_col_date' => 'Date',

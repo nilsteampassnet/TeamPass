@@ -174,7 +174,7 @@ function tpRecoveryPackageRecordDownload(array $snapshot, int $userId): bool
         }
         tpRecoveryPackageSaveState(tpRecoveryPackageStatusForInputs($currentSnapshot, $savedReceipt, $inputs), $inputs);
         DB::insert(prefixTable('log_system'), [
-            'type' => 'admin_action', 'date' => $now, 'label' => 'Recovery Package downloaded',
+            'type' => 'admin_action', 'date' => $now, 'label' => 'recovery_package_downloaded',
             'qui' => (string) $userId, 'field_1' => '',
         ]);
         DB::commit();
