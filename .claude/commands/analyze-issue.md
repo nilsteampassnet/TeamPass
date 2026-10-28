@@ -111,6 +111,20 @@ Inclure uniquement les blocs pertinents selon ce qui manque réellement dans le 
 
 ---
 
+## 5 bis. Réponse de clôture quand le rapporteur confirme le correctif
+
+Seulement si le rapporteur a **confirmé** que le correctif fonctionne (ou remercie) : jamais sur
+une issue encore ouverte, jamais dans une demande d'informations, jamais sur un rapport de
+sécurité. Une seule phrase, à la fin, sans relance ultérieure :
+
+```
+Glad it works for you now, thanks for confirming! If TeamPass serves your team well, a ⭐ on the
+repository or a like on [AlternativeTo](https://alternativeto.net/software/teampass/about/) helps
+other administrators find it.
+```
+
+---
+
 ## 6. Rapport de synthèse
 
 Produis une synthèse structurée :
