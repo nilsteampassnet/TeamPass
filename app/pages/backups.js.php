@@ -2592,8 +2592,8 @@ var tpExternalized = {
     $.post('sources/backups.queries.php', {
       type: 'recovery_package_status',
       key: <?php echo json_encode((string) $session->get('key'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>
-    }, function(response) {
-      var info = tpSafePrepareDecode((response || '').toString())
+    }, (response) => {
+      let info = tpSafePrepareDecode((response || '').toString())
       if (typeof info === 'string') {
         try { info = JSON.parse(info) } catch (e) { return }
       }
@@ -2602,7 +2602,7 @@ var tpExternalized = {
       // A binary navigation has no browser completion callback. Poll only briefly
       // after this administrator starts a download, until its receipt is visible.
       if (remaining > 0 && Number(info.downloaded_at || 0) < expectedAt) {
-        setTimeout(function() {
+        setTimeout(() => {
           tpExternalized.refreshRecoveryPackageInformation(expectedAt, remaining - 1)
         }, 1000)
       }

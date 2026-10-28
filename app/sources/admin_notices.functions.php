@@ -107,7 +107,7 @@ function adminNoticesCollectMaintenance(array $SETTINGS, Language $lang): array
     if ($recoveryMessages !== []) {
         $notices[] = adminNoticeBuild([
             'id' => 'recovery_package',
-            'severity' => 'warning',
+            'severity' => 'info',
             'icon' => 'fa-solid fa-key',
             'title' => htmlspecialchars($lang->get($recoveryMessages['title']), ENT_QUOTES, 'UTF-8'),
             'description' => htmlspecialchars($lang->get($recoveryMessages['description']), ENT_QUOTES, 'UTF-8'),
