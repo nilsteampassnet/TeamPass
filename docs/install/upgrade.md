@@ -146,7 +146,7 @@ On a hardened non-Docker installation, first grant the [temporary configuration 
 * Authenticate with your **Administrator** account
 * Follow all wizard steps
 
-> 🔔 When a release changes the database, TeamPass stays closed from the moment the new files are in place until the wizard has run: the login page announces the upgrade and refuses sign-in, and users already signed in are signed out at their next page load. Run the wizard right after replacing the files. The Docker image runs it by itself when the container starts.
+> 🔔 When a release changes the database, TeamPass stays closed from the moment the new files are in place until the wizard has run: the login page announces the upgrade and refuses sign-in, and users already signed in are signed out at their next page load. Background tasks wait as well. Run the wizard right after replacing the files. The Docker image runs it by itself when the container starts.
 
 The wizard enables the maintenance mode while it runs and restores the previous value at the end, unless you tick *Don't activate the Maintenance mode*. If it stops on an error, the maintenance mode stays on: disable it in the settings once the upgrade is complete.
 

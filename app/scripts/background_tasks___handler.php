@@ -1921,7 +1921,17 @@ class BackgroundTasksHandler {
 try {
     $configManager = new ConfigManager();
     $settings = $configManager->getAllSettings();
-    
+
+    // New code must not run against an older schema: between the deployment of new files and
+    // their upgrade (web wizard or app/scripts/upgrade-cli.php), and after a command-line revert
+    // that left the new files in place, every task would query columns that do not exist yet.
+    if (defined('TP_VERSION') === true
+        && ((string) ($settings['teampass_version'] ?? '') !== TP_VERSION
+            || (int) ($settings['upgrade_timestamp'] ?? 0) < (int) UPGRADE_MIN_DATE)
+    ) {
+        exit(0);
+    }
+
     $tasksHandler = new BackgroundTasksHandler($settings);
     $tasksHandler->processBackgroundTasks();
 } catch (Exception $e) {
