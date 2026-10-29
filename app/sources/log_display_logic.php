@@ -109,6 +109,10 @@ function formatAdminLogLabel(string $label, Language $lang): string
 
         return (string) $lang->get($change[0]) . ' ' . ($change[1] ?? '') . ' (' . ($change[2] ?? '') . ')';
     }
+    if (preg_match('/^at_upgrade_cli_([a-z_]+):([0-9.]*):([0-9.]*)$/', $label, $upgrade) === 1) {
+        // Label carries "at_upgrade_cli_<outcome>:<release before>:<release of the files>"
+        return (string) $lang->get('upgrade_cli_log_' . $upgrade[1]) . ' (' . $upgrade[2] . ' → ' . $upgrade[3] . ')';
+    }
 
     return $label;
 }

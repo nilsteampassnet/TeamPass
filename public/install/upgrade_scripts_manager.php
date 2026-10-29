@@ -44,34 +44,8 @@ require_once TEAMPASS_ROOT . '/app/config/include.php';
 // Prepare POST variables
 $post_file_number = filter_input(INPUT_POST, 'file_number', FILTER_SANITIZE_NUMBER_INT);
 
-$scripts_list = array(
-    array('upgrade_run_3.0.0.php', 'user_id'),
-    array('upgrade_run_3.0.0_passwords.php', 'user_id'),
-    array('upgrade_run_3.0.0_logs.php', 'user_id'),
-    array('upgrade_run_3.0.0_fields.php', 'user_id'),
-    array('upgrade_run_3.0.0_suggestions.php', 'user_id'),
-    array('upgrade_run_3.0.0_files.php', 'user_id'),
-    array('upgrade_run_3.0.php', 'user_id'),
-    array('upgrade_operations.php', '20230604_1'),
-    array('upgrade_operations.php', 'populateItemsTable_CreatedAt'),
-    array('upgrade_operations.php', 'populateItemsTable_UpdatedAt'),
-    array('upgrade_operations.php', 'populateItemsTable_DeletedAt'),
-    array('upgrade_operations.php', '20231017_1'),
-    array('upgrade_run_3.1.php', 'user_id'),
-    array('upgrade_operations.php', 'clean_duplicate_sharekeys'),
-    array('upgrade_run_3.1.5.php', 'user_id'),
-    array('upgrade_operations.php', 'Transparent_recovery_migration'),
-    array('upgrade_run_3.1.6.php', 'user_id'),
-    array('upgrade_run_3.1.7.php', 'user_id'),
-    array('upgrade_operations.php', 'deduplicate_misc'),
-    array('upgrade_run_3.2.0.php', 'user_id'),
-    array('upgrade_run_3.2.1.php', 'user_id'),
-    array('upgrade_run_3.2.2.php', 'user_id'),
-    array('upgrade_run_3.2.3.php', 'user_id'),
-    array('upgrade_operations.php', 'sanitize_legacy_fa_icons'),
-    array('upgrade_operations.php', 'sanitize_directory_user_fields'),
-    array('upgrade_operations.php', 'sanitize_imported_folder_titles'),
-);
+// The manifest is shared with the command-line upgrade (app/scripts/upgrade-cli.php).
+$scripts_list = require __DIR__ . '/upgrade_manifest.php';
 $param = '';
 
 $total_scripts = count($scripts_list);

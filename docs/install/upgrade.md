@@ -8,7 +8,7 @@ The 3.2.0 directory layout (`app/` / `public/` / `storage/` / `secrets/`) is alr
 
 1. [**Step 1 — Back up your instance**](#step-1--back-up-your-instance)
 2. [**Step 2 — Get the new code**](#step-2--get-the-new-code)
-3. [**Step 4a — Run the web-based upgrade wizard**](#step-4a--run-the-web-based-upgrade-wizard) — followed by [Step 4b](#step-4b--restart-websocket-daemon-if-websocket-is-enabled) only if the WebSocket feature is enabled.
+3. [**Step 4a — Run the web-based upgrade wizard**](#step-4a--run-the-web-based-upgrade-wizard), or its shell equivalent [**Step 4c — Command-line upgrade**](#step-4c--command-line-upgrade) — followed by [Step 4b](#step-4b--restart-websocket-daemon-if-websocket-is-enabled) only if the WebSocket feature is enabled.
 
 There is **nothing else to do.** The following 3.2.0-only steps must be **skipped** because your installation has already been migrated:
 
@@ -147,6 +147,73 @@ On a hardened non-Docker installation, first grant the [temporary configuration 
 * Follow all wizard steps
 
 > 🔔 When a release changes the database, TeamPass stays closed from the moment the new files are in place until the wizard has run: the login page announces the upgrade and refuses sign-in, and users already signed in are signed out at their next page load. Run the wizard right after replacing the files. The Docker image runs it by itself when the container starts.
+
+---
+
+### Step 4c — Command-line upgrade
+
+The same upgrade can run from a shell or a cron job with `app/scripts/upgrade-cli.php`, once the new files are in place. It accepts databases at **3.2.2 or later**; older ones go through the wizard (Step 4a).
+
+Run it as the PHP service account (the account PHP-FPM or Apache runs as), never as root: the files it creates must stay readable by the web server.
+
+```bash
+cd /var/www/html/teampass
+sudo -u www-data php app/scripts/upgrade-cli.php check    # tells whether an upgrade is waiting; changes nothing
+sudo -u www-data php app/scripts/upgrade-cli.php run      # asks for confirmation, then upgrades
+```
+
+`run` performs, in this order:
+
+1. the checks of `check` (PHP version and extensions, database engine and charset, upgrade scripts present, disk space, backup key...);
+2. maintenance mode on, a 60-second pause so the web server sees it, then every web and API session closed;
+3. an encrypted backup of the database (`storage/backups/scheduled-pre-upgrade-*.sql`), decrypted once to prove it can be restored;
+4. the upgrade scripts, one by one;
+5. a final verification, then the maintenance mode back to its previous value.
+
+Background tasks are held while it runs. Each run writes a log under `storage/upgrade/logs/` and a journal under `storage/upgrade/runs/`. The administrators are e-mailed the outcome when SMTP is configured, and it is recorded in the administration logs.
+
+**On failure**, the database is restored from the backup by default (`--on-failure=revert`). TeamPass then stays in maintenance, because the files deployed are still those of the new release:
+
+1. restore the code of the previous release (`git checkout <previous release>`, or redeploy its archive);
+2. sign in as an administrator and disable the maintenance mode.
+
+With `--on-failure=stop`, the run stops instead and can be continued once the cause is fixed. A run interrupted by Ctrl-C finishes its current script, then stops the same way.
+
+```bash
+sudo -u www-data php app/scripts/upgrade-cli.php status             # journal of the latest run
+sudo -u www-data php app/scripts/upgrade-cli.php resume <run-id>    # continue a stopped run
+sudo -u www-data php app/scripts/upgrade-cli.php revert <run-id>    # restore its pre-upgrade backup
+```
+
+| Exit code | Meaning |
+|---|---|
+| 0 | Up to date, or upgrade completed |
+| 2 | Usage error, or cancelled |
+| 10 | `check`: an upgrade is waiting |
+| 20 | Blocked by a check — nothing changed |
+| 30 | Backup failed — nothing changed |
+| 40 | Upgrade failed, database restored (maintenance on) |
+| 41 | Upgrade failed or interrupted, resumable (maintenance on) |
+| 50 | Restore failed (maintenance on) |
+| 60 | Another run is in progress, or an unfinished run must be resumed or reverted first |
+
+From cron, `--yes` replaces the confirmation. The recommended use is a check that e-mails the administrators once per release waiting to be applied:
+
+```cron
+*/30 * * * * www-data php /var/www/html/teampass/app/scripts/upgrade-cli.php check --notify >/dev/null 2>&1
+```
+
+A fully automatic upgrade, right after an automated deployment, is opt-in:
+
+```cron
+30 3 * * * www-data php /var/www/html/teampass/app/scripts/upgrade-cli.php run --yes
+```
+
+> Over SSH, run `run` inside `tmux` or `screen`: a dropped connection no longer kills a running script, but the terminal output is lost.
+>
+> When the database was last upgraded by a release older than 3.2.3.3, the backup cannot record its schema level: the command line can still restore it, but *Administration → Backups* will refuse it. The log says so.
+>
+> Like the wizard, the upgrade scripts connect to the database without SSL: an SSL-only database cannot be upgraded this way.
 
 ---
 

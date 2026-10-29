@@ -62,6 +62,36 @@ final class FullVersionRecordTest extends TestCase
         $this->assertStringNotContainsString('ON DUPLICATE KEY', $writer);
     }
 
+    /**
+     * The command-line upgrade stamps its pre-upgrade backup with teampass_schema_level: once
+     * new files are deployed, UPGRADE_MIN_DATE no longer describes the data being saved.
+     */
+    public function testEveryRecordingPathAlsoRecordsTheSchemaLevel(): void
+    {
+        $this->assertStringContainsString(
+            "array('admin', 'teampass_schema_level', UPGRADE_MIN_DATE),",
+            self::read('public/install/install-steps/run.step5.php')
+        );
+
+        $wizard = self::read('public/install/upgrade_ajax.php');
+        $full = strpos($wizard, "WHERE intitule = 'teampass_version_full' AND type = 'admin';");
+        $schema = strpos($wizard, "'teampass_schema_level', '\" . (int) UPGRADE_MIN_DATE . \"'");
+        $this->assertIsInt($schema, 'the wizard must record teampass_schema_level');
+        $this->assertGreaterThan((int) $full, $schema);
+        $this->assertLessThan((int) strpos($wizard, 'ConfigManager::invalidateCache();', (int) $full), $schema);
+
+        $writer = self::read('app/scripts/write-db-version.php');
+        $block = substr($writer, (int) strpos($writer, "if (\$ok === true && \$version === TP_VERSION && defined('TP_VERSION_MINOR') === true) {"));
+        $this->assertStringContainsString("'teampass_schema_level', (string) UPGRADE_MIN_DATE", $block);
+    }
+
+    public function testBackupAcceptsTheSchemaLevelOfTheData(): void
+    {
+        $backup = self::read('app/sources/backup.functions.php');
+
+        $this->assertStringContainsString("array_key_exists('schema_level', \$options) === true", $backup);
+    }
+
     public function testDockerHelperReadsTheCompleteReleaseOnRequest(): void
     {
         $reader = self::read('app/scripts/read-db-version.php');

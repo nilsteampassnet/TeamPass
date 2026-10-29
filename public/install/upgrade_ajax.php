@@ -1047,6 +1047,15 @@ if (isset($post_type)) {
                     WHERE intitule = 'teampass_version_full' AND type = 'admin';"
                 );
             }
+            // ...and the schema level of these files, which the command-line upgrade stamps on its
+            // pre-upgrade backup (files deployed later no longer tell which schema the data has).
+            $data = mysqli_fetch_row(mysqli_query($db_link, "SELECT COUNT(*) FROM ".$pre . "misc WHERE type = 'admin' AND intitule = 'teampass_schema_level';"));
+            mysqli_query(
+                $db_link,
+                (int) $data[0] === 0
+                    ? "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'teampass_schema_level', '" . (int) UPGRADE_MIN_DATE . "');"
+                    : "UPDATE `" . $pre . "misc` SET `valeur` = '" . (int) UPGRADE_MIN_DATE . "' WHERE intitule = 'teampass_schema_level' AND type = 'admin';"
+            );
             // Flush APCu cache so that index.php reads the new version from DB
             // instead of a stale cached value that would re-trigger the upgrade redirect.
             ConfigManager::invalidateCache();

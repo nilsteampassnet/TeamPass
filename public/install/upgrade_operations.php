@@ -90,8 +90,18 @@ if ($db_link) {
     exit();
 }
 
-// Get POST with operation to perform
-$post_operation = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+// Get POST with operation to perform. The command-line upgrade (app/scripts/upgrade-cli.php)
+// passes it as the first argument instead: $argv is only read under the CLI SAPI, and only the
+// single-pass operations that need no nb/start input are accepted there.
+if (PHP_SAPI === 'cli') {
+    $post_operation = (string) ($argv[1] ?? '');
+    if (in_array($post_operation, ['sanitize_legacy_fa_icons', 'sanitize_directory_user_fields', 'sanitize_imported_folder_titles'], true) === false) {
+        echo '[{"finish":"1", "next":"", "error":"Operation not available from the command line"}]';
+        exit();
+    }
+} else {
+    $post_operation = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+}
 
 if (isset($post_operation) === true && empty($post_operation) === false && strpos($post_operation, 'step') === false) {
     $total = 0;
