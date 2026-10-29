@@ -125,6 +125,28 @@ final class UpgradeCliLogicTest extends TestCase
         );
     }
 
+    public function testDockerGetsTheCommandLineOperationsOfEachScript(): void
+    {
+        $this->assertSame(
+            ['sanitize_legacy_fa_icons', 'sanitize_directory_user_fields', 'sanitize_imported_folder_titles'],
+            tpUpgradeCliOperationsAfterScript(self::manifest(), '3.2.3')
+        );
+        $this->assertSame([], tpUpgradeCliOperationsAfterScript(self::manifest(), '3.2.2'));
+        // The batched operations of the 3.1.x scripts stay wizard-only.
+        $this->assertSame([], tpUpgradeCliOperationsAfterScript(self::manifest(), '3.1.5'));
+        $this->assertSame([], tpUpgradeCliOperationsAfterScript(self::manifest(), '3.1.7'));
+        $this->assertSame([], tpUpgradeCliOperationsAfterScript(self::manifest(), ''));
+    }
+
+    public function testDockerHelperPrintsTheOperationsOfAScript(): void
+    {
+        $helper = dirname(__DIR__, 2) . '/app/scripts/list-upgrade-operations.php';
+        exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($helper) . ' 3.2.3', $output, $exitCode);
+
+        $this->assertSame(0, $exitCode);
+        $this->assertSame(tpUpgradeCliOperationsAfterScript(self::manifest(), '3.2.3'), $output);
+    }
+
     public function testStepSucceedsOnlyWhenItsJsonSaysSo(): void
     {
         $this->assertTrue(tpUpgradeCliParseStepOutput('[{"finish":"1" , "next":"", "error":""}]', 0)['ok']);

@@ -25,8 +25,9 @@ declare(strict_types=1);
  * Decision logic of the command-line upgrade, kept free of any database, session or file
  * access so it can be unit-tested on its own — same pattern as licence_trial_logic.php.
  *
- * It is included by both:
+ * It is included by:
  *   - app/sources/upgrade_cli.functions.php   (database, files and subprocesses)
+ *   - app/scripts/list-upgrade-operations.php (Docker entrypoint)
  *   - tests/Unit/UpgradeCliLogicTest.php      (unit tests)
  *
  * @file      upgrade_cli_logic.php
@@ -212,6 +213,38 @@ function tpUpgradeCliBuildPlan(array $manifest, string $dbVersion, string $files
     }
 
     return $plan;
+}
+
+/**
+ * Operations the manifest runs after one upgrade_run script, limited to those that can run from
+ * the command line. The Docker entrypoint applies them after each step of its own chain, which
+ * starts below TP_UPGRADE_CLI_FLOOR: the batched, POST-driven operations of the 3.1.x scripts
+ * are left to the web wizard, as they always were.
+ *
+ * @param list<array{0: string, 1: string}> $manifest Content of public/install/upgrade_manifest.php
+ * @param string                            $version  Version of the script (X.Y.Z)
+ *
+ * @return list<string> Operation names, in manifest order
+ */
+function tpUpgradeCliOperationsAfterScript(array $manifest, string $version): array
+{
+    $operations = [];
+    $currentVersion = null;
+
+    foreach ($manifest as $entry) {
+        $file = (string) $entry[0];
+        $parameter = (string) $entry[1];
+
+        if ($file !== 'upgrade_operations.php') {
+            $currentVersion = tpUpgradeCliScriptVersion($file);
+            continue;
+        }
+        if ($currentVersion === $version && in_array($parameter, TP_UPGRADE_CLI_CLI_OPERATIONS, true) === true) {
+            $operations[] = $parameter;
+        }
+    }
+
+    return $operations;
 }
 
 /**
