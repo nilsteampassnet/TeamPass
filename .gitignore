@@ -50,6 +50,9 @@ app/includes/libraries/csrfp/libs/csrfp.config.php.*
 !/storage/onthefly/.gitkeep
 /storage/recovery/*
 !/storage/recovery/.gitkeep
+# Command-line upgrade journals and logs. Ignored as a whole directory: it is created 0700 by
+# the web server user (tpUpgradeCliPaths()), so git must not try to descend into it.
+/storage/upgrade/
 
 # Avatars are user data — never commit
 /public/assets/avatars/*

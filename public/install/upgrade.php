@@ -984,7 +984,8 @@ $(function(){
             postData = {
                 type : currentStep,
                 abspath : $("#root_path").val(),
-                fullurl : $("#root_url").val()
+                fullurl : $("#root_url").val(),
+                no_maintenance_mode : $('#no_maintenance_mode').prop('checked') === true ? 1 : 0
             }
         } else if (currentStep === 'step3') {
             postData = {

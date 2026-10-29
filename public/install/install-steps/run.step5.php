@@ -571,6 +571,7 @@ class DatabaseInstaller
             array('admin', 'encryptClientServer', '1'),
             array('admin', 'teampass_version', TP_VERSION),
             array('admin', 'teampass_version_full', TP_VERSION . '.' . TP_VERSION_MINOR),
+            array('admin', 'teampass_schema_level', UPGRADE_MIN_DATE),
             array('admin', 'ldap_mode', '0'),
             array('admin', 'ldap_type', '0'),
             array('admin', 'ldap_user_attribute', '0'),

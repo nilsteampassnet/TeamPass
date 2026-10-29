@@ -423,6 +423,8 @@ function tpBackupPurgeStaleDatabasePartFiles(string $dir, int $olderThanSeconds 
  *                              - flush_every_inserts (int) default: 200
  *                              - include_tables (array<string>) default: [] (empty => all)
  *                              - exclude_tables (array<string>) default: [] (empty => none)
+ *                              - schema_level (string) default: tpGetSchemaLevel(); '' => no -sl token.
+ *                                For a database the deployed files have not migrated yet.
  * @return array
  * @psalm-return array{success: bool, filename: string, filepath: string, encrypted: bool, size_bytes: int, message: string}
  */
@@ -459,8 +461,11 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
         // Generate filename
         $token = GenerateCryptKey(20, false, true, true, false, true);
 
-        // Schema level token in filename (used for compatibility checks during migrations)
-        $schemaLevel = tpGetSchemaLevel();
+        // Schema level token in filename (used for compatibility checks during migrations).
+        // The command-line upgrade passes the level of the data itself: the files are already newer.
+        $schemaLevel = array_key_exists('schema_level', $options) === true
+            ? (string) $options['schema_level']
+            : tpGetSchemaLevel();
         $schemaSuffix = ($schemaLevel !== '') ? ('-sl' . $schemaLevel) : '';
         $filename = $prefix . time() . '-' . $token . $schemaSuffix . '.sql';
         $filepath = rtrim($outputDir, '/\\') . DIRECTORY_SEPARATOR . $filename;
