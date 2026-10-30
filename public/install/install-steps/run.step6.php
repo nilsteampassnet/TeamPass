@@ -398,6 +398,14 @@ class teampassInstaller
                     'message' => 'Invalid table prefix: only letters, digits and underscore are allowed.',
                 ];
             }
+            // The key file name is appended to TEAMPASS_SECRETS and written as SECUREFILE: a path
+            // would point the instance at a key stored elsewhere.
+            if (installIsValidSecureFileName((string) ($this->installConfig['teampassSecureFile'] ?? '')) === false) {
+                return [
+                    'success' => false,
+                    'message' => 'Invalid encryption key file name.',
+                ];
+            }
 
             // TEAMPASS_ROOT is defined at the top of this file (project root, parent of public/)
             $rootPath = TEAMPASS_ROOT;
@@ -479,6 +487,10 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                     'message' => "Failed to write settings.php. Check file permissions.",
                 ];
             }
+
+            // csrf, cronJob and cleanInstall run once settings.php exists: bind them to this
+            // session, installAssertStepAuthorized() refuses every other install grant from now on.
+            $_SESSION['install_settings_sha256'] = hash('sha256', $settingsContent);
 
             // Initialize background tasks trigger file (in storage/files/ — outside public/)
             $triggerFile = $rootPath . '/storage/files/teampass_background_tasks.trigger';
@@ -666,6 +678,10 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                     (`type`, `intitule`, `valeur`) VALUES
                     ('install', 'clear_install_folder', 'true');"
             );
+
+            // The installation is complete: revoke the install grant so that no request reaches
+            // the step endpoints with it any more. The settings hash stays for the final page.
+            unset($_SESSION['install_granted'], $_SESSION['install_csrf']);
 
             // Remove the development dependencies shipped in the archive. PHPUnit, PHPStan
             // (whose app/vendor/bin/phpstan.phar is an executable archive) and their

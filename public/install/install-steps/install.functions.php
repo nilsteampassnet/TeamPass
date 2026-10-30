@@ -38,6 +38,7 @@ use Defuse\Crypto\Exception as CryptoException;
 // Required here so every installer step that loads this file can reach the helpers below.
 if (defined('TEAMPASS_ROOT')) {
     require_once TEAMPASS_ROOT . '/app/sources/install_security_logic.php';
+    require_once TEAMPASS_ROOT . '/app/sources/config_access_logic.php';
 }
 
 /**
@@ -76,9 +77,37 @@ function installIssueCsrfToken(): string
 }
 
 /**
+ * Return the SHA-256 of app/config/settings.php, or null when it cannot be read.
+ *
+ * @return string|null
+ */
+function installSettingsFileHash(): ?string
+{
+    $hash = @hash_file('sha256', TEAMPASS_ROOT . '/app/config/settings.php');
+
+    return is_string($hash) ? $hash : null;
+}
+
+/**
+ * Tell whether this installer session wrote the settings.php now on disk.
+ *
+ * @return bool
+ */
+function installSessionWroteCurrentSettings(): bool
+{
+    installStartSession();
+    $writtenHash = isset($_SESSION['install_settings_sha256']) && is_string($_SESSION['install_settings_sha256'])
+        ? $_SESSION['install_settings_sha256']
+        : null;
+
+    return installSessionWroteSettings($writtenHash, installSettingsFileHash());
+}
+
+/**
  * Guard an installer step endpoint.
  *
- * Refuses the request unless it carries a valid install-session grant and a matching CSRF token.
+ * Refuses the request unless it carries a valid install-session grant and a matching CSRF token,
+ * and, once settings.php exists, unless it is step 6 from the session that wrote that file.
  * An unauthenticated request (no session cookie, no token) is rejected with 403 before any POST
  * input is processed — the primary fix for GHSA-8xp7-fh3p-5pcr (unauthenticated RCE via the
  * re-runnable installer). On failure it emits a JSON body and terminates.
@@ -96,10 +125,23 @@ function installAssertStepAuthorized(): void
     $providedToken = isset($_SERVER['HTTP_X_CSRF_TOKEN']) && is_string($_SERVER['HTTP_X_CSRF_TOKEN'])
         ? $_SERVER['HTTP_X_CSRF_TOKEN']
         : null;
+    $script = basename((string) ($_SERVER['SCRIPT_FILENAME'] ?? ''));
+    // A grant minted before the setup must not outlive it: once settings.php exists, only the
+    // session that wrote it may finish step 6.
+    $configState = teampassConfigState(TEAMPASS_ROOT . '/app/config');
+    $writtenHash = isset($_SESSION['install_settings_sha256']) && is_string($_SESSION['install_settings_sha256'])
+        ? $_SESSION['install_settings_sha256']
+        : null;
 
     if ($granted === true && installCsrfTokenMatches($sessionToken, $providedToken) === true
+        && installStepAllowedInConfigState(
+            $configState,
+            $script,
+            $writtenHash,
+            $configState === 'installed' ? installSettingsFileHash() : null
+        )
         && !is_file(TEAMPASS_ROOT . '/storage/recovery/pending.json')
-        && (!in_array(basename((string) ($_SERVER['SCRIPT_FILENAME'] ?? '')), ['run.step4.php', 'run.step5.php', 'run.step6.php'], true)
+        && (!in_array($script, ['run.step4.php', 'run.step5.php', 'run.step6.php'], true)
             || installAcquireWriteLock())) {
         return;
     }
