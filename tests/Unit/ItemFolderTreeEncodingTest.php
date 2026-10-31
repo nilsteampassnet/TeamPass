@@ -99,6 +99,7 @@ class ItemFolderTreeEncodingTest extends TestCase
             ];
             $json = [];
             handleNode(7, $node, [7 => $node], [], -1, 1, [], $input, '', 0, 1, 0, $json);
+            self::assertSame($stored, $node->title, 'Rendering must not decode the shared snapshot in place');
             self::assertCount(1, $json, $context);
 
             $document = new DOMDocument();
@@ -110,5 +111,24 @@ class ItemFolderTreeEncodingTest extends TestCase
                 self::assertSame($displayed, html_entity_decode($json[0]['a_attr']['data-title'], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
             }
         }
+    }
+
+    /** Reusing the snapshot for dropdowns must not decode literal entities a second time. */
+    public function testTreeAndDropdownPathsEachDecodeOneLayer(): void
+    {
+        $parent = (object) ['id' => 7, 'parent_id' => '0', 'nlevel' => 2, 'title' => '&amp;lt;Lab O&apos;Brien&amp;gt;',
+            'personal_folder' => 1, 'fa_icon' => 'fas fa-folder', 'fa_icon_selected' => 'fas fa-folder-open', 'children' => []];
+        $child = (object) ['id' => 8, 'parent_id' => '7', 'nlevel' => 3, 'title' => 'R&amp;D', 'personal_folder' => 1];
+        $nodes = [7 => $parent, 8 => $child];
+        $input = ['userId' => 99, 'userLogin' => 'test.user', 'visibleFolders' => [7, 8], 'readOnlyFolders' => [],
+            'personalVisibleFolders' => [], 'personalFolders' => [7, 8], 'userReadOnly' => false,
+            'restrictedFoldersForItems' => [], 'userCanCreateRootFolder' => 0, 'userTreeLoadStrategy' => 'full'];
+        $json = [];
+        handleNode(7, $parent, $nodes, [], -1, 1, [], $input, '', 0, 1, 0, $json);
+        $json[] = ['id' => 'li_8'];
+        $folders = buildVisibleFoldersFromTree($json, $nodes, $input);
+        self::assertSame("&lt;Lab O'Brien&gt;", $folders[0]['title']);
+        self::assertSame('R&D', $folders[1]['title']);
+        self::assertSame("&lt;Lab O'Brien&gt;", html_entity_decode($folders[1]['path'], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
     }
 }
