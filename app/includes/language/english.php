@@ -4137,7 +4137,8 @@ return array(
     'secure_send_active_links' => 'Active Secure Send links',
     'secure_send_active_count' => 'Active links: #COUNT#',
     'secure_send_inventory_loading' => 'Loading your active links…',
-    'secure_send_inventory_unavailable' => 'Your active links could not be loaded. Refresh to try again.',
+    'secure_send_inventory_unavailable' => 'Your active links could not be loaded. Close and reopen this window to try again.',
     'secure_send_revoke_confirm' => 'Revoke this link? Recipients will no longer be able to open it.',
+    'secure_send_revoke_failed' => 'Revocation could not be confirmed. Close and reopen this window to check the link’s status.',
 
 );

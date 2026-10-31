@@ -1231,9 +1231,13 @@ uses the existing owner-checked, transactionally audited operation. Neither the
 modal nor the counter requires permission to create standalone notes.
 
 The personal count refreshes on page load, after creation/revocation, when the
-page regains focus, and every minute while visible. Opening or refreshing the
-modal reloads the list. A failed request clears stale labels and shows a retry
-message; it is never presented as an empty inventory. Disabling Secure Send hides
+page regains focus, and every minute while visible and the modal is closed.
+The list loads once on each opening and stays stable while being read. Revocation
+uses a confirmation view in the TeamPass dialog; cancelling restores the list's
+scroll position, and success removes only that row without reloading the list.
+There is no manual refresh button; close and reopen the dialog to obtain a fresh
+inventory. A failed list request shows a retry message rather than an empty
+inventory. Disabling Secure Send hides
 the administrator line and personal entry; existing audit history remains visible.
 
 ## References

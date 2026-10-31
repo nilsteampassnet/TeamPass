@@ -28,19 +28,25 @@ $lang = new Language($session->get('user-language') ?? 'english');
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="tp-my-sends-title"><i class="fa-regular fa-paper-plane mr-2" aria-hidden="true"></i><?php echo htmlspecialchars($lang->get('secure_send_my_sends'), ENT_QUOTES, 'UTF-8'); ?></h5>
+                <h5 class="modal-title" id="tp-my-sends-title"><i class="fa-regular fa-paper-plane mr-2" aria-hidden="true"></i><span id="tp-my-sends-title-text"><?php echo htmlspecialchars($lang->get('secure_send_my_sends'), ENT_QUOTES, 'UTF-8'); ?></span></h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="<?php echo htmlspecialchars($lang->get('close'), ENT_QUOTES, 'UTF-8'); ?>"><span aria-hidden="true">&times;</span></button>
             </div>
-            <div class="modal-body">
-                <div class="d-flex align-items-center justify-content-between mb-3">
-                    <span class="text-muted small" id="tp-my-sends-summary" aria-live="polite"></span>
-                    <button type="button" class="btn btn-sm btn-default" id="tp-my-sends-refresh" title="<?php echo htmlspecialchars($lang->get('refresh'), ENT_QUOTES, 'UTF-8'); ?>"><i class="fa-solid fa-rotate" aria-hidden="true"></i><span class="sr-only"><?php echo htmlspecialchars($lang->get('refresh'), ENT_QUOTES, 'UTF-8'); ?></span></button>
+            <div class="modal-body" id="tp-my-sends-body">
+                <div id="tp-my-sends-list-view">
+                    <p class="text-muted small mb-3" id="tp-my-sends-summary" aria-live="polite"></p>
+                    <p id="tp-my-sends-status" class="text-muted mb-0" role="status" aria-live="polite"></p>
+                    <ul id="tp-my-sends-list" class="list-group list-group-flush tp-my-sends-list mb-0" aria-label="<?php echo htmlspecialchars($lang->get('secure_send_my_sends'), ENT_QUOTES, 'UTF-8'); ?>"></ul>
                 </div>
-                <p id="tp-my-sends-status" class="text-muted mb-0" role="status" aria-live="polite"></p>
-                <ul id="tp-my-sends-list" class="list-group list-group-flush tp-my-sends-list mb-0" aria-label="<?php echo htmlspecialchars($lang->get('secure_send_my_sends'), ENT_QUOTES, 'UTF-8'); ?>"></ul>
+                <div id="tp-my-sends-confirm-view" hidden>
+                    <p><?php echo htmlspecialchars($lang->get('secure_send_revoke_confirm'), ENT_QUOTES, 'UTF-8'); ?></p>
+                    <p class="font-weight-bold tp-my-sends-label" id="tp-my-sends-confirm-label"></p>
+                    <p class="text-danger mb-0" id="tp-my-sends-revoke-status" role="status" aria-live="polite"></p>
+                </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal"><?php echo htmlspecialchars($lang->get('close'), ENT_QUOTES, 'UTF-8'); ?></button>
+                <button type="button" class="btn btn-default" id="tp-my-sends-close" data-dismiss="modal"><?php echo htmlspecialchars($lang->get('close'), ENT_QUOTES, 'UTF-8'); ?></button>
+                <button type="button" class="btn btn-default" id="tp-my-sends-revoke-cancel" hidden><?php echo htmlspecialchars($lang->get('cancel'), ENT_QUOTES, 'UTF-8'); ?></button>
+                <button type="button" class="btn btn-danger" id="tp-my-sends-revoke-confirm" hidden><?php echo htmlspecialchars($lang->get('secure_send_revoke'), ENT_QUOTES, 'UTF-8'); ?></button>
             </div>
         </div>
     </div>
@@ -61,12 +67,19 @@ $(function () {
         remaining: <?php echo json_encode($lang->get('secure_send_remaining_views_count'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
         protected: <?php echo json_encode($lang->get('secure_send_protected'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
         revoke: <?php echo json_encode($lang->get('secure_send_revoke'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
-        confirm: <?php echo json_encode($lang->get('secure_send_revoke_confirm'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>
+        revokeFailed: <?php echo json_encode($lang->get('secure_send_revoke_failed'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>
     }
     const $modal = $('#tp-secure-send-modal')
     const $list = $('#tp-my-sends-list')
     const $status = $('#tp-my-sends-status')
-    const $refresh = $('#tp-my-sends-refresh')
+    const $body = $('#tp-my-sends-body')
+    const $confirm = $('#tp-my-sends-revoke-confirm')
+    const $cancel = $('#tp-my-sends-revoke-cancel')
+    const entries = new Map()
+    let sends = []
+    let pending = null
+    let bodyScroll = 0
+    let listScroll = 0
     let version = 0
     let opened = false
     let disabled = false
@@ -102,27 +115,73 @@ $(function () {
         })
     }
 
-    function revoke(send, $button) {
-        if (mutating || !window.confirm(labels.confirm)) return
+    function showList($focus) {
+        $('#tp-my-sends-title-text').text(labels.title)
+        $('#tp-my-sends-list-view').prop('hidden', false)
+        $('#tp-my-sends-confirm-view').prop('hidden', true)
+        $('#tp-my-sends-close').prop('hidden', false)
+        $confirm.prop('hidden', true)
+        $cancel.prop('hidden', true)
+        $('#tp-my-sends-confirm-label').text('')
+        $('#tp-my-sends-revoke-status').text('')
+        $body.scrollTop(bodyScroll)
+        $list.scrollTop(listScroll)
+        if ($focus) $focus.trigger('focus')
+    }
+
+    function confirmRevocation(send, $button) {
+        if (mutating || pending) return
+        pending = { send, $button }
+        bodyScroll = $body.scrollTop()
+        listScroll = $list.scrollTop()
+        $('#tp-my-sends-title-text').text(labels.revoke)
+        $('#tp-my-sends-list-view').prop('hidden', true)
+        $('#tp-my-sends-confirm-view').prop('hidden', false)
+        $('#tp-my-sends-confirm-label').text(send.label)
+        $('#tp-my-sends-revoke-status').text('')
+        $('#tp-my-sends-close').prop('hidden', true)
+        $confirm.prop('hidden', false)
+        $cancel.prop('hidden', false).trigger('focus')
+        $body.scrollTop(0)
+    }
+
+    function removeRevokedSend(send) {
+        const index = sends.findIndex(row => row.id === send.id)
+        const neighbour = sends[index + 1] || sends[index - 1]
+        entries.get(send.id)?.$entry.remove()
+        entries.delete(send.id)
+        sends = sends.filter(row => row.id !== send.id)
+        updateCount(sends.length)
+        $status.text(sends.length === 0 ? labels.empty : '')
+        pending = null
+        showList(neighbour ? entries.get(neighbour.id)?.$button : $('#tp-my-sends-close'))
+    }
+
+    function revoke() {
+        if (mutating || !pending) return
+        const { send } = pending
         mutating = true
-        ++version // A preceding list/count response cannot undo the pending revocation.
-        $refresh.prop('disabled', true)
-        $button.prop('disabled', true)
+        const mutationVersion = ++version
+        $confirm.prop('disabled', true)
+        $cancel.prop('disabled', true)
+        $('#tp-my-sends-revoke-status').text('')
         let succeeded = false
         request('revoke_secure_send', {
             data: prepareExchangedData(JSON.stringify({ id: send.id }), 'encode', sessionKey)
         }).done(function (data) {
             if (data && data.enabled === false) { disable(); return }
             succeeded = data && data.error === '' && data.id === send.id
-            if (!succeeded) showError()
-        }).fail(showError).always(function () {
+        }).always(function () {
             mutating = false
-            $refresh.prop('disabled', false)
-            $button.prop('disabled', false)
+            $confirm.prop('disabled', false)
+            $cancel.prop('disabled', false)
             if (succeeded) {
                 $(document).trigger('tp-secure-send-changed', ['global', send.id])
-                refresh(true)
+                if (opened && version === mutationVersion) removeRevokedSend(send)
             }
+            if (!opened) refreshCount(true)
+            else if (version !== mutationVersion) loadList()
+            else if (!succeeded) $('#tp-my-sends-revoke-status').text(labels.revokeFailed)
         })
     }
 
@@ -134,7 +193,9 @@ $(function () {
             && ['item', 'note'].includes(send.send_type) && [0, 1].includes(send.has_passphrase)
     }
 
-    function render(sends) {
+    function render(rows) {
+        sends = rows
+        entries.clear()
         $list.empty()
         updateCount(sends.length)
         $status.text(sends.length === 0 ? labels.empty : '').removeClass('text-danger').addClass('text-muted')
@@ -151,46 +212,73 @@ $(function () {
             }
             const $button = $('<button>', { type: 'button', class: 'btn btn-sm btn-outline-danger flex-shrink-0 tp-my-sends-revoke' })
                 .text(labels.revoke).attr('aria-describedby', labelId).appendTo($entry)
-            $button.on('click', function () { revoke(send, $button) })
+            $button.on('click', function () { confirmRevocation(send, $button) })
             $entry.appendTo($list)
+            entries.set(send.id, { $entry, $button })
         })
     }
 
-    function refresh(force) {
-        if (disabled || mutating || document.hidden || (!force && Date.now() - lastRefresh < 5000)) return
-        lastRefresh = Date.now()
+    function loadList() {
         const current = ++version
-        const listing = opened
-        if (listing) {
-            $list.empty()
-            $status.text(labels.loading).removeClass('text-danger').addClass('text-muted')
-            $refresh.prop('disabled', true)
-        }
-        request(listing ? 'list_secure_sends' : 'count_secure_sends', {}).done(function (data) {
+        sends = []
+        entries.clear()
+        $list.empty()
+        $status.text(labels.loading).removeClass('text-danger').addClass('text-muted')
+        if (disabled || mutating) return
+        request('list_secure_sends', {}).done(function (data) {
             if (current !== version) return
             if (data && data.enabled === false) { disable(); return }
-            if (!data || data.error !== '' || data.enabled !== true) { showError(); return }
-            if (listing) {
-                if (!Array.isArray(data.sends) || !data.sends.every(validSend)) { showError(); return }
-                render(data.sends)
-            } else {
-                if (!Number.isSafeInteger(data.count) || data.count < 0) { showError(); return }
-                updateCount(data.count)
+            if (!data || data.error !== '' || data.enabled !== true || !Array.isArray(data.sends) || !data.sends.every(validSend)) {
+                showError(); return
             }
+            render(data.sends)
         }).fail(function () {
             if (current === version) showError()
-        }).always(function () {
-            if (current === version) $refresh.prop('disabled', false)
         })
     }
 
-    $modal.on('shown.bs.modal', function () { opened = true; refresh(true) })
-    $modal.on('hidden.bs.modal', function () { opened = false; ++version; $list.empty(); $status.text(''); $refresh.prop('disabled', false) })
-    $refresh.on('click', function () { refresh(true) })
-    $(document).on('tp-secure-send-changed', function (event, source) { if (source !== 'global') refresh(true) })
-    $(document).on('visibilitychange', function () { refresh(false) })
-    $(window).on('focus', function () { refresh(false) })
-    window.setInterval(function () { refresh(false) }, 60000)
-    refresh(true)
+    function refreshCount(force) {
+        if (opened || disabled || mutating || document.hidden || (!force && Date.now() - lastRefresh < 5000)) return
+        lastRefresh = Date.now()
+        const current = ++version
+        request('count_secure_sends', {}).done(function (data) {
+            if (current !== version) return
+            if (data && data.enabled === false) { disable(); return }
+            updateCount(data && data.error === '' && data.enabled === true ? data.count : null)
+        }).fail(function () { if (current === version) updateCount(null) })
+    }
+
+    $modal.on('show.bs.modal', function () {
+        opened = true
+        pending = null
+        bodyScroll = listScroll = 0
+        showList()
+        loadList()
+    })
+    $modal.on('hide.bs.modal', function () { ++version })
+    $modal.on('hidden.bs.modal', function () {
+        opened = false
+        ++version
+        sends = []
+        pending = null
+        entries.clear()
+        $list.empty()
+        $status.text('')
+        $('#tp-my-sends-confirm-label').text('')
+        $('#tp-my-sends-revoke-status').text('')
+        refreshCount(true)
+    })
+    $cancel.on('click', function () {
+        if (mutating || !pending) return
+        const $button = pending.$button
+        pending = null
+        showList($button)
+    })
+    $confirm.on('click', revoke)
+    $(document).on('tp-secure-send-changed', function (event, source) { if (source !== 'global') refreshCount(true) })
+    $(document).on('visibilitychange', function () { refreshCount(false) })
+    $(window).on('focus', function () { refreshCount(false) })
+    window.setInterval(function () { refreshCount(false) }, 60000)
+    refreshCount(true)
 })
 </script>

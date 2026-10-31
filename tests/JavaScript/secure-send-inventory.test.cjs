@@ -21,22 +21,25 @@ function harness() {
   const requests = []
   const timers = []
   const document = { hidden: false }
-  const window = { confirm: () => true, setInterval(fn) { timers.push(fn) } }
+  const window = { confirm() { throw new Error('Native confirmation must not be used') }, setInterval(fn) { timers.push(fn) } }
   let now = 100000
+  let focused = null
   function node(key, attrs = {}) {
     if (!nodes.has(key)) {
       const entry = {
-        key, attrs, value: '', properties: {}, children: [], handlers: new Map(), classes: new Set(),
+        key, attrs, value: '', properties: {}, children: [], handlers: new Map(), classes: new Set(), scroll: 0,
         text(value) { this.value = value; return this },
         attr(name, value) { this.attrs[name] = value; return this },
         prop(name, value) { this.properties[name] = value; return this },
         empty() { this.children = []; return this },
-        appendTo(parent) { parent.children.push(this); return this },
+        appendTo(parent) { this.parent = parent; parent.children.push(this); return this },
+        remove() { this.parent.children = this.parent.children.filter(child => child !== this); return this },
+        scrollTop(value) { if (value === undefined) return this.scroll; this.scroll = value; return this },
         addClass(name) { this.classes.add(name); return this },
         removeClass(name) { this.classes.delete(name); return this },
         on(name, callback) { this.handlers.set(name, callback); return this },
-        trigger(name, args = []) { this.handlers.get(name)?.({}, ...args); return this },
-        modal(action) { if (action === 'hide') this.trigger('hidden.bs.modal'); return this }
+        trigger(name, args = []) { if (name === 'focus') focused = this; this.handlers.get(name)?.({}, ...args); return this },
+        modal(action) { if (action === 'hide') this.trigger('hide.bs.modal').trigger('hidden.bs.modal'); return this }
       }
       nodes.set(key, entry)
     }
@@ -57,15 +60,18 @@ function harness() {
   }
   vm.runInNewContext(source, { $, window, document, Date: { now: () => now }, prepareExchangedData: value => value })
   return { requests, window, document, node, timers,
-    open() { node('#tp-secure-send-modal').trigger('shown.bs.modal') },
-    close() { node('#tp-secure-send-modal').trigger('hidden.bs.modal') },
+    open() { node('#tp-secure-send-modal').trigger('show.bs.modal') },
+    close() { node('#tp-secure-send-modal').trigger('hide.bs.modal').trigger('hidden.bs.modal') },
     reply(index, data, failed = false) {
       const request = requests[index]
       if (failed) request.failure?.(); else request.success?.(data)
       request.finished?.()
     },
     advance() { now += 60000; timers[0]() },
-    revoke() { node('#tp-my-sends-list').children[0].children.at(-1).trigger('click') },
+    revoke(index = 0) { node('#tp-my-sends-list').children[index].children.at(-1).trigger('click') },
+    confirm() { node('#tp-my-sends-revoke-confirm').trigger('click') },
+    cancel() { node('#tp-my-sends-revoke-cancel').trigger('click') },
+    get focused() { return focused },
     createdNodes() { return [...nodes.values()].filter(n => n.attrs.tag) }
   }
 }
@@ -111,9 +117,11 @@ test('late count and list responses cannot overwrite a newer inventory or reopen
   h.reply(1, list([send()]))
   h.reply(0, count(20))
   assert.equal(h.node('#tp-secure-send-badge').value, '1')
-  h.node('#tp-my-sends-refresh').trigger('click')
   h.close()
-  h.reply(2, list([send()]))
+  h.open()
+  const pendingList = h.requests.length - 1
+  h.close()
+  h.reply(pendingList, list([send()]))
   assert.equal(h.node('#tp-my-sends-list').children.length, 0)
 })
 
@@ -123,13 +131,14 @@ test('empty inventory, malformed payloads and network errors remain distinct and
   h.reply(1, list([]))
   assert.equal(h.node('#tp-my-sends-status').value, 'secure_send_no_active')
   for (const payload of [list([send({ remaining_views: 0 })]), list([send({ id: '7' })]), { error: 'server_error' }, null]) {
-    h.node('#tp-my-sends-refresh').trigger('click')
+    h.close()
+    h.open()
     h.reply(h.requests.length - 1, payload)
     assert.equal(h.node('#tp-my-sends-status').value, 'secure_send_inventory_unavailable')
     assert.equal(h.node('#tp-secure-send-badge').value, '—')
-    assert.equal(h.node('#tp-my-sends-refresh').properties.disabled, false)
   }
-  h.node('#tp-my-sends-refresh').trigger('click')
+  h.close()
+  h.open()
   h.reply(h.requests.length - 1, null, true)
   assert.equal(h.node('#tp-my-sends-list').children.length, 0)
 })
@@ -137,16 +146,14 @@ test('empty inventory, malformed payloads and network errors remain distinct and
 test('disabling the feature hides the entry, clears labels and stops polling', () => {
   const h = harness()
   h.open()
-  h.reply(1, list([send()]))
-  h.advance()
-  h.reply(2, { error: '', enabled: false, sends: [] })
+  h.reply(1, { error: '', enabled: false, sends: [] })
   assert.equal(h.node('#tp-secure-send-nav').properties.hidden, true)
   assert.equal(h.node('#tp-my-sends-list').children.length, 0)
   h.advance()
-  assert.equal(h.requests.length, 3)
+  assert.equal(h.requests.length, 2)
 })
 
-test('hidden pages do not poll; changes refresh the count and open modals poll their list', () => {
+test('hidden pages do not poll; the closed badge refreshes and open dialogs stay stable', () => {
   const h = harness()
   h.document.hidden = true
   h.advance()
@@ -157,37 +164,151 @@ test('hidden pages do not poll; changes refresh the count and open modals poll t
   h.node(h.document).trigger('tp-secure-send-changed', ['items'])
   assert.equal(h.requests.length, 3)
   h.open()
+  h.reply(3, list([send()]))
+  const entries = h.node('#tp-my-sends-list').children
+  const requestCount = h.requests.length
   h.advance()
-  assert.equal(h.requests.at(-1).options.data.type, 'list_secure_sends')
+  h.node(h.window).trigger('focus')
+  h.node(h.document).trigger('visibilitychange')
+  h.node(h.document).trigger('tp-secure-send-changed', ['items'])
+  assert.equal(h.requests.length, requestCount)
+  assert.equal(h.node('#tp-my-sends-list').children, entries)
+  h.close()
+  assert.equal(h.requests.at(-1).options.data.type, 'count_secure_sends')
 })
 
-test('revocation requires confirmation, cannot be submitted twice, and refreshes on success', () => {
+test('revocation uses the TeamPass confirmation view and cancel restores focus and scroll', () => {
   const h = harness()
   h.open()
   h.reply(1, list([send()]))
-  h.window.confirm = () => false
+  const row = h.node('#tp-my-sends-list').children[0]
+  const button = row.children.at(-1)
+  h.node('#tp-my-sends-body').scrollTop(350)
+  h.node('#tp-my-sends-list').scrollTop(700)
   h.revoke()
   assert.equal(h.requests.length, 2)
-  h.window.confirm = () => true
-  h.revoke()
+  assert.equal(h.node('#tp-my-sends-confirm-view').properties.hidden, false)
+  assert.equal(h.node('#tp-my-sends-list-view').properties.hidden, true)
+  assert.equal(h.node('#tp-my-sends-confirm-label').value, send().label)
+  assert.equal(h.focused, h.node('#tp-my-sends-revoke-cancel'))
+  h.cancel()
+  assert.equal(h.requests.length, 2)
+  assert.equal(h.node('#tp-my-sends-confirm-view').properties.hidden, true)
+  assert.equal(h.node('#tp-my-sends-list').children[0], row)
+  assert.equal(h.node('#tp-my-sends-body').scrollTop(), 350)
+  assert.equal(h.node('#tp-my-sends-list').scrollTop(), 700)
+  assert.equal(h.focused, button)
+})
+
+test('a long list remains stable and revocation removes only its row without reloading', () => {
+  const h = harness()
+  h.open()
+  const sends = Array.from({ length: 250 }, (_, index) => send({ id: index + 1, label: send().label.repeat(5) }))
+  h.reply(1, list(sends))
+  const rows = [...h.node('#tp-my-sends-list').children]
+  h.node('#tp-my-sends-body').scrollTop(18000)
+  h.node('#tp-my-sends-list').scrollTop(19000)
+  h.revoke(125)
+  h.advance()
+  assert.equal(h.requests.length, 2)
+  h.confirm()
+  h.confirm()
   h.revoke()
   h.advance()
   assert.equal(h.requests.length, 3)
   assert.equal(h.requests[2].options.data.type, 'revoke_secure_send')
-  assert.equal(h.requests[2].options.data.data, '{"id":7}')
-  h.reply(2, { error: '', id: 7 })
-  assert.equal(h.requests[3].options.data.type, 'list_secure_sends')
-  h.reply(3, list([]))
-  assert.equal(h.node('#tp-secure-send-badge').properties.hidden, true)
+  assert.equal(h.requests[2].options.data.data, '{"id":126}')
+  h.reply(2, { error: '', id: 126 })
+  const remaining = h.node('#tp-my-sends-list').children
+  assert.equal(h.requests.length, 3)
+  assert.equal(remaining.length, 249)
+  assert.ok(!remaining.includes(rows[125]))
+  assert.ok(remaining.every((row, index) => row === rows[index < 125 ? index : index + 1]))
+  assert.equal(h.node('#tp-secure-send-badge').value, '99+')
+  assert.equal(h.node('#tp-my-sends-body').scrollTop(), 18000)
+  assert.equal(h.node('#tp-my-sends-list').scrollTop(), 19000)
+  assert.equal(h.focused, rows[126].children.at(-1))
 })
 
-test('a failed revocation clears stale labels and leaves an enabled retry action', () => {
+test('revoking the last link displays the empty state without a new list request', () => {
   const h = harness()
   h.open()
   h.reply(1, list([send()]))
   h.revoke()
+  h.confirm()
+  h.reply(2, { error: '', id: 7 })
+  assert.equal(h.requests.length, 3)
+  assert.equal(h.node('#tp-secure-send-badge').properties.hidden, true)
+  assert.equal(h.node('#tp-my-sends-status').value, 'secure_send_no_active')
+  assert.equal(h.focused, h.node('#tp-my-sends-close'))
+})
+
+test('a failed revocation preserves the list and leaves an enabled cancel action', () => {
+  const h = harness()
+  h.open()
+  h.reply(1, list([send()]))
+  const rows = h.node('#tp-my-sends-list').children
+  h.revoke()
+  h.confirm()
   h.reply(2, { error: 'not_allowed' })
+  assert.equal(h.node('#tp-my-sends-list').children, rows)
+  assert.equal(h.node('#tp-my-sends-revoke-status').value, 'secure_send_revoke_failed')
+  assert.equal(h.node('#tp-my-sends-revoke-cancel').properties.disabled, false)
+  h.cancel()
+  assert.equal(h.node('#tp-my-sends-list-view').properties.hidden, false)
+  assert.equal(h.requests.length, 3)
+})
+
+test('closing during a revocation does not reopen the dialog and refreshes only the badge', () => {
+  const h = harness()
+  h.open()
+  h.reply(1, list([send()]))
+  h.revoke()
+  h.confirm()
+  h.close()
+  h.reply(2, { error: '', id: 7 })
   assert.equal(h.node('#tp-my-sends-list').children.length, 0)
-  assert.equal(h.node('#tp-my-sends-status').value, 'secure_send_inventory_unavailable')
-  assert.equal(h.node('#tp-my-sends-refresh').properties.disabled, false)
+  assert.equal(h.requests.at(-1).options.data.type, 'count_secure_sends')
+})
+
+test('closing a confirmation clears its label and cannot revoke a stale selection', () => {
+  const h = harness()
+  h.open()
+  h.reply(1, list([send()]))
+  h.revoke()
+  h.close()
+  const requestCount = h.requests.length
+  h.confirm()
+  assert.equal(h.node('#tp-my-sends-confirm-label').value, '')
+  assert.equal(h.requests.length, requestCount)
+  assert.equal(h.requests.at(-1).options.data.type, 'count_secure_sends')
+})
+
+test('a network failure during revocation keeps the snapshot and allows cancellation', () => {
+  const h = harness()
+  h.open()
+  h.reply(1, list([send()]))
+  const row = h.node('#tp-my-sends-list').children[0]
+  h.revoke()
+  h.confirm()
+  h.reply(2, null, true)
+  assert.equal(h.node('#tp-my-sends-revoke-status').value, 'secure_send_revoke_failed')
+  assert.equal(h.node('#tp-my-sends-list').children[0], row)
+  h.cancel()
+  assert.equal(h.node('#tp-my-sends-confirm-view').properties.hidden, true)
+})
+
+test('reopening during a revocation loads the next snapshot once the write finishes', () => {
+  const h = harness()
+  h.open()
+  h.reply(1, list([send()]))
+  h.revoke()
+  h.confirm()
+  h.close()
+  h.open()
+  assert.equal(h.requests.length, 3)
+  h.reply(2, { error: '', id: 7 })
+  assert.equal(h.requests.at(-1).options.data.type, 'list_secure_sends')
+  h.reply(3, list([]))
+  assert.equal(h.node('#tp-my-sends-list').children.length, 0)
 })
