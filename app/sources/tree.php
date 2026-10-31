@@ -453,13 +453,16 @@ function handleNode(
     array &$ret_json = array()
 )
 {
+    // Keep the shared snapshot encoded: other renderers must decode its titles only once.
+    $currentNode = clone $currentNode;
+
     // If personal Folder, convert id into user name
     if ((int) $currentNode->title === (int) $inputData['userId'] && (int) $currentNode->nlevel === 1) {
         $currentNode->title = $inputData['userLogin'];
     }
 
-    // Decode if needed
-    $currentNode->title = htmlspecialchars_decode($currentNode->title, ENT_QUOTES);
+    // Decode stored HTML5 and legacy entities before escaping the label for jsTree.
+    $currentNode->title = html_entity_decode($currentNode->title, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
     $nodeData = prepareNodeData(
         (int) $nodeId,
@@ -792,7 +795,7 @@ function buildVisibleFoldersFromTree(
         $currentId = (int) $treeNode->parent_id;
         while (isset($completTree[$currentId]) && $currentId > 0) {
             $pathParts[] = htmlspecialchars(
-                stripslashes(htmlspecialchars_decode($completTree[$currentId]->title, ENT_QUOTES)),
+                stripslashes(html_entity_decode($completTree[$currentId]->title, ENT_QUOTES | ENT_HTML5, 'UTF-8')),
                 ENT_QUOTES
             );
             $currentId = (int) $completTree[$currentId]->parent_id;
@@ -808,7 +811,7 @@ function buildVisibleFoldersFromTree(
         $visibleFolders[] = [
             'id' => $folderId,
             'level' => (int) $treeNode->nlevel,
-            'title' => $title,
+            'title' => html_entity_decode($title, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
             'disabled' => (
                 !isset($accessibleFoldersSet[$folderId])
                 || isset($readOnlyFoldersSet[$folderId])

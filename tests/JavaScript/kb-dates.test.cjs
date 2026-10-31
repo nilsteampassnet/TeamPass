@@ -36,13 +36,14 @@ function harness() {
       return { text(value) { text = value; return this }, html() { return escape(text) } }
     }
     if (!nodes.has(selector)) {
-      const state = { value: '', classes: new Set(), data: {}, properties: {} }
+      const state = { value: '', classes: new Set(), data: {}, properties: {}, children: [] }
       const adapter = {
         text(value) { state.value = value; return this }, html(value) { state.value = value; return this },
         val(value) { if (value === undefined) return state.value; state.value = value; return this },
         prop(key, value) { state.properties[key] = value; return this },
         is() { return state.properties.checked === true }, trigger() { return this },
         empty() { state.value = ''; return this },
+        append(child) { state.children.push(child); return this },
         data(key, value) { if (value === undefined) return state.data[key]; state.data[key] = value; return this },
         addClass(name) { state.classes.add(name); return this }, removeClass(name) { state.classes.delete(name); return this },
         toggleClass(name, present) { if (present) state.classes.add(name); else state.classes.delete(name); return this }
@@ -53,6 +54,7 @@ function harness() {
   }
   $.post = (url, payload) => { requests.push(payload); return { fail() {} } }
   const context = vm.createContext({ $, window: {},
+    Option: class { constructor(text, value) { this.text = text; this.value = value } },
     document: { createElement() { return { set innerHTML(value) { this.value = decode(value) } } } },
     DOMPurify: { sanitize: text => text },
     kbTranslations: { kb_created_on: 'Created on %s', kb_modified_on: 'Modified on %s',
@@ -64,7 +66,7 @@ function harness() {
     kbByteLength(text) { return Buffer.byteLength(text) }, kbHasPendingAttachments() { return false },
     kbEditorOptions: { maxDescriptionBytes: 4194304 }, kbSessionKey: 'test-session', kbEncodePayload: value => value
   })
-  vm.runInContext(['kbEscapeHtml', 'kbDecodeHtmlEntities', 'kbArticleDateHtml', 'kbBuildListEntry', 'kbRenderViewer', 'kbHideViewer', 'kbFillEditor', 'kbSaveEntry'].map(section).join('\n'), context)
+  vm.runInContext(['kbEscapeHtml', 'kbDecodeHtmlEntities', 'kbArticleDateHtml', 'kbBuildListEntry', 'kbBuildListCategory', 'kbRenderViewer', 'kbHideViewer', 'kbFillEditor', 'kbSaveEntry'].map(section).join('\n'), context)
   return { context, requests, node: selector => nodes.get(selector).state,
     list: entry => context.kbBuildListEntry(entry), view: entry => context.kbRenderViewer(entry) }
 }
@@ -88,6 +90,30 @@ test('opening and saving an encoded title/category repeatedly preserves the stor
     assert.equal(saved.category, entry.category)
     assert.equal(saved.description, entry.description_html)
   }
+})
+
+test('viewer categories and selected associated items decode one storage layer as text', () => {
+  const h = harness()
+  const entry = { id: 1, label: 'Title', category: 'R&amp;D O&apos;Brien &quot;Ops&quot; &lt;Guide&gt;',
+    associated_items: [{ id: 7, label: 'R&amp;D &lt;img src=x onerror=alert(1)&gt;' }] }
+  h.view(entry)
+  assert.equal(h.node('#kb-viewer-category').value, 'R&D O\'Brien "Ops" <Guide>')
+  h.context.kbFillEditor(entry)
+  assert.equal(h.node('#kb-associated-items').children[0].text, 'R&D <img src=x onerror=alert(1)>')
+  h.view({ ...entry, category: '&amp;lt;literal&amp;gt;' })
+  assert.equal(h.node('#kb-viewer-category').value, '&lt;literal&gt;')
+})
+
+test('category display, sort and search share the decoded and safely escaped label', () => {
+  const h = harness()
+  const cell = h.context.kbBuildListCategory({ category: 'R&amp;D O&apos;Brien &quot;Ops&quot; &lt;Guide&gt;' })
+  assert.equal(cell.sort, 'R&D O\'Brien "Ops" <Guide>')
+  assert.ok(cell.display.includes('R&amp;D O&#39;Brien &quot;Ops&quot; &lt;Guide&gt;'))
+  assert.equal(decode(cell.filter), cell.sort, 'DataTables decodes one layer for its search cache')
+  assert.ok(!cell.sort.includes('apos') && !cell.sort.includes('quot'))
+  const markup = h.context.kbBuildListCategory({ category: '&lt;img src=x onerror=alert(1)&gt;' })
+  assert.ok(markup.display.includes('&lt;img'))
+  assert.ok(!markup.display.includes('<img'))
 })
 
 test('list prefers the last modification, falls back to creation, and hides unknown dates', () => {

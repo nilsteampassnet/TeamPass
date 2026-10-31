@@ -1831,7 +1831,7 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
     // the unnormalized argument against a normalized column never matched, so re-importing
     // a folder whose name carried an accent or an ampersand created a duplicate every time.
     $folderTitle = htmlspecialchars(
-        html_entity_decode(stripslashes((string) $folderTitle), ENT_QUOTES, 'UTF-8'),
+        html_entity_decode(stripslashes((string) $folderTitle), ENT_QUOTES | ENT_HTML5, 'UTF-8'),
         ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5,
         'UTF-8'
     );
