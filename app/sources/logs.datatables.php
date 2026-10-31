@@ -42,6 +42,7 @@ use voku\helper\AntiXSS;
 require_once 'main.functions.php';
 require_once __DIR__ . '/logs_filter_logic.php';
 require_once __DIR__ . '/webauthn_login_logic.php';
+require_once __DIR__ . '/stored_text_search.php';
 
 /**
  * Encode a single value as a safe JSON string literal for the manually built DataTables output.
@@ -492,35 +493,27 @@ if (isset($params['action']) && $params['action'] === 'logs') {
    'utilities.logs' page right, which managers hold and 'utilities' does not imply. */
 } elseif (isset($params['action']) && $params['action'] === 'user_options') {
     $term = mb_substr(trim((string) $request->query->get('term', '')), 0, 100);
-    $page = max(1, (int) $request->query->get('page', 1));
+    $page = min(10000, max(1, (int) $request->query->get('page', 1)));
     $perPage = 30;
 
-    $where = new WhereClause('AND');
-    $where->add('id > 0');
-    $where->add(
-        'id NOT IN %li',
-        [(int) OTV_USER_ID, (int) TP_USER_ID, (int) SSH_USER_ID, (int) API_USER_ID]
-    );
-    if ($term !== '') {
-        $search = $where->addClause('OR');
-        foreach (['login', 'name', 'lastname'] as $column) {
-            $search->add($column . ' LIKE %ss', $term);
-        }
-    }
-
-    // One row beyond the page is fetched to answer "is there more" without a second COUNT.
-    $rows = DB::query(
+    $terms = $term === '' ? [] : [$term];
+    $candidate = storedTextSearchCandidates(['login', 'name', 'lastname'], $terms, 'logs_user');
+    $displayText = static fn (string $value, array $row = []): string => storedTextSearchDecode(normalizeLogDisplayValue($value));
+    $optionPage = storedTextSearchPage(DB::queryWalk(
         'SELECT id, login, name, lastname FROM ' . prefixTable('users') . '
-        WHERE %l ORDER BY login ASC LIMIT %i, %i',
-        $where,
-        ($page - 1) * $perPage,
-        $perPage + 1
+        WHERE id > 0 AND id NOT IN %li_logs_system_users AND ' . $candidate['sql'],
+        $candidate['params'] + ['logs_system_users' => [(int) OTV_USER_ID, (int) TP_USER_ID, (int) SSH_USER_ID, (int) API_USER_ID]]
+    ), $terms, ['login', 'name', 'lastname'], ($page - 1) * $perPage, $perPage,
+        static fn (array $left, array $right): int => strcmp(
+            mb_strtolower($displayText($left['login']), 'UTF-8'), mb_strtolower($displayText($right['login']), 'UTF-8')
+        ) ?: (int) $left['id'] <=> (int) $right['id'],
+        array_fill_keys(['login', 'name', 'lastname'], $displayText)
     );
-    $rows = is_array($rows) === true ? $rows : [];
-    $hasMore = count($rows) > $perPage;
+    $rows = $optionPage['rows'];
+    $hasMore = $optionPage['more'];
 
     $results = [];
-    foreach (array_slice($rows, 0, $perPage) as $record) {
+    foreach ($rows as $record) {
         $displayName = trim(
             normalizeLogDisplayValue($record['name'] ?? '') . ' ' .
             normalizeLogDisplayValue($record['lastname'] ?? '')
@@ -539,26 +532,29 @@ if (isset($params['action']) && $params['action'] === 'logs') {
     exit;
 } elseif (isset($params['action']) && $params['action'] === 'folder_options') {
     $term = mb_substr(trim((string) $request->query->get('term', '')), 0, 100);
-    $page = max(1, (int) $request->query->get('page', 1));
+    $page = min(10000, max(1, (int) $request->query->get('page', 1)));
     $perPage = 30;
 
-    $where = new WhereClause('AND');
-    if ($term !== '') {
-        $where->add('title LIKE %ss', $term);
+    $terms = $term === '' ? [] : [$term];
+    $candidate = storedTextSearchCandidates(['title'], $terms, 'logs_folder');
+    $selectSql = 'SELECT id, title, nlevel FROM ' . prefixTable('nested_tree') . '
+        WHERE ' . $candidate['sql'] . ' ORDER BY nleft ASC, id ASC';
+    if ($terms === []) {
+        // Hierarchy order needs no text normalization; keep initial loads SQL-bounded.
+        $rows = DB::query($selectSql . ' LIMIT %i_logs_offset, %i_logs_limit',
+            ['logs_offset' => ($page - 1) * $perPage, 'logs_limit' => $perPage + 1]);
+        $hasMore = count($rows) > $perPage;
+        $rows = array_slice($rows, 0, $perPage);
+    } else {
+        $displayText = static fn (string $value, array $row = []): string => storedTextSearchDecode(normalizeLogDisplayValue($value));
+        $optionPage = storedTextSearchPage(DB::queryWalk($selectSql, $candidate['params']),
+            $terms, ['title'], ($page - 1) * $perPage, $perPage, null, ['title' => $displayText]);
+        $rows = $optionPage['rows'];
+        $hasMore = $optionPage['more'];
     }
 
-    $rows = DB::query(
-        'SELECT id, title, nlevel FROM ' . prefixTable('nested_tree') . '
-        WHERE %l ORDER BY nleft ASC LIMIT %i, %i',
-        $where,
-        ($page - 1) * $perPage,
-        $perPage + 1
-    );
-    $rows = is_array($rows) === true ? $rows : [];
-    $hasMore = count($rows) > $perPage;
-
     $results = [];
-    foreach (array_slice($rows, 0, $perPage) as $record) {
+    foreach ($rows as $record) {
         $results[] = [
             'id' => (int) $record['id'],
             // The indent conveys the tree depth without sending the whole hierarchy.
