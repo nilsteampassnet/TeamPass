@@ -538,6 +538,15 @@ The public `Host` header must reach Teampass because public links are bound to
 the configured hostname. Do not replace it with the container name or an
 internal backend hostname.
 
+When the `Host` header is rewritten, or the request is redirected to the main
+TeamPass hostname, the recipient only sees an invalid link. Each refusal writes
+one line to the PHP error log, naming the received and the expected hostnames
+(never the link parameters):
+
+```text
+TEAMPASS Secure Send: public link #12 refused, request Host "vault.example.com" does not match the public address host "share.example.com"; the web server or reverse proxy must forward the original Host header
+```
+
 ### Official Docker image backend safeguards
 
 Images released after 3.2.2.6 need no change for Secure Send. The Nginx process

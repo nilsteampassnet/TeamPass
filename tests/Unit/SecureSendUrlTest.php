@@ -35,6 +35,23 @@ require_once __DIR__ . '/../../app/sources/secure_send_url.php';
 
 class SecureSendUrlTest extends TestCase
 {
+    private string $log = '';
+    private string $previousLog = '';
+
+    /** Capture host refusals instead of printing them on the test output. */
+    protected function setUp(): void
+    {
+        $this->log = (string) tempnam(sys_get_temp_dir(), 'tp-send-url-');
+        $this->previousLog = (string) ini_get('error_log');
+        ini_set('error_log', $this->log);
+    }
+
+    protected function tearDown(): void
+    {
+        ini_set('error_log', $this->previousLog);
+        unlink($this->log);
+    }
+
     /** Resolve supported public settings and preserve the internal base address. */
     #[DataProvider('addresses')]
     public function testAddresses(string $main, string $public, bool $selected, string $expected): void
@@ -117,6 +134,32 @@ class SecureSendUrlTest extends TestCase
             'share.example.com\\evil', 'share.example.com.evil.test'] as $host) {
             self::assertFalse(secureSendHostIsAllowed($settings, ['shared_globaly' => 1], $host), $host);
         }
+    }
+
+    /** Name both hosts of a refusal (proxy redirect or Host rewrite), never the link credentials. */
+    public function testRefusedPublicHostIsLoggedWithoutCredentials(): void
+    {
+        $settings = ['cpassman_url' => 'https://vault.example.com', 'otv_subdomain' => 'https://share.example.cloud'];
+        $link = ['id' => 42, 'shared_globaly' => 1, 'code' => 'secret-canary', 'encrypted' => 'secret-canary'];
+
+        self::assertTrue(secureSendHostIsAllowed($settings, $link, 'share.example.cloud'));
+        self::assertTrue(secureSendHostIsAllowed($settings, ['shared_globaly' => 0] + $link, 'vault.example.com'));
+        self::assertSame('', (string) file_get_contents($this->log));
+
+        self::assertFalse(secureSendHostIsAllowed($settings, $link, 'vault.example.com'));
+        $contents = (string) file_get_contents($this->log);
+        self::assertStringContainsString('public link #42 refused', $contents);
+        self::assertStringContainsString('request Host "vault.example.com"', $contents);
+        self::assertStringContainsString('public address host "share.example.cloud"', $contents);
+
+        // A forged Host cannot inject a log line or control bytes.
+        self::assertFalse(secureSendHostIsAllowed($settings, $link, "evil\x1b.test\r\nforged"));
+        self::assertFalse(secureSendHostIsAllowed(['otv_subdomain' => 'bad/path'], $link, 'share.example.cloud'));
+        $lines = array_slice(explode("\n", trim((string) file_get_contents($this->log))), 1);
+        self::assertCount(2, $lines);
+        self::assertStringContainsString('request Host "evil?.test??forged"', $lines[0]);
+        self::assertStringContainsString('"(empty or invalid public address)"', $lines[1]);
+        self::assertStringNotContainsString('secret-canary', (string) file_get_contents($this->log));
     }
 
 }

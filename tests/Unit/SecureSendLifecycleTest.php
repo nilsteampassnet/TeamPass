@@ -68,20 +68,32 @@ class SecureSendLifecycleTest extends TestCase
     /** Reject a wrong public host before confirmation, decryption or view consumption. */
     public function testPublicHostIsCheckedOnBothConfirmationAndReveal(): void
     {
-        foreach (['item', 'note'] as $type) {
-            DB::reset();
-            $parameters = $this->create(['send_type' => $type, 'shared_globaly' => 1]);
-            $tokens = [];
-            $bad = secureSendPrepareRecipient($parameters, 'GET', $this->settings, $tokens, 'vault.example.com');
-            self::assertSame('secure_send_invalid_link', $bad['error']);
-            self::assertSame('', $bad['token']);
-            $page = secureSendPrepareRecipient($parameters, 'GET', $this->settings, $tokens, 'share.example.com:443');
-            self::assertNotEmpty($page['token']);
-            $post = $parameters + ['confirmation' => $page['token']];
-            self::assertSame('secure_send_invalid_link', secureSendPrepareRecipient($post, 'POST', $this->settings, $tokens, 'evil.test')['error']);
-            self::assertSame('invalid_link', secureSendRedeem($parameters, '', $this->settings, 'evil.test')['error']);
-            self::assertSame(0, DB::$links[1]['views']);
-            self::assertSame('', secureSendPrepareRecipient($post, 'POST', $this->settings, $tokens, 'share.example.com')['result']['error']);
+        $log = tempnam(sys_get_temp_dir(), 'tp-otv-test-');
+        $previous = ini_set('error_log', $log);
+        try {
+            foreach (['item', 'note'] as $type) {
+                DB::reset();
+                $parameters = $this->create(['send_type' => $type, 'shared_globaly' => 1]);
+                $tokens = [];
+                $bad = secureSendPrepareRecipient($parameters, 'GET', $this->settings, $tokens, 'vault.example.com');
+                self::assertSame('secure_send_invalid_link', $bad['error']);
+                self::assertSame('', $bad['token']);
+                $page = secureSendPrepareRecipient($parameters, 'GET', $this->settings, $tokens, 'share.example.com:443');
+                self::assertNotEmpty($page['token']);
+                $post = $parameters + ['confirmation' => $page['token']];
+                self::assertSame('secure_send_invalid_link', secureSendPrepareRecipient($post, 'POST', $this->settings, $tokens, 'evil.test')['error']);
+                self::assertSame('invalid_link', secureSendRedeem($parameters, '', $this->settings, 'evil.test')['error']);
+                self::assertSame(0, DB::$links[1]['views']);
+                self::assertSame('', secureSendPrepareRecipient($post, 'POST', $this->settings, $tokens, 'share.example.com')['result']['error']);
+            }
+            // Each refusal is diagnosable by the administrator, without the link credentials.
+            $contents = (string) file_get_contents($log);
+            self::assertSame(6, substr_count($contents, 'TEAMPASS Secure Send: public link #'));
+            self::assertStringNotContainsString($parameters['code'], $contents);
+            self::assertStringNotContainsString($parameters['key'], $contents);
+        } finally {
+            ini_set('error_log', $previous);
+            unlink($log);
         }
     }
 

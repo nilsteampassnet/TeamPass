@@ -40,6 +40,7 @@ return array(
     'secure_send_revoke' => 'Revoke',
     'secure_send_public_url' => 'Public sharing address',
     'secure_send_public_url_tip' => 'Recommended: a full HTTPS base URL, for example https://share.example.com or https://share.example.com/vault. A hostname inherits the main URL port and path. A short prefix such as share is still supported and is prepended to the TeamPass hostname. Configure matching DNS, HTTPS certificate and web server routing; no DNS validation is performed here. Leave empty to use the main TeamPass address.',
+    'secure_send_public_url_scope_tip' => 'Any HTTPS address is accepted, including one outside the TeamPass domain. It is used only for Secure Send links whose sender selects “Use public address” when generating them; the item sharing email uses the “Customize URL for links” setting of the Emails page instead. The web server or reverse proxy must pass the original Host header to TeamPass: redirecting to the main address or rewriting the Host makes public links invalid, and each refusal is written to the PHP error log.',
     'secure_send_invalid_public_url' => 'Invalid sharing address. Enter a valid HTTPS base URL, hostname or short subdomain prefix, without credentials, query parameters or a fragment.',
     'secure_send_address_preview' => 'Address used for this link: #URL#',
     'secure_send_use_public_url' => 'Use public address',
