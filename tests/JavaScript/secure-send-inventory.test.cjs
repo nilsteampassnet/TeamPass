@@ -99,6 +99,7 @@ test('opening reloads the list and renders labels and metadata exclusively as te
   assert.equal(h.node('#tp-my-sends-list').children.length, 1)
   assert.equal(h.node('#tp-secure-send-badge').value, '1')
   assert.ok(h.createdNodes().some(n => n.value === send().label))
+  assert.equal(h.node('#tp-my-sends-list').children[0].children.at(-1).attrs['aria-describedby'], 'tp-my-send-label-7')
   assert.ok(h.createdNodes().every(n => ['<li>', '<i>', '<div>', '<span>', '<button>'].includes(n.attrs.tag)))
   h.close()
   assert.equal(h.node('#tp-my-sends-list').children.length, 0)

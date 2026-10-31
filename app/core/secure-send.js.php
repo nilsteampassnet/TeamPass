@@ -50,6 +50,7 @@ $(function () {
     'use strict'
 
     const sessionKey = <?php echo json_encode($session->get('key'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>
+
     const labels = {
         title: <?php echo json_encode($lang->get('secure_send_my_sends'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
         count: <?php echo json_encode($lang->get('secure_send_active_count'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
@@ -141,14 +142,15 @@ $(function () {
             const $entry = $('<li>', { class: 'list-group-item px-0 d-flex align-items-center tp-my-sends-entry' })
             $('<i>', { class: 'fa-solid ' + (send.send_type === 'note' ? 'fa-note-sticky' : 'fa-key') + ' text-muted', 'aria-hidden': 'true' }).appendTo($entry)
             const $details = $('<div>', { class: 'flex-grow-1 tp-my-sends-details' }).appendTo($entry)
-            $('<span>', { class: 'd-block font-weight-bold tp-my-sends-label' }).text(send.label).appendTo($details)
+            const labelId = 'tp-my-send-label-' + String(send.id)
+            $('<span>', { id: labelId, class: 'd-block font-weight-bold tp-my-sends-label' }).text(send.label).appendTo($details)
             $('<span>', { class: 'd-block small text-muted mt-1' }).text(labels.remaining.replace('#VIEWS#', String(send.remaining_views))).appendTo($details)
             $('<span>', { class: 'd-block small text-muted' }).text(labels.expires.replace('#DATE#', send.expires_label)).appendTo($details)
             if (send.has_passphrase === 1) {
                 $('<span>', { class: 'badge badge-light mt-1' }).text(labels.protected).appendTo($details)
             }
             const $button = $('<button>', { type: 'button', class: 'btn btn-sm btn-outline-danger flex-shrink-0 tp-my-sends-revoke' })
-                .text(labels.revoke).attr('aria-label', labels.revoke + ' — ' + send.label).appendTo($entry)
+                .text(labels.revoke).attr('aria-describedby', labelId).appendTo($entry)
             $button.on('click', function () { revoke(send, $button) })
             $entry.appendTo($list)
         })
