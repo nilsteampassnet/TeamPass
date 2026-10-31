@@ -9325,6 +9325,7 @@ require __DIR__ . '/icon.picker.js.php';
             "json"
         ).always(function() {
             loadSecureSendsList();
+            $(document).trigger('tp-secure-send-changed', ['items']);
         });
     }
 
@@ -9401,6 +9402,7 @@ require __DIR__ . '/icon.picker.js.php';
                 if (data === null || typeof data !== 'object' || Array.isArray(data) || typeof data.error !== 'string') {
                     toastr.error(secureSendErrorLabel('server_error'), '', { timeOut: 5000 });
                 } else if (data.error === "" && typeof data.url === 'string' && data.url !== '' && Number.isInteger(responseId) && responseId > 0) {
+                    $(document).trigger('tp-secure-send-changed', ['items']);
                     $('#form-item-otv-link').val(data.url).data('otv-id', data.otv_id);
                     bindSecureSendClipboard(data.url);
                     if (data.description_truncated === true) {
@@ -9435,6 +9437,18 @@ require __DIR__ . '/icon.picker.js.php';
     });
 
     // Refresh the "My secure sends" list
+    $(document).on('tp-secure-send-changed', function(event, source, id) {
+        if (source !== 'global') {
+            return;
+        }
+        if (Number($('#form-item-otv-link').data('otv-id')) === Number(id)) {
+            invalidateSecureSendLink();
+        }
+        if ($('#modal-item-otv').hasClass('show')) {
+            loadSecureSendsList();
+        }
+    });
+
     $(document).on('click', '#secure-send-list-refresh', function() {
         loadSecureSendsList();
     });
@@ -9473,6 +9487,7 @@ require __DIR__ . '/icon.picker.js.php';
         ).fail(function() {
             toastr.error(secureSendErrorLabel('server_error'), '', { timeOut: 5000 });
         }).always(function() {
+            $(document).trigger('tp-secure-send-changed', ['items']);
             $button.prop('disabled', false);
         });
     });

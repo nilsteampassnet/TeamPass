@@ -4093,4 +4093,11 @@ return array(
     'device_pairing_next' => 'Suivant',
     'device_pairing_upgrade_needed' => 'Exécutez l’assistant de mise à niveau avant d’activer cette fonction.',
 
+    'secure_send_active_links' => 'Liens Secure Send actifs',
+    'secure_send_active_count' => 'Liens actifs : #COUNT#',
+    'secure_send_inventory_loading' => 'Chargement de vos liens actifs…',
+    'secure_send_inventory_unavailable' => 'Impossible de charger vos liens actifs. Fermez puis rouvrez cette fenêtre pour réessayer.',
+    'secure_send_revoke_confirm' => 'Révoquer ce lien ? Les destinataires ne pourront plus l’ouvrir.',
+    'secure_send_revoke_failed' => 'La révocation n’a pas pu être confirmée. Fermez puis rouvrez cette fenêtre pour vérifier l’état du lien.',
+
 );
