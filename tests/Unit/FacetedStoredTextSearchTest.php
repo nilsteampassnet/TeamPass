@@ -201,4 +201,14 @@ class FacetedStoredTextSearchTest extends TestCase
             self::assertStringNotContainsString('GROUP BY c.id', $sql);
         }
     }
+
+    /** Opening the hierarchy picker still reads only its requested SQL page. */
+    public function testEmptyFolderLookupRetainsItsBoundedSqlQuery(): void
+    {
+        $result = $this->folderOptions('', 2, array_merge([10], range(1001, 1165)));
+        self::assertSame(range(1050, 1099), array_column($result['results'], 'id'));
+        self::assertTrue($result['pagination']['more']);
+        self::assertCount(1, DB::$calls);
+        self::assertStringContainsString('LIMIT %i_folder_option_limit OFFSET %i_folder_option_offset', DB::$calls[0][0]);
+    }
 }

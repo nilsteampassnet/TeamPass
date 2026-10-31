@@ -343,19 +343,20 @@ if ($request->request->get('type') === 'folder_options') {
             $candidate = storedTextSearchCandidates(['folder.title'], $terms, 'folder_option');
             $where[] = '(' . $candidate['sql'] . ' OR (folder.nlevel = 1 AND folder.title = %s_folder_owner))';
             $params += $candidate['params'] + ['folder_owner' => (string) $userId];
-            $folderPage = storedTextSearchPage(
-                DB::queryWalk(
-                    'SELECT folder.id, folder.title, folder.nlevel FROM ' . prefixTable('nested_tree') . ' AS folder
-                    WHERE ' . implode(' AND ', $where) . ' ORDER BY folder.nleft ASC, folder.id ASC',
-                    $params
-                ),
-                $terms,
-                ['title'],
-                ($page - 1) * SEARCH_FOLDER_OPTIONS_PAGE_SIZE,
-                SEARCH_FOLDER_OPTIONS_PAGE_SIZE,
-                null,
-                ['title' => static fn (string $title, array $row): string => searchFolderDisplayTitle($title, (int) $row['nlevel'], $userId, $userLogin)]
-            );
+            $selectSql = 'SELECT folder.id, folder.title, folder.nlevel FROM ' . prefixTable('nested_tree') . ' AS folder
+                WHERE ' . implode(' AND ', $where) . ' ORDER BY folder.nleft ASC, folder.id ASC';
+            if ($terms === []) {
+                // No decoded filtering is needed for an empty hierarchy search.
+                $initialRows = DB::query($selectSql . ' LIMIT %i_folder_option_limit OFFSET %i_folder_option_offset',
+                    $params + ['folder_option_limit' => SEARCH_FOLDER_OPTIONS_PAGE_SIZE + 1,
+                        'folder_option_offset' => ($page - 1) * SEARCH_FOLDER_OPTIONS_PAGE_SIZE]);
+                $folderPage = ['rows' => array_slice($initialRows, 0, SEARCH_FOLDER_OPTIONS_PAGE_SIZE),
+                    'more' => count($initialRows) > SEARCH_FOLDER_OPTIONS_PAGE_SIZE];
+            } else {
+                $folderPage = storedTextSearchPage(DB::queryWalk($selectSql, $params),
+                    $terms, ['title'], ($page - 1) * SEARCH_FOLDER_OPTIONS_PAGE_SIZE, SEARCH_FOLDER_OPTIONS_PAGE_SIZE,
+                    null, ['title' => static fn (string $title, array $row): string => searchFolderDisplayTitle($title, (int) $row['nlevel'], $userId, $userLogin)]);
+            }
             $folderOptionRows = $folderPage['rows'];
             $output['pagination']['more'] = $folderPage['more'];
         }
