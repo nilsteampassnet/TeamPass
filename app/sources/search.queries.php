@@ -31,8 +31,8 @@ declare(strict_types=1);
  * Faceted search backend for the Search page.
  *
  * No query is performed per rendered row: every permission rule is expressed
- * in SQL and applied before the LIMIT, so the item row counts are exact and
- * the pagination consistent.
+ * in SQL. Entity-bearing metadata is matched in a bounded-memory stream before
+ * its count and page boundaries, so stored encodings cannot consume a page.
  *
  * Requests are POSTed so search terms never land in web server access logs
  * or Referer headers.
@@ -327,41 +327,37 @@ if ($request->request->get('type') === 'folder_options') {
         if ($selectedFolderId > 0) {
             $where[] = 'folder.id = %i_selected_folder_id';
             $params['selected_folder_id'] = $selectedFolderId;
-            $limitSql = 'LIMIT 1';
+            $folderOptionRows = DB::query(
+                'SELECT folder.id, folder.title, folder.nlevel FROM ' . prefixTable('nested_tree') . ' AS folder
+                WHERE ' . implode(' AND ', $where) . ' LIMIT 1',
+                $params
+            );
         } else {
             $term = $request->request->get('term', '');
             $term = is_string($term) === true ? mb_substr(trim($term), 0, 100) : '';
-            if ($term !== '') {
-                $storageTerm = searchEncodeFolderTerm($term);
-                if ($storageTerm === '') {
-                    $where[] = '(1 = 0)';
-                } else {
-                    $where[] = 'folder.title LIKE %ss_folder_option_term';
-                    $params['folder_option_term'] = $storageTerm;
-                }
-            }
-
             $page = min(
                 10000,
                 max(1, (int) $request->request->filter('page', 1, FILTER_SANITIZE_NUMBER_INT))
             );
-            $params['folder_option_limit'] = SEARCH_FOLDER_OPTIONS_PAGE_SIZE + 1;
-            $params['folder_option_offset'] = ($page - 1) * SEARCH_FOLDER_OPTIONS_PAGE_SIZE;
-            $limitSql = 'LIMIT %i_folder_option_limit OFFSET %i_folder_option_offset';
-        }
-
-        $folderOptionRows = DB::query(
-            'SELECT folder.id, folder.title, folder.nlevel
-            FROM ' . prefixTable('nested_tree') . ' AS folder
-            WHERE ' . implode(' AND ', $where) . '
-            ORDER BY folder.nleft ASC, folder.title ASC, folder.id ASC
-            ' . $limitSql,
-            $params
-        );
-
-        if ($selectedFolderId === 0) {
-            $output['pagination']['more'] = count($folderOptionRows) > SEARCH_FOLDER_OPTIONS_PAGE_SIZE;
-            $folderOptionRows = array_slice($folderOptionRows, 0, SEARCH_FOLDER_OPTIONS_PAGE_SIZE);
+            $terms = $term === '' ? [] : [$term];
+            $candidate = storedTextSearchCandidates(['folder.title'], $terms, 'folder_option');
+            $where[] = '(' . $candidate['sql'] . ' OR (folder.nlevel = 1 AND folder.title = %s_folder_owner))';
+            $params += $candidate['params'] + ['folder_owner' => (string) $userId];
+            $folderPage = storedTextSearchPage(
+                DB::queryWalk(
+                    'SELECT folder.id, folder.title, folder.nlevel FROM ' . prefixTable('nested_tree') . ' AS folder
+                    WHERE ' . implode(' AND ', $where) . ' ORDER BY folder.nleft ASC, folder.id ASC',
+                    $params
+                ),
+                $terms,
+                ['title'],
+                ($page - 1) * SEARCH_FOLDER_OPTIONS_PAGE_SIZE,
+                SEARCH_FOLDER_OPTIONS_PAGE_SIZE,
+                null,
+                ['title' => static fn (string $title, array $row): string => searchFolderDisplayTitle($title, (int) $row['nlevel'], $userId, $userLogin)]
+            );
+            $folderOptionRows = $folderPage['rows'];
+            $output['pagination']['more'] = $folderPage['more'];
         }
 
         foreach (searchHydrateFolderRows($folderOptionRows, $folderScope, $userId, $userLogin) as $folder) {
@@ -464,8 +460,8 @@ if (count($folderScope) === 0
 
 // Folder matches are a separate result type. Item-only facets do not apply
 // to them; the requested subtree and personal/shared scope do. The query is
-// capped one row above the display limit so the UI can ask for refinement
-// without running a second COUNT query.
+// matched before the display limit, so encoded false candidates cannot hide a
+// later valid result. Only the best bounded set is retained for hydration.
 $folderResults = [];
 $folderResultsTruncated = false;
 if (count($filters['terms']) > 0 && in_array('folder', (array) $filters['fields'], true)) {
@@ -478,21 +474,25 @@ if (count($filters['terms']) > 0 && in_array('folder', (array) $filters['fields'
         );
     }
 
-    $folderBuilt = searchBuildFolderWhere((array) $filters['terms'], $folderResultScope);
+    $folderBuilt = searchBuildFolderWhere((array) $filters['terms'], $folderResultScope, $userId);
     if (count($folderBuilt['params']) > 0) {
-        $folderBuilt['params']['folder_result_limit'] = SEARCH_FOLDER_RESULTS_LIMIT + 1;
-        $folderRows = DB::query(
+        $folderTitle = static fn (string $title, array $row): string => searchFolderDisplayTitle($title, (int) $row['nlevel'], $userId, $userLogin);
+        $folderPage = storedTextSearchPage(DB::queryWalk(
             'SELECT folder.id, folder.title, folder.nlevel
             FROM ' . prefixTable('nested_tree') . ' AS folder
             WHERE ' . $folderBuilt['sql'] . '
-            ORDER BY folder.title ASC, folder.id ASC
-            LIMIT %i_folder_result_limit',
+            ORDER BY folder.id ASC',
             $folderBuilt['params']
+        ), (array) $filters['terms'], ['title'], 0, SEARCH_FOLDER_RESULTS_LIMIT,
+            static fn (array $left, array $right): int => strcmp(
+                mb_strtolower($folderTitle($left['title'], $left), 'UTF-8'),
+                mb_strtolower($folderTitle($right['title'], $right), 'UTF-8')
+            ) ?: (int) $left['id'] <=> (int) $right['id'],
+            ['title' => $folderTitle]
         );
-
-        $folderResultsTruncated = count($folderRows) > SEARCH_FOLDER_RESULTS_LIMIT;
+        $folderResultsTruncated = $folderPage['more'];
         $folderResults = searchHydrateFolderRows(
-            array_slice($folderRows, 0, SEARCH_FOLDER_RESULTS_LIMIT),
+            $folderPage['rows'],
             $folderResultScope,
             $userId,
             $userLogin
@@ -550,10 +550,6 @@ $fromClause = ' FROM ' . prefixTable('cache') . ' AS c'
     . $classificationJoin
     . ' WHERE ' . $built['sql'];
 
-// Exact count: all filtering is in SQL, nothing is dropped afterwards.
-$countRow = DB::queryFirstRow('SELECT COUNT(DISTINCT c.id) AS nb' . $fromClause, $built['params']);
-$iTotal = (int) ($countRow['nb'] ?? 0);
-
 $sortColumns = searchSortColumnMap();
 $orderParam = $request->request->all()['order'] ?? null;
 $sOrder = searchBuildOrderClause(
@@ -568,17 +564,47 @@ $start = max(0, (int) $request->request->filter('start', 0, FILTER_SANITIZE_NUMB
 $length = (int) $request->request->filter('length', 25, FILTER_SANITIZE_NUMBER_INT);
 $length = ($length <= 0 || $length > 100) ? 100 : $length;
 
-$rows = DB::query(
-    'SELECT c.id, c.label, c.login, c.description, c.tags, c.url, c.folder,
+$selectSql = 'SELECT c.id, c.label, c.login, c.description, c.tags, c.url, c.folder,
         c.id_tree, c.perso, c.author, c.restricted_to, ' . $effectivePeriodSql . ' AS renewal_period,
         ' . renewalBaseDateSql('c.timestamp') . ' AS timestamp'
-    . $classificationSelect
-    . $fromClause
-    . ' GROUP BY c.id'
-    . ' ' . $sOrder
-    . ' LIMIT ' . $start . ', ' . $length,
-    $built['params']
-);
+    . $classificationSelect;
+
+if ($filters['terms'] === []) {
+    // Facet-only searches retain their bounded SQL count and page query.
+    $countRow = DB::queryFirstRow('SELECT COUNT(DISTINCT c.id) AS nb' . $fromClause, $built['params']);
+    $iTotal = (int) ($countRow['nb'] ?? 0);
+    $rows = DB::query($selectSql . $fromClause . ' GROUP BY c.id ' . $sOrder . ' LIMIT ' . $start . ', ' . $length, $built['params']);
+} else {
+    preg_match('/^ORDER BY c\.(label|login|description|tags|url|folder) (ASC|DESC)$/', $sOrder, $sortMatch);
+    $sortField = $sortMatch[1] ?? 'label';
+    $sortDirection = ($sortMatch[2] ?? 'ASC') === 'DESC' ? -1 : 1;
+    $textFields = array_values(array_intersect((array) $filters['fields'], array_keys(searchTextFieldMap())));
+    $candidateColumns = array_unique(array_merge($textFields, [$sortField]));
+    $candidateSelect = 'SELECT c.id, ' . implode(', ', array_map(static fn (string $field): string => 'c.' . $field, $candidateColumns));
+    $page = storedTextSearchPage(
+        DB::queryWalk($candidateSelect . $fromClause . ' GROUP BY c.id', $built['params']),
+        (array) $filters['terms'], $textFields, $start, $length,
+        static fn (array $left, array $right): int => $sortDirection * strcmp(
+            mb_strtolower($left['sort_key'], 'UTF-8'), mb_strtolower($right['sort_key'], 'UTF-8')
+        ) ?: $left['id'] <=> $right['id'],
+        [],
+        static fn (array $row): array => ['id' => (int) $row['id'], 'sort_key' => $sortField === 'description'
+            ? findBuildDescriptionPreview((string) ($row[$sortField] ?? ''), 200)
+            : storedTextSearchDecode((string) ($row[$sortField] ?? ''))]
+    );
+    $iTotal = $page['total'];
+    $rows = [];
+    if ($page['rows'] !== []) {
+        $ids = array_column($page['rows'], 'id');
+        $pageRows = DB::query($selectSql . $fromClause . ' AND c.id IN %li_page_ids GROUP BY c.id', $built['params'] + ['page_ids' => $ids]);
+        $byId = array_column($pageRows, null, 'id');
+        foreach ($ids as $id) {
+            if (isset($byId[$id])) {
+                $rows[] = $byId[$id];
+            }
+        }
+    }
+}
 
 // --------------------------------- //
 // Mass-operation rights, resolved in ONE query for the whole page instead of
