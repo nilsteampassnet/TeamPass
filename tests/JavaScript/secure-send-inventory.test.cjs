@@ -77,7 +77,7 @@ function harness() {
 }
 
 function send(changes = {}) {
-  return { id: 7, label: 'R&D, O\'Brien, "<img src=x onerror=alert(1)>"', send_type: 'item',
+  return { id: 7, item_id: 123, folder_id: 7, label: 'R&D, O\'Brien, "<img src=x onerror=alert(1)>"', send_type: 'item',
     has_passphrase: 1, remaining_views: 2, expires_at: 2000, expires_label: '31/10/2026 18:00', ...changes }
 }
 const list = sends => ({ error: '', enabled: true, sends })
@@ -106,9 +106,53 @@ test('opening reloads the list and renders labels and metadata exclusively as te
   assert.equal(h.node('#tp-secure-send-badge').value, '1')
   assert.ok(h.createdNodes().some(n => n.value === send().label))
   assert.equal(h.node('#tp-my-sends-list').children[0].children.at(-1).attrs['aria-describedby'], 'tp-my-send-label-7')
-  assert.ok(h.createdNodes().every(n => ['<li>', '<i>', '<div>', '<span>', '<button>'].includes(n.attrs.tag)))
+  assert.ok(h.createdNodes().every(n => ['<li>', '<i>', '<div>', '<a>', '<span>', '<button>'].includes(n.attrs.tag)))
   h.close()
   assert.equal(h.node('#tp-my-sends-list').children.length, 0)
+})
+
+test('item labels link to the authenticated item page using the current folder, not the send ID', () => {
+  const h = harness()
+  h.open()
+  h.reply(1, list([send()]))
+  const label = h.node('#tp-my-sends-list').children[0].children[1].children[0]
+  assert.equal(label.attrs.tag, '<a>')
+  assert.equal(label.attrs.href, 'index.php?page=items&group=7&id=123')
+  assert.equal(label.value, send().label)
+  assert.equal(label.attrs.target, undefined)
+  assert.equal(h.requests.length, 2)
+  h.close()
+  h.open()
+  h.reply(h.requests.length - 1, list([send({ folder_id: 19 })]))
+  assert.equal(h.node('#tp-my-sends-list').children[0].children[1].children[0].attrs.href,
+    'index.php?page=items&group=19&id=123')
+})
+
+test('standalone notes never link to an item even if navigation fields are present', () => {
+  const h = harness()
+  h.open()
+  h.reply(1, list([send({ send_type: 'note' }), send({ id: 8, send_type: 'note', item_id: null, folder_id: null })]))
+  for (const row of h.node('#tp-my-sends-list').children) {
+    const label = row.children[1].children[0]
+    assert.equal(label.attrs.tag, '<span>')
+    assert.equal(label.attrs.href, undefined)
+  }
+})
+
+test('missing or malformed navigation IDs keep the link revocable without creating a URL', () => {
+  for (const invalid of [undefined, null, 0, -1, '7', 'javascript:alert(1)', 1.5, Number.MAX_SAFE_INTEGER + 1]) {
+    for (const field of ['item_id', 'folder_id']) {
+      const h = harness()
+      h.open()
+      h.reply(1, list([send({ [field]: invalid })]))
+      const row = h.node('#tp-my-sends-list').children[0]
+      assert.equal(row.children[1].children[0].attrs.href, undefined)
+      h.revoke()
+      h.confirm()
+      assert.equal(h.requests.at(-1).options.data.type, 'revoke_secure_send')
+      assert.equal(h.requests.at(-1).options.data.data, '{"id":7}')
+    }
+  }
 })
 
 test('late count and list responses cannot overwrite a newer inventory or reopen private labels', () => {

@@ -1229,6 +1229,9 @@ links. Opening it lists their item links and standalone notes with expiration,
 remaining views and passphrase protection. Revocation requires confirmation and
 uses the existing owner-checked, transactionally audited operation. Neither the
 modal nor the counter requires permission to create standalone notes.
+Item labels link to the item in its current folder using the normal authenticated
+item page; access is checked again when it is opened. Standalone notes have no
+source item and remain plain text. Navigation never uses the recipient's sharing URL.
 
 The personal count refreshes on page load, after creation/revocation, when the
 page regains focus, and every minute while visible and the modal is closed.

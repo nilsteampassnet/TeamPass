@@ -205,7 +205,14 @@ $(function () {
             $('<i>', { class: 'fa-solid ' + (send.send_type === 'note' ? 'fa-note-sticky' : 'fa-key') + ' fa-fw flex-shrink-0 text-muted', 'aria-hidden': 'true' }).appendTo($entry)
             const $details = $('<div>', { class: 'tp-my-sends-details' }).appendTo($entry)
             const labelId = 'tp-my-send-label-' + String(send.id)
-            $('<span>', { id: labelId, class: 'd-block font-weight-bold tp-my-sends-label' }).text(send.label).appendTo($details)
+            const canOpenItem = send.send_type === 'item'
+                && Number.isSafeInteger(send.item_id) && send.item_id > 0
+                && Number.isSafeInteger(send.folder_id) && send.folder_id > 0
+            const $label = $(canOpenItem ? '<a>' : '<span>', { id: labelId, class: 'd-block font-weight-bold tp-my-sends-label' })
+                .text(send.label).appendTo($details)
+            if (canOpenItem) {
+                $label.attr('href', 'index.php?page=items&group=' + String(send.folder_id) + '&id=' + String(send.item_id))
+            }
             $('<span>', { class: 'd-block small text-muted mt-1' }).text(labels.remaining.replace('#VIEWS#', String(send.remaining_views))).appendTo($details)
             $('<span>', { class: 'd-block small text-muted' }).text(labels.expires.replace('#DATE#', send.expires_label)).appendTo($details)
             if (send.has_passphrase === 1) {

@@ -7525,6 +7525,8 @@ switch ($inputData['type']) {
             $secureSends[] = array(
                 'id' => (int) $secureSendRow['id'],
                 'send_type' => $isNote === true ? 'note' : 'item',
+                'item_id' => $isNote === true ? null : (int) $secureSendRow['item_id'],
+                'folder_id' => $isNote === true ? null : (int) $secureSendRow['folder_id'],
                 'label' => $isNote === true
                     ? $lang->get('secure_send_note')
                     : $secureSendRow['item_label'],

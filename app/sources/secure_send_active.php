@@ -22,7 +22,7 @@ declare(strict_types=1);
  * @param int|null $originatorId Authenticated sender, or null for the global inventory
  * @param int|null $itemId Optional item scope (never includes standalone notes)
  * @param int|null $now Observation timestamp
- * @param bool $withLabels Include authorized item labels for the sender's list
+ * @param bool $withLabels Include authorized item labels and folder IDs for the sender's list
  * @return array<int,array<string,mixed>> Active metadata, newest first
  */
 function secureSendActiveLinks(
@@ -87,21 +87,22 @@ function secureSendActiveLinks(
             $itemParameters[] = $now;
         }
         foreach (DB::query(
-            'SELECT i.id' . ($withLabels ? ', i.label' : '') . ' FROM ' . prefixTable('items') . ' i WHERE ' . $itemWhere,
+            'SELECT i.id' . ($withLabels ? ', i.label, i.id_tree' : '') . ' FROM ' . prefixTable('items') . ' i WHERE ' . $itemWhere,
             ...$itemParameters
         ) as $item) {
-            $accessible[$senderId][(int) $item['id']] = $withLabels ? (string) $item['label'] : true;
+            $accessible[$senderId][(int) $item['id']] = $item;
         }
     }
     $active = [];
     foreach ($rows as $row) {
         if ($row['send_type'] !== 'note') {
-            $label = $accessible[(int) $row['originator']][(int) $row['item_id']] ?? null;
-            if ($label === null) {
+            $item = $accessible[(int) $row['originator']][(int) $row['item_id']] ?? null;
+            if ($item === null) {
                 continue;
             }
             if ($withLabels) {
-                $row['item_label'] = html_entity_decode((string) $label, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                $row['item_label'] = html_entity_decode((string) $item['label'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                $row['folder_id'] = (int) $item['id_tree'];
             }
         }
         unset($row['sender_admin']);

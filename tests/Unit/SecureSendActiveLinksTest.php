@@ -160,6 +160,65 @@ class SecureSendActiveLinksTest extends TestCase
         self::assertSame([], DB::$queries);
     }
 
+    public function testNavigationUsesTheCurrentAuthorizedFolderAndIsAbsentFromCounts(): void
+    {
+        $this->link();
+        $metadata = secureSendActiveLinks($this->settings, 42, null, 1000);
+        self::assertArrayNotHasKey('folder_id', $metadata[0]);
+        self::assertArrayNotHasKey('item_label', $metadata[0]);
+        $listing = secureSendActiveLinks($this->settings, 42, null, 1000, true);
+        self::assertSame(123, $listing[0]['item_id']);
+        self::assertSame(7, $listing[0]['folder_id']);
+
+        DB::$connection->exec('UPDATE active_fixture_items SET id_tree = 9 WHERE id = 123');
+        DB::$folders[42] = [7, 9];
+        $listing = secureSendActiveLinks($this->settings, 42, null, 1000, true);
+        self::assertSame(9, $listing[0]['folder_id']);
+        DB::$folders[42] = [7];
+        self::assertSame([], secureSendActiveLinks($this->settings, 42, null, 1000, true));
+    }
+
+    public function testListHandlerReturnsOnlyOwnedAuthorizedItemTargetsAndNullTargetsForNotes(): void
+    {
+        $expiry = time() + 3600;
+        $this->link(1, ['time_limit' => $expiry]);
+        $this->link(2, ['originator' => 43, 'item_id' => 124, 'time_limit' => $expiry]);
+        $this->link(3, ['send_type' => 'note', 'time_limit' => $expiry]);
+        $this->link(4, ['item_id' => 124, 'time_limit' => $expiry]);
+        $this->link(5, ['send_type' => 'item', 'time_limit' => $expiry]);
+        $source = file_get_contents(__DIR__ . '/../../app/sources/items.queries.php');
+        $start = strpos($source, "case 'list_secure_sends':");
+        $end = strpos($source, "case 'revoke_secure_send':", $start);
+        $handler = substr($source, $start, $end - $start);
+        $session = new class {
+            public function get(string $name): string|int { return $name === 'key' ? 'fixture-session-key' : 42; }
+        };
+        $lang = new class {
+            public function get(string $name): string { return $name; }
+        };
+        $SETTINGS = $this->settings + ['date_format' => 'Y-m-d', 'time_format' => 'H:i'];
+        $inputData = ['key' => 'fixture-session-key', 'user_id' => 43, 'originator' => 43];
+        ob_start();
+        try {
+            eval('switch (true) { case true: ' . $handler . ' }');
+            $response = json_decode(ob_get_contents(), true, 512, JSON_THROW_ON_ERROR);
+        } finally {
+            ob_end_clean();
+        }
+        self::assertSame('', $response['error']);
+        self::assertSame([5, 3, 1], array_column($response['sends'], 'id'));
+        foreach ([$response['sends'][0], $response['sends'][2]] as $send) {
+            self::assertSame('item', $send['send_type']);
+            self::assertSame(123, $send['item_id']);
+            self::assertSame(7, $send['folder_id']);
+            self::assertSame('R&D <item>', $send['label']);
+        }
+        self::assertSame('note', $response['sends'][1]['send_type']);
+        self::assertNull($response['sends'][1]['item_id']);
+        self::assertNull($response['sends'][1]['folder_id']);
+        self::assertStringNotContainsString('canary', json_encode($response));
+    }
+
     public function testCountHandlerUsesSessionScopeAndRejectsIncorrectKeys(): void
     {
         $this->link(1, ['time_limit' => time() + 3600]);

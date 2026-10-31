@@ -59,3 +59,8 @@ function securityPostureItemAccessSql(int $userId, string $alias): string
     $folders = DB::$folders[$userId] ?? [];
     return $folders === [] ? '(1 = 0)' : $alias . '.id_tree IN (' . implode(',', $folders) . ')';
 }
+
+/** Isolate list-response tests from the independently tested cleanup transaction. */
+function secureSendPurgeExpiredLinks(array $settings): void
+{
+}
