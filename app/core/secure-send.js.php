@@ -15,17 +15,18 @@ $session = SessionManager::getSession();
 $lang = new Language($session->get('user-language') ?? 'english');
 ?>
 <style>
-    #tp-secure-send-modal .tp-my-sends-list { max-height: 60vh; overflow-y: auto; }
     #tp-secure-send-modal .tp-my-sends-label { overflow-wrap: anywhere; }
-    #tp-secure-send-modal .tp-my-sends-details { min-width: 0; }
+    #tp-secure-send-modal .tp-my-sends-details { flex: 1 1 0; min-width: 0; }
+    #tp-secure-send-modal .tp-my-sends-details .badge { white-space: normal; text-align: left; }
     #tp-secure-send-modal .tp-my-sends-entry { gap: .75rem; }
     @media (max-width: 575.98px) {
         #tp-secure-send-modal .tp-my-sends-entry { flex-wrap: wrap; }
+        #tp-secure-send-modal .tp-my-sends-details { flex-basis: calc(100% - 2rem); }
         #tp-secure-send-modal .tp-my-sends-revoke { margin-left: auto; }
     }
 </style>
 <div class="modal fade" id="tp-secure-send-modal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="tp-my-sends-title">
-    <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="tp-my-sends-title"><i class="fa-regular fa-paper-plane mr-2" aria-hidden="true"></i><span id="tp-my-sends-title-text"><?php echo htmlspecialchars($lang->get('secure_send_my_sends'), ENT_QUOTES, 'UTF-8'); ?></span></h5>
@@ -201,8 +202,8 @@ $(function () {
         $status.text(sends.length === 0 ? labels.empty : '').removeClass('text-danger').addClass('text-muted')
         sends.forEach(function (send) {
             const $entry = $('<li>', { class: 'list-group-item px-0 d-flex align-items-center tp-my-sends-entry' })
-            $('<i>', { class: 'fa-solid ' + (send.send_type === 'note' ? 'fa-note-sticky' : 'fa-key') + ' text-muted', 'aria-hidden': 'true' }).appendTo($entry)
-            const $details = $('<div>', { class: 'flex-grow-1 tp-my-sends-details' }).appendTo($entry)
+            $('<i>', { class: 'fa-solid ' + (send.send_type === 'note' ? 'fa-note-sticky' : 'fa-key') + ' fa-fw flex-shrink-0 text-muted', 'aria-hidden': 'true' }).appendTo($entry)
+            const $details = $('<div>', { class: 'tp-my-sends-details' }).appendTo($entry)
             const labelId = 'tp-my-send-label-' + String(send.id)
             $('<span>', { id: labelId, class: 'd-block font-weight-bold tp-my-sends-label' }).text(send.label).appendTo($details)
             $('<span>', { class: 'd-block small text-muted mt-1' }).text(labels.remaining.replace('#VIEWS#', String(send.remaining_views))).appendTo($details)

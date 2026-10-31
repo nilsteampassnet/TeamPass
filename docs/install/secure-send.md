@@ -1235,6 +1235,8 @@ page regains focus, and every minute while visible and the modal is closed.
 The list loads once on each opening and stays stable while being read. Revocation
 uses a confirmation view in the TeamPass dialog; cancelling restores the list's
 scroll position, and success removes only that row without reloading the list.
+Long lists scroll within the modal body, keeping the title and footer available.
+Long labels wrap, and the revoke button moves below the details on narrow screens.
 There is no manual refresh button; close and reopen the dialog to obtain a fresh
 inventory. A failed list request shows a retry message rather than an empty
 inventory. Disabling Secure Send hides
