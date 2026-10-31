@@ -458,8 +458,8 @@ function handleNode(
         $currentNode->title = $inputData['userLogin'];
     }
 
-    // Decode if needed
-    $currentNode->title = htmlspecialchars_decode($currentNode->title, ENT_QUOTES);
+    // Decode stored HTML5 and legacy entities before escaping the label for jsTree.
+    $currentNode->title = html_entity_decode($currentNode->title, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
     $nodeData = prepareNodeData(
         (int) $nodeId,

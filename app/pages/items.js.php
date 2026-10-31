@@ -921,6 +921,12 @@ require __DIR__ . '/icon.picker.js.php';
                 'icons': false,
             },
         },
+        'search': {
+            'search_callback': function(str, node) {
+                // jsTree labels contain icons and escaped names; search their displayed text.
+                return htmlDecode(node.text).toLowerCase().indexOf(str.toLowerCase()) !== -1;
+            }
+        },
         'plugins': [
             'state', 'search'
         ]
