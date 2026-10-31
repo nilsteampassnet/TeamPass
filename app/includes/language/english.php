@@ -1756,6 +1756,7 @@ return array(
     'settings_ldap_bind_passwd_tip' => 'Password for the bind DN specified above.',
     'settings_ldap_search_base_tip' => 'Root DN location for searches on the tree',
     'admin_email_server_url' => 'Customize URL for links',
+    'admin_email_server_url_tip' => 'Base address of the links in every TeamPass email: item sharing, account creation, password reset and notifications. Enter it without a trailing slash; leave empty to use the main TeamPass address. These links open the full application, so this address must serve all of TeamPass. Secure Send links do not use it: they follow the public sharing address of the Options page.',
     'enable_email_notification_on_user_pw_change' => 'Email user when user password is changed',
     'settings_otv_expiration_period' => 'One-time-view (OTV) links expire after XX days',
     'write' => 'Write',

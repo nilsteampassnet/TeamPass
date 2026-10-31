@@ -684,6 +684,7 @@ return array(
     'settings_suggestion_tip' => 'Le système de Suggestions permet aux utilisateurs en lecture seule de pouvoir proposer de nouveaux Élément ou d’en demander la modification. Les Suggestions sont validées par les Administrateurs et les Gestionnaires.',
     'imported_via_api' => 'API',
     'admin_email_server_url' => 'URL serveur pour les liens dans les emails',
+    'admin_email_server_url_tip' => 'Adresse de base des liens de tous les emails TeamPass : partage d’élément, création de compte, réinitialisation du mot de passe et notifications. Saisissez-la sans « / » final ; laissez vide pour utiliser l’adresse principale de TeamPass. Ces liens ouvrent l’application complète : cette adresse doit donc donner accès à tout TeamPass. Les liens d’envoi sécurisé ne l’utilisent pas : ils suivent l’adresse publique de partage de la page Options.',
     'enable_email_notification_on_user_pw_change' => 'Envoyer un e-mail à l’utilisateur une fois que son mot de passe est changé',
     'settings_otv_expiration_period' => 'Délai avant l’expiration d’un élément partagé à vue unique',
     'write' => 'Ecriture',

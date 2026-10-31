@@ -150,6 +150,9 @@ $localPasswordRecoveryEnabled = isset($SETTINGS['enable_local_password_recovery'
                         <div class="row mb-2">
                             <div class="col-5">
                                 <?php echo $lang->get('admin_email_server_url'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo htmlspecialchars($lang->get('admin_email_server_url_tip'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?>
+                                </small>
                             </div>
                             <div class="col-7 mb-0">
                                 <input type='text' class='form-control form-control-sm' id='email_server_url' value='<?php echo isset($SETTINGS['email_server_url']) === true ? $SETTINGS['email_server_url'] : ''; ?>'>

@@ -23,7 +23,7 @@ Basic installation paths and branding.
 | Option | Description |
 |--------|-------------|
 | **TeamPass installation directory** | Absolute server path where Teampass is installed |
-| **TeamPass URL** | Public URL used to generate links (e.g. One Time View links, email links) |
+| **TeamPass URL** | Public URL used to generate links (e.g. One Time View links, email links). Email links use **Emails → Customize URL for links** instead when it is set, and Secure Send links use the **Public sharing address** when the sender selects it |
 | **Path to upload folder** | Server path for temporary uploads |
 | **Path to files folder** | Server path for item file attachments |
 | **Favicon URL** | Custom favicon path or URL |
