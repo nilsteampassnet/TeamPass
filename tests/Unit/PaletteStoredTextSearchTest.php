@@ -40,8 +40,9 @@ class NestedTree
     /** Return a deterministic, database-backed path for the selected authorized node. */
     public function getPath(int $id, bool $includeSelf): array
     {
-        return array_map(static fn (array $row): object => (object) $row,
-            DB::query('SELECT title FROM palette_fixture_nested_tree WHERE id=%i_path_id', ['path_id' => $id]));
+        return array_merge([(object) ['id' => 99, 'title' => 'Hidden ancestor']],
+            array_map(static fn (array $row): object => (object) $row,
+                DB::query('SELECT id,title FROM palette_fixture_nested_tree WHERE id=%i_path_id', ['path_id' => $id])));
     }
 }
 
@@ -137,6 +138,9 @@ class PaletteStoredTextSearchTest extends TestCase
         self::assertSame([999, 61, 62, 63, 64, 65, 66, 67], array_column($result['items'], 'id'));
         self::assertSame([1999, 1061, 1062, 1063, 1064], array_column($result['folders'], 'id'));
         self::assertSame([999, 61, 62, 63, 64], array_column($result['kb'], 'id'));
+        foreach (array_merge($result['items'], $result['folders']) as $row) {
+            self::assertStringNotContainsString('Hidden ancestor', $row['path']);
+        }
         self::assertSame(0, DB::$activeCursors);
     }
 

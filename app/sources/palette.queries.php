@@ -155,6 +155,7 @@ switch ($post_type) {
             );
 
             if (count($searchableFolders) > 0) {
+                $searchableFolderSet = array_fill_keys($searchableFolders, true);
                 // Item-level ACL. The folder scope alone is not an authorization
                 // decision: an item can be restricted to named users or to roles
                 // inside a folder the caller can otherwise see. Both other search
@@ -200,6 +201,9 @@ switch ($post_type) {
                 foreach ($itemRecords as $record) {
                     $path = [];
                     foreach ($tree->getPath((int) $record['id_tree'], true) as $node) {
+                        if (!isset($searchableFolderSet[(int) $node->id])) {
+                            continue;
+                        }
                         // Raw values: the client escapes them at render time.
                         $path[] = (string) $node->title;
                     }
@@ -226,6 +230,9 @@ switch ($post_type) {
                 foreach ($folderRecords as $record) {
                     $path = [];
                     foreach ($tree->getPath((int) $record['id'], true) as $node) {
+                        if (!isset($searchableFolderSet[(int) $node->id])) {
+                            continue;
+                        }
                         $path[] = (string) $node->title;
                     }
                     $folders[] = [
