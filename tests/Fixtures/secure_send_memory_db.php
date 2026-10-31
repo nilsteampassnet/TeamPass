@@ -195,10 +195,12 @@ class DB
                 static fn (array $row): bool => (int) $row['time_limit'] < $args[0]
                     && (int) $row['id'] > 0 && (int) $row['originator'] > 0)), 0, 100);
         }
-        if (str_contains($sql, 'WHERE o.originator = %i')) {
+        if (str_contains($sql, 'u ON u.id = o.originator')) {
             return array_values(array_map(
-                static fn (array $row): array => $row + ['item_label' => 'Original label'],
-                array_filter(self::$links, static fn (array $row): bool => (int) $row['originator'] === $args[0])
+                static fn (array $row): array => $row + ['sender_admin' => self::$admin ? 1 : 0],
+                array_filter(self::$links, static fn (array $row): bool => self::$activeUser
+                    && (int) $row['originator'] === $args[1]
+                    && secureSendIsAvailable($row, ['otv_is_enabled' => 1, 'secure_send_allow_notes' => 1], $args[0]))
             ));
         }
         if (str_contains($sql, 'SET views = views + 1')) {

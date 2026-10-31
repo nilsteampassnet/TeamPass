@@ -56,7 +56,7 @@ class SecureSendAccessSentinelTest extends TestCase
         self::assertLessThan(strpos($create, 'secureSendStoreLink('), strpos($create, 'secureSendItemPassword('));
         self::assertStringContainsString("catch (InvalidArgumentException \$e)", $create);
         self::assertStringContainsString("'cannot_decrypt'", $create);
-        self::assertStringContainsString('secureSendFilterLinks($secureSendRows,', $sender);
+        self::assertStringContainsString("secureSendActiveLinks(\$SETTINGS, (int) \$session->get('user-id'),", $sender);
         $recipient = (string) file_get_contents(__DIR__ . '/../../app/core/otv.php');
         self::assertStringContainsString('secureSendPrepareRecipient(', $recipient);
         $lifecycle = (string) file_get_contents(__DIR__ . '/../../app/sources/secure_send.functions.php');

@@ -1201,6 +1201,22 @@ that format.
 
 ---
 
+## Active-link inventory
+
+An active link must still be usable under the current Secure Send settings:
+its deadline has not passed, it has remaining views and fewer than five failed
+credential attempts, and its sender account is enabled and not deleted. Notes
+must still be allowed; protected links need their wrapped key, and links must
+meet the current passphrase requirement. Item links additionally require the
+sender's current access to an active item and an unexhausted automatic-deletion
+policy when that feature is enabled.
+
+The sender's list and per-item counter use this same definition and only include
+that sender's links. Exhausted links are excluded immediately, even while their
+encrypted database rows await cleanup. Counting reads metadata without decrypting
+content, consuming views, deleting rows or adding audit events. Link state is
+observed at refresh time; it is separate from historical audit event statistics.
+
 ## References
 
 - [Teampass 3.2.2.6 release](https://github.com/nilsteampassnet/TeamPass/releases/tag/3.2.2.6)
