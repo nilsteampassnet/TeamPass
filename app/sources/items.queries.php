@@ -7477,10 +7477,30 @@ switch ($inputData['type']) {
      * CASE
      * List the current user's active Secure Send links (My secure sends)
      */
+    case 'count_secure_sends':
+        if (!hash_equals((string) $session->get('key'), (string) $inputData['key'])) {
+            echo json_encode(['error' => 'key_not_conform']);
+            break;
+        }
+        $secureSendEnabled = (int) ($SETTINGS['otv_is_enabled'] ?? 0) === 1;
+        try {
+            echo json_encode(['error' => '', 'enabled' => $secureSendEnabled,
+                'count' => $secureSendEnabled ? secureSendCountActiveLinks($SETTINGS, (int) $session->get('user-id')) : null]);
+        } catch (Throwable $e) {
+            error_log('TEAMPASS Secure Send active count failed (' . get_class($e) . ')');
+            echo json_encode(['error' => 'server_error']);
+        }
+        break;
+
     case 'list_secure_sends':
         // Check KEY
         if ($inputData['key'] !== $session->get('key')) {
             echo '[ { "error" : "key_not_conform" } ]';
+            break;
+        }
+
+        if ((int) ($SETTINGS['otv_is_enabled'] ?? 0) !== 1) {
+            echo json_encode(['error' => '', 'enabled' => false, 'sends' => []]);
             break;
         }
 
@@ -7515,7 +7535,7 @@ switch ($inputData['type']) {
             );
         }
 
-        echo json_encode(array('error' => '', 'sends' => $secureSends));
+        echo json_encode(array('error' => '', 'enabled' => true, 'sends' => $secureSends));
         break;
 
     /*
@@ -7526,6 +7546,11 @@ switch ($inputData['type']) {
         // Check KEY
         if ($inputData['key'] !== $session->get('key')) {
             echo '[ { "error" : "key_not_conform" } ]';
+            break;
+        }
+
+        if ((int) ($SETTINGS['otv_is_enabled'] ?? 0) !== 1) {
+            echo json_encode(['error' => 'disabled', 'enabled' => false]);
             break;
         }
 

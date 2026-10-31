@@ -64,7 +64,7 @@ function harness(item = { id: 123 }) {
       text(value) { this.content = value; return this }, html(value) { this.content = value; return this },
       addClass(value) { String(value).split(/\s+/).filter(Boolean).forEach(name => this.classes.add(name)); return this },
       removeClass(value) { String(value).split(/\s+/).filter(Boolean).forEach(name => this.classes.delete(name)); return this },
-      hasClass(value) { return this.classes.has(value) }, modal() { return this }, off() { return this },
+      hasClass(value) { return this.classes.has(value) }, modal() { return this }, off() { return this }, trigger() { return this },
       on(events, target, fn) { handlers.set(`${selector === document ? target : selector}|${events}`, fn || target); return this }
     })
     return nodes.get(selector)

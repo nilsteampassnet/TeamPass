@@ -159,4 +159,33 @@ class SecureSendActiveLinksTest extends TestCase
         self::assertSame([], secureSendActiveLinks(['otv_is_enabled' => 0], 42));
         self::assertSame([], DB::$queries);
     }
+
+    public function testCountHandlerUsesSessionScopeAndRejectsIncorrectKeys(): void
+    {
+        $this->link(1, ['time_limit' => time() + 3600]);
+        $this->link(2, ['originator' => 43, 'item_id' => 124, 'time_limit' => time() + 3600]);
+        $source = file_get_contents(__DIR__ . '/../../app/sources/items.queries.php');
+        $start = strpos($source, "case 'count_secure_sends':");
+        $end = strpos($source, "case 'list_secure_sends':", $start);
+        $handler = substr($source, $start, $end - $start);
+        $session = new class {
+            public function get(string $name): string|int { return $name === 'key' ? 'fixture-session-key' : 42; }
+        };
+        $dispatch = static function (array $SETTINGS, string $key) use ($handler, $session): array {
+            $inputData = ['key' => $key, 'user_id' => 43, 'originator' => 43];
+            ob_start();
+            try {
+                eval('switch (true) { case true: ' . $handler . ' }');
+                return json_decode(ob_get_contents(), true, 512, JSON_THROW_ON_ERROR);
+            } finally {
+                ob_end_clean();
+            }
+        };
+        self::assertSame(['error' => 'key_not_conform'], $dispatch($this->settings, 'wrong-key'));
+        self::assertSame([], DB::$queries);
+        self::assertSame(['error' => '', 'enabled' => true, 'count' => 1], $dispatch($this->settings, 'fixture-session-key'));
+        DB::$queries = [];
+        self::assertSame(['error' => '', 'enabled' => false, 'count' => null], $dispatch(['otv_is_enabled' => 0], 'fixture-session-key'));
+        self::assertSame([], DB::$queries);
+    }
 }

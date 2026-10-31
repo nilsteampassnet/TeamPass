@@ -1223,6 +1223,19 @@ of the selected activity period or personal/API history filters. No link labels,
 credentials or shared contents are exposed through this count. A failed count
 is displayed as unavailable rather than as zero.
 
+Authenticated non-administrator users have a paper-plane icon in the top bar on
+every page while Secure Send is enabled. Its badge counts only their own active
+links. Opening it lists their item links and standalone notes with expiration,
+remaining views and passphrase protection. Revocation requires confirmation and
+uses the existing owner-checked, transactionally audited operation. Neither the
+modal nor the counter requires permission to create standalone notes.
+
+The personal count refreshes on page load, after creation/revocation, when the
+page regains focus, and every minute while visible. Opening or refreshing the
+modal reloads the list. A failed request clears stale labels and shows a retry
+message; it is never presented as an empty inventory. Disabling Secure Send hides
+the administrator line and personal entry; existing audit history remains visible.
+
 ## References
 
 - [Teampass 3.2.2.6 release](https://github.com/nilsteampassnet/TeamPass/releases/tag/3.2.2.6)
