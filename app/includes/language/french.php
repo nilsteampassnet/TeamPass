@@ -4093,4 +4093,6 @@ return array(
     'device_pairing_next' => 'Suivant',
     'device_pairing_upgrade_needed' => 'Exécutez l’assistant de mise à niveau avant d’activer cette fonction.',
 
+    'secure_send_active_links' => 'Liens Secure Send actifs',
+
 );

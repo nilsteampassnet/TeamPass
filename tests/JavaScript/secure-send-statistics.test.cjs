@@ -36,6 +36,7 @@ const errorRenderer = section('tpOpsShowLoadError(', 'loadOperationalStatistics(
 )
 assert.ok(!errorRenderer.includes('<?php'))
 const loadingTables = { '#tp-roles-top-body': 5, '#tp-users-ranking-body': 3, '#tp-items-topcopied-body': 6, '#tp-lapr-endpoints-body': 5 }
+const activeRenderer = section('renderActiveSecureSendCount(', 'tpOpsShowLoadError(')
 const fields = {
   totals: ['created', 'revealed', 'reveal_failed', 'senders', 'sends_revealed', 'revoked', 'invalidated', 'expired'],
   creations: ['items', 'notes', 'unknown', 'protected', 'unprotected', 'public_links', 'internal_links']
@@ -88,7 +89,7 @@ function harness() {
     prepareExchangedData(value) { if (value === 'decode-failure') throw new Error('decode'); return value },
     toastr: { remove() {}, error() {} } }
   vm.createContext(context)
-  vm.runInContext(encoder + renderer + errorRenderer + loader + section('tpOpsRerenderFromCache(', 'tpOpsEnsureLoadedOrRerender('), context)
+  vm.runInContext(encoder + renderer + activeRenderer + errorRenderer + loader + section('tpOpsRerenderFromCache(', 'tpOpsEnsureLoadedOrRerender('), context)
   context.renderOperationalStatistics = data => context.renderSecureSendStatistics(data.users.secure_send)
   return { context, requests, node: selector => element(selector).state, render: (data, state) => context.renderSecureSendStatistics(data, state) }
 }
@@ -229,4 +230,22 @@ test('a superseded failure cannot clear the newer request loading state', () => 
   assert.equal(h.node('#tp-ops-refresh').properties.disabled, true)
   assert.equal(h.node('#tp-ops-refresh i').classes.has('fa-spin'), true)
   assert.match(h.node('#tp-secure-send-status').value, /ops_secure_send_loading/)
+})
+
+test('current active count distinguishes zero, disabled and unavailable independently of audit history', () => {
+  const h = harness()
+  for (const count of [0, 12]) {
+    h.context.renderActiveSecureSendCount({ enabled: true, count })
+    assert.equal(h.node('#tp-secure-send-active-row').properties.hidden, false)
+    assert.equal(h.node('#tp-secure-send-active-count').value, count)
+  }
+  for (const count of [null, undefined, -1, '12', NaN]) {
+    h.context.renderActiveSecureSendCount({ enabled: true, count })
+    assert.equal(h.node('#tp-secure-send-active-count').value, '—')
+  }
+  h.context.renderActiveSecureSendCount({ enabled: false, count: 12 })
+  assert.equal(h.node('#tp-secure-send-active-row').properties.hidden, true)
+  h.context.renderActiveSecureSendCount({ enabled: true, count: 12 })
+  h.context.tpOpsShowLoadError()
+  assert.equal(h.node('#tp-secure-send-active-count').value, '—')
 })

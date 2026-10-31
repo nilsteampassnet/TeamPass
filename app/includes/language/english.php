@@ -4134,4 +4134,6 @@ return array(
     'device_pairing_next' => 'Next',
     'device_pairing_upgrade_needed' => 'Run the upgrade wizard before enabling this feature.',
 
+    'secure_send_active_links' => 'Active Secure Send links',
+
 );

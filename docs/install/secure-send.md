@@ -1217,6 +1217,12 @@ encrypted database rows await cleanup. Counting reads metadata without decryptin
 content, consuming views, deleting rows or adding audit events. Link state is
 observed at refresh time; it is separate from historical audit event statistics.
 
+When Secure Send is enabled, administrators see the global number under
+**Statistics → Overview → Current state**. This is the current inventory regardless
+of the selected activity period or personal/API history filters. No link labels,
+credentials or shared contents are exposed through this count. A failed count
+is displayed as unavailable rather than as zero.
+
 ## References
 
 - [Teampass 3.2.2.6 release](https://github.com/nilsteampassnet/TeamPass/releases/tag/3.2.2.6)
