@@ -39,6 +39,7 @@ declare(strict_types=1);
  */
 
 require_once __DIR__ . '/renewal_logic.php';
+require_once __DIR__ . '/stored_text_search.php';
 
 // Fetch one extra row to tell the UI that more folder matches exist.
 const SEARCH_FOLDER_RESULTS_LIMIT = 20;
