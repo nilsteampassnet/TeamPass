@@ -191,4 +191,14 @@ class FacetedStoredTextSearchTest extends TestCase
         self::assertSame([7], array_column($this->folderOptions('test.user', 1, [7])['results'], 'id'));
         self::assertSame([], $this->folderOptions('test.user', 1, [10])['results']);
     }
+
+    /** One-to-one metadata joins do not need grouping that fails strict MariaDB mode. */
+    public function testTextAndFacetOnlyQueriesAvoidNonAggregatedGrouping(): void
+    {
+        $this->search(['term' => 'amp', 'fields' => ['label']]);
+        $this->search(['scope_perso' => 'shared', 'fields' => ['label']]);
+        foreach (DB::$calls as [$sql]) {
+            self::assertStringNotContainsString('GROUP BY c.id', $sql);
+        }
+    }
 }

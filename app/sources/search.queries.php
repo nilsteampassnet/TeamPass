@@ -550,6 +550,9 @@ $fromClause = ' FROM ' . prefixTable('cache') . ' AS c'
     . $classificationJoin
     . ' WHERE ' . $built['sql'];
 
+// cache.id and all joined object IDs are unique. Grouping their non-aggregated
+// metadata is unnecessary and is rejected by MariaDB's ONLY_FULL_GROUP_BY mode.
+
 $sortColumns = searchSortColumnMap();
 $orderParam = $request->request->all()['order'] ?? null;
 $sOrder = searchBuildOrderClause(
@@ -573,7 +576,7 @@ if ($filters['terms'] === []) {
     // Facet-only searches retain their bounded SQL count and page query.
     $countRow = DB::queryFirstRow('SELECT COUNT(DISTINCT c.id) AS nb' . $fromClause, $built['params']);
     $iTotal = (int) ($countRow['nb'] ?? 0);
-    $rows = DB::query($selectSql . $fromClause . ' GROUP BY c.id ' . $sOrder . ' LIMIT ' . $start . ', ' . $length, $built['params']);
+    $rows = DB::query($selectSql . $fromClause . ' ' . $sOrder . ' LIMIT ' . $start . ', ' . $length, $built['params']);
 } else {
     preg_match('/^ORDER BY c\.(label|login|description|tags|url|folder) (ASC|DESC)$/', $sOrder, $sortMatch);
     $sortField = $sortMatch[1] ?? 'label';
@@ -582,7 +585,7 @@ if ($filters['terms'] === []) {
     $candidateColumns = array_unique(array_merge($textFields, [$sortField]));
     $candidateSelect = 'SELECT c.id, ' . implode(', ', array_map(static fn (string $field): string => 'c.' . $field, $candidateColumns));
     $page = storedTextSearchPage(
-        DB::queryWalk($candidateSelect . $fromClause . ' GROUP BY c.id', $built['params']),
+        DB::queryWalk($candidateSelect . $fromClause, $built['params']),
         (array) $filters['terms'], $textFields, $start, $length,
         static fn (array $left, array $right): int => $sortDirection * strcmp(
             mb_strtolower($left['sort_key'], 'UTF-8'), mb_strtolower($right['sort_key'], 'UTF-8')
@@ -596,7 +599,7 @@ if ($filters['terms'] === []) {
     $rows = [];
     if ($page['rows'] !== []) {
         $ids = array_column($page['rows'], 'id');
-        $pageRows = DB::query($selectSql . $fromClause . ' AND c.id IN %li_page_ids GROUP BY c.id', $built['params'] + ['page_ids' => $ids]);
+        $pageRows = DB::query($selectSql . $fromClause . ' AND c.id IN %li_page_ids', $built['params'] + ['page_ids' => $ids]);
         $byId = array_column($pageRows, null, 'id');
         foreach ($ids as $id) {
             if (isset($byId[$id])) {
