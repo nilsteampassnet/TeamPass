@@ -537,7 +537,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 processResults: function(data, params) {
                     params.page = params.page || 1
                     return {
-                        results: data.results || [],
+                        // Select2 escapes plain text itself; remove only the server's display layer.
+                        results: (data.results || []).map(function(option) {
+                            return Object.assign({}, option, {text: decodeHtmlEntities(option.text)});
+                        }),
                         pagination: { more: !!(data.pagination && data.pagination.more) }
                     }
                 }

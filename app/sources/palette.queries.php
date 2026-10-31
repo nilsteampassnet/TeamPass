@@ -105,7 +105,8 @@ if ((int) ($SETTINGS['command_palette_enabled'] ?? 0) !== 1) {
 // Read POST variables
 $post_type = (string) $request->request->filter('type', '', FILTER_SANITIZE_SPECIAL_CHARS);
 $post_key = (string) $request->request->filter('key', '', FILTER_SANITIZE_SPECIAL_CHARS);
-$post_term = (string) $request->request->filter('term', '', FILTER_SANITIZE_SPECIAL_CHARS);
+$post_term = $request->request->get('term', '');
+$post_term = is_string($post_term) ? $post_term : '';
 
 if ($post_key !== $session->get('key')) {
     echo (string) prepareExchangedData(
@@ -131,7 +132,6 @@ switch ($post_type) {
             break;
         }
 
-        $likeTerm = '%' . paletteEscapeLikeTerm($term) . '%';
         $items = [];
         $folders = [];
 
@@ -148,10 +148,14 @@ switch ($post_type) {
             // own personal folders remain searchable at every nesting depth.
             $searchableFolders = searchResolveFolderScope(
                 $accessibleFolders,
-                (array) ($session->get('user-forbiden_personal_folders') ?? [])
+                array_merge(
+                    (array) ($session->get('user-forbiden_personal_folders') ?? []),
+                    getForeignPersonalFolderIds((int) $session->get('user-id'))
+                )
             );
 
             if (count($searchableFolders) > 0) {
+                $searchableFolderSet = array_fill_keys($searchableFolders, true);
                 // Item-level ACL. The folder scope alone is not an authorization
                 // decision: an item can be restricted to named users or to roles
                 // inside a folder the caller can otherwise see. Both other search
@@ -170,35 +174,36 @@ switch ($post_type) {
                 );
 
                 // Items — from the search cache (labels/logins/urls/tags, no secret).
-                // Filtering happens in SQL, so it runs before the LIMIT: a page of
-                // 30 rows can no longer be consumed by items the user may not open.
+                // Authorization stays in SQL; decoded matching and relevance are
+                // applied to the stream before the display limit.
                 // Two further guards mirror the other entry points:
                 //  - deleted_at, because the cache is pruned on delete but drifts
                 //    (search.queries.php carries the same defence in depth);
                 //  - perso/author, which catches a personal item sitting in a folder
                 //    whose personal_folder flag was never written, the case the
                 //    folder scope cannot see (same test as find.queries.php).
-                $itemRecords = DB::query(
-                    'SELECT c.id, c.label, c.login, c.id_tree
+                $candidate = storedTextSearchCandidates(['c.label', 'c.login', 'c.url', 'c.tags'], [$term], 'palette_item');
+                $itemPage = storedTextSearchPage(DB::queryWalk(
+                    'SELECT c.id, c.label, c.login, c.url, c.tags, c.id_tree
                     FROM ' . prefixTable('cache') . ' AS c
                     INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = c.id)
-                    WHERE c.id_tree IN %li
-                    AND (c.label LIKE %s OR c.login LIKE %s OR c.url LIKE %s OR c.tags LIKE %s)
+                    WHERE c.id_tree IN %li_palette_scope
+                    AND ' . $candidate['sql'] . '
                     AND i.deleted_at IS NULL
                     AND ' . $restrictionSql . '
-                    AND (c.perso = 0 OR CAST(c.author AS UNSIGNED) = %i)
-                    LIMIT 30',
-                    $searchableFolders,
-                    $likeTerm,
-                    $likeTerm,
-                    $likeTerm,
-                    $likeTerm,
-                    (int) $session->get('user-id')
+                    AND (c.perso = 0 OR CAST(c.author AS UNSIGNED) = %i_palette_user)',
+                    $candidate['params'] + ['palette_scope' => $searchableFolders, 'palette_user' => (int) $session->get('user-id')]
+                ), [$term], ['label', 'login', 'url', 'tags'], 0, 8,
+                    static fn (array $left, array $right): int => paletteCompareRows($left, $right, $term)
                 );
+                $itemRecords = $itemPage['rows'];
 
                 foreach ($itemRecords as $record) {
                     $path = [];
                     foreach ($tree->getPath((int) $record['id_tree'], true) as $node) {
+                        if (!isset($searchableFolderSet[(int) $node->id])) {
+                            continue;
+                        }
                         // Raw values: the client escapes them at render time.
                         $path[] = (string) $node->title;
                     }
@@ -210,20 +215,24 @@ switch ($post_type) {
                         'path' => implode(' › ', $path),
                     ];
                 }
-                $items = array_slice(paletteRankRows($items, $term, 'label'), 0, 8);
 
                 // Folders — visible tree nodes matching by title.
-                $folderRecords = DB::query(
+                $candidate = storedTextSearchCandidates(['title'], [$term], 'palette_folder');
+                $folderPage = storedTextSearchPage(DB::queryWalk(
                     'SELECT id, title FROM ' . prefixTable('nested_tree') . '
-                    WHERE id IN %li AND title LIKE %s
-                    LIMIT 20',
-                    $searchableFolders,
-                    $likeTerm
+                    WHERE id IN %li_palette_scope AND ' . $candidate['sql'],
+                    $candidate['params'] + ['palette_scope' => $searchableFolders]
+                ), [$term], ['title'], 0, 5,
+                    static fn (array $left, array $right): int => paletteCompareRows($left, $right, $term, 'title')
                 );
+                $folderRecords = $folderPage['rows'];
 
                 foreach ($folderRecords as $record) {
                     $path = [];
                     foreach ($tree->getPath((int) $record['id'], true) as $node) {
+                        if (!isset($searchableFolderSet[(int) $node->id])) {
+                            continue;
+                        }
                         $path[] = (string) $node->title;
                     }
                     $folders[] = [
@@ -232,7 +241,6 @@ switch ($post_type) {
                         'path' => implode(' › ', $path),
                     ];
                 }
-                $folders = array_slice(paletteRankRows($folders, $term, 'title'), 0, 5);
             }
         }
 
@@ -245,23 +253,22 @@ switch ($post_type) {
             && (int) $session->get('user-admin') !== 1
             && $checkUserAccess->userAccessPage('kb') === true
         ) {
-            $kbRecords = DB::query(
+            $candidate = storedTextSearchCandidates(['k.label', 'k.description'], [$term], 'palette_kb');
+            $kbPage = storedTextSearchPage(DB::queryWalk(
                 'SELECT k.id, k.label, k.description, c.category AS category
                 FROM ' . prefixTable('kb') . ' AS k
                 LEFT JOIN ' . prefixTable('kb_categories') . ' AS c ON (c.id = k.category_id)
                 WHERE k.deleted_at IS NULL
-                AND (k.label LIKE %s OR k.description LIKE %s)
-                LIMIT 30',
-                $likeTerm,
-                $likeTerm
+                AND ' . $candidate['sql'],
+                $candidate['params']
+            ), [$term], ['label', 'description'], 0, 5,
+                static fn (array $left, array $right): int => paletteCompareRows($left, $right, $term),
+                ['description' => static fn (string $description): string => paletteFlattenRichText($description)]
             );
+            $kbRecords = $kbPage['rows'];
 
             foreach ($kbRecords as $record) {
                 $plainDescription = paletteFlattenRichText((string) $record['description']);
-                // Drop rows whose LIKE only matched the stored markup.
-                if (paletteTextMatchesTerm([(string) $record['label'], $plainDescription], $term) === false) {
-                    continue;
-                }
                 $kb[] = [
                     'id' => (int) $record['id'],
                     'label' => (string) $record['label'],
@@ -269,7 +276,6 @@ switch ($post_type) {
                     'category' => (string) ($record['category'] ?? ''),
                 ];
             }
-            $kb = array_slice(paletteRankRows($kb, $term, 'label'), 0, 5);
         }
 
         echo (string) prepareExchangedData(

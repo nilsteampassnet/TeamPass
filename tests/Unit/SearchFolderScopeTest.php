@@ -261,14 +261,13 @@ class SearchFolderScopeTest extends TestCase
     {
         $built = searchBuildFolderWhere(['backup', 'prod'], [3, 7, 9]);
 
-        $this->assertSame(
-            'folder.id IN %li_folder_scope AND folder.title LIKE %ss_folder_term0'
-                . ' AND folder.title LIKE %ss_folder_term1',
-            $built['sql']
-        );
+        $this->assertStringContainsString('folder.id IN %li_folder_scope AND', $built['sql']);
+        $this->assertStringContainsString('folder.title LIKE %ss_folder_term0', $built['sql']);
+        $this->assertStringContainsString('folder.title LIKE %ss_folder_term1', $built['sql']);
         $this->assertSame(
             [
                 'folder_scope' => [3, 7, 9],
+                'folder_term_entity' => '%&%;%',
                 'folder_term0' => 'backup',
                 'folder_term1' => 'prod',
             ],
@@ -284,21 +283,21 @@ class SearchFolderScopeTest extends TestCase
         $this->assertStringContainsString('%ss_folder_term0', $built['sql']);
     }
 
-    public function testFolderPredicateMatchesTheHtmlEncodedStorageFormat(): void
+    public function testFolderCandidatesKeepTypedTermsAndAllEntitySpellings(): void
     {
         $built = searchBuildFolderWhere(['R&D', "Client's", '"Production"'], [7]);
 
-        $this->assertSame('R&amp;D', $built['params']['folder_term0']);
-        $this->assertSame('Client&#039;s', $built['params']['folder_term1']);
-        $this->assertSame('&quot;Production&quot;', $built['params']['folder_term2']);
+        $this->assertSame('R&D', $built['params']['folder_term0']);
+        $this->assertSame("Client's", $built['params']['folder_term1']);
+        $this->assertSame('"Production"', $built['params']['folder_term2']);
+        $this->assertSame('%&%;%', $built['params']['folder_term_entity']);
     }
 
-    public function testFolderPredicateFailsClosedWhenSanitizationEmptiesTheTerm(): void
+    public function testLiteralAngleBracketsRemainSearchableText(): void
     {
-        $this->assertSame(
-            ['sql' => '(1 = 0)', 'params' => []],
-            searchBuildFolderWhere(['<script>'], [7])
-        );
+        $built = searchBuildFolderWhere(['<script>'], [7]);
+        $this->assertSame('<script>', $built['params']['folder_term0']);
+        $this->assertTrue(storedTextSearchMatches(['title' => '&lt;script&gt;'], ['<script>'], ['title']));
     }
 
     public function testFolderTitlesAreDecodedAndPersonalRootsUseTheLogin(): void
@@ -409,9 +408,9 @@ class SearchFolderScopeTest extends TestCase
         $optionsSource = substr($source, $optionsStart, $searchStart - $optionsStart);
 
         $this->assertStringContainsString("'folder.id IN %li_folder_scope'", $optionsSource);
-        $this->assertStringContainsString('searchEncodeFolderTerm($term)', $optionsSource);
-        $this->assertStringContainsString('SEARCH_FOLDER_OPTIONS_PAGE_SIZE + 1', $optionsSource);
-        $this->assertStringContainsString('LIMIT %i_folder_option_limit OFFSET %i_folder_option_offset', $optionsSource);
+        $this->assertStringContainsString('storedTextSearchCandidates(', $optionsSource);
+        $this->assertStringContainsString('storedTextSearchPage(', $optionsSource);
+        $this->assertStringContainsString('($page - 1) * SEARCH_FOLDER_OPTIONS_PAGE_SIZE', $optionsSource);
         $this->assertStringContainsString("'pagination' => ['more' => false]", $optionsSource);
         $this->assertStringContainsString('searchHydrateFolderRows(', $optionsSource);
     }

@@ -120,6 +120,17 @@ class CommandPaletteLogicTest extends TestCase
         $this->assertArrayNotHasKey('_score', $ranked[0]);
     }
 
+    /** Relevance is computed from displayed names while response encodings stay unchanged. */
+    public function testRankUsesDecodedNamesAndStableIdentity(): void
+    {
+        $rows = [['id' => 3, 'label' => 'Other O&apos;Brien'], ['id' => 2, 'label' => 'O&#039;Brien'],
+            ['id' => 1, 'label' => 'O&apos;Brien']];
+        $ranked = paletteRankRows($rows, "O'Brien");
+        self::assertSame([1, 2, 3], array_column($ranked, 'id'));
+        self::assertSame('O&apos;Brien', $ranked[0]['label']);
+        self::assertSame(0, paletteStoredTextScore('&amp;lt;literal&amp;gt;', '&lt;literal&gt;'));
+    }
+
     // -------------------------------------------------------------------
     // paletteFlattenRichText()  — knowledge base descriptions
     // -------------------------------------------------------------------

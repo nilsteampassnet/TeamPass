@@ -267,8 +267,9 @@ class SearchFiltersLogicTest extends TestCase
             $this->context()
         );
         // Terms are ANDed, fields ORed inside a term.
-        $this->assertStringContainsString('(c.label LIKE %ss_term0 OR c.login LIKE %ss_term0)', $built['sql']);
-        $this->assertStringContainsString('(c.label LIKE %ss_term1 OR c.login LIKE %ss_term1)', $built['sql']);
+        $this->assertStringContainsString('c.label LIKE %ss_term0', $built['sql']);
+        $this->assertStringContainsString('c.login LIKE %ss_term1', $built['sql']);
+        $this->assertSame('%&%;%', $built['params']['term_entity']);
         $this->assertSame('backup', $built['params']['term0']);
         $this->assertSame('prod', $built['params']['term1']);
     }
@@ -299,15 +300,10 @@ class SearchFiltersLogicTest extends TestCase
             $this->context()
         );
 
-        $this->assertStringContainsString(
-            '(c.label LIKE %ss_term0 OR c.label LIKE %ss_term0_1'
-            . ' OR c.login LIKE %ss_term0 OR c.login LIKE %ss_term0_1)',
-            $built['sql']
-        );
+        $this->assertStringContainsString('c.label LIKE %s_term_entity', $built['sql']);
         $this->assertSame('Eligibilité', $built['params']['term0']);
-        $this->assertSame('Eligibilit&eacute;', $built['params']['term0_1']);
-        // A plain term keeps its single placeholder.
-        $this->assertStringContainsString('(c.label LIKE %ss_term1 OR c.login LIKE %ss_term1)', $built['sql']);
+        $this->assertTrue(storedTextSearchMatches(['label' => 'Eligibilit&eacute; backup'], ['Eligibilité', 'backup'], ['label']));
+        $this->assertStringContainsString('c.label LIKE %ss_term1', $built['sql']);
         $this->assertArrayNotHasKey('term1_1', $built['params']);
     }
 

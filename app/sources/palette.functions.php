@@ -36,6 +36,8 @@ declare(strict_types=1);
  * the results, never touching any secret value.
  */
 
+require_once __DIR__ . '/stored_text_search.php';
+
 /**
  * Normalise a palette search term.
  *
@@ -172,36 +174,28 @@ function paletteBuildExcerpt(string $text, string $term, int $maxLength = 90): s
  */
 function paletteRankRows(array $rows, string $term, string $key = 'label'): array
 {
-    $needle = mb_strtolower($term);
+    usort($rows, static fn (array $left, array $right): int => paletteCompareRows($left, $right, $term, $key));
+    return $rows;
+}
 
-    $scored = array_map(static function (array $row) use ($needle, $key): array {
-        $text = mb_strtolower((string) ($row[$key] ?? ''));
-        $pos = $needle === '' ? false : mb_strpos($text, $needle);
-        if ($text !== '' && $text === $needle) {
-            $score = 0;          // exact
-        } elseif ($pos === 0) {
-            $score = 1;          // prefix
-        } elseif ($pos !== false) {
-            $score = 2 + $pos;   // substring, earlier is better
-        } else {
-            $score = PHP_INT_MAX; // no direct match (e.g. matched on login/url)
-        }
-        $row['_score'] = $score;
+/** Rank a decoded label by exact, prefix, then substring match; keep other-field hits last. */
+function paletteStoredTextScore(string $stored, string $term): int
+{
+    $needle = mb_strtolower($term, 'UTF-8');
+    $text = mb_strtolower(storedTextSearchDecode($stored), 'UTF-8');
+    $position = $needle === '' ? false : mb_strpos($text, $needle, 0, 'UTF-8');
+    if ($text !== '' && $text === $needle) {
+        return 0;
+    }
+    return $position === false ? PHP_INT_MAX : ($position === 0 ? 1 : 2 + $position);
+}
 
-        return $row;
-    }, $rows);
-
-    usort($scored, static function (array $a, array $b) use ($key): int {
-        if ($a['_score'] !== $b['_score']) {
-            return $a['_score'] <=> $b['_score'];
-        }
-
-        return strcasecmp((string) ($a[$key] ?? ''), (string) ($b[$key] ?? ''));
-    });
-
-    return array_map(static function (array $row): array {
-        unset($row['_score']);
-
-        return $row;
-    }, $scored);
+/** Use one decoded relevance order for the bounded stream and the legacy array helper. */
+function paletteCompareRows(array $left, array $right, string $term, string $key = 'label'): int
+{
+    $leftText = (string) ($left[$key] ?? '');
+    $rightText = (string) ($right[$key] ?? '');
+    return paletteStoredTextScore($leftText, $term) <=> paletteStoredTextScore($rightText, $term)
+        ?: storedTextSearchCompare($leftText, $rightText)
+        ?: (int) ($left['id'] ?? 0) <=> (int) ($right['id'] ?? 0);
 }
