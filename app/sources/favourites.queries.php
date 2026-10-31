@@ -41,6 +41,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 // Load functions
 require_once 'main.functions.php';
 require_once 'find.functions.php';
+require_once __DIR__ . '/search.functions.php';
 $session = SessionManager::getSession();
 
 
@@ -210,18 +211,18 @@ if (null !== $post_type) {
                 }
 
                 $tags = array_values(array_filter(
-                    array_map('trim', explode(' ', (string) ($record['tags'] ?? ''))),
+                    array_map(static fn (string $tag): string => trim(searchDecodeStoredText($tag)), explode(' ', (string) ($record['tags'] ?? ''))),
                     static fn (string $tag): bool => $tag !== ''
                 ));
 
                 $items[] = [
                     'id' => (int) $record['id'],
-                    'label' => (string) $record['label'],
+                    'label' => searchDecodeStoredText((string) $record['label']),
                     'description' => findBuildDescriptionPreview((string) ($record['description'] ?? ''), 140),
-                    'login' => (string) ($record['login'] ?? ''),
-                    'url' => $url,
+                    'login' => searchDecodeStoredText((string) ($record['login'] ?? '')),
+                    'url' => searchDecodeStoredText($url),
                     'folder_id' => (int) $record['id_tree'],
-                    'folder' => $folderPath,
+                    'folder' => searchDecodeStoredText($folderPath),
                     'icon' => (string) ($record['fa_icon'] ?? ''),
                     'perso' => (int) $record['perso'],
                     'restricted' => (string) ($record['restricted_to'] ?? ''),
