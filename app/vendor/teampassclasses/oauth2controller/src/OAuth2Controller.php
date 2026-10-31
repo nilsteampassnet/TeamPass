@@ -78,7 +78,7 @@ class OAuth2Controller
             $this->provider = new GenericProvider([
                 'clientId'                => $settings['oauth2_client_id'],
                 'clientSecret'            => $settings['oauth2_client_secret'],
-                'redirectUri'             => $settings['cpassman_url'].'/index.php?post_type=oauth2',
+                'redirectUri'             => rtrim($settings['cpassman_url'], '/').'/index.php?post_type=oauth2',
                 'urlAuthorize'            => $settings['oauth2_client_endpoint'],
                 'urlAccessToken'          => $settings['oauth2_client_token'],
                 'urlResourceOwnerDetails' => $settings['oauth2_client_urlResourceOwnerDetails'],
@@ -117,7 +117,8 @@ class OAuth2Controller
         try {
             // Exchange the authorization code for an access token
             $token = $this->provider->getAccessToken('authorization_code', [
-                'code' => $_GET['code']
+                'code' => $_GET['code'],
+                'scope' => $this->provider->getSeperatedScopes()
             ]);
 
             if ($this->provider instanceof Azure) {
