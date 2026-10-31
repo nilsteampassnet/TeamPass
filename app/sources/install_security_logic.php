@@ -289,9 +289,10 @@ function installSessionWroteSettings(?string $writtenHash, ?string $currentHash)
 /**
  * Tell whether an installer step endpoint may run in the current installation state.
  *
- * GHSA-8xp7-fh3p-5pcr follow-up: install.php stops minting the install grant once settings.php
- * exists, but a grant minted before that point used to stay valid for every step afterwards, so
- * a session opened before the setup could still rewrite settings.php of the live instance.
+ * GHSA-6x8j-28p6-mmfm (follow-up of GHSA-8xp7-fh3p-5pcr): install.php stops minting the install
+ * grant once settings.php exists, but a grant minted before that point used to stay valid for
+ * every step afterwards, so a session opened before the setup could still rewrite settings.php of
+ * the live instance.
  * Once installed, only step 6 may still run — csrf, cronJob and cleanInstall come after
  * settingsFile — and only for the session that wrote the settings.php now on disk.
  *
