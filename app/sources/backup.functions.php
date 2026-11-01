@@ -188,6 +188,16 @@ function tpBackupGetScheduledDefaultDir(): string
     return defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/backups' : __DIR__ . '/../../storage/backups';
 }
 
+/**
+ * Directory of the on-the-fly backups (storage/onthefly), for callers outside backups.queries.php.
+ *
+ * @return string
+ */
+function tpBackupGetOntheflyDefaultDir(): string
+{
+    return defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/onthefly' : __DIR__ . '/../../storage/onthefly';
+}
+
 function tpBackupGetConfiguredFilesDir(array $SETTINGS): string
 {
     return (string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));

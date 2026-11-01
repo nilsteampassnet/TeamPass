@@ -69,6 +69,13 @@ Available actions for each backup:
 
 If a backup contains documents, an indicator is displayed next to the backup date.
 
+The [command-line upgrade](../install/upgrade.md) also stores its pre-upgrade backup here
+(`pre-upgrade-*.sql`, with the comment *Before upgrade X to Y*). It is encrypted with the
+Teampass instance key, shown by a key icon next to its date: restore it without entering an
+encryption key. Like every on-the-fly backup, it is kept until you delete it. Its schema level
+and Teampass version are those of the release it was taken from, so it can only be restored
+once the code of that release is deployed again.
+
 ### Restoring from a backup
 
 To restore your database from a backup:

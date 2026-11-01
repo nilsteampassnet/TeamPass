@@ -1557,6 +1557,7 @@ return array(
     'bck_onthefly_invalid_filename' => 'Nom de fichier invalide.',
     'bck_onthefly_file_not_found' => 'Fichier de sauvegarde introuvable.',
     'bck_onthefly_comment_save_failed' => 'Impossible d’enregistrer le commentaire.',
+    'bck_onthefly_instance_key_hint' => 'Créée par la mise à jour en ligne de commande et chiffrée avec la clé de l’instance : aucune clé de déchiffrement n’est nécessaire pour la restaurer.',
     'ws_realtime_connection_lost' => 'Connexion temps réel perdue',
     'ws_reconnecting' => 'Reconnexion en cours...',
     'ws_new_item' => 'Nouvel élément',

@@ -331,13 +331,15 @@ function tpUpgradeCliPreflight(array $plan, array $SETTINGS, string $schemaLevel
     $add('plan_files', $missingFiles === [] ? 'ok' : 'error', $missingFiles === [] ? 'Upgrade scripts present' : 'Missing in public/install: ' . implode(', ', array_keys($missingFiles)));
 
     $paths = tpUpgradeCliPaths();
-    $backupDir = tpBackupResolveScheduledOutputDir('', $SETTINGS);
+    // The pre-upgrade backup goes to storage/onthefly, created by the run when it is missing.
+    $backupDir = tpBackupGetOntheflyDefaultDir();
+    $backupExistingDir = is_dir($backupDir) === true ? $backupDir : dirname($backupDir);
     $storageOk = is_writable($paths['runs']) && is_writable($paths['logs']);
-    $backupOk = $backupDir['success'] === true && is_writable($backupDir['path']);
+    $backupOk = is_writable($backupExistingDir);
     $add(
         'storage_writable',
         $storageOk && $backupOk ? 'ok' : 'error',
-        $storageOk && $backupOk ? 'Upgrade and backup directories writable' : 'Not writable: ' . ($storageOk ? '' : $paths['root'] . ' ') . ($backupOk ? '' : (string) ($backupDir['path'] ?: 'backup directory'))
+        $storageOk && $backupOk ? 'Upgrade and backup directories writable' : 'Not writable: ' . ($storageOk ? '' : $paths['root'] . ' ') . ($backupOk ? '' : $backupExistingDir)
     );
 
     if ($backupOk === true) {
@@ -347,7 +349,7 @@ function tpUpgradeCliPreflight(array $plan, array $SETTINGS, string $schemaLevel
             $prefix
         );
         $required = tpUpgradeCliRequiredFreeBytes($dataBytes);
-        $free = @disk_free_space($backupDir['path']);
+        $free = @disk_free_space($backupExistingDir);
         $add(
             'disk_space',
             $free === false || $free >= $required ? 'ok' : 'error',
@@ -624,6 +626,9 @@ function tpUpgradeCliRecordVersion(string $version): bool
  * Create the pre-upgrade backup: encrypted with the instance backup key, limited to the
  * TeamPass tables, stamped with the version and schema level of the data (not of the files).
  *
+ * It is an on-the-fly backup (storage/onthefly, no "scheduled-" prefix): Administration >
+ * Backups lists it in the On-the-fly tab, and the scheduled retention never deletes it.
+ *
  * @param array                $SETTINGS Settings (the backup key may be self-healed)
  * @param array<string, mixed> $journal  Journal of the run (from, to, inventory)
  *
@@ -633,9 +638,13 @@ function tpUpgradeCliCreateBackup(array &$SETTINGS, array $journal): array
 {
     $failure = static fn (string $message): array => ['success' => false, 'file' => '', 'sha256' => '', 'size_bytes' => 0, 'message' => $message];
 
-    $dir = tpBackupResolveScheduledOutputDir('', $SETTINGS);
-    if ($dir['success'] !== true || is_writable($dir['path']) === false) {
-        return $failure('Backup directory not writable');
+    $dir = tpBackupGetOntheflyDefaultDir();
+    if (is_dir($dir) === false) {
+        @mkdir($dir, 0750, true);
+    }
+    $dirReal = realpath($dir);
+    if ($dirReal === false || is_writable($dirReal) === false) {
+        return $failure('Backup directory not writable: ' . $dir);
     }
     $key = tpResolveBackupScriptPasskey($SETTINGS, true);
     $clearKey = $key['clear_key'];
@@ -646,8 +655,8 @@ function tpUpgradeCliCreateBackup(array &$SETTINGS, array $journal): array
     $from = $journal['from'];
     $schemaLevel = (string) $from['schema_level'];
     $result = tpCreateDatabaseBackup($SETTINGS, $clearKey, [
-        'output_dir' => $dir['path'],
-        'filename_prefix' => 'scheduled-pre-upgrade-',
+        'output_dir' => $dirReal,
+        'filename_prefix' => 'pre-upgrade-',
         'include_tables' => array_keys($journal['inventory']),
         'schema_level' => $schemaLevel,
     ]);
@@ -750,7 +759,7 @@ function tpUpgradeCliRevert(array $journal, array &$SETTINGS, TpUpgradeCliLogger
         0,
         'upgrade-cli',
         $file,
-        'scheduled',
+        '',
         basename($file),
         0,
         '',

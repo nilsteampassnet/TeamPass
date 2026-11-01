@@ -2369,6 +2369,7 @@ return array(
     'bck_onthefly_invalid_filename' => 'Invalid filename.',
     'bck_onthefly_file_not_found' => 'Backup file not found.',
     'bck_onthefly_comment_save_failed' => 'Unable to save the comment.',
+    'bck_onthefly_instance_key_hint' => 'Made by the command-line upgrade and encrypted with the instance key: no decryption key is needed to restore it.',
     'inactive_users_mgmt_description' => 'Automatically warn inactive users and apply an action after a grace period.',
     'inactive_users_mgmt_inactivity_days' => 'Warn after (days of inactivity)',
     'inactive_users_mgmt_grace_days' => 'Grace period before action (days)',
