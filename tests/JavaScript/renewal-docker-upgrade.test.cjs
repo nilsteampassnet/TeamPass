@@ -22,6 +22,7 @@ php() {
       printf 'RECORDED:%s\\n' "$2"
       ;;
     */upgrade_run_*.php) printf '[{"finish":"1","error":""}]\\n' ;;
+    */list-upgrade-operations.php) ;;
     *) return 1 ;;
   esac
 }

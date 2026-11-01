@@ -84,6 +84,8 @@ function formatAdminLogLabel(string $label, Language $lang): string
         'at_2fa_google_code_send_by_email' => 'mfa_code_send_by_email',
         'authentication_lockout_removed' => 'authentication_lockout_removed',
         'secure_send_audit_retention_purge' => 'secure_send_audit_retention_purge',
+        'recovery_package_downloaded' => 'recovery_package_downloaded',
+        'Recovery Package downloaded' => 'recovery_package_downloaded',
         'at_licence_trial_requested' => 'licence_trial_log_requested',
         'at_licence_trial_activated' => 'licence_trial_log_activated',
         'at_licence_trial_link_sent' => 'licence_trial_log_link_sent',
@@ -106,6 +108,10 @@ function formatAdminLogLabel(string $label, Language $lang): string
         $change = explode(':', $label);
 
         return (string) $lang->get($change[0]) . ' ' . ($change[1] ?? '') . ' (' . ($change[2] ?? '') . ')';
+    }
+    if (preg_match('/^at_upgrade_cli_([a-z_]+):([0-9.]*):([0-9.]*)$/', $label, $upgrade) === 1) {
+        // Label carries "at_upgrade_cli_<outcome>:<release before>:<release of the files>"
+        return (string) $lang->get('upgrade_cli_log_' . $upgrade[1]) . ' (' . $upgrade[2] . ' → ' . $upgrade[3] . ')';
     }
 
     return $label;

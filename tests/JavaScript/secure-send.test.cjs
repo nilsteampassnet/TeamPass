@@ -64,7 +64,7 @@ function harness(item = { id: 123 }) {
       text(value) { this.content = value; return this }, html(value) { this.content = value; return this },
       addClass(value) { String(value).split(/\s+/).filter(Boolean).forEach(name => this.classes.add(name)); return this },
       removeClass(value) { String(value).split(/\s+/).filter(Boolean).forEach(name => this.classes.delete(name)); return this },
-      hasClass(value) { return this.classes.has(value) }, modal() { return this }, off() { return this },
+      hasClass(value) { return this.classes.has(value) }, modal() { return this }, off() { return this }, trigger() { return this },
       on(events, target, fn) { handlers.set(`${selector === document ? target : selector}|${events}`, fn || target); return this }
     })
     return nodes.get(selector)
@@ -282,6 +282,18 @@ test('My secure sends escapes decoded item labels exactly once', () => {
   }] })
   assert.match(h.$('#secure-send-list').content, /R&amp;D O&#039;Brien/)
   assert.doesNotMatch(h.$('#secure-send-list').content, /&amp;amp;|&amp;#039;/)
+})
+
+test('The item-page personal list marks suspended links and keeps their revoke buttons', () => {
+  const h = harness()
+  h.loadList()
+  h.requests[0].resolve({ error: '', sends: [{
+    id: 17, send_type: 'note', label: '<paused>', suspended: true,
+    has_passphrase: 0, remaining_views: 1, expires_label: 'later'
+  }] })
+  assert.match(h.$('#secure-send-list').content, /secure_send_suspended/)
+  assert.match(h.$('#secure-send-list').content, /&lt;paused&gt;/)
+  assert.match(h.$('#secure-send-list').content, /secure-send-revoke[^>]*data-id="17"/)
 })
 
 test('Malformed list responses report an error instead of an empty list', () => {

@@ -403,6 +403,15 @@ Teampass is what it is thanks to these people.
 
 Teampass is free, GPL-3.0, and has been maintained by one person since 2009. There is no company behind it — which is exactly the point, and also why support matters.
 
+### Help others find it — free
+
+There is no marketing budget either. Teams looking for a self-hosted password manager find Teampass on GitHub and on listing sites, whose rankings come from users. If Teampass serves you well, a few seconds on any of these makes a real difference:
+
+- ⭐ **[Star the repository](https://github.com/nilsteampassnet/TeamPass)** — the count also shows on [OpenAlternative](https://openalternative.co/teampass)
+- 👍 **[Like Teampass on AlternativeTo](https://alternativeto.net/software/teampass/about/)**
+- ✍️ **[Write a short review on SourceForge](https://sourceforge.net/projects/communitypasswo/reviews/)**
+- 🧱 **[Add Teampass to your stack on StackShare](https://stackshare.io/teampass)**
+
 ### What sponsorship funds
 
 - **Security work** — triaging reports, fixing them, and publishing advisories with CVEs

@@ -168,7 +168,7 @@ if (
 
     const kbDirectId = parseInt($('#kb-direct-id').val(), 10) || 0;
     let kbTable = null;
-    const kbCategoryBrowser = createKbCategoryBrowser();
+    const kbCategoryBrowser = createKbCategoryBrowser(kbDecodeHtmlEntities);
     let kbListRequestId = 0;
     let kbLoadedDirectId = false;
     let kbEditionLockInterval = null;
@@ -997,9 +997,11 @@ if (
         }
 
         items.forEach(function(item) {
-            const safeText = DOMPurify.sanitize(item.label || '', {USE_PROFILES: {html: false}});
             const safeLink = DOMPurify.sanitize(item.link || '#', {USE_PROFILES: {html: false}});
-            $container.append('<a class="badge badge-primary tp-kb-associated-item" href="' + safeLink + '">' + safeText + '</a>');
+            $container.append($('<a>', {
+                class: 'badge badge-primary tp-kb-associated-item',
+                href: safeLink
+            }).text(kbDecodeHtmlEntities(item.label)));
         });
 
         $zone.removeClass('hidden');
@@ -1147,7 +1149,7 @@ if (
         const commentsCount = parseInt(entry.comments_count || 0, 10) || 0;
         const entryId = parseInt(entry.id || 0, 10) || 0;
         $('#kb-viewer-title').text(kbDecodeHtmlEntities(entry.label));
-        $('#kb-viewer-category').text(entry.category || '');
+        $('#kb-viewer-category').text(kbDecodeHtmlEntities(entry.category));
         $('#kb-viewer-author').text(kbTranslations.kb_created_by + ' ' + (entry.author || ''));
         const createdDate = kbArticleDateHtml(entry, 'created', false);
         $('#kb-viewer-created').html(createdDate).toggleClass('hidden', createdDate === '');
@@ -1237,7 +1239,7 @@ if (
 
         if (Array.isArray(entry.associated_items)) {
             entry.associated_items.forEach(function(item) {
-                const option = new Option(item.label, item.id, true, true);
+                const option = new Option(kbDecodeHtmlEntities(item.label), item.id, true, true);
                 $('#kb-associated-items').append(option);
             });
         }
@@ -1543,6 +1545,17 @@ if (
         };
     }
 
+    /** Use the same decoded category for display, sorting and DataTables search. */
+    function kbBuildListCategory(entry) {
+        const label = kbDecodeHtmlEntities(entry.category) || kbTranslations.kb_uncategorized;
+        const escaped = kbEscapeHtml(label);
+        return {
+            display: '<span class="badge badge-info">' + escaped + '</span>',
+            sort: label,
+            filter: escaped
+        };
+    }
+
     /** Render category navigation and reuse the existing table for the selected articles. */
     function kbRenderBrowser(resetTable) {
         const state = kbCategoryBrowser.getState();
@@ -1572,13 +1585,12 @@ if (
         const page = kbTable.page();
         kbTable.clear();
         kbCategoryBrowser.getEntries().forEach(function(entry) {
-            const safeCategory = kbEscapeHtml(entry.category || kbTranslations.kb_uncategorized);
             const safeAuthor = kbEscapeHtml(entry.author);
             const itemsCount = parseInt(entry.items_count || 0, 10) || 0;
 
             kbTable.row.add([
                 kbBuildListEntry(entry),
-                safeCategory !== '' ? '<span class="badge badge-info">' + safeCategory + '</span>' : '',
+                kbBuildListCategory(entry),
                 safeAuthor,
                 itemsCount,
                 kbBuildActions(entry)
@@ -1644,7 +1656,7 @@ if (
             },
             columnDefs: [
                 {targets: 0, className: 'kb-col-label', type: 'string', render: {_: 'display', sort: 'sort', filter: 'filter', type: 'sort'}},
-                {targets: 1, className: 'kb-col-category', width: '160px'},
+                {targets: 1, className: 'kb-col-category', width: '160px', type: 'string', render: {_: 'display', sort: 'sort', filter: 'filter', type: 'sort'}},
                 {targets: 2, className: 'kb-col-author', width: '140px'},
                 {targets: 3, orderable: false, searchable: false, className: 'kb-col-items text-center text-nowrap', width: '80px'},
                 {targets: 4, orderable: false, searchable: false, className: 'kb-col-actions text-center text-nowrap', width: '130px'}
@@ -1669,7 +1681,9 @@ if (
                         },
                         function(response) {
                             const data = kbDecodeResponse(response, 'search_items');
-                            success({results: data.results || []});
+                            success({results: (data.results || []).map(function(item) {
+                                return Object.assign({}, item, {text: kbDecodeHtmlEntities(item.text)});
+                            })});
                         }
                     ).fail(failure);
                 },
@@ -1694,7 +1708,7 @@ if (
                     },
                     function(result) {
                         const data = kbDecodeResponse(result, 'search_categories');
-                        response(data.categories || []);
+                        response((data.categories || []).map(kbDecodeHtmlEntities));
                     }
                 ).fail(function() {
                     response([]);

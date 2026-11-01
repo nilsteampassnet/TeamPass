@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+/**
+ * TeamPass - a collaborative passwords manager.
+ * Copyright (c) 2009-2026 Teampass.net
+ * Licensed under the GNU General Public License, version 3 or later.
+ * See <https://www.gnu.org/licenses/>.
+ */
+
 use PHPUnit\Framework\TestCase;
 
 // Real production logic (DB-free) shared with the palette.queries.php
@@ -13,10 +20,8 @@ require_once __DIR__ . '/../../app/sources/palette.functions.php';
  *
  * Covers:
  *   - paletteNormalizeTerm()    — trimming, min length, hard cap
- *   - paletteEscapeLikeTerm()   — LIKE-injection hardening
- *   - paletteRankRows()         — relevance ordering
+ *   - storedTextSearchPage() / paletteCompareRows() — production relevance ordering
  *   - paletteFlattenRichText()  — KB rich text to searchable plain text
- *   - paletteTextMatchesTerm()  — markup-only match rejection
  *   - paletteBuildExcerpt()     — excerpt centred on the match
  */
 class CommandPaletteLogicTest extends TestCase
@@ -44,24 +49,7 @@ class CommandPaletteLogicTest extends TestCase
     }
 
     // -------------------------------------------------------------------
-    // paletteEscapeLikeTerm()
-    // -------------------------------------------------------------------
-
-    public function testEscapeNeutralisesLikeWildcards(): void
-    {
-        // A raw % or _ would widen the match (LIKE injection).
-        $this->assertSame('100\%', paletteEscapeLikeTerm('100%'));
-        $this->assertSame('a\_b', paletteEscapeLikeTerm('a_b'));
-        $this->assertSame('a\\\\b', paletteEscapeLikeTerm('a\\b'));
-    }
-
-    public function testEscapeLeavesNormalTextAlone(): void
-    {
-        $this->assertSame('gitlab prod', paletteEscapeLikeTerm('gitlab prod'));
-    }
-
-    // -------------------------------------------------------------------
-    // paletteRankRows()
+    // Production streaming relevance ordering
     // -------------------------------------------------------------------
 
     private function rows(array $labels): array
@@ -69,9 +57,18 @@ class CommandPaletteLogicTest extends TestCase
         return array_map(static fn (string $label): array => ['label' => $label], $labels);
     }
 
+    /** Exercise the same bounded reader and comparator as the production handlers. */
+    private function rankRows(array $rows, string $term): array
+    {
+        $foldedTerm = storedTextSearchFold($term);
+        return storedTextSearchPage($rows, [], ['label'], 0, count($rows),
+            'paletteCompareRows', [],
+            static fn (array $row): array => paletteProjectRow($row, $foldedTerm))['rows'];
+    }
+
     public function testRankExactBeatsPrefixBeatsSubstring(): void
     {
-        $ranked = paletteRankRows(
+        $ranked = $this->rankRows(
             $this->rows(['my gitlab', 'gitlab prod', 'gitlab']),
             'gitlab'
         );
@@ -81,7 +78,7 @@ class CommandPaletteLogicTest extends TestCase
 
     public function testRankEarlierSubstringWins(): void
     {
-        $ranked = paletteRankRows(
+        $ranked = $this->rankRows(
             $this->rows(['zzz git', 'a git', 'the git server']),
             'git'
         );
@@ -92,7 +89,7 @@ class CommandPaletteLogicTest extends TestCase
 
     public function testRankIsCaseInsensitiveAndFallsBackAlpha(): void
     {
-        $ranked = paletteRankRows(
+        $ranked = $this->rankRows(
             $this->rows(['GitLab', 'gitface', 'GITHUB']),
             'git'
         );
@@ -105,7 +102,7 @@ class CommandPaletteLogicTest extends TestCase
     {
         // A row matched on login/url only (label does not contain the term)
         // must stay listed, after every direct label match.
-        $ranked = paletteRankRows(
+        $ranked = $this->rankRows(
             $this->rows(['admin account', 'git server']),
             'git'
         );
@@ -113,11 +110,15 @@ class CommandPaletteLogicTest extends TestCase
         $this->assertSame(['git server', 'admin account'], array_column($ranked, 'label'));
     }
 
-    public function testRankStripsInternalScoreKey(): void
+    /** Relevance is computed from displayed names while response encodings stay unchanged. */
+    public function testRankUsesDecodedNamesAndStableIdentity(): void
     {
-        $ranked = paletteRankRows($this->rows(['abc']), 'ab');
-
-        $this->assertArrayNotHasKey('_score', $ranked[0]);
+        $rows = [['id' => 3, 'label' => 'Other O&apos;Brien'], ['id' => 2, 'label' => 'O&#039;Brien'],
+            ['id' => 1, 'label' => 'O&apos;Brien']];
+        $ranked = $this->rankRows($rows, "O'Brien");
+        self::assertSame([1, 2, 3], array_column($ranked, 'id'));
+        self::assertSame('O&apos;Brien', $ranked[0]['label']);
+        self::assertSame(0, paletteProjectRow(['label' => '&amp;lt;literal&amp;gt;'], '&lt;literal&gt;')['_search_score']);
     }
 
     // -------------------------------------------------------------------
@@ -147,28 +148,6 @@ class CommandPaletteLogicTest extends TestCase
     {
         $this->assertSame('a b', paletteFlattenRichText("a \n\t  b"));
         $this->assertSame(10, mb_strlen(paletteFlattenRichText(str_repeat('x', 50), 10)));
-    }
-
-    // -------------------------------------------------------------------
-    // paletteTextMatchesTerm()
-    // -------------------------------------------------------------------
-
-    public function testTextMatchIsCaseInsensitiveAcrossHaystacks(): void
-    {
-        $this->assertTrue(paletteTextMatchesTerm(['VPN access', ''], 'vpn'));
-        $this->assertTrue(paletteTextMatchesTerm(['', 'how to reset the VPN'], 'vpn'));
-    }
-
-    public function testTextMatchRejectsMarkupOnlyHit(): void
-    {
-        // The SQL LIKE matched "<table>" in the stored HTML, but the readable
-        // text never mentions it — the row must be dropped.
-        $this->assertFalse(paletteTextMatchesTerm(['Onboarding', 'Step one then step two'], 'table'));
-    }
-
-    public function testTextMatchRejectsEmptyTerm(): void
-    {
-        $this->assertFalse(paletteTextMatchesTerm(['anything'], '   '));
     }
 
     // -------------------------------------------------------------------

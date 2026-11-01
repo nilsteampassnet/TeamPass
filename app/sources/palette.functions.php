@@ -36,6 +36,8 @@ declare(strict_types=1);
  * the results, never touching any secret value.
  */
 
+require_once __DIR__ . '/stored_text_search.php';
+
 /**
  * Normalise a palette search term.
  *
@@ -59,21 +61,6 @@ function paletteNormalizeTerm(string $term, int $minLength = 2, int $maxLength =
 }
 
 /**
- * Escape a term for safe use inside a LIKE pattern.
- *
- * `%` and `_` are user-typable wildcards that would otherwise widen the
- * match (LIKE injection).
- *
- * @param string $term Normalised term
- *
- * @return string Term with LIKE wildcards escaped
- */
-function paletteEscapeLikeTerm(string $term): string
-{
-    return str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $term);
-}
-
-/**
  * Flatten rich text (KB descriptions) to a searchable/displayable string.
  *
  * KB descriptions are stored either as sanitized HTML or, for legacy rows, as
@@ -94,33 +81,6 @@ function paletteFlattenRichText(string $html, int $maxLength = 2000): string
     $text = trim((string) preg_replace('/\s+/u', ' ', $text));
 
     return mb_substr($text, 0, $maxLength);
-}
-
-/**
- * Tell whether the term appears in at least one of the given texts.
- *
- * Used to drop rows whose SQL LIKE only matched HTML markup (searching
- * "table" must not return every entry containing a `<table>`).
- *
- * @param array<int, string> $haystacks Texts to test
- * @param string             $term      Normalised term
- *
- * @return bool True when the term is readable in one of the texts
- */
-function paletteTextMatchesTerm(array $haystacks, string $term): bool
-{
-    $needle = mb_strtolower(trim($term));
-    if ($needle === '') {
-        return false;
-    }
-
-    foreach ($haystacks as $haystack) {
-        if (mb_strpos(mb_strtolower((string) $haystack), $needle) !== false) {
-            return true;
-        }
-    }
-
-    return false;
 }
 
 /**
@@ -158,50 +118,32 @@ function paletteBuildExcerpt(string $text, string $term, int $maxLength = 90): s
 }
 
 /**
- * Rank palette rows by relevance to the term.
+ * Compute relevance and alphabetic keys once per matched palette row.
  *
- * Order: exact match, prefix match, earliest substring position, then
- * alphabetical — so "gitlab" beats "my gitlab" for the term "git".
- * Rows must carry the searchable text under $key.
- *
- * @param array<int, array<string, mixed>> $rows Result rows
- * @param string                           $term Normalised term
- * @param string                           $key  Row key holding the display text
- *
- * @return array<int, array<string, mixed>> Rows, most relevant first
+ * @param array<string, mixed> $row Stored metadata.
+ * @param string $foldedTerm Prepared user term.
+ * @param string $key Label field to rank.
+ * @return array<string, mixed> Row with private relevance and sort keys.
  */
-function paletteRankRows(array $rows, string $term, string $key = 'label'): array
+function paletteProjectRow(array $row, string $foldedTerm, string $key = 'label'): array
 {
-    $needle = mb_strtolower($term);
+    $row = storedTextSearchSortRow($row, $key);
+    $text = $row['_search_key'];
+    $position = $foldedTerm === '' ? false : mb_strpos($text, $foldedTerm, 0, 'UTF-8');
+    $row['_search_score'] = $text !== '' && $text === $foldedTerm ? 0
+        : ($position === false ? PHP_INT_MAX : ($position === 0 ? 1 : 2 + $position));
+    return $row;
+}
 
-    $scored = array_map(static function (array $row) use ($needle, $key): array {
-        $text = mb_strtolower((string) ($row[$key] ?? ''));
-        $pos = $needle === '' ? false : mb_strpos($text, $needle);
-        if ($text !== '' && $text === $needle) {
-            $score = 0;          // exact
-        } elseif ($pos === 0) {
-            $score = 1;          // prefix
-        } elseif ($pos !== false) {
-            $score = 2 + $pos;   // substring, earlier is better
-        } else {
-            $score = PHP_INT_MAX; // no direct match (e.g. matched on login/url)
-        }
-        $row['_score'] = $score;
-
-        return $row;
-    }, $rows);
-
-    usort($scored, static function (array $a, array $b) use ($key): int {
-        if ($a['_score'] !== $b['_score']) {
-            return $a['_score'] <=> $b['_score'];
-        }
-
-        return strcasecmp((string) ($a[$key] ?? ''), (string) ($b[$key] ?? ''));
-    });
-
-    return array_map(static function (array $row): array {
-        unset($row['_score']);
-
-        return $row;
-    }, $scored);
+/**
+ * Compare precomputed relevance, folded display keys and stable object IDs.
+ *
+ * @param array<string, mixed> $left Projected row.
+ * @param array<string, mixed> $right Projected row.
+ * @return int Negative when the left result ranks first.
+ */
+function paletteCompareRows(array $left, array $right): int
+{
+    return $left['_search_score'] <=> $right['_search_score']
+        ?: storedTextSearchCompareRows($left, $right);
 }

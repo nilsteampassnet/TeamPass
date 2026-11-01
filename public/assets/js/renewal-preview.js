@@ -41,7 +41,37 @@ function createRenewalPreview(config) {
     return result
   }
 
+  /**
+   * One status line for a single item, under its own renewal setting: the deadline that applies
+   * and why, the explanations behind an info icon. Nothing when no deadline applies.
+   */
+  function renderCompact(target, data) {
+    const item = data.items[0]
+    target.empty().removeClass('text-danger text-muted')
+    if (!item || item.source === 'none') {
+      target.addClass('hidden')
+      return
+    }
+    const text = item.source === 'lapr'
+      ? messages.source_lapr
+      : messages.effective.replace('#days#', item.days) + ' ' + messages['source_' + item.source] + ' '
+        + (item.due_date ? messages.due.replace('#date#', item.due_date) : messages.unknown)
+        + (item.expired ? ' ' + messages.expired : '')
+    const icon = item.source === 'lapr' ? 'fa-arrows-rotate' : (item.expired ? 'fa-triangle-exclamation' : 'fa-calendar-check')
+    target.removeClass('hidden').addClass(item.expired ? 'text-danger' : 'text-muted')
+    $('<i>').addClass('fa-solid fa-fw mr-1 ' + icon).attr('aria-hidden', 'true').appendTo(target)
+    $('<span>').text(text).appendTo(target)
+    if (item.source !== 'lapr') {
+      const help = messages.explanation + ' ' + (data.creation ? messages.estimate : messages.existing)
+      $('<i>').addClass('fa-solid fa-circle-info ml-1 tp-renewal-help').attr({ title: help, 'aria-label': help, role: 'img' }).appendTo(target)
+    }
+  }
+
   function render(target, data) {
+    if (target.hasClass('tp-renewal-compact')) {
+      renderCompact(target, data)
+      return
+    }
     const text = lines(data)
     target.empty().toggleClass('hidden', text.length === 0)
       .toggleClass('alert-warning', data.items.some(item => item.expired)).addClass('alert')
@@ -78,16 +108,19 @@ function createRenewalPreview(config) {
   }
 
   function update(selector, folderId, itemIds = [], creation = false, itemPeriod = null, copy = false) {
-    clear(selector)
+    const target = $(selector)
+    // A compact line keeps its text until the answer replaces it: no flicker while the period is typed
+    const compact = target.hasClass('tp-renewal-compact')
+    if (compact && Number(folderId)) requests.set(selector, (requests.get(selector) || 0) + 1)
+    else clear(selector)
     const requestId = requests.get(selector)
     if (!Number(folderId)) return $.Deferred().resolve().promise()
-    const target = $(selector)
-    target.removeClass('hidden alert-warning').addClass('alert alert-info').text(messages.loading)
+    if (!compact) target.removeClass('hidden alert-warning').addClass('alert alert-info').text(messages.loading)
     return fetchPreview(folderId, itemIds, creation, itemPeriod, copy).then(data => {
       if (requestId === requests.get(selector)) render(target, data)
       return data
     }, () => {
-      if (requestId === requests.get(selector)) target.text(messages.unavailable)
+      if (requestId === requests.get(selector)) target.removeClass('hidden').text(messages.unavailable)
     })
   }
 

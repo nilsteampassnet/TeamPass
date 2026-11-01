@@ -1852,6 +1852,10 @@ switch ($post_type) {
 
         // Keep local settings array aligned with the saved value
         $SETTINGS[$post_field] = $post_value;
+        if (in_array($post_field, ['cpassman_url', 'cpassman_dir', 'path_to_files_folder', 'path_to_upload_folder'], true)) {
+            require_once __DIR__ . '/recovery_package_state.functions.php';
+            tpRecoveryPackageSettingsChanged($SETTINGS);
+        }
         if ($post_field === 'enable_local_password_recovery') {
             $SETTINGS['disable_show_forgot_pwd_link'] = (string) ((int) $post_value === 1 ? 0 : 1);
         }
@@ -2296,6 +2300,17 @@ case 'get_operational_statistics':
             array(TP_USER_ID, OTV_USER_ID, API_USER_ID, SSH_USER_ID)
         );
 
+        // Current usable links are independent of the selected activity period.
+        $secureSendActive = ['enabled' => (int) ($SETTINGS['otv_is_enabled'] ?? 0) === 1, 'count' => null];
+        if ($secureSendActive['enabled']) {
+            try {
+                require_once __DIR__ . '/secure_send_active.php';
+                $secureSendActive['count'] = secureSendCountActiveLinks($SETTINGS, null, null, $nowTs);
+            } catch (Throwable $e) {
+                error_log('TEAMPASS Secure Send active count failed (' . get_class($e) . ')');
+            }
+        }
+
         // ---- ROLES
         $rolesTotal = intval(DB::queryFirstField("SELECT COUNT(*) FROM " . prefixTable('roles_title')));
 
@@ -2644,6 +2659,7 @@ case 'get_operational_statistics':
         // Prepare response
         $response = array(
             'error' => false,
+            'secure_send_active' => $secureSendActive,
             'meta' => array(
                 'period' => $period,
                 'from' => $fromTs,

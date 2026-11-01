@@ -453,4 +453,21 @@ return [
         'description' => 'email_tpl_scheduled_backup_externalized_block_desc',
         'trigger' => 'app/scripts/background_tasks___worker.php:1063',
     ],
+
+    'upgrade_cli_report' => [
+        'group' => 'maintenance',
+        'subject_key' => 'email_subject_upgrade_cli_report',
+        'subject_prefix' => '',
+        'body_key' => 'email_body_upgrade_cli_report',
+        'tokens' => [
+            '#tp_status#', '#tp_datetime#', '#tp_server#', '#tp_from#', '#tp_to#',
+            '#tp_backup#', '#tp_log#', '#tp_message#', '#tp_next_action#',
+        ],
+        'subject_tokens' => ['#tp_status#'],
+        // The next action carries the recovery instructions after a failure.
+        'required_tokens' => ['#tp_next_action#'],
+        'label' => 'email_tpl_upgrade_cli_report',
+        'description' => 'email_tpl_upgrade_cli_report_desc',
+        'trigger' => 'app/sources/upgrade_cli.functions.php (tpUpgradeCliNotify)',
+    ],
 ];

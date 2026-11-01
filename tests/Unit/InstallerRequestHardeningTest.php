@@ -117,6 +117,41 @@ final class InstallerRequestHardeningTest extends TestCase
         self::assertStringContainsString('name="csrf-token"', $source, 'install.php must expose the token to install.js.');
     }
 
+    public function testStepGuardRefusesAGrantThatOutlivedTheSetup(): void
+    {
+        $source = self::read('install.functions.php');
+
+        self::assertStringContainsString("teampassConfigState(TEAMPASS_ROOT . '/app/config')", $source);
+        self::assertStringContainsString('installStepAllowedInConfigState(', $source);
+    }
+
+    public function testStepSixBindsItsSessionAndRevokesTheGrantWhenDone(): void
+    {
+        $source = self::read('run.step6.php');
+
+        $write = strpos($source, 'file_put_contents($settingsFile, $settingsContent)');
+        $bind = strpos($source, "\$_SESSION['install_settings_sha256'] = hash('sha256', \$settingsContent);");
+        self::assertNotFalse($write);
+        self::assertNotFalse($bind, 'settingsFile() must bind the end of step 6 to its session.');
+        self::assertGreaterThan($write, $bind, 'The hash must be recorded once settings.php is written.');
+
+        $cleanInstall = strpos($source, 'function cleanInstall(');
+        $revoke = strpos($source, "unset(\$_SESSION['install_granted'], \$_SESSION['install_csrf']);");
+        self::assertNotFalse($cleanInstall);
+        self::assertNotFalse($revoke, 'cleanInstall() must revoke the install grant.');
+        self::assertGreaterThan($cleanInstall, $revoke);
+
+        self::assertStringContainsString('installIsValidSecureFileName(', $source);
+    }
+
+    public function testFinalPageIsShownToTheInstallingSessionWithoutMintingAGrant(): void
+    {
+        $source = str_replace("\r\n", "\n", (string) file_get_contents(__DIR__ . '/../../public/install/install.php'));
+
+        self::assertStringContainsString('installSessionWroteCurrentSettings()', $source);
+        self::assertStringContainsString("\$installCompleted === true ? '' : installIssueCsrfToken()", $source);
+    }
+
     /**
      * End-to-end proof: take the ACTUAL settingsContent block from run.step6.php, feed it the
      * reporter's style of payload through tablePrefix, generate the file exactly as the installer

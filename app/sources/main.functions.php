@@ -4209,9 +4209,9 @@ function geItemReadablePath(int $id_tree, string $label, array $SETTINGS): strin
     $path = '';
     foreach ($arbo as $elem) {
         if (empty($path) === true) {
-            $path = htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES) . ' ';
+            $path = htmlspecialchars(stripslashes(html_entity_decode($elem->title, ENT_QUOTES | ENT_HTML5, 'UTF-8')), ENT_QUOTES) . ' ';
         } else {
-            $path .= '&#8594; ' . htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES);
+            $path .= '&#8594; ' . htmlspecialchars(stripslashes(html_entity_decode($elem->title, ENT_QUOTES | ENT_HTML5, 'UTF-8')), ENT_QUOTES);
         }
     }
 

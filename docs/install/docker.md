@@ -116,7 +116,7 @@ docker compose up -d
 docker compose logs teampass | head -60
 ```
 
-The container applies the database migrations itself when it starts, then removes the install directory. `/install/upgrade.php` therefore answers **404** after a successful upgrade: that is expected. It stays available only when the log says an upgrade is pending, and then you finish it there.
+The container applies the database migrations itself when it starts, with the data clean-ups the web wizard runs after them, then removes the install directory. `/install/upgrade.php` therefore answers **404** after a successful upgrade: that is expected. It stays available only when the log says an upgrade is pending, and then you finish it there.
 
 The database records the version line in `teampass_version` (`3.2.3`) and the complete release that last upgraded it in `teampass_version_full` (`3.2.3.2`). The log names that release, as in `Upgrading database from 3.2.2.3 to 3.2.3.2`. A database last upgraded by an older image only holds the short form until its next upgrade, and an image that ships no database change does not rewrite it.
 

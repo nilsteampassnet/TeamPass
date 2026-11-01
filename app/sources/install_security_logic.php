@@ -82,7 +82,7 @@ function installSanitizeSettingsValue(string $value): string
  */
 function installIsValidTablePrefix(string $prefix): bool
 {
-    return preg_match('/^[A-Za-z0-9_]{0,64}$/', $prefix) === 1;
+    return preg_match('/^[A-Za-z0-9_]{0,64}\z/', $prefix) === 1;
 }
 
 /**
@@ -267,4 +267,65 @@ function installCsrfTokenMatches(?string $expected, ?string $provided): bool
     }
 
     return hash_equals($expected, $provided);
+}
+
+/**
+ * Tell whether the settings.php on disk is the one this installer session wrote.
+ *
+ * @param string|null $writtenHash SHA-256 recorded in the session when settingsFile() wrote the file.
+ * @param string|null $currentHash SHA-256 of the settings.php currently on disk (null when unreadable).
+ *
+ * @return bool True when both are known and equal.
+ */
+function installSessionWroteSettings(?string $writtenHash, ?string $currentHash): bool
+{
+    if ($writtenHash === null || $writtenHash === '' || $currentHash === null || $currentHash === '') {
+        return false;
+    }
+
+    return hash_equals($writtenHash, $currentHash);
+}
+
+/**
+ * Tell whether an installer step endpoint may run in the current installation state.
+ *
+ * GHSA-6x8j-28p6-mmfm (follow-up of GHSA-8xp7-fh3p-5pcr): install.php stops minting the install
+ * grant once settings.php exists, but a grant minted before that point used to stay valid for
+ * every step afterwards, so a session opened before the setup could still rewrite settings.php of
+ * the live instance.
+ * Once installed, only step 6 may still run — csrf, cronJob and cleanInstall come after
+ * settingsFile — and only for the session that wrote the settings.php now on disk.
+ *
+ * @param string      $configState teampassConfigState(): 'installed', 'not_installed' or 'unreadable'.
+ * @param string      $script      Basename of the step endpoint (run.stepN.php).
+ * @param string|null $writtenHash SHA-256 recorded in the session by settingsFile().
+ * @param string|null $currentHash SHA-256 of the settings.php currently on disk.
+ *
+ * @return bool True when the step may run.
+ */
+function installStepAllowedInConfigState(string $configState, string $script, ?string $writtenHash, ?string $currentHash): bool
+{
+    if ($configState === 'not_installed') {
+        return true;
+    }
+
+    return $configState === 'installed'
+        && $script === 'run.step6.php'
+        && installSessionWroteSettings($writtenHash, $currentHash);
+}
+
+/**
+ * Validate the name of the encryption key file written into settings.php (SECUREFILE).
+ *
+ * The name is read from the _install table and appended to TEAMPASS_SECRETS: it must be a plain
+ * file name, never a path that leaves the secrets directory. secureFile() generates 40
+ * alphanumeric characters.
+ *
+ * @param string $name Candidate file name.
+ *
+ * @return bool True when the name is a plain file name.
+ */
+function installIsValidSecureFileName(string $name): bool
+{
+    return preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}\z/', $name) === 1;
 }

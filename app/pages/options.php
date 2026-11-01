@@ -1892,6 +1892,9 @@ if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_descr
                                 <small class='form-text text-muted'>
                                     <?php echo $lang->get('secure_send_public_url_tip'); ?>
                                 </small>
+                                <small class='form-text text-muted'>
+                                    <?php echo htmlspecialchars($lang->get('secure_send_public_url_scope_tip'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?>
+                                </small>
                             </div>
                             <div class='col-sm-12'>
                                 <input type='text' class='form-control form-control-sm' id='otv_subdomain' placeholder='https://share.example.com' value='<?php echo isset($SETTINGS['otv_subdomain']) === true ? htmlspecialchars($SETTINGS['otv_subdomain']) : ''; ?>'>

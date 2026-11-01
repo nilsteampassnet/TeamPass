@@ -221,7 +221,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         document.head.appendChild(s);
     }
 
+    function renderActiveSecureSendCount(summary) {
+        var enabled = summary && summary.enabled === true;
+        $('#tp-secure-send-active-row').prop('hidden', !enabled);
+        $('#tp-secure-send-active-count').text(enabled && Number.isSafeInteger(summary.count) && summary.count >= 0 ? summary.count : '—');
+    }
+
     function tpOpsShowLoadError() {
+        $('#tp-secure-send-active-count').text('—');
         var message = <?php echo json_encode($lang->get('ops_stats_load_error'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
         $.each([
             ['#tp-roles-top-body', 5],
@@ -236,6 +243,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     function loadOperationalStatistics() {
         var requestId = ++tpOpsRequestId;
+        $('#tp-secure-send-active-count').text('—');
         // A failed/new period must not be repainted from the previous payload on tab changes.
         tpOpsLastData = null;
         renderSecureSendStatistics(null, 'loading');
@@ -303,6 +311,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     }
 
     function renderOperationalStatistics(data) {
+        renderActiveSecureSendCount(data.secure_send_active);
         // ---------------- USERS KPIs
         var totalEnabled = parseInt(data.users.enabled_users || 0, 10);
         var active = parseInt(data.users.active_users || 0, 10);

@@ -289,10 +289,8 @@ UPGRADE_CHAIN_FLOOR="3.1.5"
 # upgrade_run_3.1.php is a legacy entry point and upgrade_run_3.0.0_users.php
 # and friends are helpers invoked by the wizard, not standalone versions.
 #
-# The interleaved upgrade_operations.php data-sanitation steps of the wizard
-# manifest are deliberately not part of this chain: they read their parameters
-# from POST and cannot run from the CLI. They stay wizard-only, exactly as
-# before this change.
+# The upgrade_operations.php steps the wizard manifest interleaves are not listed
+# here: run_upgrade_step() applies those of each script itself.
 upgrade_chain() {
     _floor_number=$(version_to_number "$UPGRADE_CHAIN_FLOOR")
 
@@ -345,6 +343,19 @@ run_upgrade_step() {
         return 1
     fi
 
+    # Apply the data clean-ups the manifest runs after this script, as the web
+    # wizard does. They run before the version is recorded: they are idempotent,
+    # and recording first would strand a failed one, the next boot finding the
+    # database up to date. Only the operations that can run from the command line
+    # are listed; the batched 3.1.x ones stay wizard-only.
+    if ! _step_operations=$(php /var/www/html/app/scripts/list-upgrade-operations.php "$_step_version"); then
+        echo -e "${YELLOW}⚠️  Could not list the data operations of ${_step_version}${NC}"
+        return 1
+    fi
+    for _operation in $_step_operations; do
+        run_upgrade_operation "$_operation" || return 1
+    done
+
     # Record the version reached. The standalone upgrade scripts never write
     # teampass_version themselves (only the web wizard does), so without this
     # the migration would be replayed on every boot and the install directory
@@ -355,6 +366,32 @@ run_upgrade_step() {
     fi
 
     echo -e "${GREEN}✅ Database upgrade to ${_step_version} completed${NC}"
+    return 0
+}
+
+# Run one operation of upgrade_operations.php and report whether it succeeded.
+#
+# Same contract as the scripts (JSON result, exit code 0 even on failure), and
+# "finish" must also be "1": "0" asks to be called again.
+run_upgrade_operation() {
+    _operation="$1"
+
+    if _op_output=$(php /var/www/html/public/install/upgrade_operations.php "$_operation" 2>&1); then
+        _op_rc=0
+    else
+        _op_rc=$?
+    fi
+
+    _op_error=$(printf '%s' "$_op_output" | sed -n 's/.*"error"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+    _op_finish=$(printf '%s' "$_op_output" | sed -n 's/.*"finish"[[:space:]]*:[[:space:]]*"\([0-9]*\)".*/\1/p')
+
+    if [ "$_op_rc" -ne 0 ] || [ -n "$_op_error" ] || [ "$_op_finish" != "1" ]; then
+        echo -e "${YELLOW}⚠️  Data operation ${_operation} failed: ${_op_error:-exit code ${_op_rc}, finish ${_op_finish:-missing}}${NC}"
+        [ -n "$_op_output" ] && echo "      $_op_output"
+        return 1
+    fi
+
+    echo -e "${GREEN}✅ Data operation ${_operation} completed${NC}"
     return 0
 }
 

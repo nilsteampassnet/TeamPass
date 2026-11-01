@@ -125,6 +125,7 @@ function secureSendUrl(array $settings, bool $public, array $parameters): string
  *
  * Internal links retain compatibility with proxy rewrites, aliases and LAN names.
  * Read the actual Host header; never trust arbitrary forwarded-host headers.
+ * A refusal is written to the PHP error log, since the recipient only sees "invalid link".
  *
  * @param array $settings Application settings
  * @param array $link Stored link
@@ -136,14 +137,25 @@ function secureSendHostIsAllowed(array $settings, array $link, string $hostHeade
     if ((int) ($link['shared_globaly'] ?? 0) !== 1) {
         return true;
     }
+    $expected = null;
     try {
-        if ($hostHeader === '' || preg_match('~[/@?#\s\\\\]~', $hostHeader) === 1) {
-            return false;
-        }
-        $actual = parse_url(secureSendNormalizeBaseUrl('https://' . $hostHeader, true), PHP_URL_HOST);
         $expected = parse_url(secureSendBaseUrl($settings, true), PHP_URL_HOST);
-        return is_string($actual) && is_string($expected) && hash_equals($expected, $actual);
+        if ($hostHeader !== '' && preg_match('~[/@?#\s\\\\]~', $hostHeader) !== 1) {
+            $actual = parse_url(secureSendNormalizeBaseUrl('https://' . $hostHeader, true), PHP_URL_HOST);
+            if (is_string($actual) && is_string($expected) && hash_equals($expected, $actual)) {
+                return true;
+            }
+        }
     } catch (InvalidArgumentException $e) {
-        return false;
+        // An unusable public address or Host header never matches.
     }
+    // A proxy that redirects to the main address or rewrites the Host is otherwise impossible
+    // to diagnose. Only hostnames are logged, never the link code, secret or URL.
+    error_log(sprintf(
+        'TEAMPASS Secure Send: public link #%d refused, request Host "%s" does not match the public address host "%s"; the web server or reverse proxy must forward the original Host header',
+        (int) ($link['id'] ?? 0),
+        (string) preg_replace('/[^\x21-\x7e]/', '?', substr($hostHeader, 0, 255)),
+        is_string($expected) ? $expected : '(empty or invalid public address)'
+    ));
+    return false;
 }

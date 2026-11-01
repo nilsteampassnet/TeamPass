@@ -124,6 +124,44 @@ function wdvExecute($link, string $query, string $param): bool
     return $done !== false;
 }
 
+/**
+ * Insert or update one admin setting of teampass_misc.
+ *
+ * Works without the (type, intitule) unique key, which a database upgraded by this headless
+ * chain from 3.1.x may lack (it is added by a wizard-only operation).
+ *
+ * @param mysqli $link  Open database connection.
+ * @param string $table Prefixed misc table name.
+ * @param string $key   Setting name (intitule).
+ * @param string $value Value to store.
+ *
+ * @return bool True when the statement executed successfully.
+ */
+function wdvUpsertAdminSetting($link, string $table, string $key, string $value): bool
+{
+    $existing = @mysqli_query(
+        $link,
+        'SELECT COUNT(*) FROM `' . $table . "` WHERE type = 'admin' AND intitule = '" . mysqli_real_escape_string($link, $key) . "'"
+    );
+    $exists = $existing !== false && (int) (mysqli_fetch_row($existing)[0] ?? 0) > 0;
+
+    $stmt = mysqli_prepare(
+        $link,
+        $exists === true
+            ? 'UPDATE `' . $table . "` SET valeur = ? WHERE type = 'admin' AND intitule = ?"
+            : 'INSERT INTO `' . $table . "` (valeur, type, intitule) VALUES (?, 'admin', ?)"
+    );
+    if ($stmt === false) {
+        return false;
+    }
+
+    mysqli_stmt_bind_param($stmt, 'ss', $value, $key);
+    $done = mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
+
+    return $done !== false;
+}
+
 // Mirror install/upgrade_ajax.php: when only the legacy key exists (TeamPass
 // 3.1.5.x and earlier), rename it instead of leaving two competing rows behind.
 $existing = @mysqli_query(
@@ -159,19 +197,13 @@ if ($hasCurrentKey === true) {
 
 // Once the chain reaches the version of these files, record the complete release too:
 // teampass_version holds TP_VERSION only, so 3.2.2.3 and 3.2.2.8 both read "3.2.2".
+// The schema level of these files goes with it: the command-line upgrade stamps its pre-upgrade
+// backup with it, because the files deployed meanwhile no longer tell which schema the data has.
 if ($ok === true && $version === TP_VERSION && defined('TP_VERSION_MINOR') === true) {
-    $existingFull = @mysqli_query(
-        $link,
-        'SELECT COUNT(*) FROM `' . $table . "` WHERE type = 'admin' AND intitule = 'teampass_version_full'"
-    );
-    $hasFullKey = $existingFull !== false && (int) (mysqli_fetch_row($existingFull)[0] ?? 0) > 0;
-    $ok = wdvExecute(
-        $link,
-        $hasFullKey === true
-            ? 'UPDATE `' . $table . "` SET valeur = ? WHERE type = 'admin' AND intitule = 'teampass_version_full'"
-            : 'INSERT INTO `' . $table . "` (type, intitule, valeur) VALUES ('admin', 'teampass_version_full', ?)",
-        TP_VERSION . '.' . TP_VERSION_MINOR
-    );
+    $ok = wdvUpsertAdminSetting($link, $table, 'teampass_version_full', TP_VERSION . '.' . TP_VERSION_MINOR);
+    if ($ok === true && defined('UPGRADE_MIN_DATE') === true) {
+        $ok = wdvUpsertAdminSetting($link, $table, 'teampass_schema_level', (string) UPGRADE_MIN_DATE);
+    }
 }
 
 if ($ok === false) {

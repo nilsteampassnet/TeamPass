@@ -114,6 +114,7 @@ final class InstallSecurityLogicTest extends TestCase
             'space'          => ['a b', false],
             'dash'           => ['a-b', false],
             'dot'            => ['a.b', false],
+            'trailing newline' => ["teampass_\n", false],
         ];
     }
 
@@ -151,5 +152,78 @@ final class InstallSecurityLogicTest extends TestCase
         self::assertFalse(installCsrfTokenMatches(null, $token));
         self::assertFalse(installCsrfTokenMatches('', ''));
         self::assertFalse(installCsrfTokenMatches(null, null));
+    }
+
+    public function testSessionWroteSettingsRequiresTwoEqualNonEmptyHashes(): void
+    {
+        $hash = hash('sha256', '<?php // settings');
+
+        self::assertTrue(installSessionWroteSettings($hash, $hash));
+        self::assertFalse(installSessionWroteSettings($hash, hash('sha256', '<?php // rewritten')));
+        self::assertFalse(installSessionWroteSettings(null, $hash));
+        self::assertFalse(installSessionWroteSettings($hash, null));
+        self::assertFalse(installSessionWroteSettings('', ''));
+        self::assertFalse(installSessionWroteSettings(null, null));
+    }
+
+    /**
+     * A grant minted before the setup must not outlive it: once installed, only the session that
+     * wrote settings.php may finish step 6.
+     */
+    public function testAGrantMintedBeforeTheSetupDoesNotOutliveIt(): void
+    {
+        $hash = hash('sha256', '<?php // settings');
+        $steps = ['run.step1.php', 'run.step2.php', 'run.step3.php', 'run.step4.php', 'run.step5.php', 'run.step6.php'];
+
+        // Before the setup completes, the grant holder reaches every step.
+        foreach ($steps as $script) {
+            self::assertTrue(installStepAllowedInConfigState('not_installed', $script, null, null), $script);
+        }
+
+        // Once installed, a session that never wrote settings.php reaches none of them.
+        foreach ($steps as $script) {
+            self::assertFalse(installStepAllowedInConfigState('installed', $script, null, $hash), $script);
+        }
+
+        // The session that wrote settings.php may finish step 6, and only step 6...
+        self::assertTrue(installStepAllowedInConfigState('installed', 'run.step6.php', $hash, $hash));
+        foreach (array_diff($steps, ['run.step6.php']) as $script) {
+            self::assertFalse(installStepAllowedInConfigState('installed', $script, $hash, $hash), $script);
+        }
+
+        // ...while the file on disk is still the one it wrote.
+        self::assertFalse(installStepAllowedInConfigState('installed', 'run.step6.php', $hash, hash('sha256', 'other')));
+        self::assertFalse(installStepAllowedInConfigState('installed', 'run.step6.php', $hash, null));
+
+        // An installation whose configuration cannot be read is never touched.
+        self::assertFalse(installStepAllowedInConfigState('unreadable', 'run.step6.php', $hash, $hash));
+        self::assertFalse(installStepAllowedInConfigState('', 'run.step1.php', null, null));
+    }
+
+    /**
+     * @return array<string,array{string,bool}>
+     */
+    public static function secureFileNames(): array
+    {
+        return [
+            'generated'         => [str_repeat('aZ9x', 10), true],
+            'legacy name'       => ['teampass-seckey.txt', true],
+            'parent traversal'  => ['../storage/files/key', false],
+            'subdirectory'      => ['sub/key', false],
+            'absolute path'     => ['/etc/passwd', false],
+            'backslash'         => ['..\\key', false],
+            'hidden file'       => ['.htaccess', false],
+            'parent only'       => ['..', false],
+            'empty'             => ['', false],
+            'too long'          => [str_repeat('a', 129), false],
+            'null byte'         => ["key\0", false],
+            'trailing newline'  => ["key\n", false],
+        ];
+    }
+
+    #[DataProvider('secureFileNames')]
+    public function testSecureFileNameValidation(string $name, bool $expected): void
+    {
+        self::assertSame($expected, installIsValidSecureFileName($name));
     }
 }

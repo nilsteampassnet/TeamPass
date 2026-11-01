@@ -48,6 +48,7 @@ require_once 'classification.functions.php';
 require_once 'lapr.functions.php';
 require_once __DIR__ . '/item_access_logic.php';
 require_once __DIR__ . '/secure_send_access.php';
+require_once __DIR__ . '/secure_send_active.php';
 require_once __DIR__ . '/secure_send_snapshot.php';
 require_once __DIR__ . '/secure_send_input.php';
 require_once __DIR__ . '/secure_send_url.php';
@@ -4239,9 +4240,9 @@ switch ($inputData['type']) {
                 $path = '';
                 foreach ($arbo as $elem) {
                     if (empty($path) === true) {
-                        $path = htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES) . ' ';
+                        $path = htmlspecialchars(stripslashes(html_entity_decode($elem->title, ENT_QUOTES | ENT_HTML5, 'UTF-8')), ENT_QUOTES) . ' ';
                     } else {
-                        $path .= '&#8594; ' . htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES);
+                        $path .= '&#8594; ' . htmlspecialchars(stripslashes(html_entity_decode($elem->title, ENT_QUOTES | ENT_HTML5, 'UTF-8')), ENT_QUOTES);
                     }
                 }
                 // Build text to show user
@@ -4290,15 +4291,9 @@ switch ($inputData['type']) {
 
             // get OTV links
             if (isset($SETTINGS['otv_is_enabled']) === true && (int) $SETTINGS['otv_is_enabled'] === 1) {
-                DB::query(
-                    'SELECT *
-                    FROM ' . prefixTable('otv') . '
-                    WHERE item_id = %i
-                    AND time_limit > %i',
-                    $inputData['id'],
-                    time()
+                $returnArray['otv_links'] = secureSendCountActiveLinks(
+                    $SETTINGS, null, (int) $inputData['id']
                 );
-                $returnArray['otv_links'] = (int) DB::count();
             }
 
             $session->set('system-show_step2', false);
@@ -4569,15 +4564,18 @@ switch ($inputData['type']) {
                 );
                 $otpCode = $otp->now();
                 $otpExpiresIn = $otp->expiresIn();
+                $otpPeriod = $otp->getPeriod();
             } catch (Throwable $e) {
                 $error = true;
                 $otpCode = '';
                 $otpExpiresIn = '';
+                $otpPeriod = '';
                 $message = $e->getMessage();
             }
         } else {
             $otpCode = '';
             $otpExpiresIn = '';
+            $otpPeriod = '';
         }
         
         // deepcode ignore ServerLeak: Data is encrypted before being sent
@@ -4587,6 +4585,7 @@ switch ($inputData['type']) {
                 'message' => isset($message) === true ? $message : '',
                 'otp_code' => $otpCode,
                 'otp_expires_in' => $otpExpiresIn,
+                'otp_period' => $otpPeriod,
                 'otp_enabled' => (int) ($dataItem['enabled'] ?? 0),
             ),
             'encode'
@@ -4811,7 +4810,7 @@ switch ($inputData['type']) {
                     $arr_arbo,
                     array(
                         'id' => $elem->id,
-                        'title' => htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES),
+                        'title' => htmlspecialchars(stripslashes(html_entity_decode($elem->title, ENT_QUOTES | ENT_HTML5, 'UTF-8')), ENT_QUOTES),
                         'visible' => in_array($elem->id, $session->get('user-accessible_folders')) ? 1 : 0,
                         'icon' => (string) ($elem->fa_icon ?? 'fas fa-folder'),
                     )
@@ -7476,12 +7475,36 @@ switch ($inputData['type']) {
 
     /*
      * CASE
-     * List the current user's active Secure Send links (My secure sends)
+     * Count the current user's usable Secure Send links
+     */
+    case 'count_secure_sends':
+        if (!hash_equals((string) $session->get('key'), (string) $inputData['key'])) {
+            echo json_encode(['error' => 'key_not_conform']);
+            break;
+        }
+        $secureSendEnabled = (int) ($SETTINGS['otv_is_enabled'] ?? 0) === 1;
+        try {
+            echo json_encode(['error' => '', 'enabled' => $secureSendEnabled,
+                'count' => $secureSendEnabled ? secureSendCountActiveLinks($SETTINGS, (int) $session->get('user-id')) : null]);
+        } catch (Throwable $e) {
+            error_log('TEAMPASS Secure Send active count failed (' . get_class($e) . ')');
+            echo json_encode(['error' => 'server_error']);
+        }
+        break;
+
+    /*
+     * CASE
+     * List the current user's Secure Send links (My secure sends)
      */
     case 'list_secure_sends':
         // Check KEY
         if ($inputData['key'] !== $session->get('key')) {
             echo '[ { "error" : "key_not_conform" } ]';
+            break;
+        }
+
+        if ((int) ($SETTINGS['otv_is_enabled'] ?? 0) !== 1) {
+            echo json_encode(['error' => '', 'enabled' => false, 'sends' => []]);
             break;
         }
 
@@ -7492,39 +7515,34 @@ switch ($inputData['type']) {
             error_log('TEAMPASS Secure Send cleanup failed (' . get_class($e) . ')');
         }
 
-        $secureSendRows = DB::query(
-            'SELECT o.id, o.send_type, o.item_id, o.has_passphrase, o.views, o.max_views, o.time_limit, i.label AS item_label
-            FROM ' . prefixTable('otv') . ' AS o
-            LEFT JOIN ' . prefixTable('items') . ' AS i ON (i.id = o.item_id)
-            WHERE o.originator = %i
-            ORDER BY o.id DESC',
-            $session->get('user-id')
-        );
+        try {
+            $secureSendRows = secureSendActiveLinks($SETTINGS, (int) $session->get('user-id'), null, null, true);
+        } catch (Throwable $e) {
+            error_log('TEAMPASS Secure Send inventory failed (' . get_class($e) . ')');
+            echo json_encode(['error' => 'server_error']);
+            break;
+        }
 
         $secureSends = array();
-        foreach (secureSendFilterLinks($secureSendRows, (int) $session->get('user-id')) as $secureSendRow) {
-            // A bounded cleanup may leave expired rows for the next operation.
-            if ((int) $secureSendRow['time_limit'] <= time()) {
-                continue;
-            }
-            $isNote = ($secureSendRow['send_type'] ?? 'item') === 'note' || empty($secureSendRow['item_id']) === true;
+        foreach ($secureSendRows as $secureSendRow) {
+            $isNote = $secureSendRow['send_type'] === 'note';
             $secureSends[] = array(
                 'id' => (int) $secureSendRow['id'],
                 'send_type' => $isNote === true ? 'note' : 'item',
+                'item_id' => $isNote === true ? null : (int) $secureSendRow['item_id'],
+                'folder_id' => $isNote === true ? null : (int) $secureSendRow['folder_id'],
                 'label' => $isNote === true
                     ? $lang->get('secure_send_note')
-                    : html_entity_decode(
-                        (string) ($secureSendRow['item_label'] ?? ''),
-                        ENT_QUOTES | ENT_HTML5,
-                        'UTF-8'
-                    ),
+                    : $secureSendRow['item_label'],
                 'has_passphrase' => (int) ($secureSendRow['has_passphrase'] ?? 0),
+                'suspended' => $secureSendRow['suspended'],
                 'remaining_views' => max(0, (int) $secureSendRow['max_views'] - (int) $secureSendRow['views']),
+                'expires_at' => (int) $secureSendRow['time_limit'],
                 'expires_label' => date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $secureSendRow['time_limit']),
             );
         }
 
-        echo json_encode(array('error' => '', 'sends' => $secureSends));
+        echo json_encode(array('error' => '', 'enabled' => true, 'sends' => $secureSends));
         break;
 
     /*
@@ -7765,7 +7783,11 @@ switch ($inputData['type']) {
                     $pathParts = [];
                     $currentId = $folder->parent_id;
                     while (isset($foldersById[$currentId])) {
-                        $pathParts[] = htmlspecialchars(stripslashes(htmlspecialchars_decode($foldersById[$currentId]->title, ENT_QUOTES)), ENT_QUOTES);
+                        $parentTitle = $foldersById[$currentId]->title;
+                        if ((int) $parentTitle === (int) $session->get('user-id') && (int) $foldersById[$currentId]->nlevel === 1) {
+                            $parentTitle = $session->get('user-login');
+                        }
+                        $pathParts[] = htmlspecialchars(stripslashes(html_entity_decode($parentTitle, ENT_QUOTES | ENT_HTML5, 'UTF-8')), ENT_QUOTES);
                         $currentId = $foldersById[$currentId]->parent_id;
                     }
                     $path = implode(' / ', array_reverse($pathParts));
@@ -8879,17 +8901,19 @@ if (isset($inputData['getType'])) {
         * Autocomplet for TAGS
         */
         case 'autocomplete_tags':
-            // Get a list off all existing TAGS
-            $listOfTags = '';
-            $rows = DB::query('SELECT tag FROM ' . prefixTable('tags') . ' WHERE tag LIKE %ss GROUP BY tag', $inputData['getTerm']);
-            foreach ($rows as $record) {
-                if (empty($listOfTags)) {
-                    $listOfTags = '"' . strval($record['tag']) . '"';
-                } else {
-                    $listOfTags .= ', "' . strval($record['tag']) . '"';
-                }
-            }
-            echo '[' . $listOfTags . ']';
+            // Tags of the items the user can read: the tags of other folders must not leak
+            $rows = DB::query(
+                'SELECT DISTINCT t.tag
+                FROM ' . prefixTable('tags') . ' AS t
+                INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = t.item_id
+                WHERE t.tag LIKE %ss AND i.inactif = %i AND i.deleted_at IS NULL
+                    AND ' . securityPostureItemAccessSql((int) $session->get('user-id')) . '
+                ORDER BY t.tag
+                LIMIT 20',
+                $inputData['getTerm'],
+                0
+            );
+            echo json_encode(array_column($rows, 'tag'));
             break;
     }
 }

@@ -81,13 +81,25 @@ works because every upgrade script is replayed on every upgrade run (see §3).
 
 **New line (3.2.1 → 3.2.2):** bump `TP_VERSION`, reset `TP_VERSION_MINOR` to `0`, and:
 
-1. create `public/install/upgrade_run_<new TP_VERSION>.php`, modelled on
-   `upgrade_run_3.2.1.php`;
-2. append it to `$scripts_list` in `public/install/upgrade_scripts_manager.php`
-   (flat ordered array, appended **at the end**, never reordered);
+1. create `public/install/upgrade_run_<new TP_VERSION>.php`, modelled on the previous line's
+   script (keep its `TEAMPASS_RECOVERY_MIGRATION` guard). **Create it even when the line opens
+   without DDL** (3.2.4.0 did): the Docker chain and the command-line upgrade only record a
+   version that has its own script, so without it the database stays at the previous line and
+   `public/index.php` redirects every request to the wizard forever;
+2. append it to `public/install/upgrade_manifest.php` (since 3.2.4.0 the list shared by the
+   wizard and `app/scripts/upgrade-cli.php`; flat ordered array, appended **at the end**, never
+   reordered — `tests/Unit/UpgradeManifestTest.php` checks it);
 3. seed every new admin setting / table in `public/install/install-steps/run.step5.php` so
    fresh installs match, and register each new `CREATE TABLE` method as an action in
-   `public/install/install-steps/install.js`.
+   `public/install/install-steps/install.js`;
+4. add the new line to the two disaster-recovery allowlists, `app/sources/recovery_upgrade.php`
+   (`tpRecoveryUpgradeScripts()`) and `app/scripts/recovery-migrate.php`, and move the "future
+   line" case of `tests/Unit/RecoveryUpgradeTest.php` one line up. Otherwise restoring any
+   older backup on the new release fails with `UPGRADE_PATH_UNSUPPORTED`.
+
+A TP_VERSION bump sends every installation through the upgrade on its own
+(`public/index.php` compares it with `teampass_version`), whatever `UPGRADE_MIN_DATE` says —
+so a line opened without schema change keeps `UPGRADE_MIN_DATE` (§4).
 
 Checks 8 and 9 of the release gate (§3) verify points 3 automatically.
 
@@ -96,8 +108,12 @@ Checks 8 and 9 of the release gate (§3) verify points 3 automatically.
 ## 3. Run the release gate
 
 ```bash
-scripts/release_check.sh "$BASE"
+PHP_INI_SCAN_DIR=":$PWD/_tools/sqlite/ini" scripts/release_check.sh "$BASE"
 ```
+
+The variable loads `sqlite3`/`pdo_sqlite` for the run (the local PHP CLI has neither). Without
+it check 3 fails on 12 `AdminActivityTest` `PDOException: could not find driver` errors and
+~60 SQLite tests are silently skipped.
 
 Ten checks: version constants, PHPStan (level from `phpstan.neon`), PHPUnit, PHP lint on
 changed files, shell lint, debug-leftover scan on added lines, EN/FR language parity,
@@ -399,9 +415,9 @@ git show <VERSION>:app/config/include.php | grep TP_VERSION
 
 **STOP — ask the user before pushing.** Every one of the three pushes below triggers the Docker
 build workflow: `.github/workflows/docker-publish.yml` fires on `push` to `master` **and**
-`develop`, on tags matching `*.*.*.*` / `v*.*.*`, on `release: published`, and on
-`workflow_dispatch`. Each run publishes to Docker Hub and GHCR (`push:` is true for every event
-except `pull_request`), so this is not a dry run.
+`develop`, on tags matching `*.*.*.*` / `v*.*.*`, on the weekly `schedule`, and on
+`workflow_dispatch` — no longer on `release: published`. Each run publishes to Docker Hub and GHCR
+(`push:` is true for every event except `pull_request`), so this is not a dry run.
 
 ```bash
 git push origin master
@@ -451,9 +467,10 @@ gh release create <VERSION> \
 
 ## 9. After publishing
 
-- `docker-publish.yml` (push to `master`/`develop`, tags, release, manual dispatch) builds and
-  pushes the images, to Docker Hub and GHCR. A release fires it twice, once on the tag push and
-  once on `release: published`. Check the runs:
+- `docker-publish.yml` (push to `master`/`develop`, tags, weekly schedule, manual dispatch)
+  builds and pushes the images, to Docker Hub and GHCR. Publishing the GitHub release fires
+  nothing: the `release` trigger was removed because the tag push already builds that commit, so
+  the release's image is the tag-push run. Check the runs:
   `gh run list --repo nilsteampassnet/TeamPass --limit 5`.
 - Confirm the release is visible and correctly flagged:
   `gh release view <VERSION> --repo nilsteampassnet/TeamPass --json name,isPrerelease`.

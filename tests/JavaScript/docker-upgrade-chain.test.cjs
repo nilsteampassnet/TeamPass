@@ -9,8 +9,9 @@ const root = resolve(__dirname, '../..')
 // Run the entrypoint's real auto_upgrade() against the migration scripts of this
 // checkout, with the database replaced by the recorded version, the complete release
 // that recorded it and the schema stamp. The fake helper mirrors write-db-version.php:
-// reaching the image version stamps the image release.
-function bootContainer (recordedVersion, recordedTimestamp, recordedFull = '') {
+// reaching the image version stamps the image release. The manifest lists the 3.2.3
+// data operations; failingOperation makes one of them report an error.
+function bootContainer (recordedVersion, recordedTimestamp, recordedFull = '', failingOperation = '') {
   const source = readFileSync(resolve(root, 'docker/docker-entrypoint.sh'), 'utf8').replace(/\r\n/g, '\n')
   const start = source.indexOf('read_db_version() {')
   const end = source.indexOf('# Function to show manual installation instructions', start)
@@ -21,6 +22,7 @@ function bootContainer (recordedVersion, recordedTimestamp, recordedFull = '') {
 exec 3>&2
 RECORDED="${recordedVersion}"
 RECORDED_FULL="${recordedFull}"
+FAILING_OPERATION="${failingOperation}"
 ${functions}
 php() {
   case "$1" in
@@ -29,6 +31,7 @@ php() {
       ;;
     */read-db-upgrade-timestamp.php) printf '%s' "${recordedTimestamp}" ;;
     */write-db-version.php)
+      printf 'REC:%s\\n' "$2" >&3
       RECORDED="$2"
       if [ "$2" = "$TP_VERSION" ]; then RECORDED_FULL="$TEAMPASS_VERSION"; fi
       ;;
@@ -36,6 +39,19 @@ php() {
       _ran=\${1##*upgrade_run_}
       printf 'RAN:%s\\n' "\${_ran%.php}" >&3
       printf '[{"finish":"1","error":""}]\\n'
+      ;;
+    */list-upgrade-operations.php)
+      if [ "$2" = "3.2.3" ]; then
+        printf 'sanitize_legacy_fa_icons\\nsanitize_directory_user_fields\\nsanitize_imported_folder_titles\\n'
+      fi
+      ;;
+    */upgrade_operations.php)
+      printf 'OP:%s\\n' "$2" >&3
+      if [ "$2" = "$FAILING_OPERATION" ]; then
+        printf '[{"finish":"1", "next":"", "error":"test failure"}]\\n'
+      else
+        printf '[{"finish":"1" , "next":"", "error":"", "total":"0"}]\\n'
+      fi
       ;;
     *) return 1 ;;
   esac
@@ -57,6 +73,7 @@ printf 'RECORDED_FULL:%s\\n' "$RECORDED_FULL" >&2
 
   return {
     ran: (result.stderr.match(/RAN:[\d.]+/g) || []).map(line => line.slice(4)),
+    trace: result.stderr.match(/^(RAN|OP|REC):[\w.]+$/gm) || [],
     recorded: (result.stderr.match(/RECORDED:([\d.]*)/) || [])[1],
     recordedFull: (result.stderr.match(/RECORDED_FULL:([\d.]*)/) || [])[1],
     log: result.stdout
@@ -104,4 +121,29 @@ test('Docker never names a release that does not belong to the recorded version'
   // A chain stopped at 3.2.2 keeps the release stamped by the previous complete run.
   const boot = bootContainer('3.2.2', '1788511813', '3.2.1.7')
   assert.match(boot.log, /Upgrading database from 3\.2\.2 to 3\.2\.3\.2\.\.\./)
+})
+
+test('Docker applies the data operations of a step before recording its version', () => {
+  const boot = bootContainer('3.2.2', '1788511813')
+  assert.deepEqual(boot.trace, [
+    'RAN:3.2.2', 'REC:3.2.2',
+    'RAN:3.2.3',
+    'OP:sanitize_legacy_fa_icons', 'OP:sanitize_directory_user_fields', 'OP:sanitize_imported_folder_titles',
+    'REC:3.2.3'
+  ])
+})
+
+test('Docker replays the data operations with the image step', () => {
+  const boot = bootContainer('3.2.3', '1788511813')
+  assert.equal(boot.trace.filter(line => line.startsWith('OP:')).length, 3)
+  assert.deepEqual(bootContainer('3.2.3', '1792658752').trace, [])
+})
+
+test('Docker keeps the previous version when a data operation fails', () => {
+  // Recording 3.2.3 anyway would make the next boot skip the operation for good.
+  const boot = bootContainer('3.2.2', '1788511813', '', 'sanitize_directory_user_fields')
+  assert.deepEqual(boot.trace.slice(-2), ['OP:sanitize_legacy_fa_icons', 'OP:sanitize_directory_user_fields'])
+  assert.equal(boot.recorded, '3.2.2')
+  assert.match(boot.log, /Data operation sanitize_directory_user_fields failed: test failure/)
+  assert.match(boot.log, /Upgrade stopped at 3\.2\.3/)
 })

@@ -23,7 +23,7 @@ Basic installation paths and branding.
 | Option | Description |
 |--------|-------------|
 | **TeamPass installation directory** | Absolute server path where Teampass is installed |
-| **TeamPass URL** | Public URL used to generate links (e.g. One Time View links, email links) |
+| **TeamPass URL** | Public URL used to generate links (e.g. One Time View links, email links). Email links use **Emails → Customize URL for links** instead when it is set, and Secure Send links use the **Public sharing address** when the sender selects it |
 | **Path to upload folder** | Server path for temporary uploads |
 | **Path to files folder** | Server path for item file attachments |
 | **Favicon URL** | Custom favicon path or URL |
@@ -218,7 +218,7 @@ Sharing, export, and content features.
 |--------|-------------|
 | **User can propose One-Time-View links** | Enables Secure Send: users can generate time-limited sharing links for items (see [Items — Secure Send](../features/items.md#secure-send)) |
 | **One-time-view (OTV) links expire after XX days** | Maximum validity of a Secure Send link, in days, also proposed by default in the sender form (default: 7) |
-| **Public sharing address** | HTTPS base URL used for external item and note links. The existing `otv_subdomain` setting also accepts a hostname or legacy short prefix; see below. |
+| **Public sharing address** | HTTPS base URL used for external item and note links, when the sender selects **Use public address**. Any HTTPS hostname is accepted, inside or outside the TeamPass domain. The item **Share** email does not use it: its links follow **Emails → Customize URL for links**. The existing `otv_subdomain` setting also accepts a hostname or legacy short prefix; see below. |
 | **Secure Send maximum number of views per link** | Upper bound that a sender may assign to one link; use `1` unless the use case explicitly requires more |
 | **Secure Send audit retention (days)** | `0` keeps all audit events (default); `1`–`36500` opts into irreversible deletion of older events, up to 1000 per scheduled run of the **Items integrity scan** maintenance task. Statistics may become incomplete; see [Audit retention](../install/secure-send.md#audit-retention). Backups and external logs retain separate policies. |
 | **Force a passphrase on every Secure Send link** | Requires the sender to protect every new link with a separate passphrase; recommended for Internet-facing links |

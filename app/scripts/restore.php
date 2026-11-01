@@ -344,8 +344,10 @@ if (!empty($webUsers) && $forceDisconnect === true) {
                 'key_tempo' => '',
                 'session_end' => '',
             ],
-            'session_end >= %i',
-            $now
+            // By id: session_end is a varchar often holding '', which a numeric comparison
+            // rejects in an UPDATE under strict SQL mode, leaving every user connected.
+            'id IN %li',
+            array_map(static fn (array $user): int => (int) $user['id'], $webUsers)
         );
     } catch (Throwable $e) {
         $log('WARN', 'Failed to force-disconnect web users: ' . $e->getMessage());

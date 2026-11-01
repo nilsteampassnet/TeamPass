@@ -256,21 +256,14 @@ $complexityHtml .= $complexitySelect . '</select></div>';
                     <label for="new-renewal"><?php echo $lang->get('renewal_delay'); ?></label>
                     <input type="number" class="form-control clear-me" id="new-renewal" value="0" min="0">
                 </div>
+                <!-- Folder icons: the icon picker adds its button and area around each field -->
                 <div class="form-group">
-                    <label><?php echo $lang->get('icon'); ?></label>
+                    <label for="new-folder-add-icon"><?php echo $lang->get('icon'); ?></label>
                     <input type="text" class="form-control form-folder-control purify" id="new-folder-add-icon" data-field="icon">
-                    <small class="form-text text-muted">
-                        <?php echo $lang->get('fontawesome_icon_tip'); ?>
-                        <a href="<?php echo FONTAWESOME_URL; ?>" target="_blank"><i class="fas fa-external-link-alt ml-1"></i></a>
-                    </small>
                 </div>
                 <div class="form-group">
-                    <label><?php echo $lang->get('icon_on_selection'); ?></label>
+                    <label for="new-folder-add-icon-selected"><?php echo $lang->get('icon_on_selection'); ?></label>
                     <input type="text" class="form-control form-folder-control purify" id="new-folder-add-icon-selected" data-field="iconSelected">
-                    <small class="form-text text-muted">
-                        <?php echo $lang->get('fontawesome_icon_tip'); ?>
-                        <a href="<?php echo FONTAWESOME_URL; ?>" target="_blank"><i class="fas fa-external-link-alt ml-1"></i></a>
-                    </small>
                 </div>
                 <div class="form-group">
                     <label><?php echo $lang->get('special'); ?></label>
@@ -333,21 +326,14 @@ $complexityHtml .= $complexitySelect . '</select></div>';
             <label for="folder-edit-renewal"><?php echo $lang->get('renewal_delay'); ?></label>
             <input type="number" class="form-control" id="folder-edit-renewal" min="0" value="0">
         </div>
+        <!-- Folder icons: the icon picker adds its button and area around each field -->
         <div class="form-group">
-            <label><?php echo $lang->get('icon'); ?></label>
+            <label for="folder-edit-icon"><?php echo $lang->get('icon'); ?></label>
             <input type="text" class="form-control purify" id="folder-edit-icon" data-field="icon">
-            <small class="form-text text-muted">
-                <?php echo $lang->get('fontawesome_icon_tip'); ?>
-                <a href="<?php echo FONTAWESOME_URL; ?>" target="_blank"><i class="fas fa-external-link-alt ml-1"></i></a>
-            </small>
         </div>
         <div class="form-group">
-            <label><?php echo $lang->get('icon_on_selection'); ?></label>
+            <label for="folder-edit-icon-selected"><?php echo $lang->get('icon_on_selection'); ?></label>
             <input type="text" class="form-control purify" id="folder-edit-icon-selected" data-field="iconSelected">
-            <small class="form-text text-muted">
-                <?php echo $lang->get('fontawesome_icon_tip'); ?>
-                <a href="<?php echo FONTAWESOME_URL; ?>" target="_blank"><i class="fas fa-external-link-alt ml-1"></i></a>
-            </small>
         </div>
         <div class="form-group">
             <label><?php echo $lang->get('special'); ?></label>

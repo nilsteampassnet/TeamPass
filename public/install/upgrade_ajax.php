@@ -679,13 +679,23 @@ if (isset($post_type)) {
             }
             $superGlobal->put('utf8_enabled', $cpmIsUTF8[0], 'SESSION');
 
-            // put TP in maintenance mode or not
-            @mysqli_query(
-                $db_link,
-                "UPDATE `" . $pre . "misc`
-                SET `valeur` = 'maintenance_mode'
-                WHERE type = 'admin' AND intitule = '" . $post_no_maintenance_mode . "'"
-            );
+            // Put TeamPass in maintenance for the upgrade unless the administrator opted out. Every
+            // 3.2.x script writes upgrade_timestamp, which reopens sign-in before the whole chain
+            // has run. Step 5 restores the value found here.
+            $superGlobal->put('upgrade_previous_maintenance', '', 'SESSION');
+            if ((int) $post_no_maintenance_mode !== 1) {
+                $maintenanceRow = mysqli_fetch_row(mysqli_query(
+                    $db_link,
+                    "SELECT valeur FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'maintenance_mode'"
+                ));
+                $superGlobal->put('upgrade_previous_maintenance', is_array($maintenanceRow) === true ? ((string) $maintenanceRow[0] === '1' ? '1' : '0') : '0', 'SESSION');
+                mysqli_query(
+                    $db_link,
+                    is_array($maintenanceRow) === true
+                        ? "UPDATE `" . $pre . "misc` SET `valeur` = '1' WHERE type = 'admin' AND intitule = 'maintenance_mode'"
+                        : "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'maintenance_mode', '1')"
+                );
+            }
 
             echo '[{'.
                 '"error" : "",'.
@@ -1047,6 +1057,25 @@ if (isset($post_type)) {
                     WHERE intitule = 'teampass_version_full' AND type = 'admin';"
                 );
             }
+            // ...and the schema level of these files, which the command-line upgrade stamps on its
+            // pre-upgrade backup (files deployed later no longer tell which schema the data has).
+            $data = mysqli_fetch_row(mysqli_query($db_link, "SELECT COUNT(*) FROM ".$pre . "misc WHERE type = 'admin' AND intitule = 'teampass_schema_level';"));
+            mysqli_query(
+                $db_link,
+                (int) $data[0] === 0
+                    ? "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'teampass_schema_level', '" . (int) UPGRADE_MIN_DATE . "');"
+                    : "UPDATE `" . $pre . "misc` SET `valeur` = '" . (int) UPGRADE_MIN_DATE . "' WHERE intitule = 'teampass_schema_level' AND type = 'admin';"
+            );
+            // Leave the maintenance mode as step 2 found it.
+            $previousMaintenance = (string) $superGlobal->get('upgrade_previous_maintenance', 'SESSION');
+            if ($previousMaintenance === '0' || $previousMaintenance === '1') {
+                mysqli_query(
+                    $db_link,
+                    "UPDATE `" . $pre . "misc` SET `valeur` = '" . $previousMaintenance . "' WHERE type = 'admin' AND intitule = 'maintenance_mode'"
+                );
+                $superGlobal->put('upgrade_previous_maintenance', '', 'SESSION');
+            }
+
             // Flush APCu cache so that index.php reads the new version from DB
             // instead of a stale cached value that would re-trigger the upgrade redirect.
             ConfigManager::invalidateCache();

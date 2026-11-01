@@ -22,9 +22,17 @@ final class RecoveryUpgradeTest extends TestCase
         self::assertSame(['3.2.2', '3.2.3'], array_keys(tpRecoveryUpgradeScripts($plan, __DIR__ . '/../../public/install')));
     }
 
+    public function testCrossesIntoANewLineWithoutASchemaChange(): void
+    {
+        // 3.2.4.0 kept the 3.2.3.3 schema level: the version alone requires the upgrade.
+        $plan = tpRecoveryPlanUpgrade(['teampass' => ['files_version' => '3.2.3.3', 'schema_level' => '1792993330']], '3.2.4.0', '1792993330');
+        self::assertTrue($plan['upgrade_required']);
+        self::assertSame(['3.2.3', '3.2.4'], array_keys(tpRecoveryUpgradeScripts($plan, __DIR__ . '/../../public/install')));
+    }
+
     public function testRejectsMissingFutureUpgradePath(): void
     {
-        $plan = tpRecoveryPlanUpgrade(['teampass' => ['files_version' => '3.2.3.2', 'schema_level' => '1']], '3.2.4.0', '2');
+        $plan = tpRecoveryPlanUpgrade(['teampass' => ['files_version' => '3.2.3.2', 'schema_level' => '1']], '3.2.5.0', '2');
         $this->expectExceptionMessage('UPGRADE_PATH_UNSUPPORTED');
         tpRecoveryUpgradeScripts($plan, __DIR__ . '/../../public/install');
     }
