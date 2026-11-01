@@ -63,4 +63,5 @@ return [
     ['upgrade_operations.php', 'sanitize_legacy_fa_icons'],
     ['upgrade_operations.php', 'sanitize_directory_user_fields'],
     ['upgrade_operations.php', 'sanitize_imported_folder_titles'],
+    ['upgrade_run_3.2.4.php', 'user_id'],
 ];
