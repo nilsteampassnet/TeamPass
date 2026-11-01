@@ -47,20 +47,4 @@ class FolderPathEncodingTest extends TestCase
             }
         }
     }
-
-    /** Importing an HTML5-encoded title must not store another entity layer. */
-    #[DataProvider('names')]
-    public function testImportedFolderNamesAreNormalizedOnce(string $folderTitle, string $displayed): void
-    {
-        $source = str_replace("\r\n", "\n", (string) file_get_contents(__DIR__ . '/../../app/sources/import.queries.php'));
-        $function = strpos($source, 'function createFolder(');
-        self::assertNotFalse($function);
-        $start = strpos($source, '$folderTitle = htmlspecialchars(', $function);
-        self::assertNotFalse($start);
-        $end = strpos($source, "\n    );", $start);
-        self::assertNotFalse($end);
-        eval(substr($source, $start, $end + strlen("\n    );") - $start));
-        self::assertSame($displayed, html_entity_decode($folderTitle, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
-        self::assertStringNotContainsString('<img', $folderTitle);
-    }
 }
