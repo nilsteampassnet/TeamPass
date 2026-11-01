@@ -94,7 +94,7 @@ class PaletteStoredTextSearchTest extends TestCase
     }
 
     /** Execute the real input-reading and controller case, leaving authorization gates intact. */
-    private function request(string $term, array $overrides = [], bool $kbEnabled = true): array
+    private function request(mixed $term, array $overrides = [], bool $kbEnabled = true): array
     {
         $scope = array_map('intval', array_column(DB::query('SELECT id FROM palette_fixture_nested_tree WHERE id != 99'), 'id'));
         $session = new class ($overrides, $scope) {
@@ -150,6 +150,17 @@ class PaletteStoredTextSearchTest extends TestCase
         self::assertSame([100, 101, 102], array_column($this->request("O'Brien")['items'], 'id'));
         self::assertSame([103], array_column($this->request('100%_')['items'], 'id'));
         self::assertSame([], $this->request('quot')['items']);
+    }
+
+    /** Forged term[] and other non-string inputs produce an empty response, never a 500. */
+    public function testMalformedTermsDoNotThrowOrStartAMetadataScan(): void
+    {
+        foreach ([[], ['amp'], [['nested' => 'amp']], null, 42, true] as $term) {
+            DB::$calls = [];
+            self::assertSame(['error' => false, 'items' => [], 'folders' => [], 'kb' => []], $this->request($term));
+            self::assertCount(1, DB::$calls, 'Only the fixture scope setup may query; the handler must return early');
+            self::assertSame(0, DB::$activeCursors);
+        }
     }
 
     /** Exact/prefix relevance and its alphabetic tie breaker use the same folded key. */

@@ -105,7 +105,7 @@ if ((int) ($SETTINGS['command_palette_enabled'] ?? 0) !== 1) {
 // Read POST variables
 $post_type = (string) $request->request->filter('type', '', FILTER_SANITIZE_SPECIAL_CHARS);
 $post_key = (string) $request->request->filter('key', '', FILTER_SANITIZE_SPECIAL_CHARS);
-$post_term = $request->request->get('term', '');
+$post_term = $request->request->all()['term'] ?? '';
 $post_term = is_string($post_term) ? $post_term : '';
 
 if ($post_key !== $session->get('key')) {
