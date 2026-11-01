@@ -504,10 +504,9 @@ if (isset($params['action']) && $params['action'] === 'logs') {
         WHERE id > 0 AND id NOT IN %li_logs_system_users AND ' . $candidate['sql'],
         $candidate['params'] + ['logs_system_users' => [(int) OTV_USER_ID, (int) TP_USER_ID, (int) SSH_USER_ID, (int) API_USER_ID]]
     ), $terms, ['login', 'name', 'lastname'], ($page - 1) * $perPage, $perPage,
-        static fn (array $left, array $right): int => strcmp(
-            mb_strtolower($displayText($left['login']), 'UTF-8'), mb_strtolower($displayText($right['login']), 'UTF-8')
-        ) ?: (int) $left['id'] <=> (int) $right['id'],
-        array_fill_keys(['login', 'name', 'lastname'], $displayText)
+        'storedTextSearchCompareRows',
+        array_fill_keys(['login', 'name', 'lastname'], $displayText),
+        static fn (array $row): array => storedTextSearchSortRow($row, 'login', $displayText)
     );
     $rows = $optionPage['rows'];
     $hasMore = $optionPage['more'];

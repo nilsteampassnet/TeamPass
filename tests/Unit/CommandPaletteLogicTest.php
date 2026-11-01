@@ -60,8 +60,10 @@ class CommandPaletteLogicTest extends TestCase
     /** Exercise the same bounded reader and comparator as the production handlers. */
     private function rankRows(array $rows, string $term): array
     {
+        $foldedTerm = storedTextSearchFold($term);
         return storedTextSearchPage($rows, [], ['label'], 0, count($rows),
-            static fn (array $left, array $right): int => paletteCompareRows($left, $right, $term))['rows'];
+            'paletteCompareRows', [],
+            static fn (array $row): array => paletteProjectRow($row, $foldedTerm))['rows'];
     }
 
     public function testRankExactBeatsPrefixBeatsSubstring(): void
@@ -116,7 +118,7 @@ class CommandPaletteLogicTest extends TestCase
         $ranked = $this->rankRows($rows, "O'Brien");
         self::assertSame([1, 2, 3], array_column($ranked, 'id'));
         self::assertSame('O&apos;Brien', $ranked[0]['label']);
-        self::assertSame(0, paletteStoredTextScore('&amp;lt;literal&amp;gt;', '&lt;literal&gt;'));
+        self::assertSame(0, paletteProjectRow(['label' => '&amp;lt;literal&amp;gt;'], '&lt;literal&gt;')['_search_score']);
     }
 
     // -------------------------------------------------------------------

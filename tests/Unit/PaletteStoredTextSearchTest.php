@@ -152,6 +152,28 @@ class PaletteStoredTextSearchTest extends TestCase
         self::assertSame([], $this->request('quot')['items']);
     }
 
+    /** Exact/prefix relevance and its alphabetic tie breaker use the same folded key. */
+    public function testAccentInsensitiveRelevanceAndAlphabeticTiesAcrossAllFamilies(): void
+    {
+        $this->insert(700, 'Sécurité');
+        $this->insert(701, 'S&eacute;curit&eacute;');
+        $this->insert(702, 'Zebra probe');
+        $this->insert(703, 'École probe');
+        $folded = $this->request('securite');
+        // SQLite cannot prefilter raw accents; the independent PHP matcher test covers those.
+        self::assertSame([701], array_column($folded['items'], 'id'));
+        self::assertSame([1701], array_column($folded['folders'], 'id'));
+        self::assertSame([701], array_column($folded['kb'], 'id'));
+        $ties = $this->request('probe');
+        self::assertSame([703, 702], array_column($ties['items'], 'id'));
+        self::assertSame([1703, 1702], array_column($ties['folders'], 'id'));
+        self::assertSame([703, 702], array_column($ties['kb'], 'id'));
+        foreach (array_merge($ties['items'], $ties['folders'], $ties['kb']) as $row) {
+            self::assertArrayNotHasKey('_search_key', $row);
+            self::assertArrayNotHasKey('_search_score', $row);
+        }
+    }
+
     /** Restrictions are applied in SQL and KB has its own feature/admin gates. */
     public function testPermissionsAndFeatureGatesApplyBeforeLimits(): void
     {

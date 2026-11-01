@@ -145,6 +145,19 @@ class FacetedStoredTextSearchTest extends TestCase
         self::assertSame([600], array_map('intval', array_column($this->search(['term' => 'sort', 'fields' => ['label']], 1, 1)['rows'], 'id')));
     }
 
+    /** Items and folder results share accent-insensitive keys before applying their limits. */
+    public function testAccentedItemAndFolderSortKeysAreProjectedBeforePaging(): void
+    {
+        DB::$connection->exec("INSERT INTO faceted_fixture_items (id,id_tree) VALUES (700,10),(701,10);
+            INSERT INTO faceted_fixture_cache (id,label,id_tree) VALUES (700,'Zebra probe',10),(701,'École probe',10);
+            INSERT INTO faceted_fixture_nested_tree VALUES (700,'Zebra probe',2,700),(701,'École probe',2,701);");
+        $filters = ['term' => 'probe', 'fields' => ['label']];
+        self::assertSame([701], array_map('intval', array_column($this->search($filters, 0, 1)['rows'], 'id')));
+        self::assertSame([700], array_map('intval', array_column($this->search($filters, 0, 1, 'desc')['rows'], 'id')));
+        $folders = $this->search(['term' => 'probe', 'fields' => ['folder']], 0, 25, 'asc', [700, 701]);
+        self::assertSame([701, 700], array_column($folders['folders'], 'id'));
+    }
+
     /** Folder-only matches stay separate from items and are limited after decoding. */
     public function testFolderResultsRejectFalseCandidatesBeforeTheirLimit(): void
     {

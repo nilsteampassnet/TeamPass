@@ -1699,8 +1699,9 @@ switch ($type) {
             ['category'],
             0,
             20,
-            static fn (array $left, array $right): int => storedTextSearchCompare($left['category'], $right['category'])
-                ?: (int) $left['id'] <=> (int) $right['id']
+            'storedTextSearchCompareRows',
+            [],
+            static fn (array $row): array => storedTextSearchSortRow($row, 'category')
         );
         $rows = $page['rows'];
 
@@ -1751,8 +1752,9 @@ switch ($type) {
             ['label'],
             0,
             20,
-            static fn (array $left, array $right): int => storedTextSearchCompare($left['label'], $right['label'])
-                ?: (int) $left['id'] <=> (int) $right['id']
+            'storedTextSearchCompareRows',
+            [],
+            static fn (array $row): array => storedTextSearchSortRow($row, 'label')
         );
         $rows = $page['rows'];
 

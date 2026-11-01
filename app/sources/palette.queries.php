@@ -132,6 +132,7 @@ switch ($post_type) {
             break;
         }
 
+        $foldedTerm = storedTextSearchFold($term);
         $items = [];
         $folders = [];
 
@@ -194,7 +195,9 @@ switch ($post_type) {
                     AND (c.perso = 0 OR CAST(c.author AS UNSIGNED) = %i_palette_user)',
                     $candidate['params'] + ['palette_scope' => $searchableFolders, 'palette_user' => (int) $session->get('user-id')]
                 ), [$term], ['label', 'login', 'url', 'tags'], 0, 8,
-                    static fn (array $left, array $right): int => paletteCompareRows($left, $right, $term)
+                    'paletteCompareRows',
+                    [],
+                    static fn (array $row): array => paletteProjectRow($row, $foldedTerm)
                 );
                 $itemRecords = $itemPage['rows'];
 
@@ -223,7 +226,9 @@ switch ($post_type) {
                     WHERE id IN %li_palette_scope AND ' . $candidate['sql'],
                     $candidate['params'] + ['palette_scope' => $searchableFolders]
                 ), [$term], ['title'], 0, 5,
-                    static fn (array $left, array $right): int => paletteCompareRows($left, $right, $term, 'title')
+                    'paletteCompareRows',
+                    [],
+                    static fn (array $row): array => paletteProjectRow($row, $foldedTerm, 'title')
                 );
                 $folderRecords = $folderPage['rows'];
 
@@ -262,8 +267,9 @@ switch ($post_type) {
                 AND ' . $candidate['sql'],
                 $candidate['params']
             ), [$term], ['label', 'description'], 0, 5,
-                static fn (array $left, array $right): int => paletteCompareRows($left, $right, $term),
-                ['description' => static fn (string $description): string => paletteFlattenRichText($description)]
+                'paletteCompareRows',
+                ['description' => static fn (string $description): string => paletteFlattenRichText($description)],
+                static fn (array $row): array => paletteProjectRow($row, $foldedTerm)
             );
             $kbRecords = $kbPage['rows'];
 

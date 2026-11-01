@@ -485,11 +485,9 @@ if (count($filters['terms']) > 0 && in_array('folder', (array) $filters['fields'
             ORDER BY folder.id ASC',
             $folderBuilt['params']
         ), (array) $filters['terms'], ['title'], 0, SEARCH_FOLDER_RESULTS_LIMIT,
-            static fn (array $left, array $right): int => strcmp(
-                mb_strtolower($folderTitle($left['title'], $left), 'UTF-8'),
-                mb_strtolower($folderTitle($right['title'], $right), 'UTF-8')
-            ) ?: (int) $left['id'] <=> (int) $right['id'],
-            ['title' => $folderTitle]
+            'storedTextSearchCompareRows',
+            ['title' => $folderTitle],
+            static fn (array $row): array => storedTextSearchSortRow($row, 'title', $folderTitle)
         );
         $folderResultsTruncated = $folderPage['more'];
         $folderResults = searchHydrateFolderRows(
@@ -588,13 +586,12 @@ if ($filters['terms'] === []) {
     $page = storedTextSearchPage(
         DB::queryWalk($candidateSelect . $fromClause, $built['params']),
         (array) $filters['terms'], $textFields, $start, $length,
-        static fn (array $left, array $right): int => $sortDirection * strcmp(
-            mb_strtolower($left['sort_key'], 'UTF-8'), mb_strtolower($right['sort_key'], 'UTF-8')
-        ) ?: $left['id'] <=> $right['id'],
+        static fn (array $left, array $right): int => $sortDirection * strcmp($left['sort_key'], $right['sort_key'])
+            ?: $left['id'] <=> $right['id'],
         [],
-        static fn (array $row): array => ['id' => (int) $row['id'], 'sort_key' => $sortField === 'description'
+        static fn (array $row): array => ['id' => (int) $row['id'], 'sort_key' => storedTextSearchFold($sortField === 'description'
             ? findBuildDescriptionPreview((string) ($row[$sortField] ?? ''), 200)
-            : storedTextSearchDecode((string) ($row[$sortField] ?? ''))]
+            : storedTextSearchDecode((string) ($row[$sortField] ?? '')))]
     );
     $iTotal = $page['total'];
     $rows = [];

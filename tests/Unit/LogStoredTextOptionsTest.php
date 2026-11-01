@@ -114,6 +114,17 @@ class LogStoredTextOptionsTest extends TestCase
         self::assertSame(0, DB::$activeCursors);
     }
 
+    /** User sorting and both option matchers fold display values, not transport encodings. */
+    public function testLogOptionsUseAccentInsensitiveDisplayKeys(): void
+    {
+        DB::$connection->exec("INSERT INTO log_options_fixture_users VALUES (700,'Zebra probe','',''),(701,'École probe','',''),(702,'S&eacute;curit&eacute;','','');
+            INSERT INTO log_options_fixture_nested_tree VALUES (702,'S&eacute;curit&eacute;',2,702);");
+        self::assertSame([701, 700], array_column($this->request('user_options', 'probe')['results'], 'id'));
+        foreach (['user_options', 'folder_options'] as $action) {
+            self::assertSame([702], array_column($this->request($action, 'securite')['results'], 'id'));
+        }
+    }
+
     /** Opening a hierarchy picker without a term retains its bounded SQL page. */
     public function testEmptyFolderLookupDoesNotStreamTheWholeHierarchy(): void
     {

@@ -58,8 +58,8 @@ class StoredTextSearchTest extends TestCase
     public function testDecodedSortAndTieBreakerAreAppliedBeforeThePage(): void
     {
         $rows = [['id' => 3, 'label' => '&#90;ebra'], ['id' => 2, 'label' => 'Alpha'], ['id' => 1, 'label' => 'Alpha']];
-        $compare = static fn (array $a, array $b): int => storedTextSearchCompare($a['label'], $b['label']) ?: $a['id'] <=> $b['id'];
-        $page = storedTextSearchPage($rows, [], ['label'], 1, 2, $compare);
+        $page = storedTextSearchPage($rows, [], ['label'], 1, 2, 'storedTextSearchCompareRows', [],
+            static fn (array $row): array => storedTextSearchSortRow($row, 'label'));
         self::assertSame([2, 3], array_column($page['rows'], 'id'));
         self::assertSame('&#90;ebra', $page['rows'][1]['label']);
         self::assertSame($rows[0]['label'], '&#90;ebra');
@@ -72,6 +72,34 @@ class StoredTextSearchTest extends TestCase
         self::assertTrue(storedTextSearchMatches($row, ['R&D', "O'Brien"], ['label', 'login']));
         self::assertFalse(storedTextSearchMatches($row, ['hidden'], ['label', 'login']));
         self::assertFalse(storedTextSearchMatches($row, ['R&D'], []));
+    }
+
+    /** No database collation participates in these raw/entity/Unicode matching cases. */
+    public function testAccentsAreIgnoredInTermsAndNormalizedDisplayValues(): void
+    {
+        foreach (['Sécurité', 'S&eacute;curit&eacute;', 'S&#233;curit&#233;', "Se\u{0301}curite\u{0301}"] as $label) {
+            foreach (['securite', 'SÉCURITÉ', "se\u{0301}curite\u{0301}"] as $term) {
+                self::assertTrue(storedTextSearchMatches(['label' => $label], [$term], ['label']));
+            }
+        }
+        $normalizers = ['label' => static fn (string $value): string => 'Sécurité'];
+        self::assertTrue(storedTextSearchMatches(['label' => '99'], ['securite'], ['label'], $normalizers));
+        self::assertFalse(storedTextSearchMatches(['label' => 'Sécurité'], ['securite', 'missing'], ['label']));
+        $page = storedTextSearchPage([['id' => 1, 'label' => 'Sécurité']], ['securite'], ['label'], 0, 1);
+        self::assertSame(1, $page['total']);
+        self::assertSame('Sécurité', $page['rows'][0]['label']);
+    }
+
+    /** Folded ordering is applied before paging and keeps IDs stable for accent ties. */
+    public function testAccentedNamesSortBeforeZebraWithoutAnyDatabase(): void
+    {
+        $rows = [['id' => 4, 'label' => 'Zebra'], ['id' => 3, 'label' => '&Eacute;cole'],
+            ['id' => 2, 'label' => 'École'], ['id' => 1, 'label' => 'Ecole']];
+        $page = storedTextSearchPage($rows, [], ['label'], 0, 3, 'storedTextSearchCompareRows', [],
+            static fn (array $row): array => storedTextSearchSortRow($row, 'label'));
+        self::assertSame([1, 2, 3], array_column($page['rows'], 'id'));
+        self::assertTrue($page['more']);
+        self::assertSame('&Eacute;cole', $page['rows'][2]['label']);
     }
 
     /** Candidate SQL is a superset; all user text remains in bound parameters. */

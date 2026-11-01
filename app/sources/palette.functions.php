@@ -117,24 +117,33 @@ function paletteBuildExcerpt(string $text, string $term, int $maxLength = 90): s
     return $excerpt;
 }
 
-/** Rank a decoded label by exact, prefix, then substring match; keep other-field hits last. */
-function paletteStoredTextScore(string $stored, string $term): int
+/**
+ * Compute relevance and alphabetic keys once per matched palette row.
+ *
+ * @param array<string, mixed> $row Stored metadata.
+ * @param string $foldedTerm Prepared user term.
+ * @param string $key Label field to rank.
+ * @return array<string, mixed> Row with private relevance and sort keys.
+ */
+function paletteProjectRow(array $row, string $foldedTerm, string $key = 'label'): array
 {
-    $needle = mb_strtolower($term, 'UTF-8');
-    $text = mb_strtolower(storedTextSearchDecode($stored), 'UTF-8');
-    $position = $needle === '' ? false : mb_strpos($text, $needle, 0, 'UTF-8');
-    if ($text !== '' && $text === $needle) {
-        return 0;
-    }
-    return $position === false ? PHP_INT_MAX : ($position === 0 ? 1 : 2 + $position);
+    $row = storedTextSearchSortRow($row, $key);
+    $text = $row['_search_key'];
+    $position = $foldedTerm === '' ? false : mb_strpos($text, $foldedTerm, 0, 'UTF-8');
+    $row['_search_score'] = $text !== '' && $text === $foldedTerm ? 0
+        : ($position === false ? PHP_INT_MAX : ($position === 0 ? 1 : 2 + $position));
+    return $row;
 }
 
-/** Use one decoded relevance order for the bounded stream and the legacy array helper. */
-function paletteCompareRows(array $left, array $right, string $term, string $key = 'label'): int
+/**
+ * Compare precomputed relevance, folded display keys and stable object IDs.
+ *
+ * @param array<string, mixed> $left Projected row.
+ * @param array<string, mixed> $right Projected row.
+ * @return int Negative when the left result ranks first.
+ */
+function paletteCompareRows(array $left, array $right): int
 {
-    $leftText = (string) ($left[$key] ?? '');
-    $rightText = (string) ($right[$key] ?? '');
-    return paletteStoredTextScore($leftText, $term) <=> paletteStoredTextScore($rightText, $term)
-        ?: storedTextSearchCompare($leftText, $rightText)
-        ?: (int) ($left['id'] ?? 0) <=> (int) ($right['id'] ?? 0);
+    return $left['_search_score'] <=> $right['_search_score']
+        ?: storedTextSearchCompareRows($left, $right);
 }

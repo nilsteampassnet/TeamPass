@@ -119,6 +119,17 @@ class KbStoredTextLookupTest extends TestCase
         self::assertSame(0, DB::$activeCursors);
     }
 
+    /** Both suggestion handlers fold decoded accents and sort accented labels alphabetically. */
+    public function testBothLookupsUseFoldedMatchingAndSortKeys(): void
+    {
+        DB::$connection->exec("INSERT INTO lookup_fixture_kb_categories VALUES (700,'Zebra probe'),(701,'École probe'),(702,'S&eacute;curit&eacute;');
+            INSERT INTO lookup_fixture_items (id,label,id_tree) VALUES (700,'Zebra probe',10),(701,'École probe',10),(702,'S&eacute;curit&eacute;',10);");
+        self::assertSame(['École probe', 'Zebra probe'], $this->request('search_categories', 'probe')['categories']);
+        self::assertSame([701, 700], array_column($this->request('search_items', 'probe')['results'], 'id'));
+        self::assertSame(['S&eacute;curit&eacute;'], $this->request('search_categories', 'securite')['categories']);
+        self::assertSame([702], array_column($this->request('search_items', 'securite')['results'], 'id'));
+    }
+
     /** Authentication, admin and empty-scope gates happen before reading candidates. */
     public function testUnauthorizedRequestsNeverOpenACursor(): void
     {
