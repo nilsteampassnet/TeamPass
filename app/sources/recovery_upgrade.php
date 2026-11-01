@@ -21,7 +21,7 @@ function tpRecoveryUpgradeScripts(array $plan, string $directory): array
     $source = implode('.', array_slice(explode('.', $plan['source_version']), 0, 3));
     $target = implode('.', array_slice(explode('.', $plan['target_version']), 0, 3));
     $scripts = [];
-    foreach (['3.2.2', '3.2.3'] as $release) {
+    foreach (['3.2.2', '3.2.3', '3.2.4'] as $release) {
         if (version_compare($release, $source, '>=') && version_compare($release, $target, '<=')) {
             $file = $directory . '/upgrade_run_' . $release . '.php';
             if (!is_file($file) || !is_readable($file)) {

@@ -22,7 +22,7 @@ try {
     $options = getopt('', ['job:', 'release:']);
     $jobId = (string) ($options['job'] ?? '');
     $release = (string) ($options['release'] ?? '');
-    if (preg_match('/^[a-f0-9]{32}$/D', $jobId) !== 1 || !in_array($release, ['3.2.2', '3.2.3', 'verify'], true)) {
+    if (preg_match('/^[a-f0-9]{32}$/D', $jobId) !== 1 || !in_array($release, ['3.2.2', '3.2.3', '3.2.4', 'verify'], true)) {
         throw new TeamPassRecoveryException('UPGRADE_REQUEST_INVALID');
     }
     $root = dirname(__DIR__, 2);
