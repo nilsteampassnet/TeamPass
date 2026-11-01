@@ -148,46 +148,6 @@ function searchApplyPersonalFolderScope(
 }
 
 /**
- * Encode a folder search term exactly like folder titles are encoded on write.
- *
- * Folder titles pass through Elegant Sanitizer's `escape` filter before being
- * stored. Item columns hold several encodings and are matched through
- * searchStoredTermVariants() instead.
- *
- * @param string $term Plain-text term entered by the user.
- *
- * @return string Storage-compatible term for a bound LIKE predicate.
- */
-function searchEncodeFolderTerm(string $term): string
-{
-    return htmlspecialchars(strip_tags($term));
-}
-
-/**
- * Spell an item search term the way each item write path stores text.
- *
- * The cache columns are not normalized: the web item form stores label and
- * login through FILTER_SANITIZE_FULL_SPECIAL_CHARS ("é" becomes "&eacute;"),
- * the API, the imports and the tags escape only the HTML special characters
- * ("'" becomes "&#039;", "é" stays), and other values are raw. A LIKE on the
- * typed term alone therefore misses every accented label saved from the web
- * form. The first variant is always the term itself; duplicates are dropped,
- * so a term without special characters still yields a single predicate.
- *
- * @param string $term Plain-text term entered by the user.
- *
- * @return array<int, string> Distinct spellings to OR together, raw term first.
- */
-function searchStoredTermVariants(string $term): array
-{
-    return array_values(array_unique([
-        $term,
-        (string) filter_var($term, FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-        htmlspecialchars($term),
-    ]));
-}
-
-/**
  * Decode one HTML entity layer from a database-backed search value.
  *
  * The web item form stores label and login through
@@ -203,7 +163,7 @@ function searchStoredTermVariants(string $term): array
  */
 function searchDecodeStoredText(string $storedText): string
 {
-    return html_entity_decode($storedText, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    return storedTextSearchDecode($storedText);
 }
 
 /**

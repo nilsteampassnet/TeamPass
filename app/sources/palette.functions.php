@@ -61,21 +61,6 @@ function paletteNormalizeTerm(string $term, int $minLength = 2, int $maxLength =
 }
 
 /**
- * Escape a term for safe use inside a LIKE pattern.
- *
- * `%` and `_` are user-typable wildcards that would otherwise widen the
- * match (LIKE injection).
- *
- * @param string $term Normalised term
- *
- * @return string Term with LIKE wildcards escaped
- */
-function paletteEscapeLikeTerm(string $term): string
-{
-    return str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $term);
-}
-
-/**
  * Flatten rich text (KB descriptions) to a searchable/displayable string.
  *
  * KB descriptions are stored either as sanitized HTML or, for legacy rows, as
@@ -96,33 +81,6 @@ function paletteFlattenRichText(string $html, int $maxLength = 2000): string
     $text = trim((string) preg_replace('/\s+/u', ' ', $text));
 
     return mb_substr($text, 0, $maxLength);
-}
-
-/**
- * Tell whether the term appears in at least one of the given texts.
- *
- * Used to drop rows whose SQL LIKE only matched HTML markup (searching
- * "table" must not return every entry containing a `<table>`).
- *
- * @param array<int, string> $haystacks Texts to test
- * @param string             $term      Normalised term
- *
- * @return bool True when the term is readable in one of the texts
- */
-function paletteTextMatchesTerm(array $haystacks, string $term): bool
-{
-    $needle = mb_strtolower(trim($term));
-    if ($needle === '') {
-        return false;
-    }
-
-    foreach ($haystacks as $haystack) {
-        if (mb_strpos(mb_strtolower((string) $haystack), $needle) !== false) {
-            return true;
-        }
-    }
-
-    return false;
 }
 
 /**
@@ -157,25 +115,6 @@ function paletteBuildExcerpt(string $text, string $term, int $maxLength = 90): s
     }
 
     return $excerpt;
-}
-
-/**
- * Rank palette rows by relevance to the term.
- *
- * Order: exact match, prefix match, earliest substring position, then
- * alphabetical — so "gitlab" beats "my gitlab" for the term "git".
- * Rows must carry the searchable text under $key.
- *
- * @param array<int, array<string, mixed>> $rows Result rows
- * @param string                           $term Normalised term
- * @param string                           $key  Row key holding the display text
- *
- * @return array<int, array<string, mixed>> Rows, most relevant first
- */
-function paletteRankRows(array $rows, string $term, string $key = 'label'): array
-{
-    usort($rows, static fn (array $left, array $right): int => paletteCompareRows($left, $right, $term, $key));
-    return $rows;
 }
 
 /** Rank a decoded label by exact, prefix, then substring match; keep other-field hits last. */
