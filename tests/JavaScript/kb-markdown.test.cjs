@@ -62,6 +62,23 @@ test('GFM output used by AI answers maps to tags the KB sanitizers allow', () =>
   assert.match(html, /<table>[\s\S]*<th>A<\/th>[\s\S]*<td>2<\/td>/)
 })
 
+test('Table cells keep their pipes, backslashes and line breaks without splitting the row', () => {
+  // Cell content as Turndown emits it: literal backslashes in text are already escaped, code spans are raw.
+  const cells = [
+    ['a|b', '<td>a|b</td>'],
+    ['a\\\\b', '<td>a\\b</td>'],
+    ['a\\\\|b', '<td>a\\|b</td>'],
+    ['`a|b`', '<td><code>a|b</code></td>'],
+    ['`a\\|b`', '<td><code>a\\|b</code></td>'],
+    ['`a\\`|b', '<td><code>a\\</code>|b</td>'],
+    ['one\n\ntwo', '<td>one two</td>']
+  ]
+  cells.forEach(([cell, expected]) => {
+    const html = kb.renderMarkdown('| H | Z |\n| --- | --- |\n| ' + kb.markdownTableCell(cell) + ' | end |').replace(/\n/g, '')
+    assert.ok(html.includes('<tr>' + expected + '<td>end</td></tr>'), cell + ' => ' + html)
+  })
+})
+
 test('Image placeholders are restored, unknown ones and ordinary links are kept', () => {
   const images = { 'tp-kb-image-1': 'data:image/png;base64,AAAA' }
   assert.equal(kb.restoreImages('![a](tp-kb-image-1) ![b](tp-kb-image-2)', images),
