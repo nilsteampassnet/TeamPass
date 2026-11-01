@@ -48,14 +48,22 @@ if (teampassConfigState(TEAMPASS_ROOT . '/app/config') === 'unreadable') {
 // endpoints (run.step*.php) trust the install-session grant minted when this page renders, so
 // serving the wizard on a live instance would hand that grant to anyone who can reach this URL.
 // A readable settings.php == installed; reinstalling requires removing it first.
+// The one exception is the final page (step 7), shown to the session that wrote settings.php:
+// it mints no grant, and its button removes the install directory.
+$installCompleted = false;
 if (teampassConfigState(TEAMPASS_ROOT . '/app/config') === 'installed') {
-    teampassSendErrorPage(teampassErrorPageShell(
-        'TeamPass is already installed',
-        '<p>TeamPass is already installed on this server, so the installation wizard is disabled.</p>'
-        . '<p>Open the application login page to use TeamPass. To reinstall from scratch, remove '
-        . '<code>app/config/settings.php</code> first, then reload this page.</p>'
-    ));
-    exit;
+    require_once __DIR__ . '/install-steps/install.functions.php';
+    $postedStep = isset($_POST['installStep']) && is_string($_POST['installStep']) ? $_POST['installStep'] : '';
+    if ($postedStep !== '7' || installSessionWroteCurrentSettings() === false) {
+        teampassSendErrorPage(teampassErrorPageShell(
+            'TeamPass is already installed',
+            '<p>TeamPass is already installed on this server, so the installation wizard is disabled.</p>'
+            . '<p>Open the application login page to use TeamPass. To reinstall from scratch, remove '
+            . '<code>app/config/settings.php</code> first, then reload this page.</p>'
+        ));
+        exit;
+    }
+    $installCompleted = true;
 }
 
 // Prepare autoloader
@@ -103,7 +111,7 @@ $post_sk_key = getPostValue('sk_key', 'hid_sk_key');
 // sends back on every step (X-CSRF-Token header). This is what makes run.step*.php reachable
 // only by a client that first loaded this page — previously no session was ever started, so the
 // token stashed here never survived to the steps and the protection was dead end to end.
-$csrf_token = installIssueCsrfToken();
+$csrf_token = $installCompleted === true ? '' : installIssueCsrfToken();
 
 ?>
 
