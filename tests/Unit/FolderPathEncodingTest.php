@@ -36,10 +36,11 @@ class FolderPathEncodingTest extends TestCase
         $elem = (object) ['title' => $stored];
         $currentId = 7;
         $foldersById = [7 => $elem];
-        foreach (['app/sources/main.functions.php', 'app/sources/items.queries.php', 'app/api/Model/ItemModel.php'] as $file) {
+        $parentTitle = $stored;
+        foreach (['app/sources/main.functions.php' => 2, 'app/sources/items.queries.php' => 4, 'app/api/Model/ItemModel.php' => 2] as $file => $expectedCount) {
             $source = (string) file_get_contents(__DIR__ . '/../../' . $file);
-            preg_match_all('/htmlspecialchars\(stripslashes\(html(?:specialchars_decode|_entity_decode)\((?:\$elem->title|\$foldersById\[\$currentId\]->title),[^;\r\n]*?\)\), ENT_QUOTES\)/', $source, $matches);
-            self::assertNotEmpty($matches[0], $file);
+            preg_match_all('/htmlspecialchars\(stripslashes\(html(?:specialchars_decode|_entity_decode)\((?:\$elem->title|\$foldersById\[\$currentId\]->title|\$parentTitle),[^;\r\n]*?\)\), ENT_QUOTES\)/', $source, $matches);
+            self::assertCount($expectedCount, $matches[0], $file . ': update the source slice when a path expression moves or changes');
             foreach ($matches[0] as $expression) {
                 $html = eval('return ' . $expression . ';');
                 self::assertSame($displayed, html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8'), $file);

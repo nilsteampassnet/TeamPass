@@ -23,7 +23,7 @@ class FavouritesLabelEncodingTest extends TestCase
         $source = (string) file_get_contents(__DIR__ . '/../../app/sources/favourites.queries.php');
         $start = strpos($source, '$userLogin =');
         self::assertNotFalse($start);
-        $end = strpos($source, '// Favourites left without a readable item.', $start);
+        $end = strpos($source, '$visibleIds = array_column(', $start);
         self::assertNotFalse($end);
         $session = new class {
             /** Supply a test login for personal root fallback labels. */
