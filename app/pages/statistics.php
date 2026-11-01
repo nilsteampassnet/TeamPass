@@ -277,6 +277,12 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                                         <th><?php echo $lang->get('ops_kpi_users_disabled'); ?></th>
                                                         <td class='text-right' id='tp-kpi-users-disabled'>-</td>
                                                     </tr>
+                                                    <?php if ((int) ($SETTINGS['otv_is_enabled'] ?? 0) === 1) { ?>
+                                                    <tr id='tp-secure-send-active-row'>
+                                                        <th colspan='3'><?php echo htmlspecialchars($lang->get('secure_send_active_links'), ENT_QUOTES, 'UTF-8'); ?></th>
+                                                        <td class='text-right' id='tp-secure-send-active-count' aria-live='polite'>—</td>
+                                                    </tr>
+                                                    <?php } ?>
                                                 </tbody>
                                             </table>
                                         </div>

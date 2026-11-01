@@ -407,7 +407,8 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                 $tpShowSearch    = (int) ($SETTINGS['command_palette_enabled'] ?? 0) === 1 && (int) $session_user_admin !== 1;
                 $tpShowScore     = (int) ($SETTINGS['security_dashboard_enabled'] ?? 0) === 1 && (int) $session_user_admin !== 1;
                 $tpShowBell      = (int) ($SETTINGS['notification_center_enabled'] ?? 0) === 1;
-                $tpShowAwareness = $tpShowScore === true || $tpShowBell === true;
+                $tpShowSecureSend = (int) ($SETTINGS['otv_is_enabled'] ?? 0) === 1 && (int) $session_user_admin !== 1;
+                $tpShowAwareness = $tpShowScore === true || $tpShowBell === true || $tpShowSecureSend === true;
                 // Quick access panel (right control sidebar). Administrators never reach
                 // items, so the panel would always be empty for them. The Starred tab
                 // follows the Favorites page gate: feature enabled and caller not an admin.
@@ -449,6 +450,17 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                     <?php } ?>
                     <?php if ($tpShowBell === true) { ?>
                     <li class="nav-item dropdown" id="tp-slot-bell"></li>
+                    <?php } ?>
+                    <?php if ($tpShowSecureSend === true) { ?>
+                    <li class="nav-item" id="tp-secure-send-nav">
+                        <a class="nav-link tp-topbar-btn" href="#" id="tp-navbar-secure-send" role="button"
+                            data-toggle="modal" data-target="#tp-secure-send-modal"
+                            aria-label="<?php echo htmlspecialchars($lang->get('secure_send_my_sends'), ENT_QUOTES, 'UTF-8'); ?>"
+                            title="<?php echo htmlspecialchars($lang->get('secure_send_my_sends'), ENT_QUOTES, 'UTF-8'); ?>">
+                            <i class="fa-regular fa-paper-plane" aria-hidden="true"></i>
+                            <span class="badge badge-info navbar-badge" id="tp-secure-send-badge" aria-hidden="true" hidden></span>
+                        </a>
+                    </li>
                     <?php } ?>
                     <li class="tp-topbar-sep" aria-hidden="true"></li>
                     <?php } ?>
@@ -1981,6 +1993,13 @@ if (isset($SETTINGS['cpassman_dir']) === true) {
         && (int) $session->get('user-admin') !== 1
     ) {
         include_once TEAMPASS_APP . '/core/command-palette.js.php';
+    }
+    // Global personal Secure Send inventory, independent of note creation permissions.
+    if ((int) ($SETTINGS['otv_is_enabled'] ?? 0) === 1
+        && (int) $session->get('user-id') > 0
+        && (int) $session->get('user-admin') !== 1
+    ) {
+        include_once TEAMPASS_APP . '/core/secure-send.js.php';
     }
     // Notification Centre (D2): navbar bell + inbox for all authenticated users
     // when the feature is enabled by an admin.

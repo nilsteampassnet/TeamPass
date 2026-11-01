@@ -1210,6 +1210,62 @@ that format.
 
 ---
 
+## Active-link inventory
+
+An active link must still be usable under the current Secure Send settings:
+its deadline has not passed, it has remaining views and fewer than five failed
+credential attempts, and its sender account is enabled and not deleted. Notes
+must still be allowed; protected links need their wrapped key, and links must
+meet the current passphrase requirement. Item links additionally require the
+sender's current access to an active item and an unexhausted automatic-deletion
+policy when that feature is enabled.
+
+The personal list and count include only that sender's links. The per-item counter
+counts usable links from every sender on that item. Exhausted links are excluded
+immediately, even while their encrypted database rows await cleanup. Counting
+reads metadata without decrypting
+content, consuming views, deleting rows or adding audit events. Link state is
+observed at refresh time; it is separate from historical audit event statistics.
+
+When Secure Send is enabled, administrators see the global number under
+**Statistics → Overview → Current state**. This is the current inventory regardless
+of the selected activity period or personal/API history filters. No link labels,
+credentials or shared contents are exposed through this count. A failed count
+is displayed as unavailable rather than as zero.
+
+Authenticated non-administrator users have a paper-plane icon in the top bar on
+every page while Secure Send is enabled. Its badge counts only their own active
+links. Opening it lists their item links and standalone notes with expiration,
+remaining views and passphrase protection. Both personal lists retain unexpired,
+unexhausted links paused by the note-sharing or mandatory-passphrase settings,
+with a suspension badge and a working Revoke button. Relaxing those settings can
+make retained links usable again. Suspended links do not contribute to the top-bar
+badge, modal summary, statistics or item count. Expired, exhausted, locked-out,
+invalid or unauthorized links remain excluded.
+
+Revocation requires confirmation and uses the existing owner-checked,
+transactionally audited operation. Neither the modal nor the counter requires
+permission to create standalone notes.
+The revocation endpoint remains available to the authenticated owner even while
+Secure Send is disabled globally; feature gating still hides the entry points and
+prevents creation and reveal.
+Item labels link to the item in its current folder using the normal authenticated
+item page; access is checked again when it is opened. Standalone notes have no
+source item and remain plain text. Navigation never uses the recipient's sharing URL.
+
+The personal count refreshes on page load, after creation/revocation, and when the
+page regains focus or becomes visible, while the modal is closed. No periodic
+polling runs.
+The list loads once on each opening and stays stable while being read. Revocation
+uses a confirmation view in the TeamPass dialog; cancelling restores the list's
+scroll position, and success removes only that row without reloading the list.
+Long lists scroll within the modal body, keeping the title and footer available.
+Long labels wrap, and the revoke button moves below the details on narrow screens.
+There is no manual refresh button; close and reopen the dialog to obtain a fresh
+inventory. A failed list request shows a retry message rather than an empty
+inventory. Disabling Secure Send hides
+the administrator line and personal entry; existing audit history remains visible.
+
 ## References
 
 - [Teampass 3.2.2.6 release](https://github.com/nilsteampassnet/TeamPass/releases/tag/3.2.2.6)

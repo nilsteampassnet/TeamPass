@@ -9199,7 +9199,7 @@ require __DIR__ . '/icon.picker.js.php';
     const secureSendBaseUrls = <?php echo json_encode($secureSendUrls, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
 
     /**
-     * Load and render the current user's active Secure Send links.
+     * Load the current user's usable and policy-suspended Secure Send links.
      *
      * @return void
      */
@@ -9233,10 +9233,11 @@ require __DIR__ . '/icon.picker.js.php';
                 data.sends.forEach(function(s) {
                     var lock = s.has_passphrase === 1 ? ' <i class="fa-solid fa-lock text-success" aria-hidden="true"></i><span class="sr-only">' + htmlEncode(<?php echo json_encode($lang->get('secure_send_protected'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>) + '</span>' : '';
                     var icon = s.send_type === 'note' ? 'fa-note-sticky' : 'fa-key';
+                    var suspended = s.suspended === true ? '<span class="badge badge-warning text-wrap text-left mt-1">' + htmlEncode(<?php echo json_encode($lang->get('secure_send_suspended'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>) + '</span>' : '';
                     html += '<li class="secure-send-entry d-flex align-items-center">' +
                         '<i class="fa-solid ' + icon + ' text-muted mr-3" aria-hidden="true"></i>' +
                         '<div class="secure-send-entry-content flex-grow-1"><span class="d-block font-weight-bold">' + htmlEncode(s.label) + lock + '</span>' +
-                        '<span class="d-block text-muted mt-1">' + Number(s.remaining_views) + ' ' + htmlEncode(<?php echo json_encode($lang->get('secure_send_remaining_views'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>) + ' &middot; ' + htmlEncode(s.expires_label) + '</span></div>' +
+                        '<span class="d-block text-muted mt-1">' + Number(s.remaining_views) + ' ' + htmlEncode(<?php echo json_encode($lang->get('secure_send_remaining_views'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>) + ' &middot; ' + htmlEncode(s.expires_label) + '</span>' + suspended + '</div>' +
                         '<button type="button" class="btn btn-sm btn-outline-danger secure-send-revoke ml-3" data-id="' + Number(s.id) + '"><i class="fa-solid fa-trash mr-1" aria-hidden="true"></i>' + htmlEncode(<?php echo json_encode($lang->get('secure_send_revoke'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>) + '</button>' +
                         '</li>';
                 });
@@ -9325,6 +9326,7 @@ require __DIR__ . '/icon.picker.js.php';
             "json"
         ).always(function() {
             loadSecureSendsList();
+            $(document).trigger('tp-secure-send-changed', ['items']);
         });
     }
 
@@ -9401,6 +9403,7 @@ require __DIR__ . '/icon.picker.js.php';
                 if (data === null || typeof data !== 'object' || Array.isArray(data) || typeof data.error !== 'string') {
                     toastr.error(secureSendErrorLabel('server_error'), '', { timeOut: 5000 });
                 } else if (data.error === "" && typeof data.url === 'string' && data.url !== '' && Number.isInteger(responseId) && responseId > 0) {
+                    $(document).trigger('tp-secure-send-changed', ['items']);
                     $('#form-item-otv-link').val(data.url).data('otv-id', data.otv_id);
                     bindSecureSendClipboard(data.url);
                     if (data.description_truncated === true) {
@@ -9435,6 +9438,18 @@ require __DIR__ . '/icon.picker.js.php';
     });
 
     // Refresh the "My secure sends" list
+    $(document).on('tp-secure-send-changed', function(event, source, id) {
+        if (source !== 'global') {
+            return;
+        }
+        if (Number($('#form-item-otv-link').data('otv-id')) === Number(id)) {
+            invalidateSecureSendLink();
+        }
+        if ($('#modal-item-otv').hasClass('show')) {
+            loadSecureSendsList();
+        }
+    });
+
     $(document).on('click', '#secure-send-list-refresh', function() {
         loadSecureSendsList();
     });
@@ -9473,6 +9488,7 @@ require __DIR__ . '/icon.picker.js.php';
         ).fail(function() {
             toastr.error(secureSendErrorLabel('server_error'), '', { timeOut: 5000 });
         }).always(function() {
+            $(document).trigger('tp-secure-send-changed', ['items']);
             $button.prop('disabled', false);
         });
     });

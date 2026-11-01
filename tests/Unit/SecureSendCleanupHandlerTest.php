@@ -47,6 +47,7 @@ class SecureSendCleanupHandlerTest extends TestCase
         require_once __DIR__ . '/../Fixtures/secure_send_dependencies.php';
         require_once __DIR__ . '/../../app/sources/secure_send.functions.php';
         require_once __DIR__ . '/../../app/sources/secure_send_storage.php';
+        require_once __DIR__ . '/../../app/sources/secure_send_active.php';
         DB::reset();
         $this->log = tempnam(sys_get_temp_dir(), 'tp-cleanup-handler-');
         $this->previousLog = (string) ini_get('error_log');
