@@ -534,13 +534,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 data: function(params) {
                     return { term: params.term || '', page: params.page || 1 }
                 },
-                processResults: function(data, params) {
+                processResults: (data, params) => {
                     params.page = params.page || 1
                     return {
                         // Select2 escapes plain text itself; remove only the server's display layer.
-                        results: (data.results || []).map(function(option) {
-                            return Object.assign({}, option, {text: decodeHtmlEntities(option.text)});
-                        }),
+                        results: (data.results || []).map(option => Object.assign({}, option, {text: decodeHtmlEntities(option.text)})),
                         pagination: { more: !!(data.pagination && data.pagination.more) }
                     }
                 }
