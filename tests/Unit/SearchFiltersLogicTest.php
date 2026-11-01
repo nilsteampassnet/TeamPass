@@ -14,7 +14,6 @@ require_once __DIR__ . '/../../app/sources/search.functions.php';
  *   - searchNormalizeTerms()      — multi-term splitting and bounds
  *   - searchNormalizeFilters()    — allow-list validation of the payload
  *   - searchItemRestrictionSql()  — item-level restriction predicate
- *   - searchStoredTermVariants()  — term spellings matching each storage encoding
  *   - searchBuildWhere()          — predicate assembly and parameter binding
  */
 class SearchFiltersLogicTest extends TestCase
@@ -267,29 +266,11 @@ class SearchFiltersLogicTest extends TestCase
             $this->context()
         );
         // Terms are ANDed, fields ORed inside a term.
-        $this->assertStringContainsString('(c.label LIKE %ss_term0 OR c.login LIKE %ss_term0)', $built['sql']);
-        $this->assertStringContainsString('(c.label LIKE %ss_term1 OR c.login LIKE %ss_term1)', $built['sql']);
+        $this->assertStringContainsString('c.label LIKE %ss_term0', $built['sql']);
+        $this->assertStringContainsString('c.login LIKE %ss_term1', $built['sql']);
+        $this->assertSame('%&%;%', $built['params']['term_entity']);
         $this->assertSame('backup', $built['params']['term0']);
         $this->assertSame('prod', $built['params']['term1']);
-    }
-
-    public function testStoredTermVariantsFollowEveryItemWritePath(): void
-    {
-        // No special character: one spelling, one predicate per column.
-        $this->assertSame(['backup'], searchStoredTermVariants('backup'));
-        // Web form (FULL_SPECIAL_CHARS) turns the accent into a named entity.
-        $this->assertSame(['Eligibilité', 'Eligibilit&eacute;'], searchStoredTermVariants('Eligibilité'));
-        // API, imports and tags escape only the special characters.
-        $this->assertSame(['R&D', 'R&amp;D'], searchStoredTermVariants('R&D'));
-        $this->assertSame(
-            ["l'été", 'l&#039;&eacute;t&eacute;', 'l&#039;été'],
-            searchStoredTermVariants("l'été")
-        );
-        // The web spelling is exactly what create_item writes.
-        $this->assertSame(
-            filter_var("l'été", FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-            searchStoredTermVariants("l'été")[1]
-        );
     }
 
     public function testAccentedTermAlsoMatchesTheEntityEncodedWebSpelling(): void
@@ -299,15 +280,10 @@ class SearchFiltersLogicTest extends TestCase
             $this->context()
         );
 
-        $this->assertStringContainsString(
-            '(c.label LIKE %ss_term0 OR c.label LIKE %ss_term0_1'
-            . ' OR c.login LIKE %ss_term0 OR c.login LIKE %ss_term0_1)',
-            $built['sql']
-        );
+        $this->assertStringContainsString('c.label LIKE %s_term_entity', $built['sql']);
         $this->assertSame('Eligibilité', $built['params']['term0']);
-        $this->assertSame('Eligibilit&eacute;', $built['params']['term0_1']);
-        // A plain term keeps its single placeholder.
-        $this->assertStringContainsString('(c.label LIKE %ss_term1 OR c.login LIKE %ss_term1)', $built['sql']);
+        $this->assertTrue(storedTextSearchMatches(['label' => 'Eligibilit&eacute; backup'], ['Eligibilité', 'backup'], ['label']));
+        $this->assertStringContainsString('c.label LIKE %ss_term1', $built['sql']);
         $this->assertArrayNotHasKey('term1_1', $built['params']);
     }
 

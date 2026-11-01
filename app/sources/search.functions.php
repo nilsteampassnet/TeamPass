@@ -39,6 +39,7 @@ declare(strict_types=1);
  */
 
 require_once __DIR__ . '/renewal_logic.php';
+require_once __DIR__ . '/stored_text_search.php';
 
 // Fetch one extra row to tell the UI that more folder matches exist.
 const SEARCH_FOLDER_RESULTS_LIMIT = 20;
@@ -147,46 +148,6 @@ function searchApplyPersonalFolderScope(
 }
 
 /**
- * Encode a folder search term exactly like folder titles are encoded on write.
- *
- * Folder titles pass through Elegant Sanitizer's `escape` filter before being
- * stored. Item columns hold several encodings and are matched through
- * searchStoredTermVariants() instead.
- *
- * @param string $term Plain-text term entered by the user.
- *
- * @return string Storage-compatible term for a bound LIKE predicate.
- */
-function searchEncodeFolderTerm(string $term): string
-{
-    return htmlspecialchars(strip_tags($term));
-}
-
-/**
- * Spell an item search term the way each item write path stores text.
- *
- * The cache columns are not normalized: the web item form stores label and
- * login through FILTER_SANITIZE_FULL_SPECIAL_CHARS ("é" becomes "&eacute;"),
- * the API, the imports and the tags escape only the HTML special characters
- * ("'" becomes "&#039;", "é" stays), and other values are raw. A LIKE on the
- * typed term alone therefore misses every accented label saved from the web
- * form. The first variant is always the term itself; duplicates are dropped,
- * so a term without special characters still yields a single predicate.
- *
- * @param string $term Plain-text term entered by the user.
- *
- * @return array<int, string> Distinct spellings to OR together, raw term first.
- */
-function searchStoredTermVariants(string $term): array
-{
-    return array_values(array_unique([
-        $term,
-        (string) filter_var($term, FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-        htmlspecialchars($term),
-    ]));
-}
-
-/**
  * Decode one HTML entity layer from a database-backed search value.
  *
  * The web item form stores label and login through
@@ -202,7 +163,7 @@ function searchStoredTermVariants(string $term): array
  */
 function searchDecodeStoredText(string $storedText): string
 {
-    return html_entity_decode($storedText, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    return storedTextSearchDecode($storedText);
 }
 
 /**
@@ -263,19 +224,21 @@ function searchFolderDisplayTitle(
 }
 
 /**
- * Build the ACL-bound predicate used to search folder titles.
+ * Build the ACL-bound candidate predicate used to search decoded folder titles.
  *
  * Terms are ANDed and remain bound through MeekroDB's %ss placeholder, which
  * escapes SQL LIKE wildcards before surrounding the value with `%`.
+ * Entity-bearing candidates must be matched before pagination by the caller.
  *
  * Expected alias in the caller's query: `folder` (nested_tree).
  *
  * @param array<int, mixed>      $terms       Normalized free-text terms.
  * @param array<int|string>      $folderScope Authorized folder ids.
+ * @param int                   $userId Include the numeric personal root as a display-name candidate.
  *
  * @return array{sql: string, params: array<string, mixed>}
  */
-function searchBuildFolderWhere(array $terms, array $folderScope): array
+function searchBuildFolderWhere(array $terms, array $folderScope, int $userId = 0): array
 {
     $scope = searchResolveFolderScope($folderScope);
     $storageTerms = [];
@@ -287,11 +250,10 @@ function searchBuildFolderWhere(array $terms, array $folderScope): array
         if (mb_strlen($term) < 2) {
             continue;
         }
-        $storageTerm = searchEncodeFolderTerm($term);
-        if ($storageTerm === '' || in_array($storageTerm, $storageTerms, true) === true) {
+        if (in_array($term, $storageTerms, true) === true) {
             continue;
         }
-        $storageTerms[] = $storageTerm;
+        $storageTerms[] = $term;
         if (count($storageTerms) >= 5) {
             break;
         }
@@ -301,16 +263,17 @@ function searchBuildFolderWhere(array $terms, array $folderScope): array
         return ['sql' => '(1 = 0)', 'params' => []];
     }
 
-    $clauses = ['folder.id IN %li_folder_scope'];
-    $params = ['folder_scope' => $scope];
-    foreach ($storageTerms as $index => $storageTerm) {
-        $key = 'folder_term' . $index;
-        $clauses[] = 'folder.title LIKE %ss_' . $key;
-        $params[$key] = $storageTerm;
+    $candidate = storedTextSearchCandidates(['folder.title'], $storageTerms, 'folder_term');
+    $params = ['folder_scope' => $scope] + $candidate['params'];
+    $textSql = $candidate['sql'];
+    if ($userId > 0) {
+        // The personal root displays a login, not the numeric title stored in SQL.
+        $textSql = '(' . $textSql . ' OR (folder.nlevel = 1 AND folder.title = %s_folder_owner))';
+        $params['folder_owner'] = (string) $userId;
     }
 
     return [
-        'sql' => implode(' AND ', $clauses),
+        'sql' => 'folder.id IN %li_folder_scope AND ' . $textSql,
         'params' => $params,
     ];
 }
@@ -694,6 +657,8 @@ function searchItemRestrictionSql(
  * Returns MeekroDB named placeholders exclusively — named and numbered
  * placeholders cannot be mixed in one query. Array placeholders are only
  * emitted for non-empty arrays, because MeekroDB throws on an empty one.
+ * Free-text clauses are conservative candidates; the handler verifies their
+ * decoded metadata stream before counting and selecting a page.
  *
  * Expected aliases in the caller's query: `c` (cache), `i` (items) and, when
  * the classification facet is used, `dc` (LEFT JOIN on data_classification).
@@ -736,32 +701,18 @@ function searchBuildWhere(array $filters, array $ctx): array
     $fieldMap = searchTextFieldMap();
     $terms = (array) ($filters['terms'] ?? []);
     $fields = (array) ($filters['fields'] ?? []);
-    foreach (array_values($terms) as $index => $term) {
-        // term0 is the typed term, term0_1... its stored spellings.
-        $placeholders = [];
-        foreach (searchStoredTermVariants((string) $term) as $variantIndex => $variant) {
-            $placeholder = 'term' . $index . ($variantIndex === 0 ? '' : '_' . $variantIndex);
-            $placeholders[$placeholder] = $variant;
-        }
+    if ($terms !== []) {
         $columns = [];
         foreach ($fields as $field) {
-            if (isset($fieldMap[$field]) === true) {
-                // The same named placeholder is reused across columns: MeekroDB
-                // resolves named args by lookup, not by position.
-                foreach (array_keys($placeholders) as $placeholder) {
-                    $columns[] = $fieldMap[$field] . ' LIKE %ss_' . $placeholder;
-                }
+            if (isset($fieldMap[$field])) {
+                $columns[] = $fieldMap[$field];
             }
         }
-        if (count($columns) === 0) {
-            // `folder` is a valid search field, but it has no item-cache
-            // column. A folder-only text search must therefore return no
-            // items, never the whole faceted item scope.
-            $clauses[] = '(1 = 0)';
-            break;
-        }
-        $clauses[] = '(' . implode(' OR ', $columns) . ')';
-        $params += $placeholders;
+        // This is a candidate predicate, not a decoded match count. The handler
+        // verifies the authorized stream before its count and page boundaries.
+        $candidate = storedTextSearchCandidates($columns, $terms, 'term');
+        $clauses[] = $candidate['sql'];
+        $params += $candidate['params'];
     }
 
     // ---- Classification --------------------------------------------------

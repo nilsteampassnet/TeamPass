@@ -40,6 +40,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 require_once 'main.functions.php';
 require_once __DIR__ . '/logs_filter_logic.php';
 require_once __DIR__ . '/kb_dates.php';
+require_once __DIR__ . '/search.functions.php';
 
 loadClasses('DB');
 DB::$encoding = 'utf8mb4';
@@ -1687,17 +1688,22 @@ switch ($type) {
 
         $payload = prepareExchangedData($data, 'decode');
         $term = is_array($payload) ? trim((string) ($payload['term'] ?? '')) : '';
-        $termLike = '%' . $term . '%';
-        $rows = $term === ''
-            ? DB::query('SELECT category FROM ' . prefixTable('kb_categories') . ' ORDER BY category ASC LIMIT 20')
-            : DB::query(
-                'SELECT category
-                FROM ' . prefixTable('kb_categories') . '
-                WHERE category LIKE %s
-                ORDER BY category ASC
-                LIMIT 20',
-                $termLike
-            );
+        $terms = $term === '' ? [] : [mb_substr($term, 0, 100)];
+        $candidate = storedTextSearchCandidates(['category'], $terms, 'kb_category');
+        $page = storedTextSearchPage(
+            DB::queryWalk(
+                'SELECT id, category FROM ' . prefixTable('kb_categories') . ' WHERE ' . $candidate['sql'],
+                $candidate['params']
+            ),
+            $terms,
+            ['category'],
+            0,
+            20,
+            'storedTextSearchCompareRows',
+            [],
+            static fn (array $row): array => storedTextSearchSortRow($row, 'category')
+        );
+        $rows = $page['rows'];
 
         $categories = array_values(array_map(static fn (array $row): string => (string) $row['category'], $rows));
         echo (string) prepareExchangedData(['error' => false, 'categories' => $categories], 'encode');
@@ -1715,35 +1721,46 @@ switch ($type) {
 
         $payload = prepareExchangedData($data, 'decode');
         $term = is_array($payload) ? trim((string) ($payload['term'] ?? '')) : '';
-        $folders = kbAccessibleFolders($session);
+        $folders = searchResolveFolderScope(
+            kbAccessibleFolders($session),
+            array_merge(
+                (array) $session->get('user-forbiden_personal_folders'),
+                getForeignPersonalFolderIds((int) $session->get('user-id'))
+            )
+        );
         if (empty($folders)) {
             echo (string) prepareExchangedData(['error' => false, 'results' => []], 'encode');
             break;
         }
 
-        $termLike = '%' . $term . '%';
-        $rows = $term === ''
-            ? DB::query(
-                'SELECT id, label
-                FROM ' . prefixTable('items') . '
-                WHERE inactif = %i AND id_tree IN %li
-                ORDER BY label ASC
-                LIMIT 20',
+        $terms = $term === '' ? [] : [mb_substr($term, 0, 100)];
+        $restrictionSql = searchItemRestrictionSql(
+            (int) $session->get('user-id'),
+            (array) $session->get('user-roles_array'),
+            'i',
+            prefixTable('restriction_to_roles')
+        );
+        $selectSql = 'SELECT i.id, i.label FROM ' . prefixTable('items') . ' AS i
+            WHERE i.inactif = 0 AND i.deleted_at IS NULL AND i.id_tree IN %li_kb_folders
+                AND ' . $restrictionSql;
+        $params = ['kb_folders' => $folders];
+        if ($terms === []) {
+            // Opening the picker needs only its first authorized SQL page.
+            $rows = DB::query($selectSql . ' ORDER BY i.label ASC, i.id ASC LIMIT 20', $params);
+        } else {
+            $candidate = storedTextSearchCandidates(['i.label'], $terms, 'kb_item');
+            $page = storedTextSearchPage(
+                DB::queryWalk($selectSql . ' AND ' . $candidate['sql'], $candidate['params'] + $params),
+                $terms,
+                ['label'],
                 0,
-                $folders
-            )
-            : DB::query(
-                'SELECT id, label
-                FROM ' . prefixTable('items') . '
-                WHERE inactif = %i
-                    AND id_tree IN %li
-                    AND label LIKE %s
-                ORDER BY label ASC
-                LIMIT 20',
-                0,
-                $folders,
-                $termLike
+                20,
+                'storedTextSearchCompareRows',
+                [],
+                static fn (array $row): array => storedTextSearchSortRow($row, 'label')
             );
+            $rows = $page['rows'];
+        }
 
         $results = [];
         foreach ($rows as $row) {
