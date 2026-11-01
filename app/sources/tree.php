@@ -794,8 +794,12 @@ function buildVisibleFoldersFromTree(
         $pathParts = [];
         $currentId = (int) $treeNode->parent_id;
         while (isset($completTree[$currentId]) && $currentId > 0) {
+            $parentTitle = $completTree[$currentId]->title;
+            if ((int) $parentTitle === (int) $inputData['userId'] && (int) $completTree[$currentId]->nlevel === 1) {
+                $parentTitle = $inputData['userLogin'];
+            }
             $pathParts[] = htmlspecialchars(
-                stripslashes(html_entity_decode($completTree[$currentId]->title, ENT_QUOTES | ENT_HTML5, 'UTF-8')),
+                stripslashes(html_entity_decode($parentTitle, ENT_QUOTES | ENT_HTML5, 'UTF-8')),
                 ENT_QUOTES
             );
             $currentId = (int) $completTree[$currentId]->parent_id;

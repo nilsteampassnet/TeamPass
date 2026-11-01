@@ -7769,7 +7769,11 @@ switch ($inputData['type']) {
                     $pathParts = [];
                     $currentId = $folder->parent_id;
                     while (isset($foldersById[$currentId])) {
-                        $pathParts[] = htmlspecialchars(stripslashes(html_entity_decode($foldersById[$currentId]->title, ENT_QUOTES | ENT_HTML5, 'UTF-8')), ENT_QUOTES);
+                        $parentTitle = $foldersById[$currentId]->title;
+                        if ((int) $parentTitle === (int) $session->get('user-id') && (int) $foldersById[$currentId]->nlevel === 1) {
+                            $parentTitle = $session->get('user-login');
+                        }
+                        $pathParts[] = htmlspecialchars(stripslashes(html_entity_decode($parentTitle, ENT_QUOTES | ENT_HTML5, 'UTF-8')), ENT_QUOTES);
                         $currentId = $foldersById[$currentId]->parent_id;
                     }
                     $path = implode(' / ', array_reverse($pathParts));
