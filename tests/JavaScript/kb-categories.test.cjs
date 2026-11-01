@@ -10,10 +10,10 @@ const { join } = require('node:path')
 const vm = require('node:vm')
 const { test } = require('node:test')
 
-function browser(entries = []) {
-  const context = vm.createContext({})
+function browser(entries = [], decodeCategory) {
+  const context = vm.createContext({ decodeCategory })
   vm.runInContext(readFileSync(join(__dirname, '../../public/assets/js/kb-categories.js'), 'utf8'), context)
-  const navigation = vm.runInContext('createKbCategoryBrowser()', context)
+  const navigation = vm.runInContext('createKbCategoryBrowser(decodeCategory)', context)
   navigation.refresh(entries)
   return navigation
 }
@@ -104,6 +104,18 @@ test('Labels remain literal text, including markup, quotes, and object property 
     assert.equal(navigation.getState().selected.label, label)
     assert.deepEqual(ids(navigation), [index + 1])
   })
+})
+
+test('Encoded categories sort by displayed labels while selection retains category identity', () => {
+  const decoded = new Map([['&#90;ebra', 'Zebra'], ['R&amp;D', 'R&D'], ['&lt;Guide&gt;', '<Guide>']])
+  const navigation = browser([article(1, 1, '&#90;ebra'), article(2, 2, 'Alpha'),
+    article(3, 3, 'R&amp;D'), article(4, 4, '&lt;Guide&gt;'), article(5, 5, 'R&amp;D')],
+  value => decoded.get(value) || value)
+  assert.deepEqual(Array.from(navigation.getCategories(), category => category.label), ['<Guide>', 'Alpha', 'R&D', 'R&D', 'Zebra'])
+  navigation.select(3)
+  assert.equal(navigation.getState().selected.label, 'R&D')
+  assert.deepEqual(ids(navigation), [3])
+  assert.equal(navigation.getEntries()[0].category, 'R&amp;D', 'Stored values remain unchanged')
 })
 
 test('Empty or malformed responses have no populated categories and keep the current view', () => {

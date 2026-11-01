@@ -8,9 +8,10 @@
 /**
  * Build the category navigation state from the active articles returned by list_kbs.
  * Category labels are untrusted text; the UI must escape them when rendering.
+ * @param {function(string): string} decodeLabel Decode one stored entity layer for display.
  * @returns {object} Category navigation and article selection helpers.
  */
-function createKbCategoryBrowser() {
+function createKbCategoryBrowser(decodeLabel = value => String(value || '')) {
   let entries = []
   let categories = []
   let view = 'list'
@@ -28,7 +29,7 @@ function createKbCategoryBrowser() {
       const groups = new Map()
       entries.forEach(entry => {
         const id = categoryId(entry)
-        if (!groups.has(id)) groups.set(id, { id, label: id === 0 ? '' : String(entry.category), count: 0 })
+        if (!groups.has(id)) groups.set(id, { id, label: id === 0 ? '' : decodeLabel(String(entry.category)), count: 0 })
         groups.get(id).count += 1
       })
       categories = Array.from(groups.values()).sort((left, right) =>

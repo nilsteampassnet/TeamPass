@@ -4240,9 +4240,9 @@ switch ($inputData['type']) {
                 $path = '';
                 foreach ($arbo as $elem) {
                     if (empty($path) === true) {
-                        $path = htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES) . ' ';
+                        $path = htmlspecialchars(stripslashes(html_entity_decode($elem->title, ENT_QUOTES | ENT_HTML5, 'UTF-8')), ENT_QUOTES) . ' ';
                     } else {
-                        $path .= '&#8594; ' . htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES);
+                        $path .= '&#8594; ' . htmlspecialchars(stripslashes(html_entity_decode($elem->title, ENT_QUOTES | ENT_HTML5, 'UTF-8')), ENT_QUOTES);
                     }
                 }
                 // Build text to show user
@@ -4810,7 +4810,7 @@ switch ($inputData['type']) {
                     $arr_arbo,
                     array(
                         'id' => $elem->id,
-                        'title' => htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES),
+                        'title' => htmlspecialchars(stripslashes(html_entity_decode($elem->title, ENT_QUOTES | ENT_HTML5, 'UTF-8')), ENT_QUOTES),
                         'visible' => in_array($elem->id, $session->get('user-accessible_folders')) ? 1 : 0,
                         'icon' => (string) ($elem->fa_icon ?? 'fas fa-folder'),
                     )
@@ -7783,7 +7783,11 @@ switch ($inputData['type']) {
                     $pathParts = [];
                     $currentId = $folder->parent_id;
                     while (isset($foldersById[$currentId])) {
-                        $pathParts[] = htmlspecialchars(stripslashes(htmlspecialchars_decode($foldersById[$currentId]->title, ENT_QUOTES)), ENT_QUOTES);
+                        $parentTitle = $foldersById[$currentId]->title;
+                        if ((int) $parentTitle === (int) $session->get('user-id') && (int) $foldersById[$currentId]->nlevel === 1) {
+                            $parentTitle = $session->get('user-login');
+                        }
+                        $pathParts[] = htmlspecialchars(stripslashes(html_entity_decode($parentTitle, ENT_QUOTES | ENT_HTML5, 'UTF-8')), ENT_QUOTES);
                         $currentId = $foldersById[$currentId]->parent_id;
                     }
                     $path = implode(' / ', array_reverse($pathParts));
