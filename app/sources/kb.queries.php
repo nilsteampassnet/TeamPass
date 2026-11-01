@@ -1734,29 +1734,33 @@ switch ($type) {
         }
 
         $terms = $term === '' ? [] : [mb_substr($term, 0, 100)];
-        $candidate = storedTextSearchCandidates(['i.label'], $terms, 'kb_item');
         $restrictionSql = searchItemRestrictionSql(
             (int) $session->get('user-id'),
             (array) $session->get('user-roles_array'),
             'i',
             prefixTable('restriction_to_roles')
         );
-        $page = storedTextSearchPage(
-            DB::queryWalk(
-                'SELECT i.id, i.label FROM ' . prefixTable('items') . ' AS i
-                WHERE i.inactif = 0 AND i.deleted_at IS NULL AND i.id_tree IN %li_kb_folders
-                    AND ' . $restrictionSql . ' AND ' . $candidate['sql'],
-                $candidate['params'] + ['kb_folders' => $folders]
-            ),
-            $terms,
-            ['label'],
-            0,
-            20,
-            'storedTextSearchCompareRows',
-            [],
-            static fn (array $row): array => storedTextSearchSortRow($row, 'label')
-        );
-        $rows = $page['rows'];
+        $selectSql = 'SELECT i.id, i.label FROM ' . prefixTable('items') . ' AS i
+            WHERE i.inactif = 0 AND i.deleted_at IS NULL AND i.id_tree IN %li_kb_folders
+                AND ' . $restrictionSql;
+        $params = ['kb_folders' => $folders];
+        if ($terms === []) {
+            // Opening the picker needs only its first authorized SQL page.
+            $rows = DB::query($selectSql . ' ORDER BY i.label ASC, i.id ASC LIMIT 20', $params);
+        } else {
+            $candidate = storedTextSearchCandidates(['i.label'], $terms, 'kb_item');
+            $page = storedTextSearchPage(
+                DB::queryWalk($selectSql . ' AND ' . $candidate['sql'], $candidate['params'] + $params),
+                $terms,
+                ['label'],
+                0,
+                20,
+                'storedTextSearchCompareRows',
+                [],
+                static fn (array $row): array => storedTextSearchSortRow($row, 'label')
+            );
+            $rows = $page['rows'];
+        }
 
         $results = [];
         foreach ($rows as $row) {

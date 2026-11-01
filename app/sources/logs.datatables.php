@@ -497,19 +497,27 @@ if (isset($params['action']) && $params['action'] === 'logs') {
     $perPage = 30;
 
     $terms = $term === '' ? [] : [$term];
-    $candidate = storedTextSearchCandidates(['login', 'name', 'lastname'], $terms, 'logs_user');
-    $displayText = static fn (string $value, array $row = []): string => storedTextSearchDecode(normalizeLogDisplayValue($value));
-    $optionPage = storedTextSearchPage(DB::queryWalk(
-        'SELECT id, login, name, lastname FROM ' . prefixTable('users') . '
-        WHERE id > 0 AND id NOT IN %li_logs_system_users AND ' . $candidate['sql'],
-        $candidate['params'] + ['logs_system_users' => [(int) OTV_USER_ID, (int) TP_USER_ID, (int) SSH_USER_ID, (int) API_USER_ID]]
-    ), $terms, ['login', 'name', 'lastname'], ($page - 1) * $perPage, $perPage,
-        'storedTextSearchCompareRows',
-        array_fill_keys(['login', 'name', 'lastname'], $displayText),
-        static fn (array $row): array => storedTextSearchSortRow($row, 'login', $displayText)
-    );
-    $rows = $optionPage['rows'];
-    $hasMore = $optionPage['more'];
+    $selectSql = 'SELECT id, login, name, lastname FROM ' . prefixTable('users') . '
+        WHERE id > 0 AND id NOT IN %li_logs_system_users';
+    $queryParams = ['logs_system_users' => [(int) OTV_USER_ID, (int) TP_USER_ID, (int) SSH_USER_ID, (int) API_USER_ID]];
+    if ($terms === []) {
+        $rows = DB::query($selectSql . ' ORDER BY login ASC, id ASC LIMIT %i_logs_offset, %i_logs_limit',
+            $queryParams + ['logs_offset' => ($page - 1) * $perPage, 'logs_limit' => $perPage + 1]);
+        $hasMore = count($rows) > $perPage;
+        $rows = array_slice($rows, 0, $perPage);
+    } else {
+        $candidate = storedTextSearchCandidates(['login', 'name', 'lastname'], $terms, 'logs_user');
+        $displayText = static fn (string $value, array $row = []): string => storedTextSearchDecode(normalizeLogDisplayValue($value));
+        $optionPage = storedTextSearchPage(DB::queryWalk(
+            $selectSql . ' AND ' . $candidate['sql'], $candidate['params'] + $queryParams
+        ), $terms, ['login', 'name', 'lastname'], ($page - 1) * $perPage, $perPage,
+            'storedTextSearchCompareRows',
+            array_fill_keys(['login', 'name', 'lastname'], $displayText),
+            static fn (array $row): array => storedTextSearchSortRow($row, 'login', $displayText)
+        );
+        $rows = $optionPage['rows'];
+        $hasMore = $optionPage['more'];
+    }
 
     $results = [];
     foreach ($rows as $record) {

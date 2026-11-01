@@ -130,6 +130,19 @@ class KbStoredTextLookupTest extends TestCase
         self::assertSame([702], array_column($this->request('search_items', 'securite')['results'], 'id'));
     }
 
+    /** Opening the item picker reads at most twenty authorized rows directly from SQL. */
+    public function testEmptyItemTermRetainsABoundedAuthorizedSqlQuery(): void
+    {
+        DB::$connection->exec("INSERT INTO lookup_fixture_items (id,label,id_tree,restricted_to,inactif,deleted_at) VALUES
+            (700,'A hidden',99,'',0,NULL),(701,'A foreign',90,'',0,NULL),(702,'A restricted',10,'42',0,NULL),
+            (703,'A inactive',10,'',1,NULL),(704,'A deleted',10,'',0,1);");
+        $response = $this->request('search_items', '');
+        self::assertSame(range(46, 65), array_column($response['results'], 'id'));
+        self::assertCount(1, DB::$calls);
+        self::assertStringContainsString('ORDER BY i.label ASC, i.id ASC LIMIT 20', DB::$calls[0][0]);
+        self::assertSame(0, DB::$activeCursors);
+    }
+
     /** Authentication, admin and empty-scope gates happen before reading candidates. */
     public function testUnauthorizedRequestsNeverOpenACursor(): void
     {

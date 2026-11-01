@@ -37,7 +37,7 @@ class LogStoredTextOptionsTest extends TestCase
     protected function setUp(): void
     {
         DB::reset();
-        DB::$connection->exec('CREATE TABLE log_options_fixture_users (id INTEGER PRIMARY KEY,login TEXT,name TEXT,lastname TEXT);
+        DB::$connection->exec('CREATE TABLE log_options_fixture_users (id INTEGER PRIMARY KEY,login TEXT COLLATE NOCASE,name TEXT,lastname TEXT);
             CREATE TABLE log_options_fixture_nested_tree (id INTEGER PRIMARY KEY,title TEXT,nlevel INTEGER,nleft INTEGER);');
         $user = DB::$connection->prepare('INSERT INTO log_options_fixture_users VALUES (:id,:login,:name,"")');
         $folder = DB::$connection->prepare('INSERT INTO log_options_fixture_nested_tree VALUES (:id,:name,2,:id)');
@@ -133,5 +133,28 @@ class LogStoredTextOptionsTest extends TestCase
         self::assertTrue($result['pagination']['more']);
         self::assertCount(1, DB::$calls);
         self::assertStringContainsString('LIMIT %i_logs_offset, %i_logs_limit', DB::$calls[0][0]);
+    }
+
+    /** Empty user lookups keep bounded SQL pages, exact more flags and system-user exclusions. */
+    public function testEmptyUserLookupKeepsBoundedSqlPages(): void
+    {
+        $second = $this->request('user_options', '', 2);
+        self::assertSame(range(131, 160), array_column($second['results'], 'id'));
+        self::assertTrue($second['pagination']['more']);
+        self::assertCount(1, DB::$calls);
+        self::assertStringContainsString('ORDER BY login ASC, id ASC LIMIT %i_logs_offset, %i_logs_limit', DB::$calls[0][0]);
+        self::assertSame(30, DB::$calls[0][1]['logs_offset']);
+        self::assertSame(31, DB::$calls[0][1]['logs_limit']);
+        $ids = [];
+        foreach (range(1, 6) as $page) {
+            $result = $this->request('user_options', '', $page);
+            $ids = array_merge($ids, array_column($result['results'], 'id'));
+        }
+        self::assertCount(167, array_unique($ids));
+        self::assertNotContains(9901, $ids);
+        self::assertNotContains(0, $ids);
+        self::assertCount(17, $result['results']);
+        self::assertFalse($result['pagination']['more']);
+        self::assertSame([], $this->request('user_options', '', 7)['results']);
     }
 }
