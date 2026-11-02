@@ -67,15 +67,13 @@ $checkUserAccess = new PerformChecks(
 
 // Check user access and printing enabled
 echo $checkUserAccess->caseHandler();
+require_once __DIR__ . '/../sources/export_access_logic.php';
 if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('export') === false
-    || isset($SETTINGS['allow_print']) === false || (int) $SETTINGS['allow_print'] === 0
-    || isset($SETTINGS['roles_allowed_to_print_select']) === false
-    || empty($SETTINGS['roles_allowed_to_print_select']) === true
-    || count(array_intersect(
-        explode(';', $session->get('user-roles')),
-        explode(',', str_replace(['"', '[', ']'], '', $SETTINGS['roles_allowed_to_print_select']))
-    )) === 0
-    || (isset($session_user_admin) && (int) $session_user_admin === 1)
+    || exportAllowedForUser(
+        $SETTINGS,
+        (string) $session->get('user-roles'),
+        (int) $session->get('user-admin') === 1
+    ) === false
 ) {
     // Not allowed page
     $session->set('system-error_code', ERR_NOT_ALLOWED);
