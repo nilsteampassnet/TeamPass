@@ -223,13 +223,14 @@ If a user changes phone or loses their authenticator, a new code can be issued. 
 | A user is enrolled but has no working code | An administrator must reset the user's code from the `Users` page (see above). |
 
 
-## Oauth2 with Microsoft Entra (Azure)
+## Oauth2
 
-Users can authenticate through your Entra AD. The first time a user is authenticate in Teampass through oauth2, his account will be created in Teampass.
+Users can authenticate through oauth2. The first time a user is authenticate in Teampass through oauth2, his account will be created in Teampass.
 
 👉 Notice that if the user has `group memberships` defined in AD and that those groups also exist in Teampass, then the user will be automatically associated to the matching groups (based upon their names).
 
-### Setting up at Entra side
+### Microsoft Entra (Azure)
+#### Setting up at Entra side
 
 You need to create a new `App registration` for example called `Teampass`.
 
@@ -274,7 +275,7 @@ Don't forget to `Grant admin consent for Default Directory`.
 
 Finaly define the users allowaed to access this new Application
 
-### Setting up in Teampass
+#### Setting up in Teampass
 
 Navigate to `OAuth` page from the administration, and provide the expected information.
 
@@ -287,6 +288,62 @@ automatic creation of accounts: an Entra user who does not already exist in Team
 refused with the generic message *"Login credentials do not correspond"*, which does not hint at
 the cause. On a fresh installation no Entra account exists yet in TeamPass, so **every** first
 login fails until either the field is filled in or the accounts are created beforehand.
+
+### Generic Oauth (Authentik)
+#### Authentik Side
+##### Create custom scope mapping
+
+Teampass's Oauth is based off of Microsoft Entra so we have to provide the data it is expecting. 
+To do this we create a custom scope mapping for Teampass.
+
+1. Log in to authentik as an administrator and open the authentik Admin interface.
+2. Navigate to **Customization** > **Property Mappings** and click **Create**.
+   - **Select type**: select **Scope Mapping**.
+     - **Configure the Scope Mapping**: Provide a descriptive name (e.g. `Teampass Scope`), and an optional description.
+       - **Scope name**: `teampass`
+       - **Expression**:
+       ```python
+       # Extract all groups the user is a member of
+       groups = []
+    
+       for group in user.groups.all():
+       groups.append({"id": group.name, "displayName": group.name})
+    
+       return {
+         "mail": request.user.email,
+         "givenName": request.user.name,
+         "givenname": request.user.name,
+         "surname": "",
+         "displayName": request.user.name,
+         "userPrincipalName": request.user.email,
+      
+         "family_name":"",
+         "realm_access": {"roles": groups},
+       }
+       ```
+3. Click **Finish** to save the property mapping.
+
+##### Create an application and provider in authentik
+
+1. Log in to authentik as an administrator and open the authentik Admin interface.
+2. Navigate to **Applications** > **Applications** and click **New Application** to open the application wizard.
+   - **Application**: provide a descriptive name, an optional group for the type of application, the policy engine mode, and optional UI settings.
+   - **Choose a Provider type**: select **OAuth2/OpenID Connect** as the provider type.
+   - **Configure the Provider**: provide a name (or accept the auto-provided name), the authorization flow to use for this provider, and the following required configurations.
+     - Note the **Client ID**, **Client Secret**, and **slug** values because they will be required later.
+     - Add a **Redirect URI** of type `Strict` `Authorization` as `https://teampass.company/index.php?post_type=oauth2`.
+     - Select any available signing key.
+     - Under **Advanced protocol settings**:
+       - Add the custom scope mapping you created above.
+   - **Configure Bindings** *(optional)*: you can create a [binding](/docs/add-secure-apps/bindings-overview/) (policy, group, or user) to manage the listing and access to applications on a user's **Application Dashboard** page.
+3. Click **Submit** to save the new application and provider.
+
+#### Teampass side
+Same as [the process for Entra](#setting-up-in-teampass), however with some minor changes:
+
+* No ``Tenant ID``
+* Scopes should be ``openid,profile,email``
+  * If you followed the [Authentik Side](#authentik-side) you should also add ``teampass``
 
 ### Allowing OAuth2 users to access the API
 
