@@ -110,6 +110,17 @@ function createKbMarkdown(deps) {
     return prefix + body + (node.nextSibling && !/\n$/.test(body) ? '\n' : '')
   }
 
+  /**
+   * Fit the inline Markdown of a table cell on one row: a line break would end the row and a raw pipe
+   * would split the cell. GFM (markdown-it and cmark-gfm alike) never splits on a pipe preceded by a
+   * backslash and drops exactly that one backslash before parsing the cell, so every pipe gets one.
+   * Backslashes are deliberately not escaped: the content is already Markdown, Turndown escaped the
+   * literal ones, and doubling them would display two.
+   */
+  function markdownTableCell(content) {
+    return String(content).trim().replace(/\s*\n+\s*/g, ' ').replace(/\|/g, '\\|')
+  }
+
   function getConverter() {
     if (converter === null) {
       converter = new deps.TurndownService({
@@ -120,12 +131,11 @@ function createKbMarkdown(deps) {
       converter.addRule('tpKbStrikethrough', { filter: ['del', 's', 'strike'], replacement: content => '~~' + content + '~~' })
       // One space after the marker, instead of Turndown's column alignment.
       converter.addRule('tpKbListItem', { filter: 'li', replacement: listItem })
-      // A raw pipe or line break inside a cell would split or end the Markdown row and lose text.
       converter.addRule('tpKbTableCell', {
         filter: ['th', 'td'],
         replacement: (content, node) => {
           const first = Array.prototype.indexOf.call(node.parentNode.childNodes, node) === 0
-          return (first ? '| ' : ' ') + content.trim().replace(/\s*\n+\s*/g, ' ').replace(/\|/g, '\\|') + ' |'
+          return (first ? '| ' : ' ') + markdownTableCell(content) + ' |'
         }
       })
     }
@@ -182,5 +192,5 @@ function createKbMarkdown(deps) {
     return { markdown: getConverter().turndown(doc.body.innerHTML), images, lossy: Array.from(lossy) }
   }
 
-  return { looksLikeMarkdown, renderMarkdown, plainTextToHtml, restoreImages, clampHtmlHeadings, htmlToMarkdown }
+  return { looksLikeMarkdown, renderMarkdown, plainTextToHtml, restoreImages, clampHtmlHeadings, htmlToMarkdown, markdownTableCell }
 }
