@@ -66,7 +66,10 @@ exercise a live database or a rendered browser.
 in one VM context, without a DOM. It covers paste detection (AI answers converted; prose, scripts,
 YAML, INI and JSON left alone), heading levels mapped to the `h2`–`h4` range of the KB sanitizers,
 escaping of raw HTML and `javascript:` links, the GFM output used by AI answers, image placeholder
-restoration and the "Keep plain text" rendering.
+restoration and the "Keep plain text" rendering. Table cells written by "Edit as Markdown" keep their
+pipes and backslashes, in text and code spans, without splitting the row: every pipe gets one backslash
+and existing backslashes are never doubled (CodeQL `js/incomplete-sanitization` flags this; it is a
+false positive, and its suggested fix makes this test fail).
 
 `htmlToMarkdown()` and `clampHtmlHeadings()` need a DOM (`DOMParser`, Turndown) and are not run
 here. Before release, check in Chrome and Firefox, in light and dark theme:

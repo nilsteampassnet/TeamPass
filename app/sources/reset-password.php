@@ -188,6 +188,10 @@ if (is_array($resetResult) !== true
     exit;
 }
 
+// A recovery is how a user takes their account back: a session opened before it, possibly by
+// whoever made the recovery necessary, must not survive it (GHSA-p84q-3h9h-qvh6).
+tpRevokeUserSessions((int) $userInfo['id']);
+
 // The password just changed, so the failures recorded against the old one are moot: clearing
 // them spares a legitimate user a lockout wait. This is only reachable after the mailbox proof.
 DB::delete(

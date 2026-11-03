@@ -216,7 +216,7 @@ if (function_exists('emailsTemplatesSampleValues') === false) {
             '#tp_server#' => 'teampass-prod',
             '#tp_from#' => '3.2.3.3',
             '#tp_to#' => '3.2.3.4',
-            '#tp_backup#' => '/var/www/html/teampass/storage/backups/scheduled-pre-upgrade-1793000000.sql',
+            '#tp_backup#' => '/var/www/html/teampass/storage/onthefly/pre-upgrade-1793000000.sql',
             '#tp_log#' => '/var/www/html/teampass/storage/upgrade/logs/upgrade_20261029_143000.log',
             '#tp_next_action#' => 'Restart the WebSocket daemon.',
             // Licence trial, offline request link

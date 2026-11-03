@@ -2906,6 +2906,9 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                     'backup_format_version' => $isPackage ? (int) ($meta['backup_format_version'] ?? tpBackupGetPackageFormatVersion()) : null,
                     'backup_type' => $backupType !== '' ? $backupType : 'unknown',
                     'restore_supported' => $restoreSupported,
+                    // Pre-upgrade backup of the command line: encrypted with the instance key, which
+                    // prepare_restore_cli already tries for an on-the-fly server file.
+                    'instance_key' => ($meta['source'] ?? '') === 'upgrade_cli',
                     'download' => 'sources/downloadFile.php?name=' . urlencode($bn) .
                         '&action=backup&file=' . urlencode($bn) .
                         '&type=' . tpBackupGetDownloadTypeForFilename($bn) . '&key=' . $session->get('key') .

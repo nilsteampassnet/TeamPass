@@ -187,3 +187,56 @@ function passwordHoldsForbiddenWord(string $password, array $forbiddenWords): bo
 
     return false;
 }
+
+/**
+ * Tell whether a key generation may replace the account password with a generated one.
+ *
+ * A generated password is handed back to the caller in clear text, so it never replaces the
+ * password of the caller's own account: there it would let whoever holds the session - a
+ * stolen cookie, an unattended browser - take the account over without knowing its password
+ * (GHSA-p84q-3h9h-qvh6). Only a user who manages another account, already authorized by
+ * keyHandler() for the explicit target, gets one.
+ *
+ * @param bool $targetProvided Whether the request named a target account (user_id)
+ * @param int  $targetUserId   Account whose keys are generated
+ * @param int  $sessionUserId  Account of the caller
+ * @param bool $requested      Whether the request asked for a generated password
+ *
+ * @return bool True when a password may be generated for the target
+ */
+function userKeysGenerationMayGeneratePassword(
+    bool $targetProvided,
+    int $targetUserId,
+    int $sessionUserId,
+    bool $requested
+): bool {
+    return $requested === true
+        && $targetProvided === true
+        && $targetUserId > 0
+        && $targetUserId !== $sessionUserId;
+}
+
+/**
+ * Compute the end of a session extended by the user.
+ *
+ * The extension is capped at the administrator's maximum session duration counted from now,
+ * the limit the extension dialog already offers. A duration that is not positive leaves the
+ * session unchanged, and the result never shortens it.
+ *
+ * @param int $currentEnd     Current end of the session (timestamp)
+ * @param int $duration       Requested extension in seconds
+ * @param int $now            Current timestamp
+ * @param int $maximumMinutes Setting maximum_session_expiration_time, in minutes
+ *
+ * @return int New end of the session (timestamp)
+ */
+function sessionExtensionEnd(int $currentEnd, int $duration, int $now, int $maximumMinutes): int
+{
+    if ($duration <= 0) {
+        return $currentEnd;
+    }
+
+    $ceiling = $now + max(0, $maximumMinutes) * 60;
+
+    return max($currentEnd, min($currentEnd + $duration, $ceiling));
+}

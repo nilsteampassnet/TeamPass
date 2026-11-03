@@ -1,6 +1,6 @@
 # Teampass License Compliance Report
 
-**Generated:** 2026-09-13 14:17:11
+**Generated:** 2026-11-01 13:51:57
 **Project License:** GNU General Public License v3.0
 
 ## PHP Dependencies (Composer)
@@ -93,8 +93,8 @@
 | symfony/contracts | v3.7.3 | MIT | ✅ Compatible |
 | symfony/filesystem | v7.4.18 | MIT | ✅ Compatible |
 | symfony/finder | v6.4.44 | MIT | ✅ Compatible |
-| symfony/http-foundation | v6.4.45 | MIT | ✅ Compatible |
-| symfony/mime | v6.4.45 | MIT | ✅ Compatible |
+| symfony/http-foundation | v6.4.49 | MIT | ✅ Compatible |
+| symfony/mime | v6.4.49 | MIT | ✅ Compatible |
 | symfony/password-hasher | v6.4.32 | MIT | ✅ Compatible |
 | symfony/polyfill-ctype | v1.37.0 | MIT | ✅ Compatible |
 | symfony/polyfill-iconv | v1.37.0 | MIT | ✅ Compatible |
@@ -188,4 +188,4 @@ php _tools/licences/compliance-checker.php
 
 ---
 
-*Auto-generated report - Last updated: 2026-09-13 14:17:11*
+*Auto-generated report - Last updated: 2026-11-01 13:51:57*

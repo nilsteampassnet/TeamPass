@@ -734,16 +734,19 @@ switch ($inputData['type']) {
                 ) {
                     // add roles for item
                     foreach ($post_restricted_to_roles as $role) {
-                        if (count($role) > 1) {
-                            $role = $role[1];
-                        } else {
-                            $role = $role[0];
+                        // The form posts plain role ids; count() on a string is a TypeError.
+                        if (is_array($role) === true) {
+                            $role = count($role) > 1 ? $role[1] : ($role[0] ?? 0);
                         }
+                        if (is_scalar($role) === false || (int) $role <= 0) {
+                            continue;
+                        }
+                        // Attach the roles to the item just created, never to a client-supplied id.
                         DB::insert(
                             prefixTable('restriction_to_roles'),
                             array(
-                                'role_id' => $role,
-                                'item_id' => $inputData['itemId'],
+                                'role_id' => (int) $role,
+                                'item_id' => (int) $newID,
                             )
                         );
                     }
@@ -4035,31 +4038,14 @@ switch ($inputData['type']) {
             $inputData['id']
         );
 
-        // check that actual user can access this item
-        $restrictionActive = true;
-        $restrictedTo = is_null($dataItem['restricted_to']) === false ? array_filter(explode(';', $dataItem['restricted_to'])) : [];
-        if (
-            in_array($session->get('user-id'), $restrictedTo)
-            || (((int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1)
-                && (int) $SETTINGS['manager_edit'] === 1)
+        // check that actual user can access this item.
+        // Same decision as show_details_item: an item restricted to roles only (empty
+        // restricted_to) stays closed to a user holding none of those roles.
+        $restrictionActive = getItemRestrictedUsersList((int) $inputData['id'], (int) $session->get('user-id')) === false;
+        if (((int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1)
+            && (int) $SETTINGS['manager_edit'] === 1
         ) {
             $restrictionActive = false;
-        }
-        if (empty($dataItem['restricted_to'])) {
-            $restrictionActive = false;
-        }
-
-        // Check if user has a role that is accepted
-        $rows_tmp = DB::query(
-            'SELECT role_id
-            FROM ' . prefixTable('restriction_to_roles') . '
-            WHERE item_id=%i',
-            $inputData['id']
-        );
-        foreach ($rows_tmp as $rec_tmp) {
-            if (in_array($rec_tmp['role_id'], explode(';', $session->get('user-roles')))) {
-                $restrictionActive = false;
-            }
         }
 
         // check user is admin
@@ -4525,9 +4511,19 @@ switch ($inputData['type']) {
             break;
         }
 
-        // Verify the current user can access the folder this item belongs to.
-        $granted = accessToItemIsGranted((int) $inputData['id'], $SETTINGS);
-        if ($granted !== true) {
+        // The code is a second factor of the item: require the same read access as its password,
+        // per-item restriction included.
+        $otpItemTreeId = DB::queryFirstField(
+            'SELECT id_tree FROM ' . prefixTable('items') . ' WHERE id = %i',
+            $inputData['id']
+        );
+        if ($otpItemTreeId === null
+            || getCurrentAccessRights(
+                (int) $session->get('user-id'),
+                (int) $inputData['id'],
+                (int) $otpItemTreeId
+            )['access'] !== true
+        ) {
             echo (string) prepareExchangedData(
                 array('error' => true, 'message' => $lang->get('error_not_allowed_to_access_this_folder')),
                 'encode'
@@ -4544,7 +4540,8 @@ switch ($inputData['type']) {
             $inputData['id']
         );
 
-        if (DB::count() > 0) {
+        // A disabled OTP stays stored but is never served (same rule as the REST API).
+        if (DB::count() > 0 && (int) $dataItem['enabled'] === 1) {
             // OTP exists then display it
             $secret = cryption(
                 $dataItem['secret'],
@@ -7619,6 +7616,19 @@ switch ($inputData['type']) {
             break;
         }
 
+        // A sharekey is not an authorization: the attachments of a shared item are keyed for
+        // every user. Require read access to the item, as downloadFile.php does.
+        if (userHasAccessToFile((int) $session->get('user-id'), (int) $inputData['id']) === false) {
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
         //$fileName = basename($file_info['name'], '.'.$file_info['extension']);
 
         // prepare image info
@@ -7911,16 +7921,6 @@ switch ($inputData['type']) {
             break;
         }
 
-        // Verify the current user can access the folder this item belongs to.
-        $granted = accessToItemIsGranted((int) $inputData['itemId'], $SETTINGS);
-        if ($granted !== true) {
-            echo (string) prepareExchangedData(
-                array('error' => true, 'message' => $lang->get('error_not_allowed_to_access_this_folder')),
-                'encode'
-            );
-            break;
-        }
-
         // get item info
         $dataItem = DB::queryFirstRow(
             'SELECT *
@@ -7928,6 +7928,22 @@ switch ($inputData['type']) {
             WHERE id=%i',
             $inputData['itemId']
         );
+
+        // The history holds previous passwords, decrypted below with the instance key: require
+        // the same read access as the password itself, per-item restriction included.
+        if ($dataItem === null
+            || getCurrentAccessRights(
+                (int) $session->get('user-id'),
+                (int) $inputData['itemId'],
+                (int) $dataItem['id_tree']
+            )['access'] !== true
+        ) {
+            echo (string) prepareExchangedData(
+                array('error' => true, 'message' => $lang->get('error_not_allowed_to_access_this_folder')),
+                'encode'
+            );
+            break;
+        }
 
         // get item history
         $history = [];

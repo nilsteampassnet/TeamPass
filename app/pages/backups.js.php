@@ -1128,8 +1128,12 @@ function tpFmtBytes(bytes) {
                         html += '<tr title="' + titleName + '" data-file="' + fileKey + '" class="' + (isSelected && canRestore ? 'table-active' : '') + '">';
                         html += '  <td class="text-nowrap">';
                         html += '    <div class="form-check m-0">';
-                        html += '      <input class="form-check-input tp-onthefly-backup-radio" type="radio" name="onthefly-server-backup-radio" id="onthefly-bck-' + idx + '" value="' + titleName + '"' + (isSelected && canRestore ? ' checked' : '') + (canRestore ? '' : ' disabled') + '>';
-                        html += '      <label class="form-check-label" for="onthefly-bck-' + idx + '">' + dt + tpBackupDocumentsIconHtml(f) + '</label>';
+                        const instanceKey = (f.instance_key === true);
+                        const instanceKeyHint = tpEscapeHtml('<?php echo addslashes($lang->get('bck_onthefly_instance_key_hint')); ?>');
+                        html += '      <input class="form-check-input tp-onthefly-backup-radio" type="radio" name="onthefly-server-backup-radio" id="onthefly-bck-' + idx + '" value="' + titleName + '" data-instance-key="' + (instanceKey ? '1' : '0') + '"' + (isSelected && canRestore ? ' checked' : '') + (canRestore ? '' : ' disabled') + '>';
+                        html += '      <label class="form-check-label" for="onthefly-bck-' + idx + '">' + dt + tpBackupDocumentsIconHtml(f) +
+                            (instanceKey ? '<span class="ml-1 text-info" title="' + instanceKeyHint + '" aria-label="' + instanceKeyHint + '" data-toggle="tooltip"><i class="fas fa-key"></i></span>' : '') +
+                            '</label>';
                         html += '    </div>';
                         html += '  </td>';
                         html += '  <td>' + sz + '</td>';
@@ -1304,7 +1308,18 @@ function tpFmtBytes(bytes) {
                 overrideKey = ($('#scheduled-restore-override-key').val() || '').toString();
             }
 
-            if (encryptionKey === '' && serverScope !== 'scheduled') {
+            // A pre-upgrade backup of the command line is encrypted with the instance key:
+            // the server tries it for an on-the-fly server file, no key has to be typed.
+            var usesInstanceKey = false;
+            if ((opId === undefined || opId === null || opId === '') && serverScope === '') {
+                $('.tp-onthefly-backup-radio:checked').each(function () {
+                    if ($(this).val() === serverFile && $(this).data('instance-key') === 1) {
+                        usesInstanceKey = true;
+                    }
+                });
+            }
+
+            if (encryptionKey === '' && serverScope !== 'scheduled' && usesInstanceKey === false) {
                 toastr.error("<?php echo addslashes($lang->get('bck_restore_key_required')); ?>");
                 return false;
             }

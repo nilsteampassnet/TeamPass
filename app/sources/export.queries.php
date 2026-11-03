@@ -81,6 +81,18 @@ if (
     exit;
 }
 
+// Same rule as the Export page: exports enabled and the user holds an allowed role.
+require_once __DIR__ . '/export_access_logic.php';
+if (exportAllowedForUser(
+    $SETTINGS,
+    (string) $session->get('user-roles'),
+    (int) $session->get('user-admin') === 1
+) === false) {
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
+    include TEAMPASS_ROOT . '/public/error.php';
+    exit;
+}
+
 // Define Timezone
 date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
 
@@ -278,18 +290,16 @@ if (null !== $post_type) {
                                 $itemsTags[(int) $rowTag['item_id']][] = $rowTag['tag'];
                             }
                         }
+                        $itemsRestrictedRoles = exportItemsRestrictedRoles(array_column($rows, 'id'));
 
                         foreach ($rows as $record) {
-                            // Item-level restriction check
+                            // Item-level restriction check (users and roles)
                             if (
                                 !(
                                     in_array((int) $record['id_tree'], (array) $session->get('user-personal_visible_folders')) === true
                                     || (
                                         in_array((int) $record['id_tree'], (array) $session->get('user-accessible_folders')) === true
-                                        && (
-                                            empty($record['restricted_to']) === true
-                                            || in_array((string) $session->get('user-id'), explode(';', (string) $record['restricted_to'])) === true
-                                        )
+                                        && exportItemRestrictionAllows($record, $itemsRestrictedRoles) === true
                                     )
                                 )
                             ) {
@@ -424,14 +434,13 @@ if (null !== $post_type) {
                         '0',
                         intval($id)
                     );
+                    $itemsRestrictedRoles = exportItemsRestrictedRoles(array_column($rows, 'id'));
                     foreach ($rows as $record) {
-                        $restricted_users_array = empty($record['restricted_to']) === false ? explode(';', $record['restricted_to']) : [];
                         //exclude all results except the first one returned by query
                         if (empty($id_managed) === true || (int) $id_managed !== (int) $record['id']) {
                             if ((in_array($record['id_tree'], $session->get('user-personal_visible_folders')) === true)
                                 || (in_array($record['id_tree'], $session->get('user-accessible_folders')) === true
-                                    && (empty($record['restricted_to']) === true
-                                        || (in_array($session->get('user-id'), explode(';', $record['restricted_to'])) === true)))
+                                    && exportItemRestrictionAllows($record, $itemsRestrictedRoles) === true)
                             ) {
                                 // Run query
                                 $dataItem = DB::queryFirstRow(
@@ -665,12 +674,12 @@ if (null !== $post_type) {
 
                 $id_managed = '';
                 $items_id_list = array();
+                $itemsRestrictedRoles = exportItemsRestrictedRoles(array_column($rows, 'id'));
                 foreach ($rows as $record) {
-                    $restricted_users_array = empty($record['restricted_to']) === false ? explode(';', $record['restricted_to']) : [];
                     //exclude all results except the first one returned by query
                     if (empty($id_managed) || $id_managed != $record['id']) {
                         if ((in_array($post_id, $session->get('user-personal_visible_folders')) && !($record['perso'] == 1 && $session->get('user-id') == $record['restricted_to']) && !empty($record['restricted_to']))
-                            || (!empty($record['restricted_to']) && !in_array($session->get('user-id'), $restricted_users_array))
+                            || exportItemRestrictionAllows($record, $itemsRestrictedRoles) === false
                         ) {
                             //exclude this case
                         } else {
@@ -1013,17 +1022,15 @@ if (null !== $post_type) {
                     0,
                     $folderId
                 );
+                $itemsRestrictedRoles = exportItemsRestrictedRoles(array_column($rows, 'id'));
                 foreach ($rows as $record) {
-                    // Item-level restriction check
+                    // Item-level restriction check (users and roles)
                     if (
                         !(
                             in_array($record['id_tree'], $session->get('user-personal_visible_folders')) === true
                             || (
                                 in_array($record['id_tree'], $session->get('user-accessible_folders')) === true
-                                && (
-                                    empty($record['restricted_to']) === true
-                                    || in_array($session->get('user-id'), explode(';', $record['restricted_to'])) === true
-                                )
+                                && exportItemRestrictionAllows($record, $itemsRestrictedRoles) === true
                             )
                         )
                     ) {
@@ -1152,6 +1159,54 @@ function array2csv($fields, $delimiter = ',', $enclosure = '"', $escape_char = '
     return $csv;
 }
 
+
+/**
+ * Load the role restrictions (restriction_to_roles) of a set of items.
+ *
+ * @param array<int|string> $itemIds Items to look up.
+ *
+ * @return array<int, int[]> Restricted role ids, keyed by item id.
+ */
+function exportItemsRestrictedRoles(array $itemIds): array
+{
+    $itemIds = array_values(array_unique(array_map('intval', $itemIds)));
+    $rolesByItem = [];
+    if (count($itemIds) === 0) {
+        return $rolesByItem;
+    }
+
+    foreach (DB::query(
+        'SELECT item_id, role_id FROM ' . prefixTable('restriction_to_roles') . ' WHERE item_id IN %li',
+        $itemIds
+    ) as $row) {
+        $rolesByItem[(int) $row['item_id']][] = (int) $row['role_id'];
+    }
+
+    return $rolesByItem;
+}
+
+/**
+ * Whether the current user satisfies an exported item's own restriction (users and roles).
+ *
+ * Same decision as the item card and the REST API (item_restriction_logic.php): an item
+ * restricted to roles only must not be exported to a folder member holding none of them.
+ *
+ * @param array<string, mixed> $record      Item row; needs 'id' and 'restricted_to'.
+ * @param array<int, int[]>    $rolesByItem Output of exportItemsRestrictedRoles().
+ *
+ * @return bool True when the item may be exported for this user.
+ */
+function exportItemRestrictionAllows(array $record, array $rolesByItem): bool
+{
+    $session = SessionManager::getSession();
+
+    return itemRestrictionAllows(
+        isset($record['restricted_to']) === true ? (string) $record['restricted_to'] : null,
+        $rolesByItem[(int) $record['id']] ?? [],
+        (int) $session->get('user-id'),
+        itemRestrictionParseIdList((string) $session->get('user-roles'))
+    );
+}
 
 /**
  * Derive a key from the export password and encrypt the JSON payload with AES-256-GCM.

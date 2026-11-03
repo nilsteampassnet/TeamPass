@@ -168,7 +168,7 @@ sudo -u www-data php app/scripts/upgrade-cli.php run      # asks for confirmatio
 
 1. the checks of `check` (PHP version and extensions, database engine and charset, upgrade scripts present, disk space, backup key...);
 2. maintenance mode on, a 60-second pause so the web server sees it, then every web and API session closed;
-3. an encrypted backup of the database (`storage/backups/scheduled-pre-upgrade-*.sql`), decrypted once to prove it can be restored;
+3. an encrypted backup of the database (`storage/onthefly/pre-upgrade-*.sql`), decrypted once to prove it can be restored. It is listed under *Administration > Backups*, in the **On the fly** tab, and is kept until an administrator deletes it;
 4. the upgrade scripts, one by one;
 5. a final verification, then the maintenance mode back to its previous value.
 
