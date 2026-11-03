@@ -452,7 +452,8 @@ function userHandler(string $post_type, array $dataReceived, array $SETTINGS, st
         */
         case 'increase_session_time'://action_user
             return increaseSessionDuration(
-                (int) filter_input(INPUT_POST, 'duration', FILTER_SANITIZE_NUMBER_INT)
+                (int) filter_input(INPUT_POST, 'duration', FILTER_SANITIZE_NUMBER_INT),
+                isset($SETTINGS['maximum_session_expiration_time']) === true ? (int) $SETTINGS['maximum_session_expiration_time'] : 60
             );
 
         /*
@@ -871,8 +872,21 @@ function keyHandler(string $post_type, array $dataReceived, array $SETTINGS): st
             // IMPORTANT: Passwords should NOT be sanitized (fix 3.1.5.10)
             $userPassword = $dataReceived['user_pwd'];
 
+            // A generated password is returned in clear: only for another account the caller
+            // manages, never for the caller's own one (GHSA-p84q-3h9h-qvh6).
+            $keysTargetUserId = (int) filter_var($filtered_user_id, FILTER_SANITIZE_NUMBER_INT);
+            $keysForAnotherUser = isset($dataReceived['user_id']) === true
+                && $keysTargetUserId !== (int) $session->get('user-id');
+            $generateUserNewPassword = userKeysGenerationMayGeneratePassword(
+                isset($dataReceived['user_id']) === true,
+                $keysTargetUserId,
+                (int) $session->get('user-id'),
+                isset($dataReceived['generate_user_new_password']) === true
+                    && filter_var($dataReceived['generate_user_new_password'], FILTER_VALIDATE_BOOLEAN) === true
+            );
+
             // Don't generate new user password -> verify it
-            if ($dataReceived['generate_user_new_password'] !== true) {
+            if ($generateUserNewPassword === false) {
 
                 // Get current user hash
                 $userHash = DB::queryFirstRow(
@@ -894,21 +908,32 @@ function keyHandler(string $post_type, array $dataReceived, array $SETTINGS): st
                 }
             }
 
-            return handleUserKeys(
-                (int) filter_var($filtered_user_id, FILTER_SANITIZE_NUMBER_INT),
+            $keysResult = handleUserKeys(
+                $keysTargetUserId,
                 (string) $userPassword,
                 isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? (int) $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
                 (string) filter_var($dataReceived['encryption_key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (bool) filter_var($dataReceived['delete_existing_keys'], FILTER_VALIDATE_BOOLEAN),
                 (bool) filter_var($dataReceived['send_email_to_user'], FILTER_VALIDATE_BOOLEAN),
                 (bool) filter_var($dataReceived['encrypt_with_user_pwd'], FILTER_VALIDATE_BOOLEAN),
-                (bool) isset($dataReceived['generate_user_new_password']) === true ? filter_var($dataReceived['generate_user_new_password'], FILTER_VALIDATE_BOOLEAN) : false,
+                $generateUserNewPassword,
                 (string) filter_var($dataReceived['email_body'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (bool) filter_var($dataReceived['user_self_change'], FILTER_VALIDATE_BOOLEAN),
                 (string) filter_var($dataReceived['recovery_public_key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (string) filter_var($dataReceived['recovery_private_key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (bool) isset($dataReceived['user_has_to_encrypt_personal_items_after']) === true ? filter_var($dataReceived['user_has_to_encrypt_personal_items_after'], FILTER_VALIDATE_BOOLEAN) : false,
             );
+
+            // The other account now has a new password and key pair: end its open sessions,
+            // as an administrator disconnect does (GHSA-p84q-3h9h-qvh6).
+            if ($keysForAnotherUser === true) {
+                $keysOutcome = prepareExchangedData($keysResult, 'decode');
+                if (is_array($keysOutcome) === true && ($keysOutcome['error'] ?? true) === false) {
+                    tpRevokeUserSessions($keysTargetUserId);
+                }
+            }
+
+            return $keysResult;
 
         case 'user_only_personal_items_encryption': //action_key
             // IMPORTANT: Passwords should NOT be sanitized (fix 3.1.5.10)
@@ -1353,6 +1378,21 @@ function changePassword(
             $post_user_id
         );
 
+        // The current password is the proof of ownership: without it, whoever holds the
+        // session would set a password of their choice (GHSA-p84q-3h9h-qvh6).
+        if (is_array($dataUser) === false
+            || $post_current_password === ''
+            || $passwordManager->verifyPassword((string) $dataUser['pw'], $post_current_password) === false
+        ) {
+            return prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_bad_credentials'),
+                ),
+                'encode'
+            );
+        }
+
         // check if badly written
         $dataUser['fonction_id'] = array_filter(
             explode(',', str_replace(';', ',', $dataUser['fonction_id']))
@@ -1432,6 +1472,9 @@ function changePassword(
 
             // update LOG
             logEvents($SETTINGS, 'user_mngt', 'at_user_pwd_changed', (string) $session->get('user-id'), $session->get('user-login'), (string) $post_user_id);
+
+            // Whoever shares this session (a stolen cookie) must not outlive the change
+            tpRenewSessionAfterPasswordChange($post_user_id);
 
             // Send back
             return prepareExchangedData(
@@ -3757,6 +3800,9 @@ function changeUserAuthenticationPassword(
 
                 $session->set('user-private_key', $privateKey);
 
+                // Whoever shares this session (a stolen cookie) must not outlive the change
+                tpRenewSessionAfterPasswordChange($post_user_id);
+
                 return prepareExchangedData(
                     array(
                         'error' => false,
@@ -4070,20 +4116,25 @@ function queuePersonalItemsRecoveryTask(int $userId, string $currentPassword, st
 }
 
 /**
- * Change user LDAP auth password
+ * Extend the user's session
  *
  * @param int $duration Duration in seconds to add
+ * @param int $maximumSessionMinutes Setting maximum_session_expiration_time, in minutes
  * @return string
  */
 function increaseSessionDuration(
-    int $duration
+    int $duration,
+    int $maximumSessionMinutes
 ): string
 {
     $session = SessionManager::getSession();
     // check if session is not already expired.
     if ($session->get('user-session_duration') > time()) {
-        // Calculate end of session
-        $session->set('user-session_duration', (int) $session->get('user-session_duration') + $duration);
+        // Calculate end of session: never beyond the maximum duration counted from now
+        $session->set(
+            'user-session_duration',
+            sessionExtensionEnd((int) $session->get('user-session_duration'), $duration, time(), $maximumSessionMinutes)
+        );
         // Update table
         DB::update(
             prefixTable('users'),
