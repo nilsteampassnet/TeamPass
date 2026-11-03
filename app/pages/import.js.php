@@ -94,7 +94,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         });
 
     // Provide list to filder target select
-    $('#import-csv-target-folder, #import-keepass-target-folder').html(store.get('teampassUser').folders)
+    $('#import-csv-target-folder, #import-keepass-target-folder, #import-mgr-target-folder').html(store.get('teampassUser').folders)
 
     // Plupload for CSV
     var csv_filename = '';
