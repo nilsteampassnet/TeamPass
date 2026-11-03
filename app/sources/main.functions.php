@@ -11926,6 +11926,54 @@ function tpInvalidateUserApiSession(int $userId): void
 }
 
 /**
+ * End every web and API session of a user whose password was replaced by someone else.
+ *
+ * Same effect as an administrator disconnect: clearing key_tempo makes PerformChecks reject
+ * every open web session of the account, whatever its session id. Used after a password
+ * recovery and after a key generation for another account (GHSA-p84q-3h9h-qvh6).
+ *
+ * @param integer $userId User whose sessions must end.
+ * @return void
+ */
+function tpRevokeUserSessions(int $userId): void
+{
+    if ($userId <= 0) {
+        return;
+    }
+
+    DB::update(
+        prefixTable('users'),
+        [
+            'key_tempo' => '',
+            'timestamp' => '',
+            'session_end' => '',
+        ],
+        'id = %i',
+        $userId
+    );
+
+    tpInvalidateUserApiSession($userId);
+}
+
+/**
+ * Keep the current web session after its user changed their own password, and end the others.
+ *
+ * TeamPass allows one web session per account, so the only other holder of a live session is
+ * whoever shares this one's id (a stolen cookie). Regenerating the id and destroying the old
+ * one evicts them while the user keeps working: the session data, its key included, moves to
+ * the new id. API sessions are revoked (GHSA-p84q-3h9h-qvh6).
+ *
+ * @param integer $userId User who changed their password.
+ * @return void
+ */
+function tpRenewSessionAfterPasswordChange(int $userId): void
+{
+    SessionManager::getSession()->migrate(true);
+
+    tpInvalidateUserApiSession($userId);
+}
+
+/**
  * Flush the HTTP response to the client and free the PHP-FPM worker early.
  *
  * Under PHP-FPM, fastcgi_finish_request() sends the buffered response to the
