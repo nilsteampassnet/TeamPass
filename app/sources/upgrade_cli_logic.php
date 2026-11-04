@@ -389,6 +389,7 @@ function tpUpgradeCliInstallerTables(string $installerSource): array
  * Whether a journal may move from one status to another.
  *
  * A status may follow itself for "running" and "reverting": a resumed or retried run keeps it.
+ * "reverting" goes back to "failed_resumable" when the revert gave up before restoring anything.
  *
  * @param string $from Current status ('' for a new journal)
  * @param string $to   Next status
@@ -401,7 +402,7 @@ function tpUpgradeCliCanTransition(string $from, string $to): bool
         '' => ['running'],
         'running' => ['running', 'completed', 'failed_resumable', 'reverting', 'aborted'],
         'failed_resumable' => ['running', 'reverting'],
-        'reverting' => ['reverting', 'reverted', 'revert_failed'],
+        'reverting' => ['reverting', 'reverted', 'revert_failed', 'failed_resumable'],
         'revert_failed' => ['reverting'],
         'completed' => ['reverting'],
     ];

@@ -179,7 +179,7 @@ Background tasks are held while it runs. Each run writes a log under `storage/up
 1. restore the code of the previous release (`git checkout <previous release>`, or redeploy its archive);
 2. sign in as an administrator and disable the maintenance mode.
 
-With `--on-failure=stop`, the run stops instead and can be continued once the cause is fixed. A run interrupted by Ctrl-C finishes its current script, then stops the same way.
+With `--on-failure=stop`, the run stops instead and can be continued once the cause is fixed. A run interrupted by Ctrl-C finishes its current script, then stops the same way. Two failures stop the run this way even with `--on-failure=revert`, because the database is still as the upgrade left it: an unexpected error during the final verification (every script already succeeded, so `resume` only verifies again), and a restore that could not even start.
 
 ```bash
 sudo -u www-data php app/scripts/upgrade-cli.php status             # journal of the latest run

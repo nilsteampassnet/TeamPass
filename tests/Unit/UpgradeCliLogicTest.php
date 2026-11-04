@@ -233,6 +233,9 @@ final class UpgradeCliLogicTest extends TestCase
         $this->assertTrue(tpUpgradeCliCanTransition('failed_resumable', 'running'));
         $this->assertTrue(tpUpgradeCliCanTransition('completed', 'reverting'));
         $this->assertTrue(tpUpgradeCliCanTransition('revert_failed', 'reverting'));
+        // A revert that gave up before restoring anything leaves the run resumable (#5450).
+        $this->assertTrue(tpUpgradeCliCanTransition('reverting', 'failed_resumable'));
+        $this->assertFalse(tpUpgradeCliCanTransition('revert_failed', 'failed_resumable'));
         $this->assertFalse(tpUpgradeCliCanTransition('reverted', 'running'));
         $this->assertFalse(tpUpgradeCliCanTransition('aborted', 'reverting'));
         $this->assertFalse(tpUpgradeCliCanTransition('completed', 'running'));
