@@ -873,6 +873,21 @@ if (null !== $post_type) {
                 break;
             }
 
+            // Same scope for the administrating role as save_user_change: 0 hands the account to
+            // the administrators, any other role must be one the caller may grant.
+            if ((int) $is_administrated_by !== 0
+                && in_array((int) $is_administrated_by, callerGrantableRoleIds(), true) === false
+            ) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
             // Non-admin cannot grant can_create_root_folder if they don't have it themselves.
             if ((int) $session->get('user-admin') !== 1 && (int) $session->get('user-can_create_root_folder') !== 1) {
                 $post_root_level = 0;
