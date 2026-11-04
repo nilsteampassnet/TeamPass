@@ -2106,6 +2106,19 @@ if (null !== $post_type) {
             // Prepare variables
             $post_id = (int) filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT);
 
+            // The target arrives in a plain POST field, which the generic target-scope guard
+            // (keyed on the encrypted 'user_id') never sees: check it here (GHSA-28mq-vx4v-72h8).
+            if (callerMayManageUser($post_id) === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
             $arrData = array();
 
             //Build tree
@@ -2113,6 +2126,16 @@ if (null !== $post_type) {
 
             // get User info
             $rowUser = getUserCompleteData(null, $post_id);
+            if (empty($rowUser) === true) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('user_not_exists'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
 
             // get rights
             $arrFolders = [];
