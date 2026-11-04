@@ -6508,7 +6508,8 @@ function attemptTransparentRecovery(array $userInfo, string $newPassword, array 
  * Handles external password change (LDAP/OAuth2) with automatic re-encryption.
  *
  * Returns an array with:
- * - 'success' (bool): true if the private key was transparently re-encrypted
+ * - 'success' (bool): true if the private key was transparently re-encrypted, or if the
+ *   account has no private key yet (nothing to re-encrypt: the login generates the keys)
  * - 'reason' (string): '' on success, 'no_recovery_data' for legacy users without a backup
  *   seed or backup ciphertext, 'integrity_check_failed' when the stored integrity hash
  *   does not match (non-disabling: modal shown), 'recovery_failed' when decryption
@@ -6523,6 +6524,14 @@ function attemptTransparentRecovery(array $userInfo, string $newPassword, array 
  */
 function handleExternalPasswordChange(int $userId, string $newPassword, array $userInfo, array $SETTINGS): array
 {
+    // No private key yet (account written into the users table by a directory synchronization,
+    // or legacy 'none' placeholder): there is nothing to re-encrypt, and decryptPrivateKey()
+    // would throw a TypeError on NULL. prepareUserEncryptionKeys() generates the keys later in
+    // the same login (#5451).
+    if (userKeyIsMissing($userInfo['private_key'] ?? null) === true) {
+        return ['success' => true, 'reason' => ''];
+    }
+
     // Check if password was changed recently (< 20s) to avoid duplicate processing
     if (!empty($userInfo['last_pw_change'])) {
         $timeSinceChange = time() - (int) $userInfo['last_pw_change'];
