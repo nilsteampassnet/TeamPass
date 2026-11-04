@@ -212,6 +212,34 @@ function mainQuery(array $SETTINGS)
 }
 
 /**
+ * Password a request sends for the signed-in user.
+ *
+ * When the browser sets `oauth2_derived_password` for an OAuth2 session, the password is
+ * the one derived from the provider subject held in the session, not the posted field:
+ * the browser no longer knows that subject once signed in (oauth2KeyPasswordFromSession()).
+ *
+ * @param array<array-key, mixed> $dataReceived Decoded request payload.
+ * @param string                  $field        Payload field carrying the typed password.
+ * @return string
+ */
+function requestedUserPassword(array $dataReceived, string $field): string
+{
+    $session = SessionManager::getSession();
+
+    if (filter_var($dataReceived['oauth2_derived_password'] ?? false, FILTER_VALIDATE_BOOLEAN) === true
+        && $session->get('user-auth_type') === 'oauth2'
+    ) {
+        return oauth2KeyPasswordFromSession(
+            $session->get('userOauth2Info'),
+            (string) $session->get('user-login')
+        );
+    }
+
+    // IMPORTANT: Passwords should NOT be sanitized (fix 3.1.5.10)
+    return (string) ($dataReceived[$field] ?? '');
+}
+
+/**
  * Handler for all password tasks
  *
  * @param string $post_type
@@ -329,7 +357,7 @@ function passwordHandler(string $post_type, array $dataReceived, array $SETTINGS
             // IMPORTANT: Passwords should NOT be sanitized (fix 3.1.5.10)
             return isUserPasswordCorrect(
                 (int) $session->get('user-id'),
-                (string) $dataReceived['password'],
+                requestedUserPassword($dataReceived, 'password'),
                 (string) filter_var($dataReceived['otp'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 $SETTINGS
             );
@@ -835,7 +863,7 @@ function keyHandler(string $post_type, array $dataReceived, array $SETTINGS): st
         case 'change_private_key_encryption_password'://action_key
 
             // IMPORTANT: Passwords should NOT be sanitized (fix 3.1.5.10)
-            $newPassword = $dataReceived['new_code'];
+            $newPassword = requestedUserPassword($dataReceived, 'new_code');
 
             // Get current user hash
             $userHash = DB::queryFirstRow(
@@ -869,14 +897,16 @@ function keyHandler(string $post_type, array $dataReceived, array $SETTINGS): st
          */
         case 'user_new_keys_generation'://action_key
 
-            // IMPORTANT: Passwords should NOT be sanitized (fix 3.1.5.10)
-            $userPassword = $dataReceived['user_pwd'];
-
             // A generated password is returned in clear: only for another account the caller
             // manages, never for the caller's own one (GHSA-p84q-3h9h-qvh6).
             $keysTargetUserId = (int) filter_var($filtered_user_id, FILTER_SANITIZE_NUMBER_INT);
             $keysForAnotherUser = isset($dataReceived['user_id']) === true
                 && $keysTargetUserId !== (int) $session->get('user-id');
+
+            // The caller's own password; for another account the field is not the target's password
+            $userPassword = $keysForAnotherUser === false
+                ? requestedUserPassword($dataReceived, 'user_pwd')
+                : $dataReceived['user_pwd'];
             $generateUserNewPassword = userKeysGenerationMayGeneratePassword(
                 isset($dataReceived['user_id']) === true,
                 $keysTargetUserId,
