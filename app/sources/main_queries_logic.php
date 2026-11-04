@@ -240,3 +240,49 @@ function sessionExtensionEnd(int $currentEnd, int $duration, int $now, int $maxi
 
     return max($currentEnd, min($currentEnd + $duration, $ceiling));
 }
+
+/**
+ * Password protecting the encryption keys of the signed-in OAuth2 account.
+ *
+ * An OAuth2 user never types a TeamPass password: the login page derives one from the
+ * provider subject (hashUserId() in core/load.js.php, applied to `id`, or to `sub` when the
+ * provider sends no `id`: the first 16 hex characters of its SHA-256). Once signed in, the
+ * browser no longer holds that subject, so the dialogs that need the password ask the
+ * server, which still has the provider's answer in the session.
+ *
+ * The subject is used only when it belongs to the signed-in account: its login (the part
+ * before '@' of userPrincipalName, or the whole value) must match the session login, the
+ * rule oauth2SessionSubjectLogin() applies at sign-in.
+ *
+ * @param mixed  $oauth2Info   Session value 'userOauth2Info', written by core/login.php.
+ * @param string $sessionLogin Session value 'user-login'.
+ *
+ * @return string The derived password, or '' when it cannot be derived.
+ */
+function oauth2KeyPasswordFromSession(mixed $oauth2Info, string $sessionLogin): string
+{
+    if (is_array($oauth2Info) === false) {
+        return '';
+    }
+
+    // Same precedence as the login page: id ?? sub
+    $subject = $oauth2Info['id'] ?? $oauth2Info['sub'] ?? null;
+    if (is_string($subject) === false || $subject === '') {
+        return '';
+    }
+
+    $principal = $oauth2Info['userPrincipalName'] ?? null;
+    if (is_string($principal) === false || trim($principal) === '') {
+        return '';
+    }
+    $localPart = strstr($principal, '@', true);
+    $subjectLogin = trim($localPart === false ? $principal : $localPart);
+
+    // The session login went through FILTER_SANITIZE_FULL_SPECIAL_CHARS at sign-in
+    $sessionLogin = trim(html_entity_decode($sessionLogin, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+    if ($sessionLogin === '' || strcasecmp($subjectLogin, $sessionLogin) !== 0) {
+        return '';
+    }
+
+    return substr(hash('sha256', $subject), 0, 16);
+}
