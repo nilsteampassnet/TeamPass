@@ -1116,7 +1116,7 @@ return array(
     'oauth' => 'OAuth',
     'admin_oauth_configuration' => 'Configuração OAuth',
     'settings_oauth_mode' => 'Habilitar Modo OAuth',
-    'settings_oauth_mode_tip' => 'OAuth só é possível com provedor Microsoft Entra (Azure AD).',
+    'settings_oauth_providers_tip' => 'Works with Microsoft Entra ID and with any OpenID Connect provider (authentik, Keycloak…) that returns the sub and preferred_username claims. The OAuth2 synchronization of the Users page is only available with Entra ID.',
     'app_name' => 'Nome da aplicação',
     'app_name_tip' => 'Será exibido no botão de login SSO.',
     'client_id' => 'Client ID',

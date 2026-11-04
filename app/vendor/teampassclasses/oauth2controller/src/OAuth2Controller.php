@@ -68,7 +68,7 @@ class OAuth2Controller
                 'urlAuthorize'            => 'https://login.microsoftonline.com/' . $settings['oauth2_tenant_id'] . '/oauth2/v2.0/authorize', // Using the v2.0 endpoint
                 'urlAccessToken'          => 'https://login.microsoftonline.com/' . $settings['oauth2_tenant_id'] . '/oauth2/v2.0/token',     // v2.0 endpoint for the token
                 'urlResourceOwnerDetails' => 'https://graph.microsoft.com/v1.0/me',  // Endpoint to get user info
-                'scopes'                  => explode(",", $settings['oauth2_client_scopes']),  // Scopes are defined in the settings
+                'scopes'                  => self::parseScopes((string) $settings['oauth2_client_scopes']),  // Scopes are defined in the settings
                 'defaultEndPointVersion'  => '2.0',  // Endpoint version
             ]);
 
@@ -82,9 +82,28 @@ class OAuth2Controller
                 'urlAuthorize'            => $settings['oauth2_client_endpoint'],
                 'urlAccessToken'          => $settings['oauth2_client_token'],
                 'urlResourceOwnerDetails' => $settings['oauth2_client_urlResourceOwnerDetails'],
-                'scopes'                  => explode(",", $settings['oauth2_client_scopes']),
+                'scopes'                  => self::parseScopes((string) $settings['oauth2_client_scopes']),
+                // OAuth2 scopes are space-delimited (RFC 6749 §3.3); League defaults to ','
+                'scopeSeparator'          => ' ',
             ]);
         }
+    }
+
+    /**
+     * Split the comma-separated scope setting into a clean list.
+     *
+     * Spaces typed around the commas and empty entries are dropped, so that
+     * "openid, profile," still requests exactly "openid profile".
+     *
+     * @param string $scopes Value of the oauth2_client_scopes setting.
+     * @return array<int, string>
+     */
+    private static function parseScopes(string $scopes): array
+    {
+        return array_values(array_filter(
+            array_map('trim', explode(',', $scopes)),
+            static fn (string $scope): bool => $scope !== ''
+        ));
     }
 
     public function redirect()
@@ -117,8 +136,7 @@ class OAuth2Controller
         try {
             // Exchange the authorization code for an access token
             $token = $this->provider->getAccessToken('authorization_code', [
-                'code' => $_GET['code'],
-                'scope' => $this->provider->getSeperatedScopes()
+                'code' => $_GET['code']
             ]);
 
             if ($this->provider instanceof Azure) {
@@ -143,13 +161,10 @@ class OAuth2Controller
                     }
                 }
             } else {
-                // Get user infos
+                // Get user infos from the UserInfo endpoint of the provider
                 $resourceOwner = $this->provider->getResourceOwner($token);
-                $user = $resourceOwner->toArray();
-                $userGroups = $user['realm_access']['roles'];
-                $user['userPrincipalName'] = $user['preferred_username'];
-                $user['givenname'] = $user['given_name'];
-                $user['surname'] = $user['family_name'];
+                $user = self::mapGenericUserInfo($resourceOwner->toArray());
+                $userGroups = $user['groups'];
             }
 
             // Return user information
@@ -162,9 +177,113 @@ class OAuth2Controller
             error_log('Unexpected error: ' . $e->getMessage());
             return [
                 'error' => true,
-                'message' => 'Error retrieving token: ' . $e->getMessage(),
+                'message' => 'OAuth2 sign-in failed: ' . $e->getMessage(),
             ];
         }
+    }
+
+    /**
+     * Map the UserInfo claims of a generic OpenID Connect provider onto the keys
+     * the TeamPass login flow reads, which follow the Microsoft Graph naming of Entra.
+     *
+     * - `preferred_username` becomes `userPrincipalName`: its part before '@' is the
+     *   TeamPass login;
+     * - `sub` (or `id`) must be present: the login page derives the account password
+     *   from it, so it has to be stable for the account to open its keys;
+     * - `groups` (standard claim) and `realm_access.roles` (Keycloak) are merged into a
+     *   list of {id, displayName} entries, matched against the TeamPass role titles;
+     * - `given_name` / `name`, `family_name` and `email` fill the names and the mail.
+     *
+     * @param array<string, mixed> $claims UserInfo response of the provider.
+     * @return array<string, mixed> The claims completed with userPrincipalName,
+     *                              givenname, surname, mail and a normalized `groups`.
+     * @throws Exception When the provider returned no subject or no username.
+     */
+    public static function mapGenericUserInfo(array $claims): array
+    {
+        $subject = self::firstClaim($claims, ['sub', 'id']);
+        if (trim($subject) === '') {
+            throw new Exception('The identity provider returned no "sub" claim. Check that the "openid" scope is requested.');
+        }
+
+        $login = self::firstClaim($claims, ['preferred_username']);
+        if (trim($login) === '') {
+            throw new Exception('The identity provider returned no "preferred_username" claim. Check that the "profile" scope is requested.');
+        }
+
+        $user = $claims;
+        $user['userPrincipalName'] = $login;
+        $user['givenname'] = self::firstClaim($claims, ['given_name', 'givenName', 'name']);
+        $user['surname'] = self::firstClaim($claims, ['family_name', 'surname']);
+        $user['mail'] = self::firstClaim($claims, ['mail', 'email']);
+        $user['groups'] = self::extractGenericGroups($claims);
+
+        return $user;
+    }
+
+    /**
+     * Return the first non-empty string claim among the given names.
+     *
+     * @param array<string, mixed> $claims UserInfo claims.
+     * @param array<int, string>   $names  Claim names, by order of preference.
+     * @return string The claim value, or '' when none is a non-empty string.
+     */
+    private static function firstClaim(array $claims, array $names): string
+    {
+        foreach ($names as $name) {
+            $value = $claims[$name] ?? null;
+            if ((is_string($value) || is_int($value)) && trim((string) $value) !== '') {
+                return (string) $value;
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * Collect the groups of a generic provider user as {id, displayName} entries.
+     *
+     * Reads the standard `groups` claim and Keycloak's `realm_access.roles`. Each entry
+     * may be a plain name or an object carrying `displayName` / `name` (and `id`).
+     * Duplicates and unusable entries are dropped.
+     *
+     * @param array<string, mixed> $claims UserInfo claims.
+     * @return array<int, array{id: string, displayName: string}>
+     */
+    private static function extractGenericGroups(array $claims): array
+    {
+        $sources = [];
+        if (isset($claims['groups']) && is_array($claims['groups'])) {
+            $sources[] = $claims['groups'];
+        }
+        if (isset($claims['realm_access']) && is_array($claims['realm_access'])
+            && isset($claims['realm_access']['roles']) && is_array($claims['realm_access']['roles'])
+        ) {
+            $sources[] = $claims['realm_access']['roles'];
+        }
+
+        $groups = [];
+        foreach ($sources as $source) {
+            foreach ($source as $entry) {
+                if (is_string($entry) || is_int($entry)) {
+                    $name = trim((string) $entry);
+                    $id = $name;
+                } elseif (is_array($entry)) {
+                    $name = trim(self::firstClaim($entry, ['displayName', 'name']));
+                    $id = trim(self::firstClaim($entry, ['id']));
+                    $id = $id === '' ? $name : $id;
+                } else {
+                    continue;
+                }
+
+                if ($name === '' || isset($groups[$name]) === true) {
+                    continue;
+                }
+                $groups[$name] = ['id' => $id, 'displayName' => $name];
+            }
+        }
+
+        return array_values($groups);
     }
 
     public function getAllGroups($token = null)

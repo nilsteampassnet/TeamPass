@@ -172,14 +172,6 @@ class Azure extends AbstractProvider
     /**
      * @inheritdoc
      */
-    public function getRequestScopes()
-    {
-        return $this->getDefaultScopes();
-    }
-
-    /**
-     * @inheritdoc
-     */
     public function getResourceOwner(\League\OAuth2\Client\Token\AccessToken $token): ResourceOwnerInterface
     {
         $data = $token->getIdTokenClaims();

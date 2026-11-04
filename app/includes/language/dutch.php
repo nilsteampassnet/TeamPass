@@ -1116,7 +1116,7 @@ return array(
     'oauth' => 'OAuth',
     'admin_oauth_configuration' => 'OAuth Configuratie',
     'settings_oauth_mode' => 'Schakel OAuth Modus in',
-    'settings_oauth_mode_tip' => 'OAuth is alleen mogelijk met Microsoft Entra (Azure AD) provider',
+    'settings_oauth_providers_tip' => 'Works with Microsoft Entra ID and with any OpenID Connect provider (authentik, Keycloak…) that returns the sub and preferred_username claims. The OAuth2 synchronization of the Users page is only available with Entra ID.',
     'app_name' => 'Applicatienaam',
     'app_name_tip' => 'Dit wordt weergegeven op de SSO-inlogknop',
     'client_id' => 'Client ID',
