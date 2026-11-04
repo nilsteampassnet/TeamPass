@@ -1116,7 +1116,7 @@ return array(
     'oauth' => 'OAuth',
     'admin_oauth_configuration' => 'OAuth Yapılandırması',
     'settings_oauth_mode' => 'OAuth Modunu Etkinleştir',
-    'settings_oauth_mode_tip' => 'OAuth yalnızca ID Microsoft Entra (Azure AD) sağlayıcısı ile mümkündür.',
+    'settings_oauth_providers_tip' => 'Works with Microsoft Entra ID and with any OpenID Connect provider (authentik, Keycloak…) that returns the sub and preferred_username claims. The OAuth2 synchronization of the Users page is only available with Entra ID.',
     'app_name' => 'Uygulama adı',
     'app_name_tip' => 'Bu, SSO giriş düğmesinde görüntülenecektir.',
     'client_id' => 'İstemci Kimliği',

@@ -1116,7 +1116,7 @@ return array(
     'oauth' => 'OAuth',
     'admin_oauth_configuration' => 'OAuth配置',
     'settings_oauth_mode' => '启用OAuth模式',
-    'settings_oauth_mode_tip' => '提示：OAuth模式仅适用于Microsoft Entra(Azure AD)身份提供商。',
+    'settings_oauth_providers_tip' => 'Works with Microsoft Entra ID and with any OpenID Connect provider (authentik, Keycloak…) that returns the sub and preferred_username claims. The OAuth2 synchronization of the Users page is only available with Entra ID.',
     'app_name' => '应用程序名称',
     'app_name_tip' => '提示：这将显示在单点登录(SSO)的登录按钮上。',
     'client_id' => '客户ID',

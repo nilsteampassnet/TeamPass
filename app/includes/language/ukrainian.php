@@ -1116,7 +1116,7 @@ return array(
     'oauth' => 'OAuth',
     'admin_oauth_configuration' => 'Конфігурація OAuth',
     'settings_oauth_mode' => 'Увімкнути режим OAuth',
-    'settings_oauth_mode_tip' => 'OAuth можливий лише з постачальником Microsoft Entra (Azure AD).',
+    'settings_oauth_providers_tip' => 'Works with Microsoft Entra ID and with any OpenID Connect provider (authentik, Keycloak…) that returns the sub and preferred_username claims. The OAuth2 synchronization of the Users page is only available with Entra ID.',
     'app_name' => 'Назва додатку',
     'app_name_tip' => 'Це відображатиметься на кнопці входу SSO.',
     'client_id' => 'ID клієнта',
