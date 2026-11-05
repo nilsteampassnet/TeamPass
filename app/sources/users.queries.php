@@ -970,10 +970,11 @@ if (null !== $post_type) {
                 // Store private key in dedicated table
                 insertPrivateKeyWithCurrentFlag($new_user_id, $userKeys['private_key']);
 
-                // Add Groups and Roles
+                // Add Groups and Roles. The folder ids are client-supplied: keep only the ones
+                // the caller may grant, like the roles above.
                 setUserRoles($new_user_id, $groups, 'manual');
-                setUserGroups($new_user_id, $allowed_flds);
-                setUserForbiddenGroups($new_user_id, $forbidden_flds);
+                setUserGroups($new_user_id, reconcileUserFolderSet([], (array) $allowed_flds));
+                setUserForbiddenGroups($new_user_id, reconcileUserFolderSet([], (array) $forbidden_flds));
 
                 // Create personnal folder
                 if ((int) $has_personal_folder === 1) {
@@ -1988,8 +1989,15 @@ if (null !== $post_type) {
                     // Add Groups and Roles ($post_groups already reconciled with the roles
                     // the caller is not entitled to grant)
                     setUserRoles($post_id, $post_groups, 'manual');
-                    setUserGroups($post_id, $post_allowed_flds);
-                    setUserForbiddenGroups($post_id, $post_forbidden_flds);
+                    // Folders: same reconciliation against the caller's scope
+                    setUserGroups(
+                        $post_id,
+                        reconcileUserFolderSet(getUserGroups($post_id), (array) $post_allowed_flds)
+                    );
+                    setUserForbiddenGroups(
+                        $post_id,
+                        reconcileUserFolderSet(getUserForbiddenGroups($post_id), (array) $post_forbidden_flds)
+                    );
 
                     // CLear cache tree for this user to force tree
                     DB::delete(
@@ -2540,17 +2548,24 @@ if (null !== $post_type) {
                     'manual'
                 );
 
-                // Update allowed folders in users_groups table
+                // Update allowed folders in users_groups table, reconciled per destination
+                // like the roles: only folders the caller may grant are propagated.
                 $allowedFolders = array_filter(
                     explode(';', str_replace(',', ';', (string) $inputData['user_fldallowed']))
                 );
-                setUserGroups((int) $dest_user_id, $allowedFolders);
+                setUserGroups(
+                    (int) $dest_user_id,
+                    reconcileUserFolderSet(getUserGroups((int) $dest_user_id), $allowedFolders)
+                );
 
                 // Update forbidden folders in users_groups_forbidden table
                 $forbiddenFolders = array_filter(
                     explode(';', str_replace(',', ';', (string) $inputData['user_fldforbid']))
                 );
-                setUserForbiddenGroups((int) $dest_user_id, $forbiddenFolders);
+                setUserForbiddenGroups(
+                    (int) $dest_user_id,
+                    reconcileUserFolderSet(getUserForbiddenGroups((int) $dest_user_id), $forbiddenFolders)
+                );
 
                 // Update other user fields in users table
                 DB::update(
