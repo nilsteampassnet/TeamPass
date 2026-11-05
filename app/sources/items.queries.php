@@ -4792,9 +4792,9 @@ switch ($inputData['type']) {
         }
 
         // Prepare tree. Built before the authorization check below, because the path
-        // of a folder the user cannot browse is still returned to him so he can walk
-        // the hierarchy down to a folder he is allowed to open. Only needed on the
-        // first page: the client keeps it for the next ones.
+        // of a folder the user cannot browse is still returned to him when it leads
+        // to a folder he is allowed to open, so he can walk the hierarchy down to it.
+        // Only needed on the first page: the client keeps it for the next ones.
         if ((int) $start === 0) {
             $arbo = $tree->getPath(intval($inputData['id']), true);
             foreach ($arbo as $elem) {
@@ -4820,6 +4820,32 @@ switch ($inputData['type']) {
         // `user-accessible_folders`, so no bypass is needed here: adding one would
         // expose the personal folders of other users.
         if (!in_array($inputData['id'], $session->get('user-accessible_folders'))) {
+            // The path of a folder outside the user's scope is only returned when the
+            // tree shows that folder: as the blocked ancestor of a folder in his scope.
+            // Any other folder id would give away the title and path of a folder he
+            // has no right on, another user's personal tree included (GHSA-5mff-6g7v-9v6v).
+            $requestedFolder = count($arr_arbo) > 0 ? $tree->getNode((int) $inputData['id']) : null;
+            $scopeFolderIds = itemAccessScopeFolderIds(
+                (array) $session->get('user-accessible_folders'),
+                (array) $session->get('user-personal_folders'),
+                (array) $session->get('user-no_access_folders'),
+                (array) $session->get('user-forbiden_personal_folders')
+            );
+            if (
+                $requestedFolder === null
+                || count($scopeFolderIds) === 0
+                || DB::queryFirstField(
+                    'SELECT id FROM ' . prefixTable('nested_tree') . '
+                    WHERE id IN %li AND nleft > %i AND nright < %i
+                    LIMIT 1',
+                    $scopeFolderIds,
+                    (int) $requestedFolder->nleft,
+                    (int) $requestedFolder->nright
+                ) === null
+            ) {
+                $arr_arbo = [];
+            }
+
             echo (string) prepareExchangedData(
                 array(
                     'error' => 'not_authorized',
