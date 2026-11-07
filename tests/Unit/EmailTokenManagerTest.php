@@ -191,6 +191,6 @@ final class EmailTokenManagerTest extends TestCase
         self::assertNull(EmailHttp::json(new Response(200, [], str_repeat('x', 65537))));
         self::assertNull(EmailHttp::json(new Response(200, [], '<html>private</html>')));
         self::assertNull(EmailHttp::retryAfter(new Response(429, ['Retry-After' => 'invalid'])));
-        self::assertGreaterThanOrEqual(100, EmailHttp::retryAfter(new Response(429, ['Retry-After' => gmdate(DATE_RFC7231, time() + 120)])));
+        self::assertGreaterThanOrEqual(100, EmailHttp::retryAfter(new Response(429, ['Retry-After' => gmdate('D, d M Y H:i:s \G\M\T', time() + 120)])));
     }
 }
