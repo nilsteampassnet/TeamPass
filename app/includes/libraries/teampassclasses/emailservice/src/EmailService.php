@@ -38,14 +38,14 @@ class EmailService
     protected $antiXSS;
 
     /**
-     * Message returned by the mail server on the last failed send, '' otherwise.
+     * Safe library reason and SMTP codes of the last failed send, '' otherwise.
      *
      * @var string
      */
     protected $lastError = '';
 
     /**
-     * SMTP conversation captured on the last send when a debug level is set.
+     * SMTP stages and response codes captured when a debug level is set.
      *
      * @var array<int, string>
      */
@@ -59,10 +59,10 @@ class EmailService
     }
 
     /**
-     * Returns the mail server message of the last failed send.
+     * Returns the safe reason of the last failed send, without provider details.
      *
      * Callers that only need to know whether the send worked can rely on the
-     * return value of sendMail(); this accessor gives the raw reason without
+     * return value of sendMail(); this accessor gives the safe reason without
      * having to decode it.
      *
      * @return string Empty string when the last send succeeded.
@@ -73,7 +73,7 @@ class EmailService
     }
 
     /**
-     * Returns the SMTP conversation captured during the last send.
+     * Returns SMTP stages and response codes captured during the last send.
      *
      * Only filled when the administrator set a debug level other than "None";
      * empty otherwise. PHPMailer would print that trace straight to the output
@@ -115,11 +115,11 @@ class EmailService
     {
         $this->mailer->setLanguage('en', $emailSettings->dir . '/vendor/phpmailer/phpmailer/language/');
         $this->mailer->SMTPDebug = ($cron || $silent) ? 0 : (int) $emailSettings->debugLevel;
-        // Capture the SMTP conversation rather than letting PHPMailer echo it:
-        // it would land in the middle of the JSON answer and make it unparsable.
+        // Keep only protocol stages and numeric replies. Raw SMTP debug output can
+        // include AUTH credentials, message bodies and provider-echoed secrets.
         $this->mailer->Debugoutput = function ($str) {
-            $line = trim((string) $str);
-            if ($line !== '') {
+            $line = $this->safeDebugLine(trim((string) $str));
+            if ($line !== '' && count($this->debugOutput) < 200) {
                 $this->debugOutput[] = $line;
             }
         };
@@ -149,7 +149,7 @@ class EmailService
             if (filter_var($dest, FILTER_VALIDATE_EMAIL)) {
                 $this->mailer->addAddress($dest);
             } else {
-                error_log("Teampass - Error - Invalid email ignored : $dest");
+                error_log('Teampass - Error - Invalid email address ignored');
             }
         }
     }
@@ -177,6 +177,9 @@ class EmailService
     ) {
         $this->lastError = '';
         $this->debugOutput = [];
+        // A service can send several messages in a backlog or an administrator loop.
+        // PHPMailer keeps its recipients after send(), including after a failure.
+        $this->mailer->clearAllRecipients();
 
         try {
             // Configurer le mailer
@@ -197,21 +200,17 @@ class EmailService
 
             // Envoyer l'email
             $this->mailer->send();
-            $this->mailer->smtpClose();
 
             return '';
 
         } catch (Exception $e) {
-            error_log('Error sending email: ' . $e->getMessage());
-
             // The reason is always returned: every caller already decodes it and
             // checks 'error', but it used to be silenced by default, so a refused
             // authentication or an unreachable relay was reported as a success.
-            $this->lastError = str_replace(
-                ["\n", "\t", "\r"],
-                '',
+            $this->lastError = $this->safeErrorMessage(
                 $this->mailer->ErrorInfo !== '' ? $this->mailer->ErrorInfo : $e->getMessage()
             );
+            error_log('Error sending email: ' . $this->lastError);
 
             return (string) json_encode([
                 'error' => true,
@@ -219,6 +218,53 @@ class EmailService
                 // Kept for the callers that read 'message'.
                 'message' => $this->lastError,
             ]);
+        } finally {
+            $this->mailer->smtpClose();
         }
+    }
+
+    /** Return only known protocol stages, never command arguments or reply text. */
+    private function safeDebugLine(string $line): string
+    {
+        if (preg_match('/\ACLIENT -> SERVER: (EHLO|HELO|STARTTLS|AUTH|MAIL|RCPT|DATA|RSET|QUIT|NOOP)(?:\s|$)/', $line, $matches) === 1) {
+            return 'CLIENT -> SERVER: ' . $matches[1];
+        }
+        if (preg_match('/\ASERVER -> CLIENT: ([1-5][0-9]{2})(?:[ -]([245]\.[0-9]{1,3}\.[0-9]{1,3})(?=\s|$))?/', $line, $matches) === 1) {
+            return 'SERVER -> CLIENT: ' . $matches[1] . (isset($matches[2]) ? ' ' . $matches[2] : '');
+        }
+        if (preg_match('/\AConnection: (opening|opened|closed|failed)\b/', $line, $matches) === 1) {
+            return 'Connection: ' . $matches[1];
+        }
+
+        return '';
+    }
+
+    /** Resolve a shipped PHPMailer reason and validated codes without echoing server data. */
+    private function safeErrorMessage(string $error): string
+    {
+        $translations = $this->mailer->getTranslations();
+        $reason = rtrim($translations['smtp_error'], ": \t\r\n");
+        foreach ([
+            'authenticate', 'smtp_connect_failed', 'connect_host', 'data_not_accepted',
+            'recipients_failed', 'from_failed', 'provide_address', 'invalid_address',
+            'invalid_header', 'invalid_hostentry', 'invalid_host', 'empty_message',
+            'extension_missing', 'no_smtputf8',
+        ] as $key) {
+            if (isset($translations[$key]) && strpos($error, $translations[$key]) !== false) {
+                $reason = rtrim($translations[$key], ": \t\r\n");
+                break;
+            }
+        }
+
+        $smtpError = $this->mailer->getSMTPInstance()->getError();
+        $codes = [];
+        if (preg_match('/\A[1-5][0-9]{2}\z/', (string) ($smtpError['smtp_code'] ?? '')) === 1) {
+            $codes[] = (string) $smtpError['smtp_code'];
+        }
+        if (preg_match('/\A[245]\.[0-9]{1,3}\.[0-9]{1,3}\z/', (string) ($smtpError['smtp_code_ex'] ?? '')) === 1) {
+            $codes[] = (string) $smtpError['smtp_code_ex'];
+        }
+
+        return $reason . ($codes === [] ? '' : ' [' . implode(' ', $codes) . ']');
     }
 }
