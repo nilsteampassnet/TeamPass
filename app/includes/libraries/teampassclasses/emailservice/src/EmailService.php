@@ -177,6 +177,9 @@ class EmailService
     ) {
         $this->lastError = '';
         $this->debugOutput = [];
+        // A service can send several messages in a backlog or an administrator loop.
+        // PHPMailer keeps its recipients after send(), including after a failure.
+        $this->mailer->clearAllRecipients();
 
         try {
             // Configurer le mailer
@@ -197,7 +200,6 @@ class EmailService
 
             // Envoyer l'email
             $this->mailer->send();
-            $this->mailer->smtpClose();
 
             return '';
 
@@ -219,6 +221,8 @@ class EmailService
                 // Kept for the callers that read 'message'.
                 'message' => $this->lastError,
             ]);
+        } finally {
+            $this->mailer->smtpClose();
         }
     }
 }
