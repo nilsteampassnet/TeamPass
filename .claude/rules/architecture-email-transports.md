@@ -41,3 +41,14 @@ updates; no transaction remains open during network I/O. Late workers cannot sav
 or release a replacement owner's state. Access-token invalidation matches the
 observed token hash so a late 401 cannot discard a newer token. Never put token
 values in `misc`, task arguments, logs or browser responses.
+
+`EmailTokenManager` uses separate cache keys and scopes for Microsoft Graph and
+Exchange SMTP client credentials. Gmail uses delegated consent with PKCE and the
+single `gmail.send` scope, retaining refresh tokens when renewal omits them.
+Token requests only reach fixed HTTPS endpoints, verify TLS, refuse redirects,
+bound response bodies and discard provider error bodies. A renewal lease conflict
+defers the caller rather than racing a refresh. Acquiring a token does not prove
+that the configured mailbox can send mail.
+
+Guzzle and League OAuth2 Client were already shipped transitively; they are now
+declared directly without changing locked versions or the production autoloader.

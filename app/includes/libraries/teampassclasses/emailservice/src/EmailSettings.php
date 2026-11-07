@@ -60,6 +60,14 @@ class EmailSettings
     public $timeout;
     public string $transport;
     public string $language;
+    public string $revision;
+    public string $microsoftTenantId;
+    public string $microsoftClientId;
+    public string $microsoftClientSecret;
+    public string $microsoftMailbox;
+    public string $googleClientId;
+    public string $googleClientSecret;
+    public string $googleSender;
 
     /**
      * Whether the TLS certificate of the SMTP server is verified (chain and host name).
@@ -73,6 +81,14 @@ class EmailSettings
     {
         $this->transport = (string) ($SETTINGS['email_transport'] ?? 'smtp');
         $this->language = (string) ($SETTINGS['default_language'] ?? 'english');
+        $this->revision = (string) ($SETTINGS['email_config_revision'] ?? '');
+        $this->microsoftTenantId = (string) ($SETTINGS['email_microsoft_tenant_id'] ?? '');
+        $this->microsoftClientId = (string) ($SETTINGS['email_microsoft_client_id'] ?? '');
+        $this->microsoftMailbox = (string) ($SETTINGS['email_microsoft_mailbox'] ?? '');
+        $this->googleClientId = (string) ($SETTINGS['email_google_client_id'] ?? '');
+        $this->googleSender = (string) ($SETTINGS['email_google_sender'] ?? '');
+        $this->microsoftClientSecret = $this->readProviderSecret($SETTINGS, 'email_microsoft_client_secret');
+        $this->googleClientSecret = $this->readProviderSecret($SETTINGS, 'email_google_client_secret');
         $this->smtpServer = $SETTINGS['email_smtp_server'] ?? '';
         $this->smtpAuth = isset($SETTINGS['email_smtp_auth']) ? ((int) $SETTINGS['email_smtp_auth']) === 1 : false;
         $this->authUsername = $SETTINGS['email_auth_username'] ?? '';
@@ -91,5 +107,32 @@ class EmailSettings
         // the certificate gets '0', and a missing value means the same: an upgrade must not
         // break a relay that presents a self-signed or internal certificate.
         $this->verifyCertificate = (string) ($SETTINGS['email_smtp_verify_certificate'] ?? '0') === '1';
+    }
+
+    /** Validate only fixed provider identities, never administrator-supplied endpoints. */
+    public function providerConfigurationIsValid(string $purpose): bool
+    {
+        if (preg_match('/\A[a-f0-9]{32}\z/', $this->revision) !== 1) {
+            return false;
+        }
+        if ($purpose === 'gmail_api') {
+            return preg_match('/\A[A-Za-z0-9_-]+\.apps\.googleusercontent\.com\z/', $this->googleClientId) === 1
+                && $this->googleClientSecret !== '' && filter_var($this->googleSender, FILTER_VALIDATE_EMAIL) !== false;
+        }
+        if (!in_array($purpose, ['microsoft_graph', 'microsoft_smtp'], true)) {
+            return false;
+        }
+        $guid = '/\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i';
+        return preg_match($guid, $this->microsoftTenantId) === 1 && preg_match($guid, $this->microsoftClientId) === 1
+            && $this->microsoftClientSecret !== '' && filter_var($this->microsoftMailbox, FILTER_VALIDATE_EMAIL) !== false;
+    }
+
+    private function readProviderSecret(array $settings, string $name): string
+    {
+        $value = (string) ($settings[$name] ?? '');
+        if ($value === '' || !function_exists('tpIsInstanceKeyCiphertext') || !\tpIsInstanceKeyCiphertext($value)) {
+            return '';
+        }
+        return \tpGetSecretSetting($settings, $name);
     }
 }
