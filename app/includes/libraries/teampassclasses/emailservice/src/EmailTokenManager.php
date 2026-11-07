@@ -172,6 +172,7 @@ final class EmailTokenManager implements EmailAccessTokenProviderInterface
             $data = EmailHttp::json($response);
             $lifetime = filter_var($data['expires_in'] ?? null, FILTER_VALIDATE_INT);
             if (!is_string($data['access_token'] ?? null) || $data['access_token'] === '' || strlen($data['access_token']) > 32768
+                || preg_match('/\A[A-Za-z0-9._~+\/-]+=*\z/', $data['access_token']) !== 1
                 || $lifetime === false || $lifetime <= 60 || $lifetime > PHP_INT_MAX - time()
                 || !is_string($data['token_type'] ?? null) || strcasecmp($data['token_type'], 'Bearer') !== 0
                 || !is_string($data['refresh_token'] ?? $existingRefresh)

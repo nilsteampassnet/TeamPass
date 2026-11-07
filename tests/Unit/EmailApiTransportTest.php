@@ -121,7 +121,7 @@ final class EmailApiTransportTest extends TestCase
     /** A provider may accept a message before its error response is lost. */
     public function testAmbiguousResponsesNeverReplay(): void
     {
-        foreach ([new Response(503), new Response(200, [], 'private-response'), new ConnectException('private-url-token', new Request('POST', 'https://example.test'), null, ['errno' => 28])] as $response) {
+        foreach ([new Response(503), new Response(200, [], 'private-response'), new Response(200, [], '{"id":"private-provider-secret"}'), new ConnectException('private-url-token', new Request('POST', 'https://example.test'), null, ['errno' => 28])] as $response) {
             $history = [];
             $tokens = $this->createMock(EmailAccessTokenProviderInterface::class);
             $tokens->expects(self::once())->method('getAccessToken')->willReturn('token');

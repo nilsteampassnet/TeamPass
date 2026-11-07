@@ -63,8 +63,13 @@ final class EmailHttp
     {
         $header = trim($response->getHeaderLine('Retry-After'));
         if ($header !== '' && ctype_digit($header)) {
-            $seconds = filter_var($header, FILTER_VALIDATE_INT);
-            return $seconds !== false && $seconds >= 0 && $seconds <= PHP_INT_MAX - time() ? $seconds : null;
+            $digits = ltrim($header, '0');
+            $maximum = (string) (PHP_INT_MAX - time());
+            // Leading zeros are legal. Saturate overflow instead of retrying too early.
+            if (strlen($digits) > strlen($maximum) || (strlen($digits) === strlen($maximum) && strcmp($digits, $maximum) > 0)) {
+                return (int) $maximum;
+            }
+            return $digits === '' ? 0 : (int) $digits;
         }
         $date = \DateTimeImmutable::createFromFormat('D, d M Y H:i:s \G\M\T', $header, new \DateTimeZone('UTC'));
         return $date === false ? null : max(0, $date->getTimestamp() - time());

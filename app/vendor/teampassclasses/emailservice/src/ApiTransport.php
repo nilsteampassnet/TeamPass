@@ -73,7 +73,7 @@ final class ApiTransport implements EmailTransportInterface
                 if (!$graph && $status === 200) {
                     $data = EmailHttp::json($response);
                     $id = $data['id'] ?? null;
-                    return is_string($id) && preg_match('/\A[a-zA-Z0-9_-]{1,256}\z/', $id) === 1
+                    return is_string($id) && preg_match('/\A[a-f0-9]{1,64}\z/i', $id) === 1
                         ? EmailSendResult::accepted($id) : EmailSendResult::indeterminate();
                 }
                 $delay = EmailHttp::retryAfter($response);
