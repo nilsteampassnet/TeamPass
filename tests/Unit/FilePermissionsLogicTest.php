@@ -129,6 +129,20 @@ class FilePermissionsLogicTest extends TestCase
         self::assertSame('danger', $report['status']);
     }
 
+    public function testReadOnlyModesDoNotProtectCodeOwnedByThePhpAccount(): void
+    {
+        if (PHP_OS_FAMILY !== 'Linux' || !function_exists('posix_geteuid')) {
+            self::markTestSkipped('POSIX ownership semantics are required.');
+        }
+        chmod($this->root . '/app/known.php', 0440);
+        $report = tpFilePermissionsScan($this->root,
+            tpFilePermissionsDetectPlatform("ID=ubuntu\n", 'Linux'),
+            ['source' => 'test', 'uid' => posix_geteuid(), 'gids' => [posix_getegid()]]);
+        $owned = array_filter($report['issues'], static fn (array $issue): bool =>
+            $issue['path'] === 'app/known.php' && $issue['reason'] === 'protected_web_owned');
+        self::assertCount(1, $owned);
+    }
+
     public function testRemediationUsesSudoAndDistributionSpecificWebIdentity(): void
     {
         $report = tpFilePermissionsDefaultReport();

@@ -9,6 +9,18 @@ const source = fs.readFileSync(path.join(__dirname, '../../public/install/recove
 const job = (status, permissions) => ({ id: 'a'.repeat(32), status, permissions, error: '', tables: 80, documents: 3,
   plan: { source_version: '3.2.2.7', target_version: '3.2.3.2' } })
 
+test('Manual permission review requires an explicit choice before offering the CLI acknowledgement', () => {
+  const ui = app(job('complete', { status: 'manual' }))
+  assert.equal(ui.element('recovery-resume-command').textContent, '')
+  const acknowledgement = ui.element('recovery-manual-ack')
+  acknowledgement.checked = true
+  acknowledgement.handlers.change()
+  assert.match(ui.element('recovery-resume-command').textContent, /--resume=a{32} --acknowledge-manual-permissions$/)
+  acknowledgement.checked = false
+  acknowledgement.handlers.change()
+  assert.equal(ui.element('recovery-resume-command').textContent, '')
+})
+
 function app(initial = null, command = "sudo -u 'www-data' -- '/usr/bin/php8.5' '/srv/TeamPass Lab/app/scripts/disaster-recovery.php'") {
   const elements = new Map()
   const element = (id) => {

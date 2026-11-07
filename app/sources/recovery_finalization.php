@@ -10,7 +10,7 @@ declare(strict_types=1);
  * @license GPL-3.0
  */
 
-require_once __DIR__ . '/file_permissions.functions.php';
+require_once __DIR__ . '/setup_permissions.php';
 
 /** Keep only non-sensitive receipt fields when persisting or exposing finalization. */
 function tpRecoveryReceiptFields(array $receipt): array
@@ -67,14 +67,7 @@ function tpRecoveryFinalizationLock()
 /** Summarize the real integrity permission scan and reuse its exact remediation model. */
 function tpRecoveryPermissionReview(string $root, array $report, int $checkedAt): array
 {
-    $supported = !empty($report['scan_supported']) && !empty($report['has_result'])
-        && ($report['identity']['source'] ?? '') === 'current_process';
-    $issues = $supported ? max(0, (int) ($report['counts']['issues'] ?? 0)) : null;
-    $commands = $supported ? tpFilePermissionsRemediationCommands($root, $report) : [];
-    $status = !$supported ? 'manual' : ($issues === 0 ? 'passed' : 'issues');
-    return ['status' => $status, 'checked_at' => $checkedAt, 'issues' => $issues,
-        'scan_supported' => $supported, 'commands' => $commands,
-        'remediation_supported' => $supported && !empty($report['remediation_supported'])];
+    return tpSetupPermissionsReview($root, $report, $checkedAt);
 }
 
 /** Audit only permissions, not release hashes, and propose commands without executing them. */
@@ -83,8 +76,7 @@ function tpRecoveryCheckPermissions(string $id): array
     $lock = tpRecoveryFinalizationLock();
     try {
         $receipt = tpRecoveryLoadReceipt($id);
-        $report = tpFilePermissionsScan(TEAMPASS_ROOT, null, null, true);
-        $receipt['permissions'] = tpRecoveryPermissionReview(TEAMPASS_ROOT, $report, time());
+        $receipt['permissions'] = tpSetupPermissionsAudit(TEAMPASS_ROOT);
         tpRecoverySaveReceipt($receipt);
         return $receipt;
     } finally {
