@@ -118,6 +118,20 @@ if (mysqli_query($db_link,
 ) === false) {
     throw new RuntimeException('Unable to initialize email token storage.');
 }
+foreach (['email_attempts' => 'SMALLINT UNSIGNED NOT NULL DEFAULT 0', 'next_attempt_at' => 'BIGINT UNSIGNED NOT NULL DEFAULT 0'] as $emailColumn => $emailDefinition) {
+    $emailColumnResult = mysqli_query($db_link, "SHOW COLUMNS FROM `" . $pre . "background_tasks` LIKE '" . $emailColumn . "'");
+    if ($emailColumnResult === false) { throw new RuntimeException('Unable to inspect email queue schema.'); }
+    if (mysqli_num_rows($emailColumnResult) === 0 && mysqli_query($db_link,
+        "ALTER TABLE `" . $pre . "background_tasks` ADD COLUMN `" . $emailColumn . "` " . $emailDefinition
+    ) === false) { throw new RuntimeException('Unable to initialize email queue scheduling.'); }
+    mysqli_free_result($emailColumnResult);
+}
+$emailIndexResult = mysqli_query($db_link, "SHOW INDEX FROM `" . $pre . "background_tasks` WHERE Key_name = 'idx_email_due'");
+if ($emailIndexResult === false) { throw new RuntimeException('Unable to inspect email queue index.'); }
+if (mysqli_num_rows($emailIndexResult) === 0 && mysqli_query($db_link,
+    "ALTER TABLE `" . $pre . "background_tasks` ADD INDEX idx_email_due (is_in_progress, next_attempt_at, increment_id)"
+) === false) { throw new RuntimeException('Unable to initialize email queue index.'); }
+mysqli_free_result($emailIndexResult);
 ConfigManager::invalidateCache();
 
 // Save upgrade timestamp (upsert: always update if exists)

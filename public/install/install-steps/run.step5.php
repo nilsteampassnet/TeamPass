@@ -1764,10 +1764,13 @@ class DatabaseInstaller
             `item_id` INT(12) NULL,
             `status` varchar(50) DEFAULT NULL,
             `error_message` TEXT NULL DEFAULT NULL,
+            `email_attempts` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+            `next_attempt_at` BIGINT UNSIGNED NOT NULL DEFAULT 0,
             PRIMARY KEY (`increment_id`),
             INDEX idx_finished (`finished_at`),
             INDEX idx_progress (`is_in_progress`),
-            INDEX idx_process_item (`process_type`, `item_id`)
+            INDEX idx_process_item (`process_type`, `item_id`),
+            INDEX idx_email_due (`is_in_progress`, `next_attempt_at`, `increment_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }

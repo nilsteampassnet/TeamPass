@@ -18,7 +18,7 @@ final class EmailTaskDeliveryTest extends TestCase
     public function testRejectedDeliveryFailsTheTaskWithoutExposingTheProviderResponse(): void
     {
         $result = $this->probe('rejected');
-        self::assertSame('Email delivery failed.', $result['failure']);
+        self::assertSame('rejected', $result['failure']);
         self::assertCount(1, $result['messages']);
         self::assertStringNotContainsString('private-provider-response', $result['failure']);
     }
@@ -52,7 +52,7 @@ final class EmailTaskDeliveryTest extends TestCase
     /** Execute the production worker, including persistence and logger boundaries. */
     public function testWorkerPersistsDeliveryFailuresAndLogsOnlyMetadata(): void
     {
-        foreach (['accepted' => 'completed', 'encrypted' => 'completed', 'rejected' => 'failed', 'unexpected' => 'failed', 'invalid' => 'failed'] as $mode => $status) {
+        foreach (['accepted' => 'completed', 'encrypted' => 'completed', 'rejected' => 'failed', 'unexpected' => 'failed', 'invalid' => 'failed', 'throttled' => 'queued', 'exhausted' => 'failed', 'indeterminate' => 'failed'] as $mode => $status) {
             $result = $this->probe($mode, true);
             self::assertCount(1, $result['task_updates']);
             self::assertSame($status, $result['task_updates'][0]['status'], $mode);
@@ -61,6 +61,22 @@ final class EmailTaskDeliveryTest extends TestCase
                 self::assertStringNotContainsString($sensitive, $diagnostics, $mode);
             }
             self::assertStringContainsString('123 (send_email)', implode('\n', $result['logs']));
+        }
+    }
+
+    /** Throttling defers this same task; ambiguous acceptance and exhausted retries remain failed. */
+    public function testWorkerDefersOnlyConfirmedRetryableFailures(): void
+    {
+        $before = time();
+        $deferred = $this->probe('throttled', true)['task_updates'][0];
+        self::assertSame('queued', $deferred['status']);
+        self::assertSame(0, $deferred['is_in_progress']);
+        self::assertNull($deferred['finished_at']);
+        self::assertGreaterThanOrEqual($before + 172800, $deferred['next_attempt_at']);
+        foreach (['indeterminate', 'exhausted'] as $mode) {
+            $failed = $this->probe($mode, true)['task_updates'][0];
+            self::assertSame('failed', $failed['status']);
+            self::assertArrayNotHasKey('next_attempt_at', $failed);
         }
     }
 

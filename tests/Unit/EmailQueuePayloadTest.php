@@ -115,4 +115,19 @@ final class EmailQueuePayloadTest extends TestCase
             self::assertSame([], DB::$inserts);
         }
     }
+
+    /** A retry timestamp never shortens Retry-After and never replays unsafe outcomes. */
+    public function testRetryPolicyHonorsDelayAndAttemptBudget(): void
+    {
+        $resultClass = \TeampassClasses\EmailService\EmailSendResult::class;
+        self::assertSame(1030, emailQueueRetryAt($resultClass::failure('temporary', true), 1, 1000));
+        self::assertSame(1060, emailQueueRetryAt($resultClass::failure('network', true), 2, 1000));
+        self::assertSame(173800, emailQueueRetryAt($resultClass::failure('throttled', true, 172800), 1, 1000));
+        self::assertNull(emailQueueRetryAt($resultClass::failure('temporary', true), 3, 1000));
+        self::assertNull(emailQueueRetryAt($resultClass::accepted(), 1, 1000));
+        self::assertNull(emailQueueRetryAt($resultClass::indeterminate('timeout'), 1, 1000));
+        foreach (['authentication', 'configuration', 'permission', 'message', 'rejected', 'partial_acceptance'] as $code) {
+            self::assertNull(emailQueueRetryAt($resultClass::failure($code, true), 1, 1000));
+        }
+    }
 }

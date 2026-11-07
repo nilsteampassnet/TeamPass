@@ -64,7 +64,7 @@ trait EmailTrait {
         // The worker catches this exception and marks the task failed. Do not include
         // the provider response: it can contain recipient or message data.
         if ($result !== '') {
-            throw new RuntimeException('Email delivery failed.');
+            throw new \TeampassClasses\EmailService\EmailTransportException($emailService->getLastResult());
         }
     }
 }
