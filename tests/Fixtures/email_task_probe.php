@@ -19,6 +19,9 @@ namespace TeampassClasses\EmailService {
         public function sendMail($subject, $body, $receivers, $settings, $alternative, $silent, $cron)
         {
             self::$messages[] = ['body' => $body, 'silent' => $silent, 'cron' => $cron];
+            if ($GLOBALS['argv'][1] === 'unexpected') {
+                throw new \RuntimeException('private-provider-response');
+            }
 
             return $GLOBALS['argv'][1] === 'rejected'
                 ? '{"error":true,"message":"private-provider-response"}'
@@ -31,6 +34,17 @@ namespace TeampassClasses\EmailService {
         /** No configuration or database is needed by this boundary stub. */
         public function __construct(array $settings)
         {
+        }
+    }
+}
+
+namespace TeampassClasses\ConfigManager {
+    final class ConfigManager
+    {
+        /** Keep the production worker constructor independent of an installation. */
+        public function getAllSettings(): array
+        {
+            return [];
         }
     }
 }
@@ -60,11 +74,85 @@ namespace {
         }
     }
 
+    /** In-memory persistence boundary for the real worker's status transitions. */
+    final class DB
+    {
+        public static array $updates = [];
+
+        /** Record writes, including the task's actual final status and error. */
+        public static function update($table, $values, $where, $id): void
+        {
+            self::$updates[] = $values;
+        }
+    }
+
+    final class TaskLogger
+    {
+        public static array $entries = [];
+
+        /** Capture log calls without writing a runtime journal. */
+        public function __construct(array $settings, string $path)
+        {
+        }
+
+        /** Capture exactly what the worker gives its logger. */
+        public function log(string $message, string $level): void
+        {
+            self::$entries[] = $message;
+        }
+    }
+
+    /** Supply infrastructure helpers that email tasks do not otherwise exercise. */
+    function resetItemRevisionMemo(): void
+    {
+    }
+
+    /** Preserve use of a configurable table prefix at the persistence boundary. */
+    function prefixTable(string $table): string
+    {
+        return 'test_' . $table;
+    }
+
+    /** Load the actual worker class without running its installation bootstrap or CLI entry point. */
+    function loadEmailTaskWorker(): void
+    {
+        $source = file_get_contents(dirname(__DIR__, 2) . '/app/scripts/background_tasks___worker.php');
+        $class = '';
+        $recording = false;
+        $depth = 0;
+        foreach (token_get_all($source) as $token) {
+            if (is_array($token) && $token[0] === T_CLASS) {
+                $recording = true;
+            }
+            if (!$recording) {
+                continue;
+            }
+            $class .= is_array($token) ? $token[1] : $token;
+            if ($token === '{' || (is_array($token) && in_array($token[0], [T_CURLY_OPEN, T_DOLLAR_OPEN_CURLY_BRACES], true))) {
+                $depth++;
+            } elseif ($token === '}' && --$depth === 0) {
+                break;
+            }
+        }
+        if ($depth !== 0 || !str_starts_with($class, 'class TaskWorker ')) {
+            throw new \RuntimeException('Unable to load the production worker class.');
+        }
+        // Other task families are outside this probe; EmailTrait is the production trait.
+        preg_match_all('/^    use ([A-Za-z0-9]+Trait);/m', $class, $traits);
+        foreach ($traits[1] as $trait) {
+            if ($trait !== 'EmailTrait') {
+                eval('trait ' . $trait . ' {}');
+            }
+        }
+        eval('use TeampassClasses\\ConfigManager\\ConfigManager; use TeampassClasses\\Language\\Language; ' . $class);
+    }
+
     $GLOBALS['decrypt_calls'] = 0;
     $arguments = [
         'subject' => 'Task test',
         'body' => '<p>Task body</p>',
         'receivers' => 'recipient@example.com',
+        'receiver_name' => 'Recipient',
         'encryptedUserPassword' => '',
     ];
     if (in_array($argv[1], ['encrypted', 'invalid'], true)) {
@@ -74,7 +162,14 @@ namespace {
 
     $failure = null;
     try {
-        (new EmailTaskProbe())->run($arguments);
+        if (($argv[2] ?? '') === 'worker') {
+            define('LOG_TASKS', true);
+            define('LOG_TASKS_FILE', 'unused-test-log');
+            loadEmailTaskWorker();
+            (new TaskWorker(123, 'send_email', $arguments))->execute();
+        } else {
+            (new EmailTaskProbe())->run($arguments);
+        }
     } catch (RuntimeException $e) {
         $failure = $e->getMessage();
     }
@@ -83,5 +178,7 @@ namespace {
         'failure' => $failure,
         'decrypt_calls' => $GLOBALS['decrypt_calls'],
         'messages' => \TeampassClasses\EmailService\EmailService::$messages,
+        'task_updates' => DB::$updates,
+        'logs' => TaskLogger::$entries,
     ], JSON_THROW_ON_ERROR);
 }
