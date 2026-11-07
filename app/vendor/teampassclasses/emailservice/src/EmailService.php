@@ -30,39 +30,54 @@ namespace TeampassClasses\EmailService;
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
+use TeampassClasses\Language\Language;
 use voku\helper\AntiXSS;
 
 class EmailService
 {
     protected $mailer;
     protected $antiXSS;
+    private ?EmailTransportInterface $transport;
+    private EmailSendResult $lastResult;
+    /** @var \Closure(): PHPMailer */
+    private \Closure $mailerFactory;
 
     /**
-     * Message returned by the mail server on the last failed send, '' otherwise.
+     * Safe library reason and SMTP codes of the last failed send, '' otherwise.
      *
      * @var string
      */
     protected $lastError = '';
 
     /**
-     * SMTP conversation captured on the last send when a debug level is set.
+     * SMTP stages and response codes captured when a debug level is set.
      *
      * @var array<int, string>
      */
     protected $debugOutput = [];
 
-    public function __construct()
+    /** Create the message builder; an injected transport can supply an isolated delivery boundary. */
+    public function __construct(?EmailTransportInterface $transport = null, ?callable $mailerFactory = null)
     {
         // Initialise PHPMailer et AntiXSS
-        $this->mailer = new PHPMailer(true);
+        $this->mailerFactory = $mailerFactory === null ? static fn(): PHPMailer => new PHPMailer(true) : \Closure::fromCallable($mailerFactory);
+        $this->mailer = ($this->mailerFactory)();
         $this->antiXSS = new AntiXSS();
+        $this->transport = $transport;
+        $this->lastResult = EmailSendResult::failure('not_attempted');
+    }
+
+    /** Return the structured outcome without changing the legacy sendMail() contract. */
+    public function getLastResult(): EmailSendResult
+    {
+        return $this->lastResult;
     }
 
     /**
-     * Returns the mail server message of the last failed send.
+     * Returns the safe reason of the last failed send, without provider details.
      *
      * Callers that only need to know whether the send worked can rely on the
-     * return value of sendMail(); this accessor gives the raw reason without
+     * return value of sendMail(); this accessor gives the safe reason without
      * having to decode it.
      *
      * @return string Empty string when the last send succeeded.
@@ -73,7 +88,7 @@ class EmailService
     }
 
     /**
-     * Returns the SMTP conversation captured during the last send.
+     * Returns SMTP stages and response codes captured during the last send.
      *
      * Only filled when the administrator set a debug level other than "None";
      * empty otherwise. PHPMailer would print that trace straight to the output
@@ -115,11 +130,11 @@ class EmailService
     {
         $this->mailer->setLanguage('en', $emailSettings->dir . '/vendor/phpmailer/phpmailer/language/');
         $this->mailer->SMTPDebug = ($cron || $silent) ? 0 : (int) $emailSettings->debugLevel;
-        // Capture the SMTP conversation rather than letting PHPMailer echo it:
-        // it would land in the middle of the JSON answer and make it unparsable.
+        // Keep only protocol stages and numeric replies. Raw SMTP debug output can
+        // include AUTH credentials, message bodies and provider-echoed secrets.
         $this->mailer->Debugoutput = function ($str) {
-            $line = trim((string) $str);
-            if ($line !== '') {
+            $line = $this->safeDebugLine(trim((string) $str));
+            if ($line !== '' && count($this->debugOutput) < 200) {
                 $this->debugOutput[] = $line;
             }
         };
@@ -139,6 +154,21 @@ class EmailService
         $this->mailer->SMTPOptions = self::tlsOptions($emailSettings->verifyCertificate === true);
         $this->mailer->From = $emailSettings->from;
         $this->mailer->FromName = $emailSettings->fromName;
+        if ($emailSettings->transport === 'smtp' && $emailSettings->smtpAuthMode === 'microsoft_oauth') {
+            if (strcasecmp($emailSettings->from, $emailSettings->microsoftMailbox) !== 0) {
+                throw new EmailTransportException(EmailSendResult::failure('configuration'));
+            }
+            $this->mailer->Host = 'smtp.office365.com';
+            $this->mailer->Port = 587;
+            $this->mailer->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $this->mailer->SMTPAutoTLS = true;
+            $this->mailer->SMTPOptions = self::tlsOptions(true);
+            $this->mailer->SMTPAuth = true;
+            $this->mailer->AuthType = 'XOAUTH2';
+            $this->mailer->Username = $emailSettings->microsoftMailbox;
+            $this->mailer->Password = '';
+            $this->mailer->setOAuth(new MicrosoftSmtpOAuthProvider($emailSettings->microsoftMailbox, $this->tokenManager($emailSettings, 'microsoft_smtp')));
+        }
     }
 
     // Fonction pour ajouter des destinataires
@@ -149,7 +179,7 @@ class EmailService
             if (filter_var($dest, FILTER_VALIDATE_EMAIL)) {
                 $this->mailer->addAddress($dest);
             } else {
-                error_log("Teampass - Error - Invalid email ignored : $dest");
+                error_log('Teampass - Error - Invalid email address ignored');
             }
         }
     }
@@ -177,8 +207,14 @@ class EmailService
     ) {
         $this->lastError = '';
         $this->debugOutput = [];
-
+        $this->lastResult = EmailSendResult::failure('not_attempted');
+        // A service can send several messages in a backlog or an administrator loop.
+        // PHPMailer keeps its recipients after send(), including after a failure.
         try {
+            // Never carry OAuth objects, attachments, headers or auth settings between messages.
+            $this->mailer = ($this->mailerFactory)();
+            $this->mailer->clearAllRecipients();
+            $transport = $this->resolveTransport($emailSettings);
             // Configurer le mailer
             $this->configureMailer($emailSettings, $silent, $cron);
 
@@ -196,29 +232,157 @@ class EmailService
             $this->mailer->AltBody = $textMailAlt ?? '';
 
             // Envoyer l'email
-            $this->mailer->send();
-            $this->mailer->smtpClose();
+            $this->mailer->preSend();
+            $this->lastResult = $transport->send($this->mailer);
+            if ($this->lastResult->accepted === false) {
+                $this->lastError = $this->transportErrorMessage($emailSettings);
+                return $this->errorResponse();
+            }
 
             return '';
 
+        } catch (EmailTransportException $e) {
+            $this->lastResult = $e->result;
+            $this->lastError = $this->transportErrorMessage($emailSettings);
+            return $this->errorResponse();
         } catch (Exception $e) {
-            error_log('Error sending email: ' . $e->getMessage());
-
             // The reason is always returned: every caller already decodes it and
             // checks 'error', but it used to be silenced by default, so a refused
             // authentication or an unreachable relay was reported as a success.
-            $this->lastError = str_replace(
-                ["\n", "\t", "\r"],
-                '',
+            $this->lastError = $this->safeErrorMessage(
                 $this->mailer->ErrorInfo !== '' ? $this->mailer->ErrorInfo : $e->getMessage()
             );
+            $this->lastResult = $this->smtpFailureResult();
+            error_log('Error sending email: ' . $this->lastError);
 
-            return (string) json_encode([
-                'error' => true,
-                'errorInfo' => $this->lastError,
-                // Kept for the callers that read 'message'.
-                'message' => $this->lastError,
-            ]);
+            return $this->errorResponse();
+        } catch (\InvalidArgumentException $e) {
+            $this->lastResult = EmailSendResult::failure('configuration');
+            $this->lastError = $this->transportErrorMessage($emailSettings);
+            return $this->errorResponse();
+        } catch (\Throwable $e) {
+            // A transport failure may carry credentials in its exception. Never expose it.
+            $this->lastResult = EmailSendResult::indeterminate();
+            $this->lastError = $this->transportErrorMessage($emailSettings);
+            return $this->errorResponse();
+        } finally {
+            $this->mailer->smtpClose();
         }
+    }
+
+    /** Resolve the active transport without falling back from an unsupported selection. */
+    private function resolveTransport(EmailSettings $settings): EmailTransportInterface
+    {
+        if ($this->transport !== null) {
+            return $this->transport;
+        }
+        if ($settings->transport === 'smtp') {
+            if (!in_array($settings->smtpAuthMode, ['none', 'password', 'microsoft_oauth'], true)) {
+                throw new \InvalidArgumentException('Unsupported SMTP authentication.');
+            }
+            return new SmtpTransport();
+        }
+        if (in_array($settings->transport, ['microsoft_graph', 'gmail_api'], true)) {
+            return new ApiTransport($settings, $this->tokenManager($settings, $settings->transport), EmailHttp::client());
+        }
+
+        throw new \InvalidArgumentException('Unsupported email transport.');
+    }
+
+    /** Token audiences are isolated from each other and from TeamPass login OAuth. */
+    private function tokenManager(EmailSettings $settings, string $purpose): EmailTokenManager
+    {
+        return new EmailTokenManager($settings, $purpose, new DatabaseEmailTokenStore($settings->revision), EmailHttp::client());
+    }
+
+    /** Translate caller-facing errors independently of any user session. */
+    private function transportErrorMessage(EmailSettings $settings): string
+    {
+        $code = $this->lastResult->indeterminate ? 'indeterminate' : $this->lastResult->errorCode;
+        return (string) (new Language($settings->language))->get('email_transport_error_' . $code);
+    }
+
+    /** Preserve the historical JSON error fields and append structured metadata. */
+    private function errorResponse(): string
+    {
+        return (string) json_encode(array_merge($this->lastResult->toArray(), [
+            'error' => true,
+            'errorInfo' => $this->lastError,
+            'message' => $this->lastError,
+        ]));
+    }
+
+    /** Classify SMTP errors conservatively, especially partially accepted recipient lists. */
+    private function smtpFailureResult(): EmailSendResult
+    {
+        $translations = $this->mailer->getTranslations();
+        $reason = $this->mailer->ErrorInfo;
+        if (str_starts_with($reason, $translations['recipients_failed'])) {
+            return EmailSendResult::indeterminate('partial_acceptance');
+        }
+        if (str_starts_with($reason, $translations['authenticate'])) {
+            return EmailSendResult::failure('authentication');
+        }
+        if (str_starts_with($reason, $translations['connect_host']) || str_starts_with($reason, $translations['smtp_connect_failed'])) {
+            return EmailSendResult::failure('network', true);
+        }
+        $smtpError = $this->mailer->getSMTPInstance()->getError();
+        $code = (string) ($smtpError['smtp_code'] ?? '');
+        if (preg_match('/\A4[0-9]{2}\z/', $code) === 1) {
+            return EmailSendResult::failure('temporary', true);
+        }
+        if (preg_match('/\A5[0-9]{2}\z/', $code) === 1) {
+            return EmailSendResult::failure('rejected');
+        }
+        if (str_starts_with($reason, $translations['data_not_accepted'])) {
+            return EmailSendResult::indeterminate();
+        }
+
+        return EmailSendResult::failure('message');
+    }
+
+    /** Return only known protocol stages, never command arguments or reply text. */
+    private function safeDebugLine(string $line): string
+    {
+        if (preg_match('/\ACLIENT -> SERVER: (EHLO|HELO|STARTTLS|AUTH|MAIL|RCPT|DATA|RSET|QUIT|NOOP)(?:\s|$)/', $line, $matches) === 1) {
+            return 'CLIENT -> SERVER: ' . $matches[1];
+        }
+        if (preg_match('/\ASERVER -> CLIENT: ([1-5][0-9]{2})(?:[ -]([245]\.[0-9]{1,3}\.[0-9]{1,3})(?=\s|$))?/', $line, $matches) === 1) {
+            return 'SERVER -> CLIENT: ' . $matches[1] . (isset($matches[2]) ? ' ' . $matches[2] : '');
+        }
+        if (preg_match('/\AConnection: (opening|opened|closed|failed)\b/', $line, $matches) === 1) {
+            return 'Connection: ' . $matches[1];
+        }
+
+        return '';
+    }
+
+    /** Resolve a shipped PHPMailer reason and validated codes without echoing server data. */
+    private function safeErrorMessage(string $error): string
+    {
+        $translations = $this->mailer->getTranslations();
+        $reason = rtrim($translations['smtp_error'], ": \t\r\n");
+        foreach ([
+            'authenticate', 'smtp_connect_failed', 'connect_host', 'data_not_accepted',
+            'recipients_failed', 'from_failed', 'provide_address', 'invalid_address',
+            'invalid_header', 'invalid_hostentry', 'invalid_host', 'empty_message',
+            'extension_missing', 'no_smtputf8',
+        ] as $key) {
+            if (isset($translations[$key]) && strpos($error, $translations[$key]) !== false) {
+                $reason = rtrim($translations[$key], ": \t\r\n");
+                break;
+            }
+        }
+
+        $smtpError = $this->mailer->getSMTPInstance()->getError();
+        $codes = [];
+        if (preg_match('/\A[1-5][0-9]{2}\z/', (string) ($smtpError['smtp_code'] ?? '')) === 1) {
+            $codes[] = (string) $smtpError['smtp_code'];
+        }
+        if (preg_match('/\A[245]\.[0-9]{1,3}\.[0-9]{1,3}\z/', (string) ($smtpError['smtp_code_ex'] ?? '')) === 1) {
+            $codes[] = (string) $smtpError['smtp_code_ex'];
+        }
+
+        return $reason . ($codes === [] ? '' : ' [' . implode(' ', $codes) . ']');
     }
 }

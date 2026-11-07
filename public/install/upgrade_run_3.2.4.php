@@ -82,8 +82,57 @@ if ($db_link) {
 
 //--->BEGIN 3.2.4
 
-// No schema change yet. Patch releases of the 3.2.4 line append their idempotent DDL here:
-// every upgrade_run script is replayed on every upgrade.
+// Email transport state: additive and idempotent, preserving every existing SMTP value.
+$emailTransportDefaults = [
+    'email_transport' => 'smtp', 'email_smtp_auth_mode' => '',
+    'email_config_revision' => bin2hex(random_bytes(16)),
+    'email_microsoft_tenant_id' => '', 'email_microsoft_client_id' => '',
+    'email_microsoft_client_secret' => '', 'email_microsoft_mailbox' => '',
+    'email_google_client_id' => '', 'email_google_client_secret' => '', 'email_google_sender' => '',
+];
+foreach ($emailTransportDefaults as $emailSetting => $emailDefault) {
+    $emailEncrypted = in_array($emailSetting, ['email_microsoft_client_secret', 'email_google_client_secret'], true) ? 1 : 0;
+    $emailSettingEscaped = mysqli_real_escape_string($db_link, $emailSetting);
+    $emailDefaultEscaped = mysqli_real_escape_string($db_link, $emailDefault);
+    if (mysqli_query($db_link,
+        "INSERT IGNORE INTO `" . $pre . "misc` (type, intitule, valeur, is_encrypted)
+         VALUES ('admin', '" . $emailSettingEscaped . "', '" . $emailDefaultEscaped . "', " . $emailEncrypted . ")"
+    ) === false) {
+        throw new RuntimeException('Unable to initialize email transport settings.');
+    }
+}
+if (mysqli_query($db_link,
+    "CREATE TABLE IF NOT EXISTS `" . $pre . "email_oauth_state` (
+    `cache_key` CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    `config_revision` CHAR(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    `access_token` MEDIUMTEXT NOT NULL,
+    `refresh_token` MEDIUMTEXT NOT NULL,
+    `access_token_hash` CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    `expires_at` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    `lease_owner` VARCHAR(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
+    `lease_until` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    `updated_at` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    PRIMARY KEY (`cache_key`),
+    KEY `idx_config_revision` (`config_revision`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+) === false) {
+    throw new RuntimeException('Unable to initialize email token storage.');
+}
+foreach (['email_attempts' => 'SMALLINT UNSIGNED NOT NULL DEFAULT 0', 'next_attempt_at' => 'BIGINT UNSIGNED NOT NULL DEFAULT 0'] as $emailColumn => $emailDefinition) {
+    $emailColumnResult = mysqli_query($db_link, "SHOW COLUMNS FROM `" . $pre . "background_tasks` LIKE '" . $emailColumn . "'");
+    if ($emailColumnResult === false) { throw new RuntimeException('Unable to inspect email queue schema.'); }
+    if (mysqli_num_rows($emailColumnResult) === 0 && mysqli_query($db_link,
+        "ALTER TABLE `" . $pre . "background_tasks` ADD COLUMN `" . $emailColumn . "` " . $emailDefinition
+    ) === false) { throw new RuntimeException('Unable to initialize email queue scheduling.'); }
+    mysqli_free_result($emailColumnResult);
+}
+$emailIndexResult = mysqli_query($db_link, "SHOW INDEX FROM `" . $pre . "background_tasks` WHERE Key_name = 'idx_email_due'");
+if ($emailIndexResult === false) { throw new RuntimeException('Unable to inspect email queue index.'); }
+if (mysqli_num_rows($emailIndexResult) === 0 && mysqli_query($db_link,
+    "ALTER TABLE `" . $pre . "background_tasks` ADD INDEX idx_email_due (is_in_progress, next_attempt_at, increment_id)"
+) === false) { throw new RuntimeException('Unable to initialize email queue index.'); }
+mysqli_free_result($emailIndexResult);
+ConfigManager::invalidateCache();
 
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(

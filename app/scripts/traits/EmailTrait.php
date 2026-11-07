@@ -29,24 +29,30 @@
 use TeampassClasses\EmailService\EmailService;
 use TeampassClasses\EmailService\EmailSettings;
 
+require_once __DIR__ . '/../../sources/emails_queue_logic.php';
+
 trait EmailTrait {
     /**
      * Envoie un email
      * @param array $arguments Arguments nécessaires pour l'envoi d'email
      */
     private function sendEmail($arguments) {
+        $arguments = emailQueueOpen($arguments);
         // Prepare email properties
         $emailSettings = new EmailSettings($this->settings);
         $emailService = new EmailService();
         
         // if email.encryptedUserPassword is set, decrypt it
-        if (isset($arguments['encryptedUserPassword']) === true) {
-            $userPassword = cryption($arguments['encryptedUserPassword'], '', 'decrypt', $this->settings)['string'];
-            $arguments['body'] = str_replace('#password#', $userPassword, $arguments['body']);
+        if (empty($arguments['encryptedUserPassword']) === false) {
+            $decrypted = cryption($arguments['encryptedUserPassword'], '', 'decrypt', $this->settings);
+            if (($decrypted['error'] ?? false) !== false) {
+                throw new RuntimeException('Email credential could not be decrypted.');
+            }
+            $arguments['body'] = str_replace('#password#', $decrypted['string'], $arguments['body']);
         }
         
         // send email
-        $emailService->sendMail(
+        $result = $emailService->sendMail(
             $arguments['subject'],
             $arguments['body'],
             $arguments['receivers'],
@@ -55,5 +61,10 @@ trait EmailTrait {
             true,
             true
         );
+        // The worker catches this exception and marks the task failed. Do not include
+        // the provider response: it can contain recipient or message data.
+        if ($result !== '') {
+            throw new \TeampassClasses\EmailService\EmailTransportException($emailService->getLastResult());
+        }
     }
 }

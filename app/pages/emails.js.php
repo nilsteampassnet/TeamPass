@@ -81,6 +81,80 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 <script type='text/javascript'>
     //<![CDATA[
 
+    let emailProfileDirty = false;
+    const emailProfileText = <?php echo json_encode([
+        'dirty' => $lang->get('email_profile_save_required'),
+        'saved' => $lang->get('email_profile_saved'),
+        'saving' => $lang->get('in_progress'),
+        'failed' => $lang->get('email_profile_save_failed'),
+        'save' => $lang->get('email_profile_save'),
+        'authorize' => $lang->get('email_profile_save_google'),
+    ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+    const emailProfileKey = <?php echo json_encode($session->get('key'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+
+    function updateEmailTransportPanels() {
+        const transport = $('#email_transport').val();
+        const mode = $('#email_smtp_auth_mode').val();
+        const visible = ['all'];
+        $('#email-profile-save').text(transport === 'gmail_api' ? emailProfileText.authorize : emailProfileText.save);
+        if (transport === 'smtp') {
+            visible.push('smtp-auth');
+            if (mode === 'microsoft_oauth') visible.push('microsoft');
+            else visible.push('smtp');
+            if (mode === 'password') visible.push('password');
+        } else if (transport === 'microsoft_graph') visible.push('microsoft');
+        else if (transport === 'gmail_api') visible.push('google');
+        $('[data-email-section]').each(function() {
+            $(this).prop('hidden', !visible.includes($(this).data('email-section')));
+        });
+    }
+    updateEmailTransportPanels();
+
+    $('#email-transport-profile :input, #email_debug_level').on('input change', function() {
+        if (this.type === 'password' && this.value !== '') {
+            $('.email-secret-action').filter((index, element) => $(element).data('secret') === this.id).val('replace');
+        }
+        emailProfileDirty = true;
+        $('#email-profile-status').text(emailProfileText.dirty);
+        updateEmailTransportPanels();
+    });
+
+    $('#email-profile-save').on('click', function() {
+        const profile = { secret_actions: {}, email_debug_level: String($('#email_debug_level').val()) };
+        $('#email-transport-profile input[id], #email-transport-profile select[id]').each(function() {
+            profile[this.id] = String($(this).val());
+        });
+        $('.email-secret-action').each(function() {
+            profile.secret_actions[$(this).data('secret')] = $(this).val();
+        });
+        // A hidden provider secret stays untouched; explicitly clearing it still requires Save.
+        $('#email-transport-profile :input, #email_debug_level').prop('disabled', true);
+        $('#email-profile-status').text(emailProfileText.saving);
+        $.post('sources/emails_transport.queries.php', {
+            key: emailProfileKey,
+            data: prepareExchangedData(JSON.stringify({ profile, revision: $('#email-transport-profile').attr('data-revision') }), 'encode', emailProfileKey)
+        }).done(function(response) {
+            const data = decodeQueryReturn(response, emailProfileKey);
+            if (data === false || data.error === true) {
+                $('#email-profile-status').text(emailProfileText.failed);
+                return;
+            }
+            emailProfileDirty = false;
+            if (data.authorization_url) {
+                window.location.assign(data.authorization_url);
+                return;
+            }
+            $('#email-transport-profile').attr('data-revision', data.revision);
+            $('#email-transport-profile input[type=password]').val('');
+            $('.email-secret-action').val('keep');
+            $('#email-profile-status').text(emailProfileText.saved);
+        }).fail(function() {
+            $('#email-profile-status').text(emailProfileText.failed);
+        }).always(function() {
+            $('#email-transport-profile :input, #email_debug_level').prop('disabled', false);
+        });
+    });
+
     $(document).on('click', '.button', function() {
         var action = $(this).data('action');
 
@@ -88,6 +162,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         if (action === 'send-test-email') {
+            if (emailProfileDirty) {
+                toastr.remove();
+                toastr.warning(emailProfileText.dirty);
+                return;
+            }
             showEmailTestDebug('');
 
             $.post(

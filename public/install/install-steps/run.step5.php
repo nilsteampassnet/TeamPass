@@ -612,6 +612,16 @@ class DatabaseInstaller
             array('admin', 'enable_personal_saltkey_cookie', '0'),
             array('admin', 'personal_saltkey_cookie_duration', '31'),
             array('admin', 'email_smtp_server', ''),
+            array('admin', 'email_transport', 'smtp'),
+            array('admin', 'email_smtp_auth_mode', ''),
+            array('admin', 'email_config_revision', bin2hex(random_bytes(16))),
+            array('admin', 'email_microsoft_tenant_id', ''),
+            array('admin', 'email_microsoft_client_id', ''),
+            array('admin', 'email_microsoft_client_secret', '', '1'),
+            array('admin', 'email_microsoft_mailbox', ''),
+            array('admin', 'email_google_client_id', ''),
+            array('admin', 'email_google_client_secret', '', '1'),
+            array('admin', 'email_google_sender', ''),
             array('admin', 'email_smtp_auth', ''),
             array('admin', 'email_auth_username', '', '1'),
             array('admin', 'email_auth_pwd', '', '1'),
@@ -1351,6 +1361,22 @@ class DatabaseInstaller
             PRIMARY KEY (`increment_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
         );
+        // Keep OAuth state separate from ConfigManager's shared settings cache.
+        DB::query(
+            'CREATE TABLE IF NOT EXISTS `' . $this->inputData['tablePrefix'] . 'email_oauth_state` (
+            `cache_key` CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+            `config_revision` CHAR(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+            `access_token` MEDIUMTEXT NOT NULL,
+            `refresh_token` MEDIUMTEXT NOT NULL,
+            `access_token_hash` CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+            `expires_at` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+            `lease_owner` VARCHAR(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT \'\',
+            `lease_until` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+            `updated_at` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+            PRIMARY KEY (`cache_key`),
+            KEY `idx_config_revision` (`config_revision`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
+        );
     }
 
     // Create table automatic_del
@@ -1738,10 +1764,13 @@ class DatabaseInstaller
             `item_id` INT(12) NULL,
             `status` varchar(50) DEFAULT NULL,
             `error_message` TEXT NULL DEFAULT NULL,
+            `email_attempts` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+            `next_attempt_at` BIGINT UNSIGNED NOT NULL DEFAULT 0,
             PRIMARY KEY (`increment_id`),
             INDEX idx_finished (`finished_at`),
             INDEX idx_progress (`is_in_progress`),
-            INDEX idx_process_item (`process_type`, `item_id`)
+            INDEX idx_process_item (`process_type`, `item_id`),
+            INDEX idx_email_due (`is_in_progress`, `next_attempt_at`, `increment_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
