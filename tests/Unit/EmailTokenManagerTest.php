@@ -191,6 +191,22 @@ final class EmailTokenManagerTest extends TestCase
         self::assertNull(EmailHttp::json(new Response(200, [], str_repeat('x', 65537))));
         self::assertNull(EmailHttp::json(new Response(200, [], '<html>private</html>')));
         self::assertNull(EmailHttp::retryAfter(new Response(429, ['Retry-After' => 'invalid'])));
+        self::assertSame(172800, EmailHttp::retryAfter(new Response(429, ['Retry-After' => '000172800'])));
+        self::assertSame(0, EmailHttp::retryAfter(new Response(429, ['Retry-After' => '000'])));
+        self::assertGreaterThan(172800, EmailHttp::retryAfter(new Response(429, ['Retry-After' => str_repeat('9', 40)])));
         self::assertGreaterThanOrEqual(100, EmailHttp::retryAfter(new Response(429, ['Retry-After' => gmdate('D, d M Y H:i:s \G\M\T', time() + 120)])));
+    }
+
+    /** A provider response must not inject SASL delimiters or HTTP header characters into a bearer token. */
+    public function testMalformedBearerTokenIsRefusedBeforePersistence(): void
+    {
+        $history = [];
+        $store = new EmailMemoryTokenStore();
+        $http = $this->client([$this->token("private-token\x01injected")], $history);
+        $manager = new EmailTokenManager($this->settings(), 'microsoft_smtp', $store, $http);
+        try { $manager->getAccessToken(); self::fail('Malformed bearer token accepted'); }
+        catch (EmailTransportException $e) { self::assertSame('authentication', $e->getMessage()); }
+        self::assertSame([], $store->states);
+        self::assertSame(1, $store->releases);
     }
 }
