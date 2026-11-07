@@ -87,6 +87,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         'saved' => $lang->get('email_profile_saved'),
         'saving' => $lang->get('in_progress'),
         'failed' => $lang->get('email_profile_save_failed'),
+        'save' => $lang->get('email_profile_save'),
+        'authorize' => $lang->get('email_profile_save_google'),
     ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
     const emailProfileKey = <?php echo json_encode($session->get('key'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 
@@ -94,6 +96,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         const transport = $('#email_transport').val();
         const mode = $('#email_smtp_auth_mode').val();
         const visible = ['all'];
+        $('#email-profile-save').text(transport === 'gmail_api' ? emailProfileText.authorize : emailProfileText.save);
         if (transport === 'smtp') {
             visible.push('smtp-auth');
             if (mode === 'microsoft_oauth') visible.push('microsoft');
