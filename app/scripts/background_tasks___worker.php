@@ -126,6 +126,7 @@ class TaskWorker {
                     $this->handleUserBuildCacheTree($this->taskData);
                     break;
                 case 'send_email':
+                    DB::query('UPDATE ' . prefixTable('background_tasks') . ' SET email_attempts = email_attempts + 1 WHERE increment_id = %i', $this->taskId);
                     $this->sendEmail($this->taskData);
                     break;
                 case 'create_user_keys':
@@ -1759,6 +1760,19 @@ class TaskWorker {
      * @return void
      */
     private function handleTaskFailure(Throwable $e): void {
+        if ($this->processType === 'send_email' && $e instanceof \TeampassClasses\EmailService\EmailTransportException) {
+            $attempts = (int) DB::queryFirstField('SELECT email_attempts FROM ' . prefixTable('background_tasks') . ' WHERE increment_id = %i', $this->taskId);
+            $retryAt = emailQueueRetryAt($e->result, $attempts, time());
+            if ($retryAt !== null) {
+                DB::update(prefixTable('background_tasks'), [
+                    'is_in_progress' => 0, 'status' => 'queued', 'finished_at' => null, 'process_id' => null,
+                    'updated_at' => time(), 'next_attempt_at' => $retryAt,
+                    'error_message' => 'Email delivery deferred: ' . $e->result->errorCode . '.',
+                ], 'increment_id = %i', $this->taskId);
+                $this->logger->log('Email task ' . $this->taskId . ' deferred: ' . $e->result->errorCode, 'WARNING');
+                return;
+            }
+        }
         $errorMessage = $e->getMessage();
         // Keep only the trait's fixed diagnostics; transport exceptions may echo secrets.
         if ($this->processType === 'send_email' && !in_array($errorMessage, [
@@ -1766,6 +1780,9 @@ class TaskWorker {
             'Email credential could not be decrypted.',
         ], true)) {
             $errorMessage = 'Email delivery failed.';
+        }
+        if ($this->processType === 'send_email' && $e instanceof \TeampassClasses\EmailService\EmailTransportException) {
+            $errorMessage = 'Email delivery ' . ($e->result->indeterminate ? 'indeterminate' : 'failed') . ': ' . $e->result->errorCode . '.';
         }
         $updateData = [
             'is_in_progress' => -1,

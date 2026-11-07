@@ -66,6 +66,9 @@ try {
     eval(substr($installerSource, $classStart));
     $installer = new DatabaseInstaller(['tablePrefix' => $prefix], []);
     (new ReflectionMethod(DatabaseInstaller::class, 'emails'))->invoke($installer);
+    (new ReflectionMethod(DatabaseInstaller::class, 'background_tasks'))->invoke($installer);
+    $freshQueueColumns = DB::query('SHOW COLUMNS FROM ' . prefixTable('background_tasks'));
+    DB::query('ALTER TABLE ' . prefixTable('background_tasks') . ' DROP INDEX idx_email_due, DROP COLUMN email_attempts, DROP COLUMN next_attempt_at');
     $freshColumns = DB::query('SHOW COLUMNS FROM ' . prefixTable('email_oauth_state'));
     DB::query('DROP TABLE ' . prefixTable('email_oauth_state'));
     DB::query('CREATE TABLE ' . prefixTable('misc') . ' (type VARCHAR(50), intitule VARCHAR(100), valeur MEDIUMTEXT,
@@ -77,8 +80,20 @@ try {
     $revision = (string) DB::queryFirstField('SELECT valeur FROM ' . prefixTable('misc') . ' WHERE intitule = %s', 'email_config_revision');
     emailTokenExpect(preg_match('/\A[a-f0-9]{32}\z/', $revision) === 1, 'Missing configuration revision');
     emailTokenExpect($freshColumns === DB::query('SHOW COLUMNS FROM ' . prefixTable('email_oauth_state')), 'Fresh and upgrade schemas differ');
+    emailTokenExpect($freshQueueColumns === DB::query('SHOW COLUMNS FROM ' . prefixTable('background_tasks')), 'Fresh and upgrade queue schemas differ');
     emailTokenRunMigration($root, $host, $user, $password, $database, $port, $prefix);
     emailTokenExpect($revision === DB::queryFirstField('SELECT valeur FROM ' . prefixTable('misc') . ' WHERE intitule = %s', 'email_config_revision'), 'Replay changed the revision');
+    // Execute the scheduler's actual candidate SQL against due/deferred tasks on MariaDB.
+    DB::insert(prefixTable('background_tasks'), ['created_at' => time(), 'process_type' => 'send_email', 'arguments' => '{}', 'next_attempt_at' => time() + 7200]);
+    $deferredTaskId = (int) DB::insertId();
+    DB::insert(prefixTable('background_tasks'), ['created_at' => time(), 'process_type' => 'send_email', 'arguments' => '{}']);
+    $dueTaskId = (int) DB::insertId();
+    $handlerSource = file_get_contents($root . '/app/scripts/background_tasks___handler.php');
+    $queryStart = strpos($handlerSource, "'SELECT increment_id, process_type, arguments, item_id");
+    $queryEnd = strpos($handlerSource, "LIMIT %i'", $queryStart) + strlen("LIMIT %i'");
+    $candidateSql = eval('return ' . substr($handlerSource, $queryStart, $queryEnd - $queryStart) . ';');
+    $dueIds = array_map(static fn(array $row): int => (int) $row['increment_id'], DB::query($candidateSql, 100));
+    emailTokenExpect(in_array($dueTaskId, $dueIds, true) && !in_array($deferredTaskId, $dueIds, true), 'Scheduler ran a deferred email early');
     emailTokenExpect($oldSecret === DB::queryFirstField('SELECT valeur FROM ' . prefixTable('misc') . ' WHERE intitule = %s', 'email_auth_pwd'), 'Upgrade changed the SMTP secret');
     emailTokenExpect('relay.example.test' === DB::queryFirstField('SELECT valeur FROM ' . prefixTable('misc') . ' WHERE intitule = %s', 'email_smtp_server'), 'Upgrade changed the relay');
 
@@ -137,7 +152,7 @@ try {
     }
     echo "Email token storage and profiles: install, migration, replay, encryption, ownership, rollback and concurrency checks passed.\n";
 } finally {
-    foreach (['email_oauth_state', 'emails', 'misc'] as $table) {
+    foreach (['email_oauth_state', 'emails', 'misc', 'background_tasks'] as $table) {
         DB::query('DROP TABLE IF EXISTS ' . prefixTable($table));
     }
     DB::disconnect();

@@ -26,9 +26,19 @@ namespace TeampassClasses\EmailService {
                 throw new \RuntimeException('Email credential could not be decrypted. private-provider-response');
             }
 
-            return $GLOBALS['argv'][1] === 'rejected'
+            return in_array($GLOBALS['argv'][1], ['rejected', 'throttled', 'exhausted', 'indeterminate'], true)
                 ? '{"error":true,"message":"private-provider-response"}'
                 : '';
+        }
+
+        /** Supply the production structured result without making a provider request. */
+        public function getLastResult(): EmailSendResult
+        {
+            return match ($GLOBALS['argv'][1]) {
+                'throttled', 'exhausted' => EmailSendResult::failure('throttled', true, 172800),
+                'indeterminate' => EmailSendResult::indeterminate('timeout'),
+                default => EmailSendResult::failure('rejected'),
+            };
         }
     }
 
@@ -53,6 +63,7 @@ namespace TeampassClasses\ConfigManager {
 }
 
 namespace {
+    require dirname(__DIR__, 2) . '/app/vendor/autoload.php';
     require dirname(__DIR__, 2) . '/app/scripts/traits/EmailTrait.php';
 
     /** Supply deterministic decryption outcomes without an instance secret file. */
@@ -81,6 +92,15 @@ namespace {
     final class DB
     {
         public static array $updates = [];
+
+        /** Observe the attempt count after the worker increments it. */
+        public static function queryFirstField(string $sql, mixed ...$arguments): int
+        {
+            return $GLOBALS['argv'][1] === 'exhausted' ? 3 : 1;
+        }
+
+        /** The real worker increments its attempt before submitting the message. */
+        public static function query(string $sql, mixed ...$arguments): array { return []; }
 
         /** Record writes, including the task's actual final status and error. */
         public static function update($table, $values, $where, $id): void

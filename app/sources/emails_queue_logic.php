@@ -59,3 +59,15 @@ function emailQueueValidateMessage(#[SensitiveParameter] array $message): void
         }
     }
 }
+
+/** Schedule only confirmed retryable failures; acceptance and ambiguous outcomes never replay. */
+function emailQueueRetryAt(TeampassClasses\EmailService\EmailSendResult $result, int $attempts, int $now): ?int
+{
+    if ($result->accepted || $result->indeterminate || !$result->retryable || $attempts < 1 || $attempts >= 3
+        || !in_array($result->errorCode, ['network', 'timeout', 'throttled', 'temporary'], true)
+    ) {
+        return null;
+    }
+    $delay = max(30 * (2 ** ($attempts - 1)), $result->retryAfter ?? 0);
+    return $delay > PHP_INT_MAX - $now ? PHP_INT_MAX : $now + $delay;
+}
