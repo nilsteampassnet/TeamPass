@@ -33,3 +33,11 @@ All package classes have synchronized source and vendor copies. Extend
 `EmailServiceCopiesInSyncTest` when adding a class. Test adapters through the
 transport interface; regression tests also exercise real PHPMailer MIME preparation
 and the SMTP boundary without installation credentials.
+
+OAuth state is stored separately in `email_oauth_state`, encrypted with the existing
+instance-key helpers before SQL writes. A configuration revision invalidates stale
+readers. Renewal leases use the database clock, a random owner and conditional
+updates; no transaction remains open during network I/O. Late workers cannot save
+or release a replacement owner's state. Access-token invalidation matches the
+observed token hash so a late 401 cannot discard a newer token. Never put token
+values in `misc`, task arguments, logs or browser responses.

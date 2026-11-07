@@ -27,6 +27,9 @@ class EmailServiceCopiesInSyncTest extends TestCase
             'EmailTransportInterface.php' => ['EmailTransportInterface.php'],
             'EmailSendResult.php' => ['EmailSendResult.php'],
             'SmtpTransport.php' => ['SmtpTransport.php'],
+            'EmailTransportException.php' => ['EmailTransportException.php'],
+            'EmailTokenStoreInterface.php' => ['EmailTokenStoreInterface.php'],
+            'DatabaseEmailTokenStore.php' => ['DatabaseEmailTokenStore.php'],
         ];
     }
 
