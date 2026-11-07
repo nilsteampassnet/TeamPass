@@ -134,70 +134,8 @@ if (defined('TP_PW_COMPLEXITY') === false) {
     );
 }
 
-// LOAD CPASSMAN SETTINGS
-if (
-    is_dir(TEAMPASS_ROOT . '/public/install') === true
-) {
-    // Should we delete folder INSTALL?
-    $row = DB::queryFirstRow(
-        'SELECT valeur FROM ' . prefixTable('misc') . ' WHERE type=%s AND intitule=%s',
-        'install',
-        'clear_install_folder'
-    );
-    if (DB::count() > 0 && isset($row['valeur']) === true && $row['valeur'] === 'true') {
-        /**
-         * Permits to delete files and folders recursively.
-         *
-         * @param string $dir Path
-         *
-         * @return bool
-         */
-        if (function_exists('delTree') === false) {
-            function delTree(string $dir): bool
-            {
-                $entries = scandir($dir);
-                if ($entries === false) {
-                    return false;
-                }
-                $success = true;
-                foreach (array_diff($entries, ['.', '..']) as $entry) {
-                    $path = $dir . '/' . $entry;
-                    if (is_dir($path) === true && is_link($path) === false) {
-                        if (delTree($path) === false) {
-                            $success = false;
-                        }
-                    } else {
-                        @chmod($path, 0666);
-                        if (@unlink($path) === false) {
-                            $success = false;
-                        }
-                    }
-                }
-                if ($success === false) {
-                    return false;
-                }
-                @chmod($dir, 0777);
-                return rmdir($dir);
-            }
-        }
-
-        $installFolderDeleted = delTree(TEAMPASS_ROOT . '/public/install');
-
-        if ($installFolderDeleted === true) {
-            // Delete temporary install table
-            DB::query('DROP TABLE IF EXISTS `_install`');
-            // Delete tag
-            DB::delete(
-                prefixTable('misc'),
-                'type=%s AND intitule=%s',
-                'install',
-                'clear_install_folder'
-            );
-        } else {
-            error_log('[TeamPass] install folder auto-cleanup failed — check ownership/permissions of ' . TEAMPASS_ROOT . '/public/install');
-        }
-    }
-}
+// Installer cleanup is performed by the operator after the mandatory permission
+// review. Runtime requests must never chmod or delete the installer.
 
 // Load Languages stuff
 if (isset($languagesList) === false) {

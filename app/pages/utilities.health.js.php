@@ -1089,6 +1089,8 @@ function tpFileIntegrityIssueDetails(category, item) {
     if (category === 'permissions') {
         var reasons = {
             protected_writable: TP_HEALTH_L10N.file_permissions_reason_protected_writable,
+            protected_web_owned: <?php echo json_encode($lang->get('health_file_permissions_reason_protected_web_owned'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+            secret_web_owned: <?php echo json_encode($lang->get('health_file_permissions_reason_secret_web_owned'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
             runtime_not_readable: TP_HEALTH_L10N.file_permissions_reason_runtime_not_readable,
             runtime_not_writable: TP_HEALTH_L10N.file_permissions_reason_runtime_not_writable,
             world_writable: TP_HEALTH_L10N.file_permissions_reason_world_writable,

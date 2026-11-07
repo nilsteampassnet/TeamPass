@@ -2553,6 +2553,8 @@ return array(
     'health_file_permissions_affected' => 'Affected entries',
     'health_file_permissions_samples' => 'Examples',
     'health_file_permissions_reason_protected_writable' => 'Application code is writable by the PHP/web account.',
+    'health_file_permissions_reason_protected_web_owned' => 'Application code is owned by the PHP/web account, which can restore write permission.',
+    'health_file_permissions_reason_secret_web_owned' => 'The instance secret is owned by the PHP/web account, which can restore write permission.',
     'health_file_permissions_reason_runtime_not_readable' => 'A runtime path is not readable/traversable by the PHP/web account.',
     'health_file_permissions_reason_runtime_not_writable' => 'A runtime path is not writable by the PHP/web account.',
     'health_file_permissions_reason_world_writable' => 'The path is writable by every system user.',

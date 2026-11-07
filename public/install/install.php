@@ -525,24 +525,11 @@ $csrf_token = $installCompleted === true ? '' : installIssueCsrfToken();
 									<div class="alert alert-success">
 										<h5>Congratulations 🎉</h5>
 										<div class="mt-3">
-											<p>Next step is now to move to the authentication page and start using <b>Teampass</b>.</p>
+											<p>Review the file permissions below, then remove the installer before opening <b>Teampass</b>.</p>
 											<p>The Administrator login is <code>admin</code>, and the password is the one you defined during the installation process.</p>
 										</div>
 									</div>
-									
-									<div class="alert alert-warning mt-2">
-										<i><i class="fa-solid fa-circle-exclamation"></i> For security purposes, the <code>install</code> directory will be deleted when you click the button below and the page will refresh.</i>
-									</div>
-
-									<div class="alert alert-info mt-3">
-										For news, help and information, please visit <a href="https://teampass.net" target="_blank">TeamPass website</a>.
-									</div>
-
-									<div class="d-grid gap-2 col-6 mx-auto mt-5">
-										<button class="btn btn-primary" id="btn_go_home" onclick="cleanupAndRedirect('../index.php')">
-											<i class="fa-solid fa-up-right-from-square"></i> Continue
-										</button>
-									</div>
+<?php $permissionsFlow = 'install'; require __DIR__ . '/permissions.view.php'; ?>
 
 								</div>
 							</div>
