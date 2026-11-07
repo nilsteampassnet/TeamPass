@@ -90,6 +90,7 @@ if (in_array($emailOauthResult, ['success', 'error'], true)) {
     <div data-email-section="microsoft" class="alert alert-info"><?php echo $emailEscape($lang->get('email_microsoft_tip')); ?></div>
     <div data-email-section="google" class="alert alert-info">
         <?php echo $emailEscape($lang->get('email_google_tip')); ?>
+        <p class="mt-2 mb-2"><?php echo $emailEscape($lang->get(($emailGoogleAuthorizationRecorded ?? false) ? 'email_google_authorization_recorded' : 'email_google_authorization_missing')); ?></p>
         <div><strong><?php echo $emailEscape($lang->get('email_google_redirect')); ?></strong>
             <code><?php try { echo $emailEscape(emailTransportRedirectUri($SETTINGS)); } catch (Throwable $e) { echo $emailEscape($lang->get('email_profile_save_failed')); } ?></code>
         </div>

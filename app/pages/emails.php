@@ -85,6 +85,16 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 $localPasswordRecoveryEnabled = isset($SETTINGS['enable_local_password_recovery']) === true
     ? (int) $SETTINGS['enable_local_password_recovery'] === 1
     : ((int) ($SETTINGS['disable_show_forgot_pwd_link'] ?? 0) !== 1);
+$emailGoogleAuthorizationRecorded = (int) DB::queryFirstField(
+    'SELECT COUNT(*) FROM ' . prefixTable('email_oauth_state') . ' WHERE config_revision = %s AND refresh_token <> %s',
+    (string) ($SETTINGS['email_config_revision'] ?? ''), ''
+) > 0;
+$emailBackgroundQueue = DB::queryFirstRow(
+    'SELECT SUM(CASE WHEN is_in_progress = 0 AND (finished_at IS NULL OR finished_at = %s OR finished_at = %s) THEN 1 ELSE 0 END) AS queued,
+        SUM(CASE WHEN is_in_progress = 1 THEN 1 ELSE 0 END) AS running,
+        SUM(CASE WHEN is_in_progress = -1 THEN 1 ELSE 0 END) AS failed
+     FROM ' . prefixTable('background_tasks') . ' WHERE process_type = %s', '', '0', 'send_email'
+);
 
 ?>
 <!-- Content Header (Page header) -->
@@ -171,6 +181,12 @@ $localPasswordRecoveryEnabled = isset($SETTINGS['enable_local_password_recovery'
                     </div>
 
                     <div class="card-body">
+                        <p><?php echo htmlspecialchars(strtr($lang->get('email_background_queue_summary'), [
+                            '#queued#' => (string) (int) ($emailBackgroundQueue['queued'] ?? 0),
+                            '#running#' => (string) (int) ($emailBackgroundQueue['running'] ?? 0),
+                            '#failed#' => (string) (int) ($emailBackgroundQueue['failed'] ?? 0),
+                        ]), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?></p>
+                        <p class="text-muted"><?php echo htmlspecialchars($lang->get('email_legacy_queue'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?></p>
                         <div id="unsent-emails">
                             <?php
                             DB::query('SELECT * FROM ' . prefixTable('emails') . ' WHERE status = %s OR status = %s', 'not_sent', '');
