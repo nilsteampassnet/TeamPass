@@ -192,6 +192,8 @@
         "sergeytsalkov/meekrodb": "^2.5",
         "owasp/csrf-protector-php": "^1.0",
         "phpmailer/phpmailer": "^6.8",
+        "guzzlehttp/guzzle": "^7.15",
+        "league/oauth2-client": "^2.9",
         "moxiecode/plupload": "^3.1",
         "tecnickcom/tcpdf": "^6.6",
         "paragonie/random_compat": "^9.99",
