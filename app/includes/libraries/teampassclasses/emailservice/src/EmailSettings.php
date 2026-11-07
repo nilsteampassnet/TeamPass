@@ -60,6 +60,7 @@ class EmailSettings
     public $timeout;
     public string $transport;
     public string $language;
+    public string $smtpAuthMode;
     public string $revision;
     public string $microsoftTenantId;
     public string $microsoftClientId;
@@ -81,6 +82,7 @@ class EmailSettings
     {
         $this->transport = (string) ($SETTINGS['email_transport'] ?? 'smtp');
         $this->language = (string) ($SETTINGS['default_language'] ?? 'english');
+        $this->smtpAuthMode = (string) ($SETTINGS['email_smtp_auth_mode'] ?? '');
         $this->revision = (string) ($SETTINGS['email_config_revision'] ?? '');
         $this->microsoftTenantId = (string) ($SETTINGS['email_microsoft_tenant_id'] ?? '');
         $this->microsoftClientId = (string) ($SETTINGS['email_microsoft_client_id'] ?? '');
@@ -91,6 +93,10 @@ class EmailSettings
         $this->googleClientSecret = $this->readProviderSecret($SETTINGS, 'email_google_client_secret');
         $this->smtpServer = $SETTINGS['email_smtp_server'] ?? '';
         $this->smtpAuth = isset($SETTINGS['email_smtp_auth']) ? ((int) $SETTINGS['email_smtp_auth']) === 1 : false;
+        if ($this->smtpAuthMode === '') {
+            $this->smtpAuthMode = $this->smtpAuth ? 'password' : 'none';
+        }
+        $this->smtpAuth = $this->smtpAuthMode !== 'none';
         $this->authUsername = $SETTINGS['email_auth_username'] ?? '';
         // Stored encrypted with the instance key: see tpGetSecretSetting()
         $this->authPassword = function_exists('tpGetSecretSetting') === true
