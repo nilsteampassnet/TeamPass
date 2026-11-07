@@ -28,6 +28,8 @@ const setup = ({ filtered = false, info = { start: 0, recordsDisplay: 2 }, focus
   let responder = () => Promise.resolve({ error: false })
   let refocused = 0
   let writtenCells = 0
+  const document = { body: {} }
+  document.activeElement = document.body
   const selection = {
     prop(name, value) { for (const row of rows) row.disabled = value; return this },
     tooltip() { return this },
@@ -76,14 +78,14 @@ const setup = ({ filtered = false, info = { start: 0, recordsDisplay: 2 }, focus
     page
   }
   const context = vm.createContext({
-    $, oTable, pendingFavourites,
+    $, oTable, pendingFavourites, document,
     favouriteLabels: { add: 'Favorite', remove: 'Unfavorite', error: 'Request failed' },
     collectFilters: () => ({ favourites: filtered }),
     toastr: { error: (...args) => errors.push(args) }
   })
   vm.runInContext(handler + '\nglobalThis.changeFavourite = setSearchFavourite;', context)
   return {
-    change: context.changeFavourite, pendingFavourites, requests, errors, rows, reloads, pages,
+    change: context.changeFavourite, pendingFavourites, requests, errors, rows, reloads, pages, document,
     respondWith(fn) { responder = fn },
     state: () => JSON.parse(rows[0].cells[7]),
     refocused: () => refocused,
@@ -126,6 +128,17 @@ test('a duplicate click while saving sends only one request and changes no state
   assert.equal(app.rows[0].disabled, false)
   assert.equal(app.pendingFavourites.size, 0)
   assert.equal(app.state().attributes['aria-pressed'], 'true')
+})
+
+test('an asynchronous save does not steal focus after the user moves to another control', async () => {
+  const app = setup({ focused: true })
+  let resolve
+  app.respondWith(() => new Promise((done) => { resolve = done }))
+  const save = app.change(1, true)
+  app.document.activeElement = { tagName: 'INPUT' }
+  resolve({ error: false })
+  await save
+  assert.equal(app.refocused(), 0)
 })
 
 for (const [name, response] of [

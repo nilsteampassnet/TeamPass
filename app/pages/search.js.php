@@ -896,6 +896,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         }
         pendingFavourites.add(id);
         const buttons = () => $('#search-results-items .search-row-actions[data-id="' + id + '"] [data-action="favourite"]');
+        // Disabling a native button can blur it before the response arrives.
+        const focused = buttons().is(':focus');
         buttons().prop('disabled', true).tooltip('hide');
         try {
             const result = await $.post('sources/favourites.queries.php', {
@@ -915,13 +917,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 holder.find('[data-action="favourite"]')
                     .attr('aria-pressed', String(favourite)).attr('aria-label', label).attr('title', label)
                     .find('i').attr('class', favourite ? 'fa-solid fa-star text-warning' : 'fa-regular fa-star');
-                const focused = buttons().is(':focus');
                 $(this.node()).find('.infotip').tooltip('dispose');
                 oTable.cell(this.index(), 7).data(holder.prop('outerHTML'));
                 $(this.node()).find('.infotip').tooltip();
-                if (focused) {
-                    buttons().trigger('focus');
-                }
             });
             if (collectFilters().favourites === true) {
                 oTable.ajax.reload(function() {
@@ -936,6 +934,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         } finally {
             pendingFavourites.delete(id);
             buttons().prop('disabled', false);
+            if (focused && document.activeElement === document.body) {
+                buttons().trigger('focus');
+            }
         }
     };
 

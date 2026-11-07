@@ -36,6 +36,7 @@ class SearchFavouritesTest extends TestCase
         $folderAccessLevel = [];
         $massOperationEnabled = false;
         $session = new class ($admin) {
+            /** Supply the account type for the renderer's feature gate. */
             public function __construct(private int $admin) {}
             /** Supply only the account flag needed by the renderer. */
             public function get(string $key): int { return $this->admin; }
