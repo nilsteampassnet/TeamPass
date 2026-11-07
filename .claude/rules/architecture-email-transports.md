@@ -78,3 +78,9 @@ match. The callback consumes validated state once, exchanges the code before ope
 a transaction, then activates the candidate and encrypted tokens together. Failure
 leaves the previous transport active. Saving Gmail again intentionally requires fresh
 consent. The callback has a public proxy and rechecks the current administrator role.
+
+`prepareSendingEmail()` seals new task arguments with the instance key before INSERT.
+The versioned JSON envelope contains ciphertext only; the worker opens it immediately
+before delivery. Historical task arguments remain readable. Unknown envelope versions,
+tampering and unexpected fields fail closed, without sending or logging the payload.
+Never place transport tokens or application credentials inside a queued message.
