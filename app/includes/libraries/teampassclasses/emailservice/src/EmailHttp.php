@@ -66,7 +66,7 @@ final class EmailHttp
             $seconds = filter_var($header, FILTER_VALIDATE_INT);
             return $seconds !== false && $seconds >= 0 && $seconds <= PHP_INT_MAX - time() ? $seconds : null;
         }
-        $date = \DateTimeImmutable::createFromFormat(DATE_RFC7231, $header, new \DateTimeZone('UTC'));
+        $date = \DateTimeImmutable::createFromFormat('D, d M Y H:i:s \G\M\T', $header, new \DateTimeZone('UTC'));
         return $date === false ? null : max(0, $date->getTimestamp() - time());
     }
 
