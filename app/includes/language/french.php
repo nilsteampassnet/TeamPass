@@ -4131,4 +4131,15 @@ return array(
     'secure_send_revoke_confirm' => 'Révoquer ce lien ? Les destinataires ne pourront plus l’ouvrir.',
     'secure_send_revoke_failed' => 'La révocation n’a pas pu être confirmée. Fermez puis rouvrez cette fenêtre pour vérifier l’état du lien.',
 
+    'email_transport_error_configuration' => 'Le transport d’e-mails sélectionné n’est pas correctement configuré.',
+    'email_transport_error_message' => 'L’e-mail n’a pas pu être préparé. Vérifiez l’expéditeur et les destinataires.',
+    'email_transport_error_authentication' => 'Le fournisseur de messagerie a refusé l’authentification. Vérifiez les identifiants ou l’autorisation enregistrés.',
+    'email_transport_error_permission' => 'Le fournisseur de messagerie a refusé l’autorisation d’envoyer depuis cette boîte.',
+    'email_transport_error_network' => 'Le fournisseur de messagerie est injoignable.',
+    'email_transport_error_timeout' => 'Le fournisseur de messagerie n’a pas répondu dans le délai imparti.',
+    'email_transport_error_throttled' => 'Le fournisseur de messagerie limite les requêtes. Le message doit attendre avant une nouvelle tentative.',
+    'email_transport_error_temporary' => 'Le fournisseur de messagerie a temporairement refusé le message.',
+    'email_transport_error_rejected' => 'Le fournisseur de messagerie a rejeté le message.',
+    'email_transport_error_partial_acceptance' => 'Certains destinataires ont peut-être été acceptés. Vérifiez le relais avant un nouvel envoi.',
+    'email_transport_error_indeterminate' => 'L’acceptation de l’e-mail n’a pas pu être confirmée. Vérifiez le fournisseur avant un nouvel envoi pour éviter les doublons.',
 );

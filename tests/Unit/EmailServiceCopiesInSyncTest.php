@@ -24,6 +24,9 @@ class EmailServiceCopiesInSyncTest extends TestCase
         return [
             'EmailService.php' => ['EmailService.php'],
             'EmailSettings.php' => ['EmailSettings.php'],
+            'EmailTransportInterface.php' => ['EmailTransportInterface.php'],
+            'EmailSendResult.php' => ['EmailSendResult.php'],
+            'SmtpTransport.php' => ['SmtpTransport.php'],
         ];
     }
 

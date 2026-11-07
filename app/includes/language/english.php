@@ -4147,4 +4147,15 @@ return array(
     'secure_send_revoke_confirm' => 'Revoke this link? Recipients will no longer be able to open it.',
     'secure_send_revoke_failed' => 'Revocation could not be confirmed. Close and reopen this window to check the link’s status.',
 
+    'email_transport_error_configuration' => 'The selected email transport is not configured correctly.',
+    'email_transport_error_message' => 'The email could not be prepared. Check its sender and recipients.',
+    'email_transport_error_authentication' => 'The email provider refused authentication. Check the saved credentials or authorization.',
+    'email_transport_error_permission' => 'The email provider refused permission to send from this mailbox.',
+    'email_transport_error_network' => 'The email provider could not be reached.',
+    'email_transport_error_timeout' => 'The email provider did not respond within the allowed time.',
+    'email_transport_error_throttled' => 'The email provider is limiting requests. The message must wait before another attempt.',
+    'email_transport_error_temporary' => 'The email provider temporarily refused the message.',
+    'email_transport_error_rejected' => 'The email provider rejected the message.',
+    'email_transport_error_partial_acceptance' => 'Some recipients may have been accepted. Check the relay before sending again.',
+    'email_transport_error_indeterminate' => 'Email acceptance could not be confirmed. Check the provider before sending again to avoid duplicates.',
 );
