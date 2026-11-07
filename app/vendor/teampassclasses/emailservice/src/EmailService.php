@@ -39,6 +39,8 @@ class EmailService
     protected $antiXSS;
     private ?EmailTransportInterface $transport;
     private EmailSendResult $lastResult;
+    /** @var \Closure(): PHPMailer */
+    private \Closure $mailerFactory;
 
     /**
      * Safe library reason and SMTP codes of the last failed send, '' otherwise.
@@ -55,10 +57,11 @@ class EmailService
     protected $debugOutput = [];
 
     /** Create the message builder; an injected transport can supply an isolated delivery boundary. */
-    public function __construct(?EmailTransportInterface $transport = null)
+    public function __construct(?EmailTransportInterface $transport = null, ?callable $mailerFactory = null)
     {
         // Initialise PHPMailer et AntiXSS
-        $this->mailer = new PHPMailer(true);
+        $this->mailerFactory = $mailerFactory === null ? static fn(): PHPMailer => new PHPMailer(true) : \Closure::fromCallable($mailerFactory);
+        $this->mailer = ($this->mailerFactory)();
         $this->antiXSS = new AntiXSS();
         $this->transport = $transport;
         $this->lastResult = EmailSendResult::failure('not_attempted');
@@ -151,6 +154,21 @@ class EmailService
         $this->mailer->SMTPOptions = self::tlsOptions($emailSettings->verifyCertificate === true);
         $this->mailer->From = $emailSettings->from;
         $this->mailer->FromName = $emailSettings->fromName;
+        if ($emailSettings->transport === 'smtp' && $emailSettings->smtpAuthMode === 'microsoft_oauth') {
+            if (strcasecmp($emailSettings->from, $emailSettings->microsoftMailbox) !== 0) {
+                throw new EmailTransportException(EmailSendResult::failure('configuration'));
+            }
+            $this->mailer->Host = 'smtp.office365.com';
+            $this->mailer->Port = 587;
+            $this->mailer->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $this->mailer->SMTPAutoTLS = true;
+            $this->mailer->SMTPOptions = self::tlsOptions(true);
+            $this->mailer->SMTPAuth = true;
+            $this->mailer->AuthType = 'XOAUTH2';
+            $this->mailer->Username = $emailSettings->microsoftMailbox;
+            $this->mailer->Password = '';
+            $this->mailer->setOAuth(new MicrosoftSmtpOAuthProvider($emailSettings->microsoftMailbox, $this->tokenManager($emailSettings, 'microsoft_smtp')));
+        }
     }
 
     // Fonction pour ajouter des destinataires
@@ -192,9 +210,10 @@ class EmailService
         $this->lastResult = EmailSendResult::failure('not_attempted');
         // A service can send several messages in a backlog or an administrator loop.
         // PHPMailer keeps its recipients after send(), including after a failure.
-        $this->mailer->clearAllRecipients();
-
         try {
+            // Never carry OAuth objects, attachments, headers or auth settings between messages.
+            $this->mailer = ($this->mailerFactory)();
+            $this->mailer->clearAllRecipients();
             $transport = $this->resolveTransport($emailSettings);
             // Configurer le mailer
             $this->configureMailer($emailSettings, $silent, $cron);
@@ -222,6 +241,10 @@ class EmailService
 
             return '';
 
+        } catch (EmailTransportException $e) {
+            $this->lastResult = $e->result;
+            $this->lastError = $this->transportErrorMessage($emailSettings);
+            return $this->errorResponse();
         } catch (Exception $e) {
             // The reason is always returned: every caller already decodes it and
             // checks 'error', but it used to be silenced by default, so a refused
@@ -254,10 +277,22 @@ class EmailService
             return $this->transport;
         }
         if ($settings->transport === 'smtp') {
+            if (!in_array($settings->smtpAuthMode, ['none', 'password', 'microsoft_oauth'], true)) {
+                throw new \InvalidArgumentException('Unsupported SMTP authentication.');
+            }
             return new SmtpTransport();
+        }
+        if (in_array($settings->transport, ['microsoft_graph', 'gmail_api'], true)) {
+            return new ApiTransport($settings, $this->tokenManager($settings, $settings->transport), EmailHttp::client());
         }
 
         throw new \InvalidArgumentException('Unsupported email transport.');
+    }
+
+    /** Token audiences are isolated from each other and from TeamPass login OAuth. */
+    private function tokenManager(EmailSettings $settings, string $purpose): EmailTokenManager
+    {
+        return new EmailTokenManager($settings, $purpose, new DatabaseEmailTokenStore($settings->revision), EmailHttp::client());
     }
 
     /** Translate caller-facing errors independently of any user session. */

@@ -33,6 +33,8 @@ class EmailServiceCopiesInSyncTest extends TestCase
             'EmailAccessTokenProviderInterface.php' => ['EmailAccessTokenProviderInterface.php'],
             'EmailHttp.php' => ['EmailHttp.php'],
             'EmailTokenManager.php' => ['EmailTokenManager.php'],
+            'ApiTransport.php' => ['ApiTransport.php'],
+            'MicrosoftSmtpOAuthProvider.php' => ['MicrosoftSmtpOAuthProvider.php'],
         ];
     }
 

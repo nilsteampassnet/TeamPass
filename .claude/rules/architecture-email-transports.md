@@ -52,3 +52,16 @@ that the configured mailbox can send mail.
 
 Guzzle and League OAuth2 Client were already shipped transitively; they are now
 declared directly without changing locked versions or the production autoloader.
+
+`ApiTransport` sends prepared MIME to Graph (standard base64, HTTP 202) or Gmail
+(base64url, HTTP 200 with a message ID). It targets the configured mailbox, requires
+the From/envelope sender to match it, and never follows a redirect. One explicit
+401 permits renewing the observed token and retrying once. A 429 can be deferred;
+timeouts, 5xx and malformed acceptance responses are indeterminate and cannot be
+automatically replayed. The v1 application limit is 2 MiB of MIME; Bcc is explicitly
+refused because SMTP-prepared MIME omits its envelope. Existing SMTP retains Bcc.
+To, Cc, Reply-To, multipart bodies, headers and attachments stay in the MIME.
+
+Microsoft SMTP OAuth uses only `smtp.office365.com:587`, STARTTLS and verified TLS.
+It cannot fall back to Basic credentials. Each service send creates a new PHPMailer
+to prevent auth providers, headers or attachments surviving a configuration change.

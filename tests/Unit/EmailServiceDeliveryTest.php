@@ -206,11 +206,54 @@ final class EmailServiceDeliveryTest extends TestCase
     /** @return array{EmailService, EmailDeliveryRecordingMailer, EmailSettings} */
     private function delivery(): array
     {
-        $service = new EmailService();
         $mailer = new EmailDeliveryRecordingMailer(true);
-        (new ReflectionProperty(EmailService::class, 'mailer'))->setValue($service, $mailer);
+        $service = new EmailService(null, static fn(): PHPMailer => $mailer);
 
         return [$service, $mailer, new EmailSettings(['email_from' => 'sender@example.com'])];
+    }
+
+    /** Selecting another mode cannot retain OAuth, custom headers or attachments from a previous message. */
+    public function testEachSendCreatesAnIndependentMessageBuilder(): void
+    {
+        $builders = [];
+        $factory = static function () use (&$builders): PHPMailer {
+            $mailer = new EmailDeliveryRecordingMailer(true);
+            $builders[] = $mailer;
+            return $mailer;
+        };
+        $service = new EmailService(null, $factory);
+        $settings = new EmailSettings(['email_from' => 'sender@example.com']);
+        self::assertSame('', $service->sendMail('First', 'Body', 'first@example.com', $settings));
+        $builders[1]->addStringAttachment('private-attachment', 'private.txt');
+        $builders[1]->AuthType = 'XOAUTH2';
+        self::assertSame('', $service->sendMail('Second', 'Body', 'second@example.com', $settings));
+        self::assertNotSame($builders[1], $builders[2]);
+        self::assertSame([], $builders[2]->getAttachments());
+        self::assertSame('', $builders[2]->AuthType);
+        self::assertSame(['second@example.com'], $builders[2]->attempts[0]['recipients']);
+    }
+
+    /** Exchange OAuth always uses its fixed STARTTLS endpoint and certificate verification. */
+    public function testExchangeOAuthCannotUseBasicCredentialsOrDisableTls(): void
+    {
+        [$service, $mailer, $settings] = $this->delivery();
+        $settings->revision = str_repeat('a', 32);
+        $settings->smtpAuthMode = 'microsoft_oauth';
+        $settings->microsoftTenantId = '11111111-1111-1111-1111-111111111111';
+        $settings->microsoftClientId = '22222222-2222-2222-2222-222222222222';
+        $settings->microsoftClientSecret = 'private-client-secret';
+        $settings->microsoftMailbox = 'sender@example.com';
+        $settings->verifyCertificate = false;
+        $settings->security = 'none';
+        $settings->authPassword = 'private-basic-password';
+        $service->configureMailer($settings, true, true);
+        self::assertSame('smtp.office365.com', $mailer->Host);
+        self::assertSame(587, $mailer->Port);
+        self::assertSame('tls', $mailer->SMTPSecure);
+        self::assertSame(EmailService::tlsOptions(true), $mailer->SMTPOptions);
+        self::assertSame('XOAUTH2', $mailer->AuthType);
+        self::assertSame('', $mailer->Password);
+        self::assertNotNull($mailer->getOAuth());
     }
 }
 
