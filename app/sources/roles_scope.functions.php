@@ -28,16 +28,18 @@ declare(strict_types=1);
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  *
- * Role assignment scope.
+ * Role and folder assignment scope.
  *
- * Pure, DB-free set logic used when saving the roles of a user (unit-tested by
- * tests/Unit/RolesScopeLogicTest.php). The user edit form replaces the whole
- * manual role set while a manager only ever sees the roles they may grant, so
+ * Pure, DB-free set logic used when saving the roles and the allowed / forbidden
+ * folders of a user (unit-tested by tests/Unit/RolesScopeLogicTest.php and
+ * tests/Unit/UserFolderGrantScopeTest.php). The user edit form replaces the whole
+ * set while a manager only ever sees the roles and folders they may grant, so
  * the submitted set alone cannot be taken as the final state: applying it as-is
- * would silently revoke every role outside the caller's scope.
+ * would silently revoke everything outside the caller's scope, and accept ids the
+ * caller had no right to hand out.
  *
- * The DB-facing wrappers live in main.functions.php (callerGrantableRoleIds()
- * and reconcileManualUserRoles()).
+ * The DB-facing wrappers live in main.functions.php (callerGrantableRoleIds(),
+ * reconcileManualUserRoles(), callerGrantableFolderIds() and reconcileUserFolderSet()).
  */
 
 /**
@@ -86,6 +88,26 @@ function excludeAdRolesFromSubmittedRoles(array $submittedRoleIds, array $adRole
     return array_values(
         array_diff(rolesScopeNormalizeIds($submittedRoleIds), rolesScopeNormalizeIds($adRoleIds))
     );
+}
+
+/**
+ * List the folders a non-administrator may grant or deny to another user.
+ *
+ * Same scope as the role matrix and as the folder lists of the user form: the
+ * caller's accessible folders, minus the excluded ones (personal folders, which
+ * belong to their owner, and the folders denied to the caller).
+ *
+ * @param array $accessibleFolderIds Folder ids the caller can access (session).
+ * @param array $excludedFolderIds   Folder ids never grantable by the caller.
+ *
+ * @return array<int> Grantable folder ids, unique and re-indexed.
+ */
+function grantableFolderIds(array $accessibleFolderIds, array $excludedFolderIds): array
+{
+    return array_values(array_unique(array_diff(
+        rolesScopeNormalizeIds($accessibleFolderIds),
+        rolesScopeNormalizeIds($excludedFolderIds)
+    )));
 }
 
 /**

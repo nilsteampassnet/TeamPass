@@ -13757,6 +13757,54 @@ function reconcileManualUserRoles(int $targetUserId, array $submittedRoleIds): a
 }
 
 /**
+ * Returns the ids of the folders a non-administrator may grant or deny to another user.
+ *
+ * Same scope as the role matrix and as the folder lists of the user form ('get_user_info'):
+ * the caller's accessible folders, minus personal folders and the folders denied to the
+ * caller. Administrators are not limited by it, see reconcileUserFolderSet().
+ *
+ * @return array<int> Folder ids the caller may grant or deny, empty when none.
+ */
+function callerGrantableFolderIds(): array
+{
+    $session = SessionManager::getSession();
+
+    return grantableFolderIds(
+        (array) $session->get('user-accessible_folders'),
+        array_merge(
+            getPersonalFolderIdsWithDescendants(),
+            (array) $session->get('user-no_access_folders')
+        )
+    );
+}
+
+/**
+ * Reconciles a submitted allowed or forbidden folder list with the caller's scope.
+ *
+ * A direct folder grant (users_groups) gives full write access to the folder, whatever the
+ * roles of the user. A manager could therefore grant, through an account they create or
+ * manage, a folder they cannot open themselves (GHSA-vrhq-38vx-9vjp). For a non-administrator,
+ * submitted folders outside their scope are dropped, and stored folders outside it are kept,
+ * since the form never shows them: saving it must not revoke them. Administrators keep the
+ * submitted list as-is.
+ *
+ * @param array $currentFolderIds   Folder ids currently stored for the user, empty for a new account.
+ * @param array $submittedFolderIds Folder ids coming from the request.
+ *
+ * @return array<int> Folder ids to persist.
+ */
+function reconcileUserFolderSet(array $currentFolderIds, array $submittedFolderIds): array
+{
+    $session = SessionManager::getSession();
+    if ((int) $session->get('user-admin') === 1) {
+        return rolesScopeNormalizeIds($submittedFolderIds);
+    }
+
+    // Same set logic as the roles: honour the submission inside the scope only.
+    return mergeGrantableRoleSets($currentFolderIds, $submittedFolderIds, callerGrantableFolderIds());
+}
+
+/**
  * Build the `intitule` value binding a temporary uploaded file to its uploader.
  *
  * The upload timestamp stays first so the cleanup background task can still read
