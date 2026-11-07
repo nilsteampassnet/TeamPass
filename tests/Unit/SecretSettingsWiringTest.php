@@ -72,13 +72,47 @@ class SecretSettingsWiringTest extends TestCase
 
     public function testSettingsPagesNeverRenderTheCredentials(): void
     {
-        foreach (['app/pages/ldap.php' => 'ldap_password', 'app/pages/emails.php' => 'email_auth_pwd'] as $page => $id) {
+        foreach (['app/pages/ldap.php' => 'ldap_password'] as $page => $id) {
             $tag = $this->inputTag($this->source($page), $id);
             self::assertStringContainsString("value=''", $tag, $page . ' must not send the stored value to the browser');
             self::assertStringContainsString('setting-secret', $tag, 'The save handler must send it as typed');
             self::assertStringContainsString("autocomplete='new-password'", $tag);
             self::assertStringNotContainsString("value='<?php", $tag);
         }
+    }
+
+    /** Render the email partial: PHP-generated controls must also keep all secrets out of HTML. */
+    public function testEmailProfileNeverRendersSecretsAndEscapesDisplayedLabels(): void
+    {
+        require_once __DIR__ . '/../../app/sources/emails_transport_logic.php';
+        $lang = new TeampassClasses\Language\Language('french');
+        $session = new class {
+            public function get(string $key): mixed { return null; }
+            public function set(string $key, mixed $value): void {}
+        };
+        $localPasswordRecoveryEnabled = false;
+        $SETTINGS = ['email_auth_pwd' => 'private-smtp-secret', 'email_microsoft_client_secret' => 'private-microsoft-secret',
+            'email_google_client_secret' => 'private-google-secret', 'email_from_name' => 'R&amp;D O&#039;Brien &quot;quoted&quot; &lt;label&gt;',
+            'cpassman_url' => 'https://example.test'];
+        ob_start();
+        try {
+            require __DIR__ . '/../../app/pages/emails_transport_form.php';
+            $html = (string) ob_get_contents();
+        } finally { ob_end_clean(); }
+        $dom = new DOMDocument();
+        @$dom->loadHTML('<?xml encoding="utf-8" ?>' . $html);
+        $xpath = new DOMXPath($dom);
+        foreach (['email_auth_pwd', 'email_microsoft_client_secret', 'email_google_client_secret'] as $id) {
+            $input = $xpath->query('//input[@id="' . $id . '"]')->item(0);
+            self::assertInstanceOf(DOMElement::class, $input);
+            self::assertSame('', $input->getAttribute('value'));
+            self::assertSame('password', $input->getAttribute('type'));
+            self::assertSame('new-password', $input->getAttribute('autocomplete'));
+            self::assertStringContainsString('no-save', $input->getAttribute('class'));
+            self::assertStringNotContainsString($SETTINGS[$id], $html);
+        }
+        self::assertSame('R&D O\'Brien "quoted" <label>', $xpath->query('//input[@id="email_from_name"]')->item(0)->getAttribute('value'));
+        self::assertSame(0, $xpath->query('//label/label')->length);
     }
 
     public function testSaveEncryptsTheCredentialAsTyped(): void

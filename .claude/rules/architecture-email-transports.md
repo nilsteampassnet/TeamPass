@@ -65,3 +65,16 @@ To, Cc, Reply-To, multipart bodies, headers and attachments stay in the MIME.
 Microsoft SMTP OAuth uses only `smtp.office365.com:587`, STARTTLS and verified TLS.
 It cannot fall back to Basic credentials. Each service send creates a new PHPMailer
 to prevent auth providers, headers or attachments surviving a configuration change.
+
+The Emails page saves a complete profile through `emails_transport.queries.php`.
+The generic settings endpoint refuses profile fields. Secrets have explicit
+keep/replace/clear actions and are encrypted before SQL. A transaction locks the
+current revision, compares the browser revision and publishes all settings together;
+old token state is removed. Invalid fields never activate a partial profile.
+
+Gmail consent keeps an encrypted pending candidate in the administrator session for
+ten minutes. State, user, canonical callback URI and the active revision must all
+match. The callback consumes validated state once, exchanges the code before opening
+a transaction, then activates the candidate and encrypted tokens together. Failure
+leaves the previous transport active. Saving Gmail again intentionally requires fresh
+consent. The callback has a public proxy and rechecks the current administrator role.

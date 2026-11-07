@@ -31,6 +31,7 @@ define('SECUREFILE', basename($keyFile));
 define('DB_PREFIX', $prefix);
 require $root . '/app/vendor/autoload.php';
 require $root . '/app/sources/main.functions.php';
+require $root . '/app/sources/emails_transport_logic.php';
 file_put_contents($keyFile, Key::createNewRandomKey()->saveToAsciiSafeString());
 DB::$host = $host;
 DB::$user = $user;
@@ -106,7 +107,35 @@ try {
     } catch (EmailTransportException $e) {
         emailTokenExpect($e->result->errorCode === 'configuration', 'Wrong revision failure');
     }
-    echo "Email token storage: fresh install, migration, replay, encryption and ownership checks passed.\n";
+    // Profile activation must roll back as one unit and refuse an obsolete browser revision.
+    $activeRevision = str_repeat('2', 32);
+    $profile = emailTransportCandidate([
+        'email_transport' => 'smtp', 'email_smtp_server' => 'relay.internal', 'email_port' => '25',
+        'email_from' => 'sender@example.test', 'email_from_name' => 'R&D O\'Brien <label>',
+        'email_auth_pwd' => 'synthetic-replacement', 'secret_actions' => ['email_auth_pwd' => 'replace'],
+    ], [], static fn(string $secret): string => emailTransportEncrypt($secret, []));
+    DB::startTransaction();
+    emailTransportWriteProfile($profile, $activeRevision);
+    DB::rollback();
+    emailTokenExpect($activeRevision === DB::queryFirstField('SELECT valeur FROM ' . prefixTable('misc') . ' WHERE intitule = %s', 'email_config_revision'), 'Rollback published a revision');
+    emailTokenExpect($oldSecret === DB::queryFirstField('SELECT valeur FROM ' . prefixTable('misc') . ' WHERE intitule = %s', 'email_auth_pwd'), 'Rollback changed credentials');
+    DB::startTransaction();
+    emailTransportWriteProfile($profile, $activeRevision);
+    DB::commit();
+    $replacement = DB::queryFirstField('SELECT valeur FROM ' . prefixTable('misc') . ' WHERE intitule = %s', 'email_auth_pwd');
+    emailTokenExpect(tpIsInstanceKeyCiphertext($replacement), 'Replacement secret was not encrypted');
+    emailTokenExpect(cryption($replacement, '', 'decrypt')['string'] === 'synthetic-replacement', 'Secret replacement corrupted its value');
+    emailTokenExpect((int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('email_oauth_state')) === 0, 'Old authorization survived a revision change');
+    DB::startTransaction();
+    try {
+        emailTransportWriteProfile($profile, $activeRevision);
+        throw new LogicException('Stale browser configuration was accepted');
+    } catch (RuntimeException $e) {
+        emailTokenExpect($e->getMessage() === 'configuration', 'Wrong profile concurrency error');
+    } finally {
+        DB::rollback();
+    }
+    echo "Email token storage and profiles: install, migration, replay, encryption, ownership, rollback and concurrency checks passed.\n";
 } finally {
     foreach (['email_oauth_state', 'emails', 'misc'] as $table) {
         DB::query('DROP TABLE IF EXISTS ' . prefixTable($table));

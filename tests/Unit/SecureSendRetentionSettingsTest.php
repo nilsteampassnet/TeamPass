@@ -25,6 +25,7 @@ use TeampassClasses\Encryption\Encryption;
 require_once __DIR__ . '/../../app/sources/secure_send_retention.php';
 require_once __DIR__ . '/../../app/sources/secret_settings_logic.php';
 require_once __DIR__ . '/../../app/sources/storage_folder_logic.php';
+require_once __DIR__ . '/../../app/sources/emails_transport_logic.php';
 
 /** Observe only persistence calls made by the real save_option_change handler. */
 final class DB
@@ -93,7 +94,7 @@ class SecureSendRetentionSettingsTest extends TestCase
         }
     }
 
-    private function request(mixed $value, bool $encrypted = false, string $key = 'session'): array
+    private function request(mixed $value, bool $encrypted = false, string $key = 'session', string $field = 'secure_send_audit_retention_days'): array
     {
         $source = (string) file_get_contents(__DIR__ . '/../../app/sources/admin.queries.php');
         $start = strpos($source, "case 'save_option_change':");
@@ -102,7 +103,7 @@ class SecureSendRetentionSettingsTest extends TestCase
         self::assertIsInt($end, "Missing case 'get_values_for_statistics': in app/sources/admin.queries.php");
         self::assertGreaterThan($start, $end, "case 'get_values_for_statistics': must follow save_option_change in app/sources/admin.queries.php");
         $handler = substr($source, $start, $end - $start);
-        $handler = str_replace(["require_once 'main.functions.php';", "require_once __DIR__ . '/secure_send_retention.php';"], '', $handler);
+        $handler = str_replace(["require_once 'main.functions.php';", "require_once __DIR__ . '/secure_send_retention.php';", "require_once __DIR__ . '/emails_transport_logic.php';"], '', $handler);
         SessionManager::$encrypted = $encrypted;
         $session = SessionManager::getSession();
         $lang = new class {
@@ -110,7 +111,7 @@ class SecureSendRetentionSettingsTest extends TestCase
         };
         $SETTINGS = [];
         $post_key = $key;
-        $post_data = json_encode(['field' => 'secure_send_audit_retention_days', 'value' => $value], JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION);
+        $post_data = json_encode(['field' => $field, 'value' => $value], JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION);
         if ($encrypted) {
             $post_data = Encryption::encrypt($post_data, 'session');
         }
@@ -160,5 +161,15 @@ class SecureSendRetentionSettingsTest extends TestCase
         $source = (string) file_get_contents(__DIR__ . '/../../app/sources/admin.queries.php');
         self::assertStringContainsString("\$checkUserAccess->checkSession() === false || \$checkUserAccess->userAccessPage('admin') === false", $source);
         self::assertLessThan(strpos($source, "case 'save_option_change':"), strpos($source, "\$checkUserAccess->userAccessPage('admin')"));
+    }
+
+    /** A stale settings page cannot bypass atomic profile validation through generic autosave. */
+    public function testEmailProfileFieldsCannotUseGenericAutosave(): void
+    {
+        foreach (emailTransportSettingNames() as $field) {
+            self::assertTrue($this->request('unsafe-value', false, 'session', $field)['error']);
+            self::assertSame([], DB::$queries);
+            self::assertSame([], DB::$writes);
+        }
     }
 }
