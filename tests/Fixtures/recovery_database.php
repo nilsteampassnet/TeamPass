@@ -328,6 +328,22 @@ try {
         $process = new \Symfony\Component\Process\Process([PHP_BINARY, 'app/scripts/disaster-recovery.php', '--resume=' . $jobId], $root);
         $process->setTimeout(120);
         $process->run();
+        if ($receipt['permissions']['status'] === 'issues') {
+            if ($process->isSuccessful() || !str_contains($process->getErrorOutput(), 'PERMISSIONS_REVIEW_REQUIRED')
+                || $targetDb->query("SELECT valeur FROM recovery_misc WHERE type='admin' AND intitule='recovery_pending_checks'")->fetch_row()[0] !== '1') {
+                throw new RuntimeException('Unsafe permissions did not block CLI finalization and preserve the hold');
+            }
+            echo "OK: known permission findings block CLI finalization without releasing the hold\n";
+        } else {
+        if ($receipt['permissions']['status'] === 'manual') {
+            if ($process->isSuccessful() || !str_contains($process->getErrorOutput(), 'PERMISSIONS_MANUAL_ACK_REQUIRED')) {
+                throw new RuntimeException('Manual ACL review was not required by the CLI');
+            }
+            $process = new \Symfony\Component\Process\Process([PHP_BINARY, 'app/scripts/disaster-recovery.php',
+                '--resume=' . $jobId, '--acknowledge-manual-permissions'], $root);
+            $process->setTimeout(120);
+            $process->run();
+        }
         if (!$process->isSuccessful()) {
             throw new RuntimeException($process->getErrorOutput());
         }
@@ -357,6 +373,7 @@ try {
             throw new RuntimeException('Legacy complete receipt was not repaired after prior service resume');
         }
         echo "OK: isolated publication, original master key, private staging cleanup, permission audit and idempotent service resume\n";
+        }
     }
     echo "OK: real encrypted backup, kit, SQL import, original keys and cryptographic verification\n";
 } catch (Throwable $exception) {

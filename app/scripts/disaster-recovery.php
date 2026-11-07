@@ -23,7 +23,7 @@ require_once __DIR__ . '/../config/include.php';
 require_once __DIR__ . '/../sources/recovery.functions.php';
 
 $options = getopt('', ['enable', 'prepare:', 'run:', 'verification-timeout:', 'activate:',
-    'acknowledge-unusable-tp-key', 'check-permissions:', 'resume:', 'status:', 'discard:', 'help']);
+    'acknowledge-unusable-tp-key', 'acknowledge-manual-permissions', 'check-permissions:', 'resume:', 'status:', 'discard:', 'help']);
 try {
     foreach (['enable', 'prepare', 'run', 'activate', 'check-permissions', 'resume', 'discard'] as $writeOperation) {
         if (isset($options[$writeOperation])) {
@@ -121,6 +121,13 @@ try {
             if (!empty($receipt['cleanup_pending'])) {
                 throw new TeamPassRecoveryException('RECOVERY_CLEANUP_REQUIRED');
             }
+            // Always audit again here: a cached pass, or a hidden UI command,
+            // cannot authorize finalization after permissions have changed.
+            $receipt['permissions'] = tpSetupPermissionsAudit(TEAMPASS_ROOT);
+            tpRecoverySaveReceipt($receipt);
+            $receipt['permissions'] = tpSetupPermissionsApprove($receipt['permissions'],
+                isset($options['acknowledge-manual-permissions']));
+            tpRecoverySaveReceipt($receipt);
             require_once __DIR__ . '/../sources/main.functions.php';
             if (($SETTINGS['recovery_job_id'] ?? '') !== $id) {
                 throw new TeamPassRecoveryException('RECOVERY_RESUME_INVALID');
@@ -172,6 +179,7 @@ try {
         . "  --activate=JOB        Publish verified data and configuration in maintenance\n"
         . "  --acknowledge-unusable-tp-key  Explicitly accept the reported TP key diagnostic at activation\n"
         . "  --check-permissions=JOB  Audit runtime permissions and propose administrator commands\n"
+        . "  --acknowledge-manual-permissions  Confirm a completed manual ACL/deployment review\n"
         . "  --resume=JOB          Finalize publication and release the recovery hold\n"
         . "  --status=JOB          Print non-sensitive progress\n"
         . "  --discard=JOB         Remove private staging of a prepared or failed job\n"

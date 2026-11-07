@@ -301,6 +301,15 @@ sudo -u www-data php app/scripts/disaster-recovery.php --resume=JOB_ID
 
 This releases maintenance and the recovery background-task hold, and records
 `resumed` in the non-sensitive receipt so the assistant can show the final step.
+Finalization runs a new permission audit on the server: a previous successful
+report does not authorize completion if rights have changed. Findings block
+`--resume`, including when invoked directly without the assistant. Fix them and
+repeat the command. On a platform or deployment requiring manual review, complete
+the ACL/service-account review and explicitly add
+`--acknowledge-manual-permissions`. The assistant offers that flag after the
+confirmation checkbox is selected. The acknowledgement is recorded in the
+receipt as a manual review, never as an automatic audit pass. Container ownership
+is reviewed manually; other detected unsafe permissions still require correction.
 Repeating the command is safe if a prior acknowledgement was interrupted. An
 older receipt left at `complete` can be acknowledged again; maintenance enabled
 separately after recovery is preserved.

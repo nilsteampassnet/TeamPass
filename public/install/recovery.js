@@ -92,7 +92,10 @@
   let visibleJob = null
   const show = (result) => {
     const acknowledge = document.getElementById('recovery-acknowledge-tp-key')
-    if (visibleJob?.id !== result.id) acknowledge.checked = false
+    if (visibleJob?.id !== result.id) {
+      acknowledge.checked = false
+      document.getElementById('recovery-manual-ack').checked = false
+    }
     visibleJob = result
     document.getElementById('recovery-result').hidden = false
     const resumed = result.status === 'resumed'
@@ -163,7 +166,11 @@
     document.getElementById('recovery-permissions-manual').hidden = review.status !== 'manual'
       && !(review.status === 'issues' && permissionCommands.length === 0)
     document.getElementById('recovery-resume').hidden = !completed || !permissionReady || cleanupPending
-    document.getElementById('recovery-resume-command').textContent = `${data.command} --resume=${result.id}`
+    const manualReview = document.getElementById('recovery-manual-acknowledgement')
+    manualReview.hidden = review.status !== 'manual' || !completed
+    const manualAcknowledged = document.getElementById('recovery-manual-ack').checked
+    document.getElementById('recovery-resume-command').textContent = review.status === 'manual' && !manualAcknowledged
+      ? '' : `${data.command} --resume=${result.id}${review.status === 'manual' ? ' --acknowledge-manual-permissions' : ''}`
     document.getElementById('recovery-finished').hidden = !finalStep
     document.getElementById('recovery-finished-status').textContent = result.maintenance_enabled
       ? data.resumedMaintenance : data.resumed
@@ -172,6 +179,9 @@
     document.getElementById('recovery-refresh').hidden = finalStep
     syncCopyButtons()
   }
+  document.getElementById('recovery-manual-ack').addEventListener('change', () => {
+    if (visibleJob) show(visibleJob)
+  })
   document.getElementById('recovery-acknowledge-tp-key').addEventListener('change', () => {
     if (visibleJob) show(visibleJob)
   })

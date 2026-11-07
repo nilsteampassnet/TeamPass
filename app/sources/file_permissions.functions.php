@@ -469,6 +469,8 @@ function tpFilePermissionsScan(
         $writeBits = $isDirectory ? 3 : 2;
         $readable = tpFilePermissionsIdentityHasAccess($absolutePath, $identity, $readBits);
         $writable = tpFilePermissionsIdentityHasAccess($absolutePath, $identity, $writeBits);
+        $stat = @stat($absolutePath);
+        $webOwned = is_array($stat) && isset($identity['uid']) && (int) $stat['uid'] === (int) $identity['uid'];
         $worldWritable = ($mode & 0002) !== 0;
 
         $report['counts']['checked']++;
@@ -490,6 +492,9 @@ function tpFilePermissionsScan(
         }
 
         if ($classification === 'secret') {
+            if ($webOwned && !$writable) {
+                tpFilePermissionsAddIssue($report, $relativePath, 'secret_web_owned', 'warning', $actualMode, 'non-web-owner');
+            }
             if ($readable === false) {
                 tpFilePermissionsAddIssue($report, $relativePath, 'secret_not_readable', 'error', $actualMode, $isDirectory ? '0750' : '0640');
             }
@@ -514,6 +519,9 @@ function tpFilePermissionsScan(
 
         if ($readable === false) {
             tpFilePermissionsAddIssue($report, $relativePath, 'protected_not_readable', 'error', $actualMode, 'read-only-for-web');
+        }
+        if ($webOwned && !$writable) {
+            tpFilePermissionsAddIssue($report, $relativePath, 'protected_web_owned', 'warning', $actualMode, 'non-web-owner');
         }
         if ($writable && $worldWritable === false) {
             tpFilePermissionsAddIssue($report, $relativePath, 'protected_writable', 'warning', $actualMode, 'read-only-for-web');
