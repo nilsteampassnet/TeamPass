@@ -40,13 +40,16 @@ trait EmailTrait {
         $emailService = new EmailService();
         
         // if email.encryptedUserPassword is set, decrypt it
-        if (isset($arguments['encryptedUserPassword']) === true) {
-            $userPassword = cryption($arguments['encryptedUserPassword'], '', 'decrypt', $this->settings)['string'];
-            $arguments['body'] = str_replace('#password#', $userPassword, $arguments['body']);
+        if (empty($arguments['encryptedUserPassword']) === false) {
+            $decrypted = cryption($arguments['encryptedUserPassword'], '', 'decrypt', $this->settings);
+            if (($decrypted['error'] ?? false) !== false) {
+                throw new RuntimeException('Email credential could not be decrypted.');
+            }
+            $arguments['body'] = str_replace('#password#', $decrypted['string'], $arguments['body']);
         }
         
         // send email
-        $emailService->sendMail(
+        $result = $emailService->sendMail(
             $arguments['subject'],
             $arguments['body'],
             $arguments['receivers'],
@@ -55,5 +58,10 @@ trait EmailTrait {
             true,
             true
         );
+        // The worker catches this exception and marks the task failed. Do not include
+        // the provider response: it can contain recipient or message data.
+        if ($result !== '') {
+            throw new RuntimeException('Email delivery failed.');
+        }
     }
 }
