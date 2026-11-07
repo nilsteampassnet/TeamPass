@@ -335,44 +335,44 @@ try {
             }
             echo "OK: known permission findings block CLI finalization without releasing the hold\n";
         } else {
-        if ($receipt['permissions']['status'] === 'manual') {
-            if ($process->isSuccessful() || !str_contains($process->getErrorOutput(), 'PERMISSIONS_MANUAL_ACK_REQUIRED')) {
-                throw new RuntimeException('Manual ACL review was not required by the CLI');
+            if ($receipt['permissions']['status'] === 'manual') {
+                if ($process->isSuccessful() || !str_contains($process->getErrorOutput(), 'PERMISSIONS_MANUAL_ACK_REQUIRED')) {
+                    throw new RuntimeException('Manual ACL review was not required by the CLI');
+                }
+                $process = new \Symfony\Component\Process\Process([PHP_BINARY, 'app/scripts/disaster-recovery.php',
+                    '--resume=' . $jobId, '--acknowledge-manual-permissions'], $root);
+                $process->setTimeout(120);
+                $process->run();
             }
-            $process = new \Symfony\Component\Process\Process([PHP_BINARY, 'app/scripts/disaster-recovery.php',
-                '--resume=' . $jobId, '--acknowledge-manual-permissions'], $root);
-            $process->setTimeout(120);
+            if (!$process->isSuccessful()) {
+                throw new RuntimeException($process->getErrorOutput());
+            }
+            if ($targetDb->query("SELECT valeur FROM recovery_misc WHERE type='admin' AND intitule='recovery_pending_checks'")->fetch_row()[0] !== '0') {
+                throw new RuntimeException('Operational hold was not released');
+            }
+            $receipt = json_decode((string) file_get_contents($receiptPath), true, 32, JSON_THROW_ON_ERROR);
+            if ($receipt['status'] !== 'resumed' || !isset($receipt['resumed_at']) || $receipt['maintenance_enabled']) {
+                throw new RuntimeException('Service resume was not recorded for the final cleanup step');
+            }
+            if ($scenario === 'publish-retry') { tpRecoveryTestPublicationReceiptRetry($root, $jobId); }
+            // A repeated acknowledgement must not rewrite separately enabled maintenance.
+            $targetDb->query("UPDATE recovery_misc SET valeur='1' WHERE type='admin' AND intitule='maintenance_mode'");
             $process->run();
-        }
-        if (!$process->isSuccessful()) {
-            throw new RuntimeException($process->getErrorOutput());
-        }
-        if ($targetDb->query("SELECT valeur FROM recovery_misc WHERE type='admin' AND intitule='recovery_pending_checks'")->fetch_row()[0] !== '0') {
-            throw new RuntimeException('Operational hold was not released');
-        }
-        $receipt = json_decode((string) file_get_contents($receiptPath), true, 32, JSON_THROW_ON_ERROR);
-        if ($receipt['status'] !== 'resumed' || !isset($receipt['resumed_at']) || $receipt['maintenance_enabled']) {
-            throw new RuntimeException('Service resume was not recorded for the final cleanup step');
-        }
-        if ($scenario === 'publish-retry') { tpRecoveryTestPublicationReceiptRetry($root, $jobId); }
-        // A repeated acknowledgement must not rewrite separately enabled maintenance.
-        $targetDb->query("UPDATE recovery_misc SET valeur='1' WHERE type='admin' AND intitule='maintenance_mode'");
-        $process->run();
-        $repeated = json_decode((string) file_get_contents($receiptPath), true, 32, JSON_THROW_ON_ERROR);
-        if (!$process->isSuccessful() || $repeated['resumed_at'] !== $receipt['resumed_at'] || !$repeated['maintenance_enabled']) {
-            throw new RuntimeException('Repeated resume changed the acknowledgement or separately enabled maintenance');
-        }
-        $legacy = $receipt;
-        $legacy['status'] = 'complete';
-        unset($legacy['resumed_at']);
-        file_put_contents($receiptPath, json_encode($legacy, JSON_THROW_ON_ERROR));
-        $process->run();
-        $repaired = json_decode((string) file_get_contents($receiptPath), true, 32, JSON_THROW_ON_ERROR);
-        if (!$process->isSuccessful() || $repaired['status'] !== 'resumed' || !isset($repaired['resumed_at'])
-            || !$repaired['maintenance_enabled']) {
-            throw new RuntimeException('Legacy complete receipt was not repaired after prior service resume');
-        }
-        echo "OK: isolated publication, original master key, private staging cleanup, permission audit and idempotent service resume\n";
+            $repeated = json_decode((string) file_get_contents($receiptPath), true, 32, JSON_THROW_ON_ERROR);
+            if (!$process->isSuccessful() || $repeated['resumed_at'] !== $receipt['resumed_at'] || !$repeated['maintenance_enabled']) {
+                throw new RuntimeException('Repeated resume changed the acknowledgement or separately enabled maintenance');
+            }
+            $legacy = $receipt;
+            $legacy['status'] = 'complete';
+            unset($legacy['resumed_at']);
+            file_put_contents($receiptPath, json_encode($legacy, JSON_THROW_ON_ERROR));
+            $process->run();
+            $repaired = json_decode((string) file_get_contents($receiptPath), true, 32, JSON_THROW_ON_ERROR);
+            if (!$process->isSuccessful() || $repaired['status'] !== 'resumed' || !isset($repaired['resumed_at'])
+                || !$repaired['maintenance_enabled']) {
+                throw new RuntimeException('Legacy complete receipt was not repaired after prior service resume');
+            }
+            echo "OK: isolated publication, original master key, private staging cleanup, permission audit and idempotent service resume\n";
         }
     }
     echo "OK: real encrypted backup, kit, SQL import, original keys and cryptographic verification\n";

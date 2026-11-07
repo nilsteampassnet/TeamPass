@@ -88,13 +88,7 @@ function tpRecoveryCheckPermissions(string $id): array
 /** Build the final administrator-only cleanup command for the real installer directory. */
 function tpRecoveryInstallerCleanupCommand(string $root, string $os): ?string
 {
-    $realRoot = realpath($root);
-    if ($realRoot === false || $realRoot === dirname($realRoot)) { return null; }
-    $installer = $realRoot . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'install';
-    if (is_link($installer) || realpath($installer) !== $installer || !is_dir($installer)) { return null; }
-    $quoted = tpRecoveryCommandArgument($installer, $os);
-    return $os === 'Windows' ? 'Remove-Item -LiteralPath ' . $quoted . ' -Recurse -Force'
-        : 'sudo rm -rf -- ' . $quoted;
+    return tpSetupPermissionsCleanupCommand($root, $os);
 }
 
 /** Propose service activation only when a known systemd cron unit is installed. */

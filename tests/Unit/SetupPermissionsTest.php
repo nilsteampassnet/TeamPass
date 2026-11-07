@@ -74,6 +74,43 @@ final class SetupPermissionsTest extends TestCase
         tpSetupPermissionsApprove([], true);
     }
 
+    public function testFinalizationNeedsTheCompletedFlowItsOwnTokenAndSettingsOwnership(): void
+    {
+        $session = ['setup_permissions_ready' => 'install', 'setup_permissions_csrf' => 'token'];
+        self::assertTrue(tpSetupPermissionsRequestAllowed($session, 'install', 'token', true));
+        self::assertFalse(tpSetupPermissionsRequestAllowed($session, 'install', 'token', false));
+        self::assertFalse(tpSetupPermissionsRequestAllowed($session, 'install', null, true));
+        self::assertFalse(tpSetupPermissionsRequestAllowed($session, 'install', 'wrong', true));
+        self::assertFalse(tpSetupPermissionsRequestAllowed($session, 'upgrade', 'token', true));
+        self::assertFalse(tpSetupPermissionsRequestAllowed([], 'install', 'token', true));
+        $session['setup_permissions_ready'] = 'upgrade';
+        self::assertFalse(tpSetupPermissionsRequestAllowed($session, 'upgrade', 'token', false));
+        $session['user_granted'] = '1';
+        self::assertTrue(tpSetupPermissionsRequestAllowed($session, 'upgrade', 'token', false));
+    }
+
+    public function testManualReviewLogContainsMetadataAndNeverCommandsOrFindings(): void
+    {
+        $root = sys_get_temp_dir() . '/tp-permissions-log-' . bin2hex(random_bytes(8));
+        mkdir($root . '/storage/logs', 0700, true);
+        try {
+            $review = tpSetupPermissionsApprove(tpSetupPermissionsReview($root, [], 123), true);
+            $review['commands'] = ['synthetic command that must not be logged'];
+            tpSetupPermissionsRecord($root, 'install', $review);
+            $entry = json_decode((string) file_get_contents($root . '/storage/logs/setup-permissions.jsonl'), true);
+            self::assertSame('manual', $entry['status']);
+            self::assertSame('install', $entry['flow']);
+            self::assertIsInt($entry['manual_acknowledged_at']);
+            self::assertArrayNotHasKey('commands', $entry);
+            self::assertArrayNotHasKey('findings', $entry);
+        } finally {
+            unlink($root . '/storage/logs/setup-permissions.jsonl');
+            rmdir($root . '/storage/logs');
+            rmdir($root . '/storage');
+            rmdir($root);
+        }
+    }
+
     public function testReplacingAPassedReportWithCurrentFindingsRefusesFinalization(): void
     {
         $passed = tpSetupPermissionsReview(__DIR__, $this->report(), 123);
@@ -81,5 +118,12 @@ final class SetupPermissionsTest extends TestCase
         $current = tpSetupPermissionsReview(__DIR__, $this->report(2), 124);
         $this->expectExceptionMessage('PERMISSIONS_REVIEW_REQUIRED');
         tpSetupPermissionsApprove($current, false);
+    }
+
+    public function testRuntimeBootstrapCannotDeleteTheInstallerFromALegacyFlag(): void
+    {
+        $source = (string) file_get_contents(__DIR__ . '/../../app/sources/core.php');
+        self::assertStringNotContainsString('clear_install_folder', $source);
+        self::assertStringNotContainsString('function delTree(', $source);
     }
 }

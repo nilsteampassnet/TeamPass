@@ -4,6 +4,24 @@
 
 Correct file system permissions are critical for a password manager. This page defines the minimal permission set required by Teampass 3.2.x, explains the rationale for each directory, and provides ready-to-use commands for the most common server configurations.
 
+The web installation and upgrade assistants require a final permission review,
+using the same rules as disaster recovery. Correct detected findings in a server
+terminal, check again, then finalize. Finalization performs a new server-side
+audit: a cached result or a browser button cannot bypass it. TeamPass displays
+the correction commands but never executes them. The web upgrade retains its
+previous maintenance state until this review is approved (unless maintenance
+was explicitly disabled for that upgrade).
+
+Windows ACLs, container ownership and custom linked layouts may need a manual
+review. The operator must explicitly acknowledge it; this remains a manual result,
+not an automatic pass. Other detected unsafe permissions still block completion.
+Installation/upgrade reviews are recorded without secrets in
+`storage/logs/setup-permissions.jsonl`; recovery records its review in the job
+receipt. After approval, remove `public/install` manually using the validated
+command displayed by the assistant. PHP is not granted write access to protected
+code merely to let it delete its own installer. Keep the final page open until
+cleanup is complete, then open the login page in another tab.
+
 The upgrade wizard (**Step 1 — Requirements check**) verifies the paths it needs for an upgrade and blocks when a required one is not writable or readable. The File integrity permission audit checks the broader **normal-runtime** posture, including background-task logs and whether PHP can modify application code. These are different phases: temporarily unlock installation paths for the wizard, then restore the hardened runtime model afterwards.
 
 ---

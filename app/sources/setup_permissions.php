@@ -86,3 +86,26 @@ function tpSetupPermissionsRecord(string $root, string $flow, array $review): vo
         throw new RuntimeException('PERMISSIONS_AUDIT_LOG_UNAVAILABLE');
     }
 }
+
+/** Build a quoted cleanup command for the real installer, without deleting anything. */
+function tpSetupPermissionsCleanupCommand(string $root, string $os): ?string
+{
+    $realRoot = realpath($root);
+    if ($realRoot === false || $realRoot === dirname($realRoot)) { return null; }
+    $installer = $realRoot . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'install';
+    if (is_link($installer) || realpath($installer) !== $installer || !is_dir($installer)) { return null; }
+    $quoted = $os === 'Windows' ? "'" . str_replace("'", "''", $installer) . "'"
+        : "'" . str_replace("'", "'\\''", $installer) . "'";
+    return $os === 'Windows' ? 'Remove-Item -LiteralPath ' . $quoted . ' -Recurse -Force'
+        : 'sudo rm -rf -- ' . $quoted;
+}
+
+/** Authorize only the completed setup session and its own finalization CSRF token. */
+function tpSetupPermissionsRequestAllowed(array $session, string $flow, ?string $token, bool $ownsSettings): bool
+{
+    return in_array($flow, ['install', 'upgrade'], true)
+        && ($session['setup_permissions_ready'] ?? '') === $flow
+        && is_string($session['setup_permissions_csrf'] ?? null)
+        && $token !== null && $token !== '' && hash_equals($session['setup_permissions_csrf'], $token)
+        && ($flow === 'install' ? $ownsSettings : ($session['user_granted'] ?? '') === '1');
+}
