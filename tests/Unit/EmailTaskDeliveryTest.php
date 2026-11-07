@@ -52,7 +52,7 @@ final class EmailTaskDeliveryTest extends TestCase
     /** Execute the production worker, including persistence and logger boundaries. */
     public function testWorkerPersistsDeliveryFailuresAndLogsOnlyMetadata(): void
     {
-        foreach (['accepted' => 'completed', 'encrypted' => 'completed', 'rejected' => 'failed', 'unexpected' => 'failed', 'invalid' => 'failed', 'throttled' => 'queued', 'exhausted' => 'failed', 'indeterminate' => 'failed'] as $mode => $status) {
+        foreach (['accepted' => 'completed', 'encrypted' => 'completed', 'sealed' => 'completed', 'rejected' => 'failed', 'unexpected' => 'failed', 'invalid' => 'failed', 'throttled' => 'queued', 'exhausted' => 'failed', 'indeterminate' => 'failed'] as $mode => $status) {
             $result = $this->probe($mode, true);
             self::assertCount(1, $result['task_updates']);
             self::assertSame($status, $result['task_updates'][0]['status'], $mode);
@@ -77,6 +77,19 @@ final class EmailTaskDeliveryTest extends TestCase
             $failed = $this->probe($mode, true)['task_updates'][0];
             self::assertSame('failed', $failed['status']);
             self::assertArrayNotHasKey('next_attempt_at', $failed);
+        }
+    }
+
+    /** Completion records acceptance without reading envelope fields or retaining recipient identities. */
+    public function testEncryptedAndLegacyTasksCompleteWithPrivateMetadataOnly(): void
+    {
+        foreach (['accepted', 'sealed'] as $mode) {
+            $result = $this->probe($mode, true);
+            self::assertSame(['accepted' => true], json_decode($result['task_updates'][0]['arguments'], true));
+            $metadata = json_encode($result['task_updates']) . json_encode($result['logs']);
+            foreach (['recipient@example.com', 'Recipient', 'Task body', 'def50200cafe'] as $sensitive) {
+                self::assertStringNotContainsString($sensitive, $metadata);
+            }
         }
     }
 

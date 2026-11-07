@@ -1599,8 +1599,9 @@ class TaskWorker {
     {
         if ($this->processType === 'send_email') {
             return (string) json_encode([
-                'email' => $this->taskData['receivers'],
-                'login' => $this->taskData['receiver_name'],
+                // The input may be an encrypted envelope. Do not reopen it or persist
+                // recipient identities just to record completion.
+                'accepted' => true,
             ]);
         }
 
