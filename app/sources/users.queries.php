@@ -888,8 +888,9 @@ if (null !== $post_type) {
                 break;
             }
 
-            // Non-admin cannot grant can_create_root_folder if they don't have it themselves.
-            if ((int) $session->get('user-admin') !== 1 && (int) $session->get('user-can_create_root_folder') !== 1) {
+            // Only an administrator may grant can_create_root_folder, as on the user edit form and in
+            // the rights propagation (GHSA-57ww-wx2c-hx7x).
+            if ((int) $session->get('user-admin') !== 1) {
                 $post_root_level = 0;
             }
 
@@ -2565,6 +2566,23 @@ if (null !== $post_type) {
                 }
             }
 
+            // Columns written on every destination. Only an administrator may change
+            // can_create_root_folder, as on the user edit form (store_user_changes): for any other
+            // caller each destination keeps its own value (GHSA-57ww-wx2c-hx7x). It is dropped, not
+            // refused, because a legitimate propagation carries the source account's flag.
+            $userColumns = array(
+                'isAdministratedByRole' => $inputData['user_managedby'],
+                'gestionnaire' => $inputData['user_manager'],
+                'read_only' => $inputData['user_readonly'],
+                'can_create_root_folder' => $inputData['user_rootfolder'],
+                'personal_folder' => $inputData['user_personalfolder'],
+                'can_manage_all_users' => $inputData['user_hr'],
+                'admin' => $inputData['user_admin'],
+            );
+            if ((int) $session->get('user-admin') !== 1) {
+                unset($userColumns['can_create_root_folder']);
+            }
+
             foreach ($inputData['destination_ids'] as $dest_user_id) {
                 // Update user roles in users_roles table. The propagated set is reconciled
                 // per destination so a caller cannot revoke, through the propagation, a role
@@ -2593,15 +2611,7 @@ if (null !== $post_type) {
                 // Update other user fields in users table
                 DB::update(
                     prefixTable('users'),
-                    array(
-                        'isAdministratedByRole' => $inputData['user_managedby'],
-                        'gestionnaire' => $inputData['user_manager'],
-                        'read_only' => $inputData['user_readonly'],
-                        'can_create_root_folder' => $inputData['user_rootfolder'],
-                        'personal_folder' => $inputData['user_personalfolder'],
-                        'can_manage_all_users' => $inputData['user_hr'],
-                        'admin' => $inputData['user_admin'],
-                    ),
+                    $userColumns,
                     'id = %i',
                     $dest_user_id
                 );
