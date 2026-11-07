@@ -7,6 +7,8 @@ paths:
 
 # Email transport architecture
 
+Administration and acceptance checks: [Email transports](../../docs/manage/email-transports.md).
+
 `EmailService` remains the entry point used by immediate callers and background
 notifications. It resolves the transport, applies the existing sanitization and
 `emailBody()` wrapper, then calls PHPMailer's `preSend()` exactly once. A transport
