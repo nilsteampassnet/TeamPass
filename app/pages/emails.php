@@ -38,6 +38,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
+require_once __DIR__ . '/../sources/emails_transport_logic.php';
 
 // init
 loadClasses('DB');
@@ -110,119 +111,7 @@ $localPasswordRecoveryEnabled = isset($SETTINGS['enable_local_password_recovery'
                     </div>
 
                     <div class="card-body">
-
-                        <div class="row mb-2">
-                            <div class="col-5">
-                                <?php echo $lang->get('admin_email_smtp_server'); ?>
-                            </div>
-                            <div class="col-7 mb-0">
-                                <input type='text' class='form-control form-control-sm' id='email_smtp_server' value='<?php echo isset($SETTINGS['email_smtp_server']) === true ? $SETTINGS['email_smtp_server'] : ''; ?>'>
-                            </div>
-                        </div>
-
-                        <div class="row mb-2">
-                            <div class="col-5">
-                                <?php echo $lang->get('admin_email_auth'); ?>
-                            </div>
-                            <div class="col-7 mb-0">
-                                <div class='toggle toggle-modern' id='email_smtp_auth' data-toggle-on='<?php echo isset($SETTINGS['email_smtp_auth']) === true && $SETTINGS['email_smtp_auth'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='email_smtp_auth_input' value='<?php echo isset($SETTINGS['email_smtp_auth']) && $SETTINGS['email_smtp_auth'] === '1' ? '1' : '0'; ?>' />
-                            </div>
-                        </div>
-
-                        <div class="row mb-2">
-                            <div class="col-5">
-                                <?php echo $lang->get('admin_email_auth_username'); ?>
-                            </div>
-                            <div class="col-7 mb-0">
-                                <input type='text' class='form-control form-control-sm' id='email_auth_username' value='<?php echo isset($SETTINGS['email_auth_username']) === true ? $SETTINGS['email_auth_username'] : ''; ?>'>
-                            </div>
-                        </div>
-
-                        <div class="row mb-2">
-                            <div class="col-5">
-                                <?php echo $lang->get('admin_email_auth_pwd'); ?>
-                            </div>
-                            <div class="col-7 mb-0">
-                                <input type='password' class='form-control form-control-sm setting-secret' id='email_auth_pwd' value='' autocomplete='new-password' placeholder='<?php echo empty($SETTINGS['email_auth_pwd']) === true ? '' : $lang->get('bck_externalized_secret_keep_existing'); ?>'>
-                            </div>
-                        </div>
-
-                        <div class="row mb-2">
-                            <div class="col-5">
-                                <?php echo $lang->get('admin_email_server_url'); ?>
-                                <small class='form-text text-muted'>
-                                    <?php echo htmlspecialchars($lang->get('admin_email_server_url_tip'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?>
-                                </small>
-                            </div>
-                            <div class="col-7 mb-0">
-                                <input type='text' class='form-control form-control-sm' id='email_server_url' value='<?php echo isset($SETTINGS['email_server_url']) === true ? $SETTINGS['email_server_url'] : ''; ?>'>
-                            </div>
-                        </div>
-
-                        <div class="row mb-2">
-                            <div class="col-5">
-                                <?php echo $lang->get('settings_enable_local_password_recovery'); ?>
-                                <small class='form-text text-muted'>
-                                    <?php echo $lang->get('settings_enable_local_password_recovery_tip'); ?>
-                                </small>
-                            </div>
-                            <div class="col-7 mb-0">
-                                <div class='toggle toggle-modern' id='enable_local_password_recovery' data-toggle-on='<?php echo $localPasswordRecoveryEnabled === true ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_local_password_recovery_input' value='<?php echo $localPasswordRecoveryEnabled === true ? '1' : '0'; ?>' />
-                            </div>
-                        </div>
-
-                        <div class="row mb-2">
-                            <div class="col-5">
-                                <?php echo $lang->get('admin_email_port'); ?>
-                            </div>
-                            <div class="col-7 mb-0">
-                                <input type='text' class='form-control form-control-sm' id='email_port' value='<?php echo isset($SETTINGS['email_port']) === true ? $SETTINGS['email_port'] : ''; ?>'>
-                            </div>
-                        </div>
-
-                        <div class="row mb-2">
-                            <div class="col-5">
-                                <?php echo $lang->get('admin_email_security'); ?>
-                            </div>
-                            <div class="col-7 mb-0">
-                                <select class='form-control form-control-sm' id='email_security'>
-                                    <option value="none" <?php echo isset($SETTINGS['email_security']) === false || $SETTINGS['email_security'] === 'none' ? ' selected' : ''; ?>><?php echo $lang->get('none'); ?></option>
-                                    <option value="ssl" <?php echo isset($SETTINGS['email_security']) === true && $SETTINGS['email_security'] === 'ssl' ? ' selected' : ''; ?>>SSL</option>
-                                    <option value="tls" <?php echo isset($SETTINGS['email_security']) === true && $SETTINGS['email_security'] === 'tls' ? ' selected' : ''; ?>>TLS</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <?php $emailVerifyCertificate = (string) ($SETTINGS['email_smtp_verify_certificate'] ?? '0') === '1'; ?>
-                        <div class="row mb-2">
-                            <div class="col-5">
-                                <?php echo $lang->get('admin_email_verify_certificate'); ?>
-                                <small class='form-text text-muted'>
-                                    <?php echo $lang->get('admin_email_verify_certificate_tip'); ?>
-                                </small>
-                            </div>
-                            <div class="col-7 mb-0">
-                                <div class='toggle toggle-modern' id='email_smtp_verify_certificate' data-toggle-on='<?php echo $emailVerifyCertificate === true ? 'true' : 'false'; ?>'></div><input type='hidden' id='email_smtp_verify_certificate_input' value='<?php echo $emailVerifyCertificate === true ? '1' : '0'; ?>' />
-                            </div>
-                        </div>
-
-                        <div class="row mb-2">
-                            <div class="col-5">
-                                <?php echo $lang->get('admin_email_from'); ?>
-                            </div>
-                            <div class="col-7 mb-0">
-                                <input type='text' class='form-control form-control-sm' id='email_from' value='<?php echo isset($SETTINGS['email_from']) === true ? $SETTINGS['email_from'] : ''; ?>'>
-                            </div>
-                        </div>
-
-                        <div class="row mb-2">
-                            <div class="col-5">
-                                <?php echo $lang->get('admin_email_from_name'); ?>
-                            </div>
-                            <div class="col-7 mb-0">
-                                <input type='text' class='form-control form-control-sm' id='email_from_name' value='<?php echo isset($SETTINGS['email_from_name']) === true ? $SETTINGS['email_from_name'] : ''; ?>'>
-                            </div>
-                        </div>
+                        <?php require __DIR__ . '/emails_transport_form.php'; ?>
 
                     </div>
                 </div>
@@ -243,7 +132,7 @@ $localPasswordRecoveryEnabled = isset($SETTINGS['enable_local_password_recovery'
                                 <?php echo $lang->get('email_debug_level'); ?>
                             </div>
                             <div class="col-7 mb-0">
-                                <select class='form-control form-control-sm' id='email_debug_level'>
+                                <select class='form-control form-control-sm no-save' id='email_debug_level' data-email-profile='true'>
                                     <option value='0'<?php echo isset($SETTINGS['email_debug_level']) === true && $SETTINGS['email_debug_level'] === '0' ? ' selected' : ''; ?>><?php echo $lang->get('none'); ?></option>
                                     <option value='1'<?php echo isset($SETTINGS['email_debug_level']) === true && $SETTINGS['email_debug_level'] === '1' ? ' selected' : ''; ?>><?php echo $lang->get('email_debug_client'); ?></option>
                                     <option value='2'<?php echo isset($SETTINGS['email_debug_level']) === true && $SETTINGS['email_debug_level'] === '2' ? ' selected' : ''; ?>><?php echo $lang->get('email_debug_server'); ?></option>

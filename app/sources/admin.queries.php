@@ -1511,6 +1511,12 @@ switch ($post_type) {
             $post_data,
             'decode'
         );
+
+        require_once __DIR__ . '/emails_transport_logic.php';
+        if (in_array($dataReceived['field'] ?? '', emailTransportSettingNames(), true)) {
+            echo prepareExchangedData(['error' => true, 'message' => $lang->get('email_profile_save_required')], 'encode');
+            break;
+        }
         
         if (($dataReceived['field'] ?? null) === 'device_pairing_token_lifetime_days') {
             require_once __DIR__ . '/api_device_logic.php';
