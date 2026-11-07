@@ -1,0 +1,35 @@
+---
+paths:
+  - "app/includes/libraries/teampassclasses/emailservice/**"
+  - "app/vendor/teampassclasses/emailservice/**"
+  - "app/scripts/traits/EmailTrait.php"
+---
+
+# Email transport architecture
+
+`EmailService` remains the entry point used by immediate callers and background
+notifications. It resolves the transport, applies the existing sanitization and
+`emailBody()` wrapper, then calls PHPMailer's `preSend()` exactly once. A transport
+receives that prepared PHPMailer message. It must not render templates, rebuild
+the body, or interpret business permissions.
+
+`SmtpTransport` uses `postSend()` to preserve the existing SMTP/TLS implementation.
+Missing `email_transport` means `smtp`; an unknown selection fails explicitly.
+There is no automatic fallback to SMTP after another transport fails.
+
+`EmailSendResult` separates provider acceptance from confirmed failure and an
+indeterminate outcome. Its error codes are a closed set. It carries no provider
+response body or decrypted content. Acceptance is not inbox delivery. A timeout
+after submission or partial recipient acceptance must never trigger a blind replay.
+The transport reports retry eligibility and delay; it does not schedule retries.
+
+For compatibility, `sendMail()` still returns an empty string on acceptance and
+JSON with `error`, `errorInfo` and `message` on failure. Failure JSON also carries
+the structured result metadata. New callers can use `getLastResult()` instead of
+parsing translated messages. Error translations use the configured default
+language and its English fallback; sending does not depend on a user session.
+
+All package classes have synchronized source and vendor copies. Extend
+`EmailServiceCopiesInSyncTest` when adding a class. Test adapters through the
+transport interface; regression tests also exercise real PHPMailer MIME preparation
+and the SMTP boundary without installation credentials.

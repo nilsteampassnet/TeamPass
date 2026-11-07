@@ -58,6 +58,8 @@ class EmailSettings
     public $debugLevel;
     public $dir;
     public $timeout;
+    public string $transport;
+    public string $language;
 
     /**
      * Whether the TLS certificate of the SMTP server is verified (chain and host name).
@@ -69,6 +71,8 @@ class EmailSettings
     // Constructeur pour initialiser les paramètres
     public function __construct(array $SETTINGS)
     {
+        $this->transport = (string) ($SETTINGS['email_transport'] ?? 'smtp');
+        $this->language = (string) ($SETTINGS['default_language'] ?? 'english');
         $this->smtpServer = $SETTINGS['email_smtp_server'] ?? '';
         $this->smtpAuth = isset($SETTINGS['email_smtp_auth']) ? ((int) $SETTINGS['email_smtp_auth']) === 1 : false;
         $this->authUsername = $SETTINGS['email_auth_username'] ?? '';

@@ -198,6 +198,8 @@ MFA: Google Authenticator (TOTP), Duo Security, YubiKey, AGSES.
 
 ## Email Templates
 
+Email delivery and transport contract: `.claude/rules/architecture-email-transports.md`.
+
 > Admin guide: `docs/manage/email-templates.md` — design notes: `workReadmeFiles/emails-templates-customization-plan.md`
 
 Emails are language strings, customizable per language by an admin. `Language::get()` checks `teampass_emails_templates` **before** the language files (`override[lang] → override[english] → file[lang] → file[english] → key`); the table is a pure diff, an empty table = shipped behaviour. Kill switch: `emails_templates_enabled`.
