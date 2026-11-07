@@ -64,12 +64,16 @@ namespace TeampassClasses\ConfigManager {
 
 namespace {
     require dirname(__DIR__, 2) . '/app/vendor/autoload.php';
+    require dirname(__DIR__, 2) . '/app/sources/secret_settings_logic.php';
     require dirname(__DIR__, 2) . '/app/scripts/traits/EmailTrait.php';
 
     /** Supply deterministic decryption outcomes without an instance secret file. */
-    function cryption($value, $key, $operation, $settings): array
+    function cryption($value, $key, $operation, $settings = []): array
     {
         $GLOBALS['decrypt_calls']++;
+        if ($value === 'def50200cafe') {
+            return ['string' => json_encode($GLOBALS['email_probe_plain_message']), 'error' => false];
+        }
         return $value === 'invalid-ciphertext'
             ? ['string' => '', 'error' => 'wrong_key_or_modified_ciphertext']
             : ['string' => 'temporary-password', 'error' => false];
@@ -171,6 +175,10 @@ namespace {
     }
 
     $GLOBALS['decrypt_calls'] = 0;
+    $sealedFailure = str_starts_with($argv[1], 'sealed-');
+    if ($sealedFailure) {
+        $argv[1] = substr($argv[1], strlen('sealed-'));
+    }
     $arguments = [
         'subject' => 'Task test',
         'body' => '<p>Task body</p>',
@@ -181,6 +189,10 @@ namespace {
     if (in_array($argv[1], ['encrypted', 'invalid'], true)) {
         $arguments['body'] = '<p>#password#</p>';
         $arguments['encryptedUserPassword'] = $argv[1] === 'invalid' ? 'invalid-ciphertext' : 'valid-ciphertext';
+    }
+    if ($argv[1] === 'sealed' || $sealedFailure) {
+        $GLOBALS['email_probe_plain_message'] = $arguments;
+        $arguments = ['email_payload_version' => 1, 'ciphertext' => 'def50200cafe'];
     }
 
     $failure = null;

@@ -52,13 +52,13 @@ final class EmailTaskDeliveryTest extends TestCase
     /** Execute the production worker, including persistence and logger boundaries. */
     public function testWorkerPersistsDeliveryFailuresAndLogsOnlyMetadata(): void
     {
-        foreach (['accepted' => 'completed', 'encrypted' => 'completed', 'rejected' => 'failed', 'unexpected' => 'failed', 'spoofed' => 'failed', 'invalid' => 'failed', 'throttled' => 'queued', 'exhausted' => 'failed', 'indeterminate' => 'failed'] as $mode => $status) {
+        foreach (['accepted' => 'completed', 'encrypted' => 'completed', 'sealed' => 'completed', 'rejected' => 'failed', 'unexpected' => 'failed', 'spoofed' => 'failed', 'invalid' => 'failed', 'throttled' => 'queued', 'exhausted' => 'failed', 'indeterminate' => 'failed'] as $mode => $status) {
             $result = $this->probe($mode, true);
             self::assertCount(1, $result['task_updates']);
             self::assertSame($status, $result['task_updates'][0]['status'], $mode);
             self::assertSame(
                 match ($mode) {
-                    'accepted', 'encrypted' => null,
+                    'accepted', 'encrypted', 'sealed' => null,
                     'invalid' => 'Email credential could not be decrypted.',
                     'rejected' => 'Email delivery failed: rejected.',
                     'exhausted' => 'Email delivery failed: throttled.',
@@ -73,7 +73,7 @@ final class EmailTaskDeliveryTest extends TestCase
                 self::assertArrayNotHasKey('arguments', $result['task_updates'][0]);
             } else {
                 self::assertSame(
-                    ['email' => 'recipient@example.com', 'login' => 'Recipient'],
+                    $status === 'completed' ? ['accepted' => true] : ['failed' => true],
                     json_decode($result['task_updates'][0]['arguments'], true, 512, JSON_THROW_ON_ERROR),
                     $mode
                 );
@@ -103,6 +103,40 @@ final class EmailTaskDeliveryTest extends TestCase
             self::assertSame('failed', $failed['status']);
             self::assertArrayNotHasKey('next_attempt_at', $failed);
         }
+    }
+
+    /** Completion records acceptance without reading envelope fields or retaining recipient identities. */
+    public function testEncryptedAndLegacyTasksCompleteWithPrivateMetadataOnly(): void
+    {
+        foreach (['accepted', 'sealed'] as $mode) {
+            $result = $this->probe($mode, true);
+            self::assertSame(['accepted' => true], json_decode($result['task_updates'][0]['arguments'], true));
+            $metadata = json_encode($result['task_updates']) . json_encode($result['logs']);
+            foreach (['recipient@example.com', 'Recipient', 'Task body', 'def50200cafe'] as $sensitive) {
+                self::assertStringNotContainsString($sensitive, $metadata);
+            }
+        }
+    }
+
+    /** Terminal failures drop the sealed payload without claiming acceptance; deferrals retain it. */
+    public function testEncryptedFailureOutcomesRetainOnlyPrivateStatusMetadata(): void
+    {
+        foreach (['rejected', 'invalid', 'indeterminate', 'exhausted', 'spoofed'] as $mode) {
+            $result = $this->probe('sealed-' . $mode, true);
+            $update = $result['task_updates'][0];
+            self::assertSame('failed', $update['status']);
+            self::assertSame(['failed' => true], json_decode($update['arguments'], true, 512, JSON_THROW_ON_ERROR));
+            $metadata = json_encode($result['task_updates']) . json_encode($result['logs']);
+            foreach (['recipient@example.com', 'Recipient', 'Task body', 'def50200cafe', 'invalid-ciphertext'] as $sensitive) {
+                self::assertStringNotContainsString($sensitive, $metadata);
+            }
+            if ($mode === 'invalid') {
+                self::assertSame('Email credential could not be decrypted.', $update['error_message']);
+            }
+        }
+        $deferred = $this->probe('sealed-throttled', true)['task_updates'][0];
+        self::assertSame('queued', $deferred['status']);
+        self::assertArrayNotHasKey('arguments', $deferred);
     }
 
     /** @return array{failure: ?string, decrypt_calls: int, messages: array, task_updates: array, logs: array} */

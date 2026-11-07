@@ -86,6 +86,11 @@ The versioned JSON envelope contains ciphertext only; the worker opens it immedi
 before delivery. Historical task arguments remain readable. Unknown envelope versions,
 tampering and unexpected fields fail closed, without sending or logging the payload.
 Never place transport tokens or application credentials inside a queued message.
+On completion, arguments are replaced with acceptance metadata only. Completion
+must not read the envelope as legacy fields or persist recipient identities.
+Terminal failures likewise replace arguments with failure metadata, without claiming
+provider acceptance or retaining the envelope. A deferred attempt keeps its payload
+for the scheduled retry. Both paths preserve the prerequisite's safe diagnostics.
 
 Email retries use `background_tasks.email_attempts` and `next_attempt_at`, with an
 additive idempotent migration. The existing scheduler only picks due tasks, so a
