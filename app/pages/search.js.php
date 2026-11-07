@@ -87,6 +87,12 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     // validate it against its own allow-lists in a single place.
     var searchFilters = {}
     const searchFilterStateVersion = 2
+    const pendingFavourites = new Set()
+    const favouriteLabels = {
+        add: <?php echo json_encode($lang->get('favorite'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+        remove: <?php echo json_encode($lang->get('unfavorite'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+        error: <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>
+    }
 
     // Out-of-order responses need no guard here: DataTables discards any
     // response whose "draw" counter is older than the current one.
@@ -369,6 +375,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             }
         ],
         "drawCallback": function() {
+            // A page redraw must not allow a second request for an item still being saved.
+            $('#search-results-items [data-action="favourite"]').each(function() {
+                $(this).prop('disabled', pendingFavourites.has(String($(this).closest('.search-row-actions').data('id'))));
+            });
             // Tooltips
             $('.infotip').tooltip();
 
@@ -878,6 +888,57 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         });
     };
 
+    /** Save an explicit bookmark state, keeping the DataTables data and rendered cell aligned. */
+    const setSearchFavourite = async (itemId, favourite) => {
+        const id = String(itemId);
+        if (pendingFavourites.has(id)) {
+            return;
+        }
+        pendingFavourites.add(id);
+        const buttons = () => $('#search-results-items .search-row-actions[data-id="' + id + '"] [data-action="favourite"]');
+        buttons().prop('disabled', true).tooltip('hide');
+        try {
+            const result = await $.post('sources/favourites.queries.php', {
+                type: favourite ? 'add_fav' : 'del_fav',
+                id: itemId,
+                key: <?php echo json_encode($session->get('key'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>
+            }, null, 'json');
+            if (!result || result.error !== false) {
+                throw new Error(favouriteLabels.error);
+            }
+            oTable.rows().every(function() {
+                const holder = $(this.data()[7]);
+                if (String(holder.data('id')) !== id) {
+                    return;
+                }
+                const label = favourite ? favouriteLabels.remove : favouriteLabels.add;
+                holder.find('[data-action="favourite"]')
+                    .attr('aria-pressed', String(favourite)).attr('aria-label', label).attr('title', label)
+                    .find('i').attr('class', favourite ? 'fa-solid fa-star text-warning' : 'fa-regular fa-star');
+                const focused = buttons().is(':focus');
+                $(this.node()).find('.infotip').tooltip('dispose');
+                oTable.cell(this.index(), 7).data(holder.prop('outerHTML'));
+                $(this.node()).find('.infotip').tooltip();
+                if (focused) {
+                    buttons().trigger('focus');
+                }
+            });
+            if (collectFilters().favourites === true) {
+                oTable.ajax.reload(function() {
+                    const info = oTable.page.info();
+                    if (info.start > 0 && info.start >= info.recordsDisplay) {
+                        oTable.page('last').draw('page');
+                    }
+                }, false);
+            }
+        } catch (error) {
+            toastr.error(favouriteLabels.error, '', {timeOut: 5000});
+        } finally {
+            pendingFavourites.delete(id);
+            buttons().prop('disabled', false);
+        }
+    };
+
     // Row actions. Stop the propagation so acting on a row never also opens the
     // modal behind it.
     $('#search-results-items tbody').on('click', '.search-row-action', async function(event) {
@@ -889,6 +950,11 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             return;
         }
         const action = $(this).data('action');
+
+        if (action === 'favourite') {
+            await setSearchFavourite(meta.id, $(this).attr('aria-pressed') !== 'true');
+            return;
+        }
 
         if (action === 'open') {
             goToItem(meta);
