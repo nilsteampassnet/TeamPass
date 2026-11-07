@@ -29,12 +29,15 @@
 use TeampassClasses\EmailService\EmailService;
 use TeampassClasses\EmailService\EmailSettings;
 
+require_once __DIR__ . '/../../sources/emails_queue_logic.php';
+
 trait EmailTrait {
     /**
      * Envoie un email
      * @param array $arguments Arguments nécessaires pour l'envoi d'email
      */
     private function sendEmail($arguments) {
+        $arguments = emailQueueOpen($arguments);
         // Prepare email properties
         $emailSettings = new EmailSettings($this->settings);
         $emailService = new EmailService();
