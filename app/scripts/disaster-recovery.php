@@ -186,7 +186,16 @@ try {
         . "See docs/install/disaster-recovery.md. Secrets are never accepted as command arguments.\n");
     exit(isset($options['help']) ? 0 : 2);
 } catch (Throwable $exception) {
-    $reason = $exception instanceof TeamPassRecoveryException ? $exception->reason : 'RECOVERY_OPERATION_FAILED';
+    $permissionFailures = ['PERMISSIONS_REVIEW_REQUIRED', 'PERMISSIONS_MANUAL_ACK_REQUIRED'];
+    $reason = $exception instanceof TeamPassRecoveryException ? $exception->reason
+        : (in_array($exception->getMessage(), $permissionFailures, true) ? $exception->getMessage() : 'RECOVERY_OPERATION_FAILED');
+    if (in_array($reason, $permissionFailures, true)) {
+        fwrite(STDERR, 'Recovery finalization refused: ' . $reason . ". Maintenance and the recovery hold were not released.\n");
+        fwrite(STDERR, $reason === 'PERMISSIONS_MANUAL_ACK_REQUIRED'
+            ? "Complete the manual ACL/deployment review, then repeat --resume=JOB with --acknowledge-manual-permissions.\n"
+            : "Run --check-permissions=JOB, correct the findings, then repeat --resume=JOB.\n");
+        exit(1);
+    }
     if ($reason === 'RECOVERY_SERVICE_ACCOUNT_REQUIRED') {
         fwrite(STDERR, "Do not run recovery with sudo php or as root. Open /install/recovery.php for the exact sudo -u command using the PHP service account.\n");
     }

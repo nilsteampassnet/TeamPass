@@ -384,7 +384,7 @@ function tpFilePermissionsAddIssue(
 
     $report['counts']['issues']++;
     $report['counts'][$severity === 'error' ? 'errors' : 'warnings']++;
-    if ($reason === 'protected_writable') {
+    if (in_array($reason, ['protected_writable', 'protected_web_owned'], true)) {
         $report['counts']['protected_writable']++;
     }
     if ($reason === 'runtime_not_writable') {

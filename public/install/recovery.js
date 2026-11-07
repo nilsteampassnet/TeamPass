@@ -112,7 +112,9 @@
     const review = result.permissions || { status: 'not_checked', commands: [] }
     const permissionCommands = Array.isArray(review.commands) ? review.commands : []
     const permissionReady = review.status === 'passed' || review.status === 'manual'
-    const finalStep = resumed && permissionReady && !cleanupPending
+    const manualConfirmed = review.status !== 'manual' || Number.isInteger(review.manual_acknowledged_at)
+    const needsFinalization = completed || (resumed && !manualConfirmed)
+    const finalStep = resumed && permissionReady && manualConfirmed && !cleanupPending
     const currentStep = cleanupPending ? 2 : (finalStep ? 5 : (published ? (permissionReady ? 4 : 3) : (verified || activating ? 2 : 1)))
     for (let step = 1; step <= 5; step++) {
       const marker = document.getElementById(`recovery-step-${step}`)
@@ -165,9 +167,9 @@
       ? ['(', 'set -e', ...permissionCommands, `${data.command} --check-permissions=${result.id}`, ')'].join('\n') : ''
     document.getElementById('recovery-permissions-manual').hidden = review.status !== 'manual'
       && !(review.status === 'issues' && permissionCommands.length === 0)
-    document.getElementById('recovery-resume').hidden = !completed || !permissionReady || cleanupPending
+    document.getElementById('recovery-resume').hidden = !needsFinalization || !permissionReady || cleanupPending
     const manualReview = document.getElementById('recovery-manual-acknowledgement')
-    manualReview.hidden = review.status !== 'manual' || !completed
+    manualReview.hidden = review.status !== 'manual' || !needsFinalization
     const manualAcknowledged = document.getElementById('recovery-manual-ack').checked
     document.getElementById('recovery-resume-command').textContent = review.status === 'manual' && !manualAcknowledged
       ? '' : `${data.command} --resume=${result.id}${review.status === 'manual' ? ' --acknowledge-manual-permissions' : ''}`

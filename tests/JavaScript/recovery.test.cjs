@@ -21,6 +21,16 @@ test('Manual permission review requires an explicit choice before offering the C
   assert.equal(ui.element('recovery-resume-command').textContent, '')
 })
 
+test('A legacy resumed receipt still needs a recorded manual review before cleanup', async () => {
+  const ui = app(job('resumed', { status: 'manual' }))
+  assert.equal(ui.element('recovery-finished').hidden, true)
+  assert.equal(ui.element('recovery-resume').hidden, false)
+  assert.equal(ui.element('recovery-resume-command').textContent, '')
+  ui.queue.push(job('resumed', { status: 'manual', manual_acknowledged_at: 123 }))
+  await ui.refresh()
+  assert.equal(ui.element('recovery-finished').hidden, false)
+})
+
 function app(initial = null, command = "sudo -u 'www-data' -- '/usr/bin/php8.5' '/srv/TeamPass Lab/app/scripts/disaster-recovery.php'") {
   const elements = new Map()
   const element = (id) => {
