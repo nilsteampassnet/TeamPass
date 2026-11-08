@@ -8,8 +8,8 @@ current line, and nowhere else.
 
 | Version                   | Supported          | Notes                                                        |
 | ------------------------- | ------------------ | ------------------------------------------------------------ |
-| 3.2.3.x                   | :white_check_mark: | Current maintenance line. Security fixes are released here.  |
-| 3.2.2.x and earlier 3.2.x | :x:                | End of life — upgrade to the latest release.                 |
+| 3.2.4.x                   | :white_check_mark: | Current maintenance line. Security fixes are released here.  |
+| 3.2.3.x and earlier 3.2.x | :x:                | End of life — upgrade to the latest release.                 |
 | 3.1.x                     | :x:                | End of life — upgrade to the latest release.                 |
 | 3.0.x                     | :x:                | End of life — upgrade to the latest release.                 |
 | 2.x and earlier           | :x:                | End of life — upgrade to the latest release.                 |
@@ -150,3 +150,17 @@ Each entry is fixed in the version listed and in every later release. **Always u
 | _pending_      | [GHSA-8xp7-fh3p-5pcr](https://github.com/nilsteampassnet/TeamPass/security/advisories/GHSA-8xp7-fh3p-5pcr) | Unauthenticated remote code execution through a re-runnable installer.                                            | 3.2.3.1  |
 | _pending_      | [GHSA-988j-pf6f-2m2r](https://github.com/nilsteampassnet/TeamPass/security/advisories/GHSA-988j-pf6f-2m2r) | Unauthenticated remote code execution through a pre-authentication access-control bypass.                         | 3.2.3.1  |
 | _pending_      | [GHSA-pxjv-6qgf-xhcg](https://github.com/nilsteampassnet/TeamPass/security/advisories/GHSA-pxjv-6qgf-xhcg) | Fresh installation of 3.2.3.1 failing at the database step, the installer allowlist rejecting 35 tables.          | 3.2.3.2  |
+| _pending_      | [GHSA-r6r4-5mr3-rppm](https://github.com/nilsteampassnet/TeamPass/security/advisories/GHSA-r6r4-5mr3-rppm) | Read-only users able to delete the attachments of items in the folders they can read.                             | 3.2.3.3  |
+| _pending_      | [GHSA-6x8j-28p6-mmfm](https://github.com/nilsteampassnet/TeamPass/security/advisories/GHSA-6x8j-28p6-mmfm) | Installer step endpoints accepting a pre-install session after setup, allowing `settings.php` to be rewritten.    | 3.2.4.0  |
+| _pending_      | [GHSA-75qw-h7p8-ppr3](https://github.com/nilsteampassnet/TeamPass/security/advisories/GHSA-75qw-h7p8-ppr3) | Item history and TOTP code ignoring the per-item restriction, exposing previous passwords and the one-time code.  | 3.2.4.1  |
+| _pending_      | [GHSA-jxj9-mcx4-h34j](https://github.com/nilsteampassnet/TeamPass/security/advisories/GHSA-jxj9-mcx4-h34j) | Image preview handler letting any authenticated user read the attachments of every shared item.                   | 3.2.4.1  |
+| _pending_      | [GHSA-h66m-8w9q-86r2](https://github.com/nilsteampassnet/TeamPass/security/advisories/GHSA-h66m-8w9q-86r2) | Role-based item restrictions bypassed by the item details request and the exports.                                | 3.2.4.1  |
+| _pending_      | [GHSA-jgmv-3gr2-fjpw](https://github.com/nilsteampassnet/TeamPass/security/advisories/GHSA-jgmv-3gr2-fjpw) | Item creation writing its role restriction onto a client-supplied item id, restricting any existing item.         | 3.2.4.1  |
+| _pending_      | [GHSA-p84q-3h9h-qvh6](https://github.com/nilsteampassnet/TeamPass/security/advisories/GHSA-p84q-3h9h-qvh6) | Password change and password recovery not ending the sessions opened before them.                                 | 3.2.4.1  |
+| _pending_      | [GHSA-2vf9-2qw7-8hmr](https://github.com/nilsteampassnet/TeamPass/security/advisories/GHSA-2vf9-2qw7-8hmr) | Key generation replacing the caller's own password without the current one, and returning the new password.       | 3.2.4.1  |
+| _pending_      | [GHSA-vrhq-38vx-9vjp](https://github.com/nilsteampassnet/TeamPass/security/advisories/GHSA-vrhq-38vx-9vjp) | Managers and HR managers able to grant any shared folder to an account they create or manage, and read its items. | 3.2.4.2  |
+| _pending_      | [GHSA-7wvw-wxqx-v364](https://github.com/nilsteampassnet/TeamPass/security/advisories/GHSA-7wvw-wxqx-v364) | Administration actions skipping the session-key check, exposing them to same-site forged requests.                | 3.2.4.2  |
+| _pending_      | [GHSA-5cwc-6hfp-2mr7](https://github.com/nilsteampassnet/TeamPass/security/advisories/GHSA-5cwc-6hfp-2mr7) | Users administration list gated on the Items page right, letting any user list the accounts their roles manage.   | 3.2.4.2  |
+| _pending_      | [GHSA-28mq-vx4v-72h8](https://github.com/nilsteampassnet/TeamPass/security/advisories/GHSA-28mq-vx4v-72h8) | Folder-rights view of the Users page letting a manager read the folder rights of accounts they do not administer. | 3.2.4.2  |
+| _pending_      | [GHSA-57ww-wx2c-hx7x](https://github.com/nilsteampassnet/TeamPass/security/advisories/GHSA-57ww-wx2c-hx7x) | Rights propagation letting a manager or HR account grant the administrator-only root-folder creation right.       | 3.2.4.2  |
+| _pending_      | [GHSA-5mff-6g7v-9v6v](https://github.com/nilsteampassnet/TeamPass/security/advisories/GHSA-5mff-6g7v-9v6v) | Items folder list returning the title and path of any folder id, including folders the caller cannot access.      | 3.2.4.2  |
