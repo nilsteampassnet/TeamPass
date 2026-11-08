@@ -119,7 +119,7 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                 <div class='col-10'>
                                     <?php echo $lang->get('settings_oauth_mode'); ?>
                                     <small id='passwordHelpBlock' class='form-text text-muted'>
-                                        <?php echo $lang->get('settings_oauth_mode_tip'); ?>
+                                        <?php echo $lang->get('settings_oauth_providers_tip'); ?>
                                     </small>
                                 </div>
                                 <div class='col-2'>

@@ -69,6 +69,40 @@ function itemAccessFolderIsInScope(
 }
 
 /**
+ * List the folder IDs of the user's resolved item access scope.
+ *
+ * Same scope as itemAccessFolderIsInScope(), as a list usable in an SQL IN clause:
+ * accessible folders and the user's own personal folders, minus explicit denials
+ * and other users' personal folders.
+ *
+ * @param array $accessible      Session user-accessible_folders
+ * @param array $personal        Session user-personal_folders
+ * @param array $denied          Session user-no_access_folders
+ * @param array $foreignPersonal Session user-forbiden_personal_folders
+ *
+ * @return array<int, int> Distinct positive folder IDs, in input order
+ */
+function itemAccessScopeFolderIds(
+    array $accessible,
+    array $personal,
+    array $denied,
+    array $foreignPersonal
+): array {
+    // Session arrays mix string and integer IDs
+    $excluded = array_map('intval', array_merge($denied, $foreignPersonal));
+
+    $scope = [];
+    foreach (array_merge($accessible, $personal) as $folderId) {
+        $folderId = (int) $folderId;
+        if ($folderId > 0 && in_array($folderId, $excluded, true) === false) {
+            $scope[$folderId] = $folderId;
+        }
+    }
+
+    return array_values($scope);
+}
+
+/**
  * Tell whether a resolved folder context permits item deletion.
  *
  * Direct grants and the user's own personal folders grant deletion. Otherwise,

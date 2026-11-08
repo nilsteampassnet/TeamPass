@@ -942,10 +942,12 @@ if (
 
                     } else if ($('#warningModalButtonAction').attr('data-button-confirm') === 'true') {
                         // As reencryption relies on user's password
-                        // ensure we have it
-                        if ($('#encryption-otp').val() === '') {
+                        // ensure we have it. An OAuth2 account has none to type: the server
+                        // derives it from the provider subject held in the session.
+                        const oauth2DerivedPassword = store.get('teampassUser').auth_type === 'oauth2'
+                        if (oauth2DerivedPassword === false && $('#encryption-otp').val() === '') {
                             // No user password provided
-                            $('#encryption-otp').addClass('alert-danger');                            
+                            $('#encryption-otp').addClass('alert-danger');
                         } else {
                             // We have the password, start reencryption
                             $('#warningModalButtonAction')
@@ -953,14 +955,15 @@ if (
                                 .html('<i class="fa-solid fa-spinner fa-spin"></i>');
                             $('#warningModalButtonClose').addClass('disabled');
 
-                            const user_pwd = store.get('teampassUser').auth_type !== 'oauth2'
+                            const user_pwd = oauth2DerivedPassword === false
                                     ? $('#encryption-otp').val() // User password (local or ldap)
-                                    : hashUserId(store.get('userOauth2Info').id); // Oauth
+                                    : '' // OAuth2: derived server-side
 
                             // update the process
                             // add all tasks
                             var parameters = {
                                 'user_pwd': user_pwd,
+                                'oauth2_derived_password': oauth2DerivedPassword,
                                 'encryption_key': '',
                                 'delete_existing_keys': true,
                                 'encrypt_with_user_pwd': true,
@@ -1716,14 +1719,13 @@ if (
      */
     $(document).on('click', '#dialog-ldap-user-build-keys-database-do', function() {
 
-        // Add OAuth password in hidden field.
-        if (store.get('teampassUser').auth_type === 'oauth2') {
-            $('#dialog-ldap-user-build-keys-database-userpassword')
-                .val(hashUserId(store.get('userOauth2Info').id));
-        }
+        // An OAuth2 account has no password to type: the server derives it from the
+        // provider subject held in the session (the browser no longer has it).
+        const oauth2DerivedPassword = store.get('teampassUser').auth_type === 'oauth2'
 
         if ($('#dialog-ldap-user-build-keys-database-code').val() === ''
-            || $('#dialog-ldap-user-build-keys-database-userpassword').val() === '') {
+            || (oauth2DerivedPassword === false
+                && $('#dialog-ldap-user-build-keys-database-userpassword').val() === '')) {
 
             return false;
         }
@@ -1745,6 +1747,7 @@ if (
             'user_id': store.get('teampassUser').user_id,
             'otp' : $('#dialog-ldap-user-build-keys-database-code').val(),
             'password' : $('#dialog-ldap-user-build-keys-database-userpassword').val(),
+            'oauth2_derived_password': oauth2DerivedPassword,
         }
         if (debugJavascript === true) {
             console.log('Testing if temporary code is correct in LDAP user case');
@@ -1784,6 +1787,7 @@ if (
                         'current_code': $('#dialog-ldap-user-build-keys-database-code').val(),
                         'new_code': $('#dialog-ldap-user-build-keys-database-userpassword').val(),
                         'action_type' : 'encrypt_privkey_with_user_password',
+                        'oauth2_derived_password': oauth2DerivedPassword,
                     }
                     if (debugJavascript === true) console.log(data);
                     

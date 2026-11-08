@@ -2095,6 +2095,14 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
             ];
         }
 
+        // A known account without a key pair (written into the users table by a directory
+        // synchronization, never signed in) is keyed like a new account (#5451). A locked
+        // account is refused later in the login: nothing is queued for it.
+        $keyPairToGenerate = empty($userInfo['ldap_user_to_be_created']) === true
+            && empty($userInfo['id']) === false
+            && (int) ($userInfo['disabled'] ?? 0) !== 1
+            && userHasNoKeyPair($userInfo) === true;
+
         // Handle user creation if needed
         if ($userInfo['ldap_user_to_be_created']) {
             $userInfo = handleNewUser($username, $passwordClear, $userADInfos, $userInfo, $SETTINGS, $lang);
@@ -2111,6 +2119,20 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
                 . ' — AD roles left unchanged. ' . $userGroupsData['message']);
         }
         
+        // Generated once the AD roles are set. The login then stops as for a new account and the
+        // user signs in again when the keys are ready. If the generation cannot be queued, the
+        // login goes on and prepareUserEncryptionKeys() generates a key pair without sharekeys.
+        if ($keyPairToGenerate === true
+            && generateKeyPairForLdapUserWithoutKeys((int) $userInfo['id'], $passwordClear, $SETTINGS) === true
+        ) {
+            $userInfo['has_been_created'] = 1;
+            return [
+                'error' => false,
+                'message' => '',
+                'user_info' => $userInfo,
+            ];
+        }
+
         // Finalize authentication
         finalizeAuthentication($userInfo, $passwordClear, $SETTINGS);
         
@@ -2169,6 +2191,47 @@ function handleNewUser(string $username, string $passwordClear, array $userADInf
 
     $userInfo['has_been_created'] = 1;
     return $userInfo;
+}
+
+/**
+ * Generate the keys of an existing LDAP account that has no key pair, as for a new account.
+ *
+ * Such an account was written into the users table without keys (directory synchronization,
+ * legacy 'none' placeholder). A key pair generated alone at login would open nothing: item
+ * sharekeys are only distributed to accounts holding a public key, so this account has none.
+ * The create_user_keys task builds them, then makes the account usable (#5451).
+ *
+ * @param int    $userId        Account ID
+ * @param string $passwordClear LDAP password, just verified by the bind
+ * @param array  $SETTINGS      Teampass settings
+ *
+ * @return bool True when the generation is queued
+ */
+function generateKeyPairForLdapUserWithoutKeys(int $userId, string $passwordClear, array $SETTINGS): bool
+{
+    // Same arguments as handleNewUser()
+    $result = prepareExchangedData(
+        handleUserKeys(
+            $userId,
+            $passwordClear,
+            (int) ($SETTINGS['maximum_number_of_items_to_treat'] ?? NUMBER_ITEMS_IN_BATCH),
+            uniqidReal(20),
+            true,
+            true,
+            true,
+            false,
+            'email_body_user_config_2'
+        ),
+        'decode'
+    );
+
+    if (is_array($result) === false || ($result['error'] ?? true) !== false) {
+        error_log('TEAMPASS LDAP: keys of user ' . $userId . ' (no key pair) not generated: '
+            . (is_array($result) === true ? (string) ($result['message'] ?? '') : 'unreadable answer'));
+        return false;
+    }
+
+    return true;
 }
 
 /**

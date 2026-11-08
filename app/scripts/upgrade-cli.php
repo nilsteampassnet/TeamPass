@@ -544,7 +544,10 @@ function upgradeCliMigrateSafely(array &$journal, array $options, array &$SETTIN
     try {
         return upgradeCliMigrate($journal, $options, $SETTINGS, $logger);
     } catch (Throwable $exception) {
-        return upgradeCliFail($journal, $options, $SETTINGS, $logger, (string) $journal['phase'], '', 'Unexpected error: ' . $exception->getMessage(), false);
+        // Every step is done once the verification starts: an error of the check itself must not
+        // revert a complete upgrade. "resume" skips the done steps and only verifies again.
+        $resumable = (string) $journal['phase'] === 'verify';
+        return upgradeCliFail($journal, $options, $SETTINGS, $logger, (string) $journal['phase'], '', 'Unexpected error: ' . $exception->getMessage(), $resumable);
     }
 }
 
@@ -705,7 +708,7 @@ function upgradeCliMigrate(array &$journal, array $options, array &$SETTINGS, Tp
  * @param string                     $phase     Phase
  * @param string                     $step      Step name ('' for the verification)
  * @param string                     $message   Error
- * @param bool                       $resumable Interrupted by the operator: never revert
+ * @param bool                       $resumable Interrupted by the operator, or the verification itself crashed: never revert
  *
  * @return int Exit code
  */
@@ -744,6 +747,7 @@ function upgradeCliFail(array &$journal, array $options, array &$SETTINGS, TpUpg
  */
 function upgradeCliRevertRun(array &$journal, array $options, array &$SETTINGS, TpUpgradeCliLogger $logger): int
 {
+    $previousStatus = (string) $journal['status'];
     $journal['status'] = 'reverting';
     $journal['phase'] = 'revert';
     tpUpgradeCliJournalSave($journal);
@@ -751,9 +755,26 @@ function upgradeCliRevertRun(array &$journal, array $options, array &$SETTINGS, 
     try {
         $result = tpUpgradeCliRevert($journal, $SETTINGS, $logger);
     } catch (Throwable $exception) {
-        $result = ['success' => false, 'warnings' => [], 'dropped' => [], 'restore_exit_code' => 0, 'message' => 'Unexpected error: ' . $exception->getMessage()];
+        // Where it failed is unknown: assume the database was touched.
+        $result = ['success' => false, 'restore_started' => true, 'warnings' => [], 'dropped' => [], 'restore_exit_code' => 0, 'message' => 'Unexpected error: ' . $exception->getMessage()];
     }
     $journal['revert'] = ['restore_exit_code' => $result['restore_exit_code'], 'dropped_tables' => $result['dropped'], 'warnings' => $result['warnings']];
+
+    // Given up before restore.php ran: the database is as the upgrade left it, so the run stays
+    // resumable instead of locked in revert_failed - unless an earlier revert already touched it.
+    if ($result['success'] === false && $result['restore_started'] === false
+        && in_array($previousStatus, ['running', 'failed_resumable', 'completed'], true) === true
+    ) {
+        $journal['status'] = 'failed_resumable';
+        tpUpgradeCliJournalSave($journal);
+        $logger->error('revert', 'Revert not started: ' . $result['message']);
+        upgradeCliReport('stopped', $journal, $SETTINGS, $logger, $options, 'Revert not started: ' . $result['message'], [
+            'TeamPass stays in maintenance; the revert did not touch the database.',
+            'Fix the cause (see the log), then: php app/scripts/upgrade-cli.php resume ' . $journal['run_id'],
+            'Or restore the pre-upgrade backup: php app/scripts/upgrade-cli.php revert ' . $journal['run_id'],
+        ]);
+        return TP_UPGRADE_CLI_EXIT_STOPPED;
+    }
     $journal['finished_at'] = time();
     $from = upgradeCliFromLabel($journal);
     $backupFile = (string) $journal['backup']['file'];
@@ -1018,6 +1039,9 @@ if ($parsed['command'] === 'status') {
 
 try {
     loadClasses('DB');
+    // A run leaves its connection idle for minutes (backup verification, maintenance wait,
+    // operator prompts): reconnect rather than hit a server or proxy idle timeout (#5450).
+    DB::$reconnect_after = 10;
     $SETTINGS = (new ConfigManager())->getAllSettings();
 } catch (Throwable $exception) {
     fwrite(STDERR, 'ERROR: cannot read the TeamPass database: ' . $exception->getMessage() . PHP_EOL);

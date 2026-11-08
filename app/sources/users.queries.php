@@ -873,8 +873,24 @@ if (null !== $post_type) {
                 break;
             }
 
-            // Non-admin cannot grant can_create_root_folder if they don't have it themselves.
-            if ((int) $session->get('user-admin') !== 1 && (int) $session->get('user-can_create_root_folder') !== 1) {
+            // Same scope for the administrating role as save_user_change: 0 hands the account to
+            // the administrators, any other role must be one the caller may grant.
+            if ((int) $is_administrated_by !== 0
+                && in_array((int) $is_administrated_by, callerGrantableRoleIds(), true) === false
+            ) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Only an administrator may grant can_create_root_folder, as on the user edit form and in
+            // the rights propagation (GHSA-57ww-wx2c-hx7x).
+            if ((int) $session->get('user-admin') !== 1) {
                 $post_root_level = 0;
             }
 
@@ -970,10 +986,11 @@ if (null !== $post_type) {
                 // Store private key in dedicated table
                 insertPrivateKeyWithCurrentFlag($new_user_id, $userKeys['private_key']);
 
-                // Add Groups and Roles
+                // Add Groups and Roles. The folder ids are client-supplied: keep only the ones
+                // the caller may grant, like the roles above.
                 setUserRoles($new_user_id, $groups, 'manual');
-                setUserGroups($new_user_id, $allowed_flds);
-                setUserForbiddenGroups($new_user_id, $forbidden_flds);
+                setUserGroups($new_user_id, reconcileUserFolderSet([], (array) $allowed_flds));
+                setUserForbiddenGroups($new_user_id, reconcileUserFolderSet([], (array) $forbidden_flds));
 
                 // Create personnal folder
                 if ((int) $has_personal_folder === 1) {
@@ -1988,8 +2005,15 @@ if (null !== $post_type) {
                     // Add Groups and Roles ($post_groups already reconciled with the roles
                     // the caller is not entitled to grant)
                     setUserRoles($post_id, $post_groups, 'manual');
-                    setUserGroups($post_id, $post_allowed_flds);
-                    setUserForbiddenGroups($post_id, $post_forbidden_flds);
+                    // Folders: same reconciliation against the caller's scope
+                    setUserGroups(
+                        $post_id,
+                        reconcileUserFolderSet(getUserGroups($post_id), (array) $post_allowed_flds)
+                    );
+                    setUserForbiddenGroups(
+                        $post_id,
+                        reconcileUserFolderSet(getUserForbiddenGroups($post_id), (array) $post_forbidden_flds)
+                    );
 
                     // CLear cache tree for this user to force tree
                     DB::delete(
@@ -2106,6 +2130,19 @@ if (null !== $post_type) {
             // Prepare variables
             $post_id = (int) filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT);
 
+            // The target arrives in a plain POST field, which the generic target-scope guard
+            // (keyed on the encrypted 'user_id') never sees: check it here (GHSA-28mq-vx4v-72h8).
+            if (callerMayManageUser($post_id) === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
             $arrData = array();
 
             //Build tree
@@ -2113,6 +2150,16 @@ if (null !== $post_type) {
 
             // get User info
             $rowUser = getUserCompleteData(null, $post_id);
+            if (empty($rowUser) === true) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('user_not_exists'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
 
             // get rights
             $arrFolders = [];
@@ -2527,6 +2574,23 @@ if (null !== $post_type) {
                 }
             }
 
+            // Columns written on every destination. Only an administrator may change
+            // can_create_root_folder, as on the user edit form (store_user_changes): for any other
+            // caller each destination keeps its own value (GHSA-57ww-wx2c-hx7x). It is dropped, not
+            // refused, because a legitimate propagation carries the source account's flag.
+            $userColumns = array(
+                'isAdministratedByRole' => $inputData['user_managedby'],
+                'gestionnaire' => $inputData['user_manager'],
+                'read_only' => $inputData['user_readonly'],
+                'can_create_root_folder' => $inputData['user_rootfolder'],
+                'personal_folder' => $inputData['user_personalfolder'],
+                'can_manage_all_users' => $inputData['user_hr'],
+                'admin' => $inputData['user_admin'],
+            );
+            if ((int) $session->get('user-admin') !== 1) {
+                unset($userColumns['can_create_root_folder']);
+            }
+
             foreach ($inputData['destination_ids'] as $dest_user_id) {
                 // Update user roles in users_roles table. The propagated set is reconciled
                 // per destination so a caller cannot revoke, through the propagation, a role
@@ -2540,30 +2604,29 @@ if (null !== $post_type) {
                     'manual'
                 );
 
-                // Update allowed folders in users_groups table
+                // Update allowed folders in users_groups table, reconciled per destination
+                // like the roles: only folders the caller may grant are propagated.
                 $allowedFolders = array_filter(
                     explode(';', str_replace(',', ';', (string) $inputData['user_fldallowed']))
                 );
-                setUserGroups((int) $dest_user_id, $allowedFolders);
+                setUserGroups(
+                    (int) $dest_user_id,
+                    reconcileUserFolderSet(getUserGroups((int) $dest_user_id), $allowedFolders)
+                );
 
                 // Update forbidden folders in users_groups_forbidden table
                 $forbiddenFolders = array_filter(
                     explode(';', str_replace(',', ';', (string) $inputData['user_fldforbid']))
                 );
-                setUserForbiddenGroups((int) $dest_user_id, $forbiddenFolders);
+                setUserForbiddenGroups(
+                    (int) $dest_user_id,
+                    reconcileUserFolderSet(getUserForbiddenGroups((int) $dest_user_id), $forbiddenFolders)
+                );
 
                 // Update other user fields in users table
                 DB::update(
                     prefixTable('users'),
-                    array(
-                        'isAdministratedByRole' => $inputData['user_managedby'],
-                        'gestionnaire' => $inputData['user_manager'],
-                        'read_only' => $inputData['user_readonly'],
-                        'can_create_root_folder' => $inputData['user_rootfolder'],
-                        'personal_folder' => $inputData['user_personalfolder'],
-                        'can_manage_all_users' => $inputData['user_hr'],
-                        'admin' => $inputData['user_admin'],
-                    ),
+                    $userColumns,
                     'id = %i',
                     $dest_user_id
                 );

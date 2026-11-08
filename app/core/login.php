@@ -67,28 +67,27 @@ if (isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1 && $get['po
 if (isset($_GET['code']) === true && isset($_GET['state']) === true && $get['post_type'] === 'oauth2') {
     $get['code'] = filter_var($_GET['code'], FILTER_SANITIZE_SPECIAL_CHARS);
     $get['state'] = filter_var($_GET['state'], FILTER_SANITIZE_SPECIAL_CHARS);
-    $get['session_state'] = filter_var($_GET['session_state'], FILTER_SANITIZE_SPECIAL_CHARS);
+    // session_state is only sent by some providers (Entra, Keycloak), not by every OIDC provider
+    $get['session_state'] = filter_var($_GET['session_state'] ?? '', FILTER_SANITIZE_SPECIAL_CHARS);
 
     if (WIP === true) error_log('---- OAUTH2 START ----');
 
-    // Création d'une instance du contrôleur
+    // Instantiate the OAuth2 controller
     $OAuth2 = new OAuth2Controller($SETTINGS);
 
-    // Traitement de la réponse de callback Azure
+    // Handle the callback of the OAuth2 provider
     $userInfo = $OAuth2->callback();
 
     if ($userInfo['error'] === false) {
-        // Si aucune erreur, stocker les informations utilisateur dans la session PHP
-
-        // Stocker les informations de l'utilisateur dans la session
+        // Store the user information in the session
         $session->set('userOauth2Info', $userInfo['userOauth2Info']);
 
-        // Rediriger l'utilisateur vers la page d'accueil ou une page d'authentification réussie
+        // Back to the login page, which completes the sign-in
         header('Location: index.php');
         exit;
     } else {
-        // Gérer les erreurs
-        echo 'Erreur lors de la récupération des informations utilisateur : ' . htmlspecialchars($userInfo['message'], ENT_QUOTES, 'UTF-8');
+        // Show the error (missing claim, rejected code, unreachable provider...)
+        echo 'Unable to retrieve the user information from the OAuth2 provider: ' . htmlspecialchars($userInfo['message'], ENT_QUOTES, 'UTF-8');
     };
 }
 
@@ -100,9 +99,13 @@ if (null !== $session->get('userOauth2Info') && empty($session->get('userOauth2I
         error_log('---- CALLBACK LOGIN ----');
     }
 
-    $session->set('user-login', strstr($session->get('userOauth2Info')['userPrincipalName'], '@', true));
+    // TeamPass login = part before '@' of the subject, or the whole subject when it has none
+    // (a generic provider's preferred_username is often a plain username)
+    $oauth2Subject = (string) ($session->get('userOauth2Info')['userPrincipalName'] ?? '');
+    $oauth2LocalPart = strstr($oauth2Subject, '@', true);
+    $session->set('user-login', $oauth2LocalPart === false ? $oauth2Subject : $oauth2LocalPart);
 
-    // Encoder les valeurs de la session en JSON
+    // Encode the session values as JSON for the login page
     $userOauth2InfoJson = json_encode($session->get('userOauth2Info'));
 }
 

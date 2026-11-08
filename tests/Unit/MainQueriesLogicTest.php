@@ -335,6 +335,91 @@ class MainQueriesLogicTest extends TestCase
     }
 
     /**
+     * The server must derive exactly what the login page derives with hashUserId():
+     * '6854153fd75c41ea' was computed by public/assets/lib/cryptojs/crypto-js.js.
+     */
+    public function testTheOAuth2KeyPasswordMatchesTheLoginPageDerivation(): void
+    {
+        $info = ['sub' => '2d4e6f8a-sub', 'userPrincipalName' => 'jdoe'];
+
+        self::assertSame('6854153fd75c41ea', oauth2KeyPasswordFromSession($info, 'jdoe'));
+
+        $loadJs = file_get_contents(__DIR__ . '/../../app/core/load.js.php');
+        self::assertIsString($loadJs);
+        self::assertStringContainsString(
+            "const hash = CryptoJS.SHA256(userId);\n        return hash.toString(CryptoJS.enc.Hex).substring(0, 16);",
+            $loadJs,
+            'hashUserId() changed: oauth2KeyPasswordFromSession() must follow it.'
+        );
+    }
+
+    public function testTheOAuth2KeyPasswordPrefersIdOverSubLikeTheLoginPage(): void
+    {
+        $info = ['id' => 'entra-object-id', 'sub' => 'pairwise-sub', 'userPrincipalName' => 'jdoe@example.com'];
+
+        self::assertSame(
+            substr(hash('sha256', 'entra-object-id'), 0, 16),
+            oauth2KeyPasswordFromSession($info, 'JDoe')
+        );
+    }
+
+    /**
+     * @dataProvider oauth2KeyPasswordRefusalProvider
+     */
+    public function testTheOAuth2KeyPasswordIsOnlyDerivedForTheSignedInAccount(mixed $info, string $login): void
+    {
+        self::assertSame('', oauth2KeyPasswordFromSession($info, $login));
+    }
+
+    /**
+     * @return array<string, array{mixed, string}>
+     */
+    public static function oauth2KeyPasswordRefusalProvider(): array
+    {
+        return [
+            'no OAuth2 context (cleared session value)' => ['', 'jdoe'],
+            'no subject' => [['userPrincipalName' => 'jdoe'], 'jdoe'],
+            'empty subject' => [['sub' => '', 'userPrincipalName' => 'jdoe'], 'jdoe'],
+            'subject not a string' => [['sub' => ['x'], 'userPrincipalName' => 'jdoe'], 'jdoe'],
+            'no principal' => [['sub' => 'a1'], 'jdoe'],
+            'subject of another account' => [['sub' => 'a1', 'userPrincipalName' => 'alice@example.com'], 'jdoe'],
+            'no session login' => [['sub' => 'a1', 'userPrincipalName' => 'jdoe'], ''],
+        ];
+    }
+
+    public function testTheSessionLoginIsComparedDecoded(): void
+    {
+        $info = ['sub' => 'a1', 'userPrincipalName' => "o'brien@example.com"];
+
+        self::assertSame(substr(hash('sha256', 'a1'), 0, 16), oauth2KeyPasswordFromSession($info, 'o&#039;brien'));
+    }
+
+    /**
+     * The three handlers that check the caller's password honour oauth2_derived_password,
+     * and the dialogs no longer hash a subject the browser does not have.
+     */
+    public function testTheOAuth2DerivedPasswordIsWired(): void
+    {
+        self::assertStringContainsString(
+            "requestedUserPassword(\$dataReceived, 'password')",
+            self::switchCaseBody("case 'test_current_user_password_is_correct'")
+        );
+        self::assertStringContainsString(
+            "requestedUserPassword(\$dataReceived, 'new_code')",
+            self::switchCaseBody("case 'change_private_key_encryption_password'")
+        );
+        self::assertStringContainsString(
+            "requestedUserPassword(\$dataReceived, 'user_pwd')",
+            self::switchCaseBody("case 'user_new_keys_generation'")
+        );
+
+        $loadJs = file_get_contents(__DIR__ . '/../../app/core/load.js.php');
+        self::assertIsString($loadJs);
+        self::assertStringNotContainsString("store.get('userOauth2Info').id", $loadJs);
+        self::assertSame(3, substr_count($loadJs, "'oauth2_derived_password': oauth2DerivedPassword"));
+    }
+
+    /**
      * Read main.queries.php once, for the wiring assertions above.
      */
     private static function mainQueriesSource(): string

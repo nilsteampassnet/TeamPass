@@ -748,11 +748,14 @@ function tpUpgradeCliVerifyBackup(string $file, array $inventory, array &$SETTIN
  * @param array                $SETTINGS Settings, reloaded from the restored database
  * @param TpUpgradeCliLogger   $logger   Logger
  *
- * @return array{success: bool, warnings: list<string>, dropped: list<string>, restore_exit_code: int, message: string}
+ * restore_started is false when the revert gave up before restore.php ran: the database was not
+ * touched and is still as the upgrade left it.
+ *
+ * @return array{success: bool, restore_started: bool, warnings: list<string>, dropped: list<string>, restore_exit_code: int, message: string}
  */
 function tpUpgradeCliRevert(array $journal, array &$SETTINGS, TpUpgradeCliLogger $logger): array
 {
-    $result = ['success' => false, 'warnings' => [], 'dropped' => [], 'restore_exit_code' => 0, 'message' => ''];
+    $result = ['success' => false, 'restore_started' => false, 'warnings' => [], 'dropped' => [], 'restore_exit_code' => 0, 'message' => ''];
     $file = (string) $journal['backup']['file'];
 
     $authorization = tpRestoreAuthorizationCreate(
@@ -769,12 +772,13 @@ function tpUpgradeCliRevert(array $journal, array &$SETTINGS, TpUpgradeCliLogger
         $SETTINGS
     );
     if (empty($authorization['success'])) {
-        $result['message'] = 'Cannot authorize the restore';
+        $result['message'] = 'Cannot authorize the restore: ' . (string) ($authorization['message'] ?? 'unknown error');
         return $result;
     }
 
     $logger->info('revert', 'Restoring ' . basename($file) . ' (restore log under ' . rtrim((string) ($SETTINGS['path_to_files_folder'] ?? ''), '/') . '/restore_cli_logs)...');
     $scriptsDir = dirname(__DIR__) . '/scripts';
+    $result['restore_started'] = true;
     $process = tpUpgradeCliRunPhp(
         [$scriptsDir . '/restore.php', '--file=' . $file, '--auth-token=' . (string) $authorization['token'], '--force-disconnect'],
         $scriptsDir,

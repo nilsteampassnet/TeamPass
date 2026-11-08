@@ -6508,7 +6508,8 @@ function attemptTransparentRecovery(array $userInfo, string $newPassword, array 
  * Handles external password change (LDAP/OAuth2) with automatic re-encryption.
  *
  * Returns an array with:
- * - 'success' (bool): true if the private key was transparently re-encrypted
+ * - 'success' (bool): true if the private key was transparently re-encrypted, or if the
+ *   account has no private key yet (nothing to re-encrypt: the login generates the keys)
  * - 'reason' (string): '' on success, 'no_recovery_data' for legacy users without a backup
  *   seed or backup ciphertext, 'integrity_check_failed' when the stored integrity hash
  *   does not match (non-disabling: modal shown), 'recovery_failed' when decryption
@@ -6523,6 +6524,14 @@ function attemptTransparentRecovery(array $userInfo, string $newPassword, array 
  */
 function handleExternalPasswordChange(int $userId, string $newPassword, array $userInfo, array $SETTINGS): array
 {
+    // No private key yet (account written into the users table by a directory synchronization,
+    // or legacy 'none' placeholder): there is nothing to re-encrypt, and decryptPrivateKey()
+    // would throw a TypeError on NULL. prepareUserEncryptionKeys() generates the keys later in
+    // the same login (#5451).
+    if (userKeyIsMissing($userInfo['private_key'] ?? null) === true) {
+        return ['success' => true, 'reason' => ''];
+    }
+
     // Check if password was changed recently (< 20s) to avoid duplicate processing
     if (!empty($userInfo['last_pw_change'])) {
         $timeSinceChange = time() - (int) $userInfo['last_pw_change'];
@@ -13745,6 +13754,54 @@ function reconcileManualUserRoles(int $targetUserId, array $submittedRoleIds): a
         $submittedRoleIds,
         callerGrantableRoleIds()
     );
+}
+
+/**
+ * Returns the ids of the folders a non-administrator may grant or deny to another user.
+ *
+ * Same scope as the role matrix and as the folder lists of the user form ('get_user_info'):
+ * the caller's accessible folders, minus personal folders and the folders denied to the
+ * caller. Administrators are not limited by it, see reconcileUserFolderSet().
+ *
+ * @return array<int> Folder ids the caller may grant or deny, empty when none.
+ */
+function callerGrantableFolderIds(): array
+{
+    $session = SessionManager::getSession();
+
+    return grantableFolderIds(
+        (array) $session->get('user-accessible_folders'),
+        array_merge(
+            getPersonalFolderIdsWithDescendants(),
+            (array) $session->get('user-no_access_folders')
+        )
+    );
+}
+
+/**
+ * Reconciles a submitted allowed or forbidden folder list with the caller's scope.
+ *
+ * A direct folder grant (users_groups) gives full write access to the folder, whatever the
+ * roles of the user. A manager could therefore grant, through an account they create or
+ * manage, a folder they cannot open themselves (GHSA-vrhq-38vx-9vjp). For a non-administrator,
+ * submitted folders outside their scope are dropped, and stored folders outside it are kept,
+ * since the form never shows them: saving it must not revoke them. Administrators keep the
+ * submitted list as-is.
+ *
+ * @param array $currentFolderIds   Folder ids currently stored for the user, empty for a new account.
+ * @param array $submittedFolderIds Folder ids coming from the request.
+ *
+ * @return array<int> Folder ids to persist.
+ */
+function reconcileUserFolderSet(array $currentFolderIds, array $submittedFolderIds): array
+{
+    $session = SessionManager::getSession();
+    if ((int) $session->get('user-admin') === 1) {
+        return rolesScopeNormalizeIds($submittedFolderIds);
+    }
+
+    // Same set logic as the roles: honour the submission inside the scope only.
+    return mergeGrantableRoleSets($currentFolderIds, $submittedFolderIds, callerGrantableFolderIds());
 }
 
 /**

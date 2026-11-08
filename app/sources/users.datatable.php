@@ -73,7 +73,10 @@ $checkUserAccess = new PerformChecks(
 // Handle the case
 echo $checkUserAccess->caseHandler();
 if (
-    $checkUserAccess->userAccessPage('items') === false ||
+    // This datatable feeds the Users administration page: gate it on that page. 'items' is held
+    // by every authenticated user, who then listed the accounts administrated by their roles
+    // (GHSA-5cwc-6hfp-2mr7, same class as GHSA-qhff-v9qj-75wc on users.logs.datatable.php).
+    $checkUserAccess->userAccessPage('users') === false ||
     $checkUserAccess->checkSession() === false
 ) {
     // Not allowed page
@@ -109,6 +112,9 @@ foreach ($titles as $title) {
 $html = '';
 //Columns name
 $aColumns = ['u.id', 'u.login', 'u.name', 'u.lastname', 'u.admin', 'u.read_only', 'u.gestionnaire', 'u.isAdministratedByRole', 'u.can_manage_all_users', 'u.can_create_root_folder', 'u.personal_folder', 'u.email', 'u.ga', 'fonction_id', 'u.mfa_enabled'];
+// Only the 9 columns of the Users page table (app/pages/users.js.php) may be sorted. Ordering on
+// a column the response never returns (email, GA secret) leaks its values through the row order.
+$aSortableColumns = array_slice($aColumns, 0, 9);
 $aSortTypes = ['asc', 'desc'];
 //init SQL variables
 $sWhere = $sOrder = $sLimit = '';
@@ -128,9 +134,11 @@ $order = $params['order'][0] ?? null;
 if ($order && in_array($order['dir'], $aSortTypes)) {
     $sOrder = 'ORDER BY  ';
     if (isset($order['column']) && preg_match('#^(asc|desc)$#i', $order['dir'])) {
-        $columnIndex = filter_var($order['column'], FILTER_SANITIZE_NUMBER_INT);
+        $columnIndex = (int) filter_var($order['column'], FILTER_SANITIZE_NUMBER_INT);
         $dir = filter_var($order['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $sOrder .= $aColumns[$columnIndex] . ' ' . $dir . ', ';
+        if (isset($aSortableColumns[$columnIndex]) === true) {
+            $sOrder .= $aSortableColumns[$columnIndex] . ' ' . $dir . ', ';
+        }
     }
 
     $sOrder = substr_replace($sOrder, '', -2);

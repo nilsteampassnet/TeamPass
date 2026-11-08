@@ -37,6 +37,9 @@ declare(strict_types=1);
  * stops before the limit and hands the task back to the handler, and a batch interrupted by a
  * killed slice is replayed a bounded number of times. DB-free, unit-tested by
  * tests/Unit/UserKeysTaskLogicTest.php.
+ *
+ * It also tells when an existing account has no key pair yet, so the login generates one
+ * instead of trying to open it (tests/Unit/LdapUserWithoutKeyPairTest.php).
  */
 
 /** Smallest time limit a slice is computed from, in seconds. */
@@ -127,4 +130,37 @@ function userKeysTaskIsResumable(?array $task, int $userId): bool
     return (int) ($arguments['new_user_id'] ?? 0) === $userId
         && empty($arguments['owner_id']) === false
         && empty($arguments['creator_pwd']) === false;
+}
+
+/**
+ * Is a stored user key absent: never generated, or the legacy 'none' placeholder?
+ *
+ * The login reads the private key from user_private_keys: an account without a current row
+ * there, such as one written into the users table by a directory synchronization, comes back
+ * with NULL whatever users.private_key holds.
+ *
+ * @param mixed $key Stored public or private key
+ *
+ * @return bool
+ */
+function userKeyIsMissing(mixed $key): bool
+{
+    return $key === null || $key === '' || $key === 'none';
+}
+
+/**
+ * Does an existing account have no key pair at all, so its keys must be generated as for a
+ * new account?
+ *
+ * Both halves must be missing. An account still holding a public key may hold sharekeys
+ * encrypted with it: generating a pair would then replace a key pair, not create one.
+ *
+ * @param array $userInfo User row as loaded at login (private_key comes from user_private_keys)
+ *
+ * @return bool
+ */
+function userHasNoKeyPair(array $userInfo): bool
+{
+    return userKeyIsMissing($userInfo['private_key'] ?? null)
+        && userKeyIsMissing($userInfo['public_key'] ?? null);
 }

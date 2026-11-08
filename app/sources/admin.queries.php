@@ -385,6 +385,17 @@ switch ($post_type) {
         break;
 
     case 'save_api_status':
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
         $timestamp = time();
 
         // Save API status
@@ -3236,6 +3247,16 @@ case 'save_sending_statistics':
      *   logs: {actions: int, accesses: int, errors: int}
      * }
      */
+    if ($post_key !== $session->get('key')) {
+        echo prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => $lang->get('key_is_not_correct'),
+            ),
+            'encode'
+        );
+        break;
+    }
     
     // Users statistics
     // Exclude TeamPass system accounts (TP / OTV / API)
@@ -3473,6 +3494,16 @@ case 'get_system_status':
      *   last_cron: string
      * }
      */
+    if ($post_key !== $session->get('key')) {
+        echo prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => $lang->get('key_is_not_correct'),
+            ),
+            'encode'
+        );
+        break;
+    }
         
     // Tasks queue count
     $tasksQueue = DB::queryFirstField(
@@ -3516,6 +3547,17 @@ case 'get_system_status':
 // ========================================
 
 case 'get_system_health':
+    if ($post_key !== $session->get('key')) {
+        echo prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => $lang->get('key_is_not_correct'),
+            ),
+            'encode'
+        );
+        break;
+    }
+
     $systemHealth = teampassGetSystemHealthOverview($SETTINGS, $lang);
     echo prepareExchangedData(
         array_merge(array('error' => false), $systemHealth),
@@ -4107,6 +4149,17 @@ case 'websocket_status':
     /**
      * Get detailed WebSocket server status
      */
+    if ($post_key !== $session->get('key')) {
+        echo prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => $lang->get('key_is_not_correct'),
+            ),
+            'encode'
+        );
+        break;
+    }
+
     $wsEnabled = $SETTINGS['websocket_enabled'] ?? '0';
     $wsHost = $SETTINGS['websocket_host'] ?? '127.0.0.1';
     $wsPort = (int) ($SETTINGS['websocket_port'] ?? 8080);
@@ -4189,6 +4242,17 @@ case 'websocket_start':
     /**
      * Start the WebSocket server process
      */
+    if ($post_key !== $session->get('key')) {
+        echo prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => $lang->get('key_is_not_correct'),
+            ),
+            'encode'
+        );
+        break;
+    }
+
     if (PHP_OS_FAMILY === 'Windows') {
         echo prepareExchangedData(
             array(
@@ -4317,6 +4381,17 @@ case 'websocket_stop':
      * When managed by systemd (Restart=always), a raw SIGTERM is immediately overridden
      * by the service manager. We must use systemctl in that case.
      */
+    if ($post_key !== $session->get('key')) {
+        echo prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => $lang->get('key_is_not_correct'),
+            ),
+            'encode'
+        );
+        break;
+    }
+
     if (PHP_OS_FAMILY === 'Windows') {
         echo prepareExchangedData(
             array(
@@ -4420,6 +4495,16 @@ case 'clean_old_logs':
      *   deleted_count: int
      * }
      */
+    if ($post_key !== $session->get('key')) {
+        echo prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => $lang->get('key_is_not_correct'),
+            ),
+            'encode'
+        );
+        break;
+    }
     
     $threshold = time() - (90 * 86400); // 90 days ago
     
@@ -4476,6 +4561,16 @@ case 'test_encryption':
      *   message: string
      * }
      */
+    if ($post_key !== $session->get('key')) {
+        echo prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => $lang->get('key_is_not_correct'),
+            ),
+            'encode'
+        );
+        break;
+    }
     
     try {
         // Test string
@@ -4547,6 +4642,16 @@ case 'export_statistics':
      * 
      * @return void (file download)
      */
+    if ($post_key !== $session->get('key')) {
+        echo prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => $lang->get('key_is_not_correct'),
+            ),
+            'encode'
+        );
+        break;
+    }
     
     // Set headers for CSV download
     header('Content-Type: text/csv; charset=utf-8');

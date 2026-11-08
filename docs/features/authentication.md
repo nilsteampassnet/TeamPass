@@ -223,13 +223,14 @@ If a user changes phone or loses their authenticator, a new code can be issued. 
 | A user is enrolled but has no working code | An administrator must reset the user's code from the `Users` page (see above). |
 
 
-## Oauth2 with Microsoft Entra (Azure)
+## Oauth2
 
-Users can authenticate through your Entra AD. The first time a user is authenticate in Teampass through oauth2, his account will be created in Teampass.
+Users can authenticate through Microsoft Entra ID or through any OpenID Connect provider (authentik, Keycloak…). When self-registration is enabled, the account of a user who signs in for the first time is created in TeamPass.
 
-👉 Notice that if the user has `group memberships` defined in AD and that those groups also exist in Teampass, then the user will be automatically associated to the matching groups (based upon their names).
+👉 Notice that if the user belongs to groups in the identity provider and that roles with the same names exist in TeamPass, then the account is automatically associated to the matching roles when it is created (based upon their names).
 
-### Setting up at Entra side
+### Microsoft Entra (Azure)
+#### Setting up at Entra side
 
 You need to create a new `App registration` for example called `Teampass`.
 
@@ -274,7 +275,7 @@ Don't forget to `Grant admin consent for Default Directory`.
 
 Finaly define the users allowaed to access this new Application
 
-### Setting up in Teampass
+#### Setting up in Teampass
 
 Navigate to `OAuth` page from the administration, and provide the expected information.
 
@@ -287,6 +288,72 @@ automatic creation of accounts: an Entra user who does not already exist in Team
 refused with the generic message *"Login credentials do not correspond"*, which does not hint at
 the cause. On a fresh installation no Entra account exists yet in TeamPass, so **every** first
 login fails until either the field is filled in or the accounts are created beforehand.
+
+### Generic OpenID Connect provider (authentik, Keycloak…)
+
+TeamPass uses its generic OpenID Connect client whenever the `Authorization Endpoint` of the
+`OAuth` page is not a `login.microsoftonline.com` address. After the sign-in, it reads the claims
+returned by the provider's UserInfo endpoint (`URL to get user details`):
+
+| Claim | Scope | Used for |
+|---|---|---|
+| `sub` | `openid` | **Required.** Identifies the user. TeamPass derives the password protecting the account's encryption keys from it. |
+| `preferred_username` | `profile` | **Required.** TeamPass login: the part before `@` when the value holds one, the whole value otherwise. |
+| `given_name` (or `name`), `family_name` | `profile` | First and last name of an account created at its first sign-in. |
+| `email` | `email` | E-mail address of an account created at its first sign-in. |
+| `groups`, `realm_access.roles` | provider-specific | Group names, matched against the TeamPass role titles when the account is created. |
+
+A provider that returns no `sub` or no `preferred_username` is refused with an explicit message
+naming the missing claim.
+
+> ⚠️ **Three rules on the provider side, before opening the access:**
+>
+> * **Usernames must be controlled by the provider's administrators.** At the first SSO sign-in,
+>   an existing local or LDAP TeamPass account whose login matches `preferred_username` is
+>   switched to OAuth2. Users must not be able to choose or change their own username, for
+>   example through open enrollment or a self-service profile page.
+> * **`sub` must never change for a given user.** Do not change the way the provider builds the
+>   subject once users have signed in. Their accounts could no longer open their encryption keys.
+> * **Restrict the application to the users allowed to use TeamPass.** The provider decides who
+>   may sign in. Bind the application to the relevant groups.
+
+#### Setting up in authentik
+
+1. In the authentik Admin interface, open **Applications** > **Applications** and create a new
+   application with an **OAuth2/OpenID Connect** provider.
+2. In the provider:
+   - **Client type**: `Confidential`. Note the **Client ID** and the **Client Secret**.
+   - **Redirect URIs**: add a `Strict` redirect URI with the `Callback URL` displayed on the
+     TeamPass `OAuth` page (`https://teampass.company/index.php?post_type=oauth2`).
+   - **Scopes**: keep the default `openid`, `email` and `profile` mappings. authentik's default
+     `profile` mapping already returns the user's group names in the `groups` claim, so no custom
+     mapping is needed.
+3. Bind the application to the group(s) of users allowed to use TeamPass. See
+   [Bindings in authentik](https://docs.goauthentik.io/add-secure-apps/bindings-overview/).
+
+#### Setting up in TeamPass for a generic provider
+
+On the `OAuth` page of the administration, set the fields as follows (shown for authentik,
+replace `authentik.company` with your authentik host):
+
+| Field | Value |
+|---|---|
+| `Authorization Endpoint` | `https://authentik.company/application/o/authorize/` |
+| `Token Endpoint` | `https://authentik.company/application/o/token/` |
+| `URL to get user details` | `https://authentik.company/application/o/userinfo/` |
+| `Client ID` / `Client Secret` | The values of the provider |
+| `Tenant ID` | Leave empty |
+| `Scopes` | `openid,profile,email`. Replace the default value, which holds Microsoft-specific scopes. |
+
+The three authentik endpoints are the same for every application: they do not contain the
+application slug.
+
+With **Keycloak**, use `https://<host>/realms/<realm>/protocol/openid-connect/auth`, `…/token` and
+`…/userinfo`. To get the roles in `realm_access.roles` or the groups in `groups`, enable
+*Add to userinfo* on the mapper that emits them.
+
+The `Allowed groups for self-registration` field behaves as described for Entra
+[above](#setting-up-in-teampass): left empty, a user with no TeamPass account is refused.
 
 ### Allowing OAuth2 users to access the API
 
