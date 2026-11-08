@@ -25,6 +25,7 @@ require_once TEAMPASS_ROOT . '/app/sources/setup_permissions.php';
 require_once TEAMPASS_ROOT . '/app/sources/install_security_logic.php';
 $flow = is_string($_POST['flow'] ?? null) ? $_POST['flow'] : '';
 $ownsSettings = false;
+$finalizationLock = null;
 try {
     if ($flow === 'install') {
         require_once __DIR__ . '/install-steps/install.functions.php';
@@ -54,6 +55,9 @@ try {
     if (!installAcquireWriteLock()) {
         throw new RuntimeException('SETUP_OPERATION_BUSY');
     }
+    if ($action === 'finalize') {
+        $finalizationLock = tpSetupPermissionsFinalizationLock(TEAMPASS_ROOT);
+    }
     // Read filesystem metadata only. Keep the browser informed if a large
     // deployment exceeds the host's request timeout; never assume a pass.
     if (function_exists('set_time_limit')) { @set_time_limit(300); }
@@ -78,4 +82,9 @@ try {
     $reason = in_array($exception->getMessage(), $known, true) ? $exception->getMessage() : 'PERMISSIONS_AUDIT_FAILED';
     if (http_response_code() < 400) { http_response_code(409); }
     echo json_encode(['success' => false, 'error' => $reason, 'review' => $review ?? null], JSON_INVALID_UTF8_SUBSTITUTE);
+} finally {
+    if (is_resource($finalizationLock)) {
+        flock($finalizationLock, LOCK_UN);
+        fclose($finalizationLock);
+    }
 }

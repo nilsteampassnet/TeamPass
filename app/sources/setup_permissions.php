@@ -87,6 +87,31 @@ function tpSetupPermissionsRecord(string $root, string $flow, array $review): vo
     }
 }
 
+/**
+ * Serialize finalizations while the caller also holds the shared recovery lock.
+ *
+ * @param string $root Application root with an initialized recovery directory.
+ *
+ * @return resource Exclusive lock; the caller must unlock and close it.
+ * @throws RuntimeException When the lock is unavailable, unsafe or already held.
+ */
+function tpSetupPermissionsFinalizationLock(string $root)
+{
+    $storage = $root . '/storage';
+    $directory = $storage . '/recovery';
+    if (is_link($storage) || is_link($directory) || !is_dir($directory)) {
+        throw new RuntimeException('SETUP_OPERATION_BUSY');
+    }
+    $lock = tpOpenRuntimeFile($directory . '/setup-finalization.lock', true);
+    if (!is_resource($lock) || !flock($lock, LOCK_EX | LOCK_NB)) {
+        if (is_resource($lock)) {
+            fclose($lock);
+        }
+        throw new RuntimeException('SETUP_OPERATION_BUSY');
+    }
+    return $lock;
+}
+
 /** Build a quoted cleanup command for the real installer, without deleting anything. */
 function tpSetupPermissionsCleanupCommand(string $root, string $os, string $manualReason = ''): ?string
 {

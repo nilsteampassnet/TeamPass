@@ -92,7 +92,20 @@ try {
         flock($lock, LOCK_UN);
         fclose($lock);
     }
+    $lock = fopen($root . '/storage/recovery/setup-finalization.lock', 'c+b');
+    flock($lock, LOCK_EX);
+    try {
+        [$code, $blocked] = $request(['flow' => 'install', 'action' => 'finalize', 'acknowledge_manual' => '1']);
+        $assert($code === 409 && $blocked['error'] === 'SETUP_OPERATION_BUSY', 'A concurrent finalization was accepted');
+        $assert(!is_file($root . '/storage/logs/setup-permissions.jsonl'), 'A busy finalization wrote a journal entry');
+        [$code, $audited] = $request($post);
+        $assert($code === 200 && $audited['success'], 'A finalization lock unnecessarily blocked a read-only audit');
+    } finally {
+        flock($lock, LOCK_UN);
+        fclose($lock);
+    }
     [$code, $result] = $request(['flow' => 'install', 'action' => 'finalize', 'review' => 'passed']);
+    $assert(($result['error'] ?? '') !== 'SETUP_OPERATION_BUSY', 'A released finalization lock remained busy');
     $assert($status === 'passed' || $code === 409, 'A client-supplied pass bypassed server verification');
     if ($status === 'manual') {
         $assert($result['error'] === 'PERMISSIONS_MANUAL_ACK_REQUIRED', 'Missing manual acknowledgement was accepted');
@@ -107,7 +120,7 @@ try {
         $assert($code === 409 && $result['error'] === 'PERMISSIONS_REVIEW_REQUIRED', 'Known findings could be acknowledged away');
     }
     $assert(is_dir($root . '/public/install'), 'The endpoint removed installer code');
-    echo "OK: setup session binding, CSRF, legacy cleanup, current audit and finalization policy ($status)\n";
+    echo "OK: setup session binding, CSRF, legacy cleanup, exclusive finalization, current audit and finalization policy ($status)\n";
 } catch (Throwable $exception) {
     fwrite(STDERR, $exception->getMessage() . "\n" . $server->getErrorOutput());
     $exit = 1;
