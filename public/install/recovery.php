@@ -367,6 +367,7 @@ $cronServiceCommand = tpRecoveryCronServiceCommand(PHP_OS_FAMILY);
     'running' => $texts['drp_running'], 'failed' => $texts['drp_failed'], 'initial' => $initialJob,
     'command' => $commandBase,
     'cleanup' => tpRecoveryInstallerCleanupCommand(TEAMPASS_ROOT, PHP_OS_FAMILY),
+    'cleanupContainer' => tpRecoveryInstallerCleanupCommand(TEAMPASS_ROOT, PHP_OS_FAMILY, 'container'),
     'resumed' => $texts['drp_resumed'], 'resumedMaintenance' => $texts['drp_resumed_maintenance'],
     'permissionsNotChecked' => $texts['drp_permissions_not_checked'], 'permissionsPassed' => $texts['drp_permissions_passed'],
     'permissionsIssues' => $texts['drp_permissions_issues'], 'permissionsManual' => $texts['drp_permissions_manual'],

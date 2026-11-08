@@ -57,6 +57,7 @@ function app(initial = null, command = "sudo -u 'www-data' -- '/usr/bin/php8.5' 
     counts: '%s tables, %s documents', preparing: 'WAIT', error: 'ERROR',
     command,
     cleanup: "sudo rm -rf -- '/srv/TeamPass Lab/public/install'",
+    cleanupContainer: 'docker compose restart teampass',
     resumed: 'RESUMED', resumedMaintenance: 'MAINTENANCE', permissionsNotChecked: 'AUDIT FIRST',
     permissionsPassed: 'PERMISSIONS PASS', permissionsIssues: '%s findings', permissionsManual: 'MANUAL ACL REVIEW',
     cleanupManual: 'MANUAL CLEANUP',
@@ -85,6 +86,13 @@ function app(initial = null, command = "sudo -u 'www-data' -- '/usr/bin/php8.5' 
     submit: () => form.handlers.submit({ preventDefault() {} }),
     refresh: () => element('recovery-refresh').handlers.click() }
 }
+
+test('Container recovery offers a host restart command after manual finalization', () => {
+  const ui = app(job('resumed', { status: 'manual', manual_reason: 'container', manual_acknowledged_at: 123 }))
+  assert.equal(ui.element('recovery-finished').hidden, false)
+  assert.equal(ui.element('recovery-cleanup-command').textContent, 'docker compose restart teampass')
+  assert.equal(ui.element('recovery-cleanup-command').dataset.copyDisabled, 'false')
+})
 
 test('Recovery progresses from import to activation and operational resume without offering a second import', async () => {
   const ui = app()

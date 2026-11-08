@@ -86,9 +86,9 @@ function tpRecoveryCheckPermissions(string $id): array
 }
 
 /** Build the final administrator-only cleanup command for the real installer directory. */
-function tpRecoveryInstallerCleanupCommand(string $root, string $os): ?string
+function tpRecoveryInstallerCleanupCommand(string $root, string $os, string $manualReason = ''): ?string
 {
-    return tpSetupPermissionsCleanupCommand($root, $os);
+    return tpSetupPermissionsCleanupCommand($root, $os, $manualReason);
 }
 
 /** Propose service activation only when a known systemd cron unit is installed. */

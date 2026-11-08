@@ -21,6 +21,9 @@ receipt. After approval, remove `public/install` manually using the validated
 command displayed by the assistant. PHP is not granted write access to protected
 code merely to let it delete its own installer. Keep the final page open until
 cleanup is complete, then open the login page in another tab.
+For the official Docker image, restart the container instead (for example
+`docker compose restart teampass`): its entrypoint removes `public/install` once
+the database matches the image version. See [Docker](docker.md).
 
 On deployments where PHP owns the application code (for example cPanel/Plesk,
 per-account FPM pools or deployments made as the web user), the review cannot

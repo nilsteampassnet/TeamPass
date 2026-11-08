@@ -71,7 +71,7 @@ try {
             $_SESSION['upgrade_previous_maintenance'], $_SESSION['user_granted'], $_SESSION['install_settings_sha256']);
     }
     echo json_encode(['success' => true, 'review' => $review, 'finalized' => $action === 'finalize',
-        'cleanup' => tpSetupPermissionsCleanupCommand(TEAMPASS_ROOT, PHP_OS_FAMILY)], JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE);
+        'cleanup' => tpSetupPermissionsCleanupCommand(TEAMPASS_ROOT, PHP_OS_FAMILY, $review['manual_reason'])], JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE);
 } catch (Throwable $exception) {
     $known = ['SETUP_SESSION_REQUIRED', 'SETUP_OPERATION_BUSY', 'INVALID_ACTION', 'PERMISSIONS_REVIEW_REQUIRED',
         'PERMISSIONS_MANUAL_ACK_REQUIRED', 'PERMISSIONS_AUDIT_LOG_UNAVAILABLE'];

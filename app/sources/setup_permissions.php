@@ -88,8 +88,11 @@ function tpSetupPermissionsRecord(string $root, string $flow, array $review): vo
 }
 
 /** Build a quoted cleanup command for the real installer, without deleting anything. */
-function tpSetupPermissionsCleanupCommand(string $root, string $os): ?string
+function tpSetupPermissionsCleanupCommand(string $root, string $os, string $manualReason = ''): ?string
 {
+    if ($manualReason === 'container') {
+        return 'docker compose restart teampass';
+    }
     $realRoot = realpath($root);
     if ($realRoot === false || $realRoot === dirname($realRoot)) { return null; }
     $installer = $realRoot . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'install';

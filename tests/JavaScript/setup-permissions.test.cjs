@@ -76,6 +76,19 @@ test('A final server audit can reject a previous pass and keep setup blocked', a
   assert.equal(ui.element('refresh').disabled, false)
 })
 
+test('Container setup displays and copies the restart command returned after approval', async () => {
+  const review = { status: 'manual', manual_reason: 'container', issues: 0, commands: [] }
+  const ui = app([{ success: true, review }, { success: true, review, finalized: true, cleanup: 'docker compose restart teampass' }])
+  await flush()
+  ui.element('ack').checked = true
+  ui.element('ack').handlers.change()
+  ui.element('finalize').handlers.click()
+  await flush()
+  assert.equal(ui.element('cleanup').textContent, 'docker compose restart teampass')
+  await ui.element('copy-cleanup').handlers.click()
+  assert.equal(ui.clipboard[0], 'docker compose restart teampass')
+})
+
 test('A failed refresh invalidates a previous pass', async () => {
   const ui = app([{ success: true, review: { status: 'passed' } }, new Error('untrusted network detail')])
   await flush()

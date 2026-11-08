@@ -176,8 +176,9 @@
     document.getElementById('recovery-finished').hidden = !finalStep
     document.getElementById('recovery-finished-status').textContent = result.maintenance_enabled
       ? data.resumedMaintenance : data.resumed
-    document.getElementById('recovery-cleanup-command').textContent = data.cleanup || data.cleanupManual
-    document.getElementById('recovery-cleanup-command').dataset.copyDisabled = data.cleanup ? 'false' : 'true'
+    const cleanup = review.manual_reason === 'container' ? data.cleanupContainer : data.cleanup
+    document.getElementById('recovery-cleanup-command').textContent = cleanup || data.cleanupManual
+    document.getElementById('recovery-cleanup-command').dataset.copyDisabled = cleanup ? 'false' : 'true'
     document.getElementById('recovery-refresh').hidden = finalStep
     syncCopyButtons()
   }
