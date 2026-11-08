@@ -266,6 +266,14 @@ These permissions prepare a **fresh installation**, with temporary write ownersh
 
 Browse to `https://<your_teampass_domain>/install/install.php` and follow the on-screen wizard.
 
+The final page requires a file-permission review. Run the proposed administrator
+commands in your server terminal, check again, then finalize. TeamPass verifies
+the current permissions again before approving completion. Where automatic
+verification is unavailable, explicitly acknowledge the manual ACL/deployment
+review; the result is recorded as manual. Remove `public/install` with the
+validated cleanup command displayed afterwards, then open the login page in a
+new tab. Keep the final page open until cleanup is complete.
+
 #### Lock down the install directory after setup
 
 Once the wizard completes, **block HTTP access to `public/install/`**. The installer files must not remain publicly accessible in production.

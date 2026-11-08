@@ -16,6 +16,9 @@ parameters:
         - app/scripts
         - app/includes
         - app/pages
+        - public/install/permissions.php
+        - public/install/permissions.view.php
+        - public/install/cleanup_install.php
 
     excludePaths:
         - app/vendor/*
@@ -34,6 +37,7 @@ parameters:
         - app/vendor/tecnickcom/tcpdf/tcpdf_autoconfig.php
         - app/includes/libraries/teampassclasses/lapr/src/LAPRSshService.php
         - public/install/tp.functions.php
+        - public/install/install-steps/install.functions.php
 
     ignoreErrors:
         - '#Call to an undefined static method DB::count#'

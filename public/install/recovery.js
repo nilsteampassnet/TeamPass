@@ -92,7 +92,10 @@
   let visibleJob = null
   const show = (result) => {
     const acknowledge = document.getElementById('recovery-acknowledge-tp-key')
-    if (visibleJob?.id !== result.id) acknowledge.checked = false
+    if (visibleJob?.id !== result.id) {
+      acknowledge.checked = false
+      document.getElementById('recovery-manual-ack').checked = false
+    }
     visibleJob = result
     document.getElementById('recovery-result').hidden = false
     const resumed = result.status === 'resumed'
@@ -109,7 +112,9 @@
     const review = result.permissions || { status: 'not_checked', commands: [] }
     const permissionCommands = Array.isArray(review.commands) ? review.commands : []
     const permissionReady = review.status === 'passed' || review.status === 'manual'
-    const finalStep = resumed && permissionReady && !cleanupPending
+    const manualConfirmed = review.status !== 'manual' || Number.isInteger(review.manual_acknowledged_at)
+    const needsFinalization = completed || (resumed && !manualConfirmed)
+    const finalStep = resumed && permissionReady && manualConfirmed && !cleanupPending
     const currentStep = cleanupPending ? 2 : (finalStep ? 5 : (published ? (permissionReady ? 4 : 3) : (verified || activating ? 2 : 1)))
     for (let step = 1; step <= 5; step++) {
       const marker = document.getElementById(`recovery-step-${step}`)
@@ -162,16 +167,24 @@
       ? ['(', 'set -e', ...permissionCommands, `${data.command} --check-permissions=${result.id}`, ')'].join('\n') : ''
     document.getElementById('recovery-permissions-manual').hidden = review.status !== 'manual'
       && !(review.status === 'issues' && permissionCommands.length === 0)
-    document.getElementById('recovery-resume').hidden = !completed || !permissionReady || cleanupPending
-    document.getElementById('recovery-resume-command').textContent = `${data.command} --resume=${result.id}`
+    document.getElementById('recovery-resume').hidden = !needsFinalization || !permissionReady || cleanupPending
+    const manualReview = document.getElementById('recovery-manual-acknowledgement')
+    manualReview.hidden = review.status !== 'manual' || !needsFinalization
+    const manualAcknowledged = document.getElementById('recovery-manual-ack').checked
+    document.getElementById('recovery-resume-command').textContent = review.status === 'manual' && !manualAcknowledged
+      ? '' : `${data.command} --resume=${result.id}${review.status === 'manual' ? ' --acknowledge-manual-permissions' : ''}`
     document.getElementById('recovery-finished').hidden = !finalStep
     document.getElementById('recovery-finished-status').textContent = result.maintenance_enabled
       ? data.resumedMaintenance : data.resumed
-    document.getElementById('recovery-cleanup-command').textContent = data.cleanup || data.cleanupManual
-    document.getElementById('recovery-cleanup-command').dataset.copyDisabled = data.cleanup ? 'false' : 'true'
+    const cleanup = review.manual_reason === 'container' ? data.cleanupContainer : data.cleanup
+    document.getElementById('recovery-cleanup-command').textContent = cleanup || data.cleanupManual
+    document.getElementById('recovery-cleanup-command').dataset.copyDisabled = cleanup ? 'false' : 'true'
     document.getElementById('recovery-refresh').hidden = finalStep
     syncCopyButtons()
   }
+  document.getElementById('recovery-manual-ack').addEventListener('change', () => {
+    if (visibleJob) show(visibleJob)
+  })
   document.getElementById('recovery-acknowledge-tp-key').addEventListener('change', () => {
     if (visibleJob) show(visibleJob)
   })

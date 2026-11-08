@@ -129,6 +129,13 @@ final class RecoveryFinalizationTest extends TestCase
         }
     }
 
+    public function testContainerCleanupRestartsTheServiceInsteadOfDeletingAHostPath(): void
+    {
+        self::assertSame('docker compose restart teampass',
+            tpRecoveryInstallerCleanupCommand($this->root, 'Linux', 'container'));
+        self::assertDirectoryExists($this->root . '/public/install');
+    }
+
     public function testCronInstructionsUseTheRealServiceIdentityAndQuotedAbsolutePaths(): void
     {
         $result = tpRecoverySchedulerInstructions($this->root, 'Linux', '/usr/local/PHP 8.5/php%', 'www-data');

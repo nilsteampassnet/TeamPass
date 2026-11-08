@@ -3404,6 +3404,8 @@ return array(
     'health_file_permissions_affected' => 'Entrées concernées',
     'health_file_permissions_samples' => 'Exemples',
     'health_file_permissions_reason_protected_writable' => 'Le code applicatif est inscriptible par le compte PHP/web.',
+    'health_file_permissions_reason_protected_web_owned' => 'Le compte PHP/web est propriétaire du code et peut rétablir son droit d’écriture.',
+    'health_file_permissions_reason_secret_web_owned' => 'Le compte PHP/web est propriétaire du secret de l’instance et peut rétablir son droit d’écriture.',
     'health_file_permissions_reason_runtime_not_readable' => 'Un chemin d’exécution n’est pas lisible ou traversable par le compte PHP/web.',
     'health_file_permissions_reason_runtime_not_writable' => 'Un chemin d’exécution n’est pas inscriptible par le compte PHP/web.',
     'health_file_permissions_reason_world_writable' => 'Le chemin est inscriptible par tous les utilisateurs du système.',

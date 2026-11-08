@@ -305,6 +305,11 @@ $cronServiceCommand = tpRecoveryCronServiceCommand(PHP_OS_FAMILY);
         <section id="recovery-resume" class="border-top pt-3 mt-3" hidden>
             <h2 class="h5">4. Finalize restoration</h2>
             <p>After reviewing permissions, run this command, wait for it to finish, then click <strong>Refresh progress</strong>.</p>
+            <label id="recovery-manual-acknowledgement" hidden>
+                <input id="recovery-manual-ack" type="checkbox">
+                I have reviewed the service accounts, deployment permissions and platform ACLs manually.
+                This acknowledgement is recorded and is not an automatic audit pass.
+            </label>
             <p>Keep cron stopped until the installer is removed and access checks are complete in the next step.</p>
             <pre id="recovery-resume-command" data-recovery-command class="p-3 bg-light"></pre>
             <p>Backup schedules and LAPR stay disabled until you review and enable them deliberately.</p>
@@ -362,6 +367,7 @@ $cronServiceCommand = tpRecoveryCronServiceCommand(PHP_OS_FAMILY);
     'running' => $texts['drp_running'], 'failed' => $texts['drp_failed'], 'initial' => $initialJob,
     'command' => $commandBase,
     'cleanup' => tpRecoveryInstallerCleanupCommand(TEAMPASS_ROOT, PHP_OS_FAMILY),
+    'cleanupContainer' => tpRecoveryInstallerCleanupCommand(TEAMPASS_ROOT, PHP_OS_FAMILY, 'container'),
     'resumed' => $texts['drp_resumed'], 'resumedMaintenance' => $texts['drp_resumed_maintenance'],
     'permissionsNotChecked' => $texts['drp_permissions_not_checked'], 'permissionsPassed' => $texts['drp_permissions_passed'],
     'permissionsIssues' => $texts['drp_permissions_issues'], 'permissionsManual' => $texts['drp_permissions_manual'],

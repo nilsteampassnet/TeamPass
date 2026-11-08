@@ -672,16 +672,11 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                 "DROP TABLE IF EXISTS `_install`;"
             );
 
-            // Save the installation status
-            DB::query(
-                "INSERT IGNORE INTO " . $this->inputData['tablePrefix'] . "misc
-                    (`type`, `intitule`, `valeur`) VALUES
-                    ('install', 'clear_install_folder', 'true');"
-            );
-
             // The installation is complete: revoke the install grant so that no request reaches
             // the step endpoints with it any more. The settings hash stays for the final page.
             unset($_SESSION['install_granted'], $_SESSION['install_csrf']);
+            $_SESSION['setup_permissions_ready'] = 'install';
+            unset($_SESSION['setup_permissions_csrf']);
 
             // Remove the development dependencies shipped in the archive. PHPUnit, PHPStan
             // (whose app/vendor/bin/phpstan.phar is an executable archive) and their
