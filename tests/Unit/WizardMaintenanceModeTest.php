@@ -28,7 +28,7 @@ final class WizardMaintenanceModeTest extends TestCase
         $this->assertStringContainsString("no_maintenance_mode : \$('#no_maintenance_mode').prop('checked') === true ? 1 : 0", $stepTwo);
     }
 
-    public function testMaintenanceIsRestoredOnlyAfterTheFinalPermissionApproval(): void
+    public function testMaintenanceIsRestoredAtTheEndOfStepFive(): void
     {
         $ajax = self::read('public/install/upgrade_ajax.php');
         $stepTwo = substr($ajax, (int) strpos($ajax, "case 'step2':"), (int) strpos($ajax, "case 'step3':") - (int) strpos($ajax, "case 'step2':"));
@@ -39,16 +39,11 @@ final class WizardMaintenanceModeTest extends TestCase
         $this->assertStringContainsString("SET `valeur` = '1' WHERE type = 'admin' AND intitule = 'maintenance_mode'", $stepTwo);
         $this->assertStringContainsString("\$superGlobal->put('upgrade_previous_maintenance'", $stepTwo);
 
-        $this->assertStringNotContainsString("\$superGlobal->get('upgrade_previous_maintenance', 'SESSION')", $stepFive);
+        $this->assertStringContainsString("\$superGlobal->get('upgrade_previous_maintenance', 'SESSION')", $stepFive);
+        $this->assertStringContainsString("\$previousMaintenance === '0' || \$previousMaintenance === '1'", $stepFive);
+        $this->assertStringContainsString("SET `valeur` = '\" . \$previousMaintenance . \"' WHERE type = 'admin' AND intitule = 'maintenance_mode'", $stepFive);
+        $this->assertStringContainsString("\$superGlobal->put('upgrade_previous_maintenance', '', 'SESSION')", $stepFive);
         $finalization = self::read('public/install/permissions.php');
-        $audit = strpos($finalization, 'tpSetupPermissionsAudit(TEAMPASS_ROOT)');
-        $approval = strpos($finalization, 'tpSetupPermissionsApprove(');
-        $restore = strpos($finalization, "DB::update(prefixTable('misc')");
-        $this->assertIsInt($audit);
-        $this->assertIsInt($approval);
-        $this->assertIsInt($restore);
-        $this->assertGreaterThan($audit, $approval);
-        $this->assertGreaterThan($approval, $restore);
-        $this->assertStringContainsString("\$previous === '0' || \$previous === '1'", $finalization);
+        $this->assertStringNotContainsString('maintenance_mode', $finalization);
     }
 }

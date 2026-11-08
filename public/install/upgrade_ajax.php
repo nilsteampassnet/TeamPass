@@ -1061,8 +1061,15 @@ if (isset($post_type)) {
                     ? "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'teampass_schema_level', '" . (int) UPGRADE_MIN_DATE . "');"
                     : "UPDATE `" . $pre . "misc` SET `valeur` = '" . (int) UPGRADE_MIN_DATE . "' WHERE intitule = 'teampass_schema_level' AND type = 'admin';"
             );
-            // Keep the upgrade hold until the final permission review is approved.
-            // permissions.php restores the previous maintenance value afterwards.
+            // Leave the maintenance mode as step 2 found it.
+            $previousMaintenance = (string) $superGlobal->get('upgrade_previous_maintenance', 'SESSION');
+            if ($previousMaintenance === '0' || $previousMaintenance === '1') {
+                mysqli_query(
+                    $db_link,
+                    "UPDATE `" . $pre . "misc` SET `valeur` = '" . $previousMaintenance . "' WHERE type = 'admin' AND intitule = 'maintenance_mode'"
+                );
+                $superGlobal->put('upgrade_previous_maintenance', '', 'SESSION');
+            }
 
             // Flush APCu cache so that index.php reads the new version from DB
             // instead of a stale cached value that would re-trigger the upgrade redirect.

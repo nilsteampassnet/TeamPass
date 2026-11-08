@@ -66,11 +66,6 @@ try {
             // must never remove installer code before this review is complete.
             DB::query('DROP TABLE IF EXISTS `_install`');
             DB::delete(prefixTable('misc'), 'type=%s AND intitule=%s', 'install', 'clear_install_folder');
-            $previous = $_SESSION['upgrade_previous_maintenance'] ?? '';
-            if ($previous === '0' || $previous === '1') {
-                DB::update(prefixTable('misc'), ['valeur' => $previous], 'type=%s AND intitule=%s', 'admin', 'maintenance_mode');
-                \TeampassClasses\ConfigManager\ConfigManager::invalidateCache();
-            }
         }
         unset($_SESSION['setup_permissions_ready'], $_SESSION['setup_permissions_csrf'],
             $_SESSION['upgrade_previous_maintenance'], $_SESSION['user_granted'], $_SESSION['install_settings_sha256']);
