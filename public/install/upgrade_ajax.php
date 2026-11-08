@@ -681,7 +681,7 @@ if (isset($post_type)) {
 
             // Put TeamPass in maintenance for the upgrade unless the administrator opted out. Every
             // 3.2.x script writes upgrade_timestamp, which reopens sign-in before the whole chain
-            // has run. The final permission approval restores the value found here.
+            // has run. Step 5 restores the value found here.
             unset($_SESSION['setup_permissions_ready'], $_SESSION['setup_permissions_csrf']);
             $superGlobal->put('upgrade_previous_maintenance', '', 'SESSION');
             if ((int) $post_no_maintenance_mode !== 1) {

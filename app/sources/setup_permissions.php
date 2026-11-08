@@ -13,7 +13,15 @@ declare(strict_types=1);
 require_once __DIR__ . '/file_permissions.functions.php';
 require_once __DIR__ . '/runtime_files.functions.php';
 
-/** Summarize a permission audit without treating an unavailable audit as success. */
+/**
+ * Summarize a permission audit without treating an unavailable audit as success.
+ *
+ * @param string $root Application root used to generate remediation commands.
+ * @param array $report Permission scan report for the current PHP identity.
+ * @param int $checkedAt Unix timestamp of the scan.
+ *
+ * @return array Review status, findings and optional remediation commands.
+ */
 function tpSetupPermissionsReview(string $root, array $report, int $checkedAt): array
 {
     $supported = !empty($report['scan_supported']) && !empty($report['has_result'])
@@ -21,21 +29,51 @@ function tpSetupPermissionsReview(string $root, array $report, int $checkedAt): 
     $manualReason = (string) ($report['manual_reason'] ?? '');
     $issues = $supported ? max(0, (int) ($report['counts']['issues'] ?? 0)) : null;
     $manual = !$supported || $manualReason !== '';
-    $blockingIssues = $manual && $supported ? array_filter($report['issues'] ?? [],
-        static fn (array $issue): bool => $manualReason !== 'container'
-            || !in_array($issue['reason'] ?? '', ['protected_writable', 'protected_web_owned', 'secret_writable', 'secret_web_owned'], true)) : [];
+    $blockingIssues = [];
+    if ($manual && $supported) {
+        $blockingIssues = array_filter(
+            $report['issues'] ?? [],
+            static fn (array $issue): bool => $manualReason !== 'container'
+                || !in_array($issue['reason'] ?? '', [
+                    'protected_writable',
+                    'protected_web_owned',
+                    'secret_writable',
+                    'secret_web_owned',
+                ], true)
+        );
+    }
+    $status = 'issues';
+    if ($blockingIssues === []) {
+        if ($manual) {
+            $status = 'manual';
+        } elseif ($issues === 0) {
+            $status = 'passed';
+        }
+    }
+    if ($manualReason === '' && !$supported) {
+        $manualReason = 'unsupported_audit';
+    }
+
     return [
-        'status' => $blockingIssues !== [] ? 'issues' : ($manual ? 'manual' : ($issues === 0 ? 'passed' : 'issues')),
-        'checked_at' => $checkedAt, 'issues' => $issues, 'scan_supported' => $supported,
+        'status' => $status,
+        'checked_at' => $checkedAt,
+        'issues' => $issues,
+        'scan_supported' => $supported,
         'remediation_supported' => !$manual && !empty($report['remediation_supported']),
         'commands' => !$manual ? tpFilePermissionsRemediationCommands($root, $report) : [],
-        'manual_reason' => $manualReason !== '' ? $manualReason : ($supported ? '' : 'unsupported_audit'),
+        'manual_reason' => $manualReason,
         'identity' => array_intersect_key($report['identity'] ?? [], array_flip(['web_user', 'web_group', 'source'])),
         'findings' => array_slice($report['issues'] ?? [], 0, 30),
     ];
 }
 
-/** Audit current rights only; never hash application files or apply corrections. */
+/**
+ * Audit current rights only; never hash application files or apply corrections.
+ *
+ * @param string $root Application root to inspect.
+ *
+ * @return array Current permission review, including any manual-review reason.
+ */
 function tpSetupPermissionsAudit(string $root): array
 {
     clearstatcache();
@@ -45,8 +83,14 @@ function tpSetupPermissionsAudit(string $root): array
     if (is_file('/.dockerenv') || is_file('/run/.containerenv')) {
         $report['manual_reason'] = 'container';
     } else {
-        foreach (['app', 'public', 'app/config', 'app/config/settings.php',
-            'app/includes/libraries/csrfp/libs', 'secrets'] as $path) {
+        foreach ([
+            'app',
+            'public',
+            'app/config',
+            'app/config/settings.php',
+            'app/includes/libraries/csrfp/libs',
+            'secrets',
+        ] as $path) {
             if (tpFilePermissionsPathHasSymlink($root, $path)) {
                 $report['manual_reason'] = 'linked_layout';
                 break;
@@ -56,7 +100,15 @@ function tpSetupPermissionsAudit(string $root): array
     return tpSetupPermissionsReview($root, $report, time());
 }
 
-/** Refuse known findings; a manual review requires an explicit operator acknowledgement. */
+/**
+ * Refuse known findings and require an explicit acknowledgement for manual reviews.
+ *
+ * @param array $review Current server-side permission review.
+ * @param bool $acknowledgeManual Whether the operator completed the manual review.
+ *
+ * @return array Approved review, with a timestamp for manual acknowledgement.
+ * @throws RuntimeException When findings remain or acknowledgement is missing.
+ */
 function tpSetupPermissionsApprove(array $review, bool $acknowledgeManual): array
 {
     if (($review['status'] ?? '') === 'passed' && ($review['issues'] ?? null) === 0
@@ -71,17 +123,32 @@ function tpSetupPermissionsApprove(array $review, bool $acknowledgeManual): arra
         ? 'PERMISSIONS_MANUAL_ACK_REQUIRED' : 'PERMISSIONS_REVIEW_REQUIRED');
 }
 
-/** Persist a non-sensitive setup review; failure must not silently authorize completion. */
+/**
+ * Persist a non-sensitive setup review before authorizing completion.
+ *
+ * @param string $root Application root containing the private runtime log directory.
+ * @param string $flow Completed setup flow, either install or upgrade.
+ * @param array $review Approved permission review to record.
+ *
+ * @return void
+ * @throws RuntimeException When the protected audit log cannot be written.
+ */
 function tpSetupPermissionsRecord(string $root, string $flow, array $review): void
 {
     $directory = $root . '/storage/logs';
     if (is_link($root . '/storage') || is_link($directory) || !is_dir($directory)) {
         throw new RuntimeException('PERMISSIONS_AUDIT_LOG_UNAVAILABLE');
     }
-    $entry = ['flow' => $flow, 'recorded_at' => time(), 'status' => $review['status'],
-        'checked_at' => $review['checked_at'], 'issues' => $review['issues'],
-        'identity' => $review['identity'] ?? [], 'manual_reason' => $review['manual_reason'] ?? '',
-        'manual_acknowledged_at' => $review['manual_acknowledged_at'] ?? null];
+    $entry = [
+        'flow' => $flow,
+        'recorded_at' => time(),
+        'status' => $review['status'],
+        'checked_at' => $review['checked_at'],
+        'issues' => $review['issues'],
+        'identity' => $review['identity'] ?? [],
+        'manual_reason' => $review['manual_reason'] ?? '',
+        'manual_acknowledged_at' => $review['manual_acknowledged_at'] ?? null,
+    ];
     if (!tpAppendRuntimeFile($directory . '/setup-permissions.jsonl', json_encode($entry, JSON_THROW_ON_ERROR) . "\n")) {
         throw new RuntimeException('PERMISSIONS_AUDIT_LOG_UNAVAILABLE');
     }
@@ -112,23 +179,46 @@ function tpSetupPermissionsFinalizationLock(string $root)
     return $lock;
 }
 
-/** Build a quoted cleanup command for the real installer, without deleting anything. */
+/**
+ * Propose installer cleanup for the deployment without executing any command.
+ *
+ * @param string $root Application root containing the installer.
+ * @param string $os Operating system family used for command quoting.
+ * @param string $manualReason Manual-review reason identifying container deployments.
+ *
+ * @return string|null Quoted removal command or container restart, if applicable.
+ */
 function tpSetupPermissionsCleanupCommand(string $root, string $os, string $manualReason = ''): ?string
 {
     if ($manualReason === 'container') {
         return 'docker compose restart teampass';
     }
     $realRoot = realpath($root);
-    if ($realRoot === false || $realRoot === dirname($realRoot)) { return null; }
+    if ($realRoot === false || $realRoot === dirname($realRoot)) {
+        return null;
+    }
     $installer = $realRoot . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'install';
-    if (is_link($installer) || realpath($installer) !== $installer || !is_dir($installer)) { return null; }
-    $quoted = $os === 'Windows' ? "'" . str_replace("'", "''", $installer) . "'"
-        : "'" . str_replace("'", "'\\''", $installer) . "'";
-    return $os === 'Windows' ? 'Remove-Item -LiteralPath ' . $quoted . ' -Recurse -Force'
-        : 'sudo rm -rf -- ' . $quoted;
+    if (is_link($installer) || realpath($installer) !== $installer || !is_dir($installer)) {
+        return null;
+    }
+    if ($os === 'Windows') {
+        $quoted = "'" . str_replace("'", "''", $installer) . "'";
+        return 'Remove-Item -LiteralPath ' . $quoted . ' -Recurse -Force';
+    }
+    $quoted = "'" . str_replace("'", "'\\''", $installer) . "'";
+    return 'sudo rm -rf -- ' . $quoted;
 }
 
-/** Authorize only the completed setup session and its own finalization CSRF token. */
+/**
+ * Authorize only the completed setup session and its own finalization CSRF token.
+ *
+ * @param array $session Current session data containing the completed-flow grant.
+ * @param string $flow Requested setup flow, either install or upgrade.
+ * @param string|null $token CSRF token supplied by the request.
+ * @param bool $ownsSettings Whether this installer session wrote the current settings.
+ *
+ * @return bool Whether the request is authorized for the completed setup flow.
+ */
 function tpSetupPermissionsRequestAllowed(array $session, string $flow, ?string $token, bool $ownsSettings): bool
 {
     return in_array($flow, ['install', 'upgrade'], true)

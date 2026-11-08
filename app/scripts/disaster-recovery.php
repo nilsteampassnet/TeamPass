@@ -187,8 +187,12 @@ try {
     exit(isset($options['help']) ? 0 : 2);
 } catch (Throwable $exception) {
     $permissionFailures = ['PERMISSIONS_REVIEW_REQUIRED', 'PERMISSIONS_MANUAL_ACK_REQUIRED'];
-    $reason = $exception instanceof TeamPassRecoveryException ? $exception->reason
-        : (in_array($exception->getMessage(), $permissionFailures, true) ? $exception->getMessage() : 'RECOVERY_OPERATION_FAILED');
+    $reason = 'RECOVERY_OPERATION_FAILED';
+    if ($exception instanceof TeamPassRecoveryException) {
+        $reason = $exception->reason;
+    } elseif (in_array($exception->getMessage(), $permissionFailures, true)) {
+        $reason = $exception->getMessage();
+    }
     if (in_array($reason, $permissionFailures, true)) {
         fwrite(STDERR, 'Recovery finalization refused: ' . $reason . ". Maintenance and the recovery hold were not released.\n");
         fwrite(STDERR, $reason === 'PERMISSIONS_MANUAL_ACK_REQUIRED'

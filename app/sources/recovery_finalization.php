@@ -85,7 +85,15 @@ function tpRecoveryCheckPermissions(string $id): array
     }
 }
 
-/** Build the final administrator-only cleanup command for the real installer directory. */
+/**
+ * Build the final cleanup command for the installer or container deployment.
+ *
+ * @param string $root Application root containing the installer.
+ * @param string $os Operating system family used for command quoting.
+ * @param string $manualReason Manual-review reason identifying container deployments.
+ *
+ * @return string|null Installer cleanup command, when one can be proposed safely.
+ */
 function tpRecoveryInstallerCleanupCommand(string $root, string $os, string $manualReason = ''): ?string
 {
     return tpSetupPermissionsCleanupCommand($root, $os, $manualReason);
