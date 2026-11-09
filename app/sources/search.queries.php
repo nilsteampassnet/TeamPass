@@ -638,7 +638,7 @@ if ($massOperationEnabled === true && count($rows) > 0 && count($userRoleIds) > 
 $classificationLabels = [1 => 'public', 2 => 'internal', 3 => 'confidential', 4 => 'restricted'];
 $classificationColours = [1 => 'success', 2 => 'info', 3 => 'warning', 4 => 'danger'];
 
-$canManageFavourites = $featureFavourites && (int) $session->get('user-admin') !== 1;
+$canManageFavourites = searchCanManageFavourites($featureFavourites, (int) $session->get('user-admin'));
 // Read the current user's bookmarks once, independently of the session cache.
 $favouriteIds = $canManageFavourites ? array_fill_keys(array_map('intval', getUserFavorites($userId)), true) : [];
 

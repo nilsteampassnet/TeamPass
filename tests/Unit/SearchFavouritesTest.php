@@ -26,6 +26,37 @@ class SearchFavouritesTest extends TestCase
         return $document;
     }
 
+    /** A disabled feature and administrators get no star button. */
+    public function testOnlyEnabledFeatureAndNonAdministratorsGetTheButton(): void
+    {
+        self::assertTrue(searchCanManageFavourites(true, 0));
+        self::assertFalse(searchCanManageFavourites(false, 0));
+        self::assertFalse(searchCanManageFavourites(true, 1));
+        self::assertFalse(searchCanManageFavourites(false, 1));
+    }
+
+    /** The endpoint applies the gate to both the bookmark lookup and the button. */
+    public function testEndpointGatesTheLookupAndTheButton(): void
+    {
+        $source = (string) file_get_contents(__DIR__ . '/../../app/sources/search.queries.php');
+        self::assertMatchesRegularExpression(
+            '/\$canManageFavourites\s*=\s*searchCanManageFavourites\(\s*\$featureFavourites\s*,/',
+            $source
+        );
+        self::assertMatchesRegularExpression(
+            '/\$favouriteIds\s*=\s*\$canManageFavourites\s*\?[^;]*getUserFavorites\(\s*\$userId\s*\)[^;]*:\s*\[\]\s*;/',
+            $source,
+            'Bookmarks must not be read when the button is not offered.'
+        );
+        self::assertMatchesRegularExpression(
+            '/if\s*\(\s*\$canManageFavourites\s*\)\s*\{[^}]*searchFavouriteActionHtml\(/',
+            $source,
+            'The button must only be rendered behind the gate.'
+        );
+        self::assertSame(1, substr_count($source, 'getUserFavorites('));
+        self::assertSame(1, substr_count($source, 'searchFavouriteActionHtml('));
+    }
+
     /** Pressed state and icon distinguish adding from removing a personal bookmark. */
     public function testButtonReflectsTheCurrentFavouriteState(): void
     {

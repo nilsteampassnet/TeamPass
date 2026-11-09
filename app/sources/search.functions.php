@@ -48,6 +48,22 @@ const SEARCH_FOLDER_RESULTS_LIMIT = 20;
 const SEARCH_FOLDER_OPTIONS_PAGE_SIZE = 50;
 
 /**
+ * Tell whether the search results offer the favourite toggle.
+ *
+ * Same gate as favourites.queries.php: the feature must be enabled, and
+ * administrators get no toggle because they have no item access.
+ *
+ * @param bool $featureFavourites Whether the Favourites feature is enabled.
+ * @param int  $isAdmin           Session user-admin flag.
+ *
+ * @return bool True when the star button is rendered and the bookmarks are read.
+ */
+function searchCanManageFavourites(bool $featureFavourites, int $isAdmin): bool
+{
+    return $featureFavourites === true && $isAdmin !== 1;
+}
+
+/**
  * Render the search result's favourite button.
  *
  * @param bool   $isFavourite Whether the current user has bookmarked the item.

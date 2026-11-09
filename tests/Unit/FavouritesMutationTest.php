@@ -144,19 +144,37 @@ class FavouritesMutationTest extends TestCase
         self::assertSame([1], array_map('intval', getUserFavorites(42)));
     }
 
-    /** Both controllers share the helper; Items keeps its separate read-only policy. */
+    /** Return one case of a handler, from its label to the next case label. */
+    private static function caseBlock(string $file, string $case): string
+    {
+        $source = str_replace("\r\n", "\n", (string) file_get_contents(__DIR__ . '/../../app/sources/' . $file));
+        $label = "case '" . $case . "':";
+        $start = strpos($source, $label);
+        self::assertNotFalse($start, $file . ' must handle ' . $case);
+        $end = strpos($source, "case '", $start + strlen($label));
+        self::assertNotFalse($end, 'A case must follow ' . $case);
+
+        return substr($source, $start, $end - $start);
+    }
+
+    /** Both controllers share the helper when adding; removing never requires item access. */
     public function testBothControllersCheckReadabilityOnlyWhenAdding(): void
     {
-        $favourites = (string) file_get_contents(__DIR__ . '/../../app/sources/favourites.queries.php');
-        $items = (string) file_get_contents(__DIR__ . '/../../app/sources/items.queries.php');
-        self::assertStringContainsString('if (favouriteItemIsReadable($userId, $itemId) === false)', $favourites);
-        self::assertStringContainsString(
-            "if (\$action === 0 && favouriteItemIsReadable((int) \$session->get('user-id'), \$itemId) === false)",
-            $items
+        $addFav = self::caseBlock('favourites.queries.php', 'add_fav');
+        self::assertMatchesRegularExpression('/favouriteItemIsReadable\(\s*\$userId\s*,\s*\$itemId\s*\)\s*===\s*false/', $addFav);
+        self::assertStringNotContainsString('accessToItemIsGranted(', $addFav);
+
+        self::assertStringNotContainsString('favouriteItemIsReadable(', self::caseBlock('favourites.queries.php', 'del_fav'));
+
+        $quickIcon = self::caseBlock('items.queries.php', 'action_on_quick_icon');
+        self::assertMatchesRegularExpression(
+            '/\$action\s*===\s*0\s*&&\s*favouriteItemIsReadable\(\s*\(int\)\s*\$session->get\(\s*\'user-id\'\s*\)\s*,\s*\$itemId\s*\)\s*===\s*false/',
+            $quickIcon,
+            'The Items star must check access when adding only.'
         );
-        self::assertStringContainsString(
-            "if (\$session->get('user-read_only') === 1 || !isset(\$SETTINGS['pwd_maximum_length']))",
-            $items
-        );
+        self::assertSame(1, substr_count($quickIcon, 'favouriteItemIsReadable('));
+        self::assertStringNotContainsString('accessToItemIsGranted(', $quickIcon);
+        // Items keeps its own read-only refusal; the wording of that check may change freely.
+        self::assertStringContainsString("'user-read_only'", $quickIcon);
     }
 }
