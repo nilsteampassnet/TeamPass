@@ -26,6 +26,7 @@ class SecureSendActiveLinksTest extends TestCase
         require_once __DIR__ . '/../Fixtures/secure_send_active_db.php';
         require_once __DIR__ . '/../../app/sources/secure_send_active.php';
         require_once __DIR__ . '/../../app/sources/secure_send_logic.php';
+        require_once __DIR__ . '/../../app/sources/secure_send_email.php';
         DB::$connection = new SQLite3(':memory:');
         DB::$connection->enableExceptions(true);
         DB::$connection->exec('CREATE TABLE active_fixture_users (id INTEGER PRIMARY KEY, admin INTEGER DEFAULT 0,
@@ -38,6 +39,8 @@ class SecureSendActiveLinksTest extends TestCase
             item_id INTEGER, send_type TEXT, has_passphrase INTEGER, protected_key TEXT, views INTEGER,
             max_views INTEGER, time_limit INTEGER, failed_attempts INTEGER, payload TEXT, code TEXT)');
         DB::$connection->exec('INSERT INTO active_fixture_users (id) VALUES (42), (43)');
+        DB::$connection->exec('CREATE TABLE active_fixture_secure_send_email (send_id INTEGER, task_id INTEGER, originator INTEGER)');
+        DB::$connection->exec('CREATE TABLE active_fixture_background_tasks (increment_id INTEGER, status TEXT)');
         DB::$connection->exec("INSERT INTO active_fixture_items (id, id_tree, label)
             VALUES (123, 7, 'R&amp;D &lt;item&gt;'), (124, 8, 'Other sender')");
     }

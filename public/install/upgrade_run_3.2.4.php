@@ -141,6 +141,13 @@ try {
     ) === false) { $emailUpgradeFailure('Unable to initialize email queue index.'); }
     mysqli_free_result($emailIndexResult);
     ConfigManager::invalidateCache();
+
+    // Secure Send delivery associations contain no URL, recipient or message content.
+    require_once TEAMPASS_ROOT . '/app/sources/secure_send_email.php';
+    if (mysqli_query($db_link, secureSendEmailSchemaSql($pre . 'secure_send_email')) === false) {
+        $emailUpgradeFailure('Unable to initialize Secure Send email metadata.');
+    }
+
 } catch (Throwable $error) {
     // Keep a usable trace without disclosing SQL values or driver messages.
     error_log('Email transport migration failure: ' . get_class($error) . ' at '

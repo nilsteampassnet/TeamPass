@@ -102,6 +102,25 @@ amplification path. Missing required passphrases consume neither an attempt nor
 an event. Storage/crypto runtime errors retain the existing generic error log,
 without treating broken storage as a bad recipient credential.
 
+## Email delivery association
+
+`secure_send_email.php` implements optional single-recipient delivery. Its
+`secure_send_email` table is a metadata-only association, not the lifecycle
+journal: send/task IDs, originator, creation timestamp and sharing-base hash.
+The encrypted `secure_send_email` task, association and `created` event share
+the link INSERT transaction. A users-row lock serializes the ten-per-hour sender
+quota. Wakeups happen after commit. Revocation never refunds recent reservations.
+No recipient, complete URL, content or phrase enters the association or journal.
+
+These tasks use the normal sealed email payload and transport outcomes, but
+recheck current settings and source access before every submission. They are
+non-resumable after interruption and inherit the safe retry/terminal-metadata
+rules of ordinary email tasks. Generic email transports contain no Secure Send
+business logic. Delivery states are owner-scoped metadata; acceptance is not proof
+of inbox delivery or recipient identity. The association's schema is shared by
+fresh installation and the 3.2.4 upgrade; refresh the upgrade floor after rebasing
+onto the final email-modernization merge, before publication.
+
 ## External forwarding
 
 After commit, `secureSendEmitAudit()` forwards the safe row as

@@ -186,6 +186,8 @@ class DB
 
     public static function query(string $sql, ...$args): int|array
     {
+        // Email delivery has its own SQL-backed fixture; these legacy links were copied to the clipboard.
+        if (str_contains($sql, prefixTable('secure_send_email'))) { return []; }
         self::$affected = 0;
         if (str_contains($sql, 'ORDER BY id ASC LIMIT 100 FOR UPDATE')) {
             if (self::$failCleanupQuery) {
@@ -235,6 +237,9 @@ class DB
         }
         self::$snapshot = [self::$links, self::$audit, self::$secureAudit, self::$automatic, self::$item, self::$cache, self::$folderCounts];
     }
+
+    /** No email association exists for these clipboard-only lifecycle scenarios. */
+    public static function queryFirstColumn(string $sql, ...$args): array { return []; }
 
     public static function commit(): void { self::$snapshot = []; }
     public static function inTransaction(): bool { return self::$snapshot !== []; }

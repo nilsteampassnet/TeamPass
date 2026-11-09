@@ -55,9 +55,15 @@ namespace TeampassClasses\EmailService {
 namespace TeampassClasses\ConfigManager {
     final class ConfigManager
     {
+        /** Refreshing settings before a Secure Send attempt must remain installation-free. */
+        public static function invalidateCache(): void {}
         /** Keep the production worker constructor independent of an installation. */
         public function getAllSettings(): array
         {
+            if ($GLOBALS['secure_send_probe'] ?? false) {
+                return ['otv_is_enabled' => $GLOBALS['argv'][1] === 'disabled' ? 0 : 1,
+                    'secure_send_allow_notes' => 1, 'cpassman_url' => 'https://vault.example.test'];
+            }
             return [];
         }
     }
@@ -108,7 +114,19 @@ namespace {
         public static function query(string $sql, mixed ...$arguments): array { return []; }
 
         /** Unknown recipients fall back to their email in the real Tasks log renderer. */
-        public static function queryFirstRow(string $sql, mixed ...$arguments): ?array { return null; }
+        public static function queryFirstRow(string $sql, mixed ...$arguments): ?array
+        {
+            if (!($GLOBALS['secure_send_probe'] ?? false)) { return null; }
+            if (str_contains($sql, 'secure_send_email')) {
+                if ($GLOBALS['argv'][1] === 'revoked') { return null; }
+                return ['id' => 7, 'originator' => 42, 'send_type' => 'note', 'views' => 0, 'max_views' => 1,
+                    'time_limit' => time() + ($GLOBALS['argv'][1] === 'expired' ? -1 : 3600),
+                    'failed_attempts' => 0, 'shared_globaly' => 0, 'has_passphrase' => 0,
+                    'address_hash' => hash('sha256', 'https://vault.example.test')];
+            }
+            if (str_contains($sql, 'users')) { return ['id' => 42, 'admin' => 0]; }
+            return null;
+        }
 
         /** This fixture has no matching application user. */
         public static function count(): int { return 0; }
@@ -182,6 +200,8 @@ namespace {
     }
 
     $GLOBALS['decrypt_calls'] = 0;
+    $GLOBALS['secure_send_probe'] = str_starts_with($argv[1], 'secure-');
+    if ($GLOBALS['secure_send_probe']) { $argv[1] = substr($argv[1], strlen('secure-')); }
     $sealedFailure = str_starts_with($argv[1], 'sealed-');
     if ($sealedFailure) {
         $argv[1] = substr($argv[1], strlen('sealed-'));
@@ -211,10 +231,13 @@ namespace {
     $failure = null;
     try {
         if (($argv[2] ?? '') === 'worker') {
-            define('LOG_TASKS', true);
-            define('LOG_TASKS_FILE', 'unused-test-log');
+            if ($GLOBALS['secure_send_probe']) {
+                require_once dirname(__DIR__, 2) . '/app/config/include.php';
+            }
+            if (!defined('LOG_TASKS')) { define('LOG_TASKS', true); }
+            if (!defined('LOG_TASKS_FILE')) { define('LOG_TASKS_FILE', 'unused-test-log'); }
             loadEmailTaskWorker();
-            (new TaskWorker(123, 'send_email', $arguments))->execute();
+            (new TaskWorker(123, $GLOBALS['secure_send_probe'] ? 'secure_send_email' : 'send_email', $arguments))->execute();
         } else {
             (new EmailTaskProbe())->run($arguments);
         }

@@ -4193,4 +4193,8 @@ return array(
     'email_google_redirect' => 'Google authorized redirect URI:',
     'email_google_authorized' => 'Google authorization recorded and Gmail activated. Send a test email: authorization alone does not prove that the mailbox can send.',
     'email_api_limits' => 'Graph and Gmail accept up to 2 MiB of prepared MIME in this version. Bcc is explicitly refused. Provider acceptance does not confirm inbox delivery.',
+    'secure_send_email_subject' => 'A secure message is available in TeamPass',
+    'secure_send_email_body' => '<p>A secure message has been shared with you.</p><p><a href="#link#">Open the secure message</a></p><p>This link expires on #expires# and has a limited number of views. Open it only on a trusted device. If a passphrase is required, the sender will provide it through a separate channel.</p><p>Do not forward this email. The link grants access to the shared message.</p>',
+    'secure_send_email_template' => 'Secure Send invitation',
+    'secure_send_email_template_desc' => 'Invitation containing a Secure Send link and its expiration, without the shared content or passphrase.',
 );

@@ -4177,4 +4177,8 @@ return array(
     'email_google_redirect' => 'URI de redirection autorisée dans Google :',
     'email_google_authorized' => 'Autorisation Google enregistrée et Gmail activé. Envoyez un e-mail de test : l’autorisation seule ne prouve pas que la boîte peut envoyer.',
     'email_api_limits' => 'Graph et Gmail acceptent jusqu’à 2 Mio de MIME préparé dans cette version. Bcc est explicitement refusé. L’acceptation du fournisseur ne confirme pas la distribution en boîte de réception.',
+    'secure_send_email_subject' => 'Un message sécurisé est disponible dans TeamPass',
+    'secure_send_email_body' => '<p>Un message sécurisé a été partagé avec vous.</p><p><a href="#link#">Ouvrir le message sécurisé</a></p><p>Ce lien expire le #expires# et son nombre de consultations est limité. Ouvrez-le uniquement sur un appareil de confiance. Si une phrase secrète est requise, l’expéditeur vous la communiquera par un autre canal.</p><p>Ne transférez pas cet e-mail. Le lien donne accès au message partagé.</p>',
+    'secure_send_email_template' => 'Invitation Secure Send',
+    'secure_send_email_template_desc' => 'Invitation contenant un lien Secure Send et son expiration, sans le contenu partagé ni la phrase secrète.',
 );

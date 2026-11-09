@@ -126,6 +126,7 @@ class TaskWorker {
                     $this->handleUserBuildCacheTree($this->taskData);
                     break;
                 case 'send_email':
+                case 'secure_send_email':
                     DB::query('UPDATE ' . prefixTable('background_tasks') . ' SET email_attempts = email_attempts + 1 WHERE increment_id = %i', $this->taskId);
                     $this->sendEmail($this->taskData);
                     break;
@@ -1597,7 +1598,7 @@ class TaskWorker {
      */
     private function buildCompletionArguments(): string
     {
-        if ($this->processType === 'send_email') {
+        if (in_array($this->processType, ['send_email', 'secure_send_email'], true)) {
             return (string) json_encode([
                 // Recipients were captured after opening the envelope; never reopen it for logging.
                 'accepted' => true,
@@ -1760,7 +1761,7 @@ class TaskWorker {
      * @return void
      */
     private function handleTaskFailure(Throwable $e): void {
-        if ($this->processType === 'send_email' && $e instanceof \TeampassClasses\EmailService\EmailTransportException) {
+        if (in_array($this->processType, ['send_email', 'secure_send_email'], true) && $e instanceof \TeampassClasses\EmailService\EmailTransportException) {
             $attempts = (int) DB::queryFirstField('SELECT email_attempts FROM ' . prefixTable('background_tasks') . ' WHERE increment_id = %i', $this->taskId);
             $retryAt = emailQueueRetryAt($e->result, $attempts, time());
             if ($retryAt !== null) {
@@ -1775,13 +1776,14 @@ class TaskWorker {
         }
         $errorMessage = $e->getMessage();
         // Keep only the trait's fixed diagnostics; transport exceptions may echo secrets.
-        if ($this->processType === 'send_email' && !in_array($errorMessage, [
+        if (in_array($this->processType, ['send_email', 'secure_send_email'], true) && !in_array($errorMessage, [
             'Email delivery failed.',
             'Email credential could not be decrypted.',
+            'Secure Send is no longer available; email was not submitted.',
         ], true)) {
             $errorMessage = 'Email delivery failed.';
         }
-        if ($this->processType === 'send_email' && $e instanceof \TeampassClasses\EmailService\EmailTransportException) {
+        if (in_array($this->processType, ['send_email', 'secure_send_email'], true) && $e instanceof \TeampassClasses\EmailService\EmailTransportException) {
             $errorMessage = 'Email delivery ' . ($e->result->indeterminate ? 'indeterminate' : 'failed') . ': ' . $e->result->errorCode . '.';
         }
         $updateData = [
@@ -1790,7 +1792,7 @@ class TaskWorker {
             'status' => 'failed',
             'error_message' => $errorMessage,
         ];
-        if ($this->processType === 'send_email') {
+        if (in_array($this->processType, ['send_email', 'secure_send_email'], true)) {
             // Drop terminal payloads without claiming provider acceptance for an ambiguous send.
             $updateData['arguments'] = (string) json_encode(['failed' => true] + $this->emailTaskRecipients);
         }

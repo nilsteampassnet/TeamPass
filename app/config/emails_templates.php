@@ -77,6 +77,18 @@ declare(strict_types=1);
  */
 return [
 
+    'secure_send_link' => [
+        'group' => 'items',
+        'subject_key' => 'secure_send_email_subject',
+        'subject_prefix' => '',
+        'body_key' => 'secure_send_email_body',
+        'tokens' => ['#link#', '#expires#'],
+        'required_tokens' => ['#link#', '#expires#'],
+        'label' => 'secure_send_email_template',
+        'description' => 'secure_send_email_template_desc',
+        'trigger' => 'items.queries.php (generate_OTV_url)',
+    ],
+
     // ---------------------------------------------------------------- users
 
     'new_user_credentials' => [

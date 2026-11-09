@@ -1347,7 +1347,7 @@ class BackgroundTasksHandler {
         $taskId = (int) $entry['task']['increment_id'];
 
         if ($process->isSuccessful()) {
-            if ((string) $entry['task']['process_type'] === 'send_email') {
+            if (in_array((string) $entry['task']['process_type'], ['send_email', 'secure_send_email'], true)) {
                 $emailStatus = DB::queryFirstField('SELECT status FROM ' . prefixTable('background_tasks') . ' WHERE increment_id = %i', $taskId);
                 $emailStatus = in_array($emailStatus, ['completed', 'queued', 'failed'], true) ? $emailStatus : 'unknown';
                 if (LOG_TASKS === true) $this->logger->log('Email task ' . $taskId . ' status: ' . $emailStatus, 'INFO');
@@ -1389,7 +1389,7 @@ class BackgroundTasksHandler {
      */
     private function markTaskFailed(int $taskId, string $message): void {
         $failedProcessType = DB::queryFirstField('SELECT process_type FROM ' . prefixTable('background_tasks') . ' WHERE increment_id = %i', $taskId);
-        if ($failedProcessType === 'send_email') {
+        if (in_array($failedProcessType, ['send_email', 'secure_send_email'], true)) {
             $message = 'Email delivery interrupted; acceptance is unknown. Check the provider before resending.';
         }
         DB::update(
@@ -1542,6 +1542,7 @@ class BackgroundTasksHandler {
                 return 'user:' . strval($args['user_id'] ?? 0);
 
             case 'send_email':
+            case 'secure_send_email':
                 // Emails never conflict with each other
                 return null;
 

@@ -1590,6 +1590,13 @@ class DatabaseInstaller
         DB::query(secureSendAuditSchemaSql($this->inputData['tablePrefix'] . 'secure_send_audit'));
     }
 
+    /** Create the metadata-only Secure Send email association. */
+    private function secure_send_email()
+    {
+        require_once TEAMPASS_ROOT . '/app/sources/secure_send_email.php';
+        DB::query(secureSendEmailSchemaSql($this->inputData['tablePrefix'] . 'secure_send_email'));
+    }
+
     // Create table suggestion
     private function suggestion()
     {
