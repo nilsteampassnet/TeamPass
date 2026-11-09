@@ -98,7 +98,9 @@ Email retries use `background_tasks.email_attempts` and `next_attempt_at`, with 
 additive idempotent migration. The existing scheduler only picks due tasks, so a
 deferred task requires the usual cron/handler schedule; no worker sleeps waiting
 for a retry. At most three attempts are allowed, with 30/60-second minimum delays
-and the full provider Retry-After when longer. Only confirmed network/token,
+and the full provider Retry-After when longer, up to one hour. A longer delay or
+timestamp overflow fails the task; never truncate the delay and retry early.
+Only confirmed network/token,
 temporary or throttle failures can be deferred. Accepted, ambiguous, partial and
 permanent failures cannot replay automatically. Interrupted email workers remain
 failed through the existing non-resumable task policy. Diagnostic task fields and

@@ -69,5 +69,6 @@ function emailQueueRetryAt(TeampassClasses\EmailService\EmailSendResult $result,
         return null;
     }
     $delay = max(30 * (2 ** ($attempts - 1)), $result->retryAfter ?? 0);
-    return $delay > PHP_INT_MAX - $now ? PHP_INT_MAX : $now + $delay;
+    // Fail rather than park a task indefinitely or retry before the provider permits it.
+    return $delay > 3600 || $now > PHP_INT_MAX - $delay ? null : $now + $delay;
 }

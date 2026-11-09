@@ -26,7 +26,7 @@ namespace TeampassClasses\EmailService {
                 throw new \RuntimeException('Email credential could not be decrypted. private-provider-response');
             }
 
-            return in_array($GLOBALS['argv'][1], ['rejected', 'throttled', 'exhausted', 'indeterminate'], true)
+            return in_array($GLOBALS['argv'][1], ['rejected', 'throttled', 'exhausted', 'indeterminate', 'excessive-delay'], true)
                 ? '{"error":true,"message":"private-provider-response"}'
                 : '';
         }
@@ -35,7 +35,8 @@ namespace TeampassClasses\EmailService {
         public function getLastResult(): EmailSendResult
         {
             return match ($GLOBALS['argv'][1]) {
-                'throttled', 'exhausted' => EmailSendResult::failure('throttled', true, 172800),
+                'throttled', 'exhausted' => EmailSendResult::failure('throttled', true, 120),
+                'excessive-delay' => EmailSendResult::failure('throttled', true, 172800),
                 'indeterminate' => EmailSendResult::indeterminate('timeout'),
                 default => EmailSendResult::failure('rejected'),
             };

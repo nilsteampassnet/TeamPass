@@ -122,7 +122,12 @@ final class EmailQueuePayloadTest extends TestCase
         $resultClass = \TeampassClasses\EmailService\EmailSendResult::class;
         self::assertSame(1030, emailQueueRetryAt($resultClass::failure('temporary', true), 1, 1000));
         self::assertSame(1060, emailQueueRetryAt($resultClass::failure('network', true), 2, 1000));
-        self::assertSame(173800, emailQueueRetryAt($resultClass::failure('throttled', true, 172800), 1, 1000));
+        self::assertSame(1120, emailQueueRetryAt($resultClass::failure('throttled', true, 120), 1, 1000));
+        self::assertSame(4600, emailQueueRetryAt($resultClass::failure('throttled', true, 3600), 1, 1000));
+        foreach ([3601, 172800, PHP_INT_MAX] as $delay) {
+            self::assertNull(emailQueueRetryAt($resultClass::failure('throttled', true, $delay), 1, 1000));
+        }
+        self::assertNull(emailQueueRetryAt($resultClass::failure('temporary', true), 1, PHP_INT_MAX - 10));
         self::assertNull(emailQueueRetryAt($resultClass::failure('temporary', true), 3, 1000));
         self::assertNull(emailQueueRetryAt($resultClass::accepted(), 1, 1000));
         self::assertNull(emailQueueRetryAt($resultClass::indeterminate('timeout'), 1, 1000));

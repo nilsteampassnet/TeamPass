@@ -100,8 +100,8 @@ final class EmailTaskDeliveryTest extends TestCase
         self::assertSame('queued', $deferred['status']);
         self::assertSame(0, $deferred['is_in_progress']);
         self::assertNull($deferred['finished_at']);
-        self::assertGreaterThanOrEqual($before + 172800, $deferred['next_attempt_at']);
-        foreach (['indeterminate', 'exhausted'] as $mode) {
+        self::assertGreaterThanOrEqual($before + 120, $deferred['next_attempt_at']);
+        foreach (['indeterminate', 'exhausted', 'excessive-delay'] as $mode) {
             $failed = $this->probe($mode, true)['task_updates'][0];
             self::assertSame('failed', $failed['status']);
             self::assertArrayNotHasKey('next_attempt_at', $failed);
@@ -126,7 +126,7 @@ final class EmailTaskDeliveryTest extends TestCase
     /** Terminal failures drop the sealed payload without claiming acceptance; deferrals retain it. */
     public function testEncryptedFailureOutcomesRetainOnlyPrivateStatusMetadata(): void
     {
-        foreach (['rejected', 'invalid', 'indeterminate', 'exhausted', 'spoofed'] as $mode) {
+        foreach (['rejected', 'invalid', 'indeterminate', 'exhausted', 'spoofed', 'excessive-delay'] as $mode) {
             $result = $this->probe('sealed-' . $mode, true);
             $update = $result['task_updates'][0];
             self::assertSame('failed', $update['status']);

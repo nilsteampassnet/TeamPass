@@ -185,7 +185,9 @@ When the worker records completion or terminal failure, only the outcome and
 retaining the subject, body, encrypted credential or envelope.
 
 Confirmed transient failures can defer the same task for at most three attempts.
-The minimum backoff is 30 then 60 seconds; a longer `Retry-After` is preserved.
+The minimum backoff is 30 then 60 seconds; a longer `Retry-After` is preserved
+up to one hour. A delay beyond one hour fails the task instead of parking it
+indefinitely or retrying earlier than the provider permits.
 The existing cron/handler schedule must keep running. There is no sleeping worker
 or new queue infrastructure. Permanent authentication, permission, configuration
 and message errors require administrator action.
