@@ -54,6 +54,7 @@ final class EmailTransportConfigurationTest extends TestCase
     {
         return [
             'unknown setting' => [['ldap_password' => 'secret']],
+            'debug is not a profile field' => [['email_debug_level' => '2']],
             'revision injection' => [['email_config_revision' => str_repeat('b', 32)]],
             'legacy auth bypass' => [['email_smtp_auth' => '1']],
             'unknown transport' => [['email_transport' => 'unimplemented']],

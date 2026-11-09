@@ -110,7 +110,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     }
     updateEmailTransportPanels();
 
-    $('#email-transport-profile :input, #email_debug_level').on('input change', function() {
+    $('#email-transport-profile :input').on('input change', function() {
         if (this.type === 'password' && this.value !== '') {
             $('.email-secret-action').filter((index, element) => $(element).data('secret') === this.id).val('replace');
         }
@@ -120,7 +120,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     });
 
     $('#email-profile-save').on('click', function() {
-        const profile = { secret_actions: {}, email_debug_level: String($('#email_debug_level').val()) };
+        const profile = { secret_actions: {} };
         $('#email-transport-profile input[id], #email-transport-profile select[id]').each(function() {
             profile[this.id] = String($(this).val());
         });
@@ -128,7 +128,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             profile.secret_actions[$(this).data('secret')] = $(this).val();
         });
         // A hidden provider secret stays untouched; explicitly clearing it still requires Save.
-        $('#email-transport-profile :input, #email_debug_level').prop('disabled', true);
+        $('#email-transport-profile :input').prop('disabled', true);
         $('#email-profile-status').text(emailProfileText.saving);
         $.post('sources/emails_transport.queries.php', {
             key: emailProfileKey,
@@ -151,7 +151,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         }).fail(function() {
             $('#email-profile-status').text(emailProfileText.failed);
         }).always(function() {
-            $('#email-transport-profile :input, #email_debug_level').prop('disabled', false);
+            $('#email-transport-profile :input').prop('disabled', false);
         });
     });
 

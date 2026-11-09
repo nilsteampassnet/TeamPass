@@ -142,7 +142,7 @@ $emailBackgroundQueue = DB::queryFirstRow(
                                 <?php echo $lang->get('email_debug_level'); ?>
                             </div>
                             <div class="col-7 mb-0">
-                                <select class='form-control form-control-sm no-save' id='email_debug_level' data-email-profile='true'>
+                                <select class='form-control form-control-sm' id='email_debug_level'>
                                     <option value='0'<?php echo isset($SETTINGS['email_debug_level']) === true && $SETTINGS['email_debug_level'] === '0' ? ' selected' : ''; ?>><?php echo $lang->get('none'); ?></option>
                                     <option value='1'<?php echo isset($SETTINGS['email_debug_level']) === true && $SETTINGS['email_debug_level'] === '1' ? ' selected' : ''; ?>><?php echo $lang->get('email_debug_client'); ?></option>
                                     <option value='2'<?php echo isset($SETTINGS['email_debug_level']) === true && $SETTINGS['email_debug_level'] === '2' ? ' selected' : ''; ?>><?php echo $lang->get('email_debug_server'); ?></option>

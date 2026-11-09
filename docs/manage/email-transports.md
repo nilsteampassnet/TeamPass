@@ -74,6 +74,8 @@ a trusted certificate and enable verification for authenticated TLS relays.
 Debug output contains bounded protocol stages and numeric codes. Credentials,
 message bodies and raw server responses are excluded. API requests have no raw
 HTTP debug mode. See [email troubleshooting](email-troubleshooting.md).
+The debug level saves independently of the transport profile. Changing it does
+not rotate the profile revision, invalidate tokens or require Gmail consent again.
 If every recipient is refused, no DATA is submitted and the result is a definite
 rejection. If DATA was accepted for some recipients, the result remains
 `partial_acceptance` and cannot be replayed automatically. Unexpected transport

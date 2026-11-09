@@ -172,4 +172,40 @@ class SecureSendRetentionSettingsTest extends TestCase
             self::assertSame([], DB::$writes);
         }
     }
+
+    /** Changing diagnostics writes only that setting and preserves transport tokens/revision. */
+    public function testEmailDebugAutosavesWithoutWritingTheTransportProfile(): void
+    {
+        self::assertNotContains('email_debug_level', emailTransportSettingNames());
+        foreach ([false, true] as $encrypted) {
+            foreach ([false, true] as $existing) {
+                DB::$existing = $existing;
+                foreach (['0', '1', '2', '3', '4'] as $level) {
+                    self::assertFalse($this->request($level, $encrypted, 'session', 'email_debug_level')['error']);
+                    self::assertCount(1, DB::$writes);
+                    self::assertSame($level, DB::$writes[0][1]['valeur']);
+                    self::assertSame(['admin', 'email_debug_level'], DB::$queries[0][1]);
+                    self::assertCount(1, DB::$queries);
+                    if ($existing) {
+                        self::assertSame(['admin', 'email_debug_level'], DB::$writes[0][3]);
+                    } else {
+                        self::assertSame('email_debug_level', DB::$writes[0][1]['intitule']);
+                    }
+                    self::assertSame(1, ConfigManager::$invalidations);
+                }
+            }
+        }
+    }
+
+    /** Malformed diagnostic levels and the wrong session key cannot reach persistence. */
+    public function testEmailDebugRejectsInvalidValuesAndSessionKeys(): void
+    {
+        foreach ([null, true, false, [], ['1'], -1, '5', '01', 1.5, '1e0'] as $value) {
+            self::assertTrue($this->request($value, false, 'session', 'email_debug_level')['error']);
+            self::assertSame([], DB::$writes);
+            self::assertSame([], DB::$queries);
+        }
+        self::assertTrue($this->request('2', false, 'wrong-key', 'email_debug_level')['error']);
+        self::assertSame([], DB::$writes);
+    }
 }

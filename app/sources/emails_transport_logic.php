@@ -15,7 +15,7 @@ function emailTransportSettingNames(): array
     return [
         'email_transport', 'email_smtp_auth_mode', 'email_smtp_auth', 'email_config_revision',
         'email_smtp_server', 'email_port', 'email_security', 'email_smtp_verify_certificate',
-        'email_auth_username', 'email_auth_pwd', 'email_from', 'email_from_name', 'email_debug_level',
+        'email_auth_username', 'email_auth_pwd', 'email_from', 'email_from_name',
         'email_microsoft_tenant_id', 'email_microsoft_client_id', 'email_microsoft_client_secret',
         'email_microsoft_mailbox', 'email_google_client_id', 'email_google_client_secret', 'email_google_sender',
     ];
@@ -63,7 +63,6 @@ function emailTransportCandidate(#[SensitiveParameter] array $input, #[Sensitive
         || !in_array($mode, ['none', 'password', 'microsoft_oauth'], true)
         || !in_array((string) ($candidate['email_security'] ?? 'none'), ['none', 'ssl', 'tls'], true)
         || !in_array((string) ($candidate['email_smtp_verify_certificate'] ?? '0'), ['0', '1'], true)
-        || !in_array((string) ($candidate['email_debug_level'] ?? '0'), ['0', '1', '2', '3', '4'], true)
     ) {
         throw new InvalidArgumentException('configuration');
     }
