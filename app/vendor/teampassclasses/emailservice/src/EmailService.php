@@ -262,6 +262,7 @@ class EmailService
             return $this->errorResponse();
         } catch (\Throwable $e) {
             // A transport failure may carry credentials in its exception. Never expose it.
+            error_log('Email transport failure: ' . get_class($e));
             $this->lastResult = EmailSendResult::indeterminate();
             $this->lastError = $this->transportErrorMessage($emailSettings);
             return $this->errorResponse();
@@ -318,7 +319,11 @@ class EmailService
         $translations = $this->mailer->getTranslations();
         $reason = $this->mailer->ErrorInfo;
         if (str_starts_with($reason, $translations['recipients_failed'])) {
-            return EmailSendResult::indeterminate('partial_acceptance');
+            // Each send has a fresh SMTP instance. Null means DATA was never submitted;
+            // false also denotes a completed DATA reply, just without a recognized queue ID.
+            return $this->mailer->getSMTPInstance()->getLastTransactionID() === null
+                ? EmailSendResult::failure('rejected')
+                : EmailSendResult::indeterminate('partial_acceptance');
         }
         if (str_starts_with($reason, $translations['authenticate'])) {
             return EmailSendResult::failure('authentication');

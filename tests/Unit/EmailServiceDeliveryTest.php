@@ -15,6 +15,7 @@ use PHPMailer\PHPMailer\SMTP;
 use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Process\Process;
 use TeampassClasses\EmailService\EmailService;
 use TeampassClasses\EmailService\EmailSettings;
 use TeampassClasses\EmailService\EmailSendResult;
@@ -186,10 +187,55 @@ final class EmailServiceDeliveryTest extends TestCase
         $transport = $this->createMock(EmailTransportInterface::class);
         $transport->expects(self::once())->method('send')->willThrowException(new RuntimeException('private-provider-secret'));
         $service = new EmailService($transport);
-        $response = $service->sendMail('Test', 'Body', 'recipient@example.com', new EmailSettings([]));
-        self::assertTrue($service->getLastResult()->indeterminate);
-        self::assertFalse($service->getLastResult()->retryable);
-        self::assertStringNotContainsString('private-provider-secret', $response);
+        $log = tempnam(sys_get_temp_dir(), 'teampass-email-test-');
+        self::assertNotFalse($log);
+        ini_set('error_log', $log);
+        try {
+            $response = $service->sendMail('Test', 'private-body', 'recipient@example.com', new EmailSettings([]));
+            self::assertTrue($service->getLastResult()->indeterminate);
+            self::assertFalse($service->getLastResult()->retryable);
+            $logged = file_get_contents($log);
+            self::assertStringContainsString('Email transport failure: RuntimeException', $logged);
+            foreach (['private-provider-secret', 'private-body', 'recipient@example.com'] as $secret) {
+                self::assertStringNotContainsString($secret, $response . $logged);
+            }
+        } finally {
+            ini_set('error_log', PHP_OS_FAMILY === 'Windows' ? 'NUL' : '/dev/null');
+            unlink($log);
+        }
+    }
+
+    /** Real RCPT refusals are definite only when PHPMailer never submits DATA. */
+    public function testRecipientRejectionsFollowTheActualSmtpDataBoundary(): void
+    {
+        foreach ([['reject_all', 1], ['reject_all', 2], ['reject_partial', 2]] as [$mode, $count]) {
+            $server = new Process([PHP_BINARY, dirname(__DIR__) . '/Fixtures/email_smtp_server.php', $mode]);
+            $server->setTimeout(15);
+            $server->start();
+            try {
+                self::assertTrue($server->waitUntil(static fn(string $type, string $output): bool => str_contains($output, '"port"')), $server->getErrorOutput());
+                $ready = json_decode(strtok($server->getOutput(), "\n"), true);
+                $settings = new EmailSettings(['email_from' => 'sender@example.test', 'email_smtp_server' => '127.0.0.1',
+                    'email_port' => $ready['port'], 'email_smtp_auth_mode' => 'none']);
+                $settings->timeout = 5;
+                $service = new EmailService();
+                $recipients = $count === 1 ? 'first@example.test' : 'first@example.test,second@example.test';
+                $response = json_decode($service->sendMail('Test', 'Synthetic body', $recipients, $settings), true);
+                self::assertTrue($response['error']);
+                $partial = $mode === 'reject_partial';
+                self::assertSame($partial ? 'partial_acceptance' : 'rejected', $service->getLastResult()->errorCode);
+                self::assertSame($partial, $service->getLastResult()->indeterminate);
+                self::assertFalse($service->getLastResult()->retryable);
+                $server->wait();
+                self::assertSame(0, $server->getExitCode(), $server->getErrorOutput());
+                $lines = explode("\n", trim($server->getOutput()));
+                $recorded = json_decode(end($lines), true);
+                self::assertSame($count, $recorded['recipients']);
+                self::assertSame($partial, $recorded['data_submitted']);
+            } finally {
+                $server->stop(0);
+            }
+        }
     }
 
     /** Provider text cannot turn an ambiguous DATA outcome into a retryable connection failure. */

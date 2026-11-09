@@ -11,7 +11,7 @@ declare(strict_types=1);
 
 // Test-only loopback relay. All credentials and messages are synthetic; no TLS bypass exists in production.
 $mode = $argv[1] ?? '';
-if (!in_array($mode, ['none', 'password', 'oauth'], true)) { exit(2); }
+if (!in_array($mode, ['none', 'password', 'oauth', 'reject_all', 'reject_partial'], true)) { exit(2); }
 $server = stream_socket_server('tcp://127.0.0.1:0', $errorCode, $errorMessage);
 if ($server === false) { throw new RuntimeException('Unable to bind test SMTP relay.'); }
 $port = (int) substr(strrchr(stream_socket_get_name($server, false), ':'), 1);
@@ -20,11 +20,13 @@ flush();
 $client = stream_socket_accept($server, 10);
 if ($client === false) { throw new RuntimeException('Test SMTP connection timeout.'); }
 stream_set_timeout($client, 10);
-$authenticated = $mode === 'none';
+$authenticated = in_array($mode, ['none', 'reject_all', 'reject_partial'], true);
 $authStage = '';
 $dataMode = false;
 $data = '';
 $recipients = 0;
+$acceptedRecipients = 0;
+$dataSubmitted = false;
 fwrite($client, "220 localhost ESMTP test\r\n");
 while (($line = fgets($client)) !== false) {
     $command = rtrim($line, "\r\n");
@@ -60,8 +62,14 @@ while (($line = fgets($client)) !== false) {
         fwrite($client, "250 2.1.0 sender accepted\r\n");
     } elseif (str_starts_with($command, 'RCPT TO:') && $authenticated) {
         ++$recipients;
-        fwrite($client, "250 2.1.5 recipient accepted\r\n");
-    } elseif ($command === 'DATA' && $authenticated && $recipients > 0) {
+        if ($mode === 'reject_all' || ($mode === 'reject_partial' && $recipients > 1)) {
+            fwrite($client, "550 5.1.1 recipient refused\r\n");
+        } else {
+            ++$acceptedRecipients;
+            fwrite($client, "250 2.1.5 recipient accepted\r\n");
+        }
+    } elseif ($command === 'DATA' && $authenticated && $acceptedRecipients > 0) {
+        $dataSubmitted = true;
         $dataMode = true;
         fwrite($client, "354 send message\r\n");
     } elseif ($command === 'QUIT') {
@@ -73,5 +81,6 @@ while (($line = fgets($client)) !== false) {
 }
 fclose($client);
 fclose($server);
-if ($data === '') { throw new RuntimeException('Test SMTP message is missing.'); }
-echo json_encode(['authenticated' => $authenticated, 'recipients' => $recipients, 'mime_hash' => hash('sha256', rtrim($data, "\r\n"))]) . "\n";
+if ($data === '' && $mode !== 'reject_all') { throw new RuntimeException('Test SMTP message is missing.'); }
+echo json_encode(['authenticated' => $authenticated, 'recipients' => $recipients, 'data_submitted' => $dataSubmitted,
+    'mime_hash' => hash('sha256', rtrim($data, "\r\n"))]) . "\n";

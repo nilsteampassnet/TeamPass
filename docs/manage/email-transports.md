@@ -64,12 +64,20 @@ connections themselves still use a direct SMTP socket.
 Choose **SMTP relay**, then no authentication or username/password. Keep the
 existing relay host, port and encryption combination; internal DNS names and IP
 addresses are supported. STARTTLS and implicit TLS remain separate choices.
+The profile editor accepts one host or IP address, with port and encryption in
+their separate fields. PHPMailer semicolon-separated failover lists and
+`tls://` / `ssl://` host prefixes are refused on save. Existing stored SMTP
+settings remain readable unchanged until the profile is saved again.
 Certificate verification retains the existing installation's setting. Configure
 a trusted certificate and enable verification for authenticated TLS relays.
 
 Debug output contains bounded protocol stages and numeric codes. Credentials,
 message bodies and raw server responses are excluded. API requests have no raw
 HTTP debug mode. See [email troubleshooting](email-troubleshooting.md).
+If every recipient is refused, no DATA is submitted and the result is a definite
+rejection. If DATA was accepted for some recipients, the result remains
+`partial_acceptance` and cannot be replayed automatically. Unexpected transport
+exceptions log only their class, never the exception message.
 
 ## Microsoft Graph
 
