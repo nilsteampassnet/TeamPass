@@ -211,7 +211,7 @@ namespace {
         $argv[1] = substr($argv[1], strlen('sealed-'));
     }
     $arguments = [
-        'subject' => ($GLOBALS['secure_send_probe'] ? '#sender_prefix#' : '') . 'Task test',
+        'subject' => $GLOBALS['secure_send_probe'] ? '#sender# shared a secure message with you via TeamPass' : 'Task test',
         'body' => '<p>Task body</p>',
         'receivers' => 'recipient@example.com',
         'receiver_name' => 'Recipient',

@@ -187,6 +187,7 @@ if (function_exists('emailsTemplatesSampleValues') === false) {
             '#link#' => $url . '/index.php?page=items&group=12&id=345',
             '#expires#' => $datetime,
             '#sender_prefix#' => 'Jane Doe — ',
+            '#sender#' => 'Jane Doe',
             '#item_label#' => 'Production database',
             '#item_id#' => '345',
             '#item_category#' => '12',

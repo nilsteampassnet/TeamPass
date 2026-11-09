@@ -119,14 +119,14 @@ function secureSendEmailQueue(array $message, array $link, array $settings, int 
     ]);
 }
 
-/** Resolve the optional profile prefix at submission time, using current disclosure policy and identity. */
+/** Resolve profile tokens at submission time, using current disclosure policy and identity. */
 function secureSendEmailPersonalize(array $message, int $taskId, array $settings): array
 {
-    $token = '#sender_prefix#';
-    if (!str_contains($message['subject'], $token) && !str_contains($message['body'], $token)) {
+    if (!str_contains($message['subject'], '#sender#') && !str_contains($message['body'], '#sender#')
+        && !str_contains($message['subject'], '#sender_prefix#') && !str_contains($message['body'], '#sender_prefix#')) {
         return $message;
     }
-    $prefix = '';
+    $name = '';
     if ((int) ($settings['secure_send_show_sender_name'] ?? 0) === 1) {
         $link = DB::queryFirstRow('SELECT o.originator, o.item_id, o.send_type FROM ' . prefixTable('secure_send_email') . ' e
             INNER JOIN ' . prefixTable('otv') . ' o ON o.id = e.send_id AND o.originator = e.originator
@@ -137,13 +137,17 @@ function secureSendEmailPersonalize(array $message, int $taskId, array $settings
         }
         // Decode through the public-identity helper, then remove header controls and Unicode separators.
         $name = trim(preg_replace('/[\p{C}\p{Z}]+/u', ' ', $sender['display_name']) ?? '');
-        if ($name !== '') {
-            $prefix = $name . ' — ';
-        }
     }
+    $language = new \TeampassClasses\Language\Language($settings['default_language'] ?? 'english');
+    $replacements = [
+        '#sender#' => $name !== '' ? $name : $language->getShipped('secure_send_email_anonymous_sender'),
+        '#sender_prefix#' => $name !== '' ? $name . ' — ' : '',
+    ];
     // The subject is plain text. A customized HTML body needs its own contextual escaping.
-    $message['subject'] = str_replace($token, $prefix, $message['subject']);
-    $message['body'] = str_replace($token, htmlspecialchars($prefix, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), $message['body']);
+    $message['subject'] = strtr($message['subject'], $replacements);
+    $message['body'] = strtr($message['body'], array_map(
+        static fn (string $value): string => htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), $replacements
+    ));
     return $message;
 }
 
