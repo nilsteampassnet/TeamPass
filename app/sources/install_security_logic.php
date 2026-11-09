@@ -187,6 +187,7 @@ function installAllowedActions(string $step): array
             'sharekeys_webauthn',
             'user_webauthn_credentials',
             'secure_send_audit',
+            'secure_send_email',
         ],
         // Finalisation: settings file, chmod, csrf, cron, cleanup (run.step6.php).
         'step6' => [
