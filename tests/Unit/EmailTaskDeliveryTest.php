@@ -52,10 +52,15 @@ final class EmailTaskDeliveryTest extends TestCase
     /** Execute the production worker, including persistence and logger boundaries. */
     public function testWorkerPersistsDeliveryFailuresAndLogsOnlyMetadata(): void
     {
-        foreach (['accepted' => 'completed', 'encrypted' => 'completed', 'rejected' => 'failed', 'unexpected' => 'failed', 'invalid' => 'failed'] as $mode => $status) {
+        foreach (['accepted' => 'completed', 'encrypted' => 'completed', 'rejected' => 'failed', 'unexpected' => 'failed', 'spoofed' => 'failed', 'invalid' => 'failed'] as $mode => $status) {
             $result = $this->probe($mode, true);
             self::assertCount(1, $result['task_updates']);
             self::assertSame($status, $result['task_updates'][0]['status'], $mode);
+            self::assertSame(
+                $status === 'completed' ? null : ($mode === 'invalid' ? 'Email credential could not be decrypted.' : 'Email delivery failed.'),
+                $result['task_updates'][0]['error_message'],
+                $mode
+            );
             self::assertSame(
                 ['email' => 'recipient@example.com', 'login' => 'Recipient'],
                 json_decode($result['task_updates'][0]['arguments'], true, 512, JSON_THROW_ON_ERROR),

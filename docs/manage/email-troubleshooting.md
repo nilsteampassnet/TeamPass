@@ -31,8 +31,12 @@ credential cannot be decrypted. Ordinary notifications do not attempt to decrypt
 an empty credential.
 
 Task diagnostics contain task identifiers and types, without dumping their
-arguments. Email failures store a generic failure message; use the administrator's
-test to diagnose the current relay configuration. Completed and failed email tasks
+arguments. Email failures distinguish `Email delivery failed.` from
+`Email credential could not be decrypted.`. The latter points to the instance key
+(`SECUREFILE`) or encrypted credential, before the relay is contacted. The test
+email can succeed in that situation because it has no queued credential to decrypt.
+Use the administrator's test to diagnose the current relay configuration. Unknown
+exceptions are replaced with the generic delivery message. Completed and failed email tasks
 retain only the recipient and login; message bodies and encrypted credentials are
 removed when the attempt ends. Old failed tasks are purged after the configured
 task-history retention period, including tasks without subtasks. Database access

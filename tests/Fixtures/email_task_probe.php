@@ -22,6 +22,9 @@ namespace TeampassClasses\EmailService {
             if ($GLOBALS['argv'][1] === 'unexpected') {
                 throw new \RuntimeException('private-provider-response');
             }
+            if ($GLOBALS['argv'][1] === 'spoofed') {
+                throw new \RuntimeException('Email credential could not be decrypted. private-provider-response');
+            }
 
             return $GLOBALS['argv'][1] === 'rejected'
                 ? '{"error":true,"message":"private-provider-response"}'

@@ -1759,8 +1759,14 @@ class TaskWorker {
      * @return void
      */
     private function handleTaskFailure(Throwable $e): void {
-        // Email transport exceptions can contain a provider-echoed message or credential.
-        $errorMessage = $this->processType === 'send_email' ? 'Email delivery failed.' : $e->getMessage();
+        $errorMessage = $e->getMessage();
+        // Keep only the trait's fixed diagnostics; transport exceptions may echo secrets.
+        if ($this->processType === 'send_email' && !in_array($errorMessage, [
+            'Email delivery failed.',
+            'Email credential could not be decrypted.',
+        ], true)) {
+            $errorMessage = 'Email delivery failed.';
+        }
         $updateData = [
             'is_in_progress' => -1,
             'finished_at' => time(),
