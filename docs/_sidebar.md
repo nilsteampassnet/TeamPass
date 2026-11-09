@@ -45,6 +45,7 @@
 - [Administrator live activity](manage/admin-live-activity.md)
 - [Settings](manage/settings.md)
 - [Email templates](manage/email-templates.md)
+- [Email troubleshooting](manage/email-troubleshooting.md)
 - [Compliance Reports](manage/compliance-reports.md)
 - [Rotation Tracking](manage/rotation-tracking.md)
 - [Access Reviews](manage/access-reviews.md)

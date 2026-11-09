@@ -97,7 +97,7 @@ class TaskWorker {
             // to the same item is a new revision.
             resetItemRevisionMemo();
 
-            if (LOG_TASKS=== true) $this->logger->log('Processing task: ' . print_r($this->taskData, true), 'DEBUG');
+            if (LOG_TASKS=== true) $this->logger->log('Processing task: ' . $this->taskId . ' (' . $this->processType . ')', 'DEBUG');
 
             // The LAPR master switch is authoritative for tasks that were
             // already queued when an administrator disabled the module.
@@ -1706,7 +1706,7 @@ class TaskWorker {
         // Anonymize arguments for storage
         $arguments = $this->buildCompletionArguments();
 
-        if (LOG_TASKS=== true) $this->logger->log('Process: '.$this->processType.' -- '.print_r($arguments, true), 'DEBUG');
+        if (LOG_TASKS=== true) $this->logger->log('Completed task: ' . $this->taskId . ' (' . $this->processType . ')', 'DEBUG');
 
         // Add 'arguments' only if not empty
         if (!empty($arguments)) {
@@ -1759,18 +1759,31 @@ class TaskWorker {
      * @return void
      */
     private function handleTaskFailure(Throwable $e): void {
+        $errorMessage = $e->getMessage();
+        // Keep only the trait's fixed diagnostics; transport exceptions may echo secrets.
+        if ($this->processType === 'send_email' && !in_array($errorMessage, [
+            'Email delivery failed.',
+            'Email credential could not be decrypted.',
+        ], true)) {
+            $errorMessage = 'Email delivery failed.';
+        }
+        $updateData = [
+            'is_in_progress' => -1,
+            'finished_at' => time(),
+            'status' => 'failed',
+            'error_message' => $errorMessage,
+        ];
+        if ($this->processType === 'send_email') {
+            // As on success, the body and encrypted credential must not outlive the attempt.
+            $updateData['arguments'] = $this->buildCompletionArguments();
+        }
         DB::update(
             prefixTable('background_tasks'),
-            [
-                'is_in_progress' => -1,
-                'finished_at' => time(),
-                'status' => 'failed',
-                'error_message' => $e->getMessage()
-            ],
+            $updateData,
             'increment_id = %i',
             $this->taskId
         );
-        $this->logger->log('Task failure: ' . $e->getMessage(), 'ERROR');
+        $this->logger->log('Task failure: ' . $errorMessage, 'ERROR');
 
         $this->emitItemEncryptionEvent('failed');
 
@@ -1842,7 +1855,7 @@ class TaskWorker {
      * @return void
      */
     private function processSubTasks(array $arguments): void {
-        if (LOG_TASKS=== true) $this->logger->log('processSubTasks: '.print_r($arguments, true), 'DEBUG');
+        if (LOG_TASKS=== true) $this->logger->log('Processing subtasks for task: ' . $this->taskId, 'DEBUG');
         // Get all subtasks related to this task
         $subtasks = DB::query(
             'SELECT * FROM ' . prefixTable('background_subtasks') . ' WHERE task_id = %i AND is_in_progress = 0 ORDER BY `task` ASC',
