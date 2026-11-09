@@ -121,6 +121,14 @@ of inbox delivery or recipient identity. The association's schema is shared by
 fresh installation and the 3.2.4 upgrade; refresh the upgrade floor after rebasing
 onto the final email-modernization merge, before publication.
 
+Invitation subjects carry an optional `#sender_prefix#` token until submission.
+After refreshing settings and checking availability, the worker resolves the
+current public profile under `secure_send_show_sender_name`, strips header control
+characters and replaces the token with the permitted name plus ` — `, or nothing.
+There is no login/email fallback. Custom subjects without the token stay intact;
+custom HTML bodies escape its value. Never freeze a profile name into a queued
+invitation: privacy and profile changes must apply to deferred attempts too.
+
 ## External forwarding
 
 After commit, `secureSendEmitAudit()` forwards the safe row as

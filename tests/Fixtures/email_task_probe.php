@@ -19,6 +19,9 @@ namespace TeampassClasses\EmailService {
         public function sendMail($subject, $body, $receivers, $settings, $alternative, $silent, $cron)
         {
             self::$messages[] = ['body' => $body, 'silent' => $silent, 'cron' => $cron];
+            if ($GLOBALS['secure_send_probe'] ?? false) {
+                self::$messages[array_key_last(self::$messages)]['subject'] = $subject;
+            }
             if ($GLOBALS['argv'][1] === 'unexpected') {
                 throw new \RuntimeException('private-provider-response');
             }
@@ -62,7 +65,8 @@ namespace TeampassClasses\ConfigManager {
         {
             if ($GLOBALS['secure_send_probe'] ?? false) {
                 return ['otv_is_enabled' => $GLOBALS['argv'][1] === 'disabled' ? 0 : 1,
-                    'secure_send_allow_notes' => 1, 'cpassman_url' => 'https://vault.example.test'];
+                    'secure_send_allow_notes' => 1, 'cpassman_url' => 'https://vault.example.test',
+                    'secure_send_show_sender_name' => $GLOBALS['argv'][1] === 'sender-shown' ? 1 : 0];
             }
             return [];
         }
@@ -124,7 +128,7 @@ namespace {
                     'failed_attempts' => 0, 'shared_globaly' => 0, 'has_passphrase' => 0,
                     'address_hash' => hash('sha256', 'https://vault.example.test')];
             }
-            if (str_contains($sql, 'users')) { return ['id' => 42, 'admin' => 0]; }
+            if (str_contains($sql, 'users')) { return ['id' => 42, 'admin' => 0, 'name' => 'R&amp;D', 'lastname' => 'O&#039;Brien']; }
             return null;
         }
 
@@ -207,7 +211,7 @@ namespace {
         $argv[1] = substr($argv[1], strlen('sealed-'));
     }
     $arguments = [
-        'subject' => 'Task test',
+        'subject' => ($GLOBALS['secure_send_probe'] ? '#sender_prefix#' : '') . 'Task test',
         'body' => '<p>Task body</p>',
         'receivers' => 'recipient@example.com',
         'receiver_name' => 'Recipient',

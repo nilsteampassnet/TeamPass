@@ -1283,6 +1283,16 @@ language and a customizable template, without item labels, note content or the
 recipient passphrase. Send that passphrase through a separate channel. Email
 delivery requires an HTTPS sharing address, including for internal links.
 
+The default subject's `#sender_prefix#` token is resolved immediately before
+submission, using the current `secure_send_show_sender_name` setting and the
+sender's decoded first/last name. When enabled and non-empty, it inserts the name
+followed by ` — `; otherwise it inserts nothing. Logins and email addresses never
+serve as fallback identities. The queued payload contains the token rather than
+the profile name, so a disclosure-policy or profile change applies to the next
+attempt. Already submitted mail cannot be recalled by changing that setting.
+Customized subjects retain full control over their text and may omit this
+optional token. If used in a customized HTML body, its value is HTML-escaped.
+
 Each authenticated sender can create at most ten emailed shares per rolling hour.
 Reservations are serialized per account and count pending, accepted and failed
 deliveries. Revocation does not refund that budget. Clipboard-only links do not

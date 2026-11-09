@@ -178,6 +178,20 @@ final class EmailTaskDeliveryTest extends TestCase
         }
     }
 
+    /** The real worker must resolve disclosure policy and the profile after opening the queued payload. */
+    public function testSecureSendWorkerResolvesTheSubjectWithCurrentDisclosurePolicy(): void
+    {
+        foreach (['sender-shown' => 'R&D O\'Brien — Task test', 'sender-hidden' => 'Task test'] as $mode => $subject) {
+            $result = $this->probe('secure-' . $mode, true);
+            self::assertSame('completed', $result['task_updates'][0]['status']);
+            self::assertCount(1, $result['messages']);
+            self::assertSame($subject, $result['messages'][0]['subject']);
+            $metadata = json_encode($result['task_updates']) . json_encode($result['logs']);
+            self::assertStringNotContainsString('O\'Brien', $metadata);
+            self::assertStringNotContainsString('#sender_prefix#', $metadata);
+        }
+    }
+
     /** @return array{failure: ?string, decrypt_calls: int, messages: array, task_updates: array, logs: array} */
     private function probe(string $mode, bool $worker = false): array
     {

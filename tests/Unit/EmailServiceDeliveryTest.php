@@ -61,7 +61,10 @@ final class EmailServiceDeliveryTest extends TestCase
                 ['shared_globaly' => 0, 'time_limit' => 1794849600, 'encrypted' => 'content-canary', 'protected_key' => 'wrapped-canary'],
                 ['default_language' => $locale, 'email_from' => 'team@example.test', 'email_smtp_server' => 'smtp.example.test',
                     'cpassman_url' => 'https://share.example.test/team']);
+            $message = secureSendEmailPersonalize($message, 0, []);
             self::assertSame('', $service->sendMail($message['subject'], $message['body'], $message['receivers'], $settings));
+            self::assertSame($locale === 'french' ? 'Un message sécurisé est disponible dans TeamPass' : 'A secure message is available in TeamPass', $mailer->Subject);
+            self::assertStringNotContainsString('#sender_prefix#', $mailer->getSentMIMEMessage());
             $body = $mailer->attempts[0]['body'];
             self::assertStringContainsString('href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '"', $body);
             foreach (['content-canary', 'wrapped-canary', '#link#', '#expires#'] as $forbidden) {

@@ -374,6 +374,15 @@ The administrator can customize the invitation under **Email templates**. Email
 delivery requires the additive application upgrade described in
 [Email delivery](../install/secure-send.md#email-delivery).
 
+The default email subject starts with the sender's profile name only when
+**Show the sender's profile name** is enabled. Missing names keep the generic
+subject; neither a login nor an email address is used as a fallback. The worker
+reads the current policy and profile before each submission, including a retry.
+Custom subjects can include `#sender_prefix#`, which inserts the permitted name
+followed by ` — `, or nothing when names are hidden or empty. A custom subject
+without that optional token remains unchanged. Names are not embedded when the
+invitation is queued, so turning disclosure off also affects pending invitations.
+
 ---
 
 ## OTP code for Item

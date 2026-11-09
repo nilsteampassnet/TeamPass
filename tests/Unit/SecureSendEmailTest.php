@@ -168,6 +168,91 @@ final class SecureSendEmailTest extends TestCase
         self::assertSame([1 => 'unknown'], secureSendEmailStatuses(42));
     }
 
+    public function testInvitationSubjectIncludesOnlyThePermittedDecodedProfileName(): void
+    {
+        DB::$connection->exec("UPDATE email_test_users SET name='R&amp;D', lastname='O&#039;Brien &quot;Ops&quot; &lt;Guide&gt;' WHERE id=42");
+        foreach (['english' => 'A secure message is available in TeamPass', 'french' => 'Un message sécurisé est disponible dans TeamPass'] as $locale => $generic) {
+            $settings = $this->settings + ['default_language' => $locale];
+            $id = secureSendStoreLink($this->link, $settings, $this->delivery);
+            $taskId = (int) DB::queryFirstField('SELECT task_id FROM email_test_secure_send_email WHERE send_id=%i', $id);
+            $message = emailQueueOpen(json_decode(DB::queryFirstField('SELECT arguments FROM email_test_background_tasks WHERE increment_id=%i', $taskId), true));
+            self::assertStringNotContainsString('O\'Brien', json_encode($message));
+            self::assertSame($generic, secureSendEmailPersonalize($message, $taskId, $settings)['subject']);
+            $named = secureSendEmailPersonalize($message, $taskId, $settings + ['secure_send_show_sender_name' => 1]);
+            self::assertSame('R&D O\'Brien "Ops" <Guide> — ' . $generic, $named['subject']);
+            self::assertStringNotContainsString('R&D', $named['body']);
+            self::assertSame($generic, secureSendEmailPersonalize($message, $taskId, $settings + ['secure_send_show_sender_name' => 0])['subject']);
+        }
+    }
+
+    public function testQueuedInvitationUsesTheCurrentNameAndPolicyOnEveryAttempt(): void
+    {
+        DB::$connection->exec("UPDATE email_test_users SET name='Queued', lastname='Name' WHERE id=42");
+        secureSendStoreLink($this->link, $this->settings + ['secure_send_show_sender_name' => 1], $this->delivery);
+        $message = emailQueueOpen(json_decode(DB::queryFirstField('SELECT arguments FROM email_test_background_tasks'), true));
+        self::assertStringNotContainsString('Queued', json_encode($message));
+        DB::$connection->exec("UPDATE email_test_users SET name='Current', lastname='Profile' WHERE id=42");
+        self::assertSame('Current Profile — A secure message is available in TeamPass',
+            secureSendEmailPersonalize($message, 1, $this->settings + ['secure_send_show_sender_name' => 1])['subject']);
+        self::assertSame('A secure message is available in TeamPass',
+            secureSendEmailPersonalize($message, 1, $this->settings + ['secure_send_show_sender_name' => 0])['subject']);
+        DB::$connection->exec("UPDATE email_test_users SET name='Latest', lastname='Profile' WHERE id=42");
+        self::assertSame('Latest Profile — A secure message is available in TeamPass',
+            secureSendEmailPersonalize($message, 1, $this->settings + ['secure_send_show_sender_name' => 1])['subject']);
+        self::assertSame(0, DB::$connection->querySingle('SELECT views FROM email_test_otv'));
+    }
+
+    public function testEmptyProfilesStayGenericAndCustomSubjectsRemainEditable(): void
+    {
+        secureSendStoreLink($this->link, $this->settings, $this->delivery);
+        $message = emailQueueOpen(json_decode(DB::queryFirstField('SELECT arguments FROM email_test_background_tasks'), true));
+        $settings = $this->settings + ['secure_send_show_sender_name' => 1];
+        self::assertSame('A secure message is available in TeamPass', secureSendEmailPersonalize($message, 1, $settings)['subject']);
+        foreach (['', '  ', '&#10;&#x2028;'] as $emptyName) {
+            DB::query('UPDATE email_test_users SET name=%s, lastname=%s WHERE id=42', $emptyName, '');
+            self::assertSame('A secure message is available in TeamPass', secureSendEmailPersonalize($message, 1, $settings)['subject']);
+        }
+        DB::$connection->exec("UPDATE email_test_users SET name='Visible', lastname='Profile' WHERE id=42");
+        $message['subject'] = 'Administrator custom subject';
+        self::assertSame($message, secureSendEmailPersonalize($message, 1, $settings));
+        $message['subject'] = '#sender_prefix#Custom invitation';
+        self::assertSame('Visible Profile — Custom invitation', secureSendEmailPersonalize($message, 1, $settings)['subject']);
+    }
+
+    public function testProfilePrefixCannotInjectHeadersAndIsEscapedInCustomHtmlBodies(): void
+    {
+        secureSendStoreLink($this->link, $this->settings, $this->delivery);
+        DB::query('UPDATE email_test_users SET name=%s, lastname=%s WHERE id=42', "R&amp;D\r\nBcc: injected@example.test\0", 'O&#039;Brien &quot;Ops&quot; &lt;Guide&gt;');
+        $message = ['subject' => '#sender_prefix#Custom invitation', 'body' => '<p>#sender_prefix#Invitation</p>'];
+        $named = secureSendEmailPersonalize($message, 1, $this->settings + ['secure_send_show_sender_name' => 1]);
+        self::assertSame('R&D Bcc: injected@example.test O\'Brien "Ops" <Guide> — Custom invitation', $named['subject']);
+        self::assertSame(0, preg_match('/[\r\n\x00]/', $named['subject']));
+        self::assertStringContainsString('R&amp;D Bcc: injected@example.test O&#039;Brien &quot;Ops&quot; &lt;Guide&gt; — ', $named['body']);
+        $hidden = secureSendEmailPersonalize($message, 1, $this->settings);
+        self::assertSame(['subject' => 'Custom invitation', 'body' => '<p>Invitation</p>'], $hidden);
+    }
+
+    public function testNamedSubjectSurvivesRealMimeHeaderPreparation(): void
+    {
+        secureSendStoreLink($this->link, $this->settings, $this->delivery);
+        DB::query('UPDATE email_test_users SET name=%s, lastname=%s WHERE id=42', 'Élodie', 'O&#039;Brien');
+        $message = emailQueueOpen(json_decode(DB::queryFirstField('SELECT arguments FROM email_test_background_tasks'), true));
+        $named = secureSendEmailPersonalize($message, 1, $this->settings + ['secure_send_show_sender_name' => 1]);
+        $mailer = new \PHPMailer\PHPMailer\PHPMailer(true);
+        $mailer->CharSet = 'UTF-8';
+        $mailer->setFrom('sender@example.test');
+        $mailer->addAddress('recipient@example.test');
+        $mailer->Subject = $named['subject'];
+        $mailer->isHTML(true);
+        $mailer->Body = $named['body'];
+        self::assertTrue($mailer->preSend());
+        $mime = $mailer->getSentMIMEMessage();
+        $headers = iconv_mime_decode_headers($mime, ICONV_MIME_DECODE_CONTINUE_ON_ERROR, 'UTF-8');
+        self::assertSame($named['subject'], $headers['Subject']);
+        self::assertStringNotContainsString('#sender_prefix#', $mime);
+        self::assertDoesNotMatchRegularExpression('/\r\n(?:Bcc|Cc):/i', $mime);
+    }
+
     /** Run the real creation handler after its existing page/session authorization gate. */
     private function dispatch(array $payload, string $key = 'session-key'): array
     {

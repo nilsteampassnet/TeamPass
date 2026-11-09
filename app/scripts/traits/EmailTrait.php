@@ -54,6 +54,7 @@ trait EmailTrait {
             if (!secureSendEmailCanDeliver($this->taskId, $this->settings)) {
                 throw new RuntimeException('Secure Send is no longer available; email was not submitted.');
             }
+            $arguments = secureSendEmailPersonalize($arguments, $this->taskId, $this->settings);
         }
         // Prepare email properties
         $emailSettings = new EmailSettings($this->settings);
