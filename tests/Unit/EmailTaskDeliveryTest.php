@@ -56,6 +56,14 @@ final class EmailTaskDeliveryTest extends TestCase
             $result = $this->probe($mode, true);
             self::assertCount(1, $result['task_updates']);
             self::assertSame($status, $result['task_updates'][0]['status'], $mode);
+            self::assertSame(
+                ['email' => 'recipient@example.com', 'login' => 'Recipient'],
+                json_decode($result['task_updates'][0]['arguments'], true, 512, JSON_THROW_ON_ERROR),
+                $mode
+            );
+            foreach (['body', 'subject', 'encryptedUserPassword', 'valid-ciphertext', 'invalid-ciphertext'] as $sensitive) {
+                self::assertStringNotContainsString($sensitive, $result['task_updates'][0]['arguments'], $mode);
+            }
             $diagnostics = json_encode($result['logs']) . $result['task_updates'][0]['error_message'];
             foreach (['Task test', '<p>Task body</p>', 'temporary-password', 'valid-ciphertext', 'invalid-ciphertext', 'private-provider-response'] as $sensitive) {
                 self::assertStringNotContainsString($sensitive, $diagnostics, $mode);

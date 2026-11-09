@@ -32,8 +32,11 @@ an empty credential.
 
 Task diagnostics contain task identifiers and types, without dumping their
 arguments. Email failures store a generic failure message; use the administrator's
-test to diagnose the current relay configuration. Failed task arguments remain in
-the database for investigation, so database access must remain restricted.
+test to diagnose the current relay configuration. Completed and failed email tasks
+retain only the recipient and login; message bodies and encrypted credentials are
+removed when the attempt ends. Old failed tasks are purged after the configured
+task-history retention period, including tasks without subtasks. Database access
+must remain restricted because recipient metadata is still retained until purge.
 
 These fixes do not add automatic retries. After an interrupted or partially
 accepted SMTP transaction, check the relay before sending again: some recipients

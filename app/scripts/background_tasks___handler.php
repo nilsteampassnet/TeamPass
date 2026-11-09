@@ -1034,10 +1034,10 @@ class BackgroundTasksHandler {
             time() - $this->maxExecutionTime
         );
 
-        // Remove very old failed tasks
+        // Remove very old failed tasks, including email tasks that have no subtasks.
         DB::query(
             'DELETE t, st FROM ' . prefixTable('background_tasks') . ' t
-            INNER JOIN ' . prefixTable('background_subtasks') . ' st ON (t.increment_id = st.task_id)
+            LEFT JOIN ' . prefixTable('background_subtasks') . ' st ON (t.increment_id = st.task_id)
             WHERE t.finished_at > 0
               AND t.finished_at < %i
               AND t.status = %s',

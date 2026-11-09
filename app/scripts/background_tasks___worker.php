@@ -1761,14 +1761,19 @@ class TaskWorker {
     private function handleTaskFailure(Throwable $e): void {
         // Email transport exceptions can contain a provider-echoed message or credential.
         $errorMessage = $this->processType === 'send_email' ? 'Email delivery failed.' : $e->getMessage();
+        $updateData = [
+            'is_in_progress' => -1,
+            'finished_at' => time(),
+            'status' => 'failed',
+            'error_message' => $errorMessage,
+        ];
+        if ($this->processType === 'send_email') {
+            // As on success, the body and encrypted credential must not outlive the attempt.
+            $updateData['arguments'] = $this->buildCompletionArguments();
+        }
         DB::update(
             prefixTable('background_tasks'),
-            [
-                'is_in_progress' => -1,
-                'finished_at' => time(),
-                'status' => 'failed',
-                'error_message' => $errorMessage
-            ],
+            $updateData,
             'increment_id = %i',
             $this->taskId
         );
