@@ -11601,6 +11601,32 @@ function getUserRoles(int $userId, ?string $source = null): array
 // Users Favorites
 // ----------------------
 /**
+ * Tell whether a user may bookmark an item.
+ *
+ * Same predicate as the Favourites list and the Quick access "starred" tab:
+ * active item, readable folder, per-item user and role restrictions.
+ *
+ * @param int $userId User adding the bookmark.
+ * @param int $itemId Item to bookmark.
+ *
+ * @return bool True when the item may be bookmarked.
+ */
+function favouriteItemIsReadable(int $userId, int $itemId): bool
+{
+    if ($userId <= 0 || $itemId <= 0) {
+        return false;
+    }
+
+    return DB::queryFirstField(
+        'SELECT i.id FROM ' . prefixTable('items') . ' AS i
+        WHERE i.id = %i AND i.inactif = %i
+            AND ' . securityPostureItemAccessSql($userId, 'i'),
+        $itemId,
+        0
+    ) !== null;
+}
+
+/**
  * Add an item to user's favorites
  */
 function addUserFavorite(int $userId, int $itemId): void

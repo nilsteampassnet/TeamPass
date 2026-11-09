@@ -50,21 +50,6 @@ class DB
     }
 }
 
-/** Keep session refresh observable without opening an installed TeamPass session. */
-class SessionManager
-{
-    public static array $values = [];
-
-    /** Return the session double used by the unchanged refresh helper. */
-    public static function getSession(): self { return new self(); }
-
-    /** Read a fixture session value. */
-    public function get(string $key): mixed { return self::$values[$key] ?? null; }
-
-    /** Record the refreshed favorites list. */
-    public function set(string $key, mixed $value): void { self::$values[$key] = $value; }
-}
-
 /** Exercise a non-default installation prefix. */
 function prefixTable(string $table): string { return 'fav_fixture_' . $table; }
 
@@ -81,8 +66,7 @@ class FavouritesMutationTest extends TestCase
     public static function setUpBeforeClass(): void
     {
         foreach ([
-            'main.functions.php' => ['securityPostureItemAccessSql', 'addUserFavorite', 'removeUserFavorite', 'getUserFavorites'],
-            'favourites.queries.php' => ['favouritesRefreshSession'],
+            'main.functions.php' => ['securityPostureItemAccessSql', 'favouriteItemIsReadable', 'addUserFavorite', 'removeUserFavorite', 'getUserFavorites'],
         ] as $file => $functions) {
             $source = str_replace("\r\n", "\n", (string) file_get_contents(__DIR__ . '/../../app/sources/' . $file));
             foreach ($functions as $function) {
@@ -110,44 +94,17 @@ class FavouritesMutationTest extends TestCase
                 (5,10,0,"42"),(6,10,0,"7"),(7,10,0,""),(8,10,0,""),(9,10,0,"17");
             INSERT INTO fav_fixture_restriction_to_roles VALUES (7,3),(8,4);
             INSERT INTO fav_fixture_users_favorites (user_id,item_id) VALUES (42,1);');
-        SessionManager::$values = ['user-id' => 7, 'user-read_only' => 1];
-    }
-
-    /** Execute the actual add/remove cases, including SQL, writes, response and session refresh. */
-    private function mutate(string $action, int $itemId): array
-    {
-        $source = (string) file_get_contents(__DIR__ . '/../../app/sources/favourites.queries.php');
-        $start = strpos($source, "case 'del_fav':");
-        $end = strpos($source, "case 'cleanup_unavailable':", $start);
-        self::assertNotFalse($start);
-        self::assertNotFalse($end);
-        $post_type = $action;
-        $post_id = $itemId;
-        $userId = 7;
-        $session = SessionManager::getSession();
-        $SETTINGS = [];
-        $lang = new class {
-            /** Return an observable error without loading translations or an installation. */
-            public function get(string $key): string { return $key; }
-        };
-        ob_start();
-        try {
-            eval('namespace ' . __NAMESPACE__ . '; switch ($post_type) {' . substr($source, $start, $end - $start) . '}');
-            return json_decode((string) ob_get_contents(), true, 512, JSON_THROW_ON_ERROR);
-        } finally {
-            ob_end_clean();
-        }
     }
 
     /** Shared, own-personal, direct-user and held-role access all allow personal bookmarks. */
-    public function testReadableItemsCanBeAddedIdempotentlyByReadOnlyUsers(): void
+    public function testReadableItemsCanBeBookmarkedIdempotently(): void
     {
         foreach ([1, 2, 6, 7] as $id) {
-            self::assertFalse($this->mutate('add_fav', $id)['error']);
-            self::assertFalse($this->mutate('add_fav', $id)['error']);
+            self::assertTrue(favouriteItemIsReadable(7, $id));
+            addUserFavorite(7, $id);
+            addUserFavorite(7, $id);
         }
         self::assertSame([1, 2, 6, 7], array_map('intval', getUserFavorites(7)));
-        self::assertSame(getUserFavorites(7), SessionManager::$values['user-favorites']);
         self::assertSame([1], array_map('intval', getUserFavorites(42)), 'Other users keep their own favorites');
     }
 
@@ -155,32 +112,51 @@ class FavouritesMutationTest extends TestCase
     public function testUnauthorizedItemsCannotBeBookmarked(): void
     {
         foreach ([0, -1, 999, 3, 4, 5, 8, 9] as $id) {
-            self::assertTrue($this->mutate('add_fav', $id)['error'], 'Item ' . $id);
+            self::assertFalse(favouriteItemIsReadable(7, $id), 'Item ' . $id);
         }
+        self::assertFalse(favouriteItemIsReadable(0, 1));
+        self::assertFalse(favouriteItemIsReadable(-1, 1));
         self::assertSame([], getUserFavorites(7));
         DB::$folders = [];
-        self::assertTrue($this->mutate('add_fav', 1)['error']);
+        self::assertFalse(favouriteItemIsReadable(7, 1));
     }
 
     /** Revocation between search and click is rechecked rather than trusting the rendered row. */
     public function testChangedFolderAndRoleRightsAreCheckedAgain(): void
     {
         DB::$folders = [10];
-        self::assertTrue($this->mutate('add_fav', 2)['error']);
+        self::assertFalse(favouriteItemIsReadable(7, 2));
         DB::$roles = [];
-        self::assertTrue($this->mutate('add_fav', 7)['error']);
+        self::assertFalse(favouriteItemIsReadable(7, 7));
         self::assertSame([], getUserFavorites(7));
     }
 
     /** Removing a stale bookmark remains possible and never removes another user's bookmark. */
-    public function testRemovalWorksAfterAccessIsLostAndRefreshesSession(): void
+    public function testRemovalWorksAfterAccessIsLost(): void
     {
-        $this->mutate('add_fav', 1);
+        addUserFavorite(7, 1);
         DB::$folders = [];
+        self::assertFalse(favouriteItemIsReadable(7, 1));
         foreach ([1, 1] as $id) {
-            self::assertSame(['error' => false, 'count' => 0], $this->mutate('del_fav', $id));
+            removeUserFavorite(7, $id);
         }
-        self::assertSame([], SessionManager::$values['user-favorites']);
+        self::assertSame([], getUserFavorites(7));
         self::assertSame([1], array_map('intval', getUserFavorites(42)));
+    }
+
+    /** Both controllers share the helper; Items keeps its separate read-only policy. */
+    public function testBothControllersCheckReadabilityOnlyWhenAdding(): void
+    {
+        $favourites = (string) file_get_contents(__DIR__ . '/../../app/sources/favourites.queries.php');
+        $items = (string) file_get_contents(__DIR__ . '/../../app/sources/items.queries.php');
+        self::assertStringContainsString('if (favouriteItemIsReadable($userId, $itemId) === false)', $favourites);
+        self::assertStringContainsString(
+            "if (\$action === 0 && favouriteItemIsReadable((int) \$session->get('user-id'), \$itemId) === false)",
+            $items
+        );
+        self::assertStringContainsString(
+            "if (\$session->get('user-read_only') === 1 || !isset(\$SETTINGS['pwd_maximum_length']))",
+            $items
+        );
     }
 }

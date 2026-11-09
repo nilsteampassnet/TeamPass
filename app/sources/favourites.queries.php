@@ -280,13 +280,7 @@ if (null !== $post_type) {
          */
         case 'add_fav':
             $itemId = (int) $post_id;
-            if ($itemId <= 0 || DB::queryFirstField(
-                'SELECT i.id FROM ' . prefixTable('items') . ' AS i
-                WHERE i.id = %i AND i.inactif = %i
-                    AND ' . securityPostureItemAccessSql($userId, 'i'),
-                $itemId,
-                0
-            ) === null) {
+            if (favouriteItemIsReadable($userId, $itemId) === false) {
                 echo json_encode([
                     'error' => true,
                     'message' => $lang->get('error_not_allowed_to_access_this_folder'),
