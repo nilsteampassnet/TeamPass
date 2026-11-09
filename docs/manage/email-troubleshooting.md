@@ -44,10 +44,9 @@ arguments. Email failures distinguish `Email delivery failed.` from
 (`SECUREFILE`) or encrypted credential, before the relay is contacted. The test
 email can succeed in that situation because it has no queued credential to decrypt.
 Use the administrator's test to diagnose the current relay configuration. Unknown
-exceptions are replaced with the generic delivery message. Completed and failed
-email tasks
-retain only the recipient and login; message bodies and encrypted credentials are
-removed when the attempt ends. Old failed tasks are purged after the configured
+exceptions are replaced with the generic delivery message. When the worker records
+completion or failure, email task arguments retain only the recipient and login;
+message bodies and encrypted credentials are removed. Old failed tasks are purged after the configured
 task-history retention period, including tasks without subtasks. Database access
 must remain restricted because recipient metadata is still retained until purge.
 
