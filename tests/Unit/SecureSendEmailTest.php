@@ -223,5 +223,6 @@ final class SecureSendEmailTest extends TestCase
             self::assertStringContainsString('secureSendEmailSchemaSql(', file_get_contents($root . '/' . $file));
         }
         self::assertGreaterThan(1794218153, (int) UPGRADE_MIN_DATE);
+        self::assertLessThanOrEqual(time(), (int) UPGRADE_MIN_DATE, 'A future floor would require repeated upgrades on fresh installations.');
     }
 }
