@@ -638,6 +638,10 @@ if ($massOperationEnabled === true && count($rows) > 0 && count($userRoleIds) > 
 $classificationLabels = [1 => 'public', 2 => 'internal', 3 => 'confidential', 4 => 'restricted'];
 $classificationColours = [1 => 'success', 2 => 'info', 3 => 'warning', 4 => 'danger'];
 
+$canManageFavourites = $featureFavourites && (int) $session->get('user-admin') !== 1;
+// Read the current user's bookmarks once, independently of the session cache.
+$favouriteIds = $canManageFavourites ? array_fill_keys(array_map('intval', getUserFavorites($userId)), true) : [];
+
 $data = [];
 foreach ($rows as $record) {
     $itemId = (int) $record['id'];
@@ -675,8 +679,12 @@ foreach ($rows as $record) {
     }
     $actions .= '<button type="button" class="search-row-action infotip" data-action="password" title="'
         . htmlspecialchars($lang->get('favorites_copy_password'), ENT_QUOTES, 'UTF-8')
-        . '"><i class="fa-solid fa-key" aria-hidden="true"></i></button>'
-        . '<button type="button" class="search-row-action infotip" data-action="open" title="'
+        . '"><i class="fa-solid fa-key" aria-hidden="true"></i></button>';
+    if ($canManageFavourites) {
+        $isFavourite = isset($favouriteIds[$itemId]);
+        $actions .= searchFavouriteActionHtml($isFavourite, $lang->get($isFavourite ? 'unfavorite' : 'favorite'));
+    }
+    $actions .= '<button type="button" class="search-row-action infotip" data-action="open" title="'
         . htmlspecialchars($lang->get('favorites_open_item'), ENT_QUOTES, 'UTF-8')
         . '"><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></button>'
         . '</div>';

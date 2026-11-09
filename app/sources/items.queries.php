@@ -6217,9 +6217,8 @@ switch ($inputData['type']) {
         $action = (int) filter_var($dataReceived['action'], FILTER_SANITIZE_NUMBER_INT);
         $itemId = (int) filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
 
-        // Verify the current user can access this item's folder.
-        $granted = accessToItemIsGranted($itemId, $SETTINGS);
-        if ($granted !== true) {
+        // Recheck item access when adding; stale bookmarks can always be removed.
+        if ($action === 0 && favouriteItemIsReadable((int) $session->get('user-id'), $itemId) === false) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
