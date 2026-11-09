@@ -185,6 +185,7 @@ if (function_exists('emailsTemplatesSampleValues') === false) {
             // Items
             '#label#' => 'Production database',
             '#link#' => $url . '/index.php?page=items&group=12&id=345',
+            '#expires#' => $datetime,
             '#item_label#' => 'Production database',
             '#item_id#' => '345',
             '#item_category#' => '12',
