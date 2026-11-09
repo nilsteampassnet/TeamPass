@@ -45,8 +45,11 @@ decrypted.` for credential failures. This points to the instance key
 email can succeed in that situation because it has no queued credential to decrypt.
 Use the administrator's test to diagnose the current relay configuration. Unknown
 exceptions are replaced with the generic delivery message. When the worker records
-completion or final failure, arguments are replaced with outcome metadata rather
-than message bodies or encrypted credentials. Deferred attempts keep their payload
+completion or final failure, arguments retain the outcome plus only `email` and
+`login` for the user column in **Logs → Tasks**. These fields are captured after
+opening the payload; subject, body and encrypted credentials are removed. If the
+payload cannot be opened, its recipient cannot be recovered for the log.
+Deferred attempts keep their payload
 for the scheduled retry. New queued payloads are encrypted with the instance key;
 historical arguments can remain plaintext until processed, so database access must
 remain restricted. Old failed tasks are purged after the configured task-history

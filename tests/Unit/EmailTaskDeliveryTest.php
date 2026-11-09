@@ -73,10 +73,12 @@ final class EmailTaskDeliveryTest extends TestCase
                 self::assertArrayNotHasKey('arguments', $result['task_updates'][0]);
             } else {
                 self::assertSame(
-                    $status === 'completed' ? ['accepted' => true] : ['failed' => true],
+                    ($status === 'completed' ? ['accepted' => true] : ['failed' => true])
+                        + ['email' => 'recipient@example.com', 'login' => 'Recipient'],
                     json_decode($result['task_updates'][0]['arguments'], true, 512, JSON_THROW_ON_ERROR),
                     $mode
                 );
+                self::assertSame('Recipient', $result['display_user'], $mode);
                 foreach (['body', 'subject', 'encryptedUserPassword', 'valid-ciphertext', 'invalid-ciphertext'] as $sensitive) {
                     self::assertStringNotContainsString($sensitive, $result['task_updates'][0]['arguments'], $mode);
                 }
@@ -86,6 +88,7 @@ final class EmailTaskDeliveryTest extends TestCase
                 self::assertStringNotContainsString($sensitive, $diagnostics, $mode);
             }
             self::assertStringContainsString('123 (send_email)', implode('\n', $result['logs']));
+            self::assertStringNotContainsString('recipient@example.com', implode('\n', $result['logs']));
         }
     }
 
@@ -105,14 +108,16 @@ final class EmailTaskDeliveryTest extends TestCase
         }
     }
 
-    /** Completion records acceptance without reading envelope fields or retaining recipient identities. */
+    /** Completion keeps only its outcome and the fields needed by the actual Tasks log renderer. */
     public function testEncryptedAndLegacyTasksCompleteWithPrivateMetadataOnly(): void
     {
         foreach (['accepted', 'sealed'] as $mode) {
             $result = $this->probe($mode, true);
-            self::assertSame(['accepted' => true], json_decode($result['task_updates'][0]['arguments'], true));
+            self::assertSame(['accepted' => true, 'email' => 'recipient@example.com', 'login' => 'Recipient'],
+                json_decode($result['task_updates'][0]['arguments'], true));
+            self::assertSame('Recipient', $result['display_user']);
             $metadata = json_encode($result['task_updates']) . json_encode($result['logs']);
-            foreach (['recipient@example.com', 'Recipient', 'Task body', 'def50200cafe'] as $sensitive) {
+            foreach (['Task body', 'def50200cafe'] as $sensitive) {
                 self::assertStringNotContainsString($sensitive, $metadata);
             }
         }
@@ -125,9 +130,11 @@ final class EmailTaskDeliveryTest extends TestCase
             $result = $this->probe('sealed-' . $mode, true);
             $update = $result['task_updates'][0];
             self::assertSame('failed', $update['status']);
-            self::assertSame(['failed' => true], json_decode($update['arguments'], true, 512, JSON_THROW_ON_ERROR));
+            self::assertSame(['failed' => true, 'email' => 'recipient@example.com', 'login' => 'Recipient'],
+                json_decode($update['arguments'], true, 512, JSON_THROW_ON_ERROR));
+            self::assertSame('Recipient', $result['display_user']);
             $metadata = json_encode($result['task_updates']) . json_encode($result['logs']);
-            foreach (['recipient@example.com', 'Recipient', 'Task body', 'def50200cafe', 'invalid-ciphertext'] as $sensitive) {
+            foreach (['Task body', 'def50200cafe', 'invalid-ciphertext'] as $sensitive) {
                 self::assertStringNotContainsString($sensitive, $metadata);
             }
             if ($mode === 'invalid') {
@@ -137,6 +144,22 @@ final class EmailTaskDeliveryTest extends TestCase
         $deferred = $this->probe('sealed-throttled', true)['task_updates'][0];
         self::assertSame('queued', $deferred['status']);
         self::assertArrayNotHasKey('arguments', $deferred);
+    }
+
+    /** The Tasks user column falls back to the email if no receiver name was supplied. */
+    public function testTaskLogCanDisplayAnUnnamedRecipient(): void
+    {
+        $result = $this->probe('unnamed', true);
+        self::assertSame('recipient@example.com', $result['display_user']);
+    }
+
+    /** An envelope that cannot be opened provides no recipient metadata to retain. */
+    public function testInvalidEnvelopeDoesNotRetainItsPayload(): void
+    {
+        $result = $this->probe('payload-invalid', true);
+        self::assertSame('failed', $result['task_updates'][0]['status']);
+        self::assertSame(['failed' => true], json_decode($result['task_updates'][0]['arguments'], true));
+        self::assertSame([], $result['messages']);
     }
 
     /** @return array{failure: ?string, decrypt_calls: int, messages: array, task_updates: array, logs: array} */

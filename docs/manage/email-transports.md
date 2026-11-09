@@ -175,6 +175,9 @@ New background email arguments contain a versioned encrypted envelope. Historica
 tasks remain readable until drained. Tokens and provider credentials never enter
 task arguments. Completed/failed task retention follows existing TeamPass policy;
 restrict database and backup access because historical arguments can be plaintext.
+When the worker records completion or terminal failure, only the outcome and
+`email`/`login` remain, so **Logs → Tasks** can identify the recipient without
+retaining the subject, body, encrypted credential or envelope.
 
 Confirmed transient failures can defer the same task for at most three attempts.
 The minimum backoff is 30 then 60 seconds; a longer `Retry-After` is preserved.

@@ -32,12 +32,20 @@ use TeampassClasses\EmailService\EmailSettings;
 require_once __DIR__ . '/../../sources/emails_queue_logic.php';
 
 trait EmailTrait {
+    /** @var array{email?: string, login?: string} Recipient display metadata, never message content. */
+    private array $emailTaskRecipients = [];
+
     /**
      * Envoie un email
      * @param array $arguments Arguments nécessaires pour l'envoi d'email
      */
     private function sendEmail($arguments) {
+        $this->emailTaskRecipients = [];
         $arguments = emailQueueOpen($arguments);
+        $this->emailTaskRecipients = [
+            'email' => $arguments['receivers'],
+            'login' => (string) ($arguments['receiver_name'] ?? ''),
+        ];
         // Prepare email properties
         $emailSettings = new EmailSettings($this->settings);
         $emailService = new EmailService();

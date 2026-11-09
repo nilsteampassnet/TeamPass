@@ -106,6 +106,12 @@ namespace {
         /** The real worker increments its attempt before submitting the message. */
         public static function query(string $sql, mixed ...$arguments): array { return []; }
 
+        /** Unknown recipients fall back to their email in the real Tasks log renderer. */
+        public static function queryFirstRow(string $sql, mixed ...$arguments): ?array { return null; }
+
+        /** This fixture has no matching application user. */
+        public static function count(): int { return 0; }
+
         /** Record writes, including the task's actual final status and error. */
         public static function update($table, $values, $where, $id): void
         {
@@ -190,9 +196,15 @@ namespace {
         $arguments['body'] = '<p>#password#</p>';
         $arguments['encryptedUserPassword'] = $argv[1] === 'invalid' ? 'invalid-ciphertext' : 'valid-ciphertext';
     }
+    if ($argv[1] === 'unnamed') {
+        $arguments['receiver_name'] = '';
+    }
     if ($argv[1] === 'sealed' || $sealedFailure) {
         $GLOBALS['email_probe_plain_message'] = $arguments;
         $arguments = ['email_payload_version' => 1, 'ciphertext' => 'def50200cafe'];
+    }
+    if ($argv[1] === 'payload-invalid') {
+        $arguments = ['email_payload_version' => 1, 'ciphertext' => 'def50200dead'];
     }
 
     $failure = null;
@@ -209,11 +221,23 @@ namespace {
         $failure = $e->getMessage();
     }
 
+    $displayUser = null;
+    if (isset(DB::$updates[0]['arguments'])) {
+        require_once dirname(__DIR__, 2) . '/app/sources/log_display_logic.php';
+        $source = str_replace("\r\n", "\n", (string) file_get_contents(dirname(__DIR__, 2) . '/app/sources/logs.datatables.php'));
+        if (preg_match('/function resolveBackgroundTaskUserDisplay\(array \$arguments, string \$processType\): string\s*\{.*?\n\}/s', $source, $match) !== 1) {
+            throw new RuntimeException('Missing Tasks log recipient resolver.');
+        }
+        // Run the production display logic without its HTTP/session/database bootstrap.
+        eval($match[0]);
+        $displayUser = resolveBackgroundTaskUserDisplay(json_decode(DB::$updates[0]['arguments'], true), 'send_email');
+    }
     echo json_encode([
         'failure' => $failure,
         'decrypt_calls' => $GLOBALS['decrypt_calls'],
         'messages' => \TeampassClasses\EmailService\EmailService::$messages,
         'task_updates' => DB::$updates,
         'logs' => TaskLogger::$entries,
+        'display_user' => $displayUser,
     ], JSON_THROW_ON_ERROR);
 }

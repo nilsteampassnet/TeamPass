@@ -1599,10 +1599,9 @@ class TaskWorker {
     {
         if ($this->processType === 'send_email') {
             return (string) json_encode([
-                // The input may be an encrypted envelope. Do not reopen it or persist
-                // recipient identities just to record completion.
+                // Recipients were captured after opening the envelope; never reopen it for logging.
                 'accepted' => true,
-            ]);
+            ] + $this->emailTaskRecipients);
         }
 
         if ($this->processType === 'create_user_keys' || $this->processType === 'migrate_user_personal_items') {
@@ -1793,7 +1792,7 @@ class TaskWorker {
         ];
         if ($this->processType === 'send_email') {
             // Drop terminal payloads without claiming provider acceptance for an ambiguous send.
-            $updateData['arguments'] = (string) json_encode(['failed' => true]);
+            $updateData['arguments'] = (string) json_encode(['failed' => true] + $this->emailTaskRecipients);
         }
         DB::update(
             prefixTable('background_tasks'),
