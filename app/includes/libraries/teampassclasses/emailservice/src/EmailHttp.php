@@ -13,6 +13,7 @@ namespace TeampassClasses\EmailService;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
+use GuzzleHttp\Psr7\Uri;
 use Psr\Http\Message\ResponseInterface;
 
 /** Shared HTTP protections for fixed email-provider endpoints. */
@@ -28,6 +29,21 @@ final class EmailHttp
     public static function options(EmailSettings $settings, #[\SensitiveParameter] array $options = []): array
     {
         $timeout = max(1, min(60, (int) $settings->timeout));
+        if ($settings->proxyIp !== '') {
+            $proxy = $settings->proxyIp;
+            if (filter_var($proxy, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false) {
+                $proxy = '[' . $proxy . ']';
+            }
+            $uri = new Uri(str_contains($proxy, '://') ? $proxy : 'http://' . $proxy);
+            if ($settings->proxyPort !== '') {
+                $port = filter_var($settings->proxyPort, FILTER_VALIDATE_INT);
+                if ($port === false || $port < 1 || $port > 65535) {
+                    throw new \InvalidArgumentException('configuration');
+                }
+                $uri = $uri->withPort($port);
+            }
+            $options['proxy'] = (string) $uri;
+        }
         return array_merge($options, [
             'verify' => true, 'allow_redirects' => false, 'http_errors' => false,
             'debug' => false, 'stream' => true,

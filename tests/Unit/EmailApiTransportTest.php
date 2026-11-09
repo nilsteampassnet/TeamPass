@@ -25,6 +25,25 @@ use TeampassClasses\EmailService\MicrosoftSmtpOAuthProvider;
 
 final class EmailApiTransportTest extends TestCase
 {
+    /** Both API transports send through the same global proxy as token acquisition. */
+    public function testApiRequestsUseTheConfiguredProxy(): void
+    {
+        foreach (['microsoft_graph', 'gmail_api'] as $provider) {
+            $settings = $this->settings($provider);
+            $settings->proxyIp = 'proxy.example.test';
+            $settings->proxyPort = '3128';
+            $history = [];
+            $tokens = $this->createMock(EmailAccessTokenProviderInterface::class);
+            $tokens->method('getAccessToken')->willReturn('private-token');
+            $response = $provider === 'microsoft_graph' ? new Response(202) : new Response(200, [], '{"id":"18ab9"}');
+            $transport = new ApiTransport($settings, $tokens, $this->client([$response], $history));
+            self::assertTrue($transport->send($this->message())->accepted);
+            self::assertSame('http://proxy.example.test:3128', $history[0]['options']['proxy']);
+            self::assertTrue($history[0]['options']['verify']);
+            self::assertFalse($history[0]['options']['allow_redirects']);
+        }
+    }
+
     private function settings(string $transport): EmailSettings
     {
         $settings = new EmailSettings(['email_transport' => $transport]);

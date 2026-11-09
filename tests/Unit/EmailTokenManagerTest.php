@@ -53,6 +53,33 @@ final class EmailMemoryTokenStore implements EmailTokenStoreInterface
 
 final class EmailTokenManagerTest extends TestCase
 {
+    /** Token acquisition for both Microsoft audiences follows the global proxy. */
+    public function testMicrosoftTokenRequestsUseTheConfiguredProxy(): void
+    {
+        foreach (['microsoft_graph', 'microsoft_smtp'] as $purpose) {
+            $settings = $this->settings();
+            $settings->proxyIp = 'proxy.example.test';
+            $settings->proxyPort = '8080';
+            $history = [];
+            $manager = new EmailTokenManager($settings, $purpose, new EmailMemoryTokenStore(), $this->client([$this->token()], $history));
+            self::assertSame('access-token', $manager->getAccessToken());
+            self::assertSame('http://proxy.example.test:8080', $history[0]['options']['proxy']);
+            self::assertTrue($history[0]['options']['verify']);
+            self::assertFalse($history[0]['options']['debug']);
+        }
+    }
+
+    /** Preserve URI proxies and IPv6, without overriding environment proxies when unset. */
+    public function testProxyOptionsPreserveSupportedAddresses(): void
+    {
+        $settings = new EmailSettings([]);
+        self::assertArrayNotHasKey('proxy', EmailHttp::options($settings));
+        foreach ([['2001:db8::1', '3128', 'http://[2001:db8::1]:3128'], ['http://proxy.example.test:8080', '', 'http://proxy.example.test:8080']] as [$host, $port, $expected]) {
+            $settings = new EmailSettings(['proxy_ip' => $host, 'proxy_port' => $port]);
+            self::assertSame($expected, EmailHttp::options($settings)['proxy']);
+        }
+    }
+
     private function settings(): EmailSettings
     {
         $settings = new EmailSettings([]);

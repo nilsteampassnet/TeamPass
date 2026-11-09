@@ -56,6 +56,11 @@ provider's delivery tools. Use fictitious content for tests.
 
 ## SMTP relays
 
+OAuth token requests (including SMTP XOAUTH2), Microsoft Graph and Gmail API
+requests use the global `proxy_ip` / `proxy_port` settings when configured.
+HTTPS certificate verification remains enabled through the proxy. SMTP relay
+connections themselves still use a direct SMTP socket.
+
 Choose **SMTP relay**, then no authentication or username/password. Keep the
 existing relay host, port and encryption combination; internal DNS names and IP
 addresses are supported. STARTTLS and implicit TLS remain separate choices.

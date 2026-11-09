@@ -69,6 +69,8 @@ class EmailSettings
     public string $googleClientId;
     public string $googleClientSecret;
     public string $googleSender;
+    public string $proxyIp;
+    public string $proxyPort;
 
     /**
      * Whether the TLS certificate of the SMTP server is verified (chain and host name).
@@ -89,6 +91,8 @@ class EmailSettings
         $this->microsoftMailbox = (string) ($SETTINGS['email_microsoft_mailbox'] ?? '');
         $this->googleClientId = (string) ($SETTINGS['email_google_client_id'] ?? '');
         $this->googleSender = (string) ($SETTINGS['email_google_sender'] ?? '');
+        $this->proxyIp = trim((string) ($SETTINGS['proxy_ip'] ?? ''));
+        $this->proxyPort = trim((string) ($SETTINGS['proxy_port'] ?? ''));
         $this->microsoftClientSecret = $this->readProviderSecret($SETTINGS, 'email_microsoft_client_secret');
         $this->googleClientSecret = $this->readProviderSecret($SETTINGS, 'email_google_client_secret');
         $this->smtpServer = $SETTINGS['email_smtp_server'] ?? '';
