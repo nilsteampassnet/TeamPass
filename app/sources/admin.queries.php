@@ -1511,6 +1511,20 @@ switch ($post_type) {
             $post_data,
             'decode'
         );
+
+        require_once __DIR__ . '/emails_transport_logic.php';
+        if (in_array($dataReceived['field'] ?? '', emailTransportSettingNames(), true)) {
+            echo prepareExchangedData(['error' => true, 'message' => $lang->get('email_profile_save_required')], 'encode');
+            break;
+        }
+
+        // Diagnostics are independent of the transport revision and OAuth consent.
+        if (($dataReceived['field'] ?? null) === 'email_debug_level'
+            && !in_array($dataReceived['value'] ?? null, ['0', '1', '2', '3', '4', 0, 1, 2, 3, 4], true)
+        ) {
+            echo prepareExchangedData(['error' => true, 'message' => $lang->get('email_transport_error_configuration')], 'encode');
+            break;
+        }
         
         if (($dataReceived['field'] ?? null) === 'device_pairing_token_lifetime_days') {
             require_once __DIR__ . '/api_device_logic.php';

@@ -1176,6 +1176,7 @@ class BackgroundTasksHandler {
             FROM ' . prefixTable('background_tasks') . '
             WHERE is_in_progress = 0
             AND (finished_at IS NULL OR finished_at = "")
+            AND next_attempt_at <= UNIX_TIMESTAMP()
             ORDER BY increment_id ASC
             LIMIT %i',
             $this->batchSize
@@ -1346,6 +1347,12 @@ class BackgroundTasksHandler {
         $taskId = (int) $entry['task']['increment_id'];
 
         if ($process->isSuccessful()) {
+            if ((string) $entry['task']['process_type'] === 'send_email') {
+                $emailStatus = DB::queryFirstField('SELECT status FROM ' . prefixTable('background_tasks') . ' WHERE increment_id = %i', $taskId);
+                $emailStatus = in_array($emailStatus, ['completed', 'queued', 'failed'], true) ? $emailStatus : 'unknown';
+                if (LOG_TASKS === true) $this->logger->log('Email task ' . $taskId . ' status: ' . $emailStatus, 'INFO');
+                return;
+            }
             if (LOG_TASKS === true) $this->logger->log('Task ' . $taskId . ' completed successfully', 'INFO');
             return;
         }
@@ -1381,6 +1388,10 @@ class BackgroundTasksHandler {
      * @param string $message Error message.
      */
     private function markTaskFailed(int $taskId, string $message): void {
+        $failedProcessType = DB::queryFirstField('SELECT process_type FROM ' . prefixTable('background_tasks') . ' WHERE increment_id = %i', $taskId);
+        if ($failedProcessType === 'send_email') {
+            $message = 'Email delivery interrupted; acceptance is unknown. Check the provider before resending.';
+        }
         DB::update(
             prefixTable('background_tasks'),
             [
@@ -1445,7 +1456,8 @@ class BackgroundTasksHandler {
             'SELECT COUNT(*)
             FROM ' . prefixTable('background_tasks') . '
             WHERE is_in_progress = 0
-            AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)'
+            AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)
+            AND next_attempt_at <= UNIX_TIMESTAMP()'
         ));
     }
 

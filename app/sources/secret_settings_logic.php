@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Admin settings that hold a credential: the LDAP bind password and the SMTP password.
+ * Admin settings that hold LDAP, SMTP or email-provider credentials.
  *
  * They are stored in teampass_misc encrypted with the instance key (is_encrypted = 1),
  * decrypted only where they are used, and never rendered back into a page: on save, a blank
@@ -19,7 +19,7 @@ declare(strict_types=1);
  */
 function tpSecretSettingNames(): array
 {
-    return ['ldap_password', 'email_auth_pwd'];
+    return ['ldap_password', 'email_auth_pwd', 'email_microsoft_client_secret', 'email_google_client_secret'];
 }
 
 /**

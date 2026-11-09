@@ -15,8 +15,11 @@ use PHPMailer\PHPMailer\SMTP;
 use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Process\Process;
 use TeampassClasses\EmailService\EmailService;
 use TeampassClasses\EmailService\EmailSettings;
+use TeampassClasses\EmailService\EmailSendResult;
+use TeampassClasses\EmailService\EmailTransportInterface;
 
 /** Exercise real PHPMailer message preparation without contacting a relay. */
 #[RunTestsInSeparateProcesses]
@@ -136,6 +139,116 @@ final class EmailServiceDeliveryTest extends TestCase
         self::assertSame('SMTP server error', $result['message']);
     }
 
+    /** Existing installations implicitly select SMTP and retain its legacy success result. */
+    public function testLegacyConfigurationUsesSmtpAndExposesStructuredAcceptance(): void
+    {
+        [$service, $mailer, $settings] = $this->delivery();
+        self::assertSame('smtp', $settings->transport);
+        self::assertSame('not_attempted', $service->getLastResult()->errorCode);
+        self::assertSame('', $service->sendMail('Test', 'Body', 'recipient@example.com', $settings));
+        self::assertTrue($service->getLastResult()->accepted);
+        self::assertCount(1, $mailer->attempts);
+    }
+
+    /** Unsupported transports must fail explicitly without trying the SMTP relay. */
+    public function testUnsupportedTransportDoesNotFallBackToSmtp(): void
+    {
+        [$service, $mailer, $settings] = $this->delivery();
+        $settings->transport = 'unsupported';
+        $response = json_decode($service->sendMail('Test', 'Body', 'recipient@example.com', $settings), true);
+        self::assertTrue($response['error']);
+        self::assertSame('configuration', $response['code']);
+        self::assertSame([], $mailer->attempts);
+        self::assertNotSame('email_transport_error_configuration', $response['message']);
+    }
+
+    /** API adapters receive the same completed MIME representation as SMTP. */
+    public function testTransportReceivesPreparedMimeAndItsResultIsPreserved(): void
+    {
+        $transport = $this->createMock(EmailTransportInterface::class);
+        $outcome = EmailSendResult::failure('throttled', true, 120);
+        $transport->expects(self::once())->method('send')->willReturnCallback(function (PHPMailer $message) use ($outcome) {
+            self::assertStringContainsString('Subject: Transport test', $message->getSentMIMEMessage());
+            self::assertStringContainsString('recipient@example.com', $message->getSentMIMEMessage());
+            self::assertStringContainsString('Body', $message->Body);
+            return $outcome;
+        });
+        $service = new EmailService($transport);
+        $response = json_decode($service->sendMail('Transport test', 'Body', 'recipient@example.com', new EmailSettings([])), true);
+        self::assertSame($outcome, $service->getLastResult());
+        self::assertSame(120, $response['retry_after']);
+        self::assertTrue($response['retryable']);
+        self::assertSame('throttled', $response['code']);
+    }
+
+    /** Exceptions from a provider never expose details or silently invoke another transport. */
+    public function testUnexpectedTransportFailureIsIndeterminateAndPrivate(): void
+    {
+        $transport = $this->createMock(EmailTransportInterface::class);
+        $transport->expects(self::once())->method('send')->willThrowException(new RuntimeException('private-provider-secret'));
+        $service = new EmailService($transport);
+        $log = tempnam(sys_get_temp_dir(), 'teampass-email-test-');
+        self::assertNotFalse($log);
+        ini_set('error_log', $log);
+        try {
+            $response = $service->sendMail('Test', 'private-body', 'recipient@example.com', new EmailSettings([]));
+            self::assertTrue($service->getLastResult()->indeterminate);
+            self::assertFalse($service->getLastResult()->retryable);
+            $logged = file_get_contents($log);
+            self::assertStringContainsString('Email transport failure: RuntimeException', $logged);
+            foreach (['private-provider-secret', 'private-body', 'recipient@example.com'] as $secret) {
+                self::assertStringNotContainsString($secret, $response . $logged);
+            }
+        } finally {
+            ini_set('error_log', PHP_OS_FAMILY === 'Windows' ? 'NUL' : '/dev/null');
+            unlink($log);
+        }
+    }
+
+    /** Real RCPT refusals are definite only when PHPMailer never submits DATA. */
+    public function testRecipientRejectionsFollowTheActualSmtpDataBoundary(): void
+    {
+        foreach ([['reject_all', 1], ['reject_all', 2], ['reject_partial', 2]] as [$mode, $count]) {
+            $server = new Process([PHP_BINARY, dirname(__DIR__) . '/Fixtures/email_smtp_server.php', $mode]);
+            $server->setTimeout(15);
+            $server->start();
+            try {
+                self::assertTrue($server->waitUntil(static fn(string $type, string $output): bool => str_contains($output, '"port"')), $server->getErrorOutput());
+                $ready = json_decode(strtok($server->getOutput(), "\n"), true);
+                $settings = new EmailSettings(['email_from' => 'sender@example.test', 'email_smtp_server' => '127.0.0.1',
+                    'email_port' => $ready['port'], 'email_smtp_auth_mode' => 'none']);
+                $settings->timeout = 5;
+                $service = new EmailService();
+                $recipients = $count === 1 ? 'first@example.test' : 'first@example.test,second@example.test';
+                $response = json_decode($service->sendMail('Test', 'Synthetic body', $recipients, $settings), true);
+                self::assertTrue($response['error']);
+                $partial = $mode === 'reject_partial';
+                self::assertSame($partial ? 'partial_acceptance' : 'rejected', $service->getLastResult()->errorCode);
+                self::assertSame($partial, $service->getLastResult()->indeterminate);
+                self::assertFalse($service->getLastResult()->retryable);
+                $server->wait();
+                self::assertSame(0, $server->getExitCode(), $server->getErrorOutput());
+                $lines = explode("\n", trim($server->getOutput()));
+                $recorded = json_decode(end($lines), true);
+                self::assertSame($count, $recorded['recipients']);
+                self::assertSame($partial, $recorded['data_submitted']);
+            } finally {
+                $server->stop(0);
+            }
+        }
+    }
+
+    /** Provider text cannot turn an ambiguous DATA outcome into a retryable connection failure. */
+    public function testProviderCannotMakeAnAmbiguousSendRetryable(): void
+    {
+        [$service, $mailer, $settings] = $this->delivery();
+        $mailer->reject = true;
+        $mailer->failureMessage = 'SMTP Error: data not accepted. SMTP Error: Could not connect to SMTP host.';
+        $service->sendMail('Test', 'Body', 'recipient@example.com', $settings);
+        self::assertTrue($service->getLastResult()->indeterminate);
+        self::assertFalse($service->getLastResult()->retryable);
+    }
+
     /** PHPMailer's stream handler emits multiline OpenSSL failures with a trailing source path. */
     public function testLocalConnectionAndTlsErrorsRemainVisibleWithoutSourcePaths(): void
     {
@@ -225,11 +338,54 @@ final class EmailServiceDeliveryTest extends TestCase
     /** @return array{EmailService, EmailDeliveryRecordingMailer, EmailSettings} */
     private function delivery(): array
     {
-        $service = new EmailService();
         $mailer = new EmailDeliveryRecordingMailer(true);
-        (new ReflectionProperty(EmailService::class, 'mailer'))->setValue($service, $mailer);
+        $service = new EmailService(null, static fn(): PHPMailer => $mailer);
 
         return [$service, $mailer, new EmailSettings(['email_from' => 'sender@example.com'])];
+    }
+
+    /** Selecting another mode cannot retain OAuth, custom headers or attachments from a previous message. */
+    public function testEachSendCreatesAnIndependentMessageBuilder(): void
+    {
+        $builders = [];
+        $factory = static function () use (&$builders): PHPMailer {
+            $mailer = new EmailDeliveryRecordingMailer(true);
+            $builders[] = $mailer;
+            return $mailer;
+        };
+        $service = new EmailService(null, $factory);
+        $settings = new EmailSettings(['email_from' => 'sender@example.com']);
+        self::assertSame('', $service->sendMail('First', 'Body', 'first@example.com', $settings));
+        $builders[1]->addStringAttachment('private-attachment', 'private.txt');
+        $builders[1]->AuthType = 'XOAUTH2';
+        self::assertSame('', $service->sendMail('Second', 'Body', 'second@example.com', $settings));
+        self::assertNotSame($builders[1], $builders[2]);
+        self::assertSame([], $builders[2]->getAttachments());
+        self::assertSame('', $builders[2]->AuthType);
+        self::assertSame(['second@example.com'], $builders[2]->attempts[0]['recipients']);
+    }
+
+    /** Exchange OAuth always uses its fixed STARTTLS endpoint and certificate verification. */
+    public function testExchangeOAuthCannotUseBasicCredentialsOrDisableTls(): void
+    {
+        [$service, $mailer, $settings] = $this->delivery();
+        $settings->revision = str_repeat('a', 32);
+        $settings->smtpAuthMode = 'microsoft_oauth';
+        $settings->microsoftTenantId = '11111111-1111-1111-1111-111111111111';
+        $settings->microsoftClientId = '22222222-2222-2222-2222-222222222222';
+        $settings->microsoftClientSecret = 'private-client-secret';
+        $settings->microsoftMailbox = 'sender@example.com';
+        $settings->verifyCertificate = false;
+        $settings->security = 'none';
+        $settings->authPassword = 'private-basic-password';
+        $service->configureMailer($settings, true, true);
+        self::assertSame('smtp.office365.com', $mailer->Host);
+        self::assertSame(587, $mailer->Port);
+        self::assertSame('tls', $mailer->SMTPSecure);
+        self::assertSame(EmailService::tlsOptions(true), $mailer->SMTPOptions);
+        self::assertSame('XOAUTH2', $mailer->AuthType);
+        self::assertSame('', $mailer->Password);
+        self::assertNotNull($mailer->getOAuth());
     }
 }
 

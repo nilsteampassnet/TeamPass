@@ -64,6 +64,7 @@ require_once __DIR__ . '/ldap_config_logic.php';
 require_once __DIR__ . '/branding_logic.php';
 require_once __DIR__ . '/user_keys_task_logic.php';
 require_once __DIR__ . '/secret_settings_logic.php';
+require_once __DIR__ . '/emails_queue_logic.php';
 require_once __DIR__ . '/sharekeys_repair_logic.php';
 require_once __DIR__ . '/main_queries_logic.php';
 require_once __DIR__ . '/attachment_pending_logic.php';
@@ -2346,13 +2347,13 @@ function prepareSendingEmail(
         array(
             'created_at' => time(),
             'process_type' => 'send_email',
-            'arguments' => json_encode([
+            'arguments' => json_encode(emailQueueSeal([
                 'subject' => html_entity_decode($subject, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
                 'receivers' => $email,
                 'body' => $body,
                 'receiver_name' => $receiverName,
                 'encryptedUserPassword' => $encryptedUserPassword,
-            ], JSON_HEX_QUOT | JSON_HEX_TAG),
+            ]), JSON_THROW_ON_ERROR),
         )
     );
 

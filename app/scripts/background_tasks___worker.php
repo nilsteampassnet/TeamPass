@@ -126,6 +126,7 @@ class TaskWorker {
                     $this->handleUserBuildCacheTree($this->taskData);
                     break;
                 case 'send_email':
+                    DB::query('UPDATE ' . prefixTable('background_tasks') . ' SET email_attempts = email_attempts + 1 WHERE increment_id = %i', $this->taskId);
                     $this->sendEmail($this->taskData);
                     break;
                 case 'create_user_keys':
@@ -1598,9 +1599,9 @@ class TaskWorker {
     {
         if ($this->processType === 'send_email') {
             return (string) json_encode([
-                'email' => $this->taskData['receivers'],
-                'login' => $this->taskData['receiver_name'],
-            ]);
+                // Recipients were captured after opening the envelope; never reopen it for logging.
+                'accepted' => true,
+            ] + $this->emailTaskRecipients);
         }
 
         if ($this->processType === 'create_user_keys' || $this->processType === 'migrate_user_personal_items') {
@@ -1759,6 +1760,19 @@ class TaskWorker {
      * @return void
      */
     private function handleTaskFailure(Throwable $e): void {
+        if ($this->processType === 'send_email' && $e instanceof \TeampassClasses\EmailService\EmailTransportException) {
+            $attempts = (int) DB::queryFirstField('SELECT email_attempts FROM ' . prefixTable('background_tasks') . ' WHERE increment_id = %i', $this->taskId);
+            $retryAt = emailQueueRetryAt($e->result, $attempts, time());
+            if ($retryAt !== null) {
+                DB::update(prefixTable('background_tasks'), [
+                    'is_in_progress' => 0, 'status' => 'queued', 'finished_at' => null, 'process_id' => null,
+                    'updated_at' => time(), 'next_attempt_at' => $retryAt,
+                    'error_message' => 'Email delivery deferred: ' . $e->result->errorCode . '.',
+                ], 'increment_id = %i', $this->taskId);
+                $this->logger->log('Email task ' . $this->taskId . ' deferred: ' . $e->result->errorCode, 'WARNING');
+                return;
+            }
+        }
         $errorMessage = $e->getMessage();
         // Keep only the trait's fixed diagnostics; transport exceptions may echo secrets.
         if ($this->processType === 'send_email' && !in_array($errorMessage, [
@@ -1767,6 +1781,9 @@ class TaskWorker {
         ], true)) {
             $errorMessage = 'Email delivery failed.';
         }
+        if ($this->processType === 'send_email' && $e instanceof \TeampassClasses\EmailService\EmailTransportException) {
+            $errorMessage = 'Email delivery ' . ($e->result->indeterminate ? 'indeterminate' : 'failed') . ': ' . $e->result->errorCode . '.';
+        }
         $updateData = [
             'is_in_progress' => -1,
             'finished_at' => time(),
@@ -1774,8 +1791,8 @@ class TaskWorker {
             'error_message' => $errorMessage,
         ];
         if ($this->processType === 'send_email') {
-            // As on success, the body and encrypted credential must not outlive the attempt.
-            $updateData['arguments'] = $this->buildCompletionArguments();
+            // Drop terminal payloads without claiming provider acceptance for an ambiguous send.
+            $updateData['arguments'] = (string) json_encode(['failed' => true] + $this->emailTaskRecipients);
         }
         DB::update(
             prefixTable('background_tasks'),

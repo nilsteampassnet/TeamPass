@@ -18,7 +18,7 @@ final class EmailTaskDeliveryTest extends TestCase
     public function testRejectedDeliveryFailsTheTaskWithoutExposingTheProviderResponse(): void
     {
         $result = $this->probe('rejected');
-        self::assertSame('Email delivery failed.', $result['failure']);
+        self::assertSame('rejected', $result['failure']);
         self::assertCount(1, $result['messages']);
         self::assertStringNotContainsString('private-provider-response', $result['failure']);
     }
@@ -52,29 +52,114 @@ final class EmailTaskDeliveryTest extends TestCase
     /** Execute the production worker, including persistence and logger boundaries. */
     public function testWorkerPersistsDeliveryFailuresAndLogsOnlyMetadata(): void
     {
-        foreach (['accepted' => 'completed', 'encrypted' => 'completed', 'rejected' => 'failed', 'unexpected' => 'failed', 'spoofed' => 'failed', 'invalid' => 'failed'] as $mode => $status) {
+        foreach (['accepted' => 'completed', 'encrypted' => 'completed', 'sealed' => 'completed', 'rejected' => 'failed', 'unexpected' => 'failed', 'spoofed' => 'failed', 'invalid' => 'failed', 'throttled' => 'queued', 'exhausted' => 'failed', 'indeterminate' => 'failed'] as $mode => $status) {
             $result = $this->probe($mode, true);
             self::assertCount(1, $result['task_updates']);
             self::assertSame($status, $result['task_updates'][0]['status'], $mode);
             self::assertSame(
-                $status === 'completed' ? null : ($mode === 'invalid' ? 'Email credential could not be decrypted.' : 'Email delivery failed.'),
+                match ($mode) {
+                    'accepted', 'encrypted', 'sealed' => null,
+                    'invalid' => 'Email credential could not be decrypted.',
+                    'rejected' => 'Email delivery failed: rejected.',
+                    'exhausted' => 'Email delivery failed: throttled.',
+                    'throttled' => 'Email delivery deferred: throttled.',
+                    'indeterminate' => 'Email delivery indeterminate: timeout.',
+                    default => 'Email delivery failed.',
+                },
                 $result['task_updates'][0]['error_message'],
                 $mode
             );
-            self::assertSame(
-                ['email' => 'recipient@example.com', 'login' => 'Recipient'],
-                json_decode($result['task_updates'][0]['arguments'], true, 512, JSON_THROW_ON_ERROR),
-                $mode
-            );
-            foreach (['body', 'subject', 'encryptedUserPassword', 'valid-ciphertext', 'invalid-ciphertext'] as $sensitive) {
-                self::assertStringNotContainsString($sensitive, $result['task_updates'][0]['arguments'], $mode);
+            if ($status === 'queued') {
+                self::assertArrayNotHasKey('arguments', $result['task_updates'][0]);
+            } else {
+                self::assertSame(
+                    ($status === 'completed' ? ['accepted' => true] : ['failed' => true])
+                        + ['email' => 'recipient@example.com', 'login' => 'Recipient'],
+                    json_decode($result['task_updates'][0]['arguments'], true, 512, JSON_THROW_ON_ERROR),
+                    $mode
+                );
+                self::assertSame('Recipient', $result['display_user'], $mode);
+                foreach (['body', 'subject', 'encryptedUserPassword', 'valid-ciphertext', 'invalid-ciphertext'] as $sensitive) {
+                    self::assertStringNotContainsString($sensitive, $result['task_updates'][0]['arguments'], $mode);
+                }
             }
             $diagnostics = json_encode($result['logs']) . $result['task_updates'][0]['error_message'];
             foreach (['Task test', '<p>Task body</p>', 'temporary-password', 'valid-ciphertext', 'invalid-ciphertext', 'private-provider-response'] as $sensitive) {
                 self::assertStringNotContainsString($sensitive, $diagnostics, $mode);
             }
             self::assertStringContainsString('123 (send_email)', implode('\n', $result['logs']));
+            self::assertStringNotContainsString('recipient@example.com', implode('\n', $result['logs']));
         }
+    }
+
+    /** Throttling defers this same task; ambiguous acceptance and exhausted retries remain failed. */
+    public function testWorkerDefersOnlyConfirmedRetryableFailures(): void
+    {
+        $before = time();
+        $deferred = $this->probe('throttled', true)['task_updates'][0];
+        self::assertSame('queued', $deferred['status']);
+        self::assertSame(0, $deferred['is_in_progress']);
+        self::assertNull($deferred['finished_at']);
+        self::assertGreaterThanOrEqual($before + 120, $deferred['next_attempt_at']);
+        foreach (['indeterminate', 'exhausted', 'excessive-delay'] as $mode) {
+            $failed = $this->probe($mode, true)['task_updates'][0];
+            self::assertSame('failed', $failed['status']);
+            self::assertArrayNotHasKey('next_attempt_at', $failed);
+        }
+    }
+
+    /** Completion keeps only its outcome and the fields needed by the actual Tasks log renderer. */
+    public function testEncryptedAndLegacyTasksCompleteWithPrivateMetadataOnly(): void
+    {
+        foreach (['accepted', 'sealed'] as $mode) {
+            $result = $this->probe($mode, true);
+            self::assertSame(['accepted' => true, 'email' => 'recipient@example.com', 'login' => 'Recipient'],
+                json_decode($result['task_updates'][0]['arguments'], true));
+            self::assertSame('Recipient', $result['display_user']);
+            $metadata = json_encode($result['task_updates']) . json_encode($result['logs']);
+            foreach (['Task body', 'def50200cafe'] as $sensitive) {
+                self::assertStringNotContainsString($sensitive, $metadata);
+            }
+        }
+    }
+
+    /** Terminal failures drop the sealed payload without claiming acceptance; deferrals retain it. */
+    public function testEncryptedFailureOutcomesRetainOnlyPrivateStatusMetadata(): void
+    {
+        foreach (['rejected', 'invalid', 'indeterminate', 'exhausted', 'spoofed', 'excessive-delay'] as $mode) {
+            $result = $this->probe('sealed-' . $mode, true);
+            $update = $result['task_updates'][0];
+            self::assertSame('failed', $update['status']);
+            self::assertSame(['failed' => true, 'email' => 'recipient@example.com', 'login' => 'Recipient'],
+                json_decode($update['arguments'], true, 512, JSON_THROW_ON_ERROR));
+            self::assertSame('Recipient', $result['display_user']);
+            $metadata = json_encode($result['task_updates']) . json_encode($result['logs']);
+            foreach (['Task body', 'def50200cafe', 'invalid-ciphertext'] as $sensitive) {
+                self::assertStringNotContainsString($sensitive, $metadata);
+            }
+            if ($mode === 'invalid') {
+                self::assertSame('Email credential could not be decrypted.', $update['error_message']);
+            }
+        }
+        $deferred = $this->probe('sealed-throttled', true)['task_updates'][0];
+        self::assertSame('queued', $deferred['status']);
+        self::assertArrayNotHasKey('arguments', $deferred);
+    }
+
+    /** The Tasks user column falls back to the email if no receiver name was supplied. */
+    public function testTaskLogCanDisplayAnUnnamedRecipient(): void
+    {
+        $result = $this->probe('unnamed', true);
+        self::assertSame('recipient@example.com', $result['display_user']);
+    }
+
+    /** An envelope that cannot be opened provides no recipient metadata to retain. */
+    public function testInvalidEnvelopeDoesNotRetainItsPayload(): void
+    {
+        $result = $this->probe('payload-invalid', true);
+        self::assertSame('failed', $result['task_updates'][0]['status']);
+        self::assertSame(['failed' => true], json_decode($result['task_updates'][0]['arguments'], true));
+        self::assertSame([], $result['messages']);
     }
 
     /** @return array{failure: ?string, decrypt_calls: int, messages: array, task_updates: array, logs: array} */
