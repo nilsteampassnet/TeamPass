@@ -10,12 +10,40 @@ const { join } = require('node:path')
 const vm = require('node:vm')
 const { test } = require('node:test')
 
+// PHP blocks echo JSON values: `null` keeps the JavaScript parseable.
 const source = readFileSync(join(__dirname, '../../app/core/notification-center.js.php'), 'utf8')
-const start = source.indexOf('var RENDERERS = {')
-const end = source.indexOf('function escapeText(', start)
-assert.ok(start >= 0 && end > start, 'Missing notification renderers')
+  .replace(/<\?php[\s\S]*?\?>/g, 'null')
 
+/**
+ * Extract the RENDERERS declaration, whatever its keyword (var, let or const)
+ * and whatever follows it. The first closing brace at which the slice parses
+ * is the end of the object literal: braces inside strings, comments or nested
+ * objects leave the slice unparseable, so they cannot end it early.
+ */
+function renderersDeclaration() {
+  const match = /\b(?:var|let|const)\s+RENDERERS\s*=\s*\{/.exec(source)
+  assert.ok(match, 'Missing RENDERERS declaration in notification-center.js.php')
+  for (let end = source.indexOf('}', match.index); end !== -1; end = source.indexOf('}', end + 1)) {
+    const candidate = source.slice(match.index, end + 1)
+    try {
+      new vm.Script(candidate)
+      return candidate
+    } catch (error) {
+      if (!(error instanceof SyntaxError)) throw error
+    }
+  }
+  assert.fail('Cannot find the end of the RENDERERS declaration')
+}
+
+const declaration = renderersDeclaration()
+
+/**
+ * Run the shipped renderer in a sandbox whose clock is frozen at `now`, for
+ * Date.now() and new Date() alike, so a renderer reading the time in any way
+ * gets the test's clock and never the machine's.
+ */
 function renderer(now) {
+  const fixed = Date.parse(now)
   const context = vm.createContext({
     L: {
       passwordExpired: 'Your TeamPass password has expired',
@@ -23,9 +51,22 @@ function renderer(now) {
       passwordExpiring: 'Your TeamPass password expires in %s days'
     }
   })
-  vm.runInContext('Date.now = () => ' + Date.parse(now), context)
-  vm.runInContext(source.slice(start, end), context)
-  return context.RENDERERS.local_password_expiring.detail
+  vm.runInContext(`(() => {
+    const RealDate = Date
+    class FixedDate extends RealDate {
+      constructor (...args) { super(...(args.length > 0 ? args : [${fixed}])) }
+      static now () { return ${fixed} }
+    }
+    globalThis.Date = FixedDate
+  })()`, context)
+  assert.equal(vm.runInContext('Date.now()', context), fixed)
+  assert.equal(vm.runInContext('new Date().getTime()', context), fixed)
+
+  // The completion value reaches a let/const binding, which never becomes a
+  // property of the sandbox global.
+  const renderers = vm.runInContext(declaration + '\nRENDERERS', context)
+  assert.ok(renderers.local_password_expiring, 'Missing local_password_expiring renderer')
+  return renderers.local_password_expiring.detail
 }
 
 const expiresAt = Date.parse('2026-11-15T03:15:00Z') / 1000
