@@ -13,13 +13,21 @@ configuration and the administrator's own email address. It has a shorter SMTP
 timeout than a background notification.
 
 When a debug level is selected, TeamPass shows connection stages, SMTP command
-names and numeric response codes. Command arguments, credentials, message bodies
+names and numeric response codes. It also keeps local socket and TLS/OpenSSL
+errors, including connection refusals and certificate-verification failures, and
+identifies failed commands without the server's reply text. Local error messages
+omit PHPMailer's trailing source-file path and line number. Command arguments,
+credentials, message bodies
 and free-form server replies are deliberately excluded, even at the highest debug
 level. The captured output is bounded. Do not re-enable raw PHPMailer transcripts
 to diagnose production messages: they can contain passwords and recovery links.
 
 An error reports a standard PHPMailer reason and, when available, validated SMTP
 response codes. For example, an authentication failure can include `535 5.7.8`.
+Socket error numbers are not shown as SMTP reply codes; use the debug trace for
+the local connection reason. A certificate-verification failure calls for checking
+the relay's certificate name, CA chain and system trust store. Disabling certificate
+verification removes authentication of the relay and is not a general TLS fix.
 Use the relay's documentation or its protected administration tools to investigate
 that code. Never post passwords, message contents or recovery links in an issue.
 
@@ -36,7 +44,8 @@ arguments. Email failures distinguish `Email delivery failed.` from
 (`SECUREFILE`) or encrypted credential, before the relay is contacted. The test
 email can succeed in that situation because it has no queued credential to decrypt.
 Use the administrator's test to diagnose the current relay configuration. Unknown
-exceptions are replaced with the generic delivery message. Completed and failed email tasks
+exceptions are replaced with the generic delivery message. Completed and failed
+email tasks
 retain only the recipient and login; message bodies and encrypted credentials are
 removed when the attempt ends. Old failed tasks are purged after the configured
 task-history retention period, including tasks without subtasks. Database access

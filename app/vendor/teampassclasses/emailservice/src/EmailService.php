@@ -45,7 +45,7 @@ class EmailService
     protected $lastError = '';
 
     /**
-     * SMTP stages and response codes captured when a debug level is set.
+     * SMTP stages, response codes and local connection errors captured in debug mode.
      *
      * @var array<int, string>
      */
@@ -73,7 +73,7 @@ class EmailService
     }
 
     /**
-     * Returns SMTP stages and response codes captured during the last send.
+     * Returns SMTP stages, response codes and local connection errors from the last send.
      *
      * Only filled when the administrator set a debug level other than "None";
      * empty otherwise. PHPMailer would print that trace straight to the output
@@ -115,7 +115,7 @@ class EmailService
     {
         $this->mailer->setLanguage('en', $emailSettings->dir . '/vendor/phpmailer/phpmailer/language/');
         $this->mailer->SMTPDebug = ($cron || $silent) ? 0 : (int) $emailSettings->debugLevel;
-        // Keep only protocol stages and numeric replies. Raw SMTP debug output can
+        // Keep protocol stages, numeric replies and local connection errors. Raw debug output can
         // include AUTH credentials, message bodies and provider-echoed secrets.
         $this->mailer->Debugoutput = function ($str) {
             $line = $this->safeDebugLine(trim((string) $str));
@@ -223,7 +223,7 @@ class EmailService
         }
     }
 
-    /** Return only known protocol stages, never command arguments or reply text. */
+    /** Keep protocol stages and local connection errors, never command arguments or reply text. */
     private function safeDebugLine(string $line): string
     {
         if (preg_match('/\ACLIENT -> SERVER: (EHLO|HELO|STARTTLS|AUTH|MAIL|RCPT|DATA|RSET|QUIT|NOOP)(?:\s|$)/', $line, $matches) === 1) {
@@ -232,7 +232,19 @@ class EmailService
         if (preg_match('/\ASERVER -> CLIENT: ([1-5][0-9]{2})(?:[ -]([245]\.[0-9]{1,3}\.[0-9]{1,3})(?=\s|$))?/', $line, $matches) === 1) {
             return 'SERVER -> CLIENT: ' . $matches[1] . (isset($matches[2]) ? ' ' . $matches[2] : '');
         }
-        if (preg_match('/\AConnection: (opening|opened|closed|failed)\b/', $line, $matches) === 1) {
+        if (preg_match('/\A(Connection failed\. Error #[0-9]+: .*?)(?: \[[^\r\n]* line [0-9]+\])?\z/s', $line, $matches) === 1) {
+            return $matches[1];
+        }
+        if (preg_match('/\ASMTP ERROR: Failed to connect to server: .* \([0-9]+\)\z/s', $line) === 1) {
+            return $line;
+        }
+        if (preg_match('/\ASMTP ERROR: (EHLO|HELO|STARTTLS|AUTH(?: CRAM-MD5)?|Username|Password|User & Password|MAIL FROM|RCPT TO|DATA(?: END)?|RSET|QUIT|NOOP|XCLIENT|SAML|VRFY) command failed(?::|\z)/', $line, $matches) === 1) {
+            return 'SMTP ERROR: ' . $matches[1] . ' command failed';
+        }
+        if ($line === 'Connection: closing due to error') {
+            return $line;
+        }
+        if (preg_match('/\AConnection: (opening|opened|closed)\b/', $line, $matches) === 1) {
             return 'Connection: ' . $matches[1];
         }
 
@@ -257,6 +269,11 @@ class EmailService
         }
 
         $smtpError = $this->mailer->getSMTPInstance()->getError();
+        // PHPMailer puts a local socket errno in smtp_code when connecting fails.
+        // It is not an SMTP reply; the local reason is available in the debug trace.
+        if (in_array($smtpError['error'] ?? '', ['Failed to connect to server', 'Connection failed.'], true)) {
+            return $reason;
+        }
         $codes = [];
         if (preg_match('/\A[1-5][0-9]{2}\z/', (string) ($smtpError['smtp_code'] ?? '')) === 1) {
             $codes[] = (string) $smtpError['smtp_code'];

@@ -136,6 +136,92 @@ final class EmailServiceDeliveryTest extends TestCase
         self::assertSame('SMTP server error', $result['message']);
     }
 
+    /** PHPMailer's stream handler emits multiline OpenSSL failures with a trailing source path. */
+    public function testLocalConnectionAndTlsErrorsRemainVisibleWithoutSourcePaths(): void
+    {
+        [$service, $mailer, $settings] = $this->delivery();
+        $service->configureMailer($settings, false, false);
+        $smtp = new SMTP();
+        $smtp->do_debug = SMTP::DEBUG_CONNECTION;
+        $smtp->Debugoutput = $mailer->Debugoutput;
+        $errorHandler = new ReflectionMethod(SMTP::class, 'errorHandler');
+        $messages = [
+            'stream_socket_client(): Unable to connect to 127.0.0.1:1 (Connection refused)',
+            "stream_socket_client(): SSL operation failed with code 1. OpenSSL Error messages:\nerror:0A000086:SSL routines::certificate verify failed",
+        ];
+        foreach ($messages as $message) {
+            $errorHandler->invoke($smtp, 2, $message, '/private/path/SMTP.php', 421);
+        }
+        $debug = $mailer->Debugoutput;
+        $debug('SMTP ERROR: Failed to connect to server: Connection refused (111)', SMTP::DEBUG_CLIENT);
+        $debug('Connection: closing due to error', SMTP::DEBUG_CONNECTION);
+        $debug('Connection: failed', SMTP::DEBUG_CONNECTION); // Not emitted by PHPMailer 6.12.
+
+        self::assertSame(
+            'Connection failed. Error #2: ' . $messages[0] . "\n"
+            . 'Connection failed. Error #2: ' . $messages[1] . "\n"
+            . "SMTP ERROR: Failed to connect to server: Connection refused (111)\nConnection: closing due to error",
+            $service->getDebugOutput()
+        );
+    }
+
+    /** PHPMailer names the failed command before appending a potentially sensitive reply. */
+    public function testFailedSmtpCommandsKeepOnlyTheirLibraryLabels(): void
+    {
+        [$service, $mailer, $settings] = $this->delivery();
+        $service->configureMailer($settings, false, false);
+        $debug = $mailer->Debugoutput;
+        $commands = ['EHLO', 'STARTTLS', 'AUTH', 'AUTH CRAM-MD5', 'Username', 'Password',
+            'User & Password', 'MAIL FROM', 'RCPT TO', 'DATA', 'DATA END', 'RSET', 'QUIT'];
+        foreach ($commands as $command) {
+            $debug('SMTP ERROR: ' . $command . " command failed: 535 5.7.8 private-provider-response\r\nprivate-password",
+                SMTP::DEBUG_CLIENT);
+        }
+        self::assertSame(implode("\n", array_map(
+            static fn (string $command): string => 'SMTP ERROR: ' . $command . ' command failed',
+            $commands
+        )), $service->getDebugOutput());
+    }
+
+    /** Both socket failure labels use smtp_code for an errno, never an SMTP response. */
+    public function testSocketErrorNumbersAreNotDisplayedAsSmtpReplyCodes(): void
+    {
+        foreach (['Failed to connect to server', 'Connection failed.'] as $error) {
+            [$service, $mailer, $settings] = $this->delivery();
+            $smtp = $this->createMock(SMTP::class);
+            $smtp->method('getError')->willReturn([
+                'error' => $error, 'smtp_code' => '111', 'smtp_code_ex' => 'Connection refused',
+            ]);
+            $mailer->setSMTPInstance($smtp);
+            $mailer->reject = true;
+            $mailer->failureMessage = 'SMTP Error: Could not connect to SMTP host.';
+            $result = json_decode($service->sendMail('Test', 'Body', 'recipient@example.com', $settings), true);
+            self::assertSame('SMTP Error: Could not connect to SMTP host.', $result['message']);
+        }
+    }
+
+    /** Exercise the actual PHPMailer stream error path against a bound, non-listening local port. */
+    public function testRealConnectionRefusalKeepsDiagnosticsWithoutFalseSmtpCodes(): void
+    {
+        $socket = stream_socket_server('tcp://127.0.0.1:0', $errno, $error, STREAM_SERVER_BIND);
+        self::assertIsResource($socket);
+        try {
+            $settings = new EmailSettings(['email_from' => 'sender@example.com', 'email_smtp_server' => '127.0.0.1',
+                'email_port' => (int) substr(strrchr(stream_socket_get_name($socket, false), ':'), 1),
+                'email_debug_level' => SMTP::DEBUG_CONNECTION]);
+            $settings->timeout = 2;
+            $service = new EmailService();
+            $result = json_decode($service->sendMail('Test', 'Body', 'recipient@example.com', $settings, null, false), true);
+            self::assertTrue($result['error']);
+            self::assertSame('SMTP Error: Could not connect to SMTP host.', $service->getLastError());
+            self::assertStringContainsString('Connection failed. Error #2: stream_socket_client():', $service->getDebugOutput());
+            self::assertStringContainsString('SMTP ERROR: Failed to connect to server:', $service->getDebugOutput());
+            self::assertStringNotContainsString('SMTP.php line', $service->getDebugOutput());
+        } finally {
+            fclose($socket);
+        }
+    }
+
     /** @return array{EmailService, EmailDeliveryRecordingMailer, EmailSettings} */
     private function delivery(): array
     {
