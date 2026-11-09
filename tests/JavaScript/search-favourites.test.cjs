@@ -145,13 +145,15 @@ for (const [name, response] of [
   ['server rejection', () => Promise.resolve({ error: true })],
   ['missing response', () => Promise.resolve(null)],
   ['malformed success', () => Promise.resolve({})],
-  ['transport or JSON failure', () => Promise.reject(new Error('offline'))]
+  ['transport failure', () => Promise.reject({ status: 0, statusText: 'error' })],
+  ['JSON parsing failure', () => Promise.reject({ status: 200, statusText: 'parsererror' })]
 ]) {
   test(name + ' leaves the bookmark unchanged and releases the button for retry', async () => {
     const app = setup()
     app.respondWith(response)
     await app.change(1, true)
     assert.equal(app.errors.length, 1)
+    assert.equal(app.errors[0][0], 'Request failed')
     assert.equal(app.writtenCells(), 0)
     assert.equal(app.state().attributes['aria-pressed'], 'false')
     assert.equal(app.rows[0].disabled, false)
@@ -161,6 +163,27 @@ for (const [name, response] of [
     assert.equal(app.state().attributes['aria-pressed'], 'true')
   })
 }
+
+test('a server refusal shows its specific message as text and leaves the bookmark unchanged', async () => {
+  const app = setup()
+  const message = 'Access denied to R&D "Ops" <img src=x onerror=alert(1)>'
+  app.respondWith(() => Promise.resolve({ error: true, message }))
+  await app.change(1, true)
+  assert.equal(app.errors.length, 1)
+  assert.equal(app.errors[0][0], message)
+  assert.equal(app.errors[0][2].escapeHtml, true)
+  assert.equal(app.writtenCells(), 0)
+  assert.equal(app.state().attributes['aria-pressed'], 'false')
+  assert.equal(app.rows[0].disabled, false)
+  assert.equal(app.pendingFavourites.size, 0)
+})
+
+test('an empty refusal message falls back to the generic request error', async () => {
+  const app = setup()
+  app.respondWith(() => Promise.resolve({ error: true, message: '' }))
+  await app.change(1, true)
+  assert.equal(app.errors[0][0], 'Request failed')
+})
 
 for (const info of [{ start: 10, recordsDisplay: 11 }, { start: 10, recordsDisplay: 10 }, { start: 10, recordsDisplay: 0 }]) {
   test('favorites filter refreshes counts and preserves or repairs the current page: ' + JSON.stringify(info), async () => {

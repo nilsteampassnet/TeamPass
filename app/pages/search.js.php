@@ -906,7 +906,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 key: <?php echo json_encode($session->get('key'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>
             }, null, 'json');
             if (!result || result.error !== false) {
-                throw new Error(favouriteLabels.error);
+                throw new Error(result?.message || favouriteLabels.error);
             }
             oTable.rows().every(function() {
                 const holder = $(this.data()[7]);
@@ -930,7 +930,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 }, false);
             }
         } catch (error) {
-            toastr.error(favouriteLabels.error, '', {timeOut: 5000});
+            toastr.error(error?.message || favouriteLabels.error, '', {timeOut: 5000, escapeHtml: true});
         } finally {
             pendingFavourites.delete(id);
             buttons().prop('disabled', false);
