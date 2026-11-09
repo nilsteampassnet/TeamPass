@@ -682,11 +682,7 @@ foreach ($rows as $record) {
         . '"><i class="fa-solid fa-key" aria-hidden="true"></i></button>';
     if ($canManageFavourites) {
         $isFavourite = isset($favouriteIds[$itemId]);
-        $favouriteLabel = htmlspecialchars($lang->get($isFavourite ? 'unfavorite' : 'favorite'), ENT_QUOTES, 'UTF-8');
-        $actions .= '<button type="button" class="search-row-action infotip" data-action="favourite"'
-            . ' aria-pressed="' . ($isFavourite ? 'true' : 'false') . '"'
-            . ' title="' . $favouriteLabel . '" aria-label="' . $favouriteLabel . '">'
-            . '<i class="' . ($isFavourite ? 'fa-solid fa-star text-warning' : 'fa-regular fa-star') . '" aria-hidden="true"></i></button>';
+        $actions .= searchFavouriteActionHtml($isFavourite, $lang->get($isFavourite ? 'unfavorite' : 'favorite'));
     }
     $actions .= '<button type="button" class="search-row-action infotip" data-action="open" title="'
         . htmlspecialchars($lang->get('favorites_open_item'), ENT_QUOTES, 'UTF-8')
