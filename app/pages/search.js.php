@@ -890,55 +890,58 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
     /** Save an explicit bookmark state, keeping the DataTables data and rendered cell aligned. */
     const setSearchFavourite = async (itemId, favourite) => {
-        const id = String(itemId);
-        if (pendingFavourites.has(id)) {
-            return;
+      const id = String(itemId)
+      if (pendingFavourites.has(id)) {
+        return
+      }
+      pendingFavourites.add(id)
+      const buttons = () => $('#search-results-items .search-row-actions[data-id="' + id + '"] [data-action="favourite"]')
+      // Disabling a native button can blur it before the response arrives.
+      const focused = buttons().is(':focus')
+      buttons().prop('disabled', true).tooltip('hide')
+      try {
+        const result = await $.post('sources/favourites.queries.php', {
+          type: favourite ? 'add_fav' : 'del_fav',
+          id: itemId,
+          key: <?php echo json_encode($session->get('key'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>
+        }, null, 'json')
+        if (!result || result.error !== false) {
+          throw new Error(result?.message || favouriteLabels.error)
         }
-        pendingFavourites.add(id);
-        const buttons = () => $('#search-results-items .search-row-actions[data-id="' + id + '"] [data-action="favourite"]');
-        // Disabling a native button can blur it before the response arrives.
-        const focused = buttons().is(':focus');
-        buttons().prop('disabled', true).tooltip('hide');
-        try {
-            const result = await $.post('sources/favourites.queries.php', {
-                type: favourite ? 'add_fav' : 'del_fav',
-                id: itemId,
-                key: <?php echo json_encode($session->get('key'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>
-            }, null, 'json');
-            if (!result || result.error !== false) {
-                throw new Error(result?.message || favouriteLabels.error);
+        oTable.rows().every(function () {
+          const holder = $(this.data()[7])
+          if (String(holder.data('id')) !== id) {
+            return
+          }
+          const label = favourite ? favouriteLabels.remove : favouriteLabels.add
+          holder.find('[data-action="favourite"]')
+            .attr('aria-pressed', String(favourite)).attr('aria-label', label).attr('title', label)
+            .find('i').attr('class', favourite ? 'fa-solid fa-star text-warning' : 'fa-regular fa-star')
+          $(this.node()).find('.infotip').tooltip('dispose')
+          oTable.cell(this.index(), 7).data(holder.prop('outerHTML'))
+          $(this.node()).find('.infotip').tooltip()
+        })
+        if (collectFilters().favourites === true) {
+          oTable.ajax.reload(function () {
+            const info = oTable.page.info()
+            if (info.start > 0 && info.start >= info.recordsDisplay) {
+              oTable.page('last').draw('page')
             }
-            oTable.rows().every(function() {
-                const holder = $(this.data()[7]);
-                if (String(holder.data('id')) !== id) {
-                    return;
-                }
-                const label = favourite ? favouriteLabels.remove : favouriteLabels.add;
-                holder.find('[data-action="favourite"]')
-                    .attr('aria-pressed', String(favourite)).attr('aria-label', label).attr('title', label)
-                    .find('i').attr('class', favourite ? 'fa-solid fa-star text-warning' : 'fa-regular fa-star');
-                $(this.node()).find('.infotip').tooltip('dispose');
-                oTable.cell(this.index(), 7).data(holder.prop('outerHTML'));
-                $(this.node()).find('.infotip').tooltip();
-            });
-            if (collectFilters().favourites === true) {
-                oTable.ajax.reload(function() {
-                    const info = oTable.page.info();
-                    if (info.start > 0 && info.start >= info.recordsDisplay) {
-                        oTable.page('last').draw('page');
-                    }
-                }, false);
-            }
-        } catch (error) {
-            toastr.error(error?.message || favouriteLabels.error, '', {timeOut: 5000, escapeHtml: true});
-        } finally {
-            pendingFavourites.delete(id);
-            buttons().prop('disabled', false);
-            if (focused && document.activeElement === document.body) {
-                buttons().trigger('focus');
-            }
+          }, false)
         }
-    };
+      } catch (error) {
+        toastr.error(error?.message || favouriteLabels.error, '', {
+          timeOut: 5000,
+          escapeHtml: true
+        })
+      } finally {
+        pendingFavourites.delete(id)
+        buttons().prop('disabled', false)
+        if (focused && document.activeElement === document.body) {
+          buttons().trigger('focus')
+        }
+      }
+    }
 
     // Row actions. Stop the propagation so acting on a row never also opens the
     // modal behind it.
