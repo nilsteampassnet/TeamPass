@@ -39,7 +39,8 @@ function secureSendEmailRecipient(mixed $value): string
         throw new InvalidArgumentException('invalid_email');
     }
     $value = trim($value);
-    if (filter_var($value, FILTER_VALIDATE_EMAIL) === false) {
+    // The shared transport splits recipient strings on commas; quoted lists cannot be represented safely.
+    if (strpbrk($value, ',;<>') !== false || filter_var($value, FILTER_VALIDATE_EMAIL) === false) {
         throw new InvalidArgumentException('invalid_email');
     }
     return $value;

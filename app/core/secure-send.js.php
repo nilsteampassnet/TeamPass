@@ -69,7 +69,11 @@ $(function () {
         protected: <?php echo json_encode($lang->get('secure_send_protected'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
         suspended: <?php echo json_encode($lang->get('secure_send_suspended'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
         revoke: <?php echo json_encode($lang->get('secure_send_revoke'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
-        revokeFailed: <?php echo json_encode($lang->get('secure_send_revoke_failed'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>
+        revokeFailed: <?php echo json_encode($lang->get('secure_send_revoke_failed'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+        emailQueued: <?php echo json_encode($lang->get('secure_send_email_queued'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+        emailAccepted: <?php echo json_encode($lang->get('secure_send_email_accepted'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+        emailFailed: <?php echo json_encode($lang->get('secure_send_email_failed'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+        emailUnknown: <?php echo json_encode($lang->get('secure_send_email_unknown'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>
     }
     const $modal = $('#tp-secure-send-modal')
     const $list = $('#tp-my-sends-list')
@@ -222,6 +226,10 @@ $(function () {
             }
             if (send.suspended === true) {
                 $('<span>', { class: 'badge badge-warning mt-1' }).text(labels.suspended).appendTo($details)
+            }
+            const emailLabels = { queued: labels.emailQueued, accepted: labels.emailAccepted, failed: labels.emailFailed, unknown: labels.emailUnknown }
+            if (['queued', 'accepted', 'failed', 'unknown'].includes(send.email_status)) {
+                $('<span>', { class: 'd-block small text-muted mt-1' }).text(emailLabels[send.email_status]).appendTo($details)
             }
             const $button = $('<button>', { type: 'button', class: 'btn btn-sm btn-outline-danger flex-shrink-0 tp-my-sends-revoke' })
                 .text(labels.revoke).attr('aria-describedby', labelId).appendTo($entry)

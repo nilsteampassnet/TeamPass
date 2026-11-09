@@ -37,6 +37,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
+require_once __DIR__ . '/../sources/secure_send_email.php';
 // init
 $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
@@ -48,6 +49,7 @@ $lang = new Language($session->get('user-language') ?? 'english');
 // Load config
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
+$secureSendEmailConfigured = secureSendEmailIsConfigured($SETTINGS);
 
 // Do checks
 $checkUserAccess = new PerformChecks(
@@ -884,6 +886,17 @@ if ((int) $session_user_admin === 1) {
                             </div>
                         </div>
                         <small id="form-secure-send-passphrase-reminder" class="d-block mt-2 text-info hidden"><i class="fa-solid fa-circle-info mr-1" aria-hidden="true"></i><?php echo $lang->get('secure_send_passphrase_reminder'); ?></small>
+                        <div class="border-top pt-3 mt-3">
+                            <div class="d-flex flex-column flex-sm-row align-items-sm-end">
+                                <div class="form-group flex-grow-1 mb-2 mb-sm-0 mr-sm-2">
+                                    <label for="form-secure-send-email-recipient"><?php echo htmlspecialchars($lang->get('secure_send_email_recipient'), ENT_QUOTES, 'UTF-8'); ?></label>
+                                    <input type="email" class="form-control" id="form-secure-send-email-recipient" maxlength="254" autocomplete="off" spellcheck="false" aria-describedby="secure-send-email-hint" <?php echo $secureSendEmailConfigured ? '' : 'disabled'; ?>>
+                                </div>
+                                <button type="button" class="btn btn-outline-primary" id="form-secure-send-email" <?php echo $secureSendEmailConfigured ? '' : 'disabled'; ?>><i class="fa-regular fa-envelope mr-2" aria-hidden="true"></i><?php echo htmlspecialchars($lang->get('secure_send_email_create'), ENT_QUOTES, 'UTF-8'); ?></button>
+                            </div>
+                            <small class="d-block text-muted mt-2" id="secure-send-email-hint"><?php echo htmlspecialchars($lang->get($secureSendEmailConfigured ? 'secure_send_email_hint' : 'secure_send_email_not_configured'), ENT_QUOTES, 'UTF-8'); ?></small>
+                            <p class="small mt-2 mb-0 hidden" id="secure-send-email-result" role="status" aria-live="polite"></p>
+                        </div>
                         <details id="secure-send-snapshot-hint" class="text-muted small mt-3">
                             <summary><?php echo $lang->get('secure_send_snapshot_details'); ?></summary>
                             <p class="mt-2 mb-0"><?php echo $lang->get('secure_send_snapshot_hint'); ?></p>

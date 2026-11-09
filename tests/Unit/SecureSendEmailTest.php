@@ -132,7 +132,7 @@ final class SecureSendEmailTest extends TestCase
 
     public function testExactlyOneValidMailboxAndHttpsAreRequired(): void
     {
-        foreach ([null, [], '', 'a@example.test,b@example.test', 'Name <a@example.test>', "a@example.test\r\nBcc: b@example.test"] as $bad) {
+        foreach ([null, [], '', 'a@example.test,b@example.test', '"a,b"@example.test', 'Name <a@example.test>', "a@example.test\r\nBcc: b@example.test"] as $bad) {
             try { secureSendEmailRecipient($bad); self::fail('Invalid recipient accepted'); }
             catch (InvalidArgumentException $e) { self::assertSame('invalid_email', $e->getMessage()); }
         }
@@ -141,6 +141,18 @@ final class SecureSendEmailTest extends TestCase
         $this->delivery['url'] = str_replace('https:', 'http:', $this->delivery['url']);
         $this->expectExceptionMessage('email_requires_https');
         secureSendStoreLink($this->link, $this->settings, $this->delivery);
+    }
+
+    public function testMailAvailabilityIncludesAllConfiguredTransportsAndFixedExchangeSmtp(): void
+    {
+        self::assertTrue(secureSendEmailIsConfigured($this->settings));
+        $settings = $this->settings;
+        unset($settings['email_smtp_server']);
+        self::assertFalse(secureSendEmailIsConfigured($settings));
+        self::assertTrue(secureSendEmailIsConfigured($settings + ['email_smtp_auth_mode' => 'microsoft_oauth', 'email_microsoft_mailbox' => 'team@example.test']));
+        self::assertTrue(secureSendEmailIsConfigured($settings + ['email_transport' => 'microsoft_graph', 'email_microsoft_mailbox' => 'team@example.test']));
+        self::assertTrue(secureSendEmailIsConfigured($settings + ['email_transport' => 'gmail_api', 'email_google_sender' => 'team@example.test']));
+        self::assertFalse(secureSendEmailIsConfigured($settings + ['email_transport' => 'unknown']));
     }
 
     public function testDeliveryStatusIsOwnerScopedAndDoesNotExposeRecipientsOrSecrets(): void

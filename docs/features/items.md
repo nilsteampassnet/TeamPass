@@ -318,7 +318,7 @@ created.
 Passphrases are limited to 1,024 bytes, matching the recipient form. Malformed
 fields and invalid note text are rejected before a link is created; requested
 validity and view counts remain bounded by the administrator's policy.
-No schema upgrade is needed: new copies use the existing send_type value space
+Snapshot storage needs no schema upgrade: new copies use the existing send_type value space
 with item_v2. Legacy item and note links remain readable. Do not roll back the
 application while item_v2 links remain active.
 
@@ -345,6 +345,34 @@ Generate again to apply the new settings; this does not alter links already show
 or sent. Use **My secure sends** to revoke those links. If the form changes or
 closes while generation is pending, a link created by the late response is
 revoked on a best-effort basis and the active-link list is refreshed.
+
+### Email invitations
+
+To email a new sharing link, enter one address in **Email the link to** and choose
+**Create and email**. This creates a separate share with the current options; it
+does not resend an earlier link. The recipient receives a generic invitation,
+with the link and expiration, without the shared item/note content or passphrase.
+Communicate the passphrase through a different channel. The sharing address must
+use HTTPS and be reachable by the recipient. The public-address option remains
+an explicit sender choice.
+
+The form stays locked during this request, for at most 30 seconds. An emailed
+creation is not automatically revoked when its response is late or lost: the
+mail service may already hold the invitation. Use **My secure sends** to revoke
+it explicitly if needed.
+
+The invitation is queued after creation. **My secure sends** shows whether it is
+awaiting submission, accepted by the mail service, unconfirmed or no longer
+tracked. Reopen the list to refresh this state; acceptance does not confirm inbox
+delivery. If a response is lost or sending is unconfirmed, check the list and ask
+an administrator to check the provider before creating another invitation.
+
+Each sender may create ten emailed shares per rolling hour; pending and failed
+invitations count too. Revoking a link does not refund that budget. **Generate
+link** and clipboard sharing remain available independently of email configuration.
+The administrator can customize the invitation under **Email templates**. Email
+delivery requires the additive application upgrade described in
+[Email delivery](../install/secure-send.md#email-delivery).
 
 ---
 

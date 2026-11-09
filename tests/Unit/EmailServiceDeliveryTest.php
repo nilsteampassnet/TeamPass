@@ -50,6 +50,27 @@ final class EmailServiceDeliveryTest extends TestCase
         self::assertSame('', $mailer->attempts[1]['alternative']);
     }
 
+    /** The invitation's escaped query parameters survive the actual mail preparation pipeline. */
+    public function testSecureSendInvitationKeepsItsCompleteLinkThroughMimePreparation(): void
+    {
+        require_once dirname(__DIR__, 2) . '/app/sources/secure_send_email.php';
+        foreach (['english', 'french'] as $locale) {
+            [$service, $mailer, $settings] = $this->delivery();
+            $url = 'https://share.example.test/team/index.php?otv=1&code=lookup&key=link-secret-canary&stamp=1794244800';
+            $message = secureSendEmailMessage(['recipient' => 'recipient@example.test', 'url' => $url],
+                ['shared_globaly' => 0, 'time_limit' => 1794849600, 'encrypted' => 'content-canary', 'protected_key' => 'wrapped-canary'],
+                ['default_language' => $locale, 'email_from' => 'team@example.test', 'email_smtp_server' => 'smtp.example.test',
+                    'cpassman_url' => 'https://share.example.test/team']);
+            self::assertSame('', $service->sendMail($message['subject'], $message['body'], $message['receivers'], $settings));
+            $body = $mailer->attempts[0]['body'];
+            self::assertStringContainsString('href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '"', $body);
+            foreach (['content-canary', 'wrapped-canary', '#link#', '#expires#'] as $forbidden) {
+                self::assertStringNotContainsString($forbidden, $body);
+            }
+            self::assertSame(['recipient@example.test'], $mailer->attempts[0]['recipients']);
+        }
+    }
+
     /** A failed send must release the connection and leave the service reusable. */
     public function testFailedDeliveryClosesTheConnectionAndDoesNotRetainRecipients(): void
     {
