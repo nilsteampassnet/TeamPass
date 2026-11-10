@@ -63,7 +63,7 @@ final class EmailServiceDeliveryTest extends TestCase
                     'cpassman_url' => 'https://share.example.test/team']);
             $message = secureSendEmailPersonalize($message, 0, ['default_language' => $locale]);
             self::assertSame('', $service->sendMail($message['subject'], $message['body'], $message['receivers'], $settings));
-            self::assertSame($locale === 'french' ? 'Quelqu’un vous a partagé un message sécurisé depuis TeamPass' : 'Someone shared a secure message with you via TeamPass', $mailer->Subject);
+            self::assertSame($locale === 'french' ? 'Quelqu’un a partagé un message sécurisé avec vous via TeamPass' : 'Someone shared a secure message with you via TeamPass', $mailer->Subject);
             self::assertStringNotContainsString('#sender_prefix#', $mailer->getSentMIMEMessage());
             $body = $mailer->attempts[0]['body'];
             self::assertStringContainsString('href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '"', $body);

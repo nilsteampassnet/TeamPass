@@ -301,7 +301,7 @@ final class SecureSendEmailTest extends TestCase
     public function testInvitationSubjectIncludesOnlyThePermittedDecodedProfileName(): void
     {
         DB::$connection->exec("UPDATE email_test_users SET name='R&amp;D', lastname='O&#039;Brien &quot;Ops&quot; &lt;Guide&gt;' WHERE id=42");
-        foreach (['english' => 'Someone shared a secure message with you via TeamPass', 'french' => 'Quelqu’un vous a partagé un message sécurisé depuis TeamPass'] as $locale => $generic) {
+        foreach (['english' => 'Someone shared a secure message with you via TeamPass', 'french' => 'Quelqu’un a partagé un message sécurisé avec vous via TeamPass'] as $locale => $generic) {
             $settings = $this->settings + ['default_language' => $locale];
             $id = secureSendStoreLink($this->link, $settings, $this->delivery);
             $taskId = (int) DB::queryFirstField('SELECT task_id FROM email_test_secure_send_email WHERE send_id=%i', $id);
@@ -309,7 +309,7 @@ final class SecureSendEmailTest extends TestCase
             self::assertStringNotContainsString('O\'Brien', json_encode($message));
             self::assertSame($generic, secureSendEmailPersonalize($message, $taskId, $settings)['subject']);
             $named = secureSendEmailPersonalize($message, $taskId, $settings + ['secure_send_show_sender_name' => 1]);
-            self::assertSame('R&D O\'Brien "Ops" <Guide> ' . ($locale === 'french' ? 'vous a partagé un message sécurisé depuis TeamPass' : 'shared a secure message with you via TeamPass'), $named['subject']);
+            self::assertSame('R&D O\'Brien "Ops" <Guide> ' . ($locale === 'french' ? 'a partagé un message sécurisé avec vous via TeamPass' : 'shared a secure message with you via TeamPass'), $named['subject']);
             self::assertStringNotContainsString('R&D', $named['body']);
             self::assertSame($generic, secureSendEmailPersonalize($message, $taskId, $settings + ['secure_send_show_sender_name' => 0])['subject']);
         }
