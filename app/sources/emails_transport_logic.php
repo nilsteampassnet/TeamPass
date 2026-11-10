@@ -9,6 +9,30 @@ declare(strict_types=1);
  * See <https://www.gnu.org/licenses/>.
  */
 
+/** Detect a selected email destination without database access or a provider request. */
+function emailTransportIsConfigured(array $settings): bool
+{
+    $transport = (string) ($settings['email_transport'] ?? 'smtp');
+    if ($transport === 'gmail_api') {
+        return filter_var(trim((string) ($settings['email_google_sender'] ?? '')), FILTER_VALIDATE_EMAIL) !== false;
+    }
+    if ($transport === 'microsoft_graph') {
+        return filter_var(trim((string) ($settings['email_microsoft_mailbox'] ?? '')), FILTER_VALIDATE_EMAIL) !== false;
+    }
+    if ($transport !== 'smtp') {
+        return false;
+    }
+    $mode = (string) ($settings['email_smtp_auth_mode'] ?? '');
+    if ($mode === '') {
+        $mode = (string) ($settings['email_smtp_auth'] ?? '0') === '1' ? 'password' : 'none';
+    }
+    if ($mode === 'microsoft_oauth') {
+        return filter_var(trim((string) ($settings['email_microsoft_mailbox'] ?? '')), FILTER_VALIDATE_EMAIL) !== false;
+    }
+    return in_array($mode, ['none', 'password'], true)
+        && trim((string) ($settings['email_smtp_server'] ?? '')) !== '';
+}
+
 /** Settings that must be written as one profile, never through generic autosave. */
 function emailTransportSettingNames(): array
 {

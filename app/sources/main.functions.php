@@ -65,6 +65,7 @@ require_once __DIR__ . '/branding_logic.php';
 require_once __DIR__ . '/user_keys_task_logic.php';
 require_once __DIR__ . '/secret_settings_logic.php';
 require_once __DIR__ . '/emails_queue_logic.php';
+require_once __DIR__ . '/emails_transport_logic.php';
 require_once __DIR__ . '/sharekeys_repair_logic.php';
 require_once __DIR__ . '/main_queries_logic.php';
 require_once __DIR__ . '/attachment_pending_logic.php';
@@ -4451,7 +4452,7 @@ function handleFailedAttempts(string $source, string $value, int $limit, int $lo
  */
 function getForgotLocalPasswordContext(?array $userInfo, array $SETTINGS): array
 {
-    $emailConfigured = empty(trim((string) ($SETTINGS['email_smtp_server'] ?? ''))) === false;
+    $emailConfigured = emailTransportIsConfigured($SETTINGS);
     $featureEnabled  = isset($SETTINGS['enable_local_password_recovery']) === true
         ? (int) $SETTINGS['enable_local_password_recovery'] === 1
         : (int) ($SETTINGS['disable_show_forgot_pwd_link'] ?? 0) !== 1;

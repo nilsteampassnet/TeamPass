@@ -24,6 +24,13 @@ place. An absent transport still means SMTP; an empty auth-mode override derives
 the previous authentication setting. No OAuth configuration is required to keep
 using a legacy SMTP relay. Unknown transport/authentication selections fail.
 
+Recovery eligibility, passkey notifications, upgrade notifications and the user
+administration warning use the selected transport's destination: the relay host,
+Microsoft mailbox or Gmail sender. API and Microsoft SMTP OAuth configurations
+do not need a stored relay host. This availability check does not verify tokens
+or provider permissions. Certificate warnings apply only to legacy SMTP relays;
+Microsoft SMTP OAuth always verifies TLS.
+
 Back up the database, application configuration and instance key using the normal
 upgrade process. Preserve the instance key: it protects credentials, tokens and
 new queued messages. Do not create a new key to repair an email problem.

@@ -222,9 +222,9 @@ if ($deleted_users_count > 0) {
 $inactive_never_connected_count = $canAccessInactiveAndDeletedUsers === true ? count_never_connected_active_users() : 0;
 $inactive_blink_class = $inactive_never_connected_count > 0 ? 'blink_me' : '';
 
-// Warn admin if SMTP server address is not configured
+// Warn admin if the selected email transport has no configured destination.
 $emailNotConfigured = $canAccessInactiveAndDeletedUsers === true
-    && empty(trim($SETTINGS['email_smtp_server'] ?? ''));
+    && !emailTransportIsConfigured($SETTINGS);
 ?>
 
 <!-- Content Header (Page header) -->

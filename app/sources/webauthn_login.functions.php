@@ -1108,7 +1108,7 @@ function webauthnLoginLabelOrDefault($label, Language $lang, string $aaguid = ''
 function webauthnLoginNotifyAdded(array $SETTINGS, int $userId, string $label): void
 {
     if ((int) ($SETTINGS['webauthn_email_on_add'] ?? 1) !== 1
-        || trim((string) ($SETTINGS['email_smtp_server'] ?? '')) === ''
+        || !emailTransportIsConfigured($SETTINGS)
     ) {
         return;
     }
