@@ -15,8 +15,10 @@ use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Throwable;
+use function TeamPass\Tests\SourceStructure\lastCatchSource;
 
 require_once dirname(__DIR__, 2) . '/app/sources/emails_transport_logic.php';
+require_once __DIR__ . '/../Fixtures/php_source_structure.php';
 
 /** Keep the response boundary isolated from the session encryption adapter. */
 function prepareExchangedData(array $data, string $operation): string
@@ -30,9 +32,7 @@ final class EmailProfileErrorResponseTest extends TestCase
     public function testResponseContainsOnlyKnownFieldNamesAndGenericMessages(): void
     {
         $source = (string) file_get_contents(dirname(__DIR__, 2) . '/app/sources/emails_transport.queries.php');
-        $start = strpos($source, 'catch (Throwable $e)');
-        self::assertIsInt($start);
-        $handler = substr($source, $start);
+        $handler = lastCatchSource($source);
         $transaction = false;
         $callback = false;
         $session = new class {

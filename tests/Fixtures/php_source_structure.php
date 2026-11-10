@@ -21,10 +21,10 @@ function blockSource(string $source, array $tokens, int $start): string
     $opened = false;
     for ($index = $start; $index < count($tokens); ++$index) {
         $token = $tokens[$index];
-        if ($token->text === '{' || $token->is([T_CURLY_OPEN, T_DOLLAR_OPEN_CURLY_BRACES])) {
+        if ($token->id === ord('{') || $token->is([T_CURLY_OPEN, T_DOLLAR_OPEN_CURLY_BRACES])) {
             ++$depth;
             $opened = true;
-        } elseif ($token->text === '}' && $opened && --$depth === 0) {
+        } elseif ($token->id === ord('}') && $opened && --$depth === 0) {
             return substr($source, $tokens[$start]->pos, $token->pos + 1 - $tokens[$start]->pos);
         }
     }
@@ -65,4 +65,31 @@ function lastCatchSource(string $source): string
         if ($tokens[$index]->is(T_CATCH)) { return blockSource($source, $tokens, $index); }
     }
     throw new RuntimeException('Production catch block is missing.');
+}
+
+/** Extract a variable assignment through its balanced statement terminator. */
+function assignmentSource(string $source, string $name): string
+{
+    $start = variableOffset($source, $name);
+    $depth = 0;
+    foreach (PhpToken::tokenize($source) as $token) {
+        if ($token->pos < $start) { continue; }
+        if ($token->is(['(', '[', '{', T_CURLY_OPEN, T_DOLLAR_OPEN_CURLY_BRACES])) { ++$depth; }
+        if ($token->is([')', ']', '}'])) { --$depth; }
+        if ($token->is(';') && $depth === 0) { return substr($source, $start, $token->pos + 1 - $start); }
+    }
+    throw new RuntimeException('Production assignment is incomplete.');
+}
+
+/** Extract the foreach over a named variable, without anchoring on formatting comments. */
+function foreachSource(string $source, string $name): string
+{
+    $tokens = PhpToken::tokenize($source);
+    foreach ($tokens as $index => $token) {
+        if (!$token->is(T_FOREACH)) { continue; }
+        for ($next = $index + 1; $next < count($tokens) && !$tokens[$next]->is(T_AS); ++$next) {
+            if ($tokens[$next]->is(T_VARIABLE) && $tokens[$next]->text === $name) { return blockSource($source, $tokens, $index); }
+        }
+    }
+    throw new RuntimeException('Production foreach is missing: ' . $name);
 }

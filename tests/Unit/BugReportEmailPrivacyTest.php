@@ -12,8 +12,13 @@ declare(strict_types=1);
 namespace TeamPass\Tests\BugReportPrivacy;
 
 use PHPUnit\Framework\TestCase;
+use function TeamPass\Tests\SourceStructure\assignmentSource;
+use function TeamPass\Tests\SourceStructure\foreachSource;
+use function TeamPass\Tests\SourceStructure\functionSource;
+use function TeamPass\Tests\SourceStructure\variableOffset;
 
 require_once dirname(__DIR__, 2) . '/app/sources/secret_settings_logic.php';
+require_once __DIR__ . '/../Fixtures/php_source_structure.php';
 
 /** Simulate a future registered secret without changing the production registry. */
 function tpSecretSettingNames(): array
@@ -26,13 +31,7 @@ final class BugReportEmailPrivacyTest extends TestCase
     private function exclusionSource(): string
     {
         $source = (string) file_get_contents(dirname(__DIR__, 2) . '/app/sources/main.queries.php');
-        $function = strpos($source, 'function generateBugReport(');
-        self::assertIsInt($function);
-        $start = strpos($source, '$config_exclude_vars =', $function);
-        $end = strpos($source, "// Load user's language", $start);
-        self::assertIsInt($start);
-        self::assertIsInt($end);
-        return substr($source, $start, $end - $start);
+        return assignmentSource('<?php ' . functionSource($source, 'generateBugReport'), '$config_exclude_vars');
     }
 
     /** Provider identities and all current/future registered secrets belong to the actual mask list. */
@@ -55,8 +54,10 @@ final class BugReportEmailPrivacyTest extends TestCase
             $SETTINGS[$name] = 'def50200-private-value-' . $name;
         }
         $source = (string) file_get_contents(dirname(__DIR__, 2) . '/app/sources/main.queries.php');
-        $start = strpos($source, '// Read config file', strpos($source, 'function generateBugReport('));
-        $end = strpos($source, '// Get error', $start);
+        $source = '<?php ' . functionSource($source, 'generateBugReport');
+        $start = variableOffset($source, '$list_of_options');
+        $loop = foreachSource($source, '$sortedSettings');
+        $end = strpos($source, $loop) + strlen($loop);
         self::assertIsInt($start);
         self::assertIsInt($end);
         eval(substr($source, $start, $end - $start));
