@@ -1738,7 +1738,7 @@ function generateQRCode(
 
     // send mail?
     if ((int) $post_send_mail === 1) {
-        prepareSendingEmail(
+        $queued = prepareSendingEmail(
             $lang->get('email_ga_subject'),
             str_replace(
                 '#2FACode#',
@@ -1747,6 +1747,12 @@ function generateQRCode(
             ),
             $dataUser['email']
         );
+        if ($queued === false) {
+            return prepareExchangedData([
+                'error' => true,
+                'message' => $lang->get('email_queue_failed'),
+            ], 'encode');
+        }
 
         // send back
         return prepareExchangedData(

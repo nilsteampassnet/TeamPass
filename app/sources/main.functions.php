@@ -10269,7 +10269,7 @@ function getEmailTemplateSubject(string $templateId, $lang): string
  * @param boolean $immediate_email
  * @param string $encryptedUserPassword
  * @param string $receiverName
- * @return string
+ * @return string|null Encoded immediate result or enqueue error; null after a successful enqueue.
  */
 function sendMailToUser(
     string $post_receipt,
@@ -10323,13 +10323,20 @@ function sendMailToUser(
         );
     } else {
         // Send through task handler
-        prepareSendingEmail(
+        $queued = prepareSendingEmail(
             $post_subject,
             $post_body,
             $post_receipt,
             $receiverName,
             $encryptedUserPassword,
         );
+        if ($queued === false) {
+            $language = new Language(SessionManager::getSession()->get('user-language') ?? ($SETTINGS['default_language'] ?? 'english'));
+            return prepareExchangedData([
+                'error' => true,
+                'message' => $language->get('email_queue_failed'),
+            ], 'encode');
+        }
     }
 
     return null;
