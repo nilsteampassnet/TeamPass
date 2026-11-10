@@ -2333,7 +2333,7 @@ function getStatisticsData(array $SETTINGS): array
  * @param string $receiverName  Receiver name
  * @param string $encryptedUserPassword      encryptedUserPassword
  *
- * @return void
+ * @return bool True when the email task was queued and the handler was notified
  */
 function prepareSendingEmail(
     $subject,
@@ -2341,32 +2341,39 @@ function prepareSendingEmail(
     $email,
     $receiverName = '',
     $encryptedUserPassword = ''
-): void 
+): bool
 {
-    DB::insert(
-        prefixTable('background_tasks'),
-        array(
-            'created_at' => time(),
-            'process_type' => 'send_email',
-            'arguments' => json_encode(emailQueueSeal([
-                'subject' => html_entity_decode($subject, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
-                'receivers' => $email,
-                'body' => $body,
-                'receiver_name' => $receiverName,
-                'encryptedUserPassword' => $encryptedUserPassword,
-            ]), JSON_THROW_ON_ERROR),
-        )
-    );
+    try {
+        DB::insert(
+            prefixTable('background_tasks'),
+            array(
+                'created_at' => time(),
+                'process_type' => 'send_email',
+                'arguments' => json_encode(emailQueueSeal([
+                    'subject' => html_entity_decode($subject, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+                    'receivers' => $email,
+                    'body' => $body,
+                    'receiver_name' => $receiverName,
+                    'encryptedUserPassword' => $encryptedUserPassword,
+                ]), JSON_THROW_ON_ERROR),
+            )
+        );
 
-    // Wake the handler up. This task is very often created from inside a worker that the
-    // handler is already draining (typically create_user_keys step99). Without the trigger
-    // the handler only picks it up if it is still in its launching window: once
-    // tasks_max_drain_time is exceeded, drainTaskPool() stops launching and exits, leaving
-    // the email queued until the next cron tick - or forever when no cron is configured.
-    // Touching the trigger file makes a running handler extend its drain window
-    // (checkAndConsumeTrigger) and relaunches a stopped one. Concurrent launches are
-    // harmless: the handler holds an exclusive flock and surplus instances exit at once.
-    triggerBackgroundHandler();
+        // Wake the handler up. This task is very often created from inside a worker that the
+        // handler is already draining (typically create_user_keys step99). Without the trigger
+        // the handler only picks it up if it is still in its launching window: once
+        // tasks_max_drain_time is exceeded, drainTaskPool() stops launching and exits, leaving
+        // the email queued until the next cron tick - or forever when no cron is configured.
+        // Touching the trigger file makes a running handler extend its drain window
+        // (checkAndConsumeTrigger) and relaunches a stopped one. Concurrent launches are
+        // harmless: the handler holds an exclusive flock and surplus instances exit at once.
+        triggerBackgroundHandler();
+        return true;
+    } catch (Throwable $error) {
+        // Notification failures must not abort sign-in or expose credentials in diagnostics.
+        error_log('Email queue failure: ' . get_class($error));
+        return false;
+    }
 }
 
 /**

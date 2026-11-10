@@ -82,6 +82,9 @@ leaves the previous transport active. Saving Gmail again intentionally requires 
 consent. The callback has a public proxy and rechecks the current administrator role.
 
 `prepareSendingEmail()` seals new task arguments with the instance key before INSERT.
+It returns a boolean and catches enqueue failures, logging only the exception class.
+Serialization or encryption failure inserts no task and does not abort the caller's
+sign-in or notification flow; callers that need to detect failure can check `false`.
 The versioned JSON envelope contains ciphertext only; the worker opens it immediately
 before delivery. Historical task arguments remain readable. Unknown envelope versions,
 tampering and unexpected fields fail closed, without sending or logging the payload.

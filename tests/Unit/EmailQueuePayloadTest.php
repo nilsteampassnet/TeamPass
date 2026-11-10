@@ -21,8 +21,13 @@ use RuntimeException;
 final class DB
 {
     public static array $inserts = [];
+    public static bool $reject = false;
     /** Capture a write without configuring an installation. */
-    public static function insert(string $table, array $row): void { self::$inserts[] = [$table, $row]; }
+    public static function insert(string $table, array $row): void
+    {
+        if (self::$reject) { throw new RuntimeException('private-database-error'); }
+        self::$inserts[] = [$table, $row];
+    }
 }
 
 /** Keep the wakeup boundary isolated from cron and PHP-FPM. */
@@ -48,9 +53,10 @@ final class EmailQueuePayloadTest extends TestCase
         $source = str_replace("\r\n", "\n", file_get_contents(dirname(__DIR__, 2) . '/app/sources/main.functions.php'));
         $start = strpos($source, 'function prepareSendingEmail(');
         $end = strpos($source, "\n}\n", $start) + 2;
-        eval('namespace ' . __NAMESPACE__ . ';' . substr($source, $start, $end - $start));
+        eval('namespace ' . __NAMESPACE__ . '; use Throwable;' . substr($source, $start, $end - $start));
         $GLOBALS['email_queue_wakeups'] = 0;
         DB::$inserts = [];
+        DB::$reject = false;
     }
 
     protected function tearDown(): void
@@ -61,7 +67,7 @@ final class EmailQueuePayloadTest extends TestCase
     /** New email data reaches the INSERT only after authenticated encryption. */
     public function testEnqueueEncryptsBeforeSqlAndWakesTheHandler(): void
     {
-        prepareSendingEmail('R&amp;D O&#039;Brien', '<p>private-mail-body</p>', 'private-recipient@example.test');
+        self::assertTrue(prepareSendingEmail('R&amp;D O&#039;Brien', '<p>private-mail-body</p>', 'private-recipient@example.test'));
         self::assertSame(1, $GLOBALS['email_queue_wakeups']);
         self::assertCount(1, DB::$inserts);
         self::assertSame('email_queue_test_background_tasks', DB::$inserts[0][0]);
@@ -84,6 +90,34 @@ final class EmailQueuePayloadTest extends TestCase
         $message = ['subject' => 'Émail', 'body' => str_repeat('<p>R&amp;D éè</p>', 10000), 'receivers' => 'recipient@example.test'];
         self::assertSame($message, emailQueueOpen($message));
         self::assertSame($message, emailQueueOpen(emailQueueSeal($message)));
+    }
+
+    /** Serialization, key and persistence failures return false without escaping into sign-in. */
+    public function testEnqueueFailuresReturnFalseAndLogOnlyTheirClass(): void
+    {
+        $log = tempnam(sys_get_temp_dir(), 'teampass-email-queue-log-');
+        self::assertNotFalse($log);
+        ini_set('error_log', $log);
+        try {
+            self::assertFalse(prepareSendingEmail('private-subject', "\xb1\x31", 'private-recipient@example.test'));
+            self::assertStringContainsString('Email queue failure: JsonException', file_get_contents($log));
+            DB::$reject = true;
+            self::assertFalse(prepareSendingEmail('private-subject', 'private-body', 'private-recipient@example.test'));
+            self::assertStringContainsString('Email queue failure: RuntimeException', file_get_contents($log));
+            DB::$reject = false;
+            file_put_contents($this->keyFile, 'private-invalid-instance-key');
+            self::assertFalse(prepareSendingEmail('private-subject', 'private-body', 'private-recipient@example.test'));
+            $logged = file_get_contents($log);
+            self::assertStringContainsString('Defuse\\Crypto\\Exception\\BadFormatException', $logged);
+            foreach (['private-subject', 'private-body', 'private-recipient', 'private-database-error', 'private-invalid-instance-key'] as $private) {
+                self::assertStringNotContainsString($private, $logged);
+            }
+            self::assertSame([], DB::$inserts);
+            self::assertSame(0, $GLOBALS['email_queue_wakeups']);
+        } finally {
+            ini_set('error_log', PHP_OS_FAMILY === 'Windows' ? 'NUL' : '/dev/null');
+            unlink($log);
+        }
     }
 
     /** Modified ciphertext cannot fall back to historical plaintext processing. */
