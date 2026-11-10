@@ -91,6 +91,8 @@ final class ApiTransport implements EmailTransportInterface
                     $status >= 400 => EmailSendResult::failure('rejected'),
                     default => EmailSendResult::indeterminate(),
                 };
+            } catch (\InvalidArgumentException $e) {
+                return EmailSendResult::failure('configuration');
             } catch (\Throwable $e) {
                 return EmailSendResult::indeterminate(EmailHttp::networkCode($e));
             }

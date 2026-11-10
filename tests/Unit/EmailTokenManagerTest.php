@@ -53,6 +53,37 @@ final class EmailMemoryTokenStore implements EmailTokenStoreInterface
 
 final class EmailTokenManagerTest extends TestCase
 {
+    /** Invalid proxy configuration is permanent and never reaches a provider endpoint. */
+    public function testInvalidProxyPortIsNotARetryableTokenNetworkFailure(): void
+    {
+        foreach (['microsoft_graph', 'microsoft_smtp', 'gmail_api'] as $purpose) {
+            foreach (['0', '65536', 'private-invalid-port'] as $port) {
+                $settings = $this->settings();
+                $settings->proxyIp = 'proxy.example.test';
+                $settings->proxyPort = $port;
+                $history = [];
+                $store = new EmailMemoryTokenStore();
+                $manager = new EmailTokenManager($settings, $purpose, $store, $this->client([], $history));
+                try {
+                    if ($purpose === 'gmail_api') {
+                        $manager->exchangeGoogleCode('code', str_repeat('v', 43), 'https://example.test/sources/emails_oauth.php');
+                    } else {
+                        $manager->getAccessToken();
+                    }
+                    self::fail('Invalid proxy port accepted');
+                } catch (EmailTransportException $error) {
+                    self::assertSame('configuration', $error->result->errorCode);
+                    self::assertFalse($error->result->retryable);
+                    self::assertFalse($error->result->indeterminate);
+                    self::assertNull($error->getPrevious());
+                }
+                self::assertSame([], $history);
+                self::assertSame([], $store->states);
+                if ($purpose !== 'gmail_api') { self::assertSame(1, $store->releases); }
+            }
+        }
+    }
+
     /** Token acquisition for both Microsoft audiences follows the global proxy. */
     public function testMicrosoftTokenRequestsUseTheConfiguredProxy(): void
     {
