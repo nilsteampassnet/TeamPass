@@ -886,6 +886,7 @@ if ((int) $session_user_admin === 1) {
                             </div>
                         </div>
                         <small id="form-secure-send-passphrase-reminder" class="d-block mt-2 text-info hidden"><i class="fa-solid fa-circle-info mr-1" aria-hidden="true"></i><?php echo $lang->get('secure_send_passphrase_reminder'); ?></small>
+                        <?php if ((int) ($SETTINGS['secure_send_allow_email'] ?? 0) === 1) { ?>
                         <div class="border-top pt-3 mt-3">
                             <div class="d-flex flex-column flex-sm-row align-items-sm-end">
                                 <div class="form-group flex-grow-1 mb-2 mb-sm-0 mr-sm-2">
@@ -897,6 +898,7 @@ if ((int) $session_user_admin === 1) {
                             <small class="d-block text-muted mt-2" id="secure-send-email-hint"><?php echo htmlspecialchars($lang->get($secureSendEmailConfigured ? 'secure_send_email_hint' : 'secure_send_email_not_configured'), ENT_QUOTES, 'UTF-8'); ?></small>
                             <p class="small mt-2 mb-0 hidden" id="secure-send-email-result" role="status" aria-live="polite"></p>
                         </div>
+                        <?php } ?>
                         <details id="secure-send-snapshot-hint" class="text-muted small mt-3">
                             <summary><?php echo $lang->get('secure_send_snapshot_details'); ?></summary>
                             <p class="mt-2 mb-0"><?php echo $lang->get('secure_send_snapshot_hint'); ?></p>

@@ -13,6 +13,7 @@ require_once __DIR__ . '/secure_send_access.php';
 require_once __DIR__ . '/secure_send_logic.php';
 require_once __DIR__ . '/secure_send_url.php';
 require_once __DIR__ . '/emails_queue_logic.php';
+require_once __DIR__ . '/emails_transport_logic.php';
 
 /** Return the metadata-only delivery association shared by installation and upgrade. */
 function secureSendEmailSchemaSql(string $table): string
@@ -49,17 +50,8 @@ function secureSendEmailRecipient(mixed $value): string
 /** Check whether a sending identity has been configured; provider acceptance is checked later. */
 function secureSendEmailIsConfigured(array $settings): bool
 {
-    if (filter_var($settings['email_from'] ?? '', FILTER_VALIDATE_EMAIL) === false) {
-        return false;
-    }
-    return match ($settings['email_transport'] ?? 'smtp') {
-        'smtp' => ($settings['email_smtp_auth_mode'] ?? '') === 'microsoft_oauth'
-            ? trim((string) ($settings['email_microsoft_mailbox'] ?? '')) !== ''
-            : trim((string) ($settings['email_smtp_server'] ?? '')) !== '',
-        'microsoft_graph' => trim((string) ($settings['email_microsoft_mailbox'] ?? '')) !== '',
-        'gmail_api' => trim((string) ($settings['email_google_sender'] ?? '')) !== '',
-        default => false,
-    };
+    return filter_var($settings['email_from'] ?? '', FILTER_VALIDATE_EMAIL) !== false
+        && emailTransportIsConfigured($settings);
 }
 
 /** Serialize per-sender reservations; failed and pending deliveries also consume the hourly budget. */
@@ -80,6 +72,9 @@ function secureSendEmailReserve(int $originator, int $now): void
 /** Render a generic invitation; item labels, note contents and passphrases never enter the message. */
 function secureSendEmailMessage(array $delivery, array $link, array $settings): array
 {
+    if ((int) ($settings['secure_send_allow_email'] ?? 0) !== 1) {
+        throw new InvalidArgumentException('email_not_allowed');
+    }
     $recipient = secureSendEmailRecipient($delivery['recipient'] ?? null);
     if (!secureSendEmailIsConfigured($settings)) {
         throw new InvalidArgumentException('email_not_configured');
@@ -155,6 +150,9 @@ function secureSendEmailPersonalize(array $message, int $taskId, array $settings
 /** Recheck current policy and source access immediately before each attempt, without consuming a view. */
 function secureSendEmailCanDeliver(int $taskId, array $settings, ?int $now = null): bool
 {
+    if ((int) ($settings['secure_send_allow_email'] ?? 0) !== 1) {
+        return false;
+    }
     $link = DB::queryFirstRow('SELECT o.*, e.address_hash FROM ' . prefixTable('secure_send_email') . ' e
         INNER JOIN ' . prefixTable('otv') . ' o ON o.id = e.send_id AND o.originator = e.originator
         WHERE e.task_id = %i', $taskId) ?: [];

@@ -7341,6 +7341,10 @@ switch ($inputData['type']) {
 
         $secureSendRecipient = null;
         if (array_key_exists('recipient_email', $dataReceived)) {
+            if ((int) ($SETTINGS['secure_send_allow_email'] ?? 0) !== 1) {
+                echo json_encode(['error' => 'email_not_allowed']);
+                break;
+            }
             try {
                 $secureSendRecipient = secureSendEmailRecipient($dataReceived['recipient_email']);
             } catch (InvalidArgumentException $e) {

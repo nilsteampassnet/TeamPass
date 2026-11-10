@@ -16,6 +16,7 @@ use function TeamPass\Tests\SourceStructure\variableOffset;
 
 require __DIR__ . '/php_source_structure.php';
 ini_set('error_log', 'php://stderr');
+define('TEAMPASS_ROOT', dirname(__DIR__, 2));
 $mode = $argv[1];
 $recovery = str_starts_with($mode, 'recovery-');
 if ($recovery) {
@@ -36,6 +37,7 @@ function mysqli_query(object $connection, string $sql): mixed
     $matches = match ($mode) {
         'settings' => str_contains($sql, 'INSERT IGNORE'),
         'tokens', 'exception' => str_contains($sql, 'CREATE TABLE'),
+        'sharing' => str_contains($sql, 'CREATE TABLE') && str_contains($sql, 'secure_send_email'),
         'columns' => str_contains($sql, 'SHOW COLUMNS'),
         'scheduling' => str_contains($sql, 'ADD COLUMN'),
         'index_inspect' => str_contains($sql, 'SHOW INDEX'),

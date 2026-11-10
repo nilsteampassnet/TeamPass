@@ -92,6 +92,7 @@ $emailUpgradeFailure = static function (string $message): never {
 };
 try {
     $emailTransportDefaults = [
+        'secure_send_allow_email' => '0',
         'email_transport' => 'smtp', 'email_smtp_auth_mode' => '',
         'email_config_revision' => bin2hex(random_bytes(16)),
         'email_microsoft_tenant_id' => '', 'email_microsoft_client_id' => '',

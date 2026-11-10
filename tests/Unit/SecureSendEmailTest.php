@@ -39,7 +39,7 @@ final class SecureSendEmailTest extends TestCase
         DB::$connection->exec('CREATE TABLE email_test_secure_send_audit (record TEXT)');
         DB::$connection->exec('CREATE TABLE email_test_background_tasks (increment_id INTEGER PRIMARY KEY AUTOINCREMENT, created_at INTEGER, process_type TEXT, arguments TEXT, status TEXT DEFAULT "queued")');
         DB::$connection->exec('CREATE TABLE email_test_secure_send_email (send_id INTEGER PRIMARY KEY, task_id INTEGER UNIQUE, originator INTEGER, created_at INTEGER, address_hash TEXT)');
-        $this->settings = ['otv_is_enabled' => 1, 'secure_send_allow_notes' => 1, 'cpassman_url' => 'https://vault.example.test',
+        $this->settings = ['otv_is_enabled' => 1, 'secure_send_allow_notes' => 1, 'secure_send_allow_email' => 1, 'cpassman_url' => 'https://vault.example.test',
             'email_smtp_server' => 'smtp.example.test', 'email_from' => 'team@example.test', 'timezone' => 'Europe/Paris'];
         $this->link = ['item_id' => null, 'send_type' => 'note', 'timestamp' => time(), 'originator' => 42,
             'code' => 'lookup-canary', 'encrypted' => 'encrypted-content-canary', 'protected_key' => 'wrapped-canary',
@@ -65,6 +65,45 @@ final class SecureSendEmailTest extends TestCase
         self::assertStringNotContainsString('wrapped-canary', $message['body']);
         self::assertSame('', $message['encryptedUserPassword']);
         self::assertTrue(secureSendEmailCanDeliver(1, $this->settings));
+    }
+
+    public function testEmailInvitationsRequireOptInBeforeCreationAndAtSubmission(): void
+    {
+        foreach ([0, null] as $value) {
+            $this->settings['secure_send_allow_email'] = $value;
+            if ($value === null) { unset($this->settings['secure_send_allow_email']); }
+            self::assertSame(['error' => 'email_not_allowed'], $this->dispatch([
+                'send_type' => 'note', 'payload' => ['note' => 'test'], 'recipient_email' => 'recipient@example.test',
+            ]));
+            foreach (['otv', 'secure_send_audit', 'background_tasks', 'secure_send_email'] as $table) {
+                self::assertSame(0, DB::$connection->querySingle('SELECT COUNT(*) FROM ' . prefixTable($table)));
+            }
+            try { secureSendEmailMessage($this->delivery, $this->link, $this->settings); self::fail('Expected opt-in refusal'); }
+            catch (InvalidArgumentException $e) { self::assertSame('email_not_allowed', $e->getMessage()); }
+        }
+        $this->settings['secure_send_allow_email'] = 1;
+        secureSendStoreLink($this->link, $this->settings, $this->delivery);
+        self::assertTrue(secureSendEmailCanDeliver(1, $this->settings));
+        $this->settings['secure_send_allow_email'] = 0;
+        self::assertFalse(secureSendEmailCanDeliver(1, $this->settings));
+    }
+
+    public function testModalOmitsTheEmailBlockUntilTheAdministratorEnablesIt(): void
+    {
+        $page = file_get_contents(__DIR__ . '/../../app/pages/items.php');
+        $start = strpos($page, "<?php if ((int) (\$SETTINGS['secure_send_allow_email'] ?? 0) === 1) { ?>");
+        self::assertNotFalse($start);
+        $end = strpos($page, '<details id="secure-send-snapshot-hint"', $start);
+        $section = substr($page, $start, $end - $start);
+        $lang = new class { public function get(string $key): string { return $key; } };
+        $secureSendEmailConfigured = true;
+        foreach ([[], ['secure_send_allow_email' => 0], ['secure_send_allow_email' => 1]] as $SETTINGS) {
+            ob_start();
+            try { eval('?>' . $section); $html = ob_get_contents(); }
+            finally { ob_end_clean(); }
+            self::assertSame((int) ($SETTINGS['secure_send_allow_email'] ?? 0) === 1,
+                str_contains($html, 'id="form-secure-send-email-recipient"'));
+        }
     }
 
     public function testPersistenceFailureRollsBackLinkAuditAndJob(): void
@@ -328,6 +367,7 @@ final class SecureSendEmailTest extends TestCase
 
     public function testClipboardSharingDoesNotRequireEmailConfigurationOrUseTheEmailQuota(): void
     {
+        $this->settings['secure_send_allow_email'] = 0;
         unset($this->settings['email_smtp_server']);
         $result = $this->dispatch(['send_type' => 'note', 'payload' => ['note' => 'test']]);
         self::assertSame('', $result['error']);
@@ -352,6 +392,9 @@ final class SecureSendEmailTest extends TestCase
         self::assertGreaterThan(1794218153, (int) UPGRADE_MIN_DATE);
         // #5454 merged at this time; installations upgraded since then also need the delivery table.
         self::assertGreaterThan(1794241179, (int) UPGRADE_MIN_DATE);
+        self::assertGreaterThan(1794244602, (int) UPGRADE_MIN_DATE);
+        self::assertStringContainsString("array('admin', 'secure_send_allow_email', '0')", file_get_contents($root . '/public/install/install-steps/run.step5.php'));
+        self::assertStringContainsString("'secure_send_allow_email' => '0'", file_get_contents($root . '/public/install/upgrade_run_3.2.4.php'));
         self::assertLessThanOrEqual(time(), (int) UPGRADE_MIN_DATE, 'A future floor would require repeated upgrades on fresh installations.');
     }
 }

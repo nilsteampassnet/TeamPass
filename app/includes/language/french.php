@@ -4196,4 +4196,7 @@ return array(
     'secure_send_email_unknown' => 'Suivi de l’e-mail indisponible',
     'secure_send_email_queued_help' => 'L’invitation est en attente d’envoi. Consultez son état dans Mes partages sécurisés. Communiquez la phrase secrète par un autre canal.',
     'secure_send_email_network_unknown' => 'La réponse a été perdue : une invitation est peut-être déjà en attente. Vérifiez Mes partages sécurisés et contactez votre administrateur avant de réessayer.',
+    'secure_send_allow_email' => 'Autoriser les invitations Secure Send par e-mail',
+    'secure_send_allow_email_tip' => 'Autorise les utilisateurs à envoyer des liens de partage à des destinataires externes depuis la boîte de l’organisation configurée. La désactivation bloque aussi les invitations en attente.',
+    'secure_send_email_not_allowed' => 'Les invitations par e-mail sont désactivées par votre administrateur.',
 );

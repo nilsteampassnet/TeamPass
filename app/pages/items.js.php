@@ -9187,6 +9187,7 @@ require __DIR__ . '/icon.picker.js.php';
      */
     function secureSendErrorLabel(code) {
         var map = {
+            'email_not_allowed': <?php echo json_encode($lang->get('secure_send_email_not_allowed'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
             'passphrase_required': <?php echo json_encode($lang->get('secure_send_passphrase_required_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
             'empty_note': <?php echo json_encode($lang->get('secure_send_empty_note_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
             'notes_not_allowed': <?php echo json_encode($lang->get('error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
@@ -9208,7 +9209,7 @@ require __DIR__ . '/icon.picker.js.php';
     let secureSendListVersion = 0;
     let secureSendGenerating = false;
     let secureSendEmailGenerating = false;
-    const secureSendEmailAvailable = <?php echo json_encode(secureSendEmailIsConfigured($SETTINGS)); ?>;
+    const secureSendEmailAvailable = <?php echo json_encode((int) ($SETTINGS['secure_send_allow_email'] ?? 0) === 1 && secureSendEmailIsConfigured($SETTINGS)); ?>;
     const secureSendBaseUrls = <?php echo json_encode($secureSendUrls, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
     const secureSendEmailLabels = {
         queued: <?php echo json_encode($lang->get('secure_send_email_queued'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,

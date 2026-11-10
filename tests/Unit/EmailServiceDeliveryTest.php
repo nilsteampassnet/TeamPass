@@ -59,7 +59,7 @@ final class EmailServiceDeliveryTest extends TestCase
             $url = 'https://share.example.test/team/index.php?otv=1&code=lookup&key=link-secret-canary&stamp=1794244800';
             $message = secureSendEmailMessage(['recipient' => 'recipient@example.test', 'url' => $url],
                 ['shared_globaly' => 0, 'time_limit' => 1794849600, 'encrypted' => 'content-canary', 'protected_key' => 'wrapped-canary'],
-                ['default_language' => $locale, 'email_from' => 'team@example.test', 'email_smtp_server' => 'smtp.example.test',
+                ['default_language' => $locale, 'secure_send_allow_email' => 1, 'email_from' => 'team@example.test', 'email_smtp_server' => 'smtp.example.test',
                     'cpassman_url' => 'https://share.example.test/team']);
             $message = secureSendEmailPersonalize($message, 0, ['default_language' => $locale]);
             self::assertSame('', $service->sendMail($message['subject'], $message['body'], $message['receivers'], $settings));

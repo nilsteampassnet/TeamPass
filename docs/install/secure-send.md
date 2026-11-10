@@ -1269,7 +1269,13 @@ the administrator line and personal entry; existing audit history remains visibl
 ## Email delivery
 
 Secure Send invitations can use the instance's configured SMTP, Microsoft Graph
-or Gmail transport. Complete the application upgrade before enabling this flow:
+or Gmail transport. Email invitations are disabled by default on fresh and upgraded
+instances. An administrator must enable **Allow Secure Send email invitations**
+under **Options / Collaboration / Secure sharing**. Disabling it hides the email
+controls, refuses new email shares and stops pending or deferred invitations at
+their next submission check; clipboard sharing remains available.
+
+Complete the application upgrade before enabling this flow:
 the `secure_send_email` table associates each link with its background task and
 sender. It contains identifiers, a creation timestamp and a hash of the configured
 sharing address, never a recipient, URL, passphrase or message body. No existing

@@ -4212,4 +4212,7 @@ return array(
     'secure_send_email_unknown' => 'Email tracking unavailable',
     'secure_send_email_queued_help' => 'The invitation is queued. Check its status in My secure sends. Keep the passphrase separate from this email.',
     'secure_send_email_network_unknown' => 'The response was lost: an invitation may already be queued. Check My secure sends and ask your administrator before trying again.',
+    'secure_send_allow_email' => 'Allow Secure Send email invitations',
+    'secure_send_allow_email_tip' => 'Allow users to send sharing links to external recipients from the configured organization mailbox. Disabling this also blocks pending invitations.',
+    'secure_send_email_not_allowed' => 'Email invitations are disabled by your administrator.',
 );

@@ -19,7 +19,7 @@ final class EmailUpgradeFailureResponseTest extends TestCase
     /** Every migration failure produces the wizard's JSON and is also rejected by the CLI parser. */
     public function testQueryFailuresStopBeforeRecordingTheUpgradeAndReturnWizardErrors(): void
     {
-        foreach (['settings', 'tokens', 'columns', 'scheduling', 'index_inspect', 'index_create', 'exception', 'success'] as $mode) {
+        foreach (['settings', 'tokens', 'columns', 'scheduling', 'index_inspect', 'index_create', 'sharing', 'exception', 'success'] as $mode) {
             $statePath = tempnam(sys_get_temp_dir(), 'teampass-email-upgrade-test-');
             self::assertNotFalse($statePath);
             try {

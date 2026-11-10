@@ -65,6 +65,7 @@ namespace TeampassClasses\ConfigManager {
         {
             if ($GLOBALS['secure_send_probe'] ?? false) {
                 return ['otv_is_enabled' => $GLOBALS['argv'][1] === 'disabled' ? 0 : 1,
+                    'secure_send_allow_email' => $GLOBALS['argv'][1] === 'email-disabled' ? 0 : 1,
                     'secure_send_allow_notes' => 1, 'cpassman_url' => 'https://vault.example.test',
                     'secure_send_show_sender_name' => $GLOBALS['argv'][1] === 'sender-shown' ? 1 : 0];
             }

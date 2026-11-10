@@ -165,7 +165,7 @@ final class EmailTaskDeliveryTest extends TestCase
     /** The real worker must refuse unavailable links and retain safe failure metadata. */
     public function testSecureSendWorkerChecksAvailabilityBeforeEveryAttempt(): void
     {
-        foreach (['accepted', 'throttled', 'revoked', 'expired', 'disabled'] as $mode) {
+        foreach (['accepted', 'throttled', 'revoked', 'expired', 'disabled', 'email-disabled'] as $mode) {
             $result = $this->probe('secure-' . $mode, true);
             $expected = match ($mode) { 'accepted' => 'completed', 'throttled' => 'queued', default => 'failed' };
             self::assertSame($expected, $result['task_updates'][0]['status'], $mode);
