@@ -1027,10 +1027,13 @@ class BackgroundTasksHandler {
             SET is_in_progress = -1, 
                 finished_at = %i, 
                 status = "failed",
+                arguments = CASE WHEN process_type = %s THEN %s ELSE arguments END,
                 error_message = "Task exceeded maximum execution time of '.$this->maxExecutionTime.' seconds"
             WHERE is_in_progress = 1 
             AND updated_at < %i',
             time(),
+            'secure_send_email',
+            json_encode(['failed' => true, 'interrupted' => true]),
             time() - $this->maxExecutionTime
         );
 
@@ -1392,14 +1395,18 @@ class BackgroundTasksHandler {
         if (in_array($failedProcessType, ['send_email', 'secure_send_email'], true)) {
             $message = 'Email delivery interrupted; acceptance is unknown. Check the provider before resending.';
         }
+        $failedValues = [
+            'is_in_progress' => -1,
+            'finished_at' => time(),
+            'status' => 'failed',
+            'error_message' => mb_substr($message, 0, 1000),
+        ];
+        if ($failedProcessType === 'secure_send_email') {
+            $failedValues['arguments'] = json_encode(['failed' => true, 'interrupted' => true]);
+        }
         DB::update(
             prefixTable('background_tasks'),
-            [
-                'is_in_progress' => -1,
-                'finished_at' => time(),
-                'status' => 'failed',
-                'error_message' => mb_substr($message, 0, 1000)
-            ],
+            $failedValues,
             'increment_id = %i',
             $taskId
         );

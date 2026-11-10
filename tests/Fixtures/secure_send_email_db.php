@@ -70,6 +70,12 @@ final class DB
 
     /** Return the actual auto-generated identifier. */
     public static function insertId(): int { return self::$connection->lastInsertRowID(); }
+    /** Apply production failure metadata to the actual synthetic SQL row. */
+    public static function update(string $table, array $values, string $where, mixed ...$parameters): void
+    {
+        $assignments = implode(', ', array_map(static fn (string $column): string => $column . '=%s', array_keys($values)));
+        self::query('UPDATE ' . $table . ' SET ' . $assignments . ' WHERE ' . $where, ...array_merge(array_values($values), $parameters));
+    }
     /** Delete metadata using the production predicate. */
     public static function delete(string $table, string $where, mixed ...$parameters): void
     {

@@ -1317,8 +1317,9 @@ recipient flow independently enforces current access at reveal time.
 Transport acceptance does not confirm inbox delivery. Ambiguous submissions are
 not automatically replayed. Terminal tasks discard their encrypted payload and
 retain only outcome and recipient metadata, as other email tasks do. Interrupted
-tasks retain the encrypted payload until existing task-history cleanup and are
-not resumed automatically. Inspect the provider before manually creating another
+invitations immediately discard their encrypted payload when marked failed,
+including during stale-task cleanup, retaining only failure/interruption flags.
+They are not resumed automatically. Inspect the provider before manually creating another
 invitation after an uncertain outcome.
 
 Delivery associations remain while their link exists. Maintenance and subsequent

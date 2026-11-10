@@ -20,6 +20,7 @@ final class SecureSendEmailTest extends TestCase
     private array $settings;
     private array $link;
     private array $delivery;
+    private int $maxExecutionTime = 60;
 
     protected function setUp(): void
     {
@@ -252,6 +253,40 @@ final class SecureSendEmailTest extends TestCase
         $end = strpos($source, "\n);", $start);
         eval(substr($source, $start, $end + 3 - $start));
         self::assertSame(['queued' => 6, 'running' => 2, 'failed' => 2], $emailBackgroundQueue);
+    }
+
+    public function testInterruptedInvitationsLoseTheirPayloadInBothHandlerFailurePaths(): void
+    {
+        if (!defined('LOG_TASKS')) { define('LOG_TASKS', false); }
+        $source = str_replace("\r\n", "\n", file_get_contents(__DIR__ . '/../../app/scripts/background_tasks___handler.php'));
+        $start = strpos($source, 'class BackgroundTasksHandler');
+        eval(substr($source, $start, strpos($source, '// Main execution', $start) - $start));
+        $handler = (new ReflectionClass(BackgroundTasksHandler::class))->newInstanceWithoutConstructor();
+        foreach (['is_in_progress INTEGER', 'finished_at INTEGER', 'updated_at INTEGER', 'error_message TEXT'] as $column) {
+            DB::$connection->exec('ALTER TABLE email_test_background_tasks ADD COLUMN ' . $column);
+        }
+        foreach (['direct', 'stale'] as $path) {
+            DB::$connection->exec('DELETE FROM email_test_background_tasks');
+            foreach (['secure_send_email', 'send_email', 'other_task'] as $type) {
+                DB::insert(prefixTable('background_tasks'), ['process_type' => $type, 'status' => 'in_progress',
+                    'arguments' => 'sealed-url-secret-canary', 'is_in_progress' => 1, 'updated_at' => time() - 120]);
+            }
+            if ($path === 'direct') {
+                $id = (int) DB::queryFirstField('SELECT increment_id FROM email_test_background_tasks WHERE process_type=%s', 'secure_send_email');
+                (new ReflectionMethod(BackgroundTasksHandler::class, 'markTaskFailed'))->invoke($handler, $id, 'private-stderr-canary');
+            } else {
+                $from = strpos($source, '// Mark tasks as failed if');
+                $to = strpos($source, '// Remove very old failed tasks', $from);
+                eval(substr($source, $from, $to - $from));
+            }
+            $task = DB::queryFirstRow('SELECT * FROM email_test_background_tasks WHERE process_type=%s', 'secure_send_email');
+            self::assertSame('failed', $task['status']);
+            self::assertSame(['failed' => true, 'interrupted' => true], json_decode($task['arguments'], true));
+            self::assertStringNotContainsString('private-stderr-canary', $task['error_message']);
+            foreach (['send_email', 'other_task'] as $type) {
+                self::assertSame('sealed-url-secret-canary', DB::queryFirstField('SELECT arguments FROM email_test_background_tasks WHERE process_type=%s', $type));
+            }
+        }
     }
 
     public function testInvitationSubjectIncludesOnlyThePermittedDecodedProfileName(): void
