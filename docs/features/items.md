@@ -365,7 +365,9 @@ it explicitly if needed.
 
 The invitation is queued after creation. **My secure sends** shows whether it is
 awaiting submission, accepted by the mail service, unconfirmed or no longer
-tracked. Reopen the list to refresh this state; acceptance does not confirm inbox
+tracked. A **Not sent** state means the worker blocked submission because the link
+was no longer usable or email invitations were disabled; it differs from an
+unconfirmed provider outcome. Reopen the list to refresh this state; acceptance does not confirm inbox
 delivery. If a response is lost or sending is unconfirmed, check the list and ask
 an administrator to check the provider before creating another invitation.
 

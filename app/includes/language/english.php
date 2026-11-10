@@ -4215,4 +4215,5 @@ return array(
     'secure_send_allow_email' => 'Allow Secure Send email invitations',
     'secure_send_allow_email_tip' => 'Allow users to send sharing links to external recipients from the configured organization mailbox. Disabling this also blocks pending invitations.',
     'secure_send_email_not_allowed' => 'Email invitations are disabled by your administrator.',
+    'secure_send_email_not_sent' => 'Not sent: the link was no longer usable or email invitations were disabled',
 );

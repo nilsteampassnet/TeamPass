@@ -38,7 +38,7 @@ final class SecureSendEmailTest extends TestCase
         DB::$connection->exec('CREATE TABLE email_test_automatic_del (item_id INTEGER, del_enabled INTEGER, del_type INTEGER, del_value INTEGER)');
         DB::$connection->exec('CREATE TABLE email_test_otv (id INTEGER PRIMARY KEY AUTOINCREMENT, item_id INTEGER, send_type TEXT, timestamp INTEGER, originator INTEGER, code TEXT, encrypted TEXT, protected_key TEXT, has_passphrase INTEGER, failed_attempts INTEGER, views INTEGER DEFAULT 0, time_limit INTEGER, max_views INTEGER, shared_globaly INTEGER)');
         DB::$connection->exec('CREATE TABLE email_test_secure_send_audit (record TEXT)');
-        DB::$connection->exec('CREATE TABLE email_test_background_tasks (increment_id INTEGER PRIMARY KEY AUTOINCREMENT, created_at INTEGER, process_type TEXT, arguments TEXT, status TEXT DEFAULT "queued")');
+        DB::$connection->exec('CREATE TABLE email_test_background_tasks (increment_id INTEGER PRIMARY KEY AUTOINCREMENT, created_at INTEGER, process_type TEXT, arguments TEXT, status TEXT DEFAULT "queued", error_message TEXT)');
         DB::$connection->exec('CREATE TABLE email_test_secure_send_email (send_id INTEGER PRIMARY KEY, task_id INTEGER UNIQUE, originator INTEGER, created_at INTEGER, address_hash TEXT)');
         $this->settings = ['otv_is_enabled' => 1, 'secure_send_allow_notes' => 1, 'secure_send_allow_email' => 1, 'cpassman_url' => 'https://vault.example.test',
             'email_smtp_server' => 'smtp.example.test', 'email_from' => 'team@example.test', 'timezone' => 'Europe/Paris'];
@@ -234,6 +234,11 @@ final class SecureSendEmailTest extends TestCase
         self::assertSame([1 => 'accepted'], secureSendEmailStatuses(42));
         DB::$connection->exec('UPDATE email_test_background_tasks SET status="failed"');
         self::assertSame([1 => 'failed'], secureSendEmailStatuses(42));
+        DB::query('UPDATE email_test_background_tasks SET error_message=%s', 'Secure Send is no longer available; email was not submitted.');
+        self::assertSame([1 => 'not_sent'], secureSendEmailStatuses(42));
+        self::assertSame([], secureSendEmailStatuses(43));
+        DB::query('UPDATE email_test_background_tasks SET error_message=%s', 'Email delivery interrupted; acceptance is unknown. Check the provider before resending.');
+        self::assertSame([1 => 'failed'], secureSendEmailStatuses(42));
         DB::$connection->exec('DELETE FROM email_test_background_tasks');
         self::assertSame([1 => 'unknown'], secureSendEmailStatuses(42));
     }
@@ -262,7 +267,7 @@ final class SecureSendEmailTest extends TestCase
         $start = strpos($source, 'class BackgroundTasksHandler');
         eval(substr($source, $start, strpos($source, '// Main execution', $start) - $start));
         $handler = (new ReflectionClass(BackgroundTasksHandler::class))->newInstanceWithoutConstructor();
-        foreach (['is_in_progress INTEGER', 'finished_at INTEGER', 'updated_at INTEGER', 'error_message TEXT'] as $column) {
+        foreach (['is_in_progress INTEGER', 'finished_at INTEGER', 'updated_at INTEGER'] as $column) {
             DB::$connection->exec('ALTER TABLE email_test_background_tasks ADD COLUMN ' . $column);
         }
         foreach (['direct', 'stale'] as $path) {

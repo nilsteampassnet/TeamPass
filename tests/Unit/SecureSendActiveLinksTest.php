@@ -40,7 +40,7 @@ class SecureSendActiveLinksTest extends TestCase
             max_views INTEGER, time_limit INTEGER, failed_attempts INTEGER, payload TEXT, code TEXT)');
         DB::$connection->exec('INSERT INTO active_fixture_users (id) VALUES (42), (43)');
         DB::$connection->exec('CREATE TABLE active_fixture_secure_send_email (send_id INTEGER, task_id INTEGER, originator INTEGER)');
-        DB::$connection->exec('CREATE TABLE active_fixture_background_tasks (increment_id INTEGER, status TEXT)');
+        DB::$connection->exec('CREATE TABLE active_fixture_background_tasks (increment_id INTEGER, status TEXT, error_message TEXT)');
         DB::$connection->exec("INSERT INTO active_fixture_items (id, id_tree, label)
             VALUES (123, 7, 'R&amp;D &lt;item&gt;'), (124, 8, 'Other sender')");
     }

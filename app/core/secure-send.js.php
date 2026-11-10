@@ -59,6 +59,7 @@ $(function () {
     const sessionKey = <?php echo json_encode($session->get('key'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>
 
     const labels = {
+        emailNotSent: <?php echo json_encode($lang->get('secure_send_email_not_sent'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
         title: <?php echo json_encode($lang->get('secure_send_my_sends'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
         count: <?php echo json_encode($lang->get('secure_send_active_count'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
         loading: <?php echo json_encode($lang->get('secure_send_inventory_loading'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
@@ -227,8 +228,8 @@ $(function () {
             if (send.suspended === true) {
                 $('<span>', { class: 'badge badge-warning mt-1' }).text(labels.suspended).appendTo($details)
             }
-            const emailLabels = { queued: labels.emailQueued, accepted: labels.emailAccepted, failed: labels.emailFailed, unknown: labels.emailUnknown }
-            if (['queued', 'accepted', 'failed', 'unknown'].includes(send.email_status)) {
+            const emailLabels = { queued: labels.emailQueued, accepted: labels.emailAccepted, failed: labels.emailFailed, not_sent: labels.emailNotSent, unknown: labels.emailUnknown }
+            if (['queued', 'accepted', 'failed', 'not_sent', 'unknown'].includes(send.email_status)) {
                 $('<span>', { class: 'd-block small text-muted mt-1' }).text(emailLabels[send.email_status]).appendTo($details)
             }
             const $button = $('<button>', { type: 'button', class: 'btn btn-sm btn-outline-danger flex-shrink-0 tp-my-sends-revoke' })

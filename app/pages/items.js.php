@@ -9212,6 +9212,7 @@ require __DIR__ . '/icon.picker.js.php';
     const secureSendEmailAvailable = <?php echo json_encode((int) ($SETTINGS['secure_send_allow_email'] ?? 0) === 1 && secureSendEmailIsConfigured($SETTINGS)); ?>;
     const secureSendBaseUrls = <?php echo json_encode($secureSendUrls, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
     const secureSendEmailLabels = {
+        not_sent: <?php echo json_encode($lang->get('secure_send_email_not_sent'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
         queued: <?php echo json_encode($lang->get('secure_send_email_queued'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
         accepted: <?php echo json_encode($lang->get('secure_send_email_accepted'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
         failed: <?php echo json_encode($lang->get('secure_send_email_failed'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
@@ -9254,7 +9255,7 @@ require __DIR__ . '/icon.picker.js.php';
                     var lock = s.has_passphrase === 1 ? ' <i class="fa-solid fa-lock text-success" aria-hidden="true"></i><span class="sr-only">' + htmlEncode(<?php echo json_encode($lang->get('secure_send_protected'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>) + '</span>' : '';
                     var icon = s.send_type === 'note' ? 'fa-note-sticky' : 'fa-key';
                     var suspended = s.suspended === true ? '<span class="badge badge-warning text-wrap text-left mt-1">' + htmlEncode(<?php echo json_encode($lang->get('secure_send_suspended'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>) + '</span>' : '';
-                    const email = ['queued', 'accepted', 'failed', 'unknown'].includes(s.email_status)
+                    const email = ['queued', 'accepted', 'failed', 'not_sent', 'unknown'].includes(s.email_status)
                         ? '<span class="d-block small text-muted mt-1">' + htmlEncode(secureSendEmailLabels[s.email_status]) + '</span>' : '';
                     html += '<li class="secure-send-entry d-flex align-items-center">' +
                         '<i class="fa-solid ' + icon + ' text-muted mr-3" aria-hidden="true"></i>' +

@@ -192,12 +192,14 @@ function secureSendEmailCanDeliver(int $taskId, array $settings, ?int $now = nul
 function secureSendEmailStatuses(int $originator): array
 {
     $statuses = [];
-    foreach (DB::query('SELECT e.send_id, t.status FROM ' . prefixTable('secure_send_email') . ' e
+    foreach (DB::query('SELECT e.send_id, t.status, t.error_message FROM ' . prefixTable('secure_send_email') . ' e
         LEFT JOIN ' . prefixTable('background_tasks') . ' t ON t.increment_id = e.task_id
         INNER JOIN ' . prefixTable('otv') . ' o ON o.id = e.send_id AND o.originator = e.originator
         WHERE e.originator = %i', $originator) as $row) {
         $statuses[(int) $row['send_id']] = match ($row['status']) {
-            'completed' => 'accepted', 'failed' => 'failed',
+            'completed' => 'accepted',
+            'failed' => ($row['error_message'] ?? '') === 'Secure Send is no longer available; email was not submitted.'
+                ? 'not_sent' : 'failed',
             'queued', 'in_progress' => 'queued',
             default => 'unknown',
         };

@@ -86,9 +86,9 @@ const count = value => ({ error: '', enabled: true, count: value })
 test('email delivery states render as translated text and unknown values add no badge', () => {
   const h = harness()
   h.open()
-  h.reply(1, list(['queued', 'accepted', 'failed', 'unknown', '<img onerror=alert(1)>'].map((email_status, index) => send({id: index + 1, email_status}))))
+  h.reply(1, list(['queued', 'accepted', 'failed', 'not_sent', 'unknown', '<img onerror=alert(1)>'].map((email_status, index) => send({id: index + 1, email_status}))))
   const texts = h.createdNodes().map(node => node.value)
-  for (const status of ['queued', 'accepted', 'failed', 'unknown']) {
+  for (const status of ['queued', 'accepted', 'failed', 'not_sent', 'unknown']) {
     assert.ok(texts.includes('secure_send_email_' + status))
   }
   assert.equal(texts.includes('<img onerror=alert(1)>'), false)

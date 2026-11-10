@@ -241,9 +241,11 @@ test('The item-page inventory shows only known email outcomes without recipient 
   h.loadList()
   h.requests[0].resolve({ error: '', sends: [
     { id: 7, send_type: 'item', label: 'R&D', remaining_views: 1, expires_label: 'Tomorrow', email_status: 'accepted' },
+    { id: 9, send_type: 'item', label: 'Blocked', remaining_views: 1, expires_label: 'Tomorrow', email_status: 'not_sent' },
     { id: 8, send_type: 'note', label: 'Note', remaining_views: 1, expires_label: 'Tomorrow', email_status: '<img src=x onerror=alert(1)>' }
   ] })
   assert.match(h.$('#secure-send-list').content, /secure_send_email_accepted/)
+  assert.match(h.$('#secure-send-list').content, /secure_send_email_not_sent/)
   assert.doesNotMatch(h.$('#secure-send-list').content, /onerror|mailto:/)
 })
 

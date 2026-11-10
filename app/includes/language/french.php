@@ -4199,4 +4199,5 @@ return array(
     'secure_send_allow_email' => 'Autoriser les invitations Secure Send par e-mail',
     'secure_send_allow_email_tip' => 'Autorise les utilisateurs à envoyer des liens de partage à des destinataires externes depuis la boîte de l’organisation configurée. La désactivation bloque aussi les invitations en attente.',
     'secure_send_email_not_allowed' => 'Les invitations par e-mail sont désactivées par votre administrateur.',
+    'secure_send_email_not_sent' => 'Non envoyé : le lien n’était plus utilisable ou les invitations par e-mail ont été désactivées',
 );
