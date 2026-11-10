@@ -237,6 +237,23 @@ final class SecureSendEmailTest extends TestCase
         self::assertSame([1 => 'unknown'], secureSendEmailStatuses(42));
     }
 
+    public function testAdministratorQueueCountersIncludeBothEmailTypesOnly(): void
+    {
+        DB::$connection->exec('ALTER TABLE email_test_background_tasks ADD COLUMN is_in_progress INTEGER DEFAULT 0');
+        DB::$connection->exec('ALTER TABLE email_test_background_tasks ADD COLUMN finished_at TEXT');
+        foreach (['send_email', 'secure_send_email', 'other_task'] as $type) {
+            foreach ([[0, null], [0, ''], [0, '0'], [1, null], [-1, '123'], [0, '123']] as [$progress, $finished]) {
+                DB::insert(prefixTable('background_tasks'), ['process_type' => $type,
+                    'is_in_progress' => $progress, 'finished_at' => $finished]);
+            }
+        }
+        $source = str_replace("\r\n", "\n", file_get_contents(__DIR__ . '/../../app/pages/emails.php'));
+        $start = strpos($source, '$emailBackgroundQueue =');
+        $end = strpos($source, "\n);", $start);
+        eval(substr($source, $start, $end + 3 - $start));
+        self::assertSame(['queued' => 6, 'running' => 2, 'failed' => 2], $emailBackgroundQueue);
+    }
+
     public function testInvitationSubjectIncludesOnlyThePermittedDecodedProfileName(): void
     {
         DB::$connection->exec("UPDATE email_test_users SET name='R&amp;D', lastname='O&#039;Brien &quot;Ops&quot; &lt;Guide&gt;' WHERE id=42");

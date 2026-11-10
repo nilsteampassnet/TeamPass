@@ -93,7 +93,7 @@ $emailBackgroundQueue = DB::queryFirstRow(
     'SELECT SUM(CASE WHEN is_in_progress = 0 AND (finished_at IS NULL OR finished_at = %s OR finished_at = %s) THEN 1 ELSE 0 END) AS queued,
         SUM(CASE WHEN is_in_progress = 1 THEN 1 ELSE 0 END) AS running,
         SUM(CASE WHEN is_in_progress = -1 THEN 1 ELSE 0 END) AS failed
-     FROM ' . prefixTable('background_tasks') . ' WHERE process_type = %s', '', '0', 'send_email'
+     FROM ' . prefixTable('background_tasks') . ' WHERE process_type IN (%s, %s)', '', '0', 'send_email', 'secure_send_email'
 );
 
 ?>
