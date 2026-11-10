@@ -80,6 +80,36 @@ final class SecureSendEmailTest extends TestCase
         }
     }
 
+    public function testQueuedExpirationUsesRegionalDateTimeAndTimezoneSettings(): void
+    {
+        foreach ([
+            ['2026-11-10T16:05:09Z', 'Europe/Paris', 'd/m/Y', 'H:i:s', '10/11/2026 17:05:09 CET'],
+            ['2026-11-10T16:05:09Z', 'America/New_York', 'm/d/Y', 'g:i:s a', '11/10/2026 11:05:09 am EST'],
+            ['2026-07-10T16:05:09Z', 'Europe/Paris', 'd-M-y', 'G:i:s', '10-Jul-26 18:05:09 CEST'],
+            ['2026-11-10T16:05:09Z', 'UTC', 'Y-m-d', 'H:i', '2026-11-10 16:05 UTC'],
+        ] as [$instant, $timezone, $dateFormat, $timeFormat, $expected]) {
+            $settings = array_replace($this->settings, [
+                'timezone' => $timezone, 'date_format' => $dateFormat, 'time_format' => $timeFormat,
+            ]);
+            $link = array_replace($this->link, ['time_limit' => (new DateTimeImmutable($instant))->getTimestamp()]);
+            $id = secureSendStoreLink($link, $settings, $this->delivery);
+            $arguments = DB::queryFirstField('SELECT t.arguments FROM email_test_background_tasks t
+                INNER JOIN email_test_secure_send_email e ON e.task_id=t.increment_id WHERE e.send_id=%i', $id);
+            $message = emailQueueOpen(json_decode($arguments, true));
+            self::assertStringContainsString($expected, $message['body']);
+            self::assertStringNotContainsString('#expires#', $message['body']);
+        }
+    }
+
+    public function testExpirationFallsBackToInstallationFormatsWhenSettingsAreMissing(): void
+    {
+        $settings = $this->settings;
+        unset($settings['timezone']);
+        $link = array_replace($this->link, ['time_limit' => (new DateTimeImmutable('2026-11-10T16:05:09Z'))->getTimestamp()]);
+        $message = secureSendEmailMessage($this->delivery, $link, $settings);
+        self::assertStringContainsString('10/11/2026 16:05:09 UTC', $message['body']);
+    }
+
     public function testQuotaSurvivesRevocationAndFailedDeliveriesAndIsPerSender(): void
     {
         for ($i = 0; $i < 10; ++$i) { secureSendStoreLink($this->link, $this->settings, $this->delivery); }

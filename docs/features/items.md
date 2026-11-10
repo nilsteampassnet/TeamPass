@@ -352,6 +352,8 @@ To email a new sharing link, enter one address in **Email the link to** and choo
 **Create and email**. This creates a separate share with the current options; it
 does not resend an earlier link. The recipient receives a generic invitation,
 with the link and expiration, without the shared item/note content or passphrase.
+The expiration follows the instance's regional date and time formats and configured
+timezone, with the timezone abbreviation included for the recipient.
 Communicate the passphrase through a different channel. The sharing address must
 use HTTPS and be reachable by the recipient. The public-address option remains
 an explicit sender choice.

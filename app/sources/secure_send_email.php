@@ -93,7 +93,8 @@ function secureSendEmailMessage(array $delivery, array $link, array $settings): 
     $language = new \TeampassClasses\Language\Language($settings['default_language'] ?? 'english');
     $escape = static fn (string $value): string => htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     $expiry = (new DateTimeImmutable('@' . (int) $link['time_limit']))
-        ->setTimezone(new DateTimeZone($settings['timezone'] ?? 'UTC'))->format('Y-m-d H:i T');
+        ->setTimezone(new DateTimeZone($settings['timezone'] ?? 'UTC'))
+        ->format(($settings['date_format'] ?? 'd/m/Y') . ' ' . ($settings['time_format'] ?? 'H:i:s') . ' T');
     $body = strtr($language->get('secure_send_email_body'), [
         '#link#' => $escape($url), '#expires#' => $escape($expiry),
     ]);
