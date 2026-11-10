@@ -56,3 +56,13 @@ function variableOffset(string $source, string $name): int
     }
     throw new RuntimeException('Production variable is missing: ' . $name);
 }
+
+/** Extract a final catch block without depending on its exception variable name. */
+function lastCatchSource(string $source): string
+{
+    $tokens = PhpToken::tokenize($source);
+    for ($index = count($tokens) - 1; $index >= 0; --$index) {
+        if ($tokens[$index]->is(T_CATCH)) { return blockSource($source, $tokens, $index); }
+    }
+    throw new RuntimeException('Production catch block is missing.');
+}

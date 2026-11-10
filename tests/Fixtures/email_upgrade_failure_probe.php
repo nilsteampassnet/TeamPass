@@ -11,7 +11,17 @@ declare(strict_types=1);
 
 namespace TeamPass\Tests\EmailUpgradeProbe;
 
+use function TeamPass\Tests\SourceStructure\lastCatchSource;
+use function TeamPass\Tests\SourceStructure\variableOffset;
+
+require __DIR__ . '/php_source_structure.php';
+ini_set('error_log', 'php://stderr');
 $mode = $argv[1];
+$recovery = str_starts_with($mode, 'recovery-');
+if ($recovery) {
+    $mode = substr($mode, strlen('recovery-'));
+    define('TEAMPASS_RECOVERY_MIGRATION', true);
+}
 $statePath = $argv[2];
 $state = ['timestamp_written' => false, 'queries_after_failure' => 0, 'failed' => false];
 register_shutdown_function(static function () use ($statePath, &$state): void {
@@ -30,11 +40,13 @@ function mysqli_query(object $connection, string $sql): mixed
         'scheduling' => str_contains($sql, 'ADD COLUMN'),
         'index_inspect' => str_contains($sql, 'SHOW INDEX'),
         'index_create' => str_contains($sql, 'ADD INDEX'),
+        'timestamp' => str_contains($sql, 'upgrade_timestamp'),
         default => false,
     };
     if ($matches) {
         $state['failed'] = true;
         if ($mode === 'exception') { throw new \RuntimeException('private-database-detail'); }
+        if ($mode === 'timestamp') { throw new \LogicException('private-non-email-detail'); }
         return false;
     }
     if (str_contains($sql, 'upgrade_timestamp')) { $state['timestamp_written'] = true; }
@@ -56,8 +68,12 @@ final class ConfigManager
 }
 
 $source = (string) file_get_contents(dirname(__DIR__, 2) . '/public/install/upgrade_run_3.2.4.php');
-$start = strpos($source, '$emailUpgradeFailure =');
-if ($start === false) { throw new \RuntimeException('Migration error adapter is missing.'); }
+$start = variableOffset($source, '$emailUpgradeFailure');
 $db_link = new \stdClass();
 $pre = 'email_upgrade_fixture_';
-eval('namespace ' . __NAMESPACE__ . '; use Throwable;' . substr($source, $start));
+if ($recovery) {
+    $recoverySource = (string) file_get_contents(dirname(__DIR__, 2) . '/app/scripts/recovery-migrate.php');
+    eval('namespace ' . __NAMESPACE__ . '; use Throwable; use RuntimeException; try {' . substr($source, $start) . '}' . lastCatchSource($recoverySource));
+} else {
+    eval('namespace ' . __NAMESPACE__ . '; use Throwable; use RuntimeException;' . substr($source, $start));
+}

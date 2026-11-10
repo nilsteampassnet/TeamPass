@@ -84,6 +84,9 @@ if ($db_link) {
 
 // Email transport state: additive and idempotent, preserving every existing SMTP value.
 $emailUpgradeFailure = static function (string $message): never {
+    if (PHP_SAPI === 'cli' && defined('TEAMPASS_RECOVERY_MIGRATION') && TEAMPASS_RECOVERY_MIGRATION === true) {
+        throw new RuntimeException($message);
+    }
     echo json_encode([['finish' => '1', 'error' => $message]]);
     exit;
 };
@@ -138,22 +141,27 @@ try {
     ) === false) { $emailUpgradeFailure('Unable to initialize email queue index.'); }
     mysqli_free_result($emailIndexResult);
     ConfigManager::invalidateCache();
-
-    // Save upgrade timestamp (upsert: always update if exists)
-    mysqli_query(
-        $db_link,
-        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'upgrade_timestamp', " . time() . ")
-         ON DUPLICATE KEY UPDATE `valeur` = VALUES(`valeur`)"
-    );
-
-    //--->END 3.2.4
-
-    // Close connection
-    mysqli_close($db_link);
 } catch (Throwable $error) {
-    // mysqli may throw instead of returning false. Never expose database details.
+    // Keep a usable trace without disclosing SQL values or driver messages.
+    error_log('Email transport migration failure: ' . get_class($error) . ' at '
+        . basename($error->getFile()) . ':' . $error->getLine());
+    if (PHP_SAPI === 'cli' && defined('TEAMPASS_RECOVERY_MIGRATION') && TEAMPASS_RECOVERY_MIGRATION === true) {
+        throw $error;
+    }
     $emailUpgradeFailure('Unable to upgrade email transport storage.');
 }
+
+// Save upgrade timestamp (upsert: always update if exists)
+mysqli_query(
+    $db_link,
+    "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'upgrade_timestamp', " . time() . ")
+     ON DUPLICATE KEY UPDATE `valeur` = VALUES(`valeur`)"
+);
+
+//--->END 3.2.4
+
+// Close connection
+mysqli_close($db_link);
 
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';
