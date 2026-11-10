@@ -1979,7 +1979,7 @@ return array(
     'health_teampass_log_path' => 'Chemin du log d’erreurs dédié à TeamPass',
     'health_teampass_log_path_tip' => 'Surcharge absolue optionnelle. Laisse ce champ vide pour auto-détecter le log d’erreurs dédié à TeamPass.',
     'health_runtime_log_empty_fmt' => 'Aucune entrée de log n’a été trouvée pour : %s',
-    'email_smtp_server_not_configured' => 'Email n’est pas configuré - l’adresse du serveur SMTP est manquant. Cliquer pour configurer.',
+    'email_smtp_server_not_configured' => 'L’envoi d’e-mails n’est pas configuré. Renseignez l’hôte du relais, la boîte aux lettres Microsoft ou l’expéditeur Gmail selon le transport choisi. Cliquez pour configurer.',
     'items_corrupted_notice_unreadable' => 'Le mot de passe de cet élément n’a pas pu être relu correctement. Veuillez le mettre à jour.',
     'items_corrupted_marker_unreadable' => 'Mot de passe illisible',
     'settings_show_corrupted_items_in_list' => 'Mettre en évidence les items corrompus dans la liste',
