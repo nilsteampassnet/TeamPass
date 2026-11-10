@@ -2075,7 +2075,7 @@ function generateBugReport(
     array $SETTINGS
 ): string
 {
-    $config_exclude_vars = array(
+    $config_exclude_vars = array_merge(tpSecretSettingNames(), array(
         'bck_script_passkey',
         'browser_extension_key',
         // Carries the administrator address used for the licence trial request.
@@ -2084,6 +2084,13 @@ function generateBugReport(
         'email_auth_username',
         'email_auth_pwd',
         'email_from',
+        'email_microsoft_tenant_id',
+        'email_microsoft_client_id',
+        'email_microsoft_client_secret',
+        'email_microsoft_mailbox',
+        'email_google_client_id',
+        'email_google_client_secret',
+        'email_google_sender',
         'onthefly-restore-key',
         'onthefly-backup-key',
         'ldap_password',
@@ -2105,7 +2112,7 @@ function generateBugReport(
         'restore_items_master_keys_id',
         'statistics_auth_token',
         'statistics_instance_id'
-    );
+    ));
 
     // Load user's language
     $session = SessionManager::getSession();
