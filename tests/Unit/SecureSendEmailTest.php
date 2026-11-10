@@ -251,9 +251,10 @@ final class SecureSendEmailTest extends TestCase
         DB::$connection->exec('ALTER TABLE email_test_background_tasks ADD COLUMN is_in_progress INTEGER DEFAULT 0');
         DB::$connection->exec('ALTER TABLE email_test_background_tasks ADD COLUMN finished_at TEXT');
         foreach (['send_email', 'secure_send_email', 'other_task'] as $type) {
-            foreach ([[0, null], [0, ''], [0, '0'], [1, null], [-1, '123'], [0, '123']] as [$progress, $finished]) {
+            foreach ([[0, null, 'queued'], [0, '', 'queued'], [0, '0', 'queued'], [1, null, 'in_progress'],
+                [-1, '123', 'failed'], [-1, '123', 'completed'], [0, '123', 'completed']] as [$progress, $finished, $status]) {
                 DB::insert(prefixTable('background_tasks'), ['process_type' => $type,
-                    'is_in_progress' => $progress, 'finished_at' => $finished]);
+                    'is_in_progress' => $progress, 'finished_at' => $finished, 'status' => $status]);
             }
         }
         $source = str_replace("\r\n", "\n", file_get_contents(__DIR__ . '/../../app/pages/emails.php'));
