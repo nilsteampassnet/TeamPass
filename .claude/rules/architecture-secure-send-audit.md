@@ -104,32 +104,20 @@ without treating broken storage as a bad recipient credential.
 
 ## Email delivery association
 
-`secure_send_email.php` implements optional single-recipient delivery. Its
-`secure_send_email` table is a metadata-only association, not the lifecycle
-journal: send/task IDs, originator, creation timestamp and sharing-base hash.
-The encrypted `secure_send_email` task, association and `created` event share
-the link INSERT transaction. A users-row lock serializes the ten-per-hour sender
-quota. Wakeups happen after commit. Revocation never refunds recent reservations.
-No recipient, complete URL, content or phrase enters the association or journal.
+Email invitations require `secure_send_allow_email` (off by default). Creation
+and every submission/retry enforce it alongside current source access and policy.
+The sealed task, metadata-only association and creation audit commit with the link;
+the per-sender lock limits invitations to ten per rolling hour. Wakeups follow commit.
+No recipient, URL, content or phrase enters the association or lifecycle journal.
+Fresh install and the 3.2.4 upgrade share the association DDL.
 
-These tasks use the normal sealed email payload and transport outcomes, but
-recheck current settings and source access before every submission. They are
-non-resumable after interruption and inherit the safe retry/terminal-metadata
-rules of ordinary email tasks. Generic email transports contain no Secure Send
-business logic. Delivery states are owner-scoped metadata; acceptance is not proof
-of inbox delivery or recipient identity. The association's schema is shared by
-fresh installation and the 3.2.4 upgrade; refresh the upgrade floor after rebasing
-onto the final email-modernization merge, before publication.
-
-Invitation subjects carry a `#sender#` token until submission.
-After refreshing settings and checking availability, the worker resolves the
-current public profile under `secure_send_show_sender_name`, strips header control
-characters and replaces the token with the permitted name, or the shipped,
-translated **Someone**. `#sender_prefix#` is an optional custom-template variant
-that inserts the permitted name plus ` — `, or nothing. There is no login/email
-fallback. Custom subjects without these tokens stay intact;
-custom HTML bodies escape its value. Never freeze a profile name into a queued
-invitation: privacy and profile changes must apply to deferred attempts too.
+Interrupted invitations are not resumed; both handler failure paths wipe their
+payload. Provider outcomes remain conservative: `not_sent` denotes a preflight
+refusal, while acceptance is not inbox delivery. Statuses are owner-scoped.
+Resolve `#sender#` / optional `#sender_prefix#` at each submission under current
+`secure_send_show_sender_name`; hidden/empty profiles use shipped **Someone**,
+never login/email. Strip header controls, escape HTML and preserve custom subjects
+without these tokens. Never freeze a profile name into a queued invitation.
 
 ## External forwarding
 

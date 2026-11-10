@@ -68,6 +68,7 @@ final class SecureSendEmailTest extends TestCase
         self::assertTrue(secureSendEmailCanDeliver(1, $this->settings));
     }
 
+    /** Missing or disabled consent refuses creation and a later submission. */
     public function testEmailInvitationsRequireOptInBeforeCreationAndAtSubmission(): void
     {
         foreach ([0, null] as $value) {
@@ -89,6 +90,7 @@ final class SecureSendEmailTest extends TestCase
         self::assertFalse(secureSendEmailCanDeliver(1, $this->settings));
     }
 
+    /** Execute the actual modal section with consent missing, off and on. */
     public function testModalOmitsTheEmailBlockUntilTheAdministratorEnablesIt(): void
     {
         $page = file_get_contents(__DIR__ . '/../../app/pages/items.php');
@@ -243,6 +245,7 @@ final class SecureSendEmailTest extends TestCase
         self::assertSame([1 => 'unknown'], secureSendEmailStatuses(42));
     }
 
+    /** Execute the administration query against both email types and unrelated tasks. */
     public function testAdministratorQueueCountersIncludeBothEmailTypesOnly(): void
     {
         DB::$connection->exec('ALTER TABLE email_test_background_tasks ADD COLUMN is_in_progress INTEGER DEFAULT 0');
@@ -260,6 +263,7 @@ final class SecureSendEmailTest extends TestCase
         self::assertSame(['queued' => 6, 'running' => 2, 'failed' => 2], $emailBackgroundQueue);
     }
 
+    /** Exercise direct handler failure and stale-task SQL without an installed instance. */
     public function testInterruptedInvitationsLoseTheirPayloadInBothHandlerFailurePaths(): void
     {
         if (!defined('LOG_TASKS')) { define('LOG_TASKS', false); }
