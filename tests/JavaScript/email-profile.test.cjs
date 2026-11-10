@@ -16,7 +16,7 @@ const admin = fs.readFileSync('app/pages/admin.js.php', 'utf8')
 const autosave = admin.slice(admin.indexOf("$(document).on('change', '.form-control-sm:not(.select2[multiple])"),
     admin.indexOf('function saveFieldValue('))
 
-function harness() {
+function harness(hostLabel = 'SMTP host R&D <label>') {
     const handlers = []
     const saves = []
     const requests = []
@@ -34,7 +34,7 @@ function harness() {
     field('email_smtp_auth_mode', 'none', true, ['no-save'])
     const host = field('email_smtp_server', 'tls://private-host', true, ['no-save'])
     const status = field('email-profile-status', '', false)
-    const labels = [{attributes: {for: 'email_smtp_server'}, content: 'SMTP host R&D <label>'}]
+    const labels = [{attributes: {for: 'email_smtp_server'}, content: hostLabel}]
     const debug = field('email_debug_level', '0', false, debugClasses)
     function $(selector) {
         if (selector === document) return {on(event, target, callback) { handlers.push({event, target, callback}) }}
@@ -142,4 +142,12 @@ test('unknown fields and undecodable responses keep the generic error without ex
         assert.equal(page.status.content, 'Save failed')
         assert.equal(page.host.classes.includes('is-invalid'), false)
     }
+})
+
+test('field labels keep dollar replacement patterns and punctuation literally', () => {
+    const label = "SMTP $& $1 $$ R&D O'Brien <label>"
+    const page = harness(label)
+    page.save()
+    page.requests[0].pending.resolve({error: true, field: 'email_smtp_server'})
+    assert.equal(page.status.content, 'Check field: ' + label)
 })

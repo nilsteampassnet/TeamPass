@@ -123,7 +123,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 });
             }
         }
-        $('#email-profile-status').text(label === '' ? emailProfileText.failed : emailProfileText.invalidField.replace('#field#', label));
+        $('#email-profile-status').text(label === '' ? emailProfileText.failed : emailProfileText.invalidField.replace('#field#', () => label));
     }
 
     $('#email-transport-profile :input').on('input change', function() {
