@@ -4179,6 +4179,8 @@ return array(
     'email_legacy_queue' => 'The older email backlog below is separate from background tasks. This button only sends that legacy backlog.',
     'email_profile_saved' => 'Configuration saved. Send a test email to verify mailbox permissions.',
     'email_profile_save_required' => 'Save the email configuration before testing. This profile cannot be changed through individual settings.',
+    'email_profile_invalid_field' => 'Check the following field: #field#.',
+    'email_smtp_host_format_hint' => 'Enter one host or IP address. Set the port and encryption separately. Host lists and tls:// or ssl:// prefixes are not supported.',
     'email_profile_save_failed' => 'The email configuration was not activated. Check the fields, reload if another administrator changed it, and retry authorization if required.',
     'email_secret_action' => 'Secret action',
     'email_secret_keep' => 'Keep the stored secret',

@@ -51,6 +51,10 @@ is refused. The browser never receives the stored value. Typing a replacement
 automatically selects Replace. Inactive provider settings can be retained for a
 later switch; explicitly clear credentials you no longer need.
 
+If validation fails, the page identifies and highlights the offending field.
+The response contains only a known setting name, never its value. The SMTP host
+hint explains how to replace legacy host lists or URI prefixes before saving.
+
 A save publishes the profile atomically and rotates its revision. Stale browser
 tabs and late token renewals cannot overwrite it. Reload after another
 administrator changes the profile. Changing provider or credentials invalidates

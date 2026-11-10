@@ -32,11 +32,15 @@ function harness() {
     }
     const transport = field('email_transport', 'gmail_api', true, ['no-save'])
     field('email_smtp_auth_mode', 'none', true, ['no-save'])
+    const host = field('email_smtp_server', 'tls://private-host', true, ['no-save'])
+    const status = field('email-profile-status', '', false)
+    const labels = [{attributes: {for: 'email_smtp_server'}, content: 'SMTP host R&D <label>'}]
     const debug = field('email_debug_level', '0', false, debugClasses)
     function $(selector) {
         if (selector === document) return {on(event, target, callback) { handlers.push({event, target, callback}) }}
         let list = []
         if (typeof selector === 'object') list = [selector]
+        else if (selector === '#email-transport-profile label[for]') list = labels
         else if (selector.includes('#email-transport-profile ') && selector.includes('input')) {
             list = [...elements.values()].filter(element => element.profile)
             if (selector.includes('#email_debug_level')) list.push(debug)
@@ -45,19 +49,33 @@ function harness() {
             on(event, callback) { handlers.push({event, target: selector, callback}); return this },
             val(value) { if (value === undefined) return list[0]?.value; list.forEach(element => { element.value = value }); return this },
             prop(key, value) { list.forEach(element => { element[key] = value }); return this },
-            attr(key) { return key === 'id' ? list[0]?.id : 'saved-revision' },
+            attr(key, value) {
+                if (value !== undefined) { list.forEach(element => { (element.attributes ||= {})[key] = value }); return this }
+                return key === 'id' ? list[0]?.id : key === 'data-revision' ? 'saved-revision' : list[0]?.attributes?.[key]
+            },
+            removeAttr(key) { list.forEach(element => { if (element.attributes) delete element.attributes[key] }); return this },
+            addClass(name) { list.forEach(element => { element.classes.push(name) }); return this },
+            removeClass(name) { list.forEach(element => { element.classes = element.classes.filter(value => value !== name) }); return this },
             hasClass(name) { return list[0]?.classes?.includes(name) || false },
             each(callback) { list.forEach(element => callback.call(element)); return this },
-            text() { return this }, data() {}, filter() { return this }
+            text(value) { if (value === undefined) return list[0]?.content || ''; list.forEach(element => { element.content = value }); return this },
+            data() {}, filter() { return this }
         }
     }
     $.post = (url, body) => {
-        requests.push({url, payload: JSON.parse(body.data)})
-        const pending = {done() { return pending }, fail() { return pending }, always() { return pending }}
+        const callbacks = {}
+        const pending = {
+            done(callback) { callbacks.done = callback; return pending },
+            fail(callback) { callbacks.fail = callback; return pending },
+            always(callback) { callbacks.always = callback; return pending },
+            resolve(response) { callbacks.done(response); callbacks.always() }
+        }
+        requests.push({url, payload: JSON.parse(body.data), pending})
         return pending
     }
     const context = vm.createContext({$, document, JSON, String,
-        emailProfileText: {}, emailProfileKey: 'session',
+        emailProfileText: {failed: 'Save failed', invalidField: 'Check field: #field#'}, emailProfileKey: 'session',
+        decodeQueryReturn: response => response,
         saveFieldValue: ($field, id) => saves.push({id, value: $field.val()}),
         prepareExchangedData: value => value})
     vm.runInContext('let emailProfileDirty = false;\n' + controller + '\n' + autosave, context)
@@ -73,7 +91,7 @@ function harness() {
             if (matches) handler.callback.call(element)
         }
     }
-    return {change, debug, transport, saves, requests,
+    return {change, debug, transport, host, status, saves, requests,
         dirty: () => vm.runInContext('emailProfileDirty', context),
         save: () => handlers.find(handler => handler.target === '#email-profile-save').callback()}
 }
@@ -98,4 +116,30 @@ test('profile changes still require saving and exclude the independently saved d
     assert.equal(page.requests[0].payload.profile.email_transport, 'gmail_api')
     assert.equal(Object.hasOwn(page.requests[0].payload.profile, 'email_debug_level'), false)
     assert.equal(page.debug.disabled, undefined)
+})
+
+test('a validation error names and highlights the field without displaying its value or raw error', () => {
+    const page = harness()
+    page.change(page.host)
+    page.save()
+    page.requests[0].pending.resolve({error: true, field: 'email_smtp_server', message: 'private-error'})
+    assert.equal(page.status.content, 'Check field: SMTP host R&D <label>')
+    assert.equal(page.host.attributes['aria-invalid'], 'true')
+    assert.ok(page.host.classes.includes('is-invalid'))
+    assert.equal(page.host.disabled, false)
+    assert.equal(page.dirty(), true)
+    page.change(page.host)
+    assert.equal(page.host.classes.includes('is-invalid'), false)
+    assert.equal(Object.hasOwn(page.host.attributes, 'aria-invalid'), false)
+})
+
+test('unknown fields and undecodable responses keep the generic error without exposing raw text', () => {
+    for (const response of [false, {error: true, field: 'private-secret', message: 'private-error'},
+        {error: true, field: 'email_smtp_server\"]<img src=x>', message: 'private-error'}]) {
+        const page = harness()
+        page.save()
+        page.requests[0].pending.resolve(response)
+        assert.equal(page.status.content, 'Save failed')
+        assert.equal(page.host.classes.includes('is-invalid'), false)
+    }
 })

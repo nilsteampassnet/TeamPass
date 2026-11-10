@@ -80,6 +80,30 @@ final class EmailTransportConfigurationTest extends TestCase
         emailTransportCandidate($input, $this->smtp(), $this->encrypt(...));
     }
 
+    /** Field errors identify only a known setting, including unsupported legacy SMTP formats. */
+    public function testValidationErrorsIdentifyFieldsWithoutReflectingTheirValues(): void
+    {
+        foreach ([
+            [['email_smtp_server' => 'tls://private-host'], 'email_smtp_server'],
+            [['email_smtp_server' => 'private-host;other-host'], 'email_smtp_server'],
+            [['email_port' => 'private-invalid-port'], 'email_port'],
+            [['email_from' => 'private-invalid-email'], 'email_from'],
+            [['email_security' => 'private-invalid-security'], 'email_security'],
+            [['email_smtp_auth_mode' => 'private-invalid-mode'], 'email_smtp_auth_mode'],
+            [['email_auth_pwd' => 'private-without-replace'], 'email_auth_pwd'],
+        ] as [$input, $expected]) {
+            try {
+                emailTransportCandidate($input, $this->smtp(), $this->encrypt(...));
+                self::fail('Invalid profile accepted');
+            } catch (InvalidArgumentException $error) {
+                self::assertSame($expected, emailTransportValidationField($error));
+                self::assertSame($expected, $error->getMessage());
+            }
+        }
+        self::assertNull(emailTransportValidationField(new InvalidArgumentException('private-value')));
+        self::assertNull(emailTransportValidationField(new RuntimeException('email_auth_pwd')));
+    }
+
     /** Provider identities cannot inject another tenant endpoint or a different sender. */
     public function testMicrosoftProfileRequiresMatchingSenderAndEncryptedSecret(): void
     {

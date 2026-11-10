@@ -87,6 +87,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         'saved' => $lang->get('email_profile_saved'),
         'saving' => $lang->get('in_progress'),
         'failed' => $lang->get('email_profile_save_failed'),
+        'invalidField' => $lang->get('email_profile_invalid_field'),
         'save' => $lang->get('email_profile_save'),
         'authorize' => $lang->get('email_profile_save_google'),
     ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
@@ -110,7 +111,23 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     }
     updateEmailTransportPanels();
 
+    function showEmailProfileError(data) {
+        let label = '';
+        if (data && typeof data.field === 'string') {
+            $('#email-transport-profile label[for]').each(function() {
+                if ($(this).attr('for') === data.field) label = $(this).text().trim();
+            });
+            if (label !== '') {
+                $('#email-transport-profile input[id], #email-transport-profile select[id]').each(function() {
+                    if (this.id === data.field) $(this).addClass('is-invalid').attr('aria-invalid', 'true');
+                });
+            }
+        }
+        $('#email-profile-status').text(label === '' ? emailProfileText.failed : emailProfileText.invalidField.replace('#field#', label));
+    }
+
     $('#email-transport-profile :input').on('input change', function() {
+        $(this).removeClass('is-invalid').removeAttr('aria-invalid');
         if (this.type === 'password' && this.value !== '') {
             $('.email-secret-action').filter((index, element) => $(element).data('secret') === this.id).val('replace');
         }
@@ -120,6 +137,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     });
 
     $('#email-profile-save').on('click', function() {
+        $('#email-transport-profile :input').removeClass('is-invalid').removeAttr('aria-invalid');
         const profile = { secret_actions: {} };
         $('#email-transport-profile input[id], #email-transport-profile select[id]').each(function() {
             profile[this.id] = String($(this).val());
@@ -136,7 +154,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         }).done(function(response) {
             const data = decodeQueryReturn(response, emailProfileKey);
             if (data === false || data.error === true) {
-                $('#email-profile-status').text(emailProfileText.failed);
+                showEmailProfileError(data);
                 return;
             }
             emailProfileDirty = false;

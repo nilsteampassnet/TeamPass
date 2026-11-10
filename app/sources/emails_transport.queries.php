@@ -116,6 +116,7 @@ try {
             echo json_encode(['error' => true, 'message' => $lang->get('email_profile_save_failed')]);
             exit;
         }
-        echo prepareExchangedData(['error' => true, 'message' => $lang->get('email_profile_save_failed')], 'encode');
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('email_profile_save_failed'),
+            'field' => emailTransportValidationField($e)], 'encode');
     }
 }

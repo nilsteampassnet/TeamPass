@@ -4163,6 +4163,8 @@ return array(
     'email_legacy_queue' => 'L’ancienne file d’e-mails ci-dessous est distincte des tâches en arrière-plan. Ce bouton envoie uniquement cette ancienne file.',
     'email_profile_saved' => 'Configuration enregistrée. Envoyez un e-mail de test pour vérifier les permissions sur la boîte.',
     'email_profile_save_required' => 'Enregistrez la configuration des e-mails avant le test. Ce profil ne peut pas être modifié paramètre par paramètre.',
+    'email_profile_invalid_field' => 'Vérifiez le champ suivant : #field#.',
+    'email_smtp_host_format_hint' => 'Indiquez un seul hôte ou une adresse IP. Réglez le port et le chiffrement séparément. Les listes de serveurs et les préfixes tls:// ou ssl:// ne sont pas pris en charge.',
     'email_profile_save_failed' => 'La configuration des e-mails n’a pas été activée. Vérifiez les champs, rechargez si un autre administrateur l’a modifiée et recommencez l’autorisation si nécessaire.',
     'email_secret_action' => 'Action sur le secret',
     'email_secret_keep' => 'Conserver le secret enregistré',
