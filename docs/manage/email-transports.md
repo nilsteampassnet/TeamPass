@@ -19,6 +19,10 @@ fresh installation creates the same schema. The migration adds:
 - `email_oauth_state`, separate from general settings;
 - `email_attempts` and `next_attempt_at` on background tasks, plus a due-task index.
 
+If email storage migration fails, the web wizard receives its normal JSON error
+response. The CLI also treats this response as a failed step. No upgrade timestamp
+is recorded after a failed schema operation, so the step can be retried.
+
 Existing relay, authentication, sender, TLS and certificate settings remain in
 place. An absent transport still means SMTP; an empty auth-mode override derives
 the previous authentication setting. No OAuth configuration is required to keep
