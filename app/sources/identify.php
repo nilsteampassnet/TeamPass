@@ -3558,6 +3558,29 @@ function isOauth2LoginBoundToUser(string $submittedLogin): bool
     return strcasecmp(trim($submittedLogin), trim($subjectLogin)) === 0;
 }
 
+/**
+ * Tell whether the account a sign-in located is one that SSO must never sign in to.
+ *
+ * The built-in administrator and the internal accounts (TP, OTV, SSH, API) are local accounts
+ * holding the administrator flag. An OAuth2 sign-in that reached one of them would convert it
+ * to OAuth2, rewrite its password (for TP, the instance-encrypted password the server opens its
+ * private key with) and open an administrator session. The submitted login cannot tell on its
+ * own: the users table compares logins through its collation, which ignores case, accents and
+ * trailing spaces, so "Admin", "tp" or "Api" locate these accounts too. The account row decides.
+ *
+ * @param string     $username         Submitted login
+ * @param array      $userInfo         Users row the login located
+ * @param array<int> $systemAccountIds teampassGetSystemAccountIds()
+ *
+ * @return bool
+ */
+function oauth2AccountIsReserved(string $username, array $userInfo, array $systemAccountIds): bool
+{
+    return $username === 'admin'
+        || (string) ($userInfo['login'] ?? '') === 'admin'
+        || in_array((int) ($userInfo['id'] ?? 0), $systemAccountIds, true);
+}
+
 function shouldUserAuthWithOauth2(
     array $SETTINGS,
     array $userInfo,
@@ -3586,8 +3609,22 @@ function shouldUserAuthWithOauth2(
         ];
     }
 
+    // The built-in administrator and the internal accounts never sign in through SSO,
+    // whatever the case of the login that located them
+    $reservedAccount = oauth2AccountIsReserved($username, $userInfo, teampassGetSystemAccountIds());
+    if ($reservedAccount === true && (bool) $userInfo['oauth2_login_ongoing'] === true) {
+        logEvents($SETTINGS, 'failed_auth', 'user_not_allowed_to_auth_to_teampass_app', '', stripslashes($username), stripslashes($username));
+
+        return [
+            'error' => true,
+            'message' => 'user_not_allowed_to_auth_to_teampass_app',
+            'oauth2Connection' => false,
+            'userPasswordVerified' => false,
+        ];
+    }
+
     // Prepare Oauth2 connection if set up
-    if ($username !== 'admin') {
+    if ($reservedAccount === false) {
         // User has started to auth with oauth2
         if ((bool) $userInfo['oauth2_login_ongoing'] === true) {
             // Case where user exists in Teampass password login type
