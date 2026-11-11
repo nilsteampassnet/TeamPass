@@ -273,6 +273,18 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                 </div>
                             </div>
 
+                            <div class='row mb-2'>
+                                <div class='col-10'>
+                                    <?php echo $lang->get('oauth2_link_existing_accounts'); ?>
+                                    <small class='form-text text-muted'>
+                                        <?php echo $lang->get('oauth2_link_existing_accounts_tip'); ?>
+                                    </small>
+                                </div>
+                                <div class='col-2'>
+                                    <div class='toggle toggle-modern' id='oauth2_link_existing_accounts' data-toggle-on='<?php echo isset($SETTINGS['oauth2_link_existing_accounts']) === true && (int) $SETTINGS['oauth2_link_existing_accounts'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='oauth2_link_existing_accounts_input' value='<?php echo isset($SETTINGS['oauth2_link_existing_accounts']) && (int) $SETTINGS['oauth2_link_existing_accounts'] === 1 ? 1 : 0; ?>'>
+                                </div>
+                            </div>
+
                             </div>
 
                         </form>

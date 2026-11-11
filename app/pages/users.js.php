@@ -196,6 +196,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         ) +
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="edit"><i class="fa-solid fa-pen mr-2"></i><?php echo $lang->get('edit'); ?></li>' +
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '" data-action="reset-antibruteforce"><i class="fa-solid fa-lock mr-2"></i><?php echo $lang->get('bruteforce_reset_account'); ?></li>' +
+                        ($(data).data('auth-type') === 'oauth2' ?
+                            '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="oauth2-identity-reset"><i class="fa-solid fa-link-slash mr-2"></i><?php echo $lang->get('oauth2_identity_reset'); ?></li>'
+                            : '') +
                         ($(data).data('auth-type') !== 'local' ?
                             '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '" data-action="new-enc-code"><i class="fa-solid fa-key mr-2"></i><?php echo $lang->get('generate_new_keys'); ?></li>'
                             : '') +
@@ -1430,6 +1433,53 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 }
             );
         
+        } else if ($(this).data('action') === 'oauth2-identity-reset') {
+            // Release the account from its SSO identity: rewriting the unchanged authentication
+            // type through save_user_change clears users.oauth2_identity (and logs it)
+            const userId = $(this).data('id');
+            showModalDialogBox(
+                '#warningModal',
+                '<i class="fa-solid fa-link-slash fa-lg warning mr-2"></i><?php echo $lang->get('oauth2_identity_reset'); ?>',
+                '<?php echo $lang->get('oauth2_identity_reset_confirm'); ?>',
+                '<?php echo $lang->get('perform'); ?>',
+                '<?php echo $lang->get('cancel'); ?>'
+            );
+            $(document).off('click', '#warningModalButtonAction');
+            $(document).on('click', '#warningModalButtonAction', function(event) {
+                event.preventDefault();
+                $('#warningModal').modal('hide');
+                toastr.remove();
+                toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+
+                const data = {
+                    'user_id': userId,
+                    'field': 'auth_type',
+                    'value': 'oauth2',
+                    'context': ''
+                };
+                $.post(
+                    'sources/users.queries.php', {
+                        type: 'save_user_change',
+                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                        key: '<?php echo $session->get('key'); ?>'
+                    },
+                    function(answer) {
+                        answer = prepareExchangedData(answer, 'decode', '<?php echo $session->get('key'); ?>');
+                        toastr.remove();
+                        if (answer.error !== false) {
+                            toastr.error(answer.message, '<?php echo $lang->get('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            });
+                            return;
+                        }
+                        toastr.success('<?php echo $lang->get('done'); ?>', '', {
+                            timeOut: 1000
+                        });
+                    }
+                );
+            });
+
         } else if ($(this).data('action') === 'new-enc-code') {
             // HIde
             $('.content-header, .content').addClass('hidden');

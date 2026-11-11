@@ -93,6 +93,8 @@ function formatAdminLogLabel(string $label, Language $lang): string
         'at_user_webauthn_deleted' => 'log_user_webauthn_deleted',
         'at_user_webauthn_passwordless_enabled' => 'log_user_webauthn_passwordless_enabled',
         'at_user_webauthn_passwordless_disabled' => 'log_user_webauthn_passwordless_disabled',
+        'at_user_oauth2_identity_bound' => 'log_user_oauth2_identity_bound',
+        'at_user_oauth2_identity_reset' => 'log_user_oauth2_identity_reset',
     ];
     if (isset($direct[$label]) === true) {
         return (string) $lang->get($direct[$label]);

@@ -43,6 +43,13 @@ use Exception;
 
 class OAuth2Controller
 {
+    /**
+     * Issuer key of every Microsoft Entra ID identity. Entra object ids are GUIDs unique across
+     * tenants, so the tenant adds nothing; it is not used because oauth2_tenant_id accepts the
+     * tenant GUID or a domain, and switching between the two would unbind every account.
+     */
+    public const ENTRA_IDENTITY_ISSUER = 'entra';
+
     protected $provider;
     protected $settings;
 
@@ -160,17 +167,26 @@ class OAuth2Controller
                         ];
                     }
                 }
+
+                $identity = self::entraIdentity($user);
             } else {
                 // Get user infos from the UserInfo endpoint of the provider
                 $resourceOwner = $this->provider->getResourceOwner($token);
                 $user = self::mapGenericUserInfo($resourceOwner->toArray());
                 $userGroups = $user['groups'];
+
+                $identity = self::genericIdentity(
+                    $token->getValues(),
+                    $user,
+                    (string) ($this->settings['oauth2_client_endpoint'] ?? '')
+                );
             }
 
-            // Return user information
+            // Return user information. identityIssuer + identitySubject bind the TeamPass
+            // account to this identity (users.oauth2_identity), never to the name claim.
             return [
                 'error' => false,
-                'userOauth2Info' => array_merge($user, array('groups' => $userGroups, 'oauth2TokenUsed' => false, 'oauth2LoginOngoing' => true)),
+                'userOauth2Info' => array_merge($user, array('groups' => $userGroups, 'oauth2TokenUsed' => false, 'oauth2LoginOngoing' => true), $identity),
             ];
 
         } catch (\Exception $e) {
@@ -219,6 +235,104 @@ class OAuth2Controller
         $user['groups'] = self::extractGenericGroups($claims);
 
         return $user;
+    }
+
+    /**
+     * Identity Microsoft Graph asserts for the signed-in Entra user.
+     *
+     * The subject is the object id (`id` of `/me`), immutable for the life of the account.
+     * GUIDs are case-insensitive, so it is lowercased.
+     *
+     * @param array<string, mixed> $user Answer of Graph `/me`.
+     * @return array{identityIssuer: string, identitySubject: string} An empty subject when Graph
+     *                                                                returned no object id.
+     */
+    public static function entraIdentity(array $user): array
+    {
+        return [
+            'identityIssuer' => self::ENTRA_IDENTITY_ISSUER,
+            'identitySubject' => strtolower(trim(self::firstClaim($user, ['id']))),
+        ];
+    }
+
+    /**
+     * Identity a generic OpenID Connect provider asserts for the signed-in user.
+     *
+     * - subject: the value mapGenericUserInfo() required (`sub`, else `id`);
+     * - issuer: the `iss` claim of the ID token. The token comes straight from the token
+     *   endpoint over TLS, which OpenID Connect Core §3.1.3.7 accepts in place of a signature
+     *   check. A provider that returns no ID token (plain OAuth2) falls back to the origin of
+     *   the authorization endpoint.
+     *
+     * @param array<string, mixed> $tokenValues  Extra values of the token response (id_token...).
+     * @param array<string, mixed> $user         Result of mapGenericUserInfo().
+     * @param string               $authorizeUrl Setting oauth2_client_endpoint.
+     * @return array{identityIssuer: string, identitySubject: string}
+     * @throws Exception When the ID token names another subject than the UserInfo answer
+     *                   (OpenID Connect Core §5.3.2).
+     */
+    public static function genericIdentity(array $tokenValues, array $user, string $authorizeUrl): array
+    {
+        $subject = self::firstClaim($user, ['sub', 'id']);
+        $idTokenClaims = self::idTokenClaims($tokenValues['id_token'] ?? null);
+
+        $idTokenSubject = self::firstClaim($idTokenClaims, ['sub']);
+        if ($idTokenSubject !== '' && $idTokenSubject !== $subject) {
+            throw new Exception('The "sub" claim of the UserInfo answer does not match the ID token.');
+        }
+
+        $issuer = trim(self::firstClaim($idTokenClaims, ['iss']));
+
+        return [
+            'identityIssuer' => $issuer !== '' ? $issuer : self::urlOrigin($authorizeUrl),
+            'identitySubject' => $subject,
+        ];
+    }
+
+    /**
+     * Claims of an ID token, read without verifying its signature (see genericIdentity()).
+     *
+     * @param mixed $idToken The id_token value of the token response.
+     * @return array<string, mixed> The claims, or [] when the value is not a JWT.
+     */
+    private static function idTokenClaims($idToken): array
+    {
+        if (is_string($idToken) === false) {
+            return [];
+        }
+
+        $parts = explode('.', $idToken);
+        if (count($parts) !== 3) {
+            return [];
+        }
+
+        $payload = strtr($parts[1], '-_', '+/');
+        $payload .= str_repeat('=', (4 - strlen($payload) % 4) % 4);
+        $json = base64_decode($payload, true);
+        if ($json === false) {
+            return [];
+        }
+
+        $claims = json_decode($json, true);
+
+        return is_array($claims) ? $claims : [];
+    }
+
+    /**
+     * Origin (scheme://host[:port]) of a URL, lowercased.
+     *
+     * @param string $url Any absolute URL.
+     * @return string The origin, or '' when the URL has no scheme or host.
+     */
+    private static function urlOrigin(string $url): string
+    {
+        $parts = parse_url(trim($url));
+        if (is_array($parts) === false || empty($parts['scheme']) || empty($parts['host'])) {
+            return '';
+        }
+
+        return strtolower($parts['scheme']) . '://' . strtolower($parts['host'])
+            . (isset($parts['port']) ? ':' . $parts['port'] : '');
     }
 
     /**

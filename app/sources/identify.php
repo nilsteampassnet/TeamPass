@@ -45,6 +45,7 @@ use TeampassClasses\OAuth2Controller\OAuth2Controller;
 // Load functions
 require_once 'main.functions.php';
 require_once __DIR__ . '/webauthn_login.functions.php';
+require_once __DIR__ . '/oauth2_identity_logic.php';
 
 // init
 loadClasses('DB');
@@ -1068,6 +1069,9 @@ function identifyFinishLogin(
         }
         $old_key = $sessionData['old_key'];
         $returnKeys = $sessionData['returnKeys'];
+
+        // The sign-in has succeeded (MFA included): bind an OAuth2 account to its identity
+        oauth2PersistSessionIdentity($SETTINGS, (int) $userInfo['id'], $username);
         
         // Setup user roles and permissions - Extracted to separate function for readability
         $rolesDbUpdateData = setupUserRolesAndPermissions($session, $userInfo, $SETTINGS);
@@ -2360,6 +2364,7 @@ function finalizeAuthentication(
  * @param string $authType       Authentication type
  * @param array  $userGroups     User groups
  * @param array  $SETTINGS       Teampass settings
+ * @param string|null $oauth2Identity users.oauth2_identity of an OAuth2 account (ignored otherwise)
  *
  * @return array
  */
@@ -2371,7 +2376,8 @@ function externalAdCreateUser(
     string $userLastname,
     string $authType,
     array $userGroups,
-    array $SETTINGS
+    array $SETTINGS,
+    ?string $oauth2Identity = null
 ): array
 {
     $session = SessionManager::getSession();
@@ -2466,6 +2472,11 @@ function externalAdCreateUser(
         'encryption_version' => 3,
         'phpseclibv3_migration_completed' => 1,
     ];
+
+    // OAuth2 account: bound to the provider identity it was created for
+    if ($authType === 'oauth2' && $oauth2Identity !== null && $oauth2Identity !== '') {
+        $userData['oauth2_identity'] = $oauth2Identity;
+    }
 
     // Add transparent recovery fields if available
     if (isset($userKeys['user_seed'])) {
@@ -3558,6 +3569,132 @@ function isOauth2LoginBoundToUser(string $submittedLogin): bool
     return strcasecmp(trim($submittedLogin), trim($subjectLogin)) === 0;
 }
 
+/**
+ * Return the fingerprint of the identity the OAuth2 provider asserted in this session.
+ *
+ * Computed from identityIssuer/identitySubject, which OAuth2Controller::callback() wrote
+ * from the provider answer: the browser never supplies them.
+ *
+ * @return string users.oauth2_identity value, or '' when no OAuth2 round-trip is in progress
+ */
+function oauth2SessionIdentity(): string
+{
+    $oauth2Info = SessionManager::getSession()->get('userOauth2Info');
+    if (is_array($oauth2Info) === false
+        || filter_var($oauth2Info['oauth2LoginOngoing'] ?? false, FILTER_VALIDATE_BOOLEAN) !== true
+    ) {
+        return '';
+    }
+
+    return oauth2IdentityFromSessionInfo($oauth2Info);
+}
+
+/**
+ * Return the login of the account, other than $exceptUserId, already bound to an identity.
+ *
+ * Deleted accounts count: restoring one must give it back its identity.
+ *
+ * @param string $identity     users.oauth2_identity value
+ * @param int    $exceptUserId Account being signed in (0 for an account to create)
+ *
+ * @return string The login of the other account, or '' when none holds the identity
+ */
+function oauth2IdentityBoundElsewhere(string $identity, int $exceptUserId): string
+{
+    $other = DB::queryFirstRow(
+        'SELECT login FROM ' . prefixTable('users') . ' WHERE oauth2_identity = %s AND id <> %i',
+        $identity,
+        $exceptUserId
+    );
+
+    return is_array($other) === true ? (string) $other['login'] : '';
+}
+
+/**
+ * Check the account an OAuth2 sign-in matched by login against the provider identity.
+ *
+ * Read-only: an account that is not bound yet is bound by oauth2PersistSessionIdentity()
+ * once the whole sign-in (MFA included) has succeeded, so a sign-in stopped by MFA leaves
+ * no binding behind. Every refusal is written to the system log with its reason.
+ *
+ * @param array  $SETTINGS Teampass settings
+ * @param array  $userInfo Users row of the account (auth_type, oauth2_identity, id)
+ * @param string $username Submitted login
+ *
+ * @return string '' when the sign-in may go on, else the language key explaining the refusal
+ */
+function oauth2CheckAccountIdentity(array $SETTINGS, array $userInfo, string $username): string
+{
+    $sessionIdentity = oauth2SessionIdentity();
+    $decision = oauth2IdentityDecision(
+        $userInfo,
+        $sessionIdentity,
+        (int) ($SETTINGS['oauth2_link_existing_accounts'] ?? 0) === 1
+    );
+
+    $refusalKey = oauth2IdentityRefusalKey($decision);
+    $logDetail = stripslashes($username);
+    if ($refusalKey === '' && $decision === 'bind') {
+        // The identity may already belong to another account (e.g. its UPN was renamed)
+        $boundLogin = oauth2IdentityBoundElsewhere($sessionIdentity, (int) $userInfo['id']);
+        if ($boundLogin !== '') {
+            $refusalKey = 'oauth2_identity_already_bound';
+            $logDetail .= ' | bound to: ' . $boundLogin;
+        }
+    }
+
+    if ($refusalKey !== '') {
+        // log_system.field_1 is a VARCHAR(250)
+        logEvents($SETTINGS, 'failed_auth', $refusalKey, '', stripslashes($username), mb_substr($logDetail, 0, 250));
+    }
+
+    return $refusalKey;
+}
+
+/**
+ * Bind the account to the OAuth2 identity of this session, once the sign-in has succeeded.
+ *
+ * Only an OAuth2 account that is not bound yet is written: oauth2CheckAccountIdentity()
+ * already refused every other case earlier in the same sign-in. A concurrent sign-in that
+ * bound the identity first makes the UNIQUE key reject the write; the account then stays
+ * unbound and the next sign-in decides again.
+ *
+ * @param array  $SETTINGS Teampass settings
+ * @param int    $userId   Account signed in
+ * @param string $username Submitted login
+ *
+ * @return void
+ */
+function oauth2PersistSessionIdentity(array $SETTINGS, int $userId, string $username): void
+{
+    if ($username === 'admin' || isOauth2LoginBoundToUser($username) === false) {
+        return;
+    }
+
+    $identity = oauth2SessionIdentity();
+    if ($identity === '') {
+        return;
+    }
+
+    try {
+        DB::update(
+            prefixTable('users'),
+            ['oauth2_identity' => $identity],
+            'id = %i AND oauth2_identity IS NULL AND auth_type = %s',
+            $userId,
+            'oauth2'
+        );
+        $bound = DB::affectedRows() > 0;
+    } catch (Exception $e) {
+        error_log('TEAMPASS OAuth2 - identity binding of user ' . $userId . ' failed: ' . $e->getMessage());
+        $bound = false;
+    }
+
+    if ($bound === true) {
+        logEvents($SETTINGS, 'user_mngt', 'at_user_oauth2_identity_bound', (string) $userId, stripslashes($username), (string) $userId);
+    }
+}
+
 function shouldUserAuthWithOauth2(
     array $SETTINGS,
     array $userInfo,
@@ -3590,6 +3727,18 @@ function shouldUserAuthWithOauth2(
     if ($username !== 'admin') {
         // User has started to auth with oauth2
         if ((bool) $userInfo['oauth2_login_ongoing'] === true) {
+            // The login only located the account: it must belong to the identity the provider
+            // asserted, never to whoever holds the same name at the provider
+            $identityRefusal = oauth2CheckAccountIdentity($SETTINGS, $userInfo, $username);
+            if ($identityRefusal !== '') {
+                return [
+                    'error' => true,
+                    'message' => $identityRefusal,
+                    'oauth2Connection' => false,
+                    'userPasswordVerified' => false,
+                ];
+            }
+
             // Case where user exists in Teampass password login type
             if ((string) $userInfo['auth_type'] === 'ldap' || (string) $userInfo['auth_type'] === 'local') {
                 // Add transparent recovery data if available
@@ -3866,6 +4015,24 @@ function createOauth2User(
         $session = SessionManager::getSession();    
         $lang = new Language($session->get('user-language') ?? 'english');
 
+        // The new account is bound to the provider identity from the start. That identity may
+        // already own an account under another login (UPN renamed at the provider): creating a
+        // second account would hit the UNIQUE key, and the administrator renames the login instead.
+        $oauth2Identity = oauth2SessionIdentity();
+        $boundLogin = $oauth2Identity === '' ? '' : oauth2IdentityBoundElsewhere($oauth2Identity, 0);
+        $identityRefusal = $oauth2Identity === ''
+            ? 'oauth2_identity_missing'
+            : ($boundLogin !== '' ? 'oauth2_identity_already_bound' : '');
+        if ($identityRefusal !== '') {
+            $logDetail = stripslashes($username) . ($boundLogin !== '' ? ' | bound to: ' . $boundLogin : '');
+            logEvents($SETTINGS, 'failed_auth', $identityRefusal, '', stripslashes($username), mb_substr($logDetail, 0, 250));
+
+            return [
+                'error' => true,
+                'message' => $identityRefusal,
+            ];
+        }
+
         // Prepare user groups
         foreach ($userInfo['groups'] as $key => $group) {
             // Check if the group is in the list of groups allowed to self register
@@ -3886,7 +4053,8 @@ function createOauth2User(
             is_null($userInfo['surname']) ? '' : $userInfo['surname'],
             'oauth2',
             $userInfo['groups'],
-            $SETTINGS
+            $SETTINGS,
+            $oauth2Identity
         );
         $userInfo = array_merge($userInfo, $ret);
 

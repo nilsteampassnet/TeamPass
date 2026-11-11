@@ -3102,6 +3102,13 @@ if (null !== $post_type) {
                 $post_user_id
             );
 
+            // An administrator changing the authentication type also releases the account from
+            // the OAuth2 identity it was bound to (user re-created at the provider, tenant moved):
+            // the next OAuth2 sign-in binds it again
+            if ($post_field === 'auth_type') {
+                usersResetOauth2Identity((int) $post_user_id, $SETTINGS);
+            }
+
             // special case
             if ($post_field === 'auth_type' && $post_new_value === 'ldap') {
                 /*DB::update(
@@ -3784,6 +3791,8 @@ if (null !== $post_type) {
                     'id = %i',
                     $post_id
                 );
+                // ... and release the account from its OAuth2 identity (see save_user_change)
+                usersResetOauth2Identity((int) $post_id, $SETTINGS);
             } else {
                 echo prepareExchangedData(
                     array(
@@ -5130,6 +5139,39 @@ break;
 // They had no caller: user administration goes through the "save_user_change" action and profile
 // preferences through "user_profile_update", both subject to the target-scope guard above.
 // Do not reintroduce a request-driven column write outside that guard.
+
+/**
+ * Release an account from the OAuth2 identity it is bound to.
+ *
+ * The next OAuth2 sign-in on the account binds it to the identity that signs in (see
+ * oauth2IdentityDecision()). Logged only when a binding was actually removed.
+ *
+ * @param int   $userId   Account whose authentication type an administrator changed
+ * @param array $SETTINGS Teampass settings
+ *
+ * @return void
+ */
+function usersResetOauth2Identity(int $userId, array $SETTINGS): void
+{
+    DB::update(
+        prefixTable('users'),
+        ['oauth2_identity' => null],
+        'id = %i AND oauth2_identity IS NOT NULL',
+        $userId
+    );
+
+    if (DB::affectedRows() > 0) {
+        $session = SessionManager::getSession();
+        logEvents(
+            $SETTINGS,
+            'user_mngt',
+            'at_user_oauth2_identity_reset',
+            (string) $session->get('user-id'),
+            (string) $session->get('user-login'),
+            (string) $userId
+        );
+    }
+}
 
 function canAccessInactiveAndDeletedUsersPanels(): bool
 {

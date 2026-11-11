@@ -229,6 +229,39 @@ Users can authenticate through Microsoft Entra ID or through any OpenID Connect 
 
 👉 Notice that if the user belongs to groups in the identity provider and that roles with the same names exist in TeamPass, then the account is automatically associated to the matching roles when it is created (based upon their names).
 
+### Accounts are bound to their identity at the provider
+
+TeamPass finds the account of an SSO user through its login (the part before `@` of the Entra
+UPN or of `preferred_username`). It then checks that the account belongs to the identity the
+provider asserted: the Entra **object id**, or the `iss` + `sub` pair of an OpenID Connect
+provider. Somebody who holds the same username at the provider is refused.
+
+* **New account**: an account created at its first SSO sign-in is bound when it is created.
+* **Existing OAuth2 account** (created before this check existed, or imported from
+  *Users* → *OAuth2 synchronization*): bound at its next successful sign-in, MFA included.
+* **Existing local or LDAP account with the same login**: converted to OAuth2 and bound only when
+  `Link existing accounts at their first SSO sign-in` is enabled on the `OAuth` page. The upgrade
+  enables it on installations configured for Microsoft Entra ID, which converted those accounts
+  until now, and disables it everywhere else. Leave it disabled when users can choose their
+  username at the provider. With Entra, one account can also be converted from
+  *Users* → *OAuth2 synchronization*. While LDAP authentication is enabled, an LDAP account is
+  checked against the directory first and cannot be converted.
+
+A refused sign-in shows one of these messages, also written to the failed authentications of the
+`Logs` page:
+
+| Message | Cause | What to do |
+|---|---|---|
+| *This TeamPass account is linked to another identity…* | The user was deleted and re-created at the provider, the provider or tenant changed, or another person holds the login | If it is the same person, release the link (below) |
+| *Your identity at the identity provider is already linked to another TeamPass account…* | The username changed at the provider (UPN renamed). The log entry names the account holding the identity | Rename that account's login on the `Users` page |
+| *A TeamPass account with this login already exists and does not use single sign-on…* | Linking existing accounts is disabled | Enable the setting, or convert the account |
+| *The identity provider returned no usable identifier…* | No object id / `sub` in the provider answer | Check the provider configuration |
+
+**Release a link**: on the `Users` page, the action menu of an OAuth2 account offers
+*Release the SSO identity link*. Changing the authentication type of the account (OAuth2
+synchronization toggle) does the same. The next SSO sign-in binds the account to the identity that
+signs in. Binding and release are both written to the `Logs` page.
+
 ### Microsoft Entra (Azure)
 #### Setting up at Entra side
 
@@ -308,12 +341,14 @@ naming the missing claim.
 
 > ⚠️ **Three rules on the provider side, before opening the access:**
 >
-> * **Usernames must be controlled by the provider's administrators.** At the first SSO sign-in,
->   an existing local or LDAP TeamPass account whose login matches `preferred_username` is
->   switched to OAuth2. Users must not be able to choose or change their own username, for
->   example through open enrollment or a self-service profile page.
+> * **Prefer usernames controlled by the provider's administrators.** TeamPass binds every account
+>   to the user's `sub` and refuses anyone else ([see above](#accounts-are-bound-to-their-identity-at-the-provider)),
+>   but a user who renames themselves can no longer reach their account. Keep
+>   `Link existing accounts at their first SSO sign-in` disabled if users can choose or change
+>   their own username (open enrollment, self-service profile page).
 > * **`sub` must never change for a given user.** Do not change the way the provider builds the
->   subject once users have signed in. Their accounts could no longer open their encryption keys.
+>   subject once users have signed in: their accounts would be refused until an administrator
+>   releases the link.
 > * **Restrict the application to the users allowed to use TeamPass.** The provider decides who
 >   may sign in. Bind the application to the relevant groups.
 
