@@ -130,3 +130,13 @@ An endpoint whose SSH credential is unusable shows an escaped explanation and on
 Delete action; usable endpoints keep check, pause/resume and delete. The server side of
 the same lifecycle (account release, replacement on re-enrollment) is exercised against
 MariaDB by `tests/Integration/lapr_endpoint_lifecycle_database.php`.
+
+## OAuth "Test a user"
+
+`oauth2-test-user.test.cjs` runs the shipped renderers of the OAuth page results panel (*Test a
+user*, *Check the allowed groups*). Its DOM adapter refuses any markup other than a constant empty
+element, so a directory value (display name, UPN, group name) or a server message can only ever be
+inserted as text. It also covers the outcome icons, the allowed groups in bold, groups without a
+name, the roles of an account the sign-in would create and the fallback role. The verdicts
+themselves come from `oauth2_test_user_logic.php` (`Oauth2TestUserLogicTest`). Check the panel in
+the browser against a real Entra tenant before release.

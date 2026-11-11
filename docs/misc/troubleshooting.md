@@ -218,6 +218,7 @@ The account creation background task (key generation) may not have completed bef
 
 On the `Users` page, the **OAuth2 synchronization** button shows a red notification reading
 *"Insufficient privileges to complete the operation."* and no directory account is listed.
+The **Test a user** and **Check the allowed groups** buttons of the `OAuth` page fail the same way.
 Signing in through Entra can work perfectly at the same time.
 
 ### Cause

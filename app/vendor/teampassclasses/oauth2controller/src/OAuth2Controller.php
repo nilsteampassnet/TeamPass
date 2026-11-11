@@ -59,7 +59,7 @@ class OAuth2Controller
         $this->settings = $settings;
         
         // MS Azure
-        if (str_contains($settings['oauth2_client_endpoint'], 'login.microsoftonline.com')) {
+        if (self::isEntraEndpoint((string) $settings['oauth2_client_endpoint'])) {
 
             // Multi-tenant is not allowed
             if (empty($settings['oauth2_tenant_id']) || $settings['oauth2_tenant_id'] === 'common') {
@@ -94,6 +94,18 @@ class OAuth2Controller
                 'scopeSeparator'          => ' ',
             ]);
         }
+    }
+
+    /**
+     * Tell whether the authorization endpoint is Microsoft Entra ID, which selects the Azure
+     * provider (Graph, directory synchronization, "Test a user") instead of the generic one.
+     *
+     * @param string $authorizeUrl Setting oauth2_client_endpoint.
+     * @return bool
+     */
+    public static function isEntraEndpoint(string $authorizeUrl): bool
+    {
+        return str_contains($authorizeUrl, 'login.microsoftonline.com');
     }
 
     /**
@@ -614,5 +626,186 @@ class OAuth2Controller
         }
 
         return $userGroups;
+    }
+
+    /**
+     * Directory users who sign in to TeamPass with a given login, with their groups.
+     *
+     * The TeamPass login of an Entra user is the part of the UPN before '@', so every user whose
+     * UPN starts with "<login>@" reaches the same TeamPass account: all of them are returned
+     * (at most 10), the one whose full UPN was given first. Their groups are read by
+     * entraUserGroups(), the method of the sign-in, so that the "Test a user" check of the OAuth
+     * page sees what the sign-in sees.
+     *
+     * The directory is read as the application (client credentials grant), like getAllUsers():
+     * this needs the Application permissions User.Read.All and Group.Read.All.
+     *
+     * @param string $loginOrUpn TeamPass login, or full UPN of the user
+     * @return array{error: bool, message: string, code: int, users: array<int, array<string, mixed>>}
+     *         `code` is the HTTP status Graph answered a failure with (403: permission missing)
+     */
+    public function describeDirectoryUsers(string $loginOrUpn): array
+    {
+        if (($this->provider instanceof Azure) === false) {
+            return ['error' => true, 'message' => 'Only supported with Microsoft Entra ID (Azure).', 'code' => 0, 'users' => []];
+        }
+
+        $upn = trim($loginOrUpn);
+        $localPart = strstr($upn, '@', true);
+        $login = $localPart === false ? $upn : $localPart;
+        if ($login === '') {
+            return ['error' => true, 'message' => 'No login given.', 'code' => 0, 'users' => []];
+        }
+
+        try {
+            $token = $this->applicationToken();
+            $url = 'https://graph.microsoft.com/v1.0/users?$filter='
+                . rawurlencode("startswith(userPrincipalName,'" . self::odataString($login . '@') . "')")
+                . '&$select=id,displayName,userPrincipalName,accountEnabled&$top=10';
+            $answer = $this->provider->getParsedResponse(
+                $this->provider->getAuthenticatedRequest('GET', $url, $token)
+            );
+
+            $users = [];
+            foreach ((is_array($answer) && is_array($answer['value'] ?? null)) ? $answer['value'] : [] as $user) {
+                $principalName = is_array($user) ? ($user['userPrincipalName'] ?? null) : null;
+                if (is_string($principalName) === false || empty($user['id']) === true) {
+                    continue;
+                }
+                // Defensive: only the UPNs whose part before '@' is the login, as the sign-in reads it
+                $userLocalPart = strstr($principalName, '@', true);
+                if ($userLocalPart === false || mb_strtolower($userLocalPart) !== mb_strtolower($login)) {
+                    continue;
+                }
+
+                $users[] = [
+                    'id' => (string) $user['id'],
+                    'displayName' => $user['displayName'] ?? null,
+                    'userPrincipalName' => $principalName,
+                    'accountEnabled' => $user['accountEnabled'] ?? null,
+                    'groups' => $this->entraUserGroups('users/' . rawurlencode((string) $user['id']), $token),
+                ];
+            }
+
+            // The user whose UPN was given comes first
+            usort(
+                $users,
+                static fn (array $a, array $b): int => (int) (strcasecmp($b['userPrincipalName'], $upn) === 0)
+                    <=> (int) (strcasecmp($a['userPrincipalName'], $upn) === 0)
+            );
+
+            return ['error' => false, 'message' => '', 'code' => 0, 'users' => $users];
+        } catch (Exception $e) {
+            return [
+                'error' => true,
+                'message' => 'Error while reading the directory: ' . $e->getMessage(),
+                'code' => (int) $e->getCode(),
+                'users' => [],
+            ];
+        }
+    }
+
+    /**
+     * Look up the directory groups each entry of the self-registration list names.
+     *
+     * An entry shaped like an object id is read as an id; any other entry is a display name,
+     * which Entra does not keep unique: several groups may answer, and the members of each of
+     * them may then self-register. An entry nothing answers is a typo, or a group removed.
+     *
+     * @param array<int, string> $entries Entries of oauth_self_register_groups, '*' left out
+     * @return array{error: bool, message: string, code: int, groups: array<int, array{entry: string, matches: array<int, array{id: mixed, displayName: mixed}>}>}
+     */
+    public function checkGroupNames(array $entries): array
+    {
+        if (($this->provider instanceof Azure) === false) {
+            return ['error' => true, 'message' => 'Only supported with Microsoft Entra ID (Azure).', 'code' => 0, 'groups' => []];
+        }
+
+        try {
+            $token = $this->applicationToken();
+            $groups = [];
+            foreach ($entries as $entry) {
+                $groups[] = ['entry' => $entry, 'matches' => $this->directoryGroupsNamed($entry, $token)];
+            }
+
+            return ['error' => false, 'message' => '', 'code' => 0, 'groups' => $groups];
+        } catch (Exception $e) {
+            return [
+                'error' => true,
+                'message' => 'Error while reading the directory: ' . $e->getMessage(),
+                'code' => (int) $e->getCode(),
+                'groups' => [],
+            ];
+        }
+    }
+
+    /**
+     * Groups of the directory an entry of the self-registration list names.
+     *
+     * @param string $entry       Object id or display name
+     * @param string $accessToken Application token for Microsoft Graph
+     * @return array<int, array{id: mixed, displayName: mixed}>
+     * @throws Exception When Graph refuses the query (a group id it does not know excepted)
+     */
+    private function directoryGroupsNamed(string $entry, string $accessToken): array
+    {
+        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $entry) === 1) {
+            try {
+                $group = $this->provider->getParsedResponse($this->provider->getAuthenticatedRequest(
+                    'GET',
+                    'https://graph.microsoft.com/v1.0/groups/' . rawurlencode($entry) . '?$select=id,displayName',
+                    $accessToken
+                ));
+            } catch (Exception $e) {
+                if ((int) $e->getCode() === 404) {
+                    return [];
+                }
+                throw $e;
+            }
+
+            return is_array($group) && isset($group['id'])
+                ? [['id' => $group['id'], 'displayName' => $group['displayName'] ?? null]]
+                : [];
+        }
+
+        $answer = $this->provider->getParsedResponse($this->provider->getAuthenticatedRequest(
+            'GET',
+            'https://graph.microsoft.com/v1.0/groups?$filter='
+                . rawurlencode("displayName eq '" . self::odataString($entry) . "'")
+                . '&$select=id,displayName&$top=10',
+            $accessToken
+        ));
+
+        $matches = [];
+        foreach ((is_array($answer) && is_array($answer['value'] ?? null)) ? $answer['value'] : [] as $group) {
+            if (is_array($group) && isset($group['id'])) {
+                $matches[] = ['id' => $group['id'], 'displayName' => $group['displayName'] ?? null];
+            }
+        }
+
+        return $matches;
+    }
+
+    /**
+     * Access token of the application itself for Microsoft Graph (client credentials grant).
+     *
+     * @return string
+     */
+    private function applicationToken(): string
+    {
+        return $this->provider->getAccessToken('client_credentials', [
+            'scope' => 'https://graph.microsoft.com/.default',
+        ])->getToken();
+    }
+
+    /**
+     * Escape a value for a string literal of a Graph $filter (OData doubles single quotes).
+     *
+     * @param string $value Raw value
+     * @return string
+     */
+    private static function odataString(string $value): string
+    {
+        return str_replace("'", "''", $value);
     }
 }

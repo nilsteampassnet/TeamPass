@@ -82,8 +82,6 @@ class ClientHtmlEncodingSentinelTest extends TestCase
         'app/pages/favorites.js.php' => ['item.login', 'item.description', 'item.folder', 'item.url'],
         // ldap.js.php needs no exemption: the configuration test now reports directory values
         // (entry DN, bind identity, group DN), so every answer goes through htmlEncode().
-        // safe — sources/ldap.queries.php answers oauth.js.php with language strings only
-        'app/pages/oauth.js.php' => ['data.message'],
         // safe — the master-key backup restore answers with language strings and counters; the
         // message is server-built markup that has to stay markup
         'app/pages/tools.js.php' => ['dataStep1.message'],

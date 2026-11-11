@@ -341,8 +341,8 @@ TeamPass account at their first sign-in:
 
 A user who may not self-register is refused with *"You have no TeamPass account yet, and your
 groups at the identity provider do not allow it to be created automatically"*. The failed
-authentications of the `Logs` page show the login and the groups TeamPass received, which is the
-quickest way to check a group name.
+authentications of the `Logs` page show the login and the groups TeamPass received. The
+[Test a user](#test-a-user-before-they-sign-in) block shows them before the user even tries.
 
 On a fresh installation no Entra account exists yet in TeamPass, so **every** first login fails
 until either the field is filled in or the accounts are created beforehand.
@@ -351,6 +351,33 @@ until either the field is filled in or the accounts are created beforehand.
 > held any value: the list was never checked. Now only the members of the listed groups are
 > accepted, and the upgrade leaves the field as it is. If you relied on the old behaviour, enter
 > `*`.
+
+#### Test a user before they sign in
+
+The `OAuth` page ends with a **Test a user** block. It changes nothing.
+
+* **Test a user**: enter a TeamPass login (`jdoe`) or a UPN (`jdoe@contoso.com`). TeamPass lists
+  every directory user whose UPN starts with `jdoe@`, since all of them sign in with the TeamPass
+  login `jdoe`, and tells for each one what the next SSO sign-in would do:
+  * accepted: account already linked, account linked at this sign-in, local or LDAP account
+    converted, or account created;
+  * refused, with the reason and what to do (account linked to another identity, UPN renamed,
+    user outside the allowed groups, user disabled in Entra, LDAP account while LDAP is enabled,
+    the administrator or an internal account…).
+
+  It also lists the groups the sign-in reads (nested groups included, the ones that allow the
+  self-registration in bold) and, for an account the sign-in would create, the roles it would get.
+* **Check the allowed groups**: looks up each entry of `Allowed groups for self-registration` in
+  the directory. *No group answers* means a typo. *Several groups share this name* means the
+  members of each of them may self-register: enter the object id of the right group instead.
+
+Both buttons use the value displayed in the field, even before it is saved.
+
+The test reads the directory **as the application**, like the OAuth2 synchronization: it needs
+`User.Read.All` and `Group.Read.All` of type `Application` (see above). The sign-in reads the
+groups with the user's own token instead (`Delegated` permissions). If the sign-in token cannot
+read group names, the test shows names the sign-in will not receive; listing the object ids
+avoids the difference.
 
 ### Generic OpenID Connect provider (authentik, Keycloak…)
 
@@ -422,6 +449,10 @@ The `Allowed groups for self-registration` field behaves as described for Entra
 lets everybody in; otherwise the user needs one of the listed groups in the `groups` or
 `realm_access.roles` claim. The value is compared with what the provider sends: a Keycloak mapper
 with *Full group path* enabled sends `/parent/child`, not `child`.
+
+The *Test a user* block of the `OAuth` page needs Microsoft Entra ID: OpenID Connect has no
+standard way to read the groups of another user. The failed authentications of the `Logs` page
+show the groups received at each refused self-registration.
 
 ### Allowing OAuth2 users to access the API
 
