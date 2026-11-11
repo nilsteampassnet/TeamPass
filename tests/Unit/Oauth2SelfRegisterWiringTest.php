@@ -56,6 +56,23 @@ final class Oauth2SelfRegisterWiringTest extends TestCase
         $this->assertStringContainsString('oauth2GroupsForRoleMatching($selfRegisterGroups, $oAuthUser[\'groups\'])', $sync);
     }
 
+    public function testGroupsAreMatchedAgainstTheRoleTitlesAsTheyAreStored(): void
+    {
+        // Role titles are stored entity-encoded: a raw lookup missed "Équipe", "R&D", "O'Neil"
+        $create = $this->functionBody($this->source('app/sources/identify.php'), 'externalAdCreateUser');
+        $this->assertStringContainsString('oauth2RoleTitleCandidates(', $create);
+        $this->assertStringContainsString('WHERE title IN %ls', $create);
+        $this->assertStringNotContainsString('$group["displayName"]', $create);
+
+        $sync = $this->between($this->source('app/sources/users.queries.php'), "case 'get_list_of_users_in_oauth2':", "\n        case '");
+        $this->assertStringContainsString("\$titleToIdMap[oauth2RoleTitleAsGroupName((string) \$record['title'])]", $sync);
+        $this->assertLessThan(
+            strpos($sync, 'oauth2RoleTitleAsGroupName('),
+            strpos($sync, "require_once __DIR__ . '/oauth2_self_register_logic.php';"),
+            'The logic module must be loaded before the role titles are read'
+        );
+    }
+
     public function testNoCodeComparesTheWholeSettingWithOneGroupName(): void
     {
         // The pre-fix rule: "A,B" never matched anything, and any value let everybody in

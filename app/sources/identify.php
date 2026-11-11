@@ -2394,12 +2394,18 @@ function externalAdCreateUser(
     $groupIds = [];
     if (count($userGroups) > 0) {
         foreach ($userGroups as $group) {
+            // Role titles are stored entity-encoded: look up the encoded name as well
+            $titles = oauth2RoleTitleCandidates(is_array($group) === true ? ($group['displayName'] ?? null) : null);
+            if ($titles === []) {
+                continue;
+            }
+
             // Check if exists in DB
             $groupData = DB::queryFirstRow(
                 'SELECT id
                 FROM ' . prefixTable('roles_title') . '
-                WHERE title = %s',
-                $group["displayName"]
+                WHERE title IN %ls',
+                $titles
             );
 
             if (DB::count() > 0) {

@@ -154,6 +154,42 @@ function oauth2GroupsForRoleMatching(array $allowedGroups, array $userGroups): a
 }
 
 /**
+ * Titles a TeamPass role named after a provider group may be stored as.
+ *
+ * Every write of a role title goes through FILTER_SANITIZE_FULL_SPECIAL_CHARS (Roles page, role
+ * created from the OAuth2 or LDAP synchronization, domain role): "Équipe R&D" is stored as
+ * "&Eacute;quipe R&amp;D", which a lookup on the raw group name never finds. The raw name is
+ * kept too, so the lookup still finds every title it found before.
+ *
+ * @param mixed $groupName displayName of a group of the provider answer
+ *
+ * @return array<int, string> Values to look up in roles_title.title; [] for a group without a name
+ */
+function oauth2RoleTitleCandidates(mixed $groupName): array
+{
+    if (is_string($groupName) === false || trim($groupName) === '') {
+        return [];
+    }
+
+    return array_values(array_unique([
+        $groupName,
+        (string) filter_var($groupName, FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+    ]));
+}
+
+/**
+ * Group name a stored role title stands for, to compare it with the names the provider sends.
+ *
+ * @param string $storedTitle roles_title.title, stored entity-encoded (see oauth2RoleTitleCandidates())
+ *
+ * @return string
+ */
+function oauth2RoleTitleAsGroupName(string $storedTitle): string
+{
+    return html_entity_decode($storedTitle, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+}
+
+/**
  * Detail of a refused self-registration for the Logs page: the login and the groups received.
  *
  * Groups without a name are counted: Microsoft Graph returns them that way when the app

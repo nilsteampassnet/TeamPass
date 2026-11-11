@@ -127,6 +127,32 @@ final class Oauth2SelfRegisterLogicTest extends TestCase
         );
     }
 
+    public function testARoleIsLookedUpAsItIsStored(): void
+    {
+        // Every role title is saved through FILTER_SANITIZE_FULL_SPECIAL_CHARS
+        $this->assertSame(
+            ["Équipe R&D, O'Neil", '&Eacute;quipe R&amp;D, O&#039;Neil'],
+            oauth2RoleTitleCandidates("Équipe R&D, O'Neil")
+        );
+        // Nothing to encode: one lookup, as before
+        $this->assertSame(['TeamPass-Users'], oauth2RoleTitleCandidates('TeamPass-Users'));
+    }
+
+    public function testAGroupWithoutANameMatchesNoRole(): void
+    {
+        foreach ([null, '', '  ', 42, ['Sales']] as $name) {
+            $this->assertSame([], oauth2RoleTitleCandidates($name));
+        }
+    }
+
+    public function testAStoredRoleTitleReadsAsTheGroupNameItWasCreatedFrom(): void
+    {
+        foreach (["Équipe R&D", "O'Neil team", 'Say "hi"', 'TeamPass-Users'] as $name) {
+            $stored = (string) filter_var($name, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $this->assertSame($name, oauth2RoleTitleAsGroupName($stored));
+        }
+    }
+
     public function testTheLogDetailNamesTheGroupsReceived(): void
     {
         $this->assertSame('jdoe | groups: Sales, Finance', oauth2SelfRegisterLogDetail('jdoe', $this->userGroups('Sales', 'Finance')));

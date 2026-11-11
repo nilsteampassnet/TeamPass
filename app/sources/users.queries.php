@@ -3860,6 +3860,8 @@ if (null !== $post_type) {
 
             $usersList = $oauth2Answer['users'];
 
+            require_once __DIR__ . '/oauth2_self_register_logic.php';
+
             // Get all groups in Teampass
             $teampassRoles = array();
             $titleToIdMap = [];
@@ -3872,14 +3874,14 @@ if (null !== $post_type) {
                         'title' => $record['title']
                     )
                 );
-                $titleToIdMap[$record['title']] = $record['id'];
+                // Keyed by the group name the title stands for: titles are stored entity-encoded
+                $titleToIdMap[oauth2RoleTitleAsGroupName((string) $record['title'])] ??= $record['id'];
             }
 
             // Do init
             $adUsersToSync = [];
             $adRoles = [];
             $usersAlreadyInTeampass = [];
-            require_once __DIR__ . '/oauth2_self_register_logic.php';
             $selfRegisterGroups = oauth2ParseAllowedGroups((string) ($SETTINGS['oauth_self_register_groups'] ?? ''));
 
             function nameFromEmail($email) {
