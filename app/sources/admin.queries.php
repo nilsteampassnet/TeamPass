@@ -1971,17 +1971,9 @@ switch ($post_type) {
         }
 
         // special Cases
-        if ($post_field === 'cpassman_url') {
-            // update also jsUrl for CSFP protection
-            $jsUrl = $post_value . '/assets/lib/csrfp/csrfprotector.js';
-            $csrfp_file = '../includes/libraries/csrfp/libs/csrfp.config.php';
-            $data = file_get_contents($csrfp_file);
-            $posJsUrl = strpos($data, '"jsUrl" => "');
-            $posEndLine = strpos($data, '",', $posJsUrl);
-            $line = substr($data, $posJsUrl, ($posEndLine - $posJsUrl + 2));
-            $newdata = str_replace($line, '"jsUrl" => "' . filter_var($jsUrl, FILTER_SANITIZE_FULL_SPECIAL_CHARS) . '",', $data);
-            file_put_contents($csrfp_file, $newdata);
-        } elseif ($post_field === 'restricted_to_input' && (int) $post_value === 0) {
+        // cpassman_url needs no csrfp.config.php rewrite: public/index.php derives
+        // csrfProtector::$config['jsUrl'] from the request on every page load.
+        if ($post_field === 'restricted_to_input' && (int) $post_value === 0) {
             DB::update(
                 prefixTable('misc'),
                 array(
