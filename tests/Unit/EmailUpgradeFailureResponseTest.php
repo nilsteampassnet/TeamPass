@@ -50,7 +50,7 @@ final class EmailUpgradeFailureResponseTest extends TestCase
     /** Recovery keeps the real wrapper's class/code/location trace; non-email failures escape the email catch. */
     public function testRecoveryRetainsSafeDiagnosticsForEmailAndLaterFailures(): void
     {
-        foreach (['settings', 'tokens', 'columns', 'scheduling', 'index_inspect', 'index_create', 'exception', 'timestamp'] as $mode) {
+        foreach (['settings', 'tokens', 'columns', 'scheduling', 'index_inspect', 'index_create', 'sharing', 'exception', 'timestamp'] as $mode) {
             $statePath = tempnam(sys_get_temp_dir(), 'teampass-email-recovery-test-');
             self::assertNotFalse($statePath);
             try {
