@@ -3187,16 +3187,21 @@ class initialChecks {
             throw new Exception("error");
         }
 
-        // Check if similar login deleted exists
-        DB::queryFirstRow(
-            'SELECT id, login
-            FROM ' . prefixTable('users') . '
-            WHERE login LIKE %s AND deleted_at IS NOT NULL',
-            $login . '_deleted_%'
-        );
+        // A deleted account kept under "<login>_deleted_<time>" explains why the login is
+        // unknown, and stops LDAP or OAuth2 from creating a new account in its place. It says
+        // nothing about an active account holding the login again (re-created by an
+        // administrator; restore_user refuses to restore over it), which must still sign in.
+        if ($dataUserCount === 0) {
+            DB::queryFirstRow(
+                'SELECT id, login
+                FROM ' . prefixTable('users') . '
+                WHERE login LIKE %s AND deleted_at IS NOT NULL',
+                $login . '_deleted_%'
+            );
 
-        if (DB::count() > 0) {
-            throw new Exception("error_user_deleted_exists");
+            if (DB::count() > 0) {
+                throw new Exception("error_user_deleted_exists");
+            }
         }
 
         // We cannot create a user with LDAP if the OAuth2 login is ongoing.
