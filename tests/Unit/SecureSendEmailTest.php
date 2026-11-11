@@ -457,6 +457,8 @@ final class SecureSendEmailTest extends TestCase
         self::assertGreaterThan(1794244602, (int) UPGRADE_MIN_DATE);
         // The latest #5458 follow-up also predates this feature's required migration.
         self::assertGreaterThan(1794333583, (int) UPGRADE_MIN_DATE);
+        // Existing installations may have been upgraded after #5458 reached develop.
+        self::assertGreaterThan(1794380104, (int) UPGRADE_MIN_DATE);
         self::assertStringContainsString("array('admin', 'secure_send_allow_email', '0')", file_get_contents($root . '/public/install/install-steps/run.step5.php'));
         self::assertStringContainsString("'secure_send_allow_email' => '0'", file_get_contents($root . '/public/install/upgrade_run_3.2.4.php'));
         self::assertLessThanOrEqual(time(), (int) UPGRADE_MIN_DATE, 'A future floor would require repeated upgrades on fresh installations.');
