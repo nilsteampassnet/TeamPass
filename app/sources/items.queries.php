@@ -53,6 +53,7 @@ require_once __DIR__ . '/secure_send_snapshot.php';
 require_once __DIR__ . '/secure_send_input.php';
 require_once __DIR__ . '/secure_send_url.php';
 require_once __DIR__ . '/secure_send_storage.php';
+require_once __DIR__ . '/secure_send_email.php';
 
 // init
 loadClasses('DB');
@@ -7338,6 +7339,20 @@ switch ($inputData['type']) {
             break;
         }
 
+        $secureSendRecipient = null;
+        if (array_key_exists('recipient_email', $dataReceived)) {
+            if ((int) ($SETTINGS['secure_send_allow_email'] ?? 0) !== 1) {
+                echo json_encode(['error' => 'email_not_allowed']);
+                break;
+            }
+            try {
+                $secureSendRecipient = secureSendEmailRecipient($dataReceived['recipient_email']);
+            } catch (InvalidArgumentException $e) {
+                echo json_encode(['error' => 'invalid_email']);
+                break;
+            }
+        }
+
         // Determine the kind of send: an existing item or an ad-hoc note/secret
         $secureSendType = (isset($dataReceived['send_type']) === true && $dataReceived['send_type'] === 'note') ? 'note' : 'item';
         if ($secureSendType === 'note' && (int) ($SETTINGS['secure_send_allow_notes'] ?? 0) !== 1) {
@@ -7416,6 +7431,7 @@ switch ($inputData['type']) {
         // Opportunistic cleanup keeps evidence before removing expired ciphertext.
         try {
             secureSendPurgeExpiredLinks($SETTINGS);
+            secureSendEmailPruneMetadata(time());
         } catch (Throwable $e) {
             error_log('TEAMPASS Secure Send cleanup failed (' . get_class($e) . ')');
         }
@@ -7476,8 +7492,14 @@ switch ($inputData['type']) {
                     'max_views' => $secureSendLimits['views'],
                     'shared_globaly' => $secureSendShared,
                 ),
-                $SETTINGS
+                $SETTINGS,
+                $secureSendRecipient === null ? null : ['recipient' => $secureSendRecipient, 'url' => $url]
             );
+        } catch (InvalidArgumentException $e) {
+            echo json_encode(['error' => in_array($e->getMessage(), [
+                'invalid_email', 'email_rate_limited', 'email_not_configured', 'email_requires_https', 'not_allowed',
+            ], true) ? $e->getMessage() : 'server_error']);
+            break;
         } catch (Throwable $e) {
             error_log('TEAMPASS Secure Send creation failed (' . get_class($e) . ')');
             echo json_encode(['error' => 'server_error']);
@@ -7491,6 +7513,7 @@ switch ($inputData['type']) {
                 'otv_id' => $newID,
                 'has_passphrase' => $secureSendPassphrase === '' ? 0 : 1,
                 'description_truncated' => $secureSendDescriptionTruncated,
+                'email_queued' => $secureSendRecipient !== null,
             )
         );
         break;
@@ -7539,6 +7562,7 @@ switch ($inputData['type']) {
 
         try {
             $secureSendRows = secureSendActiveLinks($SETTINGS, (int) $session->get('user-id'), null, null, true);
+            $secureSendEmailStatuses = secureSendEmailStatuses((int) $session->get('user-id'));
         } catch (Throwable $e) {
             error_log('TEAMPASS Secure Send inventory failed (' . get_class($e) . ')');
             echo json_encode(['error' => 'server_error']);
@@ -7557,6 +7581,7 @@ switch ($inputData['type']) {
                     ? $lang->get('secure_send_note')
                     : $secureSendRow['item_label'],
                 'has_passphrase' => (int) ($secureSendRow['has_passphrase'] ?? 0),
+                'email_status' => $secureSendEmailStatuses[(int) $secureSendRow['id']] ?? null,
                 'suspended' => $secureSendRow['suspended'],
                 'remaining_views' => max(0, (int) $secureSendRow['max_views'] - (int) $secureSendRow['views']),
                 'expires_at' => (int) $secureSendRow['time_limit'],

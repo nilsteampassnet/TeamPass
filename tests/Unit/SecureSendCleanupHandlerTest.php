@@ -48,6 +48,7 @@ class SecureSendCleanupHandlerTest extends TestCase
         require_once __DIR__ . '/../../app/sources/secure_send.functions.php';
         require_once __DIR__ . '/../../app/sources/secure_send_storage.php';
         require_once __DIR__ . '/../../app/sources/secure_send_active.php';
+        require_once __DIR__ . '/../../app/sources/secure_send_email.php';
         DB::reset();
         $this->log = tempnam(sys_get_temp_dir(), 'tp-cleanup-handler-');
         $this->previousLog = (string) ini_get('error_log');
@@ -78,6 +79,7 @@ class SecureSendCleanupHandlerTest extends TestCase
         $handler = substr($handler, $cleanup);
         $SETTINGS = ['otv_is_enabled' => 1, 'secure_send_allow_notes' => 1,
             'cpassman_url' => 'https://vault.example.com', 'date_format' => 'Y-m-d', 'time_format' => 'H:i'];
+        $secureSendRecipient = null;
         $session = new class {
             public function get(string $key): int { return 42; }
         };

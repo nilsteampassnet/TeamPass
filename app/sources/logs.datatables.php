@@ -107,7 +107,7 @@ function resolveBackgroundTaskUserDisplay(array $arguments, string $processType)
         return getBackgroundTaskUserDisplayFromUserId($userId);
     }
 
-    if ($processType === 'send_email') {
+    if (in_array($processType, ['send_email', 'secure_send_email'], true)) {
         $receiverName = trim((string) ($arguments['receiver_name'] ?? ($arguments['login'] ?? '')));
         if ($receiverName !== '') {
             return normalizeLogDisplayValue($receiverName);
@@ -1058,7 +1058,7 @@ if (isset($params['action']) && $params['action'] === 'logs') {
         //col5
         if ($record['process_type'] === 'create_user_keys') {
             $processIcon = '<i class=\"fa-solid fa-user-plus infotip\" style=\"cursor: pointer;\" title=\"'.$lang->get('user_creation').'\"></i>';
-        } else if ($record['process_type'] === 'send_email') {
+        } else if (in_array($record['process_type'], ['send_email', 'secure_send_email'], true)) {
             $processIcon = '<i class=\"fa-solid fa-envelope-circle-check infotip\" style=\"cursor: pointer;\" title=\"'.$lang->get('send_email_to_user').'\"></i>';
         } else if ($record['process_type'] === 'user_build_cache_tree') {
             $processIcon = '<i class=\"fa-solid fa-folder-tree infotip\" style=\"cursor: pointer;\" title=\"'.$lang->get('reload_user_cache_table').'\"></i>';

@@ -46,6 +46,16 @@ trait EmailTrait {
             'email' => $arguments['receivers'],
             'login' => (string) ($arguments['receiver_name'] ?? ''),
         ];
+        if (isset($this->processType) && $this->processType === 'secure_send_email') {
+            require_once __DIR__ . '/../../sources/secure_send_email.php';
+            // Refresh policy for every attempt, including a deferred retry. No network I/O under a DB lock.
+            \TeampassClasses\ConfigManager\ConfigManager::invalidateCache();
+            $this->settings = (new \TeampassClasses\ConfigManager\ConfigManager())->getAllSettings();
+            if (!secureSendEmailCanDeliver($this->taskId, $this->settings)) {
+                throw new RuntimeException('Secure Send is no longer available; email was not submitted.');
+            }
+            $arguments = secureSendEmailPersonalize($arguments, $this->taskId, $this->settings);
+        }
         // Prepare email properties
         $emailSettings = new EmailSettings($this->settings);
         $emailService = new EmailService();

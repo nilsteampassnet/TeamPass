@@ -330,7 +330,8 @@ function performStep5() {
         { id: 'check82', action: 'sharekeys_webauthn' },
         { id: 'check83', action: 'user_webauthn_credentials' },
         { id: 'check84', action: 'secure_send_audit' },
-        { id: 'check85', action: 'device_pairings' }
+        { id: 'check85', action: 'device_pairings' },
+        { id: 'check86', action: 'secure_send_email' }
     ];
     
     let errorOccurred = false; // Variable to track errors

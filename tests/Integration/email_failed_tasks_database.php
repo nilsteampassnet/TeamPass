@@ -10,6 +10,7 @@ declare(strict_types=1);
  */
 
 require_once __DIR__ . '/../../app/vendor/sergeytsalkov/meekrodb/db.class.php';
+define('LOG_TASKS', false);
 
 $database = (string) getenv('TEAMPASS_TEST_DB');
 if (preg_match('/^teampass_test_[a-z0-9_]+$/', $database) !== 1) {
@@ -60,7 +61,7 @@ eval($class);
 
 try {
     DB::query('CREATE TABLE %b (increment_id INT PRIMARY KEY, process_type VARCHAR(50),
-        status VARCHAR(20), is_in_progress INT, updated_at BIGINT, finished_at BIGINT, error_message TEXT)',
+        status VARCHAR(20), is_in_progress INT, updated_at BIGINT, finished_at BIGINT, error_message TEXT, arguments MEDIUMTEXT)',
         prefixTable('background_tasks'));
     DB::query('CREATE TABLE %b (increment_id INT PRIMARY KEY, task_id INT)', prefixTable('background_subtasks'));
     $now = time();
@@ -78,6 +79,12 @@ try {
     foreach ([[1, 2], [2, 2], [3, 3], [4, 4]] as [$id, $taskId]) {
         DB::insert(prefixTable('background_subtasks'), ['increment_id' => $id, 'task_id' => $taskId]);
     }
+    foreach ([[7, 'secure_send_email', $now - 1200], [8, 'send_email', $now - 1200],
+        [9, 'secure_send_email', $now], [10, 'create_user_keys', $now - 1200]] as [$id, $type, $updatedAt]) {
+        DB::insert(prefixTable('background_tasks'), ['increment_id' => $id, 'process_type' => $type,
+            'status' => 'in_progress', 'is_in_progress' => 1, 'updated_at' => $updatedAt,
+            'finished_at' => 0, 'arguments' => 'sealed-invitation-secret-canary']);
+    }
     $reflection = new ReflectionClass(BackgroundTasksHandler::class);
     $handler = $reflection->newInstanceWithoutConstructor();
     $reflection->getProperty('maxExecutionTime')->setValue($handler, 600);
@@ -85,13 +92,27 @@ try {
     $cleanup = $reflection->getMethod('cleanupStaleTasks');
     $cleanup->invoke($handler);
     $remaining = DB::queryFirstColumn('SELECT increment_id FROM %b ORDER BY increment_id', prefixTable('background_tasks'));
-    emailCleanupExpect(array_map('intval', $remaining) === [3, 4, 5, 6], 'Incorrect failed-task retention');
+    emailCleanupExpect(array_map('intval', $remaining) === [3, 4, 5, 6, 7, 8, 9, 10], 'Incorrect failed-task retention');
     $remaining = DB::queryFirstColumn('SELECT increment_id FROM %b ORDER BY increment_id', prefixTable('background_subtasks'));
     emailCleanupExpect(array_map('intval', $remaining) === [3, 4], 'Orphaned or incorrectly deleted subtasks');
+    $task = DB::queryFirstRow('SELECT * FROM %b WHERE increment_id=7', prefixTable('background_tasks'));
+    emailCleanupExpect($task['status'] === 'failed'
+        && json_decode($task['arguments'], true) === ['failed' => true, 'interrupted' => true], 'Stale invitation retained its payload');
+    foreach ([8 => 'failed', 9 => 'in_progress', 10 => 'queued'] as $id => $status) {
+        $task = DB::queryFirstRow('SELECT * FROM %b WHERE increment_id=%i', prefixTable('background_tasks'), $id);
+        emailCleanupExpect($task['status'] === $status && $task['arguments'] === 'sealed-invitation-secret-canary',
+            'Cleanup changed another payload or failed a resumable/recent task');
+    }
+    $reflection->getMethod('markTaskFailed')->invoke($handler, 9, 'private-worker-stderr-canary');
+    $task = DB::queryFirstRow('SELECT * FROM %b WHERE increment_id=9', prefixTable('background_tasks'));
+    emailCleanupExpect($task['status'] === 'failed'
+        && json_decode($task['arguments'], true) === ['failed' => true, 'interrupted' => true]
+        && !str_contains($task['error_message'], 'private-worker-stderr-canary'), 'Direct interruption retained private task data');
     $cleanup->invoke($handler);
-    emailCleanupExpect((int) DB::queryFirstField('SELECT COUNT(*) FROM %b', prefixTable('background_tasks')) === 4,
+    emailCleanupExpect((int) DB::queryFirstField('SELECT COUNT(*) FROM %b', prefixTable('background_tasks')) === 8,
         'Repeated cleanup changed retained tasks');
     echo "OK: failed tasks with and without subtasks obey retention; recent and other statuses remain.\n";
+    echo "OK: both handler interruption paths wipe invitations; ordinary, recent and resumable task payloads are preserved.\n";
 } finally {
     DB::query('DROP TABLE IF EXISTS %b', prefixTable('background_subtasks'));
     DB::query('DROP TABLE IF EXISTS %b', prefixTable('background_tasks'));

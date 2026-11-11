@@ -327,6 +327,18 @@ return [
 
     // ---------------------------------------------------------------- items
 
+    'secure_send_link' => [
+        'group' => 'items',
+        'subject_key' => 'secure_send_email_subject',
+        'subject_prefix' => '',
+        'body_key' => 'secure_send_email_body',
+        'tokens' => ['#link#', '#expires#', '#sender#', '#sender_prefix#'],
+        'required_tokens' => ['#link#', '#expires#'],
+        'label' => 'secure_send_email_template',
+        'description' => 'secure_send_email_template_desc',
+        'trigger' => 'items.queries.php (generate_OTV_url)',
+    ],
+
     'item_created' => [
         'group' => 'items',
         'subject_key' => 'email_subject_item_updated',

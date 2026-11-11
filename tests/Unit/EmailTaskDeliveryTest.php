@@ -162,6 +162,37 @@ final class EmailTaskDeliveryTest extends TestCase
         self::assertSame([], $result['messages']);
     }
 
+    /** The real worker must refuse unavailable links and retain safe failure metadata. */
+    public function testSecureSendWorkerChecksAvailabilityBeforeEveryAttempt(): void
+    {
+        foreach (['accepted', 'throttled', 'revoked', 'expired', 'disabled', 'email-disabled'] as $mode) {
+            $result = $this->probe('secure-' . $mode, true);
+            $expected = match ($mode) { 'accepted' => 'completed', 'throttled' => 'queued', default => 'failed' };
+            self::assertSame($expected, $result['task_updates'][0]['status'], $mode);
+            self::assertCount(in_array($mode, ['accepted', 'throttled'], true) ? 1 : 0, $result['messages'], $mode);
+            if ($expected === 'failed') {
+                self::assertSame('Secure Send is no longer available; email was not submitted.', $result['task_updates'][0]['error_message']);
+                self::assertSame(['failed' => true, 'email' => 'recipient@example.com', 'login' => 'Recipient'],
+                    json_decode($result['task_updates'][0]['arguments'], true));
+            }
+        }
+    }
+
+    /** The real worker must resolve disclosure policy and the profile after opening the queued payload. */
+    public function testSecureSendWorkerResolvesTheSubjectWithCurrentDisclosurePolicy(): void
+    {
+        foreach (['sender-shown' => 'R&D O\'Brien shared a secure message with you via TeamPass', 'sender-hidden' => 'Someone shared a secure message with you via TeamPass'] as $mode => $subject) {
+            $result = $this->probe('secure-' . $mode, true);
+            self::assertSame('completed', $result['task_updates'][0]['status']);
+            self::assertCount(1, $result['messages']);
+            self::assertSame($subject, $result['messages'][0]['subject']);
+            $metadata = json_encode($result['task_updates']) . json_encode($result['logs']);
+            self::assertStringNotContainsString('O\'Brien', $metadata);
+            self::assertStringNotContainsString('#sender_prefix#', $metadata);
+            self::assertStringNotContainsString('#sender#', $metadata);
+        }
+    }
+
     /** @return array{failure: ?string, decrypt_calls: int, messages: array, task_updates: array, logs: array} */
     private function probe(string $mode, bool $worker = false): array
     {

@@ -1266,6 +1266,68 @@ inventory. A failed list request shows a retry message rather than an empty
 inventory. Disabling Secure Send hides
 the administrator line and personal entry; existing audit history remains visible.
 
+## Email delivery
+
+Secure Send invitations can use the instance's configured SMTP, Microsoft Graph
+or Gmail transport. Email invitations are disabled by default on fresh and upgraded
+instances. An administrator must enable **Allow Secure Send email invitations**
+under **Options / Collaboration / Secure sharing**. Disabling it hides the email
+controls, refuses new email shares and stops pending or deferred invitations at
+their next submission check; clipboard sharing remains available.
+
+Complete the application upgrade before enabling this flow:
+the `secure_send_email` table associates each link with its background task and
+sender. It contains identifiers, a creation timestamp and a hash of the configured
+sharing address, never a recipient, URL, passphrase or message body. No existing
+link or SMTP setting is changed by the additive migration.
+
+The link, its creation audit event, the association and the encrypted email task
+commit together. The handler wakes only after commit; cron remains the recovery
+path if that wakeup fails. Subjects, recipients and bodies use the encrypted queue
+introduced by the email transport modernization. The invitation uses the instance
+language and a customizable template, without item labels, note content or the
+recipient passphrase. Send that passphrase through a separate channel. Email
+delivery requires an HTTPS sharing address, including for internal links.
+
+The default subject's `#sender#` token is resolved immediately before
+submission, using the current `secure_send_show_sender_name` setting and the
+sender's decoded first/last name. When enabled and non-empty, it inserts the name;
+otherwise it inserts the translated **Someone**. Logins and email addresses never
+serve as fallback identities. The queued payload contains the token rather than
+the profile name, so a disclosure-policy or profile change applies to the next
+attempt. Already submitted mail cannot be recalled by changing that setting.
+Customized subjects retain full control over their text and may omit this
+optional token. The alternative `#sender_prefix#` inserts the permitted name plus
+` — `, or nothing when names are hidden or empty. In customized HTML bodies, both
+values are HTML-escaped.
+
+Each authenticated sender can create at most ten emailed shares per rolling hour.
+Reservations are serialized per account and count pending, accepted and failed
+deliveries. Revocation does not refund that budget. Clipboard-only links do not
+consume it. One recipient and one email task are associated with each emailed
+share; the application does not automatically resend an existing share.
+
+Before every submission, including a deferred retry, the worker checks current
+settings, sender eligibility, source-item access, remaining views, expiry,
+automatic deletion and the configured sharing address. An unusable share is not
+submitted. No content is decrypted and no view is consumed by that check. A
+concurrent change after the check can still race with network submission; the
+recipient flow independently enforces current access at reveal time.
+
+Transport acceptance does not confirm inbox delivery. Ambiguous submissions are
+not automatically replayed. Terminal tasks discard their encrypted payload and
+retain only outcome and recipient metadata, as other email tasks do. Interrupted
+invitations immediately discard their encrypted payload when marked failed,
+including during stale-task cleanup, retaining only failure/interruption flags.
+They are not resumed automatically. Inspect the provider before manually creating another
+invitation after an uncertain outcome.
+
+Delivery associations remain while their link exists. Maintenance and subsequent
+creations prune at most 100 obsolete associations after the one-hour quota window,
+once the link is gone and its task has ended or been purged. The separate lifecycle
+audit journal keeps its configured retention. Downgrading requires compatible
+code/database backups and draining or cancelling pending email tasks first.
+
 ## References
 
 - [Teampass 3.2.2.6 release](https://github.com/nilsteampassnet/TeamPass/releases/tag/3.2.2.6)

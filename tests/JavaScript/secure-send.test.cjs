@@ -37,20 +37,21 @@ const from = template.indexOf('function bindSecureSendClipboard(')
 const to = template.indexOf('// Handle max value for OTV', from)
 assert.ok(from >= 0 && to > from)
 const source = template.slice(from, to).replace(/<\?php[\s\S]*?\?>/g, php => {
+  if (php.includes('secureSendEmailIsConfigured')) return 'true'
   if (php.includes('$secureSendUrls')) return JSON.stringify({ internal: 'https://vault.example.com', public: 'https://share.example.com/team' })
   const key = php.match(/\$lang->get\(['"]([^'"]+)['"]\)/)?.[1] || 'test-key'
   const value = key === 'secure_send_address_preview' ? 'Address: #URL#' : key
   return php.includes('json_encode') ? JSON.stringify(value) : value
 })
 
-function harness(item = { id: 123 }) {
+function harness(item = { id: 123 }, emailAvailable = true) {
   const nodes = new Map()
   const handlers = new Map()
   const requests = []
   const copied = []
   const notices = []
   let listLoads = 0
-  const document = {}
+  const document = { getElementById(id) { return { reportValidity: () => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($('#' + id).val()) } } }
   const $ = selector => {
     if (selector?.node) return selector
     if (!nodes.has(selector)) nodes.set(selector, {
@@ -58,6 +59,7 @@ function harness(item = { id: 123 }) {
       val(value) { if (!arguments.length) return this.value; this.value = value; return this },
       prop(name, value) { if (arguments.length === 1) return this.properties[name]; this.properties[name] = value; return this },
       attr(name, value) { if (arguments.length === 1) return this.attributes[name]; this.attributes[name] = value; return this },
+      removeAttr(name) { delete this.attributes[name]; return this },
       data(name, value) { if (arguments.length === 1) return this.dataValues[name]; this.dataValues[name] = value; return this },
       is() { return this.properties.checked === true },
       iCheck(action) { this.properties.checked = action === 'check'; return this },
@@ -72,11 +74,17 @@ function harness(item = { id: 123 }) {
   $.post = (url, data, success) => {
     const request = {
       data, success,
+      done(fn) { this.success = fn; return this },
       fail(fn) { this.failed = fn; return this }, always(fn) { this.finished = fn; return this },
       resolve(value) { this.success?.(value); this.finished?.() },
       reject() { this.failed?.(); this.finished?.() }
     }
     requests.push(request)
+    return request
+  }
+  $.ajax = options => {
+    const request = $.post(options.url, options.data)
+    request.options = options
     return request
   }
   $('#form-item-otv-days').attr('max', '7')
@@ -91,13 +99,14 @@ function harness(item = { id: 123 }) {
     prepareExchangedData: value => value, copyToClipboard: async value => copied.push(value),
     toastr: { error: value => notices.push(value), warning: value => notices.push(value), info() {} }
   }
-  vm.runInNewContext(source, context)
+  vm.runInNewContext(source.replace('const secureSendEmailAvailable = true;', `const secureSendEmailAvailable = ${emailAvailable};`), context)
   const loadList = context.loadSecureSendsList
   context.loadSecureSendsList = () => { listLoads += 1 }
   const click = selector => handlers.get(`${selector}|click`).call($(selector))
   const edit = () => handlers.get('#modal-item-otv input:not(#form-item-otv-link), #modal-item-otv textarea|input change ifChanged')()
   const generate = () => click('#form-secure-send-generate')
-  return { $, context, handlers, requests, copied, notices, click, edit, generate, loadList,
+  const email = () => click('#form-secure-send-email')
+  return { $, context, handlers, requests, copied, notices, click, edit, generate, email, loadList,
     get listLoads() { return listLoads } }
 }
 
@@ -147,6 +156,97 @@ test('Rapid generation submits once and restores the button after network failur
   assert.equal(h.notices.length, 1)
   h.generate()
   assert.equal(h.requests.length, 2)
+})
+
+test('Only the explicit email action includes a single recipient and double clicks create one request', () => {
+  const h = harness()
+  h.context.openSecureSendModal('item')
+  h.$('#form-secure-send-email-recipient').val('recipient@example.test')
+  h.email(); h.email(); h.generate()
+  assert.equal(h.requests.length, 1)
+  assert.equal(JSON.parse(h.requests[0].data.data).recipient_email, 'recipient@example.test')
+  assert.equal(h.requests[0].options.timeout, 30000)
+  assert.equal(h.$('#secure-send-email-result').content, 'secure_send_email_preparing')
+  h.requests[0].resolve({ error: '', url: 'https://vault.example.test/link', otv_id: 1, email_queued: true })
+  assert.equal(h.$('#secure-send-email-result').hasClass('hidden'), false)
+  h.generate()
+  assert.equal(Object.hasOwn(JSON.parse(h.requests[1].data.data), 'recipient_email'), false)
+})
+
+test('Email action requires a recipient while clipboard sharing accepts an empty field', () => {
+  const h = harness()
+  h.context.openSecureSendModal('item')
+  h.email()
+  assert.equal(h.requests.length, 0)
+  h.generate()
+  assert.equal(h.requests.length, 1)
+})
+
+test('An emailed creation keeps its form stable and cannot be dismissed before the response', () => {
+  const h = harness()
+  h.context.openSecureSendModal('item')
+  h.$('#form-secure-send-email-recipient').val('recipient@example.test')
+  h.email()
+  h.context.openSecureSendModal('note')
+  assert.equal(h.$('#form-secure-send-mode').val(), 'item')
+  let prevented = false
+  h.handlers.get('#modal-item-otv|hide.bs.modal')({ preventDefault() { prevented = true } })
+  assert.equal(prevented, true)
+  h.edit()
+  h.requests[0].resolve({ error: '', url: 'https://vault.example.test/link', otv_id: 1, email_queued: true })
+  assert.equal(h.requests.length, 1, 'the invitation must not be silently revoked')
+  assert.equal(h.$('#form-item-otv-link').val(), 'https://vault.example.test/link')
+  prevented = false
+  h.handlers.get('#modal-item-otv|hide.bs.modal')({ preventDefault() { prevented = true } })
+  assert.equal(prevented, false)
+})
+
+test('Lost email responses warn about possible queueing and never retry automatically', () => {
+  const h = harness()
+  h.context.openSecureSendModal('item')
+  h.$('#form-secure-send-email-recipient').val('recipient@example.test')
+  h.email()
+  h.requests[0].reject()
+  assert.equal(h.requests.length, 1)
+  assert.deepEqual(h.notices, ['secure_send_email_network_unknown'])
+  assert.equal(h.$('#secure-send-email-result').content, 'secure_send_email_network_unknown')
+  assert.equal(h.$('#form-secure-send-email').prop('disabled'), false)
+  assert.equal(h.$('#form-item-otv-link').val(), '')
+})
+
+test('Recipient addresses are cleared when reopening or closing the sharing form', () => {
+  const h = harness()
+  h.$('#form-secure-send-email-recipient').val('previous@example.test')
+  h.context.openSecureSendModal('note')
+  assert.equal(h.$('#form-secure-send-email-recipient').val(), '')
+  h.$('#form-secure-send-email-recipient').val('previous@example.test')
+  h.handlers.get('#modal-item-otv|hidden.bs.modal')()
+  assert.equal(h.$('#form-secure-send-email-recipient').val(), '')
+})
+
+test('An unconfigured mail service prevents email submission while clipboard sharing remains available', () => {
+  const h = harness({ id: 123 }, false)
+  h.context.openSecureSendModal('item')
+  h.$('#form-secure-send-email-recipient').val('recipient@example.test')
+  h.email()
+  assert.equal(h.requests.length, 0)
+  h.generate()
+  assert.equal(h.requests.length, 1)
+  h.requests[0].reject()
+  assert.equal(h.$('#form-secure-send-email').prop('disabled'), true)
+})
+
+test('The item-page inventory shows only known email outcomes without recipient addresses', () => {
+  const h = harness()
+  h.loadList()
+  h.requests[0].resolve({ error: '', sends: [
+    { id: 7, send_type: 'item', label: 'R&D', remaining_views: 1, expires_label: 'Tomorrow', email_status: 'accepted' },
+    { id: 9, send_type: 'item', label: 'Blocked', remaining_views: 1, expires_label: 'Tomorrow', email_status: 'not_sent' },
+    { id: 8, send_type: 'note', label: 'Note', remaining_views: 1, expires_label: 'Tomorrow', email_status: '<img src=x onerror=alert(1)>' }
+  ] })
+  assert.match(h.$('#secure-send-list').content, /secure_send_email_accepted/)
+  assert.match(h.$('#secure-send-list').content, /secure_send_email_not_sent/)
+  assert.doesNotMatch(h.$('#secure-send-list').content, /onerror|mailto:/)
 })
 
 test('Editing the form clears the displayed URL and revokes a late generated link', async () => {

@@ -1027,10 +1027,13 @@ class BackgroundTasksHandler {
             SET is_in_progress = -1, 
                 finished_at = %i, 
                 status = "failed",
+                arguments = CASE WHEN process_type = %s THEN %s ELSE arguments END,
                 error_message = "Task exceeded maximum execution time of '.$this->maxExecutionTime.' seconds"
             WHERE is_in_progress = 1 
             AND updated_at < %i',
             time(),
+            'secure_send_email',
+            json_encode(['failed' => true, 'interrupted' => true]),
             time() - $this->maxExecutionTime
         );
 
@@ -1347,7 +1350,7 @@ class BackgroundTasksHandler {
         $taskId = (int) $entry['task']['increment_id'];
 
         if ($process->isSuccessful()) {
-            if ((string) $entry['task']['process_type'] === 'send_email') {
+            if (in_array((string) $entry['task']['process_type'], ['send_email', 'secure_send_email'], true)) {
                 $emailStatus = DB::queryFirstField('SELECT status FROM ' . prefixTable('background_tasks') . ' WHERE increment_id = %i', $taskId);
                 $emailStatus = in_array($emailStatus, ['completed', 'queued', 'failed'], true) ? $emailStatus : 'unknown';
                 if (LOG_TASKS === true) $this->logger->log('Email task ' . $taskId . ' status: ' . $emailStatus, 'INFO');
@@ -1389,17 +1392,21 @@ class BackgroundTasksHandler {
      */
     private function markTaskFailed(int $taskId, string $message): void {
         $failedProcessType = DB::queryFirstField('SELECT process_type FROM ' . prefixTable('background_tasks') . ' WHERE increment_id = %i', $taskId);
-        if ($failedProcessType === 'send_email') {
+        if (in_array($failedProcessType, ['send_email', 'secure_send_email'], true)) {
             $message = 'Email delivery interrupted; acceptance is unknown. Check the provider before resending.';
+        }
+        $failedValues = [
+            'is_in_progress' => -1,
+            'finished_at' => time(),
+            'status' => 'failed',
+            'error_message' => mb_substr($message, 0, 1000),
+        ];
+        if ($failedProcessType === 'secure_send_email') {
+            $failedValues['arguments'] = json_encode(['failed' => true, 'interrupted' => true]);
         }
         DB::update(
             prefixTable('background_tasks'),
-            [
-                'is_in_progress' => -1,
-                'finished_at' => time(),
-                'status' => 'failed',
-                'error_message' => mb_substr($message, 0, 1000)
-            ],
+            $failedValues,
             'increment_id = %i',
             $taskId
         );
@@ -1542,6 +1549,7 @@ class BackgroundTasksHandler {
                 return 'user:' . strval($args['user_id'] ?? 0);
 
             case 'send_email':
+            case 'secure_send_email':
                 // Emails never conflict with each other
                 return null;
 

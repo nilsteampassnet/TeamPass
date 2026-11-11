@@ -184,6 +184,9 @@ function cleanOrphanObjectsAndScanIntegrity(): array
         WHERE u.id IS NULL'
     );
 
+    require_once __DIR__ . '/../sources/secure_send_email.php';
+    secureSendEmailPruneMetadata(time());
+
     // Update CACHE table
     updateCacheTable('reload', null);
 

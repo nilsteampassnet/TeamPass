@@ -102,6 +102,23 @@ amplification path. Missing required passphrases consume neither an attempt nor
 an event. Storage/crypto runtime errors retain the existing generic error log,
 without treating broken storage as a bad recipient credential.
 
+## Email delivery association
+
+Email invitations require `secure_send_allow_email` (off by default). Creation
+and every submission/retry enforce it alongside current source access and policy.
+The sealed task, metadata-only association and creation audit commit with the link;
+the per-sender lock limits invitations to ten per rolling hour. Wakeups follow commit.
+No recipient, URL, content or phrase enters the association or lifecycle journal.
+Fresh install and the 3.2.4 upgrade share the association DDL.
+
+Interrupted invitations are not resumed; both handler failure paths wipe their
+payload. Provider outcomes remain conservative: `not_sent` denotes a preflight
+refusal, while acceptance is not inbox delivery. Statuses are owner-scoped.
+Resolve `#sender#` / optional `#sender_prefix#` at each submission under current
+`secure_send_show_sender_name`; hidden/empty profiles use shipped **Someone**,
+never login/email. Strip header controls, escape HTML and preserve custom subjects
+without these tokens. Never freeze a profile name into a queued invitation.
+
 ## External forwarding
 
 After commit, `secureSendEmitAudit()` forwards the safe row as

@@ -671,6 +671,7 @@ class DatabaseInstaller
             array('admin', 'secure_send_audit_retention_days', '0'),
             array('admin', 'secure_send_require_passphrase', '0'),
             array('admin', 'secure_send_show_sender_name', '1'),
+            array('admin', 'secure_send_allow_email', '0'),
             array('admin', 'agses_authentication_enabled', '0'),
             array('admin', 'item_extra_fields', '0'),
             array('admin', 'saltkey_ante_2127', 'none'),
@@ -1588,6 +1589,13 @@ class DatabaseInstaller
     {
         require_once TEAMPASS_ROOT . '/app/sources/secure_send_audit.php';
         DB::query(secureSendAuditSchemaSql($this->inputData['tablePrefix'] . 'secure_send_audit'));
+    }
+
+    /** Create the metadata-only Secure Send email association. */
+    private function secure_send_email()
+    {
+        require_once TEAMPASS_ROOT . '/app/sources/secure_send_email.php';
+        DB::query(secureSendEmailSchemaSql($this->inputData['tablePrefix'] . 'secure_send_email'));
     }
 
     // Create table suggestion
