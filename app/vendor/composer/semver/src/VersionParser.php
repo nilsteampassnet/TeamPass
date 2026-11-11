@@ -96,6 +96,22 @@ class VersionParser
     }
 
     /**
+     * @param string $version
+     *
+     * @return bool
+     */
+    public function isValid($version)
+    {
+        try {
+            $this->normalize($version);
+        } catch (\UnexpectedValueException $e) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Normalizes a version string to be able to perform comparisons on it.
      *
      * @param string $version
@@ -506,7 +522,7 @@ class VersionParser
                 if ($op !== '==' && $op !== '=' && !empty($stabilityModifier) && self::parseStability($version) === 'stable') {
                     $version .= '-' . $stabilityModifier;
                 } elseif ('<' === $op || '>=' === $op) {
-                    if (!preg_match('/-' . self::$modifierRegex . '$/', strtolower($matches[2]))) {
+                    if (!preg_match('/-' . self::$modifierRegex . '$/i', $matches[2])) {
                         if (strpos($matches[2], 'dev-') !== 0) {
                             $version .= '-dev';
                         }

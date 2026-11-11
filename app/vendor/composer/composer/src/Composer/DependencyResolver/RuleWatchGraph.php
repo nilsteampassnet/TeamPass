@@ -41,11 +41,12 @@ class RuleWatchGraph
      */
     public function insert(RuleWatchNode $node): void
     {
-        if ($node->getRule()->isAssertion()) {
+        $rule = $node->getRule();
+        if ($rule->isAssertion()) {
             return;
         }
 
-        if (!$node->getRule() instanceof MultiConflictRule) {
+        if (!$rule instanceof MultiConflictRule) {
             foreach ([$node->watch1, $node->watch2] as $literal) {
                 if (!isset($this->watchChains[$literal])) {
                     $this->watchChains[$literal] = new RuleWatchChain;
@@ -54,7 +55,7 @@ class RuleWatchGraph
                 $this->watchChains[$literal]->unshift($node);
             }
         } else {
-            foreach ($node->getRule()->getLiterals() as $literal) {
+            foreach ($rule->getLiterals() as $literal) {
                 if (!isset($this->watchChains[$literal])) {
                     $this->watchChains[$literal] = new RuleWatchChain;
                 }
@@ -109,9 +110,13 @@ class RuleWatchGraph
                 if (!$node->getRule()->isDisabled() && !$decisions->satisfy($otherWatch)) {
                     $ruleLiterals = $node->getRule()->getLiterals();
 
-                    $alternativeLiteral = array_find($ruleLiterals, static function ($ruleLiteral) use ($literal, $otherWatch, $decisions): bool {
-                        return $ruleLiteral !== $literal && $ruleLiteral !== $otherWatch && !$decisions->conflict($ruleLiteral);
-                    });
+                    $alternativeLiteral = null;
+                    foreach ($ruleLiterals as $ruleLiteral) {
+                        if ($ruleLiteral !== $literal && $ruleLiteral !== $otherWatch && !$decisions->conflict($ruleLiteral)) {
+                            $alternativeLiteral = $ruleLiteral;
+                            break;
+                        }
+                    }
 
                     if ($alternativeLiteral !== null) {
                         $this->moveWatch($literal, $alternativeLiteral, $node);

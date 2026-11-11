@@ -169,8 +169,6 @@ interface OTPInterface
     public function withParameter(string $parameter, mixed $value): self;
 
     /**
-     * Get the provisioning URI.
-     *
      * @return non-empty-string
      */
     public function getProvisioningUri(): string;

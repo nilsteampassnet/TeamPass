@@ -10,10 +10,12 @@ use Webauthn\CredentialRecord;
 use Webauthn\PublicKeyCredentialSource;
 
 /**
- * Event dispatched when the backup eligibility flag (BE) changes.
+ * Event dispatched when the backup eligibility flag (BE) of a credential record is recorded.
  *
- * The BE flag indicates whether the authenticator is capable of backing up
- * the credential. A change in this flag may indicate device capabilities have changed.
+ * The BE flag indicates whether the credential is a multi-device credential. It is set when the credential is created
+ * and never changes afterwards, so the event is only dispatched when the credential record had no value yet: by the
+ * registration ceremony, and by the first authentication ceremony of a record stored before the flag was tracked.
+ * An assertion that claims another value than the recorded one is rejected.
  */
 final readonly class BackupEligibilityChangedEvent implements WebauthnEvent
 {

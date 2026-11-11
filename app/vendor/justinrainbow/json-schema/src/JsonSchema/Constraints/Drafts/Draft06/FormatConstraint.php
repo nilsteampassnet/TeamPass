@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace JsonSchema\Constraints\Drafts\Draft06;
 
 use JsonSchema\ConstraintError;
+use JsonSchema\Constraints\Constraint;
 use JsonSchema\Constraints\ConstraintInterface;
 use JsonSchema\Constraints\Factory;
 use JsonSchema\Entity\ErrorBagProxy;
@@ -17,14 +18,18 @@ class FormatConstraint implements ConstraintInterface
 {
     use ErrorBagProxy;
 
+    /** @var Factory */
+    private $factory;
+
     public function __construct(?Factory $factory = null)
     {
-        $this->initialiseErrorBag($factory ?: new Factory());
+        $this->factory = $factory ?: new Factory();
+        $this->initialiseErrorBag($this->factory);
     }
 
     public function check(&$value, $schema = null, ?JsonPointer $path = null, $i = null): void
     {
-        if (!property_exists($schema, 'format')) {
+        if (!property_exists($schema, 'format') || $this->factory->getConfig(Constraint::CHECK_MODE_DISABLE_FORMAT)) {
             return;
         }
 
@@ -140,7 +145,7 @@ class FormatConstraint implements ConstraintInterface
 
     private function validateRegex(string $regex): bool
     {
-        return preg_match(self::jsonPatternToPhpRegex($regex), '') !== false;
+        return @preg_match(self::jsonPatternToPhpRegex($regex), '') !== false;
     }
 
     /**
@@ -214,10 +219,26 @@ class FormatConstraint implements ConstraintInterface
         return true;
     }
 
+    /**
+     * Validates a URI template according to the ABNF of RFC 6570 section 2.
+     */
     private function validateUriTemplate(string $value): bool
     {
+        $pctEncoded = '%[0-9A-Fa-f]{2}';
+        // Any Unicode character except CTL, SP, '"', '%', '<', '>', '\', '^', '`', '{', '|' and '}' (ucschar / iprivate).
+        // BMP and supplementary ranges are kept in separate classes, as PCRE2 10.46 fails to match some BMP code
+        // points when a single class holds too many ranges.
+        $literal = '(?:[\x21\x23\x24\x26-\x3B\x3D\x3F-\x5B\x5D\x5F\x61-\x7A\x7E\x{A0}-\x{D7FF}\x{E000}-\x{FDCF}\x{FDF0}-\x{FFEF}]'
+            . '|[\x{10000}-\x{1FFFD}\x{20000}-\x{2FFFD}\x{30000}-\x{3FFFD}\x{40000}-\x{4FFFD}\x{50000}-\x{5FFFD}'
+            . '\x{60000}-\x{6FFFD}\x{70000}-\x{7FFFD}\x{80000}-\x{8FFFD}\x{90000}-\x{9FFFD}\x{A0000}-\x{AFFFD}'
+            . '\x{B0000}-\x{BFFFD}\x{C0000}-\x{CFFFD}\x{D0000}-\x{DFFFD}\x{E1000}-\x{EFFFD}\x{F0000}-\x{FFFFD}'
+            . '\x{100000}-\x{10FFFD}])';
+        $varchar = '(?:[A-Za-z0-9_]|' . $pctEncoded . ')';
+        $varspec = $varchar . '(?:\.?' . $varchar . ')*(?::[1-9][0-9]{0,3}|\*)?';
+        $expression = '\{[+#.\/;?&]?' . $varspec . '(?:,' . $varspec . ')*\}';
+
         return preg_match(
-            '/^(?:[^\{\}]*|\{[a-zA-Z0-9_:%\/\.~\-\+\*]+\})*$/',
+            '/^(?:' . $literal . '|' . $pctEncoded . '|' . $expression . ')*\z/u',
             $value
         ) === 1;
     }

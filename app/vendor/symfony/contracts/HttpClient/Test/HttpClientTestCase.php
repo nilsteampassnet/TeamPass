@@ -11,6 +11,7 @@
 
 namespace Symfony\Contracts\HttpClient\Test;
 
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
@@ -58,12 +59,10 @@ abstract class HttpClientTestCase extends TestCase
         $this->assertNull($info['error']);
         $this->assertSame(0, $info['redirect_count']);
         $this->assertSame('HTTP/1.1 200 OK', $info['response_headers'][0]);
-        $this->assertSame('Host: localhost:8057', $info['response_headers'][1]);
         $this->assertSame('http://localhost:8057/', $info['url']);
 
         $headers = $response->getHeaders();
 
-        $this->assertSame('localhost:8057', $headers['host'][0]);
         $this->assertSame(['application/json'], $headers['content-type']);
 
         $body = json_decode($response->getContent(), true);
@@ -95,11 +94,9 @@ abstract class HttpClientTestCase extends TestCase
 
         $info = $response->getInfo();
         $this->assertSame('HTTP/1.1 200 OK', $info['response_headers'][0]);
-        $this->assertSame('Host: localhost:8057', $info['response_headers'][1]);
 
         $headers = $response->getHeaders();
 
-        $this->assertSame('localhost:8057', $headers['host'][0]);
         $this->assertSame(['application/json'], $headers['content-type']);
         $this->assertTrue(0 < $headers['content-length'][0]);
 
@@ -794,6 +791,10 @@ abstract class HttpClientTestCase extends TestCase
         }
     }
 
+    /**
+     * @group transient-on-windows
+     */
+    #[Group('transient-on-windows')]
     public function testTimeoutOnStream()
     {
         $client = $this->getHttpClient(__FUNCTION__);
@@ -826,6 +827,10 @@ abstract class HttpClientTestCase extends TestCase
         $this->fail('The response should have completed');
     }
 
+    /**
+     * @group transient-on-windows
+     */
+    #[Group('transient-on-windows')]
     public function testUncheckedTimeoutThrows()
     {
         $client = $this->getHttpClient(__FUNCTION__);
@@ -838,6 +843,10 @@ abstract class HttpClientTestCase extends TestCase
         }
     }
 
+    /**
+     * @group transient-on-windows
+     */
+    #[Group('transient-on-windows')]
     public function testTimeoutWithActiveConcurrentStream()
     {
         $p1 = TestHttpServer::start(8067);

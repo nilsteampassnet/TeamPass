@@ -25,6 +25,7 @@ class ConstraintError extends Enum
     public const FORMAT_DATE = 'dateFormat';
     public const FORMAT_DATE_TIME = 'dateTimeFormat';
     public const FORMAT_DATE_UTC = 'dateUtcFormat';
+    public const FORMAT_DURATION = 'durationFormat';
     public const FORMAT_EMAIL = 'emailFormat';
     public const FORMAT_HOSTNAME = 'styleHostName';
     public const FORMAT_IP = 'ipFormat';
@@ -36,6 +37,7 @@ class ConstraintError extends Enum
     public const FORMAT_URI_TEMPLATE = 'uriTemplateFormat';
     public const FORMAT_URL = 'urlFormat';
     public const FORMAT_URL_REF = 'urlRefFormat';
+    public const FORMAT_UUID = 'uuidFormat';
     public const INVALID_SCHEMA = 'invalidSchema';
     public const LENGTH_MAX = 'maxLength';
     public const LENGTH_MIN = 'minLength';
@@ -60,6 +62,7 @@ class ConstraintError extends Enum
     public const PROPERTY_NAMES = 'propertyNames';
     public const TYPE = 'type';
     public const UNIQUE_ITEMS = 'uniqueItems';
+    public const UNEVALUATED_PROPERTIES = 'unevaluatedProperties';
     public const CONTENT_MEDIA_TYPE = 'contentMediaType';
     public const CONTENT_ENCODING = 'contentEncoding';
 
@@ -76,17 +79,18 @@ class ConstraintError extends Enum
             self::ANY_OF => 'Failed to match at least one schema',
             self::DEPENDENCIES => '%s depends on %s, which is missing',
             self::DISALLOW => 'Disallowed value was matched',
-            self::DIVISIBLE_BY => 'Is not divisible by %d',
+            self::DIVISIBLE_BY => 'Is not divisible by %s',
             self::ENUM => 'Does not have a value in the enumeration %s',
             self::CONSTANT => 'Does not have a value equal to %s',
             self::CONTAINS => 'Does not have a value valid to contains schema',
-            self::EXCLUSIVE_MINIMUM => 'Must have a minimum value greater than %d',
-            self::EXCLUSIVE_MAXIMUM => 'Must have a maximum value less than %d',
+            self::EXCLUSIVE_MINIMUM => 'Must have a minimum value greater than %s',
+            self::EXCLUSIVE_MAXIMUM => 'Must have a maximum value less than %s',
             self::FALSE => 'Boolean schema false',
             self::FORMAT_COLOR => 'Invalid color',
             self::FORMAT_DATE => 'Invalid date %s, expected format YYYY-MM-DD',
             self::FORMAT_DATE_TIME => 'Invalid date-time %s, expected format YYYY-MM-DDThh:mm:ssZ or YYYY-MM-DDThh:mm:ss+hh:mm',
             self::FORMAT_DATE_UTC => 'Invalid time %s, expected integer of milliseconds since Epoch',
+            self::FORMAT_DURATION => 'Invalid duration %s, expected ISO 8601 duration such as P1DT12H',
             self::FORMAT_EMAIL => 'Invalid email',
             self::FORMAT_HOSTNAME => 'Invalid hostname',
             self::FORMAT_IP => 'Invalid IP address',
@@ -98,15 +102,16 @@ class ConstraintError extends Enum
             self::FORMAT_URI_TEMPLATE => 'Invalid URI template format',
             self::FORMAT_URL => 'Invalid URL format',
             self::FORMAT_URL_REF => 'Invalid URL reference format',
+            self::FORMAT_UUID => 'Invalid UUID format',
             self::LENGTH_MAX => 'Must be at most %d characters long',
             self::INVALID_SCHEMA => 'Schema is not valid',
             self::LENGTH_MIN => 'Must be at least %d characters long',
             self::MAX_CONTAINS => 'There must be a maximum of %d valid items in the array, %d found',
             self::MAX_ITEMS => 'There must be a maximum of %d items in the array, %d found',
-            self::MAXIMUM => 'Must have a maximum value less than or equal to %d',
+            self::MAXIMUM => 'Must have a maximum value less than or equal to %s',
             self::MIN_CONTAINS => 'There must be a minimum of %d valid items in the array, %d found',
             self::MIN_ITEMS => 'There must be a minimum of %d items in the array, %d found',
-            self::MINIMUM => 'Must have a minimum value greater than or equal to %d',
+            self::MINIMUM => 'Must have a minimum value greater than or equal to %s',
             self::MISSING_MAXIMUM => 'Use of exclusiveMaximum requires presence of maximum',
             self::MISSING_MINIMUM => 'Use of exclusiveMinimum requires presence of minimum',
             /*self::MISSING_ERROR => 'Used for tests; this error is deliberately commented out',*/
@@ -122,6 +127,7 @@ class ConstraintError extends Enum
             self::PROPERTY_NAMES => 'Property name %s is invalid',
             self::TYPE => '%s value found, but %s is required',
             self::UNIQUE_ITEMS => 'There are no duplicates allowed in the array',
+            self::UNEVALUATED_PROPERTIES => 'The property %s is not evaluated and the definition does not allow unevaluated properties',
             self::CONTENT_MEDIA_TYPE => 'Value is not valid with content media type',
             self::CONTENT_ENCODING => 'Value is not valid with content encoding',
         ];

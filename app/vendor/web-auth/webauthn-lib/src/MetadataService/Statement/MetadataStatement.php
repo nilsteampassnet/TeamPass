@@ -151,11 +151,18 @@ class MetadataStatement
     public readonly AuthenticatorGetInfo $authenticatorGetInfo;
 
     /**
+     * @see https://fidoalliance.org/specs/mds/fido-metadata-statement-v3.1-ps-20250521.html#dom-metadatastatement-userverificationdetails
+     *
+     * @var VerificationMethodANDCombinations[]
+     */
+    public readonly array $userVerificationDetails;
+
+    /**
      * @param Version[] $upv
      * @param string[] $authenticationAlgorithms
      * @param string[] $publicKeyAlgAndEncodings
      * @param string[] $attestationTypes
-     * @param VerificationMethodANDCombinations[] $userVerificationDetails
+     * @param VerificationMethodANDCombinations[]|null $userVerificationDetails
      * @param string[] $matcherProtection
      * @param string[] $tcDisplay
      * @param string[] $attestationRootCertificates
@@ -174,7 +181,7 @@ class MetadataStatement
         public readonly array $authenticationAlgorithms,
         public readonly array $publicKeyAlgAndEncodings,
         public readonly array $attestationTypes,
-        public readonly array $userVerificationDetails,
+        ?array $userVerificationDetails,
         public readonly array $matcherProtection,
         public readonly array $tcDisplay,
         public readonly array $attestationRootCertificates,
@@ -194,6 +201,7 @@ class MetadataStatement
         public array $supportedExtensions = [],
         ?AuthenticatorGetInfo $authenticatorGetInfo = null,
     ) {
+        $this->userVerificationDetails = $userVerificationDetails ?? [];
         $this->authenticatorGetInfo = $authenticatorGetInfo ?? AuthenticatorGetInfo::create($attestationTypes);
     }
 
@@ -202,7 +210,7 @@ class MetadataStatement
      * @param string[] $authenticationAlgorithms
      * @param string[] $publicKeyAlgAndEncodings
      * @param string[] $attestationTypes
-     * @param VerificationMethodANDCombinations[] $userVerificationDetails
+     * @param VerificationMethodANDCombinations[]|null $userVerificationDetails
      * @param string[] $matcherProtection
      * @param string[] $tcDisplay
      * @param string[] $attestationRootCertificates
@@ -222,7 +230,7 @@ class MetadataStatement
         array $authenticationAlgorithms,
         array $publicKeyAlgAndEncodings,
         array $attestationTypes,
-        array $userVerificationDetails,
+        ?array $userVerificationDetails,
         array $matcherProtection,
         array $tcDisplay,
         array $attestationRootCertificates,

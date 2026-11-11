@@ -14,10 +14,9 @@ declare(strict_types=1);
 namespace phpDocumentor\Reflection;
 
 use InvalidArgumentException;
-use function assert;
+
 use function end;
 use function explode;
-use function is_string;
 use function preg_match;
 use function sprintf;
 use function trim;
@@ -63,10 +62,11 @@ final class Fqsen
 
         if (isset($matches[2])) {
             $this->name = $matches[2];
+        } elseif ($fqsen === '\\') {
+            $this->name = '';
         } else {
             $matches = explode('\\', $fqsen);
             $name = end($matches);
-            assert(is_string($name));
             $this->name = trim($name, '()');
         }
     }
@@ -74,7 +74,7 @@ final class Fqsen
     /**
      * converts this class to string.
      */
-    public function __toString() : string
+    public function __toString(): string
     {
         return $this->fqsen;
     }
@@ -82,7 +82,7 @@ final class Fqsen
     /**
      * Returns the name of the element without path.
      */
-    public function getName() : string
+    public function getName(): string
     {
         return $this->name;
     }

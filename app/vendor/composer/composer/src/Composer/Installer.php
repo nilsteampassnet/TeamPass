@@ -26,6 +26,7 @@ use Composer\DependencyResolver\Pool;
 use Composer\DependencyResolver\Request;
 use Composer\DependencyResolver\FilterListPoolFilter;
 use Composer\DependencyResolver\SecurityAdvisoryPoolFilter;
+use Composer\DependencyResolver\CooldownPoolFilter;
 use Composer\DependencyResolver\Solver;
 use Composer\DependencyResolver\SolverProblemsException;
 use Composer\DependencyResolver\PolicyInterface;
@@ -43,6 +44,7 @@ use Composer\Policy\PolicyConfig;
 use Composer\Installer\InstallerEvents;
 use Composer\Installer\SuggestedPackagesReporter;
 use Composer\IO\IOInterface;
+use Composer\Json\JsonFile;
 use Composer\Package\AliasPackage;
 use Composer\Package\RootAliasPackage;
 use Composer\Package\BasePackage;
@@ -450,10 +452,11 @@ class Installer
 
         if ($auditConfig->audit) {
             if ($this->update && !$this->install) {
-                $packages = $lockedRepository->getCanonicalPackages();
+                // aliases are included as a branch alias version can match advisories which the dev-* branch cannot
+                $packages = $lockedRepository->getPackages();
                 $target = 'locked';
             } else {
-                $packages = $localRepo->getCanonicalPackages();
+                $packages = $localRepo->getPackages();
                 $target = 'installed';
             }
             if (count($packages) > 0) {
@@ -513,7 +516,6 @@ class Installer
         $this->io->writeError('<info>Loading composer repositories with package information</info>');
 
         // creating repository set
-        $policy = $this->createPolicy(true, $lockedRepository);
         $repositorySet = $this->createRepositorySet(true, $platformRepo, $aliases);
         $repositories = $this->repositoryManager->getRepositories();
         foreach ($repositories as $repository) {
@@ -531,7 +533,8 @@ class Installer
             $request->setUpdateAllowList($this->updateAllowList, $this->updateAllowTransitiveDependencies);
         }
 
-        $pool = $repositorySet->createPool($request, $this->io, $this->eventDispatcher, $this->createPoolOptimizer($policy), $this->ignoredTypes, $this->allowedTypes, $this->createSecurityAuditPoolFilter(), $this->createFilterListPoolFilter(ListPolicyConfig::BLOCK_SCOPE_UPDATE));
+        $policy = $this->createPolicy(true, $request);
+        $pool = $repositorySet->createPool($request, $this->io, $this->eventDispatcher, $this->createPoolOptimizer($policy), $this->ignoredTypes, $this->allowedTypes, $this->createSecurityAuditPoolFilter(), $this->createFilterListPoolFilter(ListPolicyConfig::BLOCK_SCOPE_UPDATE), $this->createCooldownPoolFilter());
 
         $this->io->writeError('<info>Updating dependencies</info>');
 
@@ -750,6 +753,12 @@ class Installer
      */
     protected function doInstall(InstalledRepositoryInterface $localRepo, bool $alreadySolved = false): int
     {
+        if (!$alreadySolved && ($this->locker->getLockData()['content-hash'] ?? null) === JsonFile::CONFLICTED_CONTENT_HASH) {
+            $this->io->writeError('<error>'.JsonFile::CONFLICTED_CONTENT_HASH.'</error>', true, IOInterface::QUIET);
+
+            return self::ERROR_LOCK_FILE_INVALID;
+        }
+
         if ($this->config->get('lock')) {
             $this->io->writeError('<info>Installing dependencies from lock file'.($this->devMode ? ' (including require-dev)' : '').'</info>');
         }
@@ -976,7 +985,7 @@ class Installer
         return $repositorySet;
     }
 
-    private function createPolicy(bool $forUpdate, ?LockArrayRepository $lockedRepo = null): DefaultPolicy
+    private function createPolicy(bool $forUpdate, ?Request $request = null): DefaultPolicy
     {
         $preferStable = null;
         $preferLowest = null;
@@ -994,10 +1003,11 @@ class Installer
         }
 
         $preferredVersions = null;
-        if ($forUpdate && $this->minimalUpdate && $lockedRepo !== null) {
+        $lockedRepo = $request !== null ? $request->getLockedRepository() : null;
+        if ($forUpdate && $this->minimalUpdate && $request !== null && $lockedRepo !== null) {
             $preferredVersions = [];
             foreach ($lockedRepo->getPackages() as $pkg) {
-                if ($pkg instanceof AliasPackage || ($this->updateAllowList !== null && in_array($pkg->getName(), $this->updateAllowList, true))) {
+                if ($pkg instanceof AliasPackage || $request->isInUpdateAllowList($pkg->getName())) {
                     continue;
                 }
                 $preferredVersions[$pkg->getName()] = $pkg->getVersion();
@@ -1193,6 +1203,19 @@ class Installer
         }
 
         return new FilterListPoolFilter($policyConfig, new FilterListAuditor(), $this->repositoryManager->getHttpDownloader(), $blockScope, $this->repositoryManager->getRepositories(), $this->io);
+    }
+
+    private function createCooldownPoolFilter(): ?CooldownPoolFilter
+    {
+        $policyConfig = $this->getPolicyConfig();
+
+        // Cooldown blocks during update/require only for now, and is skipped when
+        // only refreshing mirror/dist information (no version changes happen then)
+        if ($policyConfig->enabled && $policyConfig->cooldown->shouldBlock(ListPolicyConfig::BLOCK_SCOPE_UPDATE) && !$this->updateMirrors) {
+            return new CooldownPoolFilter($policyConfig->cooldown);
+        }
+
+        return null;
     }
 
     /**

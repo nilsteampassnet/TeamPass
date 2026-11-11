@@ -4711,10 +4711,12 @@ trait Mixin
     /**
      * @psalm-pure
      *
-     * @param string|object|null       $classOrObject
+     * @template T as class-string|object
+     *
+     * @param T|null                   $classOrObject
      * @param string|callable():string $message
      *
-     * @return string|object|null
+     * @return T|null
      *
      * @throws InvalidArgumentException
      */
@@ -4728,10 +4730,12 @@ trait Mixin
     /**
      * @psalm-pure
      *
-     * @param iterable<string|object>  $classOrObject
+     * @template T as class-string|object
+     *
+     * @param iterable<T>              $classOrObject
      * @param string|callable():string $message
      *
-     * @return iterable<string|object>
+     * @return iterable<T>
      *
      * @throws InvalidArgumentException
      */
@@ -4749,10 +4753,12 @@ trait Mixin
     /**
      * @psalm-pure
      *
-     * @param iterable<string|object|null> $classOrObject
-     * @param string|callable():string     $message
+     * @template T as class-string|object|null
      *
-     * @return iterable<string|object|null>
+     * @param iterable<T>              $classOrObject
+     * @param string|callable():string $message
+     *
+     * @return iterable<T>
      *
      * @throws InvalidArgumentException
      */
@@ -5016,6 +5022,65 @@ trait Mixin
 
         foreach ($array as $entry) {
             null === $entry || static::keyExists($entry, $key, $message);
+        }
+
+        return $array;
+    }
+
+    /**
+     * @psalm-pure
+     *
+     * @param iterable<string|int>     $keys
+     * @param string|callable():string $message
+     *
+     * @return array|null
+     *
+     * @throws InvalidArgumentException
+     */
+    public static function nullOrKeysExist(mixed $array, mixed $keys, callable|string $message = ''): ?array
+    {
+        null === $array || static::keysExist($array, $keys, $message);
+
+        return $array;
+    }
+
+    /**
+     * @psalm-pure
+     *
+     * @param iterable<string|int>     $keys
+     * @param string|callable():string $message
+     *
+     * @return iterable<array>
+     *
+     * @throws InvalidArgumentException
+     */
+    public static function allKeysExist(mixed $array, mixed $keys, callable|string $message = ''): iterable
+    {
+        static::isIterable($array);
+
+        foreach ($array as $entry) {
+            static::keysExist($entry, $keys, $message);
+        }
+
+        return $array;
+    }
+
+    /**
+     * @psalm-pure
+     *
+     * @param iterable<string|int>     $keys
+     * @param string|callable():string $message
+     *
+     * @return iterable<array|null>
+     *
+     * @throws InvalidArgumentException
+     */
+    public static function allNullOrKeysExist(mixed $array, mixed $keys, callable|string $message = ''): iterable
+    {
+        static::isIterable($array);
+
+        foreach ($array as $entry) {
+            null === $entry || static::keysExist($entry, $keys, $message);
         }
 
         return $array;

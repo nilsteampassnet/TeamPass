@@ -37,7 +37,15 @@ class PhpFileParser
 
         // Use @ here instead of Silencer to actively suppress 'unhelpful' output
         // @link https://github.com/composer/composer/pull/4886
-        $contents = @php_strip_whitespace($path);
+        // Avoid a tokenizer pass when the cleaner can process the original source.
+        // Preserve tokenizer handling of shell strings.
+        $rawContents = true;
+        $contents = \function_exists('file_get_contents') ? @file_get_contents($path) : false;
+        if ($contents === false || $contents === '' || strpos($contents, '`') !== false) {
+            $rawContents = false;
+            unset($contents);
+            $contents = @php_strip_whitespace($path);
+        }
         if ('' === $contents) {
             if (!file_exists($path)) {
                 $message = 'File at "%s" does not exist, check your classmap definitions';
@@ -64,7 +72,7 @@ class PhpFileParser
             return [];
         }
 
-        $p = new PhpFileCleaner($contents, \count($matches[0]));
+        $p = new PhpFileCleaner($contents, \count($matches[0]), $rawContents);
         $contents = $p->clean();
         unset($p);
 

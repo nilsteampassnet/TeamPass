@@ -85,15 +85,32 @@ final class DataUriNormalizer implements NormalizerInterface, DenormalizerInterf
      */
     public function denormalize(mixed $data, string $type, ?string $format = null, array $context = []): \SplFileInfo
     {
-        if (null === $data || !preg_match('/^data:([a-z0-9][a-z0-9\!\#\$\&\-\^\_\+\.]{0,126}\/[a-z0-9][a-z0-9\!\#\$\&\-\^\_\+\.]{0,126}(;[a-z0-9\-]+\=[a-z0-9\-]+)?)?(;base64)?,[a-z0-9\!\$\&\\\'\,\(\)\*\+\;\=\-\.\_\~\:\@\/\?\%\s]*\s*$/i', $data)) {
+        if ($data instanceof \SplFileInfo && $data instanceof $type) {
+            return $data;
+        }
+
+        if (!isset(self::SUPPORTED_TYPES[$type]) && is_a($type, \SplFileInfo::class, true)) {
+            throw NotNormalizableValueException::createForUnexpectedDataType(\sprintf('Data expected to be an instance of "%s" ("%s" given).', $type, get_debug_type($data)), $data, [$type], $context['deserialization_path'] ?? null, true);
+        }
+
+        if (!\is_string($data) || !preg_match('/^data:([a-z0-9][a-z0-9\!\#\$\&\-\^\_\+\.]{0,126}\/[a-z0-9][a-z0-9\!\#\$\&\-\^\_\+\.]{0,126}(;[a-z0-9\-]+\=[a-z0-9\-]+)?)?(;base64)?,[a-z0-9\!\$\&\\\'\,\(\)\*\+\;\=\-\.\_\~\:\@\/\?\%\s]*\s*$/i', $data)) {
             throw NotNormalizableValueException::createForUnexpectedDataType('The provided "data:" URI is not valid.', $data, ['string'], $context['deserialization_path'] ?? null, true);
         }
+
+        // PHP opens a "data:" URI as a local path when its scheme is not lowercase
+        $data = 'data:'.substr($data, 5);
 
         try {
             switch ($type) {
                 case File::class:
                     if (!class_exists(File::class)) {
                         throw new InvalidArgumentException(\sprintf('Cannot denormalize to a "%s" without the HttpFoundation component installed. Try running "composer require symfony/http-foundation".', File::class));
+                    }
+
+                    // \SplFileInfo trims trailing slashes, but they are part of the data
+                    if (str_ends_with($data, '/') && false !== $content = @file_get_contents($data)) {
+                        $mediaType = preg_replace('/;base64$/i', '', substr($data, 0, strpos($data, ',')));
+                        $data = $mediaType.','.rawurlencode($content);
                     }
 
                     return new File($data, false);
@@ -111,7 +128,7 @@ final class DataUriNormalizer implements NormalizerInterface, DenormalizerInterf
 
     public function supportsDenormalization(mixed $data, string $type, ?string $format = null, array $context = []): bool
     {
-        return isset(self::SUPPORTED_TYPES[$type]);
+        return isset(self::SUPPORTED_TYPES[$type]) || is_a($type, \SplFileInfo::class, true);
     }
 
     /**
@@ -119,11 +136,19 @@ final class DataUriNormalizer implements NormalizerInterface, DenormalizerInterf
      */
     private function getMimeType(\SplFileInfo $object): string
     {
-        if ($object instanceof File) {
-            return $object->getMimeType();
-        }
+        try {
+            if ($object instanceof File) {
+                return $object->getMimeType();
+            }
 
-        return $this->mimeTypeGuesser?->guessMimeType($object->getPathname()) ?: 'application/octet-stream';
+            return $this->mimeTypeGuesser?->guessMimeType($object->getPathname()) ?: 'application/octet-stream';
+        } catch (\LogicException $e) {
+            if (!preg_match('{^data:(?://)?([^,]*?)(?:;base64)?,}', $object->getPathname(), $m)) {
+                throw $e;
+            }
+
+            return $m[1] ?: 'text/plain';
+        }
     }
 
     /**

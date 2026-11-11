@@ -20,9 +20,12 @@ use Composer\Filter\PlatformRequirementFilter\PlatformRequirementFilterInterface
 use Composer\Installer;
 use Composer\Installer\ProjectInstaller;
 use Composer\Installer\SuggestedPackagesReporter;
+use Composer\Console\ProgramStatus;
+use Composer\IO\ConsoleIO;
 use Composer\IO\IOInterface;
 use Composer\Package\BasePackage;
 use Composer\DependencyResolver\Operation\InstallOperation;
+use Composer\DependencyResolver\PolicyRemovalReason;
 use Composer\Package\Version\VersionSelector;
 use Composer\Package\AliasPackage;
 use Composer\Pcre\Preg;
@@ -92,8 +95,9 @@ class CreateProjectCommand extends BaseCommand
                 new InputOption('no-install', null, InputOption::VALUE_NONE, 'Whether to skip installation of the package dependencies.'),
                 new InputOption('no-audit', null, InputOption::VALUE_NONE, 'Whether to skip auditing of the installed package dependencies (can also be set via the COMPOSER_NO_AUDIT=1 env var).'),
                 new InputOption('audit-format', null, InputOption::VALUE_REQUIRED, 'Audit output format. Must be "table", "plain", "json" or "summary".', Auditor::FORMAT_SUMMARY, Auditor::FORMATS),
-                new InputOption('no-security-blocking', null, InputOption::VALUE_NONE, 'DEPRECATED: use --no-blocking instead. Allows installing packages with security advisories or that are abandoned (can also be set via the COMPOSER_NO_SECURITY_BLOCKING=1 env var).'),
-                new InputOption('no-blocking', null, InputOption::VALUE_NONE, 'Disables all policy blocking during this command (can also be set via the COMPOSER_NO_BLOCKING=1 env var).'),
+                new InputOption('no-security-blocking', null, InputOption::VALUE_NONE, 'DEPRECATED: use --no-blocking instead. Allows installing packages with security advisories, that are abandoned or that are still in the cooldown period (can also be set via the COMPOSER_NO_SECURITY_BLOCKING=1 env var).'),
+                new InputOption('no-blocking', null, InputOption::VALUE_NONE, 'Disables all policy blocking during this command, including the cooldown period (can also be set via the COMPOSER_NO_BLOCKING=1 env var).'),
+                new InputOption('no-cooldown', null, InputOption::VALUE_NONE, 'Disables the cooldown policy blocking during this command, other policies still apply.'),
                 new InputOption('ignore-platform-req', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Ignore a specific platform requirement (php & ext- packages).'),
                 new InputOption('ignore-platform-reqs', null, InputOption::VALUE_NONE, 'Ignore all platform requirements (php & ext- packages).'),
                 new InputOption('ask', null, InputOption::VALUE_NONE, 'Whether to ask for project directory.'),
@@ -442,14 +446,19 @@ EOT
         $platformOverrides = $config->get('platform');
         $platformRepo = new PlatformRepository([], $platformOverrides);
 
+        $cooldown = $this->getBlockingCooldownPolicy($config, $input);
+
         // find the latest version if there are multiple
-        $versionSelector = new VersionSelector($repositorySet, $platformRepo);
+        $versionSelector = new VersionSelector($repositorySet, $platformRepo, $cooldown);
         $package = $versionSelector->findBestCandidate($name, $packageVersion, $stability, $platformRequirementFilter, 0, $io);
 
         if (!$package) {
             $errorMessage = "Could not find package $name with " . ($packageVersion ? "version $packageVersion" : "stability $stability");
             if (!($platformRequirementFilter instanceof IgnoreAllPlatformRequirementFilter) && $versionSelector->findBestCandidate($name, $packageVersion, $stability, PlatformRequirementFilterFactory::ignoreAll())) {
                 throw new \InvalidArgumentException($errorMessage .' in a version installable using your PHP version, PHP extensions and Composer version.');
+            }
+            if ($cooldown !== null && false !== (new VersionSelector($repositorySet, $platformRepo))->findBestCandidate($name, $packageVersion, $stability, $platformRequirementFilter)) {
+                throw new \InvalidArgumentException($errorMessage .' that is past the cooldown period configured in "policy.cooldown". '.PolicyRemovalReason::COOLDOWN_REMEDY);
             }
 
             throw new \InvalidArgumentException($errorMessage .'.');
@@ -462,6 +471,10 @@ EOT
                 $this->getIO()->writeError('Received '.$signal.', aborting', true, IOInterface::DEBUG);
                 $fs = new Filesystem();
                 $fs->removeDirectory($realDir);
+                $io = $this->getIO();
+                if ($io instanceof ConsoleIO) {
+                    $io->writeProgramStatus(ProgramStatus::idle());
+                }
                 $handler->exitWithLastSignal();
             });
         }

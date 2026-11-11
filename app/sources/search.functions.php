@@ -96,10 +96,13 @@ function searchFavouriteActionHtml(bool $isFavourite, string $label): string
  *  - other users' personal folders are subtracted, mirroring
  *    expired.datatables.php.
  *
- * @param array<int|string> $accessibleFolders         Session `user-accessible_folders`.
- * @param array<int|string> $forbiddenPersonalFolders  Session `user-forbiden_personal_folders`.
- * @param array<int|string>|null $requestedSubtree     Folder ids of the requested subtree,
- *                                                     or null when no narrowing is asked for.
+ * Callers hand over raw session values (`(array) $session->get(...)`), so every
+ * element is type-checked here rather than trusted.
+ *
+ * @param array<mixed> $accessibleFolders         Session `user-accessible_folders`.
+ * @param array<mixed> $forbiddenPersonalFolders  Session `user-forbiden_personal_folders`.
+ * @param array<mixed>|null $requestedSubtree     Folder ids of the requested subtree,
+ *                                                or null when no narrowing is asked for.
  *
  * @return array<int, int> Positive folder ids, unique and reindexed. Empty means "search nothing".
  */

@@ -5,6 +5,12 @@ parameters:
     level: 4
     phpVersion: 80100
 
+    # Unused variable/parameter rules arrived with bleedingEdge in PHPStan 2.3; kept off until
+    # the existing findings are cleaned up in a dedicated pass.
+    featureToggles:
+        unusedVariable: false
+        unusedParameters: false
+
     bootstrapFiles:
         - app/vendor/autoload.php
         - app/config/include.php

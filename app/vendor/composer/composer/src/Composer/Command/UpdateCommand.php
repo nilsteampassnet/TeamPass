@@ -66,8 +66,9 @@ class UpdateCommand extends BaseCommand
                 new InputOption('no-install', null, InputOption::VALUE_NONE, 'Skip the install step after updating the composer.lock file.'),
                 new InputOption('no-audit', null, InputOption::VALUE_NONE, 'Skip the audit step after updating the composer.lock file (can also be set via the COMPOSER_NO_AUDIT=1 env var).'),
                 new InputOption('audit-format', null, InputOption::VALUE_REQUIRED, 'Audit output format. Must be "table", "plain", "json", or "summary".', Auditor::FORMAT_SUMMARY, Auditor::FORMATS),
-                new InputOption('no-security-blocking', null, InputOption::VALUE_NONE, 'DEPRECATED: use --no-blocking instead. Allows installing packages with security advisories or that are abandoned (can also be set via the COMPOSER_NO_SECURITY_BLOCKING=1 env var).'),
-                new InputOption('no-blocking', null, InputOption::VALUE_NONE, 'Disables all policy blocking during this command (can also be set via the COMPOSER_NO_BLOCKING=1 env var).'),
+                new InputOption('no-security-blocking', null, InputOption::VALUE_NONE, 'DEPRECATED: use --no-blocking instead. Allows installing packages with security advisories, that are abandoned or that are still in the cooldown period (can also be set via the COMPOSER_NO_SECURITY_BLOCKING=1 env var).'),
+                new InputOption('no-blocking', null, InputOption::VALUE_NONE, 'Disables all policy blocking during this command, including the cooldown period (can also be set via the COMPOSER_NO_BLOCKING=1 env var).'),
+                new InputOption('no-cooldown', null, InputOption::VALUE_NONE, 'Disables the cooldown policy blocking during this command, other policies still apply.'),
                 new InputOption('no-autoloader', null, InputOption::VALUE_NONE, 'Skips autoloader generation'),
                 new InputOption('no-suggest', null, InputOption::VALUE_NONE, 'DEPRECATED: This flag does not exist anymore.'),
                 new InputOption('no-progress', null, InputOption::VALUE_NONE, 'Do not output download progress.'),
@@ -76,7 +77,7 @@ class UpdateCommand extends BaseCommand
                 new InputOption('verbose', 'v|vv|vvv', InputOption::VALUE_NONE, 'Shows more details including new commits pulled in when updating packages.'),
                 new InputOption('optimize-autoloader', 'o', InputOption::VALUE_NONE, 'Optimize autoloader during autoloader dump.'),
                 new InputOption('classmap-authoritative', 'a', InputOption::VALUE_NONE, 'Autoload classes from the classmap only. Implicitly enables `--optimize-autoloader`.'),
-                new InputOption('strict-psr-autoloader', null, InputOption::VALUE_NONE, 'Return a failed status code (6) if PSR-4 or PSR-0 mapping errors are present. Requires --optimize-autoloader to work.'),
+                new InputOption('strict-psr-autoloader', null, InputOption::VALUE_NONE, 'Return a failed status code (6) if PSR-4 or PSR-0 mapping errors are present. Requires --optimize-autoloader or --classmap-authoritative to work.'),
                 new InputOption('apcu-autoloader', null, InputOption::VALUE_NONE, 'Use APCu to cache found/not-found classes.'),
                 new InputOption('apcu-autoloader-prefix', null, InputOption::VALUE_REQUIRED, 'Use a custom prefix for the APCu autoloader cache. Implicitly enables --apcu-autoloader'),
                 new InputOption('ignore-platform-req', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Ignore a specific platform requirement (php & ext- packages).'),
@@ -117,7 +118,7 @@ To run a partial update with more restrictive constraints you can use the shorth
 
 To select packages names interactively with auto-completion use <info>-i</info>.
 
-Read more at https://getcomposer.org/doc/03-cli.md#update-u-upgrade
+Read more at https://getcomposer.org/doc/03-cli.md#update--u--upgrade
 EOT
             )
         ;
@@ -259,11 +260,12 @@ EOT
 
         $optimize = $input->getOption('optimize-autoloader') || $config->get('optimize-autoloader');
         $authoritative = $input->getOption('classmap-authoritative') || $config->get('classmap-authoritative');
+        $strictPsrAutoloader = $input->getOption('strict-psr-autoloader') || $config->get('strict-psr-autoloader');
         $apcuPrefix = $input->getOption('apcu-autoloader-prefix');
         $apcu = $apcuPrefix !== null || $input->getOption('apcu-autoloader') || $config->get('apcu-autoloader');
         $minimalChanges = $input->getOption('minimal-changes') || $config->get('update-with-minimal-changes');
 
-        if ($input->getOption('strict-psr-autoloader') && !$optimize && !$authoritative) {
+        if ($strictPsrAutoloader && !$optimize && !$authoritative) {
             throw new \InvalidArgumentException('--strict-psr-autoloader mode only works with optimized autoloader, use --optimize-autoloader or --classmap-authoritative if you want a strict return value.');
         }
 
@@ -283,7 +285,7 @@ EOT
             ->setDumpAutoloader(!$input->getOption('no-autoloader'))
             ->setOptimizeAutoloader($optimize)
             ->setClassMapAuthoritative($authoritative)
-            ->setStrictPsrAutoloader($input->getOption('strict-psr-autoloader'))
+            ->setStrictPsrAutoloader($strictPsrAutoloader)
             ->setApcuAutoloader($apcu, $apcuPrefix)
             ->setUpdate(true)
             ->setInstall(!$input->getOption('no-install'))

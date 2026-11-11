@@ -253,9 +253,7 @@ final class CheckMetadataStatement implements CeremonyStep, CanLogData
 
     private function checkStatusReport(string $aaguid): void
     {
-        $statusReports = $this->statusReportRepository === null ? [] : $this->statusReportRepository->findStatusReportsByAAGUID(
-            $aaguid
-        );
+        $statusReports = $this->statusReportRepository?->findStatusReportsByAAGUID($aaguid) ?? [];
         if (count($statusReports) === 0) {
             $this->logger->debug('No status reports found for authenticator.', [
                 'aaguid' => $aaguid,

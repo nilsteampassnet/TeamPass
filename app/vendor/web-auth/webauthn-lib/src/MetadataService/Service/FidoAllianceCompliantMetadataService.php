@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Webauthn\MetadataService\Service;
 
 use function array_key_exists;
+use InvalidArgumentException;
 use function is_array;
 use Jose\Component\Core\AlgorithmManager;
 use Jose\Component\KeyManagement\JWKFactory;
@@ -49,15 +50,24 @@ final class FidoAllianceCompliantMetadataService implements MetadataService, Can
 
     private readonly SerializerInterface $serializer;
 
+    private readonly CertificateChainValidator $certificateChainValidator;
+
+    private readonly string $rootCertificateUri;
+
     /**
+     * The BLOB is trusted only once its signing certificate chain validates against the root certificate, as the
+     * metadata BLOB processing rules of the FIDO Metadata Service specification require. The certificate chain
+     * validator and the root certificate URI are therefore required: their null defaults only keep the signature
+     * unchanged until 6.0.
+     *
      * @param array<string, mixed> $additionalHeaderParameters
      */
     public function __construct(
         private readonly HttpClientInterface $httpClient,
         private readonly string $uri,
         private readonly array $additionalHeaderParameters = [],
-        private readonly ?CertificateChainValidator $certificateChainValidator = null,
-        private readonly ?string $rootCertificateUri = null,
+        ?CertificateChainValidator $certificateChainValidator = null,
+        ?string $rootCertificateUri = null,
         ?SerializerInterface $serializer = null,
     ) {
         if (! class_exists(CompactSerializer::class)) {
@@ -65,6 +75,14 @@ final class FidoAllianceCompliantMetadataService implements MetadataService, Can
                 'The "web-token/jwt-library" package is required to use this service. Please run "composer require web-token/jwt-library".'
             );
         }
+        $certificateChainValidator !== null || throw new InvalidArgumentException(
+            'A certificate chain validator is required to verify the metadata BLOB against its root certificate.'
+        );
+        $rootCertificateUri !== null || throw new InvalidArgumentException(
+            'The root certificate URI is required to verify the metadata BLOB. For the FIDO Alliance Metadata Service, it is "https://secure.globalsign.com/cacert/root-r3.crt".'
+        );
+        $this->certificateChainValidator = $certificateChainValidator;
+        $this->rootCertificateUri = $rootCertificateUri;
         $this->serializer = $serializer ?? (new WebauthnSerializerFactory(
             AttestationStatementSupportManager::create()
         ))->create();
@@ -226,9 +244,6 @@ final class FidoAllianceCompliantMetadataService implements MetadataService, Can
 
     private function validateCertificates(string ...$untrustedCertificates): void
     {
-        if ($this->certificateChainValidator === null || $this->rootCertificateUri === null) {
-            return;
-        }
         $untrustedCertificates = CertificateToolbox::fixPEMStructures($untrustedCertificates);
         $rootCertificate = CertificateToolbox::convertDERToPEM($this->fetch($this->rootCertificateUri, []));
         $this->certificateChainValidator->check($untrustedCertificates, [$rootCertificate]);

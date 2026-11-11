@@ -783,19 +783,20 @@ function kbBuildRichTextHtml(string $text): string
             }
         }
 
-        if ($isUnordered === true && !empty($unorderedItems)) {
+        // $lines is never empty here, so a flag still true means every line matched.
+        if ($isUnordered === true) {
             $itemsHtml = array_map(static fn (string $item): string => '<li>' . kbRenderInlineText(trim($item)) . '</li>', $unorderedItems);
             $htmlBlocks[] = '<ul>' . implode('', $itemsHtml) . '</ul>';
             continue;
         }
 
-        if ($isOrdered === true && !empty($orderedItems)) {
+        if ($isOrdered === true) {
             $itemsHtml = array_map(static fn (string $item): string => '<li>' . kbRenderInlineText(trim($item)) . '</li>', $orderedItems);
             $htmlBlocks[] = '<ol>' . implode('', $itemsHtml) . '</ol>';
             continue;
         }
 
-        if ($isQuote === true && !empty($quoteLines)) {
+        if ($isQuote === true) {
             $htmlBlocks[] = '<blockquote>' . implode('<br>', array_map(static fn (string $line): string => kbRenderInlineText(trim($line)), $quoteLines)) . '</blockquote>';
             continue;
         }

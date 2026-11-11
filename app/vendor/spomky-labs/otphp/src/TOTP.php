@@ -6,6 +6,7 @@ namespace OTPHP;
 
 use function is_int;
 use OTPHP\Exception\InvalidParameterException;
+use const PHP_INT_MAX;
 use Psr\Clock\ClockInterface;
 
 /**
@@ -99,8 +100,18 @@ final class TOTP extends OTP implements TOTPInterface
     public function expiresIn(): int
     {
         $period = $this->getPeriod();
+        $epoch = $this->getEpoch();
+        $timestamp = $this->clock->now()
+            ->getTimestamp();
+        // Before the epoch there is no current OTP (now() refuses it too), and the negative remainder would push the
+        // result past the period, up to an integer overflow for the largest periods.
+        $timestamp >= $epoch || throw new InvalidParameterException(
+            'The timestamp must be greater than or equal to the epoch.',
+            'timestamp',
+            $timestamp
+        );
 
-        return $period - (($this->clock->now()->getTimestamp() - $this->getEpoch()) % $period);
+        return $period - (($timestamp - $epoch) % $period);
     }
 
     /**
@@ -159,8 +170,15 @@ final class TOTP extends OTP implements TOTPInterface
             'timestamp',
             $timestamp
         );
+        $timestamp <= PHP_INT_MAX - $leeway || throw new InvalidParameterException(
+            'The timestamp must be lower than or equal to PHP_INT_MAX minus the leeway.',
+            'timestamp',
+            $timestamp
+        );
 
-        return $this->compareOTP($this->at($timestampMinusLeeway), $otp)
+        // There is no time step before the epoch: the "timestamp - leeway" candidate only exists
+        // when it is at or after the epoch. Otherwise at() would throw instead of verify() answering.
+        return ($timestampMinusLeeway >= $this->getEpoch() && $this->compareOTP($this->at($timestampMinusLeeway), $otp))
             || $this->compareOTP($this->at($timestamp), $otp)
             || $this->compareOTP($this->at($timestamp + $leeway), $otp);
     }
@@ -212,19 +230,21 @@ final class TOTP extends OTP implements TOTPInterface
     {
         return [
             ...parent::getParameterMap(),
-            'period' => static function ($value): int {
-                (int) $value > 0 || throw new InvalidParameterException('Period must be at least 1.', 'period', $value);
+            'period' => static function (mixed $value): int {
+                $value = self::toInt('period', $value);
+                $value > 0 || throw new InvalidParameterException('Period must be at least 1.', 'period', $value);
 
-                return (int) $value;
+                return $value;
             },
-            'epoch' => static function ($value): int {
-                (int) $value >= 0 || throw new InvalidParameterException(
+            'epoch' => static function (mixed $value): int {
+                $value = self::toInt('epoch', $value);
+                $value >= 0 || throw new InvalidParameterException(
                     'Epoch must be greater than or equal to 0.',
                     'epoch',
                     $value
                 );
 
-                return (int) $value;
+                return $value;
             },
         ];
     }
@@ -250,13 +270,15 @@ final class TOTP extends OTP implements TOTPInterface
      */
     private function timecode(int $timestamp): int
     {
-        $timecode = (int) floor(($timestamp - $this->getEpoch()) / $this->getPeriod());
-        $timecode >= 0 || throw new InvalidParameterException(
+        $elapsed = $timestamp - $this->getEpoch();
+        $elapsed >= 0 || throw new InvalidParameterException(
             'Timecode must be at least 0. The timestamp must be greater than or equal to the epoch.',
             'timecode',
-            $timecode
+            $elapsed
         );
 
-        return $timecode;
+        // intdiv() keeps the time step exact: "/" and floor() go through a float, which loses precision above 2^53.
+        // Both operands are non-negative, so max() only states the 0|positive-int result for static analysis.
+        return max(0, intdiv($elapsed, $this->getPeriod()));
     }
 }

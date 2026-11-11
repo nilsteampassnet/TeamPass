@@ -419,6 +419,11 @@ class TypeParser
 			return false;
 		}
 
+		// every end tag the walk below looks for contains this
+		if (!$tokens->hasEndTagCandidateAhead($htmlTagName)) {
+			return false;
+		}
+
 		$endTag = '</' . $htmlTagName . '>';
 		$endTagSearchOffset = - strlen($endTag);
 

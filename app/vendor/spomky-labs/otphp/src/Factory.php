@@ -116,6 +116,9 @@ final class Factory implements FactoryInterface
     private static function getLabel(string $data): string
     {
         $result = explode(':', rawurldecode(substr($data, 1)));
+        count($result) <= 2 || throw new InvalidProvisioningUriException(
+            'Neither issuer nor account name in label may contain a colon.'
+        );
         $label = count($result) === 2 ? $result[1] : $result[0];
         $label !== '' || throw new InvalidProvisioningUriException('Label must not be empty.');
 
