@@ -25,6 +25,27 @@ use TeampassClasses\EmailService\MicrosoftSmtpOAuthProvider;
 
 final class EmailApiTransportTest extends TestCase
 {
+    /** Reject invalid proxy ports as configuration errors before submitting any message. */
+    public function testInvalidProxyPortIsNotAnIndeterminateSend(): void
+    {
+        foreach (['microsoft_graph', 'gmail_api'] as $provider) {
+            foreach (['0', '65536', 'private-invalid-port'] as $port) {
+                $settings = $this->settings($provider);
+                $settings->proxyIp = 'proxy.example.test';
+                $settings->proxyPort = $port;
+                $history = [];
+                $tokens = $this->createMock(EmailAccessTokenProviderInterface::class);
+                $tokens->expects(self::once())->method('getAccessToken')->willReturn('private-token');
+                $transport = new ApiTransport($settings, $tokens, $this->client([], $history));
+                $result = $transport->send($this->message());
+                self::assertSame('configuration', $result->errorCode);
+                self::assertFalse($result->retryable);
+                self::assertFalse($result->indeterminate);
+                self::assertSame([], $history);
+            }
+        }
+    }
+
     /** Both API transports send through the same global proxy as token acquisition. */
     public function testApiRequestsUseTheConfiguredProxy(): void
     {

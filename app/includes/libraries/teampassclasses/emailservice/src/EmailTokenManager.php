@@ -182,6 +182,8 @@ final class EmailTokenManager implements EmailAccessTokenProviderInterface
             return ['access_token' => $data['access_token'], 'refresh_token' => $data['refresh_token'] ?? $existingRefresh, 'expires_at' => time() + $lifetime];
         } catch (EmailTransportException $e) {
             throw $e;
+        } catch (\InvalidArgumentException $e) {
+            throw new EmailTransportException(EmailSendResult::failure('configuration'));
         } catch (\Throwable $e) {
             // Token acquisition can be retried: no message has been submitted.
             throw new EmailTransportException(EmailSendResult::failure(EmailHttp::networkCode($e), true));

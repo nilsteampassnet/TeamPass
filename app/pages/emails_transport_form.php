@@ -57,6 +57,9 @@ if (in_array($emailOauthResult, ['success', 'error'], true)) {
     <div class="form-group" data-email-section="<?php echo $section; ?>">
         <label for="<?php echo $name; ?>"><?php echo $emailEscape($lang->get($label)); ?></label>
         <input class="form-control form-control-sm no-save" type="text" id="<?php echo $name; ?>" value="<?php echo $emailValue($name); ?>" maxlength="1024">
+        <?php if ($name === 'email_smtp_server') { ?>
+        <small class="form-text text-muted"><?php echo $emailEscape($lang->get('email_smtp_host_format_hint')); ?></small>
+        <?php } ?>
     </div>
     <?php } ?>
     <div class="form-group" data-email-section="smtp">

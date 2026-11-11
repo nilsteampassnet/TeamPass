@@ -9,6 +9,30 @@ declare(strict_types=1);
  * See <https://www.gnu.org/licenses/>.
  */
 
+/** Detect a selected email destination without database access or a provider request. */
+function emailTransportIsConfigured(array $settings): bool
+{
+    $transport = (string) ($settings['email_transport'] ?? 'smtp');
+    if ($transport === 'gmail_api') {
+        return filter_var(trim((string) ($settings['email_google_sender'] ?? '')), FILTER_VALIDATE_EMAIL) !== false;
+    }
+    if ($transport === 'microsoft_graph') {
+        return filter_var(trim((string) ($settings['email_microsoft_mailbox'] ?? '')), FILTER_VALIDATE_EMAIL) !== false;
+    }
+    if ($transport !== 'smtp') {
+        return false;
+    }
+    $mode = (string) ($settings['email_smtp_auth_mode'] ?? '');
+    if ($mode === '') {
+        $mode = (string) ($settings['email_smtp_auth'] ?? '0') === '1' ? 'password' : 'none';
+    }
+    if ($mode === 'microsoft_oauth') {
+        return filter_var(trim((string) ($settings['email_microsoft_mailbox'] ?? '')), FILTER_VALIDATE_EMAIL) !== false;
+    }
+    return in_array($mode, ['none', 'password'], true)
+        && trim((string) ($settings['email_smtp_server'] ?? '')) !== '';
+}
+
 /** Settings that must be written as one profile, never through generic autosave. */
 function emailTransportSettingNames(): array
 {
@@ -34,7 +58,7 @@ function emailTransportCandidate(#[SensitiveParameter] array $input, #[Sensitive
     foreach ($input as $name => $value) {
         if ($name === 'secret_actions' || in_array($name, $secretNames, true)) { continue; }
         if (!is_string($value) || strlen($value) > 1024 || preg_match('/[\x00-\x1f\x7f]/', $value)) {
-            throw new InvalidArgumentException('configuration');
+            throw new InvalidArgumentException($name);
         }
         $candidate[$name] = trim($value);
     }
@@ -48,7 +72,7 @@ function emailTransportCandidate(#[SensitiveParameter] array $input, #[Sensitive
         if (!is_string($value) || strlen($value) > 8192 || !in_array($action, ['keep', 'replace', 'clear'], true)
             || ($action === 'replace' && $value === '') || ($action !== 'replace' && $value !== '')
         ) {
-            throw new InvalidArgumentException('configuration');
+            throw new InvalidArgumentException($name);
         }
         if ($action === 'replace') { $candidate[$name] = $encrypt($value); }
         if ($action === 'clear') { $candidate[$name] = ''; }
@@ -59,45 +83,70 @@ function emailTransportCandidate(#[SensitiveParameter] array $input, #[Sensitive
     $transport = (string) ($candidate['email_transport'] ?? 'smtp');
     $mode = (string) ($candidate['email_smtp_auth_mode'] ?? '');
     if ($mode === '') { $mode = (string) ($candidate['email_smtp_auth'] ?? '0') === '1' ? 'password' : 'none'; }
-    if (!in_array($transport, ['smtp', 'microsoft_graph', 'gmail_api'], true)
-        || !in_array($mode, ['none', 'password', 'microsoft_oauth'], true)
-        || !in_array((string) ($candidate['email_security'] ?? 'none'), ['none', 'ssl', 'tls'], true)
-        || !in_array((string) ($candidate['email_smtp_verify_certificate'] ?? '0'), ['0', '1'], true)
-    ) {
-        throw new InvalidArgumentException('configuration');
+    foreach ([
+        'email_transport' => [$transport, ['smtp', 'microsoft_graph', 'gmail_api']],
+        'email_smtp_auth_mode' => [$mode, ['none', 'password', 'microsoft_oauth']],
+        'email_security' => [(string) ($candidate['email_security'] ?? 'none'), ['none', 'ssl', 'tls']],
+        'email_smtp_verify_certificate' => [(string) ($candidate['email_smtp_verify_certificate'] ?? '0'), ['0', '1']],
+    ] as $name => [$value, $allowed]) {
+        if (!in_array($value, $allowed, true)) {
+            throw new InvalidArgumentException($name);
+        }
     }
     $candidate['email_transport'] = $transport;
     $candidate['email_smtp_auth_mode'] = $mode;
     $candidate['email_smtp_auth'] = $mode === 'none' ? '0' : '1';
     if (filter_var($candidate['email_from'] ?? '', FILTER_VALIDATE_EMAIL) === false) {
-        throw new InvalidArgumentException('configuration');
+        throw new InvalidArgumentException('email_from');
     }
     if ($transport === 'smtp' && $mode !== 'microsoft_oauth') {
         $host = (string) ($candidate['email_smtp_server'] ?? '');
         $port = filter_var($candidate['email_port'] ?? '', FILTER_VALIDATE_INT);
         // Keep internal DNS names, IPv4 and IPv6, but refuse PHPMailer's host lists/schemes.
-        if ($host === '' || preg_match('/[\s;\/@?#]/', $host) || str_contains($host, '://')
-            || $port === false || $port < 1 || $port > 65535
-            || ($mode === 'password' && (empty($candidate['email_auth_username']) || empty($candidate['email_auth_pwd'])))
-        ) {
-            throw new InvalidArgumentException('configuration');
+        if ($host === '' || preg_match('/[\s;\/@?#]/', $host) || str_contains($host, '://')) {
+            throw new InvalidArgumentException('email_smtp_server');
+        }
+        if ($port === false || $port < 1 || $port > 65535) {
+            throw new InvalidArgumentException('email_port');
+        }
+        if ($mode === 'password') {
+            foreach (['email_auth_username', 'email_auth_pwd'] as $name) {
+                if (empty($candidate[$name])) { throw new InvalidArgumentException($name); }
+            }
         }
     } else {
         $microsoft = $transport !== 'gmail_api';
-        $sender = $candidate[$microsoft ? 'email_microsoft_mailbox' : 'email_google_sender'] ?? '';
-        $secret = $candidate[$microsoft ? 'email_microsoft_client_secret' : 'email_google_client_secret'] ?? '';
+        $senderName = $microsoft ? 'email_microsoft_mailbox' : 'email_google_sender';
+        $secretName = $microsoft ? 'email_microsoft_client_secret' : 'email_google_client_secret';
+        $sender = $candidate[$senderName] ?? '';
+        $secret = $candidate[$secretName] ?? '';
         $guid = '/\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i';
-        if (filter_var($sender, FILTER_VALIDATE_EMAIL) === false || strcasecmp($candidate['email_from'], $sender) !== 0
-            || !tpIsInstanceKeyCiphertext((string) $secret)
-            || ($microsoft && (preg_match($guid, $candidate['email_microsoft_tenant_id'] ?? '') !== 1
-                || preg_match($guid, $candidate['email_microsoft_client_id'] ?? '') !== 1))
-            || (!$microsoft && preg_match('/\A[A-Za-z0-9_-]+\.apps\.googleusercontent\.com\z/', $candidate['email_google_client_id'] ?? '') !== 1)
-        ) {
-            throw new InvalidArgumentException('configuration');
+        if (filter_var($sender, FILTER_VALIDATE_EMAIL) === false) {
+            throw new InvalidArgumentException($senderName);
+        }
+        if (strcasecmp($candidate['email_from'], $sender) !== 0) {
+            throw new InvalidArgumentException('email_from');
+        }
+        if (!tpIsInstanceKeyCiphertext((string) $secret)) {
+            throw new InvalidArgumentException($secretName);
+        }
+        if ($microsoft) {
+            foreach (['email_microsoft_tenant_id', 'email_microsoft_client_id'] as $name) {
+                if (preg_match($guid, $candidate[$name] ?? '') !== 1) { throw new InvalidArgumentException($name); }
+            }
+        } elseif (preg_match('/\A[A-Za-z0-9_-]+\.apps\.googleusercontent\.com\z/', $candidate['email_google_client_id'] ?? '') !== 1) {
+            throw new InvalidArgumentException('email_google_client_id');
         }
     }
     $candidate['email_config_revision'] = bin2hex(random_bytes(16));
     return $candidate;
+}
+
+/** Expose only a known field name for validation errors, never an exception value or message. */
+function emailTransportValidationField(Throwable $error): ?string
+{
+    return $error instanceof InvalidArgumentException && in_array($error->getMessage(), emailTransportSettingNames(), true)
+        ? $error->getMessage() : null;
 }
 
 /** Use the configured canonical application URL, never an incoming Host header or arbitrary endpoint. */

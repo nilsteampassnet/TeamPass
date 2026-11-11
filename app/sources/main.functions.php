@@ -65,6 +65,7 @@ require_once __DIR__ . '/branding_logic.php';
 require_once __DIR__ . '/user_keys_task_logic.php';
 require_once __DIR__ . '/secret_settings_logic.php';
 require_once __DIR__ . '/emails_queue_logic.php';
+require_once __DIR__ . '/emails_transport_logic.php';
 require_once __DIR__ . '/sharekeys_repair_logic.php';
 require_once __DIR__ . '/main_queries_logic.php';
 require_once __DIR__ . '/attachment_pending_logic.php';
@@ -2332,7 +2333,7 @@ function getStatisticsData(array $SETTINGS): array
  * @param string $receiverName  Receiver name
  * @param string $encryptedUserPassword      encryptedUserPassword
  *
- * @return void
+ * @return bool True when the email task was queued and the handler was notified
  */
 function prepareSendingEmail(
     $subject,
@@ -2340,32 +2341,39 @@ function prepareSendingEmail(
     $email,
     $receiverName = '',
     $encryptedUserPassword = ''
-): void 
+): bool
 {
-    DB::insert(
-        prefixTable('background_tasks'),
-        array(
-            'created_at' => time(),
-            'process_type' => 'send_email',
-            'arguments' => json_encode(emailQueueSeal([
-                'subject' => html_entity_decode($subject, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
-                'receivers' => $email,
-                'body' => $body,
-                'receiver_name' => $receiverName,
-                'encryptedUserPassword' => $encryptedUserPassword,
-            ]), JSON_THROW_ON_ERROR),
-        )
-    );
+    try {
+        DB::insert(
+            prefixTable('background_tasks'),
+            array(
+                'created_at' => time(),
+                'process_type' => 'send_email',
+                'arguments' => json_encode(emailQueueSeal([
+                    'subject' => html_entity_decode($subject, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+                    'receivers' => $email,
+                    'body' => $body,
+                    'receiver_name' => $receiverName,
+                    'encryptedUserPassword' => $encryptedUserPassword,
+                ]), JSON_THROW_ON_ERROR),
+            )
+        );
 
-    // Wake the handler up. This task is very often created from inside a worker that the
-    // handler is already draining (typically create_user_keys step99). Without the trigger
-    // the handler only picks it up if it is still in its launching window: once
-    // tasks_max_drain_time is exceeded, drainTaskPool() stops launching and exits, leaving
-    // the email queued until the next cron tick - or forever when no cron is configured.
-    // Touching the trigger file makes a running handler extend its drain window
-    // (checkAndConsumeTrigger) and relaunches a stopped one. Concurrent launches are
-    // harmless: the handler holds an exclusive flock and surplus instances exit at once.
-    triggerBackgroundHandler();
+        // Wake the handler up. This task is very often created from inside a worker that the
+        // handler is already draining (typically create_user_keys step99). Without the trigger
+        // the handler only picks it up if it is still in its launching window: once
+        // tasks_max_drain_time is exceeded, drainTaskPool() stops launching and exits, leaving
+        // the email queued until the next cron tick - or forever when no cron is configured.
+        // Touching the trigger file makes a running handler extend its drain window
+        // (checkAndConsumeTrigger) and relaunches a stopped one. Concurrent launches are
+        // harmless: the handler holds an exclusive flock and surplus instances exit at once.
+        triggerBackgroundHandler();
+        return true;
+    } catch (Throwable $error) {
+        // Notification failures must not abort sign-in or expose credentials in diagnostics.
+        error_log('Email queue failure: ' . get_class($error));
+        return false;
+    }
 }
 
 /**
@@ -4451,7 +4459,7 @@ function handleFailedAttempts(string $source, string $value, int $limit, int $lo
  */
 function getForgotLocalPasswordContext(?array $userInfo, array $SETTINGS): array
 {
-    $emailConfigured = empty(trim((string) ($SETTINGS['email_smtp_server'] ?? ''))) === false;
+    $emailConfigured = emailTransportIsConfigured($SETTINGS);
     $featureEnabled  = isset($SETTINGS['enable_local_password_recovery']) === true
         ? (int) $SETTINGS['enable_local_password_recovery'] === 1
         : (int) ($SETTINGS['disable_show_forgot_pwd_link'] ?? 0) !== 1;
@@ -10261,7 +10269,7 @@ function getEmailTemplateSubject(string $templateId, $lang): string
  * @param boolean $immediate_email
  * @param string $encryptedUserPassword
  * @param string $receiverName
- * @return string
+ * @return string|null Encoded immediate result or enqueue error; null after a successful enqueue.
  */
 function sendMailToUser(
     string $post_receipt,
@@ -10315,13 +10323,20 @@ function sendMailToUser(
         );
     } else {
         // Send through task handler
-        prepareSendingEmail(
+        $queued = prepareSendingEmail(
             $post_subject,
             $post_body,
             $post_receipt,
             $receiverName,
             $encryptedUserPassword,
         );
+        if ($queued === false) {
+            $language = new Language(SessionManager::getSession()->get('user-language') ?? ($SETTINGS['default_language'] ?? 'english'));
+            return prepareExchangedData([
+                'error' => true,
+                'message' => $language->get('email_queue_failed'),
+            ], 'encode');
+        }
     }
 
     return null;

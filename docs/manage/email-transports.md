@@ -19,10 +19,24 @@ fresh installation creates the same schema. The migration adds:
 - `email_oauth_state`, separate from general settings;
 - `email_attempts` and `next_attempt_at` on background tasks, plus a due-task index.
 
+If email storage migration fails, the web wizard receives its normal JSON error
+response. The CLI also treats this response as a failed step. No upgrade timestamp
+is recorded after a failed schema operation, so the step can be retried.
+The email-specific error adapter covers only email statements. Recovery mode
+rethrows failures to the recovery CLI so its class/code/location diagnostics are
+preserved. Email exception logs include class and location, never driver messages.
+
 Existing relay, authentication, sender, TLS and certificate settings remain in
 place. An absent transport still means SMTP; an empty auth-mode override derives
 the previous authentication setting. No OAuth configuration is required to keep
 using a legacy SMTP relay. Unknown transport/authentication selections fail.
+
+Recovery eligibility, passkey notifications, upgrade notifications and the user
+administration warning use the selected transport's destination: the relay host,
+Microsoft mailbox or Gmail sender. API and Microsoft SMTP OAuth configurations
+do not need a stored relay host. This availability check does not verify tokens
+or provider permissions. Certificate warnings apply only to legacy SMTP relays;
+Microsoft SMTP OAuth always verifies TLS.
 
 Back up the database, application configuration and instance key using the normal
 upgrade process. Preserve the instance key: it protects credentials, tokens and
@@ -43,6 +57,10 @@ For each secret, choose **Keep**, **Replace** or **Clear**. An empty replacement
 is refused. The browser never receives the stored value. Typing a replacement
 automatically selects Replace. Inactive provider settings can be retained for a
 later switch; explicitly clear credentials you no longer need.
+
+If validation fails, the page identifies and highlights the offending field.
+The response contains only a known setting name, never its value. The SMTP host
+hint explains how to replace legacy host lists or URI prefixes before saving.
 
 A save publishes the profile atomically and rotates its revision. Stale browser
 tabs and late token renewals cannot overwrite it. Reload after another

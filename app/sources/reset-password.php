@@ -209,7 +209,7 @@ if ($userLanguageName === '' || $userLanguageName === '0') {
     $userLanguageName = (string) ($SETTINGS['default_language'] ?? 'english');
 }
 $userLanguage = new Language($userLanguageName);
-sendMailToUser(
+$mailResult = sendMailToUser(
     (string) $userInfo['email'],
     $userLanguage->get('forgot_local_password_email_body'),
     $userLanguage->get('forgot_local_password_email_subject'),
@@ -232,6 +232,21 @@ logEvents(
     (string) $userInfo['login'],
     (string) $userInfo['id']
 );
+
+if ($mailResult !== null) {
+    $mailStatus = prepareExchangedData($mailResult, 'decode');
+    if (!is_array($mailStatus) || ($mailStatus['error'] ?? true) !== false) {
+        resetPasswordRenderPage(
+            $lang,
+            $SETTINGS,
+            '<div class="alert alert-danger mb-0">'
+                . '<i class="fa-solid fa-triangle-exclamation mr-2"></i>'
+                . htmlspecialchars($lang->get('forgot_local_password_email_failed'), ENT_QUOTES, 'UTF-8')
+                . '</div>'
+        );
+        exit;
+    }
+}
 
 resetPasswordRenderPage(
     $lang,

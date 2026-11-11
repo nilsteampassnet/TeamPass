@@ -834,8 +834,8 @@ function tpUpgradeCliRevert(array $journal, array &$SETTINGS, TpUpgradeCliLogger
  */
 function tpUpgradeCliNotify(string $status, array $details, array $SETTINGS, TpUpgradeCliLogger $logger): int
 {
-    if (trim((string) ($SETTINGS['email_smtp_server'] ?? '')) === '') {
-        $logger->info('notify', 'No SMTP server configured: no e-mail sent');
+    if (!emailTransportIsConfigured($SETTINGS)) {
+        $logger->info('notify', 'No email transport configured: no e-mail sent');
         return 0;
     }
 

@@ -31,7 +31,6 @@ define('SECUREFILE', basename($keyFile));
 define('DB_PREFIX', $prefix);
 require $root . '/app/vendor/autoload.php';
 require $root . '/app/sources/main.functions.php';
-require $root . '/app/sources/emails_transport_logic.php';
 file_put_contents($keyFile, Key::createNewRandomKey()->saveToAsciiSafeString());
 DB::$host = $host;
 DB::$user = $user;

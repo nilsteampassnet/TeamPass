@@ -87,6 +87,11 @@ class SmtpCertificateVerificationTest extends TestCase
         $this->assertFalse(adminNoticesSmtpCertificateUnverified(['email_security' => 'none'] + $relay));
         $this->assertFalse(adminNoticesSmtpCertificateUnverified(['email_security' => 'tls']));
         $this->assertFalse(adminNoticesSmtpCertificateUnverified(['email_smtp_server' => '  '] + $relay));
+        foreach (['microsoft_graph', 'gmail_api'] as $transport) {
+            $this->assertFalse(adminNoticesSmtpCertificateUnverified(['email_transport' => $transport] + $relay));
+        }
+        $this->assertFalse(adminNoticesSmtpCertificateUnverified(['email_smtp_auth_mode' => 'microsoft_oauth',
+            'email_microsoft_mailbox' => 'sender@example.test'] + $relay));
     }
 
     public function testNewInstallationsVerifyAndUpgradesKeepThePreviousBehaviour(): void

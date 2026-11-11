@@ -50,7 +50,7 @@ final class WebauthnNotificationAndAuditTest extends TestCase
 
         $notifier = $this->between($model, 'private function notifyCredentialAdded(', 'private function canEditItem(');
         $this->assertStringContainsString("'webauthn_email_on_add'", $notifier);
-        $this->assertStringContainsString("'email_smtp_server'", $notifier);
+        $this->assertStringContainsString('emailTransportIsConfigured($SETTINGS)', $notifier);
         $this->assertStringContainsString("getEmailTemplateSubject('webauthn_credential_added'", $notifier);
         // Queued, never sent inside the API request.
         $this->assertMatchesRegularExpression('/\],\s*false,\s*\'\',/', $notifier);
