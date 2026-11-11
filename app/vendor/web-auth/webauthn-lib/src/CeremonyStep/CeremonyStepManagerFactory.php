@@ -137,6 +137,7 @@ final class CeremonyStepManagerFactory
             new CheckBackupBitsAreConsistent(),
             new CheckExtensions($this->extensionOutputCheckerHandler),
             new CheckSignature($this->algorithmManager),
+            new CheckBackupEligibilityIsUnchanged(),
             new CheckCounter($this->counterChecker),
         ]);
     }

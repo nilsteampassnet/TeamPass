@@ -3,12 +3,42 @@
 Please refer to [UPGRADING](UPGRADING.md) guide for upgrading to a major version.
 
 
+## 7.16.1 - 2026-10-25
+
+### Fixed
+
+- Fix `CookieJar` storing already expired cookies instead of removing the stored cookie
+- Fix `CookieJar` ignoring a same-value cookie that changes its expiry or its `Discard`, `Secure`, or `HttpOnly` flag
+
+
+## 7.16.0 - 2026-10-18
+
+### Changed
+
+- Adjusted `guzzlehttp/promises` version constraint to `^2.6`
+- Replace the deprecated `Promise\Is` with `Promise\State` for PHP 8.6
+
+
+## 7.15.6 - 2026-10-18
+
+### Fixed
+
+- Fix PHP 8.6 notices for oversized numeric hosts
+- Fix `MockHandler` truncating fractional delays
+- Fix stream handler responses in Swoole coroutines on PHP 8.4+
+
+### Changed
+
+- Adjusted `guzzlehttp/psr7` version constraint to `^2.13.2`
+
+
 ## 7.15.5 - 2026-08-24
 
 ### Changed
 
 - Adjusted `guzzlehttp/psr7` version constraint to `^2.13.1`
 - Adjusted `guzzlehttp/promises` version constraint to `^2.5.3`
+
 
 ## 7.15.4 - 2026-08-24
 
@@ -19,6 +49,7 @@ Please refer to [UPGRADING](UPGRADING.md) guide for upgrading to a major version
 ### Changed
 
 - Replace the deprecated spl_object_hash() in handler stack debug output for PHP 8.6
+
 
 ## 7.15.3 - 2026-08-05
 

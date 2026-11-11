@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+# Prepares an Amp orb (Debian 12) to build, test, and analyse this repository.
+# Idempotent: a warm run skips installs that are already in place.
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+step() {
+	local name="$1"
+	shift
+	local start=$SECONDS
+	echo "==> $name"
+	"$@"
+	echo "<== $name ($((SECONDS - start))s)"
+}
+
+# PHP 8.4 runs everything: the library itself (platform pinned to 7.4.6 in
+# composer.json), and tools/phplrt, whose grammar compiler requires 8.4.
+PHP_VERSION=8.4
+PHP_PACKAGES=(
+	"php$PHP_VERSION-cli"
+	"php$PHP_VERSION-mbstring"
+	"php$PHP_VERSION-xml"
+	"php$PHP_VERSION-curl"
+	"php$PHP_VERSION-zip"
+)
+
+install_php() {
+	local missing=()
+	for pkg in "${PHP_PACKAGES[@]}"; do
+		dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null | grep -q 'install ok installed' || missing+=("$pkg")
+	done
+	if [ ${#missing[@]} -eq 0 ]; then
+		echo "PHP $PHP_VERSION packages already installed"
+		return
+	fi
+
+	if [ ! -f /etc/apt/sources.list.d/php-sury.list ]; then
+		sudo install -d -m 0755 /etc/apt/keyrings
+		curl -fsSL https://packages.sury.org/php/apt.gpg | sudo tee /etc/apt/keyrings/php-sury.gpg >/dev/null
+		echo "deb [signed-by=/etc/apt/keyrings/php-sury.gpg] https://packages.sury.org/php/ $(. /etc/os-release && echo "$VERSION_CODENAME") main" \
+			| sudo tee /etc/apt/sources.list.d/php-sury.list >/dev/null
+	fi
+	sudo apt-get update -qq
+	sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends "${missing[@]}"
+}
+
+install_composer() {
+	if command -v composer >/dev/null 2>&1; then
+		echo "Composer already installed: $(composer --version 2>/dev/null)"
+		return
+	fi
+	local tmp
+	tmp="$(mktemp -d)"
+	curl -fsSL https://getcomposer.org/installer -o "$tmp/composer-setup.php"
+	php "$tmp/composer-setup.php" --quiet --install-dir="$tmp" --filename=composer
+	sudo install -m 0755 "$tmp/composer" /usr/local/bin/composer
+	rm -rf "$tmp"
+}
+
+# composer.lock is git-ignored, so the first run resolves dependencies like CI
+# does; later runs reuse the restored lock and vendor directory.
+install_dependencies() {
+	composer install --no-interaction --no-progress
+}
+
+# Coding standard used by `make cs` / `make cs-fix`.
+install_build_cs() {
+	if [ ! -d build-cs/.git ]; then
+		git clone --quiet --branch 2.x https://github.com/phpstan/build-cs.git build-cs
+	fi
+	composer install --no-interaction --no-progress --working-dir build-cs
+}
+
+# Grammar toolchain used by FuzzyTest and GrammarSyncTest (`make grammars-install`).
+install_grammars() {
+	composer install --no-interaction --no-progress --working-dir tools/phplrt
+}
+
+step "Install PHP $PHP_VERSION" install_php
+step "Install Composer" install_composer
+step "Install dependencies" install_dependencies
+step "Install build-cs" install_build_cs
+step "Install grammar toolchain" install_grammars

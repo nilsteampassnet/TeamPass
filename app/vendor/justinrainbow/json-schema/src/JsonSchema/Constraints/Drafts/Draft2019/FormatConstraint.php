@@ -6,6 +6,7 @@ namespace JsonSchema\Constraints\Drafts\Draft2019;
 
 use DateTimeZone;
 use JsonSchema\ConstraintError;
+use JsonSchema\Constraints\Constraint;
 use JsonSchema\Constraints\ConstraintInterface;
 use JsonSchema\Constraints\Factory;
 use JsonSchema\Entity\ErrorBagProxy;
@@ -18,14 +19,18 @@ class FormatConstraint implements ConstraintInterface
 {
     use ErrorBagProxy;
 
+    /** @var Factory */
+    private $factory;
+
     public function __construct(?Factory $factory = null)
     {
-        $this->initialiseErrorBag($factory ?: new Factory());
+        $this->factory = $factory ?: new Factory();
+        $this->initialiseErrorBag($this->factory);
     }
 
     public function check(&$value, $schema = null, ?JsonPointer $path = null, $i = null): void
     {
-        if (!property_exists($schema, 'format')) {
+        if (!property_exists($schema, 'format') || $this->factory->getConfig(Constraint::CHECK_MODE_DISABLE_FORMAT)) {
             return;
         }
 
@@ -40,7 +45,11 @@ class FormatConstraint implements ConstraintInterface
                 }
                 break;
             case 'time':
-                if (!$this->validateDateTime($value, 'H:i:sp') && !$this->validateDateTime($value, 'H:i:s.up')) {
+                if (!$this->validateDateTime($value, 'H:i:sP')
+                    && !$this->validateDateTime($value, 'H:i:sp')
+                    && !$this->validateDateTime($value, 'H:i:s.up')
+                    && !$this->validateDateTime($value, 'H:i:s.uP')
+                ) {
                     $this->addError(ConstraintError::FORMAT_TIME(), $path, ['time' => $value, 'format' => $schema->format]);
                 }
                 break;
@@ -52,6 +61,11 @@ class FormatConstraint implements ConstraintInterface
             case 'utc-millisec':
                 if (!$this->validateDateTime($value, 'U')) {
                     $this->addError(ConstraintError::FORMAT_DATE_UTC(), $path, ['value' => $value, 'format' => $schema->format]);
+                }
+                break;
+            case 'duration':
+                if (!$this->validateDuration($value)) {
+                    $this->addError(ConstraintError::FORMAT_DURATION(), $path, ['value' => $value, 'format' => $schema->format]);
                 }
                 break;
             case 'regex':
@@ -97,14 +111,33 @@ class FormatConstraint implements ConstraintInterface
                     $this->addError(ConstraintError::FORMAT_URL(), $path, ['format' => $schema->format]);
                 }
                 break;
+            case 'iri':
+                if (!$this->validateIri($value, false)) {
+                    $this->addError(ConstraintError::FORMAT_URL(), $path, ['format' => $schema->format]);
+                }
+                break;
+            case 'iri-reference':
+                if (!$this->validateIri($value, true)) {
+                    $this->addError(ConstraintError::FORMAT_URL_REF(), $path, ['format' => $schema->format]);
+                }
+                break;
             case 'uri-template':
                 if (!$this->validateUriTemplate($value)) {
                     $this->addError(ConstraintError::FORMAT_URI_TEMPLATE(), $path, ['format' => $schema->format]);
                 }
                 break;
-
+            case 'uuid':
+                if (!$this->validateUuid($value)) {
+                    $this->addError(ConstraintError::FORMAT_UUID(), $path, ['format' => $schema->format]);
+                }
+                break;
             case 'email':
                 if (filter_var($value, FILTER_VALIDATE_EMAIL, FILTER_NULL_ON_FAILURE | FILTER_FLAG_EMAIL_UNICODE) === null) {
+                    $this->addError(ConstraintError::FORMAT_EMAIL(), $path, ['format' => $schema->format]);
+                }
+                break;
+            case 'idn-email':
+                if (!$this->validateInternationalizedEmail($value)) {
                     $this->addError(ConstraintError::FORMAT_EMAIL(), $path, ['format' => $schema->format]);
                 }
                 break;
@@ -132,9 +165,14 @@ class FormatConstraint implements ConstraintInterface
     private function validateDateTime(string $datetime, string $format): bool
     {
         $datetime = strtoupper($datetime); // Cleanup for lowercase z
+        $isPhpLt80WithZulu = PHP_VERSION_ID < 80000 && substr($datetime, -1) === 'Z';
         $isLeap = substr($datetime, 6, 2) === '60';
         $input = $datetime;
 
+        // Correct for Zulu in PHP < 8.0
+        if ($isPhpLt80WithZulu) {
+            $input = sprintf('%s+00:00', substr($input, 0, -1));
+        }
         // Correct for leap second
         if ($isLeap) {
             $input = sprintf('%s59%s', substr($datetime, 0, 6), substr($datetime, 8));
@@ -158,11 +196,11 @@ class FormatConstraint implements ConstraintInterface
 
         $expected = $dt->format($format);
         // Correct for trailing zeros on microseconds
-        if ($format === 'H:i:s.up') {
+        if ($format === 'H:i:s.up' || $format === 'H:i:s.uP') {
             $expected = sprintf(
                 '%s%s',
                 rtrim($dt->format('H:i:s.u'), '0'),
-                $dt->format('p')
+                $dt->format(substr($format, -1))
             );
         }
         // Correct back for leap seconds
@@ -175,13 +213,17 @@ class FormatConstraint implements ConstraintInterface
 
             $expected = sprintf('%s60%s', substr($expected, 0, 6), substr($expected, 8));
         }
+        // Correct back for PHP > 8.0 and Zulu
+        if ($isPhpLt80WithZulu) {
+            $expected = sprintf('%sZ', substr($expected, 0, -6));
+        }
 
         return $datetime === $expected;
     }
 
     private function validateRegex(string $regex): bool
     {
-        return preg_match(self::jsonPatternToPhpRegex($regex), '') !== false;
+        return @preg_match(self::jsonPatternToPhpRegex($regex), '') !== false;
     }
 
     /**
@@ -221,6 +263,37 @@ class FormatConstraint implements ConstraintInterface
         $hostnameRegex = '/^(?!-)(?!.*?[^A-Za-z0-9\-\.])(?:(?!-)[A-Za-z0-9](?:[A-Za-z0-9\-]{0,61}[A-Za-z0-9])?\.)*(?!-)[A-Za-z0-9](?:[A-Za-z0-9\-]{0,61}[A-Za-z0-9])?$/';
 
         return preg_match($hostnameRegex, $host) === 1;
+    }
+
+    /**
+     * Validates an internationalized e-mail address: a local part according to RFC 6531 section 3.3 and RFC 5321
+     * section 4.1.2, and a domain that is a valid internationalized hostname.
+     */
+    private function validateInternationalizedEmail(string $value): bool
+    {
+        $at = strrpos($value, '@');
+        if ($at === false) {
+            return false;
+        }
+
+        $localPart = substr($value, 0, $at);
+        $domain = substr($value, $at + 1);
+
+        // atext extended with UTF8-non-ascii
+        $atext = '[A-Za-z0-9!#$%&\'*+\-\/=?^_`{|}~]|[^\x00-\x7F]';
+        $dotString = '(?:' . $atext . ')++(?:\.(?:' . $atext . ')++)*+';
+        $quotedString = '"(?:[\x20\x21\x23-\x5B\x5D-\x7E]|[^\x00-\x7F]|\\\\[\x20-\x7E])*+"';
+
+        if (strlen($localPart) > 64 || preg_match('/^(?:' . $dotString . '|' . $quotedString . ')\z/u', $localPart) !== 1) {
+            return false;
+        }
+
+        // Unlike a hostname, the domain of an e-mail address can not be written in its absolute form
+        if (substr($domain, -1) === '.') {
+            return false;
+        }
+
+        return $this->validateInternationalizedHostname($domain);
     }
 
     private function validateInternationalizedHostname(string $host): bool
@@ -279,7 +352,7 @@ class FormatConstraint implements ConstraintInterface
                 return false;
             }
 
-            $ascii = idn_to_ascii($label);
+            $ascii = idn_to_ascii($label, IDNA_DEFAULT, INTL_IDNA_VARIANT_UTS46);
             if ($ascii === false) {
                 return false;
             }
@@ -288,7 +361,7 @@ class FormatConstraint implements ConstraintInterface
                 return false;
             }
             // LDH rule (after IDNA)
-            if (!preg_match('/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i', $ascii)) {
+            if (!preg_match('/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\z/i', $ascii)) {
                 return false;
             }
             $asciiLabels[] = $ascii;
@@ -332,11 +405,85 @@ class FormatConstraint implements ConstraintInterface
         return true;
     }
 
+    /**
+     * Validates an IRI or, when $allowRelative is set, an IRI reference according to the ABNF of RFC 3987 section 2.2.
+     */
+    private function validateIri(string $value, bool $allowRelative): bool
+    {
+        // iunreserved and sub-delims; BMP and supplementary ranges are kept in separate classes, as PCRE2 10.46 fails
+        // to match some BMP code points when a single class holds too many ranges.
+        $bmp = 'A-Za-z0-9\-._~!$&\'()*+,;=\x{A0}-\x{D7FF}\x{F900}-\x{FDCF}\x{FDF0}-\x{FFEF}';
+        $supplementary = '\x{10000}-\x{1FFFD}\x{20000}-\x{2FFFD}\x{30000}-\x{3FFFD}\x{40000}-\x{4FFFD}\x{50000}-\x{5FFFD}'
+            . '\x{60000}-\x{6FFFD}\x{70000}-\x{7FFFD}\x{80000}-\x{8FFFD}\x{90000}-\x{9FFFD}\x{A0000}-\x{AFFFD}'
+            . '\x{B0000}-\x{BFFFD}\x{C0000}-\x{CFFFD}\x{D0000}-\x{DFFFD}\x{E1000}-\x{EFFFD}';
+        // Matches runs of characters possessively, keeping long values within the PCRE backtracking limits
+        $chars = static function (string $extraBmp, string $extraSupplementary = '') use ($bmp, $supplementary): string {
+            return '(?:[' . $bmp . $extraBmp . ']++|[' . $supplementary . $extraSupplementary . ']++|%[0-9A-Fa-f]{2})';
+        };
+
+        $scheme = '[A-Za-z][A-Za-z0-9+\-.]*+';
+        $ipvFuture = '[vV][0-9A-Fa-f]++\.[A-Za-z0-9\-._~!$&\'()*+,;=:]++';
+        $iauthority = '(?:' . $chars(':') . '*+@)?(?:\[(?:(?<ipLiteral>[0-9A-Fa-f:.]++)|' . $ipvFuture . ')\]|' . $chars('') . '*+)(?::[0-9]*+)?';
+        $ipathAbempty = '(?:\/' . $chars(':@') . '*+)*+';
+        $ipathAbsolute = '\/(?:' . $chars(':@') . '++' . $ipathAbempty . ')?';
+        $ipathRootless = $chars(':@') . '++' . $ipathAbempty;
+        $ipathNoScheme = $chars('@') . '++' . $ipathAbempty;
+        $iquery = '(?:\?' . $chars(':@\/?\x{E000}-\x{F8FF}', '\x{F0000}-\x{FFFFD}\x{100000}-\x{10FFFD}') . '*+)?';
+        $ifragment = '(?:#' . $chars(':@\/?') . '*+)?';
+
+        $sharedPart = '(?:\/\/' . $iauthority . $ipathAbempty . '|' . $ipathAbsolute . '|)';
+        $pattern = $allowRelative
+            ? '(?:(?:' . $scheme . ':)?' . $sharedPart . '|' . $scheme . ':' . $ipathRootless . '|' . $ipathNoScheme . ')'
+            : $scheme . ':(?:' . $sharedPart . '|' . $ipathRootless . ')';
+
+        if (preg_match('/^' . $pattern . $iquery . $ifragment . '\z/u', $value, $matches) !== 1) {
+            return false;
+        }
+
+        if (isset($matches['ipLiteral']) && $matches['ipLiteral'] !== '') {
+            return filter_var($matches['ipLiteral'], FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Validates a URI template according to the ABNF of RFC 6570 section 2.
+     */
     private function validateUriTemplate(string $value): bool
     {
+        $pctEncoded = '%[0-9A-Fa-f]{2}';
+        // Any Unicode character except CTL, SP, '"', '%', '<', '>', '\', '^', '`', '{', '|' and '}' (ucschar / iprivate).
+        // BMP and supplementary ranges are kept in separate classes, as PCRE2 10.46 fails to match some BMP code
+        // points when a single class holds too many ranges.
+        $literal = '(?:[\x21\x23\x24\x26-\x3B\x3D\x3F-\x5B\x5D\x5F\x61-\x7A\x7E\x{A0}-\x{D7FF}\x{E000}-\x{FDCF}\x{FDF0}-\x{FFEF}]'
+            . '|[\x{10000}-\x{1FFFD}\x{20000}-\x{2FFFD}\x{30000}-\x{3FFFD}\x{40000}-\x{4FFFD}\x{50000}-\x{5FFFD}'
+            . '\x{60000}-\x{6FFFD}\x{70000}-\x{7FFFD}\x{80000}-\x{8FFFD}\x{90000}-\x{9FFFD}\x{A0000}-\x{AFFFD}'
+            . '\x{B0000}-\x{BFFFD}\x{C0000}-\x{CFFFD}\x{D0000}-\x{DFFFD}\x{E1000}-\x{EFFFD}\x{F0000}-\x{FFFFD}'
+            . '\x{100000}-\x{10FFFD}])';
+        $varchar = '(?:[A-Za-z0-9_]|' . $pctEncoded . ')';
+        $varspec = $varchar . '(?:\.?' . $varchar . ')*(?::[1-9][0-9]{0,3}|\*)?';
+        $expression = '\{[+#.\/;?&]?' . $varspec . '(?:,' . $varspec . ')*\}';
+
         return preg_match(
-            '/^(?:[^\{\}]*|\{[a-zA-Z0-9_:%\/\.~\-\+\*]+\})*$/',
+            '/^(?:' . $literal . '|' . $pctEncoded . '|' . $expression . ')*\z/u',
             $value
         ) === 1;
+    }
+
+    private function validateUuid(string $value): bool
+    {
+        return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iD', $value) === 1;
+    }
+
+    /**
+     * Validates against the duration ABNF from RFC 3339 Appendix A.
+     */
+    private function validateDuration(string $value): bool
+    {
+        $time = 'T(?:[0-9]+H(?:[0-9]+M(?:[0-9]+S)?)?|[0-9]+M(?:[0-9]+S)?|[0-9]+S)';
+        $date = '(?:[0-9]+D|[0-9]+M(?:[0-9]+D)?|[0-9]+Y(?:[0-9]+M(?:[0-9]+D)?)?)';
+
+        return preg_match('/^P(?:' . $date . '(?:' . $time . ')?|' . $time . '|[0-9]+W)$/D', $value) === 1;
     }
 }

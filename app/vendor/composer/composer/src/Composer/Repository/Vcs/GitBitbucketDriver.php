@@ -404,7 +404,7 @@ class GitBitbucketDriver extends VcsDriver
                 }
 
                 if (!$this->io->isInteractive() && $fetchingRepoData) {
-                    $this->attemptCloneFallback();
+                    $this->attemptCloneFallback($e);
 
                     return new Response(['url' => 'dummy'], 200, [], 'null');
                 }
@@ -419,7 +419,7 @@ class GitBitbucketDriver extends VcsDriver
      */
     protected function generateSshUrl(): string
     {
-        return 'git@' . $this->originUrl . ':' . $this->owner.'/'.$this->repository.'.git';
+        return 'git@ssh.' . $this->originUrl . ':' . $this->owner.'/'.$this->repository.'.git';
     }
 
     /**
@@ -428,8 +428,12 @@ class GitBitbucketDriver extends VcsDriver
      * @return true
      * @throws \RuntimeException
      */
-    protected function attemptCloneFallback(): bool
+    protected function attemptCloneFallback(?\Throwable $e = null): bool
     {
+        if (isset($this->repoConfig['allow-git-fallback']) && $this->repoConfig['allow-git-fallback'] === false) {
+            throw new \RuntimeException('Fallback to git driver disabled', 0, $e);
+        }
+
         try {
             $this->setupFallbackDriver($this->generateSshUrl());
 

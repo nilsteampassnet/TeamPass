@@ -15,6 +15,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Cache\CacheItemInterface;
 use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Contracts\Cache\CacheTrait;
+use Symfony\Contracts\Cache\ItemInterface;
 
 /**
  * @author Tobias Nyholm <tobias.nyholm@gmail.com>
@@ -102,6 +103,65 @@ class CacheTraitTest extends TestCase
         $callback = static fn (CacheItemInterface $item) => 'computed data';
 
         $cache->get('key', $callback, \INF);
+    }
+
+    public function testRecomputeWhenElectedForEarlyExpiration()
+    {
+        $item = $this->createMock(ItemInterface::class);
+        $item->method('isHit')
+            ->willReturn(true);
+        $item->method('getMetadata')
+            ->willReturn([ItemInterface::METADATA_EXPIRY => microtime(true) + 1000, ItemInterface::METADATA_CTIME => 50]);
+        $item->method('set')
+            ->willReturn($item);
+
+        $item->expects($this->once())
+            ->method('expiresAt')
+            ->with(null);
+        $item->expects($this->once())
+            ->method('set')
+            ->with('computed data');
+
+        $cache = $this->getMockBuilder(TestPool::class)
+            ->onlyMethods(['getItem', 'save'])
+            ->getMock();
+
+        $cache->expects($this->exactly(2))
+            ->method('getItem')
+            ->with('key')
+            ->willReturn($item);
+        $cache->expects($this->once())
+            ->method('save');
+
+        $cache->get('key', function () {
+            $this->fail('This code should never be reached');
+        }, 0.0);
+        $cache->get('key', static fn () => 'computed data', \PHP_FLOAT_MAX);
+    }
+
+    public function testMetadataReportsFailedSaves()
+    {
+        $item = $this->createStub(CacheItemInterface::class);
+        $item->method('set')
+            ->willReturn($item);
+        $item->method('isHit')
+            ->willReturn(false);
+
+        $cache = $this->getMockBuilder(TestPool::class)
+            ->onlyMethods(['getItem', 'save'])
+            ->getMock();
+        $cache->expects($this->exactly(2))
+            ->method('getItem')
+            ->willReturn($item);
+        $cache->expects($this->exactly(2))
+            ->method('save')
+            ->willReturn(false, true);
+
+        $cache->get('key', static fn () => 'computed data', null, $metadata);
+        $this->assertTrue($metadata[ItemInterface::METADATA_SAVE_FAILED]);
+
+        $cache->get('key', static fn () => 'computed data', null, $metadata);
+        $this->assertArrayNotHasKey(ItemInterface::METADATA_SAVE_FAILED, $metadata);
     }
 
     public function testExceptionOnNegativeBeta()

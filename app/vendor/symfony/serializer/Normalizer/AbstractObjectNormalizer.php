@@ -25,6 +25,7 @@ use Symfony\Component\Serializer\Exception\InvalidArgumentException;
 use Symfony\Component\Serializer\Exception\LogicException;
 use Symfony\Component\Serializer\Exception\MissingConstructorArgumentsException;
 use Symfony\Component\Serializer\Exception\NotNormalizableValueException;
+use Symfony\Component\Serializer\Exception\UnsupportedException;
 use Symfony\Component\Serializer\Mapping\AttributeMetadata;
 use Symfony\Component\Serializer\Mapping\AttributeMetadataInterface;
 use Symfony\Component\Serializer\Mapping\ClassDiscriminatorFromClassMetadata;
@@ -238,7 +239,7 @@ abstract class AbstractObjectNormalizer extends AbstractNormalizer
 
     protected function instantiateObject(array &$data, string $class, array &$context, \ReflectionClass $reflectionClass, array|bool $allowedAttributes, ?string $format = null): object
     {
-        if ($class !== $mappedClass = $this->getMappedClass($data, $class, $context)) {
+        if ($class !== $mappedClass = $this->getMappedClass($data, $class, $format, $context)) {
             return $this->instantiateObject($data, $mappedClass, $context, new \ReflectionClass($mappedClass), $allowedAttributes, $format);
         }
 
@@ -321,13 +322,17 @@ abstract class AbstractObjectNormalizer extends AbstractNormalizer
 
         if (XmlEncoder::FORMAT === $format && !\is_array($data)) {
             $data = ['#' => $data];
+        } elseif (isset($context['_union_member']) && !\is_array($data) && !\is_object($data)) {
+            throw new UnsupportedException(\sprintf('Data expected to be an array or an object to denormalize "%s" as a member of a union type, "%s" given.', $type, get_debug_type($data)));
         }
+
+        unset($context['_union_member']);
 
         $allowedAttributes = $this->getAllowedAttributes($type, $context, true);
         $normalizedData = $this->prepareForDenormalization($data);
         $extraAttributes = [];
 
-        $mappedClass = $this->getMappedClass($normalizedData, $type, $context);
+        $mappedClass = $this->getMappedClass($normalizedData, $type, $format, $context);
 
         $nestedAttributes = $this->getNestedAttributes($mappedClass);
         $nestedData = $originalNestedData = [];
@@ -474,16 +479,22 @@ abstract class AbstractObjectNormalizer extends AbstractNormalizer
             usort($types, static fn (LegacyType $a, LegacyType $b): int => ($a->getClassName() ?? $a->getBuiltinType()) <=> ($b->getClassName() ?? $b->getBuiltinType()));
         }
 
+        $originalData = $data;
         foreach ($types as $type) {
+            // each type of a union gets the data as given, not as changed for the previous type
+            $data = $originalData;
+
             if (null === $data && $type->isNullable()) {
                 return null;
             }
 
             $collectionValueType = $type->isCollection() ? $type->getCollectionValueTypes()[0] ?? null : null;
+            $collectionKeyTypes = array_map(static fn (LegacyType $t) => $t->getBuiltinType(), $type->getCollectionKeyTypes());
 
             // Fix a collection that contains the only one element
             // This is special to xml format only
-            if ('xml' === $format && null !== $collectionValueType && (!\is_array($data) || !\is_int(key($data)))) {
+            // When the keys cannot be int, an array with other keys is the collection itself, not its only element
+            if ('xml' === $format && null !== $collectionValueType && (!\is_array($data) || (!\is_int(key($data)) && (!$collectionKeyTypes || \in_array(LegacyType::BUILTIN_TYPE_INT, $collectionKeyTypes, true))))) {
                 $data = [$data];
             }
 
@@ -610,6 +621,10 @@ abstract class AbstractObjectNormalizer extends AbstractNormalizer
                     }
 
                     $childContext = $this->createChildContext($context, $attribute, $format);
+                    if (($isUnionType || $type->isNullable()) && !\is_array($data) && !\is_object($data)) {
+                        // object normalizers leave a scalar to the other types of the union instead of building an empty object from it
+                        $childContext['_union_member'] = true;
+                    }
                     if ($this->serializer->supportsDenormalization($data, $class, $format, $childContext)) {
                         return $this->serializer->denormalize($data, $class, $format, $childContext);
                     }
@@ -653,6 +668,11 @@ abstract class AbstractObjectNormalizer extends AbstractNormalizer
                         }
 
                         break;
+                }
+            } catch (UnsupportedException $unsupported) {
+                // a type that does not accept the data has no error of its own to report
+                if (!$isUnionType && !$type->isNullable()) {
+                    throw $unsupported;
                 }
             } catch (NotNormalizableValueException|InvalidArgumentException $e) {
                 if (!$isUnionType && !$isNullable) {
@@ -736,7 +756,11 @@ abstract class AbstractObjectNormalizer extends AbstractNormalizer
             default => [$type],
         };
 
+        $originalData = $data;
         foreach ($types as $t) {
+            // each type of a union gets the data as given, not as changed for the previous type
+            $data = $originalData;
+
             if (null === $data && $type->isNullable()) {
                 return null;
             }
@@ -758,7 +782,8 @@ abstract class AbstractObjectNormalizer extends AbstractNormalizer
 
             // Fix a collection that contains the only one element
             // This is special to xml format only
-            if ('xml' === $format && $collectionValueType && (!\is_array($data) || !\is_int(key($data)))) {
+            // When the keys cannot be int, an array with other keys is the collection itself, not its only element
+            if ('xml' === $format && $collectionValueType && (!\is_array($data) || (!\is_int(key($data)) && $collectionKeyType->isIdentifiedBy(TypeIdentifier::INT)))) {
                 // BC layer for type-info < 7.2
                 $isMixedType = method_exists(Type::class, 'isA') ? $collectionValueType->isA(TypeIdentifier::MIXED) : $collectionValueType->isIdentifiedBy(TypeIdentifier::MIXED);
                 if (!$isMixedType) {
@@ -925,6 +950,10 @@ abstract class AbstractObjectNormalizer extends AbstractNormalizer
                     }
 
                     $childContext = $this->createChildContext($context, $attribute, $format);
+                    if ($type instanceof UnionType && !\is_array($data) && !\is_object($data)) {
+                        // object normalizers leave a scalar to the other types of the union instead of building an empty object from it
+                        $childContext['_union_member'] = true;
+                    }
                     if ($this->serializer->supportsDenormalization($data, $class, $format, $childContext)) {
                         return $this->serializer->denormalize($data, $class, $format, $childContext);
                     }
@@ -967,6 +996,11 @@ abstract class AbstractObjectNormalizer extends AbstractNormalizer
 
                 if ($dataMatchesExpectedType) {
                     return $data;
+                }
+            } catch (UnsupportedException $unsupported) {
+                // a type that does not accept the data has no error of its own to report
+                if (!$type instanceof UnionType) {
+                    throw $unsupported;
                 }
             } catch (NotNormalizableValueException|InvalidArgumentException $e) {
                 if (!$type instanceof UnionType) {
@@ -1338,6 +1372,8 @@ abstract class AbstractObjectNormalizer extends AbstractNormalizer
         unset($context[self::EXCLUDE_FROM_CACHE_KEY]);
         unset($context[self::OBJECT_TO_POPULATE]);
         unset($context['cache_key']); // avoid artificially different keys
+        unset($context['not_normalizable_value_exceptions']); // grows with every collected error
+        unset($context['debug_trace_id']); // unique per call when the serializer is traced
 
         try {
             return hash('xxh128', $format.serialize([
@@ -1390,7 +1426,7 @@ abstract class AbstractObjectNormalizer extends AbstractNormalizer
     /**
      * @return class-string
      */
-    private function getMappedClass(array $data, string $class, array $context): string
+    private function getMappedClass(array $data, string $class, ?string $format, array $context): string
     {
         if (null !== $object = $this->extractObjectToPopulate($class, $context, self::OBJECT_TO_POPULATE)) {
             return $object::class;
@@ -1400,7 +1436,9 @@ abstract class AbstractObjectNormalizer extends AbstractNormalizer
             return $class;
         }
 
-        if (null === $type = $data[$mapping->getTypeProperty()] ?? $mapping->getDefaultType()) {
+        $typeKey = $this->nameConverter?->normalize($mapping->getTypeProperty(), $class, $format, $context) ?? $mapping->getTypeProperty();
+
+        if (null === $type = $data[$typeKey] ?? $data[$mapping->getTypeProperty()] ?? $mapping->getDefaultType()) {
             throw NotNormalizableValueException::createForUnexpectedDataType(\sprintf('Type property "%s" not found for the abstract object "%s".', $mapping->getTypeProperty(), $class), null, ['string'], isset($context['deserialization_path']) ? $context['deserialization_path'].'.'.$mapping->getTypeProperty() : $mapping->getTypeProperty(), false);
         }
 
