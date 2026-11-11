@@ -152,21 +152,8 @@ class OAuth2Controller
                 $response = $this->provider->getAuthenticatedRequest('GET', $graphUrl, $token->getToken());
                 $user = $this->provider->getParsedResponse($response);
     
-                // Retrieve the groups the user belongs to
-                $groupsUrl = 'https://graph.microsoft.com/v1.0/me/memberOf';
-                $groupsResponse = $this->provider->getAuthenticatedRequest('GET', $groupsUrl, $token->getToken());
-                $groups = $this->provider->getParsedResponse($groupsResponse);
-                
-                // Extract only the IDs and names of the groups if available
-                $userGroups = [];
-                if (isset($groups['value']) && is_array($groups['value'])) {
-                    foreach ($groups['value'] as $group) {
-                        $userGroups[] = [
-                            'id' => $group['id'] ?? null,
-                            'displayName' => $group['displayName'] ?? null,
-                        ];
-                    }
-                }
+                // Retrieve the groups the user belongs to (self-registration check, role matching)
+                $userGroups = $this->entraUserGroups('me', $token->getToken());
 
                 $identity = self::entraIdentity($user);
             } else {
@@ -196,6 +183,83 @@ class OAuth2Controller
                 'message' => 'OAuth2 sign-in failed: ' . $e->getMessage(),
             ];
         }
+    }
+
+    /**
+     * Retrieve the groups an Entra user belongs to, as {id, displayName} entries.
+     *
+     * Reads the direct and nested memberships (transitiveMemberOf) and follows the Graph
+     * paging, so that the self-registration check sees a user in a group nested in the allowed
+     * one, or in more groups than one page holds. Directory roles and administrative units are
+     * not groups and are left out; an entry carrying no type is kept, as before.
+     * Should the transitive query fail, the direct memberships (memberOf, read before this
+     * method existed) are used instead, so a sign-in that worked keeps working.
+     *
+     * @param string $userPath    'me', or 'users/{object id}' with an application token
+     * @param string $accessToken Access token for Microsoft Graph
+     * @return array<int, array{id: mixed, displayName: mixed}>
+     * @throws Exception When Graph refuses both queries
+     */
+    private function entraUserGroups(string $userPath, string $accessToken): array
+    {
+        $baseUrl = 'https://graph.microsoft.com/v1.0/' . $userPath;
+
+        try {
+            return $this->entraGroupsFromCollection($baseUrl . '/transitiveMemberOf', $accessToken);
+        } catch (Exception $e) {
+            error_log('TEAMPASS OAuth2 - nested group memberships unavailable, using direct memberships: ' . $e->getMessage());
+        }
+
+        return $this->entraGroupsFromCollection($baseUrl . '/memberOf', $accessToken);
+    }
+
+    /**
+     * Read every page of a Graph collection of directory objects and keep the groups.
+     *
+     * The next page is only requested from Graph itself: the access token is never sent to a
+     * host named by an answer.
+     *
+     * @param string $url         First page of the collection
+     * @param string $accessToken Access token for Microsoft Graph
+     * @return array<int, array{id: mixed, displayName: mixed}>
+     * @throws Exception When Graph refuses a page
+     */
+    private function entraGroupsFromCollection(string $url, string $accessToken): array
+    {
+        $groups = [];
+        $seen = [];
+        // 100 objects per page by default: far beyond any real membership count
+        for ($page = 0; $page < 100 && $url !== ''; $page++) {
+            $response = $this->provider->getAuthenticatedRequest('GET', $url, $accessToken);
+            $answer = $this->provider->getParsedResponse($response);
+
+            foreach ((is_array($answer) && is_array($answer['value'] ?? null)) ? $answer['value'] : [] as $object) {
+                if (is_array($object) === false
+                    || (isset($object['@odata.type']) && $object['@odata.type'] !== '#microsoft.graph.group')
+                ) {
+                    continue;
+                }
+
+                // A group reached through several paths is listed once
+                $id = $object['id'] ?? null;
+                if (is_string($id) && $id !== '') {
+                    if (isset($seen[$id]) === true) {
+                        continue;
+                    }
+                    $seen[$id] = true;
+                }
+
+                $groups[] = [
+                    'id' => $id,
+                    'displayName' => $object['displayName'] ?? null,
+                ];
+            }
+
+            $next = is_array($answer) && is_string($answer['@odata.nextLink'] ?? null) ? $answer['@odata.nextLink'] : '';
+            $url = str_starts_with($next, 'https://graph.microsoft.com/') ? $next : '';
+        }
+
+        return $groups;
     }
 
     /**

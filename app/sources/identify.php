@@ -46,6 +46,7 @@ use TeampassClasses\OAuth2Controller\OAuth2Controller;
 require_once 'main.functions.php';
 require_once __DIR__ . '/webauthn_login.functions.php';
 require_once __DIR__ . '/oauth2_identity_logic.php';
+require_once __DIR__ . '/oauth2_self_register_logic.php';
 
 // init
 loadClasses('DB');
@@ -3590,6 +3591,27 @@ function oauth2SessionIdentity(): string
 }
 
 /**
+ * Return the groups the OAuth2 provider sent for the user signing in.
+ *
+ * Read from the provider answer OAuth2Controller::callback() stored in the session, never from
+ * the login form: the browser posts the same answer back and could add groups to it.
+ *
+ * @return array<int, mixed> {id, displayName} entries; [] when no OAuth2 round-trip is in progress
+ */
+function oauth2SessionGroups(): array
+{
+    $oauth2Info = SessionManager::getSession()->get('userOauth2Info');
+    if (is_array($oauth2Info) === false
+        || filter_var($oauth2Info['oauth2LoginOngoing'] ?? false, FILTER_VALIDATE_BOOLEAN) !== true
+        || is_array($oauth2Info['groups'] ?? null) === false
+    ) {
+        return [];
+    }
+
+    return array_values($oauth2Info['groups']);
+}
+
+/**
  * Return the login of the account, other than $exceptUserId, already bound to an identity.
  *
  * Deleted accounts count: restoring one must give it back its identity.
@@ -3825,25 +3847,40 @@ function checkOauth2User(
         && filter_var($userInfo['oauth2_user_not_exists'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === true
         && (int) $userLdapHasBeenCreated === 0
     ) {
-        // Is allowed to self register with oauth2?
-        if (empty($SETTINGS['oauth_self_register_groups'])) {
-            // No self registration is allowed
+        // Is allowed to self register with oauth2? Only the members of a listed group are,
+        // or everybody with '*'; an empty list disables the self-registration.
+        // The user is authenticated by the provider at this point, so naming the cause
+        // discloses nothing; the groups received are logged for the administrator.
+        $oauth2Groups = oauth2SessionGroups();
+        if (oauth2UserMayRegister(
+            oauth2ParseAllowedGroups((string) ($SETTINGS['oauth_self_register_groups'] ?? '')),
+            $oauth2Groups
+        ) === false) {
+            logEvents(
+                $SETTINGS,
+                'failed_auth',
+                'oauth2_self_register_refused',
+                '',
+                stripslashes($username),
+                oauth2SelfRegisterLogDetail(stripslashes($username), $oauth2Groups)
+            );
+
             return [
                 'error' => true,
-                'message' => 'error_bad_credentials',
+                'message' => 'oauth2_self_register_refused',
             ];
-        } else {
-            // Self registration is allowed
-            // Create user in Teampass
-            $userInfo['oauth2_user_to_be_created'] = true;
-            return createOauth2User(
-                $SETTINGS,
-                $userInfo,
-                $username,
-                $passwordClear,
-                true
-            );
         }
+
+        // Self registration is allowed
+        // Create user in Teampass
+        $userInfo['oauth2_user_to_be_created'] = true;
+        return createOauth2User(
+            $SETTINGS,
+            $userInfo,
+            $username,
+            $passwordClear,
+            true
+        );
     
     } elseif (isset($userInfo['id']) === true && empty($userInfo['id']) === false) {
         // User is in construction, please wait for email
@@ -4033,17 +4070,16 @@ function createOauth2User(
             ];
         }
 
-        // Prepare user groups
-        foreach ($userInfo['groups'] as $key => $group) {
-            // Check if the group is in the list of groups allowed to self register
-            // If the group is in the list, we remove it
-            if ($userSelfRegister === true && $group["displayName"] === $SETTINGS['oauth_self_register_groups']) {
-                unset($userInfo['groups'][$key]);
-            }
+        // Groups matched against the role titles: those of the provider answer, without the
+        // groups that only allowed the self-registration
+        $userInfo['groups'] = oauth2SessionGroups();
+        if ($userSelfRegister === true) {
+            $userInfo['groups'] = oauth2GroupsForRoleMatching(
+                oauth2ParseAllowedGroups((string) ($SETTINGS['oauth_self_register_groups'] ?? '')),
+                $userInfo['groups']
+            );
         }
-        // Rebuild indexes
-        $userInfo['groups'] = array_values($userInfo['groups'] ?? []);
-        
+
         // Create Oauth2 user if not exists and tasks enabled
         $ret = externalAdCreateUser(
             $username,

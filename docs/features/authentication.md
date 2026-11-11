@@ -227,7 +227,7 @@ If a user changes phone or loses their authenticator, a new code can be issued. 
 
 Users can authenticate through Microsoft Entra ID or through any OpenID Connect provider (authentik, Keycloak…). When self-registration is enabled, the account of a user who signs in for the first time is created in TeamPass.
 
-👉 Notice that if the user belongs to groups in the identity provider and that roles with the same names exist in TeamPass, then the account is automatically associated to the matching roles when it is created (based upon their names).
+👉 Notice that if the user belongs to groups in the identity provider and that roles with the same names exist in TeamPass, then the account is automatically associated to the matching roles when it is created (based upon their names). With Entra, nested groups count; directory roles (*Global Administrator*…) do not. The groups listed in `Allowed groups for self-registration` are left out of this matching.
 
 ### Accounts are bound to their identity at the provider
 
@@ -316,11 +316,41 @@ It is suggested to perform a test with a fake user.
 
 ![OAuth2 settings example](../_media/tp3_auth_oauth2_1.png)
 
-**Pay attention to the `Allowed groups for self-registration` field.** Left empty, it disables the
-automatic creation of accounts: an Entra user who does not already exist in TeamPass is then
-refused with the generic message *"Login credentials do not correspond"*, which does not hint at
-the cause. On a fresh installation no Entra account exists yet in TeamPass, so **every** first
-login fails until either the field is filled in or the accounts are created beforehand.
+**Pay attention to the `Allowed groups for self-registration` field.** It decides who gets a
+TeamPass account at their first sign-in:
+
+| Value | Who can self-register |
+|---|---|
+| Empty | Nobody: self-registration is disabled |
+| `TeamPass-Users, Helpdesk` | The members of at least one of the listed groups |
+| `*` | Every user the identity provider authenticates |
+
+* A group is matched by its **name**, ignoring case, or by its **object id** (the GUID shown in
+  the Entra portal). Prefer the object id: Entra group names are not unique, and in many tenants
+  users may create groups themselves, so a name can be imitated.
+* With Entra, **nested groups count**: a member of a group placed inside an allowed group is
+  allowed. TeamPass reads the memberships with `GET /me/transitiveMemberOf`.
+* The listed groups only open the self-registration: they are **not** matched against the role
+  titles. Name the roles after the other groups of the users, or set
+  `Self-registered user belongs to role`.
+* Graph only returns the group names when the sign-in token may read groups: the delegated
+  `Group.Read.All` listed above (or `GroupMember.Read.All`, `Directory.Read.All`). With `User.Read`
+  alone, the groups come back with their object id but no name: list the object ids then, or
+  self-registration refuses everybody. The log entry counts these groups as *without name*.
+* The field only concerns accounts that do not exist yet. Existing accounts sign in as before.
+
+A user who may not self-register is refused with *"You have no TeamPass account yet, and your
+groups at the identity provider do not allow it to be created automatically"*. The failed
+authentications of the `Logs` page show the login and the groups TeamPass received, which is the
+quickest way to check a group name.
+
+On a fresh installation no Entra account exists yet in TeamPass, so **every** first login fails
+until either the field is filled in or the accounts are created beforehand.
+
+> ⚠️ **Change of behaviour.** Older versions let **every** user self-register as soon as the field
+> held any value: the list was never checked. Now only the members of the listed groups are
+> accepted, and the upgrade leaves the field as it is. If you relied on the old behaviour, enter
+> `*`.
 
 ### Generic OpenID Connect provider (authentik, Keycloak…)
 
@@ -388,7 +418,10 @@ With **Keycloak**, use `https://<host>/realms/<realm>/protocol/openid-connect/au
 *Add to userinfo* on the mapper that emits them.
 
 The `Allowed groups for self-registration` field behaves as described for Entra
-[above](#setting-up-in-teampass): left empty, a user with no TeamPass account is refused.
+[above](#setting-up-in-teampass): left empty, a user with no TeamPass account is refused; `*`
+lets everybody in; otherwise the user needs one of the listed groups in the `groups` or
+`realm_access.roles` claim. The value is compared with what the provider sends: a Keycloak mapper
+with *Full group path* enabled sends `/parent/child`, not `child`.
 
 ### Allowing OAuth2 users to access the API
 

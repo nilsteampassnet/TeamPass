@@ -249,7 +249,8 @@ The full permission list is in
 ### If the message appears at login instead
 
 The same Graph error can be raised by the login flow, which reads the groups of the user who is
-signing in (`GET /me/memberOf`). Both cases are easy to tell apart:
+signing in (`GET /me/transitiveMemberOf`, then `GET /me/memberOf` if the first one is refused).
+Both cases are easy to tell apart:
 
 | Where | What is displayed |
 |---|---|

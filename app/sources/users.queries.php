@@ -3879,6 +3879,8 @@ if (null !== $post_type) {
             $adUsersToSync = [];
             $adRoles = [];
             $usersAlreadyInTeampass = [];
+            require_once __DIR__ . '/oauth2_self_register_logic.php';
+            $selfRegisterGroups = oauth2ParseAllowedGroups((string) ($SETTINGS['oauth_self_register_groups'] ?? ''));
 
             function nameFromEmail($email) {
                 // Guard against null / non-string values (e.g. Entra hybrid objects
@@ -3898,13 +3900,11 @@ if (null !== $post_type) {
             $skippedUsersWithoutUpn = 0;
             
             foreach ($usersList as $oAuthUser) {
-                // Build the list of all groups in AD
-                if (isset($oAuthUser['groups']) === true) {
-                    foreach ($oAuthUser['groups'] as $group) {
-                        if (
-                            isset($group['displayName']) && !in_array($group['displayName'], $adRoles)
-                            && $SETTINGS['oauth_self_register_groups'] !== $group['displayName']
-                        ) {
+                // Build the list of all groups in AD, without the groups that only allow the
+                // self-registration (same rule as the account creation at sign-in)
+                if (isset($oAuthUser['groups']) === true && is_array($oAuthUser['groups']) === true) {
+                    foreach (oauth2GroupsForRoleMatching($selfRegisterGroups, $oAuthUser['groups']) as $group) {
+                        if (isset($group['displayName']) && !in_array($group['displayName'], $adRoles)) {
                             $adRoles[] = $group['displayName'];
                         }
                     }

@@ -256,7 +256,7 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                     </small>
                                 </div>
                                 <div class='col-7'>
-                                    <input type='text' class='form-control form-control-sm setting-oauth' id='oauth_self_register_groups' value='<?php echo $SETTINGS['oauth_self_register_groups'] ?? ''; ?>'>
+                                    <input type='text' class='form-control form-control-sm setting-oauth' id='oauth_self_register_groups' value='<?php echo htmlspecialchars(html_entity_decode((string) ($SETTINGS['oauth_self_register_groups'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8'), ENT_QUOTES, 'UTF-8'); ?>'>
                                 </div>
                             </div>
 

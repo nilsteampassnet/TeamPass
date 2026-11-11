@@ -991,7 +991,7 @@ return array(
     'account_in_construction_please_wait_email' => 'Your account is currently being created. You will receive an email when it is ready.',
     'oauth_selfregistered_user_belongs_to_role' => 'Self-registered user belongs to role',
     'oauth_self_register_groups' => 'Allowed groups for self-registration',
-    'oauth_self_register_groups_tip' => 'Comma separated list of groups that are allowed to self-register. Leave empty if you want to disable self-registration. Self-registration permits to create a user account in Teampass without the need of an administrator. The user will be able to log in with his AD credentials and will be automatically created in Teampass.',
+    'oauth_self_register_groups_tip' => 'Comma-separated list of the groups whose members get a TeamPass account at their first SSO sign-in. A group is matched by its name, ignoring case, or by its Microsoft Entra object id, which unlike a name is unique. With Entra, nested groups count. Enter * to let every user of the identity provider self-register. Leave empty to disable self-registration.',
     'oauth_selfregistered_user_belongs_to_role_tip' => 'This role will be assigned to the user when he is created if he is not belonging to groups existing in Teampass.',
     'file_not_exists' => 'File does not exist',
     'path_not_a_file' => 'Path is not a file',
