@@ -116,9 +116,11 @@ function createKbMarkdown(deps) {
    * backslash and drops exactly that one backslash before parsing the cell, so every pipe gets one.
    * Backslashes are deliberately not escaped: the content is already Markdown, Turndown escaped the
    * literal ones, and doubling them would display two.
+   * split/join rather than replace(): CodeQL's js/incomplete-sanitization reads a backslash-escaping
+   * replace() as an escaper that must also double backslashes, which is exactly what must not happen.
    */
   function markdownTableCell(content) {
-    return String(content).trim().replace(/\s*\n+\s*/g, ' ').replace(/\|/g, '\\|')
+    return String(content).trim().replace(/\s*\n+\s*/g, ' ').split('|').join('\\|')
   }
 
   function getConverter() {
