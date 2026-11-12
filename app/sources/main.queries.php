@@ -1483,6 +1483,17 @@ function changePassword(
                 $session->set('user-private_key', decryptPrivateKey($post_current_password, $dataUser['private_key']));
             }
 
+            // Never re-encrypt an empty private key: it would replace the user's real key and lock them out
+            if (empty($session->get('user-private_key')) === true) {
+                return prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('private_key_decryption_failed'),
+                    ),
+                    'encode'
+                );
+            }
+
             // update DB
             $newEncryptedPrivateKey = encryptPrivateKey($post_new_password, $session->get('user-private_key'));
             DB::update(
@@ -3780,6 +3791,18 @@ function changeUserAuthenticationPassword(
             try {
                 $privateKey = decryptPrivateKey($post_current_pwd, $userData['private_key']);
             } catch (Exception $e) {
+                return prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('bad_password'),
+                    ),
+                    'encode'
+                );
+            }
+
+            // decryptPrivateKey() returns '' instead of throwing when the password does not open the key.
+            // Without this check an empty session key compares equal and an empty key is saved for the user.
+            if ($privateKey === '') {
                 return prepareExchangedData(
                     array(
                         'error' => true,
