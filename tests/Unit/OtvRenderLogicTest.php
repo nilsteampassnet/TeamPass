@@ -81,6 +81,39 @@ class OtvRenderLogicTest extends TestCase
     /**
      * What the editor leaves behind when the user clears the field.
      */
+    /**
+     * API clients (browser extension, mobile application) store the text of a textarea:
+     * real line breaks and no markup. Rendered as HTML they collapsed into spaces.
+     */
+    public function testPlainTextLineBreaksAreKept(): void
+    {
+        $render = static fn (string $stored): string => str_replace(["\r", "\n"], '', otvSanitizeDescription($stored));
+        $this->assertSame('Test TOTP<br />Ajout 1<br />New password<br /><br />End',
+            $render("Test TOTP\nAjout 1\r\nNew password\r\rEnd"));
+        // Entity-encoded storage is decoded first.
+        $this->assertSame('a<br />b', $render('a&#10;b'));
+        // The text is escaped, never parsed: "<3" and ampersands stay text.
+        $this->assertSame('I &lt;3 R&amp;D<br />"quoted"', $render("I <3 R&D\n\"quoted\""));
+    }
+
+    /** Editor markup keeps its own layout: its source line breaks are not doubled. */
+    public function testMarkupLineBreaksAreNotConverted(): void
+    {
+        $this->assertSame("<p>a</p>\n<p>b</p>", otvSanitizeDescription("&lt;p&gt;a&lt;/p&gt;\n&lt;p&gt;b&lt;/p&gt;"));
+        $this->assertSame('one line', otvSanitizeDescription('one line'));
+        // Text holding markup takes the rich-text path: purified, its handlers dropped.
+        $this->assertStringNotContainsString('onerror', otvSanitizeDescription("x\n<img src=x onerror=alert(1)>"));
+    }
+
+    /**
+     * A literal backslash-n (two characters, found in legacy imports) is data, not a line
+     * break: converting it would cut "DOMAIN\nicolas" or "C:\new". The web card shows it too.
+     */
+    public function testLiteralBackslashNIsLeftUntouched(): void
+    {
+        $this->assertSame('Test TOTP\nAjout 1', otvSanitizeDescription('Test TOTP\nAjout 1'));
+    }
+
     public function testEmptyEditorContentProducesNothing(): void
     {
         $this->assertSame('', otvSanitizeDescription('&lt;p&gt;&lt;br&gt;&lt;/p&gt;'));
