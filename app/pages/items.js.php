@@ -613,6 +613,26 @@ require __DIR__ . '/icon.picker.js.php';
     }
 
     /**
+     * Keep the line breaks of a plain-text item description.
+     *
+     * API clients (browser extension, mobile application) store the text of a textarea: real
+     * line breaks and no markup, which collapse into spaces once rendered as HTML, and were
+     * lost when the editor saved them back. Markup from the rich-text editor, and text
+     * without any line break, are returned unchanged. The caller still purifies the result.
+     * Same rule as otvSanitizeDescription() on the Secure Send page.
+     *
+     * @param {string} decoded Description after htmlDecode()
+     * @return {string} HTML
+     */
+    function descriptionLineBreaksToHtml(decoded) {
+        const text = String(decoded || '');
+        if (/[\r\n]/.test(text) === false || /<[a-z!\/][^>]*>/i.test(text) === true) {
+            return text;
+        }
+        return tpEscapeHtmlAttribute(text).replace(/\r\n|\r|\n/g, '<br>');
+    }
+
+    /**
      * One status line of the item view: an icon and a sentence.
      *
      * @param {string} icon Font Awesome classes
@@ -7822,7 +7842,7 @@ require __DIR__ . '/icon.picker.js.php';
                     $('#form-item-label, #form-item-suggestion-label').val(htmlDecode(data.label));
                     $('#card-item-description, #form-item-suggestion-description').html(
                         DOMPurify.sanitize(
-                            htmlDecode(data.description || ''),
+                            descriptionLineBreaksToHtml(htmlDecode(data.description || '')),
                             {USE_PROFILES: {html: true}}
                         )
                     );
@@ -7899,7 +7919,7 @@ require __DIR__ . '/icon.picker.js.php';
                     // htmlDecode() turns entities back into live markup, so the result must be
                     // purified before it reaches .html() — same treatment as the detail card.
                     $('#form-item-description')
-                        .html(DOMPurify.sanitize(htmlDecode(data.description), {USE_PROFILES: {html: true}}))
+                        .html(DOMPurify.sanitize(descriptionLineBreaksToHtml(htmlDecode(data.description)), {USE_PROFILES: {html: true}}))
                         .summernote({
                             toolbar: [
                                 ['style', ['style']],
@@ -7928,7 +7948,7 @@ require __DIR__ . '/icon.picker.js.php';
                     //.summernote('editor.insertText', data.description);
 
                     $('#form-item-suggestion-description')
-                        .html(DOMPurify.sanitize(htmlDecode(data.description), {USE_PROFILES: {html: true}}))
+                        .html(DOMPurify.sanitize(descriptionLineBreaksToHtml(htmlDecode(data.description)), {USE_PROFILES: {html: true}}))
                         .summernote({
                             toolbar: [
                                 ['style', ['style']],

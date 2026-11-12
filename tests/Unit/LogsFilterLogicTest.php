@@ -517,6 +517,112 @@ class LogsFilterLogicTest extends TestCase
         self::assertStringContainsString("const signature = source + ':' + columns.join(',')", $javascript);
     }
 
+    /** The Secure Send source reads the audit journal with its own facet and columns. */
+    public function testSecureSendSourceHasItsOwnFacetsAndColumns(): void
+    {
+        // The selectable events are exactly the events the journal accepts.
+        self::assertSame(array_keys(secureSendAuditEventReasons()), logsAllowedSecureSendEvents());
+        self::assertContains('secure_send', logsAllowedSources());
+
+        $filters = logsNormalizeFilters([
+            'source' => 'secure_send', 'events' => ['revealed', 'nope', 'created'], 'actions' => ['at_shown'],
+            'types' => ['connections'], 'folder_id' => 7, 'scope' => 'personal', 'channel' => 'api',
+        ]);
+        self::assertSame(['revealed', 'created'], $filters['events']);
+        // Facets of the other sources do not leak into this one, the channel included: the
+        // journal does not record where a link was created from.
+        self::assertSame([[], [], null, '', ''], [$filters['actions'], $filters['types'], $filters['folder_id'], $filters['scope'], $filters['channel']]);
+        // Events belong to this source only.
+        self::assertSame([], logsNormalizeFilters(['source' => 'items', 'events' => ['created']])['events']);
+
+        self::assertSame(['date', 'event', 'user', 'item', 'send', 'policy'], logsVisibleColumns('secure_send', []));
+    }
+
+    public function testSecureSendPredicateCarriesEveryActiveFacet(): void
+    {
+        [$sql, $args] = buildSecureSendLogFilter($this->filters([
+            'source' => 'secure_send', 'events' => ['revoked'], 'user_id' => 42, 'term' => '#12',
+        ]))->textAndArgs();
+        foreach (['a.event IN %ls', 'a.occurred_at >= %i', 'a.occurred_at < %i', 'a.originator = %i',
+            'i.label LIKE %ss', 'u.login LIKE %ss', 'a.send_id = %i'] as $fragment) {
+            self::assertStringContainsString($fragment, $sql);
+        }
+        self::assertContains(12, $args);
+
+        // A non-numeric term searches the displayed text only.
+        [$textSql] = buildSecureSendLogFilter($this->filters(['source' => 'secure_send', 'term' => 'router']))->textAndArgs();
+        self::assertStringNotContainsString('a.send_id', $textSql);
+        // No facet: every event, no empty IN ().
+        [$bareSql] = buildSecureSendLogFilter(logsNormalizeFilters(['source' => 'secure_send']))->textAndArgs();
+        self::assertStringNotContainsString('IN', $bareSql);
+    }
+
+    /** The journal has its own administrator retention; this page never deletes from it. */
+    public function testSecureSendJournalIsNeverPurgedFromTheLogsPage(): void
+    {
+        self::assertNull($this->purge(['source' => 'secure_send']));
+        self::assertNull($this->purge(['source' => 'secure_send', 'events' => ['expired']]));
+    }
+
+    /**
+     * A view written by the One-Time View account is a Secure Send view, labelled on its own: the
+     * plain view no longer returns it, and the read, the action search and the purge agree.
+     */
+    public function testSecureSendViewIsAnActionOfItsOwn(): void
+    {
+        $virtual = logsSecureSendViewAction();
+        self::assertContains($virtual, logsAllowedItemActions());
+        self::assertNotContains($virtual, logsAllowedKbActions());
+        $lang = new Language('english', __DIR__ . '/../../app/includes/language');
+        self::assertSame('Viewed through Secure Send', $lang->get($virtual));
+
+        [$plainSql, $plainArgs] = buildItemLogFilter($this->filters(['source' => 'items', 'actions' => ['at_shown']]), $lang)->textAndArgs();
+        self::assertStringContainsString('l.action IN %ls AND NOT (l.action = %s AND l.id_user = %i)', $plainSql);
+        self::assertContains(logsOtvUserId(), $plainArgs);
+
+        [$viewSql, $viewArgs] = buildItemLogFilter($this->filters(['source' => 'items', 'actions' => [$virtual]]), $lang)->textAndArgs();
+        self::assertStringContainsString('(l.action = %s AND l.id_user = %i)', $viewSql);
+        self::assertStringNotContainsString('l.action IN', $viewSql);
+        self::assertSame(['at_shown', logsOtvUserId()], array_slice($viewArgs, 0, 2));
+
+        $both = buildItemLogFilter($this->filters(['source' => 'items', 'actions' => ['at_shown', $virtual]]), $lang)->textAndArgs()[0];
+        // One OR group: either a plain selected action, or a Secure Send view.
+        self::assertMatchesRegularExpression('/l\.action IN %ls AND NOT \(l\.action = %s AND l\.id_user = %i\)\)+ OR \(+l\.action = %s AND l\.id_user = %i\)/', $both);
+
+        $purge = $this->purge(['source' => 'items', 'actions' => [$virtual]]);
+        self::assertNotNull($purge);
+        self::assertSame('log_items', $purge['table']);
+        self::assertStringContainsString('(action = %s AND id_user = %i)', $purge['where']->textAndArgs()[0]);
+
+        // The action search knows every selectable action, the virtual one and passkeys included.
+        self::assertContains($virtual, getItemLogActionSearchCodes('Secure Send', $lang));
+        self::assertContains('at_webauthn_credential_used', getItemLogActionSearchCodes('Passkey', $lang));
+        [$searchSql] = buildItemLogSearchFilter('l.action', 'Secure Send', $lang)->textAndArgs();
+        self::assertStringContainsString('(l.action = %s AND l.id_user = %i)', $searchSql);
+    }
+
+    /** Source-level wiring of the Secure Send source: administrator only, end to end. */
+    public function testSecureSendSourceIsAdministratorOnly(): void
+    {
+        $page = file_get_contents(__DIR__ . '/../../app/pages/utilities.logs.php');
+        self::assertStringContainsString('$secureSendLogsVisible = $isAdmin === true;', $page);
+        self::assertStringContainsString("(\$secureSendLogsVisible === true ? ['secure_send' =>", $page);
+        self::assertStringContainsString('data-source="secure_send"', $page);
+        self::assertStringContainsString('data-facet="events"', $page);
+
+        $dataTable = file_get_contents(__DIR__ . '/../../app/sources/logs.datatables.php');
+        $gate = strpos($dataTable, "if (\$filters['source'] === 'secure_send' && (int) (\$session->get('user-admin') ?? 0) !== 1) {");
+        self::assertIsInt($gate);
+        self::assertLessThan(strpos($dataTable, 'buildSecureSendLogFilter('), $gate);
+        // The journal outlives accounts and items.
+        self::assertStringContainsString("LEFT JOIN ' . prefixTable('users') . ' AS u ON (a.originator = u.id)", $dataTable);
+        self::assertStringContainsString("LEFT JOIN ' . prefixTable('items') . ' AS i ON (a.item_id = i.id)", $dataTable);
+
+        $javascript = file_get_contents(__DIR__ . '/../../app/pages/utilities.logs.js.php');
+        self::assertStringContainsString("const secureSend = logFilters.source === 'secure_send'", $javascript);
+        self::assertStringContainsString('row.secure_send === true', $javascript);
+    }
+
     /** Source assertions check wiring; the helpers' behavior is tested directly. */
     public function testHandlersUseTheTestedFilteringHelpers(): void
     {

@@ -1087,6 +1087,23 @@ prove sender abuse. The card does not impose quotas, block users, export raw log
 or add a Reports consumer or manual audit-purge interface; review unusual activity in
 its operational context.
 
+### Event log
+
+Administrators can read the journal itself in **Monitoring → Logs**: open the filter
+panel and choose the **Secure Send** source. Each row shows when the event was recorded,
+the event and its reason (for example *Invalidated (item deleted or no longer readable by
+the sender)*), the sender, the item (or *Secure note*), the link number and the link
+policy: views used and allowed, passphrase, public address, failed attempts and expiry.
+Filter by event, date range and sender (the **User** filter); the search box matches the
+item label, the sender and a link number such as `#123`. Events of deleted accounts and
+items stay listed. The source is reserved to administrators, even where managers can open
+the Logs page, and stays available while Secure Send is disabled. The journal is not
+purged from this page: use the audit retention below.
+
+In the **Items** source, a consultation recorded under the One-Time View account is
+labelled **Viewed through Secure Send**: the recipient of a link opened the item. The
+**Action** filter selects these views on their own, and **Shown** no longer includes them.
+
 ### Audit retention
 
 From Teampass 3.2.3.0, after completing the upgrade, administrators can set **Secure Send audit
@@ -1328,8 +1345,32 @@ once the link is gone and its task has ended or been purged. The separate lifecy
 audit journal keeps its configured retention. Downgrading requires compatible
 code/database backups and draining or cancelling pending email tasks first.
 
+## API clients
+
+The browser extension, paired mobile devices and API scripts can create item links
+through `POST /api/v1/secureSend/create`. They are off by default, on new and on
+upgraded instances: enable **Allow Secure Send from API clients** in **Settings → API**
+after **User can propose One-Time-View links**. Device tokens and personal access
+tokens make link creation reachable outside a web session, so enabling Secure Send
+for the web never enables it for these clients.
+
+An API client creates the same links as the web interface, through the same code. Every
+policy of this page applies unchanged: maximum validity and views, required passphrase,
+public sharing address, TOTP rules, email invitations and their quota, current item access
+at creation and at every reveal. The user also needs API access with the **read** right.
+Creations appear in the audit journal and in the statistics as `created` events of the
+sender, like web creations; the journal does not record which channel was used.
+
+This version only sends items: notes stay a web feature, and API clients cannot list or
+revoke links. Users revoke them from **My secure sends** in the web interface.
+
+Turning the setting off refuses new API creations at once. Links already created stay
+valid until they expire or are revoked. The endpoints and the rules clients must follow
+are described in [Secure Send through the API](../api/secure-send.md).
+
 ## References
 
+- [Secure Send through the API](../api/secure-send.md)
 - [Teampass 3.2.2.6 release](https://github.com/nilsteampassnet/TeamPass/releases/tag/3.2.2.6)
 - [Teampass item and Secure Send behaviour](../features/items.md#secure-send)
 - [Public sharing address](../manage/settings.md#public-sharing-address)

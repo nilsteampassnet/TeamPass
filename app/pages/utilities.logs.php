@@ -87,6 +87,9 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 // logs page itself is also granted to managers.
 $isAdmin = $session->has('user-admin') && (int) $session->get('user-admin') === 1;
 $kbEnabled = isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_kb'] === 1 && $isAdmin === true;
+// The Secure Send journal is administrator only too, and stays readable when the feature is off:
+// its history does not disappear with it.
+$secureSendLogsVisible = $isAdmin === true;
 
 // The facet panel is rendered once and its groups are shown or hidden by the selected source.
 // Same pattern as the search page's feature gates, driven by the source instead of a setting.
@@ -105,6 +108,11 @@ foreach (logsAllowedItemActions() as $logAction) {
 }
 $logSortedTypes = logsSortByLabel(array_keys($logTypeLabels), $logTypeLabels);
 $logSortedActions = logsSortByLabel(logsAllowedItemActions(), $logActionLabels);
+$logEventLabels = [];
+foreach (logsAllowedSecureSendEvents() as $logEvent) {
+    $logEventLabels[$logEvent] = (string) $lang->get('logs_secure_send_event_' . $logEvent);
+}
+$logSortedEvents = logsSortByLabel(array_keys($logEventLabels), $logEventLabels);
 
 
 ?>
@@ -209,7 +217,7 @@ $logSortedActions = logsSortByLabel(logsAllowedItemActions(), $logActionLabels);
                                      so two sources at once would have no table to render into. -->
                                 <div class="logs-facet-group">
                                     <h6 class="text-muted text-uppercase small mb-2"><?php echo $lang->get('logs_source'); ?></h6>
-                                    <?php foreach (['system' => $lang->get('logs_source_system'), 'items' => $lang->get('logs_source_items')] + ($kbEnabled === true ? ['kb' => $lang->get('logs_source_kb')] : []) as $value => $label) : ?>
+                                    <?php foreach (['system' => $lang->get('logs_source_system'), 'items' => $lang->get('logs_source_items')] + ($kbEnabled === true ? ['kb' => $lang->get('logs_source_kb')] : []) + ($secureSendLogsVisible === true ? ['secure_send' => $lang->get('logs_source_secure_send')] : []) as $value => $label) : ?>
                                         <div class="custom-control custom-radio">
                                             <input type="radio" name="logs-source" class="custom-control-input logs-source"
                                                 id="logs-source-<?php echo $value; ?>" value="<?php echo $value; ?>"
@@ -246,6 +254,20 @@ $logSortedActions = logsSortByLabel(logsAllowedItemActions(), $logActionLabels);
                                         </div>
                                     <?php endforeach; ?>
                                 </div>
+
+                                <!-- Event: Secure Send journal only -->
+                                <?php if ($secureSendLogsVisible === true) : ?>
+                                <div class="logs-facet-group mt-3" data-source="secure_send">
+                                    <h6 class="text-muted text-uppercase small mb-2"><?php echo $lang->get('logs_facet_event'); ?></h6>
+                                    <?php foreach ($logSortedEvents as $value) : ?>
+                                        <div class="custom-control custom-checkbox">
+                                            <input type="checkbox" class="custom-control-input logs-facet" data-facet="events"
+                                                id="logs-event-<?php echo $value; ?>" value="<?php echo $value; ?>">
+                                            <label class="custom-control-label" for="logs-event-<?php echo $value; ?>"><?php echo $logEventLabels[$value]; ?></label>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                                <?php endif; ?>
 
                                 <!-- Dates -->
                                 <div class="logs-facet-group mt-3">
@@ -309,6 +331,8 @@ $logSortedActions = logsSortByLabel(logsAllowedItemActions(), $logActionLabels);
                             <div id="logs-purge-footer" class="card-footer">
                                 <h5><i class="fas fa-broom mr-2"></i><?php echo $lang->get('logs_purge_title'); ?></h5>
                                 <p class="text-muted mb-2" id="logs-purge-help"><?php echo $lang->get('logs_purge_help_filtered'); ?></p>
+                                <!-- The Secure Send journal has its own retention: no purge from here. -->
+                                <p class="text-muted mb-2 hidden" id="logs-purge-secure-send"><?php echo $lang->get('logs_purge_secure_send_retention'); ?></p>
 
                                 <!-- What the purge will delete, stated from the active filters, so the
                                      scope announced is the scope applied. -->

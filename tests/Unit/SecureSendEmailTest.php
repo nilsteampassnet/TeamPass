@@ -387,7 +387,7 @@ final class SecureSendEmailTest extends TestCase
     /** Run the real creation handler after its existing page/session authorization gate. */
     private function dispatch(array $payload, string $key = 'session-key'): array
     {
-        require_once __DIR__ . '/../../app/sources/secure_send_input.php';
+        require_once __DIR__ . '/../../app/sources/secure_send_create.php';
         $source = file_get_contents(__DIR__ . '/../../app/sources/items.queries.php');
         $start = strpos($source, "case 'generate_OTV_url':");
         $end = strpos($source, "case 'count_secure_sends':", $start);
@@ -425,6 +425,20 @@ final class SecureSendEmailTest extends TestCase
         self::assertSame([['error' => 'key_not_conform']], $this->dispatch($payload, 'wrong-key'));
         self::assertSame(0, DB::$connection->querySingle('SELECT COUNT(*) FROM email_test_otv'));
         self::assertSame(0, DB::$connection->querySingle('SELECT COUNT(*) FROM email_test_background_tasks'));
+    }
+
+    /** The shared orchestrator forwards the per-sender quota refusal without creating the eleventh link. */
+    public function testHandlerReportsTheInvitationQuotaWithoutCreatingTheLink(): void
+    {
+        $payload = ['send_type' => 'note', 'payload' => ['note' => 'test'], 'recipient_email' => 'recipient@example.test'];
+        for ($i = 0; $i < 10; ++$i) {
+            self::assertTrue($this->dispatch($payload)['email_queued']);
+        }
+        self::assertSame(['error' => 'email_rate_limited'], $this->dispatch($payload));
+        self::assertSame(10, DB::$connection->querySingle('SELECT COUNT(*) FROM email_test_otv'));
+        self::assertSame(10, DB::$connection->querySingle('SELECT COUNT(*) FROM email_test_secure_send_audit'));
+        $this->settings['email_smtp_server'] = '';
+        self::assertSame(['error' => 'email_not_configured'], $this->dispatch(['recipient_email' => 'other@example.test'] + $payload));
     }
 
     public function testClipboardSharingDoesNotRequireEmailConfigurationOrUseTheEmailQuota(): void

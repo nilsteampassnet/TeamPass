@@ -104,6 +104,8 @@ try {
     $revision = (string) DB::queryFirstField('SELECT valeur FROM ' . prefixTable('misc') . ' WHERE intitule = %s', 'email_config_revision');
     emailTokenExpect(DB::queryFirstField('SELECT valeur FROM ' . prefixTable('misc') . ' WHERE intitule = %s', 'secure_send_allow_email') === '0', 'Email invitations enabled without opt-in');
     DB::update(prefixTable('misc'), ['valeur' => '1'], 'intitule=%s', 'secure_send_allow_email');
+    emailTokenExpect(DB::queryFirstField('SELECT valeur FROM ' . prefixTable('misc') . ' WHERE intitule = %s', 'secure_send_api_enabled') === '0', 'Secure Send for API clients enabled without opt-in');
+    DB::update(prefixTable('misc'), ['valeur' => '1'], 'intitule=%s', 'secure_send_api_enabled');
     emailTokenExpect(preg_match('/\A[a-f0-9]{32}\z/', $revision) === 1, 'Missing configuration revision');
     emailTokenExpect($freshColumns === DB::query('SHOW COLUMNS FROM ' . prefixTable('email_oauth_state')), 'Fresh and upgrade schemas differ');
     emailTokenExpect($freshQueueColumns === DB::query('SHOW COLUMNS FROM ' . prefixTable('background_tasks')), 'Fresh and upgrade queue schemas differ');
@@ -113,6 +115,7 @@ try {
     emailTokenRunMigration($root, $host, $user, $password, $database, $port, $prefix);
     emailTokenExpect((int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('secure_send_email')) === 1, 'Replay removed a sharing delivery reservation');
     emailTokenExpect(DB::queryFirstField('SELECT valeur FROM ' . prefixTable('misc') . ' WHERE intitule = %s', 'secure_send_allow_email') === '1', 'Replay changed administrator email opt-in');
+    emailTokenExpect(DB::queryFirstField('SELECT valeur FROM ' . prefixTable('misc') . ' WHERE intitule = %s', 'secure_send_api_enabled') === '1', 'Replay changed the Secure Send API opt-in');
     emailTokenExpect($revision === DB::queryFirstField('SELECT valeur FROM ' . prefixTable('misc') . ' WHERE intitule = %s', 'email_config_revision'), 'Replay changed the revision');
     emailTokenExpect($freshIdentityShape === $oauth2IdentityShape(), 'Replay changed the OAuth2 identity schema');
     emailTokenExpect($linkSetting() === '0', 'Replay overrode the account linking choice');

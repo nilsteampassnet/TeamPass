@@ -258,17 +258,41 @@ if (isset($params['action']) && $params['action'] === 'logs') {
         exit;
     }
 
+    // The Secure Send journal is read by administrator-only consumers, like its statistics card,
+    // while this page is also granted to managers.
+    if ($filters['source'] === 'secure_send' && (int) ($session->get('user-admin') ?? 0) !== 1) {
+        http_response_code(403);
+        echo (string) json_encode(
+            [
+                'draw' => (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => $lang->get('error_not_allowed_to'),
+            ],
+            JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+        );
+        exit;
+    }
+
     $visibleColumns = logsVisibleColumns($filters['source'], $filters['types']);
-    $sortableColumns = $filters['source'] === 'items'
-        ? [
+    if ($filters['source'] === 'items') {
+        $sortableColumns = [
             'date' => 'l.date', 'id' => 'i.id', 'label' => 'i.label', 'folder' => 't.title',
             'user' => 'u.login', 'action' => 'l.action', 'api' => 'l.raison', 'personal' => 't.personal_folder',
-        ]
-        : [
+        ];
+    } elseif ($filters['source'] === 'secure_send') {
+        $sortableColumns = [
+            'date' => 'a.occurred_at', 'event' => 'a.event', 'user' => 'u.login', 'item' => 'i.label',
+            'send' => 'a.send_id', 'policy' => 'a.occurred_at',
+        ];
+    } else {
+        $sortableColumns = [
             'date' => 'l.date', 'type' => 'l.type', 'label' => 'l.label', 'user' => 'u.login',
             'source' => 'l.field_1', 'ip' => 'l.qui', 'channel' => 'l.label',
             'target' => 'l.field_1', 'actions' => 'l.date',
         ];
+    }
 
     // The ordering index addresses the columns the client was told to display, so it is resolved
     // against that same list rather than against a second one that could drift from it.
@@ -293,7 +317,7 @@ if (isset($params['action']) && $params['action'] === 'logs') {
         );
 
         $rows = DB::query(
-            'SELECT l.date AS date, l.action AS action, l.raison AS raison,
+            'SELECT l.date AS date, l.action AS action, l.raison AS raison, l.id_user AS id_user,
                 i.id AS id, i.label AS label, t.title AS folder, t.personal_folder AS personal_folder,
                 u.login AS login, u.name AS name, u.lastname AS lastname
             FROM ' . $from . ' WHERE %l ORDER BY %l %l LIMIT %i, %i',
@@ -319,8 +343,65 @@ if (isset($params['action']) && $params['action'] === 'logs') {
                 // The action code travels as-is: the client owns its translation, so no markup
                 // and no already-escaped sentence transits through the JSON payload.
                 'action' => (string) $record['action'],
+                // Only the One-Time View account writes this view: the recipient of a Secure Send link.
+                'secure_send' => (string) $record['action'] === 'at_shown' && (int) $record['id_user'] === logsOtvUserId(),
                 'api' => strpos((string) ($record['raison'] ?? ''), 'tp_src=api') !== false,
                 'personal' => (int) ($record['personal_folder'] ?? 0) === 1,
+            ];
+        }
+    } elseif ($filters['source'] === 'secure_send') {
+        $sWhere = buildSecureSendLogFilter($filters);
+
+        // LEFT JOINs: the journal outlives accounts and items, and its rows must stay readable.
+        $from = prefixTable('secure_send_audit') . ' AS a
+            LEFT JOIN ' . prefixTable('users') . ' AS u ON (a.originator = u.id)
+            LEFT JOIN ' . prefixTable('items') . ' AS i ON (a.item_id = i.id)';
+
+        $iTotal = (int) DB::queryFirstField(
+            'SELECT COUNT(*) FROM ' . $from . ' WHERE %l',
+            $sWhere
+        );
+
+        $rows = DB::query(
+            'SELECT a.id AS id, a.occurred_at AS occurred_at, a.event AS event, a.reason AS reason,
+                a.send_id AS send_id, a.originator AS originator, a.item_id AS item_id, a.send_type AS send_type,
+                a.has_passphrase AS has_passphrase, a.is_public AS is_public, a.max_views AS max_views,
+                a.views AS views, a.failed_attempts AS failed_attempts, a.expires_at AS expires_at,
+                u.login AS login, u.name AS name, u.lastname AS lastname, i.label AS item_label
+            FROM ' . $from . ' WHERE %l ORDER BY %l %l, a.id %l LIMIT %i, %i',
+            $sWhere,
+            $orderColumn,
+            $orderDirection,
+            $orderDirection,
+            $sLimitStart,
+            $sLimitLength
+        );
+
+        $dateFormat = $SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'];
+        foreach ($rows as $record) {
+            $fullname = trim(
+                normalizeLogDisplayValue($record['name'] ?? '') . ' ' .
+                normalizeLogDisplayValue($record['lastname'] ?? '')
+            );
+            $data[] = [
+                'date' => date($dateFormat, (int) $record['occurred_at']),
+                // Codes, translated by the client like the item actions.
+                'event' => (string) $record['event'],
+                'reason' => (string) $record['reason'],
+                // An empty user means the account no longer exists; originator says which one was.
+                'user' => $record['login'] === null ? '' : ($fullname !== '' ? $fullname . ' ' : '')
+                    . '[' . normalizeLogDisplayValue(trim((string) $record['login'])) . ']',
+                'originator' => (int) $record['originator'],
+                'send_type' => (string) $record['send_type'],
+                'item' => $record['item_label'] === null ? '' : normalizeLogDisplayValue(trim((string) $record['item_label'])),
+                'item_id' => $record['item_id'] === null ? null : (int) $record['item_id'],
+                'send' => (int) $record['send_id'],
+                'has_passphrase' => (int) $record['has_passphrase'] === 1,
+                'is_public' => (int) $record['is_public'] === 1,
+                'views' => (int) $record['views'],
+                'max_views' => (int) $record['max_views'],
+                'failed_attempts' => (int) $record['failed_attempts'],
+                'expires_at' => (int) $record['expires_at'] > 0 ? date($dateFormat, (int) $record['expires_at']) : '',
             ];
         }
     } else {

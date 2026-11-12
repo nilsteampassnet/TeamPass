@@ -96,8 +96,10 @@ class BaseController
      * @param int    $status       HTTP status code
      * @param string $detail       Human-readable explanation of the error
      * @param array  $extraHeaders Additional headers (e.g. 'Allow: GET' on 405)
+     * @param array  $extraMembers Extension members (RFC 9457 §3.2, e.g. a machine-readable 'reason');
+     *                             they never override the standard members
      */
-    protected function sendProblem(int $status, string $detail, array $extraHeaders = []): void
+    protected function sendProblem(int $status, string $detail, array $extraHeaders = [], array $extraMembers = []): void
     {
         $this->sendOutput(
             json_encode([
@@ -106,7 +108,7 @@ class BaseController
                 'status' => $status,
                 'detail' => $detail,
                 'error' => $detail,
-            ]),
+            ] + $extraMembers),
             array_merge(
                 ['Content-Type: application/problem+json; charset=UTF-8', $this->statusLine($status)],
                 $extraHeaders

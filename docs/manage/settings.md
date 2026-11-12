@@ -157,6 +157,7 @@ Options governing the REST API and the clients built on it (browser extension, m
 
 | Option | Description |
 |--------|-------------|
+| **Allow Secure Send from API clients** (`secure_send_api_enabled`) | Lets the browser extension, paired mobile devices and API scripts create Secure Send links for items the user can read, under the same policy as the web interface. Also requires **User can propose One-Time-View links**. Default: off. See [Secure Send through the API](../api/secure-send.md) |
 | **Offline synchronization window (days)** (`offline_sync_window_days`) | How long a mobile device may stay offline and still catch up incrementally when it reconnects. Beyond this delay the device rebuilds its local cache instead. Default: 90. Set to 0 for no limit |
 | **Allow the browser extension to save passkeys** (`webauthn_provider_enabled`) | *Browser Extension* tab. Lets the extension keep the passkeys of third-party sites in items and sign in with them. Default: off. See [Passkeys](../features/passkeys.md) |
 | **Notify users when a passkey is saved** (`webauthn_email_on_add`) | *Browser Extension* tab. Emails the user who saved a passkey. Default: on |

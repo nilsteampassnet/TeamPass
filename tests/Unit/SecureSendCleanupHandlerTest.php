@@ -49,6 +49,7 @@ class SecureSendCleanupHandlerTest extends TestCase
         require_once __DIR__ . '/../../app/sources/secure_send_storage.php';
         require_once __DIR__ . '/../../app/sources/secure_send_active.php';
         require_once __DIR__ . '/../../app/sources/secure_send_email.php';
+        require_once __DIR__ . '/../../app/sources/secure_send_create.php';
         DB::reset();
         $this->log = tempnam(sys_get_temp_dir(), 'tp-cleanup-handler-');
         $this->previousLog = (string) ini_get('error_log');
@@ -61,7 +62,24 @@ class SecureSendCleanupHandlerTest extends TestCase
         unlink($this->log);
     }
 
-    /** Execute the production handler tail after authorization and input validation. */
+    private const SETTINGS = ['otv_is_enabled' => 1, 'secure_send_allow_notes' => 1,
+        'cpassman_url' => 'https://vault.example.com', 'date_format' => 'Y-m-d', 'time_format' => 'H:i'];
+
+    /** Create a note through the production orchestrator shared by the web handler and the API. */
+    private function create(): array
+    {
+        try {
+            return ['error' => ''] + secureSendCreateLink(
+                ['send_type' => 'note', 'payload' => ['secret' => 'new-secret']],
+                ['id' => 42, 'private_key' => '', 'public_key' => '', 'read_only' => false],
+                self::SETTINGS
+            );
+        } catch (SecureSendCreateRefusal $e) {
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /** Execute the production listing handler tail after authorization. */
     private function dispatch(string $action): array
     {
         $source = (string) file_get_contents(__DIR__ . '/../../app/sources/items.queries.php');
@@ -70,29 +88,20 @@ class SecureSendCleanupHandlerTest extends TestCase
         $next = strpos($source, "\n    case '", $case + 1);
         self::assertIsInt($next);
         $handler = substr($source, $case, $next - $case);
-        // Keep the actual try/catch, encryption/storage or listing, and response.
-        // Only the preceding authorization/input setup is outside this fixture.
+        // Keep the actual try/catch, listing and response.
+        // Only the preceding authorization setup is outside this fixture.
         $purge = strpos($handler, 'secureSendPurgeExpiredLinks(');
         self::assertIsInt($purge);
         $cleanup = strrpos(substr($handler, 0, $purge), '        try {');
         self::assertIsInt($cleanup);
         $handler = substr($handler, $cleanup);
-        $SETTINGS = ['otv_is_enabled' => 1, 'secure_send_allow_notes' => 1,
-            'cpassman_url' => 'https://vault.example.com', 'date_format' => 'Y-m-d', 'time_format' => 'H:i'];
-        $secureSendRecipient = null;
+        $SETTINGS = self::SETTINGS;
         $session = new class {
             public function get(string $key): int { return 42; }
         };
         $lang = new class {
             public function get(string $key): string { return $key; }
         };
-        $dataReceived = [];
-        $secureSendPlaintext = json_encode(['secret' => 'new-secret']);
-        $secureSendPassphrase = '';
-        $secureSendLimits = ['time_limit' => time() + 3600, 'views' => 1];
-        $secureSendType = 'note';
-        $secureSendItemId = null;
-        $secureSendDescriptionTruncated = false;
         ob_start();
         try {
             eval('switch (true) { case true: ' . $handler . ' }');
@@ -105,7 +114,7 @@ class SecureSendCleanupHandlerTest extends TestCase
     public function testCleanupLockFailureDoesNotBlockAuditedCreation(): void
     {
         DB::$failCleanupQuery = true;
-        $response = $this->dispatch('generate_OTV_url');
+        $response = $this->create();
         self::assertSame('', $response['error']);
         self::assertArrayHasKey($response['otv_id'], DB::$links);
         self::assertSame(['created'], array_column(DB::$secureAudit, 'event'));
@@ -137,7 +146,7 @@ class SecureSendCleanupHandlerTest extends TestCase
         $expired = secureSendFixtureCreate(['send_type' => 'note']);
         DB::$links[$expired['otv_id']]['time_limit'] = time() - 1;
         DB::$links[$expired['otv_id']]['originator'] = 0;
-        $created = $this->dispatch('generate_OTV_url');
+        $created = $this->create();
         self::assertSame('', $created['error']);
         $listed = $this->dispatch('list_secure_sends');
         self::assertSame('', $listed['error']);
@@ -151,7 +160,7 @@ class SecureSendCleanupHandlerTest extends TestCase
     public function testIgnoredCleanupFailureDoesNotAllowUnauditedCreation(): void
     {
         DB::$failCleanupQuery = DB::$failSecureAudit = true;
-        self::assertSame(['error' => 'server_error'], $this->dispatch('generate_OTV_url'));
+        self::assertSame(['error' => 'server_error'], $this->create());
         self::assertSame([], DB::$links);
         self::assertSame([], DB::$secureAudit);
         self::assertFalse(DB::inTransaction());

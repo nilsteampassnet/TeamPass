@@ -154,6 +154,49 @@ function checkWebauthnCRUDRights(array $userData, string $actionToPerform): bool
     return false;
 }
 
+/**
+ * Launch expected action for SECURE SEND.
+ *
+ * The feature gate lives in the controller so that the policy can answer enabled:false.
+ *
+ * @param array $actions
+ * @param array $userData
+ * @return void
+ */
+function secureSendAction(array $actions, array $userData): void
+{
+    if (checkSecureSendCRUDRights($userData, (string) ($actions[0] ?? '')) === false) {
+        errorHdl(
+            'HTTP/1.1 403 Forbidden',
+            json_encode(['error' => 'Access denied: insufficient permissions for this action'])
+        );
+        return;
+    }
+
+    require API_ROOT_PATH . "/Controller/Api/SecureSendController.php";
+    $objFeedController = new SecureSendController();
+    $strMethodName = $actions[0] . 'Action';
+    $objFeedController->{$strMethodName}($userData);
+}
+
+/**
+ * Map a Secure Send action to the API right it needs.
+ *
+ * A link discloses what item/get already returns to the same caller, hence the read right.
+ *
+ * @param array  $userData
+ * @param string $actionToPerform
+ * @return bool
+ */
+function checkSecureSendCRUDRights(array $userData, string $actionToPerform): bool
+{
+    if (in_array($actionToPerform, ['policy', 'create'], true) === true) {
+        return (int) ($userData['allowed_to_read'] ?? 0) === 1;
+    }
+
+    return false;
+}
+
 function checkUSerCRUDRights($userData, $actionToPerform): bool
 {
     if ($actionToPerform === 'create' && $userData['allowed_to_create'] === 1) {

@@ -206,6 +206,18 @@ function getDomainFromSettingsUrl(string $url): string
                             </div>
                         </div>
 
+                        <div class='row mb-2'>
+                            <div class='col-10'>
+                                <?php echo htmlspecialchars($lang->get('secure_send_api_enabled'), ENT_QUOTES, 'UTF-8'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo htmlspecialchars($lang->get('secure_send_api_enabled_tip'), ENT_QUOTES, 'UTF-8'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='secure_send_api_enabled' data-toggle-on='<?php echo (int) ($SETTINGS['secure_send_api_enabled'] ?? 0) === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='secure_send_api_enabled_input' value='<?php echo (int) ($SETTINGS['secure_send_api_enabled'] ?? 0) === 1 ? '1' : '0'; ?>' />
+                            </div>
+                        </div>
+
                         <div class='row mb-3'>
                             <div class='col-10'>
                                 <?php echo $lang->get('settings_api_rate_limit'); ?>
