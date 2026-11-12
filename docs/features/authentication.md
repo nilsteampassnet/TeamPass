@@ -247,6 +247,11 @@ provider. Somebody who holds the same username at the provider is refused.
   *Users* → *OAuth2 synchronization*. While LDAP authentication is enabled, an LDAP account is
   checked against the directory first and cannot be converted.
 
+SSO never signs in to the built-in `admin` account or to the internal accounts (`TP`, `OTV`, `SSH`,
+`API`). Logins are compared without regard to case or accents, so a provider user named
+`Admin@contoso.com` or `api@contoso.com` locates one of them: the sign-in is refused with *User is
+not allowed to authenticate with Teampass application* and logged in the failed authentications.
+
 A refused sign-in shows one of these messages, also written to the failed authentications of the
 `Logs` page:
 
