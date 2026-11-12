@@ -333,6 +333,8 @@ return [
         'subject_prefix' => '',
         'body_key' => 'secure_send_email_body',
         'tokens' => ['#link#', '#expires#', '#sender#', '#sender_prefix#'],
+        // secureSendEmailMessage() also substitutes the sender in the subject
+        'subject_tokens' => ['#sender#', '#sender_prefix#'],
         'required_tokens' => ['#link#', '#expires#'],
         'label' => 'secure_send_email_template',
         'description' => 'secure_send_email_template_desc',

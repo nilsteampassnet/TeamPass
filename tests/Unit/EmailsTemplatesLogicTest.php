@@ -201,6 +201,35 @@ class EmailsTemplatesLogicTest extends TestCase
         }
     }
 
+    public function testSubjectPreviewLeavesNoTokenBehind(): void
+    {
+        // A token the sender substitutes in the subject must be declared in subject_tokens,
+        // otherwise the preview and the test email show it as literal text.
+        $root = dirname(__DIR__, 2);
+        $catalog = require $root . '/app/config/emails_templates.php';
+        $english = require $root . '/app/includes/language/english.php';
+        $samples = emailsTemplatesSampleValues([]);
+
+        foreach ($catalog as $id => $template) {
+            if (empty($template['subject_key']) === true) {
+                continue;
+            }
+            $rendered = emailsTemplatesRenderPreview(
+                $english[$template['subject_key']],
+                $template['subject_tokens'] ?? [],
+                $samples
+            );
+
+            foreach (array_merge($template['tokens'], $template['subject_tokens'] ?? []) as $token) {
+                $this->assertStringNotContainsString(
+                    $token,
+                    $rendered,
+                    sprintf('Template "%s": token "%s" survived the subject preview', $id, $token)
+                );
+            }
+        }
+    }
+
     public function testPreviewReplacesTheLongestTokenFirst(): void
     {
         // A short marker that is the prefix of a longer one must not consume it.
