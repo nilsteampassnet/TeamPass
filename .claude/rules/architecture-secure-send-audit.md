@@ -23,6 +23,12 @@ Governance/Reports can later consume the journal through their existing
 administrator-only, feature-gated handlers. No raw journal read, export or purge
 endpoint is added, and no access to another user's item contents is granted.
 
+Link creation has a single implementation, the session-free `secureSendCreateLink()`
+(`secure_send_create.php`), shared by the web `generate_OTV_url` handler and the REST
+`POST /api/v1/secureSend/create` (`api-reference.md`). Both therefore write the same
+`created` event with the sender as actor; the journal does not record the channel. Its
+refusals are `SecureSendCreateRefusal::CODES`, which the API maps to HTTP statuses.
+
 ## Data contract
 
 The append-only lifecycle rows (until administrator-configured retention) contain only:

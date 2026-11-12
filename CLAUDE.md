@@ -243,7 +243,10 @@ rows are retained and excluded before the batch limit rather than deleted unaudi
 happens only after commit.** **Rule: never copy a link row into the journal — use
 the `secureSendAuditRecord()` metadata allowlist; never log payloads or credentials.**
 The feature migration belongs to `public/install/upgrade_run_3.2.3.php`, not the
-maintained 3.2.2.x hotfix line.
+maintained 3.2.2.x hotfix line. **Rule: create links only through `secureSendCreateLink()`**
+(`app/sources/secure_send_create.php`) — the web handler and `POST /api/v1/secureSend/create`
+share it; a new refusal code must be added to `SecureSendCreateRefusal::CODES` and mapped in
+`secureSendApiRefusalStatuses()`.
 
 ## API
 

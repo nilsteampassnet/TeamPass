@@ -1328,8 +1328,32 @@ once the link is gone and its task has ended or been purged. The separate lifecy
 audit journal keeps its configured retention. Downgrading requires compatible
 code/database backups and draining or cancelling pending email tasks first.
 
+## API clients
+
+The browser extension, paired mobile devices and API scripts can create item links
+through `POST /api/v1/secureSend/create`. They are off by default, on new and on
+upgraded instances: enable **Allow Secure Send from API clients** in **Settings → API**
+after **User can propose One-Time-View links**. Device tokens and personal access
+tokens make link creation reachable outside a web session, so enabling Secure Send
+for the web never enables it for these clients.
+
+An API client creates the same links as the web interface, through the same code. Every
+policy of this page applies unchanged: maximum validity and views, required passphrase,
+public sharing address, TOTP rules, email invitations and their quota, current item access
+at creation and at every reveal. The user also needs API access with the **read** right.
+Creations appear in the audit journal and in the statistics as `created` events of the
+sender, like web creations; the journal does not record which channel was used.
+
+This version only sends items: notes stay a web feature, and API clients cannot list or
+revoke links. Users revoke them from **My secure sends** in the web interface.
+
+Turning the setting off refuses new API creations at once. Links already created stay
+valid until they expire or are revoked. The endpoints and the rules clients must follow
+are described in [Secure Send through the API](../api/secure-send.md).
+
 ## References
 
+- [Secure Send through the API](../api/secure-send.md)
 - [Teampass 3.2.2.6 release](https://github.com/nilsteampassnet/TeamPass/releases/tag/3.2.2.6)
 - [Teampass item and Secure Send behaviour](../features/items.md#secure-send)
 - [Public sharing address](../manage/settings.md#public-sharing-address)

@@ -55,6 +55,7 @@
 - [Network ACL](manage/network-acl.md)
 - **API**
 - [Introduction](api/api-basic.md)
+- [Secure Send](api/secure-send.md)
 - **Help**
 - [Tips](misc/tips.md)
 - [Accessibility](misc/accessibility.md)

@@ -43,7 +43,7 @@ All error responses use `Content-Type: application/problem+json`:
 { "type": "about:blank", "title": "Bad Request", "status": 400, "detail": "<message>", "error": "<message>" }
 ```
 
-The legacy `error` member duplicates `detail` and is kept for backward compatibility (browser extension, scripts) for one major version. Status lines use standard reason phrases only. `405` responses carry an `Allow:` header listing the supported methods. Empty collections return `200` + `[]` (never a 204 with a body). Exposed headers for browser clients: `Access-Control-Expose-Headers: X-Api-Version, X-Total-Count, Location, Allow`.
+The legacy `error` member duplicates `detail` and is kept for backward compatibility (browser extension, scripts) for one major version. Extension members go through the 4th parameter of `BaseController::sendProblem()` (`$extraMembers`), which can never override the standard ones — the Secure Send endpoints use it for their `reason` code. Status lines use standard reason phrases only. `405` responses carry an `Allow:` header listing the supported methods. Empty collections return `200` + `[]` (never a 204 with a body). Exposed headers for browser clients: `Access-Control-Expose-Headers: X-Api-Version, X-Total-Count, Location, Allow`.
 
 ---
 
@@ -141,9 +141,9 @@ Every `/authorize*` call inserts a row in `teampass_api_sessions` keyed by the J
 - Standard claims: `iss` (instance `cpassman_url`), `aud` (`teampass-api`), `iat`, `nbf`, `jti` (random 128-bit). `iss`/`aud` are validated only when present so pre-3.2.1 tokens keep working until expiry. Decode leeway: 60s.
 - Key claims: `id`, `username`, `exp`, `key_tempo`, `is_admin`, `is_manager`, `allowed_to_create`, `allowed_to_read`, `allowed_to_update`, `allowed_to_delete`, `folders_list`
 
-**Per-request revalidation:** `api/index.php` re-reads `disabled`/`deleted_at`/`api.enabled` and overrides `is_admin`, `is_manager` and the 4 CRUD claims from the DB on every request — disabling a user or revoking API rights takes effect immediately, not at token expiry.
+**Per-request revalidation:** `api/index.php` re-reads `disabled`/`deleted_at`/`api.enabled` and overrides `is_admin`, `is_manager` and the 4 CRUD claims from the DB on every request — disabling a user or revoking API rights takes effect immediately, not at token expiry. It also sets `is_read_only` from `users.read_only`, which is **not** a JWT claim; a consumer must treat a missing value as read-only (fail closed).
 
-**Private key architecture:** User private key is encrypted with a per-session AES-256-GCM key (`session_aes_key`) stored server-side in `teampass_api`. The JWT carries only `key_tempo` (a reference). A stolen JWT alone cannot decrypt the private key.
+**Private key architecture:** User private key is encrypted with a per-session AES-256-GCM key (`session_aes_key`) stored server-side in the token's `teampass_api_sessions` row (legacy tokens without a row: the single-row `teampass_api`). The JWT carries only `key_tempo` (a reference) and `jti`. A stolen JWT alone cannot decrypt the private key. Read the key pair with `get_user_keys($userId, $keyTempo, $jti)`.
 
 **No refresh token.** Re-authenticate via `/authorize` when expired.
 
@@ -507,6 +507,63 @@ The key is `extension_url` (value = `cpassman_url`) — the doc previously named
 
 ---
 
+## Secure Send Endpoints
+
+> Client contract: `docs/api/secure-send.md`. Lifecycle/audit: `architecture-secure-send-audit.md`.
+> Design: `workReadmeFiles/secure-send-api-plan.md`.
+
+`GET /api/v1/secureSend/policy` and `POST /api/v1/secureSend/create` — controller
+`SecureSendController`, decisions in the DB-free `app/sources/secure_send_api_logic.php`,
+creation by `secureSendCreateLink()` (`app/sources/secure_send_create.php`), the orchestrator the
+web `generate_OTV_url` handler also uses.
+
+**Routing and rights:** `secureSendAction()` (`api/inc/bootstrap.php`) → `checkSecureSendCRUDRights()`:
+`policy` and `create` need `allowed_to_read` (a link discloses what `item/get` already returns);
+any other action → `403`. The feature gate is **inside** the controller —
+`secureSendApiEnabled()` = `otv_is_enabled` **and** `secure_send_api_enabled` (Settings → API,
+default `0` on install and upgrade) — so `policy` always answers `200` with `enabled: false`
+instead of an error, and `create` answers `503` `secure_send_disabled`.
+
+**Rule: the API reaches link creation only through `secureSendCreateLink()`.** Never call
+`secureSendStoreLink()`, `cryption()` or the snapshot helpers from the controller: the orchestrator
+owns the policy checks, `secureSendReadItem()` (the access authority — it refuses administrators,
+inactive users, deleted items and item restrictions), the migration-aware decryption, the audit
+event and the email queue. The controller's pre-check (item `inactif = 0` and not deleted → `404`
+`not_found`; `FolderAccessModel::canAccessItemInFolder()` + `satisfiesItemRestriction()` → `403`
+`not_allowed`, same pattern as `item/getOtp`) only produces clearer statuses.
+
+**Rule: only item sends exist.** `secureSendApiCreateInput()` forces `send_type = 'item'` and
+refuses unknown members (`400`), so notes stay unreachable. It normalizes `include_totp` /
+`public_address` (JSON bool or 0/1) to integers because `secureSendShouldIncludeTotp()` compares
+with `=== 1`. Notes, link inventory and revocation are deferred (plan §8).
+
+**Rule: the response URL is a bearer secret.** Every answer of `create`, refusals included, is sent
+with `Cache-Control: no-store` + `Pragma: no-cache`; the only log line carries the exception class.
+**No `Idempotency-Key`** (`400`): replaying would mean storing the URL in
+`api_idempotency.response_body`, which `architecture-api-idempotency.md` forbids. Query-string
+parameters and non-JSON bodies are refused (`400`).
+
+**Rule: TOTP inclusion keys on `is_read_only`,** re-read per request; the controller passes
+`read_only = true` when it is missing. `markApiFunctionalActivity()` runs only after a successful
+create — reading the policy is a settings refresh.
+
+**Errors:** problem+json + `reason`. `secureSendApiRefusalStatuses()` maps every
+`SecureSendCreateRefusal::CODES` entry plus the adapter's `not_found` and `secure_send_disabled`:
+`400` invalid_payload, invalid_email, empty_note · `403` not_allowed, email_not_allowed,
+notes_not_allowed · `404` not_found · `422` passphrase_required, cannot_decrypt (retryable while the
+sharekey fan-out runs), totp_unusable, email_requires_https · `429` email_rate_limited (10 per
+sender per rolling hour, no `Retry-After`) · `500` server_error · `503` secure_send_disabled,
+email_not_configured, invalid_public_url. **Rule: a new orchestrator code needs an entry in that
+map and in the OpenAPI `SecureSendProblem.reason` enum** — `tests/Unit/Api/SecureSendApiTest.php`
+fails otherwise. A response without `reason` comes from the API layer (401, 403 right missing, 405,
+429 rate limiter, 503 API disabled).
+
+**Policy fields are derived from `secureSendLimits()`**, never re-read from the settings, so the
+published bounds cannot drift from the enforced ones; `passphrase_max_bytes` (1024) is pinned to
+`secureSendValidateInput()` by the same test.
+
+---
+
 ## HTTP Status Codes
 
 | Code | Meaning in API context |
@@ -522,7 +579,7 @@ The key is `extension_url` (value = `cpassman_url`) — the doc previously named
 | 422 | Validation failed (password rules, invalid complexity/access_rights, personal→shared move combined with another update or with unrecoverable keys, current password not recoverable on a password update — retryable while the sharekey fan-out is still running) |
 | 429 | Rate limit exceeded (`api_rate_limit_per_minute`) — `Retry-After` header gives the wait in seconds |
 | 500 | Internal server error (details logged server-side, not returned to client) |
-| 503 | API disabled in TeamPass settings |
+| 503 | API disabled in TeamPass settings; Secure Send disabled for API clients or misconfigured (`reason` member) |
 
 ---
 
@@ -546,7 +603,7 @@ On HTTPS: `Strict-Transport-Security: max-age=31536000; includeSubDomains`.
 ## Security Architecture Notes
 
 1. **JWT secret** is stored in `teampass_misc` (key: `api_jwt_secret`, type: `admin`), lazily generated on first call. Rotation: delete or update the row + wait for existing tokens to expire.
-2. **User private key** never leaves the server unencrypted. The JWT carries only `key_tempo` (a reference). The server-side `session_aes_key` in `teampass_api` is required to decrypt the private key on each request.
+2. **User private key** never leaves the server unencrypted. The JWT carries only `key_tempo` (a reference). The server-side `session_aes_key` of the token's `teampass_api_sessions` row (legacy: `teampass_api`) is required to decrypt the private key on each request.
 3. **Sharekey decryption** uses `decryptUserObjectKeyWithMigration()` — transparently upgrades phpseclib v1 (SHA-1) sharekeys to v3 (SHA-256) on access.
 4. **Bruteforce** thresholds: `nb_bad_authentication` (default 10), `nb_bad_authentication_by_ip` (default 30), `bruteforce_lock_duration` (default 10 min). Configure in TeamPass admin settings.
 5. **Folder rights parity with the web** (see `docs/features/rights.md`): `FolderAccessModel::getFolderAccessLevelForUser()` is the single API resolver. It folds every role type on the folder through `evaluateFolderAccesLevel()` — the same function the web uses in `getRoleBasedAccess()` — so the **least permissive wins** (`R` > `NDNE` > `NE` = `ND` > `W`). A direct per-user grant (`users_groups`) always yields `W` and overrides a role restriction, exactly like `identUser()`. Roles of **both** sources count (manual + AD/LDAP): filtering on `source = "manual"` used to hide folders *and* make a role-granted `R` folder look unrestricted.
@@ -561,7 +618,9 @@ On HTTPS: `Strict-Transport-Security: max-age=31536000; includeSubDomains`.
 
 ## Known Gaps (Vague 3 Roadmap)
 
-**Items:** move, copy, history, favorites (toggle), attachments (upload/download/delete), OTV (one-time view link), request_access, edition_lock.
+**Items:** move, copy, history, favorites (toggle), attachments (upload/download/delete), request_access, edition_lock.
+
+**Secure Send:** note sends, link inventory (`GET /secureSend/list`), revocation (`DELETE /secureSend/revoke`) — contract sketch in `workReadmeFiles/secure-send-api-plan.md` §8. ~~item links~~ — done (`/secureSend/policy`, `/secureSend/create`).
 
 **Folders:** copy. ~~update, delete~~ — done (`PUT /api/v1/folder/update`, `DELETE /api/v1/folder/delete`).
 
