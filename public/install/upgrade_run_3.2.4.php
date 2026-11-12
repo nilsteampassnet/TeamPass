@@ -211,6 +211,16 @@ try {
     $emailUpgradeFailure('Unable to upgrade email transport storage.');
 }
 
+// Secure Send for API clients (browser extension, paired devices, scripts) stays off until an
+// administrator opts in; a missing row reads as off too. INSERT IGNORE: a replay never overrides
+// the administrator's choice.
+if (mysqli_query($db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`)
+     VALUES ('admin', 'secure_send_api_enabled', '0')"
+) === false) {
+    $emailUpgradeFailure('Unable to initialize the Secure Send API setting.');
+}
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,

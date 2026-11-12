@@ -4239,6 +4239,8 @@ return array(
     'secure_send_email_network_unknown' => 'La réponse a été perdue : une invitation est peut-être déjà en attente. Vérifiez Mes partages sécurisés et contactez votre administrateur avant de réessayer.',
     'secure_send_allow_email' => 'Autoriser les invitations Secure Send par e-mail',
     'secure_send_allow_email_tip' => 'Autorise les utilisateurs à envoyer des liens de partage à des destinataires externes depuis la boîte de l’organisation configurée. La désactivation bloque aussi les invitations en attente.',
+    'secure_send_api_enabled' => 'Autoriser Secure Send depuis les clients de l’API',
+    'secure_send_api_enabled_tip' => 'Permet à l’extension de navigateur, aux appareils mobiles appairés et aux scripts de l’API de créer des liens Secure Send pour les éléments que l’utilisateur peut lire, avec les mêmes limites que l’interface web. Nécessite aussi « L’utilisateur peut proposer des liens à usage unique pour des objets » (Options > Fonctionnalités collaboratives & avancées > Partage sécurisé).',
     'secure_send_email_not_allowed' => 'Les invitations par e-mail sont désactivées par votre administrateur.',
     'secure_send_email_not_sent' => 'Non envoyé : le lien n’était plus utilisable ou les invitations par e-mail ont été désactivées',
 );

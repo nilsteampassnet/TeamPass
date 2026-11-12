@@ -4255,6 +4255,8 @@ return array(
     'secure_send_email_network_unknown' => 'The response was lost: an invitation may already be queued. Check My secure sends and ask your administrator before trying again.',
     'secure_send_allow_email' => 'Allow Secure Send email invitations',
     'secure_send_allow_email_tip' => 'Allow users to send sharing links to external recipients from the configured organization mailbox. Disabling this also blocks pending invitations.',
+    'secure_send_api_enabled' => 'Allow Secure Send from API clients',
+    'secure_send_api_enabled_tip' => 'Lets the browser extension, paired mobile devices and API scripts create Secure Send links for items the user can read, with the same limits as the web interface. Also requires "User can propose One-Time-View links" (Options > Collaborative & advanced features > Secure sharing).',
     'secure_send_email_not_allowed' => 'Email invitations are disabled by your administrator.',
     'secure_send_email_not_sent' => 'Not sent: the link was no longer usable or email invitations were disabled',
 );
