@@ -1087,6 +1087,23 @@ prove sender abuse. The card does not impose quotas, block users, export raw log
 or add a Reports consumer or manual audit-purge interface; review unusual activity in
 its operational context.
 
+### Event log
+
+Administrators can read the journal itself in **Monitoring → Logs**: open the filter
+panel and choose the **Secure Send** source. Each row shows when the event was recorded,
+the event and its reason (for example *Invalidated (item deleted or no longer readable by
+the sender)*), the sender, the item (or *Secure note*), the link number and the link
+policy: views used and allowed, passphrase, public address, failed attempts and expiry.
+Filter by event, date range and sender (the **User** filter); the search box matches the
+item label, the sender and a link number such as `#123`. Events of deleted accounts and
+items stay listed. The source is reserved to administrators, even where managers can open
+the Logs page, and stays available while Secure Send is disabled. The journal is not
+purged from this page: use the audit retention below.
+
+In the **Items** source, a consultation recorded under the One-Time View account is
+labelled **Viewed through Secure Send**: the recipient of a link opened the item. The
+**Action** filter selects these views on their own, and **Shown** no longer includes them.
+
 ### Audit retention
 
 From Teampass 3.2.3.0, after completing the upgrade, administrators can set **Secure Send audit

@@ -69,6 +69,25 @@ function secureSendAuditSchemaSql(string $tableName): string
 }
 
 /**
+ * Lifecycle events of the journal and the fixed reasons each one accepts.
+ *
+ * The single definition used by secureSendAuditRecord() and by the administrator Logs page.
+ *
+ * @return array<string, array<int, string>>
+ */
+function secureSendAuditEventReasons(): array
+{
+    return [
+        'created' => [''],
+        'revealed' => [''],
+        'reveal_failed' => ['wrong_credentials'],
+        'revoked' => ['sender_revoked'],
+        'invalidated' => ['sender_unavailable', 'item_access_lost', 'attempts_exhausted', 'item_auto_deleted', 'disaster_recovery'],
+        'expired' => ['deadline_elapsed'],
+    ];
+}
+
+/**
  * Build an explicit metadata allowlist; never copy a payload, URL or credentials.
  *
  * Recipient operations have a null actor: possession of a link is not identity.
@@ -83,14 +102,7 @@ function secureSendAuditSchemaSql(string $tableName): string
  */
 function secureSendAuditRecord(array $link, string $event, string $reason = '', ?int $actorId = null, ?int $now = null): array
 {
-    $reasons = [
-        'created' => [''],
-        'revealed' => [''],
-        'reveal_failed' => ['wrong_credentials'],
-        'revoked' => ['sender_revoked'],
-        'invalidated' => ['sender_unavailable', 'item_access_lost', 'attempts_exhausted', 'item_auto_deleted', 'disaster_recovery'],
-        'expired' => ['deadline_elapsed'],
-    ];
+    $reasons = secureSendAuditEventReasons();
     if (!isset($reasons[$event]) || !in_array($reason, $reasons[$event], true)) {
         throw new InvalidArgumentException('Invalid Secure Send audit event');
     }
