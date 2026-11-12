@@ -52,6 +52,12 @@ function cryption(string $message, string $asciiKey, string $operation, ?array $
     if (property_exists('DB', 'cipherError') && DB::$cipherError !== false) {
         return ['string' => '', 'error' => DB::$cipherError];
     }
+    // As in production, an empty key selects the instance key (item TOTP secrets).
+    static $instanceKey = null;
+    if ($asciiKey === '') {
+        $instanceKey ??= Key::createNewRandomKey()->saveToAsciiSafeString();
+        $asciiKey = $instanceKey;
+    }
     $key = Key::loadFromAsciiSafeString($asciiKey);
     try {
         return ['string' => $operation === 'encrypt' ? Crypto::encrypt($message, $key) : Crypto::decrypt($message, $key), 'error' => false];
