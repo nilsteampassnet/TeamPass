@@ -189,7 +189,7 @@ if (($uri[0] ?? '') === 'devicePairing') {
     // lose access immediately, not at token expiry.
     $jwtUserId = (int) ($userData['data']['id'] ?? 0);
     $freshUser = $jwtUserId > 0 ? DB::queryFirstRow(
-        'SELECT u.disabled, u.admin, u.gestionnaire,
+        'SELECT u.disabled, u.admin, u.gestionnaire, u.read_only,
             a.enabled AS api_enabled,
             a.allowed_to_create, a.allowed_to_read, a.allowed_to_update, a.allowed_to_delete
         FROM ' . prefixTable('users') . ' AS u
@@ -216,6 +216,8 @@ if (($uri[0] ?? '') === 'devicePairing') {
     $userData['data']['allowed_to_read'] = (int) $freshUser['allowed_to_read'];
     $userData['data']['allowed_to_update'] = (int) $freshUser['allowed_to_update'];
     $userData['data']['allowed_to_delete'] = (int) $freshUser['allowed_to_delete'];
+    // Not a JWT claim: read per request so a read-only restriction applies immediately.
+    $userData['data']['is_read_only'] = (int) $freshUser['read_only'];
 
     // Rate limiting (sliding window, per user AND per IP) — applied to all
     // authenticated endpoints. 0 (default on upgraded instances) disables it.
@@ -387,6 +389,13 @@ if (($uri[0] ?? '') === 'devicePairing') {
     // action related to WEBAUTHN (vault passkeys)
     } elseif ($controller === 'webauthn') {
         webauthnAction(
+            array_slice($uri, 1),
+            $userData['data']
+        );
+
+    // action related to SECURE SEND (one-time view links created by API clients)
+    } elseif ($controller === 'secureSend') {
+        secureSendAction(
             array_slice($uri, 1),
             $userData['data']
         );

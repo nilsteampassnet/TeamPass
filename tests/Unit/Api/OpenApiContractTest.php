@@ -33,6 +33,7 @@ class OpenApiContractTest extends TestCase
         'user' => 'UserController.php',
         'misc' => 'MiscController.php',
         'webauthn' => 'WebauthnController.php',
+        'secureSend' => 'SecureSendController.php',
         'devicePairing' => 'DevicePairingController.php',
     ];
 
