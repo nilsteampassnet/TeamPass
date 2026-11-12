@@ -73,12 +73,34 @@ try {
     DB::query('ALTER TABLE ' . prefixTable('background_tasks') . ' DROP INDEX idx_email_due, DROP COLUMN email_attempts, DROP COLUMN next_attempt_at');
     $freshColumns = DB::query('SHOW COLUMNS FROM ' . prefixTable('email_oauth_state'));
     DB::query('DROP TABLE ' . prefixTable('email_oauth_state'));
+    // The 3.2.4 script also binds OAuth2 accounts (users.oauth2_identity). Build the users table
+    // from the installer's own statement, without users() and its seeding, then remove the column
+    // to stand for a database that predates it.
+    $usersStart = strpos($installerSource, '"CREATE TABLE IF NOT EXISTS `" . $this->inputData[\'tablePrefix\'] . "users` (');
+    emailTokenExpect($usersStart !== false, 'Installer users table is missing');
+    $usersEnd = strpos($installerSource, 'COLLATE=utf8mb4_unicode_ci;"', $usersStart) + strlen('COLLATE=utf8mb4_unicode_ci;"');
+    DB::query(eval('return ' . str_replace('$this->inputData[\'tablePrefix\']', '$prefix', substr($installerSource, $usersStart, $usersEnd - $usersStart)) . ';'));
+    $oauth2IdentityShape = static fn(): array => [
+        DB::queryFirstRow('SHOW FULL COLUMNS FROM ' . prefixTable('users') . ' WHERE Field = %s', 'oauth2_identity'),
+        array_map(
+            static fn(array $index): array => [$index['Non_unique'], $index['Column_name']],
+            DB::query('SHOW INDEX FROM ' . prefixTable('users') . ' WHERE Key_name = %s', 'oauth2_identity')
+        ),
+    ];
+    $freshIdentityShape = $oauth2IdentityShape();
+    emailTokenExpect($freshIdentityShape[0] !== null && $freshIdentityShape[1] === [['0', 'oauth2_identity']], 'Installer lacks the unique OAuth2 identity');
+    DB::query('ALTER TABLE ' . prefixTable('users') . ' DROP INDEX oauth2_identity, DROP COLUMN oauth2_identity');
     DB::query('CREATE TABLE ' . prefixTable('misc') . ' (type VARCHAR(50), intitule VARCHAR(100), valeur MEDIUMTEXT,
         is_encrypted TINYINT DEFAULT 0, UNIQUE KEY settings_key (type, intitule))');
     $oldSecret = cryption('retained-synthetic-smtp-password', '', 'encrypt')['string'];
     DB::query('INSERT INTO ' . prefixTable('misc') . ' VALUES (%s, %s, %s, 1)', 'admin', 'email_auth_pwd', $oldSecret);
     DB::query('INSERT INTO ' . prefixTable('misc') . ' VALUES (%s, %s, %s, 0)', 'admin', 'email_smtp_server', 'relay.example.test');
+    DB::query('INSERT INTO ' . prefixTable('misc') . ' VALUES (%s, %s, %s, 0)', 'admin', 'oauth2_client_endpoint', 'https://login.microsoftonline.com/tenant/oauth2/v2.0/authorize');
     emailTokenRunMigration($root, $host, $user, $password, $database, $port, $prefix);
+    $linkSetting = static fn(): mixed => DB::queryFirstField('SELECT valeur FROM ' . prefixTable('misc') . ' WHERE intitule = %s', 'oauth2_link_existing_accounts');
+    emailTokenExpect($freshIdentityShape === $oauth2IdentityShape(), 'Fresh and upgrade OAuth2 identity schemas differ');
+    emailTokenExpect($linkSetting() === '1', 'An Entra installation lost the conversion of existing accounts');
+    DB::query('UPDATE ' . prefixTable('misc') . ' SET valeur = %s WHERE intitule = %s', '0', 'oauth2_link_existing_accounts');
     $revision = (string) DB::queryFirstField('SELECT valeur FROM ' . prefixTable('misc') . ' WHERE intitule = %s', 'email_config_revision');
     emailTokenExpect(DB::queryFirstField('SELECT valeur FROM ' . prefixTable('misc') . ' WHERE intitule = %s', 'secure_send_allow_email') === '0', 'Email invitations enabled without opt-in');
     DB::update(prefixTable('misc'), ['valeur' => '1'], 'intitule=%s', 'secure_send_allow_email');
@@ -92,6 +114,13 @@ try {
     emailTokenExpect((int) DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('secure_send_email')) === 1, 'Replay removed a sharing delivery reservation');
     emailTokenExpect(DB::queryFirstField('SELECT valeur FROM ' . prefixTable('misc') . ' WHERE intitule = %s', 'secure_send_allow_email') === '1', 'Replay changed administrator email opt-in');
     emailTokenExpect($revision === DB::queryFirstField('SELECT valeur FROM ' . prefixTable('misc') . ' WHERE intitule = %s', 'email_config_revision'), 'Replay changed the revision');
+    emailTokenExpect($freshIdentityShape === $oauth2IdentityShape(), 'Replay changed the OAuth2 identity schema');
+    emailTokenExpect($linkSetting() === '0', 'Replay overrode the account linking choice');
+    // Any provider other than Entra starts with the conversion disabled
+    DB::query('DELETE FROM ' . prefixTable('misc') . ' WHERE intitule = %s', 'oauth2_link_existing_accounts');
+    DB::query('UPDATE ' . prefixTable('misc') . ' SET valeur = %s WHERE intitule = %s', 'https://authentik.example.test/application/o/authorize/', 'oauth2_client_endpoint');
+    emailTokenRunMigration($root, $host, $user, $password, $database, $port, $prefix);
+    emailTokenExpect($linkSetting() === '0', 'A generic provider kept the conversion of existing accounts');
     // Execute the scheduler's actual candidate SQL against due/deferred tasks on MariaDB.
     DB::insert(prefixTable('background_tasks'), ['created_at' => time(), 'process_type' => 'send_email', 'arguments' => '{}', 'next_attempt_at' => time() + 7200]);
     $deferredTaskId = (int) DB::insertId();
@@ -160,8 +189,9 @@ try {
         DB::rollback();
     }
     echo "Email token storage and profiles: install, migration, replay, encryption, ownership, rollback and concurrency checks passed.\n";
+    echo "OAuth2 identity binding: install, migration, replay and linking default checks passed.\n";
 } finally {
-    foreach (['secure_send_email', 'email_oauth_state', 'emails', 'misc', 'background_tasks'] as $table) {
+    foreach (['secure_send_email', 'email_oauth_state', 'emails', 'misc', 'background_tasks', 'users'] as $table) {
         DB::query('DROP TABLE IF EXISTS ' . prefixTable($table));
     }
     DB::disconnect();

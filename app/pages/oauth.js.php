@@ -80,61 +80,198 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 <script type='text/javascript'>
     //<![CDATA[
     /**
-     * TOP MENU BUTTONS ACTIONS
+     * "Test a user": what the next SSO sign-in of a Microsoft Entra ID user would do,
+     * and what the directory answers for each allowed group. Read-only.
      */
-    $(document).on('click', '.tp-action', function() {
-        console.log($(this).data('action'))
-        $('#ldap-test-config-results-text').html('');
-        if ($(this).data('action') === 'ldap-test-config') {
-            toastr.remove();
-            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+    const oauth2TestLabels = {
+        groups: <?php echo json_encode($lang->get('oauth2_test_groups'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+        allowedGroup: <?php echo json_encode($lang->get('oauth2_test_allowed_group'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+        groupWithoutName: <?php echo json_encode($lang->get('oauth2_test_group_without_name'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+        roles: <?php echo json_encode($lang->get('oauth2_test_roles_at_creation'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+        fallbackRole: <?php echo json_encode($lang->get('oauth2_test_fallback_role'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+        none: <?php echo json_encode($lang->get('none'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+    };
 
-            var data = {
-                'username': $('#ldap-test-config-username').val(),
-                'password': $('#ldap-test-config-pwd').val(),
-            }
+    /**
+     * Post a request of the test and render its answer
+     *
+     * @param {string} type
+     * @param {object} payload
+     * @param {function} render
+     */
+    function oauth2TestPost(type, payload, render) {
+        toastr.remove();
+        toastr.info(<?php echo json_encode($lang->get('in_progress'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?> + ' ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
-            $.post(
-                'sources/ldap.queries.php', {
-                    type: 'ldap_test_configuration',
-                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
-                    key: '<?php echo $session->get('key'); ?>'
-                },
-                function(data) {
+        $.post(
+            'sources/admin.queries.php', {
+                type: type,
+                data: prepareExchangedData(JSON.stringify(payload), 'encode', '<?php echo $session->get('key'); ?>'),
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(data) {
+                toastr.remove();
+                try {
                     data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
-                    console.log(data);
-
-                    if (data.error === true) {
-                        // Show error
-                        toastr.remove();
-                        toastr.error(
-                            data.message,
-                            '<?php echo $lang->get('caution'); ?>', {
-                                //timeOut: 5000,
-                                progressBar: true
-                            }
-                        );
-                    } else {
-                        $('#ldap-test-config-results-text').html(data.message);
-                        $('#ldap-test-config-results').removeClass('hidden');
-
-                        // Inform user
-                        toastr.remove();
-                        toastr.success(
-                            '<?php echo $lang->get('done'); ?>',
-                            '', {
-                                timeOut: 1000
-                            }
-                        );
-                    }
+                } catch (e) {
+                    toastr.error(<?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>, '', {closeButton: true});
+                    return;
                 }
-            );
-            // ---
-            // END
-            // ---
+
+                if (data.error === true) {
+                    toastr.error(data.message, <?php echo json_encode($lang->get('caution'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>, {timeOut: 15000, closeButton: true, progressBar: true});
+                    return;
+                }
+                render(data);
+            }
+        );
+    }
+
+    /**
+     * Show the nodes in the results panel
+     *
+     * @param {Array} nodes
+     */
+    function oauth2TestShow(nodes) {
+        $('#oauth2-test-results-body').empty().append(nodes);
+        $('#oauth2-test-results').removeClass('hidden');
+    }
+
+    /**
+     * Render the directory users of a login, each with the outcome of its next sign-in
+     *
+     * @param {object} data
+     */
+    function oauth2TestRenderUsers(data) {
+        const nodes = [];
+        if (data.notice !== '') {
+            nodes.push($('<p class="mb-2"></p>').text(data.notice));
         }
-    });    
-        
+
+        data.users.forEach(function(user) {
+            const block = $('<div class="border rounded p-2 mb-2"></div>');
+            block.append(
+                $('<div class="font-weight-bold"></div>').text(
+                    user.displayName !== '' ? user.displayName + ' - ' + user.userPrincipalName : user.userPrincipalName
+                )
+            );
+            block.append(
+                $('<div></div>')
+                    .addClass(user.accepted === true ? 'text-success' : 'text-danger')
+                    .append($('<i class="fas mr-2"></i>').addClass(user.accepted === true ? 'fa-check-circle' : 'fa-times-circle'))
+                    .append($('<span></span>').text(user.outcome))
+            );
+
+            const groups = $('<div class="small text-muted mt-1"></div>').text(oauth2TestLabels.groups + ': ');
+            if (user.groups.length === 0) {
+                groups.append(document.createTextNode(oauth2TestLabels.none));
+            }
+            user.groups.forEach(function(group, index) {
+                if (index > 0) {
+                    groups.append(document.createTextNode(', '));
+                }
+                const label = $('<span></span>')
+                    .attr('title', group.id)
+                    .text(group.name !== '' ? group.name : group.id + ' (' + oauth2TestLabels.groupWithoutName + ')');
+                if (group.allowed === true) {
+                    label.addClass('font-weight-bold text-success')
+                        .append(document.createTextNode(' (' + oauth2TestLabels.allowedGroup + ')'));
+                }
+                groups.append(label);
+            });
+            block.append(groups);
+
+            // Only for an account this sign-in would create
+            if (user.roles !== null) {
+                block.append(
+                    $('<div class="small mt-1"></div>').text(
+                        oauth2TestLabels.roles + ': '
+                        + (user.roles.length > 0 ? user.roles.join(', ') : oauth2TestLabels.none)
+                        + (user.fallbackRole === true ? ' ' + oauth2TestLabels.fallbackRole : '')
+                    )
+                );
+            }
+            nodes.push(block);
+        });
+
+        oauth2TestShow(nodes);
+    }
+
+    /**
+     * Render what the directory answered for each allowed group
+     *
+     * @param {object} data
+     */
+    function oauth2TestRenderGroups(data) {
+        const nodes = [];
+        if (data.notice !== '') {
+            nodes.push($('<p class="mb-2"></p>').text(data.notice));
+        }
+
+        const list = $('<ul class="list-unstyled mb-0"></ul>');
+        data.groups.forEach(function(group) {
+            const icon = group.found === false
+                ? 'fa-times-circle text-danger'
+                : (group.message === '' ? 'fa-check-circle text-success' : 'fa-exclamation-triangle text-warning');
+            const item = $('<li class="mb-1"></li>')
+                .append($('<i class="fas mr-2"></i>').addClass(icon))
+                .append($('<span class="font-weight-bold"></span>').text(group.entry));
+            if (group.matches.length > 0) {
+                item.append(document.createTextNode(' : ' + group.matches.map(function(match) {
+                    return match.name !== '' ? match.name + ' (' + match.id + ')' : match.id;
+                }).join(', ')));
+            }
+            if (group.message !== '') {
+                item.append($('<div class="small"></div>').text(group.message));
+            }
+            list.append(item);
+        });
+        if (data.groups.length > 0) {
+            nodes.push(list);
+        }
+
+        oauth2TestShow(nodes);
+    }
+
+    $(document).on('click', '#oauth2-test-user', function() {
+        const login = $('#oauth2-test-user-login').val().trim();
+        if (login === '') {
+            $('#oauth2-test-user-login').focus();
+            return;
+        }
+        // The groups as the page shows them, even if their last change is still being saved
+        oauth2TestPost(
+            'oauth2_test_user',
+            {'login': login, 'groups': $('#oauth_self_register_groups').val()},
+            oauth2TestRenderUsers
+        );
+    });
+
+    $(document).on('keydown', '#oauth2-test-user-login', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            $('#oauth2-test-user').trigger('click');
+        }
+    });
+
+    $(document).on('click', '#oauth2-check-groups', function() {
+        oauth2TestPost(
+            'oauth2_check_groups',
+            {'groups': $('#oauth_self_register_groups').val()},
+            oauth2TestRenderGroups
+        );
+    });
+
+    // The test reads Microsoft Entra ID only
+    $(document).on('change', '#oauth2_client_endpoint', function() {
+        const isEntra = $(this).val().indexOf('login.microsoftonline.com') !== -1;
+        $('.oauth2-test-entra').toggleClass('hidden', isEntra === false);
+        $('.oauth2-test-generic').toggleClass('hidden', isEntra === true);
+        if (isEntra === false) {
+            $('#oauth2-test-results').addClass('hidden');
+        }
+    });
+
     /**
      * Update fields with tenant ID
      * 
@@ -234,7 +371,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     .val(selected_admin_by);
                 $('#oauth_selfregistered_user_belongs_to_role')
                     .append(html_roles);
-                console.log(selected_role);
                 if (selected_role !== '') {
                     $('#oauth_selfregistered_user_belongs_to_role').val(selected_role);
                 }

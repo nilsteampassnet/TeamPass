@@ -256,7 +256,7 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                     </small>
                                 </div>
                                 <div class='col-7'>
-                                    <input type='text' class='form-control form-control-sm setting-oauth' id='oauth_self_register_groups' value='<?php echo $SETTINGS['oauth_self_register_groups'] ?? ''; ?>'>
+                                    <input type='text' class='form-control form-control-sm setting-oauth' id='oauth_self_register_groups' value='<?php echo htmlspecialchars(html_entity_decode((string) ($SETTINGS['oauth_self_register_groups'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8'), ENT_QUOTES, 'UTF-8'); ?>'>
                                 </div>
                             </div>
 
@@ -271,6 +271,61 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                     <select class='form-control form-control-sm select2' id='oauth_selfregistered_user_belongs_to_role'>
                                     </select>
                                 </div>
+                            </div>
+
+                            <div class='row mb-2'>
+                                <div class='col-10'>
+                                    <?php echo $lang->get('oauth2_link_existing_accounts'); ?>
+                                    <small class='form-text text-muted'>
+                                        <?php echo $lang->get('oauth2_link_existing_accounts_tip'); ?>
+                                    </small>
+                                </div>
+                                <div class='col-2'>
+                                    <div class='toggle toggle-modern' id='oauth2_link_existing_accounts' data-toggle-on='<?php echo isset($SETTINGS['oauth2_link_existing_accounts']) === true && (int) $SETTINGS['oauth2_link_existing_accounts'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='oauth2_link_existing_accounts_input' value='<?php echo isset($SETTINGS['oauth2_link_existing_accounts']) && (int) $SETTINGS['oauth2_link_existing_accounts'] === 1 ? 1 : 0; ?>'>
+                                </div>
+                            </div>
+
+                            <?php
+                            // The test reads the directory: Microsoft Entra ID only
+                            $oauth2TestIsEntra = OAuth2Controller::isEntraEndpoint((string) ($SETTINGS['oauth2_client_endpoint'] ?? ''));
+                            ?>
+                            <hr>
+                            <div class='row mb-2'>
+                                <div class='col-12'>
+                                    <i class='fas fa-vial mr-2'></i><?php echo $lang->get('oauth2_test_user'); ?>
+                                    <small class='form-text text-muted oauth2-test-entra<?php echo $oauth2TestIsEntra === true ? '' : ' hidden'; ?>'>
+                                        <?php echo $lang->get('oauth2_test_user_tip'); ?>
+                                    </small>
+                                    <small class='form-text text-muted oauth2-test-generic<?php echo $oauth2TestIsEntra === true ? ' hidden' : ''; ?>'>
+                                        <?php echo $lang->get('oauth2_test_generic_provider'); ?>
+                                    </small>
+                                </div>
+                            </div>
+
+                            <div class='row mb-2 oauth2-test-entra<?php echo $oauth2TestIsEntra === true ? '' : ' hidden'; ?>'>
+                                <div class='col-5'>
+                                    <?php echo $lang->get('oauth2_test_user_login'); ?>
+                                </div>
+                                <div class='col-7'>
+                                    <div class='input-group input-group-sm'>
+                                        <input type='text' class='form-control form-control-sm no-save' id='oauth2-test-user-login' maxlength='256' autocomplete='off' placeholder='jdoe@contoso.com'>
+                                        <div class='input-group-append'>
+                                            <button type='button' class='btn btn-primary btn-sm' id='oauth2-test-user'>
+                                                <i class='fas fa-user-check mr-1'></i><?php echo $lang->get('oauth2_test_user'); ?>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <button type='button' class='btn btn-default btn-sm mt-2' id='oauth2-check-groups'>
+                                        <i class='fas fa-users mr-1'></i><?php echo $lang->get('oauth2_check_group_names'); ?>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class='card mb-2 hidden' id='oauth2-test-results'>
+                                <div class='card-header'>
+                                    <?php echo $lang->get('output'); ?>
+                                </div>
+                                <div class='card-body' id='oauth2-test-results-body'></div>
                             </div>
 
                             </div>

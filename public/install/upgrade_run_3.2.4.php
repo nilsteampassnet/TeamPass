@@ -82,6 +82,58 @@ if ($db_link) {
 
 //--->BEGIN 3.2.4
 
+// OAuth2 identity binding: the provider identity (issuer key + subject) an OAuth2 account belongs
+// to, so a sign-in is matched on an identifier and no longer on a name claim. NULL = not bound
+// yet: an existing OAuth2 account is bound at its next successful sign-in, nothing is backfilled.
+// Kept apart from the email block below, whose slice tests evaluate on a synthetic database.
+$oauth2IdentityUpgradeFailure = static function (string $message): never {
+    if (PHP_SAPI === 'cli' && defined('TEAMPASS_RECOVERY_MIGRATION') && TEAMPASS_RECOVERY_MIGRATION === true) {
+        throw new RuntimeException($message);
+    }
+    echo json_encode([['finish' => '1', 'error' => $message]]);
+    exit;
+};
+try {
+    $oauth2IdentityColumn = mysqli_query($db_link, "SHOW COLUMNS FROM `" . $pre . "users` LIKE 'oauth2_identity'");
+    if ($oauth2IdentityColumn === false) { $oauth2IdentityUpgradeFailure('Unable to inspect the users table.'); }
+    if (mysqli_num_rows($oauth2IdentityColumn) === 0 && mysqli_query($db_link,
+        "ALTER TABLE `" . $pre . "users` ADD COLUMN `oauth2_identity` CHAR(64) CHARACTER SET ascii COLLATE ascii_bin
+         NULL DEFAULT NULL COMMENT 'OAuth2: sha256(issuer key NUL subject); NULL = not bound yet'"
+    ) === false) { $oauth2IdentityUpgradeFailure('Unable to add the OAuth2 identity column.'); }
+    mysqli_free_result($oauth2IdentityColumn);
+    $oauth2IdentityIndex = mysqli_query($db_link, "SHOW INDEX FROM `" . $pre . "users` WHERE Key_name = 'oauth2_identity'");
+    if ($oauth2IdentityIndex === false) { $oauth2IdentityUpgradeFailure('Unable to inspect the users table indexes.'); }
+    if (mysqli_num_rows($oauth2IdentityIndex) === 0 && mysqli_query($db_link,
+        "ALTER TABLE `" . $pre . "users` ADD UNIQUE KEY `oauth2_identity` (`oauth2_identity`)"
+    ) === false) { $oauth2IdentityUpgradeFailure('Unable to add the OAuth2 identity index.'); }
+    mysqli_free_result($oauth2IdentityIndex);
+
+    // Until now an OAuth2 sign-in silently took over the local or LDAP account holding the same
+    // login. Microsoft Entra ID installations keep that conversion (UPNs are set by an
+    // administrator, migrations to Entra rely on it); every other one starts with it disabled.
+    // INSERT IGNORE: a replay never overrides the administrator's choice.
+    $oauth2EndpointResult = mysqli_query($db_link,
+        "SELECT valeur FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'oauth2_client_endpoint'"
+    );
+    if ($oauth2EndpointResult === false) { $oauth2IdentityUpgradeFailure('Unable to read the OAuth2 settings.'); }
+    $oauth2EndpointRow = mysqli_fetch_row($oauth2EndpointResult);
+    mysqli_free_result($oauth2EndpointResult);
+    $oauth2LinkExisting = is_array($oauth2EndpointRow)
+        && str_contains((string) $oauth2EndpointRow[0], 'login.microsoftonline.com') ? '1' : '0';
+    if (mysqli_query($db_link,
+        "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`)
+         VALUES ('admin', 'oauth2_link_existing_accounts', '" . $oauth2LinkExisting . "')"
+    ) === false) { $oauth2IdentityUpgradeFailure('Unable to initialize the OAuth2 account linking setting.'); }
+} catch (Throwable $error) {
+    // Keep a usable trace without disclosing SQL values or driver messages.
+    error_log('OAuth2 identity migration failure: ' . get_class($error) . ' at '
+        . basename($error->getFile()) . ':' . $error->getLine());
+    if (PHP_SAPI === 'cli' && defined('TEAMPASS_RECOVERY_MIGRATION') && TEAMPASS_RECOVERY_MIGRATION === true) {
+        throw $error;
+    }
+    $oauth2IdentityUpgradeFailure('Unable to upgrade the OAuth2 identity storage.');
+}
+
 // Email transport state: additive and idempotent, preserving every existing SMTP value.
 $emailUpgradeFailure = static function (string $message): never {
     if (PHP_SAPI === 'cli' && defined('TEAMPASS_RECOVERY_MIGRATION') && TEAMPASS_RECOVERY_MIGRATION === true) {

@@ -188,4 +188,73 @@ class OAuth2GenericProviderTest extends TestCase
 
         OAuth2Controller::mapGenericUserInfo(['sub' => 'a1', 'preferred_username' => '  ']);
     }
+
+    /**
+     * Build an unsigned JWT carrying the given claims (the signature part is never read).
+     *
+     * @param array<string, mixed> $claims
+     */
+    private function idToken(array $claims): string
+    {
+        $encode = static fn (string $part): string => rtrim(strtr(base64_encode($part), '+/', '-_'), '=');
+
+        return $encode('{"alg":"RS256"}') . '.' . $encode((string) json_encode($claims)) . '.signature';
+    }
+
+    public function testEntraIdentityIsTheLowercasedObjectIdUnderAFixedIssuer(): void
+    {
+        $identity = OAuth2Controller::entraIdentity([
+            'id' => '0F8E1C2A-5B6D-4E7F-8A9B-0C1D2E3F4A5B',
+            'userPrincipalName' => 'jdoe@a.example',
+        ]);
+
+        // Never the tenant: oauth2_tenant_id holds a GUID or a domain, so it is no stable key
+        $this->assertSame('entra', $identity['identityIssuer']);
+        $this->assertSame('0f8e1c2a-5b6d-4e7f-8a9b-0c1d2e3f4a5b', $identity['identitySubject']);
+    }
+
+    public function testEntraAnswerWithoutObjectIdGivesNoSubject(): void
+    {
+        $this->assertSame('', OAuth2Controller::entraIdentity(['userPrincipalName' => 'jdoe@a.example'])['identitySubject']);
+    }
+
+    public function testGenericIdentityUsesTheIssuerOfTheIdToken(): void
+    {
+        $user = OAuth2Controller::mapGenericUserInfo(['sub' => 'Ab12', 'preferred_username' => 'jdoe']);
+        $identity = OAuth2Controller::genericIdentity(
+            ['id_token' => $this->idToken(['iss' => 'https://authentik.example.com/application/o/teampass/', 'sub' => 'Ab12'])],
+            $user,
+            'https://authentik.example.com/application/o/authorize/'
+        );
+
+        $this->assertSame('https://authentik.example.com/application/o/teampass/', $identity['identityIssuer']);
+        // sub is case-sensitive (OpenID Connect Core §2): kept as is
+        $this->assertSame('Ab12', $identity['identitySubject']);
+    }
+
+    public function testGenericIdentityFallsBackToTheAuthorizationOrigin(): void
+    {
+        $user = OAuth2Controller::mapGenericUserInfo(['id' => 1234, 'preferred_username' => 'jdoe']);
+
+        $withoutToken = OAuth2Controller::genericIdentity([], $user, 'HTTPS://SSO.Example.com:8443/oauth/authorize?x=1');
+        $this->assertSame('https://sso.example.com:8443', $withoutToken['identityIssuer']);
+        $this->assertSame('1234', $withoutToken['identitySubject']);
+
+        $notAJwt = OAuth2Controller::genericIdentity(['id_token' => 'opaque'], $user, 'https://sso.example.com/authorize');
+        $this->assertSame('https://sso.example.com', $notAJwt['identityIssuer']);
+    }
+
+    public function testGenericIdentityRefusesAUserInfoSubjectThatDiffersFromTheIdToken(): void
+    {
+        $user = OAuth2Controller::mapGenericUserInfo(['sub' => 'attacker', 'preferred_username' => 'jdoe']);
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('"sub"');
+
+        OAuth2Controller::genericIdentity(
+            ['id_token' => $this->idToken(['iss' => 'https://idp.example.com', 'sub' => 'victim'])],
+            $user,
+            'https://idp.example.com/authorize'
+        );
+    }
 }

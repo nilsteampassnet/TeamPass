@@ -227,7 +227,40 @@ If a user changes phone or loses their authenticator, a new code can be issued. 
 
 Users can authenticate through Microsoft Entra ID or through any OpenID Connect provider (authentik, Keycloak…). When self-registration is enabled, the account of a user who signs in for the first time is created in TeamPass.
 
-👉 Notice that if the user belongs to groups in the identity provider and that roles with the same names exist in TeamPass, then the account is automatically associated to the matching roles when it is created (based upon their names).
+👉 Notice that if the user belongs to groups in the identity provider and that roles with the same names exist in TeamPass, then the account is automatically associated to the matching roles when it is created (based upon their names). With Entra, nested groups count; directory roles (*Global Administrator*…) do not. The groups listed in `Allowed groups for self-registration` are left out of this matching.
+
+### Accounts are bound to their identity at the provider
+
+TeamPass finds the account of an SSO user through its login (the part before `@` of the Entra
+UPN or of `preferred_username`). It then checks that the account belongs to the identity the
+provider asserted: the Entra **object id**, or the `iss` + `sub` pair of an OpenID Connect
+provider. Somebody who holds the same username at the provider is refused.
+
+* **New account**: an account created at its first SSO sign-in is bound when it is created.
+* **Existing OAuth2 account** (created before this check existed, or imported from
+  *Users* → *OAuth2 synchronization*): bound at its next successful sign-in, MFA included.
+* **Existing local or LDAP account with the same login**: converted to OAuth2 and bound only when
+  `Link existing accounts at their first SSO sign-in` is enabled on the `OAuth` page. The upgrade
+  enables it on installations configured for Microsoft Entra ID, which converted those accounts
+  until now, and disables it everywhere else. Leave it disabled when users can choose their
+  username at the provider. With Entra, one account can also be converted from
+  *Users* → *OAuth2 synchronization*. While LDAP authentication is enabled, an LDAP account is
+  checked against the directory first and cannot be converted.
+
+A refused sign-in shows one of these messages, also written to the failed authentications of the
+`Logs` page:
+
+| Message | Cause | What to do |
+|---|---|---|
+| *This TeamPass account is linked to another identity…* | The user was deleted and re-created at the provider, the provider or tenant changed, or another person holds the login | If it is the same person, release the link (below) |
+| *Your identity at the identity provider is already linked to another TeamPass account…* | The username changed at the provider (UPN renamed). The log entry names the account holding the identity | Rename that account's login on the `Users` page |
+| *A TeamPass account with this login already exists and does not use single sign-on…* | Linking existing accounts is disabled | Enable the setting, or convert the account |
+| *The identity provider returned no usable identifier…* | No object id / `sub` in the provider answer | Check the provider configuration |
+
+**Release a link**: on the `Users` page, the action menu of an OAuth2 account offers
+*Release the SSO identity link*. Changing the authentication type of the account (OAuth2
+synchronization toggle) does the same. The next SSO sign-in binds the account to the identity that
+signs in. Binding and release are both written to the `Logs` page.
 
 ### Microsoft Entra (Azure)
 #### Setting up at Entra side
@@ -283,11 +316,68 @@ It is suggested to perform a test with a fake user.
 
 ![OAuth2 settings example](../_media/tp3_auth_oauth2_1.png)
 
-**Pay attention to the `Allowed groups for self-registration` field.** Left empty, it disables the
-automatic creation of accounts: an Entra user who does not already exist in TeamPass is then
-refused with the generic message *"Login credentials do not correspond"*, which does not hint at
-the cause. On a fresh installation no Entra account exists yet in TeamPass, so **every** first
-login fails until either the field is filled in or the accounts are created beforehand.
+**Pay attention to the `Allowed groups for self-registration` field.** It decides who gets a
+TeamPass account at their first sign-in:
+
+| Value | Who can self-register |
+|---|---|
+| Empty | Nobody: self-registration is disabled |
+| `TeamPass-Users, Helpdesk` | The members of at least one of the listed groups |
+| `*` | Every user the identity provider authenticates |
+
+* A group is matched by its **name**, ignoring case, or by its **object id** (the GUID shown in
+  the Entra portal). Prefer the object id: Entra group names are not unique, and in many tenants
+  users may create groups themselves, so a name can be imitated.
+* With Entra, **nested groups count**: a member of a group placed inside an allowed group is
+  allowed. TeamPass reads the memberships with `GET /me/transitiveMemberOf`.
+* The listed groups only open the self-registration: they are **not** matched against the role
+  titles. Name the roles after the other groups of the users, or set
+  `Self-registered user belongs to role`.
+* Graph only returns the group names when the sign-in token may read groups: the delegated
+  `Group.Read.All` listed above (or `GroupMember.Read.All`, `Directory.Read.All`). With `User.Read`
+  alone, the groups come back with their object id but no name: list the object ids then, or
+  self-registration refuses everybody. The log entry counts these groups as *without name*.
+* The field only concerns accounts that do not exist yet. Existing accounts sign in as before.
+
+A user who may not self-register is refused with *"You have no TeamPass account yet, and your
+groups at the identity provider do not allow it to be created automatically"*. The failed
+authentications of the `Logs` page show the login and the groups TeamPass received. The
+[Test a user](#test-a-user-before-they-sign-in) block shows them before the user even tries.
+
+On a fresh installation no Entra account exists yet in TeamPass, so **every** first login fails
+until either the field is filled in or the accounts are created beforehand.
+
+> ⚠️ **Change of behaviour.** Older versions let **every** user self-register as soon as the field
+> held any value: the list was never checked. Now only the members of the listed groups are
+> accepted, and the upgrade leaves the field as it is. If you relied on the old behaviour, enter
+> `*`.
+
+#### Test a user before they sign in
+
+The `OAuth` page ends with a **Test a user** block. It changes nothing.
+
+* **Test a user**: enter a TeamPass login (`jdoe`) or a UPN (`jdoe@contoso.com`). TeamPass lists
+  every directory user whose UPN starts with `jdoe@`, since all of them sign in with the TeamPass
+  login `jdoe`, and tells for each one what the next SSO sign-in would do:
+  * accepted: account already linked, account linked at this sign-in, local or LDAP account
+    converted, or account created;
+  * refused, with the reason and what to do (account linked to another identity, UPN renamed,
+    user outside the allowed groups, user disabled in Entra, LDAP account while LDAP is enabled,
+    the administrator or an internal account…).
+
+  It also lists the groups the sign-in reads (nested groups included, the ones that allow the
+  self-registration in bold) and, for an account the sign-in would create, the roles it would get.
+* **Check the allowed groups**: looks up each entry of `Allowed groups for self-registration` in
+  the directory. *No group answers* means a typo. *Several groups share this name* means the
+  members of each of them may self-register: enter the object id of the right group instead.
+
+Both buttons use the value displayed in the field, even before it is saved.
+
+The test reads the directory **as the application**, like the OAuth2 synchronization: it needs
+`User.Read.All` and `Group.Read.All` of type `Application` (see above). The sign-in reads the
+groups with the user's own token instead (`Delegated` permissions). If the sign-in token cannot
+read group names, the test shows names the sign-in will not receive; listing the object ids
+avoids the difference.
 
 ### Generic OpenID Connect provider (authentik, Keycloak…)
 
@@ -308,12 +398,14 @@ naming the missing claim.
 
 > ⚠️ **Three rules on the provider side, before opening the access:**
 >
-> * **Usernames must be controlled by the provider's administrators.** At the first SSO sign-in,
->   an existing local or LDAP TeamPass account whose login matches `preferred_username` is
->   switched to OAuth2. Users must not be able to choose or change their own username, for
->   example through open enrollment or a self-service profile page.
+> * **Prefer usernames controlled by the provider's administrators.** TeamPass binds every account
+>   to the user's `sub` and refuses anyone else ([see above](#accounts-are-bound-to-their-identity-at-the-provider)),
+>   but a user who renames themselves can no longer reach their account. Keep
+>   `Link existing accounts at their first SSO sign-in` disabled if users can choose or change
+>   their own username (open enrollment, self-service profile page).
 > * **`sub` must never change for a given user.** Do not change the way the provider builds the
->   subject once users have signed in. Their accounts could no longer open their encryption keys.
+>   subject once users have signed in: their accounts would be refused until an administrator
+>   releases the link.
 > * **Restrict the application to the users allowed to use TeamPass.** The provider decides who
 >   may sign in. Bind the application to the relevant groups.
 
@@ -353,7 +445,14 @@ With **Keycloak**, use `https://<host>/realms/<realm>/protocol/openid-connect/au
 *Add to userinfo* on the mapper that emits them.
 
 The `Allowed groups for self-registration` field behaves as described for Entra
-[above](#setting-up-in-teampass): left empty, a user with no TeamPass account is refused.
+[above](#setting-up-in-teampass): left empty, a user with no TeamPass account is refused; `*`
+lets everybody in; otherwise the user needs one of the listed groups in the `groups` or
+`realm_access.roles` claim. The value is compared with what the provider sends: a Keycloak mapper
+with *Full group path* enabled sends `/parent/child`, not `child`.
+
+The *Test a user* block of the `OAuth` page needs Microsoft Entra ID: OpenID Connect has no
+standard way to read the groups of another user. The failed authentications of the `Logs` page
+show the groups received at each refused self-registration.
 
 ### Allowing OAuth2 users to access the API
 
