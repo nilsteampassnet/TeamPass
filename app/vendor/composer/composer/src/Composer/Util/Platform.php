@@ -21,12 +21,138 @@ use Composer\Pcre\Preg;
  */
 class Platform
 {
+    /**
+     * Matches OS metadata file names, Windows ones case-insensitively
+     *
+     * @internal
+     */
+    public const METADATA_NAME_REGEX = '{^(?:\._.*|\.DS_Store|__MACOSX|\.AppleDouble|\.fseventsd|\.Spotlight-V100|\.Trashes|(?i:thumbs\.db|desktop\.ini))$}';
+
+    /**
+     * Env vars which indicate that Composer is being run by an AI coding agent, mapped to the agent name
+     *
+     * Order matters as the first match wins. AI_AGENT is handled separately, see getAiAgent()
+     *
+     * Initially copied from https://github.com/laravel/agent-detector. Thanks!
+     *
+     * @internal
+     */
+    public const CODING_AGENT_ENV_VARS = [
+        // Amp, CodeBuddy and Cowork set/mirror Claude Code vars, so they must precede them
+        'AMP_CURRENT_THREAD_ID' => 'amp',
+        'CODEBUDDY' => 'codebuddy',
+        'CLAUDE_CODE_IS_COWORK' => 'cowork',
+        'CLAUDECODE' => 'claude-code',
+        'CLAUDE_CODE' => 'claude-code',
+        'CURSOR_AGENT' => 'cursor',
+        'CURSOR_SANDBOX' => 'cursor-cli',
+        // Gemini CLI forks, must precede GEMINI_CLI
+        'QWEN_CODE' => 'qwen-code',
+        'VECLI_DIR' => 'vecli',
+        'GEMINI_CLI' => 'gemini-cli',
+        'CODEX_SANDBOX' => 'codex',
+        'CODEX_CI' => 'codex',
+        'CODEX_THREAD_ID' => 'codex',
+        'AUGMENT_AGENT' => 'augment',
+        'KILO' => 'kilo-code', // must precede OPENCODE* as Kilo inherits them
+        'OPENCODE_CLIENT' => 'opencode',
+        'OPENCODE' => 'opencode',
+        'CLINE_ACTIVE' => 'cline',
+        'CLINE_TASK_ID' => 'cline',
+        'ROO_CODE_TASK_ID' => 'roo-code',
+        'CRUSH' => 'crush',
+        'IFLOW_CLI' => 'iflow-cli',
+        'TRAE_AI_SHELL_ID' => 'trae',
+        'GOOSE_TERMINAL' => 'goose',
+        'OZ_RUN_ID' => 'warp',
+        'FIREBENDER_TERMINAL' => 'firebender',
+        'GROK_SESSION_ID' => 'grok-build',
+        'JUNIE_SHIM_PATH' => 'junie',
+        'REPL_ID' => 'replit',
+        'COPILOT_MODEL' => 'github-copilot',
+        'COPILOT_ALLOW_ALL' => 'github-copilot',
+        'COPILOT_GITHUB_TOKEN' => 'github-copilot',
+        'COPILOT_CLI' => 'github-copilot',
+        'ANTIGRAVITY_AGENT' => 'antigravity',
+        'PI_CODING_AGENT' => 'pi',
+        'MATTERHORN_SESSION_ID' => 'junie',
+        'KIRO_AGENT_PATH' => 'kiro',
+    ];
+
+    /**
+     * Known AI_AGENT values and aliases mapped to agent names
+     *
+     * Inspired by https://docs.rs/is-ai-agent
+     */
+    private const KNOWN_AI_AGENT_NAMES = [
+        'amp' => 'amp',
+        'amazonq' => 'amazon-q',
+        'amazon-q' => 'amazon-q',
+        'amazon-q-cli' => 'amazon-q',
+        'antigravity' => 'antigravity',
+        'augment' => 'augment',
+        'augment-cli' => 'augment',
+        'claude' => 'claude-code',
+        'claude-code' => 'claude-code',
+        'claudecode' => 'claude-code',
+        'cline' => 'cline',
+        'codebuddy' => 'codebuddy',
+        'codex' => 'codex',
+        'cowork' => 'cowork',
+        'crush' => 'crush',
+        'cursor' => 'cursor',
+        'cursor-cli' => 'cursor-cli',
+        'deepseek-harness' => 'deepseek-harness',
+        'dsh' => 'deepseek-harness',
+        'devin' => 'devin',
+        'firebender' => 'firebender',
+        'gemini' => 'gemini-cli',
+        'gemini-cli' => 'gemini-cli',
+        'github-copilot' => 'github-copilot',
+        'github-copilot-cli' => 'github-copilot',
+        'github_copilot_vscode_agent' => 'github-copilot',
+        'github_copilot_app_agent' => 'github-copilot',
+        'goose' => 'goose',
+        'grok' => 'grok-cli',
+        'grok-cli' => 'grok-cli',
+        'grok-build' => 'grok-build',
+        'hermes' => 'hermes',
+        'hermes-agent' => 'hermes',
+        'iflow' => 'iflow-cli',
+        'iflow-cli' => 'iflow-cli',
+        'junie' => 'junie',
+        'kilo' => 'kilo-code',
+        'kilo-code' => 'kilo-code',
+        'kilocode' => 'kilo-code',
+        'kiro' => 'kiro',
+        'kiro-cli' => 'kiro',
+        'openclaw' => 'openclaw',
+        'opencode' => 'opencode',
+        'openhands' => 'openhands',
+        'pi' => 'pi',
+        'qwen' => 'qwen-code',
+        'qwen-code' => 'qwen-code',
+        'qwencode' => 'qwen-code',
+        'replit' => 'replit',
+        'roo' => 'roo-code',
+        'roo-code' => 'roo-code',
+        'roocode' => 'roo-code',
+        'trae' => 'trae',
+        'v0' => 'v0',
+        'vecli' => 'vecli',
+        'vtcode' => 'vtcode',
+        'warp' => 'warp',
+        'oz' => 'warp',
+    ];
+
     /** @var ?bool */
     private static $isVirtualBoxGuest = null;
     /** @var ?bool */
     private static $isWindowsSubsystemForLinux = null;
     /** @var ?bool */
     private static $isDocker = null;
+    /** @var non-empty-string|false|null */
+    private static $aiAgent = null;
 
     /**
      * getcwd() equivalent which always returns a string
@@ -141,6 +267,10 @@ class Platform
     {
         putenv($name . '=' . $value);
         $_SERVER[$name] = $_ENV[$name] = $value;
+
+        if ($name === 'AI_AGENT' || isset(self::CODING_AGENT_ENV_VARS[$name])) {
+            self::$aiAgent = null;
+        }
     }
 
     /**
@@ -150,6 +280,10 @@ class Platform
     {
         putenv($name);
         unset($_SERVER[$name], $_ENV[$name]);
+
+        if ($name === 'AI_AGENT' || isset(self::CODING_AGENT_ENV_VARS[$name])) {
+            self::$aiAgent = null;
+        }
     }
 
     /**
@@ -159,6 +293,10 @@ class Platform
     {
         if (Preg::isMatch('#^~[\\/]#', $path)) {
             return self::getUserDirectory() . substr($path, 1);
+        }
+
+        if ($path === '' || ($path[0] !== '$' && $path[0] !== '%')) {
+            return $path;
         }
 
         return Preg::replaceCallback('#^(\$|(?P<percent>%))(?P<var>\w++)(?(percent)%)(?P<path>.*)#', static function ($matches): string {
@@ -227,11 +365,121 @@ class Platform
     }
 
     /**
+     * @internal
+     * @return bool Whether the path is on a Windows drive mounted into WSL (e.g. /mnt/c), where filesystem IO is very slow
+     */
+    public static function isWindowsMountInWsl(string $path): bool
+    {
+        // relative paths would end up resolving against the CWD below
+        if (!str_starts_with($path, '/') || !self::isWindowsSubsystemForLinux() || !is_readable('/proc/mounts')) {
+            return false;
+        }
+
+        // resolve symlinks, walking up to the closest existing parent if the dir does not exist yet
+        $realPath = false;
+        while (false === ($realPath = realpath($path))) {
+            $parent = dirname($path);
+            if ($parent === $path) {
+                break;
+            }
+            $path = $parent;
+        }
+        if (false === $realPath) {
+            return false;
+        }
+
+        return self::isDrvfsMount($realPath, (string) Silencer::call('file_get_contents', '/proc/mounts'));
+    }
+
+    /**
+     * @internal
+     * @param string $realPath An absolute path with symlinks resolved
+     * @param string $procMounts The contents of /proc/mounts
+     */
+    public static function isDrvfsMount(string $realPath, string $procMounts): bool
+    {
+        $bestMatch = '';
+        $isDrvfs = false;
+        foreach (explode("\n", $procMounts) as $line) {
+            $parts = explode(' ', $line);
+            if (count($parts) < 4) {
+                continue;
+            }
+            // /proc/mounts octal-escapes spaces and other special chars
+            $mountPoint = stripcslashes($parts[1]);
+            // >= as a later entry for the same mount point is mounted over the earlier one
+            if (
+                strlen($mountPoint) >= strlen($bestMatch)
+                && ($realPath === $mountPoint || str_starts_with($realPath, rtrim($mountPoint, '/').'/'))
+            ) {
+                $bestMatch = $mountPoint;
+                // WSL1 uses drvfs, WSL2 drvfs over 9p; otherwise (e.g. virtiofs) a drive letter device gives it away
+                $isDrvfs = $parts[2] === 'drvfs'
+                    || ($parts[2] === '9p' && str_contains($parts[3], 'aname=drvfs'))
+                    || Preg::isMatch('{^[a-z]:\\\\}i', stripcslashes($parts[0]));
+            }
+        }
+
+        return $isDrvfs;
+    }
+
+    /**
      * @return bool Whether the host machine is running a Windows OS
      */
     public static function isWindows(): bool
     {
         return \defined('PHP_WINDOWS_VERSION_BUILD');
+    }
+
+    /**
+     * @return ?non-empty-string The name of the AI coding agent running Composer, 'unknown' if it cannot be identified, or null if run by a human
+     */
+    public static function getAiAgent(): ?string
+    {
+        // the cache is reset by putEnv/clearEnv when AI_AGENT or one of the CODING_AGENT_ENV_VARS is modified
+        if (null !== self::$aiAgent) {
+            return self::$aiAgent === false ? null : self::$aiAgent;
+        }
+
+        // a known AI_AGENT name wins over other markers, an unknown one (sanitized) is only used as fallback
+        $fallback = false;
+        $value = strtolower(trim((string) self::getEnv('AI_AGENT')));
+        if (!in_array($value, ['', '0', 'false', 'no', 'off'], true)) {
+            $name = self::KNOWN_AI_AGENT_NAMES[$value] ?? null;
+            if ($name === null) {
+                // strip anything after a separator (e.g. "codex@1.2" or "claude-code v2") and a trailing version
+                $stripVersion = static function (string $value): string {
+                    return Preg::replace('{-?v?\d+(\.\d+)*$}', '', $value);
+                };
+                $value = Preg::replace('{[\s@/:].*$}s', '', $value);
+                // also try the part before an underscore for values like "claude-code_2-1-201_agent"
+                $name = self::KNOWN_AI_AGENT_NAMES[$stripVersion(strtr($value, '_', '-'))]
+                    ?? self::KNOWN_AI_AGENT_NAMES[$stripVersion(explode('_', $value)[0])]
+                    ?? null;
+                $value = $stripVersion(strtr($value, '_', '-'));
+            }
+            if ($name !== null) {
+                return self::$aiAgent = $name;
+            }
+            $value = substr(trim(Preg::replace(['{[^a-z-]+}', '{-{2,}}'], ['', '-'], $value), '-'), 0, 20);
+            $fallback = $value !== '' ? $value : 'unknown';
+        }
+
+        foreach (self::CODING_AGENT_ENV_VARS as $envVar => $name) {
+            $value = self::getEnv($envVar);
+            if ($value !== false && $value !== '') {
+                return self::$aiAgent = $name;
+            }
+        }
+
+        // devin does not expose an env var but mounts this directory, cannot check it if open_basedir is set
+        if (!(bool) ini_get('open_basedir') && file_exists('/opt/.devin')) {
+            return self::$aiAgent = 'devin';
+        }
+
+        self::$aiAgent = $fallback;
+
+        return $fallback === false ? null : $fallback;
     }
 
     public static function isDocker(): bool
@@ -397,5 +645,15 @@ class Platform
         }
 
         return '/dev/null';
+    }
+
+    /**
+     * Whether the top-level segment of an archive entry path is OS metadata (resource forks, thumbnail caches, etc.)
+     */
+    public static function isMetadataPath(string $name): bool
+    {
+        $top = explode('/', ltrim(str_replace('\\', '/', $name), '/'))[0];
+
+        return Preg::isMatch(self::METADATA_NAME_REGEX, $top);
     }
 }

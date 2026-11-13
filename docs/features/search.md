@@ -66,6 +66,12 @@ Items are displayed in the results table:
 
 Click an item row to open its details without leaving the page.
 
+When favourites are enabled, the row actions also offer a star button. Click an
+empty star to add the item to your favourites, or a filled yellow star to remove
+it, without opening the item. This personal bookmark is also available to
+read-only users. With the favourites filter active, removing a star refreshes
+the matching items and their count.
+
 ---
 
 ## Scope of search results

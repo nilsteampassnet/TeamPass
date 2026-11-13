@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 
+/** TeamPass - GPL-3.0-or-later. Copyright 2009-2026 Teampass.net. */
+
 /**
  * Sentinel: the web upgrade wizard really puts TeamPass in maintenance, then restores it.
  *
@@ -26,7 +28,7 @@ final class WizardMaintenanceModeTest extends TestCase
         $this->assertStringContainsString("no_maintenance_mode : \$('#no_maintenance_mode').prop('checked') === true ? 1 : 0", $stepTwo);
     }
 
-    public function testStepTwoEnablesMaintenanceAndStepFiveRestoresIt(): void
+    public function testMaintenanceIsRestoredAtTheEndOfStepFive(): void
     {
         $ajax = self::read('public/install/upgrade_ajax.php');
         $stepTwo = substr($ajax, (int) strpos($ajax, "case 'step2':"), (int) strpos($ajax, "case 'step3':") - (int) strpos($ajax, "case 'step2':"));
@@ -37,8 +39,11 @@ final class WizardMaintenanceModeTest extends TestCase
         $this->assertStringContainsString("SET `valeur` = '1' WHERE type = 'admin' AND intitule = 'maintenance_mode'", $stepTwo);
         $this->assertStringContainsString("\$superGlobal->put('upgrade_previous_maintenance'", $stepTwo);
 
-        $restore = strpos($stepFive, "\$superGlobal->get('upgrade_previous_maintenance', 'SESSION')");
-        $this->assertIsInt($restore, 'step 5 must restore the maintenance mode');
-        $this->assertLessThan((int) strpos($stepFive, 'ConfigManager::invalidateCache();'), $restore);
+        $this->assertStringContainsString("\$superGlobal->get('upgrade_previous_maintenance', 'SESSION')", $stepFive);
+        $this->assertStringContainsString("\$previousMaintenance === '0' || \$previousMaintenance === '1'", $stepFive);
+        $this->assertStringContainsString("SET `valeur` = '\" . \$previousMaintenance . \"' WHERE type = 'admin' AND intitule = 'maintenance_mode'", $stepFive);
+        $this->assertStringContainsString("\$superGlobal->put('upgrade_previous_maintenance', '', 'SESSION')", $stepFive);
+        $finalization = self::read('public/install/permissions.php');
+        $this->assertStringNotContainsString('maintenance_mode', $finalization);
     }
 }

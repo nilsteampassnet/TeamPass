@@ -69,8 +69,8 @@ carries its own dependencies and is immune — the same reason `app/vendor/bin/p
 
 ```bash
 mkdir -p _tools
-curl -sL -o _tools/phpunit.phar    https://phar.phpunit.de/phpunit-10.5.64.phar
-curl -sL -o /tmp/phpunit.phar.asc  https://phar.phpunit.de/phpunit-10.5.64.phar.asc
+curl -sL -o _tools/phpunit.phar    https://phar.phpunit.de/phpunit-10.5.66.phar
+curl -sL -o /tmp/phpunit.phar.asc  https://phar.phpunit.de/phpunit-10.5.66.phar.asc
 gpg --keyserver hkps://keys.openpgp.org \
     --recv-keys D8406D0D82947747293778314AA394086372C20A         # Sebastian Bergmann
 gpg --verify /tmp/phpunit.phar.asc _tools/phpunit.phar           # expect: Good signature

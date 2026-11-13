@@ -13,6 +13,7 @@
 namespace Composer\Package\Loader;
 
 use Composer\Exception\SecurityException;
+use Composer\Installer\BinaryInstaller;
 use Composer\Package\BasePackage;
 use Composer\Package\PackageInterface;
 use Composer\Package\RootPackageInterface;
@@ -118,17 +119,15 @@ class ValidatingArrayLoader implements LoaderInterface
             } else {
                 $this->validateFlatArray('bin');
             }
-            // A ".." path segment in a bin escapes the package install directory and lets the
-            // package chmod/point at an arbitrary host file during install (GHSA-gjfg-22fp-rrxx).
             if (isset($this->config['bin']) && is_string($this->config['bin'])) {
-                if (Preg::isMatch('{(?:^|[\\\\/])\.\.(?:[\\\\/]|$)}', $this->config['bin'])) {
-                    $this->errors[] = 'bin : invalid value ('.$this->config['bin'].'), must not contain a ".." path component';
+                if (null !== $error = self::findBinError($this->config['bin'])) {
+                    $this->errors[] = 'bin : invalid value ('.$this->config['bin'].'), '.$error;
                     unset($this->config['bin']);
                 }
             } elseif (isset($this->config['bin']) && is_array($this->config['bin'])) {
                 foreach ($this->config['bin'] as $key => $bin) {
-                    if (is_string($bin) && Preg::isMatch('{(?:^|[\\\\/])\.\.(?:[\\\\/]|$)}', $bin)) {
-                        $this->errors[] = 'bin.'.$key.' : invalid value ('.$bin.'), must not contain a ".." path component';
+                    if (is_string($bin) && null !== $error = self::findBinError($bin)) {
+                        $this->errors[] = 'bin.'.$key.' : invalid value ('.$bin.'), '.$error;
                         unset($this->config['bin'][$key]);
                     }
                 }
@@ -685,7 +684,9 @@ class ValidatingArrayLoader implements LoaderInterface
         // The root package's name/metadata is locally controlled and already validated by
         // RootPackageLoader (and its "__root__" placeholder name would be a false positive here).
         // RootPackageInterface covers both RootPackage and RootAliasPackage.
-        if ($package instanceof RootPackageInterface) {
+        // Platform packages are built locally from the runtime, and extension names can be
+        // arbitrary strings which do not always map to a valid platform package name.
+        if ($package instanceof RootPackageInterface || $package->getRepository() instanceof PlatformRepository) {
             return;
         }
 
@@ -725,6 +726,27 @@ class ValidatingArrayLoader implements LoaderInterface
                 throw new SecurityException($package->getName().' has an invalid bin '.$bin.', it must not contain ".." path segments');
             }
         }
+    }
+
+    /**
+     * Validates a bin path, returning the reason it is unacceptable or null if it is fine
+     *
+     * A ".." segment escapes the package install directory and lets the package chmod/point at an
+     * arbitrary host file during install (GHSA-gjfg-22fp-rrxx). The character check is the same one
+     * BinaryInstaller applies before generating a proxy, done here as well so that packagist.org
+     * and composer validate flag such a bin at the source.
+     */
+    private static function findBinError(string $bin): ?string
+    {
+        if (Preg::isMatch('{(?:^|[\\\\/])\.\.(?:[\\\\/]|$)}', $bin)) {
+            return 'must not contain a ".." path component';
+        }
+
+        if (!BinaryInstaller::isSafeBinPath($bin)) {
+            return 'must not contain any of the characters *$`"&^|<>()%!; nor control characters';
+        }
+
+        return null;
     }
 
     /**

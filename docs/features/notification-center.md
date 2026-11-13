@@ -35,6 +35,8 @@ Each user keeps their **latest 50** notifications; older ones are pruned automat
 - The bell shows an **unread badge**; opening it lists the latest notifications with their timestamps. *Mark all as read* clears the badge; clicking a notification marks it read individually.
 - When the [WebSocket server](../install/websocket.md) is enabled, the same events refresh the inbox **live** — no reload needed.
 
+Each password-expiry notification keeps the number of days remaining on the day it was delivered, next to its delivery date: the 14-day and 7-day warnings of the same password stay distinct when read later. The current countdown is shown on the profile page.
+
 Local-password warnings are populated by a daily background sweep at 03:15 in the TeamPass timezone. A once-per-day check during an authenticated page load is a fallback for installations whose background task handler is unavailable. Both paths use the same dedupe key.
 
 A knowledge-base publication is fanned out by a background task rather than by the article save itself: the recipient list is the whole non-administrator user base, which must never be walked inside a request. The dedupe key makes the deferred delivery safe to retry.

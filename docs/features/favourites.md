@@ -22,6 +22,8 @@ From the item list in any folder:
 
 To remove a favourite, click the star icon again. You can also remove it directly from the Favourites page.
 
+From the **Search** page, the actions of each result row also carry a star: click it to add or remove the item without opening it (see [Search](search.md)). The folder item list shows its star only on the items you can edit; for an item you can only read, and for read-only users, use the search results. Adding a favourite checks again that you may read the item.
+
 ---
 
 ## Favourites page

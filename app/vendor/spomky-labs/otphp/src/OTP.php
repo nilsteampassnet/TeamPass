@@ -87,7 +87,7 @@ abstract class OTP implements OTPInterface
     {
         $parameters = $this->parameters;
 
-        if ($this->getIssuer() !== null && $this->isIssuerIncludedAsParameter() === true) {
+        if ($this->getIssuer() !== null && $this->isIssuerIncludedAsParameter()) {
             $parameters['issuer'] = $this->getIssuer();
         }
 
@@ -202,7 +202,7 @@ abstract class OTP implements OTPInterface
     {
         $map = $this->getParameterMap();
 
-        if (array_key_exists($parameter, $map) === true) {
+        if (array_key_exists($parameter, $map)) {
             $callback = $map[$parameter];
             $value = $callback($value);
         }
@@ -287,6 +287,8 @@ abstract class OTP implements OTPInterface
      */
     protected function generateOTP(int $input): string
     {
+        // A negative input would make intToByteString() loop until memory runs out.
+        $input >= 0 || throw new InvalidParameterException('The input must be at least 0.', 'input', $input);
         $hash = hash_hmac($this->getDigest(), $this->intToByteString($input), $this->getDecodedSecret(), true);
         $unpacked = unpack('C*', $hash);
         $unpacked !== false || throw new InvalidParameterException('Invalid data.', 'hash', $hash);
@@ -295,9 +297,12 @@ abstract class OTP implements OTPInterface
 
         $offset = ($hmac[count($hmac) - 1] & 0xF);
         $code = ($hmac[$offset] & 0x7F) << 24 | ($hmac[$offset + 1] & 0xFF) << 16 | ($hmac[$offset + 2] & 0xFF) << 8 | ($hmac[$offset + 3] & 0xFF);
-        $otp = $code % (10 ** $this->getDigits());
+        // $code fits in 31 bits, so it is below 10^10 and the modulo changes nothing from 10 digits on. Skipping it keeps
+        // 10 ** 10, a float on 32-bit PHP, out of the modulo, which truncated it to 10^10 mod 2^32 and corrupted the code.
+        $digits = $this->getDigits();
+        $otp = $digits >= 10 ? $code : $code % (10 ** $digits);
 
-        return str_pad((string) $otp, $this->getDigits(), '0', STR_PAD_LEFT);
+        return str_pad((string) $otp, $digits, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -354,7 +359,12 @@ abstract class OTP implements OTPInterface
 
                 return $value;
             },
-            'secret' => static fn (string $value): string => strtoupper(trim($value, '=')),
+            'secret' => static function (string $value): string {
+                $value = strtoupper(trim($value, '='));
+                $value !== '' || throw new InvalidParameterException('Secret must not be empty.', 'secret', $value);
+
+                return $value;
+            },
             'algorithm' => static function (string $value): string {
                 $value = strtolower($value);
                 in_array($value, hash_hmac_algos(), true) || throw new InvalidParameterException(
@@ -376,8 +386,8 @@ abstract class OTP implements OTPInterface
 
                 return $value;
             },
-            'digits' => static function ($value): int {
-                $value = (int) $value;
+            'digits' => static function (mixed $value): int {
+                $value = self::toInt('digits', $value);
                 ($value >= 1 && $value <= self::MAX_DIGITS) || throw new InvalidParameterException(
                     sprintf('Digits must be between 1 and %d.', self::MAX_DIGITS),
                     'digits',
@@ -397,6 +407,33 @@ abstract class OTP implements OTPInterface
                 return $value;
             },
         ];
+    }
+
+    /**
+     * Converts the value of a numeric parameter (digits, period, epoch, counter) to an integer.
+     *
+     * The typed setters pass an int, a provisioning URI passes a string. A string is accepted when it holds a decimal
+     * integer that fits in an int, possibly signed, zero-padded or surrounded by whitespace. A plain (int) cast would
+     * turn the array of "digits[]=8" into 1, drop the trailing characters of "8abc" or "6.9" and saturate "1e30" to
+     * PHP_INT_MAX, so a malformed value would pass the range checks as another value.
+     */
+    final protected static function toInt(string $parameter, mixed $value): int
+    {
+        if (is_int($value)) {
+            return $value;
+        }
+        if (is_string($value) && preg_match('/^\s*([+-]?)0*(\d+)\s*$/', $value, $matches) === 1) {
+            $integer = ($matches[1] === '-' && $matches[2] !== '0' ? '-' : '') . $matches[2];
+            if ((string) (int) $integer === $integer) {
+                return (int) $integer;
+            }
+        }
+
+        throw new InvalidParameterException(
+            sprintf('The "%s" parameter must be an integer.', $parameter),
+            $parameter,
+            $value
+        );
     }
 
     /**
@@ -438,8 +475,9 @@ abstract class OTP implements OTPInterface
                 'The label is not set. Either label or issuer must be set.',
                 'label'
             ),
-            $label !== null && $this->hasColon($label) => throw new InvalidLabelException(
-                'Label must not contain a colon.',
+            // A label in issuer:account form names its issuer already; prefixing another one would add a second colon
+            $issuer !== null && $label !== null && $this->hasColon($label) => throw new InvalidLabelException(
+                'Label must not contain a colon when an issuer is set.',
                 'label',
                 $label
             ),
@@ -485,10 +523,17 @@ abstract class OTP implements OTPInterface
 
         [$issuerPart, $accountPart] = $parts;
 
-        // Remove leading %20 (spaces) from account part per spec: *"%20" accountname
-        $accountPart = ltrim($accountPart, '%20');
+        // Neither part may be empty: issuer ":" *"%20" accountname, so the account name is what follows the spaces
+        if ($issuerPart === '' || $accountPart === '' || preg_replace('/^(?:%20)+/', '', $accountPart) === '') {
+            throw new InvalidLabelException(
+                'Neither issuer nor account name in label may be empty.',
+                'label',
+                $value
+            );
+        }
 
-        // Validate that neither part contains additional colons
+        // Validate that neither part contains additional colons. The optional leading *"%20" of the account name
+        // holds no colon, so the account part is checked as is: trimming it would also strip the "%" of a "%3A".
         if ($this->hasColon($issuerPart) || $this->hasColon($accountPart)) {
             throw new InvalidLabelException(
                 'Neither issuer nor account name in label may contain a colon.',

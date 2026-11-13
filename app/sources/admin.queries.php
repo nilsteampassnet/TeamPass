@@ -39,6 +39,7 @@ use Duo\DuoUniversal\Client;
 use Duo\DuoUniversal\DuoException;
 use TeampassClasses\EmailService\EmailSettings;
 use TeampassClasses\EmailService\EmailService;
+use TeampassClasses\OAuth2Controller\OAuth2Controller;
 
 // Load functions
 require_once 'main.functions.php';
@@ -1511,6 +1512,20 @@ switch ($post_type) {
             $post_data,
             'decode'
         );
+
+        require_once __DIR__ . '/emails_transport_logic.php';
+        if (in_array($dataReceived['field'] ?? '', emailTransportSettingNames(), true)) {
+            echo prepareExchangedData(['error' => true, 'message' => $lang->get('email_profile_save_required')], 'encode');
+            break;
+        }
+
+        // Diagnostics are independent of the transport revision and OAuth consent.
+        if (($dataReceived['field'] ?? null) === 'email_debug_level'
+            && !in_array($dataReceived['value'] ?? null, ['0', '1', '2', '3', '4', 0, 1, 2, 3, 4], true)
+        ) {
+            echo prepareExchangedData(['error' => true, 'message' => $lang->get('email_transport_error_configuration')], 'encode');
+            break;
+        }
         
         if (($dataReceived['field'] ?? null) === 'device_pairing_token_lifetime_days') {
             require_once __DIR__ . '/api_device_logic.php';
@@ -1957,17 +1972,9 @@ switch ($post_type) {
         }
 
         // special Cases
-        if ($post_field === 'cpassman_url') {
-            // update also jsUrl for CSFP protection
-            $jsUrl = $post_value . '/assets/lib/csrfp/csrfprotector.js';
-            $csrfp_file = '../includes/libraries/csrfp/libs/csrfp.config.php';
-            $data = file_get_contents($csrfp_file);
-            $posJsUrl = strpos($data, '"jsUrl" => "');
-            $posEndLine = strpos($data, '",', $posJsUrl);
-            $line = substr($data, $posJsUrl, ($posEndLine - $posJsUrl + 2));
-            $newdata = str_replace($line, '"jsUrl" => "' . filter_var($jsUrl, FILTER_SANITIZE_FULL_SPECIAL_CHARS) . '",', $data);
-            file_put_contents($csrfp_file, $newdata);
-        } elseif ($post_field === 'restricted_to_input' && (int) $post_value === 0) {
+        // cpassman_url needs no csrfp.config.php rewrite: public/index.php derives
+        // csrfProtector::$config['jsUrl'] from the request on every page load.
+        if ($post_field === 'restricted_to_input' && (int) $post_value === 0) {
             DB::update(
                 prefixTable('misc'),
                 array(
@@ -2976,6 +2983,91 @@ case 'save_sending_statistics':
 
         echo prepareExchangedData(
             $json, 
+            'encode'
+        );
+
+        break;
+
+    /*
+     * OAuth page: what the next SSO sign-in of a Microsoft Entra ID user would do
+     */
+    case 'oauth2_test_user':
+        // Check KEY and rights
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        if ((int) $session->get('user-admin') !== 1) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // decrypt and retreive data in JSON format
+        $dataReceived = prepareExchangedData(
+            $post_data,
+            'decode'
+        );
+        $dataReceived = is_array($dataReceived) === true ? $dataReceived : [];
+
+        echo prepareExchangedData(
+            oauth2TestUserReport(
+                $SETTINGS,
+                $lang,
+                mb_substr(trim((string) ($dataReceived['login'] ?? '')), 0, 256),
+                (string) ($dataReceived['groups'] ?? '')
+            ),
+            'encode'
+        );
+
+        break;
+
+    /*
+     * OAuth page: what Microsoft Entra ID answers for each allowed group of the self-registration
+     */
+    case 'oauth2_check_groups':
+        // Check KEY and rights
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        if ((int) $session->get('user-admin') !== 1) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // decrypt and retreive data in JSON format
+        $dataReceived = prepareExchangedData(
+            $post_data,
+            'decode'
+        );
+        $dataReceived = is_array($dataReceived) === true ? $dataReceived : [];
+
+        echo prepareExchangedData(
+            oauth2CheckGroupsReport($SETTINGS, $lang, (string) ($dataReceived['groups'] ?? '')),
             'encode'
         );
 
@@ -5205,4 +5297,250 @@ function tpHealthIsAbsolutePathForAdmin(string $path): bool
     $resolved = $dir . '/' . basename($path);
 
     return str_starts_with($resolved, '/');
+}
+
+/**
+ * Call Microsoft Graph for the "Test a user" check of the OAuth page.
+ *
+ * Only Microsoft Entra ID can be queried: OpenID Connect has no standard API to read the
+ * groups of another user. A Graph refusal (403) is completed with the permissions to grant.
+ *
+ * @param array    $SETTINGS Teampass settings
+ * @param Language $lang     Language of the administrator
+ * @param callable $call     fn (OAuth2Controller): array, returning an {error, message, code} envelope
+ *
+ * @return array<string, mixed> The answer of $call, or {error: true, message} (HTML-escaped)
+ */
+function oauth2TestCallDirectory(array $SETTINGS, Language $lang, callable $call): array
+{
+    if (OAuth2Controller::isEntraEndpoint((string) ($SETTINGS['oauth2_client_endpoint'] ?? '')) === false) {
+        return ['error' => true, 'message' => $lang->get('oauth2_test_generic_provider')];
+    }
+
+    try {
+        // The constructor throws on an invalid configuration (multi-tenant)
+        $answer = $call(new OAuth2Controller($SETTINGS));
+    } catch (Throwable $e) {
+        $answer = ['error' => true, 'message' => $e->getMessage(), 'code' => 0];
+    }
+
+    if ($answer['error'] === true) {
+        error_log('TEAMPASS OAuth2 - test a user: ' . $answer['message']);
+        $message = htmlspecialchars((string) $answer['message'], ENT_QUOTES, 'UTF-8');
+        if ((int) ($answer['code'] ?? 0) === 403) {
+            $message .= '<br>' . $lang->get('oauth2_test_graph_permissions');
+        }
+
+        return ['error' => true, 'message' => $message];
+    }
+
+    return $answer;
+}
+
+/**
+ * Report of the "Test a user" check: for each directory user who signs in with the login,
+ * what the next SSO sign-in would do, and what it reads.
+ *
+ * Read-only. Follows the sign-in (identify.php) through oauth2TestSignInOutcome(), on the
+ * groups the sign-in reads (OAuth2Controller::entraUserGroups()).
+ *
+ * @param array    $SETTINGS      Teampass settings
+ * @param Language $lang          Language of the administrator
+ * @param string   $loginOrUpn    TeamPass login or UPN typed by the administrator
+ * @param string   $groupsSetting Allowed groups for self-registration, as the page shows them
+ *
+ * @return array<string, mixed> {error, message} or {error: false, notice, users}
+ */
+function oauth2TestUserReport(array $SETTINGS, Language $lang, string $loginOrUpn, string $groupsSetting): array
+{
+    require_once __DIR__ . '/oauth2_self_register_logic.php';
+    require_once __DIR__ . '/oauth2_test_user_logic.php';
+
+    $login = oauth2LoginFromPrincipalName($loginOrUpn);
+    if ($login === '') {
+        return ['error' => true, 'message' => $lang->get('error_field_is_mandatory')];
+    }
+
+    $answer = oauth2TestCallDirectory(
+        $SETTINGS,
+        $lang,
+        static fn (OAuth2Controller $controller): array => $controller->describeDirectoryUsers($loginOrUpn)
+    );
+    if ($answer['error'] === true) {
+        return $answer;
+    }
+
+    $directoryUsers = is_array($answer['users'] ?? null) ? $answer['users'] : [];
+    $report = ['error' => false, 'notice' => '', 'users' => []];
+    if ($directoryUsers === []) {
+        $report['notice'] = oauth2TestText($lang->get('oauth2_test_no_directory_user'), ['#login#' => $login]);
+
+        return $report;
+    }
+    if (count($directoryUsers) > 1) {
+        $report['notice'] = oauth2TestText(
+            $lang->get('oauth2_test_homonyms'),
+            ['#count#' => (string) count($directoryUsers), '#login#' => $login]
+        );
+    }
+
+    $allowedGroups = oauth2ParseAllowedGroups($groupsSetting);
+    $systemAccountIds = teampassGetSystemAccountIds();
+
+    foreach ($directoryUsers as $directoryUser) {
+        $userLogin = oauth2LoginFromPrincipalName((string) $directoryUser['userPrincipalName']);
+        $groups = is_array($directoryUser['groups'] ?? null) ? $directoryUser['groups'] : [];
+
+        // The account the login locates, as initialChecks::getUserInfo() reads it
+        $account = DB::queryFirstRow(
+            'SELECT id, login, auth_type, oauth2_identity, disabled
+            FROM ' . prefixTable('users') . '
+            WHERE login = %s AND deleted_at IS NULL',
+            $userLogin
+        );
+        $account = is_array($account) === true ? $account : null;
+
+        // Identity the sign-in binds the account to (OAuth2Controller::callback())
+        $identityParts = OAuth2Controller::entraIdentity(['id' => $directoryUser['id']]);
+        $identity = oauth2IdentityHash($identityParts['identityIssuer'], $identityParts['identitySubject']);
+        $boundElsewhere = $identity === '' ? '' : (string) DB::queryFirstField(
+            'SELECT login FROM ' . prefixTable('users') . ' WHERE oauth2_identity = %s AND id <> %i',
+            $identity,
+            (int) ($account['id'] ?? 0)
+        );
+
+        $outcome = oauth2TestSignInOutcome([
+            'oauth2_enabled' => (int) ($SETTINGS['oauth2_enabled'] ?? 0) === 1,
+            'directory_enabled' => is_bool($directoryUser['accountEnabled'] ?? null) ? $directoryUser['accountEnabled'] : null,
+            'login' => $userLogin,
+            'account' => $account,
+            // The built-in administrator and the internal accounts, whatever the case of the login
+            'reserved_account' => $account !== null && (
+                $userLogin === 'admin'
+                || (string) $account['login'] === 'admin'
+                || in_array((int) $account['id'], $systemAccountIds, true)
+            ),
+            'identity' => $identity,
+            'bound_elsewhere' => $boundElsewhere,
+            'link_existing_accounts' => (int) ($SETTINGS['oauth2_link_existing_accounts'] ?? 0) === 1,
+            'ldap_mode' => (int) ($SETTINGS['ldap_mode'] ?? 0) === 1,
+            'deleted_homonym' => $account === null && (int) DB::queryFirstField(
+                'SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE login LIKE %s AND deleted_at IS NOT NULL',
+                $userLogin . '_deleted_%'
+            ) > 0,
+            'may_register' => oauth2UserMayRegister($allowedGroups, $groups),
+        ]);
+
+        // Roles of an account created at this sign-in, as externalAdCreateUser() resolves them
+        $roles = null;
+        $fallbackRole = false;
+        if ($outcome['key'] === 'oauth2_test_create') {
+            $roles = [];
+            foreach (oauth2GroupsForRoleMatching($allowedGroups, $groups) as $group) {
+                $titles = oauth2RoleTitleCandidates($group['displayName'] ?? null);
+                if ($titles === []) {
+                    continue;
+                }
+                $title = DB::queryFirstField(
+                    'SELECT title FROM ' . prefixTable('roles_title') . ' WHERE title IN %ls',
+                    $titles
+                );
+                if ($title !== null) {
+                    $roles[] = oauth2RoleTitleAsGroupName((string) $title);
+                }
+            }
+            if ($roles === [] && empty($SETTINGS['oauth_selfregistered_user_belongs_to_role']) === false) {
+                $title = DB::queryFirstField(
+                    'SELECT title FROM ' . prefixTable('roles_title') . ' WHERE id = %i',
+                    (int) $SETTINGS['oauth_selfregistered_user_belongs_to_role']
+                );
+                if ($title !== null) {
+                    $roles[] = oauth2RoleTitleAsGroupName((string) $title);
+                    $fallbackRole = true;
+                }
+            }
+            $roles = array_values(array_unique($roles));
+        }
+
+        $groupsView = [];
+        foreach ($groups as $group) {
+            $name = is_array($group) === true ? ($group['displayName'] ?? null) : null;
+            $groupsView[] = [
+                'name' => is_string($name) === true ? trim($name) : '',
+                'id' => is_array($group) === true ? (string) ($group['id'] ?? '') : '',
+                'allowed' => oauth2GroupIsAllowed($allowedGroups, $group),
+            ];
+        }
+
+        $report['users'][] = [
+            'userPrincipalName' => (string) $directoryUser['userPrincipalName'],
+            'displayName' => (string) ($directoryUser['displayName'] ?? ''),
+            'accepted' => $outcome['accepted'],
+            'outcome' => oauth2TestText($lang->get($outcome['key']), $outcome['tokens']),
+            'groups' => $groupsView,
+            'roles' => $roles,
+            'fallbackRole' => $fallbackRole,
+        ];
+    }
+
+    return $report;
+}
+
+/**
+ * Report of the "Check the allowed groups" button: what Microsoft Entra ID answers for each
+ * entry of the self-registration list, to catch a typo or a name several groups share.
+ *
+ * @param array    $SETTINGS      Teampass settings
+ * @param Language $lang          Language of the administrator
+ * @param string   $groupsSetting Allowed groups for self-registration, as the page shows them
+ *
+ * @return array<string, mixed> {error, message} or {error: false, notice, groups}
+ */
+function oauth2CheckGroupsReport(array $SETTINGS, Language $lang, string $groupsSetting): array
+{
+    require_once __DIR__ . '/oauth2_self_register_logic.php';
+    require_once __DIR__ . '/oauth2_test_user_logic.php';
+
+    $allowedGroups = oauth2ParseAllowedGroups($groupsSetting);
+    if ($allowedGroups === []) {
+        return ['error' => false, 'notice' => $lang->get('oauth2_test_group_list_empty'), 'groups' => []];
+    }
+
+    $entries = array_values(array_filter(
+        $allowedGroups,
+        static fn (string $entry): bool => $entry !== OAUTH2_SELF_REGISTER_ANYONE
+    ));
+    $notice = count($entries) < count($allowedGroups) ? $lang->get('oauth2_test_group_anyone') : '';
+    if ($entries === []) {
+        return ['error' => false, 'notice' => $notice, 'groups' => []];
+    }
+
+    $answer = oauth2TestCallDirectory(
+        $SETTINGS,
+        $lang,
+        static fn (OAuth2Controller $controller): array => $controller->checkGroupNames($entries)
+    );
+    if ($answer['error'] === true) {
+        return $answer;
+    }
+
+    $groups = [];
+    foreach (is_array($answer['groups'] ?? null) ? $answer['groups'] : [] as $entry) {
+        $matches = is_array($entry['matches'] ?? null) ? $entry['matches'] : [];
+        $key = oauth2TestGroupEntryKey($matches);
+        $groups[] = [
+            'entry' => (string) $entry['entry'],
+            'found' => $matches !== [],
+            'message' => $key === '' ? '' : oauth2TestText($lang->get($key), ['#count#' => (string) count($matches)]),
+            'matches' => array_map(
+                static fn ($group): array => [
+                    'id' => is_array($group) === true ? (string) ($group['id'] ?? '') : '',
+                    'name' => is_array($group) === true && is_string($group['displayName'] ?? null) ? $group['displayName'] : '',
+                ],
+                $matches
+            ),
+        ];
+    }
+
+    return ['error' => false, 'notice' => $notice, 'groups' => $groups];
 }

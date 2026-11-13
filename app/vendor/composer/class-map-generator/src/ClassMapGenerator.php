@@ -152,7 +152,7 @@ class ClassMapGenerator
                 $filePath = $cwd . '/' . $filePath;
                 $filePath = self::normalizePath($filePath);
             } else {
-                $filePath = Preg::replace('{(?<!:)[\\\\/]{2,}}', '/', $filePath);
+                $filePath = Preg::replace('{(?<![:/])[\\\\/]{2,}}', '/', $filePath);
             }
 
             if ('' === $filePath) {

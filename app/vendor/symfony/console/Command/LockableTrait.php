@@ -45,12 +45,12 @@ trait LockableTrait
             $store = new FlockStore();
         }
 
-        $this->lock = (new LockFactory($store))->createLock($name ?: $this->getName());
-        if (!$this->lock->acquire($blocking)) {
-            $this->lock = null;
-
+        $lock = (new LockFactory($store))->createLock($name ?: $this->getName());
+        if (!$lock->acquire($blocking)) {
             return false;
         }
+
+        $this->lock = $lock;
 
         return true;
     }
@@ -60,9 +60,9 @@ trait LockableTrait
      */
     private function release(): void
     {
-        if ($this->lock) {
-            $this->lock->release();
+        if ($lock = $this->lock) {
             $this->lock = null;
+            $lock->release();
         }
     }
 }

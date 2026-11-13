@@ -275,12 +275,12 @@ if (null !== $post_type) {
 
         /*
          * CASE
-         * Put back an item removed by mistake (undo). The folder is re-checked: a
-         * favourite must never become a way to bookmark an item the user lost access to.
+         * Add a readable item, including when undoing a removal. Apply the same
+         * folder and item restrictions as the favourites list, even for read-only users.
          */
         case 'add_fav':
             $itemId = (int) $post_id;
-            if ($itemId <= 0 || accessToItemIsGranted($itemId, $SETTINGS) !== true) {
+            if (favouriteItemIsReadable($userId, $itemId) === false) {
                 echo json_encode([
                     'error' => true,
                     'message' => $lang->get('error_not_allowed_to_access_this_folder'),

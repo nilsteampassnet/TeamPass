@@ -9,6 +9,28 @@ const source = fs.readFileSync(path.join(__dirname, '../../public/install/recove
 const job = (status, permissions) => ({ id: 'a'.repeat(32), status, permissions, error: '', tables: 80, documents: 3,
   plan: { source_version: '3.2.2.7', target_version: '3.2.3.2' } })
 
+test('Manual permission review requires an explicit choice before offering the CLI acknowledgement', () => {
+  const ui = app(job('complete', { status: 'manual' }))
+  assert.equal(ui.element('recovery-resume-command').textContent, '')
+  const acknowledgement = ui.element('recovery-manual-ack')
+  acknowledgement.checked = true
+  acknowledgement.handlers.change()
+  assert.match(ui.element('recovery-resume-command').textContent, /--resume=a{32} --acknowledge-manual-permissions$/)
+  acknowledgement.checked = false
+  acknowledgement.handlers.change()
+  assert.equal(ui.element('recovery-resume-command').textContent, '')
+})
+
+test('A legacy resumed receipt still needs a recorded manual review before cleanup', async () => {
+  const ui = app(job('resumed', { status: 'manual' }))
+  assert.equal(ui.element('recovery-finished').hidden, true)
+  assert.equal(ui.element('recovery-resume').hidden, false)
+  assert.equal(ui.element('recovery-resume-command').textContent, '')
+  ui.queue.push(job('resumed', { status: 'manual', manual_acknowledged_at: 123 }))
+  await ui.refresh()
+  assert.equal(ui.element('recovery-finished').hidden, false)
+})
+
 function app(initial = null, command = "sudo -u 'www-data' -- '/usr/bin/php8.5' '/srv/TeamPass Lab/app/scripts/disaster-recovery.php'") {
   const elements = new Map()
   const element = (id) => {
@@ -35,6 +57,7 @@ function app(initial = null, command = "sudo -u 'www-data' -- '/usr/bin/php8.5' 
     counts: '%s tables, %s documents', preparing: 'WAIT', error: 'ERROR',
     command,
     cleanup: "sudo rm -rf -- '/srv/TeamPass Lab/public/install'",
+    cleanupContainer: 'docker compose restart teampass',
     resumed: 'RESUMED', resumedMaintenance: 'MAINTENANCE', permissionsNotChecked: 'AUDIT FIRST',
     permissionsPassed: 'PERMISSIONS PASS', permissionsIssues: '%s findings', permissionsManual: 'MANUAL ACL REVIEW',
     cleanupManual: 'MANUAL CLEANUP',
@@ -63,6 +86,13 @@ function app(initial = null, command = "sudo -u 'www-data' -- '/usr/bin/php8.5' 
     submit: () => form.handlers.submit({ preventDefault() {} }),
     refresh: () => element('recovery-refresh').handlers.click() }
 }
+
+test('Container recovery offers a host restart command after manual finalization', () => {
+  const ui = app(job('resumed', { status: 'manual', manual_reason: 'container', manual_acknowledged_at: 123 }))
+  assert.equal(ui.element('recovery-finished').hidden, false)
+  assert.equal(ui.element('recovery-cleanup-command').textContent, 'docker compose restart teampass')
+  assert.equal(ui.element('recovery-cleanup-command').dataset.copyDisabled, 'false')
+})
 
 test('Recovery progresses from import to activation and operational resume without offering a second import', async () => {
   const ui = app()

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace CBOR;
 
-use function array_key_exists;
 use ArrayAccess;
 use ArrayIterator;
 use function count;
@@ -88,18 +87,19 @@ final class MapObject extends AbstractCBORObject implements Countable, IteratorA
 
     public function add(CBORObject $key, CBORObject $value): self
     {
-        if (! $key instanceof Normalizable) {
-            throw new InvalidArgumentException('Invalid key. Shall be normalizable');
-        }
         $this->data[$this->registerKey($key, false)] = MapItem::create($key, $value);
         $this->lengthStale = true;
 
         return $this;
     }
 
+    /**
+     * Whether an entry is reachable at that offset: a key that is opaque, or that shares its offset with a key of
+     * another major type, is only reached by iterating the map.
+     */
     public function has(int|string $key): bool
     {
-        return array_key_exists($key, $this->data);
+        return $this->isAddressable($this->data, $key);
     }
 
     public function remove(int|string $index): self
@@ -148,19 +148,15 @@ final class MapObject extends AbstractCBORObject implements Countable, IteratorA
      * Items that do not implement Normalizable -- the encoding tags or the "break" simple value, for instance -- have
      * no native counterpart and are returned as the CBORObject they are.
      *
+     * A key has to become a PHP array offset, which only an integer or a string can. A map holding any other kind of
+     * key -- a float, a boolean, null, a list, a map -- or two keys of different major types that resolve to the
+     * same offset, decodes and iterates, but cannot be normalized.
+     *
      * @return array<int|string, mixed>
      */
     public function normalize(): array
     {
-        $normalized = [];
-        foreach ($this->data as $item) {
-            $valueObject = $item->getValue();
-            $normalized[self::assertNormalizableToScalar(
-                $item->getKey()
-            )] = $valueObject instanceof Normalizable ? $valueObject->normalize() : $valueObject;
-        }
-
-        return $normalized;
+        return $this->normalizeEntries($this->data);
     }
 
     public function offsetExists($offset): bool

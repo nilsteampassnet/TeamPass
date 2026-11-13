@@ -133,9 +133,13 @@ class Url
         // e.g. https://api.github.com/repositories/9999999999?access_token=github_token
         $url = Preg::replace('{([&?]access_token=)[^&]+}', '$1***', $url);
 
+        if (!str_contains($url, '@')) {
+            return $url;
+        }
+
         // matches every scheme://user:pass@ in the string as URLs are usually embedded in a longer
         // message, plus a scheme-less one at the very start for URLs passed in on their own
-        $url = Preg::replaceCallback('{(?:(?P<prefix>[a-z0-9][a-z0-9+.-]*://)|\A)(?P<user>[^:/\s?#]*)(?::(?P<password>[^\s/?#]+))?@}i', static function ($m): string {
+        $url = Preg::replaceCallback('{(?:(?P<prefix>[a-z0-9][a-z0-9+.-]*://)|\A)(?P<user>[^:/\s?#]*)(?::(?P<password>[^\s/?#]*))?@}i', static function ($m): string {
             $user = self::sanitizeUsername($m['user']);
             if (($m['password'] ?? '') !== '') {
                 return $m['prefix'].$user.':***@';
@@ -154,7 +158,13 @@ class Url
      */
     public static function stripCredentials(string $url): string
     {
-        return Preg::replace('{://[^/\s?#]+@}', '://', $url);
+        return Preg::replaceCallback('{(?P<prefix>[a-z0-9][a-z0-9+.-]*://)(?P<user>[^:/\s?#]*)(?::(?P<password>[^\s/?#]*))?@}i', static function ($m): string {
+            if (($m['password'] ?? '') === '' && !Preg::isMatch('{^https?://$}i', $m['prefix'])) {
+                return $m['prefix'].$m['user'].'@';
+            }
+
+            return $m['prefix'];
+        }, $url);
     }
 
     /**

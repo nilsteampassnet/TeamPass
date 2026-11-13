@@ -68,7 +68,7 @@ versions of composer and if found, installs the latest.
 
 <info>php composer.phar self-update</info>
 
-Read more at https://getcomposer.org/doc/03-cli.md#self-update-selfupdate
+Read more at https://getcomposer.org/doc/03-cli.md#self-update--selfupdate
 EOT
             )
         ;
@@ -102,6 +102,8 @@ EOT
         class_exists('Composer\Util\Platform');
         class_exists('Composer\Downloader\FilesystemException');
         class_exists('Composer\Console\GithubActionError');
+        class_exists('Symfony\Component\Console\Helper\Helper');
+        class_exists('Symfony\Component\String\UnicodeString');
 
         $config = Factory::createConfig();
 

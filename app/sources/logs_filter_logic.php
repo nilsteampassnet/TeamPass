@@ -34,6 +34,7 @@ declare(strict_types=1);
 use TeampassClasses\Language\Language;
 
 require_once __DIR__ . '/api_auth_logic.php';
+require_once __DIR__ . '/secure_send_audit.php';
 
 /**
  * Resolve an item-log search column against the columns offered by the page.
@@ -61,13 +62,8 @@ function getItemLogSearchColumns(mixed $column): array
  */
 function getItemLogActionSearchCodes(string $searchValue, Language $lang): array
 {
-    $actions = [
-        'at_creation', 'at_modification', 'at_shown', 'at_export', 'at_restored', 'at_delete', 'at_copy',
-        'at_moved', 'at_manual', 'at_import', 'at_access',
-        'at_password_copied', 'at_password_shown', 'at_password_shown_edit_form',
-    ];
     $matches = [];
-    foreach ($actions as $action) {
+    foreach (logsAllowedItemActions() as $action) {
         if (mb_stripos($action, $searchValue, 0, 'UTF-8') !== false
             || mb_stripos(html_entity_decode((string) $lang->get($action), ENT_QUOTES | ENT_HTML5, 'UTF-8'), $searchValue, 0, 'UTF-8') !== false
         ) {
@@ -93,7 +89,7 @@ function buildItemLogSearchFilter(mixed $column, string $searchValue, Language $
                 if ($actions === []) {
                     $search->add('1 = 0');
                 } else {
-                    $search->add('l.action IN %ls', $actions);
+                    logsAddItemActionClause($search, $actions);
                 }
             } else {
                 $search->add($searchColumn . ' LIKE %ss', $searchValue);
@@ -156,7 +152,17 @@ function getLogsPurgeDateRange(mixed $start, mixed $end): ?array
  */
 function logsAllowedSources(): array
 {
-    return ['system', 'items', 'kb'];
+    return ['system', 'items', 'kb', 'secure_send'];
+}
+
+/**
+ * Secure Send journal events the interface can select: exactly those the journal accepts.
+ *
+ * @return array<int, string>
+ */
+function logsAllowedSecureSendEvents(): array
+{
+    return array_keys(secureSendAuditEventReasons());
 }
 
 /**
@@ -210,8 +216,56 @@ function logsAllowedItemActions(): array
         'at_creation', 'at_modification', 'at_shown', 'at_export', 'at_restored', 'at_delete',
         'at_copy', 'at_moved', 'at_manual', 'at_import', 'at_access',
         'at_password_copied', 'at_password_shown', 'at_password_shown_edit_form',
-        'at_webauthn_credential_used',
+        'at_webauthn_credential_used', logsSecureSendViewAction(),
     ];
+}
+
+/**
+ * Virtual item action: a view written by the One-Time View account, i.e. through a Secure Send
+ * link. It is stored as a plain at_shown; the interface names it on its own.
+ */
+function logsSecureSendViewAction(): string
+{
+    return 'at_secure_send_view';
+}
+
+/**
+ * Identifier of the One-Time View account, which writes the views of Secure Send links.
+ */
+function logsOtvUserId(): int
+{
+    return defined('OTV_USER_ID') ? (int) OTV_USER_ID : 0;
+}
+
+/**
+ * Restrict item log rows to the selected actions, the virtual Secure Send view included.
+ *
+ * A Secure Send view is displayed under its own label, so selecting the plain view no longer
+ * returns it: the rows a selection returns are the rows labelled as selected. The read query, the
+ * action search and the purge all go through here, so they keep matching the same rows.
+ *
+ * @param array<int, string> $actions Selected actions, already validated.
+ * @param string             $prefix  Table alias prefix ('' for the single-table purge).
+ */
+function logsAddItemActionClause(WhereClause $where, array $actions, string $prefix = 'l.'): void
+{
+    if ($actions === []) {
+        return;
+    }
+
+    $any = $where->addClause('OR');
+    $stored = array_values(array_diff($actions, [logsSecureSendViewAction()]));
+    if ($stored !== []) {
+        $any->add(
+            '(' . $prefix . 'action IN %ls AND NOT (' . $prefix . 'action = %s AND ' . $prefix . 'id_user = %i))',
+            $stored,
+            'at_shown',
+            logsOtvUserId()
+        );
+    }
+    if (in_array(logsSecureSendViewAction(), $actions, true) === true) {
+        $any->add('(' . $prefix . 'action = %s AND ' . $prefix . 'id_user = %i)', 'at_shown', logsOtvUserId());
+    }
 }
 
 /**
@@ -355,8 +409,8 @@ function logsWhitelist(mixed $raw, array $allowed): array
  *
  * @param array<string, mixed> $raw Raw client payload.
  *
- * @return array{source: string, types: array<int,string>, actions: array<int,string>, term: string,
- *               search_column: string, date_from: ?int, date_to: ?int, user_id: ?int,
+ * @return array{source: string, types: array<int,string>, actions: array<int,string>, events: array<int,string>,
+ *               term: string, search_column: string, date_from: ?int, date_to: ?int, user_id: ?int,
  *               folder_id: ?int, scope: string, channel: string}
  */
 function logsNormalizeFilters(array $raw): array
@@ -396,6 +450,8 @@ function logsNormalizeFilters(array $raw): array
         'source' => $source,
         'types' => $types,
         'actions' => logsWhitelist($raw['actions'] ?? null, $allowedActions),
+        // An empty selection means every event, like the other facets.
+        'events' => $source === 'secure_send' ? logsWhitelist($raw['events'] ?? null, logsAllowedSecureSendEvents()) : [],
         'term' => is_string($raw['term'] ?? null) ? mb_substr(trim((string) $raw['term']), 0, 100) : '',
         // Validated again by getItemLogSearchColumns(), which falls back to every column.
         'search_column' => is_string($raw['search_column'] ?? null) ? (string) $raw['search_column'] : 'all',
@@ -404,7 +460,8 @@ function logsNormalizeFilters(array $raw): array
         'user_id' => $userId === false || $userId <= 0 ? null : $userId,
         'folder_id' => $source === 'items' && $folderId !== false && $folderId > 0 ? $folderId : null,
         'scope' => $source === 'items' ? $scope : '',
-        'channel' => $source === 'kb' ? '' : $channel,
+        // The Secure Send journal does not record the channel a link was created from.
+        'channel' => in_array($source, ['kb', 'secure_send'], true) ? '' : $channel,
     ];
 }
 
@@ -426,6 +483,9 @@ function logsVisibleColumns(string $source, array $typeKeys): array
     }
     if ($source === 'kb') {
         return ['date', 'label', 'user', 'action', 'details'];
+    }
+    if ($source === 'secure_send') {
+        return ['date', 'event', 'user', 'item', 'send', 'policy'];
     }
 
     $rule = logsSystemColumnRule();
@@ -546,9 +606,7 @@ function buildItemLogFilter(array $filters, Language $lang): WhereClause
 {
     $where = buildItemLogSearchFilter($filters['search_column'], $filters['term'], $lang);
 
-    if ($filters['actions'] !== []) {
-        $where->add('l.action IN %ls', $filters['actions']);
-    }
+    logsAddItemActionClause($where, $filters['actions']);
     if ($filters['date_from'] !== null) {
         $where->add('l.date >= %i', $filters['date_from']);
     }
@@ -565,6 +623,43 @@ function buildItemLogFilter(array $filters, Language $lang): WhereClause
         $where->add('t.personal_folder = %i', $filters['scope'] === 'personal' ? 1 : 0);
     }
     logsAddChannelClause($where, 'items', $filters['channel']);
+
+    return $where;
+}
+
+/**
+ * Build the Secure Send journal read predicate from the canonical filters.
+ *
+ * The user facet is the sender (originator): recipients are anonymous. The search covers what the
+ * table displays - item label and sender identity - plus the link number.
+ *
+ * @param array<string, mixed> $filters Output of logsNormalizeFilters().
+ */
+function buildSecureSendLogFilter(array $filters): WhereClause
+{
+    $where = new WhereClause('AND');
+
+    if (($filters['events'] ?? []) !== []) {
+        $where->add('a.event IN %ls', $filters['events']);
+    }
+    if ($filters['term'] !== '') {
+        $search = $where->addClause('OR');
+        foreach (['i.label', 'u.login', 'u.name', 'u.lastname'] as $column) {
+            $search->add($column . ' LIKE %ss', $filters['term']);
+        }
+        if (preg_match('/^#?([1-9][0-9]{0,9})$/', $filters['term'], $match) === 1) {
+            $search->add('a.send_id = %i', (int) $match[1]);
+        }
+    }
+    if ($filters['date_from'] !== null) {
+        $where->add('a.occurred_at >= %i', $filters['date_from']);
+    }
+    if ($filters['date_to'] !== null) {
+        $where->add('a.occurred_at < %i', $filters['date_to']);
+    }
+    if ($filters['user_id'] !== null) {
+        $where->add('a.originator = %i', $filters['user_id']);
+    }
 
     return $where;
 }
@@ -719,9 +814,7 @@ function buildLogsPurgeFilter(array $filters, ?string $userLogin = null, array $
         );
         $where->add('id_user IN (SELECT id FROM %l)', $usersTable);
 
-        if ($filters['actions'] !== []) {
-            $where->add('action IN %ls', $filters['actions']);
-        }
+        logsAddItemActionClause($where, $filters['actions'], '');
         if ($userId !== null) {
             $where->add('id_user = %i', $userId);
         }

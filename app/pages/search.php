@@ -223,6 +223,10 @@ $featureFavourites = (int) ($SETTINGS['enable_favourites'] ?? 0) === 1;
         color: #007bff;
         background-color: rgba(0, 123, 255, .12);
     }
+    .search-row-action:disabled {
+        opacity: .5;
+        cursor: wait;
+    }
     .dark-mode .search-row-action {
         color: #adb5bd;
     }

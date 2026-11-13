@@ -112,7 +112,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     // the response to carry it.
     const logColumnRule = <?php echo (string) json_encode(logsSystemColumnRule(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
     const logFixedColumns = <?php echo (string) json_encode(
-        ['items' => logsVisibleColumns('items', []), 'kb' => logsVisibleColumns('kb', [])],
+        [
+            'items' => logsVisibleColumns('items', []),
+            'kb' => logsVisibleColumns('kb', []),
+            'secure_send' => logsVisibleColumns('secure_send', []),
+        ],
         JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
     ); ?>;
 
@@ -133,6 +137,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             'api' => $lang->get('logs_channel_api'),
             'personal' => $lang->get('at_personnel'),
             'details' => $lang->get('details'),
+            'event' => $lang->get('logs_facet_event'),
+            'item' => $lang->get('logs_col_item'),
+            'send' => $lang->get('logs_col_secure_send_link'),
+            'policy' => $lang->get('details'),
         ],
         JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE
     ); ?>;
@@ -162,6 +170,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             'caution' => $lang->get('caution'),
             'serverError' => $lang->get('server_answer_error'),
             'confirmCheckbox' => $lang->get('please_confirm_by_clicking_checkbox'),
+            'secureSendNote' => $lang->get('secure_send_note'),
+            'secureSendDeletedAccount' => $lang->get('logs_secure_send_deleted_account'),
+            'secureSendRemovedItem' => $lang->get('logs_secure_send_removed_item'),
+            'secureSendPassphrase' => $lang->get('logs_secure_send_passphrase'),
+            'secureSendPublic' => $lang->get('logs_secure_send_public'),
+            'secureSendViews' => $lang->get('logs_secure_send_views'),
+            'secureSendFailed' => $lang->get('logs_secure_send_failed'),
+            'secureSendExpires' => $lang->get('logs_secure_send_expires'),
         ],
         JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE
     ); ?>;
@@ -186,6 +202,34 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         ),
         JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE
     ); ?>;
+
+    const logSecureSendEventTitles = <?php echo (string) json_encode(
+        array_combine(
+            logsAllowedSecureSendEvents(),
+            array_map(
+                static fn (string $event): string => (string) $lang->get('logs_secure_send_event_' . $event),
+                logsAllowedSecureSendEvents()
+            )
+        ),
+        JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE
+    ); ?>;
+
+    const logSecureSendReasonTitles = <?php
+        $logSecureSendReasons = array_values(array_filter(
+            array_merge(...array_values(secureSendAuditEventReasons())),
+            static fn (string $reason): bool => $reason !== ''
+        ));
+        echo (string) json_encode(
+            array_combine(
+                $logSecureSendReasons,
+                array_map(
+                    static fn (string $reason): string => (string) $lang->get('logs_secure_send_reason_' . $reason),
+                    $logSecureSendReasons
+                )
+            ),
+            JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE
+        );
+        ?>;
 
     const logsDataUrl = '<?php echo $SETTINGS['cpassman_url']; ?>/sources/logs.datatables.php';
     const logsSessionKey = '<?php echo $session->get('key'); ?>';
@@ -301,6 +345,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     const facetChipLabel = (facet, value) => {
       if (facet === 'types') return logTypeTitles[value] || value
       if (facet === 'actions') return logActionTitles[value] || value
+      if (facet === 'events') return logSecureSendEventTitles[value] || value
       if (facet === 'channel') return logMessages[value] || value
       if (facet === 'scope') return $('#logs-scope option[value="' + value + '"]').text().trim()
       if (facet === 'user_id') return logMessages.facetUser + ': ' + select2Text('#logs-user', value)
@@ -352,7 +397,32 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
       type: (row) => '<span class="badge badge-info">' + escapeLogValue(logTypeTitles[row.type] || row.type) + '</span>',
       source: (row) => escapeLogValue(logMessages[row.source] || row.source),
       channel: (row) => escapeLogValue(logMessages[row.channel] || row.channel),
-      action: (row) => escapeLogValue(logActionTitles[row.action] || row.action),
+      // A view written by the One-Time View account is the recipient of a Secure Send link.
+      action: (row) => escapeLogValue(row.secure_send === true
+        ? logActionTitles.<?php echo logsSecureSendViewAction(); ?>
+        : (logActionTitles[row.action] || row.action)),
+      event: (row) => '<span class="badge badge-info">' + escapeLogValue(logSecureSendEventTitles[row.event] || row.event) + '</span>'
+        + (row.reason ? ' ' + escapeLogValue(logSecureSendReasonTitles[row.reason] || row.reason) : ''),
+      // The journal outlives accounts and items: name what has disappeared rather than leave a hole.
+      user: (row) => row.originator !== undefined && row.user === ''
+        ? escapeLogValue(logMessages.secureSendDeletedAccount.replace('#tp_id#', row.originator))
+        : renderLogText(row.user),
+      item: (row) => {
+        if (row.send_type === 'note') return escapeLogValue(logMessages.secureSendNote)
+        if (row.item === '' && row.item_id !== null) {
+          return escapeLogValue(logMessages.secureSendRemovedItem.replace('#tp_id#', row.item_id))
+        }
+        return renderLogText(row.item)
+      },
+      send: (row) => escapeLogValue('#' + row.send),
+      policy: (row) => {
+        const parts = [logMessages.secureSendViews.replace('#tp_views#', row.views).replace('#tp_max#', row.max_views)]
+        if (row.has_passphrase === true) parts.push(logMessages.secureSendPassphrase)
+        if (row.is_public === true) parts.push(logMessages.secureSendPublic)
+        if (row.failed_attempts > 0) parts.push(logMessages.secureSendFailed.replace('#tp_count#', row.failed_attempts))
+        if (row.expires_at !== '') parts.push(logMessages.secureSendExpires.replace('#tp_date#', row.expires_at))
+        return escapeLogValue(parts.join(' · '))
+      },
       api: (row) => escapeLogValue(row.api === true ? logMessages.yes : logMessages.no),
       personal: (row) => escapeLogValue(row.personal === true ? logMessages.yes : logMessages.no),
       actions: (row) => row.can_blacklist === true
@@ -560,6 +630,17 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
      */
     function refreshPurgePanel() {
         if ($('#logs-purge-footer').length === 0) {
+            return
+        }
+
+        // The Secure Send journal is pruned by its own retention setting, never from this page.
+        const secureSend = logFilters.source === 'secure_send'
+        $('#logs-purge-secure-send').toggleClass('hidden', !secureSend)
+        $('#logs-purge-help, #logs-purge-scope').toggleClass('hidden', secureSend)
+        if (secureSend) {
+            $('#logs-purge-blocked').addClass('hidden')
+            $('.group-confirm-purge').addClass('hidden')
+            $('#checkbox-purge-confirm').iCheck('uncheck')
             return
         }
 

@@ -18,6 +18,7 @@ use Composer\FilterList\FilterListProvider\FilterListProviderSet;
 use Composer\IO\ConsoleIO;
 use Composer\IO\IOInterface;
 use Composer\Json\JsonFile;
+use Composer\Package\AliasPackage;
 use Composer\Package\BasePackage;
 use Composer\Package\CompletePackageInterface;
 use Composer\Package\PackageInterface;
@@ -60,6 +61,14 @@ class Auditor
     public const STATUS_OK = 0;
     public const STATUS_FAILED = 1;
 
+    /** @var CooldownAuditor */
+    private $cooldownAuditor;
+
+    public function __construct(?CooldownAuditor $cooldownAuditor = null)
+    {
+        $this->cooldownAuditor = $cooldownAuditor ?? new CooldownAuditor();
+    }
+
     /**
      * @param PolicyConfig $policyConfig Source of truth for ignore lists, severity filters, and per-list audit settings.
      * @param PackageInterface[] $packages
@@ -92,7 +101,11 @@ class Auditor
         if ($policyConfig->abandoned->audit === ListPolicyConfig::AUDIT_IGNORE) {
             $abandonedPackages = [];
         } else {
-            $abandonedPackages = $this->filterAbandonedPackages($packages, $policyConfig->abandoned->getFlatIgnoreForOperation('audit'));
+            // abandonment is per package, so aliases would only report it twice
+            $canonicalPackages = array_filter($packages, static function (PackageInterface $package): bool {
+                return !$package instanceof AliasPackage;
+            });
+            $abandonedPackages = $this->filterAbandonedPackages($canonicalPackages, $policyConfig->abandoned->getFlatIgnoreForOperation('audit'));
             if ($policyConfig->abandoned->audit === ListPolicyConfig::AUDIT_FAIL) {
                 $abandonedCount = count($abandonedPackages);
             }
@@ -115,6 +128,10 @@ class Auditor
             foreach ($packages as $package) {
                 $matchingEntries = $filterAuditor->getMatchingAuditEntries($package, $filterResult['filter'], $policyConfig);
                 foreach ($matchingEntries as $entry) {
+                    // an alias can match the same entry as the package it aliases
+                    if (in_array($entry, $filteredPackages[$package->getName()] ?? [], true)) {
+                        continue;
+                    }
                     $filteredPackages[$package->getName()][] = $entry;
 
                     if (isset($failingListNames[$entry->listName])) {
@@ -124,7 +141,16 @@ class Auditor
             }
         }
 
-        $auditResult = (0 < $affectedPackagesCount || 0 < $abandonedCount || 0 < $filteredCount) ? self::STATUS_FAILED : self::STATUS_OK;
+        $cooldownPackages = [];
+        $cooldownCount = 0;
+        if ($policyConfig->cooldown->audit !== ListPolicyConfig::AUDIT_IGNORE) {
+            $cooldownPackages = $this->cooldownAuditor->collect($packages, $policyConfig->cooldown);
+            if ($policyConfig->cooldown->audit === ListPolicyConfig::AUDIT_FAIL) {
+                $cooldownCount = count($cooldownPackages);
+            }
+        }
+
+        $auditResult = (0 < $affectedPackagesCount || 0 < $abandonedCount || 0 < $filteredCount || 0 < $cooldownCount) ? self::STATUS_FAILED : self::STATUS_OK;
 
         if (self::FORMAT_JSON === $format) {
             $json = ['advisories' => $advisories];
@@ -147,6 +173,7 @@ class Auditor
                     return $data;
                 }, $entries);
             }, $filteredPackages);
+            $json['cooldown'] = $cooldownPackages;
 
             $io->write(JsonFile::encode($json));
 
@@ -199,7 +226,37 @@ class Auditor
             }
         }
 
+        if (count($cooldownPackages) > 0) {
+            $plurality = count($cooldownPackages) === 1 ? '' : 's';
+            $punctuation = $format === self::FORMAT_SUMMARY ? '.' : ':';
+            $style = $cooldownCount > 0 ? 'error' : 'warning';
+
+            $io->write(sprintf('<%s>Found %d package%s still in the cooldown period configured in "policy.cooldown"%s</%s>', $style, count($cooldownPackages), $plurality, $punctuation, $style));
+            if ($format !== self::FORMAT_SUMMARY) {
+                $this->outputCooldownPackages($io, $cooldownPackages);
+            }
+        }
+
         return $auditResult;
+    }
+
+    /**
+     * @param array<string, array{prettyVersion: string, releaseDate: string, availableIn: string, source: string}> $cooldownPackages
+     */
+    private function outputCooldownPackages(IOInterface $io, array $cooldownPackages): void
+    {
+        foreach ($cooldownPackages as $name => $info) {
+            $io->write(sprintf(
+                '  - %s (%s) published %s, available in %s',
+                $name,
+                $info['prettyVersion'],
+                $info['releaseDate'],
+                $info['availableIn']
+            ));
+            if ($info['source'] === 'time') {
+                $io->write('    The cooldown policy relied on the package-supplied time field because the repository provides no published-time.');
+            }
+        }
     }
 
     /**
@@ -326,7 +383,7 @@ class Auditor
     }
 
     /**
-     * @param array<string, array<SecurityAdvisory>> $advisories
+     * @param array<string, array<PartialSecurityAdvisory>> $advisories
      * @param self::FORMAT_* $format The format that will be used to output audit results.
      */
     private function outputAdvisories(IOInterface $io, array $advisories, string $format): void
@@ -352,40 +409,17 @@ class Auditor
     }
 
     /**
-     * @param array<string, array<SecurityAdvisory>> $advisories
+     * @param array<string, array<PartialSecurityAdvisory>> $advisories
      */
     private function outputAdvisoriesTable(ConsoleIO $io, array $advisories): void
     {
         foreach ($advisories as $packageAdvisories) {
             foreach ($packageAdvisories as $advisory) {
-                $headers = [
-                    'Package',
-                    'Severity',
-                    'Advisory ID',
-                    'CVE',
-                    'Title',
-                    'URL',
-                    'Affected versions',
-                    'Reported at',
-                ];
-                $row = [
-                    $advisory->packageName,
-                    $this->getSeverity($advisory),
-                    $this->getAdvisoryId($advisory),
-                    $this->getCVE($advisory),
-                    $advisory->title,
-                    $this->getURL($advisory),
-                    $advisory->affectedVersions->getPrettyString(),
-                    $advisory->reportedAt->format(DATE_ATOM),
-                ];
-                if ($advisory instanceof IgnoredSecurityAdvisory) {
-                    $headers[] = 'Ignore reason';
-                    $row[] = $advisory->ignoreReason ?? 'None specified';
-                }
+                $fields = $this->getAdvisoryFields($advisory);
                 $io->getTable()
                     ->setHorizontal()
-                    ->setHeaders($headers)
-                    ->addRow(ConsoleIO::sanitize($row))
+                    ->setHeaders(array_keys($fields))
+                    ->addRow(ConsoleIO::sanitize(array_values($fields)))
                     ->setColumnWidth(1, 80)
                     ->setColumnMaxWidth(1, 80)
                     ->render();
@@ -394,7 +428,7 @@ class Auditor
     }
 
     /**
-     * @param array<string, array<SecurityAdvisory>> $advisories
+     * @param array<string, array<PartialSecurityAdvisory>> $advisories
      */
     private function outputAdvisoriesPlain(IOInterface $io, array $advisories): void
     {
@@ -405,21 +439,45 @@ class Auditor
                 if (!$firstAdvisory) {
                     $error[] = '--------';
                 }
-                $error[] = "Package: ".$advisory->packageName;
-                $error[] = "Severity: ".$this->getSeverity($advisory);
-                $error[] = "Advisory ID: ".$this->getAdvisoryId($advisory);
-                $error[] = "CVE: ".$this->getCVE($advisory);
-                $error[] = "Title: ".OutputFormatter::escape($advisory->title);
-                $error[] = "URL: ".$this->getURL($advisory);
-                $error[] = "Affected versions: ".OutputFormatter::escape($advisory->affectedVersions->getPrettyString());
-                $error[] = "Reported at: ".$advisory->reportedAt->format(DATE_ATOM);
-                if ($advisory instanceof IgnoredSecurityAdvisory) {
-                    $error[] = "Ignore reason: ".($advisory->ignoreReason ?? 'None specified');
+                foreach ($this->getAdvisoryFields($advisory) as $label => $value) {
+                    $error[] = $label.': '.(in_array($label, ['Title', 'Affected versions'], true) ? OutputFormatter::escape($value) : $value);
                 }
                 $firstAdvisory = false;
             }
         }
         $io->write($error);
+    }
+
+    /**
+     * A partial advisory only has the fields its repository provided, so the others are left out
+     *
+     * @return array<string, string>
+     */
+    private function getAdvisoryFields(PartialSecurityAdvisory $advisory): array
+    {
+        if (!$advisory instanceof SecurityAdvisory) {
+            return [
+                'Package' => $advisory->packageName,
+                'Advisory ID' => $this->getAdvisoryId($advisory),
+                'Affected versions' => $advisory->affectedVersions->getPrettyString(),
+            ];
+        }
+
+        $fields = [
+            'Package' => $advisory->packageName,
+            'Severity' => $this->getSeverity($advisory),
+            'Advisory ID' => $this->getAdvisoryId($advisory),
+            'CVE' => $this->getCVE($advisory),
+            'Title' => $advisory->title,
+            'URL' => $this->getURL($advisory),
+            'Affected versions' => $advisory->affectedVersions->getPrettyString(),
+            'Reported at' => $advisory->reportedAt->format(DATE_ATOM),
+        ];
+        if ($advisory instanceof IgnoredSecurityAdvisory) {
+            $fields['Ignore reason'] = $advisory->ignoreReason ?? 'None specified';
+        }
+
+        return $fields;
     }
 
     /**
@@ -478,7 +536,7 @@ class Auditor
         return $advisory->severity;
     }
 
-    private function getAdvisoryId(SecurityAdvisory $advisory): string
+    private function getAdvisoryId(PartialSecurityAdvisory $advisory): string
     {
         if (str_starts_with($advisory->advisoryId, 'PKSA-')) {
             return '<href=https://packagist.org/security-advisories/'.$advisory->advisoryId.'>'.$advisory->advisoryId.'</>';

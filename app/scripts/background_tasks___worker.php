@@ -97,7 +97,7 @@ class TaskWorker {
             // to the same item is a new revision.
             resetItemRevisionMemo();
 
-            if (LOG_TASKS=== true) $this->logger->log('Processing task: ' . print_r($this->taskData, true), 'DEBUG');
+            if (LOG_TASKS=== true) $this->logger->log('Processing task: ' . $this->taskId . ' (' . $this->processType . ')', 'DEBUG');
 
             // The LAPR master switch is authoritative for tasks that were
             // already queued when an administrator disabled the module.
@@ -126,6 +126,8 @@ class TaskWorker {
                     $this->handleUserBuildCacheTree($this->taskData);
                     break;
                 case 'send_email':
+                case 'secure_send_email':
+                    DB::query('UPDATE ' . prefixTable('background_tasks') . ' SET email_attempts = email_attempts + 1 WHERE increment_id = %i', $this->taskId);
                     $this->sendEmail($this->taskData);
                     break;
                 case 'create_user_keys':
@@ -1596,11 +1598,11 @@ class TaskWorker {
      */
     private function buildCompletionArguments(): string
     {
-        if ($this->processType === 'send_email') {
+        if (in_array($this->processType, ['send_email', 'secure_send_email'], true)) {
             return (string) json_encode([
-                'email' => $this->taskData['receivers'],
-                'login' => $this->taskData['receiver_name'],
-            ]);
+                // Recipients were captured after opening the envelope; never reopen it for logging.
+                'accepted' => true,
+            ] + $this->emailTaskRecipients);
         }
 
         if ($this->processType === 'create_user_keys' || $this->processType === 'migrate_user_personal_items') {
@@ -1706,7 +1708,7 @@ class TaskWorker {
         // Anonymize arguments for storage
         $arguments = $this->buildCompletionArguments();
 
-        if (LOG_TASKS=== true) $this->logger->log('Process: '.$this->processType.' -- '.print_r($arguments, true), 'DEBUG');
+        if (LOG_TASKS=== true) $this->logger->log('Completed task: ' . $this->taskId . ' (' . $this->processType . ')', 'DEBUG');
 
         // Add 'arguments' only if not empty
         if (!empty($arguments)) {
@@ -1759,18 +1761,48 @@ class TaskWorker {
      * @return void
      */
     private function handleTaskFailure(Throwable $e): void {
+        if (in_array($this->processType, ['send_email', 'secure_send_email'], true) && $e instanceof \TeampassClasses\EmailService\EmailTransportException) {
+            $attempts = (int) DB::queryFirstField('SELECT email_attempts FROM ' . prefixTable('background_tasks') . ' WHERE increment_id = %i', $this->taskId);
+            $retryAt = emailQueueRetryAt($e->result, $attempts, time());
+            if ($retryAt !== null) {
+                DB::update(prefixTable('background_tasks'), [
+                    'is_in_progress' => 0, 'status' => 'queued', 'finished_at' => null, 'process_id' => null,
+                    'updated_at' => time(), 'next_attempt_at' => $retryAt,
+                    'error_message' => 'Email delivery deferred: ' . $e->result->errorCode . '.',
+                ], 'increment_id = %i', $this->taskId);
+                $this->logger->log('Email task ' . $this->taskId . ' deferred: ' . $e->result->errorCode, 'WARNING');
+                return;
+            }
+        }
+        $errorMessage = $e->getMessage();
+        // Keep only the trait's fixed diagnostics; transport exceptions may echo secrets.
+        if (in_array($this->processType, ['send_email', 'secure_send_email'], true) && !in_array($errorMessage, [
+            'Email delivery failed.',
+            'Email credential could not be decrypted.',
+            'Secure Send is no longer available; email was not submitted.',
+        ], true)) {
+            $errorMessage = 'Email delivery failed.';
+        }
+        if (in_array($this->processType, ['send_email', 'secure_send_email'], true) && $e instanceof \TeampassClasses\EmailService\EmailTransportException) {
+            $errorMessage = 'Email delivery ' . ($e->result->indeterminate ? 'indeterminate' : 'failed') . ': ' . $e->result->errorCode . '.';
+        }
+        $updateData = [
+            'is_in_progress' => -1,
+            'finished_at' => time(),
+            'status' => 'failed',
+            'error_message' => $errorMessage,
+        ];
+        if (in_array($this->processType, ['send_email', 'secure_send_email'], true)) {
+            // Drop terminal payloads without claiming provider acceptance for an ambiguous send.
+            $updateData['arguments'] = (string) json_encode(['failed' => true] + $this->emailTaskRecipients);
+        }
         DB::update(
             prefixTable('background_tasks'),
-            [
-                'is_in_progress' => -1,
-                'finished_at' => time(),
-                'status' => 'failed',
-                'error_message' => $e->getMessage()
-            ],
+            $updateData,
             'increment_id = %i',
             $this->taskId
         );
-        $this->logger->log('Task failure: ' . $e->getMessage(), 'ERROR');
+        $this->logger->log('Task failure: ' . $errorMessage, 'ERROR');
 
         $this->emitItemEncryptionEvent('failed');
 
@@ -1842,7 +1874,7 @@ class TaskWorker {
      * @return void
      */
     private function processSubTasks(array $arguments): void {
-        if (LOG_TASKS=== true) $this->logger->log('processSubTasks: '.print_r($arguments, true), 'DEBUG');
+        if (LOG_TASKS=== true) $this->logger->log('Processing subtasks for task: ' . $this->taskId, 'DEBUG');
         // Get all subtasks related to this task
         $subtasks = DB::query(
             'SELECT * FROM ' . prefixTable('background_subtasks') . ' WHERE task_id = %i AND is_in_progress = 0 ORDER BY `task` ASC',

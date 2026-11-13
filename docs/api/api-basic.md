@@ -31,9 +31,10 @@
    - [Create a folder](#create-folder)
    - [Update a folder](#folder-update)
    - [Delete a folder](#folder-delete)
-5. [Error Handling](#error-handling)
-6. [Best Practices](#best-practices)
-7. [Command-line client](#cli)
+5. [Secure Send Endpoints](#secure-send-endpoints)
+6. [Error Handling](#error-handling)
+7. [Best Practices](#best-practices)
+8. [Command-line client](#cli)
 
 ---
 
@@ -1454,6 +1455,22 @@ curl -X DELETE "https://your-teampass.com/api/index.php/folder/delete?id=57" \
 
 ---
 
+## Secure Send Endpoints {#secure-send-endpoints}
+
+> 📋 Create limited-view, expiring links to an item for someone who has no TeamPass account
+
+| Endpoint | Method | Description |
+| -------- | ------ | ----------- |
+| `secureSend/policy` | GET | Limits and options of the instance, to build the form |
+| `secureSend/create` | POST | Creates a link for an item the user can read |
+
+Both need the **read** right, **User can propose One-Time-View links** and **Allow Secure Send
+from API clients** (Settings → API, off by default). The returned link is a secret. See
+[Secure Send through the API](secure-send.md) for the payloads, the error codes and the rules
+every client must follow.
+
+---
+
 ## Error Handling {#error-handling}
 
 All API endpoints may return the following standard HTTP error codes:
@@ -1461,27 +1478,31 @@ All API endpoints may return the following standard HTTP error codes:
 | HTTP Code | Description |
 | --------- | ----------- |
 | 200 | Request processed successfully |
+| 201 | Resource created |
 | 400 | Missing or invalid parameters |
-| 401 | Invalid, expired JWT token or insufficient permissions |
+| 401 | Missing, invalid or expired JWT token |
 | 403 | User doesn't have permission to perform the action |
-| 404 | Resource not found or API is disabled |
-| 422 | HTTP method not supported |
+| 404 | Resource not found or unknown route |
+| 405 | HTTP method not supported (the `Allow` header lists the supported one) |
+| 409 | Conflict (stale `revision`, idempotency key reused or still processing) |
+| 422 | Validation failed |
+| 429 | Rate limit exceeded (`Retry-After` header) |
 | 500 | Internal server error |
+| 503 | API disabled in TeamPass settings |
 
-**Error Response Format:**
+**Error Response Format** (RFC 9457 `application/problem+json`):
 ```json
 {
-  "error": "Error description message"
+  "type": "about:blank",
+  "title": "Forbidden",
+  "status": 403,
+  "detail": "Access denied to this item",
+  "error": "Access denied to this item"
 }
 ```
 
-**Or:**
-```json
-{
-  "error": true,
-  "message": "Error description message"
-}
-```
+The `error` member repeats `detail` for older clients. Some endpoints add their own members,
+such as the `reason` code of the [Secure Send endpoints](secure-send.md#errors).
 
 ---
 

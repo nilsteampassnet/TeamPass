@@ -38,6 +38,10 @@ class AuthenticatorAssertionResponseValidator implements CanLogData, CanDispatch
     }
 
     /**
+     * The backup eligibility of the credential record is never overwritten: the BE flag cannot change during the life
+     * of a credential, and CheckBackupEligibilityIsUnchanged rejects an assertion that claims another value. It is only
+     * recorded here when the credential record has none yet, as stored before the flag was tracked.
+     *
      * @see https://www.w3.org/TR/webauthn/#verifying-assertion
      */
     public function check(
@@ -78,7 +82,7 @@ class AuthenticatorAssertionResponseValidator implements CanLogData, CanDispatch
             $previousBackupStatus = $credentialRecord->backupStatus;
 
             $credentialRecord->counter = $authenticatorAssertionResponse->authenticatorData->signCount; // 26.1.
-            $credentialRecord->backupEligible = $authenticatorAssertionResponse->authenticatorData->isBackupEligible(); // 26.2.
+            $credentialRecord->backupEligible ??= $authenticatorAssertionResponse->authenticatorData->isBackupEligible();
             $credentialRecord->backupStatus = $authenticatorAssertionResponse->authenticatorData->isBackedUp(); // 26.2.
             if ($credentialRecord->uvInitialized === false) {
                 $credentialRecord->uvInitialized = $authenticatorAssertionResponse->authenticatorData->isUserVerified(); // 26.3.

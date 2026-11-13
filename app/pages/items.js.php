@@ -38,6 +38,7 @@ use TeampassClasses\Language\Language;
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 require_once __DIR__ . '/../sources/secure_send_url.php';
+require_once __DIR__ . '/../sources/secure_send_email.php';
 
 // init
 loadClasses();
@@ -609,6 +610,26 @@ require __DIR__ . '/icon.picker.js.php';
                 "'": '&#039;'
             }[char];
         });
+    }
+
+    /**
+     * Keep the line breaks of a plain-text item description.
+     *
+     * API clients (browser extension, mobile application) store the text of a textarea: real
+     * line breaks and no markup, which collapse into spaces once rendered as HTML, and were
+     * lost when the editor saved them back. Markup from the rich-text editor, and text
+     * without any line break, are returned unchanged. The caller still purifies the result.
+     * Same rule as otvSanitizeDescription() on the Secure Send page.
+     *
+     * @param {string} decoded Description after htmlDecode()
+     * @return {string} HTML
+     */
+    function descriptionLineBreaksToHtml(decoded) {
+        const text = String(decoded || '');
+        if (/[\r\n]/.test(text) === false || /<[a-z!\/][^>]*>/i.test(text) === true) {
+            return text;
+        }
+        return tpEscapeHtmlAttribute(text).replace(/\r\n|\r|\n/g, '<br>');
     }
 
     /**
@@ -7821,7 +7842,7 @@ require __DIR__ . '/icon.picker.js.php';
                     $('#form-item-label, #form-item-suggestion-label').val(htmlDecode(data.label));
                     $('#card-item-description, #form-item-suggestion-description').html(
                         DOMPurify.sanitize(
-                            htmlDecode(data.description || ''),
+                            descriptionLineBreaksToHtml(htmlDecode(data.description || '')),
                             {USE_PROFILES: {html: true}}
                         )
                     );
@@ -7898,7 +7919,7 @@ require __DIR__ . '/icon.picker.js.php';
                     // htmlDecode() turns entities back into live markup, so the result must be
                     // purified before it reaches .html() — same treatment as the detail card.
                     $('#form-item-description')
-                        .html(DOMPurify.sanitize(htmlDecode(data.description), {USE_PROFILES: {html: true}}))
+                        .html(DOMPurify.sanitize(descriptionLineBreaksToHtml(htmlDecode(data.description)), {USE_PROFILES: {html: true}}))
                         .summernote({
                             toolbar: [
                                 ['style', ['style']],
@@ -7927,7 +7948,7 @@ require __DIR__ . '/icon.picker.js.php';
                     //.summernote('editor.insertText', data.description);
 
                     $('#form-item-suggestion-description')
-                        .html(DOMPurify.sanitize(htmlDecode(data.description), {USE_PROFILES: {html: true}}))
+                        .html(DOMPurify.sanitize(descriptionLineBreaksToHtml(htmlDecode(data.description)), {USE_PROFILES: {html: true}}))
                         .summernote({
                             toolbar: [
                                 ['style', ['style']],
@@ -9186,6 +9207,7 @@ require __DIR__ . '/icon.picker.js.php';
      */
     function secureSendErrorLabel(code) {
         var map = {
+            'email_not_allowed': <?php echo json_encode($lang->get('secure_send_email_not_allowed'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
             'passphrase_required': <?php echo json_encode($lang->get('secure_send_passphrase_required_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
             'empty_note': <?php echo json_encode($lang->get('secure_send_empty_note_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
             'notes_not_allowed': <?php echo json_encode($lang->get('error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
@@ -9194,7 +9216,11 @@ require __DIR__ . '/icon.picker.js.php';
             'totp_unusable': <?php echo json_encode($lang->get('secure_send_totp_unusable'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
             'invalid_payload': <?php echo json_encode($lang->get('secure_send_invalid_payload'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
             'server_error': <?php echo json_encode($lang->get('server_answer_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
-            'not_allowed': <?php echo json_encode($lang->get('error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>
+            'not_allowed': <?php echo json_encode($lang->get('error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+            'invalid_email': <?php echo json_encode($lang->get('secure_send_email_invalid'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+            'email_rate_limited': <?php echo json_encode($lang->get('secure_send_email_rate_limited'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+            'email_not_configured': <?php echo json_encode($lang->get('secure_send_email_not_configured'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+            'email_requires_https': <?php echo json_encode($lang->get('secure_send_email_requires_https'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>
         };
         return map[code] || <?php echo json_encode($lang->get('error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
     }
@@ -9202,7 +9228,16 @@ require __DIR__ . '/icon.picker.js.php';
     let secureSendFormVersion = 0;
     let secureSendListVersion = 0;
     let secureSendGenerating = false;
+    let secureSendEmailGenerating = false;
+    const secureSendEmailAvailable = <?php echo json_encode((int) ($SETTINGS['secure_send_allow_email'] ?? 0) === 1 && secureSendEmailIsConfigured($SETTINGS)); ?>;
     const secureSendBaseUrls = <?php echo json_encode($secureSendUrls, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
+    const secureSendEmailLabels = {
+        not_sent: <?php echo json_encode($lang->get('secure_send_email_not_sent'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+        queued: <?php echo json_encode($lang->get('secure_send_email_queued'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+        accepted: <?php echo json_encode($lang->get('secure_send_email_accepted'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+        failed: <?php echo json_encode($lang->get('secure_send_email_failed'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+        unknown: <?php echo json_encode($lang->get('secure_send_email_unknown'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>
+    };
 
     /**
      * Load the current user's usable and policy-suspended Secure Send links.
@@ -9240,10 +9275,12 @@ require __DIR__ . '/icon.picker.js.php';
                     var lock = s.has_passphrase === 1 ? ' <i class="fa-solid fa-lock text-success" aria-hidden="true"></i><span class="sr-only">' + htmlEncode(<?php echo json_encode($lang->get('secure_send_protected'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>) + '</span>' : '';
                     var icon = s.send_type === 'note' ? 'fa-note-sticky' : 'fa-key';
                     var suspended = s.suspended === true ? '<span class="badge badge-warning text-wrap text-left mt-1">' + htmlEncode(<?php echo json_encode($lang->get('secure_send_suspended'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>) + '</span>' : '';
+                    const email = ['queued', 'accepted', 'failed', 'not_sent', 'unknown'].includes(s.email_status)
+                        ? '<span class="d-block small text-muted mt-1">' + htmlEncode(secureSendEmailLabels[s.email_status]) + '</span>' : '';
                     html += '<li class="secure-send-entry d-flex align-items-center">' +
                         '<i class="fa-solid ' + icon + ' text-muted mr-3" aria-hidden="true"></i>' +
                         '<div class="secure-send-entry-content flex-grow-1"><span class="d-block font-weight-bold">' + htmlEncode(s.label) + lock + '</span>' +
-                        '<span class="d-block text-muted mt-1">' + Number(s.remaining_views) + ' ' + htmlEncode(<?php echo json_encode($lang->get('secure_send_remaining_views'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>) + ' &middot; ' + htmlEncode(s.expires_label) + '</span>' + suspended + '</div>' +
+                        '<span class="d-block text-muted mt-1">' + Number(s.remaining_views) + ' ' + htmlEncode(<?php echo json_encode($lang->get('secure_send_remaining_views'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>) + ' &middot; ' + htmlEncode(s.expires_label) + '</span>' + suspended + email + '</div>' +
                         '<button type="button" class="btn btn-sm btn-outline-danger secure-send-revoke ml-3" data-id="' + Number(s.id) + '"><i class="fa-solid fa-trash mr-1" aria-hidden="true"></i>' + htmlEncode(<?php echo json_encode($lang->get('secure_send_revoke'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>) + '</button>' +
                         '</li>';
                 });
@@ -9260,9 +9297,11 @@ require __DIR__ . '/icon.picker.js.php';
 
     /** Clear the previous URL whenever the form no longer describes that link. */
     function invalidateSecureSendLink() {
+        if (secureSendEmailGenerating) return;
         secureSendFormVersion += 1;
         $('#form-item-otv-link').val('').data('otv-id', 0);
         $('#form-secure-send-passphrase-reminder').addClass('hidden');
+        $('#secure-send-email-result').text('').addClass('hidden');
         bindSecureSendClipboard('');
         const address = secureSendBaseUrls[$('#form-item-otv-subdomain').is(':checked') ? 'public' : 'internal'];
         $('#secure-send-address-preview').text(address
@@ -9271,10 +9310,14 @@ require __DIR__ . '/icon.picker.js.php';
     }
 
     $(document).on('input change ifChanged', '#modal-item-otv input:not(#form-item-otv-link), #modal-item-otv textarea', invalidateSecureSendLink);
+    $('#modal-item-otv').on('hide.bs.modal', function(event) {
+        if (secureSendEmailGenerating) event.preventDefault();
+    });
     $('#modal-item-otv').on('hidden.bs.modal', function() {
         invalidateSecureSendLink();
         secureSendListVersion += 1;
         $('#form-secure-send-passphrase, #form-secure-send-secret, #form-secure-send-note').val('');
+        $('#form-secure-send-email-recipient').val('');
     });
 
     /**
@@ -9284,10 +9327,12 @@ require __DIR__ . '/icon.picker.js.php';
      * @return void
      */
     function openSecureSendModal(mode) {
+        if (secureSendEmailGenerating) return;
         $('#form-secure-send-mode').val(mode);
         // Reset the form
         $('#form-item-otv-link').val('').data('otv-id', 0);
         $('#form-secure-send-passphrase').val('');
+        $('#form-secure-send-email-recipient').val('');
         $('#form-secure-send-passphrase-reminder').addClass('hidden');
         $('#form-item-otv-days').val($('#form-item-otv-days').attr('max'));
         $('#form-item-otv-views').val('1');
@@ -9336,10 +9381,18 @@ require __DIR__ . '/icon.picker.js.php';
         });
     }
 
-    // Generate a Secure Send link
-    $(document).on('click', '#form-secure-send-generate', function() {
+    /** Create a link, optionally reserving one email invitation in the same request. */
+    function generateSecureSend(sendEmail) {
         if (secureSendGenerating) {
             return;
+        }
+        if (sendEmail) {
+            if (!secureSendEmailAvailable) return;
+            const input = document.getElementById('form-secure-send-email-recipient');
+            input.required = true;
+            const valid = input.reportValidity();
+            input.required = false;
+            if (!valid) return;
         }
         var mode = $('#form-secure-send-mode').val();
         var passphrase = $('#form-secure-send-passphrase').val();
@@ -9362,6 +9415,7 @@ require __DIR__ . '/icon.picker.js.php';
                 && Number(store.get('teampassItem').otp_for_item_enabled) === 1
                 && $('#form-secure-send-include-totp').is(':checked') === true ? 1 : 0
         };
+        if (sendEmail) data.recipient_email = $('#form-secure-send-email-recipient').val().trim();
 
         if (mode === 'note') {
             var secret = $('#form-secure-send-secret').val();
@@ -9381,62 +9435,84 @@ require __DIR__ . '/icon.picker.js.php';
             data.id = store.get('teampassItem').id;
         }
 
-        var $btn = $(this);
         invalidateSecureSendLink();
         const formVersion = secureSendFormVersion;
         secureSendGenerating = true;
-        $btn.prop('disabled', true);
+        secureSendEmailGenerating = sendEmail;
+        $('#form-secure-send-generate').prop('disabled', true);
+        $('#form-secure-send-email').prop('disabled', true);
+        if (sendEmail) {
+            $('#modal-item-otv input:not(:disabled), #modal-item-otv textarea:not(:disabled), #modal-item-otv button[data-dismiss="modal"]').attr('data-email-busy', '1').prop('disabled', true);
+            $('#modal-item-otv').attr('aria-busy', 'true');
+            $('#secure-send-email-result').text(<?php echo json_encode($lang->get('secure_send_email_preparing'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>).removeClass('hidden');
+        }
 
-        $.post(
-            "sources/items.queries.php", {
+        $.ajax({
+            url: 'sources/items.queries.php',
+            method: 'POST',
+            dataType: 'json',
+            timeout: 30000,
+            data: {
                 type: "generate_OTV_url",
                 data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
                 key: "<?php echo $session->get('key'); ?>"
-            },
-            function(data) {
-                const responseId = data !== null && typeof data === 'object' && !Array.isArray(data)
-                    ? Number(data.otv_id)
-                    : 0;
-                if (formVersion !== secureSendFormVersion) {
-                    if (Number.isInteger(responseId) && responseId > 0) {
-                        revokeStaleSecureSend(responseId);
-                    } else {
-                        loadSecureSendsList();
-                    }
-                    return;
-                }
-                loadSecureSendsList();
-                if (data === null || typeof data !== 'object' || Array.isArray(data) || typeof data.error !== 'string') {
-                    toastr.error(secureSendErrorLabel('server_error'), '', { timeOut: 5000 });
-                } else if (data.error === "" && typeof data.url === 'string' && data.url !== '' && Number.isInteger(responseId) && responseId > 0) {
-                    $(document).trigger('tp-secure-send-changed', ['items']);
-                    $('#form-item-otv-link').val(data.url).data('otv-id', data.otv_id);
-                    bindSecureSendClipboard(data.url);
-                    if (data.description_truncated === true) {
-                        toastr.warning(<?php echo json_encode($lang->get('secure_send_description_truncated'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
-                            '', { timeOut: 10000, escapeHtml: true });
-                    }
-                    if (data.has_passphrase === 1) {
-                        $('#form-secure-send-passphrase-reminder').removeClass('hidden');
-                    } else {
-                        $('#form-secure-send-passphrase-reminder').addClass('hidden');
-                    }
-                } else if (data.error !== "") {
-                    toastr.error(secureSendErrorLabel(data.error), '', { timeOut: 3000, progressBar: true });
+            }
+        }).done(function(data) {
+            if (sendEmail) $('#secure-send-email-result').text('').addClass('hidden');
+            const responseId = data !== null && typeof data === 'object' && !Array.isArray(data)
+                ? Number(data.otv_id)
+                : 0;
+            if (formVersion !== secureSendFormVersion) {
+                if (!sendEmail && Number.isInteger(responseId) && responseId > 0) {
+                    revokeStaleSecureSend(responseId);
                 } else {
+                    loadSecureSendsList();
+                }
+                return;
+            }
+            loadSecureSendsList();
+            if (data === null || typeof data !== 'object' || Array.isArray(data) || typeof data.error !== 'string') {
+                toastr.error(secureSendErrorLabel('server_error'), '', { timeOut: 5000 });
+            } else if (data.error === "" && typeof data.url === 'string' && data.url !== '' && Number.isInteger(responseId) && responseId > 0) {
+                $(document).trigger('tp-secure-send-changed', ['items']);
+                $('#form-item-otv-link').val(data.url).data('otv-id', data.otv_id);
+                bindSecureSendClipboard(data.url);
+                if (sendEmail && data.email_queued === true) {
+                    $('#secure-send-email-result').text(<?php echo json_encode($lang->get('secure_send_email_queued_help'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>).removeClass('hidden');
+                } else if (sendEmail) {
                     toastr.error(secureSendErrorLabel('server_error'), '', { timeOut: 5000 });
                 }
-            },
-            "json"
-        ).fail(function() {
-            if (formVersion === secureSendFormVersion) {
+                if (data.description_truncated === true) {
+                    toastr.warning(<?php echo json_encode($lang->get('secure_send_description_truncated'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>,
+                        '', { timeOut: 10000, escapeHtml: true });
+                }
+                if (data.has_passphrase === 1) {
+                    $('#form-secure-send-passphrase-reminder').removeClass('hidden');
+                } else {
+                    $('#form-secure-send-passphrase-reminder').addClass('hidden');
+                }
+            } else if (data.error !== "") {
+                toastr.error(secureSendErrorLabel(data.error), '', { timeOut: 3000, progressBar: true });
+            } else {
                 toastr.error(secureSendErrorLabel('server_error'), '', { timeOut: 5000 });
+            }
+        }).fail(function() {
+            if (formVersion === secureSendFormVersion) {
+                if (sendEmail) $('#secure-send-email-result').text(<?php echo json_encode($lang->get('secure_send_email_network_unknown'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>).removeClass('hidden');
+                toastr.error(sendEmail ? <?php echo json_encode($lang->get('secure_send_email_network_unknown'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?> : secureSendErrorLabel('server_error'), '', { timeOut: 10000 });
             }
         }).always(function() {
             secureSendGenerating = false;
-            $btn.prop('disabled', false);
+            secureSendEmailGenerating = false;
+            $('#modal-item-otv').removeAttr('aria-busy');
+            $('#modal-item-otv [data-email-busy="1"]').prop('disabled', false).removeAttr('data-email-busy');
+            $('#form-secure-send-generate').prop('disabled', false);
+            $('#form-secure-send-email').prop('disabled', !secureSendEmailAvailable);
         });
-    });
+    }
+
+    $(document).on('click', '#form-secure-send-generate', function() { generateSecureSend(false); });
+    $(document).on('click', '#form-secure-send-email', function() { generateSecureSend(true); });
 
     // Open the Secure Send modal in note mode from the top-level entry
     $(document).on('click', '#secure-send-note-open', function() {

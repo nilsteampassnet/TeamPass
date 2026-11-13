@@ -22,7 +22,7 @@
     }
   ],
   "require": {
-    "php": ">=7.0.0",
+    "php": ">=7.1.0",
     "voku/portable-utf8": "~6.1.0"
   },
   "require-dev": {

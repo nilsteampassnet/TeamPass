@@ -53,6 +53,8 @@ require_once __DIR__ . '/secure_send_snapshot.php';
 require_once __DIR__ . '/secure_send_input.php';
 require_once __DIR__ . '/secure_send_url.php';
 require_once __DIR__ . '/secure_send_storage.php';
+require_once __DIR__ . '/secure_send_email.php';
+require_once __DIR__ . '/secure_send_create.php';
 
 // init
 loadClasses('DB');
@@ -4631,6 +4633,20 @@ switch ($inputData['type']) {
             break;
         }
 
+        // A folder the user only reads through a role (R) cannot be renamed nor have its
+        // complexity changed; mirrors folders.queries.php (GHSA-32hp-p55x-wr8v).
+        if (
+            (int) $session->get('user-admin') !== 1
+            && in_array(
+                (int) $inputData['folderId'],
+                array_map('intval', (array) $session->get('user-read_only_folders')),
+                true
+            )
+        ) {
+            echo '[{"error" : "' . $lang->get('error_not_allowed_to') . '"}]';
+            break;
+        }
+
         // Check if title doesn't contains html codes
         if (preg_match_all('|<[^>]+>(.*)</[^>]+>|U', $title, $out)) {
             echo '[ { "error" : "' . $lang->get('error_html_codes') . '" } ]';
@@ -6217,9 +6233,8 @@ switch ($inputData['type']) {
         $action = (int) filter_var($dataReceived['action'], FILTER_SANITIZE_NUMBER_INT);
         $itemId = (int) filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
 
-        // Verify the current user can access this item's folder.
-        $granted = accessToItemIsGranted($itemId, $SETTINGS);
-        if ($granted !== true) {
+        // Recheck item access when adding; stale bookmarks can always be removed.
+        if ($action === 0 && favouriteItemIsReadable((int) $session->get('user-id'), $itemId) === false) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -7278,9 +7293,19 @@ switch ($inputData['type']) {
             break;
         }
 
-        // Verify the current user can access this item's folder.
-        $granted = accessToItemIsGranted((int) $inputData['id'], $SETTINGS);
-        if ($granted !== true) {
+        // Forcing the release of another user's edit lock is an operation of the Database page,
+        // which only administrators, managers and HR managers reach (GHSA-32hp-p55x-wr8v).
+        // Administrators hold no folder access by design; the others must reach the item.
+        $isAdmin = (int) $session->get('user-admin') === 1;
+        if (
+            $isAdmin === false
+            && (int) $session->get('user-manager') !== 1
+            && (int) $session->get('user-can_manage_all_users') !== 1
+        ) {
+            echo '[ { "error" : "not_allowed" } ]';
+            break;
+        }
+        if ($isAdmin === false && accessToItemIsGranted((int) $inputData['id'], $SETTINGS) !== true) {
             echo '[ { "error" : "not_allowed" } ]';
             break;
         }
@@ -7307,7 +7332,7 @@ switch ($inputData['type']) {
 
     /*
      * CASE
-     * Check if Item has been changed since loaded
+     * Create a Secure Send link for the current user
      */
     case 'generate_OTV_url':
         // Check KEY
@@ -7332,166 +7357,32 @@ switch ($inputData['type']) {
             echo json_encode(['error' => 'invalid_payload']);
             break;
         }
+
+        // Policy, item access, encryption and storage are shared with the REST API.
         try {
-            secureSendValidateInput($dataReceived);
-        } catch (InvalidArgumentException $e) {
-            echo json_encode(['error' => 'invalid_payload']);
-            break;
-        }
-
-        // Determine the kind of send: an existing item or an ad-hoc note/secret
-        $secureSendType = (isset($dataReceived['send_type']) === true && $dataReceived['send_type'] === 'note') ? 'note' : 'item';
-        if ($secureSendType === 'note' && (int) ($SETTINGS['secure_send_allow_notes'] ?? 0) !== 1) {
-            echo json_encode(array('error' => 'notes_not_allowed'));
-            break;
-        }
-
-        // Optional recipient passphrase (transmitted out-of-band by the sender)
-        $secureSendPassphrase = (string) ($dataReceived['passphrase'] ?? '');
-        if ((int) ($SETTINGS['secure_send_require_passphrase'] ?? 0) === 1 && trim($secureSendPassphrase) === '') {
-            echo json_encode(array('error' => 'passphrase_required'));
-            break;
-        }
-
-        $secureSendLimits = secureSendLimits($SETTINGS, $dataReceived, time());
-
-        // Build the plaintext payload to share
-        $secureSendDescriptionTruncated = false;
-        if ($secureSendType === 'item') {
-            // Item sends keep a coherent encrypted copy of all displayed fields.
-            $secureSendItemId = (int) ($dataReceived['id'] ?? 0);
-            $itemQ = secureSendReadItem($secureSendItemId, (int) $session->get('user-id'));
-            if ($itemQ === []) {
-                echo json_encode(array('error' => 'not_allowed'));
-                break;
-            }
-            try {
-                $secureSendPlaintext = secureSendItemPassword(
-                    $itemQ,
-                    (int) $session->get('user-id'),
-                    (string) $session->get('user-private_key'),
-                    (string) $session->get('user-public_key')
-                );
-                $snapshot = secureSendEncodeSnapshot(
-                    $itemQ,
-                    $secureSendPlaintext,
-                    secureSendShouldIncludeTotp(
-                        $dataReceived,
-                        (int) $session->get('user-read_only') === 1
-                    ) ? secureSendItemTotp($secureSendItemId) : null
-                );
-                $secureSendPlaintext = $snapshot['plaintext'];
-                $secureSendDescriptionTruncated = $snapshot['description_truncated'];
-                $secureSendType = 'item_v2';
-            } catch (InvalidArgumentException $e) {
-                $secureSendError = $e->getMessage();
-                echo json_encode(array('error' => in_array($secureSendError, ['invalid_payload', 'totp_unusable'], true)
-                    ? $secureSendError
-                    : 'cannot_decrypt'));
-                break;
-            }
-        } else {
-            // Note send: self-contained encrypted JSON, not bound to any item
-            $secureSendItemId = null;
-            $secureSendPayload = (isset($dataReceived['payload']) === true && is_array($dataReceived['payload']) === true)
-                ? $dataReceived['payload']
-                : array();
-            if (trim((string) ($secureSendPayload['secret'] ?? '')) === ''
-                && trim((string) ($secureSendPayload['note'] ?? '')) === ''
-            ) {
-                echo json_encode(array('error' => 'empty_note'));
-                break;
-            }
-            $secureSendPlaintext = json_encode(
-                array(
-                    'title'  => trim((string) ($secureSendPayload['title'] ?? '')),
-                    'secret' => (string) ($secureSendPayload['secret'] ?? ''),
-                    'note'   => (string) ($secureSendPayload['note'] ?? ''),
-                    'login'  => trim((string) ($secureSendPayload['login'] ?? '')),
-                    'url'    => trim((string) ($secureSendPayload['url'] ?? '')),
-                ),
-                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
-            );
-        }
-
-        // Opportunistic cleanup keeps evidence before removing expired ciphertext.
-        try {
-            secureSendPurgeExpiredLinks($SETTINGS);
-        } catch (Throwable $e) {
-            error_log('TEAMPASS Secure Send cleanup failed (' . get_class($e) . ')');
-        }
-
-        // Generate the lookup code and the link secret carried in the URL.
-        // The Defuse key that encrypts the payload is wrapped by the link secret
-        // (and, when set, the passphrase) so the URL alone is not enough to decrypt.
-        $otv_code = GenerateCryptKey(32, false, true, true, false, true);
-        $secureSendLinkSecret = GenerateCryptKey(32, false, true, true, false, true);
-        $secureSendWrapPassword = $secureSendPassphrase === ''
-            ? $secureSendLinkSecret
-            : hash('sha256', $secureSendLinkSecret . '|' . $secureSendPassphrase);
-
-        $secureSendProtectedKey = defuse_generate_personal_key($secureSendWrapPassword);
-        $secureSendKeyEncoded = defuse_validate_personal_key(
-            $secureSendWrapPassword,
-            $secureSendProtectedKey
-        );
-
-        // Encrypt the payload with DEFUSE using the wrapped key
-        $passwd = cryption(
-            $secureSendPlaintext,
-            $secureSendKeyEncoded,
-            'encrypt',
-            $SETTINGS
-        );
-        if (!empty($passwd['error']) || strlen($passwd['string']) > 65535) {
-            echo json_encode(array('error' => 'invalid_payload'));
-            break;
-        }
-        $timestampReference = time();
-
-        // Item copies and standalone notes use the same administrator-controlled address.
-        // The public address is opt-in: a request that does not ask for it gets the main URL.
-        $secureSendShared = (int) ($dataReceived['shared_globaly'] ?? 0) === 1 ? 1 : 0;
-        try {
-            $url = secureSendUrl($SETTINGS, $secureSendShared === 1, [
-                'otv' => 1, 'code' => $otv_code, 'key' => $secureSendLinkSecret, 'stamp' => $timestampReference,
-            ]);
-        } catch (InvalidArgumentException $e) {
-            echo json_encode(['error' => 'invalid_public_url']);
-            break;
-        }
-        try {
-            $newID = secureSendStoreLink(
-                array(
-                    'id' => null,
-                    'item_id' => $secureSendItemId,
-                    'send_type' => $secureSendType,
-                    'timestamp' => $timestampReference,
-                    'originator' => intval($session->get('user-id')),
-                    'code' => $otv_code,
-                    'encrypted' => $passwd['string'],
-                    'protected_key' => $secureSendProtectedKey,
-                    'has_passphrase' => $secureSendPassphrase === '' ? 0 : 1,
-                    'failed_attempts' => 0,
-                    'time_limit' => $secureSendLimits['time_limit'],
-                    'max_views' => $secureSendLimits['views'],
-                    'shared_globaly' => $secureSendShared,
-                ),
+            $secureSendResult = secureSendCreateLink(
+                $dataReceived,
+                [
+                    'id' => (int) $session->get('user-id'),
+                    'private_key' => (string) $session->get('user-private_key'),
+                    'public_key' => (string) $session->get('user-public_key'),
+                    'read_only' => (int) $session->get('user-read_only') === 1,
+                ],
                 $SETTINGS
             );
-        } catch (Throwable $e) {
-            error_log('TEAMPASS Secure Send creation failed (' . get_class($e) . ')');
-            echo json_encode(['error' => 'server_error']);
+        } catch (SecureSendCreateRefusal $e) {
+            echo json_encode(['error' => $e->getMessage()]);
             break;
         }
 
         echo json_encode(
             array(
                 'error' => '',
-                'url' => $url,
-                'otv_id' => $newID,
-                'has_passphrase' => $secureSendPassphrase === '' ? 0 : 1,
-                'description_truncated' => $secureSendDescriptionTruncated,
+                'url' => $secureSendResult['url'],
+                'otv_id' => $secureSendResult['otv_id'],
+                'has_passphrase' => $secureSendResult['has_passphrase'],
+                'description_truncated' => $secureSendResult['description_truncated'],
+                'email_queued' => $secureSendResult['email_queued'],
             )
         );
         break;
@@ -7540,6 +7431,7 @@ switch ($inputData['type']) {
 
         try {
             $secureSendRows = secureSendActiveLinks($SETTINGS, (int) $session->get('user-id'), null, null, true);
+            $secureSendEmailStatuses = secureSendEmailStatuses((int) $session->get('user-id'));
         } catch (Throwable $e) {
             error_log('TEAMPASS Secure Send inventory failed (' . get_class($e) . ')');
             echo json_encode(['error' => 'server_error']);
@@ -7558,6 +7450,7 @@ switch ($inputData['type']) {
                     ? $lang->get('secure_send_note')
                     : $secureSendRow['item_label'],
                 'has_passphrase' => (int) ($secureSendRow['has_passphrase'] ?? 0),
+                'email_status' => $secureSendEmailStatuses[(int) $secureSendRow['id']] ?? null,
                 'suspended' => $secureSendRow['suspended'],
                 'remaining_views' => max(0, (int) $secureSendRow['max_views'] - (int) $secureSendRow['views']),
                 'expires_at' => (int) $secureSendRow['time_limit'],

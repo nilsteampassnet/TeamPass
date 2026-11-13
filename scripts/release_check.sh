@@ -131,9 +131,21 @@ fi
 # 4. ---------------------------------------------------------------------------
 hdr "4. PHP syntax lint (changed files)"
 LINT_ERR=0
+# A Symfony polyfill bootstrapNN.php is only required on PHP >= N.N and may use its syntax
+# (bootstrap85.php declares attributes on constants): never lint it with an older PHP.
+PHP_MAJOR_MINOR="$("$PHP_BIN" -r 'echo PHP_MAJOR_VERSION . PHP_MINOR_VERSION;')"
 while IFS= read -r f; do
     [ -f "$f" ] || continue
     case "$f" in *.php) ;; *) continue ;; esac
+    case "$f" in
+        app/vendor/symfony/polyfill-*/bootstrap[0-9][0-9].php)
+            NEEDED="$(basename "$f" .php)"; NEEDED="${NEEDED#bootstrap}"
+            if [ "$NEEDED" -gt "$PHP_MAJOR_MINOR" ]; then
+                printf '    skipped %s (loaded on PHP %s.%s only)\n' "$f" "${NEEDED:0:1}" "${NEEDED:1}"
+                continue
+            fi
+            ;;
+    esac
     if ! "$PHP_BIN" -l "$f" > "$TMP/lint.log" 2>&1; then
         fail "Syntax error in $f"; sed 's/^/      /' "$TMP/lint.log"; LINT_ERR=1
     fi

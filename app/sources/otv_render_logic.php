@@ -103,6 +103,12 @@ function otvSanitizeDescription(string $description): string
         return nl2br(htmlspecialchars(strip_tags($decoded), ENT_QUOTES, 'UTF-8'));
     }
 
+    // API clients store plain text with real line breaks, which HTML rendering collapses.
+    // Same rule as descriptionLineBreaksToHtml() on the item card (items.js.php).
+    if (preg_match('/[\r\n]/', $decoded) === 1 && preg_match('#<[a-z!/][^>]*>#i', $decoded) !== 1) {
+        $decoded = nl2br(htmlspecialchars($decoded, ENT_QUOTES, 'UTF-8'), false);
+    }
+
     $config = HTMLPurifier_Config::createDefault();
     $config->set('Core.Encoding', 'UTF-8');
     $config->set(

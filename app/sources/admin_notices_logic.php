@@ -211,7 +211,11 @@ function adminNoticesMfaRecommendation(bool $imposedMethodEnabled, bool $passkey
  */
 function adminNoticesSmtpCertificateUnverified(array $SETTINGS): bool
 {
-    if (trim((string) ($SETTINGS['email_smtp_server'] ?? '')) === '') {
+    require_once __DIR__ . '/emails_transport_logic.php';
+    if (($SETTINGS['email_transport'] ?? 'smtp') !== 'smtp'
+        || !in_array((string) ($SETTINGS['email_smtp_auth_mode'] ?? ''), ['', 'none', 'password'], true)
+        || !emailTransportIsConfigured($SETTINGS)
+    ) {
         return false;
     }
     if (in_array((string) ($SETTINGS['email_security'] ?? 'none'), ['ssl', 'tls'], true) === false) {

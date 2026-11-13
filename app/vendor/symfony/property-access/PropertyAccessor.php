@@ -59,6 +59,8 @@ class PropertyAccessor implements PropertyAccessorInterface
     private const CACHE_PREFIX_PROPERTY_PATH = 'p';
     private const RESULT_PROTO = [self::VALUE => null];
 
+    private static array $dynamicPropertiesCache = [];
+
     private bool $ignoreInvalidIndices;
     private bool $ignoreInvalidProperty;
     private ?CacheItemPoolInterface $cacheItemPool;
@@ -98,7 +100,7 @@ class PropertyAccessor implements PropertyAccessorInterface
             self::VALUE => $objectOrArray,
         ];
 
-        if (\is_object($objectOrArray) && (false === strpbrk((string) $propertyPath, '.[?') || $objectOrArray instanceof \stdClass && property_exists($objectOrArray, $propertyPath))) {
+        if (\is_object($objectOrArray) && (\is_string($propertyPath) || $propertyPath instanceof PropertyPath) && (false === strpbrk((string) $propertyPath, '.[?') || $objectOrArray instanceof \stdClass && property_exists($objectOrArray, $propertyPath))) {
             return $this->readProperty($zval, $propertyPath, $this->ignoreInvalidProperty)[self::VALUE];
         }
 
@@ -111,7 +113,7 @@ class PropertyAccessor implements PropertyAccessorInterface
 
     public function setValue(object|array &$objectOrArray, string|PropertyPathInterface $propertyPath, mixed $value): void
     {
-        if (\is_object($objectOrArray) && (false === strpbrk((string) $propertyPath, '.[') || $objectOrArray instanceof \stdClass && property_exists($objectOrArray, $propertyPath))) {
+        if (\is_object($objectOrArray) && (\is_string($propertyPath) || $propertyPath instanceof PropertyPath) && (false === strpbrk((string) $propertyPath, '.[') || $objectOrArray instanceof \stdClass && property_exists($objectOrArray, $propertyPath))) {
             $zval = [
                 self::VALUE => $objectOrArray,
             ];
@@ -192,12 +194,12 @@ class PropertyAccessor implements PropertyAccessorInterface
         if (!isset($trace[$i]['file']) || __FILE__ !== $trace[$i]['file']) {
             return;
         }
-        if (preg_match('/^\S+::\S+\(\): Argument #\d+ \(\$\S+\) must be of type (\S+), (\S+) given/', $message, $matches)) {
+        if (preg_match('/^(?:\S+(?:\0.*)?::\S+|\S+@anonymous)\(\): Argument #\d+ \(\$\S+\) must be of type (\S+), (\S+) given/s', $message, $matches)) {
             [, $expectedType, $actualType] = $matches;
 
             throw new InvalidTypeException($expectedType, $actualType, $propertyPath, $previous);
         }
-        if (preg_match('/^Cannot assign (\S+) to property \S+::\$\S+ of type (\S+)$/', $message, $matches)) {
+        if (preg_match('/^Cannot assign (\S+) to property \S+(?:\0.*)?::\$\S+ of type (\S+)$/s', $message, $matches)) {
             [, $actualType, $expectedType] = $matches;
 
             throw new InvalidTypeException($expectedType, $actualType, $propertyPath, $previous);
@@ -216,7 +218,7 @@ class PropertyAccessor implements PropertyAccessorInterface
             ];
 
             // handle stdClass with properties with a dot in the name
-            if ($objectOrArray instanceof \stdClass && str_contains($propertyPath, '.') && property_exists($objectOrArray, $propertyPath)) {
+            if ($objectOrArray instanceof \stdClass && $propertyPath instanceof PropertyPath && str_contains($propertyPath, '.') && property_exists($objectOrArray, $propertyPath)) {
                 $this->readProperty($zval, $propertyPath, $this->ignoreInvalidProperty);
             } else {
                 $this->readPropertiesUntil($zval, $propertyPath, $propertyPath->getLength(), $this->ignoreInvalidIndices);
@@ -238,7 +240,7 @@ class PropertyAccessor implements PropertyAccessorInterface
             ];
 
             // handle stdClass with properties with a dot in the name
-            if ($objectOrArray instanceof \stdClass && str_contains($propertyPath, '.') && property_exists($objectOrArray, $propertyPath)) {
+            if ($objectOrArray instanceof \stdClass && $propertyPath instanceof PropertyPath && str_contains($propertyPath, '.') && property_exists($objectOrArray, $propertyPath)) {
                 $this->readProperty($zval, $propertyPath, $this->ignoreInvalidProperty);
 
                 return true;
@@ -436,7 +438,7 @@ class PropertyAccessor implements PropertyAccessorInterface
                 }
             } catch (\Error $e) {
                 // handle uninitialized properties in PHP >= 7.4
-                if (preg_match('/^Typed property ([\w\\\\@]+)::\$(\w+) must not be accessed before initialization$/', $e->getMessage(), $matches) || preg_match('/^Cannot access uninitialized non-nullable property ([\w\\\\@]+)::\$(\w+) by reference$/', $e->getMessage(), $matches)) {
+                if (preg_match('/^Typed property ([\w\\\\@]+)(?:\0.*)?::\$(\w+) must not be accessed before initialization$/s', $e->getMessage(), $matches) || preg_match('/^Cannot access uninitialized non-nullable property ([\w\\\\@]+)(?:\0.*)?::\$(\w+) by reference$/s', $e->getMessage(), $matches)) {
                     $r = new \ReflectionProperty(str_contains($matches[1], '@anonymous') ? $class : $matches[1], $matches[2]);
                     $type = ($type = $r->getType()) instanceof \ReflectionNamedType ? $type->getName() : (string) $type;
 
@@ -536,7 +538,7 @@ class PropertyAccessor implements PropertyAccessorInterface
                 } elseif (PropertyWriteInfo::TYPE_ADDER_AND_REMOVER === $type) {
                     $this->writeCollection($zval, $property, $value, $mutator->getAdderInfo(), $mutator->getRemoverInfo());
                 }
-            } elseif ($object instanceof \stdClass && property_exists($object, $property)) {
+            } elseif ($object instanceof \stdClass ? property_exists($object, $property) : $this->isDynamicPropertyWritable($object, $class, $property)) {
                 $object->$property = $value;
             } elseif (!$this->ignoreInvalidProperty) {
                 if ($mutator->hasErrors()) {
@@ -634,7 +636,8 @@ class PropertyAccessor implements PropertyAccessorInterface
             return true;
         }
 
-        $mutatorForArray = $this->getWriteInfo($object::class, $property, []);
+        $class = $object::class;
+        $mutatorForArray = $this->getWriteInfo($class, $property, []);
         if (PropertyWriteInfo::TYPE_PROPERTY === $mutatorForArray->getType()) {
             return 'public' === $mutatorForArray->getVisibility();
         }
@@ -643,15 +646,15 @@ class PropertyAccessor implements PropertyAccessorInterface
             return true;
         }
 
-        $mutator = $this->getWriteInfo($object::class, $property, '');
+        $mutator = $this->getWriteInfo($class, $property, '');
 
-        return PropertyWriteInfo::TYPE_NONE !== $mutator->getType();
+        return PropertyWriteInfo::TYPE_NONE !== $mutator->getType() || $this->isDynamicPropertyWritable($object, $class, $property);
     }
 
     /**
      * Gets a PropertyPath instance and caches it.
      */
-    private function getPropertyPath(string|PropertyPath $propertyPath): PropertyPath
+    private function getPropertyPath(string|PropertyPathInterface $propertyPath): PropertyPathInterface
     {
         if ($propertyPath instanceof PropertyPathInterface) {
             // Don't call the copy constructor has it is not needed here
@@ -701,5 +704,36 @@ class PropertyAccessor implements PropertyAccessorInterface
         }
 
         return $apcu;
+    }
+
+    /**
+     * Returns whether a property that the class doesn't declare can be written like a public one.
+     */
+    private function isDynamicPropertyWritable(object $object, string $class, string $property): bool
+    {
+        if ($object instanceof \SimpleXMLElement) {
+            // Several children that have the same name can't be written at once, and count() returns 0 for an attribute
+            return !property_exists($class, $property) && property_exists($object, $property) && 2 > \count($object->$property);
+        }
+
+        return (self::$dynamicPropertiesCache[$class] ??= self::allowsDynamicProperties($class)) && !property_exists($class, $property) && property_exists($object, $property);
+    }
+
+    /**
+     * Returns whether the class or one of its parents has the #[AllowDynamicProperties] attribute.
+     *
+     * Internal classes are ignored: stdClass is handled separately, and the properties of __PHP_Incomplete_Class can't be accessed.
+     */
+    private static function allowsDynamicProperties(string $class): bool
+    {
+        $r = new \ReflectionClass($class);
+
+        do {
+            if (!$r->isInternal() && $r->getAttributes(\AllowDynamicProperties::class)) {
+                return true;
+            }
+        } while ($r = $r->getParentClass());
+
+        return false;
     }
 }

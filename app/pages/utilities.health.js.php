@@ -128,6 +128,7 @@ var TP_HEALTH_L10N = {
     file_permissions_affected: "<?php echo addslashes($lang->get('health_file_permissions_affected')); ?>",
     file_permissions_samples: "<?php echo addslashes($lang->get('health_file_permissions_samples')); ?>",
     file_permissions_reason_protected_writable: "<?php echo addslashes($lang->get('health_file_permissions_reason_protected_writable')); ?>",
+    file_permissions_reason_protected_web_owned: <?php echo json_encode($lang->get('health_file_permissions_reason_protected_web_owned'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
     file_permissions_reason_runtime_not_readable: "<?php echo addslashes($lang->get('health_file_permissions_reason_runtime_not_readable')); ?>",
     file_permissions_reason_runtime_not_writable: "<?php echo addslashes($lang->get('health_file_permissions_reason_runtime_not_writable')); ?>",
     file_permissions_reason_world_writable: "<?php echo addslashes($lang->get('health_file_permissions_reason_world_writable')); ?>",
@@ -136,6 +137,7 @@ var TP_HEALTH_L10N = {
     file_permissions_reason_secret_world_accessible: "<?php echo addslashes($lang->get('health_file_permissions_reason_secret_world_accessible')); ?>",
     file_permissions_reason_secret_group_writable: "<?php echo addslashes($lang->get('health_file_permissions_reason_secret_group_writable')); ?>",
     file_permissions_reason_secret_writable: "<?php echo addslashes($lang->get('health_file_permissions_reason_secret_writable')); ?>",
+    file_permissions_reason_secret_web_owned: <?php echo json_encode($lang->get('health_file_permissions_reason_secret_web_owned'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
     file_permissions_reason_instance_data_world_accessible: "<?php echo addslashes($lang->get('health_file_permissions_reason_instance_data_world_accessible')); ?>",
     file_permissions_reason_protected_not_readable: "<?php echo addslashes($lang->get('health_file_permissions_reason_protected_not_readable')); ?>",
     file_permissions_reason_group_writable: "<?php echo addslashes($lang->get('health_file_permissions_reason_group_writable')); ?>",
@@ -1089,6 +1091,8 @@ function tpFileIntegrityIssueDetails(category, item) {
     if (category === 'permissions') {
         var reasons = {
             protected_writable: TP_HEALTH_L10N.file_permissions_reason_protected_writable,
+            protected_web_owned: TP_HEALTH_L10N.file_permissions_reason_protected_web_owned,
+            secret_web_owned: TP_HEALTH_L10N.file_permissions_reason_secret_web_owned,
             runtime_not_readable: TP_HEALTH_L10N.file_permissions_reason_runtime_not_readable,
             runtime_not_writable: TP_HEALTH_L10N.file_permissions_reason_runtime_not_writable,
             world_writable: TP_HEALTH_L10N.file_permissions_reason_world_writable,

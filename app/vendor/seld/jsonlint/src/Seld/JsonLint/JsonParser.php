@@ -278,7 +278,7 @@ class JsonParser
                             $message .= ", it appears you used single quotes instead of double quotes";
                         } elseif (preg_match('{".+?(\\\\[^"bfnrt/\\\\u](...)?)}', $this->lexer->getFullUpcomingInput(), $match)) {
                             $message .= ", it appears you have an unescaped backslash at: ".$match[1];
-                        } elseif (preg_match('{"(?:[^"]+|\\\\")*$}m', $this->lexer->getFullUpcomingInput())) {
+                        } elseif (preg_match('{"(?:[^"]++|\\\\")*$}m', $this->lexer->getFullUpcomingInput())) {
                             $message .= ", it appears you forgot to terminate a string, or attempted to write a multiline string which is invalid";
                         }
                     }

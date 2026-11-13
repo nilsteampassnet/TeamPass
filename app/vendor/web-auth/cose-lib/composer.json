@@ -28,9 +28,6 @@
     "require-dev": {
         "spomky-labs/cbor-php": "^3.4"
     },
-    "replace": {
-        "symfony/polyfill-php81": "*"
-    },
     "conflict": {
         "spomky-labs/cbor-php": "<3.4.0"
     },

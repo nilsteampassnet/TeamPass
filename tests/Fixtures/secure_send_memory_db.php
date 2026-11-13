@@ -57,6 +57,8 @@ class DB
     public static string $unwrapError = '';
     public static string $objectKey = 'object-key';
     public static string $password = 'secret-at-creation';
+    public static ?array $otp = null;
+    public static int $otpQueries = 0;
     private static array $snapshot = [];
     private static int $affected = 0;
     private static int $id = 0;
@@ -76,6 +78,8 @@ class DB
         self::$folderCounts = [7 => 1];
         self::$objectKey = 'object-key';
         self::$password = 'secret-at-creation';
+        self::$otp = null;
+        self::$otpQueries = 0;
         self::$id = 0;
         self::$item = ['id' => 123, 'id_tree' => 7, 'label' => 'Original label', 'login' => 'alice', 'url' => 'https://example.com',
             'description' => '&lt;p&gt;Original note&lt;/p&gt;', 'pw' => 'encrypted-password', 'pw_iv' => '', 'pw_len' => 18, 'inactif' => 0, 'deleted_at' => null];
@@ -101,6 +105,11 @@ class DB
                 'name' => 'Alice',
                 'lastname' => 'Sender',
             ] : null;
+        }
+        // Before the items branch: the TOTP table name starts with the items table name.
+        if (str_contains($sql, prefixTable('items_otp'))) {
+            ++self::$otpQueries;
+            return self::$otp;
         }
         if (str_contains($sql, prefixTable('items'))) {
             return self::$access && !str_contains($sql, '(1 = 0)') && $args[0] === 123
@@ -186,6 +195,8 @@ class DB
 
     public static function query(string $sql, ...$args): int|array
     {
+        // Email delivery has its own SQL-backed fixture; these legacy links were copied to the clipboard.
+        if (str_contains($sql, prefixTable('secure_send_email'))) { return []; }
         self::$affected = 0;
         if (str_contains($sql, 'ORDER BY id ASC LIMIT 100 FOR UPDATE')) {
             if (self::$failCleanupQuery) {
@@ -235,6 +246,9 @@ class DB
         }
         self::$snapshot = [self::$links, self::$audit, self::$secureAudit, self::$automatic, self::$item, self::$cache, self::$folderCounts];
     }
+
+    /** No email association exists for these clipboard-only lifecycle scenarios. */
+    public static function queryFirstColumn(string $sql, ...$args): array { return []; }
 
     public static function commit(): void { self::$snapshot = []; }
     public static function inTransaction(): bool { return self::$snapshot !== []; }

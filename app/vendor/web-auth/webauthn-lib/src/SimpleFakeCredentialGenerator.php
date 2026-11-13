@@ -35,7 +35,7 @@ final readonly class SimpleFakeCredentialGenerator implements FakeCredentialGene
             return $this->generateCredentials($username);
         }
 
-        $cacheKey = 'fake_credentials_' . hash('xxh128', $username);
+        $cacheKey = 'fake_credentials_v2_' . hash('xxh128', $username);
         $cacheItem = $this->cache->getItem($cacheKey);
         if ($cacheItem->isHit()) {
             /** @var PublicKeyCredentialDescriptor[] */
@@ -77,7 +77,7 @@ final readonly class SimpleFakeCredentialGenerator implements FakeCredentialGene
             $selectedTransports = array_values(array_unique($selectedTransports));
             $credentials[] = PublicKeyCredentialDescriptor::create(
                 PublicKeyCredentialDescriptor::CREDENTIAL_TYPE_PUBLIC_KEY,
-                hash('sha256', $credSeed . $username),
+                hash('sha256', $credSeed . $username, true),
                 $selectedTransports
             );
         }

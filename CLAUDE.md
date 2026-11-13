@@ -55,8 +55,8 @@ whatever `composer install` resolves for `phpunit/phpunit: ^10.5`:
 
 ```bash
 mkdir -p _tools
-curl -sL -o _tools/phpunit.phar     https://phar.phpunit.de/phpunit-10.5.64.phar
-curl -sL -o /tmp/phpunit.phar.asc   https://phar.phpunit.de/phpunit-10.5.64.phar.asc
+curl -sL -o _tools/phpunit.phar     https://phar.phpunit.de/phpunit-10.5.66.phar
+curl -sL -o /tmp/phpunit.phar.asc   https://phar.phpunit.de/phpunit-10.5.66.phar.asc
 gpg --keyserver hkps://keys.openpgp.org \
     --recv-keys D8406D0D82947747293778314AA394086372C20A          # Sebastian Bergmann
 gpg --verify /tmp/phpunit.phar.asc _tools/phpunit.phar            # expect: Good signature
@@ -198,6 +198,8 @@ MFA: Google Authenticator (TOTP), Duo Security, YubiKey, AGSES.
 
 ## Email Templates
 
+Email delivery and transport contract: `.claude/rules/architecture-email-transports.md`.
+
 > Admin guide: `docs/manage/email-templates.md` — design notes: `workReadmeFiles/emails-templates-customization-plan.md`
 
 Emails are language strings, customizable per language by an admin. `Language::get()` checks `teampass_emails_templates` **before** the language files (`override[lang] → override[english] → file[lang] → file[english] → key`); the table is a pure diff, an empty table = shipped behaviour. Kill switch: `emails_templates_enabled`.
@@ -241,7 +243,10 @@ rows are retained and excluded before the batch limit rather than deleted unaudi
 happens only after commit.** **Rule: never copy a link row into the journal — use
 the `secureSendAuditRecord()` metadata allowlist; never log payloads or credentials.**
 The feature migration belongs to `public/install/upgrade_run_3.2.3.php`, not the
-maintained 3.2.2.x hotfix line.
+maintained 3.2.2.x hotfix line. **Rule: create links only through `secureSendCreateLink()`**
+(`app/sources/secure_send_create.php`) — the web handler and `POST /api/v1/secureSend/create`
+share it; a new refusal code must be added to `SecureSendCreateRefusal::CODES` and mapped in
+`secureSendApiRefusalStatuses()`.
 
 ## API
 

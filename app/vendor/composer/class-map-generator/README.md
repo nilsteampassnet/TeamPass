@@ -56,6 +56,11 @@ foreach ($classMap->getMap() as $symbol => $path) {
 foreach ($classMap->getAmbiguousClasses() as $symbol => $paths) {
     // warn user about ambiguous class resolution
 }
+
+foreach ($classMap->getAmbiguousFolders() as $paths) {
+    // warn user that these paths only differ in casing, and therefore fold into a
+    // single file/folder on case insensitive filesystems like those of Windows/macOS
+}
 ```
 
 

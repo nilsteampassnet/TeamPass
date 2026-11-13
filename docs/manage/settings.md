@@ -157,6 +157,7 @@ Options governing the REST API and the clients built on it (browser extension, m
 
 | Option | Description |
 |--------|-------------|
+| **Allow Secure Send from API clients** (`secure_send_api_enabled`) | Lets the browser extension, paired mobile devices and API scripts create Secure Send links for items the user can read, under the same policy as the web interface. Also requires **User can propose One-Time-View links**. Default: off. See [Secure Send through the API](../api/secure-send.md) |
 | **Offline synchronization window (days)** (`offline_sync_window_days`) | How long a mobile device may stay offline and still catch up incrementally when it reconnects. Beyond this delay the device rebuilds its local cache instead. Default: 90. Set to 0 for no limit |
 | **Allow the browser extension to save passkeys** (`webauthn_provider_enabled`) | *Browser Extension* tab. Lets the extension keep the passkeys of third-party sites in items and sign in with them. Default: off. See [Passkeys](../features/passkeys.md) |
 | **Notify users when a passkey is saved** (`webauthn_email_on_add`) | *Browser Extension* tab. Emails the user who saved a passkey. Default: on |
@@ -223,7 +224,8 @@ Sharing, export, and content features.
 | **Secure Send audit retention (days)** | `0` keeps all audit events (default); `1`–`36500` opts into irreversible deletion of older events, up to 1000 per scheduled run of the **Items integrity scan** maintenance task. Statistics may become incomplete; see [Audit retention](../install/secure-send.md#audit-retention). Backups and external logs retain separate policies. |
 | **Force a passphrase on every Secure Send link** | Requires the sender to protect every new link with a separate passphrase; recommended for Internet-facing links |
 | **Allow sending ad-hoc notes/secrets** | Permits links that are not attached to an item or folder; leave disabled unless that independent lifecycle is required |
-| **Show the sender’s profile name** | Publishes the sender’s first and last name on the public page before passphrase entry. Enabled on fresh installs; existing instances must opt in after upgrading. |
+| **Allow Secure Send email invitations** | Disabled by default on fresh and upgraded instances. Allows users to send links to external recipients through the organization mailbox. Disabling it hides the email controls and stops pending/deferred invitations before submission. |
+| **Show the sender’s profile name** | Publishes the sender’s first and last name on the public page before passphrase entry and in the default invitation email subject. Queued invitations use the policy and profile current at submission. Enabled on fresh installs; existing instances must opt in after upgrading. |
 | **Allow printing** | Enables the print / export-to-PDF feature |
 | **Roles allowed to print** | Restricts the print feature to selected roles |
 | **Allow import** | Enables CSV and KeePass2 XML import (see [Import](../features/import.md)) |

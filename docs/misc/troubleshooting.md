@@ -218,6 +218,7 @@ The account creation background task (key generation) may not have completed bef
 
 On the `Users` page, the **OAuth2 synchronization** button shows a red notification reading
 *"Insufficient privileges to complete the operation."* and no directory account is listed.
+The **Test a user** and **Check the allowed groups** buttons of the `OAuth` page fail the same way.
 Signing in through Entra can work perfectly at the same time.
 
 ### Cause
@@ -249,7 +250,8 @@ The full permission list is in
 ### If the message appears at login instead
 
 The same Graph error can be raised by the login flow, which reads the groups of the user who is
-signing in (`GET /me/memberOf`). Both cases are easy to tell apart:
+signing in (`GET /me/transitiveMemberOf`, then `GET /me/memberOf` if the first one is refused).
+Both cases are easy to tell apart:
 
 | Where | What is displayed |
 |---|---|

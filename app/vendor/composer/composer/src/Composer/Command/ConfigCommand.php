@@ -13,6 +13,7 @@
 namespace Composer\Command;
 
 use Composer\Pcre\Preg;
+use Composer\Policy\CooldownPolicyConfig;
 use Composer\Policy\IgnoreUnreachable;
 use Composer\Policy\ListPolicyConfig;
 use Composer\Policy\PolicyConfig;
@@ -81,8 +82,8 @@ class ConfigCommand extends BaseConfigCommand
                 new InputOption('list', 'l', InputOption::VALUE_NONE, 'List configuration settings'),
                 new InputOption('file', 'f', InputOption::VALUE_REQUIRED, 'If you want to choose a different composer.json or config.json'),
                 new InputOption('absolute', null, InputOption::VALUE_NONE, 'Returns absolute paths when fetching *-dir config values instead of relative'),
-                new InputOption('json', 'j', InputOption::VALUE_NONE, 'JSON decode the setting value, to be used with extra.* keys'),
-                new InputOption('merge', 'm', InputOption::VALUE_NONE, 'Merge the setting value with the current value, to be used with extra.* or audit.ignore[-abandoned] keys in combination with --json'),
+                new InputOption('json', 'j', InputOption::VALUE_NONE, 'JSON decode the setting value, only supported for extra.*, policy.*.ignore, policy.advisories.ignore-id, policy.ignore-unreachable and audit.ignore[-abandoned] keys'),
+                new InputOption('merge', 'm', InputOption::VALUE_NONE, 'Merge the setting value with the current value, only supported for extra.* keys in combination with --json, and for policy.*.ignore, policy.advisories.ignore-id and audit.ignore[-abandoned] keys'),
                 new InputOption('append', null, InputOption::VALUE_NONE, 'When adding a repository, append it (lowest priority) to the existing ones instead of prepending it (highest priority)'),
                 new InputOption('source', null, InputOption::VALUE_NONE, 'Display where the config value is loaded from'),
                 new InputArgument('setting-key', null, 'Setting key', null, $this->suggestSettingKeys()),
@@ -327,6 +328,9 @@ EOT
         $auditValidator = static function ($val): bool {
             return in_array($val, [ListPolicyConfig::AUDIT_IGNORE, ListPolicyConfig::AUDIT_REPORT, ListPolicyConfig::AUDIT_FAIL], true);
         };
+        $blockScopeValidator = static function ($val): bool {
+            return in_array($val, ListPolicyConfig::AVAILABLE_BLOCK_SCOPES, true);
+        };
         $keepAsIsNormalizer = static function ($val) {
             return $val;
         };
@@ -427,6 +431,7 @@ EOT
             }],
             'sort-packages' => [$booleanValidator, $booleanNormalizer],
             'optimize-autoloader' => [$booleanValidator, $booleanNormalizer],
+            'strict-psr-autoloader' => [$booleanValidator, $booleanNormalizer],
             'classmap-authoritative' => [$booleanValidator, $booleanNormalizer],
             'apcu-autoloader' => [$booleanValidator, $booleanNormalizer],
             'prepend-autoloader' => [$booleanValidator, $booleanNormalizer],
@@ -497,15 +502,33 @@ EOT
             'policy.advisories.block' => [$booleanValidator, $booleanNormalizer],
             'policy.advisories.audit' => [$auditValidator, $keepAsIsNormalizer],
             'policy.malware.block' => [$booleanValidator, $booleanNormalizer],
-            'policy.malware.block-scope' => [
-                static function ($val): bool {
-                    return in_array($val, ['all', 'update', 'install'], true);
-                },
-                $keepAsIsNormalizer,
-            ],
+            'policy.malware.block-scope' => [$blockScopeValidator, $keepAsIsNormalizer],
             'policy.malware.audit' => [$auditValidator, $keepAsIsNormalizer],
             'policy.abandoned.block' => [$booleanValidator, $booleanNormalizer],
             'policy.abandoned.audit' => [$auditValidator, $keepAsIsNormalizer],
+            'policy.cooldown.block' => [$booleanValidator, $booleanNormalizer],
+            'policy.cooldown.audit' => [$auditValidator, $keepAsIsNormalizer],
+            'policy.cooldown.period' => [
+                static function ($val): bool {
+                    if ($val === 'null' || $val === '') {
+                        return true;
+                    }
+                    try {
+                        CooldownPolicyConfig::parseDuration($val);
+
+                        return true;
+                    } catch (\RuntimeException $e) {
+                        return false;
+                    }
+                },
+                static function ($val) {
+                    if ($val === 'null' || $val === '') {
+                        return null;
+                    }
+
+                    return is_numeric($val) ? (int) $val : $val;
+                },
+            ],
             'policy.ignore-unreachable' => [$booleanValidator, $booleanNormalizer],
         ];
         $multiConfigValues = [
@@ -704,8 +727,8 @@ EOT
             return 0;
         }
 
-        // handle custom policy lists: policy.<name>.block / policy.<name>.audit
-        if (Preg::isMatch('/^policy\.([^.]+)\.(block|audit)$/', $settingKey, $matches)
+        // handle custom policy lists: policy.<name>.block / policy.<name>.block-scope / policy.<name>.audit
+        if (Preg::isMatch('/^policy\.([^.]+)\.(block|block-scope|audit)$/', $settingKey, $matches)
             && !in_array($matches[1], $nonCustomPolicyKeys, true)
         ) {
             $reservedError = PolicyConfig::getFutureReservedListNameError($matches[1]);
@@ -717,6 +740,11 @@ EOT
                     throw new \RuntimeException(sprintf('"%s" is an invalid value for %s, expected a boolean', $values[0], $settingKey));
                 }
                 $this->configSource->addConfigSetting($settingKey, $booleanNormalizer($values[0]));
+            } elseif ($matches[2] === 'block-scope') {
+                if (!$blockScopeValidator($values[0])) {
+                    throw new \RuntimeException(sprintf('"%s" is an invalid value for %s, must be one of: all, update, install', $values[0], $settingKey));
+                }
+                $this->configSource->addConfigSetting($settingKey, $values[0]);
             } else {
                 if (!$auditValidator($values[0])) {
                     throw new \RuntimeException(sprintf('"%s" is an invalid value for %s, must be one of: ignore, report, fail', $values[0], $settingKey));

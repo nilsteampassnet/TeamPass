@@ -64,6 +64,8 @@ require_once __DIR__ . '/ldap_config_logic.php';
 require_once __DIR__ . '/branding_logic.php';
 require_once __DIR__ . '/user_keys_task_logic.php';
 require_once __DIR__ . '/secret_settings_logic.php';
+require_once __DIR__ . '/emails_queue_logic.php';
+require_once __DIR__ . '/emails_transport_logic.php';
 require_once __DIR__ . '/sharekeys_repair_logic.php';
 require_once __DIR__ . '/main_queries_logic.php';
 require_once __DIR__ . '/attachment_pending_logic.php';
@@ -2331,7 +2333,7 @@ function getStatisticsData(array $SETTINGS): array
  * @param string $receiverName  Receiver name
  * @param string $encryptedUserPassword      encryptedUserPassword
  *
- * @return void
+ * @return bool True when the email task was queued and the handler was notified
  */
 function prepareSendingEmail(
     $subject,
@@ -2339,32 +2341,39 @@ function prepareSendingEmail(
     $email,
     $receiverName = '',
     $encryptedUserPassword = ''
-): void 
+): bool
 {
-    DB::insert(
-        prefixTable('background_tasks'),
-        array(
-            'created_at' => time(),
-            'process_type' => 'send_email',
-            'arguments' => json_encode([
-                'subject' => html_entity_decode($subject, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
-                'receivers' => $email,
-                'body' => $body,
-                'receiver_name' => $receiverName,
-                'encryptedUserPassword' => $encryptedUserPassword,
-            ], JSON_HEX_QUOT | JSON_HEX_TAG),
-        )
-    );
+    try {
+        DB::insert(
+            prefixTable('background_tasks'),
+            array(
+                'created_at' => time(),
+                'process_type' => 'send_email',
+                'arguments' => json_encode(emailQueueSeal([
+                    'subject' => html_entity_decode($subject, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+                    'receivers' => $email,
+                    'body' => $body,
+                    'receiver_name' => $receiverName,
+                    'encryptedUserPassword' => $encryptedUserPassword,
+                ]), JSON_THROW_ON_ERROR),
+            )
+        );
 
-    // Wake the handler up. This task is very often created from inside a worker that the
-    // handler is already draining (typically create_user_keys step99). Without the trigger
-    // the handler only picks it up if it is still in its launching window: once
-    // tasks_max_drain_time is exceeded, drainTaskPool() stops launching and exits, leaving
-    // the email queued until the next cron tick - or forever when no cron is configured.
-    // Touching the trigger file makes a running handler extend its drain window
-    // (checkAndConsumeTrigger) and relaunches a stopped one. Concurrent launches are
-    // harmless: the handler holds an exclusive flock and surplus instances exit at once.
-    triggerBackgroundHandler();
+        // Wake the handler up. This task is very often created from inside a worker that the
+        // handler is already draining (typically create_user_keys step99). Without the trigger
+        // the handler only picks it up if it is still in its launching window: once
+        // tasks_max_drain_time is exceeded, drainTaskPool() stops launching and exits, leaving
+        // the email queued until the next cron tick - or forever when no cron is configured.
+        // Touching the trigger file makes a running handler extend its drain window
+        // (checkAndConsumeTrigger) and relaunches a stopped one. Concurrent launches are
+        // harmless: the handler holds an exclusive flock and surplus instances exit at once.
+        triggerBackgroundHandler();
+        return true;
+    } catch (Throwable $error) {
+        // Notification failures must not abort sign-in or expose credentials in diagnostics.
+        error_log('Email queue failure: ' . get_class($error));
+        return false;
+    }
 }
 
 /**
@@ -2885,8 +2894,8 @@ function emailBody(string $textMail): string
     </tr>
     <tr><td align="center" valign="top" bgcolor="#f0f0f0" style="border-collapse: collapse; background-color: #f0f0f0;">
         <table width="600" cellpadding="0" cellspacing="0" border="0" class="container" bgcolor="#ffffff" style="border-spacing: 0; border-bottom: 1px solid #e0e0e0; box-shadow: 0 0 3px #ddd; color: #434343; font-family: Helvetica, Verdana, sans-serif;">
-        <tr><td class="container-padding" bgcolor="#ffffff" style="border-collapse: collapse; border-left: 1px solid #e0e0e0; background-color: #ffffff; padding-left: 30px; padding-right: 30px;">
-        <br><div style="float:right;">' .
+        <tr><td class="container-padding" align="left" valign="top" bgcolor="#ffffff" style="border-collapse: collapse; border-left: 1px solid #e0e0e0; background-color: #ffffff; padding-left: 30px; padding-right: 30px; text-align: left;">
+        <br>' .
         $textMail .
         '<br><br></td></tr></table>
     </td></tr></table>
@@ -4450,7 +4459,7 @@ function handleFailedAttempts(string $source, string $value, int $limit, int $lo
  */
 function getForgotLocalPasswordContext(?array $userInfo, array $SETTINGS): array
 {
-    $emailConfigured = empty(trim((string) ($SETTINGS['email_smtp_server'] ?? ''))) === false;
+    $emailConfigured = emailTransportIsConfigured($SETTINGS);
     $featureEnabled  = isset($SETTINGS['enable_local_password_recovery']) === true
         ? (int) $SETTINGS['enable_local_password_recovery'] === 1
         : (int) ($SETTINGS['disable_show_forgot_pwd_link'] ?? 0) !== 1;
@@ -5929,10 +5938,15 @@ function decryptPrivateKey(string $userPwd, string $userPrivateKey)
 /**
  * Permits to encrypt the user's privatekey.
  *
+ * Every caller stores the result as the user's private key, so this function never returns
+ * anything else: an empty password, an empty key or an encryption failure throws instead.
+ *
  * @param string $userPwd        User password
- * @param string $userPrivateKey User private key
+ * @param string $userPrivateKey User private key (base64 encoded)
  *
  * @return string
+ *
+ * @throws RuntimeException When the password or the key is empty, or when the encryption fails
  */
 function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
 {
@@ -5940,28 +5954,32 @@ function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
     // See generateUserKeys() for the rationale.
     // $userPrivateKey is base64-encoded binary — xss_clean is a no-op on base64
     // chars but is removed for consistency and to avoid confusion.
-    if (empty($userPwd) === false) {
-        try {
-            if (aesV2WriteEnabled() === true) {
-                // AES v2 (authenticated GCM, PBKDF2-SHA256 600k). users.private_key has no
-                // companion column, so the metadata is encoded in the value with a "v2:" prefix.
-                $v2 = CryptoManager::aesGcmEncrypt(base64_decode($userPrivateKey), $userPwd, '', 'pbkdf2');
-                return 'v2:' . base64_encode($v2['meta']) . ':' . base64_encode($v2['ciphertext']);
-            }
-
-            // Legacy format (AES-CBC, SHA-256) — unchanged
-            $encrypted = CryptoManager::aesEncrypt(
-                base64_decode($userPrivateKey),
-                $userPwd,
-                'cbc',
-                'sha256'
-            );
-            return base64_encode($encrypted);
-        } catch (Exception $e) {
-            return $e->getMessage();
-        }
+    $privateKeyBinary = base64_decode($userPrivateKey);
+    if ($userPwd === '' || $privateKeyBinary === '') {
+        // Stored, an empty value or the ciphertext of nothing replaces the user's only copy of the key
+        throw new RuntimeException('Refusing to encrypt a private key with an empty password or an empty key.');
     }
-    return '';
+
+    try {
+        if (aesV2WriteEnabled() === true) {
+            // AES v2 (authenticated GCM, PBKDF2-SHA256 600k). users.private_key has no
+            // companion column, so the metadata is encoded in the value with a "v2:" prefix.
+            $v2 = CryptoManager::aesGcmEncrypt($privateKeyBinary, $userPwd, '', 'pbkdf2');
+            return 'v2:' . base64_encode($v2['meta']) . ':' . base64_encode($v2['ciphertext']);
+        }
+
+        // Legacy format (AES-CBC, SHA-256) — unchanged
+        $encrypted = CryptoManager::aesEncrypt(
+            $privateKeyBinary,
+            $userPwd,
+            'cbc',
+            'sha256'
+        );
+        return base64_encode($encrypted);
+    } catch (Exception $e) {
+        // The message used to be returned, and stored by the caller as the encrypted key
+        throw new RuntimeException('Private key encryption failed.', 0, $e);
+    }
 }
 
 /**
@@ -10260,7 +10278,7 @@ function getEmailTemplateSubject(string $templateId, $lang): string
  * @param boolean $immediate_email
  * @param string $encryptedUserPassword
  * @param string $receiverName
- * @return string
+ * @return string|null Encoded immediate result or enqueue error; null after a successful enqueue.
  */
 function sendMailToUser(
     string $post_receipt,
@@ -10314,13 +10332,20 @@ function sendMailToUser(
         );
     } else {
         // Send through task handler
-        prepareSendingEmail(
+        $queued = prepareSendingEmail(
             $post_subject,
             $post_body,
             $post_receipt,
             $receiverName,
             $encryptedUserPassword,
         );
+        if ($queued === false) {
+            $language = new Language(SessionManager::getSession()->get('user-language') ?? ($SETTINGS['default_language'] ?? 'english'));
+            return prepareExchangedData([
+                'error' => true,
+                'message' => $language->get('email_queue_failed'),
+            ], 'encode');
+        }
     }
 
     return null;
@@ -11600,6 +11625,32 @@ function getUserRoles(int $userId, ?string $source = null): array
 // ----------------------
 // Users Favorites
 // ----------------------
+/**
+ * Tell whether a user may bookmark an item.
+ *
+ * Same predicate as the Favourites list and the Quick access "starred" tab:
+ * active item, readable folder, per-item user and role restrictions.
+ *
+ * @param int $userId User adding the bookmark.
+ * @param int $itemId Item to bookmark.
+ *
+ * @return bool True when the item may be bookmarked.
+ */
+function favouriteItemIsReadable(int $userId, int $itemId): bool
+{
+    if ($userId <= 0 || $itemId <= 0) {
+        return false;
+    }
+
+    return DB::queryFirstField(
+        'SELECT i.id FROM ' . prefixTable('items') . ' AS i
+        WHERE i.id = %i AND i.inactif = %i
+            AND ' . securityPostureItemAccessSql($userId, 'i'),
+        $itemId,
+        0
+    ) !== null;
+}
+
 /**
  * Add an item to user's favorites
  */

@@ -48,6 +48,40 @@ const SEARCH_FOLDER_RESULTS_LIMIT = 20;
 const SEARCH_FOLDER_OPTIONS_PAGE_SIZE = 50;
 
 /**
+ * Tell whether the search results offer the favourite toggle.
+ *
+ * Same gate as favourites.queries.php: the feature must be enabled, and
+ * administrators get no toggle because they have no item access.
+ *
+ * @param bool $featureFavourites Whether the Favourites feature is enabled.
+ * @param int  $isAdmin           Session user-admin flag.
+ *
+ * @return bool True when the star button is rendered and the bookmarks are read.
+ */
+function searchCanManageFavourites(bool $featureFavourites, int $isAdmin): bool
+{
+    return $featureFavourites === true && $isAdmin !== 1;
+}
+
+/**
+ * Render the search result's favourite button.
+ *
+ * @param bool   $isFavourite Whether the current user has bookmarked the item.
+ * @param string $label       Translated action label, escaped here for HTML attributes.
+ *
+ * @return string Accessible star button markup.
+ */
+function searchFavouriteActionHtml(bool $isFavourite, string $label): string
+{
+    $escapedLabel = htmlspecialchars($label, ENT_QUOTES, 'UTF-8');
+
+    return '<button type="button" class="search-row-action infotip" data-action="favourite"'
+        . ' aria-pressed="' . ($isFavourite ? 'true' : 'false') . '"'
+        . ' title="' . $escapedLabel . '" aria-label="' . $escapedLabel . '">'
+        . '<i class="' . ($isFavourite ? 'fa-solid fa-star text-warning' : 'fa-regular fa-star') . '" aria-hidden="true"></i></button>';
+}
+
+/**
  * Resolve the folder scope a search may read from.
  *
  * This is the single authorization primitive of the search feature. It is
@@ -62,10 +96,13 @@ const SEARCH_FOLDER_OPTIONS_PAGE_SIZE = 50;
  *  - other users' personal folders are subtracted, mirroring
  *    expired.datatables.php.
  *
- * @param array<int|string> $accessibleFolders         Session `user-accessible_folders`.
- * @param array<int|string> $forbiddenPersonalFolders  Session `user-forbiden_personal_folders`.
- * @param array<int|string>|null $requestedSubtree     Folder ids of the requested subtree,
- *                                                     or null when no narrowing is asked for.
+ * Callers hand over raw session values (`(array) $session->get(...)`), so every
+ * element is type-checked here rather than trusted.
+ *
+ * @param array<mixed> $accessibleFolders         Session `user-accessible_folders`.
+ * @param array<mixed> $forbiddenPersonalFolders  Session `user-forbiden_personal_folders`.
+ * @param array<mixed>|null $requestedSubtree     Folder ids of the requested subtree,
+ *                                                or null when no narrowing is asked for.
  *
  * @return array<int, int> Positive folder ids, unique and reindexed. Empty means "search nothing".
  */

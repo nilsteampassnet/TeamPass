@@ -6,6 +6,8 @@ namespace OTPHP;
 
 use function is_int;
 use OTPHP\Exception\InvalidParameterException;
+use const PHP_INT_MAX;
+use const PHP_INT_MIN;
 
 /**
  * Note: This class is not marked as readonly because the verify() method
@@ -17,6 +19,12 @@ use OTPHP\Exception\InvalidParameterException;
 final class HOTP extends OTP implements HOTPInterface
 {
     private const DEFAULT_WINDOW = 0;
+
+    /**
+     * A successful verification moves the counter to the accepted value plus one,
+     * so the last counter that can be accepted is PHP_INT_MAX - 1.
+     */
+    private const MAX_ACCEPTED_COUNTER = PHP_INT_MAX - 1;
 
     public static function create(
         null|string $secret = null,
@@ -118,7 +126,7 @@ final class HOTP extends OTP implements HOTPInterface
     {
         return [...parent::getParameterMap(), ...[
             'counter' => static function (mixed $value): int {
-                $value = (int) $value;
+                $value = self::toInt('counter', $value);
                 $value >= 0 || throw new InvalidParameterException(
                     'Counter must be at least 0.',
                     'counter',
@@ -140,7 +148,15 @@ final class HOTP extends OTP implements HOTPInterface
      */
     private function getWindow(null|int $window): int
     {
-        return abs($window ?? self::DEFAULT_WINDOW);
+        $window ??= self::DEFAULT_WINDOW;
+        // abs(PHP_INT_MIN) does not fit in an int and would return a float.
+        $window !== PHP_INT_MIN || throw new InvalidParameterException(
+            'The window must be greater than PHP_INT_MIN.',
+            'window',
+            $window
+        );
+
+        return abs($window);
     }
 
     /**
@@ -151,8 +167,12 @@ final class HOTP extends OTP implements HOTPInterface
     private function verifyOtpWithWindow(string $otp, int $counter, null|int $window): bool
     {
         $window = $this->getWindow($window);
+        // Bounded without overflow: past PHP_INT_MAX, $i would become a float. An exhausted counter accepts nothing.
+        $lastCounter = $counter > self::MAX_ACCEPTED_COUNTER - $window
+            ? self::MAX_ACCEPTED_COUNTER
+            : $counter + $window;
 
-        for ($i = $counter; $i <= $counter + $window; ++$i) {
+        for ($i = $counter; $i <= $lastCounter; ++$i) {
             if ($this->compareOTP($this->at($i), $otp)) {
                 $this->updateCounter($i + 1);
 

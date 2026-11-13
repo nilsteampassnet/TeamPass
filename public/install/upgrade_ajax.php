@@ -682,6 +682,7 @@ if (isset($post_type)) {
             // Put TeamPass in maintenance for the upgrade unless the administrator opted out. Every
             // 3.2.x script writes upgrade_timestamp, which reopens sign-in before the whole chain
             // has run. Step 5 restores the value found here.
+            unset($_SESSION['setup_permissions_ready'], $_SESSION['setup_permissions_csrf']);
             $superGlobal->put('upgrade_previous_maintenance', '', 'SESSION');
             if ((int) $post_no_maintenance_mode !== 1) {
                 $maintenanceRow = mysqli_fetch_row(mysqli_query(
@@ -999,12 +1000,6 @@ if (isset($post_type)) {
                 $newdata = str_replace('"verifyGetFor" => array()', '"verifyGetFor" => array("*page=items&type=duo_check*")', $newdata);
                 file_put_contents('../../app/includes/libraries/csrfp/libs/csrfp.config.php', $newdata);
 
-                // Mark a tag to force Install stuff (folders, files and table) to be cleanup while first login
-                mysqli_query(
-                    $db_link,
-                    'INSERT IGNORE INTO `' . $pre . 'misc` (`type`, `intitule`, `valeur`) VALUES ("install", "clear_install_folder", "true")'
-                );
-
                 array_push(
                     $returnStatus, 
                     array(
@@ -1150,6 +1145,8 @@ if (isset($post_type)) {
             
             //-->
 
+            $_SESSION['setup_permissions_ready'] = 'upgrade';
+            unset($_SESSION['setup_permissions_csrf']);
             echo '[{'.
                 '"error" : "",'.
                 '"info" : "'.base64_encode(json_encode($returnStatus)).'",'.

@@ -29,24 +29,48 @@
 use TeampassClasses\EmailService\EmailService;
 use TeampassClasses\EmailService\EmailSettings;
 
+require_once __DIR__ . '/../../sources/emails_queue_logic.php';
+
 trait EmailTrait {
+    /** @var array{email?: string, login?: string} Recipient display metadata, never message content. */
+    private array $emailTaskRecipients = [];
+
     /**
      * Envoie un email
      * @param array $arguments Arguments nécessaires pour l'envoi d'email
      */
     private function sendEmail($arguments) {
+        $this->emailTaskRecipients = [];
+        $arguments = emailQueueOpen($arguments);
+        $this->emailTaskRecipients = [
+            'email' => $arguments['receivers'],
+            'login' => (string) ($arguments['receiver_name'] ?? ''),
+        ];
+        if (isset($this->processType) && $this->processType === 'secure_send_email') {
+            require_once __DIR__ . '/../../sources/secure_send_email.php';
+            // Refresh policy for every attempt, including a deferred retry. No network I/O under a DB lock.
+            \TeampassClasses\ConfigManager\ConfigManager::invalidateCache();
+            $this->settings = (new \TeampassClasses\ConfigManager\ConfigManager())->getAllSettings();
+            if (!secureSendEmailCanDeliver($this->taskId, $this->settings)) {
+                throw new RuntimeException('Secure Send is no longer available; email was not submitted.');
+            }
+            $arguments = secureSendEmailPersonalize($arguments, $this->taskId, $this->settings);
+        }
         // Prepare email properties
         $emailSettings = new EmailSettings($this->settings);
         $emailService = new EmailService();
         
         // if email.encryptedUserPassword is set, decrypt it
-        if (isset($arguments['encryptedUserPassword']) === true) {
-            $userPassword = cryption($arguments['encryptedUserPassword'], '', 'decrypt', $this->settings)['string'];
-            $arguments['body'] = str_replace('#password#', $userPassword, $arguments['body']);
+        if (empty($arguments['encryptedUserPassword']) === false) {
+            $decrypted = cryption($arguments['encryptedUserPassword'], '', 'decrypt', $this->settings);
+            if (($decrypted['error'] ?? false) !== false) {
+                throw new RuntimeException('Email credential could not be decrypted.');
+            }
+            $arguments['body'] = str_replace('#password#', $decrypted['string'], $arguments['body']);
         }
         
         // send email
-        $emailService->sendMail(
+        $result = $emailService->sendMail(
             $arguments['subject'],
             $arguments['body'],
             $arguments['receivers'],
@@ -55,5 +79,10 @@ trait EmailTrait {
             true,
             true
         );
+        // The worker catches this exception and marks the task failed. Do not include
+        // the provider response: it can contain recipient or message data.
+        if ($result !== '') {
+            throw new \TeampassClasses\EmailService\EmailTransportException($emailService->getLastResult());
+        }
     }
 }

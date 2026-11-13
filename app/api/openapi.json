@@ -1414,6 +1414,165 @@
                 }
             }
         },
+        "/secureSend/policy": {
+            "get": {
+                "operationId": "secureSendPolicy",
+                "summary": "Secure Send policy for API clients",
+                "description": "Instance limits and options a client needs to build its Secure Send form. Always 200: hide the action when enabled or item_send_allowed is false. Not counted as user activity.",
+                "responses": {
+                    "200": {
+                        "description": "Policy",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SecureSendPolicy"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/ApiDisabled"
+                    }
+                }
+            }
+        },
+        "/secureSend/create": {
+            "post": {
+                "operationId": "secureSendCreate",
+                "summary": "Create a Secure Send link for an item",
+                "description": "Creates a limited-view, expiring link to a snapshot of an item the caller can read, with the same policy, audit and email delivery as the web interface. Requires the read right, one-time view links and the secure_send_api_enabled setting. The returned url is a bearer secret: never log it, and send the passphrase through another channel. No Idempotency-Key support: a lost response leaves at most one unused link, which expires on its own. Error responses carry a machine-readable reason member.",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SecureSendCreateBody"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Link created",
+                        "headers": {
+                            "Cache-Control": {
+                                "description": "Always no-store",
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store"
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SecureSendCreated"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request (reason invalid_payload: body, types, unknown member, Idempotency-Key header or query-string parameters) or recipient (reason invalid_email)",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SecureSendProblem"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "description": "Item not readable by the caller or administrator account (reason not_allowed), email invitations disabled (reason email_not_allowed), or read right missing (no reason member)",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SecureSendProblem"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Item not found or deleted (reason not_found)",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SecureSendProblem"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "422": {
+                        "description": "Refused on substance: passphrase_required, cannot_decrypt (retry once the background task has distributed the item keys), totp_unusable, email_requires_https",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SecureSendProblem"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Email invitation quota reached (reason email_rate_limited: 10 per sender per rolling hour), or API rate limit",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SecureSendProblem"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "Retry-After": {
+                                "description": "Present only when the API rate limiter answered (no reason member)",
+                                "schema": {
+                                    "type": "integer"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error (reason server_error); details are logged server-side only",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SecureSendProblem"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Secure Send disabled for API clients (reason secure_send_disabled), email delivery not configured (email_not_configured), public address misconfigured (invalid_public_url), or API disabled (no reason member)",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SecureSendProblem"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/openapi.json": {
             "get": {
                 "operationId": "getOpenApiSpec",
@@ -3047,6 +3206,229 @@
                         "const": 2
                     }
                 }
+            },
+            "SecureSendPolicy": {
+                "type": "object",
+                "required": [
+                    "enabled",
+                    "item_send_allowed",
+                    "require_passphrase",
+                    "passphrase_max_bytes",
+                    "days",
+                    "views",
+                    "public_address_available",
+                    "totp_allowed",
+                    "email",
+                    "sender_name_shown"
+                ],
+                "properties": {
+                    "enabled": {
+                        "type": "boolean",
+                        "description": "One-time view links and secure_send_api_enabled are both on"
+                    },
+                    "item_send_allowed": {
+                        "type": "boolean",
+                        "description": "enabled, and the caller is not an administrator (administrators have no item access)"
+                    },
+                    "require_passphrase": {
+                        "type": "boolean"
+                    },
+                    "passphrase_max_bytes": {
+                        "type": "integer",
+                        "const": 1024
+                    },
+                    "days": {
+                        "type": "object",
+                        "required": [
+                            "max",
+                            "default"
+                        ],
+                        "properties": {
+                            "max": {
+                                "type": "integer",
+                                "minimum": 1
+                            },
+                            "default": {
+                                "type": "integer",
+                                "minimum": 1
+                            }
+                        }
+                    },
+                    "views": {
+                        "type": "object",
+                        "required": [
+                            "max",
+                            "default"
+                        ],
+                        "properties": {
+                            "max": {
+                                "type": "integer",
+                                "minimum": 1
+                            },
+                            "default": {
+                                "type": "integer",
+                                "minimum": 1
+                            }
+                        }
+                    },
+                    "public_address_available": {
+                        "type": "boolean",
+                        "description": "A valid public Secure Send address is configured (public_address can be requested)"
+                    },
+                    "totp_allowed": {
+                        "type": "boolean",
+                        "description": "false for read-only accounts: include_totp is then ignored"
+                    },
+                    "email": {
+                        "type": "object",
+                        "required": [
+                            "allowed",
+                            "configured"
+                        ],
+                        "properties": {
+                            "allowed": {
+                                "type": "boolean"
+                            },
+                            "configured": {
+                                "type": "boolean"
+                            }
+                        }
+                    },
+                    "sender_name_shown": {
+                        "type": "boolean",
+                        "description": "The recipient sees the sender's display name"
+                    }
+                }
+            },
+            "SecureSendCreateBody": {
+                "type": "object",
+                "required": [
+                    "item_id"
+                ],
+                "additionalProperties": false,
+                "description": "Unknown members are refused (400). A null optional member counts as omitted.",
+                "properties": {
+                    "item_id": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "days": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "description": "Validity in days, capped by policy days.max (default: the maximum)"
+                    },
+                    "views": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "description": "Allowed views, capped by policy views.max (default 1)"
+                    },
+                    "passphrase": {
+                        "type": "string",
+                        "maxLength": 1024,
+                        "description": "Optional recipient passphrase (at most 1024 bytes); required when policy require_passphrase is true"
+                    },
+                    "include_totp": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Copy the item's enabled TOTP into the snapshot; ignored for read-only accounts"
+                    },
+                    "public_address": {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Build the link on the public Secure Send address"
+                    },
+                    "recipient_email": {
+                        "type": "string",
+                        "format": "email",
+                        "description": "Also send the link by email from the instance mailbox"
+                    }
+                }
+            },
+            "SecureSendCreated": {
+                "type": "object",
+                "required": [
+                    "id",
+                    "url",
+                    "item_id",
+                    "expires_at",
+                    "max_views",
+                    "has_passphrase",
+                    "public_address",
+                    "totp_included",
+                    "description_truncated",
+                    "email_queued"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "description": "Link identifier (revocable from the web interface)"
+                    },
+                    "url": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "Bearer secret: anyone holding it (and the passphrase, if any) can open the link"
+                    },
+                    "item_id": {
+                        "type": "integer"
+                    },
+                    "expires_at": {
+                        "type": "integer",
+                        "description": "Unix timestamp"
+                    },
+                    "max_views": {
+                        "type": "integer"
+                    },
+                    "has_passphrase": {
+                        "type": "boolean"
+                    },
+                    "public_address": {
+                        "type": "boolean"
+                    },
+                    "totp_included": {
+                        "type": "boolean"
+                    },
+                    "description_truncated": {
+                        "type": "boolean",
+                        "description": "The item description was shortened to fit the link storage"
+                    },
+                    "email_queued": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "SecureSendProblem": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/Problem"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "reason": {
+                                "type": "string",
+                                "enum": [
+                                    "secure_send_disabled",
+                                    "invalid_payload",
+                                    "invalid_email",
+                                    "empty_note",
+                                    "not_found",
+                                    "not_allowed",
+                                    "email_not_allowed",
+                                    "notes_not_allowed",
+                                    "passphrase_required",
+                                    "cannot_decrypt",
+                                    "totp_unusable",
+                                    "email_requires_https",
+                                    "email_rate_limited",
+                                    "email_not_configured",
+                                    "invalid_public_url",
+                                    "server_error"
+                                ],
+                                "description": "Stable machine-readable cause; map it, not the detail text"
+                            }
+                        }
+                    }
+                ]
             }
         },
         "responses": {

@@ -1,6 +1,6 @@
 # Teampass License Compliance Report
 
-**Generated:** 2026-11-01 13:51:57
+**Generated:** 2026-11-10 17:27:27
 **Project License:** GNU General Public License v3.0
 
 ## PHP Dependencies (Composer)
@@ -11,32 +11,32 @@
 | brick/math | 0.12.3 | MIT | ✅ Compatible |
 | carbonphp/carbon-doctrine-types | 3.2.1 | MIT | ✅ Compatible |
 | cboden/ratchet | v0.4.4 | MIT | ✅ Compatible |
-| composer/ca-bundle | 1.5.14 | MIT | ✅ Compatible |
-| composer/class-map-generator | 1.7.3 | MIT | ✅ Compatible |
-| composer/composer | 2.10.3 | MIT | ✅ Compatible |
+| composer/ca-bundle | 1.6.1 | MIT | ✅ Compatible |
+| composer/class-map-generator | 1.9.0 | MIT | ✅ Compatible |
+| composer/composer | 2.11.2 | MIT | ✅ Compatible |
 | composer/metadata-minifier | 1.0.1 | MIT | ✅ Compatible |
 | composer/pcre | 3.4.0 | MIT | ✅ Compatible |
-| composer/semver | 3.4.4 | MIT | ✅ Compatible |
+| composer/semver | 3.6.0 | MIT | ✅ Compatible |
 | composer/spdx-licenses | 1.6.0 | MIT | ✅ Compatible |
 | composer/xdebug-handler | 3.0.5 | MIT | ✅ Compatible |
 | defuse/php-encryption | v2.4.0 | MIT | ✅ Compatible |
 | directorytree/ldaprecord | v3.8.6 | MIT | ✅ Compatible |
 | dittertp/gibberish-aes-php | 4.0.0 | MIT | ✅ Compatible |
 | doctrine/deprecations | 1.1.6 | MIT | ✅ Compatible |
-| doctrine/inflector | 2.1.0 | MIT | ✅ Compatible |
-| doctrine/lexer | 3.0.1 | MIT | ✅ Compatible |
-| dragonmantank/cron-expression | v3.6.0 | MIT | ✅ Compatible |
+| doctrine/inflector | 2.1.1 | MIT | ✅ Compatible |
+| doctrine/lexer | 3.0.3 | MIT | ✅ Compatible |
+| dragonmantank/cron-expression | v3.6.1 | MIT | ✅ Compatible |
 | duosecurity/duo_universal_php | 1.2.0 | BSD-3-Clause | ✅ Compatible |
 | egulias/email-validator | 4.0.4 | MIT | ✅ Compatible |
 | elegantweb/sanitizer | v2.4.0 | MIT | ✅ Compatible |
 | evenement/evenement | v3.0.2 | MIT | ✅ Compatible |
 | ezimuel/php-secure-session | dev-composer-update | BSD-3-Clause | ✅ Compatible |
-| ezyang/htmlpurifier | v4.19.0 | LGPL-2.1-or-later | ✅ Compatible |
-| firebase/php-jwt | v7.1.0 | BSD-3-Clause | ✅ Compatible |
+| ezyang/htmlpurifier | v4.19.1 | LGPL-2.1-or-later | ✅ Compatible |
+| firebase/php-jwt | v7.2.1 | BSD-3-Clause | ✅ Compatible |
 | goodby/csv | 1.3.0 | MIT | ✅ Compatible |
-| guzzlehttp/guzzle | 7.15.5 | MIT | ✅ Compatible |
-| guzzlehttp/promises | 2.5.3 | MIT | ✅ Compatible |
-| guzzlehttp/psr7 | 2.13.1 | MIT | ✅ Compatible |
+| guzzlehttp/guzzle | 7.16.1 | MIT | ✅ Compatible |
+| guzzlehttp/promises | 2.6.0 | MIT | ✅ Compatible |
+| guzzlehttp/psr7 | 2.13.2 | MIT | ✅ Compatible |
 | hackzilla/password-generator | 1.7.0 | MIT | ✅ Compatible |
 | illuminate/collections | v10.49.0 | MIT | ✅ Compatible |
 | illuminate/conditionable | v10.49.0 | MIT | ✅ Compatible |
@@ -47,22 +47,22 @@
 | illuminate/support | v10.49.0 | MIT | ✅ Compatible |
 | illuminate/translation | v10.49.0 | MIT | ✅ Compatible |
 | illuminate/validation | v10.49.0 | MIT | ✅ Compatible |
-| justinrainbow/json-schema | 6.12.0 | MIT | ✅ Compatible |
-| league/oauth2-client | 2.9.0 | MIT | ✅ Compatible |
+| justinrainbow/json-schema | 6.14.0 | MIT | ✅ Compatible |
+| league/oauth2-client | 2.9.1 | MIT | ✅ Compatible |
 | marc-mabe/php-enum | v4.7.2 | BSD-3-Clause | ✅ Compatible |
 | moxiecode/plupload | v3.1.5 | (GPL-2.0 or OEM) | ✅ Compatible |
 | neitanod/forceutf8 | v2.0.4 | BSD-3-Clause | ✅ Compatible |
 | nesbot/carbon | 2.73.0 | MIT | ✅ Compatible |
 | owasp/csrf-protector-php | v1.0.2 | Apache-2.0 | ✅ Compatible |
-| paragonie/constant_time_encoding | v3.1.3 | MIT | ✅ Compatible |
+| paragonie/constant_time_encoding | v3.1.4 | MIT | ✅ Compatible |
 | paragonie/random_compat | v9.99.100 | MIT | ✅ Compatible |
 | peppeocchi/php-cron-scheduler | v4.0 | MIT | ✅ Compatible |
-| phpdocumentor/reflection-common | 2.2.0 | MIT | ✅ Compatible |
+| phpdocumentor/reflection-common | 2.2.1 | MIT | ✅ Compatible |
 | phpdocumentor/reflection-docblock | 6.0.3 | MIT | ✅ Compatible |
-| phpdocumentor/type-resolver | 2.0.0 | MIT | ✅ Compatible |
+| phpdocumentor/type-resolver | 2.1.0 | MIT | ✅ Compatible |
 | phpmailer/phpmailer | v6.12.0 | LGPL-2.1-only | ✅ Compatible |
-| phpseclib/phpseclib | 3.0.57 | MIT | ✅ Compatible |
-| phpstan/phpdoc-parser | 2.3.5 | MIT | ✅ Compatible |
+| phpseclib/phpseclib | 3.0.58 | MIT | ✅ Compatible |
+| phpstan/phpdoc-parser | 2.4.1 | MIT | ✅ Compatible |
 | psr/cache | 3.0.0 | MIT | ✅ Compatible |
 | psr/clock | 1.0.0 | MIT | ✅ Compatible |
 | psr/container | 2.0.2 | MIT | ✅ Compatible |
@@ -81,42 +81,43 @@
 | react/socket | v1.17.0 | MIT | ✅ Compatible |
 | react/stream | v1.4.0 | MIT | ✅ Compatible |
 | robthree/twofactorauth | v2.1.0 | MIT | ✅ Compatible |
-| seld/jsonlint | 1.12.1 | MIT | ✅ Compatible |
-| seld/phar-utils | 1.2.2 | MIT | ✅ Compatible |
+| seld/jsonlint | 1.12.2 | MIT | ✅ Compatible |
+| seld/phar-utils | 1.2.3 | MIT | ✅ Compatible |
 | seld/signal-handler | 2.0.2 | MIT | ✅ Compatible |
 | sergeytsalkov/meekrodb | v2.5.2 | LGPL-3.0 | ✅ Compatible |
-| spomky-labs/cbor-php | 3.4.1 | MIT | ✅ Compatible |
-| spomky-labs/otphp | 11.5.0 | MIT | ✅ Compatible |
+| spomky-labs/cbor-php | 3.4.2 | MIT | ✅ Compatible |
+| spomky-labs/otphp | 11.5.1 | MIT | ✅ Compatible |
 | spomky-labs/pki-framework | 1.6.3 | MIT | ✅ Compatible |
-| symfony/clock | v7.4.8 | MIT | ✅ Compatible |
-| symfony/console | v6.4.45 | MIT | ✅ Compatible |
-| symfony/contracts | v3.7.3 | MIT | ✅ Compatible |
-| symfony/filesystem | v7.4.18 | MIT | ✅ Compatible |
-| symfony/finder | v6.4.44 | MIT | ✅ Compatible |
-| symfony/http-foundation | v6.4.49 | MIT | ✅ Compatible |
+| symfony/clock | v7.4.21 | MIT | ✅ Compatible |
+| symfony/console | v6.4.50 | MIT | ✅ Compatible |
+| symfony/contracts | v3.8.1 | MIT | ✅ Compatible |
+| symfony/filesystem | v7.4.23 | MIT | ✅ Compatible |
+| symfony/finder | v6.4.50 | MIT | ✅ Compatible |
+| symfony/http-foundation | v6.4.50 | MIT | ✅ Compatible |
 | symfony/mime | v6.4.49 | MIT | ✅ Compatible |
 | symfony/password-hasher | v6.4.32 | MIT | ✅ Compatible |
 | symfony/polyfill-ctype | v1.37.0 | MIT | ✅ Compatible |
-| symfony/polyfill-iconv | v1.37.0 | MIT | ✅ Compatible |
-| symfony/polyfill-intl-grapheme | v1.41.0 | MIT | ✅ Compatible |
-| symfony/polyfill-intl-idn | v1.42.0 | MIT | ✅ Compatible |
-| symfony/polyfill-intl-normalizer | v1.42.0 | MIT | ✅ Compatible |
-| symfony/polyfill-mbstring | v1.38.2 | MIT | ✅ Compatible |
+| symfony/polyfill-iconv | v1.43.0 | MIT | ✅ Compatible |
+| symfony/polyfill-intl-grapheme | v1.43.3 | MIT | ✅ Compatible |
+| symfony/polyfill-intl-idn | v1.43.0 | MIT | ✅ Compatible |
+| symfony/polyfill-intl-normalizer | v1.43.0 | MIT | ✅ Compatible |
+| symfony/polyfill-mbstring | v1.43.3 | MIT | ✅ Compatible |
 | symfony/polyfill-php72 | v1.31.0 | MIT | ✅ Compatible |
 | symfony/polyfill-php73 | v1.37.0 | MIT | ✅ Compatible |
-| symfony/polyfill-php80 | v1.37.0 | MIT | ✅ Compatible |
-| symfony/polyfill-php83 | v1.41.0 | MIT | ✅ Compatible |
-| symfony/polyfill-php84 | v1.38.1 | MIT | ✅ Compatible |
-| symfony/polyfill-uuid | v1.37.0 | MIT | ✅ Compatible |
-| symfony/process | v6.4.45 | MIT | ✅ Compatible |
-| symfony/property-access | v7.4.16 | MIT | ✅ Compatible |
-| symfony/property-info | v7.4.18 | MIT | ✅ Compatible |
-| symfony/routing | v6.4.45 | MIT | ✅ Compatible |
-| symfony/serializer | v7.4.18 | MIT | ✅ Compatible |
-| symfony/string | v7.4.15 | MIT | ✅ Compatible |
-| symfony/translation | v6.4.44 | MIT | ✅ Compatible |
-| symfony/type-info | v7.4.17 | MIT | ✅ Compatible |
-| symfony/uid | v7.4.17 | MIT | ✅ Compatible |
+| symfony/polyfill-php80 | v1.43.0 | MIT | ✅ Compatible |
+| symfony/polyfill-php81 | v1.38.1 | MIT | ✅ Compatible |
+| symfony/polyfill-php83 | v1.43.0 | MIT | ✅ Compatible |
+| symfony/polyfill-php84 | v1.43.0 | MIT | ✅ Compatible |
+| symfony/polyfill-uuid | v1.43.0 | MIT | ✅ Compatible |
+| symfony/process | v6.4.49 | MIT | ✅ Compatible |
+| symfony/property-access | v7.4.23 | MIT | ✅ Compatible |
+| symfony/property-info | v7.4.23 | MIT | ✅ Compatible |
+| symfony/routing | v6.4.50 | MIT | ✅ Compatible |
+| symfony/serializer | v7.4.23 | MIT | ✅ Compatible |
+| symfony/string | v7.4.22 | MIT | ✅ Compatible |
+| symfony/translation | v6.4.50 | MIT | ✅ Compatible |
+| symfony/type-info | v7.4.23 | MIT | ✅ Compatible |
+| symfony/uid | v7.4.21 | MIT | ✅ Compatible |
 | teampassclasses/configmanager | dev-composer-update | GPL-3.0-only | ✅ Compatible |
 | teampassclasses/cryptomanager | dev-composer-update | GPL-3.0-only | ✅ Compatible |
 | teampassclasses/emailservice | dev-composer-update | GPL-3.0-only | ✅ Compatible |
@@ -135,12 +136,12 @@
 | tecnickcom/tcpdf | 6.11.4 | LGPL-3.0-or-later | ✅ Compatible |
 | thenetworg/oauth2-azure | v2.2.6 | MIT | ✅ Compatible |
 | tiben/crontab-manager | v1.4.0 | Apache-2.0 | ✅ Compatible |
-| voku/anti-xss | 4.1.44 | MIT | ✅ Compatible |
+| voku/anti-xss | 4.1.46 | MIT | ✅ Compatible |
 | voku/portable-ascii | 2.1.1 | MIT | ✅ Compatible |
 | voku/portable-utf8 | 6.1.1 | (Apache-2.0 or GPL-2.0) | ✅ Compatible |
-| web-auth/cose-lib | 4.8.1 | MIT | ✅ Compatible |
-| web-auth/webauthn-lib | 5.3.9 | MIT | ✅ Compatible |
-| webmozart/assert | 2.4.1 | MIT | ✅ Compatible |
+| web-auth/cose-lib | 4.8.2 | MIT | ✅ Compatible |
+| web-auth/webauthn-lib | 5.3.12 | MIT | ✅ Compatible |
+| webmozart/assert | 2.5.0 | MIT | ✅ Compatible |
 
 ## JavaScript/CSS Dependencies
 
@@ -154,8 +155,8 @@
 
 ## Summary
 
-- **Total Dependencies:** 139
-- **PHP Dependencies:** 134
+- **Total Dependencies:** 140
+- **PHP Dependencies:** 135
 - **JavaScript Dependencies:** 5
 - **Errors:** 0
 - **Warnings:** 1
@@ -188,4 +189,4 @@ php _tools/licences/compliance-checker.php
 
 ---
 
-*Auto-generated report - Last updated: 2026-11-01 13:51:57*
+*Auto-generated report - Last updated: 2026-11-10 17:27:27*

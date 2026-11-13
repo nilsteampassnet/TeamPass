@@ -92,7 +92,17 @@ final class Url
         (is_string($path) && $path !== '') || throw new InvalidProvisioningUriException('Invalid URI.');
         is_string($query) || throw new InvalidProvisioningUriException('Invalid URI.');
         $parsedQuery = [];
-        parse_str($query, $parsedQuery);
+        // parse_str() never fails: past max_input_vars (or max_input_nesting_level) it raises an E_WARNING,
+        // drops the remaining pairs and returns what it has read so far. An object built from that truncated
+        // query would not match the URI, so any diagnostic of parse_str() rejects the URI instead.
+        set_error_handler(static function (int $errno, string $errstr): never {
+            throw new InvalidProvisioningUriException('Invalid query: ' . $errstr);
+        });
+        try {
+            parse_str($query, $parsedQuery);
+        } finally {
+            restore_error_handler();
+        }
         array_key_exists('secret', $parsedQuery) || throw new InvalidProvisioningUriException(
             'Not a valid OTP provisioning URI'
         );

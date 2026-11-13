@@ -3,6 +3,29 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+### [3.6.0] 2026-10-29
+
+  * Improved `Intervals::compactConstraint()` performance by caching results per constraint string, which speeds up callers that compact the same constraints repeatedly like Composer's pool optimizer, `Intervals::clear()` frees the cache (#194)
+
+### [3.5.2] 2026-10-22
+
+  * Fixed `MultiConstraint::getUpperBound()` picking the wrong inclusivity when two upper bounds share a version, e.g. `< 1.0 || == 1.0` reported an exclusive upper bound that excluded `1.0` (#193)
+
+### [3.5.1] 2026-10-05
+
+  * Fixed `Intervals::isSubsetOf()` returning false for `< 0.0.0`, which now correctly matches nothing and so is a subset of any constraint (#192)
+
+### [3.5.0] 2026-09-24
+
+  * Added `VersionParser::isValid()` to check whether a version string can be normalized (#168)
+  * Fixed `Intervals::compactConstraint()` turning constraints that match no dev versions, like `> 1.0.0 != 2.0.0 || < 1.9.0`, into `!= 2.0.0` which matches all `dev-*` versions (#189)
+  * Fixed `>=` and `<` constraints on RC versions, like `>=1.0-RC1`, getting an extra `-dev` suffix which `beta` and `alpha` constraints did not get (#187)
+  * Improved `CompilingMatcher` performance by avoiding building concatenated cache keys on every call (#186)
+
+### [3.4.4] 2025-08-20
+
+  * Fixed some type annotations to use `list` return types (#171)
+
 ### [3.4.3] 2024-09-19
 
   * Fixed some type annotations
@@ -191,6 +214,11 @@ This project adheres to [Semantic Versioning](http://semver.org/).
     - Namespace: `Composer\Test\Package\LinkConstraint` -> `Composer\Test\Semver\Constraint`
   * Changed: code style using php-cs-fixer.
 
+[3.6.0]: https://github.com/composer/semver/compare/3.5.2...3.6.0
+[3.5.2]: https://github.com/composer/semver/compare/3.5.1...3.5.2
+[3.5.1]: https://github.com/composer/semver/compare/3.5.0...3.5.1
+[3.5.0]: https://github.com/composer/semver/compare/3.4.4...3.5.0
+[3.4.4]: https://github.com/composer/semver/compare/3.4.3...3.4.4
 [3.4.3]: https://github.com/composer/semver/compare/3.4.2...3.4.3
 [3.4.2]: https://github.com/composer/semver/compare/3.4.1...3.4.2
 [3.4.1]: https://github.com/composer/semver/compare/3.4.0...3.4.1

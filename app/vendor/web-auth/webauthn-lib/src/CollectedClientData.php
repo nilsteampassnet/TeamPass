@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Webauthn;
 
 use function array_key_exists;
+use function in_array;
 use function is_array;
 use function is_string;
 use const JSON_THROW_ON_ERROR;
@@ -69,6 +70,11 @@ class CollectedClientData
         $crossOrigin = $data['crossOrigin'] ?? false;
         $this->crossOrigin = $crossOrigin;
 
+        $tokenBinding = $data['tokenBinding'] ?? null;
+        if ($tokenBinding !== null) {
+            self::checkTokenBinding($data, $tokenBinding);
+        }
+
         $this->data = $data;
     }
 
@@ -112,5 +118,34 @@ class CollectedClientData
         }
 
         return $this->data[$key];
+    }
+
+    /**
+     * The tokenBinding member is [RESERVED] since Webauthn Level 3, which still defines the TokenBinding dictionary it
+     * holds (section 5.8.1): a required status and, when the status is "present", the Token Binding ID. A client that
+     * sends the member sends that dictionary, and the FIDO Conformance Tools expect any other value to be refused. The
+     * accepted statuses are "present" and "supported", the TokenBindingStatus values, and "not-supported", which the
+     * tools name as well. The value itself is not used.
+     *
+     * @param mixed[] $data
+     */
+    private static function checkTokenBinding(array $data, mixed $tokenBinding): void
+    {
+        is_array($tokenBinding) || throw InvalidDataException::create(
+            $data,
+            'Invalid parameter "tokenBinding". Shall be an object.'
+        );
+        $status = $tokenBinding['status'] ?? null;
+        in_array($status, ['present', 'supported', 'not-supported'], true) || throw InvalidDataException::create(
+            $data,
+            'Invalid parameter "tokenBinding.status". Shall be "present", "supported" or "not-supported".'
+        );
+        if ($status === 'present') {
+            $id = $tokenBinding['id'] ?? null;
+            (is_string($id) && $id !== '') || throw InvalidDataException::create(
+                $data,
+                'Invalid parameter "tokenBinding.id". Shall be a non-empty string when the status is "present".'
+            );
+        }
     }
 }

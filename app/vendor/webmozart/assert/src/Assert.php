@@ -2030,9 +2030,11 @@ class Assert
     /**
      * @psalm-pure
      *
-     * @param string|object $classOrObject
+     * @template T as class-string|object
+     * @param T $classOrObject
      * @param string|callable():string $message
      *
+     * @return T
      * @throws InvalidArgumentException
      */
     public static function propertyExists(mixed $classOrObject, mixed $property, string|callable $message = ''): object|string
@@ -2140,6 +2142,40 @@ class Assert
             static::reportInvalidArgument(\sprintf(
                 $message ?: 'Expected the key %s to exist.',
                 static::valueToString($key)
+            ));
+        }
+
+        return $array;
+    }
+
+    /**
+     * @psalm-pure
+     *
+     * @param iterable<string|int> $keys
+     * @param string|callable():string $message
+     *
+     * @throws InvalidArgumentException
+     */
+    public static function keysExist(mixed $array, mixed $keys, string|callable $message = ''): array
+    {
+        static::isArray($array, $message);
+        static::isIterable($keys);
+
+        $missing = [];
+
+        foreach ($keys as $key) {
+            static::validArrayKey($key, 'Expected an array key. Got: %s');
+
+            if (!(isset($array[$key]) || \array_key_exists($key, $array))) {
+                $missing[] = $key;
+            }
+        }
+
+        if ([] !== $missing) {
+            $message = self::resolveMessage($message);
+            static::reportInvalidArgument(\sprintf(
+                $message ?: 'Expected the keys %s to exist.',
+                \implode(', ', \array_map(static::valueToString(...), $missing))
             ));
         }
 

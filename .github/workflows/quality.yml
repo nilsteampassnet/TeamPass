@@ -182,6 +182,16 @@ jobs:
           TEAMPASS_TEST_DB: teampass_test_secure_send
           TEAMPASS_TEST_PASSWORD: test-only-password
         run: php tests/Integration/kb_dates_database.php
+      - name: Purge expired failed email tasks with and without subtasks
+        env:
+          TEAMPASS_TEST_DB: teampass_test_secure_send
+          TEAMPASS_TEST_PASSWORD: test-only-password
+        run: php tests/Integration/email_failed_tasks_database.php
+      - name: Check email token storage and migration
+        env:
+          TEAMPASS_TEST_DB: teampass_test_secure_send
+          TEAMPASS_TEST_PASSWORD: test-only-password
+        run: php tests/Integration/email_token_storage_database.php
       - name: Check the LAPR endpoint lifecycle
         env:
           TEAMPASS_TEST_DB: teampass_test_secure_send

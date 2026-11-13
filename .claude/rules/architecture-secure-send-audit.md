@@ -20,8 +20,25 @@ The audit foundation provides storage, lifecycle instrumentation and migration.
 Its dependent statistics change adds aggregates to the existing administrator
 statistics endpoint; the Users statistics card displays them below item activity.
 Governance/Reports can later consume the journal through their existing
-administrator-only, feature-gated handlers. No raw journal read, export or purge
-endpoint is added, and no access to another user's item contents is granted.
+administrator-only, feature-gated handlers. No export or purge endpoint is added,
+and no access to another user's item contents is granted.
+
+The administrator Logs page (**Monitoring → Logs**) reads the journal as its `secure_send`
+source: `buildSecureSendLogFilter()` (`logs_filter_logic.php`, user facet = originator) and the
+`secure_send` branch of `logs.datatables.php`, with LEFT JOINs so rows of deleted accounts and
+items stay readable. **Rule: that source is administrator only** — the page is also granted to
+managers, so both the page and the endpoint check `user-admin`. **Rule: it is never purged
+there** — `buildLogsPurgeFilter()` refuses the source; retention is the only deletion path. Its
+events are `logsAllowedSecureSendEvents()` = the keys of `secureSendAuditEventReasons()`, the map
+`secureSendAuditRecord()` validates against. In the Items source, an `at_shown` written by
+`OTV_USER_ID` is shown and filtered as the virtual action `at_secure_send_view`;
+`logsAddItemActionClause()` applies it identically to the read, the action search and the purge.
+
+Link creation has a single implementation, the session-free `secureSendCreateLink()`
+(`secure_send_create.php`), shared by the web `generate_OTV_url` handler and the REST
+`POST /api/v1/secureSend/create` (`api-reference.md`). Both therefore write the same
+`created` event with the sender as actor; the journal does not record the channel. Its
+refusals are `SecureSendCreateRefusal::CODES`, which the API maps to HTTP statuses.
 
 ## Data contract
 
@@ -101,6 +118,23 @@ unavailable links do not create events. This avoids a public, unbounded audit
 amplification path. Missing required passphrases consume neither an attempt nor
 an event. Storage/crypto runtime errors retain the existing generic error log,
 without treating broken storage as a bad recipient credential.
+
+## Email delivery association
+
+Email invitations require `secure_send_allow_email` (off by default). Creation
+and every submission/retry enforce it alongside current source access and policy.
+The sealed task, metadata-only association and creation audit commit with the link;
+the per-sender lock limits invitations to ten per rolling hour. Wakeups follow commit.
+No recipient, URL, content or phrase enters the association or lifecycle journal.
+Fresh install and the 3.2.4 upgrade share the association DDL.
+
+Interrupted invitations are not resumed; both handler failure paths wipe their
+payload. Provider outcomes remain conservative: `not_sent` denotes a preflight
+refusal, while acceptance is not inbox delivery. Statuses are owner-scoped.
+Resolve `#sender#` / optional `#sender_prefix#` at each submission under current
+`secure_send_show_sender_name`; hidden/empty profiles use shipped **Someone**,
+never login/email. Strip header controls, escape HTML and preserve custom subjects
+without these tokens. Never freeze a profile name into a queued invitation.
 
 ## External forwarding
 

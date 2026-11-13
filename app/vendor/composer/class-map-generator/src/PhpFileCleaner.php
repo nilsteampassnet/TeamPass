@@ -20,7 +20,7 @@ use Composer\Pcre\Preg;
  */
 class PhpFileCleaner
 {
-    /** @var array<array{name: string, length: int, pattern: non-empty-string}> */
+    /** @var array<array{string, int, non-empty-string}> */
     private static $typeConfig;
 
     /** @var non-empty-string */
@@ -48,26 +48,39 @@ class PhpFileCleaner
     private $index = 0;
 
     /**
+     * Whether contents are the original source rather than php_strip_whitespace() output,
+     * in which case # and // comments are still present and must be skipped here
+     *
+     * @readonly
+     * @var bool
+     */
+    private $rawContents;
+
+    /**
      * @param string[] $types
      */
     public static function setTypeConfig(array $types): void
     {
         foreach ($types as $type) {
             self::$typeConfig[$type[0]] = [
-                'name' => $type,
-                'length' => \strlen($type),
-                'pattern' => '{.\b(?<![\$:>])'.$type.'\s++[a-zA-Z_\x7f-\xff:][a-zA-Z0-9_\x7f-\xff:\-]*+}Ais',
+                $type,
+                \strlen($type),
+                '{.\b(?<![\$:>])'.$type.'\s++[a-zA-Z_\x7f-\xff:][a-zA-Z0-9_\x7f-\xff:\-]*+}Ais',
             ];
         }
 
-        self::$rejectChars = '?"\'</'.implode('', array_keys(self::$typeConfig));
+        self::$rejectChars = '?"\'`</#'.implode('', array_keys(self::$typeConfig));
     }
 
-    public function __construct(string $contents, int $maxMatches)
+    /**
+     * @param bool $rawContents true if $contents is unprocessed source, false if it went through php_strip_whitespace()
+     */
+    public function __construct(string $contents, int $maxMatches, bool $rawContents = false)
     {
         $this->contents = $contents;
         $this->len = \strlen($this->contents);
         $this->maxMatches = $maxMatches;
+        $this->rawContents = $rawContents;
     }
 
     public function clean(): string
@@ -86,14 +99,8 @@ class PhpFileCleaner
                     continue 2;
                 }
 
-                if ($char === '"') {
-                    $this->skipString('"');
-                    $clean .= 'null';
-                    continue;
-                }
-
-                if ($char === "'") {
-                    $this->skipString("'");
+                if ($char === '"' || $char === "'" || $char === '`') {
+                    $this->skipString($char);
                     $clean .= 'null';
                     continue;
                 }
@@ -105,9 +112,14 @@ class PhpFileCleaner
                     continue;
                 }
 
+                if ($char === '#' && $this->rawContents && (PHP_VERSION_ID < 80000 || !$this->peek('['))) {
+                    $this->skipToNewline(true);
+                    continue;
+                }
+
                 if ($char === '/') {
                     if ($this->peek('/')) {
-                        $this->skipToNewline();
+                        $this->skipToNewline($this->rawContents);
                         continue;
                     }
 
@@ -120,8 +132,8 @@ class PhpFileCleaner
                 if ($this->maxMatches === 1 && isset(self::$typeConfig[$char])) {
                     $type = self::$typeConfig[$char];
                     if (
-                        substr($this->contents, $this->index, $type['length']) === $type['name']
-                        && Preg::isMatch($type['pattern'], $this->contents, $match, 0, $this->index - 1)
+                        substr($this->contents, $this->index, $type[1]) === $type[0]
+                        && Preg::isMatch($type[2], $this->contents, $match, 0, $this->index - 1)
                     ) {
                         return $clean . $match[0];
                     }
@@ -192,9 +204,18 @@ class PhpFileCleaner
         }
     }
 
-    private function skipToNewline(): void
+    /**
+     * @param bool $phpComment true when skipping a # or // comment, which PHP also ends at a ?> close tag
+     */
+    private function skipToNewline(bool $phpComment = false): void
     {
-        $this->index += strcspn($this->contents, "\r\n", $this->index);
+        do {
+            $this->index += strcspn($this->contents, $phpComment ? "\r\n?" : "\r\n", $this->index);
+            if (!$phpComment || $this->index >= $this->len || $this->contents[$this->index] !== '?' || $this->peek('>')) {
+                return;
+            }
+            $this->index++;
+        } while (true);
     }
 
     private function skipHeredoc(string $delimiter): void

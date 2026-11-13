@@ -11,7 +11,8 @@ class CallableTypeNode implements TypeNode
 
 	use NodeAttributes;
 
-	public IdentifierTypeNode $identifier;
+	/** @var IdentifierTypeNode|NameNode */
+	public TypeNode $identifier;
 
 	/** @var TemplateTagValueNode[] */
 	public array $templateTypes;
@@ -22,10 +23,11 @@ class CallableTypeNode implements TypeNode
 	public TypeNode $returnType;
 
 	/**
+	 * @param IdentifierTypeNode|NameNode $identifier
 	 * @param CallableTypeParameterNode[] $parameters
 	 * @param TemplateTagValueNode[]  $templateTypes
 	 */
-	public function __construct(IdentifierTypeNode $identifier, array $parameters, TypeNode $returnType, array $templateTypes)
+	public function __construct(TypeNode $identifier, array $parameters, TypeNode $returnType, array $templateTypes)
 	{
 		$this->identifier = $identifier;
 		$this->parameters = $parameters;

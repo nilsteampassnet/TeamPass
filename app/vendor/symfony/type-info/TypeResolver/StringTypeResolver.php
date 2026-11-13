@@ -37,13 +37,16 @@ use PHPStan\PhpDocParser\Parser\TokenIterator;
 use PHPStan\PhpDocParser\Parser\TypeParser;
 use PHPStan\PhpDocParser\ParserConfig;
 use Symfony\Component\TypeInfo\Exception\InvalidArgumentException;
+use Symfony\Component\TypeInfo\Exception\LogicException;
 use Symfony\Component\TypeInfo\Exception\UnsupportedException;
 use Symfony\Component\TypeInfo\Type;
+use Symfony\Component\TypeInfo\Type\ArrayShapeType;
 use Symfony\Component\TypeInfo\Type\BackedEnumType;
 use Symfony\Component\TypeInfo\Type\BuiltinType;
 use Symfony\Component\TypeInfo\Type\CollectionType;
 use Symfony\Component\TypeInfo\Type\GenericType;
 use Symfony\Component\TypeInfo\Type\ObjectType;
+use Symfony\Component\TypeInfo\Type\UnionType;
 use Symfony\Component\TypeInfo\TypeContext\TypeContext;
 use Symfony\Component\TypeInfo\TypeIdentifier;
 
@@ -59,6 +62,11 @@ final class StringTypeResolver implements TypeResolverInterface
      * @var array<string, bool>
      */
     private static array $classExistCache = [];
+
+    /**
+     * @var array<string, true>
+     */
+    private array $resolvingExtraTypeAliases = [];
 
     private readonly Lexer $lexer;
     private readonly TypeParser $parser;
@@ -76,7 +84,7 @@ final class StringTypeResolver implements TypeResolverInterface
             $this->parser = $parser ?? new TypeParser($config = new ParserConfig([]), new ConstExprParser($config));
         } else {
             $this->lexer = $lexer ?? new Lexer();
-            $this->parser = $parser ?? new TypeParser(new ConstExprParser());
+            $this->parser = $parser ?? new TypeParser(new ConstExprParser(true, true), true);
         }
     }
 
@@ -89,10 +97,7 @@ final class StringTypeResolver implements TypeResolverInterface
         }
 
         try {
-            $tokens = new TokenIterator($this->lexer->tokenize($subject));
-            $node = $this->parser->parse($tokens);
-
-            return $this->getTypeFromNode($node, $typeContext);
+            return $this->getTypeFromNode($this->parse($subject), $typeContext);
         } catch (\DomainException $e) {
             throw new UnsupportedException(\sprintf('Cannot resolve "%s".', $subject), $subject, previous: $e);
         }
@@ -113,10 +118,18 @@ final class StringTypeResolver implements TypeResolverInterface
         if ($node instanceof ArrayShapeNode) {
             $shape = [];
             foreach ($node->items as $item) {
-                $shape[(string) $item->keyName] = [
+                $shapeItem = [
                     'type' => $this->getTypeFromNode($item->valueType, $typeContext),
                     'optional' => $item->optional,
                 ];
+
+                if (null === $item->keyName) {
+                    $shape[] = $shapeItem;
+
+                    continue;
+                }
+
+                $shape[$item->keyName instanceof ConstExprStringNode ? $item->keyName->value : (string) $item->keyName] = $shapeItem;
             }
 
             return Type::arrayShape(
@@ -141,7 +154,13 @@ final class StringTypeResolver implements TypeResolverInterface
 
         if ($node instanceof ConstTypeNode) {
             if ($node->constExpr instanceof ConstFetchNode) {
-                $className = match (strtolower($node->constExpr->className)) {
+                $classKeyword = strtolower($node->constExpr->className);
+
+                if (null === $typeContext && \in_array($classKeyword, ['self', 'static', 'parent'], true)) {
+                    throw new InvalidArgumentException(\sprintf('A "%s" must be provided to resolve "%s".', TypeContext::class, $classKeyword));
+                }
+
+                $className = match ($classKeyword) {
                     'self' => $typeContext->getDeclaringClass(),
                     'static' => $typeContext->getCalledClass(),
                     'parent' => $typeContext->getParentClass(),
@@ -169,60 +188,27 @@ final class StringTypeResolver implements TypeResolverInterface
                     }
                 }
 
+                if (!$types) {
+                    throw new \DomainException(\sprintf('No "%s" constant found in "%s".', $node->constExpr->name, $className));
+                }
+
                 return CollectionType::mergeCollectionValueTypes($types);
             }
 
-            return match ($node->constExpr::class) {
-                ConstExprArrayNode::class => Type::array(),
-                ConstExprFalseNode::class => Type::false(),
-                ConstExprFloatNode::class => Type::float(),
-                ConstExprIntegerNode::class => Type::int(),
-                ConstExprNullNode::class => Type::null(),
-                ConstExprStringNode::class => Type::string(),
-                ConstExprTrueNode::class => Type::true(),
+            return match (true) {
+                $node->constExpr instanceof ConstExprArrayNode => Type::array(),
+                $node->constExpr instanceof ConstExprFalseNode => Type::false(),
+                $node->constExpr instanceof ConstExprFloatNode => Type::float(),
+                $node->constExpr instanceof ConstExprIntegerNode => Type::int(),
+                $node->constExpr instanceof ConstExprNullNode => Type::null(),
+                $node->constExpr instanceof ConstExprStringNode => Type::string(),
+                $node->constExpr instanceof ConstExprTrueNode => Type::true(),
                 default => throw new \DomainException(\sprintf('Unhandled "%s" constant expression.', $node->constExpr::class)),
             };
         }
 
         if ($node instanceof IdentifierTypeNode) {
-            $type = match ($node->name) {
-                'bool', 'boolean' => Type::bool(),
-                'true' => Type::true(),
-                'false' => Type::false(),
-                'int', 'integer', 'positive-int', 'negative-int', 'non-positive-int', 'non-negative-int', 'non-zero-int' => Type::int(),
-                'float', 'double' => Type::float(),
-                'string',
-                'class-string',
-                'trait-string',
-                'interface-string',
-                'callable-string',
-                'numeric-string',
-                'lowercase-string',
-                'non-empty-lowercase-string',
-                'non-empty-string',
-                'non-falsy-string',
-                'truthy-string',
-                'literal-string',
-                'html-escaped-string' => Type::string(),
-                'resource' => Type::resource(),
-                'object' => Type::object(),
-                'callable' => Type::callable(),
-                'array', 'non-empty-array' => Type::array(),
-                'list', 'non-empty-list' => Type::list(),
-                'iterable' => Type::iterable(),
-                'mixed' => Type::mixed(),
-                'null' => Type::null(),
-                'array-key' => Type::arrayKey(),
-                'scalar' => Type::union(Type::int(), Type::float(), Type::string(), Type::bool()),
-                'number' => Type::union(Type::int(), Type::float()),
-                'numeric' => Type::union(Type::int(), Type::float(), Type::string()),
-                'self' => $typeContext ? Type::object($typeContext->getDeclaringClass()) : throw new InvalidArgumentException(\sprintf('A "%s" must be provided to resolve "self".', TypeContext::class)),
-                'static' => $typeContext ? Type::object($typeContext->getCalledClass()) : throw new InvalidArgumentException(\sprintf('A "%s" must be provided to resolve "static".', TypeContext::class)),
-                'parent' => $typeContext ? Type::object($typeContext->getParentClass()) : throw new InvalidArgumentException(\sprintf('A "%s" must be provided to resolve "parent".', TypeContext::class)),
-                'void' => Type::void(),
-                'never', 'never-return', 'never-returns', 'no-return' => Type::never(),
-                default => $this->resolveCustomIdentifier($node->name, $typeContext),
-            };
+            $type = $this->resolveBuiltinIdentifier($node->name, $typeContext) ?? $this->resolveCustomIdentifier($node->name, $typeContext);
 
             if ($typeIsCollectionObject($type)) {
                 return Type::collection($type);
@@ -232,11 +218,27 @@ final class StringTypeResolver implements TypeResolverInterface
         }
 
         if ($node instanceof NullableTypeNode) {
-            return Type::nullable($this->getTypeFromNode($node->type, $typeContext));
+            $type = $this->getTypeFromNode($node->type, $typeContext);
+
+            try {
+                return Type::nullable($type);
+            } catch (InvalidArgumentException $e) {
+                throw new \DomainException($e->getMessage(), previous: $e);
+            }
         }
 
         if ($node instanceof GenericTypeNode) {
-            if ($node->type instanceof IdentifierTypeNode && 'value-of' === $node->type->name) {
+            $type = null;
+            $keyword = $node->type instanceof IdentifierTypeNode ? $node->type->name : null;
+            if (null !== $keyword && ($lowercase = strtolower($keyword)) !== $keyword && \in_array($lowercase, ['value-of', 'key-of'], true)) {
+                try {
+                    $type = $this->getTypeFromNode($node->type, $typeContext);
+                } catch (\DomainException) {
+                    $keyword = $lowercase;
+                }
+            }
+
+            if ('value-of' === $keyword) {
                 $type = $this->getTypeFromNode($node->genericTypes[0], $typeContext);
                 if ($type instanceof BackedEnumType) {
                     return $type->getBackingType();
@@ -249,7 +251,7 @@ final class StringTypeResolver implements TypeResolverInterface
                 throw new \DomainException(\sprintf('"%s" is not a valid type for "value-of".', $node->genericTypes[0]));
             }
 
-            if ($node->type instanceof IdentifierTypeNode && 'key-of' === $node->type->name) {
+            if ('key-of' === $keyword) {
                 $type = $this->getTypeFromNode($node->genericTypes[0], $typeContext);
                 if ($type instanceof CollectionType) {
                     return $type->getCollectionKeyType();
@@ -258,7 +260,7 @@ final class StringTypeResolver implements TypeResolverInterface
                 throw new \DomainException(\sprintf('"%s" is not a valid type for "key-of".', $node->genericTypes[0]));
             }
 
-            $type = $this->getTypeFromNode($node->type, $typeContext);
+            $type ??= $this->getTypeFromNode($node->type, $typeContext);
 
             // handle integer ranges as simple integers
             if ($type->isIdentifiedBy(TypeIdentifier::INT)) {
@@ -304,6 +306,7 @@ final class StringTypeResolver implements TypeResolverInterface
 
         if ($node instanceof UnionTypeNode) {
             $types = [];
+            $identifiers = [];
 
             foreach ($node->types as $nodeType) {
                 $type = $this->getTypeFromNode($nodeType, $typeContext);
@@ -312,17 +315,89 @@ final class StringTypeResolver implements TypeResolverInterface
                     return Type::mixed();
                 }
 
-                $types[] = $type;
+                foreach ($type instanceof UnionType ? $type->getTypes() : [$type] as $t) {
+                    $types[] = $t;
+
+                    if ($t instanceof BuiltinType) {
+                        $identifiers[$t->getTypeIdentifier()->value] = true;
+                    }
+                }
             }
 
-            return Type::union(...$types);
+            // "true|false" and "bool|true" mean "bool", "object|Foo" means "object"
+            if (isset($identifiers['bool']) || isset($identifiers['true'], $identifiers['false'])) {
+                $types = [Type::bool(), ...array_filter($types, static fn (Type $t): bool => !$t instanceof BuiltinType || !$t->getTypeIdentifier()->isBool())];
+            }
+
+            if (isset($identifiers['object'])) {
+                $types = array_values(array_filter($types, static fn (Type $t): bool => !$t instanceof ObjectType));
+            }
+
+            try {
+                return 1 === \count($types) ? $types[0] : Type::union(...$types);
+            } catch (InvalidArgumentException $e) {
+                throw new \DomainException($e->getMessage(), previous: $e);
+            }
         }
 
         if ($node instanceof IntersectionTypeNode) {
-            return Type::intersection(...array_map(fn (TypeNode $t): Type => $this->getTypeFromNode($t, $typeContext), $node->types));
+            $types = array_map(fn (TypeNode $t): Type => $this->getTypeFromNode($t, $typeContext), $node->types);
+            $shapes = array_filter($types, static fn (Type $t): bool => $t instanceof ArrayShapeType);
+
+            if (\count($shapes) === \count($types)) {
+                return $this->mergeArrayShapes($types);
+            }
+
+            try {
+                return Type::intersection(...$types);
+            } catch (InvalidArgumentException $e) {
+                throw new \DomainException($e->getMessage(), previous: $e);
+            }
         }
 
         throw new \DomainException(\sprintf('Unhandled "%s" node.', $node::class));
+    }
+
+    private function resolveBuiltinIdentifier(string $identifier, ?TypeContext $typeContext): ?Type
+    {
+        return match ($identifier) {
+            'bool', 'boolean' => Type::bool(),
+            'true' => Type::true(),
+            'false' => Type::false(),
+            'int', 'integer', 'positive-int', 'negative-int', 'non-positive-int', 'non-negative-int', 'non-zero-int' => Type::int(),
+            'float', 'double' => Type::float(),
+            'string',
+            'class-string',
+            'trait-string',
+            'interface-string',
+            'callable-string',
+            'numeric-string',
+            'lowercase-string',
+            'non-empty-lowercase-string',
+            'non-empty-string',
+            'non-falsy-string',
+            'truthy-string',
+            'literal-string',
+            'html-escaped-string' => Type::string(),
+            'resource' => Type::resource(),
+            'object' => Type::object(),
+            'callable' => Type::callable(),
+            'array', 'non-empty-array' => Type::array(),
+            'list', 'non-empty-list' => Type::list(),
+            'iterable' => Type::iterable(),
+            'mixed' => Type::mixed(),
+            'null' => Type::null(),
+            'array-key' => Type::arrayKey(),
+            'scalar' => Type::union(Type::int(), Type::float(), Type::string(), Type::bool()),
+            'number' => Type::union(Type::int(), Type::float()),
+            'numeric' => Type::union(Type::int(), Type::float(), Type::string()),
+            'self' => $typeContext ? Type::object($typeContext->getDeclaringClass()) : throw new InvalidArgumentException(\sprintf('A "%s" must be provided to resolve "self".', TypeContext::class)),
+            'static' => $typeContext ? Type::object($typeContext->getCalledClass()) : throw new InvalidArgumentException(\sprintf('A "%s" must be provided to resolve "static".', TypeContext::class)),
+            'parent' => $typeContext ? Type::object($typeContext->getParentClass()) : throw new InvalidArgumentException(\sprintf('A "%s" must be provided to resolve "parent".', TypeContext::class)),
+            'void' => Type::void(),
+            'never', 'never-return', 'never-returns', 'no-return' => Type::never(),
+            default => null,
+        };
     }
 
     private function resolveCustomIdentifier(string $identifier, ?TypeContext $typeContext): Type
@@ -360,9 +435,72 @@ final class StringTypeResolver implements TypeResolverInterface
         }
 
         if (isset($this->extraTypeAliases[$identifier])) {
-            return $this->resolve($this->extraTypeAliases[$identifier]);
+            if (isset($this->resolvingExtraTypeAliases[$identifier])) {
+                throw new LogicException(\sprintf('Cannot resolve "%s" type alias as it is recursive.', $identifier));
+            }
+
+            $this->resolvingExtraTypeAliases[$identifier] = true;
+
+            try {
+                return $this->resolve($this->extraTypeAliases[$identifier]);
+            } finally {
+                unset($this->resolvingExtraTypeAliases[$identifier]);
+            }
+        }
+
+        if (($keyword = strtolower($identifier)) !== $identifier && null !== $type = $this->resolveBuiltinIdentifier($keyword, $typeContext)) {
+            return $type;
         }
 
         throw new \DomainException(\sprintf('Unhandled "%s" identifier.', $identifier));
+    }
+
+    private function parse(string $subject): TypeNode
+    {
+        $lexerTokens = $this->lexer->tokenize($subject);
+        $tokens = new TokenIterator($lexerTokens);
+        $node = $this->parser->parse($tokens);
+
+        while ($tokens->tryConsumeTokenType(Lexer::TOKEN_PHPDOC_EOL)) {
+        }
+
+        $i = $tokens->currentTokenIndex();
+        if (Lexer::TOKEN_OPEN_CURLY_BRACKET === ($lexerTokens[$i][Lexer::TYPE_OFFSET] ?? null)) {
+            while (\in_array($lexerTokens[--$i][Lexer::TYPE_OFFSET] ?? null, [Lexer::TOKEN_HORIZONTAL_WS, Lexer::TOKEN_PHPDOC_EOL], true)) {
+            }
+
+            $value = $lexerTokens[$i][Lexer::VALUE_OFFSET] ?? '';
+            if (($keyword = strtolower($value)) !== $value && \in_array($keyword, ['array', 'list', 'non-empty-array', 'non-empty-list'], true)) {
+                throw new \DomainException(\sprintf('Use "%s{...}" instead of "%s{...}" for shape types.', $keyword, $value));
+            }
+        }
+
+        return $node;
+    }
+
+    /**
+     * @param list<ArrayShapeType> $types
+     */
+    private function mergeArrayShapes(array $types): ArrayShapeType
+    {
+        $shape = [];
+        $extraKeyType = $types[0]->getExtraKeyType();
+        $extraValueType = $types[0]->getExtraValueType();
+
+        foreach ($types as $type) {
+            if ((string) $extraKeyType !== (string) $type->getExtraKeyType() || (string) $extraValueType !== (string) $type->getExtraValueType()) {
+                throw new \DomainException(\sprintf('Cannot merge "%s" and "%s".', $types[0], $type));
+            }
+
+            foreach ($type->getShape() as $key => $item) {
+                if (isset($shape[$key]) && (string) $shape[$key]['type'] !== (string) $item['type']) {
+                    throw new \DomainException(\sprintf('Cannot merge array shapes that declare the "%s" key with different types.', $key));
+                }
+
+                $shape[$key] = ['type' => $item['type'], 'optional' => $item['optional'] && ($shape[$key]['optional'] ?? true)];
+            }
+        }
+
+        return new ArrayShapeType($shape, $extraKeyType, $extraValueType);
     }
 }

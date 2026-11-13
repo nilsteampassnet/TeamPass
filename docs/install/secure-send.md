@@ -1087,6 +1087,23 @@ prove sender abuse. The card does not impose quotas, block users, export raw log
 or add a Reports consumer or manual audit-purge interface; review unusual activity in
 its operational context.
 
+### Event log
+
+Administrators can read the journal itself in **Monitoring → Logs**: open the filter
+panel and choose the **Secure Send** source. Each row shows when the event was recorded,
+the event and its reason (for example *Invalidated (item deleted or no longer readable by
+the sender)*), the sender, the item (or *Secure note*), the link number and the link
+policy: views used and allowed, passphrase, public address, failed attempts and expiry.
+Filter by event, date range and sender (the **User** filter); the search box matches the
+item label, the sender and a link number such as `#123`. Events of deleted accounts and
+items stay listed. The source is reserved to administrators, even where managers can open
+the Logs page, and stays available while Secure Send is disabled. The journal is not
+purged from this page: use the audit retention below.
+
+In the **Items** source, a consultation recorded under the One-Time View account is
+labelled **Viewed through Secure Send**: the recipient of a link opened the item. The
+**Action** filter selects these views on their own, and **Shown** no longer includes them.
+
 ### Audit retention
 
 From Teampass 3.2.3.0, after completing the upgrade, administrators can set **Secure Send audit
@@ -1266,8 +1283,94 @@ inventory. A failed list request shows a retry message rather than an empty
 inventory. Disabling Secure Send hides
 the administrator line and personal entry; existing audit history remains visible.
 
+## Email delivery
+
+Secure Send invitations can use the instance's configured SMTP, Microsoft Graph
+or Gmail transport. Email invitations are disabled by default on fresh and upgraded
+instances. An administrator must enable **Allow Secure Send email invitations**
+under **Options / Collaboration / Secure sharing**. Disabling it hides the email
+controls, refuses new email shares and stops pending or deferred invitations at
+their next submission check; clipboard sharing remains available.
+
+Complete the application upgrade before enabling this flow:
+the `secure_send_email` table associates each link with its background task and
+sender. It contains identifiers, a creation timestamp and a hash of the configured
+sharing address, never a recipient, URL, passphrase or message body. No existing
+link or SMTP setting is changed by the additive migration.
+
+The link, its creation audit event, the association and the encrypted email task
+commit together. The handler wakes only after commit; cron remains the recovery
+path if that wakeup fails. Subjects, recipients and bodies use the encrypted queue
+introduced by the email transport modernization. The invitation uses the instance
+language and a customizable template, without item labels, note content or the
+recipient passphrase. Send that passphrase through a separate channel. Email
+delivery requires an HTTPS sharing address, including for internal links.
+
+The default subject's `#sender#` token is resolved immediately before
+submission, using the current `secure_send_show_sender_name` setting and the
+sender's decoded first/last name. When enabled and non-empty, it inserts the name;
+otherwise it inserts the translated **Someone**. Logins and email addresses never
+serve as fallback identities. The queued payload contains the token rather than
+the profile name, so a disclosure-policy or profile change applies to the next
+attempt. Already submitted mail cannot be recalled by changing that setting.
+Customized subjects retain full control over their text and may omit this
+optional token. The alternative `#sender_prefix#` inserts the permitted name plus
+` — `, or nothing when names are hidden or empty. In customized HTML bodies, both
+values are HTML-escaped.
+
+Each authenticated sender can create at most ten emailed shares per rolling hour.
+Reservations are serialized per account and count pending, accepted and failed
+deliveries. Revocation does not refund that budget. Clipboard-only links do not
+consume it. One recipient and one email task are associated with each emailed
+share; the application does not automatically resend an existing share.
+
+Before every submission, including a deferred retry, the worker checks current
+settings, sender eligibility, source-item access, remaining views, expiry,
+automatic deletion and the configured sharing address. An unusable share is not
+submitted. No content is decrypted and no view is consumed by that check. A
+concurrent change after the check can still race with network submission; the
+recipient flow independently enforces current access at reveal time.
+
+Transport acceptance does not confirm inbox delivery. Ambiguous submissions are
+not automatically replayed. Terminal tasks discard their encrypted payload and
+retain only outcome and recipient metadata, as other email tasks do. Interrupted
+invitations immediately discard their encrypted payload when marked failed,
+including during stale-task cleanup, retaining only failure/interruption flags.
+They are not resumed automatically. Inspect the provider before manually creating another
+invitation after an uncertain outcome.
+
+Delivery associations remain while their link exists. Maintenance and subsequent
+creations prune at most 100 obsolete associations after the one-hour quota window,
+once the link is gone and its task has ended or been purged. The separate lifecycle
+audit journal keeps its configured retention. Downgrading requires compatible
+code/database backups and draining or cancelling pending email tasks first.
+
+## API clients
+
+The browser extension, paired mobile devices and API scripts can create item links
+through `POST /api/v1/secureSend/create`. They are off by default, on new and on
+upgraded instances: enable **Allow Secure Send from API clients** in **Settings → API**
+after **User can propose One-Time-View links**. Device tokens and personal access
+tokens make link creation reachable outside a web session, so enabling Secure Send
+for the web never enables it for these clients.
+
+An API client creates the same links as the web interface, through the same code. Every
+policy of this page applies unchanged: maximum validity and views, required passphrase,
+public sharing address, TOTP rules, email invitations and their quota, current item access
+at creation and at every reveal. The user also needs API access with the **read** right.
+Creations appear in the audit journal and in the statistics as `created` events of the
+sender, like web creations; the journal does not record which channel was used.
+
+This version only sends items: notes stay a web feature, and API clients cannot list or
+revoke links. Users revoke them from **My secure sends** in the web interface.
+
+Turning the setting off refuses new API creations at once. Links already created stay
+valid until they expire or are revoked. The endpoints and the rules clients must follow
+are described in [Secure Send through the API](../api/secure-send.md).
+
 ## References
 
+- [Secure Send through the API](../api/secure-send.md)
 - [Teampass 3.2.2.6 release](https://github.com/nilsteampassnet/TeamPass/releases/tag/3.2.2.6)
 - [Teampass item and Secure Send behaviour](../features/items.md#secure-send)
 - [Public sharing address](../manage/settings.md#public-sharing-address)

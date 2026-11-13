@@ -106,6 +106,7 @@ Placeholders in **Required** must stay in the body.
 | Security summary | — | `#breached#` `#weak#` `#reused#` `#overdue#` `#total#` `#url#` |
 | Passkey saved | `#rp_name#` | `#rp_name#` `#user_name#` `#item_label#` `#link#` `#tp_date#` `#tp_time#` |
 | Sign-in passkey added | — | `#passkey_label#` `#tp_date#` `#tp_time#` `#tp_ip#` |
+| LAPR rotation failure | `#endpoint#` `#error_code#` | `#endpoint#` `#hostname#` `#username#` `#error_code#` `#trigger#` `#state#` `#retry_at#` `#url#` |
 
 ### Items
 
@@ -116,10 +117,13 @@ Placeholders in **Required** must stay in the body.
 | Item opened notification | — | `#tp_user#` `#tp_item#` `#tp_link#` |
 | Access request to an item | — | `#tp_item_author#` `#tp_user#` `#tp_item#` |
 | Item shared | `#tp_link#` | `#tp_link#` `#tp_user#` `#tp_item#` |
+| Secure Send invitation | `#link#` `#expires#` | `#link#` `#expires#` `#sender#` `#sender_prefix#` |
 
 > :bulb: *Item created* historically used `#label` and `#link` without their closing `#`. Translations that were never updated still contain that form and keep working — TeamPass substitutes both — but write the canonical `#label#` / `#link#` in new texts.
 >
 > `#changes#` is only filled by one of the two places that send *Item updated*; do not build the message around it.
+>
+> *Secure Send invitation* resolves `#sender#` and `#sender_prefix#` just before each submission, from the sender's profile name when **Show the sender's profile name** allows it (otherwise *Someone*, and nothing for `#sender_prefix#`). See [Secure Send email delivery](../install/secure-send.md#email-delivery).
 
 ### Maintenance
 
@@ -127,10 +131,19 @@ Placeholders in **Required** must stay in the body.
 |---|---|---|
 | Scheduled backup report | — | `#tp_status#` `#tp_datetime#` `#tp_message#` `#tp_file#` `#tp_size#` `#tp_output_dir#` `#tp_retention_days#` `#tp_purge_deleted#` `#tp_externalized_report#` |
 | Scheduled backup: externalization block | — | `#tp_externalized_status#` `#tp_externalized_message#` `#tp_externalized_destination#` `#tp_externalized_target#` `#tp_externalized_file#` `#tp_externalized_size#` `#tp_externalized_retention_days#` `#tp_externalized_retention_count#` `#tp_externalized_purge_deleted#` `#tp_externalized_retry#` |
+| Command-line upgrade report | `#tp_next_action#` | `#tp_status#` `#tp_datetime#` `#tp_server#` `#tp_from#` `#tp_to#` `#tp_backup#` `#tp_log#` `#tp_message#` `#tp_next_action#` |
 
 *Scheduled backup: externalization block* is not an email on its own — it is inserted into the backup report through `#tp_externalized_report#`, which is why it has no subject.
 
-`#tp_status#` is the only placeholder that also works in a **subject** (the backup report's).
+Only a few placeholders also work in a **subject**: `#tp_status#` in the backup report and the command-line upgrade report, and `#sender#` / `#sender_prefix#` in the Secure Send invitation.
+
+### Licence
+
+| Email | Required | Placeholders |
+|---|---|---|
+| Offline trial request link | `#tp_trial_link#` | `#tp_fqdn#` `#tp_contact_email#` `#tp_trial_link#` |
+
+`#tp_trial_link#` carries the licence key of the instance: a body without it is useless to the recipient.
 
 ---
 

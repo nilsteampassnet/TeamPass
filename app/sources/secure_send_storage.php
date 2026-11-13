@@ -39,23 +39,43 @@ require_once __DIR__ . '/secure_send_audit.php';
  *
  * @param array $link Validated link with encrypted payload
  * @param array $settings Application settings
+ * @param array|null $delivery Server-built URL and single recipient, or null for clipboard sharing
  * @return int New link identifier
  * @throws Throwable When the link or audit cannot be persisted
  */
-function secureSendStoreLink(array $link, array $settings): int
+function secureSendStoreLink(array $link, array $settings, ?array $delivery = null): int
 {
+    $message = null;
+    if ($delivery !== null) {
+        require_once __DIR__ . '/secure_send_email.php';
+        $message = secureSendEmailMessage($delivery, $link, $settings);
+    }
     DB::startTransaction();
     try {
+        if ($message !== null) {
+            secureSendEmailReserve((int) $link['originator'], time());
+        }
         DB::insert(prefixTable('otv'), $link);
         $id = (int) DB::insertId();
         $link['id'] = $id;
         $event = secureSendAudit($link, 'created', '', (int) $link['originator']);
+        if ($message !== null) {
+            secureSendEmailQueue($message, $link, $settings, time());
+        }
         DB::commit();
     } catch (Throwable $e) {
         DB::rollback();
         throw $e;
     }
     secureSendEmitAudit($event, $settings);
+    if ($message !== null) {
+        // The detached worker must see the committed link, journal and encrypted message.
+        try {
+            triggerBackgroundHandler();
+        } catch (Throwable $e) {
+            error_log('TEAMPASS Secure Send email wakeup failed (' . get_class($e) . ')');
+        }
+    }
     return $id;
 }
 

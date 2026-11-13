@@ -18,9 +18,9 @@ class SecretSettingsLogicTest extends TestCase
      */
     private const DEFUSE_CIPHERTEXT = 'def50200ef54a13c4ecb59e2837e34c506e1112f9ff967ebe73225c68194768999b7486bc430d7521f8feba7205505b8d9538b10d08a8fbe206f3e0c9dface105c18b558a25e9f15ac5b63cfb7655cd9f780920be8d3b850faa924';
 
-    public function testTheLdapBindAndSmtpPasswordsAreCredentialSettings(): void
+    public function testLdapSmtpAndEmailProviderSecretsAreCredentialSettings(): void
     {
-        $this->assertSame(['ldap_password', 'email_auth_pwd'], tpSecretSettingNames());
+        $this->assertSame(['ldap_password', 'email_auth_pwd', 'email_microsoft_client_secret', 'email_google_client_secret'], tpSecretSettingNames());
     }
 
     public function testDefuseCiphertextIsRecognised(): void

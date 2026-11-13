@@ -1472,19 +1472,33 @@ function changePassword(
             );
         }
 
-        // update sessions
-        $session->set('user-last_pw_change', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')));
-        $session->set('user-validite_pw', 1);
-
         // BEfore updating, check that the pwd is correct
         if ($passwordManager->verifyPassword($post_new_password_hashed, $post_new_password) === true && empty($dataUser['private_key']) === false) {
             $special_action = 'none';
+            $privateKeyClear = (string) $session->get('user-private_key');
             if ($post_change_request === 'reset_user_password_expected') {
-                $session->set('user-private_key', decryptPrivateKey($post_current_password, $dataUser['private_key']));
+                $privateKeyClear = decryptPrivateKey($post_current_password, $dataUser['private_key']);
             }
 
+            // Never re-encrypt an empty private key: it would replace the user's real key and lock them out
+            if ($privateKeyClear === '') {
+                return prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('private_key_decryption_failed'),
+                    ),
+                    'encode'
+                );
+            }
+
+            $newEncryptedPrivateKey = encryptPrivateKey($post_new_password, $privateKeyClear);
+
+            // update sessions, only once the change is certain
+            $session->set('user-private_key', $privateKeyClear);
+            $session->set('user-last_pw_change', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')));
+            $session->set('user-validite_pw', 1);
+
             // update DB
-            $newEncryptedPrivateKey = encryptPrivateKey($post_new_password, $session->get('user-private_key'));
             DB::update(
                 prefixTable('users'),
                 array(
@@ -1738,7 +1752,7 @@ function generateQRCode(
 
     // send mail?
     if ((int) $post_send_mail === 1) {
-        prepareSendingEmail(
+        $queued = prepareSendingEmail(
             $lang->get('email_ga_subject'),
             str_replace(
                 '#2FACode#',
@@ -1747,6 +1761,12 @@ function generateQRCode(
             ),
             $dataUser['email']
         );
+        if ($queued === false) {
+            return prepareExchangedData([
+                'error' => true,
+                'message' => $lang->get('email_queue_failed'),
+            ], 'encode');
+        }
 
         // send back
         return prepareExchangedData(
@@ -2075,7 +2095,7 @@ function generateBugReport(
     array $SETTINGS
 ): string
 {
-    $config_exclude_vars = array(
+    $config_exclude_vars = array_merge(tpSecretSettingNames(), array(
         'bck_script_passkey',
         'browser_extension_key',
         // Carries the administrator address used for the licence trial request.
@@ -2084,6 +2104,13 @@ function generateBugReport(
         'email_auth_username',
         'email_auth_pwd',
         'email_from',
+        'email_microsoft_tenant_id',
+        'email_microsoft_client_id',
+        'email_microsoft_client_secret',
+        'email_microsoft_mailbox',
+        'email_google_client_id',
+        'email_google_client_secret',
+        'email_google_sender',
         'onthefly-restore-key',
         'onthefly-backup-key',
         'ldap_password',
@@ -2105,7 +2132,7 @@ function generateBugReport(
         'restore_items_master_keys_id',
         'statistics_auth_token',
         'statistics_instance_id'
-    );
+    ));
 
     // Load user's language
     $session = SessionManager::getSession();
@@ -2432,7 +2459,6 @@ function changePrivateKeyEncryptionPassword(
             // Here the user has his private key encrypted with an OTC.
             // We need to encrypt it with his real password
             $privateKey = decryptPrivateKey($post_current_code, $userData['private_key']);
-            $hashedPrivateKey = encryptPrivateKey($post_new_code, $privateKey);
             if (strlen($privateKey) === 0) {
                 $privateKey = decryptPrivateKey($post_new_code, $userData['private_key']);
                 if (strlen($privateKey) === 0) {
@@ -2446,7 +2472,10 @@ function changePrivateKeyEncryptionPassword(
                     );
                 }
             }
-            
+
+            // Encrypt only once the key is known: the v2 encryption of an empty key passes the length check below
+            $hashedPrivateKey = encryptPrivateKey($post_new_code, $privateKey);
+
             // Should fail here to avoid break user private key.
             if (strlen($hashedPrivateKey) < 30) {
                 if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
@@ -3767,6 +3796,18 @@ function changeUserAuthenticationPassword(
             try {
                 $privateKey = decryptPrivateKey($post_current_pwd, $userData['private_key']);
             } catch (Exception $e) {
+                return prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('bad_password'),
+                    ),
+                    'encode'
+                );
+            }
+
+            // decryptPrivateKey() returns '' instead of throwing when the password does not open the key.
+            // Without this check an empty session key compares equal and an empty key is saved for the user.
+            if ($privateKey === '') {
                 return prepareExchangedData(
                     array(
                         'error' => true,
