@@ -1472,19 +1472,16 @@ function changePassword(
             );
         }
 
-        // update sessions
-        $session->set('user-last_pw_change', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')));
-        $session->set('user-validite_pw', 1);
-
         // BEfore updating, check that the pwd is correct
         if ($passwordManager->verifyPassword($post_new_password_hashed, $post_new_password) === true && empty($dataUser['private_key']) === false) {
             $special_action = 'none';
+            $privateKeyClear = (string) $session->get('user-private_key');
             if ($post_change_request === 'reset_user_password_expected') {
-                $session->set('user-private_key', decryptPrivateKey($post_current_password, $dataUser['private_key']));
+                $privateKeyClear = decryptPrivateKey($post_current_password, $dataUser['private_key']);
             }
 
             // Never re-encrypt an empty private key: it would replace the user's real key and lock them out
-            if (empty($session->get('user-private_key')) === true) {
+            if ($privateKeyClear === '') {
                 return prepareExchangedData(
                     array(
                         'error' => true,
@@ -1494,8 +1491,14 @@ function changePassword(
                 );
             }
 
+            $newEncryptedPrivateKey = encryptPrivateKey($post_new_password, $privateKeyClear);
+
+            // update sessions, only once the change is certain
+            $session->set('user-private_key', $privateKeyClear);
+            $session->set('user-last_pw_change', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')));
+            $session->set('user-validite_pw', 1);
+
             // update DB
-            $newEncryptedPrivateKey = encryptPrivateKey($post_new_password, $session->get('user-private_key'));
             DB::update(
                 prefixTable('users'),
                 array(
@@ -2456,7 +2459,6 @@ function changePrivateKeyEncryptionPassword(
             // Here the user has his private key encrypted with an OTC.
             // We need to encrypt it with his real password
             $privateKey = decryptPrivateKey($post_current_code, $userData['private_key']);
-            $hashedPrivateKey = encryptPrivateKey($post_new_code, $privateKey);
             if (strlen($privateKey) === 0) {
                 $privateKey = decryptPrivateKey($post_new_code, $userData['private_key']);
                 if (strlen($privateKey) === 0) {
@@ -2470,7 +2472,10 @@ function changePrivateKeyEncryptionPassword(
                     );
                 }
             }
-            
+
+            // Encrypt only once the key is known: the v2 encryption of an empty key passes the length check below
+            $hashedPrivateKey = encryptPrivateKey($post_new_code, $privateKey);
+
             // Should fail here to avoid break user private key.
             if (strlen($hashedPrivateKey) < 30) {
                 if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {

@@ -1951,10 +1951,14 @@ function prepareUserEncryptionKeys($userInfo, $passwordClear, array $SETTINGS = 
         && $privateKeyClear !== ''
         && strncmp((string) $userInfo['private_key'], 'v2:', 3) !== 0
     ) {
-        $v2PrivateKey = encryptPrivateKey($passwordClear, $privateKeyClear);
-        if (strncmp($v2PrivateKey, 'v2:', 3) === 0) {
-            $updateData['private_key'] = $v2PrivateKey;
-            $updateData['encryption_version'] = 3;
+        try {
+            $v2PrivateKey = encryptPrivateKey($passwordClear, $privateKeyClear);
+            if (strncmp($v2PrivateKey, 'v2:', 3) === 0) {
+                $updateData['private_key'] = $v2PrivateKey;
+                $updateData['encryption_version'] = 3;
+            }
+        } catch (RuntimeException $e) {
+            // The legacy key stays in place: the migration is retried at the next sign-in
         }
     }
 
@@ -3046,8 +3050,14 @@ function migratePrivateKeyFromSanitizedPassword(string $passwordClear, string $p
         ];
     }
 
-    // encryptPrivateKey() returns an error message on failure: check the round trip first
-    $newUserPrivateKey = encryptPrivateKey($passwordClear, $privateKeyClear);
+    // Write only a key that opens again with the new password
+    try {
+        $newUserPrivateKey = encryptPrivateKey($passwordClear, $privateKeyClear);
+    } catch (RuntimeException $e) {
+        return [
+            'authenticated' => true,
+        ];
+    }
     if (decryptPrivateKey($passwordClear, $newUserPrivateKey) !== $privateKeyClear) {
         return [
             'authenticated' => true,
