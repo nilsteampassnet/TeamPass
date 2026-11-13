@@ -5938,10 +5938,15 @@ function decryptPrivateKey(string $userPwd, string $userPrivateKey)
 /**
  * Permits to encrypt the user's privatekey.
  *
+ * Every caller stores the result as the user's private key, so this function never returns
+ * anything else: an empty password, an empty key or an encryption failure throws instead.
+ *
  * @param string $userPwd        User password
- * @param string $userPrivateKey User private key
+ * @param string $userPrivateKey User private key (base64 encoded)
  *
  * @return string
+ *
+ * @throws RuntimeException When the password or the key is empty, or when the encryption fails
  */
 function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
 {
@@ -5949,28 +5954,32 @@ function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
     // See generateUserKeys() for the rationale.
     // $userPrivateKey is base64-encoded binary — xss_clean is a no-op on base64
     // chars but is removed for consistency and to avoid confusion.
-    if (empty($userPwd) === false) {
-        try {
-            if (aesV2WriteEnabled() === true) {
-                // AES v2 (authenticated GCM, PBKDF2-SHA256 600k). users.private_key has no
-                // companion column, so the metadata is encoded in the value with a "v2:" prefix.
-                $v2 = CryptoManager::aesGcmEncrypt(base64_decode($userPrivateKey), $userPwd, '', 'pbkdf2');
-                return 'v2:' . base64_encode($v2['meta']) . ':' . base64_encode($v2['ciphertext']);
-            }
-
-            // Legacy format (AES-CBC, SHA-256) — unchanged
-            $encrypted = CryptoManager::aesEncrypt(
-                base64_decode($userPrivateKey),
-                $userPwd,
-                'cbc',
-                'sha256'
-            );
-            return base64_encode($encrypted);
-        } catch (Exception $e) {
-            return $e->getMessage();
-        }
+    $privateKeyBinary = base64_decode($userPrivateKey);
+    if ($userPwd === '' || $privateKeyBinary === '') {
+        // Stored, an empty value or the ciphertext of nothing replaces the user's only copy of the key
+        throw new RuntimeException('Refusing to encrypt a private key with an empty password or an empty key.');
     }
-    return '';
+
+    try {
+        if (aesV2WriteEnabled() === true) {
+            // AES v2 (authenticated GCM, PBKDF2-SHA256 600k). users.private_key has no
+            // companion column, so the metadata is encoded in the value with a "v2:" prefix.
+            $v2 = CryptoManager::aesGcmEncrypt($privateKeyBinary, $userPwd, '', 'pbkdf2');
+            return 'v2:' . base64_encode($v2['meta']) . ':' . base64_encode($v2['ciphertext']);
+        }
+
+        // Legacy format (AES-CBC, SHA-256) — unchanged
+        $encrypted = CryptoManager::aesEncrypt(
+            $privateKeyBinary,
+            $userPwd,
+            'cbc',
+            'sha256'
+        );
+        return base64_encode($encrypted);
+    } catch (Exception $e) {
+        // The message used to be returned, and stored by the caller as the encrypted key
+        throw new RuntimeException('Private key encryption failed.', 0, $e);
+    }
 }
 
 /**
