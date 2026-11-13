@@ -417,11 +417,16 @@ if (null !== $post_type) {
                 break;
             }
 
-            // Deny edit if this specific folder is read-only for the current user (per-folder role restriction)
+            // Deny edit if this specific folder is read-only for the current user (per-folder role restriction).
+            // The session holds the folder ids as returned by the database (strings): normalize both
+            // sides, a strict comparison of an int with them never matched (GHSA-32hp-p55x-wr8v).
             if (
                 (int) $session->get('user-admin') !== 1
-                && is_array($session->get('user-read_only_folders'))
-                && in_array($inputData['id'], $session->get('user-read_only_folders'), true)
+                && in_array(
+                    (int) $inputData['id'],
+                    array_map('intval', (array) $session->get('user-read_only_folders')),
+                    true
+                )
             ) {
                 echo prepareExchangedData(
                     array(

@@ -262,8 +262,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 function(data) {
                     oTableConnections.ajax.reload();
 
-                    // Inform user
+                    // Inform user; the handler answers nothing on success
                     toastr.remove();
+                    if (typeof data === 'string' && data.indexOf('"error"') !== -1) {
+                        toastr.error('<?php echo addslashes($lang->get('error_not_allowed_to')); ?>');
+                        return;
+                    }
                     toastr.success(
                         '<?php echo $lang->get('done'); ?>',
                         '', {
