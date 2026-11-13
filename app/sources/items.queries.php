@@ -4633,6 +4633,20 @@ switch ($inputData['type']) {
             break;
         }
 
+        // A folder the user only reads through a role (R) cannot be renamed nor have its
+        // complexity changed; mirrors folders.queries.php (GHSA-32hp-p55x-wr8v).
+        if (
+            (int) $session->get('user-admin') !== 1
+            && in_array(
+                (int) $inputData['folderId'],
+                array_map('intval', (array) $session->get('user-read_only_folders')),
+                true
+            )
+        ) {
+            echo '[{"error" : "' . $lang->get('error_not_allowed_to') . '"}]';
+            break;
+        }
+
         // Check if title doesn't contains html codes
         if (preg_match_all('|<[^>]+>(.*)</[^>]+>|U', $title, $out)) {
             echo '[ { "error" : "' . $lang->get('error_html_codes') . '" } ]';
@@ -7279,9 +7293,19 @@ switch ($inputData['type']) {
             break;
         }
 
-        // Verify the current user can access this item's folder.
-        $granted = accessToItemIsGranted((int) $inputData['id'], $SETTINGS);
-        if ($granted !== true) {
+        // Forcing the release of another user's edit lock is an operation of the Database page,
+        // which only administrators, managers and HR managers reach (GHSA-32hp-p55x-wr8v).
+        // Administrators hold no folder access by design; the others must reach the item.
+        $isAdmin = (int) $session->get('user-admin') === 1;
+        if (
+            $isAdmin === false
+            && (int) $session->get('user-manager') !== 1
+            && (int) $session->get('user-can_manage_all_users') !== 1
+        ) {
+            echo '[ { "error" : "not_allowed" } ]';
+            break;
+        }
+        if ($isAdmin === false && accessToItemIsGranted((int) $inputData['id'], $SETTINGS) !== true) {
             echo '[ { "error" : "not_allowed" } ]';
             break;
         }
