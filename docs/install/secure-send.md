@@ -1347,8 +1347,9 @@ code/database backups and draining or cancelling pending email tasks first.
 
 ## API clients
 
-The browser extension, paired mobile devices and API scripts can create item links
-through `POST /api/v1/secureSend/create`. They are off by default, on new and on
+The browser extension, paired mobile devices and API scripts can create item and note
+links through `POST /api/v1/secureSend/create`, and revoke them through
+`DELETE /api/v1/secureSend/revoke`. Creation is off by default, on new and on
 upgraded instances: enable **Allow Secure Send from API clients** in **Settings → API**
 after **User can propose One-Time-View links**. Device tokens and personal access
 tokens make link creation reachable outside a web session, so enabling Secure Send
@@ -1361,8 +1362,10 @@ at creation and at every reveal. The user also needs API access with the **read*
 Creations appear in the audit journal and in the statistics as `created` events of the
 sender, like web creations; the journal does not record which channel was used.
 
-This version only sends items: notes stay a web feature, and API clients cannot list or
-revoke links. Users revoke them from **My secure sends** in the web interface.
+Note sends follow **Allow sending ad-hoc notes/secrets**, exactly like in the web
+interface. A user can revoke a link through the API whichever channel created it, and
+whatever these settings: revoking only removes exposure. API clients cannot list links yet;
+users find all their links in **My secure sends** in the web interface.
 
 Turning the setting off refuses new API creations at once. Links already created stay
 valid until they expire or are revoked. The endpoints and the rules clients must follow

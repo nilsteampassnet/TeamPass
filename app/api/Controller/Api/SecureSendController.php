@@ -27,12 +27,14 @@ use TeampassClasses\ConfigManager\ConfigManager;
 
 require_once API_ROOT_PATH . '/../sources/secure_send_api_logic.php';
 require_once API_ROOT_PATH . '/../sources/secure_send_create.php';
+require_once API_ROOT_PATH . '/../sources/secure_send_storage.php';
 
 /**
  * Secure Send links created by API clients (browser extension, paired devices, scripts).
  *
- * Creation goes through secureSendCreateLink(), the orchestrator the web handler uses, so
- * policy, access, encryption, audit and email delivery are identical.
+ * Creation goes through secureSendCreateLink() and revocation through secureSendRevokeLink(),
+ * the functions the web handlers use, so policy, access, encryption, audit and email delivery
+ * are identical.
  */
 class SecureSendController extends BaseController
 {
@@ -54,7 +56,8 @@ class SecureSendController extends BaseController
     }
 
     /**
-     * Create a Secure Send link for an item the caller can read (POST, JSON body).
+     * Create a Secure Send link (POST, JSON body): a snapshot of an item the caller can read,
+     * or a note whose content the caller supplies.
      *
      * The response URL is a bearer secret: no-store, never logged, and no idempotent replay
      * (a replay would have to store it).
@@ -76,7 +79,7 @@ class SecureSendController extends BaseController
             return;
         }
 
-        $request = symfonyRequest::createFromGlobals();
+        $request = $this->currentRequest();
         if ($request->headers->has('Idempotency-Key')) {
             $this->sendRefusal('invalid_payload', 'Idempotency-Key is not supported on this endpoint');
             return;
@@ -101,35 +104,39 @@ class SecureSendController extends BaseController
         }
 
         try {
-            // Same visibility pre-check as item/getOtp; secureSendReadItem() stays the authority.
-            loadClasses('DB');
-            $itemId = (int) $input['id'];
-            $item = DB::queryFirstRow(
-                'SELECT id_tree FROM ' . prefixTable('items') . '
-                WHERE id = %i AND inactif = 0 AND (deleted_at IS NULL OR deleted_at = 0)',
-                $itemId
-            );
-            if ($item === null) {
-                $this->sendRefusal('not_found');
-                return;
-            }
-            $folderAccessModel = new FolderAccessModel();
-            if ($folderAccessModel->canAccessItemInFolder($userData, (int) $item['id_tree'], $itemId) === false
-                || $folderAccessModel->satisfiesItemRestriction($itemId, (int) $userData['id']) === false
-            ) {
-                $this->sendRefusal('not_allowed');
-                return;
-            }
+            // A note discloses nothing from the vault: the private key is never unwrapped for it.
+            $userKeys = ['private_key' => '', 'public_key' => ''];
+            if ($input['send_type'] === 'item') {
+                // Same visibility pre-check as item/getOtp; secureSendReadItem() stays the authority.
+                loadClasses('DB');
+                $itemId = (int) $input['id'];
+                $item = DB::queryFirstRow(
+                    'SELECT id_tree FROM ' . prefixTable('items') . '
+                    WHERE id = %i AND inactif = 0 AND (deleted_at IS NULL OR deleted_at = 0)',
+                    $itemId
+                );
+                if ($item === null) {
+                    $this->sendRefusal('not_found');
+                    return;
+                }
+                $folderAccessModel = new FolderAccessModel();
+                if ($folderAccessModel->canAccessItemInFolder($userData, (int) $item['id_tree'], $itemId) === false
+                    || $folderAccessModel->satisfiesItemRestriction($itemId, (int) $userData['id']) === false
+                ) {
+                    $this->sendRefusal('not_allowed');
+                    return;
+                }
 
-            include_once API_ROOT_PATH . '/inc/jwt_utils.php';
-            $userKeys = get_user_keys(
-                (int) $userData['id'],
-                (string) $userData['key_tempo'],
-                isset($userData['jti']) ? (string) $userData['jti'] : null
-            );
-            if ($userKeys === null) {
-                $this->sendProblem(401, 'Invalid session or user keys not found');
-                return;
+                include_once API_ROOT_PATH . '/inc/jwt_utils.php';
+                $userKeys = get_user_keys(
+                    (int) $userData['id'],
+                    (string) $userData['key_tempo'],
+                    isset($userData['jti']) ? (string) $userData['jti'] : null
+                );
+                if ($userKeys === null) {
+                    $this->sendProblem(401, 'Invalid session or user keys not found');
+                    return;
+                }
             }
 
             $result = secureSendCreateLink($input, [
@@ -156,6 +163,52 @@ class SecureSendController extends BaseController
     }
 
     /**
+     * Revoke one of the caller's Secure Send links (DELETE, ?id=N).
+     *
+     * Available whatever the Secure Send settings, like the web: removing a link only narrows
+     * exposure. secureSendRevokeLink() checks ownership under the row lock and records the
+     * revoked event; the owner is the token's user, never a request member.
+     *
+     * @param array $userData User data from JWT token
+     * @return void
+     */
+    public function revokeAction(array $userData): void
+    {
+        if ($this->requireMethod('DELETE') === false) {
+            return;
+        }
+
+        $request = $this->currentRequest();
+        if ($request->headers->has('Idempotency-Key')) {
+            $this->sendRefusal('invalid_payload', 'Idempotency-Key is not supported on this endpoint');
+            return;
+        }
+        try {
+            $sendId = secureSendApiRevokeId($request->query->all());
+        } catch (InvalidArgumentException $e) {
+            $this->sendRefusal('invalid_payload', $e->getMessage());
+            return;
+        }
+
+        try {
+            $revoked = secureSendRevokeLink($sendId, (int) $userData['id'], $this->settings());
+        } catch (Throwable $e) {
+            // Messages can carry SQL; only the class is logged.
+            error_log('[API] Secure Send revocation failed (' . get_class($e) . ')');
+            $this->sendRefusal('server_error');
+            return;
+        }
+        if ($revoked === false) {
+            // Unknown and foreign links answer alike, so link ids cannot be probed.
+            $this->sendRefusal('not_found', 'Secure Send link not found');
+            return;
+        }
+
+        $this->markApiFunctionalActivity($userData);
+        $this->sendOutput(json_encode(['id' => $sendId]), ['Content-Type: application/json', $this->statusLine(200)]);
+    }
+
+    /**
      * Answer a problem response carrying the stable machine-readable reason.
      *
      * @param string $reason Refusal reason (secureSendApiRefusalStatuses() key)
@@ -173,9 +226,19 @@ class SecureSendController extends BaseController
      *
      * @return array
      */
-    private function settings(): array
+    protected function settings(): array
     {
         return (new ConfigManager())->getAllSettings();
+    }
+
+    /**
+     * Current HTTP request.
+     *
+     * @return symfonyRequest
+     */
+    protected function currentRequest(): symfonyRequest
+    {
+        return symfonyRequest::createFromGlobals();
     }
 
     /**
@@ -186,7 +249,7 @@ class SecureSendController extends BaseController
      */
     private function requireMethod(string $method): bool
     {
-        if (strtoupper(symfonyRequest::createFromGlobals()->getMethod()) === $method) {
+        if (strtoupper($this->currentRequest()->getMethod()) === $method) {
             return true;
         }
 

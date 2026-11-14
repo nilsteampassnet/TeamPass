@@ -36,9 +36,12 @@ events are `logsAllowedSecureSendEvents()` = the keys of `secureSendAuditEventRe
 
 Link creation has a single implementation, the session-free `secureSendCreateLink()`
 (`secure_send_create.php`), shared by the web `generate_OTV_url` handler and the REST
-`POST /api/v1/secureSend/create` (`api-reference.md`). Both therefore write the same
-`created` event with the sender as actor; the journal does not record the channel. Its
-refusals are `SecureSendCreateRefusal::CODES`, which the API maps to HTTP statuses.
+`POST /api/v1/secureSend/create` (`api-reference.md`), item and note sends alike. Both therefore
+write the same `created` event with the sender as actor; the journal does not record the
+channel. Its refusals are `SecureSendCreateRefusal::CODES`, which the API maps to HTTP statuses.
+Revocation likewise has one implementation, `secureSendRevokeLink()`, shared by the web
+`revoke_secure_send` handler and `DELETE /api/v1/secureSend/revoke`; the owner is always the
+authenticated user (session or token), never a request member.
 
 ## Data contract
 

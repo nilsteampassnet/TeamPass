@@ -30,8 +30,9 @@ declare(strict_types=1);
  */
 
 /*
- * Decisions of the Secure Send REST endpoints (GET /secureSend/policy, POST /secureSend/create).
- * DB-free: the creation itself is secureSendCreateLink(), shared with the web handler.
+ * Decisions of the Secure Send REST endpoints (GET /secureSend/policy, POST /secureSend/create,
+ * DELETE /secureSend/revoke). DB-free: creation is secureSendCreateLink() and revocation is
+ * secureSendRevokeLink(), both shared with the web handlers.
  */
 
 require_once __DIR__ . '/secure_send_input.php';
@@ -48,6 +49,21 @@ function secureSendApiEnabled(array $settings): bool
 {
     return (int) ($settings['otv_is_enabled'] ?? 0) === 1
         && (int) ($settings['secure_send_api_enabled'] ?? 0) === 1;
+}
+
+/**
+ * Largest note an API client may send: the UTF-8 bytes of its five members together.
+ *
+ * Derived from the storage bound secureSendCreateLink() enforces (ciphertext of at most 65535
+ * characters): Defuse hex-encodes 84 bytes of overhead plus the plaintext, so the JSON-encoded
+ * note may hold 32683 bytes. Escaping a quote, a backslash or a line break doubles it; half of
+ * what remains after the JSON envelope, rounded down, keeps every such note storable.
+ *
+ * @return int Bound in bytes
+ */
+function secureSendApiNoteMaxBytes(): int
+{
+    return 16000;
 }
 
 /**
@@ -78,8 +94,11 @@ function secureSendApiPolicy(array $settings, array $userData, ?int $now = null)
         'enabled' => $enabled,
         // Administrators have no item access (secureSendReadItem() refuses them).
         'item_send_allowed' => $enabled && (int) ($userData['is_admin'] ?? 0) !== 1,
+        // A note is not bound to any item: the web offers it to every account, administrators included.
+        'note_send_allowed' => $enabled && (int) ($settings['secure_send_allow_notes'] ?? 0) === 1,
         'require_passphrase' => (int) ($settings['secure_send_require_passphrase'] ?? 0) === 1,
         'passphrase_max_bytes' => 1024,
+        'note_max_bytes' => secureSendApiNoteMaxBytes(),
         'days' => ['max' => $defaults['days'], 'default' => $defaults['days']],
         'views' => ['max' => $ceiling['views'], 'default' => $defaults['views']],
         'public_address_available' => $publicAddress,
@@ -96,7 +115,8 @@ function secureSendApiPolicy(array $settings, array $userData, ?int $now = null)
 /**
  * Validate a create body and translate it into the orchestrator's input shape.
  *
- * Only item sends exist in this version: send_type is forced, so notes stay unreachable.
+ * `type` selects an item send (default) or a note send; the members of the other kind are
+ * refused, so a note can never carry an item id and an item send never carries note content.
  * A null optional member counts as omitted.
  *
  * @param array $body Decoded JSON object
@@ -105,16 +125,32 @@ function secureSendApiPolicy(array $settings, array $userData, ?int $now = null)
  */
 function secureSendApiCreateInput(array $body): array
 {
-    $allowed = ['item_id', 'days', 'views', 'passphrase', 'include_totp', 'public_address', 'recipient_email'];
+    $allowed = ['type', 'item_id', 'note', 'days', 'views', 'passphrase', 'include_totp', 'public_address', 'recipient_email'];
     foreach (array_keys($body) as $member) {
         if (!in_array($member, $allowed, true)) {
             throw new InvalidArgumentException('Unknown member: ' . substr((string) $member, 0, 64));
         }
     }
-    if (!is_int($body['item_id'] ?? null) || $body['item_id'] <= 0) {
-        throw new InvalidArgumentException('item_id is mandatory and must be a positive integer');
+    $type = $body['type'] ?? 'item';
+    if ($type !== 'item' && $type !== 'note') {
+        throw new InvalidArgumentException('type must be "item" or "note"');
     }
-    $input = ['send_type' => 'item', 'id' => $body['item_id']];
+    if ($type === 'item') {
+        if (($body['note'] ?? null) !== null) {
+            throw new InvalidArgumentException('note is only valid when type is "note"');
+        }
+        if (!is_int($body['item_id'] ?? null) || $body['item_id'] <= 0) {
+            throw new InvalidArgumentException('item_id is mandatory and must be a positive integer');
+        }
+        $input = ['send_type' => 'item', 'id' => $body['item_id']];
+    } else {
+        foreach (['item_id', 'include_totp'] as $member) {
+            if (($body[$member] ?? null) !== null) {
+                throw new InvalidArgumentException($member . ' is only valid for item sends');
+            }
+        }
+        $input = ['send_type' => 'note', 'payload' => secureSendApiNotePayload($body['note'] ?? null)];
+    }
     foreach (['days', 'views'] as $member) {
         if (($body[$member] ?? null) === null) {
             continue;
@@ -135,7 +171,10 @@ function secureSendApiCreateInput(array $body): array
         $input[$member] = $body[$member];
     }
     // The web payload carries integers and the orchestrator compares include_totp strictly.
-    foreach (['include_totp' => 'include_totp', 'public_address' => 'shared_globaly'] as $member => $internal) {
+    $flags = $type === 'item'
+        ? ['include_totp' => 'include_totp', 'public_address' => 'shared_globaly']
+        : ['public_address' => 'shared_globaly'];
+    foreach ($flags as $member => $internal) {
         $value = $body[$member] ?? false;
         if (!is_bool($value) && $value !== 0 && $value !== 1) {
             throw new InvalidArgumentException($member . ' must be a boolean');
@@ -144,6 +183,71 @@ function secureSendApiCreateInput(array $body): array
     }
 
     return $input;
+}
+
+/**
+ * Validate the `note` member of a note send and return the orchestrator's payload.
+ *
+ * Members are strings (null = omitted) and their total size is bounded by
+ * secureSendApiNoteMaxBytes(), published in the policy. Emptiness is left to the
+ * orchestrator, which answers empty_note.
+ *
+ * @param mixed $note Decoded `note` member
+ * @return array<string, string> Payload with the members the client sent
+ * @throws InvalidArgumentException With a client-facing message (HTTP 400)
+ */
+function secureSendApiNotePayload(mixed $note): array
+{
+    // JSON {} and [] both decode to an empty array; a non-empty list is not an object.
+    if (!is_array($note) || ($note !== [] && array_is_list($note))) {
+        throw new InvalidArgumentException('note is mandatory for note sends and must be an object');
+    }
+    $payload = [];
+    $bytes = 0;
+    foreach ($note as $member => $value) {
+        if (!in_array($member, ['title', 'secret', 'note', 'login', 'url'], true)) {
+            throw new InvalidArgumentException('Unknown note member: ' . substr((string) $member, 0, 64));
+        }
+        if ($value === null) {
+            continue;
+        }
+        if (!is_string($value)) {
+            throw new InvalidArgumentException('note.' . $member . ' must be a string');
+        }
+        $bytes += strlen($value);
+        $payload[$member] = $value;
+    }
+    if ($bytes > secureSendApiNoteMaxBytes()) {
+        throw new InvalidArgumentException('The note exceeds ' . secureSendApiNoteMaxBytes() . ' bytes (policy note_max_bytes)');
+    }
+
+    return $payload;
+}
+
+/**
+ * Read the link identifier of a revocation request.
+ *
+ * The identifier is not a secret, so it travels in the query string like item/delete. Any
+ * other parameter is refused so that a malformed client fails loudly instead of revoking
+ * something else than intended.
+ *
+ * @param array $query Query-string parameters
+ * @return int Link identifier (otv.id, a signed 32-bit column)
+ * @throws InvalidArgumentException With a client-facing message (HTTP 400)
+ */
+function secureSendApiRevokeId(array $query): int
+{
+    foreach (array_keys($query) as $member) {
+        if ($member !== 'id') {
+            throw new InvalidArgumentException('Unknown parameter: ' . substr((string) $member, 0, 64));
+        }
+    }
+    $id = $query['id'] ?? null;
+    if (!is_string($id) || preg_match('/^[1-9][0-9]{0,9}$/', $id) !== 1 || (int) $id > 2147483647) {
+        throw new InvalidArgumentException('id is mandatory and must be a positive integer');
+    }
+
+    return (int) $id;
 }
 
 /**
@@ -188,7 +292,7 @@ function secureSendApiRefusalDetail(string $reason): string
         'secure_send_disabled' => 'Secure Send is disabled for API clients',
         'invalid_payload' => 'Invalid Secure Send request',
         'invalid_email' => 'Invalid recipient email address',
-        'empty_note' => 'The note is empty',
+        'empty_note' => 'The note has neither a secret nor a text',
         'not_found' => 'Item not found',
         'not_allowed' => 'Access denied to this item',
         'email_not_allowed' => 'Email invitations are disabled',
@@ -214,8 +318,10 @@ function secureSendApiCreatedBody(array $result): array
 {
     return [
         'id' => (int) $result['otv_id'],
+        'type' => $result['send_type'] === 'note' ? 'note' : 'item',
         'url' => (string) $result['url'],
-        'item_id' => (int) $result['item_id'],
+        // Notes are not bound to any item.
+        'item_id' => $result['item_id'] === null ? null : (int) $result['item_id'],
         'expires_at' => (int) $result['expires_at'],
         'max_views' => (int) $result['max_views'],
         'has_passphrase' => (int) $result['has_passphrase'] === 1,

@@ -512,17 +512,21 @@ The key is `extension_url` (value = `cpassman_url`) — the doc previously named
 > Client contract: `docs/api/secure-send.md`. Lifecycle/audit: `architecture-secure-send-audit.md`.
 > Design: `workReadmeFiles/secure-send-api-plan.md`.
 
-`GET /api/v1/secureSend/policy` and `POST /api/v1/secureSend/create` — controller
-`SecureSendController`, decisions in the DB-free `app/sources/secure_send_api_logic.php`,
-creation by `secureSendCreateLink()` (`app/sources/secure_send_create.php`), the orchestrator the
-web `generate_OTV_url` handler also uses.
+`GET /api/v1/secureSend/policy`, `POST /api/v1/secureSend/create` and
+`DELETE /api/v1/secureSend/revoke` — controller `SecureSendController`, decisions in the DB-free
+`app/sources/secure_send_api_logic.php`, creation by `secureSendCreateLink()`
+(`app/sources/secure_send_create.php`) and revocation by `secureSendRevokeLink()`
+(`app/sources/secure_send_storage.php`), the functions the web `generate_OTV_url` /
+`revoke_secure_send` handlers also use.
 
 **Routing and rights:** `secureSendAction()` (`api/inc/bootstrap.php`) → `checkSecureSendCRUDRights()`:
-`policy` and `create` need `allowed_to_read` (a link discloses what `item/get` already returns);
-any other action → `403`. The feature gate is **inside** the controller —
+`policy`, `create` and `revoke` need `allowed_to_read` (a link discloses what `item/get` already
+returns; whoever may create a link may revoke it — `allowed_to_delete` is about items); any other
+action → `403`. The feature gate is **inside** the controller —
 `secureSendApiEnabled()` = `otv_is_enabled` **and** `secure_send_api_enabled` (Settings → API,
 default `0` on install and upgrade) — so `policy` always answers `200` with `enabled: false`
-instead of an error, and `create` answers `503` `secure_send_disabled`.
+instead of an error, and `create` answers `503` `secure_send_disabled`. **`revoke` has no feature
+gate** (web parity: removing a link only narrows exposure).
 
 **Rule: the API reaches link creation only through `secureSendCreateLink()`.** Never call
 `secureSendStoreLink()`, `cryption()` or the snapshot helpers from the controller: the orchestrator
@@ -532,10 +536,31 @@ event and the email queue. The controller's pre-check (item `inactif = 0` and no
 `not_found`; `FolderAccessModel::canAccessItemInFolder()` + `satisfiesItemRestriction()` → `403`
 `not_allowed`, same pattern as `item/getOtp`) only produces clearer statuses.
 
-**Rule: only item sends exist.** `secureSendApiCreateInput()` forces `send_type = 'item'` and
-refuses unknown members (`400`), so notes stay unreachable. It normalizes `include_totp` /
-`public_address` (JSON bool or 0/1) to integers because `secureSendShouldIncludeTotp()` compares
-with `=== 1`. Notes, link inventory and revocation are deferred (plan §8).
+**Rule: the body's `type` selects the send, and each type refuses the other's members.**
+`secureSendApiCreateInput()` maps `type: item` (default) to `send_type = 'item'` + `id`, and
+`type: note` to `send_type = 'note'` + `payload` (`secureSendApiNotePayload()`: object of string
+members `title|secret|note|login|url`, null = omitted). A note carrying `item_id` or
+`include_totp`, or an item carrying `note`, is `400`, like unknown members — the web's
+`send_type`/`payload`/`id` names are refused too. It normalizes `include_totp` / `public_address`
+(JSON bool or 0/1) to integers because `secureSendShouldIncludeTotp()` compares with `=== 1`.
+Emptiness stays the orchestrator's `empty_note`; `notes_not_allowed` follows
+`secure_send_allow_notes`, for administrators too (web parity — a note touches no item).
+
+**Rule: a note send never reaches the vault.** The controller runs the item visibility pre-check
+and `get_user_keys()` only inside `if ($input['send_type'] === 'item')`; a note passes empty keys
+to the orchestrator, which never uses them on that branch. **Rule: `note_max_bytes` (16000, the
+sum of the members' UTF-8 bytes) is derived from the `otv.encrypted` bound** — Defuse hex =
+`2 × (84 + JSON bytes) ≤ 65535`, and JSON escaping at most doubles quotes/backslashes/line breaks.
+Raising it needs that computation redone; `SecureSendControllerTest` stores notes at the bound.
+
+**Rule: revocation is owner-only and indistinguishable on refusal.** `revokeAction()` reads
+`?id=N` only (`secureSendApiRevokeId()`: digits, ≤ 2147483647, no other parameter, no body,
+`Idempotency-Key` → `400`) and passes `(int) $userData['id']` as the owner — never a request
+member. `secureSendRevokeLink()` locks the row, checks `originator`, records `revoked` /
+`sender_revoked` with the sender as actor and deletes, in one transaction. Unknown, expired,
+already revoked and foreign links all answer the same `404 not_found` (no id probing); a retry
+after a lost response therefore answers `404`. Inventory (`GET /secureSend/list`) is deferred
+(plan §8).
 
 **Rule: the response URL is a bearer secret.** Every answer of `create`, refusals included, is sent
 with `Cache-Control: no-store` + `Pragma: no-cache`; the only log line carries the exception class.
@@ -545,7 +570,7 @@ parameters and non-JSON bodies are refused (`400`).
 
 **Rule: TOTP inclusion keys on `is_read_only`,** re-read per request; the controller passes
 `read_only = true` when it is missing. `markApiFunctionalActivity()` runs only after a successful
-create — reading the policy is a settings refresh.
+create or revoke — reading the policy is a settings refresh.
 
 **Errors:** problem+json + `reason`. `secureSendApiRefusalStatuses()` maps every
 `SecureSendCreateRefusal::CODES` entry plus the adapter's `not_found` and `secure_send_disabled`:
@@ -560,7 +585,14 @@ fails otherwise. A response without `reason` comes from the API layer (401, 403 
 
 **Policy fields are derived from `secureSendLimits()`**, never re-read from the settings, so the
 published bounds cannot drift from the enforced ones; `passphrase_max_bytes` (1024) is pinned to
-`secureSendValidateInput()` by the same test.
+`secureSendValidateInput()` by the same test, `note_max_bytes` to `secureSendApiNoteMaxBytes()`.
+`note_send_allowed` = `enabled` **and** `secure_send_allow_notes` (no admin exclusion, unlike
+`item_send_allowed`). The 201 body carries `type` (`item`|`note`); `item_id` is `null` for a note.
+
+**Tests:** `tests/Unit/Api/SecureSendApiTest.php` (DB-free decisions, OpenAPI contract, source
+sentinels) and `tests/Unit/Api/SecureSendControllerTest.php` (the real controller on the memory
+DB with real Defuse encryption and the production recipient path — seams: protected
+`settings()` / `currentRequest()` / `sendOutput()`, fixture `tests/Fixtures/secure_send_api_controller.php`).
 
 ---
 
@@ -620,7 +652,7 @@ On HTTPS: `Strict-Transport-Security: max-age=31536000; includeSubDomains`.
 
 **Items:** move, copy, history, favorites (toggle), attachments (upload/download/delete), request_access, edition_lock.
 
-**Secure Send:** note sends, link inventory (`GET /secureSend/list`), revocation (`DELETE /secureSend/revoke`) — contract sketch in `workReadmeFiles/secure-send-api-plan.md` §8. ~~item links~~ — done (`/secureSend/policy`, `/secureSend/create`).
+**Secure Send:** link inventory (`GET /secureSend/list`) — contract sketch in `workReadmeFiles/secure-send-api-plan.md` §8. ~~item links, note sends, revocation~~ — done (`/secureSend/policy`, `/secureSend/create`, `/secureSend/revoke`).
 
 **Folders:** copy. ~~update, delete~~ — done (`PUT /api/v1/folder/update`, `DELETE /api/v1/folder/delete`).
 
