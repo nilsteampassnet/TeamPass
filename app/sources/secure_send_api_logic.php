@@ -31,8 +31,9 @@ declare(strict_types=1);
 
 /*
  * Decisions of the Secure Send REST endpoints (GET /secureSend/policy, POST /secureSend/create,
- * DELETE /secureSend/revoke). DB-free: creation is secureSendCreateLink() and revocation is
- * secureSendRevokeLink(), both shared with the web handlers.
+ * GET /secureSend/list, DELETE /secureSend/revoke). DB-free: creation is secureSendCreateLink(),
+ * the inventory secureSendActiveLinks() and revocation secureSendRevokeLink(), all shared with
+ * the web handlers.
  */
 
 require_once __DIR__ . '/secure_send_input.php';
@@ -248,6 +249,67 @@ function secureSendApiRevokeId(array $query): int
     }
 
     return (int) $id;
+}
+
+/**
+ * Read the page of a list request: `limit` (1 to 500, default 100) and `offset` (default 0).
+ *
+ * @param array $query Query-string parameters
+ * @return array{limit: int, offset: int}
+ * @throws InvalidArgumentException With a client-facing message (HTTP 400)
+ */
+function secureSendApiListWindow(array $query): array
+{
+    $window = ['limit' => 100, 'offset' => 0];
+    $bounds = ['limit' => [1, 500], 'offset' => [0, 2147483647]];
+    foreach ($query as $member => $value) {
+        if (!array_key_exists($member, $bounds)) {
+            throw new InvalidArgumentException('Unknown parameter: ' . substr((string) $member, 0, 64));
+        }
+        [$min, $max] = $bounds[$member];
+        if (!is_string($value) || preg_match('/^(0|[1-9][0-9]{0,9})$/', $value) !== 1
+            || (int) $value < $min || (int) $value > $max
+        ) {
+            throw new InvalidArgumentException($member . ' must be an integer from ' . $min . ' to ' . $max);
+        }
+        $window[$member] = (int) $value;
+    }
+
+    return $window;
+}
+
+/**
+ * Shape the caller's links for GET /secureSend/list.
+ *
+ * Built from an explicit allowlist: an inventory row can carry other columns, and no URL,
+ * code, key, ciphertext or recipient may ever leave the server.
+ *
+ * @param array $rows secureSendActiveLinks() personal rows (labels mode)
+ * @param array<int, string> $emailStatuses secureSendEmailStatuses() of the same owner
+ * @return array<int, array<string, mixed>> Response items, in the order of $rows
+ */
+function secureSendApiListBody(array $rows, array $emailStatuses): array
+{
+    $links = [];
+    foreach ($rows as $row) {
+        $isNote = $row['send_type'] === 'note';
+        $links[] = [
+            'id' => (int) $row['id'],
+            'type' => $isNote ? 'note' : 'item',
+            'item_id' => $isNote ? null : (int) $row['item_id'],
+            'folder_id' => $isNote ? null : (int) $row['folder_id'],
+            // A note has no plaintext label: its title only exists inside the encrypted link.
+            'label' => $isNote ? null : (string) $row['item_label'],
+            'has_passphrase' => (int) ($row['has_passphrase'] ?? 0) === 1,
+            'expires_at' => (int) $row['time_limit'],
+            'max_views' => (int) $row['max_views'],
+            'remaining_views' => max(0, (int) $row['max_views'] - (int) $row['views']),
+            'suspended' => ($row['suspended'] ?? false) === true,
+            'email_status' => $emailStatuses[(int) $row['id']] ?? null,
+        ];
+    }
+
+    return $links;
 }
 
 /**

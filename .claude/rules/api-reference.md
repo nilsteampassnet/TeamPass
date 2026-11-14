@@ -512,21 +512,24 @@ The key is `extension_url` (value = `cpassman_url`) — the doc previously named
 > Client contract: `docs/api/secure-send.md`. Lifecycle/audit: `architecture-secure-send-audit.md`.
 > Design: `workReadmeFiles/secure-send-api-plan.md`.
 
-`GET /api/v1/secureSend/policy`, `POST /api/v1/secureSend/create` and
-`DELETE /api/v1/secureSend/revoke` — controller `SecureSendController`, decisions in the DB-free
-`app/sources/secure_send_api_logic.php`, creation by `secureSendCreateLink()`
-(`app/sources/secure_send_create.php`) and revocation by `secureSendRevokeLink()`
+`GET /api/v1/secureSend/policy`, `POST /api/v1/secureSend/create`, `GET /api/v1/secureSend/list`
+and `DELETE /api/v1/secureSend/revoke` — controller `SecureSendController`, decisions in the
+DB-free `app/sources/secure_send_api_logic.php`, creation by `secureSendCreateLink()`
+(`app/sources/secure_send_create.php`), inventory by `secureSendActiveLinks()` +
+`secureSendEmailStatuses()` and revocation by `secureSendRevokeLink()`
 (`app/sources/secure_send_storage.php`), the functions the web `generate_OTV_url` /
-`revoke_secure_send` handlers also use.
+`list_secure_sends` / `revoke_secure_send` handlers also use.
 
 **Routing and rights:** `secureSendAction()` (`api/inc/bootstrap.php`) → `checkSecureSendCRUDRights()`:
-`policy`, `create` and `revoke` need `allowed_to_read` (a link discloses what `item/get` already
-returns; whoever may create a link may revoke it — `allowed_to_delete` is about items); any other
-action → `403`. The feature gate is **inside** the controller —
+`policy`, `create`, `list` and `revoke` need `allowed_to_read` (a link discloses what `item/get`
+already returns; whoever may create a link may list and revoke it — `allowed_to_delete` is about
+items); any other action → `403`. The feature gate is **inside** the controller —
 `secureSendApiEnabled()` = `otv_is_enabled` **and** `secure_send_api_enabled` (Settings → API,
 default `0` on install and upgrade) — so `policy` always answers `200` with `enabled: false`
 instead of an error, and `create` answers `503` `secure_send_disabled`. **`revoke` has no feature
-gate** (web parity: removing a link only narrows exposure).
+gate** (web parity: removing a link only narrows exposure), and **`list` ignores
+`secure_send_api_enabled`** so a client can find links to revoke; `secureSendActiveLinks()` itself
+returns `[]` while `otv_is_enabled` is off (links cannot be opened then).
 
 **Rule: the API reaches link creation only through `secureSendCreateLink()`.** Never call
 `secureSendStoreLink()`, `cryption()` or the snapshot helpers from the controller: the orchestrator
@@ -559,8 +562,18 @@ Raising it needs that computation redone; `SecureSendControllerTest` stores note
 member. `secureSendRevokeLink()` locks the row, checks `originator`, records `revoked` /
 `sender_revoked` with the sender as actor and deletes, in one transaction. Unknown, expired,
 already revoked and foreign links all answer the same `404 not_found` (no id probing); a retry
-after a lost response therefore answers `404`. Inventory (`GET /secureSend/list`) is deferred
-(plan §8).
+after a lost response therefore answers `404`.
+
+**Rule: the inventory is the web one, owner-scoped, through an allowlist.** `listAction()` passes
+`(int) $userData['id']` to `secureSendActiveLinks($settings, $ownerId, null, null, true)` (labels
+mode: usable links + policy-suspended ones, item links re-checked against the sender's current
+access with `securityPostureItemAccessSql()`, newest first) and to `secureSendEmailStatuses()`, then
+shapes rows with `secureSendApiListBody()` — never copy a row: it also carries `originator`, and
+the allowlist keeps the response stable if the SELECT grows. Note `label` is `null` (the title is inside the ciphertext). Pagination is in PHP
+(`secureSendApiListWindow()`: `limit` 1–500 default 100, `offset`, nothing else → `400`),
+`X-Total-Count` = all rows. Like the web list it runs `secureSendPurgeExpiredLinks()` first
+(log-and-continue) only when `otv_is_enabled`; `Cache-Control: no-store`; activity marked only
+for a non-empty page, like item reads.
 
 **Rule: the response URL is a bearer secret.** Every answer of `create`, refusals included, is sent
 with `Cache-Control: no-store` + `Pragma: no-cache`; the only log line carries the exception class.
@@ -570,7 +583,7 @@ parameters and non-JSON bodies are refused (`400`).
 
 **Rule: TOTP inclusion keys on `is_read_only`,** re-read per request; the controller passes
 `read_only = true` when it is missing. `markApiFunctionalActivity()` runs only after a successful
-create or revoke — reading the policy is a settings refresh.
+create or revoke, or a non-empty list — reading the policy is a settings refresh.
 
 **Errors:** problem+json + `reason`. `secureSendApiRefusalStatuses()` maps every
 `SecureSendCreateRefusal::CODES` entry plus the adapter's `not_found` and `secure_send_disabled`:
@@ -652,7 +665,7 @@ On HTTPS: `Strict-Transport-Security: max-age=31536000; includeSubDomains`.
 
 **Items:** move, copy, history, favorites (toggle), attachments (upload/download/delete), request_access, edition_lock.
 
-**Secure Send:** link inventory (`GET /secureSend/list`) — contract sketch in `workReadmeFiles/secure-send-api-plan.md` §8. ~~item links, note sends, revocation~~ — done (`/secureSend/policy`, `/secureSend/create`, `/secureSend/revoke`).
+**Secure Send:** channel attribution in the journal (plan §8). ~~item links, note sends, inventory, revocation~~ — done (`/secureSend/policy`, `/secureSend/create`, `/secureSend/list`, `/secureSend/revoke`).
 
 **Folders:** copy. ~~update, delete~~ — done (`PUT /api/v1/folder/update`, `DELETE /api/v1/folder/delete`).
 

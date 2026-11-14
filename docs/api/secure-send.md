@@ -5,16 +5,14 @@
 API clients (the browser extension, a paired mobile device, a script) can create
 **Secure Send** links: limited-view, expiring links to a copy of an item or to a note,
 optionally protected by a passphrase and optionally sent by email. The recipient opens the
-link in a browser and needs no TeamPass account. The sender can revoke a link at any time.
+link in a browser and needs no TeamPass account. The sender can list their links and revoke
+them at any time.
 
 A link created through the API is the same link as one created from the web interface. The
 same administrator policy, item permissions, encryption, audit journal and email delivery
 apply. The creation is recorded as a `created` event in the Secure Send audit journal, a
-revocation as a `revoked` event. A link can be revoked from the API or from **My secure sends**
-in the web interface, whichever channel created it.
-
-The link inventory is not available through the API yet: a client can revoke the links whose
-`id` it kept from the creation response.
+revocation as a `revoked` event. A link can be listed and revoked from the API or from **My
+secure sends** in the web interface, whichever channel created it.
 
 ## Prerequisites (administrator)
 
@@ -34,8 +32,10 @@ required.
 Administrator accounts cannot send items, through the web or the API: they have no item access.
 They can send notes, like in the web interface.
 
-Revoking a link needs only the **read** right, and works whatever these settings: removing a
-link only reduces exposure.
+Listing and revoking links need only the **read** right, and do not depend on *Allow Secure Send
+from API clients*: they let a user find and remove links, which only reduces exposure. Revoking
+works whatever the settings; the list is empty while one-time view links are off, because no
+link can be opened then.
 
 ## Get the policy {#policy}
 
@@ -181,7 +181,7 @@ the link.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- |
-| `id` | integer | Link identifier. Keep it to [revoke](#revoke) the link |
+| `id` | integer | Link identifier, as in [the list](#list). Used to [revoke](#revoke) the link |
 | `type` | string | `"item"` or `"note"` |
 | `url` | string | The link. **It is a secret**: see [Client rules](#client-rules) |
 | `item_id` | integer or null | The shared item, `null` for a note |
@@ -244,6 +244,89 @@ A response **without** `reason` comes from the API itself, not from Secure Send:
 token or keys unavailable), `403` (read right missing), `405` (method), `429` with `Retry-After`
 (API rate limit), `503` (API disabled).
 
+## List your links {#list}
+
+> 📋 Returns the user's links that can still be opened, newest first
+
+| Info | Description |
+| ---- | ----------- |
+| **Endpoint** | `secureSend/list` |
+| **Method** | GET |
+| **URL** | `<Teampass URL>/api/index.php/secureSend/list?limit=100&offset=0` |
+| **Headers** | `Authorization: Bearer <token>` |
+
+| Parameter | Type | Description |
+| --------- | ---- | ----------- |
+| `limit` | integer, 1 to 500 | Links per page. Default `100` |
+| `offset` | integer ≥ 0 | Links to skip. Default `0` |
+
+Lists the links the user created, from the API or from the web interface, that can still be
+opened: links that expired, used all their views or were blocked after five wrong attempts are
+left out, and so are item links whose item the user can no longer read. Links a policy
+currently blocks are listed with `suspended: true`, so that they can be revoked. The
+`X-Total-Count` header gives the number of links across all pages.
+
+**Response `200`:**
+```json
+[
+  {
+    "id": 457,
+    "type": "note",
+    "item_id": null,
+    "folder_id": null,
+    "label": null,
+    "has_passphrase": true,
+    "expires_at": 1795003600,
+    "max_views": 1,
+    "remaining_views": 1,
+    "suspended": false,
+    "email_status": "accepted"
+  },
+  {
+    "id": 456,
+    "type": "item",
+    "item_id": 123,
+    "folder_id": 12,
+    "label": "Production database",
+    "has_passphrase": false,
+    "expires_at": 1795000000,
+    "max_views": 3,
+    "remaining_views": 2,
+    "suspended": false,
+    "email_status": null
+  }
+]
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `id` | integer | Link identifier, to [revoke](#revoke) the link |
+| `type` | string | `"item"` or `"note"` |
+| `item_id` / `folder_id` | integer or null | The shared item and its current folder. `null` for a note |
+| `label` | string or null | The item's current label, as plain text: escape it when you display it. `null` for a note: its title only exists inside the encrypted link, show a generic name |
+| `has_passphrase` | boolean | The recipient must type a passphrase |
+| `expires_at` | integer | Unix timestamp |
+| `max_views` / `remaining_views` | integer | Allowed views, and views left |
+| `suspended` | boolean | The link cannot be opened while a policy forbids it: note sends turned off, or a passphrase now required. It opens again if the policy changes back |
+| `email_status` | string or null | `null` when the link was not emailed. Otherwise `queued`, `accepted` (by the mail server, which does not prove delivery), `failed`, `not_sent` (the link was no longer valid when the email was due) or `unknown` |
+
+The list never contains the link URL: the server does not keep it. It never contains the
+email recipient or the content of a note either.
+
+| HTTP | `reason` | Meaning |
+| ---- | -------- | ------- |
+| 400 | `invalid_payload` | Invalid `limit` or `offset`, or another parameter |
+| 500 | `server_error` | Internal error, logged on the server |
+
+Expired links are cleaned up when the list is read, as in the web interface: each one leaves an
+`expired` event in the audit journal.
+
+**Example:**
+```bash
+curl "https://your-teampass.com/api/index.php/secureSend/list?limit=20" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
 ## Revoke a link {#revoke}
 
 > 📋 Deletes one of the user's links: it can no longer be opened
@@ -257,7 +340,7 @@ token or keys unavailable), `403` (read right missing), `405` (method), `429` wi
 
 | Parameter | Type | Description |
 | --------- | ---- | ----------- |
-| `id` | integer | **Required**, in the URL. The `id` returned by the creation. No other parameter is accepted |
+| `id` | integer | **Required**, in the URL. The `id` returned by the creation or the list. No other parameter is accepted |
 
 Revokes a link the user created, from the API or from the web interface. The link is deleted
 at once and a `revoked` event is recorded in the audit journal. An email invitation still
@@ -302,11 +385,11 @@ These rules apply to every client: the browser extension, the mobile application
   thread.
 - **Do not retry a create whose response was lost.** The endpoint has no idempotency key, on
   purpose: replaying a response would require the server to store the link. A lost response
-  leaves at most one unused link, which expires on its own. Tell the user that a link may exist
-  and that it can be revoked from **My secure sends** in the web interface. A revocation, on
-  the contrary, can be sent again: see [Revoke a link](#revoke).
-- **Offer to revoke** the links the client created: keep their `id` and `expires_at`, never
-  their `url`.
+  leaves at most one unused link, which expires on its own. Tell the user that a link may exist:
+  it appears in [the list](#list), where it can be revoked, but its address is lost. A
+  revocation, on the contrary, can be sent again: see [Revoke a link](#revoke).
+- **Offer to revoke** links: read them from [the list](#list). Never store a link's `url` to
+  show it again later.
 - **Translate `reason`, not `detail`.** Treat `cannot_decrypt` as temporary.
 - **Hide the actions** when `enabled` is `false`, the item action when `item_send_allowed` is
   `false` and the note action when `note_send_allowed` is `false`. Hide the TOTP option when

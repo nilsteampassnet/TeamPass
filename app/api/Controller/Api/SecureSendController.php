@@ -28,13 +28,14 @@ use TeampassClasses\ConfigManager\ConfigManager;
 require_once API_ROOT_PATH . '/../sources/secure_send_api_logic.php';
 require_once API_ROOT_PATH . '/../sources/secure_send_create.php';
 require_once API_ROOT_PATH . '/../sources/secure_send_storage.php';
+require_once API_ROOT_PATH . '/../sources/secure_send_active.php';
 
 /**
  * Secure Send links created by API clients (browser extension, paired devices, scripts).
  *
- * Creation goes through secureSendCreateLink() and revocation through secureSendRevokeLink(),
- * the functions the web handlers use, so policy, access, encryption, audit and email delivery
- * are identical.
+ * Creation goes through secureSendCreateLink(), the inventory through secureSendActiveLinks()
+ * and revocation through secureSendRevokeLink(), the functions the web handlers use, so policy,
+ * access, encryption, audit and email delivery are identical.
  */
 class SecureSendController extends BaseController
 {
@@ -160,6 +161,63 @@ class SecureSendController extends BaseController
             json_encode(secureSendApiCreatedBody($result)),
             ['Content-Type: application/json', $this->statusLine(201)]
         );
+    }
+
+    /**
+     * List the caller's links that can still be opened or are suspended by a policy (GET),
+     * newest first, paginated with ?limit=&offset= and X-Total-Count.
+     *
+     * Like revocation, it does not depend on secure_send_api_enabled: it lets a client find
+     * and revoke links. It is empty while one-time view links are off, as on the web.
+     *
+     * @param array $userData User data from JWT token
+     * @return void
+     */
+    public function listAction(array $userData): void
+    {
+        // Item labels and link metadata are personal: keep them out of shared caches.
+        header('Cache-Control: no-store');
+        header('Pragma: no-cache');
+        if ($this->requireMethod('GET') === false) {
+            return;
+        }
+        try {
+            $window = secureSendApiListWindow($this->currentRequest()->query->all());
+        } catch (InvalidArgumentException $e) {
+            $this->sendRefusal('invalid_payload', $e->getMessage());
+            return;
+        }
+
+        $settings = $this->settings();
+        $ownerId = (int) $userData['id'];
+        // Same sequence as the web list: a disabled feature neither reads nor cleans up links.
+        if ((int) ($settings['otv_is_enabled'] ?? 0) === 1) {
+            try {
+                // Opportunistic: expired links leave with their audit event, failures do not block the list.
+                secureSendPurgeExpiredLinks($settings);
+            } catch (Throwable $e) {
+                error_log('[API] Secure Send cleanup failed (' . get_class($e) . ')');
+            }
+        }
+        try {
+            $rows = secureSendActiveLinks($settings, $ownerId, null, null, true);
+            $statuses = $rows === [] ? [] : secureSendEmailStatuses($ownerId);
+        } catch (Throwable $e) {
+            error_log('[API] Secure Send inventory failed (' . get_class($e) . ')');
+            $this->sendRefusal('server_error');
+            return;
+        }
+
+        $links = secureSendApiListBody(array_slice($rows, $window['offset'], $window['limit']), $statuses);
+        // Like item reads: an empty answer is not user activity.
+        if ($links !== []) {
+            $this->markApiFunctionalActivity($userData);
+        }
+        $this->sendOutput(json_encode($links), [
+            'Content-Type: application/json',
+            'X-Total-Count: ' . count($rows),
+            $this->statusLine(200),
+        ]);
     }
 
     /**

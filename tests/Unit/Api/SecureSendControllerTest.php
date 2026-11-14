@@ -35,8 +35,9 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 
 /**
- * The real SecureSendController on the transactional memory database: note sends and
- * revocation end to end, with real Defuse encryption and the production recipient path.
+ * The real SecureSendController on the transactional memory database: note sends, the link
+ * inventory and revocation end to end, with real Defuse encryption and the production
+ * recipient path.
  *
  * Request decoding and policy decisions are covered by SecureSendApiTest.
  */
@@ -134,15 +135,26 @@ final class SecureSendControllerTest extends TestCase
     }
 
     /** Seed an owned link without going through creation. */
-    private function seedLink(int $originator = 42, string $type = 'item_v2'): int
+    private function seedLink(int $originator = 42, string $type = 'item_v2', array $changes = []): int
     {
-        DB::insert(prefixTable('otv'), [
+        DB::insert(prefixTable('otv'), array_replace([
             'originator' => $originator, 'item_id' => $type === 'note' ? null : 123, 'send_type' => $type,
             'timestamp' => (string) time(), 'time_limit' => time() + 3600, 'max_views' => 2, 'views' => 0,
             'has_passphrase' => 0, 'shared_globaly' => 0, 'failed_attempts' => 0,
-            'encrypted' => 'ciphertext-canary', 'code' => 'credential-canary',
-        ]);
+            'encrypted' => 'ciphertext-canary', 'code' => 'credential-canary', 'protected_key' => 'wrapped-key-canary',
+        ], $changes));
         return DB::insertId();
+    }
+
+    /** Response header value, or null. */
+    private static function header(array $response, string $name): ?string
+    {
+        foreach ($response['headers'] as $header) {
+            if (stripos($header, $name . ': ') === 0) {
+                return substr($header, strlen($name) + 2);
+            }
+        }
+        return null;
     }
 
     /** Redeem a link through the production recipient path. */
@@ -260,6 +272,119 @@ final class SecureSendControllerTest extends TestCase
         self::assertSame(['satisfiesItemRestriction', 42, 123], FolderAccessModel::$calls[2]);
         self::assertFalse(function_exists('get_user_keys'), 'keys are unwrapped only after the pre-check');
         $this->assertNothingChanged();
+    }
+
+    public function testListReturnsOnlyTheCallersOpenableLinksNewestFirst(): void
+    {
+        $expiry = time() + 3600;
+        $item = $this->seedLink(42, 'item_v2', ['time_limit' => $expiry, 'has_passphrase' => 1]);
+        $this->seedLink(43);
+        $note = $this->seedLink(42, 'note', ['time_limit' => $expiry, 'views' => 1, 'max_views' => 3]);
+        $expired = $this->seedLink(42, 'item_v2', ['time_limit' => time() - 10]);
+        $exhausted = $this->seedLink(42, 'note', ['views' => 2]);
+        $blocked = $this->seedLink(42, 'note', ['failed_attempts' => 5]);
+
+        $response = $this->call('list', 'GET');
+        self::assertSame(200, $response['status']);
+        self::assertSame([
+            ['id' => $note, 'type' => 'note', 'item_id' => null, 'folder_id' => null, 'label' => null, 'has_passphrase' => false,
+                'expires_at' => $expiry, 'max_views' => 3, 'remaining_views' => 2, 'suspended' => false, 'email_status' => null],
+            ['id' => $item, 'type' => 'item', 'item_id' => 123, 'folder_id' => 7, 'label' => 'Original label', 'has_passphrase' => true,
+                'expires_at' => $expiry, 'max_views' => 2, 'remaining_views' => 2, 'suspended' => false, 'email_status' => null],
+        ], $response['body']);
+        self::assertSame('2', self::header($response, 'X-Total-Count'));
+        // No code, key or ciphertext: the server has no URL to give back.
+        self::assertStringNotContainsString('canary', json_encode($response, JSON_THROW_ON_ERROR));
+        self::assertSame([42], $GLOBALS['secureSendApiActivity']);
+
+        // The expired link left with its audit event; exhausted and blocked links stay unlisted, untouched.
+        self::assertArrayNotHasKey($expired, DB::$links);
+        self::assertSame([['expired', $expired]], array_map(static fn (array $row): array => [$row['event'], $row['send_id']], DB::$secureAudit));
+        self::assertArrayHasKey($exhausted, DB::$links);
+        self::assertArrayHasKey($blocked, DB::$links);
+        self::assertFalse(DB::inTransaction());
+    }
+
+    public function testListIsPaginatedAndCountsEveryLink(): void
+    {
+        $ids = [$this->seedLink(), $this->seedLink(), $this->seedLink()];
+        $page = $this->call('list', 'GET', ['limit' => '1', 'offset' => '1']);
+        self::assertSame([200, [$ids[1]], '3'], [$page['status'], array_column($page['body'], 'id'), self::header($page, 'X-Total-Count')]);
+        self::assertSame([$ids[2], $ids[1]], array_column($this->call('list', 'GET', ['limit' => '2'])['body'], 'id'));
+
+        $GLOBALS['secureSendApiActivity'] = [];
+        $beyond = $this->call('list', 'GET', ['offset' => '3']);
+        self::assertSame([200, [], '3'], [$beyond['status'], $beyond['body'], self::header($beyond, 'X-Total-Count')]);
+        self::assertSame([], $GLOBALS['secureSendApiActivity'], 'an empty page is not user activity');
+    }
+
+    public function testListFollowsCurrentAccessAndPolicies(): void
+    {
+        $item = $this->seedLink();
+        $note = $this->seedLink(42, 'note');
+
+        // An item the sender can no longer read makes its link unusable: it is not listed.
+        DB::$access = false;
+        self::assertSame([$note], array_column($this->call('list', 'GET')['body'], 'id'));
+        DB::$access = true;
+
+        // The API opt-in governs creation only: the links stay listed so that they can be revoked.
+        $this->settings['secure_send_api_enabled'] = 0;
+        self::assertSame([$note, $item], array_column($this->call('list', 'GET')['body'], 'id'));
+
+        // Paused policies keep the owner's links listed, flagged as suspended.
+        $this->settings['secure_send_allow_notes'] = 0;
+        $this->settings['secure_send_require_passphrase'] = 1;
+        $suspended = $this->call('list', 'GET')['body'];
+        self::assertSame([[$note, true], [$item, true]], array_map(static fn (array $link): array => [$link['id'], $link['suspended']], $suspended));
+    }
+
+    public function testDisabledOneTimeViewLinksNeitherListNorCleanUp(): void
+    {
+        $this->seedLink();
+        $expired = $this->seedLink(42, 'item_v2', ['time_limit' => time() - 10]);
+        $this->settings['otv_is_enabled'] = 0;
+        $response = $this->call('list', 'GET');
+        self::assertSame([200, [], '0'], [$response['status'], $response['body'], self::header($response, 'X-Total-Count')]);
+        self::assertArrayHasKey($expired, DB::$links);
+        self::assertSame([], DB::$secureAudit);
+        self::assertSame([], $GLOBALS['secureSendApiActivity']);
+    }
+
+    public function testCleanupFailureDoesNotBlockTheList(): void
+    {
+        $id = $this->seedLink();
+        $this->seedLink(42, 'item_v2', ['time_limit' => time() - 10]);
+        DB::$failCleanupQuery = true;
+        $response = $this->call('list', 'GET');
+        self::assertSame([200, [$id]], [$response['status'], array_column($response['body'], 'id')]);
+        self::assertSame([], DB::$secureAudit);
+        self::assertFalse(DB::inTransaction());
+        self::assertStringContainsString('[API] Secure Send cleanup failed (RuntimeException)', (string) file_get_contents($this->log));
+    }
+
+    public function testMalformedListRequestsAreRefused(): void
+    {
+        $this->seedLink();
+        foreach ([['limit' => '0'], ['limit' => '501'], ['offset' => '-1'], ['limit' => 'all'], ['originator' => '43'], ['id' => '1']] as $query) {
+            $this->assertRefusal($this->call('list', 'GET', $query), 400, 'invalid_payload');
+        }
+        foreach (['POST', 'DELETE'] as $method) {
+            $response = $this->call('list', $method);
+            self::assertSame(405, $response['status'], $method);
+            self::assertContains('Allow: GET', $response['headers']);
+        }
+        self::assertSame([], $GLOBALS['secureSendApiActivity']);
+    }
+
+    public function testALinkCreatedListedAndRevokedThroughTheApi(): void
+    {
+        $created = $this->call('create', 'POST', [], ['type' => 'note', 'note' => self::NOTE, 'views' => 2]);
+        $listed = $this->call('list', 'GET')['body'];
+        self::assertSame([[$created['body']['id'], 'note', 2, $created['body']['expires_at']]],
+            array_map(static fn (array $link): array => [$link['id'], $link['type'], $link['remaining_views'], $link['expires_at']], $listed));
+        self::assertSame(200, $this->call('revoke', 'DELETE', ['id' => (string) $listed[0]['id']])['status']);
+        self::assertSame([], $this->call('list', 'GET')['body']);
     }
 
     public function testOwnerRevokesWhateverTheSecureSendSettings(): void

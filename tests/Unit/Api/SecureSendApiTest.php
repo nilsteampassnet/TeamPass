@@ -291,6 +291,28 @@ final class SecureSendApiTest extends TestCase
         }
         self::assertSame('#/components/schemas/SecureSendRevoked', $revoke['responses']['200']['content']['application/json']['schema']['$ref']);
         self::assertSame(['id'], $spec['components']['schemas']['SecureSendRevoked']['required']);
+
+        // The inventory is a paginated collection of the documented link shape.
+        $list = $spec['paths']['/secureSend/list']['get'];
+        self::assertSame('#/components/headers/X-Total-Count', $list['responses']['200']['headers']['X-Total-Count']['$ref']);
+        self::assertSame('#/components/schemas/SecureSendLink', $list['responses']['200']['content']['application/json']['schema']['items']['$ref']);
+        self::assertSame([['limit', 1, 500, 100], ['offset', 0, null, 0]], array_map(static fn (array $p): array => [$p['name'],
+            $p['schema']['minimum'], $p['schema']['maximum'] ?? null, $p['schema']['default']], $list['parameters']));
+        foreach ([400 => 'invalid_payload', 500 => 'server_error'] as $status => $reason) {
+            self::assertSame($statuses[$reason], $status, $reason);
+            self::assertSame('#/components/schemas/SecureSendProblem',
+                $list['responses'][$status]['content']['application/problem+json']['schema']['$ref'], $reason);
+        }
+        $link = $spec['components']['schemas']['SecureSendLink'];
+        $listed = secureSendApiListBody([['id' => 1, 'send_type' => 'note', 'has_passphrase' => 0, 'views' => 0,
+            'max_views' => 1, 'time_limit' => 1]], []);
+        self::assertSame(array_keys($listed[0]), $link['required']);
+        self::assertSame(array_keys($listed[0]), array_keys($link['properties']));
+        // Every status secureSendEmailStatuses() can return, or null when the link was not emailed.
+        self::assertSame([null, 'queued', 'accepted', 'failed', 'not_sent', 'unknown'], $link['properties']['email_status']['enum']);
+        $statusSource = $this->functionSource('/app/sources/secure_send_email.php', 'secureSendEmailStatuses');
+        preg_match_all("/(?:=>|\\?|:)\\s*'([a-z_]+)'/", $statusSource, $returned);
+        self::assertEqualsCanonicalizing(['queued', 'accepted', 'failed', 'not_sent', 'unknown'], array_unique($returned[1]));
         self::assertSame([['id', 'query', true]], array_map(static fn (array $p): array => [$p['name'], $p['in'], $p['required']], $revoke['parameters']));
         self::assertArrayNotHasKey('requestBody', $revoke);
     }
@@ -339,6 +361,51 @@ final class SecureSendApiTest extends TestCase
         self::assertSame(2147483647, secureSendApiRevokeId(['id' => '2147483647']));
     }
 
+    public function testListWindowDefaultsAndBounds(): void
+    {
+        self::assertSame(['limit' => 100, 'offset' => 0], secureSendApiListWindow([]));
+        self::assertSame(['limit' => 1, 'offset' => 0], secureSendApiListWindow(['limit' => '1', 'offset' => '0']));
+        self::assertSame(['limit' => 500, 'offset' => 2147483647], secureSendApiListWindow(['offset' => '2147483647', 'limit' => '500']));
+    }
+
+    public static function invalidListQueries(): array
+    {
+        return [
+            'zero limit' => [['limit' => '0']], 'limit above 500' => [['limit' => '501']], 'negative offset' => [['offset' => '-1']],
+            'empty limit' => [['limit' => '']], 'text limit' => [['limit' => 'all']], 'leading zero' => [['offset' => '010']],
+            'decimal' => [['limit' => '1.5']], 'array' => [['limit' => ['5']]], 'offset above int' => [['offset' => '2147483648']],
+            'id' => [['id' => '5']], 'owner' => [['originator' => '43']], 'item scope' => [['item_id' => '123']],
+        ];
+    }
+
+    #[DataProvider('invalidListQueries')]
+    public function testInvalidListQueriesAreRefused(array $query): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        secureSendApiListWindow($query);
+    }
+
+    /** Only allowlisted metadata leaves the server, whatever else an inventory row carries. */
+    public function testListBodyExposesOnlyLinkMetadata(): void
+    {
+        $rows = [
+            ['id' => 7, 'originator' => 42, 'item_id' => null, 'send_type' => 'note', 'has_passphrase' => 1, 'views' => 1,
+                'max_views' => 3, 'time_limit' => 1795000000, 'suspended' => true, 'code' => 'code-canary',
+                'encrypted' => 'cipher-canary', 'protected_key' => 'key-canary'],
+            ['id' => 5, 'originator' => 42, 'item_id' => 123, 'send_type' => 'item_v2', 'has_passphrase' => 0, 'views' => 4,
+                'max_views' => 2, 'time_limit' => 1794000000, 'suspended' => false, 'item_label' => 'R&D <item>', 'folder_id' => 9],
+        ];
+        $body = secureSendApiListBody($rows, [5 => 'accepted', 99 => 'failed']);
+        self::assertSame([
+            ['id' => 7, 'type' => 'note', 'item_id' => null, 'folder_id' => null, 'label' => null, 'has_passphrase' => true,
+                'expires_at' => 1795000000, 'max_views' => 3, 'remaining_views' => 2, 'suspended' => true, 'email_status' => null],
+            ['id' => 5, 'type' => 'item', 'item_id' => 123, 'folder_id' => 9, 'label' => 'R&D <item>', 'has_passphrase' => false,
+                'expires_at' => 1794000000, 'max_views' => 2, 'remaining_views' => 0, 'suspended' => false, 'email_status' => 'accepted'],
+        ], $body);
+        self::assertStringNotContainsString('canary', json_encode($body, JSON_THROW_ON_ERROR));
+        self::assertSame([], secureSendApiListBody([], [5 => 'accepted']));
+    }
+
     /** Extension members are added after, and never override, the RFC 9457 members. */
     public function testProblemResponsesCarryTheReasonWithoutOverridingStandardMembers(): void
     {
@@ -356,20 +423,19 @@ final class SecureSendApiTest extends TestCase
         self::assertArrayNotHasKey('reason', json_decode($controller->body, true, 512, JSON_THROW_ON_ERROR));
     }
 
-    public function testOnlyPolicyCreateAndRevokeAreRoutedWithTheReadRight(): void
+    public function testOnlyTheFourSecureSendActionsAreRoutedWithTheReadRight(): void
     {
         // The bootstrap cannot be loaded without an instance: run the repository's own function.
         eval($this->functionSource('/app/api/inc/bootstrap.php', 'checkSecureSendCRUDRights'));
         $reader = ['allowed_to_create' => 0, 'allowed_to_read' => 1, 'allowed_to_update' => 0, 'allowed_to_delete' => 0];
         $writer = ['allowed_to_create' => 1, 'allowed_to_read' => 0, 'allowed_to_update' => 1, 'allowed_to_delete' => 1];
-        // Whoever may create a link may revoke it: the delete right is about items.
-        foreach (['policy', 'create', 'revoke'] as $action) {
+        // Whoever may create a link may list and revoke it: the delete right is about items.
+        foreach (['policy', 'create', 'list', 'revoke'] as $action) {
             self::assertTrue(checkSecureSendCRUDRights($reader, $action), $action);
             self::assertFalse(checkSecureSendCRUDRights($writer, $action), $action);
             self::assertFalse(checkSecureSendCRUDRights([], $action), $action);
         }
-        // The inventory is not part of this version.
-        foreach (['list', 'get', 'delete', 'Create', 'Revoke', ''] as $action) {
+        foreach (['get', 'delete', 'count', 'Create', 'List', 'Revoke', ''] as $action) {
             self::assertFalse(checkSecureSendCRUDRights($reader + $writer, $action), $action);
         }
         $wrapper = $this->functionSource('/app/api/inc/bootstrap.php', 'secureSendAction');
@@ -417,6 +483,8 @@ final class SecureSendApiTest extends TestCase
         // Logs carry the exception class only, never the message, the body or the link.
         preg_match_all('/error_log\((.*)\);/', $controller, $logs);
         self::assertSame(["'[API] Secure Send creation failed (' . get_class(\$e) . ')'",
+            "'[API] Secure Send cleanup failed (' . get_class(\$e) . ')'",
+            "'[API] Secure Send inventory failed (' . get_class(\$e) . ')'",
             "'[API] Secure Send revocation failed (' . get_class(\$e) . ')'"], $logs[1]);
         foreach (['SecureSendProblem', 'secureSendStoreLink(', 'cryption('] as $forbidden) {
             self::assertStringNotContainsString($forbidden, $controller, $forbidden);
@@ -430,6 +498,17 @@ final class SecureSendApiTest extends TestCase
             self::assertStringNotContainsString($forbidden, $revoke, $forbidden);
         }
         self::assertLessThan(strpos($revoke, 'markApiFunctionalActivity('), strpos($revoke, 'if ($revoked === false)'));
+        // Inventory: owner from the token, the web inventory functions, no API opt-in gate, no-store.
+        $list = substr($controller, (int) strpos($controller, 'public function listAction('));
+        $list = substr($list, 0, (int) strpos($list, "\n    }\n"));
+        self::assertLessThan(strpos($list, 'requireMethod('), strpos($list, "header('Cache-Control: no-store');"));
+        self::assertStringContainsString("\$ownerId = (int) \$userData['id'];", $list);
+        self::assertStringContainsString('secureSendActiveLinks($settings, $ownerId, null, null, true)', $list);
+        self::assertStringContainsString('secureSendEmailStatuses($ownerId)', $list);
+        self::assertStringContainsString('secureSendApiListBody(', $list);
+        foreach (['secureSendApiEnabled(', 'DB::', 'getQueryStringParams(', "'url'"] as $forbidden) {
+            self::assertStringNotContainsString($forbidden, $list, $forbidden);
+        }
         // Reading the policy is a settings refresh, not user activity.
         $policy = substr($controller, (int) strpos($controller, 'public function policyAction('), (int) strpos($controller, 'public function createAction(') - (int) strpos($controller, 'public function policyAction('));
         self::assertStringNotContainsString('markApiFunctionalActivity', $policy);

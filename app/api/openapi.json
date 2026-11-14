@@ -1573,6 +1573,98 @@
                 }
             }
         },
+        "/secureSend/list": {
+            "get": {
+                "operationId": "secureSendList",
+                "summary": "List the caller's Secure Send links",
+                "description": "The caller's links, created through the web or the API, that can still be opened or are suspended by a policy, newest first. Expired, exhausted and blocked links, and item links whose item the caller can no longer read, are left out. Never returns a link URL, which the server does not keep. Requires the read right only; does not depend on secure_send_api_enabled, so a client can find links to revoke. Empty while one-time view links are off.",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 500,
+                            "default": 100
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "default": 0
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The caller's links (empty array when none)",
+                        "headers": {
+                            "X-Total-Count": {
+                                "$ref": "#/components/headers/X-Total-Count"
+                            },
+                            "Cache-Control": {
+                                "description": "Always no-store",
+                                "schema": {
+                                    "type": "string",
+                                    "const": "no-store"
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/SecureSendLink"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid limit or offset, or another query-string parameter (reason invalid_payload)",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SecureSendProblem"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    },
+                    "500": {
+                        "description": "Internal error (reason server_error); details are logged server-side only",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SecureSendProblem"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/ApiDisabled"
+                    }
+                }
+            }
+        },
         "/secureSend/revoke": {
             "delete": {
                 "operationId": "secureSendRevoke",
@@ -3552,6 +3644,89 @@
                     },
                     "email_queued": {
                         "type": "boolean"
+                    }
+                }
+            },
+            "SecureSendLink": {
+                "type": "object",
+                "required": [
+                    "id",
+                    "type",
+                    "item_id",
+                    "folder_id",
+                    "label",
+                    "has_passphrase",
+                    "expires_at",
+                    "max_views",
+                    "remaining_views",
+                    "suspended",
+                    "email_status"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "description": "Link identifier, the id of DELETE /secureSend/revoke"
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "item",
+                            "note"
+                        ]
+                    },
+                    "item_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "description": "null for a note"
+                    },
+                    "folder_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "description": "Current folder of the item; null for a note"
+                    },
+                    "label": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Current item label (HTML entities decoded: escape it when rendering); null for a note, whose title only exists inside the encrypted link"
+                    },
+                    "has_passphrase": {
+                        "type": "boolean"
+                    },
+                    "expires_at": {
+                        "type": "integer",
+                        "description": "Unix timestamp"
+                    },
+                    "max_views": {
+                        "type": "integer"
+                    },
+                    "remaining_views": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "suspended": {
+                        "type": "boolean",
+                        "description": "The link cannot be opened while a policy forbids it (note sends disabled, or a passphrase now required); it still counts and can be revoked"
+                    },
+                    "email_status": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "enum": [
+                            null,
+                            "queued",
+                            "accepted",
+                            "failed",
+                            "not_sent",
+                            "unknown"
+                        ],
+                        "description": "Email invitation outcome; null when the link was not emailed. accepted means accepted by the mail server, not delivered"
                     }
                 }
             },

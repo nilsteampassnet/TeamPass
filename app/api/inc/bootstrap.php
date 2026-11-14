@@ -183,8 +183,8 @@ function secureSendAction(array $actions, array $userData): void
  * Map a Secure Send action to the API right it needs.
  *
  * A link discloses what item/get already returns to the same caller, hence the read right.
- * Revoking one of the caller's own links only narrows that exposure: whoever may create a
- * link may revoke it.
+ * Listing and revoking the caller's own links only show or narrow that exposure: whoever may
+ * create a link may list and revoke it.
  *
  * @param array  $userData
  * @param string $actionToPerform
@@ -192,7 +192,7 @@ function secureSendAction(array $actions, array $userData): void
  */
 function checkSecureSendCRUDRights(array $userData, string $actionToPerform): bool
 {
-    if (in_array($actionToPerform, ['policy', 'create', 'revoke'], true) === true) {
+    if (in_array($actionToPerform, ['policy', 'create', 'list', 'revoke'], true) === true) {
         return (int) ($userData['allowed_to_read'] ?? 0) === 1;
     }
 

@@ -41,7 +41,9 @@ write the same `created` event with the sender as actor; the journal does not re
 channel. Its refusals are `SecureSendCreateRefusal::CODES`, which the API maps to HTTP statuses.
 Revocation likewise has one implementation, `secureSendRevokeLink()`, shared by the web
 `revoke_secure_send` handler and `DELETE /api/v1/secureSend/revoke`; the owner is always the
-authenticated user (session or token), never a request member.
+authenticated user (session or token), never a request member. The personal inventory
+`secureSendActiveLinks(..., true)` is shared the same way by `list_secure_sends` and
+`GET /api/v1/secureSend/list`, both preceded by the opportunistic cleanup.
 
 ## Data contract
 
