@@ -139,6 +139,9 @@ try {
     DB::query('CREATE TABLE ' . prefixTable('nested_tree') . ' (id INT PRIMARY KEY, nb_items_in_folder INT) ENGINE=InnoDB');
     DB::insert(prefixTable('users'), ['id' => 42]);
 
+    require_once __DIR__ . '/secure_send_upgrade_database.php';
+    secureSendUpgradeDatabaseChecks();
+
     foreach ([1, 5] as $allowedViews) {
         $created = secureSendFixtureCreate(['send_type' => 'note', 'views' => $allowedViews, 'payload' => ['secret' => 'synthetic-concurrency-secret']]);
         parse_str((string) parse_url($created['url'], PHP_URL_QUERY), $query);
