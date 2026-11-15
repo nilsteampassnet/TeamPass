@@ -7,7 +7,25 @@ The **Network ACL** feature lets administrators control which IPv4 addresses or 
 - **Blacklist** — always-deny list: any matching IP is blocked regardless of the whitelist.
 - **Whitelist** — exclusive allow list: when enabled, only IPs explicitly listed can reach TeamPass.
 
-Both lists can be used together or independently. Access control is evaluated on every request **before** the login page is reached.
+Both lists can be used together or independently. The shared HTTP runtime
+checks the policy before login processing, application pages, AJAX actions and
+the REST API (including preflight requests). A session opened on an allowed
+network does not exempt later requests from a different or newly blocked IP.
+
+The following entry points keep their separate authorization:
+
+- **Secure Send recipient pages**, on both the main and public sharing address,
+  use their link credentials and confirmation policy. They are not filtered by
+  these network lists. Selecting the main address does not make a link LAN-only.
+- **Installation and upgrade scripts** use their setup protections, so a missing
+  ACL table cannot prevent a required migration or repair.
+- **CLI scripts** do not represent an incoming HTTP client and are not filtered.
+
+Static resources and the WebSocket transport are not
+filtered by this PHP request guard. Use the web server, reverse proxy or
+firewall when a network restriction must cover the entire service. To limit
+Secure Send recipients by network, apply that policy on its dedicated public
+virtual host or proxy route.
 
 > :warning: **Important:** Before enabling the whitelist, make sure your own IP and the server IP are already added to the list. TeamPass automatically offers to add them when you save the settings, but verify them first to avoid locking yourself out.
 
@@ -209,3 +227,5 @@ The response does not disclose database details; the PHP error log records a
 generic ACL diagnostic without SQL or credentials. Check database permissions
 and complete any required installation/upgrade before reopening the application.
 When both lists are disabled, no ACL table is required.
+Policy refusals return HTTP 403; unavailable enabled ACL storage returns HTTP
+503. API and AJAX responses contain a generic JSON error, without the rules.

@@ -68,6 +68,7 @@ require_once __DIR__ . '/emails_queue_logic.php';
 require_once __DIR__ . '/emails_transport_logic.php';
 require_once __DIR__ . '/sharekeys_repair_logic.php';
 require_once __DIR__ . '/main_queries_logic.php';
+require_once __DIR__ . '/network_acl_guard.php';
 require_once __DIR__ . '/attachment_pending_logic.php';
 // Directory access shared by the login and by the LDAP settings page test.
 require_once __DIR__ . '/ldap.functions.php';
@@ -90,6 +91,9 @@ if (PHP_SAPI !== 'cli' || !defined('TEAMPASS_FUNCTIONS_ONLY') || TEAMPASS_FUNCTI
 
     $configManager = new ConfigManager();
     $SETTINGS = $configManager->getAllSettings();
+    if (PHP_SAPI !== 'cli') {
+        teampassEnforceNetworkAccess($SETTINGS);
+    }
 }
 
 /**
