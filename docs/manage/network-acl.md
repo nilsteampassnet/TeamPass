@@ -182,3 +182,12 @@ Then clear the APCu cache (restart PHP-FPM or run `php -r "apcu_clear_cache();"`
 ### Rules are not applied after saving
 
 TeamPass caches settings in APCu for 60 seconds. If you have APCu enabled, the new rules may take up to one minute to be picked up by existing PHP workers.
+
+### Access is refused after an ACL storage error
+
+When either list is enabled, TeamPass refuses access if its ACL table is missing
+or the rules cannot be read. A storage failure never disables an enabled policy.
+The response does not disclose database details; the PHP error log records a
+generic ACL diagnostic without SQL or credentials. Check database permissions
+and complete any required installation/upgrade before reopening the application.
+When both lists are disabled, no ACL table is required.

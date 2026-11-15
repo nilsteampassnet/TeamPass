@@ -103,13 +103,8 @@ if ((int) ($SETTINGS['api_require_https'] ?? 0) === 1) {
     }
 }
 
-$networkAccessContext = teampassGetClientIpForSecurity($SETTINGS);
-$networkAccessRules = teampassLoadNetworkAclRules(true);
-$networkAccess = teampassEvaluateNetworkAclAccess(
-    $SETTINGS,
-    isset($networkAccessContext['detected_ip']) === true ? (string) $networkAccessContext['detected_ip'] : null,
-    $networkAccessRules
-);
+$networkAccess = teampassGetNetworkAccessDecision($SETTINGS);
+$networkAccessContext = $networkAccess['context'];
 if (($networkAccess['checked'] ?? false) === true && ($networkAccess['allowed'] ?? true) === false) {
     errorHdl(
         'HTTP/1.1 403 Forbidden',

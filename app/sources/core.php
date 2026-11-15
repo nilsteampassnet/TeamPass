@@ -47,9 +47,7 @@ $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
 
 // Apply network access control before reaching the login page
-$networkAccessContext = teampassGetClientIpForSecurity($SETTINGS);
-$networkAccessRules = teampassLoadNetworkAclRules(true);
-$networkAccess = teampassEvaluateNetworkAclAccess($SETTINGS, $networkAccessContext['detected_ip'], $networkAccessRules);
+$networkAccess = teampassGetNetworkAccessDecision($SETTINGS);
 if (($networkAccess['checked'] ?? false) === true && ($networkAccess['allowed'] ?? true) === false) {
     http_response_code(403);
     header('Content-Type: text/html; charset=utf-8');

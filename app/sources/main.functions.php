@@ -4946,10 +4946,11 @@ function teampassGetClientIpForSecurity(array $settings): array
  * Loads network ACL rules.
  *
  * @param bool $onlyEnabled Only enabled rules.
+ * @param bool $required Refuse an unavailable table when enforcing an enabled policy.
  *
  * @return array<string, array<int, array<string, mixed>>>
  */
-function teampassLoadNetworkAclRules(bool $onlyEnabled = false): array
+function teampassLoadNetworkAclRules(bool $onlyEnabled = false, bool $required = false): array
 {
     $result = [
         'whitelist' => [],
@@ -4957,6 +4958,9 @@ function teampassLoadNetworkAclRules(bool $onlyEnabled = false): array
     ];
 
     if (teampassNetworkAclTableExists() === false) {
+        if ($required === true) {
+            throw new RuntimeException('network_acl_unavailable');
+        }
         return $result;
     }
 
@@ -5005,8 +5009,10 @@ function teampassLoadNetworkAclRules(bool $onlyEnabled = false): array
  */
 function teampassEvaluateNetworkAclAccess(array $settings, ?string $clientIp, array $rules): array
 {
+    $blacklistEnabled = (int) ($settings['network_blacklist_enabled'] ?? 0) === 1;
+    $whitelistEnabled = (int) ($settings['network_whitelist_enabled'] ?? 0) === 1;
     $result = [
-        'checked' => teampassNetworkAclTableExists(),
+        'checked' => $blacklistEnabled || $whitelistEnabled,
         'allowed' => true,
         'reason' => 'allowed',
         'matched_rule' => null,
@@ -5016,8 +5022,11 @@ function teampassEvaluateNetworkAclAccess(array $settings, ?string $clientIp, ar
         return $result;
     }
 
-    $blacklistEnabled = (int) ($settings['network_blacklist_enabled'] ?? 0) === 1;
-    $whitelistEnabled = (int) ($settings['network_whitelist_enabled'] ?? 0) === 1;
+    if (teampassNetworkAclTableExists() === false) {
+        $result['allowed'] = false;
+        $result['reason'] = 'acl_unavailable';
+        return $result;
+    }
 
     if ($clientIp === null || teampassIsValidIpv4($clientIp) === false) {
         if ($blacklistEnabled === true || $whitelistEnabled === true) {
@@ -5058,6 +5067,34 @@ function teampassEvaluateNetworkAclAccess(array $settings, ?string $clientIp, ar
     }
 
     return $result;
+}
+
+/**
+ * Resolve the current network policy without allowing storage failures to disable it.
+ *
+ * @param array $settings Current administrator settings.
+ * @return array<string, mixed> Decision and the client context used for the request.
+ */
+function teampassGetNetworkAccessDecision(array $settings): array
+{
+    $context = teampassGetClientIpForSecurity($settings);
+    $enabled = (int) ($settings['network_blacklist_enabled'] ?? 0) === 1
+        || (int) ($settings['network_whitelist_enabled'] ?? 0) === 1;
+    if ($enabled === false) {
+        return ['checked' => false, 'allowed' => true, 'reason' => 'allowed',
+            'matched_rule' => null, 'context' => $context];
+    }
+
+    try {
+        $rules = teampassLoadNetworkAclRules(true, true);
+        return teampassEvaluateNetworkAclAccess($settings, $context['detected_ip'], $rules)
+            + ['context' => $context];
+    } catch (Throwable $e) {
+        // Database exceptions can contain SQL or connection details; never expose their message.
+        error_log('TEAMPASS network ACL evaluation unavailable (' . get_class($e) . ')');
+        return ['checked' => true, 'allowed' => false, 'reason' => 'acl_unavailable',
+            'matched_rule' => null, 'context' => $context];
+    }
 }
 
 /**
