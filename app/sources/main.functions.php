@@ -4852,17 +4852,28 @@ function teampassIsTrustedProxy(string $remoteAddr, array $trustedProxyRules): b
 }
 
 /**
- * Extract the first valid IPv4 from a proxy header.
+ * Resolve the last untrusted IPv4 in a forwarded chain, starting at the trusted peer.
  *
  * @param string $headerValue Header value.
+ * @param array $trustedProxyRules Trusted intermediary addresses, never client networks.
  *
  * @return string|null
  */
-function teampassExtractClientIpv4FromHeader(string $headerValue): ?string
+function teampassExtractClientIpv4FromHeader(string $headerValue, array $trustedProxyRules = []): ?string
 {
+    if (strlen($headerValue) > 8192) {
+        return null;
+    }
     $parts = array_map('trim', explode(',', $headerValue));
-    foreach ($parts as $part) {
-        if (teampassIsValidIpv4($part) === true) {
+    if (count($parts) > 100) {
+        return null;
+    }
+    foreach (array_reverse($parts) as $part) {
+        // Never skip an invalid hop to accept an earlier, potentially forged address.
+        if (teampassIsValidIpv4($part) === false) {
+            return null;
+        }
+        if (teampassIsTrustedProxy($part, $trustedProxyRules) === false) {
             return $part;
         }
     }
@@ -4927,8 +4938,15 @@ function teampassGetClientIpForSecurity(array $settings): array
     $headerValue = isset($_SERVER[$serverKey]) === true ? trim((string) $_SERVER[$serverKey]) : '';
     $trustedProxyRules = teampassGetTrustedProxyRules($settings);
     $isTrustedProxy = $mode === 'reverse_proxy' && teampassIsTrustedProxy($remoteAddr, $trustedProxyRules) === true;
-    $headerIp = $isTrustedProxy === true ? teampassExtractClientIpv4FromHeader($headerValue) : null;
-    $detectedIp = $headerIp ?? (teampassIsValidIpv4($remoteAddr) === true ? $remoteAddr : null);
+    $headerIp = null;
+    if ($isTrustedProxy === true) {
+        $headerIp = $headerName === 'x-real-ip'
+            ? (teampassIsValidIpv4($headerValue) ? $headerValue : null)
+            : teampassExtractClientIpv4FromHeader($headerValue, $trustedProxyRules);
+    }
+    // A trusted proxy without a usable client header must not authorize every client as itself.
+    $detectedIp = $isTrustedProxy === true ? $headerIp
+        : (teampassIsValidIpv4($remoteAddr) === true ? $remoteAddr : null);
 
     return [
         'detected_ip' => $detectedIp,

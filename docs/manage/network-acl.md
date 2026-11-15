@@ -126,7 +126,25 @@ List all proxy IPs or their CIDR in **Trusted proxies**, one per line:
 172.16.0.0/12
 ```
 
-Only the leftmost IP in the `X-Forwarded-For` header that was injected by a trusted proxy is used as the client IP.
+TeamPass reads `X-Forwarded-For` from right to left, skips declared trusted
+proxies and uses the first non-trusted address. Values before that address
+cannot select the client IP. Declare intermediary proxies only, never an
+entire client network. A missing header, an invalid hop encountered during
+resolution or a chain containing only trusted proxies yields no usable client
+address: an enabled ACL then refuses access rather than treating the proxy
+itself as the client. `X-Real-IP` accepts one IPv4 address, not a chain.
+
+At a single Internet-facing Nginx proxy, overwrite client-supplied headers:
+
+```nginx
+proxy_set_header X-Forwarded-For $remote_addr;
+proxy_set_header X-Real-IP $remote_addr;
+```
+
+For several proxies, the edge must remove untrusted incoming forwarding
+headers; subsequent trusted proxies can append their observed peer. Keep the
+backend reachable only from the intended proxies. Test the resulting client
+address before enabling or changing a whitelist.
 
 ### HTTPS terminated by the proxy
 
