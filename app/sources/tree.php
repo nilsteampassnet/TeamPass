@@ -103,7 +103,8 @@ foreach (['user-tree_structure', 'user-cache_tree'] as $legacyTreeSessionKey) {
 $goTreeRefresh = loadTreeStrategy(
     (int) $lastFolderChangeValeur,
     (int) $session->get('user-id'),
-    (int) $request->query->get('force_refresh', 0)
+    (int) $request->query->get('force_refresh', 0),
+    (int) ($SETTINGS['tree_counters'] ?? 0) === 1
 );
 $folderCacheBuild = null;
 if ($goTreeRefresh['state'] === true || !empty($request->query->get('id'))) {
@@ -572,6 +573,7 @@ function prepareNodeJson(
             $ret_json,
             array(
                 'id' => 'li_' . $nodeId,
+                'data' => ['tree_counters' => (int) ($SETTINGS['tree_counters'] ?? 0) === 1],
                 'parent' => $last_visible_parent === -1 ? $parent : $last_visible_parent,
                 'text' => '<i class="'.$currentNode->fa_icon.' tree-folder mr-2" data-folder="'.$currentNode->fa_icon.'"  data-folder-selected="'.$currentNode->fa_icon_selected.'"></i>'.$text.htmlspecialchars($currentNode->title).$nodeData['html'],
                 'li_attr' => array(
@@ -598,6 +600,7 @@ function prepareNodeJson(
             $ret_json,
             array(
                 'id' => 'li_' . $nodeId,
+                'data' => ['tree_counters' => (int) ($SETTINGS['tree_counters'] ?? 0) === 1],
                 'parent' => $last_visible_parent === -1 ? $parent : $last_visible_parent,
                 'text' => '<i class="'.$currentNode->fa_icon.' tree-folder mr-2" data-folder="'.$currentNode->fa_icon.'"  data-folder-selected="'.$currentNode->fa_icon_selected.'"></i>'.'<i class="fas fa-times fa-xs text-danger mr-1 ml-1"></i>'.$text.htmlspecialchars($currentNode->title).$nodeData['html'],
                 'li_attr' => array(
@@ -696,7 +699,7 @@ function prepareNodeData(
     } elseif (in_array($nodeId, $listRestrictedFoldersForItemsKeys) === true) {
         return [
             'html' => ($session_user_read_only === true ? '<i class="far fa-eye fa-xs mr-1"></i>' : '') .
-                '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . count($session_list_restricted_folders_for_items[$nodeId]) . '</span>',
+                ($tree_counters === 1 ? '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . count($session_list_restricted_folders_for_items[$nodeId]) . '</span>' : ''),
             'title' => '',
             'restricted' => 1,
             'folderClass' => 'folder',
@@ -836,12 +839,14 @@ function buildVisibleFoldersFromTree(
  * @param integer $lastTreeChange
  * @param integer $userId
  * @param integer $forceRefresh
+ * @param bool $treeCounters Current folder-counter setting
  * @return array
  */
 function loadTreeStrategy(
     int $lastTreeChange,
     int $userId,
-    int $forceRefresh
+    int $forceRefresh,
+    bool $treeCounters = false
 ): array
 {
     // Case when refresh is EXPECTED / MANDATORY
@@ -859,7 +864,9 @@ function loadTreeStrategy(
         WHERE user_id = %i ORDER BY increment_id LIMIT 1',
         $userId
     );
-    if (empty($userCacheTree['data']) === false && $userCacheTree['data'] !== '[]') {
+    if (empty($userCacheTree['data']) === false
+        && folderCacheTreeMatchesCounters($userCacheTree['data'], $treeCounters)
+    ) {
         // Check per-user invalidation
         /** @var int|string $invalidatedAt */
         $invalidatedAt = $userCacheTree['invalidated_at'];

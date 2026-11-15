@@ -5487,6 +5487,7 @@ switch ($inputData['type']) {
             'list_to_be_continued' => $listToBeContinued ?? 0,
             'items_count' => $counter,
             'counter_full' => $counter_full,
+            'tree_counters' => (int) ($SETTINGS['tree_counters'] ?? 0) === 1 ? 1 : 0,
             'folder_complexity' => intval($folderComplexity),
             'categoriesStructure' => $categoriesStructure,
             'access_level' => $accessLevel,

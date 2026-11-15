@@ -3,6 +3,13 @@
 declare(strict_types=1);
 
 /**
+ * TeamPass - a collaborative passwords manager.
+ * Copyright (c) 2009-2026 Teampass.net.
+ * Licensed under the GNU General Public License, version 3 or later.
+ * See <https://www.gnu.org/licenses/>.
+ */
+
+/**
  * Folder-cache decisions shared by the web/API adapters and their unit tests.
  * This module deliberately has no database, session or clock dependency.
  */
@@ -37,6 +44,24 @@ function folderCacheEmptyRow(int $userId): array
         'timestamp' => 0,
         'invalidated_at' => 0,
     ];
+}
+
+/**
+ * Check the presentation setting used to build a cached jsTree snapshot.
+ *
+ * Legacy snapshots have no marker and must be rebuilt once. Keeping the marker
+ * in jsTree's standard node data avoids a schema change and also detects an old
+ * build that finishes after the administrator changes the setting.
+ *
+ * @param string $data Cached jsTree JSON
+ * @param bool $treeCounters Whether folder counters are currently enabled
+ * @return bool Whether the snapshot was built with the current setting
+ */
+function folderCacheTreeMatchesCounters(string $data, bool $treeCounters): bool
+{
+    $tree = json_decode($data, true);
+    return is_array($tree)
+        && ($tree[0]['data']['tree_counters'] ?? null) === $treeCounters;
 }
 
 /**
