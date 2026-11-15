@@ -61,6 +61,7 @@ const TP_UPGRADE_CLI_CLI_OPERATIONS = [
     'sanitize_legacy_fa_icons',
     'sanitize_directory_user_fields',
     'sanitize_imported_folder_titles',
+    'sanitize_legacy_setting_entities',
 ];
 
 /**

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/../../app/sources/oauth2_self_register_logic.php';
+require_once __DIR__ . '/../../app/sources/setting_value_logic.php';
 
 /**
  * Decisions of the OAuth2 self-registration (setting oauth_self_register_groups). The wiring
@@ -40,11 +41,15 @@ final class Oauth2SelfRegisterLogicTest extends TestCase
 
     public function testTheSettingIsReadAsItWasTypedNotAsItWasStored(): void
     {
-        // save_option_change stores the value through FILTER_SANITIZE_FULL_SPECIAL_CHARS
-        $stored = (string) filter_var("Équipe R&D, O'Neil team", FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $this->assertStringContainsString('&Eacute;', $stored);
-
+        // save_option_change stores the value through tpEncodeSettingValue()
+        $stored = (string) tpEncodeSettingValue("Équipe R&D, O'Neil team");
+        $this->assertStringContainsString('&amp;', $stored);
         $this->assertSame(['Équipe R&D', "O'Neil team"], oauth2ParseAllowedGroups($stored));
+
+        // and through FILTER_SANITIZE_FULL_SPECIAL_CHARS before, until the upgrade repairs it
+        $legacy = (string) filter_var("Équipe R&D, O'Neil team", FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $this->assertStringContainsString('&Eacute;', $legacy);
+        $this->assertSame(['Équipe R&D', "O'Neil team"], oauth2ParseAllowedGroups($legacy));
     }
 
     public function testNobodyMayRegisterWhenNoGroupIsAllowed(): void

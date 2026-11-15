@@ -125,6 +125,20 @@ final class UpgradeCliLogicTest extends TestCase
         );
     }
 
+    public function testPlanOfThe324LineRepairsTheSettingsAfterItsScript(): void
+    {
+        $plan = tpUpgradeCliBuildPlan(self::manifest(), '3.2.4', '3.2.4');
+
+        $this->assertSame(
+            [
+                ['script', 'upgrade_run_3.2.4.php', '3.2.4'],
+                ['operation', 'sanitize_legacy_setting_entities', '3.2.4'],
+            ],
+            array_map(static fn (array $step): array => [$step['kind'], $step['name'], $step['version']], $plan)
+        );
+        $this->assertSame(['sanitize_legacy_setting_entities'], tpUpgradeCliOperationsAfterScript(self::manifest(), '3.2.4'));
+    }
+
     public function testDockerGetsTheCommandLineOperationsOfEachScript(): void
     {
         $this->assertSame(
