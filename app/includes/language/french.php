@@ -2334,6 +2334,7 @@ return array(
     'secure_send' => 'Envoi sécurisé',
     'secure_send_protected' => 'Cet envoi sécurisé est protégé',
     'secure_send_enter_passphrase' => 'Saisissez la phrase secrète qui vous a été communiquée pour révéler le contenu.',
+    'secure_send_show_passphrase' => 'Afficher la phrase secrète',
     'secure_send_wrong_passphrase' => 'Phrase secrète incorrecte. Veuillez réessayer.',
     'secure_send_too_many_attempts' => 'Trop de tentatives échouées. Ce lien a été détruit.',
     'secure_send_recipient_intro' => 'Voici le contenu qui vous a été partagé',

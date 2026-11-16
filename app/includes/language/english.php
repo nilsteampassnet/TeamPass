@@ -949,6 +949,7 @@ return array(
     'secure_send' => 'Secure Send',
     'secure_send_protected' => 'This secure send is protected',
     'secure_send_enter_passphrase' => 'Enter the passphrase that was shared with you to reveal the content.',
+    'secure_send_show_passphrase' => 'Show passphrase',
     'secure_send_wrong_passphrase' => 'Wrong passphrase. Please try again.',
     'secure_send_too_many_attempts' => 'Too many failed attempts. This link has been destroyed.',
     'secure_send_recipient_intro' => 'Here is the content that has been shared with you',
