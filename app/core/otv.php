@@ -51,14 +51,36 @@ $languageTag = (string) (DB::queryFirstField(
 ) ?: 'en');
 date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
 
+// The only script this page may run: the static passphrase visibility toggle. The CSP
+// authorizes it by its SHA-256 digest, so no other script can execute, including on the
+// page that shows the revealed secret. Browsers hash the parsed text, where CRLF is already
+// LF, hence the normalization; echo it as the sole content of its script element.
+$passphraseToggleScript = str_replace(["\r\n", "\r"], "\n", <<<'JS'
+(() => {
+  const passphrase = document.getElementById('passphrase')
+  const toggle = document.getElementById('toggle-passphrase')
+  if (!passphrase || !toggle) return
+
+  const icon = toggle.querySelector('i')
+  toggle.addEventListener('click', () => {
+    const show = passphrase.type === 'password'
+    passphrase.type = show ? 'text' : 'password'
+    toggle.setAttribute('aria-pressed', String(show))
+    icon.classList.toggle('fa-eye', !show)
+    icon.classList.toggle('fa-eye-slash', show)
+  })
+  toggle.hidden = false
+})()
+JS);
+$passphraseToggleHash = base64_encode(hash('sha256', $passphraseToggleScript, true));
+
 // The public endpoint has its own POST confirmation; it never enters authenticated routing.
-$scriptNonce = base64_encode(random_bytes(18));
 header('Cache-Control: no-store, private, max-age=0');
 header('Pragma: no-cache');
 header('Referrer-Policy: no-referrer');
 header('X-Robots-Tag: noindex, nofollow, noarchive');
 header('X-Frame-Options: DENY');
-header("Content-Security-Policy: default-src 'none'; script-src 'nonce-$scriptNonce'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; form-action 'self'; base-uri 'none'; frame-ancestors 'none'");
+header("Content-Security-Policy: default-src 'none'; script-src 'sha256-$passphraseToggleHash'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; form-action 'self'; base-uri 'none'; frame-ancestors 'none'");
 if (!$request->isMethod('GET') && !$request->isMethod('POST')) {
     header('Allow: GET, POST');
     http_response_code(405);
@@ -469,22 +491,6 @@ $poweredBy = str_replace(
             <a href="https://teampass.net" target="_blank" rel="noopener noreferrer"><?php echo $poweredBy; ?></a>
         </footer>
     </div>
-    <script nonce="<?php echo $escape($scriptNonce); ?>">
-      (() => {
-        const passphrase = document.getElementById('passphrase')
-        const toggle = document.getElementById('toggle-passphrase')
-        if (!passphrase || !toggle) return
-
-        const icon = toggle.querySelector('i')
-        toggle.addEventListener('click', () => {
-          const show = passphrase.type === 'password'
-          passphrase.type = show ? 'text' : 'password'
-          toggle.setAttribute('aria-pressed', String(show))
-          icon.classList.toggle('fa-eye', !show)
-          icon.classList.toggle('fa-eye-slash', show)
-        })
-        toggle.hidden = false
-      })()
-    </script>
+    <script><?php echo $passphraseToggleScript; ?></script>
 </body>
 </html>

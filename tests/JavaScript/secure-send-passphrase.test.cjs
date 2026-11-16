@@ -11,7 +11,8 @@ const { test } = require('node:test')
 const vm = require('node:vm')
 
 const template = readFileSync(join(__dirname, '../../app/core/otv.php'), 'utf8')
-const script = template.match(/<script nonce="[^\n]+">([\s\S]*?)<\/script>/)
+// The script lives in a nowdoc so that otv.php can authorize it by its SHA-256 digest.
+const script = template.match(/\$passphraseToggleScript = [^\n]*<<<'JS'\n([\s\S]*?)\nJS\)/)
 assert.ok(script, 'Missing recipient passphrase script')
 
 function recipient({ value = '', hasPassphrase = true } = {}) {

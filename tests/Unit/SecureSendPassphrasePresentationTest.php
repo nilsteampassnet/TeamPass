@@ -72,6 +72,49 @@ class SecureSendPassphrasePresentationTest extends TestCase
         self::assertSame(1, $xpath->query('//button[@type="submit"]')->length);
     }
 
+    /** The CSP authorizes the toggle by its digest alone, so no other script can run on the page. */
+    public function testOnlyTheToggleScriptIsAuthorizedByItsDigest(): void
+    {
+        $source = (string) file_get_contents(__DIR__ . '/../../app/core/otv.php');
+        self::assertSame(1, preg_match('/header\("Content-Security-Policy: ([^"]+)"\);/', $source, $csp));
+        $directives = array_map('trim', explode(';', $csp[1]));
+        self::assertContains("default-src 'none'", $directives);
+        self::assertContains("script-src 'sha256-\$passphraseToggleHash'", $directives);
+        self::assertStringNotContainsString('nonce-', $csp[1]);
+        self::assertStringNotContainsString('unsafe-eval', $csp[1]);
+        // Any character added around the echoed text would change what the browser hashes.
+        self::assertSame(1, substr_count($source, '<script'));
+        self::assertSame(1, substr_count($source, '<script><?php echo $passphraseToggleScript; ?></script>'));
+    }
+
+    /** A CRLF checkout must emit and hash the LF text browsers parse, or the toggle would be blocked. */
+    public function testToggleDigestDoesNotDependOnCheckoutLineEndings(): void
+    {
+        $source = str_replace("\r\n", "\n", (string) file_get_contents(__DIR__ . '/../../app/core/otv.php'));
+        $results = [];
+        foreach (["\n", "\r\n"] as $eol) {
+            $code = str_replace("\n", $eol, $source);
+            $start = strpos($code, '$passphraseToggleScript = ');
+            self::assertIsInt($start);
+            $hashStart = strpos($code, '$passphraseToggleHash = ', $start);
+            self::assertIsInt($hashStart);
+            $end = strpos($code, ';', $hashStart);
+            self::assertIsInt($end);
+            // Evaluates only the two assignments cut from the shipped otv.php, as form() does.
+            $results[] = (static function (string $snippet): array {
+                eval($snippet);
+                return [$passphraseToggleScript, $passphraseToggleHash];
+            })(substr($code, $start, $end + 1 - $start));
+        }
+        [[$script, $hash], [$crlfScript, $crlfHash]] = $results;
+        self::assertStringNotContainsString("\r", $crlfScript);
+        self::assertSame($script, $crlfScript);
+        self::assertSame($hash, $crlfHash);
+        self::assertSame(base64_encode(hash('sha256', $script, true)), $hash);
+        self::assertStringStartsWith('(() => {', $script);
+        self::assertStringEndsWith('})()', $script);
+    }
+
     /** Quotes and markup in translations must stay within the accessible label. */
     public function testToggleLabelCannotInjectMarkupOrAttributes(): void
     {
