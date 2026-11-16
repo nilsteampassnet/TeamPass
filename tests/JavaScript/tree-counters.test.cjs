@@ -18,28 +18,47 @@ const updater = source.slice(start, end)
 
 /** Run the shipped updater with a small tree/badge adapter. */
 function view({ enabled = true, badge = '2/5/1', hasNode = true, legacy = false } = {}) {
-  const state = { badge, refreshes: 0, removals: 0, header: null }
+  const state = { badge, refreshes: 0, removals: 0, header: null, starts: [] }
+  const node = { id: 'li_7', data: legacy ? undefined : { tree_counters: enabled },
+    original: { is_pf: 0, can_edit: 1 }, a_attr: { 'data-title': 'R&D O\'Brien "test" <demo>' }, parent: '#' }
+  const events = new Map()
+  let selectHandler
   const tree = {
     get_node(id) {
       assert.equal(id, 'li_7')
-      return hasNode ? { data: legacy ? undefined : { tree_counters: enabled } } : false
+      return hasNode ? node : false
     },
     refresh() { state.refreshes++ }
   }
+  const icon = { children() { return this }, attr() { return 'fas fa-folder' },
+    removeClass() { return this }, addClass() { return this } }
   const $ = selector => {
-    if (selector === '#jstree') return { jstree: () => tree }
+    if (selector && typeof selector === 'object') return selector
+    if (selector === '#jstree') return {
+      jstree: mode => mode === 'get_selected' ? [node] : tree,
+      one(event, handler) { events.set(event, handler) },
+      bind(event, handler) { assert.equal(event, 'select_node.jstree'); selectHandler = handler }
+    }
     if (selector === '#jstree .items_count') return { remove() { state.badge = null; state.removals++ } }
     if (selector === '#count-items-badge') return { text(value) { state.header = value } }
+    if (selector.startsWith('#fld_')) return icon
     assert.equal(selector, '#itcount_7', 'A folder click must never append a badge to the folder link')
     return { length: state.badge === null ? 0 : 1, text(value) {
       if (value === undefined) return state.badge
       state.badge = String(value)
     } }
   }
-  const context = { $ }
+  const stored = { teampassApplication: {}, teampassItem: {} }
+  const context = { $, treeCountersRefreshPending: false, startedItemsListQuery: false,
+    debugJavascript: false, previousSelectedFolder: -1, window: {},
+    store: { update(key, callback) { callback(stored[key]) } },
+    ListerItems(folder, restricted, start) { assert.equal(folder, 7); state.starts.push(start) } }
   vm.createContext(context)
   vm.runInContext(updater, context)
-  return { state, run(counter, option) { context.updateFolderTreeCounter(7, counter, option) }, context }
+  return { state, run(counter, option) { context.updateFolderTreeCounter(7, counter, option) }, context,
+    select() { assert.ok(selectHandler); selectHandler({}, { instance: tree, node }) },
+    finishRefresh() { const handler = events.get('refresh.jstree'); events.delete('refresh.jstree'); if (handler) handler() }
+  }
 }
 
 test('Disabled counters are removed and are not recreated by a folder click', () => {
@@ -99,6 +118,44 @@ test('Invalid counts cannot inject markup or replace a badge', () => {
     assert.equal(ui.state.badge, '2/5/1')
   }
 })
+
+const selectionStart = source.indexOf(".bind('select_node.jstree', function(e, data) {")
+const selectionEnd = source.indexOf('\n    // Search in tree', selectionStart)
+assert.ok(selectionStart >= 0 && selectionEnd > selectionStart, 'Missing tree selection callback')
+const selection = "$('#jstree')" + source.slice(selectionStart, selectionEnd)
+const resetStart = source.indexOf('// reset doubleclick prevention', source.indexOf('function ListerItems('))
+const resetEnd = source.indexOf('// Remove skeleton', resetStart)
+assert.ok(resetStart >= 0 && resetEnd > resetStart, 'Missing item-response flag reset')
+const resetFlags = source.slice(resetStart, resetEnd)
+
+for (const enabled of [false, true]) {
+  for (const nextPageFirst of [false, true]) {
+    test(`Counter change ${Number(enabled)}→${Number(!enabled)} does not restart pagination (page first: ${nextPageFirst})`, () => {
+      const ui = view({ enabled })
+      vm.runInContext(selection, ui.context)
+      ui.select()
+      assert.deepEqual(ui.state.starts, [0])
+      vm.runInContext(resetFlags, ui.context) // First page succeeds and schedules the next page.
+      ui.run(4, enabled ? 0 : 1)
+      assert.equal(ui.state.refreshes, 1)
+
+      if (nextPageFirst) {
+        vm.runInContext(resetFlags, ui.context) // Pagination resets the ordinary selection guard again.
+        ui.run(4, enabled ? 0 : 1)
+        assert.equal(ui.state.refreshes, 1, 'Pagination must not schedule a second tree refresh')
+      }
+      ui.select() // jsTree restores selection before emitting refresh.jstree.
+      assert.deepEqual(ui.state.starts, [0], 'Restoring selection must not restart the item list')
+      ui.finishRefresh()
+      if (!nextPageFirst) vm.runInContext(resetFlags, ui.context)
+      assert.equal(ui.context.treeCountersRefreshPending, false)
+
+      ui.context.startedItemsListQuery = false
+      ui.select() // A subsequent user selection must work normally.
+      assert.deepEqual(ui.state.starts, [0, 0])
+    })
+  }
+}
 
 // Execute both actual folder-load branches, including their independent list header count.
 const blocks = [...source.matchAll(/if \(data\.counter_full !== undefined\) \{\n\s*\$\('#count-items-badge'\)[\s\S]+?\n\s*\}/g)]

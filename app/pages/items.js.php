@@ -265,6 +265,7 @@ require __DIR__ . '/icon.picker.js.php';
         selectedFolderId = false,
         itemClipboard,
         startedItemsListQuery = false,
+        treeCountersRefreshPending = false,
         itemStorageInformation = '',
         applicationVars,
         initialPageLoad = true,
@@ -999,7 +1000,7 @@ require __DIR__ . '/icon.picker.js.php';
         );
         
         // Prepare list of items
-        if (startedItemsListQuery === false) {
+        if (startedItemsListQuery === false && treeCountersRefreshPending === false) {
             startedItemsListQuery = true;
             ListerItems(selectedFolderId, '', 0, 0, true);
         }
@@ -6318,6 +6319,12 @@ require __DIR__ . '/icon.picker.js.php';
         }
         if (node && (!node.data || node.data.tree_counters !== (enabled === 1))) {
             // An already open page learns about an admin change on its next item load.
+            if (treeCountersRefreshPending === true) return;
+            // Pagination resets startedItemsListQuery while jsTree is still restoring selection.
+            treeCountersRefreshPending = true;
+            $('#jstree').one('refresh.jstree', function() {
+                treeCountersRefreshPending = false;
+            });
             tree.refresh();
             return;
         }
